@@ -48,55 +48,13 @@
         <template v-for="asset in assets" :key="asset.id">
           <!-- Phase 3C: audio/video rendered as HTML overlays — skip in Konva -->
           <template v-if="asset.type === 'audio_player' || asset.type === 'video_player'" />
-          <!-- Phase O PR-O4.3: geometry_solid Konva proxy (invisible Rect).
-               HTML overlay (Three.js) renders ABOVE з pointer-events:none —
-               Konva proxy під ним catches drag/resize/select using existing
-               asset interaction layer (same name='asset', handleAssetTransformEnd,
-               layer-level dragend → handleAssetDragEnd). Mirrors image/pdf pattern. -->
+          <!-- HTML-overlay asset types (see KONVA_PROXY_TYPES) — all share the
+               same invisible Konva Rect pattern: HTML overlay sits ON TOP з
+               pointer-events:none, Konva proxy BELOW catches drag/resize/select.
+               getSolidProxyConfig handles all → same drag/transform pipeline.
+               Adding a new overlay type: add to KONVA_PROXY_TYPES in script. -->
           <v-rect
-            v-else-if="asset.type === 'geometry_solid'"
-            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-          />
-          <!-- Phase G (2026-05-06): graph_calculator Konva proxy (invisible Rect).
-               HTML overlay вище з pointer-events:none НЕ перехоплює селекцію —
-               Konva proxy ловить drag/resize/select через існуючий
-               handleAssetTransformEnd / layer-level handleAssetDragEnd flow. -->
-          <v-rect
-            v-else-if="asset.type === 'graph_calculator'"
-            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-          />
-          <!-- Phase G PR-G1 (2026-05-13): geometry_2d_v2 Konva proxy (invisible Rect).
-               HTML overlay (SVG placeholder / JSXGraph у PR-G2) renders ABOVE з
-               pointer-events:none. Reuses getSolidProxyConfig — той самий
-               drag/resize/select pipeline через existing asset layer handlers. -->
-          <v-rect
-            v-else-if="asset.type === 'geometry_2d_v2'"
-            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-          />
-          <!-- Phase Calculus (2026-05-15): calculus_card Konva proxy (invisible Rect).
-               HTML overlay (canvas через bundle's CalculusCard) ABOVE з
-               pointer-events:none — Konva proxy ловить drag/resize/select. -->
-          <v-rect
-            v-else-if="asset.type === 'calculus_card'"
-            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-          />
-          <!-- TrigCircle (2026-05-16): trig_circle Konva proxy (invisible Rect).
-               HTML overlay (canvas через bundle's TrigCircle) ABOVE з
-               pointer-events:none — Konva proxy ловить drag/resize/select. -->
-          <v-rect
-            v-else-if="asset.type === 'trig_circle'"
-            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-          />
-          <!-- Helix (2026-05-17): helix Konva proxy (invisible Rect).
-               HTML overlay (canvas через bundle's HelixView) ABOVE з
-               pointer-events:none — Konva proxy ловить drag/resize/select. -->
-          <v-rect
-            v-else-if="asset.type === 'helix'"
+            v-else-if="KONVA_PROXY_TYPES.has(asset.type)"
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
@@ -755,39 +713,32 @@ const mediaAssets = computed(() =>
   assets.value.filter(a => a.type === 'audio_player' || a.type === 'video_player' || a.type === 'youtube_player'),
 )
 
-// Phase O PR-O4: geometry_solid rendered as HTML overlay (Three.js widget — non-Konva)
-const solidAssets = computed(() =>
-  assets.value.filter(a => a.type === 'geometry_solid'),
-)
+// ── Overlay asset types (HTML overlay + invisible Konva Rect proxy) ─────────
+// SSOT canonical list — referenced by:
+//   template: v-else-if="KONVA_PROXY_TYPES.has(asset.type)"  (Konva proxy v-rect)
+//   assetEquality.ts: FLAT_DATA_ASSET_TYPES  (ops-relevant data comparison)
+//
+// ⚠️ Adding a new overlay type:
+//   1. Add entry here (Konva proxy side auto-picks up via template loop)
+//   2. Add matching computed + template block below with its specific Vue component
+//   3. If type has versioned `data` → add to FLAT_DATA_ASSET_TYPES in assetEquality.ts
+const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
+  'geometry_solid',    // §3.7.1 — Three.js solid geometry      → SolidCardRenderer
+  'graph_calculator',  // §3.7.2 — Desmos-like graph calculator  → GraphCalculatorRenderer
+  'geometry_2d_v2',    // §3.7.3 — JSXGraph 2D geometry          → Geometry2DRenderer
+  'calculus_card',     // §3.7.4 — Calculus visualizer           → CalculusRenderer
+  'trig_circle',       // §3.7.5 — Trig unit circle              → TrigCircleRenderer
+  'helix',             // §3.7.6 — 3D helix                      → HelixRenderer
+])
 
-// Phase G (2026-05-06): graph_calculator rendered as HTML overlay (canvas-based, non-Konva).
-// Per OPS_SYNC_SSOT.md INV-21 + UX-RULE-5/6/8.
-const graphCalculatorAssets = computed(() =>
-  assets.value.filter(a => a.type === 'graph_calculator'),
-)
-
-// Phase G PR-G1 (2026-05-13): geometry_2d_v2 rendered as HTML overlay (SVG placeholder у PR-G1,
-// JSXGraph у PR-G2). Mirror solid/graph overlay pattern. Per PLAN.md PR-G1.
-const geometry2dV2Assets = computed(() =>
-  assets.value.filter(a => a.type === 'geometry_2d_v2'),
-)
-
-// Phase Calculus (2026-05-15): calculus_card rendered as HTML overlay
-// (canvas через bundle's CalculusCard). Mirror geometry_2d_v2 overlay pattern.
-const calculusAssets = computed(() =>
-  assets.value.filter(a => a.type === 'calculus_card'),
-)
-
-// TrigCircle (2026-05-16): trig_circle rendered as HTML overlay
-// (canvas через bundle's TrigCircle). Mirror calculus overlay pattern.
-const trigCircleAssets = computed(() =>
-  assets.value.filter(a => a.type === 'trig_circle'),
-)
-// Helix (2026-05-17): helix rendered as HTML overlay
-// (canvas через bundle's HelixView). Mirror trig_circle overlay pattern.
-const helixAssets = computed(() =>
-  assets.value.filter(a => a.type === 'helix'),
-)
+// Per-type filters for the HTML overlay template blocks below.
+// Each renders a distinct Vue component with its own props/events.
+const solidAssets          = computed(() => assets.value.filter(a => a.type === 'geometry_solid'))
+const graphCalculatorAssets = computed(() => assets.value.filter(a => a.type === 'graph_calculator'))
+const geometry2dV2Assets   = computed(() => assets.value.filter(a => a.type === 'geometry_2d_v2'))
+const calculusAssets       = computed(() => assets.value.filter(a => a.type === 'calculus_card'))
+const trigCircleAssets     = computed(() => assets.value.filter(a => a.type === 'trig_circle'))
+const helixAssets          = computed(() => assets.value.filter(a => a.type === 'helix'))
 
 // Expand-to-board: одночасно може бути розгорнутий тільки один asset.
 // Зберігає id розгорнутого asset, null = нічого не розгорнуто.

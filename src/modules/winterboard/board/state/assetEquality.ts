@@ -17,6 +17,16 @@
  *
  * INV-13 enforcement: ця функція робить filter "1 user action = 1 op" для
  * випадків коли handler emit'ить identical asset (typical Konva side effect).
+ *
+ * ## Додавання нового типу з versioned data
+ *
+ * Якщо новий тип має flat `data` (НЕ вкладений `data.state` як у geometry_solid):
+ *   1. Додай тип рядком у FLAT_DATA_ASSET_TYPES нижче.
+ *   2. Більше нічого не треба — JSON.stringify шлях підхопить автоматично.
+ *
+ * Якщо новий тип має вкладений `data.state` (як geometry_solid):
+ *   1. Додай ключі стану у окремий KEYS масив.
+ *   2. Додай гілку у секцію "Nested-state types" нижче.
  */
 import type { WBAsset } from '../../types/winterboard'
 
@@ -97,6 +107,33 @@ const SOLID_STATE_KEYS = [
 ] as const
 
 /**
+ * Asset types whose `data` envelope is a flat versioned object (NO nested `state` field).
+ * Equality is determined by JSON.stringify of the full data envelope.
+ *
+ * WHY a Set instead of per-type if-chains:
+ *   - Previous pattern required a new `if (a.type === 'X' || b.type === 'X')` block per type.
+ *   - Easy to forget → silent Layer-A false-positive equality → ops never recorded.
+ *   - Bug hit us: trig_circle + helix were missing → theta/toggle changes lost from replay log.
+ *   - Set: adding a new flat-data type = ONE line here. Impossible to partially forget.
+ *
+ * FLAT = НЕ має вкладеного `data.state` (як geometry_solid).
+ * Всі поля даних знаходяться безпосередньо у `data.*`.
+ *
+ * Types with nested `data.state` (geometry_solid) — handled separately below.
+ *
+ * ⚠️ NEW TYPE CHECKLIST: якщо додаєш новий asset type з versioned `data`:
+ *   - flat data (like TrigCircleData, HelixData, CalculusData) → add here
+ *   - nested state (like SolidAssetData.state) → add SOLID_STATE_KEYS + branch below
+ */
+const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
+  'graph_calculator',  // §3.7.2 — state+meta envelope, meta.last_snapshot_seq relevant
+  'geometry_2d_v2',   // §3.7.3 — preset, toggles, pointsSnapshot, options
+  'calculus_card',     // §3.7.4 — mode, expr, x0/a/b/riemann/N/showF/viewport
+  'trig_circle',       // §3.7.5 — theta, showSin/Cos/Tan/Cot, snapPi12, speed, ...
+  'helix',             // §3.7.6 — theta, phi, pitch, showHelix/Sin/Cos/Circle, ...
+])
+
+/**
  * Compare 2 WBAsset objects on ops-relevant fields ONLY.
  *
  * @returns `true` if assets are equal for ops purposes (caller can skip emit op)
@@ -127,54 +164,31 @@ export function assetsEqualByOpsFields(a: WBAsset, b: WBAsset): boolean {
     }
   }
 
-  // data envelope (Phase O SolidAssetData / Phase G GraphCalculatorData)
+  // data envelope
   const aData = a.data
   const bData = b.data
   if (aData !== bData) {
     if (!aData || !bData) return false  // one is undefined, other is set
     if (aData.version !== bData.version) return false
-    // Phase G: graph_calculator state shape ≠ SolidAssetState. Diff via
-    // JSON stringify (state ≤ 64KB per inv-21 constraints, ≤ 32 expressions,
-    // ≤ 16 params — cheap enough; no false-positive risk per fail-safe contract).
-    if (a.type === 'graph_calculator' || b.type === 'graph_calculator') {
+
+    // ── Flat-data types (no nested `state`) ─────────────────────────────────
+    // JSON.stringify covers ALL fields in one shot — no per-field maintenance.
+    // Adding a new flat-data type = add ONE entry to FLAT_DATA_ASSET_TYPES above.
+    if (FLAT_DATA_ASSET_TYPES.has(a.type) || FLAT_DATA_ASSET_TYPES.has(b.type)) {
       try {
-        // Compare full data (state + meta) bo meta.last_snapshot_seq teж relevant.
         return JSON.stringify(aData) === JSON.stringify(bData)
       } catch {
-        return false
+        return false  // fail-safe: treat as unequal → emit op
       }
     }
-    // Phase G v2: geometry_2d_v2 data envelope не має поля 'state' — JSON-diff.
-    if (a.type === 'geometry_2d_v2' || b.type === 'geometry_2d_v2') {
-      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
-    }
-    // Phase Calculus (2026-05-15): calculus_card data — flat envelope з полями
-    // expr/mode/x0/showSecant/h/showDerivTrace/a/b/riemann/N/showF/viewport.
-    // НЕ має поля 'state' (як solid), не вписується у SOLID_STATE_KEYS check.
-    // JSON.stringify — single source of truth для toggle/slider state.
-    // БЕЗ цієї гілки toggle('showF') silent-skip'ався Layer-A filter-ом →
-    // showF up до bundle ніколи не доходив → крива F(x) не рендерилась.
-    if (a.type === 'calculus_card' || b.type === 'calculus_card') {
-      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
-    }
-    // TrigCircle (2026-05-18): trig_circle data — flat envelope (theta, showSin,
-    // showCos, showTan, showCot, snapPi12, speed, ...). НЕ має поля 'state' —
-    // без цієї гілки solid-path returns true (aState/bState = undefined) →
-    // silent skip: theta/toggle changes never reach ops.
-    if (a.type === 'trig_circle' || b.type === 'trig_circle') {
-      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
-    }
-    // Helix (2026-05-18): helix data — flat envelope (theta, phi, pitch, showHelix, …).
-    // Same structural issue як trig_circle — solid-path false positive equality.
-    if (a.type === 'helix' || b.type === 'helix') {
-      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
-    }
-    // Solid path: ABi data is SolidAssetData з полем 'state'.
+
+    // ── Nested-state types (geometry_solid) ──────────────────────────────────
+    // data.state is an object with known primitive keys (per SSOT §3.7.1).
+    // Iterate whitelist to avoid Vue reactivity symbols in deep traversal.
     const aState = (aData as { state: unknown }).state
     const bState = (bData as { state: unknown }).state
     if (aState !== bState) {
       if (!aState || !bState) return false
-      // Iterate ALL known SolidAssetState keys (primitive contract per SSOT §3.7.1)
       for (const k of SOLID_STATE_KEYS) {
         const av = (aState as unknown as Record<string, unknown>)[k]
         const bv = (bState as unknown as Record<string, unknown>)[k]
@@ -195,4 +209,5 @@ export const __OPS_RELEVANT_FIELDS_INTERNAL__ = {
   TOP_LEVEL: TOP_LEVEL_FIELDS,
   CONTENT_REF: NESTED_CONTENT_REF_FIELDS,
   SOLID_STATE: SOLID_STATE_KEYS,
+  FLAT_DATA_TYPES: FLAT_DATA_ASSET_TYPES,
 } as const

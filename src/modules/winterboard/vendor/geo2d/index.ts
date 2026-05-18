@@ -25,6 +25,7 @@ import './geo2d-card.js'
 
 /* ────── runtime types ─────────────────────────────────────────────────── */
 
+/** Metadata entry у `window.GEO_PRESETS` — used by tray + drop handler. */
 export interface GeoPresetMeta {
   /** Preset key — used як WBAsset.data.preset + Geo2D.PRESETS lookup. */
   type: string
@@ -36,17 +37,48 @@ export interface GeoPresetMeta {
   desc: string
 }
 
+/**
+ * Public API surface of a mounted GeoCard widget instance.
+ *
+ * SSOT §3.7.3 adapter pattern (one-way binding):
+ *   ✅ store → `setToggle` / `setFreePoints`  (incoming from ops/replay)
+ *   ✅ card  → `onPointMove` callback         (outgoing for persistence)
+ *   ❌ NEVER read card internal state back to store
+ *   ❌ NEVER call `rebuild()` outside the bundle itself
+ *
+ * Internal methods (`rebuild`, `_apply`, `setOption`, etc.) are intentionally
+ * excluded — renderers MUST NOT call them directly.
+ */
 export interface GeoCardInstance {
-  type: string
-  preset: unknown
-  toggleState: Record<string, boolean>
+  /**
+   * Live snapshot of all toggle keys → current boolean state.
+   * Read-only from renderer perspective (wireToolbarPersistence reads after click).
+   */
+  readonly toggleState: Record<string, boolean>
+
+  /**
+   * Enable or disable a named toggle (Медіани, Висоти, Бісектриси, …).
+   * Safe to call with a key the preset doesn't have — bundle ignores unknowns.
+   */
   setToggle(key: string, on: boolean): void
-  setOption(key: string, value: unknown): void
+
+  /**
+   * Restore free-point positions from a persisted snapshot.
+   * Engine rebuilds the construction, then snaps each free point to stored coords.
+   * Map: step-id → { x, y } in canvas units (per Geometry2DV2Data.pointsSnapshot).
+   */
   setFreePoints(snapshot: Record<string, { x: number; y: number }>): void
-  rebuild(): void
+
+  /**
+   * Called by the bundle when the user finishes dragging a free point.
+   * Set by `wirePointMovePersistence` in Geometry2DRenderer.
+   * Signature: `(allPoints: Record<step-id, {x,y}>) => void`
+   * Reset to `null` on destroy to avoid stale closure leaks.
+   */
+  onPointMove: ((points: Record<string, { x: number; y: number }>) => void) | null
+
+  /** Tear down the JSXGraph board and all event listeners. Idempotent. */
   destroy(): void
-  /** Set by renderer to receive point-move notifications (drag + drag-end). */
-  onPointMove?: ((points: Record<string, { x: number; y: number }>) => void) | null
 }
 
 declare global {
@@ -57,17 +89,26 @@ declare global {
       PRESETS: Record<string, unknown>
     }
     GeoCard: new (container: HTMLElement, opts: { type: string }) => GeoCardInstance
+    /**
+     * Creates the preset's toggle toolbar and appends it to `host`.
+     * Returns the root `<div class="toolbar">` element for further DOM queries
+     * (e.g. localizeToolbar: querySelectorAll('button.tool')).
+     */
     makeGeoToolbar: (card: GeoCardInstance, host: HTMLElement) => HTMLDivElement
     GEO_PRESETS: GeoPresetMeta[]
   }
 }
 
-/** Awaitable hook — повертає `GEO_PRESETS` коли bundle loaded. */
+/** Returns `GEO_PRESETS` metadata once the bundle is loaded (empty array before). */
 export function geoPresets(): GeoPresetMeta[] {
   return window.GEO_PRESETS || []
 }
 
-/** Validate preset name — used by drop handler. */
+/**
+ * Validate a preset name against the bundle's runtime PRESETS registry.
+ * Used by drop handler before constructing a new geometry_2d_v2 asset.
+ * Returns `false` if bundle not yet loaded (safe — caller falls back to 'blank').
+ */
 export function isValidGeoPreset(name: string): boolean {
   return !!window.Geo2D?.PRESETS?.[name]
 }
