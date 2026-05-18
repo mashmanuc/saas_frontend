@@ -458,7 +458,7 @@
     </template>
 
     <!-- TrigSolver (2026-05-19): unified trig eq+ineq overlay (HTML, non-Konva).
-         Mirror .wb-helix-overlay pattern. -->
+         Uses handleOverlayPointerDown for HTML-level select+drag (mirrors media pattern). -->
     <template v-for="asset in trigSolverAssets" :key="`tslv-${asset.id}`">
       <div
         class="wb-trig-solver-overlay"
@@ -471,6 +471,7 @@
           width: `${asset.w * props.zoom}px`,
           height: `${asset.h * props.zoom}px`,
         }"
+        @pointerdown.stop="handleOverlayPointerDown(asset, $event)"
       >
         <TrigSolverRenderer
           :asset="(asset as any)"
@@ -2889,6 +2890,64 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   function onPointerUp(ev: PointerEvent) {
     document.removeEventListener('pointermove', onPointerMove)
     // Re-enable Konva stage after media drag
+    setStageListening(true)
+    el.style.cursor = ''
+    if (!hasMoved) return
+    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
+    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
+    emit('asset-update', { ...asset, x: startAssetX + dx, y: startAssetY + dy })
+  }
+
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp, { once: true })
+}
+
+// ─── HTML pointer-drag for geometry overlay types ───────────────────────────
+// All "HTML overlay + invisible Konva proxy" cards (trig_solver, helix, etc.)
+// rely on events passing through pointer-events:none to reach the Konva proxy.
+// But when the renderer stage/toolbar has pointer-events:auto (interactive mode),
+// clicks don't reach Konva — the 1px border is the only transparent area.
+// This handler replicates the media-overlay drag pattern so ANY area of the
+// card initiates select + drag. Toolbar controls (button/input) just select.
+
+function handleOverlayPointerDown(asset: WBAsset, e: PointerEvent): void {
+  if (currentTool.value !== 'select') return
+
+  const target = e.target as HTMLElement
+  const isControl = !!target.closest('button, input, select, label, [role="button"]')
+
+  // Always select the asset
+  wbStore.selectItems([asset.id])
+  selectedNode.value = null
+  const transformer = transformerRef.value?.getNode?.()
+  if (transformer) transformer.nodes([])
+  emit('select', asset.id)
+
+  // Toolbar controls → select only, skip drag
+  if (isControl) return
+
+  setStageListening(false)
+
+  const startClientX = e.clientX
+  const startClientY = e.clientY
+  const startAssetX = asset.x
+  const startAssetY = asset.y
+  const el = e.currentTarget as HTMLElement
+  let hasMoved = false
+
+  function onPointerMove(ev: PointerEvent) {
+    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
+    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      hasMoved = true
+      el.style.left = `${(startAssetX + dx) * (props.zoom || 1)}px`
+      el.style.top = `${(startAssetY + dy) * (props.zoom || 1)}px`
+      el.style.cursor = 'grabbing'
+    }
+  }
+
+  function onPointerUp(ev: PointerEvent) {
+    document.removeEventListener('pointermove', onPointerMove)
     setStageListening(true)
     el.style.cursor = ''
     if (!hasMoved) return
