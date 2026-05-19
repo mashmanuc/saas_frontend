@@ -67,7 +67,7 @@
           @click.stop="addToolToBoard(HELIX_DRAG_MIME, JSON.stringify({ type: 'helix' }))"
         >+</button>
       </div>
-    </div>
+
       <!-- TrigSolver button -->
       <div class="trig-circle-tray__card-wrap">
         <button
