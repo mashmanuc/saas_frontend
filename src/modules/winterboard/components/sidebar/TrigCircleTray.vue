@@ -68,6 +68,32 @@
         >+</button>
       </div>
     </div>
+      <!-- TrigSolver button -->
+      <div class="trig-circle-tray__card-wrap">
+        <button
+          type="button"
+          class="trig-circle-tray__btn trig-circle-tray__btn--solver"
+          data-testid="trig-solver-tray-btn"
+          :draggable="true"
+          title="Тригонометричне рівняння / нерівність"
+          @dragstart="onDragStartSolver"
+        >
+          <span class="trig-circle-tray__icon trig-circle-tray__icon--solver" aria-hidden="true">
+            <TrigSolverIcon />
+          </span>
+          <span class="trig-circle-tray__labels">
+            <span class="trig-circle-tray__label">рівняння / нерівності</span>
+            <span class="trig-circle-tray__sublabel">sin · cos · tg · ctg · =/&gt;/&lt;</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          title="Додати «рівняння / нерівності» на дошку"
+          @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))"
+        >+</button>
+      </div>
+    </div>
     <div class="trig-circle-tray__hint">
       {{ t('winterboard.contentSidebar.trayDragHint') }}
     </div>
@@ -79,6 +105,7 @@ import { h, type FunctionalComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TRIG_CIRCLE_DRAG_MIME, type TrigCircleDragPayload } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME, type HelixDragPayload } from '../../constants/helixDefaults'
+import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 
 const { t } = useI18n()
@@ -95,6 +122,12 @@ function onDragStartHelix(e: DragEvent): void {
   if (!e.dataTransfer) return
   const payload: HelixDragPayload = { type: 'helix' }
   e.dataTransfer.setData(HELIX_DRAG_MIME, JSON.stringify(payload))
+  e.dataTransfer.effectAllowed = 'copy'
+}
+
+function onDragStartSolver(e: DragEvent): void {
+  if (!e.dataTransfer) return
+  e.dataTransfer.setData(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))
   e.dataTransfer.effectAllowed = 'copy'
 }
 
@@ -120,6 +153,16 @@ const TrigCircleIcon: FunctionalComponent = () => {
     h('circle', { cx: 11, cy: 7, r: 1.5, fill: '#c4622a', stroke: 'none' }),
   ])
 }
+
+const TrigSolverIcon: FunctionalComponent = () =>
+  h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none' }, [
+    h('circle', { cx: 9, cy: 12, r: 5.5, stroke: '#2b2118', 'stroke-width': '1.3' }),
+    h('line', { x1: 9, y1: 12, x2: 13.2, y2: 8.2, stroke: '#c4622a', 'stroke-width': '1.8' }),
+    h('circle', { cx: 13.2, cy: 8.2, r: 2, fill: '#c4622a' }),
+    h('line', { x1: 3, y1: 8.2, x2: 16, y2: 8.2, stroke: '#94a3b8', 'stroke-width': '1.1', 'stroke-dasharray': '2 1.5' }),
+    h('line', { x1: 17.5, y1: 10, x2: 22, y2: 10, stroke: '#475569', 'stroke-width': '1.6' }),
+    h('line', { x1: 17.5, y1: 13.5, x2: 22, y2: 13.5, stroke: '#475569', 'stroke-width': '1.6' }),
+  ])
 
 const HelixIcon: FunctionalComponent = () =>
   h('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
@@ -190,6 +233,18 @@ const HelixIcon: FunctionalComponent = () =>
 .trig-circle-tray__btn--helix:hover {
   background: #fef3e8;
   border-color: #c4622a;
+}
+
+/* Solver button — amber-orange tint */
+.trig-circle-tray__btn--solver {
+  border-color: rgba(196, 98, 42, 0.45);
+}
+.trig-circle-tray__btn--solver:hover {
+  background: #fff7ed;
+  border-color: rgba(196, 98, 42, 0.7);
+}
+.trig-circle-tray__icon--solver {
+  color: #c4622a;
 }
 
 .trig-circle-tray__icon {

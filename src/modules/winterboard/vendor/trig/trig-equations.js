@@ -769,6 +769,22 @@
         drawEndpoint(x0, base.closed[0]);
         drawEndpoint(x1, base.closed[1]);
       });
+
+      // Angle labels at boundary points (mirrors equation-mode label style)
+      if (this.opts.showRefLabels !== false) {
+        const pts = this._principalCirclePoints(info);
+        ctx.font = `bold ${12*dpr}px JetBrains Mono, monospace`;
+        pts.forEach(pt => {
+          if (pt.label.length > 10) return;
+          const cosT = Math.cos(pt.x), sinT = Math.sin(pt.x);
+          const lx = cx + (r + 18*dpr) * cosT;
+          const ly = cy - (r + 18*dpr) * sinT;
+          ctx.fillStyle = pt.fam === 'A' ? PAL.famA : PAL.famB;
+          ctx.textAlign = cosT > 0.2 ? 'left' : (cosT < -0.2 ? 'right' : 'center');
+          ctx.textBaseline = sinT > 0.2 ? 'bottom' : (sinT < -0.2 ? 'top' : 'middle');
+          ctx.fillText(pt.label, lx, ly);
+        });
+      }
     }
 
     // returns array of {x: angle, fam: 'A'|'B', label: ' principal-form '}
