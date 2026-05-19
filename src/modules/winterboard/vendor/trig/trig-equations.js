@@ -976,8 +976,8 @@
         // a-label on right side
         ctx.fillStyle = PAL.refLine;
         ctx.font = `600 ${12*dpr}px JetBrains Mono, monospace`;
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText('y = ' + info.aLab, G.x1 + 6*dpr, yClamped);
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText('y = ' + info.aLab, G.x1 - 8*dpr, yClamped - 9*dpr);
         // drag handle dot
         ctx.fillStyle = PAL.refLine;
         ctx.beginPath(); ctx.arc(G.x0 - 6*dpr, yClamped, 5*dpr, 0, TAU); ctx.fill();
