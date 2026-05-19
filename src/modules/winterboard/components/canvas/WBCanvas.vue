@@ -56,6 +56,7 @@
           <v-rect
             v-else-if="KONVA_PROXY_TYPES.has(asset.type)"
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @transform="handleAssetLiveTransform(asset, $event)"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
           <!-- v5 A9: Sticky note rendering -->
@@ -299,12 +300,7 @@
         :class="{ 'wb-solid-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-solid-id="asset.id"
         :data-testid="`solid-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="getOverlayStyle(asset)"
       >
         <SolidCardRenderer
           :asset="(asset as any)"
@@ -326,12 +322,7 @@
         :class="{ 'wb-graph-calculator-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-graph-calculator-id="asset.id"
         :data-testid="`graph-calculator-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="getOverlayStyle(asset)"
       >
         <GraphCalculatorRenderer
           :asset="asset"
@@ -361,12 +352,7 @@
         :class="{ 'wb-geo2dv2-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-geo2dv2-id="asset.id"
         :data-testid="`geometry-2d-v2-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="getOverlayStyle(asset)"
       >
         <Geometry2DRenderer
           :asset="(asset as any)"
@@ -386,12 +372,7 @@
         :class="{ 'wb-calculus-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-calculus-id="asset.id"
         :data-testid="`calculus-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="getOverlayStyle(asset)"
       >
         <CalculusRenderer
           :asset="(asset as any)"
@@ -416,7 +397,7 @@
         :data-testid="`trig-circle-overlay-${asset.id}`"
         :style="expandedAssetId === asset.id
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
-          : { left: `${asset.x * props.zoom}px`, top: `${asset.y * props.zoom}px`, width: `${asset.w * props.zoom}px`, height: `${asset.h * props.zoom}px` }"
+          : getOverlayStyle(asset)"
       >
         <TrigCircleRenderer
           :asset="(asset as any)"
@@ -443,7 +424,7 @@
         :data-testid="`helix-overlay-${asset.id}`"
         :style="expandedAssetId === asset.id
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
-          : { left: `${asset.x * props.zoom}px`, top: `${asset.y * props.zoom}px`, width: `${asset.w * props.zoom}px`, height: `${asset.h * props.zoom}px` }"
+          : getOverlayStyle(asset)"
       >
         <HelixRenderer
           :asset="(asset as any)"
@@ -466,12 +447,7 @@
         :class="{ 'wb-trig-solver-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-tslv-id="asset.id"
         :data-testid="`trig-solver-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="getOverlayStyle(asset)"
       >
         <TrigSolverRenderer
           :asset="(asset as any)"
@@ -1155,6 +1131,21 @@ const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
 const transformerRef = ref<{ getNode: () => Konva.Transformer } | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const stickyTextareaRef = ref<HTMLTextAreaElement | null>(null)
+
+// ─── Live overlay transform (sync during Konva Transformer drag) ─────────────
+// Konva Transformer fires intermediate @transform events on every rAF frame
+// while the user drags a handle. HTML overlays don't know about this until
+// @transformend fires (on mouseup). liveTransform bridges the gap: overlay
+// reads live x/y/w/h/rotation from here, falling back to asset props otherwise.
+interface LiveOverlayTransform {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation: number
+}
+const liveTransform = ref<LiveOverlayTransform | null>(null)
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -3241,7 +3232,46 @@ function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): v
   })
 }
 
+/** Live sync of HTML overlay during Konva Transformer drag (every rAF frame).
+ *  Fires on KONVA_PROXY_TYPES only — keeps overlay position/rotation in sync
+ *  with the blue transformer box while the user holds the handle.
+ */
+function handleAssetLiveTransform(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
+  if (!KONVA_PROXY_TYPES.has(asset.type)) return
+  const node = e.target
+  liveTransform.value = {
+    id: asset.id,
+    x: node.x(),
+    y: node.y(),
+    w: Math.round(node.width() * node.scaleX()),
+    h: Math.round(node.height() * node.scaleY()),
+    rotation: node.rotation(),
+  }
+}
+
+/** Build :style for an HTML overlay div — uses live Konva transform while
+ *  transformer is active, falls back to persisted asset props otherwise.
+ *  transformOrigin:'0 0' = Konva's default rotation pivot (top-left of node).
+ */
+function getOverlayStyle(asset: WBAsset): Record<string, string> {
+  const lt = liveTransform.value?.id === asset.id ? liveTransform.value : null
+  const x = (lt?.x ?? asset.x) * props.zoom
+  const y = (lt?.y ?? asset.y) * props.zoom
+  const w = (lt?.w ?? asset.w) * props.zoom
+  const h = (lt?.h ?? asset.h) * props.zoom
+  const r = lt?.rotation ?? asset.rotation ?? 0
+  return {
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+    transform: `rotate(${r}deg)`,
+    transformOrigin: '0 0',
+  }
+}
+
 function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
+  liveTransform.value = null   // clear live state — overlay now reads from store
   const node = e.target
   const scaleX = node.scaleX()
   const scaleY = node.scaleY()
