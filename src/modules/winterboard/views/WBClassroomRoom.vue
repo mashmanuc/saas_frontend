@@ -665,6 +665,10 @@ async function handleStartRecording(): Promise<void> {
     if (result.recording_started_at) {
       recordingStartedAt.value = result.recording_started_at
     }
+    // Re-record: скинути стан попереднього запису (BE архівував його у start_recording)
+    activeReplayId.value = null
+    showRecordingDonePrompt.value = false
+    if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
     console.info('[WBClassroomRoom] start-recording', { status: result.status, state: result.recording_state, sid })
   } catch (e) {
     console.error('[WBClassroomRoom] Failed to start recording:', e)

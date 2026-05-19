@@ -428,7 +428,11 @@ export async function finalizeWithBarrier(
       // its own blocking modal). Single-purpose flag (NOT a generic
       // `_skipErrorToastOnStatus` array — see apiClient.js FORBIDDEN comment).
       // 429 doesn't need it (apiClient already silent on 429).
-      { _finalizeBarrierToastSuppressed: true } as any,
+      // timeout: 35s > barrier 30s — ensures FE always gets Django's typed
+      // response (504 APPLY_BACKLOG_TIMEOUT or 200 OK) before axios fires.
+      // Without this, axios 30s global timeout races barrier 30s → NetworkError
+      // instead of typed FinalizeBarrierTimeoutError (no JSON, no CORS headers).
+      { _finalizeBarrierToastSuppressed: true, timeout: 35_000 } as any,
     )
   } catch (err) {
     const response = (err as any)?.response

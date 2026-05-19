@@ -977,7 +977,7 @@ const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
 
 async function handleStartRecording(): Promise<void> {
   const sid = sessionId.value
-  if (!sid || isManualRecording.value || isReplayFrozen.value) return
+  if (!sid || isManualRecording.value) return
   isRecordingLoading.value = true
   try {
     // INV-T fix: flush pending autosave щоб session.state на backend містив актуальний
@@ -987,6 +987,10 @@ async function handleStartRecording(): Promise<void> {
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
+    // Re-record: скинути стан попереднього запису (BE архівував його у start_recording)
+    activeReplayId.value = null
+    showRecordingDonePrompt.value = false
+    if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
     // Time-based pipeline health check видалений: false-positive коли юзер
     // не малює у перші 2с після REC. Behavior-based warnings лишаються:
     // (1) handleStopRecording catch — реальна помилка stop API;
