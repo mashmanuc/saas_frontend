@@ -487,24 +487,32 @@
             }, { anchor: 'tr' }), 'diagonals');
           }
         }},
-        { key: 'height', label: 'Висота', icon: '↧', apply(con, on) {
+        { key: 'height', label: 'Висоти', icon: '↧', apply(con, on) {
           con.removeByTag('height');
           if (on) {
-            const RED = '#dc2626';
-            // Перпендикуляр з D на AB
-            add(con, G.foot('H_D', 'D', 'AB', { size: 4, color: RED, label: 'H' }), 'height');
-            add(con, G.segment('h_seg', 'D', 'H_D', { style: 'dashed', color: RED, width: 1.5 }), 'height');
-            add(con, G.lengthLabel('lab_h', 'h_seg', { prefix: 'h = ' }), 'height');
-            // Площа через висоту: S = a · h
+            const RED  = '#dc2626'; // h_a — до сторони a (AB)
+            const TEAL = '#0891b2'; // h_b — до сторони b (AD)
+            // h_a: перпендикуляр з D на AB
+            add(con, G.foot('H_D', 'D', 'AB', { size: 4, color: RED,  label: 'H_a' }), 'height');
+            add(con, G.segment('h_seg_a', 'D', 'H_D', { style: 'dashed', color: RED,  width: 1.5 }), 'height');
+            add(con, G.lengthLabel('lab_ha', 'h_seg_a', { prefix: 'hₐ = ' }), 'height');
+            // h_b: перпендикуляр з B на DA
+            add(con, G.foot('H_B', 'B', 'DA', { size: 4, color: TEAL, label: 'H_b' }), 'height');
+            add(con, G.segment('h_seg_b', 'B', 'H_B', { style: 'dashed', color: TEAL, width: 1.5 }), 'height');
+            add(con, G.lengthLabel('lab_hb', 'h_seg_b', { prefix: 'h_b = ' }), 'height');
+            // Площа через обидві висоти: S = a·hₐ = b·h_b
             add(con, G.formula('area_h', (r) => {
               const A = r.get('A'), B = r.get('B'), D = r.get('D');
               const u = window.Geo2D.util;
               const ab = { x: B.x - A.x, y: B.y - A.y };
               const ad = { x: D.x - A.x, y: D.y - A.y };
-              const a = u.dist(A, B);
-              const S = Math.abs(ab.x * ad.y - ab.y * ad.x);
-              const h = a > 1e-9 ? S / a : 0;
-              return 'S = a · h = ' + u.fmt(a, 2) + ' · ' + u.fmt(h, 2) + ' = ' + u.fmt(S, 2);
+              const S  = Math.abs(ab.x * ad.y - ab.y * ad.x);
+              const a  = u.dist(A, B), b = u.dist(A, D);
+              const ha = a > 1e-9 ? S / a : 0;
+              const hb = b > 1e-9 ? S / b : 0;
+              return 'S = a·hₐ = ' + u.fmt(a, 2) + '·' + u.fmt(ha, 2) +
+                     '  =  b·h_b = ' + u.fmt(b, 2) + '·' + u.fmt(hb, 2) +
+                     '  =  ' + u.fmt(S, 2);
             }, { anchor: 'bl' }), 'height');
           }
         }},
