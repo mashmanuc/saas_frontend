@@ -32,7 +32,7 @@
         type="button"
         class="tray-add-btn"
         title="Додати на дошку"
-        @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ func: 'sin' }))"
+        @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))"
       >+</button>
     </div>
 
@@ -50,7 +50,7 @@ const addToolToBoard = useAddToolToBoard()
 
 function onDrag(e: DragEvent): void {
   if (!e.dataTransfer) return
-  e.dataTransfer.setData(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ func: 'sin' }))
+  e.dataTransfer.setData(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))
   e.dataTransfer.effectAllowed = 'copy'
 }
 </script>

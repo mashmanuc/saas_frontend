@@ -1,0 +1,248 @@
+/* trig-equations.css — minimal styles for the TrigEquation card.
+   Drop-in: the component renders into any container <div>. These styles
+   handle the canvas stage, HUD overlay, and (optional) toolbar controls.
+
+   All styling is namespaced under the wrapper classes the JS adds
+   (.trig-eq-card, .trig-eq-root, .calc-hud) so it should not collide
+   with your existing site CSS.
+
+   CSS variables you can override (e.g. on :root or the wrapper):
+     --teq-paper:    canvas background       (default: #fffaf0)
+     --teq-ink:      primary text            (default: #2b2118)
+     --teq-ink-2:    secondary text          (default: #5a4a3a)
+     --teq-ink-3:    tertiary / labels       (default: #8a7860)
+     --teq-line:     borders / dividers      (default: rgba(43,33,24,0.14))
+     --teq-line-2:   stronger border         (default: rgba(43,33,24,0.28))
+     --teq-accent:   accent color            (default: #c4622a)
+*/
+
+.trig-eq-card {
+  --teq-paper:    #fffaf0;
+  --teq-ink:      #2b2118;
+  --teq-ink-2:    #5a4a3a;
+  --teq-ink-3:    #8a7860;
+  --teq-line:     rgba(43,33,24,0.14);
+  --teq-line-2:   rgba(43,33,24,0.28);
+  --teq-accent:   #c4622a;
+  --teq-accent-soft: rgba(196,98,42,0.12);
+
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(43,33,24,0.06), 0 4px 16px rgba(43,33,24,0.07);
+  display: flex;
+  flex-direction: column;
+  color: var(--teq-ink);
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+}
+
+/* Optional header */
+.trig-eq-card .teq-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--teq-line);
+  background: linear-gradient(180deg, rgba(244,237,224,0.3), rgba(244,237,224,0.7));
+}
+.trig-eq-card .teq-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--teq-accent-soft);
+  color: var(--teq-accent);
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.trig-eq-card .teq-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.trig-eq-card .teq-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--teq-ink-2);
+  padding: 2px 8px;
+  background: rgba(43,33,24,0.05);
+  border-radius: 5px;
+}
+
+/* The stage where the canvas lives — set aspect-ratio or fixed min-height. */
+.trig-eq-card .teq-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 480px;
+  background: var(--teq-paper);
+  border-bottom: 1px solid var(--teq-line);
+}
+@media (max-width: 900px) {
+  .trig-eq-card .teq-stage { aspect-ratio: 4 / 5; min-height: 600px; }
+}
+
+/* HUD (auto-injected by the JS) */
+.trig-eq-card .calc-hud {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  pointer-events: none;
+  z-index: 4;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255,250,240,0.88);
+  border: 1px solid rgba(43,33,24,0.10);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--teq-ink);
+  backdrop-filter: blur(4px);
+  max-width: 420px;
+}
+.trig-eq-card .calc-hud .calc-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.trig-eq-card .calc-hud .calc-line span { color: var(--teq-ink-3); font-size: 11px; margin-right: 2px; }
+.trig-eq-card .calc-hud .calc-line.key { font-weight: 600; color: var(--teq-ink); margin-top: 2px; }
+.trig-eq-card .calc-hud .calc-line.key span { color: var(--teq-accent); font-weight: 600; }
+.trig-eq-card .calc-hud .calc-line.sub { font-size: 10.5px; color: var(--teq-ink-3); font-style: italic; }
+.trig-eq-card .calc-hud .calc-line.sec { font-size: 11.5px; color: var(--teq-ink-2); }
+.trig-eq-card .calc-hud .calc-line.err { color: #a83a5b; }
+.trig-eq-card .calc-hud .calc-line small { color: var(--teq-ink-3); font-size: 10px; margin-left: 4px; }
+
+/* Toolbar (optional — you can use your own controls, these match the demo) */
+.trig-eq-card .teq-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  align-items: center;
+  background: rgba(244,237,224,0.4);
+}
+.trig-eq-card .teq-group {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 8px;
+}
+.trig-eq-card .teq-group-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--teq-ink-3);
+  margin-right: 4px;
+}
+.trig-eq-card .calc-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--teq-ink-2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.trig-eq-card .calc-tool:hover { border-color: var(--teq-line-2); color: var(--teq-ink); }
+.trig-eq-card .calc-tool.active { background: var(--teq-ink); color: var(--teq-paper); border-color: var(--teq-ink); }
+.trig-eq-card .calc-segmented {
+  display: inline-flex;
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.trig-eq-card .calc-segmented button {
+  padding: 4px 9px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--teq-ink-3);
+}
+.trig-eq-card .calc-segmented button.active { background: var(--teq-ink); color: var(--teq-paper); }
+.trig-eq-card .calc-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--teq-ink-3);
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+.trig-eq-card .calc-slider label { color: var(--teq-ink-2); white-space: nowrap; }
+.trig-eq-card .calc-slider input[type="range"] {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  background: rgba(43,33,24,0.16);
+  border-radius: 2px;
+  outline: none;
+  min-width: 0;
+}
+.trig-eq-card .calc-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--teq-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--teq-paper);
+}
+.trig-eq-card .calc-slider .calc-slider-val {
+  color: var(--teq-ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+}
+.trig-eq-card .calc-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.trig-eq-card .calc-preset {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--teq-paper);
+  border: 1px solid var(--teq-line);
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--teq-ink-2);
+}
+.trig-eq-card .calc-preset:hover { border-color: var(--teq-accent); color: var(--teq-accent); }
+
+/* Optional legend strip below the card */
+.trig-eq-card .teq-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--teq-ink-3);
+  padding: 10px 14px;
+  border-top: 1px solid var(--teq-line);
+  background: rgba(255,250,240,0.5);
+}
+.trig-eq-card .teq-legend i {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}

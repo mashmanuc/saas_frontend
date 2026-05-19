@@ -236,8 +236,8 @@ export function useContentDrop(options: UseContentDropOptions) {
     if (tslvRaw) {
       let parsed: TrigSolverDragPayload
       try { parsed = JSON.parse(tslvRaw) as TrigSolverDragPayload } catch { return }
-      const func = parsed?.func
-      if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
+      const funcType = parsed?.type
+      if (!funcType || !['sin', 'cos', 'tan', 'cot'].includes(funcType)) return
       const canvasPos = screenToCanvas(event.clientX, event.clientY)
       const asset: TrigSolverAsset = {
         id: `tslv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -246,7 +246,7 @@ export function useContentDrop(options: UseContentDropOptions) {
         y: canvasPos.y - DEFAULT_TRIG_SOLVER_H / 2,
         w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
-        data: buildDefaultTrigSolverData(func),
+        data: buildDefaultTrigSolverData(funcType),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return
@@ -1017,15 +1017,15 @@ export function useContentDrop(options: UseContentDropOptions) {
     if (mime === TRIG_SOLVER_DRAG_MIME) {
       let parsed: TrigSolverDragPayload
       try { parsed = JSON.parse(payloadStr) as TrigSolverDragPayload } catch { return }
-      const func = parsed?.func
-      if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
+      const funcType = parsed?.type
+      if (!funcType || !['sin', 'cos', 'tan', 'cot'].includes(funcType)) return
       const asset: TrigSolverAsset = {
         id: `tslv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         type: 'trig_solver', src: '',
         x: pos.x - DEFAULT_TRIG_SOLVER_W / 2, y: pos.y - DEFAULT_TRIG_SOLVER_H / 2,
         w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
-        data: buildDefaultTrigSolverData(func),
+        data: buildDefaultTrigSolverData(funcType),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return
