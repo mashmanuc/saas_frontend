@@ -138,9 +138,10 @@
 
   // Catalog metadata
   window.GEO_PRESETS = [
-    { type: 'similar',     short: '△ ~ △′',     full: 'Подібні трикутники', desc: 'гомотетія · drag k' },
-    { type: 'parallels',   short: 'a ∥ b · t',  full: 'Паралельні + січна', desc: '8 кутів · відповідні · різносторонні' },
-    { type: 'trapezium',   short: 'AB ∥ DC',    full: 'Трапеція',          desc: 'сер. лінія · висота · cyclic check' },
+    { type: 'similar',        short: '△ ~ △′',     full: 'Подібні трикутники', desc: 'гомотетія · drag k' },
+    { type: 'parallels',      short: 'a ∥ b · t',  full: 'Паралельні + січна', desc: '8 кутів · відповідні · різносторонні' },
+    { type: 'parallelogram',  short: 'AB ∥ DC',    full: 'Паралелограм',       desc: 'сторони · кути · діагоналі · висота' },
+    { type: 'trapezium',      short: 'AB ∥ DC',    full: 'Трапеція',           desc: 'сер. лінія · висота · cyclic check' },
     { type: 'euler9',      short: 'G·H·O',       full: 'Ейлер + 9 точок',    desc: 'колінеарність · коло 9 точок' },
     { type: 'simson',      short: 'P → F₁F₂F₃', full: 'Симсонова пряма',    desc: 'P на колі · 3 проекції колінеарні' },
     { type: 'inversion',   short: "P → P'",     full: 'Інверсія',           desc: "r²/|OP|² · OP · конформність" },

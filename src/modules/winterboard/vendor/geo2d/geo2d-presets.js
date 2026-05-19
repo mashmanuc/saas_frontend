@@ -383,6 +383,135 @@
     },
 
     // ========================================================================
+    // parallelogram: Паралелограм.
+    //   - A, B — free (нижня сторона AB)
+    //   - D — free (верхній лівий кут)
+    //   - C = D + (B − A) — derived (AB ∥ DC і |AB| = |DC|, AD ∥ BC і |AD| = |BC|)
+    //   Властивості (toggles):
+    //     · sides     — довжини сторін (a = AB = DC, b = AD = BC)
+    //     · angles    — ∠A = ∠C (сині), ∠B = ∠D (помаранчеві), ∠A+∠B = 180°
+    //     · diagonals — AC та BD пунктиром; M — їхня спільна середина
+    //     · height    — висота h з D ⊥ AB, площа S = a · h
+    // ========================================================================
+    parallelogram: {
+      name: 'Паралелограм',
+      meta: 'AB ∥ DC · AD ∥ BC · drag A/B/D',
+      defaults: { showGrid: false, showAxes: false },
+      build(con) {
+        const INK = '#1e293b';
+
+        // Нижня сторона AB
+        add(con, G.free('A', -2.7, -1.4, { label: 'A', labelOffset: { x: -14, y: 6 } }));
+        add(con, G.free('B',  2.7, -1.4, { label: 'B', labelOffset: { x: 10,  y: 6 } }));
+        // Верхній лівий кут D — free
+        add(con, G.free('D', -1.4,  1.4, { label: 'D', labelOffset: { x: -14, y: -8 } }));
+        // C = D + (B − A) — повністю похідна: обидві пари сторін паралельні й рівні
+        add(con, G.derived('C', ['A', 'B', 'D'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B'), D = reg.get('D');
+          return { x: D.x + (B.x - A.x), y: D.y + (B.y - A.y) };
+        }, { label: 'C', labelOffset: { x: 10, y: -8 } }));
+
+        // Сторони паралелограма
+        add(con, G.segment('AB', 'A', 'B', { color: INK, width: 2 }));
+        add(con, G.segment('BC', 'B', 'C', { color: INK, width: 2 }));
+        add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
+        add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
+
+        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { anchor: 'tl' }));
+        add(con, G.formula('area', (r) => {
+          const A = r.get('A'), B = r.get('B'), D = r.get('D');
+          const u = window.Geo2D.util;
+          const ab = { x: B.x - A.x, y: B.y - A.y };
+          const ad = { x: D.x - A.x, y: D.y - A.y };
+          // Площа = |AB × AD| (модуль векторного добутку)
+          const S = Math.abs(ab.x * ad.y - ab.y * ad.x);
+          const a = u.dist(A, B), b = u.dist(A, D);
+          return 'a = ' + u.fmt(a, 2) + '  b = ' + u.fmt(b, 2) + '  S = ' + u.fmt(S, 2);
+        }, { anchor: 'bl' }));
+      },
+      toggles: [
+        { key: 'sides', label: 'Сторони', icon: '∣', default: true, apply(con, on) {
+          con.removeByTag('sides');
+          if (on) {
+            // AB = DC (позначаємо 'a'), AD = BC (позначаємо 'b')
+            add(con, G.lengthLabel('lab_AB', 'AB', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_CD', 'CD', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_BC', 'BC', { prefix: 'b = ' }), 'sides');
+            add(con, G.lengthLabel('lab_DA', 'DA', { prefix: 'b = ' }), 'sides');
+          }
+        }},
+        { key: 'angles', label: 'Кути', icon: '∠', apply(con, on) {
+          con.removeByTag('angles');
+          if (on) {
+            const BLUE   = '#2563eb'; // ∠A = ∠C
+            const ORANGE = '#ea580c'; // ∠B = ∠D
+            // ∠A між DA та AB (синій)
+            add(con, G.angleArc('ang_A', 'D', 'A', 'B', { radius: 0.5, color: BLUE }),   'angles');
+            // ∠C між BC та CD (синій, рівний ∠A)
+            add(con, G.angleArc('ang_C', 'B', 'C', 'D', { radius: 0.5, color: BLUE }),   'angles');
+            // ∠B між AB та BC (помаранчевий)
+            add(con, G.angleArc('ang_B', 'A', 'B', 'C', { radius: 0.5, color: ORANGE }), 'angles');
+            // ∠D між CD та DA (помаранчевий, рівний ∠B)
+            add(con, G.angleArc('ang_D', 'C', 'D', 'A', { radius: 0.5, color: ORANGE }), 'angles');
+            // Живий лейбл: ∠A і ∠B + їхня сума
+            add(con, G.formula('ang_sum', (r) => {
+              const A = r.get('A'), B = r.get('B'), C = r.get('C'), D = r.get('D');
+              // Кут при A: між векторами A→D і A→B
+              const v1 = { x: D.x - A.x, y: D.y - A.y };
+              const v2 = { x: B.x - A.x, y: B.y - A.y };
+              const l1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
+              const l2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
+              const cosA = (l1 < 1e-9 || l2 < 1e-9) ? 1 : Math.max(-1, Math.min(1, (v1.x*v2.x + v1.y*v2.y) / (l1 * l2)));
+              const angA = Math.round(Math.acos(cosA) * 180 / Math.PI);
+              const angB = 180 - angA;
+              return '∠A = ∠C = ' + angA + '°  ·  ∠B = ∠D = ' + angB + '°  ·  ∠A+∠B = 180°';
+            }, { anchor: 'tr' }), 'angles');
+          }
+        }},
+        { key: 'diagonals', label: 'Діагоналі', icon: '╳', apply(con, on) {
+          con.removeByTag('diagonals');
+          if (on) {
+            const PURPLE = '#a855f7';
+            add(con, G.segment('diag_AC', 'A', 'C', { style: 'dashed', color: PURPLE, width: 1.5 }), 'diagonals');
+            add(con, G.segment('diag_BD', 'B', 'D', { style: 'dashed', color: PURPLE, width: 1.5 }), 'diagonals');
+            // Перетин M — спільна середина обох діагоналей
+            add(con, G.intersectLL('Mint', 'diag_AC', 'diag_BD', { label: 'M', color: PURPLE, size: 5 }), 'diagonals');
+            add(con, G.lengthLabel('lab_d1', 'diag_AC', { prefix: 'd₁ = ' }), 'diagonals');
+            add(con, G.lengthLabel('lab_d2', 'diag_BD', { prefix: 'd₂ = ' }), 'diagonals');
+            // Живий доказ: AM = MC і BM = MD
+            add(con, G.formula('diag_mid', (r) => {
+              const A = r.get('A'), C = r.get('C'), B = r.get('B'), D = r.get('D'), M = r.get('Mint');
+              const u = window.Geo2D.util;
+              if (!M) return '';
+              return 'AM = ' + u.fmt(u.dist(A, M), 2) + ' = MC  ·  BM = ' + u.fmt(u.dist(B, M), 2) + ' = MD';
+            }, { anchor: 'tr' }), 'diagonals');
+          }
+        }},
+        { key: 'height', label: 'Висота', icon: '↧', apply(con, on) {
+          con.removeByTag('height');
+          if (on) {
+            const RED = '#dc2626';
+            // Перпендикуляр з D на AB
+            add(con, G.foot('H_D', 'D', 'AB', { size: 4, color: RED, label: 'H' }), 'height');
+            add(con, G.segment('h_seg', 'D', 'H_D', { style: 'dashed', color: RED, width: 1.5 }), 'height');
+            add(con, G.lengthLabel('lab_h', 'h_seg', { prefix: 'h = ' }), 'height');
+            // Площа через висоту: S = a · h
+            add(con, G.formula('area_h', (r) => {
+              const A = r.get('A'), B = r.get('B'), D = r.get('D');
+              const u = window.Geo2D.util;
+              const ab = { x: B.x - A.x, y: B.y - A.y };
+              const ad = { x: D.x - A.x, y: D.y - A.y };
+              const a = u.dist(A, B);
+              const S = Math.abs(ab.x * ad.y - ab.y * ad.x);
+              const h = a > 1e-9 ? S / a : 0;
+              return 'S = a · h = ' + u.fmt(a, 2) + ' · ' + u.fmt(h, 2) + ' = ' + u.fmt(S, 2);
+            }, { anchor: 'bl' }), 'height');
+          }
+        }},
+      ],
+    },
+
+    // ========================================================================
     // parallels: Паралельні прямі та січна.
     //   - Дві паралельні прямі a (через A,B) та b (через C, D=C+(B-A) — derived).
     //   - Січна t (через T, S — обидві free).
