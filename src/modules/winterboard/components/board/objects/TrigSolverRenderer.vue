@@ -1,90 +1,87 @@
 <!--
   TrigSolverRenderer — trig_solver asset HTML overlay (§3.7.7).
-  Unified elementary trig equations & inequalities card.
+  Unified elementary trig equations & inequalities.
+
+  Mirror pattern: TrigCircleRenderer.vue — Konva proxy catches drag/select/resize,
+  header has pointer-events:none so clicks fall through to the proxy.
 
   Engine: vendor/trig/trig-equations.js → window.TrigEquation.
   API: new TrigEquation(container, { type, rel, a, snapSpecial, showGraph, showAllSolutions })
-  Methods: setType(t) · setRel(rel) · setA(a) · setOption(k,v) · destroy()
-  Event:   card.onChange — fires on each change (drag, setA, setRel, setType)
+  Methods: setType(t) · setRel(rel) · setA(a) · setOption(k, v) · destroy()
 
   POINTER-EVENTS MODEL:
-    Root .trig-solver           = pointer-events:none  → outer wrapper handles drag/select.
-    .teq-stage (interactive)    = pointer-events:auto  → engine canvas receives drag.
-    .teq-stage.readonly         = pointer-events:none  → canvas doesn't swallow events.
-    Toolbar                     = pointer-events:auto  → controls work only in select mode.
-
-  PERSISTENCE:
-    local state → engine → onChange → 300ms debounce → emit update:asset.
-    Remote ops  → watch(props.asset.data.*) → engine.set* + local mirror.
+    Root .trig-slv           = pointer-events:none → Konva proxy catches drag/select.
+    .trig-slv-head           = pointer-events:none → also falls through to Konva proxy.
+    .trig-slv-stage          = pointer-events:auto → engine canvas gets drag interaction.
+    .trig-slv-stage.readonly = pointer-events:none → canvas doesn't swallow events.
+    .trig-slv-tools          = pointer-events:auto → toolbar buttons/sliders work.
+    is-readonly: header+toolbar hidden, stage pointer-events:none.
 -->
 <template>
   <div
-    class="trig-solver trig-eq-card"
+    class="trig-slv"
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
     }"
     :data-testid="`trig-solver-${asset.id}`"
   >
-    <!-- Header -->
-    <div class="teq-head">
-      <span class="teq-num">{{ relLabel }}</span>
-      <h2 class="teq-title">Тригонометрія</h2>
-      <span class="teq-formula">{{ typeLabel }}(x) {{ relLabel }} a</span>
+    <!-- Header — pointer-events:none so clicks fall through to Konva proxy -->
+    <header class="trig-slv-head">
+      <span class="trig-slv-title">{{ typeLabel }}(x) {{ relLabel }} a</span>
       <button
         v-if="!asset.locked && isSelected"
         type="button"
         class="trig-slv-delete"
         title="Видалити"
         @click.stop="emit('delete')"
-        @pointerdown.stop
         @mousedown.stop
+        @pointerdown.stop
       >×</button>
-    </div>
+    </header>
 
-    <!-- Canvas stage — engine draws here -->
-    <div
-      ref="stageRef"
-      class="teq-stage"
-      :class="{ 'teq-stage--readonly': !interactive }"
-    />
+    <!-- Stage — engine renders circle + graph here -->
+    <div ref="stageRef" class="trig-slv-stage" />
 
-    <!-- Toolbar (hidden in readonly / pen mode) -->
-    <div v-if="interactive" class="teq-tools">
-
+    <!-- Toolbar (hidden in readonly) -->
+    <div class="trig-slv-tools">
       <!-- Function type -->
-      <div class="teq-group">
-        <span class="teq-group-label">f:</span>
-        <div class="calc-segmented">
-          <button
-            v-for="t in TYPE_OPTS"
-            :key="t.v"
-            :class="{ active: local.type === t.v }"
-            @click.stop="setType(t.v)"
-            @pointerdown.stop
-            @mousedown.stop
-          >{{ t.lab }}</button>
-        </div>
+      <div class="trig-slv-group">
+        <span class="trig-slv-label">f:</span>
+        <button
+          v-for="t in TYPE_OPTS"
+          :key="t.v"
+          type="button"
+          class="trig-slv-btn"
+          :class="{ 'is-active': local.type === t.v }"
+          @click.stop="setType(t.v)"
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ t.lab }}</button>
       </div>
 
-      <!-- Relation (equation / inequality) -->
-      <div class="teq-group">
-        <span class="teq-group-label">знак:</span>
-        <div class="calc-segmented">
-          <button
-            v-for="r in REL_OPTS"
-            :key="r.v"
-            :class="{ active: local.rel === r.v }"
-            @click.stop="setRel(r.v)"
-            @pointerdown.stop
-            @mousedown.stop
-          >{{ r.lab }}</button>
-        </div>
+      <span class="trig-slv-sep" />
+
+      <!-- Relation -->
+      <div class="trig-slv-group">
+        <span class="trig-slv-label">знак:</span>
+        <button
+          v-for="r in REL_OPTS"
+          :key="r.v"
+          type="button"
+          class="trig-slv-btn"
+          :class="{ 'is-active': local.rel === r.v }"
+          @click.stop="setRel(r.v)"
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ r.lab }}</button>
       </div>
+
+      <span class="trig-slv-sep" />
 
       <!-- Slider a -->
-      <div class="calc-slider">
-        <label>a =</label>
+      <label class="trig-slv-slider">
+        <span>a =</span>
         <input
           type="range"
           :min="aMin"
@@ -92,52 +89,59 @@
           step="0.01"
           :value="local.a"
           @input="onSlider"
-          @pointerdown.stop
           @mousedown.stop
+          @pointerdown.stop
         >
-        <span class="calc-slider-val">{{ roundedA }}</span>
-      </div>
+        <span class="trig-slv-slider-val">{{ roundedA }}</span>
+      </label>
+
+      <span class="trig-slv-sep" />
 
       <!-- Quick presets -->
-      <div class="calc-presets">
+      <div class="trig-slv-group trig-slv-presets">
         <button
           v-for="p in currentPresets"
           :key="p.label"
-          class="calc-preset"
+          type="button"
+          class="trig-slv-btn trig-slv-btn--preset"
           @click.stop="setA(p.v)"
-          @pointerdown.stop
           @mousedown.stop
+          @pointerdown.stop
         >{{ p.label }}</button>
       </div>
 
-      <!-- Options row -->
-      <div class="teq-opts-row">
-        <button
-          class="teq-opt-btn"
-          :class="{ active: local.snapSpecial }"
-          title="Прилипати до табличних значень"
-          @click.stop="toggleSnap"
-          @pointerdown.stop
-          @mousedown.stop
-        >⊙ snap</button>
-        <button
-          class="teq-opt-btn"
-          :class="{ active: local.showGraph }"
-          title="Показати графік"
-          @click.stop="toggleGraph"
-          @pointerdown.stop
-          @mousedown.stop
-        >~ графік</button>
-        <button
-          class="teq-opt-btn"
-          :class="{ active: local.showAllSolutions }"
-          title="Показати всі розв'язки"
-          @click.stop="toggleAllSolutions"
-          @pointerdown.stop
-          @mousedown.stop
-        >∞ всі</button>
-      </div>
+      <span class="trig-slv-sep" />
 
+      <!-- Options -->
+      <button
+        type="button"
+        class="trig-slv-btn"
+        :class="{ 'is-active': local.snapSpecial }"
+        title="Snap до табличних значень"
+        @click.stop="toggleOpt('snapSpecial')"
+        @mousedown.stop
+        @pointerdown.stop
+      >⊙ snap</button>
+
+      <button
+        type="button"
+        class="trig-slv-btn"
+        :class="{ 'is-active': local.showGraph }"
+        title="Показати графік"
+        @click.stop="toggleOpt('showGraph')"
+        @mousedown.stop
+        @pointerdown.stop
+      >~ графік</button>
+
+      <button
+        type="button"
+        class="trig-slv-btn"
+        :class="{ 'is-active': local.showAllSolutions }"
+        title="Показати всі розв'язки"
+        @click.stop="toggleOpt('showAllSolutions')"
+        @mousedown.stop
+        @pointerdown.stop
+      >∞ всі</button>
     </div>
   </div>
 </template>
@@ -146,9 +150,6 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { TrigSolverAsset, TrigFuncType, TrigRelation } from '../../../types/trigSolver'
 import type { TrigEquationInstance } from '../../../vendor/trig/index'
-
-// CSS for the library card components (non-scoped, namespaced under .trig-eq-card)
-import '../../../vendor/trig/trig-equations.css'
 
 const props = defineProps<{
   asset: TrigSolverAsset
@@ -179,11 +180,11 @@ type LocalState = {
 }
 
 const local = reactive<LocalState>({
-  type:            props.asset.data.type,
-  rel:             props.asset.data.rel,
-  a:               props.asset.data.a,
-  snapSpecial:     props.asset.data.snapSpecial,
-  showGraph:       props.asset.data.showGraph,
+  type:             props.asset.data.type,
+  rel:              props.asset.data.rel,
+  a:                props.asset.data.a,
+  snapSpecial:      props.asset.data.snapSpecial,
+  showGraph:        props.asset.data.showGraph,
   showAllSolutions: props.asset.data.showAllSolutions,
 })
 
@@ -206,21 +207,17 @@ const REL_OPTS: { v: TrigRelation; lab: string }[] = [
 
 const SIN_COS_PRESETS = [
   { label: '−1',    v: -1 },
-  { label: '−√3/2', v: -Math.sqrt(3) / 2 },
-  { label: '−√2/2', v: -Math.SQRT2 / 2 },
-  { label: '−½',   v: -0.5 },
-  { label: '0',    v: 0 },
-  { label: '½',    v: 0.5 },
-  { label: '√2/2', v: Math.SQRT2 / 2 },
-  { label: '√3/2', v: Math.sqrt(3) / 2 },
-  { label: '1',    v: 1 },
+  { label: '−½',    v: -0.5 },
+  { label: '0',     v: 0 },
+  { label: '½',     v: 0.5 },
+  { label: '√2/2',  v: Math.SQRT2 / 2 },
+  { label: '√3/2',  v: Math.sqrt(3) / 2 },
+  { label: '1',     v: 1 },
 ]
 const TAN_COT_PRESETS = [
   { label: '−√3', v: -Math.sqrt(3) },
   { label: '−1',  v: -1 },
-  { label: '−√3/3', v: -1 / Math.sqrt(3) },
   { label: '0',   v: 0 },
-  { label: '√3/3', v: 1 / Math.sqrt(3) },
   { label: '1',   v: 1 },
   { label: '√3',  v: Math.sqrt(3) },
 ]
@@ -232,20 +229,12 @@ const currentPresets = computed(() =>
 const aMin = computed(() => local.type === 'sin' || local.type === 'cos' ? -1 : -5)
 const aMax = computed(() => local.type === 'sin' || local.type === 'cos' ?  1 :  5)
 
-const roundedA = computed(() => {
-  const r = Math.round(local.a * 100) / 100
-  return r.toString().replace('.', ',')
-})
+const roundedA = computed(() =>
+  (Math.round(local.a * 100) / 100).toString().replace('.', ','),
+)
 
-const typeLabel = computed(() => {
-  const t = TYPE_OPTS.find(o => o.v === local.type)
-  return t ? t.lab : local.type
-})
-
-const relLabel = computed(() => {
-  const r = REL_OPTS.find(o => o.v === local.rel)
-  return r ? r.lab : local.rel
-})
+const typeLabel = computed(() => TYPE_OPTS.find(o => o.v === local.type)?.lab ?? local.type)
+const relLabel  = computed(() => REL_OPTS.find(o => o.v === local.rel)?.lab  ?? local.rel)
 
 // ── Engine lifecycle ──────────────────────────────────────────────────────
 
@@ -261,24 +250,20 @@ async function ensureBundle(): Promise<void> {
 
 function destroyEngine(): void {
   if (snapshotTimer != null) { clearTimeout(snapshotTimer); snapshotTimer = null }
-  if (engine) {
-    try { engine.destroy() } catch { /* idempotent */ }
-    engine = null
-  }
+  if (engine) { try { engine.destroy() } catch { /* idempotent */ }; engine = null }
 }
 
 async function mountEngine(): Promise<void> {
   if (!stageRef.value) return
   await ensureBundle()
   if (!stageRef.value || engine) return
-
   const W = window as unknown as TrigWindow
   engine = new W.TrigEquation(stageRef.value, {
-    type:            local.type,
-    rel:             local.rel,
-    a:               local.a,
-    snapSpecial:     local.snapSpecial,
-    showGraph:       local.showGraph,
+    type:             local.type,
+    rel:              local.rel,
+    a:                local.a,
+    snapSpecial:      local.snapSpecial,
+    showGraph:        local.showGraph,
     showAllSolutions: local.showAllSolutions,
   })
   engine.onChange = () => scheduleSnapshot()
@@ -287,7 +272,7 @@ async function mountEngine(): Promise<void> {
 onMounted(() => { void mountEngine() })
 onUnmounted(() => { destroyEngine() })
 
-// Remount on resize so canvas pixel buffer is correct
+// Remount on card resize so canvas pixel buffer refreshes at correct size
 watch([() => props.asset.w, () => props.asset.h], async () => {
   destroyEngine()
   await nextTick()
@@ -300,39 +285,35 @@ function scheduleSnapshot(): void {
   if (snapshotTimer != null) clearTimeout(snapshotTimer)
   snapshotTimer = setTimeout(() => {
     snapshotTimer = null
-    emitSnapshot()
+    emit('update:asset', {
+      ...props.asset,
+      data: {
+        version: 1,
+        type:             local.type,
+        rel:              local.rel,
+        a:                local.a,
+        snapSpecial:      local.snapSpecial,
+        showGraph:        local.showGraph,
+        showAllSolutions: local.showAllSolutions,
+      },
+    })
   }, SNAPSHOT_MS)
-}
-
-function emitSnapshot(): void {
-  emit('update:asset', {
-    ...props.asset,
-    data: {
-      version: 1,
-      type:            local.type,
-      rel:             local.rel,
-      a:               local.a,
-      snapSpecial:     local.snapSpecial,
-      showGraph:       local.showGraph,
-      showAllSolutions: local.showAllSolutions,
-    },
-  })
 }
 
 // ── Toolbar handlers ──────────────────────────────────────────────────────
 
 function setType(t: TrigFuncType): void {
+  if (!engine) return
   local.type = t
-  engine?.setType(t)
-  // sync slider a to clamped range after type switch
-  const newA = engine?.opts.a ?? local.a
-  local.a = newA
+  engine.setType(t)
+  local.a = engine.opts.a  // engine clamps to new range
   scheduleSnapshot()
 }
 
 function setRel(r: TrigRelation): void {
+  if (!engine) return
   local.rel = r
-  engine?.setRel(r)
+  engine.setRel(r)
   scheduleSnapshot()
 }
 
@@ -344,158 +325,243 @@ function setA(v: number): void {
 
 function onSlider(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value)
-  if (!Number.isFinite(v)) return
-  setA(v)
+  if (Number.isFinite(v)) setA(v)
 }
 
-function toggleSnap(): void {
-  local.snapSpecial = !local.snapSpecial
-  engine?.setOption('snapSpecial', local.snapSpecial)
+function toggleOpt(key: 'snapSpecial' | 'showGraph' | 'showAllSolutions'): void {
+  if (!engine) return
+  const next = !local[key]
+  local[key] = next
+  engine.setOption(key, next)
   scheduleSnapshot()
 }
 
-function toggleGraph(): void {
-  local.showGraph = !local.showGraph
-  engine?.setOption('showGraph', local.showGraph)
-  scheduleSnapshot()
-}
+// ── Replay sync ────────────────────────────────────────────────────────────
 
-function toggleAllSolutions(): void {
-  local.showAllSolutions = !local.showAllSolutions
-  engine?.setOption('showAllSolutions', local.showAllSolutions)
-  scheduleSnapshot()
-}
+const SYNC_KEYS: (keyof LocalState)[] = ['type', 'rel', 'a', 'snapSpecial', 'showGraph', 'showAllSolutions']
 
-// ── Replay sync: store → engine ───────────────────────────────────────────
-
-watch(() => props.asset.data.type, (v) => {
-  if (local.type === v || !engine) return
-  local.type = v
-  engine.setType(v)
-})
-
-watch(() => props.asset.data.rel, (v) => {
-  if (local.rel === v || !engine) return
-  local.rel = v
-  engine.setRel(v)
-})
-
-watch(() => props.asset.data.a, (v) => {
-  if (!engine) return
-  local.a = v
-  engine.setA(v)
-})
-
-watch(() => props.asset.data.snapSpecial, (v) => {
-  if (!engine) return
-  local.snapSpecial = v
-  engine.setOption('snapSpecial', v)
-})
-
-watch(() => props.asset.data.showGraph, (v) => {
-  if (!engine) return
-  local.showGraph = v
-  engine.setOption('showGraph', v)
-})
-
-watch(() => props.asset.data.showAllSolutions, (v) => {
-  if (!engine) return
-  local.showAllSolutions = v
-  engine.setOption('showAllSolutions', v)
-})
+watch(
+  () => SYNC_KEYS.map(k => (props.asset.data as unknown as Record<string, unknown>)[k]),
+  () => {
+    if (!engine) return
+    const d = props.asset.data as unknown as Record<string, unknown>
+    for (const k of SYNC_KEYS) {
+      const v = d[k]
+      if (v === undefined || (local as Record<string, unknown>)[k] === v) continue
+      ;(local as Record<string, unknown>)[k] = v
+      if (k === 'type')      engine.setType(v as TrigFuncType)
+      else if (k === 'rel')  engine.setRel(v as TrigRelation)
+      else if (k === 'a')    engine.setA(v as number)
+      else                   engine.setOption(k, v)
+    }
+  },
+)
 </script>
 
 <style scoped>
-/*
-  Component-level overrides.
-  Library base styles (.trig-eq-card, .teq-*, .calc-*) are in
-  vendor/trig/trig-equations.css, imported globally in <script>.
-*/
-
-.trig-solver {
+/* ── Root — pointer-events:none so Konva proxy below catches drag/select ── */
+.trig-slv {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* pointer-events:none so the outer wrapper (WBCanvas) handles drag/select */
-  pointer-events: none;
-}
-
-/* Stage fills remaining space (overrides aspect-ratio from library CSS) */
-.trig-solver .teq-stage {
-  flex: 1;
-  min-height: 0;
-  aspect-ratio: unset;
-  /* engine canvas interactive by default */
-  pointer-events: auto;
-}
-
-/* In readonly / pen mode: canvas must NOT capture events */
-.trig-solver .teq-stage--readonly {
-  pointer-events: none;
-}
-
-/* Toolbar needs pointer-events for buttons/inputs */
-.trig-solver .teq-tools {
-  pointer-events: auto;
-  flex-shrink: 0;
-}
-
-/* Header needs pointer-events for delete button */
-.trig-solver .teq-head {
-  pointer-events: auto;
-  flex-shrink: 0;
-}
-
-/* Delete button */
-.trig-slv-delete {
-  width: 22px;
-  height: 22px;
-  background: none;
-  border: 1px solid #fca5a5;
+  background: #fffaf0;
   border-radius: 4px;
-  color: #dc2626;
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.trig-slv.is-readonly .trig-slv-head,
+.trig-slv.is-readonly .trig-slv-tools {
+  display: none;
+}
+.trig-slv.is-readonly .trig-slv-stage {
+  pointer-events: none;
+}
+
+/* ── Header — pointer-events:none (inherited) → clicks fall through to Konva proxy ── */
+.trig-slv-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin-left: auto;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(196, 98, 42, 0.08);
+  border-bottom: 1px solid rgba(196, 98, 42, 0.18);
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a4a3a;
+  user-select: none;
 }
-.trig-slv-delete:hover { background: #fee2e2; }
 
-/* Options row (snap / graph / all solutions) */
-.teq-opts-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+.trig-slv.is-selected .trig-slv-head {
+  background: rgba(196, 98, 42, 0.16);
 }
-.teq-opt-btn {
+
+.trig-slv-title {
+  flex: 1;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  padding: 4px 8px;
-  background: var(--teq-paper, #fffaf0);
-  border: 1px solid var(--teq-line, rgba(43,33,24,0.14));
-  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Stage — auto so canvas engine receives drag ── */
+.trig-slv-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  pointer-events: auto;
+}
+
+/* HUD injected by engine inside the stage */
+.trig-slv-stage :deep(.calc-hud) {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  pointer-events: none;
+  z-index: 4;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 250, 240, 0.90);
+  border: 1px solid rgba(43, 33, 24, 0.12);
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #2b2118;
+  backdrop-filter: blur(4px);
+  max-width: 380px;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line) {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line span) {
+  color: #8a7860;
+  font-size: 10.5px;
+  margin-right: 2px;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line.key) {
+  font-weight: 600;
+  color: #2b2118;
+  margin-top: 2px;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line.key span) {
+  color: #c4622a;
+  font-weight: 600;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line.sub) {
+  font-size: 10px;
+  color: #8a7860;
+  font-style: italic;
+}
+.trig-slv-stage :deep(.calc-hud .calc-line.err) { color: #a83a5b; }
+
+/* ── Toolbar ── */
+.trig-slv-tools {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 7px;
+  background: rgba(196, 98, 42, 0.04);
+  border-top: 1px solid rgba(196, 98, 42, 0.14);
+  pointer-events: auto;
+}
+
+.trig-slv-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trig-slv-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #8a7860;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.trig-slv-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(43, 33, 24, 0.15);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.trig-slv-btn {
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 3px 7px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 4px;
+  background: #fffaf0;
+  color: #5a4a3a;
   cursor: pointer;
-  color: var(--teq-ink-3, #8a7860);
+  user-select: none;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  white-space: nowrap;
 }
-.teq-opt-btn.active {
-  background: var(--teq-ink, #2b2118);
-  color: var(--teq-paper, #fffaf0);
-  border-color: var(--teq-ink, #2b2118);
+.trig-slv-btn:hover {
+  background: #f1e4d6;
+  border-color: #c4622a;
+}
+.trig-slv-btn.is-active {
+  background: #c4622a;
+  border-color: #c4622a;
+  color: #fffaf0;
+}
+.trig-slv-btn--preset {
+  padding: 3px 5px;
+  font-size: 10px;
 }
 
-/* Selection ring (matches amber accent) */
-.trig-solver.is-selected .teq-head {
-  background: linear-gradient(180deg, rgba(196,98,42,0.08), rgba(196,98,42,0.15));
+/* ── Slider ── */
+.trig-slv-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 10px 'JetBrains Mono', monospace;
+  color: #5a4a3a;
+}
+.trig-slv-slider input[type=range] {
+  width: 80px;
+  accent-color: #c4622a;
+}
+.trig-slv-slider-val {
+  min-width: 28px;
+  text-align: right;
+  color: #c4622a;
+  font-size: 10px;
 }
 
-/* Hide toolbar and header in readonly */
-.trig-solver.is-readonly .teq-tools,
-.trig-solver.is-readonly .trig-slv-delete {
-  display: none;
+/* ── Delete button ── */
+.trig-slv-delete {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.trig-slv-delete:hover {
+  background: #dc2626;
+  border-color: #f87171;
 }
 </style>

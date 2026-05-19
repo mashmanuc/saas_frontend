@@ -457,9 +457,9 @@
       </div>
     </template>
 
-    <!-- TrigSolver (2026-05-19): unified trig eq+ineq overlay (HTML, non-Konva).
-         Uses handleOverlayPointerDown for HTML-level select+drag (mirrors media pattern).
-         Resize handles (4 corners) appear when selected + select tool. -->
+    <!-- TrigSolver (§3.7.7): unified trig eq+ineq overlay (HTML, non-Konva).
+         Mirror .wb-trig-circle-overlay pattern — Konva proxy below catches
+         drag/resize/select. Header pointer-events:none → falls through to proxy. -->
     <template v-for="asset in trigSolverAssets" :key="`tslv-${asset.id}`">
       <div
         class="wb-trig-solver-overlay"
@@ -472,7 +472,6 @@
           width: `${asset.w * props.zoom}px`,
           height: `${asset.h * props.zoom}px`,
         }"
-        @pointerdown.stop="handleOverlayPointerDown(asset, $event)"
       >
         <TrigSolverRenderer
           :asset="(asset as any)"
@@ -481,17 +480,6 @@
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
         />
-        <!-- Resize handles — 4 corners, visible when selected + select tool -->
-        <template v-if="wbStore.selectedIds.includes(asset.id) && currentTool === 'select'">
-          <div
-            v-for="corner in RESIZE_CORNERS"
-            :key="corner.name"
-            class="wb-trig-solver-resize-handle"
-            :class="`wb-trig-solver-resize-handle--${corner.name}`"
-            :style="{ cursor: corner.cursor }"
-            @pointerdown.stop.prevent="handleTrigSolverResizeStart(asset, corner.name, $event)"
-          />
-        </template>
       </div>
     </template>
 
@@ -2914,150 +2902,6 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   document.addEventListener('pointerup', onPointerUp, { once: true })
 }
 
-// ─── HTML pointer-drag for geometry overlay types ───────────────────────────
-// All "HTML overlay + invisible Konva proxy" cards (trig_solver, helix, etc.)
-// rely on events passing through pointer-events:none to reach the Konva proxy.
-// But when the renderer stage/toolbar has pointer-events:auto (interactive mode),
-// clicks don't reach Konva — the 1px border is the only transparent area.
-// This handler replicates the media-overlay drag pattern so ANY area of the
-// card initiates select + drag. Toolbar controls (button/input) just select.
-
-function handleOverlayPointerDown(asset: WBAsset, e: PointerEvent): void {
-  if (currentTool.value !== 'select') return
-
-  const target = e.target as HTMLElement
-  const isControl = !!target.closest('button, input, select, label, [role="button"]')
-
-  // Always select the asset
-  wbStore.selectItems([asset.id])
-  selectedNode.value = null
-  const transformer = transformerRef.value?.getNode?.()
-  if (transformer) transformer.nodes([])
-  emit('select', asset.id)
-
-  // Toolbar controls → select only, skip drag
-  if (isControl) return
-
-  setStageListening(false)
-
-  const startClientX = e.clientX
-  const startClientY = e.clientY
-  const startAssetX = asset.x
-  const startAssetY = asset.y
-  const el = e.currentTarget as HTMLElement
-  let hasMoved = false
-
-  function onPointerMove(ev: PointerEvent) {
-    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
-    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-      hasMoved = true
-      el.style.left = `${(startAssetX + dx) * (props.zoom || 1)}px`
-      el.style.top = `${(startAssetY + dy) * (props.zoom || 1)}px`
-      el.style.cursor = 'grabbing'
-    }
-  }
-
-  function onPointerUp(ev: PointerEvent) {
-    document.removeEventListener('pointermove', onPointerMove)
-    setStageListening(true)
-    el.style.cursor = ''
-    if (!hasMoved) return
-    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
-    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
-    emit('asset-update', { ...asset, x: startAssetX + dx, y: startAssetY + dy })
-  }
-
-  document.addEventListener('pointermove', onPointerMove)
-  document.addEventListener('pointerup', onPointerUp, { once: true })
-}
-
-// ─── TrigSolver: free resize (no aspect ratio) ──────────────────────────────
-
-const MIN_TRIG_SOLVER_SIZE = 280
-
-function handleTrigSolverResizeStart(asset: WBAsset, corner: string, e: PointerEvent): void {
-  const startX = e.clientX
-  const startY = e.clientY
-  const startW = asset.w
-  const startH = asset.h
-  const startAx = asset.x
-  const startAy = asset.y
-  const zoom = props.zoom || 1
-
-  const el = (e.target as HTMLElement).closest('.wb-trig-solver-overlay') as HTMLElement
-  if (!el) return
-
-  setStageListening(false)
-
-  function onPointerMove(ev: PointerEvent) {
-    const dx = (ev.clientX - startX) / zoom
-    const dy = (ev.clientY - startY) / zoom
-    let newW = startW, newH = startH, newX = startAx, newY = startAy
-
-    if (corner === 'bottom-right') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
-    } else if (corner === 'bottom-left') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
-      newX = startAx + (startW - newW)
-    } else if (corner === 'top-right') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
-      newY = startAy + (startH - newH)
-    } else if (corner === 'top-left') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
-      newX = startAx + (startW - newW)
-      newY = startAy + (startH - newH)
-    }
-
-    el.style.width = `${newW * zoom}px`
-    el.style.height = `${newH * zoom}px`
-    el.style.left = `${newX * zoom}px`
-    el.style.top = `${newY * zoom}px`
-  }
-
-  function onPointerUp(ev: PointerEvent) {
-    document.removeEventListener('pointermove', onPointerMove)
-    setStageListening(true)
-
-    const dx = (ev.clientX - startX) / zoom
-    const dy = (ev.clientY - startY) / zoom
-    let newW = startW, newH = startH, newX = startAx, newY = startAy
-
-    if (corner === 'bottom-right') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
-    } else if (corner === 'bottom-left') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
-      newX = startAx + (startW - newW)
-    } else if (corner === 'top-right') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
-      newY = startAy + (startH - newH)
-    } else if (corner === 'top-left') {
-      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
-      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
-      newX = startAx + (startW - newW)
-      newY = startAy + (startH - newH)
-    }
-
-    emit('asset-update', {
-      ...asset,
-      w: Math.round(newW),
-      h: Math.round(newH),
-      x: Math.round(newX),
-      y: Math.round(newY),
-    })
-  }
-
-  document.addEventListener('pointermove', onPointerMove)
-  document.addEventListener('pointerup', onPointerUp, { once: true })
-}
-
 // ─── Phase 34 B8: Long Press for Mobile Multi-Select ───────────────────────
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
@@ -4736,41 +4580,19 @@ defineExpose({
   box-shadow: none !important;
 }
 
-/* TrigSolver (§3.7.7) — unified eq+ineq card, warm amber border */
+/* TrigSolver (§3.7.7) — unified eq+ineq card, warm amber border.
+   Mirror .wb-trig-circle-overlay — pointer-events:none, Konva proxy below
+   catches drag/resize/select via transformer. */
 .wb-trig-solver-overlay {
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(196, 98, 42, 0.22);
   border-radius: 6px;
-  overflow: visible; /* must be visible so resize handles can stick out 5px */
+  overflow: hidden;
   pointer-events: none;
 }
 .wb-trig-solver-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
-
-/* Resize handles — same pattern as wb-media-resize-handle */
-.wb-trig-solver-resize-handle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1.5px solid rgba(196, 98, 42, 0.6);
-  border-radius: 50%;
-  z-index: 30;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  pointer-events: auto; /* override parent pointer-events:none */
-  transition: transform 0.12s, border-color 0.12s, background 0.12s;
-}
-.wb-trig-solver-resize-handle:hover {
-  transform: scale(1.3);
-  background: #fff;
-  border-color: rgba(196, 98, 42, 0.9);
-  box-shadow: 0 1px 6px rgba(196, 98, 42, 0.35);
-}
-.wb-trig-solver-resize-handle--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
-.wb-trig-solver-resize-handle--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
-.wb-trig-solver-resize-handle--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
-.wb-trig-solver-resize-handle--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
 </style>
