@@ -132,6 +132,24 @@ const authApi = {
   acceptInvite(payload) {
     return api.post('/auth/invite/accept/', payload)
   },
+
+  // Google OAuth — PR 1 backend, PR 2 FE
+  // Plan: saas_docs/plans/GOOGLE_OAUTH_PLAN_2026-05-20.md
+  google({ idToken }) {
+    return api.post('/v1/auth/google', { id_token: idToken })
+  },
+
+  googleLink({ idToken }) {
+    return api.post('/v1/auth/oauth/google/link/', { id_token: idToken })
+  },
+
+  oauthAccounts() {
+    return api.get('/v1/auth/oauth/accounts/')
+  },
+
+  disconnectOauth(provider) {
+    return api.delete(`/v1/auth/oauth/${provider}/`)
+  },
 }
 
 export default authApi

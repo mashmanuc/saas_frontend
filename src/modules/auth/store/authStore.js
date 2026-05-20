@@ -245,6 +245,82 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Google OAuth sign-in.
+     *
+     * Plan: saas_docs/plans/GOOGLE_OAUTH_PLAN_2026-05-20.md
+     * Reuses the same post-login pipeline as `login()` — single source of truth
+     * для cookie/CSRF/proactive-refresh bootstrap (INV-OAUTH-5).
+     *
+     * @param {string} idToken Google ID token (JWT) з GIS callback
+     * @returns {Promise<object>} user object (або throws при MFA → resolves з flag)
+     */
+    async loginWithGoogle(idToken) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
+      this.pendingMfaSessionId = null
+
+      try {
+        const res = await authApi.google({ idToken })
+        const mfaRequired = Boolean(res?.mfa_required)
+        const sessionId = res?.session_id
+
+        // INV-OAUTH-4 — MFA branch ідентичний password login
+        if (mfaRequired) {
+          this.pendingMfaSessionId =
+            typeof sessionId === 'string' && sessionId.trim().length > 0
+              ? sessionId
+              : null
+          this.lastErrorCode = 'mfa_required'
+          logAuthEvent({
+            event: AUTH_EVENTS.MFA_REQUIRED,
+            email: res?.user?.email,
+          })
+          return { mfa_required: true, session_id: this.pendingMfaSessionId }
+        }
+
+        const { access, user, exp } = res || {}
+        this.setAuth({ access, user, exp })
+        try {
+          const { resetAuthDeath } = await import('../../../core/auth/onAuthDeath')
+          resetAuthDeath()
+        } catch {
+          /* not critical */
+        }
+        await this.postAuthInit()
+        await this.ensureCsrfToken()
+        this.startProactiveRefresh()
+        if (!this.user) {
+          await this.reloadUser()
+        }
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_SUCCESS,
+          userId: this.user?.id,
+          email: this.user?.email,
+          method: 'google',
+          isNewUser: Boolean(res?.is_new_user),
+          wasAutoLinked: Boolean(res?.was_auto_linked),
+        })
+        return this.user
+      } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_FAILED,
+          method: 'google',
+          errorCode: error?.response?.data?.code || error?.response?.data?.error,
+          errorMessage: error?.response?.data?.message,
+          requestId: error?.response?.data?.request_id,
+        })
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     async verifyMfa(otp) {
       this.loading = true
       this.error = null

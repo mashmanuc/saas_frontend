@@ -74,7 +74,33 @@
       </p>
     </form>
 
-    <form v-else class="space-y-4" @submit.prevent="onSubmitOtp">
+    <!-- Google OAuth (PR 2 — Phase 2 rollout). Показуємо тільки на password step
+         і тільки якщо VITE_GOOGLE_OAUTH_CLIENT_ID сконфігуровано. -->
+    <div v-if="step === 'password' && googleEnabled" class="space-y-3">
+      <div class="relative flex items-center" aria-hidden="true">
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
+          {{ $t('auth.login.orContinueWith') }}
+        </span>
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+      </div>
+      <GoogleSignInButton
+        mode="signin"
+        @success="onGoogleSuccess"
+        @error="onGoogleError"
+      />
+      <p
+        v-if="googleErrorMessage"
+        class="text-sm"
+        style="color: var(--danger, #d92d20);"
+        data-testid="login-google-error"
+      >
+        {{ googleErrorMessage }}
+      </p>
+    </div>
+
+    <!-- Explicit step check (бо v-else розривався Google-блоком вище) -->
+    <form v-if="step === 'otp'" class="space-y-4" @submit.prevent="onSubmitOtp">
       <Input
         :label="isBackupCodeMode ? $t('auth.login.backupCodeLabel') : $t('auth.login.otpLabel')"
         type="text"
@@ -175,6 +201,7 @@ import { getDefaultRouteForRole } from '../../../config/routes'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 import UnlockConfirmModal from '../components/UnlockConfirmModal.vue'
+import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -191,6 +218,11 @@ const otp = ref('')
 const isBackupCodeMode = ref(false)
 const showWebAuthnPrompt = ref(false)
 const showUnlockModal = ref(false)
+const googleErrorMessage = ref('')
+
+// Google OAuth доступний лише коли VITE_GOOGLE_OAUTH_CLIENT_ID сконфігуровано
+// (Phase 2 rollout — без env var кнопку не показуємо).
+const googleEnabled = computed(() => Boolean(import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID))
 
 // v0.82.0: Локальна валідація перед запитом
 const validationErrors = reactive({
@@ -324,6 +356,63 @@ async function onSubmit() {
     // v0.82.0: Помилка вже відображається через auth.error
     // auth.loading автоматично скидається в finally блоці authStore.login
   }
+}
+
+/**
+ * Google sign-in success handler.
+ * `res` може бути:
+ *   - user object (звичайний login)
+ *   - { mfa_required: true, session_id } — MFA flow
+ */
+async function onGoogleSuccess(res) {
+  googleErrorMessage.value = ''
+  if (res && typeof res === 'object' && res.mfa_required) {
+    step.value = 'otp'
+    otp.value = ''
+    return
+  }
+  const user = res
+  const redirect = route.query?.redirect
+  let target
+  const isSoloV2Redirect =
+    redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
+  if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
+    target = redirect
+  } else {
+    target = getDefaultRouteForRole(user?.role)
+  }
+  router.push(target)
+}
+
+/**
+ * Google sign-in error handler. Mapping HTTP error → i18n key per §6.5 у плані.
+ */
+function onGoogleError(error) {
+  const code = error?.response?.data?.error || error?.code || ''
+  const status = error?.response?.status
+  let key = 'auth.oauth.error.unknown'
+  switch (code) {
+    case 'invalid_id_token':
+      key = 'auth.oauth.error.invalidToken'
+      break
+    case 'account_deactivated':
+      key = 'auth.oauth.error.deactivated'
+      break
+    case 'account_exists_unverified':
+      key = 'auth.oauth.error.emailUnverified'
+      break
+    case 'cross_provider_merge_forbidden':
+      key = 'auth.oauth.error.crossProvider'
+      break
+    case 'google_verify_unavailable':
+      key = 'auth.oauth.error.googleUnavailable'
+      break
+    default:
+      if (status === 429) key = 'auth.oauth.error.throttled'
+      else if (status === 503) key = 'auth.oauth.error.googleUnavailable'
+      else if (error?.message === 'gis_load_failed') key = 'auth.oauth.error.scriptFailed'
+  }
+  googleErrorMessage.value = t(key)
 }
 
 async function onSubmitOtp() {

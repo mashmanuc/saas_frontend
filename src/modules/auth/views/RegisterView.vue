@@ -88,6 +88,31 @@
       </Button>
     </form>
 
+    <!-- Google OAuth sign-up. INV-OAUTH-9: Google завжди створює STUDENT, тож
+         кнопку показуємо ЛИШЕ для student-flow. Tutor-onboarding — окрема воронка. -->
+    <div v-if="googleEnabled && form.account_type === 'student'" class="space-y-3">
+      <div class="relative flex items-center" aria-hidden="true">
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
+          {{ $t('auth.login.orContinueWith') }}
+        </span>
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+      </div>
+      <GoogleSignInButton
+        mode="signup"
+        @success="onGoogleSuccess"
+        @error="onGoogleError"
+      />
+      <p
+        v-if="googleErrorMessage"
+        class="text-sm"
+        style="color: var(--danger, #d92d20);"
+        data-testid="register-google-error"
+      >
+        {{ googleErrorMessage }}
+      </p>
+    </div>
+
     <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.register.haveAccount') }}
       <RouterLink to="/auth/login" class="hover:underline font-medium" style="color: var(--accent);">
@@ -121,12 +146,19 @@ import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
+import GoogleSignInButton from '../components/GoogleSignInButton.vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const showErrorModal = ref(false)
+const googleErrorMessage = ref('')
+
+// INV-OAUTH-S4 gate: кнопка показується тільки коли env налаштований.
+const googleEnabled = computed(() => Boolean(import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID))
 
 // Determine if account type is pre-selected from URL
 const isRolePreselected = computed(() => {
@@ -201,5 +233,49 @@ async function onSubmit() {
   } catch (error) {
     // помилка вже міститься у auth.error
   }
+}
+
+/**
+ * Google sign-up success — той самий handler що login, бо backend сам
+ * розрізняє register vs login by sub-lookup (INV-OAUTH-19).
+ */
+async function onGoogleSuccess(res) {
+  googleErrorMessage.value = ''
+  if (res && typeof res === 'object' && res.mfa_required) {
+    // У контексті register MFA малоймовірне (новий user без MFA конфігу), але
+    // якщо backend вирішить вимагати — направляємо на login MFA flow.
+    router.push({ name: 'auth-login' })
+    return
+  }
+  // Successful sign-up — redirect на default route для STUDENT (бо INV-OAUTH-9)
+  router.push('/')
+}
+
+function onGoogleError(error) {
+  const code = error?.response?.data?.error || error?.code || ''
+  const status = error?.response?.status
+  let key = 'auth.oauth.error.unknown'
+  switch (code) {
+    case 'invalid_id_token':
+      key = 'auth.oauth.error.invalidToken'
+      break
+    case 'account_deactivated':
+      key = 'auth.oauth.error.deactivated'
+      break
+    case 'account_exists_unverified':
+      key = 'auth.oauth.error.emailUnverified'
+      break
+    case 'cross_provider_merge_forbidden':
+      key = 'auth.oauth.error.crossProvider'
+      break
+    case 'google_verify_unavailable':
+      key = 'auth.oauth.error.googleUnavailable'
+      break
+    default:
+      if (status === 429) key = 'auth.oauth.error.throttled'
+      else if (status === 503) key = 'auth.oauth.error.googleUnavailable'
+      else if (error?.message === 'gis_load_failed') key = 'auth.oauth.error.scriptFailed'
+  }
+  googleErrorMessage.value = t(key)
 }
 </script>
