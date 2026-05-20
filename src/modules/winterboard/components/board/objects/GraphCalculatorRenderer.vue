@@ -1343,11 +1343,13 @@ function syncCanvasPointerEvents(): void {
   const el = plotEl.value
   if (!el) return
   const val = props.interactive ? '' : 'none'
-  // Override the `.gc-plot { pointer-events: auto }` CSS rule.
+  // Override `.gc-plot { pointer-events: auto }` AND explicitly set all
+  // descendants — vendor may create intermediate wrapper divs with pointer-
+  // events:auto by default, and may set inline styles on canvas elements.
+  // querySelectorAll('canvas') misses those intermediate divs.
   ;(el as HTMLElement).style.pointerEvents = val
-  // Also target any canvas elements the vendor library created inside the plot.
-  el.querySelectorAll('canvas').forEach((c) => {
-    ;(c as HTMLElement).style.pointerEvents = val
+  el.querySelectorAll('*').forEach((child) => {
+    ;(child as HTMLElement).style.pointerEvents = val
   })
 }
 

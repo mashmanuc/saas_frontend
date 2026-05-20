@@ -459,6 +459,17 @@
       </div>
     </template>
 
+    <!-- Strokes overlay: mirrors the Konva strokesLayer ABOVE widget overlays
+         (z-index 6 > widget overlay z-index 4-5) when the user is in draw/pen/
+         eraser mode. Committed strokes on the Konva canvas (z-index 0) would be
+         visually hidden behind the opaque vendor canvases inside widget overlays.
+         This overlay canvas is always pointer-events:none — events fall through
+         to the Konva stage. Cleared on entering select mode (Konva layer takes over). -->
+    <canvas
+      ref="strokesOverlayRef"
+      class="wb-strokes-overlay"
+    />
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -1128,6 +1139,9 @@ const assetsLayerRef = ref<{ getNode: () => Konva.Layer } | null>(null)
 const previewLayerRef = ref<{ getNode: () => Konva.Layer } | null>(null)
 const uiLayerRef = ref(null)
 const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
+/** Mirrors Konva strokesLayer above widget HTML overlays (z-index 6) in draw mode. */
+const strokesOverlayRef = ref<HTMLCanvasElement | null>(null)
+let strokesOverlayCtx: CanvasRenderingContext2D | null = null
 const transformerRef = ref<{ getNode: () => Konva.Transformer } | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const stickyTextareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -2052,6 +2066,43 @@ function createOffscreenBuffer(width: number, height: number): CanvasBuffer | nu
   return { canvas: fallback, ctx }
 }
 
+// ─── Strokes overlay (draw-mode visibility above widget HTML overlays) ──────
+// Konva strokesLayer renders at z-index 0 (inside the Konva stage element),
+// which is BELOW widget HTML overlays (z-index 4-5). In draw/pen mode, we
+// mirror the strokesLayer onto a separate canvas (z-index 6) so committed
+// strokes remain visible above widgets. In select mode, the overlay is cleared
+// (Konva strokesLayer handles display at its native z-index, widgets are not
+// blocking since the user isn't drawing anyway).
+
+function initStrokesOverlay(): void {
+  const canvas = strokesOverlayRef.value
+  if (!canvas) return
+  const { width, height } = getStagePixelSize()
+  canvas.width = width
+  canvas.height = height
+  strokesOverlayCtx = canvas.getContext('2d')
+}
+
+/** Copy the Konva strokesLayer canvas content onto strokesOverlayRef. */
+function mirrorStrokesLayer(): void {
+  const overlayCanvas = strokesOverlayRef.value
+  const ctx = strokesOverlayCtx
+  if (!overlayCanvas || !ctx) return
+  if (currentTool.value === 'select' || wbStore.mode === 'replay') {
+    // In select/replay mode: clear overlay; Konva strokesLayer handles display.
+    const { width, height } = getStagePixelSize()
+    ctx.clearRect(0, 0, width, height)
+    return
+  }
+  const layer = (strokesLayerRef.value as any)?.getNode?.()
+  if (!layer) return
+  const src: HTMLCanvasElement | undefined = layer.getCanvas()._canvas
+  if (!src) return
+  const { width, height } = getStagePixelSize()
+  ctx.clearRect(0, 0, width, height)
+  ctx.drawImage(src, 0, 0, width, height)
+}
+
 function initPreviewCanvas(): void {
   const canvas = previewCanvasRef.value
   if (!canvas) return
@@ -2421,6 +2472,9 @@ function handleMouseUp(): void {
       // Clear Konva preview layer shapes
       const previewLayer = previewLayerRef.value?.getNode?.()
       if (previewLayer) previewLayer.batchDraw()
+      // Mirror committed stroke onto the strokes overlay canvas (z-index 6)
+      // so it remains visible above widget HTML overlays in draw mode.
+      mirrorStrokesLayer()
     })
   })
 }
@@ -4029,6 +4083,7 @@ onMounted(async () => {
   nextTick(() => {
     cacheBackgroundLayer()
     initPreviewCanvas()
+    initStrokesOverlay()
   })
 })
 
@@ -4109,18 +4164,24 @@ watch(
   () => [props.width, props.height, props.zoom],
   () => {
     initPreviewCanvas()
+    initStrokesOverlay()
     drawPreviewCanvas()
   },
   { immediate: false },
 )
 
-// Auto-deselect when switching away from select tool
+// Auto-deselect when switching away from select tool.
+// Also sync the strokes overlay: entering draw mode → mirror strokesLayer;
+// entering select mode → clear overlay (Konva strokesLayer handles display).
 watch(
   () => props.tool,
   (newTool) => {
     if (newTool !== 'select' && selectedNode.value) {
       clearSelection()
     }
+    // Strokes overlay: draw mode → show committed strokes above widget overlays.
+    // Defer one rAF to ensure Konva has finished rendering the strokes layer.
+    requestAnimationFrame(() => mirrorStrokesLayer())
   },
 )
 
@@ -4168,12 +4229,18 @@ watch(
 
 // Invalidate stroke/asset config caches when strokes change (add/delete/update).
 // Selection is NOT cleared here — only caches, so group drag keeps working.
+// Also re-mirror strokes overlay in draw mode (e.g., eraser deletes a stroke
+// that was visible on the overlay — needs to be removed).
 watch(
   () => props.strokes,
   () => {
     strokeConfigCache.clear()
     assetConfigCache.clear()
     clearSmoothedCache()
+    if (currentTool.value !== 'select' && wbStore.mode !== 'replay') {
+      // Defer one rAF so Konva finishes re-rendering the strokes layer first.
+      requestAnimationFrame(() => mirrorStrokesLayer())
+    }
   },
 )
 
@@ -4281,6 +4348,17 @@ defineExpose({
   filter: none;
   backdrop-filter: none;
   box-shadow: none;
+}
+
+/* Strokes overlay — mirrors Konva strokesLayer above widget HTML overlays
+   (z-index 6 > widget overlay z-index 4-5) when in draw mode. Cleared in
+   select mode so the Konva layer handles display. Always pointer-events:none. */
+.wb-strokes-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 6;
 }
 
 /* A6.1: Loading spinner */

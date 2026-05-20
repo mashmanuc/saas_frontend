@@ -280,8 +280,13 @@ function syncCanvasPointerEvents(): void {
   const el = stageRef.value
   if (!el) return
   const val = props.interactive ? '' : 'none'
-  el.querySelectorAll('canvas').forEach((c) => {
-    ;(c as HTMLElement).style.pointerEvents = val
+  // Set on the container div itself (CSS cascade base) AND all descendants
+  // explicitly — vendor libraries may create intermediate wrapper divs that
+  // have pointer-events:auto by default, and may set inline pointer-events
+  // on their canvas elements. querySelectorAll('canvas') is not enough.
+  ;(el as HTMLElement).style.pointerEvents = val
+  el.querySelectorAll('*').forEach((child) => {
+    ;(child as HTMLElement).style.pointerEvents = val
   })
 }
 
