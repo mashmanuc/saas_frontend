@@ -285,16 +285,26 @@ function scheduleSnapshot(): void {
   if (snapshotTimer != null) clearTimeout(snapshotTimer)
   snapshotTimer = setTimeout(() => {
     snapshotTimer = null
+    if (!engine) return
+    // Read from engine.opts (source of truth), NOT from `local`.
+    // When the user drags the value line directly on the canvas, the engine
+    // updates opts.a internally and fires onChange — but local.a is still
+    // the old value (only toolbar handlers call setA → local.a = ...).
+    // Reading local here would record the stale value into the op, making
+    // the replay replay the wrong position.
+    const o = engine.opts
+    // Keep local mirror in sync so subsequent toolbar reads are accurate.
+    local.a = o.a as number
     emit('update:asset', {
       ...props.asset,
       data: {
-        version: 1,
-        type:             local.type,
-        rel:              local.rel,
-        a:                local.a,
-        snapSpecial:      local.snapSpecial,
-        showGraph:        local.showGraph,
-        showAllSolutions: local.showAllSolutions,
+        version:          1,
+        type:             o.type as TrigFuncType,
+        rel:              o.rel as TrigRelation,
+        a:                o.a as number,
+        snapSpecial:      o.snapSpecial as boolean,
+        showGraph:        o.showGraph as boolean,
+        showAllSolutions: o.showAllSolutions as boolean,
       },
     })
   }, SNAPSHOT_MS)
