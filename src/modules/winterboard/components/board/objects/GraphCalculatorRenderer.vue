@@ -399,6 +399,10 @@ let lastAppliedSeq = 0
 /** FE-RULE-7: cheap signature for skip identical applies. */
 let lastAppliedSignature = ''
 
+/** Expressions+viewport signature from last apply — used to detect params-only changes.
+ *  Empty string = no previous apply (first mount → always full setState). */
+let lastExprVpSignature = ''
+
 /** Pending debounce timer for snapshot emit. */
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null
 /** Pending throttle state for param emits. */
@@ -572,9 +576,27 @@ function snapshotSignature(s: GraphCalculatorState): string {
     .map((e) => `${e.id}:${e.src}:${e.color}:${e.hidden ? 1 : 0}`)
     .join('|')
   const paramKeys = Object.keys(s.params).sort()
-  const paramPart = paramKeys.map((k) => `${k}=${s.params[k]}`).join(',')
+  // BUG FIX: s.params[k] is {value, min, max, step} object — must extract .value,
+  // otherwise `${obj}` → "[object Object]" and ALL param sigs become identical,
+  // causing applyExternalState to skip engine update on every graph_param_set replay op.
+  const paramPart = paramKeys.map((k) => {
+    const p = s.params[k]
+    const v = (p && typeof p === 'object') ? (p as { value?: number }).value ?? '' : p
+    return `${k}=${v}`
+  }).join(',')
   const vpPart = `${s.viewport.cx},${s.viewport.cy},${s.viewport.scale}`
   return `${s.expressions.length}#${exprPart}#${paramPart}#${vpPart}`
+}
+
+/** Signature over expressions + viewport only (excludes params).
+ *  Compared against lastExprVpSignature to detect params-only state changes —
+ *  enables fast-path in applyExternalState (avoids full setState + animation cancel). */
+function exprVpSignature(s: GraphCalculatorState): string {
+  const exprPart = s.expressions
+    .map((e) => `${e.id}:${e.src}:${e.color}:${e.hidden ? 1 : 0}`)
+    .join('|')
+  const vpPart = `${s.viewport.cx},${s.viewport.cy},${s.viewport.scale}`
+  return `${s.expressions.length}#${exprPart}#${vpPart}`
 }
 
 function buildSnapshotAsset(): WBAsset {
@@ -605,9 +627,10 @@ function scheduleSnapshot() {
     snapshotTimer = null
     if (!calc) return
     const asset = buildSnapshotAsset()
-    // Update local signature so the inbound watch (echo) is suppressed.
-    const sig = snapshotSignature((asset.data as { state: GraphCalculatorState }).state)
-    lastAppliedSignature = sig
+    // Update local signatures so the inbound watch (echo) is suppressed.
+    const state = (asset.data as { state: GraphCalculatorState }).state
+    lastAppliedSignature = snapshotSignature(state)
+    lastExprVpSignature = exprVpSignature(state)
     emit('update:asset', asset)
   }, GRAPH_THROTTLE_SNAPSHOT_MS)
 }
@@ -619,7 +642,9 @@ function flushSnapshot() {
     snapshotTimer = null
     if (!calc) return
     const asset = buildSnapshotAsset()
-    lastAppliedSignature = snapshotSignature((asset.data as { state: GraphCalculatorState }).state)
+    const state = (asset.data as { state: GraphCalculatorState }).state
+    lastAppliedSignature = snapshotSignature(state)
+    lastExprVpSignature = exprVpSignature(state)
     emit('update:asset', asset)
   }
 }
@@ -748,15 +773,32 @@ function applyExternalState(state: GraphCalculatorState, seq: number) {
   // FE-RULE-7: skip identical apply.
   const sig = snapshotSignature(state)
   if (sig === lastAppliedSignature) return
+  // Fast path: when only params changed (expressions + viewport unchanged),
+  // use origSetParamRef instead of calc.setState() to avoid cancelling the
+  // animation rAF loop (per inv-21.13). lastExprVpSignature === '' on first
+  // mount → always falls through to full setState (correct for initial load).
+  const newExprVpSig = exprVpSignature(state)
+  const onlyParamsChanged = lastExprVpSignature !== '' && newExprVpSig === lastExprVpSignature
   // FE-RULE-6 / FE-RULE-12: suppress echo during setState (initial mount + watch).
   isApplyingExternalState = true
   try {
-    calc.setState(state)
+    if (onlyParamsChanged && origSetParamRef) {
+      // Fast path: update individual param values without full state replace.
+      for (const [k, entry] of Object.entries(state.params)) {
+        const val = (entry && typeof entry === 'object')
+          ? (entry as { value?: number }).value
+          : (typeof entry === 'number' ? entry : undefined)
+        if (val !== undefined && Number.isFinite(val)) origSetParamRef(k, val)
+      }
+    } else {
+      calc.setState(state)
+    }
   } finally {
     isApplyingExternalState = false
   }
   lastAppliedSeq = seq || lastAppliedSeq
   lastAppliedSignature = sig
+  lastExprVpSignature = newExprVpSig
   refreshDisplayExpressions()
 }
 
@@ -1204,6 +1246,8 @@ function onDeletePoint(id: string) {
 
 onMounted(() => {
   mountEngine()
+  // Sync canvas pointer-events immediately after vendor canvas is created.
+  syncCanvasPointerEvents()
   // Flush hooks (FE-RULE-10 partial — visibilitychange + beforeunload).
   document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -1287,6 +1331,27 @@ function onBeforeUnload() {
   flushSnapshot()
   flushParam()
 }
+
+// ─── Draw-mode canvas isolation (pointer-events sync) ─────────────────
+// When the user switches to pen/draw tool (props.interactive → false), the
+// vendor canvas inside gc-plot must NOT capture pointer events — otherwise
+// pen strokes get eaten by the graph renderer.
+// CSS `pointer-events: none` on a parent div does NOT suppress HTML <canvas>
+// children (pointer-events doesn't inherit in HTML, unlike SVG), so we set
+// inline styles directly — same approach as Geometry2DRenderer.syncPointerEvents.
+function syncCanvasPointerEvents(): void {
+  const el = plotEl.value
+  if (!el) return
+  const val = props.interactive ? '' : 'none'
+  // Override the `.gc-plot { pointer-events: auto }` CSS rule.
+  ;(el as HTMLElement).style.pointerEvents = val
+  // Also target any canvas elements the vendor library created inside the plot.
+  el.querySelectorAll('canvas').forEach((c) => {
+    ;(c as HTMLElement).style.pointerEvents = val
+  })
+}
+
+watch(() => props.interactive, syncCanvasPointerEvents)
 
 // ─── Watchers ──────────────────────────────────────────────────────────
 

@@ -311,7 +311,25 @@ async function mount(): Promise<void> {
   })
 
   trig.onChange = () => scheduleSnapshot()
+  // Sync pointer-events after vendor canvas is created (draw-mode isolation).
+  syncCanvasPointerEvents()
 }
+
+// ── Draw-mode canvas isolation ────────────────────────────────────────────
+// When the user is in pen/draw mode (props.interactive === false), the vendor
+// canvas inside stageRef must NOT capture pointer events so pen strokes pass
+// through. CSS `pointer-events: none` on parent div doesn't suppress HTML
+// <canvas> children (pointer-events doesn't inherit in HTML), so set inline.
+function syncCanvasPointerEvents(): void {
+  const el = stageRef.value
+  if (!el) return
+  const val = props.interactive ? '' : 'none'
+  el.querySelectorAll('canvas').forEach((c) => {
+    ;(c as HTMLElement).style.pointerEvents = val
+  })
+}
+
+watch(() => props.interactive, syncCanvasPointerEvents)
 
 function destroyTrig(): void {
   animating.value = false
