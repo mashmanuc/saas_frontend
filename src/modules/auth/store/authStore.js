@@ -266,6 +266,17 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const res = await authApi.google({ idToken })
+
+        // INV-OAUTH-9 v1.4 — staged registration. Login endpoint НЕ створює user.
+        // Якщо новий — backend повертає registration_required + signed token.
+        if (res?.registration_required) {
+          return {
+            registration_required: true,
+            registration_token: res.registration_token,
+            claims_preview: res.claims_preview || {},
+          }
+        }
+
         const mfaRequired = Boolean(res?.mfa_required)
         const sessionId = res?.session_id
 
@@ -313,6 +324,66 @@ export const useAuthStore = defineStore('auth', {
           errorCode: error?.response?.data?.code || error?.response?.data?.error,
           errorMessage: error?.response?.data?.message,
           requestId: error?.response?.data?.request_id,
+        })
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
+     * Staged registration — step 2.
+     * Викликається з RolePickerModal (LoginView) або одразу з RegisterStudent/Tutor.
+     */
+    async completeGoogleRegistration(registrationToken, role) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+
+      try {
+        const res = await authApi.googleRegister({ registrationToken, role })
+        // У теорії MFA не буде для щойно створеного user, але для consistency
+        if (res?.mfa_required) {
+          const sessionId = res?.session_id
+          this.pendingMfaSessionId =
+            typeof sessionId === 'string' && sessionId.trim().length > 0
+              ? sessionId
+              : null
+          this.lastErrorCode = 'mfa_required'
+          return { mfa_required: true, session_id: this.pendingMfaSessionId }
+        }
+
+        const { access, user, exp } = res || {}
+        this.setAuth({ access, user, exp })
+        try {
+          const { resetAuthDeath } = await import('../../../core/auth/onAuthDeath')
+          resetAuthDeath()
+        } catch {
+          /* not critical */
+        }
+        await this.postAuthInit()
+        await this.ensureCsrfToken()
+        this.startProactiveRefresh()
+        if (!this.user) {
+          await this.reloadUser()
+        }
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_SUCCESS,
+          userId: this.user?.id,
+          email: this.user?.email,
+          method: 'google_register',
+          isNewUser: Boolean(res?.is_new_user),
+          role,
+        })
+        return this.user
+      } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_FAILED,
+          method: 'google_register',
+          errorCode: error?.response?.data?.code || error?.response?.data?.error,
+          errorMessage: error?.response?.data?.message,
         })
         this.handleError(error)
         throw error

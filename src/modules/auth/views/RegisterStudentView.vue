@@ -187,6 +187,17 @@ async function onSubmit() {
 
 async function onGoogleSuccess(res) {
   googleErrorMessage.value = ''
+  // INV-OAUTH-9 v1.4 — staged. Якщо новий → автоматично register з role='student'.
+  if (res && typeof res === 'object' && res.registration_required) {
+    try {
+      await auth.completeGoogleRegistration(res.registration_token, 'student')
+      router.push('/')
+      return
+    } catch (e) {
+      onGoogleError(e)
+      return
+    }
+  }
   if (res && typeof res === 'object' && res.mfa_required) {
     router.push({ name: 'auth-login' })
     return

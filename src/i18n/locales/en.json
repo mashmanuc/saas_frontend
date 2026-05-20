@@ -714,6 +714,14 @@
       },
       "warning": {
         "emailMismatch": "Your Google email differs from your M4SH email — that's fine, both are kept."
+      },
+      "rolePicker": {
+        "title": "Choose account type",
+        "subtitle": "You're not registered yet. How will you use M4SH? ({email})",
+        "student": "I'm a student",
+        "studentHint": "Looking for a tutor, want to learn",
+        "tutor": "I'm a tutor",
+        "tutorHint": "I teach, looking for students. KYC verification after sign-up."
       }
     },
     "register": {

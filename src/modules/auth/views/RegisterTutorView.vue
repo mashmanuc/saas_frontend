@@ -67,6 +67,31 @@
       </Button>
     </form>
 
+    <!-- Google OAuth sign-up для тьютора (INV-OAUTH-9 v1.4: role переноситься у register endpoint).
+         KYC + phone verification — окремий onboarding після створення акаунта. -->
+    <div v-if="googleEnabled" class="space-y-3">
+      <div class="relative flex items-center" aria-hidden="true">
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
+          {{ $t('auth.login.orContinueWith') }}
+        </span>
+        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+      </div>
+      <GoogleSignInButton
+        mode="signup"
+        @success="onGoogleSuccess"
+        @error="onGoogleError"
+      />
+      <p
+        v-if="googleErrorMessage"
+        class="text-sm"
+        style="color: var(--danger, #d92d20);"
+        data-testid="register-tutor-google-error"
+      >
+        {{ googleErrorMessage }}
+      </p>
+    </div>
+
     <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.register.haveAccount') }}
       <RouterLink to="/auth/login?role=tutor" class="hover:underline font-medium" style="color: var(--accent);">
@@ -99,7 +124,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
@@ -107,6 +132,7 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
 const router = useRouter()
@@ -114,6 +140,10 @@ const { t } = useI18n()
 const auth = useAuthStore()
 
 const showErrorModal = ref(false)
+const googleErrorMessage = ref('')
+
+// INV-OAUTH-S4 gate: показуємо лише коли env налаштований
+const googleEnabled = computed(() => Boolean(import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID))
 
 watch(
   () => [auth.error, auth.lastErrorCode],
@@ -155,5 +185,57 @@ async function onSubmit() {
   } catch (error) {
     // помилка вже міститься у auth.error
   }
+}
+
+async function onGoogleSuccess(res) {
+  googleErrorMessage.value = ''
+  // INV-OAUTH-9 v1.4 — staged. Якщо новий → автоматично register з role='tutor'.
+  if (res && typeof res === 'object' && res.registration_required) {
+    try {
+      await auth.completeGoogleRegistration(res.registration_token, 'tutor')
+      router.push('/tutor/profile')
+      return
+    } catch (e) {
+      onGoogleError(e)
+      return
+    }
+  }
+  if (res && typeof res === 'object' && res.mfa_required) {
+    router.push({ name: 'auth-login' })
+    return
+  }
+  // Existing user — переходимо на tutor profile
+  router.push('/tutor/profile')
+}
+
+function onGoogleError(error) {
+  const code = error?.response?.data?.error || error?.code || ''
+  const status = error?.response?.status
+  let key = 'auth.oauth.error.unknown'
+  switch (code) {
+    case 'invalid_id_token':
+      key = 'auth.oauth.error.invalidToken'
+      break
+    case 'invalid_registration_token':
+      key = 'auth.oauth.error.invalidToken'
+      break
+    case 'account_deactivated':
+      key = 'auth.oauth.error.deactivated'
+      break
+    case 'account_exists_unverified':
+      key = 'auth.oauth.error.emailUnverified'
+      break
+    case 'cross_provider_merge_forbidden':
+      key = 'auth.oauth.error.crossProvider'
+      break
+    case 'google_verify_unavailable':
+      key = 'auth.oauth.error.googleUnavailable'
+      break
+    default:
+      if (status === 429) key = 'auth.oauth.error.throttled'
+      else if (status === 503) key = 'auth.oauth.error.googleUnavailable'
+      else if (error?.message === 'gis_load_failed') key = 'auth.oauth.error.scriptFailed'
+  }
+  googleErrorMessage.value = t(key)
 }
 </script>

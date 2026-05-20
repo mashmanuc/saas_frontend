@@ -187,6 +187,14 @@
     :on-fallback-to-otp="handleWebAuthnFallback"
     :on-cancel="handleWebAuthnCancel"
   />
+
+  <RolePickerModal
+    v-model="showRolePicker"
+    :registration-token="pendingRegistrationToken"
+    :claims-preview="pendingClaimsPreview"
+    @success="onRolePickerSuccess"
+    @cancel="onRolePickerCancel"
+  />
 </template>
 
 <script setup>
@@ -202,6 +210,7 @@ import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal
 import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 import UnlockConfirmModal from '../components/UnlockConfirmModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
+import RolePickerModal from '../components/RolePickerModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -219,6 +228,11 @@ const isBackupCodeMode = ref(false)
 const showWebAuthnPrompt = ref(false)
 const showUnlockModal = ref(false)
 const googleErrorMessage = ref('')
+
+// Staged registration state (INV-OAUTH-9 v1.4)
+const showRolePicker = ref(false)
+const pendingRegistrationToken = ref('')
+const pendingClaimsPreview = ref({})
 
 // Google OAuth доступний лише коли VITE_GOOGLE_OAUTH_CLIENT_ID сконфігуровано
 // (Phase 2 rollout — без env var кнопку не показуємо).
@@ -361,11 +375,21 @@ async function onSubmit() {
 /**
  * Google sign-in success handler.
  * `res` може бути:
- *   - user object (звичайний login)
+ *   - { registration_required: true, registration_token, claims_preview } — INV-OAUTH-9 v1.4
  *   - { mfa_required: true, session_id } — MFA flow
+ *   - user object (звичайний login)
  */
 async function onGoogleSuccess(res) {
   googleErrorMessage.value = ''
+
+  // INV-OAUTH-9 v1.4 — new user → відкриваємо role picker
+  if (res && typeof res === 'object' && res.registration_required) {
+    pendingRegistrationToken.value = res.registration_token || ''
+    pendingClaimsPreview.value = res.claims_preview || {}
+    showRolePicker.value = true
+    return
+  }
+
   if (res && typeof res === 'object' && res.mfa_required) {
     step.value = 'otp'
     otp.value = ''
@@ -382,6 +406,20 @@ async function onGoogleSuccess(res) {
     target = getDefaultRouteForRole(user?.role)
   }
   router.push(target)
+}
+
+async function onRolePickerSuccess(user) {
+  // user — результат completeGoogleRegistration
+  showRolePicker.value = false
+  pendingRegistrationToken.value = ''
+  pendingClaimsPreview.value = {}
+  const target = getDefaultRouteForRole(user?.role)
+  router.push(target)
+}
+
+function onRolePickerCancel() {
+  pendingRegistrationToken.value = ''
+  pendingClaimsPreview.value = {}
 }
 
 /**

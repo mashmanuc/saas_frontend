@@ -139,6 +139,13 @@ const authApi = {
     return api.post('/v1/auth/google', { id_token: idToken })
   },
 
+  googleRegister({ registrationToken, role }) {
+    return api.post('/v1/auth/google/register/', {
+      registration_token: registrationToken,
+      role,
+    })
+  },
+
   googleLink({ idToken }) {
     return api.post('/v1/auth/oauth/google/link/', { id_token: idToken })
   },
