@@ -67,8 +67,7 @@
       </Button>
     </form>
 
-    <!-- Google OAuth sign-up для тьютора (INV-OAUTH-9 v1.4: role переноситься у register endpoint).
-         KYC + phone verification — окремий onboarding після створення акаунта. -->
+    <!-- Google OAuth sign-up для тьютора (INV-OAUTH-9 v1.4: role переноситься у register endpoint). -->
     <div v-if="googleEnabled" class="space-y-3">
       <div class="relative flex items-center" aria-hidden="true">
         <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />

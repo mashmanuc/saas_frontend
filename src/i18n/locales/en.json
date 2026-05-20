@@ -721,7 +721,7 @@
         "student": "I'm a student",
         "studentHint": "Looking for a tutor, want to learn",
         "tutor": "I'm a tutor",
-        "tutorHint": "I teach, looking for students. KYC verification after sign-up."
+        "tutorHint": "I teach, looking for students"
       }
     },
     "register": {
