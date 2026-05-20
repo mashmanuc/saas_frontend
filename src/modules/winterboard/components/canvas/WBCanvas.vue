@@ -1400,16 +1400,19 @@ const konvaShapePreview = computed<{ type: string; config: Record<string, unknow
   return { type: '', config: {} }
 })
 
-// Soft selection transformer — indigo palette, subtle handles
+// Soft selection transformer — indigo palette, subtle handles.
+// On touch/stylus devices (maxTouchPoints > 0) we use larger anchors (20px)
+// so they can be grabbed with a finger or stylus on a multimedia board.
+const isTouchDevice = typeof window !== 'undefined' && navigator.maxTouchPoints > 0
 const transformerConfig = computed(() => ({
-  anchorSize: 9,
-  anchorCornerRadius: 2,
+  anchorSize: isTouchDevice ? 20 : 9,
+  anchorCornerRadius: isTouchDevice ? 4 : 2,
   anchorFill: '#ffffff',
   anchorStroke: 'rgba(99, 102, 241, 0.7)',
-  anchorStrokeWidth: 1.5,
+  anchorStrokeWidth: isTouchDevice ? 2 : 1.5,
   borderStroke: 'rgba(99, 102, 241, 0.45)',
   borderStrokeWidth: 1,
-  padding: 3,
+  padding: isTouchDevice ? 6 : 3,
   anchorShadowColor: 'rgba(99, 102, 241, 0.2)',
   anchorShadowBlur: 6,
   anchorShadowOffsetX: 0,
@@ -3254,9 +3257,14 @@ function handleAssetLiveTransform(asset: WBAsset, e: Konva.KonvaEventObject<Even
  *  transformOrigin:'0 0' = Konva's default rotation pivot (top-left of node).
  */
 function getOverlayStyle(asset: WBAsset): Record<string, string> {
+  // canvasOffset = pan/scroll state of the Konva stage (same offset applied to
+  // stage x/y in stageConfig). All other overlay helpers (badge, toolbar label)
+  // already include this offset — without it overlays drift away from their
+  // Konva proxy on large displays where panning is more frequent.
+  const { x: ox, y: oy } = wbStore.canvasOffset
   const lt = liveTransform.value?.id === asset.id ? liveTransform.value : null
-  const x = (lt?.x ?? asset.x) * props.zoom
-  const y = (lt?.y ?? asset.y) * props.zoom
+  const x = (lt?.x ?? asset.x) * props.zoom + ox
+  const y = (lt?.y ?? asset.y) * props.zoom + oy
   const w = (lt?.w ?? asset.w) * props.zoom
   const h = (lt?.h ?? asset.h) * props.zoom
   const r = lt?.rotation ?? asset.rotation ?? 0
