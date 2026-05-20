@@ -277,7 +277,7 @@
       @saved="onLessonEdited"
     />
 
-    <!-- Conduct lesson: select student dialog -->
+    <!-- Conduct lesson: mode picker (Solo / Classroom) + optional student dialog -->
     <Teleport to="body">
       <div
         v-if="conductTarget"
@@ -290,16 +290,77 @@
           </h3>
           <p class="text-sm text-gray-500 mb-4 truncate">{{ conductTarget.title }}</p>
 
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            {{ $t('winterboard.classroomHub.selectStudent') }}
+          <!-- Mode picker: Solo (default, no student, lighter load) / Classroom (with student) -->
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            {{ $t('winterboard.classroomHub.modePickerTitle') }}
           </label>
-          <select
-            v-model="conductStudentId"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 mb-4"
-          >
-            <option :value="null" disabled>{{ $t('winterboard.classroomHub.chooseStudent') }}</option>
-            <option v-for="s in conductStudents" :key="s.id" :value="s.id">{{ s.name }}</option>
-          </select>
+          <div class="space-y-2 mb-4">
+            <label
+              class="flex items-start gap-2 p-2 border rounded-lg cursor-pointer transition"
+              :class="conductMode === 'solo'
+                ? 'border-primary-500 bg-primary-50'
+                : 'border-gray-300 hover:bg-gray-50'"
+              data-mode="solo"
+            >
+              <input
+                type="radio"
+                v-model="conductMode"
+                value="solo"
+                class="mt-1"
+              />
+              <div class="flex-1">
+                <div class="text-sm font-medium text-gray-900">
+                  {{ $t('winterboard.classroomHub.modeSolo') }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ $t('winterboard.classroomHub.modeSoloHint') }}
+                </div>
+              </div>
+            </label>
+            <label
+              class="flex items-start gap-2 p-2 border rounded-lg cursor-pointer transition"
+              :class="conductMode === 'classroom'
+                ? 'border-primary-500 bg-primary-50'
+                : 'border-gray-300 hover:bg-gray-50'"
+              data-mode="classroom"
+            >
+              <input
+                type="radio"
+                v-model="conductMode"
+                value="classroom"
+                class="mt-1"
+              />
+              <div class="flex-1">
+                <div class="text-sm font-medium text-gray-900">
+                  {{ $t('winterboard.classroomHub.modeClassroom') }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ $t('winterboard.classroomHub.modeClassroomHint') }}
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Student picker shown ONLY when classroom mode is selected -->
+          <template v-if="conductMode === 'classroom'">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              {{ $t('winterboard.classroomHub.selectStudent') }}
+            </label>
+            <select
+              v-if="conductStudents.length > 0"
+              v-model="conductStudentId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 mb-4"
+            >
+              <option :value="null" disabled>{{ $t('winterboard.classroomHub.chooseStudent') }}</option>
+              <option v-for="s in conductStudents" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+            <p
+              v-else
+              class="text-sm text-amber-600 mb-4"
+            >
+              {{ $t('winterboard.classroomHub.noStudents') }}
+            </p>
+          </template>
 
           <div class="flex justify-end gap-3">
             <button
@@ -312,10 +373,10 @@
             <button
               type="button"
               class="px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
-              :disabled="!conductStudentId || conductingLessonId !== null"
+              :disabled="isStartDisabled"
               @click="executeConductLesson"
             >
-              {{ conductingLessonId ? '...' : $t('winterboard.classroomHub.startLesson') }}
+              {{ isStartLoading ? '...' : $t('winterboard.classroomHub.startLesson') }}
             </button>
           </div>
         </div>
@@ -362,7 +423,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
@@ -414,11 +475,26 @@ const previewingLessonId = ref<string | null>(null)
 const showEditDialog = ref(false)
 const editTarget = ref<MyLesson | null>(null)
 
-// Conduct lesson (template → student → classroom)
+// Conduct lesson: mode picker (solo without student / classroom with student)
+// + student id (only used when mode='classroom')
+type ConductMode = 'solo' | 'classroom'
 const conductTarget = ref<MyLesson | null>(null)
+const conductMode = ref<ConductMode>('solo')   // default: lighter solo path
 const conductStudentId = ref<number | null>(null)
 const conductingLessonId = ref<string | null>(null)
 const conductStudents = ref<Array<{ id: number; name: string }>>([])
+
+// Start button — disabled while any flow is in progress, OR if classroom
+// mode is selected and no student picked yet.
+const isStartLoading = computed<boolean>(() => {
+  return conductingLessonId.value !== null
+    || loadingLessonId.value === conductTarget.value?.id
+})
+const isStartDisabled = computed<boolean>(() => {
+  if (isStartLoading.value) return true
+  if (conductMode.value === 'classroom' && !conductStudentId.value) return true
+  return false
+})
 
 const PAGE_SIZE = 20
 
@@ -728,16 +804,29 @@ async function loadConductStudents(): Promise<void> {
 }
 
 function conductLesson(lesson: MyLesson): void {
-  if (conductStudents.value.length === 0) {
-    loadError.value = t('winterboard.classroomHub.loadError')
-    return
-  }
+  // Modal opens for BOTH modes — student-list emptiness is surfaced inside
+  // the classroom branch of the modal, not as a hard guard. Solo path does
+  // not require any students.
   conductTarget.value = lesson
+  conductMode.value = 'solo'           // default to lighter path
   conductStudentId.value = null
 }
 
 async function executeConductLesson(): Promise<void> {
-  if (!conductTarget.value || !conductStudentId.value) return
+  if (!conductTarget.value) return
+
+  // Solo branch: reuse existing openLesson() — orphaned WBSession via
+  // lessonViewApi.loadToSession + redirect to /winterboard/{sessionId}.
+  if (conductMode.value === 'solo') {
+    const lesson = conductTarget.value
+    conductTarget.value = null
+    await openLesson(lesson)
+    return
+  }
+
+  // Classroom branch — student must be picked, lessonsApi.quickStart
+  // creates Lesson + WBSession + classroom redirect.
+  if (!conductStudentId.value) return
   conductingLessonId.value = conductTarget.value.id
 
   try {
