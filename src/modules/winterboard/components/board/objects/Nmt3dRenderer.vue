@@ -6,10 +6,11 @@
 
   POINTER-EVENTS MODEL:
     - Root = pointer-events:none → Konva proxy catches drag/select.
-    - Stage div = pointer-events:auto ONLY when interactive=true AND isSelected=true.
-        - Not selected → clicks fall through to Konva → Konva selects the asset.
-        - Selected    → stage captures events → 3D orbit / draw strokes work.
+    - Stage div = pointer-events:auto when (interactive AND isSelected) OR isExpanded.
+        - Not selected, not expanded → clicks fall through to Konva → selection.
+        - Selected or expanded → stage captures events → 3D orbit / draw strokes.
     - Header = pointer-events:none (falls through to Konva for card drag).
+    - Expand button = pointer-events:auto (always — CSS override on header).
     - Mode toggle + delete = pointer-events:auto ONLY when isSelected=true.
     - Non-interactive (read-only / pen mode): stage = pointer-events:none always.
 -->
@@ -19,12 +20,23 @@
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
+      'is-expanded': isExpanded,
     }"
     :data-testid="`nmt3d-renderer-${asset.id}`"
   >
     <!-- Header — pointer-events:none so card dragging works outside mode toggle -->
     <header class="nmt3d-header">
       <span class="nmt3d-card-title">{{ cardTitle }}</span>
+
+      <!-- Expand / collapse — always visible, pointer-events:auto overrides header none -->
+      <button
+        type="button"
+        class="nmt3d-expand-btn"
+        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="$emit('expand')"
+        @mousedown.stop
+        @pointerdown.stop
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
 
       <!-- Mode toggle — only visible when interactive AND this object is selected -->
       <div v-if="interactive && isSelected" class="nmt3d-mode-toggle" @mousedown.stop @pointerdown.stop>
@@ -49,9 +61,9 @@
         {{ localMode === 'draw' ? '✎ малювання' : '⚙ адаптація' }}
       </span>
 
-      <!-- Delete (selected + not locked) -->
+      <!-- Delete (selected + not locked + not expanded) -->
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!asset.locked && isSelected && !isExpanded"
         type="button"
         class="nmt3d-delete"
         title="Видалити"
@@ -71,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
 import { NMT3D_TEMPLATE_LABELS } from '../../../constants/nmt3dDefaults'
 import { registerNmt3dWorkspace, unregisterNmt3dWorkspace, nmt3dUiState } from '../../../board/state/nmt3dUiState'
@@ -81,13 +93,15 @@ const props = withDefaults(
     asset: Nmt3dAsset
     isSelected?: boolean
     interactive?: boolean
+    isExpanded?: boolean
   }>(),
-  { isSelected: false, interactive: true },
+  { isSelected: false, interactive: true, isExpanded: false },
 )
 
 const emit = defineEmits<{
   'update:asset': [asset: Nmt3dAsset]
   delete: []
+  expand: []
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -170,10 +184,30 @@ function destroyWs(): void {
   }
 }
 
-onMounted(() => { void mount() })
+// ESC — collapse expanded overlay (mirrors TrigCircleRenderer)
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
+
+onMounted(() => {
+  void mount()
+  window.addEventListener('keydown', _onEsc)
+})
 onUnmounted(() => {
+  window.removeEventListener('keydown', _onEsc)
   unregisterNmt3dWorkspace(props.asset.id)
   destroyWs()
+})
+
+// Notify NMT3D engine after expand/collapse so it can resize its SVG
+watch(() => props.isExpanded, () => {
+  if (!ws) return
+  nextTick(() => {
+    // NMT3D engine may expose resize(); if not, trigger a window resize event
+    if (typeof ws.resize === 'function') {
+      ws.resize()
+    } else {
+      window.dispatchEvent(new Event('resize'))
+    }
+  })
 })
 
 // ── Pointer-events sync ────────────────────────────────────────────────────
@@ -194,7 +228,7 @@ function syncCanvasPointerEvents(): void {
   const el = stageRef.value
   if (!el) return
 
-  if (props.interactive && props.isSelected) {
+  if (props.interactive && (props.isSelected || props.isExpanded)) {
     // Enable: stage = auto; clear our forced 'none' from children
     ;(el as HTMLElement).style.pointerEvents = 'auto'
     el.querySelectorAll<HTMLElement>('*').forEach((child) => {
@@ -209,7 +243,7 @@ function syncCanvasPointerEvents(): void {
   }
 }
 
-watch(() => [props.interactive, props.isSelected] as const, syncCanvasPointerEvents)
+watch(() => [props.interactive, props.isSelected, props.isExpanded] as const, syncCanvasPointerEvents)
 
 // Register/unregister inspector when selection changes.
 // syncCanvasPointerEvents is already called by the [interactive, isSelected] watcher above.
@@ -301,8 +335,8 @@ watch(
   padding: 2px;
   gap: 2px;
   pointer-events: auto;
-  margin-left: auto;
   flex-shrink: 0;
+  /* no margin-left:auto — expand button already pushes right with its own margin-left:auto */
 }
 
 .nmt3d-mode-btn {
@@ -335,6 +369,33 @@ watch(
   color: #9a8674;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+/* ── Expand button ── */
+.nmt3d-expand-btn {
+  background: transparent;
+  border: 1px solid #d6c8b2;
+  border-radius: 4px;
+  color: #9a8674;
+  font-size: 13px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  pointer-events: auto;  /* overrides header pointer-events:none */
+  padding: 0;
+  margin-left: auto;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.nmt3d-expand-btn:hover {
+  background: #ede3d0;
+  border-color: #c4622a;
+  color: #c4622a;
 }
 
 /* ── Delete button ── */
@@ -389,5 +450,26 @@ watch(
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* ── Board-expanded state ── */
+.nmt3d-renderer.is-expanded {
+  border-radius: 0;
+}
+
+.nmt3d-renderer.is-expanded .nmt3d-header {
+  cursor: default;
+  padding: 5px 12px;
+  background: rgba(196, 98, 42, 0.10);
+}
+
+.nmt3d-renderer.is-expanded .nmt3d-expand-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+
+.nmt3d-renderer.is-expanded .nmt3d-mode-toggle {
+  margin-left: 8px;  /* expand button already took margin-left:auto */
 }
 </style>

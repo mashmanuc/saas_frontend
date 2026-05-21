@@ -460,23 +460,29 @@
     </template>
 
     <!-- NMT3D (2026-05-21): nmt3d overlay — parametric 3D stereometry (§3.7.8).
-         Mirror .wb-trig-solver-overlay pattern. Konva proxy underneath catches
-         drag/resize/select. Stage div inside NMT3D opts into pointer-events:auto
-         for 3D orbit + draw mode strokes. -->
+         Mirror .wb-trig-circle-overlay pattern. Konva proxy underneath catches
+         drag/resize/select. Expand: overlay fills canvas (position:absolute inset:0). -->
     <template v-for="asset in nmt3dAssets" :key="`nmt3d-${asset.id}`">
       <div
         class="wb-nmt3d-overlay"
-        :class="{ 'wb-nmt3d-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :class="{
+          'wb-nmt3d-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
         :data-nmt3d-id="asset.id"
         :data-testid="`nmt3d-overlay-${asset.id}`"
-        :style="getOverlayStyle(asset)"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : getOverlayStyle(asset)"
       >
         <Nmt3dRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
         />
       </div>
     </template>
