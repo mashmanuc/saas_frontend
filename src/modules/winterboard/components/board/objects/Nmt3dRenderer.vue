@@ -177,18 +177,36 @@ onUnmounted(() => {
 })
 
 // ── Pointer-events sync ────────────────────────────────────────────────────
-// Stage captures events ONLY when interactive=true AND isSelected=true:
-//   - Not selected → pointer-events:none → click falls through to Konva → selection
-//   - Not interactive → pointer-events:none → pen strokes / read-only mode pass through
-//   - Interactive + selected → pointer-events:auto → 3D orbit / draw strokes work
+// Stage captures events ONLY when interactive=true AND isSelected=true.
+//
+// IMPORTANT — two separate branches:
+//
+//   ENABLE (interactive + selected):
+//     • Stage inline style → 'auto' (overrides CSS default 'none').
+//     • Children → clear inline 'none' (remove inline style = '').
+//       NMT3D engine sets its own pointer-events on SVG handles (e.g. 'all');
+//       we MUST NOT overwrite them — just remove our own forced 'none'.
+//
+//   DISABLE (not interactive OR not selected):
+//     • Stage + all children → forced 'none'.
+//       Must block NMT3D's own interactive SVG elements too.
 function syncCanvasPointerEvents(): void {
   const el = stageRef.value
   if (!el) return
-  const val = (props.interactive && props.isSelected) ? '' : 'none'
-  ;(el as HTMLElement).style.pointerEvents = val
-  el.querySelectorAll<HTMLElement>('*').forEach((child) => {
-    child.style.pointerEvents = val
-  })
+
+  if (props.interactive && props.isSelected) {
+    // Enable: stage = auto; clear our forced 'none' from children
+    ;(el as HTMLElement).style.pointerEvents = 'auto'
+    el.querySelectorAll<HTMLElement>('*').forEach((child) => {
+      child.style.pointerEvents = ''  // remove inline → NMT3D engine's own values apply
+    })
+  } else {
+    // Disable: block everything (including NMT3D's SVG handles)
+    ;(el as HTMLElement).style.pointerEvents = 'none'
+    el.querySelectorAll<HTMLElement>('*').forEach((child) => {
+      child.style.pointerEvents = 'none'
+    })
+  }
 }
 
 watch(() => [props.interactive, props.isSelected] as const, syncCanvasPointerEvents)
