@@ -9,8 +9,8 @@
  *   'adapt' — 3D orbit + drag handles (parametric; shape stays natural)
  *   'draw'  — shape frozen, pen layer for writing over it
  *
- * Persistent state: templateKey + mode only.
- * Camera angles, params, drawn strokes — ephemeral (reset on reopen).
+ * Persistent state: templateKey + mode + params + opts.
+ * Camera angles, drawn strokes — ephemeral (reset on reopen).
  */
 
 import type { WBAsset } from './winterboard'
@@ -21,6 +21,10 @@ export interface Nmt3dData {
   templateKey: string
   /** 'adapt' = parametric + orbit; 'draw' = frozen + pen layer */
   mode: 'adapt' | 'draw'
+  /** Current parameter values (a, b, h, …). Persisted so shape is restored on reopen. */
+  params?: Record<string, number>
+  /** Current aux construction toggles. Persisted. */
+  opts?: Record<string, boolean>
 }
 
 export interface Nmt3dDragPayload {

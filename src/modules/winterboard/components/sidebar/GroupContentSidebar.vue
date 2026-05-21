@@ -13,6 +13,12 @@
       </div>
     </Transition>
 
+    <!-- NMT3D Inspector — shows when an NMT3D asset is selected; replaces tabs -->
+    <Nmt3dInspector v-if="nmt3dUiState.ws" />
+
+    <!-- Normal sidebar content (tabs + materials/tools) -->
+    <template v-else>
+
     <!-- Tab switcher -->
     <div class="content-sidebar__tabs" role="tablist">
       <button
@@ -181,6 +187,8 @@
       </div>
     </template>
 
+    </template><!-- /v-else (normal sidebar, no NMT3D active) -->
+
   </div>
 </template>
 
@@ -195,6 +203,8 @@ import ContentSidebarItem from './ContentSidebarItem.vue'
 import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 // NMT3D (2026-05-21): 21 parametric 3D stereometry templates (replaces Phase O SolidsTray)
 import Nmt3dTray from './Nmt3dTray.vue'
+import Nmt3dInspector from './Nmt3dInspector.vue'
+import { nmt3dUiState } from '../../board/state/nmt3dUiState'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray

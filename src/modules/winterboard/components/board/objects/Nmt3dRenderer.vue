@@ -72,6 +72,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
 import { NMT3D_TEMPLATE_LABELS } from '../../../constants/nmt3dDefaults'
+import { registerNmt3dWorkspace, unregisterNmt3dWorkspace, nmt3dUiState } from '../../../board/state/nmt3dUiState'
 
 const props = withDefaults(
   defineProps<{
@@ -124,7 +125,40 @@ async function mount(): Promise<void> {
 
   ws = new W.NMT3D.Workspace(stageRef.value, props.asset.data.templateKey)
   ws.setMode(localMode.value)
+
+  // Restore persisted params + opts (if saved)
+  if (props.asset.data.params) ws.setParams(props.asset.data.params)
+  if (props.asset.data.opts) {
+    for (const [k, v] of Object.entries(props.asset.data.opts)) ws.setOpt(k, v)
+  }
+
+  // Persist params changes to store via update:asset
+  ws.onParamsChanged = (params: Record<string, number>) => {
+    nmt3dUiState.latestParams = { ...params }
+    emit('update:asset', {
+      ...props.asset,
+      data: { ...props.asset.data, params: { ...params } },
+    })
+  }
+
   syncCanvasPointerEvents()
+
+  // Register for inspector if already selected when mounted
+  if (props.isSelected) _registerInspector()
+}
+
+function _registerInspector(): void {
+  if (!ws) return
+  registerNmt3dWorkspace(
+    props.asset.id,
+    ws,
+    (opts) => {
+      emit('update:asset', {
+        ...props.asset,
+        data: { ...props.asset.data, opts },
+      })
+    },
+  )
 }
 
 function destroyWs(): void {
@@ -135,7 +169,10 @@ function destroyWs(): void {
 }
 
 onMounted(() => { void mount() })
-onUnmounted(() => destroyWs())
+onUnmounted(() => {
+  unregisterNmt3dWorkspace(props.asset.id)
+  destroyWs()
+})
 
 // ── Pointer-events sync (draw mode isolation) ─────────────────────────────
 // When interactive=false (pen/draw tool active), stage must not capture events.
@@ -150,6 +187,12 @@ function syncCanvasPointerEvents(): void {
 }
 
 watch(() => props.interactive, syncCanvasPointerEvents)
+
+// Register/unregister inspector when selection changes
+watch(() => props.isSelected, (sel) => {
+  if (sel) _registerInspector()
+  else unregisterNmt3dWorkspace(props.asset.id)
+})
 
 // ── Mode toggle ──────────────────────────────────────────────────────────────
 function setMode(m: 'adapt' | 'draw'): void {
