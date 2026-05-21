@@ -174,7 +174,7 @@
     <!-- ── ІНСТРУМЕНТИ tab ── -->
     <template v-else>
       <div class="content-sidebar__tools-tab">
-        <SolidsTray />
+        <Nmt3dTray />
         <Geometry2DTray />
         <CalculusTray />
         <TrigCircleTray />
@@ -193,7 +193,8 @@ import { useWBStore } from '../../board/state/boardStore'
 import { fetchFoldersTree } from '../../api/library'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import LibraryFolderTree from '../library/LibraryFolderTree.vue'
-import SolidsTray from './SolidsTray.vue'
+// NMT3D (2026-05-21): 21 parametric 3D stereometry templates (replaces Phase O SolidsTray)
+import Nmt3dTray from './Nmt3dTray.vue'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray
