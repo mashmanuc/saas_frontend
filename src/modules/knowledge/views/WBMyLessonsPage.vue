@@ -164,16 +164,6 @@
                   </button>
                   <button
                     type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    :disabled="loadingLessonId === lesson.id"
-                    @click="openLesson(lesson)"
-                  >
-                    {{ loadingLessonId === lesson.id
-                      ? $t('knowledge.lesson.reuse.loading')
-                      : $t('knowledge.lesson.reuse.useLesson') }}
-                  </button>
-                  <button
-                    type="button"
                     class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     :title="$t('knowledge.lesson.share.shareLesson')"
                     :disabled="sharingInProgress[lesson.id]"
