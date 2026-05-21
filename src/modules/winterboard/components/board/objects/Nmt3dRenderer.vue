@@ -4,12 +4,14 @@
   Mounts window.NMT3D.Workspace on stageRef.
   Two modes: 'adapt' (3D orbit + parametric handles) / 'draw' (frozen shape + pen layer).
 
-  POINTER-EVENTS MODEL (mirrors HelixRenderer):
+  POINTER-EVENTS MODEL:
     - Root = pointer-events:none → Konva proxy catches drag/select.
-    - Stage div = pointer-events:auto (3D orbit + draw strokes).
+    - Stage div = pointer-events:auto ONLY when interactive=true AND isSelected=true.
+        - Not selected → clicks fall through to Konva → Konva selects the asset.
+        - Selected    → stage captures events → 3D orbit / draw strokes work.
     - Header = pointer-events:none (falls through to Konva for card drag).
-    - Mode toggle + delete = pointer-events:auto when interactive/selected.
-    - Read-only mode: stage = pointer-events:none (pen strokes pass through).
+    - Mode toggle + delete = pointer-events:auto ONLY when isSelected=true.
+    - Non-interactive (read-only / pen mode): stage = pointer-events:none always.
 -->
 <template>
   <div
@@ -24,8 +26,8 @@
     <header class="nmt3d-header">
       <span class="nmt3d-card-title">{{ cardTitle }}</span>
 
-      <!-- Mode toggle — opt into pointer-events when interactive -->
-      <div v-if="interactive" class="nmt3d-mode-toggle" @mousedown.stop @pointerdown.stop>
+      <!-- Mode toggle — only visible when interactive AND this object is selected -->
+      <div v-if="interactive && isSelected" class="nmt3d-mode-toggle" @mousedown.stop @pointerdown.stop>
         <button
           type="button"
           class="nmt3d-mode-btn"
@@ -174,21 +176,25 @@ onUnmounted(() => {
   destroyWs()
 })
 
-// ── Pointer-events sync (draw mode isolation) ─────────────────────────────
-// When interactive=false (pen/draw tool active), stage must not capture events.
+// ── Pointer-events sync ────────────────────────────────────────────────────
+// Stage captures events ONLY when interactive=true AND isSelected=true:
+//   - Not selected → pointer-events:none → click falls through to Konva → selection
+//   - Not interactive → pointer-events:none → pen strokes / read-only mode pass through
+//   - Interactive + selected → pointer-events:auto → 3D orbit / draw strokes work
 function syncCanvasPointerEvents(): void {
   const el = stageRef.value
   if (!el) return
-  const val = props.interactive ? '' : 'none'
+  const val = (props.interactive && props.isSelected) ? '' : 'none'
   ;(el as HTMLElement).style.pointerEvents = val
   el.querySelectorAll<HTMLElement>('*').forEach((child) => {
     child.style.pointerEvents = val
   })
 }
 
-watch(() => props.interactive, syncCanvasPointerEvents)
+watch(() => [props.interactive, props.isSelected] as const, syncCanvasPointerEvents)
 
-// Register/unregister inspector when selection changes
+// Register/unregister inspector when selection changes.
+// syncCanvasPointerEvents is already called by the [interactive, isSelected] watcher above.
 watch(() => props.isSelected, (sel) => {
   if (sel) _registerInspector()
   else unregisterNmt3dWorkspace(props.asset.id)
@@ -348,7 +354,9 @@ watch(
   background-size: 22px 22px;
   background-position: center;
   cursor: grab;
-  pointer-events: auto;
+  /* Default: none — clicks fall through to Konva for selection.
+     syncCanvasPointerEvents() sets 'auto' via inline style when interactive+selected. */
+  pointer-events: none;
   touch-action: none;
   position: relative;
 }
@@ -356,11 +364,6 @@ watch(
 /* Stage in draw mode — crosshair cursor */
 .nmt3d-renderer:has(.nmt3d-mode-btn.is-active:last-child) .nmt3d-stage {
   cursor: crosshair;
-}
-
-/* Read-only: stage pointer-events managed by syncCanvasPointerEvents() */
-.nmt3d-renderer.is-readonly .nmt3d-stage {
-  pointer-events: none;
 }
 
 /* NMT3D injects its SVG into the stage div — fill available space */
