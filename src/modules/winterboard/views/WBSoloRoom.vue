@@ -103,6 +103,7 @@
           type="button"
           class="wb-header-btn wb-header-btn--invite"
           :title="t('winterboard.startClassroom.button')"
+          :aria-label="t('winterboard.startClassroom.button')"
           @click="showInviteStudentModal = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -110,7 +111,6 @@
             <path d="M1 14c0-2.2 1.8-4 4-4h4c.7 0 1.4.2 2 .5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          {{ t('winterboard.startClassroom.button') }}
         </button>
         <button
           type="button"
@@ -3160,11 +3160,6 @@ watch(() => store.workspaceName, (name) => {
 }
 
 .wb-header-btn--invite {
-  width: auto;
-  padding: 0 12px;
-  gap: 6px;
-  font-size: 0.8125rem;
-  font-weight: 600;
   background: var(--wb-accent, #6366f1);
   color: #fff;
 }
