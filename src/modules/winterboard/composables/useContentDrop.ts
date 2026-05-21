@@ -66,6 +66,15 @@ import {
   type TrigSolverDragPayload,
 } from '../constants/trigSolverDefaults'
 import type { TrigSolverAsset } from '../types/trigSolver'
+// NMT3D (2026-05-21) — §3.7.8 parametric 3D stereometry widget drop wiring.
+import {
+  NMT3D_DRAG_MIME,
+  DEFAULT_NMT3D_W,
+  DEFAULT_NMT3D_H,
+  buildDefaultNmt3dData,
+  type Nmt3dDragPayload,
+} from '../constants/nmt3dDefaults'
+import type { Nmt3dAsset } from '../types/nmt3d'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -247,6 +256,28 @@ export function useContentDrop(options: UseContentDropOptions) {
         w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
         data: buildDefaultTrigSolverData(funcType),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    // NMT3D (2026-05-21) — §3.7.8 parametric 3D stereometry widget drag.
+    // Payload {templateKey}; default data hydrates via buildDefaultNmt3dData.
+    // 1 drop = 1 asset_add = 1 broadcast (INV-13 ATOMIC-APPLY).
+    const nmt3dRaw = event.dataTransfer?.getData(NMT3D_DRAG_MIME)
+    if (nmt3dRaw) {
+      let parsed: Nmt3dDragPayload
+      try { parsed = JSON.parse(nmt3dRaw) as Nmt3dDragPayload } catch { return }
+      if (!parsed?.templateKey || typeof parsed.templateKey !== 'string') return
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: Nmt3dAsset = {
+        id: `nmt3d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'nmt3d', src: '',
+        x: canvasPos.x - DEFAULT_NMT3D_W / 2,
+        y: canvasPos.y - DEFAULT_NMT3D_H / 2,
+        w: DEFAULT_NMT3D_W, h: DEFAULT_NMT3D_H,
+        rotation: 0, locked: false,
+        data: buildDefaultNmt3dData(parsed.templateKey),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return
@@ -1026,6 +1057,22 @@ export function useContentDrop(options: UseContentDropOptions) {
         w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
         data: buildDefaultTrigSolverData(funcType),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    if (mime === NMT3D_DRAG_MIME) {
+      let parsed: Nmt3dDragPayload
+      try { parsed = JSON.parse(payloadStr) as Nmt3dDragPayload } catch { return }
+      if (!parsed?.templateKey || typeof parsed.templateKey !== 'string') return
+      const asset: Nmt3dAsset = {
+        id: `nmt3d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'nmt3d', src: '',
+        x: pos.x - DEFAULT_NMT3D_W / 2, y: pos.y - DEFAULT_NMT3D_H / 2,
+        w: DEFAULT_NMT3D_W, h: DEFAULT_NMT3D_H,
+        rotation: 0, locked: false,
+        data: buildDefaultNmt3dData(parsed.templateKey),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return

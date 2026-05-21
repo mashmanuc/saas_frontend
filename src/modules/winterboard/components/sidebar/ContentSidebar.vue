@@ -47,12 +47,10 @@
         </span>
       </div>
 
-      <!-- Phase O PR-O4.1 P0: Геометричні фігури — drag source tray (always visible at top) -->
+      <!-- NMT3D (2026-05-21): Стереометрія НМТ — 21 параметричний 3D шаблон.
+           Замінює Phase O geometry_solid (Three.js WebGL) → SVG-based NMT3D engine. -->
       <div class="content-sidebar__solids-section">
-        <div class="content-sidebar__group-header">
-          {{ t('winterboard.contentSidebar.solidsHeader') }}
-        </div>
-        <SolidsTray />
+        <Nmt3dTray />
       </div>
 
       <!-- Phase G (2026-05-06): graph_calculator drag source tray (interactive widget). -->
@@ -173,7 +171,8 @@ import { useContentSidebar } from '../../composables/useContentSidebar'
 import { parseYouTubeVideoId } from '../../utils/youtubeParser'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import MaterialsBrowser from './MaterialsBrowser.vue'
-import SolidsTray from './SolidsTray.vue'
+// NMT3D (2026-05-21): 21 parametric 3D stereometry templates (replaces Phase O SolidsTray)
+import Nmt3dTray from './Nmt3dTray.vue'
 // Phase G (2026-05-06): graph_calculator interactive widget tray
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)

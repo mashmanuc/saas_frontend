@@ -459,6 +459,28 @@
       </div>
     </template>
 
+    <!-- NMT3D (2026-05-21): nmt3d overlay — parametric 3D stereometry (§3.7.8).
+         Mirror .wb-trig-solver-overlay pattern. Konva proxy underneath catches
+         drag/resize/select. Stage div inside NMT3D opts into pointer-events:auto
+         for 3D orbit + draw mode strokes. -->
+    <template v-for="asset in nmt3dAssets" :key="`nmt3d-${asset.id}`">
+      <div
+        class="wb-nmt3d-overlay"
+        :class="{ 'wb-nmt3d-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-nmt3d-id="asset.id"
+        :data-testid="`nmt3d-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <Nmt3dRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- Strokes overlay: mirrors the Konva strokesLayer ABOVE widget overlays
          (z-index 6 > widget overlay z-index 4-5) when the user is in draw/pen/
          eraser mode. Committed strokes on the Konva canvas (z-index 0) would be
@@ -631,6 +653,8 @@ import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
 import HelixRenderer from '../board/objects/HelixRenderer.vue'
 // TrigSolver (2026-05-19): unified trig equation + inequality solver (§3.7.7)
 import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
+// NMT3D (2026-05-21): parametric 3D stereometry widget (§3.7.8)
+import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -745,6 +769,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'trig_circle',       // §3.7.5 — Trig unit circle              → TrigCircleRenderer
   'helix',             // §3.7.6 — 3D helix                      → HelixRenderer
   'trig_solver',       // §3.7.7 — Unified trig eq+ineq solver   → TrigSolverRenderer
+  'nmt3d',            // §3.7.8 — Parametric 3D stereometry     → Nmt3dRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -756,6 +781,7 @@ const calculusAssets       = computed(() => assets.value.filter(a => a.type === 
 const trigCircleAssets     = computed(() => assets.value.filter(a => a.type === 'trig_circle'))
 const helixAssets          = computed(() => assets.value.filter(a => a.type === 'helix'))
 const trigSolverAssets     = computed(() => assets.value.filter(a => a.type === 'trig_solver'))
+const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 'nmt3d'))
 
 // Expand-to-board: одночасно може бути розгорнутий тільки один asset.
 // Зберігає id розгорнутого asset, null = нічого не розгорнуто.
@@ -4709,6 +4735,21 @@ defineExpose({
 }
 .wb-trig-solver-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
+  box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
+}
+
+/* NMT3D (§3.7.8) — parametric 3D stereometry card, warm paper border.
+   Mirror .wb-trig-solver-overlay — pointer-events:none, Konva proxy below. */
+.wb-nmt3d-overlay {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid #d6c8b2;
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-nmt3d-overlay--selected {
+  border-color: #c4622a;
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
 </style>

@@ -205,6 +205,8 @@ export interface WBAsset {
     | 'helix'
     /** TrigSolver (2026-05-19) — unified trig equation + inequality solver card (§3.7.7). */
     | 'trig_solver'
+    /** NMT3D (2026-05-21) — parametric 3D stereometry widget (21 templates, adapt/draw modes). */
+    | 'nmt3d'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -294,6 +296,7 @@ export interface WBAsset {
     | import('./trigCircle').TrigCircleData
     | import('./helix').HelixData
     | import('./trigSolver').TrigSolverData
+    | import('./nmt3d').Nmt3dData
 }
 
 /**
