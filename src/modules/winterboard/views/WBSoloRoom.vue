@@ -52,6 +52,28 @@
         </span>
       </div>
 
+      <!-- Undo / Redo — поруч із назвою (editing context) -->
+      <div class="wb-solo-room__history">
+        <button
+          type="button"
+          class="wb-header-btn"
+          :disabled="!store.canUndo"
+          :title="t('winterboard.room.undoShortcut')"
+          @click="handleUndo"
+        >
+          ↩
+        </button>
+        <button
+          type="button"
+          class="wb-header-btn"
+          :disabled="!store.canRedo"
+          :title="t('winterboard.room.redoShortcut')"
+          @click="handleRedo"
+        >
+          ↪
+        </button>
+      </div>
+
       <!-- Phase 16 INT-33: Session context bar -->
       <div v-if="sessionContextLabel" class="wb-solo-room__context">
         <span class="wb-solo-room__context-dot" />
@@ -111,24 +133,6 @@
             <path d="M1 14c0-2.2 1.8-4 4-4h4c.7 0 1.4.2 2 .5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-        </button>
-        <button
-          type="button"
-          class="wb-header-btn"
-          :disabled="!store.canUndo"
-          :title="t('winterboard.room.undoShortcut')"
-          @click="handleUndo"
-        >
-          ↩
-        </button>
-        <button
-          type="button"
-          class="wb-header-btn"
-          :disabled="!store.canRedo"
-          :title="t('winterboard.room.redoShortcut')"
-          @click="handleRedo"
-        >
-          ↪
         </button>
         <!-- Phase B: Share replay — показуємо коли є контент (ops створять replay автоматично) -->
         <button
@@ -3127,6 +3131,13 @@ watch(() => store.workspaceName, (name) => {
 
 .wb-follow-stop-btn:hover {
   background: rgba(239, 68, 68, 0.6);
+}
+
+.wb-solo-room__history {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .wb-solo-room__actions {
