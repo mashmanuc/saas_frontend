@@ -9,25 +9,38 @@
 <template>
   <div class="gc-tray" data-testid="graph-calculator-tray">
     <div class="gc-tray__header">{{ t('winterboard.contentSidebar.interactiveHeader') }}</div>
-    <button
-      type="button"
-      class="gc-tray__btn"
-      data-testid="graph-calculator-tray-btn"
-      :draggable="true"
-      :title="t('winterboard.contentSidebar.graphCalcLabel')"
-      @dragstart="onDragStart"
-    >
-      <span class="gc-tray__icon">f(x)</span>
-      <span class="gc-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
-    </button>
+    <div class="gc-tray__card-wrap">
+      <button
+        type="button"
+        class="gc-tray__btn"
+        data-testid="graph-calculator-tray-btn"
+        :draggable="true"
+        :title="t('winterboard.contentSidebar.graphCalcLabel')"
+        @dragstart="onDragStart"
+        v-bind="dragHandlers(GRAPH_CALCULATOR_MIME, '{}', t('winterboard.contentSidebar.graphCalcLabel'))"
+      >
+        <span class="gc-tray__icon">f(x)</span>
+        <span class="gc-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
+      </button>
+      <button
+        type="button"
+        class="tray-add-btn"
+        :title="`Додати «${t('winterboard.contentSidebar.graphCalcLabel')}» на дошку`"
+        @click.stop="addToolToBoard(GRAPH_CALCULATOR_MIME, '{}')"
+      >+</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { GRAPH_CALCULATOR_MIME } from '../../constants/graphCalculatorDefaults'
+import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
 const { t } = useI18n()
+const addToolToBoard = useAddToolToBoard()
+const { dragHandlers } = useTouchDragFromTray()
 
 function onDragStart(e: DragEvent): void {
   if (!e.dataTransfer) return
@@ -55,6 +68,14 @@ function onDragStart(e: DragEvent): void {
   letter-spacing: 0.04em;
 }
 
+.gc-tray__card-wrap {
+  position: relative;
+}
+
+.gc-tray__card-wrap .gc-tray__btn {
+  width: 100%;
+}
+
 .gc-tray__btn {
   display: flex;
   align-items: center;
@@ -65,8 +86,44 @@ function onDragStart(e: DragEvent): void {
   background: #f8fafc;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
+}
+
+.tray-add-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  background: #f5f3ff;
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, border-color 0.12s, color 0.12s;
+  pointer-events: none;
+}
+
+.gc-tray__card-wrap:hover .tray-add-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tray-add-btn:hover {
+  background: #ede9fe;
+  border-color: #818cf8;
+  color: #4338ca;
 }
 
 .gc-tray__btn:hover {
@@ -92,5 +149,28 @@ function onDragStart(e: DragEvent): void {
   font-size: 12px;
   color: #1e293b;
   line-height: 1.2;
+}
+
+/* ── Touch / coarse pointer ── */
+@media (pointer: coarse) {
+  .tray-add-btn {
+    opacity: 1;
+    pointer-events: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .gc-tray__btn {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .gc-tray__label {
+    font-size: 13px;
+  }
 }
 </style>

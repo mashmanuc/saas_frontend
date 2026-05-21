@@ -28,6 +28,7 @@
           :draggable="true"
           :title="solidName(item)"
           @dragstart="onDragStart($event, item.type)"
+          v-bind="dragHandlers(SOLID_DRAG_MIME, JSON.stringify({ src: item.type }), solidName(item))"
         >
           <span class="solids-tray__icon" aria-hidden="true">
             <SolidIcon :type="item.type" />
@@ -55,8 +56,10 @@ import {
 } from '../../constants/solidDefaults'
 import type { SolidType } from '../../types/winterboard'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
 const addToolToBoard = useAddToolToBoard()
+const { dragHandlers } = useTouchDragFromTray()
 
 const { t, te } = useI18n()
 const items = SOLID_TYPES
@@ -191,6 +194,7 @@ const SolidIcon: FunctionalComponent<{ type: SolidType }> = (props) => {
   cursor: grab;
   text-align: left;
   user-select: none;
+  touch-action: none;
   transition: background 0.12s, border-color 0.12s;
   min-height: 36px;
 }
@@ -262,5 +266,28 @@ const SolidIcon: FunctionalComponent<{ type: SolidType }> = (props) => {
   background: #ede9fe;
   border-color: #818cf8;
   color: #4338ca;
+}
+
+/* ── Touch / coarse pointer: always-visible + button, larger tap targets ── */
+@media (pointer: coarse) {
+  .tray-add-btn {
+    opacity: 1;
+    pointer-events: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .solids-tray__btn {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .solids-tray__label {
+    font-size: 13px;
+  }
 }
 </style>

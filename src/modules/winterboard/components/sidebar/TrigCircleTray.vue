@@ -25,6 +25,7 @@
           :draggable="true"
           :title="t('winterboard.trigCircle.btnTitle')"
           @dragstart="onDragStartTrig"
+          v-bind="dragHandlers(TRIG_CIRCLE_DRAG_MIME, JSON.stringify({ type: 'trig_circle' }), t('winterboard.trigCircle.btnLabel'))"
         >
           <span class="trig-circle-tray__icon" aria-hidden="true">
             <TrigCircleIcon />
@@ -51,6 +52,7 @@
           :draggable="true"
           :title="t('winterboard.helix.btnTitle')"
           @dragstart="onDragStartHelix"
+          v-bind="dragHandlers(HELIX_DRAG_MIME, JSON.stringify({ type: 'helix' }), t('winterboard.helix.btnLabel'))"
         >
           <span class="trig-circle-tray__icon trig-circle-tray__icon--helix" aria-hidden="true">
             <HelixIcon />
@@ -77,6 +79,7 @@
           :draggable="true"
           title="Тригонометричне рівняння / нерівність"
           @dragstart="onDragStartSolver"
+          v-bind="dragHandlers(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }), 'рівняння / нерівності')"
         >
           <span class="trig-circle-tray__icon trig-circle-tray__icon--solver" aria-hidden="true">
             <TrigSolverIcon />
@@ -107,9 +110,11 @@ import { TRIG_CIRCLE_DRAG_MIME, type TrigCircleDragPayload } from '../../constan
 import { HELIX_DRAG_MIME, type HelixDragPayload } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
 const { t } = useI18n()
 const addToolToBoard = useAddToolToBoard()
+const { dragHandlers } = useTouchDragFromTray()
 
 function onDragStartTrig(e: DragEvent): void {
   if (!e.dataTransfer) return
@@ -213,6 +218,7 @@ const HelixIcon: FunctionalComponent = () =>
   color: #1e293b;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
   min-height: 36px;
@@ -327,5 +333,32 @@ const HelixIcon: FunctionalComponent = () =>
   background: #ede9fe;
   border-color: #818cf8;
   color: #4338ca;
+}
+
+/* ── Touch / coarse pointer ── */
+@media (pointer: coarse) {
+  .tray-add-btn {
+    opacity: 1;
+    pointer-events: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .trig-circle-tray__btn {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .trig-circle-tray__label {
+    font-size: 13px;
+  }
+
+  .trig-circle-tray__sublabel {
+    font-size: 11px;
+  }
 }
 </style>

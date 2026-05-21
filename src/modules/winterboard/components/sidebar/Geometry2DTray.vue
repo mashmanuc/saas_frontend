@@ -38,6 +38,7 @@
           :draggable="true"
           :title="`${presetLabel(item)} — ${presetDesc(item)}`"
           @dragstart="onDragStart($event, item.type, presetLabel(item))"
+          v-bind="dragHandlers(GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: item.type }), presetLabel(item))"
         >
           <span class="geo2dv2-tray__icon" aria-hidden="true">
             <PresetIcon :type="item.type" />
@@ -67,8 +68,10 @@ import {
 } from '../../constants/geometry2dV2Defaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
 const addToolToBoard = useAddToolToBoard()
+const { dragHandlers } = useTouchDragFromTray()
 
 const { t, te } = useI18n()
 const items = ref<GeoPresetMeta[]>([])
@@ -224,6 +227,7 @@ const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
   color: #1e293b;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
   min-height: 36px;
@@ -303,5 +307,28 @@ const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
   background: #ede9fe;
   border-color: #818cf8;
   color: #4338ca;
+}
+
+/* ── Touch / coarse pointer ── */
+@media (pointer: coarse) {
+  .tray-add-btn {
+    opacity: 1;
+    pointer-events: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .geo2dv2-tray__btn {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .geo2dv2-tray__label {
+    font-size: 13px;
+  }
 }
 </style>

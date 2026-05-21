@@ -97,6 +97,21 @@
           @start="handleStartRecording"
           @pause="handleStopRecording"
         />
+        <!-- Solo → Classroom fork: "Запросити учня" (Solo-to-Classroom Plan 2026-05-20) -->
+        <button
+          v-if="isSessionOwner && sessionId"
+          type="button"
+          class="wb-header-btn wb-header-btn--invite"
+          :title="t('winterboard.startClassroom.button')"
+          @click="showInviteStudentModal = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M1 14c0-2.2 1.8-4 4-4h4c.7 0 1.4.2 2 .5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          {{ t('winterboard.startClassroom.button') }}
+        </button>
         <button
           type="button"
           class="wb-header-btn"
@@ -791,6 +806,13 @@
       @replay-created="(id) => { isReplayFrozen = true; activeReplayId = id }"
     />
 
+    <!-- Solo → Classroom fork modal (Solo-to-Classroom Plan 2026-05-20) -->
+    <WBInviteStudentModal
+      :visible="showInviteStudentModal"
+      :session-id="sessionId"
+      @close="showInviteStudentModal = false"
+    />
+
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="wb-confirm-overlay" @click.self="showDeleteConfirm = false">
@@ -841,6 +863,7 @@ import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
+import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
 import { parseFolderQuery, isFolderUnavailableError } from '../utils/folderRoute'
@@ -879,6 +902,7 @@ import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateD
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
+import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
@@ -1224,6 +1248,7 @@ const showSaveTemplateDialog = ref(false)
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showSaveLessonDialog = ref(false)
+const showInviteStudentModal = ref(false)
 const showYouTubeModal = ref(false)
 
 // ── "Оновити шаблон" — коли solo board відкрито з існуючого уроку ──────
@@ -1461,6 +1486,17 @@ provide(ADD_TOOL_TO_BOARD_KEY, (mime: string, payloadStr: string) => {
   const cx = (container.scrollLeft + container.clientWidth / 2) / zoom
   const cy = (container.scrollTop + container.clientHeight / 2) / zoom
   contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
+})
+
+// ── Tray touch drag: place tool at touch release position ──
+provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: number, clientY: number) => {
+  const rect = canvasContainerRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const zoom = store.zoom || 1
+  contentDrop.addAtPosition(mime, payloadStr, {
+    x: (clientX - rect.left) / zoom,
+    y: (clientY - rect.top) / zoom,
+  })
 })
 
 // ── Quick Gallery: dblclick places item at canvas center ──
@@ -3121,6 +3157,19 @@ watch(() => store.workspaceName, (name) => {
 .wb-header-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+.wb-header-btn--invite {
+  width: auto;
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--wb-accent, #6366f1);
+  color: #fff;
+}
+.wb-header-btn--invite:hover:not(:disabled) {
+  background: #4f46e5;
 }
 
 .wb-header-btn--exit {

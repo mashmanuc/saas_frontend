@@ -435,7 +435,7 @@
 // Ref: TASK_BOARD_PHASES.md A3.1, C3.1 RBAC, LAW-05, LAW-16
 // Feature flag: VITE_WB_FEATURE_CLASSROOM
 
-import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -491,6 +491,7 @@ import type { AllowedContentItem } from '../types/sidebar'
 import { addYouTubeAsset } from '../api/library'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import { useContentDrop } from '../composables/useContentDrop'
+import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
 import type { ContentDragPayload } from '@/modules/learning-content'
 
 // Lesson Domain integration (Agent B → Agent C)
@@ -906,6 +907,17 @@ async function handleSidebarPlace(item: AllowedContentItem) {
     },
   )
 }
+
+// ── Tray touch drag: place tool at touch release position ──
+provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: number, clientY: number) => {
+  const rect = canvasContainerRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const zoom = store.zoom || 1
+  contentDrop.addAtPosition(mime, payloadStr, {
+    x: (clientX - rect.left) / zoom,
+    y: (clientY - rect.top) / zoom,
+  })
+})
 
 const authStore = useAuthStore()
 const lessonRuntime = useLessonRuntimeStore()

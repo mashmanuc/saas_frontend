@@ -26,6 +26,7 @@
           :draggable="true"
           :title="t('winterboard.contentSidebar.graphCalcLabel')"
           @dragstart="onDragStartGraph"
+          v-bind="dragHandlers(GRAPH_CALCULATOR_MIME, '{}', t('winterboard.contentSidebar.graphCalcLabel'))"
         >
           <span class="calculus-tray__icon calculus-tray__icon--graph" aria-hidden="true">f(x)</span>
           <span class="calculus-tray__labels">
@@ -54,6 +55,7 @@
           :draggable="true"
           :title="`${modeLabel(item.mode)} — ${modeDesc(item.mode)}`"
           @dragstart="onDragStart($event, item.mode)"
+          v-bind="dragHandlers(CALCULUS_DRAG_MIME, JSON.stringify({ mode: item.mode }), modeLabel(item.mode))"
         >
           <span class="calculus-tray__icon" aria-hidden="true">
             <ModeIcon :mode="item.mode" />
@@ -88,8 +90,10 @@ import {
 import { GRAPH_CALCULATOR_MIME } from '../../constants/graphCalculatorDefaults'
 import type { CalculusMode } from '../../vendor/calculus'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
 const addToolToBoard = useAddToolToBoard()
+const { dragHandlers } = useTouchDragFromTray()
 
 const { t } = useI18n()
 const items = CALCULUS_PRESETS
@@ -169,6 +173,7 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
   color: #1e293b;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
   min-height: 40px;
@@ -289,5 +294,32 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
   background: #ede9fe;
   border-color: #818cf8;
   color: #4338ca;
+}
+
+/* ── Touch / coarse pointer ── */
+@media (pointer: coarse) {
+  .tray-add-btn {
+    opacity: 1;
+    pointer-events: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .calculus-tray__btn {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 9px 11px;
+  }
+
+  .calculus-tray__label {
+    font-size: 13px;
+  }
+
+  .calculus-tray__sublabel {
+    font-size: 12px;
+  }
 }
 </style>
