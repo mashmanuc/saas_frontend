@@ -3160,11 +3160,7 @@ watch(() => store.workspaceName, (name) => {
 }
 
 .wb-header-btn--invite {
-  background: var(--wb-accent, #6366f1);
   color: #fff;
-}
-.wb-header-btn--invite:hover:not(:disabled) {
-  background: #4f46e5;
 }
 
 .wb-header-btn--exit {
