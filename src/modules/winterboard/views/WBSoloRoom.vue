@@ -36,7 +36,7 @@
         </span>
       </div>
 
-      <!-- Left: Editable title -->
+      <!-- Left: Editable title + Undo/Redo (editing context) -->
       <div class="wb-solo-room__title">
         <input
           v-model="sessionName"
@@ -50,28 +50,27 @@
             <path d="M11.5 1.5a1.5 1.5 0 0 1 2.12 2.12L5 12.24l-3 .76.76-3L11.5 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </span>
-      </div>
-
-      <!-- Undo / Redo — поруч із назвою (editing context) -->
-      <div class="wb-solo-room__history">
-        <button
-          type="button"
-          class="wb-header-btn"
-          :disabled="!store.canUndo"
-          :title="t('winterboard.room.undoShortcut')"
-          @click="handleUndo"
-        >
-          ↩
-        </button>
-        <button
-          type="button"
-          class="wb-header-btn"
-          :disabled="!store.canRedo"
-          :title="t('winterboard.room.redoShortcut')"
-          @click="handleRedo"
-        >
-          ↪
-        </button>
+        <!-- Undo / Redo — поруч із назвою (editing context) -->
+        <div class="wb-solo-room__history">
+          <button
+            type="button"
+            class="wb-header-btn"
+            :disabled="!store.canUndo"
+            :title="t('winterboard.room.undoShortcut')"
+            @click="handleUndo"
+          >
+            ↩
+          </button>
+          <button
+            type="button"
+            class="wb-header-btn"
+            :disabled="!store.canRedo"
+            :title="t('winterboard.room.redoShortcut')"
+            @click="handleRedo"
+          >
+            ↪
+          </button>
+        </div>
       </div>
 
       <!-- Phase 16 INT-33: Session context bar -->
