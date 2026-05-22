@@ -43,7 +43,9 @@
 
     <div ref="stageRef" class="helix-stage" data-testid="helix-stage" />
 
-    <div class="helix-toolbar">
+    <!-- Toolbar hidden: controls moved to HelixInspector sidebar.
+         Card shows only the visualization — inspector in sidebar handles all interactions. -->
+    <div v-if="false" class="helix-toolbar">
       <!-- Рядок 1: огляд + тіні + допоміжне -->
       <div class="helix-toolbar__row">
         <span class="helix-glabel">огляд:</span>
@@ -152,10 +154,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { HelixAsset, HelixData } from '../../../types/helix'
 import type { HelixInstance, HelixViewName } from '../../../vendor/helix'
+import { registerHelix, unregisterHelix } from '../../../board/state/helixUiState'
+import type { HelixBridge } from '../../../board/state/helixUiState'
 
 const { t } = useI18n()
 
@@ -280,6 +284,8 @@ async function mount(): Promise<void> {
   helix.onChange = () => scheduleSnapshot()
   // Sync pointer-events after vendor canvas is created (draw-mode isolation).
   syncCanvasPointerEvents()
+  // Register for inspector if already selected when mounted.
+  if (props.isSelected) registerHelix(props.asset.id, _bridge)
 }
 
 // ── Draw-mode canvas isolation ────────────────────────────────────────────
@@ -322,6 +328,7 @@ onMounted(() => {
 onUnmounted(() => {
   destroyHelix()
   window.removeEventListener('keydown', _onEsc)
+  unregisterHelix(props.asset.id)
 })
 
 /* ────── remote-op sync: store → local + engine ────── */
@@ -405,6 +412,41 @@ function onSpeedInput(e: Event): void {
   local.speed = v
   helix.setOption('speed', v)
 }
+
+/** Called by HelixInspector slider via bridge. */
+function setSpeed(v: number): void {
+  if (!helix) return
+  local.speed = v
+  helix.setOption('speed', v)
+}
+
+/* ── Inspector bridge ─────────────────────────────────────────────────────
+   Registered when isSelected=true; HelixInspector reads reactive state
+   and calls action methods. Pattern mirrors TrigCircleRenderer.
+──────────────────────────────────────────────────────────────────────────── */
+const _bridge: HelixBridge = reactive({
+  local,            // already reactive — Inspector reads local.showHelix etc. live
+  animating: false, // synced via watchEffect below
+  animatingCam: false,
+  toggle,
+  setView,
+  jumpTo,
+  setSpeed,
+  toggleAnimate,
+  toggleAnimateCam,
+})
+
+// Keep bridge.animating / animatingCam in sync with Ref values.
+watchEffect(() => {
+  _bridge.animating    = animating.value
+  _bridge.animatingCam = animatingCam.value
+})
+
+// Register / unregister inspector when selection changes.
+watch(() => props.isSelected, (sel) => {
+  if (sel) registerHelix(props.asset.id, _bridge)
+  else unregisterHelix(props.asset.id)
+})
 
 /* ────── snapshot → store ────── */
 

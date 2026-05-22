@@ -13,8 +13,14 @@
       </div>
     </Transition>
 
-    <!-- NMT3D Inspector — shows when an NMT3D asset is selected; replaces tabs -->
-    <Nmt3dInspector v-if="nmt3dUiState.ws" />
+    <!-- Contextual inspectors — shown when a specific asset type is selected; replace tabs.
+         Only one can be active at a time (single selection model). -->
+    <Nmt3dInspector       v-if="nmt3dUiState.ws" />
+    <TrigCircleInspector  v-else-if="trigCircleUiState.bridge" />
+    <HelixInspector       v-else-if="helixUiState.bridge" />
+    <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
+    <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
+    <CalculusInspector    v-else-if="calculusUiState.bridge" />
 
     <!-- Normal sidebar content (tabs + materials/tools) -->
     <template v-else>
@@ -205,6 +211,17 @@ import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 import Nmt3dTray from './Nmt3dTray.vue'
 import Nmt3dInspector from './Nmt3dInspector.vue'
 import { nmt3dUiState } from '../../board/state/nmt3dUiState'
+// Contextual inspectors (2026-05-22): controls move to sidebar when asset is selected
+import TrigCircleInspector from './TrigCircleInspector.vue'
+import HelixInspector from './HelixInspector.vue'
+import GraphCalcInspector from './GraphCalcInspector.vue'
+import TrigSolverInspector from './TrigSolverInspector.vue'
+import CalculusInspector from './CalculusInspector.vue'
+import { trigCircleUiState } from '../../board/state/trigCircleUiState'
+import { helixUiState } from '../../board/state/helixUiState'
+import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
+import { trigSolverUiState } from '../../board/state/trigSolverUiState'
+import { calculusUiState } from '../../board/state/calculusUiState'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray

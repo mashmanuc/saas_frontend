@@ -56,8 +56,9 @@
     <!-- Stage — canvas mounted by bundle's TrigCircle. -->
     <div ref="stageRef" class="trig-circle-stage" data-testid="trig-circle-stage" />
 
-    <!-- Toolbar — mirrors standalone trig.html controls. -->
-    <div class="trig-toolbar">
+    <!-- Toolbar hidden: controls moved to TrigCircleInspector sidebar.
+         Card shows only the visualization — inspector in sidebar handles all interactions. -->
+    <div v-if="false" class="trig-toolbar">
       <!-- Рядок 1: функції + підписи + сітка -->
       <div class="trig-toolbar__row">
         <span class="trig-group-label">функції:</span>
@@ -167,10 +168,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TrigCircleAsset, TrigCircleData } from '../../../types/trigCircle'
 import type { TrigCircleInstance } from '../../../vendor/trig'
+import { registerTrigCircle, unregisterTrigCircle } from '../../../board/state/trigCircleUiState'
+import type { TrigCircleBridge } from '../../../board/state/trigCircleUiState'
 
 const { t } = useI18n()
 
@@ -313,6 +316,8 @@ async function mount(): Promise<void> {
   trig.onChange = () => scheduleSnapshot()
   // Sync pointer-events after vendor canvas is created (draw-mode isolation).
   syncCanvasPointerEvents()
+  // Register for inspector if already selected when mounted.
+  if (props.isSelected) registerTrigCircle(props.asset.id, _bridge)
 }
 
 // ── Draw-mode canvas isolation ────────────────────────────────────────────
@@ -355,6 +360,7 @@ onMounted(() => {
 onUnmounted(() => {
   destroyTrig()
   window.removeEventListener('keydown', _onEsc)
+  unregisterTrigCircle(props.asset.id)
 })
 
 /* ────── remote-op sync: store → local + engine ────── */
@@ -450,6 +456,40 @@ function onSpeedInput(e: Event): void {
   local.speed = v                    // immediate label update
   trig.setOption('speed', v)         // onChange → scheduleSnapshot
 }
+
+/** Called by TrigCircleInspector slider via bridge. */
+function setSpeed(v: number): void {
+  if (!trig) return
+  local.speed = v
+  trig.setOption('speed', v)
+}
+
+/* ── Inspector bridge ─────────────────────────────────────────────────────
+   Registered when isSelected=true; TrigCircleInspector reads reactive state
+   and calls action methods. Pattern mirrors Nmt3dRenderer._registerInspector.
+──────────────────────────────────────────────────────────────────────────── */
+const _bridge: TrigCircleBridge = reactive({
+  local,          // already reactive — Inspector reads local.showSin etc. live
+  animating: false,    // synced via watchEffect below
+  drawMode: false,     // synced via watchEffect below
+  toggle,
+  jumpTo,
+  setSpeed,
+  toggleAnimate,
+  toggleDraw,
+})
+
+// Keep bridge.animating / bridge.drawMode in sync with the Ref values.
+watchEffect(() => {
+  _bridge.animating = animating.value
+  _bridge.drawMode  = drawMode.value
+})
+
+// Register / unregister inspector when selection changes.
+watch(() => props.isSelected, (sel) => {
+  if (sel) registerTrigCircle(props.asset.id, _bridge)
+  else unregisterTrigCircle(props.asset.id)
+})
 
 /* ────── snapshot → store ────── */
 

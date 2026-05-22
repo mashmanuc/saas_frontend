@@ -85,7 +85,8 @@
     </header>
 
     <div class="gc-body">
-      <aside class="gc-panel" v-if="interactive">
+      <!-- Expression panel hidden when selected — moves to GraphCalcInspector sidebar. -->
+      <aside class="gc-panel" v-if="interactive && !isSelected">
         <div class="gc-expr-list">
           <div
             v-for="(expr, idx) in displayExpressions"
@@ -227,8 +228,9 @@
         <!-- Phase G: auto-detected param sliders. Renders from store state.params
              (SSoT per FE-RULE-1). Slider drag → emit('param-set', ...) per
              STORE-RULE-5 (coalesce per name). Click on name → expand row to
-             reveal range editor (min/max/step). -->
-        <div v-if="paramEntries.length > 0" class="gc-params" data-testid="graph-calc-params">
+             reveal range editor (min/max/step).
+             Hidden when isSelected=true: params move to GraphCalcInspector sidebar. -->
+        <div v-if="paramEntries.length > 0 && !isSelected" class="gc-params" data-testid="graph-calc-params">
           <div class="gc-params-header">
             Параметри
             <span
@@ -321,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { GraphCalculator, GraphCalc } from '../../../vendor/graph_calculator/graph-calculator.js'
 import type { WBAsset } from '../../../types/winterboard'
 import type {
@@ -340,6 +342,9 @@ import {
 // Phase G4: shared per-asset UI state (toggle param mode).
 // Module-level reactive — renderer + sidebar context panel see same value.
 import { getGraphCalcUi, toggleGraphCalcParamMode, toggleGraphCalcPresenting } from '../../../board/state/graphCalculatorUiState'
+// Inspector bridge — param sliders move to GraphCalcInspector sidebar when selected.
+import { registerGraphCalcInspector, unregisterGraphCalcInspector } from '../../../board/state/graphCalcInspectorState'
+import type { GraphCalcInspectorBridge } from '../../../board/state/graphCalcInspectorState'
 
 interface Props {
   asset: WBAsset
@@ -348,12 +353,15 @@ interface Props {
   interactive?: boolean
   /** Disable internal animation rAF loop (set TRUE during replay per inv-21.13). */
   disableAnimation?: boolean
+  /** True when overlay is expanded to fill the whole board canvas. */
+  isExpanded?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
   interactive: true,
   disableAnimation: false,
+  isExpanded: false,
 })
 
 const emit = defineEmits<{
@@ -380,6 +388,8 @@ const emit = defineEmits<{
   (e: 'point-promote', id: string, curveExprId: string): void
   /** Delete request */
   (e: 'delete', assetId: string): void
+  /** Expand / collapse to fill the full board canvas */
+  (e: 'expand'): void
 }>()
 
 // ─── Refs / state ──────────────────────────────────────────────────────
@@ -559,6 +569,78 @@ function onRangeStepChange(name: string, raw: string) {
   if (!cur) return
   emit('range-set', name, { min: cur.min, max: cur.max, step: v })
 }
+
+/* ── GraphCalc Inspector bridge ───────────────────────────────────────────
+   Registered when isSelected=true; GraphCalcInspector reads paramEntries,
+   paramExpanded, displayExpressions reactively; calls all action methods.
+   State synced via watchEffect (params computed + paramExpanded ref +
+   displayExpressions ref + slashPopup ref + slashFilteredTemplates computed).
+──────────────────────────────────────────────────────────────────────────── */
+
+/** Bridge-compatible wrapper for applySlashTemplate (uses GcSlashTemplate without `keyword`). */
+function bridgeApplySlashTemplate(exprId: string, tpl: import('../../../board/state/graphCalcInspectorState').GcSlashTemplate): void {
+  if (!tpl || !calc || !props.interactive) return
+  calc.updateExpression(exprId, tpl.src)
+  slashPopup.value = null
+  scheduleSyncParams()
+}
+
+const _gcBridge = reactive<GraphCalcInspectorBridge>({
+  // Params
+  paramEntries: [],
+  paramExpanded: {},
+  onSliderInput,
+  flushParam,
+  toggleParamExpand,
+  onRangeMinChange,
+  onRangeMaxChange,
+  onRangeStepChange,
+  // Expression editing
+  displayExpressions: [],
+  slashPopup: null,
+  slashFilteredTemplates: [],
+  onSrcInput,
+  onInputBlur,
+  onEnterPress,
+  onArrowNav,
+  onToggleHidden,
+  onRemoveExpression,
+  onAddExpression,
+  onQuickAdd,
+  applySlashTemplate: bridgeApplySlashTemplate,
+  closeSlashPopup,
+  setSlashSelectedIdx: (idx: number) => {
+    if (slashPopup.value) slashPopup.value.selectedIdx = idx
+  },
+  isExpanded: false,
+  toggleExpand: () => emit('expand'),
+})
+
+// Keep bridge state in sync with reactive refs + computeds.
+watchEffect(() => {
+  _gcBridge.paramEntries = paramEntries.value.map((p) => ({ ...p }))
+  _gcBridge.paramExpanded = { ...paramExpanded.value }
+  _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
+    id: e.id,
+    src: e.src,
+    color: e.color,
+    hidden: e.hidden,
+    isParam: e.isParam,
+  }))
+  _gcBridge.slashPopup = slashPopup.value ? { ...slashPopup.value } : null
+  _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((t) => ({
+    id: t.id,
+    label: t.label,
+    src: t.src,
+  }))
+  _gcBridge.isExpanded = props.isExpanded ?? false
+})
+
+// Register / unregister when selection changes.
+watch(() => props.isSelected, (sel) => {
+  if (sel) registerGraphCalcInspector(props.asset.id, _gcBridge)
+  else unregisterGraphCalcInspector(props.asset.id)
+})
 
 // Note: outer overlay у WBCanvas already positions та sizes
 // (.wb-graph-calculator-overlay style: left/top/width/height per asset
@@ -1248,6 +1330,8 @@ onMounted(() => {
   mountEngine()
   // Sync canvas pointer-events immediately after vendor canvas is created.
   syncCanvasPointerEvents()
+  // Register bridge if already selected on mount.
+  if (props.isSelected) registerGraphCalcInspector(props.asset.id, _gcBridge)
   // Flush hooks (FE-RULE-10 partial — visibilitychange + beforeunload).
   document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -1267,6 +1351,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  unregisterGraphCalcInspector(props.asset.id)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('beforeunload', onBeforeUnload)
   window.removeEventListener('keydown', onWindowKeyDown)

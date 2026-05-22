@@ -29,21 +29,8 @@
   >
     <header class="calculus-header">
       <span class="calculus-title">{{ modeLabel }}</span>
-      <input
-        v-if="isSelected"
-        v-model="exprDraft"
-        type="text"
-        class="calculus-expr-input"
-        spellcheck="false"
-        autocomplete="off"
-        :placeholder="t('winterboard.calculus.exprPlaceholder')"
-        @input="onExprInput"
-        @keydown.enter="onExprCommit"
-        @blur="onExprCommit"
-        @mousedown.stop
-        @pointerdown.stop
-      />
-      <span v-else class="calculus-expr-readonly">y = {{ asset.data.expr }}</span>
+      <!-- Expression shown readonly in card; editing moved to sidebar CalculusInspector. -->
+      <span v-if="!isSelected" class="calculus-expr-readonly">y = {{ asset.data.expr }}</span>
       <button
         v-if="!asset.locked && isSelected"
         type="button"
@@ -56,8 +43,8 @@
     <!-- Stage — canvas mounted by bundle's CalculusCard. -->
     <div ref="stageRef" class="calculus-stage" data-testid="calculus-stage" />
 
-    <!-- Toolbar (always visible — consistent з standalone bundle UX). -->
-    <div class="calculus-toolbar">
+    <!-- Toolbar hidden — controls moved to sidebar CalculusInspector on selection. -->
+    <div v-if="false" class="calculus-toolbar">
       <!-- Expression presets -->
       <div class="calculus-toolbar__row">
         <button
@@ -137,11 +124,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CalculusAsset } from '../../../types/calculus'
 import type { CalculusCardInstance, RiemannMode } from '../../../vendor/calculus'
 import { CALCULUS_EXPR_PRESETS } from '../../../constants/calculusDefaults'
+import {
+  registerCalculusInspector,
+  unregisterCalculusInspector,
+} from '../../../board/state/calculusUiState'
+import type { CalculusBridge } from '../../../board/state/calculusUiState'
 
 const { t } = useI18n()
 
@@ -168,6 +160,46 @@ const SNAPSHOT_DEBOUNCE_MS = 150
 const exprDraft = ref(props.asset.data.expr)
 const exprPresets = CALCULUS_EXPR_PRESETS
 const riemannModes: RiemannMode[] = ['off', 'left', 'mid', 'right']
+
+// ── Sidebar inspector bridge ──────────────────────────────────────────────
+// Reactive snapshot of props.asset.data + action methods for CalculusInspector.
+// Functions (toggle, setRiemann, onExprPreset, onExprCommit) are hoisted — safe to reference here.
+
+/** Live-update engine with typed value without committing to store. */
+function setExprForBridge(v: string): void {
+  exprDraft.value = v
+  if (card) card.setExpression(v)
+}
+
+const _calcBridge = reactive<CalculusBridge>({
+  mode: props.asset.data.mode,
+  expr: props.asset.data.expr,
+  showSecant: !!props.asset.data.showSecant,
+  showDerivTrace: !!props.asset.data.showDerivTrace,
+  h: props.asset.data.h ?? 0.5,
+  riemann: props.asset.data.riemann ?? 'off',
+  N: props.asset.data.N ?? 12,
+  showF: !!props.asset.data.showF,
+  setExpr: setExprForBridge,
+  commitExpr: onExprCommit,
+  toggle,
+  setRiemann,
+  setH: (v: number) => patch({ h: v }),
+  setN: (v: number) => patch({ N: v }),
+  onExprPreset,
+})
+
+// Keep bridge in sync whenever props.asset.data changes (ops applied from store).
+watchEffect(() => {
+  _calcBridge.mode = props.asset.data.mode
+  _calcBridge.expr = props.asset.data.expr
+  _calcBridge.showSecant = !!props.asset.data.showSecant
+  _calcBridge.showDerivTrace = !!props.asset.data.showDerivTrace
+  _calcBridge.h = props.asset.data.h ?? 0.5
+  _calcBridge.riemann = props.asset.data.riemann ?? 'off'
+  _calcBridge.N = props.asset.data.N ?? 12
+  _calcBridge.showF = !!props.asset.data.showF
+})
 
 const modeLabel = computed(() => t(`winterboard.calculus.mode.${props.asset.data.mode}.full`))
 
@@ -202,6 +234,8 @@ async function mount(): Promise<void> {
   card.onChange = () => scheduleSnapshot()
   // Sync pointer-events after vendor canvas is created (draw-mode isolation).
   syncCanvasPointerEvents()
+  // Register sidebar inspector bridge if card is already selected at mount.
+  if (props.isSelected) registerCalculusInspector(props.asset.id, _calcBridge)
 }
 
 // ── Draw-mode canvas isolation ────────────────────────────────────────────
@@ -225,6 +259,12 @@ function syncCanvasPointerEvents(): void {
 
 watch(() => props.interactive, syncCanvasPointerEvents)
 
+// Register / unregister bridge as selection changes.
+watch(() => props.isSelected, (sel) => {
+  if (sel) registerCalculusInspector(props.asset.id, _calcBridge)
+  else unregisterCalculusInspector(props.asset.id)
+})
+
 function destroyCard(): void {
   if (snapshotTimer != null) { clearTimeout(snapshotTimer); snapshotTimer = null }
   if (card) {
@@ -234,7 +274,7 @@ function destroyCard(): void {
 }
 
 onMounted(() => { void mount() })
-onUnmounted(() => { destroyCard() })
+onUnmounted(() => { unregisterCalculusInspector(props.asset.id); destroyCard() })
 
 // Mode hot-swap — rebuild card (rare).
 // mount() calls syncCanvasPointerEvents() at the end — no extra call needed.

@@ -43,8 +43,9 @@
     <!-- Stage — engine renders circle + graph here -->
     <div ref="stageRef" class="trig-slv-stage" />
 
-    <!-- Toolbar (hidden in readonly) -->
-    <div class="trig-slv-tools">
+    <!-- Toolbar hidden: controls moved to TrigSolverInspector sidebar (selected state).
+         Card shows only the visualization — inspector in sidebar handles all interactions. -->
+    <div v-if="false" class="trig-slv-tools">
       <!-- Function type -->
       <div class="trig-slv-group">
         <span class="trig-slv-label">f:</span>
@@ -150,6 +151,8 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { TrigSolverAsset, TrigFuncType, TrigRelation } from '../../../types/trigSolver'
 import type { TrigEquationInstance } from '../../../vendor/trig/index'
+import { registerTrigSolver, unregisterTrigSolver } from '../../../board/state/trigSolverUiState'
+import type { TrigSolverBridge } from '../../../board/state/trigSolverUiState'
 
 const props = defineProps<{
   asset: TrigSolverAsset
@@ -269,6 +272,8 @@ async function mountEngine(): Promise<void> {
   engine.onChange = () => scheduleSnapshot()
   // Sync pointer-events after vendor canvas is created (draw-mode isolation).
   syncCanvasPointerEvents()
+  // Register for inspector if already selected when mounted.
+  if (props.isSelected) registerTrigSolver(props.asset.id, _bridge)
 }
 
 // ── Draw-mode canvas isolation ────────────────────────────────────────────
@@ -293,7 +298,10 @@ function syncCanvasPointerEvents(): void {
 watch(() => props.interactive, syncCanvasPointerEvents)
 
 onMounted(() => { void mountEngine() })
-onUnmounted(() => { destroyEngine() })
+onUnmounted(() => {
+  unregisterTrigSolver(props.asset.id)
+  destroyEngine()
+})
 
 // Remount on card resize so canvas pixel buffer refreshes at correct size.
 // mountEngine() calls syncCanvasPointerEvents() at the end — no extra call needed.
@@ -369,6 +377,23 @@ function toggleOpt(key: 'snapSpecial' | 'showGraph' | 'showAllSolutions'): void 
   engine.setOption(key, next)
   scheduleSnapshot()
 }
+
+/* ── Inspector bridge ─────────────────────────────────────────────────────
+   Registered when isSelected=true; TrigSolverInspector reads reactive local
+   and calls action methods. Pattern mirrors TrigCircleRenderer.
+──────────────────────────────────────────────────────────────────────────── */
+const _bridge: TrigSolverBridge = reactive({
+  local,      // already reactive — Inspector reads local.type / local.a etc. live
+  setType,
+  setRel,
+  setA,
+  toggleOpt,
+})
+
+watch(() => props.isSelected, (sel) => {
+  if (sel) registerTrigSolver(props.asset.id, _bridge)
+  else unregisterTrigSolver(props.asset.id)
+})
 
 // ── Replay sync ────────────────────────────────────────────────────────────
 
