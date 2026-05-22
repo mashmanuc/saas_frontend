@@ -7,6 +7,36 @@
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('winterboard.lesson.myLessonsTitle') }}</h1>
     </div>
 
+    <!-- Tabs: Шаблони | Проведені уроки -->
+    <div class="flex border-b border-gray-200 mb-6">
+      <button
+        type="button"
+        :class="[
+          'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+          activeTab === 'templates'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700',
+        ]"
+        @click="setTab('templates')"
+      >
+        {{ $t('winterboard.lesson.tabs.templates') }}
+      </button>
+      <button
+        type="button"
+        :class="[
+          'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+          activeTab === 'conducted'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-gray-500 hover:text-gray-700',
+        ]"
+        @click="setTab('conducted')"
+      >
+        {{ $t('winterboard.lesson.tabs.conducted') }}
+      </button>
+    </div>
+
+    <!-- Tab: Шаблони (existing content) -->
+    <div v-if="activeTab === 'templates'">
     <!-- Search & Filters bar -->
     <div class="flex flex-wrap items-center gap-3 mb-4">
       <!-- Search -->
@@ -259,6 +289,94 @@
         <p v-if="loadError" class="mt-4 text-sm text-red-600 text-center" role="alert">{{ loadError }}</p>
       </div>
     </div>
+    </div> <!-- /tab: templates -->
+
+    <!-- Tab: Проведені уроки -->
+    <div v-else-if="activeTab === 'conducted'">
+      <!-- Loading skeleton -->
+      <div v-if="conductedLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="aspect-video bg-gray-200 animate-pulse" />
+          <div class="p-4 space-y-2">
+            <div class="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+            <div class="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <p v-else-if="conductedError" class="mt-4 text-sm text-red-600 text-center" role="alert">
+        {{ conductedError }}
+      </p>
+
+      <!-- Empty -->
+      <div v-else-if="conductedSessions.length === 0" class="text-center py-16">
+        <div class="text-5xl mb-4">🎓</div>
+        <h2 class="text-lg font-semibold text-gray-700">
+          {{ $t('winterboard.lesson.conducted.emptyTitle') }}
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">
+          {{ $t('winterboard.lesson.conducted.emptySubtitle') }}
+        </p>
+      </div>
+
+      <!-- Grid of conducted sessions -->
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-for="session in conductedSessions"
+          :key="session.id"
+          class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          @click="openConductedSession(session)"
+        >
+          <!-- Preview -->
+          <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+            <img
+              v-if="session.thumbnail_url"
+              :src="session.thumbnail_url"
+              :alt="session.name"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div v-else class="flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 w-full h-full">
+              <span class="text-2xl font-bold text-blue-600/70">{{ session.name?.[0]?.toUpperCase() || '?' }}</span>
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-semibold text-gray-900 truncate flex-1" :title="session.name">
+                {{ session.name }}
+              </h3>
+              <span
+                v-if="session.has_recording"
+                class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-red-50 text-red-700"
+                :title="$t('winterboard.lesson.conducted.hasRecording')"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500" />
+                REC
+              </span>
+            </div>
+
+            <p
+              v-if="session.origin_lesson_title"
+              class="text-xs text-gray-500 mt-1 truncate"
+              :title="session.origin_lesson_title"
+            >
+              {{ $t('winterboard.lesson.conducted.fromTemplate') }}: {{ session.origin_lesson_title }}
+            </p>
+
+            <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
+              <span>{{ session.page_count }} {{ $t('winterboard.lesson.pagesShort') }}</span>
+              <span v-if="session.has_recording">
+                ⏱ {{ formatDuration(session.recording_duration_seconds) }}
+              </span>
+              <span>{{ formatDate(session.created_at) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Edit dialog (Phase 25 B1) -->
     <LessonEditDialog
@@ -313,6 +431,7 @@ import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
+import type { ConductedLessonItem } from '../api/lessonViewApi'
 import apiClient from '@/utils/apiClient'
 import { useNotifyStore } from '@/stores/notifyStore'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
@@ -358,6 +477,54 @@ const showEditDialog = ref(false)
 const editTarget = ref<MyLesson | null>(null)
 
 const PAGE_SIZE = 20
+
+// ── Проведені уроки tab ──────────────────────────────────────────────
+// Окремий read-only список lesson-play WBSession з нового endpoint
+// GET /api/v1/knowledge/my-lessons/conducted/.
+// Існуючий "Шаблони" tab (lessons) залишається без змін.
+type TabKey = 'templates' | 'conducted'
+const activeTab = ref<TabKey>('templates')
+const conductedSessions = ref<ConductedLessonItem[]>([])
+const conductedLoading = ref(false)
+const conductedError = ref<string | null>(null)
+const conductedTotal = ref(0)
+const conductedLoaded = ref(false)
+
+async function loadConducted() {
+  conductedLoading.value = true
+  conductedError.value = null
+  try {
+    const res = await lessonViewApi.listConducted({ limit: 50 })
+    conductedSessions.value = res.sessions
+    conductedTotal.value = res.total
+    conductedLoaded.value = true
+  } catch (err) {
+    console.error('[WBMyLessonsPage] loadConducted error:', err)
+    conductedError.value = t('winterboard.lesson.conducted.loadError')
+  } finally {
+    conductedLoading.value = false
+  }
+}
+
+function setTab(tab: TabKey) {
+  activeTab.value = tab
+  if (tab === 'conducted' && !conductedLoaded.value) {
+    loadConducted()
+  }
+}
+
+function openConductedSession(session: ConductedLessonItem) {
+  // Відкриваємо існуючу lesson-play WBSession — той же route що loadToSession
+  // використовує. Жодних нових створень.
+  router.push({ name: 'winterboard-solo', params: { id: session.id } })
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds || seconds <= 0) return '—'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return m > 0 ? `${m}хв ${s}с` : `${s}с`
+}
 
 onMounted(() => {
   loadLessons()

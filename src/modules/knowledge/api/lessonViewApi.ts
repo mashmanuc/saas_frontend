@@ -76,6 +76,49 @@ export interface PrepareSessionResponse {
   is_new: boolean
 }
 
+// ── Conducted lessons (Проведені уроки tab) ─────────────────────────────
+export interface ConductedLessonItem {
+  id: string
+  name: string
+  page_count: number
+  thumbnail_url: string | null
+  rev: number
+  updated_at: string
+  created_at: string
+  has_lesson: boolean
+  lesson_info: Record<string, unknown> | null
+  folder: number | null
+  folder_path: string | null
+  has_recording: boolean
+  recording_started_at: string | null
+  recording_stopped_at: string | null
+  recording_duration_seconds: number | null
+  is_replay_frozen: boolean
+  origin_lesson_id: string | null
+  origin_lesson_title: string | null
+}
+
+export interface ConductedLessonsResponse {
+  sessions: ConductedLessonItem[]
+  total: number
+  offset: number
+  limit: number
+  has_more: boolean
+}
+
+export interface ConductedLessonsParams {
+  offset?: number
+  limit?: number
+  has_recording?: boolean
+  q?: string
+}
+
+// "+ Нова дошка" у Студії — створює draft шаблон + prep сесію одразу.
+export interface CreateDraftWithPrepResponse {
+  lesson_id: string
+  wb_session_id: string
+}
+
 // ─── API ────────────────────────────────────────────────────────────────
 
 export const lessonViewApi = {
@@ -146,6 +189,31 @@ export const lessonViewApi = {
    */
   async prepareLesson(lessonId: string): Promise<PrepareSessionResponse> {
     const res = await api.post(`${BASE}/lessons/${lessonId}/prepare/`)
+    return res.data ?? res
+  },
+
+  /**
+   * GET /api/v1/knowledge/my-lessons/conducted/
+   * Список проведених уроків tutor'а (lesson-play сесії).
+   * Read-only — для вкладки "Проведені уроки" у Моїх уроках.
+   */
+  /**
+   * POST /api/v1/knowledge/lessons/draft-with-prep/
+   * Створити порожній draft шаблон + prep WBSession. Для кнопки
+   * "+ Нова дошка" у Студії — нова дошка одразу = новий шаблон уроку.
+   */
+  async createDraftWithPrep(title?: string): Promise<CreateDraftWithPrepResponse> {
+    const res = await api.post(`${BASE}/lessons/draft-with-prep/`, title ? { title } : {})
+    return res.data ?? res
+  },
+
+  async listConducted(params: ConductedLessonsParams = {}): Promise<ConductedLessonsResponse> {
+    const query: Record<string, string> = {}
+    if (params.offset !== undefined) query.offset = String(params.offset)
+    if (params.limit !== undefined) query.limit = String(params.limit)
+    if (params.has_recording) query.has_recording = '1'
+    if (params.q) query.q = params.q
+    const res = await api.get(`${BASE}/my-lessons/conducted/`, { params: query })
     return res.data ?? res
   },
 }

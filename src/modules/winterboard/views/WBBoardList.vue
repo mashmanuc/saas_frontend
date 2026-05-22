@@ -130,19 +130,20 @@
           </div>
 
           <!-- New board.
-               INV-KNOW-1 (Knowledge plan 2026-05-02): preserve current folder
-               context through router query. WBSoloRoom reads ?folder=<id> and
-               passes to createSession. Without this query, дошка завжди
-               створювалась у root попри активну папку. -->
-          <router-link
-            :to="newBoardRoute"
+               Lesson-first: створює draft KnowledgeLesson + prep WBSession,
+               веде у конструктор шаблону (constructorMode). Усі дошки
+               тепер — шаблони уроків. -->
+          <button
+            type="button"
             class="wb-board-list__new-btn"
+            :disabled="creatingNewBoard"
+            @click="createNewTemplate"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            {{ t('winterboard.boards.newBoard') }}
-          </router-link>
+            {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
+          </button>
         </div>
       </div>
 
@@ -251,9 +252,14 @@
         </svg>
         <p class="wb-board-list__empty-title">{{ t('winterboard.boards.empty') }}</p>
         <p class="wb-board-list__empty-message">{{ t('winterboard.boards.emptyMessage') }}</p>
-        <router-link :to="newBoardRoute" class="wb-board-list__cta-btn">
-          {{ t('winterboard.boards.createFirst') }}
-        </router-link>
+        <button
+          type="button"
+          class="wb-board-list__cta-btn"
+          :disabled="creatingNewBoard"
+          @click="createNewTemplate"
+        >
+          {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.createFirst') }}
+        </button>
       </div>
 
       <!-- Grid view -->
@@ -479,15 +485,24 @@ function dismissInfoBlock(): void {
   showInfoBlock.value = false
 }
 
-/** INV-KNOW-1: route target для "Нова дошка" — пропагує current folder через query.
- *  null/root → відсутність query (avoid `?folder=null` у URL).
- *  Якщо selectedFolderId є — query.folder = id як string (Vue Router ⇒ stringify). */
-const newBoardRoute = computed(() => {
-  const id = selectedFolderId.value
-  return id !== null
-    ? { name: 'winterboard-new', query: { folder: String(id) } }
-    : { name: 'winterboard-new' }
-})
+/** Lesson-first "+ Нова дошка": створює draft KnowledgeLesson + prep
+ *  WBSession і веде в конструктор. Замість попереднього router-link на
+ *  /winterboard/new (scratch соло). Race-guard `creatingNewBoard`. */
+const creatingNewBoard = ref(false)
+async function createNewTemplate() {
+  if (creatingNewBoard.value) return
+  creatingNewBoard.value = true
+  try {
+    const { lessonViewApi } = await import('@/modules/knowledge/api/lessonViewApi')
+    const { wb_session_id } = await lessonViewApi.createDraftWithPrep()
+    await router.push({ name: 'winterboard-prepare', params: { id: wb_session_id } })
+  } catch (err) {
+    console.error('[WBBoardList] createNewTemplate failed:', err)
+    notifyError(t('winterboard.boards.createError'))
+  } finally {
+    creatingNewBoard.value = false
+  }
+}
 
 /** Build breadcrumb path: [root, ..., current] */
 const breadcrumbPath = computed(() => {

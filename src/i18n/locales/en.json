@@ -7110,6 +7110,8 @@
       "constructorComingSoonDesc": "A tool for auto-generating structured lessons by topic, level and format will appear here.",
       "constructorComingSoonBadge": "Coming soon",
       "newBoard": "New Board",
+      "creating": "Creating…",
+      "createError": "Failed to create a new board. Please try again.",
       "folderUnavailableFallback": "Folder unavailable — board created in root",
       "infoTitle": "Here you can:",
       "infoBullet1": "create boards for your lessons",
@@ -7634,7 +7636,19 @@
       "opening": "Opening…",
       "openError": "Failed to open lesson",
       "fetchError": "Failed to load lessons",
-      "viewMyLessons": "View my lessons"
+      "viewMyLessons": "View my lessons",
+      "pagesShort": "pages",
+      "tabs": {
+        "templates": "Templates",
+        "conducted": "Conducted lessons"
+      },
+      "conducted": {
+        "emptyTitle": "No conducted lessons yet",
+        "emptySubtitle": "Click \"Conduct\" on a lesson card and it will appear here",
+        "loadError": "Failed to load conducted lessons",
+        "fromTemplate": "From template",
+        "hasRecording": "Has recording"
+      }
     },
     "replay": {
       "viewReplay": "View lesson replay",
