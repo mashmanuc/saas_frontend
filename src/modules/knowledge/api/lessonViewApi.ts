@@ -71,6 +71,11 @@ export interface UpdateSnapshotResponse {
   version: number
 }
 
+export interface PrepareSessionResponse {
+  wb_session_id: string
+  is_new: boolean
+}
+
 // ─── API ────────────────────────────────────────────────────────────────
 
 export const lessonViewApi = {
@@ -131,6 +136,16 @@ export const lessonViewApi = {
    */
   async updateSnapshot(lessonId: string, sessionId: string): Promise<UpdateSnapshotResponse> {
     const res = await api.post(`${BASE}/lessons/${lessonId}/update-snapshot/`, { session_id: sessionId })
+    return res.data ?? res
+  },
+
+  /**
+   * POST /api/v1/knowledge/lessons/{id}/prepare/
+   * PR 2.2: getOrCreate preparation WBSession for a KnowledgeLesson.
+   * 200 — existing session returned; 201 — new session seeded.
+   */
+  async prepareLesson(lessonId: string): Promise<PrepareSessionResponse> {
+    const res = await api.post(`${BASE}/lessons/${lessonId}/prepare/`)
     return res.data ?? res
   },
 }

@@ -319,16 +319,22 @@
     <template v-for="asset in graphCalculatorAssets" :key="`gc-${asset.id}`">
       <div
         class="wb-graph-calculator-overlay"
-        :class="{ 'wb-graph-calculator-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :class="{
+          'wb-graph-calculator-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
         :data-graph-calculator-id="asset.id"
         :data-testid="`graph-calculator-overlay-${asset.id}`"
-        :style="getOverlayStyle(asset)"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : getOverlayStyle(asset)"
       >
         <GraphCalculatorRenderer
           :asset="asset"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
           :disable-animation="wbStore.mode === 'replay'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
           @param-set="(name: string, value: number) => wbStore.graphParamSet(asset.id, name, value)"
           @param-sync="(names: string[]) => wbStore.graphSyncParams(asset.id, names)"
@@ -338,6 +344,7 @@
           @point-delete="(id: string) => wbStore.graphPointDelete(asset.id, id)"
           @point-promote="(id: string, curveExprId: string) => wbStore.graphPointPromote(asset.id, id, curveExprId)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
         />
       </div>
     </template>
@@ -2128,6 +2135,13 @@ function mirrorStrokesLayer(): void {
   }
   const layer = (strokesLayerRef.value as any)?.getNode?.()
   if (!layer) return
+  // PAGE-LEAK FIX (sync race з vue-konva): викликаємо synchronous draw() щоб
+  // Konva strokesLayer canvas відображав АКТУАЛЬНИЙ стан v-for до того як ми
+  // його читаємо. Без цього при перемиканні сторінок (рAF з watch(props.strokes))
+  // ми race-имось з vue-konva's batchDraw — ctx.drawImage міг копіювати stale
+  // піксели попередньої сторінки. layer.draw() = no-op якщо нема pending changes,
+  // тому overhead відсутній у звичайному стискенні (commit stroke / tool change).
+  try { layer.draw() } catch { /* Konva tear-down race, harmless */ }
   const src: HTMLCanvasElement | undefined = layer.getCanvas()._canvas
   if (!src) return
   const { width, height } = getStagePixelSize()
@@ -4256,6 +4270,21 @@ watch(
     const transformer = transformerRef.value?.getNode?.()
     if (transformer) transformer.nodes([])
     wbStore.clearSelection()
+
+    // PAGE-LEAK FIX: оверлей-канвас strokesOverlayRef (z-index 6) у draw-mode
+    // дзеркалить пікселі Konva strokesLayer щоб committed strokes лишались видимі
+    // над widget overlay'ами. Без явного очищення тут оверлей зберігає піксели
+    // попередньої сторінки під час fade (180ms), а watch(props.strokes) після
+    // fade race-иться з Konva batchDraw — може скопіювати назад stale піксели
+    // через ctx.drawImage(layer.getCanvas()._canvas). Очищення тут гарантує
+    // чистий оверлей на початку переходу; після fade re-mirror з нової Konva
+    // layer заповнить його коректно (порожній канвас для empty page, або новими
+    // strokes). Безпечно: оверлей у draw-mode завжди невидимий під час fade-out
+    // (opacity:0 від .wb-page-fade--out) і recoverable з Konva layer.
+    if (strokesOverlayCtx) {
+      const { width, height } = getStagePixelSize()
+      strokesOverlayCtx.clearRect(0, 0, width, height)
+    }
   },
 )
 
@@ -4270,8 +4299,17 @@ watch(
     assetConfigCache.clear()
     clearSmoothedCache()
     if (currentTool.value !== 'select' && wbStore.mode !== 'replay') {
-      // Defer one rAF so Konva finishes re-rendering the strokes layer first.
-      requestAnimationFrame(() => mirrorStrokesLayer())
+      // PAGE-LEAK FIX: nextTick гарантує що vue-konva встиг знищити стейл v-path
+      // ноди (Vue 'post' flush ставить onUnmounted vue-konva нодів ПІСЛЯ цього
+      // watcher-а з 'pre' flush). Тільки після nextTick планувати rAF →
+      // mirrorStrokesLayer (який тепер ще й викликає layer.draw() sync, див.
+      // вище — щоб гарантовано читати canvas з актуальним layer.children).
+      // Без nextTick: rAF міг запуститися до vue-konva onUnmounted →
+      // strokesLayer.draw() рендерив старі ноди → drawImage копіював stale
+      // stroke на overlay → видно strokes попередньої сторінки на новій.
+      nextTick(() => {
+        requestAnimationFrame(() => mirrorStrokesLayer())
+      })
     }
   },
 )

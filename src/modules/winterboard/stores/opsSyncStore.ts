@@ -272,6 +272,18 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    *   - on network/HTTP errors → propagates up (caller decides retry)
    */
   async function bootstrap(sid: string): Promise<void> {
+    // INV-CROSS-SESSION: при зміні сесії — очистити pending/inFlight ops.
+    // Без цього ops від попередньої сесії (що не встигли flush) будуть надіслані
+    // на новий session_id → крос-сесійне забруднення.
+    // Обидва шаблони мають однакові page_id (з одного S3 snapshot) →
+    // старий stroke_add op з'являється на тій самій сторінці нової сесії.
+    // saveBeforeLeave() робить best-effort flush перед навігацією,
+    // але якщо flush не вдається → ops залишаються → цей guard їх дропає.
+    if (sessionId.value && sessionId.value !== sid) {
+      pendingOps.value = []
+      inFlightOps.value = []
+      _flushPromise = null
+    }
     sessionId.value = sid
     _initChannel()
     try {

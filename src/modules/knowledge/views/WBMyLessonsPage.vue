@@ -151,14 +151,14 @@
 
                 <!-- Actions -->
                 <div class="mt-3 flex flex-wrap gap-2">
-                  <!-- PR 2.2: Підготуватись — getOrCreate prep session -->
+                  <!-- "Провести" — завжди fresh WBSession з KnowledgeLesson.snapshot → WBSoloRoom -->
                   <button
                     type="button"
                     class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-                    :disabled="preparingLessonId === lesson.id"
-                    @click="prepareLesson(lesson)"
+                    :disabled="openingLessonId === lesson.id"
+                    @click="openLesson(lesson)"
                   >
-                    {{ preparingLessonId === lesson.id
+                    {{ openingLessonId === lesson.id
                       ? '...'
                       : $t('knowledge.lesson.prepare.button') }}
                   </button>
@@ -327,7 +327,6 @@ const { t } = useI18n()
 const lessons = ref<MyLesson[]>([])
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
-const loadingLessonId = ref<string | null>(null)
 const shareLinkMap = ref<Record<string, string>>({})
 const copiedLessonId = ref<string | null>(null)
 const togglingId = ref<string | null>(null)
@@ -348,8 +347,8 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const deletingId = ref<string | null>(null)
 const deleteTarget = ref<MyLesson | null>(null)
 
-// PR 2.2: Підготуватись — getOrCreate prep session
-const preparingLessonId = ref<string | null>(null)
+// "Провести" — race guard для fresh session open
+const openingLessonId = ref<string | null>(null)
 
 // Preview: loading guard поки оновлюємо snapshot
 const previewingLessonId = ref<string | null>(null)
@@ -364,18 +363,12 @@ onMounted(() => {
   loadLessons()
 })
 
-// Phase 1.5: 1-click auto-open для resume_draft / resume_last_lesson CTA.
+// 1-click auto-open для resume_last_lesson CTA (?open=<lessonId>).
+// Викликає openLesson() → loadToSession → WBSoloRoom (fresh session, template незмінний).
 //
 // Watch-sources: [lessons, isLoading, route.query.open]
 //   - [lessons, isLoading] — чекаємо поки API відповів (slow network safe)
-//   - route.query.open — ловить другий заход у той самий route з іншим ?open=
-//     (user back-ається, натискає інший CTA — компонент не remount'иться, але
-//     query змінюється, watcher знову спрацьовує з новим id)
-//
-// Race/dup protection:
-//   - openedIds: Set<id> — НЕ відкриваємо ту ж чернетку повторно навіть
-//     якщо watcher retrigger'иться до того як openLesson завершиться
-//   - openLesson має власний guard loadingLessonId → захист від паралельних викликів
+//   - route.query.open — ловить повторний захід у той самий route
 const openedIds = new Set<string>()
 
 watch(
@@ -395,14 +388,11 @@ watch(
     await router.replace({ query: { ...route.query, open: undefined } })
 
     if (!target) {
-      // Lesson не знайдено на першій сторінці — мовчки залишаємось на списку
-      // (lesson міг бути видалений або є на наступних сторінках пагінації)
       console.info('[WBMyLessonsPage] open=%s not found in loaded lessons', openId)
       return
     }
 
-    // Auto-open: те ж саме, що ручний клік. openLesson має власний
-    // loadingLessonId guard — швидкі повторні кліки безпечні.
+    // Провести: завжди fresh session від template → WBSoloRoom
     await openLesson(target)
   },
   { immediate: true },
@@ -558,26 +548,6 @@ async function toggleVisibility(lesson: MyLesson): Promise<void> {
   }
 }
 
-async function openLesson(lesson: MyLesson): Promise<void> {
-  if (loadingLessonId.value) return
-  loadingLessonId.value = lesson.id
-  loadError.value = null
-
-  try {
-    const { session_id, lesson_id } = await lessonViewApi.loadToSession(lesson.id)
-    await router.push({
-      name: 'winterboard-solo',
-      params: { id: session_id },
-      query: { source_lesson: lesson_id },
-    })
-  } catch (err) {
-    console.error('[WBMyLessonsPage] load lesson error:', err)
-    loadError.value = t('knowledge.lesson.reuse.loadError')
-  } finally {
-    loadingLessonId.value = null
-  }
-}
-
 // ── Preview: auto-refresh snapshot перед переглядом ──────────────────
 // source_session_id є в серіалайзері → оновлюємо snapshot з поточного
 // стану WBSession. Best-effort: помилка не блокує навігацію.
@@ -643,22 +613,44 @@ function onThumbnailError(event: Event, lesson: MyLesson): void {
   lesson.board_thumbnail_url = ''
 }
 
-// ── PR 2.2: Підготуватись ───────────────────────────────────────────
-async function prepareLesson(lesson: MyLesson): Promise<void> {
-  if (preparingLessonId.value) return
-  preparingLessonId.value = lesson.id
+// ── "Провести" — завжди fresh WBSession з KnowledgeLesson.snapshot ────
+// loadToSession: кожного разу нова сесія → template незмінний → урок повторюваний.
+// Сесія зберігається в "проведені уроки" після закриття.
+async function openLesson(lesson: MyLesson): Promise<void> {
+  if (openingLessonId.value) return
+  openingLessonId.value = lesson.id
+  loadError.value = null
+  try {
+    const { session_id } = await lessonViewApi.loadToSession(lesson.id)
+    await router.push({
+      name: 'winterboard-solo',
+      params: { id: session_id },
+    })
+  } catch (err) {
+    console.error('[WBMyLessonsPage] openLesson error:', err)
+    notify.error(t('knowledge.lesson.prepare.error'))
+  } finally {
+    openingLessonId.value = null
+  }
+}
+
+// ── "Конструктор" — persistent prep session (кнопка буде додана окремо) ──
+// getOrCreate: повертає існуючу prep сесію або seedить нову з snapshot.
+// INV-CONSTR-5: накопичення = очікувана поведінка в constructor.
+async function openConstructor(lesson: MyLesson): Promise<void> {
+  if (openingLessonId.value) return
+  openingLessonId.value = lesson.id
   try {
     const { wb_session_id } = await lessonViewApi.prepareLesson(lesson.id)
     await router.push({
-      name: 'winterboard-solo',
+      name: 'winterboard-prepare',
       params: { id: wb_session_id },
-      query: { lesson_ctx: 'prepare' },
     })
   } catch (err) {
-    console.error('[WBMyLessonsPage] prepareLesson error:', err)
+    console.error('[WBMyLessonsPage] openConstructor error:', err)
     notify.error(t('knowledge.lesson.prepare.error'))
   } finally {
-    preparingLessonId.value = null
+    openingLessonId.value = null
   }
 }
 

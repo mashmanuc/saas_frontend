@@ -78,7 +78,7 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
     path: 'winterboard/boards',
     name: 'winterboard-boards',
     component: () => import('./views/WBBoardList.vue'),
-    meta: { title: 'Winterboard — Boards', roles: ['tutor'] },
+    meta: { title: 'Студія уроків', roles: ['tutor'] },
   },
   {
     // Phase 1.6 → v4.1 (Replay Lifecycle): список записів тьютора з 3-tier lifecycle
@@ -172,6 +172,15 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
       query: to.query,
     }),
     meta: { public: true, requiresAuth: false },
+  },
+  {
+    // Студія уроків — редактор дошки. Той самий WBSoloRoom, але у режимі конструктора.
+    // constructorMode: true → ховає запис/invite, показує amber badge + «Оновити шаблон».
+    path: '/winterboard/prepare/:id',
+    name: 'winterboard-prepare',
+    component: () => import('./views/WBSoloRoom.vue'),
+    props: true,
+    meta: { title: 'Конструктор', roles: ['tutor'], constructorMode: true },
   },
   {
     // Solo session editor — tutor-only

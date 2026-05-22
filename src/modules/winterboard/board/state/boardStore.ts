@@ -3,6 +3,7 @@
 // Based on classroom/board/state/boardStore.ts — stripped of classroom-specific code
 
 import { defineStore } from 'pinia'
+import { useTestStore } from './testStore'
 import type {
   WBPage,
   WBStroke,
@@ -815,6 +816,16 @@ export const useWBStore = defineStore('wb-board', {
       this.lastSavedAt = new Date(session.updated_at)
       this.undoStack = []
       this.redoStack = []
+
+      // Скидаємо стан що "протікає" між сесіями при SPA-навігації.
+      // Ці поля НЕ є частиною session.state але можуть залишатись від попередньої сесії.
+      this.selectedIds = []
+      this.selectionRect = null
+      this.zoom = 1
+      this.scrollX = 0
+      this.scrollY = 0
+      this.syncError = null
+      this.objectLimitHitAt = null
     },
 
     // ── R0: Mode & Replay Lifecycle ──────────────────────────────────────
@@ -2200,20 +2211,22 @@ export const useWBStore = defineStore('wb-board', {
       const _pi = pageIndex
       const _prevStrokes = [...page.strokes]
       const _prevAssets = [...page.assets]
+      const _prevTestObjects = [...(page.testObjects ?? [])]
       const _pageId = page.id ?? ''
 
       const cmd: WBCommand = {
         apply: () => {
           const p = this.pages[_pi]
           if (!p) return
-          this.pages[_pi] = { ...p, strokes: [], assets: [] }
+          this.pages[_pi] = { ...p, strokes: [], assets: [], testObjects: [] }
+          useTestStore().clearPageAnswers(_pageId)
           this.markDirty()
           _emitOperation({ op_type: 'clear_page', page_id: _pageId, payload: {} })
         },
         revert: () => {
           const p = this.pages[_pi]
           if (!p) return
-          this.pages[_pi] = { ...p, strokes: _prevStrokes, assets: _prevAssets }
+          this.pages[_pi] = { ...p, strokes: _prevStrokes, assets: _prevAssets, testObjects: _prevTestObjects }
           this.markDirty()
           for (const s of _prevStrokes) {
             _emitOperation({ op_type: 'stroke_add', page_id: _pageId, payload: { stroke: s } })
@@ -2226,7 +2239,8 @@ export const useWBStore = defineStore('wb-board', {
       this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
-      this.pages[pageIndex] = { ...page, strokes: [], assets: [] }
+      this.pages[pageIndex] = { ...page, strokes: [], assets: [], testObjects: [] }
+      useTestStore().clearPageAnswers(_pageId)
       this.markDirty()
 
       // Phase 20: emit operation for recording

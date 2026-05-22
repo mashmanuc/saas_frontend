@@ -53,6 +53,10 @@ export interface WBSessionListItem {
   is_replay_frozen?: boolean
   // [Phase C 2026-04-16] replay_visibility / replay_share_token removed —
   // moved to Replay entity. Use replayLifecycleApi (visibility / public_token).
+  // INV-PREP-2 (Etap 2): provenance FK to KnowledgeLesson. NULL = scratch board.
+  // Read-only — set once on session creation. Serializer: select_related('origin_lesson').
+  origin_lesson_id?: string | null
+  origin_lesson_title?: string | null
 }
 
 export interface ListSessionsQuery {
@@ -95,6 +99,9 @@ export interface WBSessionDetailResponse {
   state_digest: string
   last_write_at: string | null
   created_at: string
+  // PR C.1: lesson lineage (INV-PREP-4 — set once on creation)
+  origin_lesson_id: string | null
+  origin_lesson_title: string | null
   updated_at: string
   // Recording control fields (present when session has recording)
   recording_started_seq?: number | null
@@ -106,6 +113,10 @@ export interface WBSessionDetailResponse {
   // Plan v2.3 (2026-05-05): state machine field — server-authoritative.
   // Default 'idle' for sessions without recording. FE syncs this directly.
   recording_state?: 'idle' | 'recording' | 'paused' | 'finalized'
+  // INV-LESSON-PLAY: True для сесій з "Провести урок" (loadToSession).
+  // WBSoloRoom показує WBRecordingBanner тільки коли true.
+  // False = пряма My Boards сесія → запис відключений.
+  is_lesson_play?: boolean
 }
 
 // Phase 2 (2026-04-27): WBDiffOp / WBDiffSavePayload / WBDiffSaveResponse /
@@ -244,6 +255,14 @@ export interface WBObjectAudioUploadResponse {
 
 export interface WBObjectAudioUploadOptions {
   onUploadProgress?: (event: { loaded: number; total: number; percent: number }) => void
+}
+
+// ── Solo → Classroom fork ────────────────────────────────────────────────
+
+export interface StartClassroomResponse {
+  lesson_id: string
+  classroom_url: string
+  wb_session_id: string
 }
 
 // ── API Client ─────────────────────────────────────────────────────────
@@ -714,6 +733,22 @@ export const winterboardApi = {
     } catch {
       return false
     }
+  },
+
+  // ── Solo → Classroom fork (Solo-to-Classroom Plan 2026-05-20) ────────
+
+  /**
+   * Fork a solo WBSession into a new classroom WBSession + Lesson.
+   * BE: POST /winterboard/sessions/{pk}/start-classroom/
+   * Caller MUST flushAll() before this call (flush barrier).
+   */
+  startClassroom(
+    sessionId: string,
+    data: { student_id: number; lesson_name?: string },
+  ): Promise<StartClassroomResponse> {
+    return apiClient
+      .post(`${BASE}/sessions/${sessionId}/start-classroom/`, data)
+      .then((r: any) => r.data ?? r)
   },
 
   // ── Board Folders (Level 2) ──────────────────────────────────────────

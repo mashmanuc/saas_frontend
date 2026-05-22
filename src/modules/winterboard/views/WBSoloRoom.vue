@@ -36,6 +36,11 @@
         </span>
       </div>
 
+      <!-- Constructor mode badge — amber, показується тільки в /winterboard/prepare/:id -->
+      <span v-if="constructorMode" class="wb-constructor-badge">
+        {{ t('winterboard.constructor.badge') }}
+      </span>
+
       <!-- Left: Editable title + Undo/Redo (editing context) -->
       <div class="wb-solo-room__title">
         <input
@@ -108,19 +113,20 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- A.1: Solo recording — 2-state UI (idle → recording → stop=finalize).
+        <!-- A.1: Solo recording — тільки для lesson-play сесій (INV-LESSON-PLAY).
+             Студія уроків сесії: запис відключений (is_lesson_play=false).
              @pause maps до handleStopRecording (= finalizeRecording API call). -->
         <WBRecordingBanner
-          v-if="isSessionOwner"
+          v-if="isSessionOwner && isLessonPlay && !constructorMode"
           :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
           @pause="handleStopRecording"
         />
-        <!-- Solo → Classroom fork: "Запросити учня" (Solo-to-Classroom Plan 2026-05-20) -->
+        <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode -->
         <button
-          v-if="isSessionOwner && sessionId"
+          v-if="isSessionOwner && sessionId && !constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--invite"
           :title="t('winterboard.startClassroom.button')"
@@ -133,9 +139,9 @@
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
-        <!-- Phase B: Share replay — показуємо коли є контент (ops створять replay автоматично) -->
+        <!-- Phase B: Share replay — прихована в constructor mode -->
         <button
-          v-if="isSessionOwner && hasOperations"
+          v-if="isSessionOwner && hasOperations && !constructorMode"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.replay.share.title', 'Поділитися записом')"
@@ -929,6 +935,12 @@ const route = useRoute()
 const store = useWBStore()
 const testStore = useTestStore()
 
+// ── Constructor mode (Студія уроків) ───────────────────────────────────────
+// Активується коли маршрут /winterboard/prepare/:id (meta.constructorMode = true).
+// Той самий WBSoloRoom — тільки ховає запис/invite, показує badge + «Оновити шаблон».
+const constructorMode = computed(() => !!route.meta.constructorMode)
+const originLessonId = ref<string | null>(null)
+
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
 const { t } = useI18n()
@@ -960,6 +972,10 @@ const showShareModal = ref(false)
 const isManualRecording = ref(false)
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
+// INV-LESSON-PLAY: True = сесія відкрита через "Провести урок" (loadToSession).
+// Тільки для таких сесій показується WBRecordingBanner.
+// False = пряма Студія уроків сесія → запис відключений (тьютор не плутається).
+const isLessonPlay = ref(false)
 // Share Layer v1: Replay entity id для нового content-based share flow.
 const activeReplayId = ref<string | null>(null)
 const isRecordingLoading = ref(false)
@@ -1256,9 +1272,11 @@ const showYouTubeModal = ref(false)
 
 // ── "Оновити шаблон" — коли solo board відкрито з існуючого уроку ──────
 // WBMyLessonsPage/KnowledgeHubPage передає ?source_lesson=<lesson_id> у query.
+// Constructor mode: читаємо з originLessonId (origin_lesson_id поля сесії).
 const sourceLessonId = computed<string | null>(() => {
   const q = route.query.source_lesson
-  return typeof q === 'string' && q.length > 0 ? q : null
+  if (typeof q === 'string' && q.length > 0) return q
+  return originLessonId.value  // prep-board в constructor mode
 })
 const isUpdatingSnapshot = ref(false)
 const isSessionOwner = computed(() => {
@@ -2491,9 +2509,10 @@ async function handleUpdateLessonSnapshot(): Promise<void> {
   if (!lessonId || !sid || isUpdatingSnapshot.value) return
   isUpdatingSnapshot.value = true
   try {
-    // Flush усі pending ops щоб session.state в БД був свіжим
-    try { await opsSync.flush() } catch (e) {
-      console.warn('[WBSoloRoom] flush before update-snapshot failed (continuing):', e)
+    // flushAll() — дренує ВСІ pending ops (не тільки перші 50 як flush()).
+    // Патерн той самий що saveBeforeLeave(). Без flushAll ops > 50 не досягають BE.
+    try { await opsSync.flushAll() } catch (e) {
+      console.warn('[WBSoloRoom] flushAll before update-snapshot failed (continuing):', e)
     }
     await lessonViewApi.updateSnapshot(lessonId, sid)
     _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdated'), 'success')
@@ -2533,8 +2552,14 @@ async function saveBeforeLeave(): Promise<void> {
     // string), який не ловив локалізоване "Без назви" і зберігав сміттєві
     // значення зі store.workspaceName (включно з UI-текстом, який міг туди
     // потрапити з автотестів або race-у). Назву має зберігати тільки blur.
-    // Flush all pending drawing changes
-    await autosave.saveNow()
+    //
+    // Flush ALL pending ops (not just one batch of 50).
+    // saveNow() = opsSync.flush() = one batch. flushAll() drains the full queue.
+    // Це критично: якщо ops >50 і saveNow(), решта залишається у pendingOps
+    // → при bootstrap нової сесії вони можуть забруднити новий session_id.
+    // bootstrap() очищає pendingOps при зміні session (INV-CROSS-SESSION guard),
+    // але краще відправити ops на правильну сесію ще тут.
+    await opsSync.flushAll()
   } catch (err) {
     console.warn('[WBSoloRoom] Save before leave failed (best-effort):', err)
   }
@@ -2563,7 +2588,7 @@ onMounted(async () => {
   if (!id || route.name === 'winterboard-new') {
     try {
       // Якщо тьютор відкрив дошку для конкретного учня — використовуємо ім'я учня як назву сесії
-      // щоб дошка була впізнаваною у списку "Мої дошки"
+      // щоб дошка була впізнаваною у Студії уроків
       // Якщо тьютор запустив урок з плану → використовуємо назву плану
       // Якщо тьютор відкрив дошку для учня → використовуємо ім'я учня
       const lessonNameParam = typeof route.query.lessonName === 'string' ? route.query.lessonName.trim() : null
@@ -2706,6 +2731,10 @@ onMounted(async () => {
     // Load session from API
     try {
       const detail = await winterboardApi.getSession(id)
+
+      // Зберігаємо origin_lesson_id для "Оновити шаблон" в constructor-режимі
+      originLessonId.value = detail.origin_lesson_id ?? null
+
       if (detail.state) {
         store.hydrateFromSession({
           id: detail.id,
@@ -2746,6 +2775,7 @@ onMounted(async () => {
         }
       }
       isReplayFrozen.value = detail.is_replay_frozen ?? false
+      isLessonPlay.value = detail.is_lesson_play ?? false
 
       // Share Layer v1: якщо recording вже frozen — знайти replay.id через list API.
       // Status='all' бо може бути у trash/archive теж. BE фільтрує по owner=request.user.
@@ -2953,6 +2983,19 @@ watch(() => store.workspaceName, (name) => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Constructor mode badge — amber, показується тільки в /winterboard/prepare/:id */
+.wb-constructor-badge {
+  background: #f59e0b;
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .wb-title-edit-hint {
