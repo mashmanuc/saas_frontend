@@ -100,12 +100,8 @@
         </template>
       </v-layer>
 
-      <!-- Strokes layer — ABOVE images.
-           In replay mode: opacity:0 hides this Konva canvas so strokes are shown
-           ONLY via wb-strokes-overlay (z-index 6, above HTML widget overlays).
-           Without this, newly-added replay strokes flash below widget overlays for
-           the duration of nextTick+rAF before mirrorStrokesLayer copies them. -->
-      <v-layer ref="strokesLayerRef" :config="strokesLayerReplayConfig">
+      <!-- Strokes layer — ABOVE images -->
+      <v-layer ref="strokesLayerRef">
         <template v-for="stroke in strokes" :key="stroke.id">
           <!-- Pen / Highlighter -->
           <v-path
@@ -1290,15 +1286,6 @@ const LAZY_RENDER_THRESHOLD = 500
 
 const currentTool = computed(() => props.tool)
 
-// In replay mode: Konva strokes layer is hidden (opacity:0) so strokes appear
-// ONLY via wb-strokes-overlay (z-index 6, above widget HTML overlays).
-// This prevents the "flash below objects" artifact caused by the nextTick+rAF
-// delay in mirrorStrokesLayer. The SceneCanvas still holds pixel data, so
-// mirrorStrokesLayer can still copy it even with opacity:0.
-const strokesLayerReplayConfig = computed(() => ({
-  opacity: wbStore.mode === 'replay' ? 0 : 1,
-}))
-
 const cursorClass = computed(() => {
   // v5 A4: Laser active → hide cursor (dot replaces it)
   if (props.tool === 'laser' && laserPointer.isActive.value) return 'wb-canvas--laser-active'
@@ -2140,11 +2127,8 @@ function mirrorStrokesLayer(): void {
   const overlayCanvas = strokesOverlayRef.value
   const ctx = strokesOverlayCtx
   if (!overlayCanvas || !ctx) return
-  if (currentTool.value === 'select' && wbStore.mode !== 'replay') {
-    // In select mode (live edit only): clear overlay so Konva strokesLayer
-    // handles display and strokes remain hittable/selectable via Konva.
-    // In replay mode we always mirror — strokes must appear above widget
-    // HTML overlays (z-index 4-5) regardless of the current tool.
+  if (currentTool.value === 'select' || wbStore.mode === 'replay') {
+    // In select/replay mode: clear overlay; Konva strokesLayer handles display.
     const { width, height } = getStagePixelSize()
     ctx.clearRect(0, 0, width, height)
     return
@@ -4247,20 +4231,6 @@ watch(
   },
 )
 
-// When replay mode starts: ensure wb-strokes-overlay shows existing strokes.
-// Needed when replay starts while tool is 'select' (overlay was cleared) OR when
-// seeking to a mid-session replay state. Konva strokes layer is already opacity:0
-// (strokesLayerReplayConfig), so without this mirror, existing strokes would be
-// invisible until the first stroke-add event fires watch(props.strokes).
-watch(
-  () => wbStore.mode,
-  (newMode) => {
-    if (newMode === 'replay') {
-      nextTick(() => requestAnimationFrame(() => mirrorStrokesLayer()))
-    }
-  },
-)
-
 // A6.2: Rebuild spatial index when strokes change
 watch(
   allStrokes,
@@ -4328,11 +4298,7 @@ watch(
     strokeConfigCache.clear()
     assetConfigCache.clear()
     clearSmoothedCache()
-    if (currentTool.value !== 'select' || wbStore.mode === 'replay') {
-      // Re-mirror strokes onto wb-strokes-overlay (z-index 6) when:
-      //   a) draw mode (non-select): committed strokes stay visible above widget overlays
-      //   b) replay mode: strokes must appear above widget HTML overlays (z-index 4-5)
-      //      so the recorded writing is visible over calculator/trig/helix cards.
+    if (currentTool.value !== 'select' && wbStore.mode !== 'replay') {
       // PAGE-LEAK FIX: nextTick гарантує що vue-konva встиг знищити стейл v-path
       // ноди (Vue 'post' flush ставить onUnmounted vue-konva нодів ПІСЛЯ цього
       // watcher-а з 'pre' flush). Тільки після nextTick планувати rAF →
