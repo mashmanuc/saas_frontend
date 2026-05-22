@@ -2494,9 +2494,22 @@ function handleTemplateSaved(): void {
   showSaveTemplateDialog.value = false
 }
 
-// Phase 21: Force autosave before opening save dialog to ensure latest state is persisted
+// Phase 21: Force flush ALL pending ops before opening save dialog so latest
+// state is persisted to BE before save-from-session reads session.state.
+//
+// BUG-FIX: попередньо викликалось autosave.saveNow() яке проксі на
+// opsSync.flush() (FLUSH_BATCH_SIZE=50 ops/виклик за дизайном для throttling).
+// При > 50 pending ops залишок не доходив до BE — KnowledgeLesson snapshot
+// створювався без них (репорт користувача: "10-11 штрихів пропало").
+//
+// Тут потрібен flushAll() — той самий патерн що handleUpdateLessonSnapshot()
+// нижче. Дренує ВСІ ops до повного очищення pendingOps + inFlightOps.
 async function openSaveLessonDialog(): Promise<void> {
-  await autosave.saveNow()
+  try {
+    await opsSync.flushAll()
+  } catch (e) {
+    console.warn('[WBSoloRoom] flushAll before save-as-lesson failed (continuing):', e)
+  }
   showSaveLessonDialog.value = true
 }
 
