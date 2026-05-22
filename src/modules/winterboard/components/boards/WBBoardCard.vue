@@ -40,6 +40,20 @@
            materialized у PR-1). Без traversal, без computed, без logic.
            Nothing for root sessions (folder_path is null).
            CSS-truncate + native `title` tooltip → full path on hover. -->
+      <!-- Prep session label — shown when board is linked to a KnowledgeLesson (INV-PREP-2) -->
+      <div v-if="board.origin_lesson_id" class="wb-board-card__prep" @click.stop>
+        <span class="wb-board-card__prep-badge">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M1 7.5L7 1.5l1.5 1.5-6 6H1V7.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+          {{ t('winterboard.boards.prepLabel') }}
+          <template v-if="board.origin_lesson_title"> · {{ board.origin_lesson_title }}</template>
+        </span>
+        <router-link
+          :to="{ name: 'MyLessons' }"
+          class="wb-board-card__prep-back"
+        >{{ t('winterboard.boards.backToLesson') }}</router-link>
+      </div>
       <p
         v-if="board.folder_path"
         class="wb-board-card__path"
@@ -300,6 +314,45 @@ function formatTimeAgo(iso: string): string {
 
 .wb-board-card__sep {
   opacity: 0.5;
+}
+
+/* ── Prep session label ───────────────────────────────────────────────── */
+
+.wb-board-card__prep {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.wb-board-card__prep-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0066ff;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 2px 7px;
+  width: fit-content;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wb-board-card__prep-back {
+  font-size: 11px;
+  color: var(--wb-fg-secondary, #64748b);
+  text-decoration: none;
+  padding: 0 2px;
+  transition: color 0.1s;
+}
+
+.wb-board-card__prep-back:hover {
+  color: var(--wb-brand, #0066ff);
+  text-decoration: underline;
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */

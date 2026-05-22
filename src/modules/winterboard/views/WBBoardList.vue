@@ -1,9 +1,60 @@
-<!-- WB: Board list view — grid/list toggle, thumbnail preview, CRUD
-     Ref: TASK_BOARD.md B13
+<!-- WB: Студія уроків — Library (board grid/list) + Constructor (placeholder, TBD by parallel agent)
+     Ref: LESSON_CONSTRUCTOR_ARCHITECTURE_2026-05-21.md §0, TASK_BOARD.md B13
+     Modes: 'library' (current) | 'constructor' (parallel agent builds)
      Sub-components: WBBoardCard (grid), WBBoardListItem (list), BoardFolderTree (sidebar)
      Deploy: Phase 6 responsive -->
 <template>
-  <div class="wb-board-list" :class="{ 'wb-board-list--with-sidebar': showSidebar }">
+  <div class="wb-board-list" :class="{ 'wb-board-list--with-sidebar': showSidebar && studioMode === 'library' }">
+    <!-- Mode switcher: Library | Constructor
+         Ref: LESSON_CONSTRUCTOR_ARCHITECTURE_2026-05-21.md §0 — один UX-простір, перемикання вкладками.
+         Constructor панель будує паралельний агент; поки placeholder. -->
+    <div class="wb-studio-mode-bar">
+      <button
+        type="button"
+        class="wb-studio-mode-bar__btn"
+        :class="{ 'wb-studio-mode-bar__btn--active': studioMode === 'library' }"
+        :aria-pressed="studioMode === 'library'"
+        @click="studioMode = 'library'"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M4 5h6M4 7.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        {{ t('winterboard.boards.modeLibrary') }}
+      </button>
+      <button
+        type="button"
+        class="wb-studio-mode-bar__btn"
+        :class="{ 'wb-studio-mode-bar__btn--active': studioMode === 'constructor' }"
+        :aria-pressed="studioMode === 'constructor'"
+        @click="studioMode = 'constructor'"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M7 1.5 L12 4.5 L12 9.5 L7 12.5 L2 9.5 L2 4.5 Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
+          <circle cx="7" cy="7" r="1.5" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        {{ t('winterboard.boards.modeConstructor') }}
+      </button>
+    </div>
+
+    <!-- ── Constructor mode placeholder (parallel agent will fill this) ──── -->
+    <div v-if="studioMode === 'constructor'" class="wb-studio-constructor">
+      <div class="wb-studio-constructor__icon" aria-hidden="true">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <rect x="4" y="4" width="48" height="48" rx="12" fill="var(--wb-canvas-bg, #f1f5f9)"/>
+          <path d="M28 16 L40 22 L40 34 L28 40 L16 34 L16 22 Z" stroke="var(--wb-brand, #0066ff)" stroke-width="2" fill="none"/>
+          <circle cx="28" cy="28" r="4" stroke="var(--wb-brand, #0066ff)" stroke-width="2"/>
+          <path d="M28 22v2M28 32v2M22 28h2M32 28h2" stroke="var(--wb-brand, #0066ff)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 class="wb-studio-constructor__title">{{ t('winterboard.boards.constructorComingSoonTitle') }}</h2>
+      <p class="wb-studio-constructor__desc">{{ t('winterboard.boards.constructorComingSoonDesc') }}</p>
+      <span class="wb-studio-constructor__badge">{{ t('winterboard.boards.constructorComingSoonBadge') }}</span>
+    </div>
+
+    <!-- ── Library mode (existing board list) ─────────────────────────── -->
+    <template v-if="studioMode === 'library'">
+
     <!-- Sidebar (folders) -->
     <aside v-if="showSidebar" class="wb-board-list__sidebar">
       <BoardFolderTree
@@ -215,7 +266,7 @@
           role="listitem"
           draggable="true"
           @dragstart="onBoardDragStart($event, board.id)"
-          @open="openBoard(board.id)"
+          @open="openBoard(board)"
           @duplicate="handleDuplicate(board.id)"
           @share="handleShare(board.id)"
           @delete="confirmDelete(board)"
@@ -232,7 +283,7 @@
           role="listitem"
           draggable="true"
           @dragstart="onBoardDragStart($event, board.id)"
-          @open="openBoard(board.id)"
+          @open="openBoard(board)"
           @duplicate="handleDuplicate(board.id)"
           @share="handleShare(board.id)"
           @delete="confirmDelete(board)"
@@ -316,6 +367,8 @@
       :is-open="!!exportSessionId"
       @close="exportSessionId = null"
     />
+
+    </template><!-- /library mode -->
   </div>
 </template>
 
@@ -338,12 +391,39 @@ const WBExportDialog = defineAsyncComponent(() => import('../components/export/W
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'wb_board_view_mode'
+const STUDIO_MODE_KEY = 'wb_studio_mode'
 const LIMIT = 24
 
 // ─── Composables ──────────────────────────────────────────────────────────────
 
 const { t } = useI18n()
 const router = useRouter()
+
+// ─── Studio mode: Library | Constructor ──────────────────────────────────────
+// Ref: LESSON_CONSTRUCTOR_ARCHITECTURE_2026-05-21.md §0 — один простір, дві вкладки.
+// Constructor — placeholder; реальна панель будується паралельним агентом.
+
+type StudioMode = 'library' | 'constructor'
+
+function _loadStudioMode(): StudioMode {
+  try {
+    const saved = localStorage.getItem(STUDIO_MODE_KEY)
+    if (saved === 'library' || saved === 'constructor') return saved
+  } catch {
+    // localStorage unavailable
+  }
+  return 'library'
+}
+
+const studioMode = ref<StudioMode>(_loadStudioMode())
+
+watch(studioMode, (m) => {
+  try {
+    localStorage.setItem(STUDIO_MODE_KEY, m)
+  } catch {
+    // ignore
+  }
+})
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -634,8 +714,9 @@ watch(searchQuery, () => {
 
 // ─── CRUD actions ─────────────────────────────────────────────────────────────
 
-function openBoard(id: string): void {
-  router.push({ name: 'winterboard-solo', params: { id } })
+// Студія уроків: всі дошки відкриваються через WBConstructorRoom (редактор).
+function openBoard(board: WBSessionListItem): void {
+  router.push({ name: 'winterboard-prepare', params: { id: board.id } })
 }
 
 async function handleDuplicate(id: string): Promise<void> {
@@ -716,6 +797,94 @@ onMounted(() => {
 
 .wb-board-list__main {
   min-width: 0;
+}
+
+/* ── Studio mode bar ─────────────────────────────────────────────────── */
+
+.wb-studio-mode-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--wb-canvas-bg, #f1f5f9);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 3px;
+  width: fit-content;
+  margin-bottom: 24px;
+  /* span full grid width коли немає sidebar */
+  grid-column: 1 / -1;
+}
+
+.wb-studio-mode-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wb-fg-secondary, #64748b);
+  background: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  white-space: nowrap;
+}
+
+.wb-studio-mode-bar__btn:hover {
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-studio-mode-bar__btn--active {
+  background: var(--wb-card-bg, #ffffff);
+  color: var(--wb-fg, #0f172a);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Constructor placeholder ─────────────────────────────────────────── */
+
+.wb-studio-constructor {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  border: 2px dashed var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 16px;
+  text-align: center;
+  gap: 12px;
+}
+
+.wb-studio-constructor__icon {
+  margin-bottom: 4px;
+}
+
+.wb-studio-constructor__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--wb-fg, #0f172a);
+  margin: 0;
+}
+
+.wb-studio-constructor__desc {
+  font-size: 14px;
+  color: var(--wb-fg-secondary, #64748b);
+  max-width: 440px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.wb-studio-constructor__badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--wb-brand, #0066ff);
+  color: #ffffff;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 4px;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────── */

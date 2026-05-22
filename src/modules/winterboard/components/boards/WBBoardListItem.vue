@@ -27,6 +27,17 @@
       <span class="wb-board-list-item__name">
         {{ board.name || t('winterboard.boards.untitled') }}
       </span>
+      <!-- Prep session label (INV-PREP-2) -->
+      <span v-if="board.origin_lesson_id" class="wb-board-list-item__prep" @click.stop>
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M1 7.5L7 1.5l1.5 1.5-6 6H1V7.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+        {{ t('winterboard.boards.prepLabel') }}
+        <template v-if="board.origin_lesson_title"> · {{ board.origin_lesson_title }}</template>
+        <router-link :to="{ name: 'MyLessons' }" class="wb-board-list-item__prep-back">
+          {{ t('winterboard.boards.backToLesson') }}
+        </router-link>
+      </span>
       <span class="wb-board-list-item__meta">
         <!-- INV-KNOW-3 PR-4: folder breadcrumb (rendered, not computed) -->
         <span
@@ -194,6 +205,34 @@ function formatTimeAgo(iso: string): string {
 /* INV-KNOW-3 PR-4: inline breadcrumb segment у meta line */
 .wb-board-list-item__path {
   cursor: help;
+}
+
+/* ── Prep session label ───────────────────────────────────────────────── */
+
+.wb-board-list-item__prep {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0066ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wb-board-list-item__prep-back {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--wb-fg-secondary, #64748b);
+  text-decoration: none;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.wb-board-list-item__prep-back:hover {
+  color: var(--wb-brand, #0066ff);
+  text-decoration: underline;
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */

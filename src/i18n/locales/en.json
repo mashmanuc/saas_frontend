@@ -1016,7 +1016,7 @@
       "wbDashboard": "Board Panel",
       "wbLibrary": "Files",
       "wbLessons": "Lessons",
-      "wbBoards": "My Boards",
+      "wbBoards": "Lesson Studio",
       "wbStudents": "Students",
       "myStudents": "My Students",
       "messages": "Messages",
@@ -1038,7 +1038,7 @@
       "templateLibrary": "Template Library",
       "myPacks": "My Packs",
       "knowledgeAnalytics": "Analytics",
-      "myBoards": "My Boards",
+      "myBoards": "Lesson Studio",
       "materials": "Materials",
       "myPlan": "My Plan",
       "myReplays": "My Replays"
@@ -1053,7 +1053,7 @@
       "wbDashboard": "Manage your boards and materials",
       "wbLibrary": "Your files: PDFs, presentations, images",
       "wbLessons": "My saved lessons with search and folders",
-      "wbBoards": "Interactive whiteboards for lessons",
+      "wbBoards": "Lesson constructor and preparation",
       "myStudents": "Your active students",
       "inquiries": "New requests from students",
       "tutorProfile": "Your public marketplace profile",
@@ -4359,7 +4359,7 @@
       "tutorActivity": "Tutor Activity",
       "billing": "Billing",
       "system": "System",
-      "health": "System Health",
+      "health": "Platform Status",
       "backToApp": "Back to App",
       "financeSection": "Finance",
       "payouts": "Tutor Payouts",
@@ -4382,7 +4382,7 @@
       "reports": "Reports",
       "tutorActivity": "Tutor Activity",
       "billing": "Billing",
-      "health": "System Health",
+      "health": "Platform Status",
       "payouts": "Payouts",
       "profileModeration": "Profile Moderation",
       "verification": "Verification",
@@ -4602,7 +4602,7 @@
       "statusSuccess": "Success"
     },
     "health": {
-      "title": "System Health",
+      "title": "Platform Status",
       "users": "Users",
       "openReports": "Open Reports",
       "activeBans": "Active Bans",
@@ -4614,7 +4614,7 @@
       "alertReportsWarning": "Warning: {count} open reports",
       "asOf": "as of",
       "errorLoad": "Failed to load monitoring data",
-      "helpText": "Technical platform health indicators. Red means immediate action needed, yellow means monitoring required.",
+      "helpText": "Business platform metrics: reports, bans, subscriptions, tutor activity. Technical monitoring (notification queue, cache, WS) is available in the Operator section.",
       "inactive": "inactive",
       "last7d": "last 7 days",
       "pendingHint": "Check in Finance section",
@@ -6435,6 +6435,15 @@
     }
   },
   "winterboard": {
+    "constructor": {
+      "badge": "CONSTRUCTOR",
+      "backToLessons": "My Lessons",
+      "updateTemplate": "Update template",
+      "templateUpdated": "Lesson template updated",
+      "templateUpdateError": "Failed to update template",
+      "loadError": "Failed to load constructor session",
+      "untitled": "Untitled"
+    },
     "errors": {
       "protocolMismatch": {
         "title": "App updated",
@@ -6721,17 +6730,50 @@
         "reset": "Reset"
       },
       "preset": {
-        "similar":      { "full": "Similar triangles",       "desc": "homothety · drag k" },
-        "parallels":    { "full": "Parallels + transversal", "desc": "8 angles · corresponding · alternate" },
-        "trapezium":    { "full": "Trapezium",               "desc": "midsegment · height · cyclic" },
-        "euler9":       { "full": "Euler + 9-point circle",  "desc": "collinearity · nine-point circle" },
-        "simson":       { "full": "Simson line",             "desc": "P on circle · 3 feet collinear" },
-        "inversion":    { "full": "Inversion",               "desc": "r²/|OP|² · OP · conformality" },
-        "triangle":     { "full": "Triangle",                "desc": "medians · altitudes · bisectors" },
-        "circle":       { "full": "Circle",                  "desc": "chord · tangent · angle" },
-        "polygon":      { "full": "Quadrilateral",           "desc": "diagonals · Varignon" },
-        "pythagoras":   { "full": "Pythagoras",              "desc": "squares on sides" },
-        "thales":       { "full": "Thales",                  "desc": "3 parallels · ratios" }
+        "similar": {
+          "full": "Similar triangles",
+          "desc": "homothety · drag k"
+        },
+        "parallels": {
+          "full": "Parallels + transversal",
+          "desc": "8 angles · corresponding · alternate"
+        },
+        "trapezium": {
+          "full": "Trapezium",
+          "desc": "midsegment · height · cyclic"
+        },
+        "euler9": {
+          "full": "Euler + 9-point circle",
+          "desc": "collinearity · nine-point circle"
+        },
+        "simson": {
+          "full": "Simson line",
+          "desc": "P on circle · 3 feet collinear"
+        },
+        "inversion": {
+          "full": "Inversion",
+          "desc": "r²/|OP|² · OP · conformality"
+        },
+        "triangle": {
+          "full": "Triangle",
+          "desc": "medians · altitudes · bisectors"
+        },
+        "circle": {
+          "full": "Circle",
+          "desc": "chord · tangent · angle"
+        },
+        "polygon": {
+          "full": "Quadrilateral",
+          "desc": "diagonals · Varignon"
+        },
+        "pythagoras": {
+          "full": "Pythagoras",
+          "desc": "squares on sides"
+        },
+        "thales": {
+          "full": "Thales",
+          "desc": "3 parallels · ratios"
+        }
       }
     },
     "contentSidebar": {
@@ -7028,7 +7070,7 @@
       "retry": "Retry"
     },
     "sessions": {
-      "title": "My Boards",
+      "title": "Lesson Studio",
       "newSession": "New Lesson",
       "comingSoon": "Coming soon",
       "hint": "Create your first lesson to get started",
@@ -7060,8 +7102,13 @@
       "duplicateError": "Failed to duplicate board"
     },
     "boards": {
-      "myBoards": "My Boards",
-      "myBoardsSubtitle": "Create and edit boards",
+      "myBoards": "Lesson Studio",
+      "myBoardsSubtitle": "Lesson constructor and preparation",
+      "modeLibrary": "Library",
+      "modeConstructor": "Constructor",
+      "constructorComingSoonTitle": "Lesson Constructor",
+      "constructorComingSoonDesc": "A tool for auto-generating structured lessons by topic, level and format will appear here.",
+      "constructorComingSoonBadge": "Coming soon",
       "newBoard": "New Board",
       "folderUnavailableFallback": "Folder unavailable — board created in root",
       "infoTitle": "Here you can:",
@@ -7099,6 +7146,8 @@
       "nextPage": "Next",
       "statusActive": "In lessons",
       "statusDraft": "Draft",
+      "prepLabel": "Lesson preparation",
+      "backToLesson": "↩ To lesson",
       "lessonBadge": "Linked to lesson",
       "lessonWith": "Student: {name}",
       "confirmDelete": {
@@ -7555,7 +7604,7 @@
       "dashboard": "Dashboard",
       "settings": "Settings",
       "home": "Home",
-      "boards": "My Boards",
+      "boards": "Lesson Studio",
       "addToBoard": "Add to board",
       "assets": "Assets"
     },
@@ -7662,8 +7711,14 @@
     "calculus": {
       "exprPlaceholder": "y = f(x), e.g. x^2",
       "mode": {
-        "derivative": { "full": "Derivative", "desc": "tangent · slope · f′(x) trail" },
-        "integral":   { "full": "Antiderivative", "desc": "area · Riemann L/M/R · F(x)" }
+        "derivative": {
+          "full": "Derivative",
+          "desc": "tangent · slope · f′(x) trail"
+        },
+        "integral": {
+          "full": "Antiderivative",
+          "desc": "area · Riemann L/M/R · F(x)"
+        }
       },
       "toggle": {
         "secant": "Secant",
@@ -7866,6 +7921,25 @@
       "viewSessions": "View sessions",
       "loadError": "Failed to load students",
       "unknown": "Unknown"
+    },
+    "startClassroom": {
+      "button": "Invite student",
+      "modalTitle": "Start classroom",
+      "selectStudent": "Select student",
+      "selectStudentPlaceholder": "— select student —",
+      "noStudents": "You have no active students yet.",
+      "lessonName": "Lesson name (optional)",
+      "lessonNamePlaceholder": "e.g. Algebra — lesson 3",
+      "confirm": "Start lesson",
+      "cancel": "Cancel",
+      "flushing": "Saving changes…",
+      "creating": "Creating room…",
+      "errorNoStudent": "Please select a student.",
+      "errorDesync": "Sync lost. Please reload the page.",
+      "errorFlush": "Failed to save changes. Please try again.",
+      "errorServer": "Server is busy. Please try again.",
+      "errorInvalidStudent": "Student not found. Please reload.",
+      "errorGeneric": "Something went wrong. Please try again."
     }
   },
   "storage": {
@@ -8252,6 +8326,10 @@
         "loading": "Loading...",
         "loadError": "Failed to load lesson into session",
         "useLessonHint": "Open lesson in a new session for teaching"
+      },
+      "prepare": {
+        "button": "Conduct",
+        "error": "Failed to open preparation board"
       },
       "updateSnapshot": "Update template",
       "snapshotUpdated": "Template updated ✓",
