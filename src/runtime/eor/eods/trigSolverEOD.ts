@@ -75,6 +75,9 @@ import type {
   EODataBase,
 } from '../types'
 import { SnapshotPolicyImpl } from '../transport'
+import { applyDataDiff } from '../utils/applyDataDiff'
+import type { FieldSetterMap } from '../utils/applyDataDiff'
+import { EngineEvent } from '../events'
 
 // READ-ONLY import from existing TrigSolver module (types + defaults).
 // §15.6: no modification, just type/data reuse.
@@ -167,6 +170,20 @@ interface TrigSolverBridgeState {
   showAllSolutions: boolean
 }
 
+// ─── PP-3 setter map for applyDataDiff ────────────────────────────────
+// Declared ONCE here. Helper routes per-field diffs to these setters.
+// Compare з old ad-hoc applyOp implementation у git history — this is
+// the canonical replacement pattern.
+
+const TRIG_SOLVER_SETTERS: FieldSetterMap<TrigSolverEngineLike, TrigSolverData> = {
+  type: (e, v) => e.setType(v),
+  rel: (e, v) => e.setRel(v),
+  a: (e, v) => e.setA(v),
+  snapSpecial: (e, v) => e.setOption('snapSpecial', v),
+  showGraph: (e, v) => e.setOption('showGraph', v),
+  showAllSolutions: (e, v) => e.setOption('showAllSolutions', v),
+}
+
 // ─── PersistenceAdapter ────────────────────────────────────────────────
 
 const persistence: PersistenceAdapter<TrigSolverEOData> = {
@@ -220,35 +237,14 @@ const runtime: RuntimeAdapter<TrigSolverEOData, TrigSolverEngineLike> = {
   },
 
   applyOp(op, engine) {
-    // PP-3: route per-field diff to engine setters.
-    // asset_update payload carries full data envelope. Compute diff against
-    // current engine state и call individual setters.
+    // PP-3 RESOLVED: use canonical applyDataDiff helper instead of
+    // hand-rolled if/else cascade. Adapter declares setter map once
+    // (below) and helper routes per-field diffs from incoming payload.
     if (op.op_type !== 'asset_update') return
     const payload = op.payload as { data?: Partial<TrigSolverData> } | undefined
     const newData = payload?.data
     if (!newData) return
-    const current = engine.getState()
-    if (newData.type !== undefined && newData.type !== current.type) {
-      engine.setType(newData.type)
-    }
-    if (newData.rel !== undefined && newData.rel !== current.rel) {
-      engine.setRel(newData.rel)
-    }
-    if (newData.a !== undefined && newData.a !== current.a) {
-      engine.setA(newData.a)
-    }
-    if (newData.snapSpecial !== undefined && newData.snapSpecial !== current.snapSpecial) {
-      engine.setOption('snapSpecial', newData.snapSpecial)
-    }
-    if (newData.showGraph !== undefined && newData.showGraph !== current.showGraph) {
-      engine.setOption('showGraph', newData.showGraph)
-    }
-    if (
-      newData.showAllSolutions !== undefined &&
-      newData.showAllSolutions !== current.showAllSolutions
-    ) {
-      engine.setOption('showAllSolutions', newData.showAllSolutions)
-    }
+    applyDataDiff(engine, engine.getState(), newData, TRIG_SOLVER_SETTERS)
   },
 
   setInteractive(_engine, _interactive) {
@@ -334,8 +330,9 @@ export const trigSolverEOD: EducationalObjectDefinition<
   inspector,
   transport: {
     policies: [new SnapshotPolicyImpl({ debounce_ms: 150 })],
+    // PP-6 RESOLVED: use canonical EngineEvent constants instead of bare strings.
     routing: {
-      engine_change: 'SnapshotPolicy',
+      [EngineEvent.ENGINE_CHANGE]: 'SnapshotPolicy',
     },
   },
 }

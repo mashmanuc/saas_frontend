@@ -231,6 +231,19 @@ migration to prevent re-discovery.
 
 ---
 
+## Resolution status (post-P2 targeted correction sprint)
+
+| PP | Status | Resolution |
+|---|---|---|
+| **PP-3** | ✅ RESOLVED | `applyDataDiff` helper у `runtime/eor/utils/`. TrigSolverEOD refactored to use it. Declarative setter map replaces if/else cascade. |
+| **PP-4** | ✅ RESOLVED | `InspectorBridgeRegistry` у `runtime/eor/inspector/`. Ownership rule: runtime sets, Inspector reads, NEVER creates. Duplicate registration hard-fails. |
+| **PP-6** | ✅ RESOLVED | `EngineEvent` constants у `runtime/eor/events/`. 5 canonical names + `isCanonicalEngineEvent` guard. |
+| PP-1 | DEFERRED | Mount DOM dependency — addressed when first integration test lands |
+| PP-2 | DEFERRED | Vendor `.d.ts` strategy — addressed before 3D widget migration |
+| PP-5 | DEFERRED | Snapshot scope — addressed when glue layer designed |
+| PP-7 | DEFERRED | `setInteractive` semantics — low impact, no-op у adapter sufficient |
+| PP-N | DEFERRED | `type` field collision — adapter-level translation у P2 sufficient |
+
 ## Recommendation before migrating widget #2
 
 1. **SSOT amendment** для PP-3 (applyDataDiff helper) and PP-6 (canonical
