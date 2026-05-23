@@ -7,7 +7,7 @@
  * STATUS: P1.a — type declarations only.
  */
 
-import type { NormalizedEOIdentity } from './identity'
+import type { MountedEOIdentity } from './identity'
 import type { TransportDispatcher } from './transport'
 
 /**
@@ -39,8 +39,9 @@ export interface AdapterHostContext<TData = unknown> {
   // Initial data — already normalized, deserialized from board_state
   readonly initialData: TData
 
-  // Identity — already normalized per ID-MIG-INV
-  readonly identity: NormalizedEOIdentity
+  // Identity — normalized + runtime_id attached (per ID-MIG-INV + EPH-INV).
+  // Adapter sees MountedEOIdentity at mount; runtime_id is ephemeral.
+  readonly identity: MountedEOIdentity
 
   // Are we replaying? Adapter MUST suspend transport, disable animations,
   // gate side effects (REPL-INV-5).

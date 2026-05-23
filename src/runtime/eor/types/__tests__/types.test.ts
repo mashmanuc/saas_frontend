@@ -11,6 +11,7 @@ import { describe, it, expectTypeOf } from 'vitest'
 import type {
   EOIdentity,
   NormalizedEOIdentity,
+  MountedEOIdentity,
   Capability,
   CapabilitySet,
   EOpType,
@@ -42,28 +43,42 @@ describe('EOR types — identity model', () => {
     expectTypeOf(minimal).toMatchTypeOf<EOIdentity>()
   })
 
-  it('EOIdentity allows all optional identity fields', () => {
+  it('EOIdentity allows all optional persisted identity fields (NO runtime_id)', () => {
+    // runtime_id is NOT part of raw EOIdentity — it's runtime-layer only
+    // (MountedEOIdentity). Per P1.c colleague feedback.
     const full: EOIdentity = {
       instance_id: 'abc-123',
       template_id: 'helix@1',
       origin_id: 'parent-instance-id',
       derived_chain: ['ancestor-1', 'ancestor-2'],
       canonical_id: 'marketplace-canonical-id',
-      runtime_id: 42,
     }
     expectTypeOf(full).toMatchTypeOf<EOIdentity>()
   })
 
-  it('NormalizedEOIdentity requires all fields filled', () => {
+  it('NormalizedEOIdentity is pure persisted shape (NO runtime_id)', () => {
     const normalized: NormalizedEOIdentity = {
       instance_id: 'abc-123',
       template_id: 'helix@1',
       origin_id: null,
       derived_chain: [],
       canonical_id: null,
-      runtime_id: 1,
     }
     expectTypeOf(normalized).toMatchTypeOf<NormalizedEOIdentity>()
+  })
+
+  it('MountedEOIdentity adds runtime_id (ephemeral, mount-time)', () => {
+    const mounted: MountedEOIdentity = {
+      instance_id: 'abc-123',
+      template_id: 'helix@1',
+      origin_id: null,
+      derived_chain: [],
+      canonical_id: null,
+      runtime_id: 42,
+    }
+    expectTypeOf(mounted).toMatchTypeOf<MountedEOIdentity>()
+    // MountedEOIdentity extends NormalizedEOIdentity
+    expectTypeOf(mounted).toMatchTypeOf<NormalizedEOIdentity>()
   })
 })
 

@@ -8,7 +8,11 @@
  */
 
 // Identity model
-export type { EOIdentity, NormalizedEOIdentity } from './identity'
+export type {
+  EOIdentity,
+  NormalizedEOIdentity,
+  MountedEOIdentity,
+} from './identity'
 
 // Capabilities
 export type { Capability, CapabilitySet } from './capabilities'
