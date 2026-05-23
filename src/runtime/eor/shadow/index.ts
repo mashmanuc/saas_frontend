@@ -43,3 +43,13 @@ export type {
   ParityReport,
   CompareOptions,
 } from './types'
+export {
+  classifyParityReport,
+  classifyApplyOpDeltaReport,
+  CATEGORY_PRECEDENCE,
+} from './classify'
+export type {
+  ClassificationCategory,
+  ClassifiedDiff,
+  ClassificationSummary,
+} from './classify'
