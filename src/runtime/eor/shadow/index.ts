@@ -20,6 +20,22 @@ export {
 } from './normalize-snapshot'
 export type { NormalizeOptions } from './normalize-snapshot'
 export { compareReplaySnapshots } from './replayParity'
+export { computeDelta } from './compute-delta'
+export type {
+  DeltaChangeType,
+  DeltaChange,
+  DeltaSummary,
+  ComputeDeltaOptions,
+} from './compute-delta'
+export { compareApplyOpDelta } from './applyOpParity'
+export type {
+  OpMetadata,
+  DeltaMismatchReason,
+  DeltaMismatch,
+  ApplyOpVerdict,
+  ApplyOpDeltaReport,
+  ApplyOpCompareOptions,
+} from './applyOpParity'
 export type {
   ParityVerdict,
   ParityDiff,
