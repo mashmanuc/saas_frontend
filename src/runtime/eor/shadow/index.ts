@@ -14,6 +14,12 @@
 
 export { stableStringify } from './stable-stringify'
 export { compareSerializedSnapshots } from './serializeParity'
+export {
+  normalizeForReplayParity,
+  DEFAULT_EPHEMERAL_KEYS,
+} from './normalize-snapshot'
+export type { NormalizeOptions } from './normalize-snapshot'
+export { compareReplaySnapshots } from './replayParity'
 export type {
   ParityVerdict,
   ParityDiff,
