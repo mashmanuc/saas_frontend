@@ -178,6 +178,9 @@ import type {
   SolidAssetState,
 } from '@/modules/winterboard/types/winterboard'
 import { useSolidCardRenderer } from '../../composables/useSolidCardRenderer'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../composables/useExportCapture'
+import { snapshotElement } from '../../utils/snapshotElement'
 // Phase RS PR-RS-C1.2: vendor SolidCard creation now routed через adapter
 // composable (INV-FE-1/2 enforced; INV-FE-5 single source of construction).
 
@@ -194,6 +197,16 @@ const emit = defineEmits<{
 
 const container = ref<HTMLElement | null>(null)
 const rotateOverlay = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
+// Three.js renders a <canvas> inside container — snapshotElement grabs it.
+// NOTE: якщо WebGL renderer створений без preserveDrawingBuffer:true,
+// toBlob() може повернути порожнє зображення. Якщо це буде issue,
+// додати preserveDrawingBuffer у useSolidCardRenderer renderer options.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(container.value, signal),
+)
 // Phase RS PR-RS-C1.2: card lifecycle managed by adapter composable.
 // cardRef.value = SolidCardInstance (set + rotate calls); disposal automatic.
 const { cardRef, initialize: initializeCard } = useSolidCardRenderer({

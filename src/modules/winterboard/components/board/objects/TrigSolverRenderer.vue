@@ -153,6 +153,9 @@ import type { TrigSolverAsset, TrigFuncType, TrigRelation } from '../../../types
 import type { TrigEquationInstance } from '../../../vendor/trig/index'
 import { registerTrigSolver, unregisterTrigSolver } from '../../../board/state/trigSolverUiState'
 import type { TrigSolverBridge } from '../../../board/state/trigSolverUiState'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const props = defineProps<{
   asset: TrigSolverAsset
@@ -166,6 +169,13 @@ const emit = defineEmits<{
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(stageRef.value, signal),
+)
+
 let engine: TrigEquationInstance | null = null
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null

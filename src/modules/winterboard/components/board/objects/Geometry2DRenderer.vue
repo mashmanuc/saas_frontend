@@ -67,6 +67,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Geometry2DV2Asset } from '../../../types/geometry2dV2'
 import type { GeoCardInstance, GeoPresetMeta } from '../../../vendor/geo2d'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t, te, locale } = useI18n()
 
@@ -87,6 +90,13 @@ const emit = defineEmits<{
 
 const stageRef = ref<HTMLElement | null>(null)
 const toolbarRef = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
+// JSXGraph renders SVG inside stageRef — snapshotElement picks first <svg>.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(stageRef.value, signal),
+)
 
 let card: GeoCardInstance | null = null
 let toolbarEl: HTMLElement | null = null

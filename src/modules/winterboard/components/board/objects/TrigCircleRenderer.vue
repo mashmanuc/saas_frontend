@@ -174,6 +174,10 @@ import type { TrigCircleAsset, TrigCircleData } from '../../../types/trigCircle'
 import type { TrigCircleInstance } from '../../../vendor/trig'
 import { registerTrigCircle, unregisterTrigCircle } from '../../../board/state/trigCircleUiState'
 import type { TrigCircleBridge } from '../../../board/state/trigCircleUiState'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+// INV-EP-8: NO widget business logic — only DOM canvas/svg snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
 
@@ -194,6 +198,14 @@ const emit = defineEmits<{
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter — snapshotElement лише
+// grabs первого canvas/svg всередині stageRef. NO business logic тут.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(stageRef.value, signal),
+)
+
 let trig: TrigCircleInstance | null = null
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null

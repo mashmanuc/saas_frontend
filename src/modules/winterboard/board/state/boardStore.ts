@@ -2271,6 +2271,26 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     /**
+     * goToPageSilent — programmatic page navigation WITHOUT emitting
+     * `page_navigate` op. Internal use only.
+     *
+     * Use case: export preview pipeline (Stage 1 PR-2 EXPORT_PREPARATION_SSOT)
+     * must briefly mount widget components on inactive pages to capture
+     * their snapshots, then restore the original active page. Emitting
+     * `page_navigate` ops here would (a) pollute replay history з phantom
+     * page jumps, (b) broadcast misleading "user navigated" signals to
+     * collaborators via WS, (c) trigger student-side scroll/zoom resets.
+     *
+     * MUST NOT be called from user-facing UI controls. Only:
+     *   - WBExportDialog.runCapturePhase()
+     *   - future export-preview orchestrators
+     */
+    goToPageSilent(index: number): void {
+      if (!Number.isFinite(index)) return
+      this.currentPageIndex = Math.max(0, Math.min(this.pages.length - 1, index))
+    },
+
+    /**
      * R0: Delete page by index without undo support.
      * Used by replay engine — replay operations are not undoable.
      * Cannot delete last remaining page.

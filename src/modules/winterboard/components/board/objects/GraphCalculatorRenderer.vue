@@ -345,6 +345,9 @@ import { getGraphCalcUi, toggleGraphCalcParamMode, toggleGraphCalcPresenting } f
 // Inspector bridge — param sliders move to GraphCalcInspector sidebar when selected.
 import { registerGraphCalcInspector, unregisterGraphCalcInspector } from '../../../board/state/graphCalcInspectorState'
 import type { GraphCalcInspectorBridge } from '../../../board/state/graphCalcInspectorState'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 interface Props {
   asset: WBAsset
@@ -394,6 +397,14 @@ const emit = defineEmits<{
 
 // ─── Refs / state ──────────────────────────────────────────────────────
 const plotEl = ref<HTMLDivElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter — snapshot of the inner
+// plot canvas only (rootEl has toolbar + controls we don't want in export).
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(plotEl.value, signal),
+)
+
 let calc: InstanceType<typeof GraphCalculator> | null = null
 /** Phase G3 hotfix: original engine.setParamValue (pre-monkey-patch). Used
  *  by onParamDrag to bypass monkey-patch (avoids double-emit).

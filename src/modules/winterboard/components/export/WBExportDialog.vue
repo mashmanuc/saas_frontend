@@ -128,6 +128,24 @@
             </Button>
           </template>
 
+          <!-- State: capturing (Stage 1 PR-2 EXPORT_PREPARATION_SSOT) -->
+          <!-- Pre-export FE widget snapshot phase. Failures degrade gracefully -->
+          <!-- (INV-EP-3: never block export); cancel button aborts captures. -->
+          <template v-else-if="state === 'capturing'">
+            <div class="wb-export-dialog__progress" role="status" aria-live="polite">
+              <div class="wb-export-dialog__spinner" />
+              <p class="wb-export-dialog__progress-text">
+                {{ t('winterboard.export.capturingWidgets', {
+                  done: captureProgress,
+                  total: captureTotal,
+                }) }}
+              </p>
+              <Button variant="ghost" @click="cancelCapture">
+                {{ t('common.cancel') }}
+              </Button>
+            </div>
+          </template>
+
           <!-- State: processing -->
           <template v-else-if="state === 'processing'">
             <div class="wb-export-dialog__progress" role="status" aria-live="polite">
@@ -180,9 +198,24 @@ import { ref, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
+import { nextTick } from 'vue'
 import { winterboardApi } from '../../api/winterboardApi'
 import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): widget snapshot pre-export phase.
+import { exportPreviewService } from '../../services/exportPreviewService'
+import { useWBStore } from '../../board/state/boardStore'
+
+// Asset types що рендеряться нативно бекендом (image/sticky/media plaholders).
+// Все інше — widget, потребує preview capture.
+// Sync with backend NATIVE_RENDERED_ASSET_TYPES у services/render_utils.py.
+const NATIVE_ASSET_TYPES: ReadonlySet<string> = new Set([
+  'image',
+  'sticky',
+  'audio_player',
+  'video_player',
+  'youtube_player',
+])
 
 const props = defineProps<{
   sessionId: string
@@ -200,7 +233,10 @@ const { t } = useI18n()
 const { showToast } = useToast()
 
 // ── State ─────────────────────────────────────────────────────────────────
-type ExportState = 'idle' | 'processing' | 'ready' | 'error'
+// 'capturing' state (Stage 1 PR-2): FE widget preview snapshot phase,
+// runs BEFORE BE export task. Fails gracefully → 'processing' continues
+// regardless (INV-EP-3 — BE renders placeholders for missing previews).
+type ExportState = 'idle' | 'capturing' | 'processing' | 'ready' | 'error'
 const state = ref<ExportState>('idle')
 const selectedFormat = ref<WBExportFormat>('png')
 const exporting = ref(false)
@@ -232,6 +268,11 @@ const hasPdfPages = computed(() => (props.pdfPageCount ?? 0) > 0)
 const POLL_TIMEOUT_MS = 60_000
 const pollElapsed = ref(0)
 let pollStartTime = 0
+
+// ── Widget capture phase state ───────────────────────────────────────────
+const captureProgress = ref(0)
+const captureTotal = ref(0)
+let captureAbort: AbortController | null = null
 
 // ── Format options ────────────────────────────────────────────────────────
 const formats = computed(() => {
@@ -273,6 +314,29 @@ const formats = computed(() => {
 async function startExport(): Promise<void> {
   exporting.value = true
   errorMessage.value = null
+
+  // ── Phase 1: FE widget preview capture (Stage 1 PR-2) ──────────────────
+  // Snapshots interactive math widgets (trig_circle, graph_calculator, etc.)
+  // BEFORE BE export task. Failures are silent — BE renders placeholders
+  // (INV-EP-3 + INV-EP-7). User can cancel mid-capture; abort propagates.
+  try {
+    await runCapturePhase()
+  } catch (err) {
+    // runCapturePhase swallows failures internally — this catch is defensive.
+    console.warn('[WB:ExportDialog] capture_phase_unexpected_error', err)
+  }
+  // If user cancelled mid-capture → reset, do NOT proceed to export.
+  if (captureAbort?.signal.aborted) {
+    captureAbort = null
+    captureProgress.value = 0
+    captureTotal.value = 0
+    state.value = 'idle'
+    exporting.value = false
+    return
+  }
+  captureAbort = null
+
+  // ── Phase 2: BE export request (existing behavior) ─────────────────────
   try {
     const result = await winterboardApi.createExport(props.sessionId, selectedFormat.value)
     exportId.value = result.id
@@ -295,6 +359,137 @@ async function startExport(): Promise<void> {
   } finally {
     exporting.value = false
   }
+}
+
+/**
+ * Wait until всі assets зареєстровано у capture registry — або до timeout.
+ *
+ * Vue монтує widget renderers тільки для активної сторінки (lazy view).
+ * Після `goToPageSilent(idx)` потрібен `nextTick` + час на vendor bundle
+ * init перед тим, як `useExportCapture` встигне зареєструвати функцію.
+ *
+ * Returns коли всі assetIds зареєстровані, або після timeoutMs (вже частково
+ * зареєстровані assets все одно будуть capture-нуті у наступному кроку —
+ * unregistered повертають null від captureOne → BE placeholder per INV-EP-7).
+ */
+async function waitForRegistration(
+  assetIds: string[],
+  signal: AbortSignal,
+  timeoutMs: number = 2000,
+  pollIntervalMs: number = 50,
+): Promise<void> {
+  // Give Vue 2-3 nextTick для mount + render children before polling.
+  await nextTick()
+  await nextTick()
+  await nextTick()
+
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (signal.aborted) return
+    const missing = assetIds.filter((id) => !exportPreviewService.hasCapture(id))
+    if (missing.length === 0) return
+    await new Promise((r) => setTimeout(r, pollIntervalMs))
+  }
+  // Timeout — продовжуємо з тим, що зареєстровано. Не блокуємо export.
+}
+
+async function runCapturePhase(): Promise<void> {
+  const boardStore = useWBStore()
+  // 1. Group widget assets by pageIndex (skip native types — BE рендерить сам).
+  const pageWidgets = new Map<number, string[]>() // pageIndex -> assetId[]
+  let totalWidgets = 0
+  boardStore.pages.forEach((page, pageIndex) => {
+    if (!Array.isArray(page.assets)) return
+    for (const asset of page.assets) {
+      const type = String(asset?.type ?? '')
+      const id = String(asset?.id ?? '')
+      if (!type || !id || NATIVE_ASSET_TYPES.has(type)) continue
+      if (!pageWidgets.has(pageIndex)) pageWidgets.set(pageIndex, [])
+      pageWidgets.get(pageIndex)!.push(id)
+      totalWidgets += 1
+    }
+  })
+
+  if (pageWidgets.size === 0) {
+    return // no widgets on any page — skip capture phase
+  }
+
+  captureAbort = new AbortController()
+  captureProgress.value = 0
+  captureTotal.value = totalWidgets
+  state.value = 'capturing'
+
+  // Save original active page to restore at the end (always — finally block).
+  const originalPageIndex = boardStore.currentPageIndex
+  const pageIndices = Array.from(pageWidgets.keys()).sort((a, b) => a - b)
+  let capturedAcrossPages = 0
+
+  try {
+    // 2. Sequentially iterate pages with widgets, mount via goToPageSilent,
+    //    poll registry until widgets register, capture, upload, advance.
+    for (const pageIdx of pageIndices) {
+      if (captureAbort.signal.aborted) break
+
+      const pageAssetIds = pageWidgets.get(pageIdx) ?? []
+      if (pageAssetIds.length === 0) continue
+
+      // 2a. Activate page (silent — no page_navigate op emitted).
+      if (pageIdx !== boardStore.currentPageIndex) {
+        boardStore.goToPageSilent(pageIdx)
+      }
+
+      // 2b. Wait for widget components to mount and register capture functions.
+      await waitForRegistration(pageAssetIds, captureAbort.signal)
+      if (captureAbort.signal.aborted) break
+
+      // 2c. Capture only widgets registered for THIS page.
+      const registeredOnPage = pageAssetIds.filter((id) =>
+        exportPreviewService.hasCapture(id),
+      )
+      if (registeredOnPage.length === 0) {
+        // No widgets registered — count them all as "done" for progress.
+        capturedAcrossPages += pageAssetIds.length
+        captureProgress.value = capturedAcrossPages
+        continue
+      }
+
+      const captureResult = await exportPreviewService.captureAll(
+        registeredOnPage,
+        captureAbort.signal,
+        {
+          onProgress: (done) => {
+            captureProgress.value = capturedAcrossPages + done
+          },
+        },
+      )
+      capturedAcrossPages += pageAssetIds.length
+      captureProgress.value = capturedAcrossPages
+
+      if (captureAbort.signal.aborted) break
+
+      // 2d. Upload this page's captures (parallel-bounded inside service).
+      if (captureResult.captured.size > 0) {
+        await exportPreviewService.uploadAll(
+          props.sessionId,
+          captureResult.captured,
+          captureAbort.signal,
+        )
+      }
+      // failed[] / skipped[] — silent; BE renders placeholders per INV-EP-7.
+    }
+  } catch (err) {
+    // INV-EP-3: capture failure must never block export — log and continue.
+    console.warn('[WB:ExportDialog] capture_phase_error_swallowed', err)
+  } finally {
+    // Always restore original active page — навіть при abort/throw.
+    if (boardStore.currentPageIndex !== originalPageIndex) {
+      boardStore.goToPageSilent(originalPageIndex)
+    }
+  }
+}
+
+function cancelCapture(): void {
+  captureAbort?.abort()
 }
 
 // ── Polling ───────────────────────────────────────────────────────────────
@@ -344,11 +539,31 @@ function stopPolling(): void {
 }
 
 // ── Download ──────────────────────────────────────────────────────────────
+
+/** Sanitize board name into a safe filename component.
+ *
+ * Replaces filesystem-unfriendly chars (/, \, :, *, ?, ", <, >, |, control chars)
+ * з '-'; колапсуємо whitespace; trim; обмежуємо до 80 chars; fallback to 'board'
+ * якщо результат порожній.
+ */
+function buildExportFilename(rawName: string | undefined | null, format: WBExportFormat): string {
+  const ext = format === 'pdf' ? 'pdf' : format === 'png' ? 'png' : format
+  const safe = String(rawName ?? '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[ -<>:"/\\|?*]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80)
+  return `${safe || 'board'}.${ext}`
+}
+
 function downloadFile(): void {
   if (!fileUrl.value) return
+  const boardStore = useWBStore()
+  const filename = buildExportFilename(boardStore.workspaceName, selectedFormat.value)
   const a = document.createElement('a')
   a.href = fileUrl.value
-  a.download = ''
+  a.download = filename
   a.target = '_blank'
   document.body.appendChild(a)
   a.click()
@@ -363,11 +578,18 @@ function resetToIdle(): void {
   errorMessage.value = null
   exporting.value = false
   pollElapsed.value = 0
+  captureProgress.value = 0
+  captureTotal.value = 0
+  captureAbort?.abort()
+  captureAbort = null
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────
 onUnmounted(() => {
   stopPolling()
+  // Dialog closed mid-capture: abort in-flight captures + uploads.
+  captureAbort?.abort()
+  captureAbort = null
 })
 </script>
 

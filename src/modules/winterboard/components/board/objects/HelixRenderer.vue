@@ -160,6 +160,9 @@ import type { HelixAsset, HelixData } from '../../../types/helix'
 import type { HelixInstance, HelixViewName } from '../../../vendor/helix'
 import { registerHelix, unregisterHelix } from '../../../board/state/helixUiState'
 import type { HelixBridge } from '../../../board/state/helixUiState'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
 
@@ -180,6 +183,13 @@ const emit = defineEmits<{
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(stageRef.value, signal),
+)
+
 let helix: HelixInstance | null = null
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null

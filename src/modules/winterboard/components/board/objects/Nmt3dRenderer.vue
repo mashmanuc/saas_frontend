@@ -87,6 +87,9 @@ import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
 import { NMT3D_TEMPLATE_LABELS } from '../../../constants/nmt3dDefaults'
 import { registerNmt3dWorkspace, unregisterNmt3dWorkspace, nmt3dUiState } from '../../../board/state/nmt3dUiState'
+// EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const props = withDefaults(
   defineProps<{
@@ -105,6 +108,12 @@ const emit = defineEmits<{
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
+
+// EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(stageRef.value, signal),
+)
 
 /** Local mode mirror — reflects asset.data.mode, updated immediately on toggle. */
 const localMode = ref<'adapt' | 'draw'>(props.asset.data.mode)

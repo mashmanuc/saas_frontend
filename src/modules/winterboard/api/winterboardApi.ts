@@ -457,6 +457,42 @@ export const winterboardApi = {
     return apiClient.get(`${BASE}/sessions/${sessionId}/exports/`).then((r: any) => r.data ?? r)
   },
 
+  // ── Export preparations (Stage 1 PR-1/PR-2 EXPORT_PREPARATION_SSOT) ──
+  //
+  // Disposable widget preview side-channel. Не торкається ops/WS/seq.
+  // Ref: saas_docs/domains/winterboard/export/EXPORT_PREPARATION_SSOT.md
+  uploadExportPreview(
+    sessionId: string,
+    args: {
+      assetId: string
+      blob: Blob
+      width: number
+      height: number
+      widgetSchemaVersion?: number
+    },
+    signal?: AbortSignal,
+  ): Promise<{ id: string; preview_url: string; expires_at: string; reused: boolean } | null> {
+    const form = new FormData()
+    form.append('asset_id', args.assetId)
+    form.append('file', args.blob, `${args.assetId}.png`)
+    form.append('width', String(args.width))
+    form.append('height', String(args.height))
+    form.append('widget_schema_version', String(args.widgetSchemaVersion ?? 1))
+    return apiClient
+      .post(`${BASE}/sessions/${sessionId}/export-preparations/`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        signal,
+      })
+      .then((r: any) => r.data ?? r)
+      .catch((err: any) => {
+        // INV-EP-3: preview failure NEVER blocks export — silent null.
+        // Failure logging is BE responsibility (`logger.warning` per reject
+        // branch у WBSessionExportPreparationView); FE just degrades.
+        if (signal?.aborted) return null
+        return null
+      })
+  },
+
   // ── Sharing ────────────────────────────────────────────────────────
 
   getShareStatus(sessionId: string): Promise<WBShareStatus> {
