@@ -133,6 +133,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'helix',             // §3.7.6 — theta, phi, pitch, showHelix/Sin/Cos/Circle, ...
   'trig_solver',       // §3.7.7 — mode, func, sign, value, showInfo
   'nmt3d',            // §3.7.8 — templateKey, mode ('adapt'|'draw')
+  'nmt_task',         // §3.7.9 — taskType, question, options/pairs/correctAnswer, showAnswer/showSolution
 ])
 
 /**

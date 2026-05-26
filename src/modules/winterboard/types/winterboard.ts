@@ -207,6 +207,8 @@ export interface WBAsset {
     | 'trig_solver'
     /** NMT3D (2026-05-21) — parametric 3D stereometry widget (21 templates, adapt/draw modes). */
     | 'nmt3d'
+    /** NmtTask (2026-05-23) — interactive NMT task card (single_choice/matching/open_answer). §3.7.9 */
+    | 'nmt_task'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -397,6 +399,30 @@ export interface WBPage {
   /** Phase 37: Test objects (HTML overlay) — per page */
   testObjects?: WBTestObject[]
   testMeta?: WBTestMeta
+  /** Lesson Constructor: semantic page role */
+  pageRole?: 'theory' | 'practice' | 'solution'
+  /** Lesson Constructor: structured theory content (HTML overlay, replaces sticky note) */
+  theoryBlock?: WBTheoryBlock
+  /** Lesson Constructor: structured formula content (HTML overlay) */
+  formulaBlock?: WBFormulaBlock
+}
+
+// ─── Lesson Constructor: Theory overlay types ────────────────────────────────
+
+export interface WBTheoryBlock {
+  title: string
+  body: string
+  hint?: string
+}
+
+export interface WBFormulaEntry {
+  latex: string
+  label: string
+}
+
+export interface WBFormulaBlock {
+  title: string
+  formulas: WBFormulaEntry[]
 }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
@@ -420,6 +446,9 @@ export interface WBTestObject {
   // Metadata
   createdBy: string
   createdAt: number
+  // Lesson Constructor semantic fields
+  solution?: string    // LaTeX розбір — показується в constructor edit mode
+  externalId?: string  // NMTProblem.id — для "замінити/додати з бази"
 }
 
 export interface WBTestInput extends WBTestObject {

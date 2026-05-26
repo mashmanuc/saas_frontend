@@ -156,6 +156,18 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/legal/tutor-offer',
+    name: 'legal-tutor-offer',
+    component: () => import('../views/legal/TutorOfferView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/legal/student-offer',
+    name: 'legal-student-offer',
+    component: () => import('../views/legal/StudentOfferView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/contacts',
     name: 'contacts',
     component: () => import('../views/ContactsView.vue'),
@@ -739,10 +751,43 @@ const routes = [
         path: 'reviews/my',
         name: 'my-reviews',
         component: () => import('../modules/reviews/views/MyReviewsView.vue'),
-        meta: { 
+        meta: {
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT]
         },
+      },
+      // Platform Feedback domain (community roadmap / voting / feedback governance)
+      // SSOT: backend/apps/platform_feedback/PLATFORM_FEEDBACK_SSOT.md
+      {
+        path: 'feedback',
+        name: 'FeedbackLanding',
+        component: () => import('../modules/platform-feedback/views/FeedbackLanding.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'feedback/new',
+        name: 'NewFeedbackThread',
+        component: () => import('../modules/platform-feedback/views/NewThread.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'feedback/roadmap',
+        name: 'FeedbackRoadmap',
+        component: () => import('../modules/platform-feedback/views/Roadmap.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'feedback/search',
+        name: 'FeedbackSearch',
+        component: () => import('../modules/platform-feedback/views/FeedbackSearch.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'feedback/thread/:id',
+        name: 'FeedbackThread',
+        component: () => import('../modules/platform-feedback/views/ThreadDetail.vue'),
+        meta: { requiresAuth: true },
+        props: true,
       },
       // v0.88.4: Staff Console with dedicated layout
       {
@@ -951,6 +996,9 @@ const routes = [
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar
       winterboardSessionListRoute,
       // Winterboard page-level routes (library, dashboard, boards, lessons, students)
+      // NOTE: Lesson Constructor живе всередині WBBoardList.vue (вкладка "Конструктор"),
+      // а не як окрема сторінка. Гейтується через isLessonConstructorEnabled().
+
       // Must be inside PageShell so they get header + sidebar.
       // NOTE: these must be registered BEFORE standalone /winterboard/:id route
       // or else /winterboard/library would match as id='library' → 404.

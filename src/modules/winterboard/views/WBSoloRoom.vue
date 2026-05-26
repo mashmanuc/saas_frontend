@@ -420,6 +420,13 @@
           @check="handleTestCheck"
         />
 
+        <!-- Lesson Constructor: Theory overlay (HTML over canvas, read-only) -->
+        <WBTheoryOverlay
+          v-if="store.currentPage?.theoryBlock || store.currentPage?.formulaBlock"
+          :theory-block="store.currentPage?.theoryBlock"
+          :formula-block="store.currentPage?.formulaBlock"
+        />
+
         <!-- Remote cursors overlay (A3.1) -->
         <WBRemoteCursors
           :cursors="presence.remoteCursors.value"
@@ -493,8 +500,9 @@
     <footer class="wb-solo-room__footer">
       <!-- Phase 37: Test mode controls -->
       <div v-if="testStore.testMode" class="wb-test-bar">
-        <!-- Інструменти створення тестових об'єктів (тільки в edit фазі) -->
-        <div v-if="testStore.testPhase === 'edit'" class="wb-test-bar__tools">
+        <!-- Інструменти створення тестових об'єктів (тільки в edit фазі, не в constructor) -->
+        <!-- constructorMode: задачі приходять з pipeline, ручне додавання не потрібне -->
+        <div v-if="testStore.testPhase === 'edit' && !constructorMode" class="wb-test-bar__tools">
           <button
             v-for="tool in TEST_TOOLS"
             :key="tool.type"
@@ -507,7 +515,7 @@
             {{ tool.icon }} {{ t(tool.labelKey) }}
           </button>
         </div>
-        <div v-if="testStore.testPhase === 'edit'" class="wb-test-bar__sep"></div>
+        <div v-if="testStore.testPhase === 'edit' && !constructorMode" class="wb-test-bar__sep"></div>
 
         <!-- 3-фазні кнопки переходу -->
         <div class="wb-test-bar__phases">
@@ -565,16 +573,22 @@
           </template>
         </div>
 
-        <div class="wb-test-bar__sep"></div>
-        <button type="button" class="wb-test-bar__btn wb-test-bar__btn--exit" @click="testStore.toggleTestMode()">
+        <div v-if="!constructorMode" class="wb-test-bar__sep"></div>
+        <button
+          v-if="!constructorMode"
+          type="button"
+          class="wb-test-bar__btn wb-test-bar__btn--exit"
+          @click="testStore.toggleTestMode()"
+        >
           {{ t('winterboard.test.exitTest') }}
         </button>
       </div>
 
       <!-- Page navigation -->
       <div class="wb-page-nav">
-        <!-- Phase 37: Test mode toggle button -->
+        <!-- Phase 37: Test mode toggle button — hidden in constructorMode (tasks always visible there) -->
         <button
+          v-if="!constructorMode"
           type="button"
           class="wb-page-btn"
           :class="{ 'wb-page-btn--active': testStore.testMode }"
@@ -923,6 +937,7 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 // Phase 37: Test system
 import { useTestStore } from '../board/state/testStore'
 import WBTestOverlay from '../components/test/WBTestOverlay.vue'
+import WBTheoryOverlay from '../components/theory/WBTheoryOverlay.vue'
 import WBTestGradeModal from '../components/test/WBTestGradeModal.vue'
 import TestObjectProperties from '../components/sidebar/properties/TestObjectProperties.vue'
 import type { WBTestObject, WBTestInput, WBTestRadio, WBTestCheckbox, WBTestDropdown, WBTestGapFill, WBTestMatching } from '../types/winterboard'
@@ -1439,6 +1454,7 @@ function _loadPagePanel(): boolean {
 const showPagePanel = ref(_loadPagePanel())
 watch(showPagePanel, (v) => { try { localStorage.setItem('wb:pagePanel', String(v)) } catch { /* Safari private */ } })
 
+
 // ── Group sidebar: materials panel ──
 // groupId: explicit ?groupId= from URL → group materials; null → tutor's Library files
 const explicitGroupId = computed(() => {
@@ -1692,10 +1708,11 @@ watch(sidebarWidth, (w) => {
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 
-// B6.3: Check if current page is empty (no strokes, no assets)
+// B6.3: Check if current page is empty (no strokes, no assets, no theory content)
 const isCanvasEmpty = computed(() => {
   const page = store.currentPage
   if (!page) return true
+  if (page.theoryBlock || page.formulaBlock) return false
   return page.strokes.length === 0 && page.assets.length === 0
 })
 
@@ -2760,6 +2777,14 @@ onMounted(async () => {
           created_at: detail.created_at,
           updated_at: detail.updated_at,
         })
+
+        // Auto-activate testMode якщо сесія містить testObjects (згенерована Lesson Constructor-ом).
+        // toggleTestMode() → testMode = true; setTestPhase('edit') → показує editing toolbar.
+        const hasTestObjects = store.pages.some(p => (p.testObjects?.length ?? 0) > 0)
+        if (hasTestObjects && !testStore.testMode) {
+          testStore.toggleTestMode()
+          testStore.setTestPhase('edit')
+        }
       }
       // Cleanup stale localStorage markers from previous sessions (P0.5 fallback)
       try {

@@ -76,6 +76,8 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.teaching',
       items: [
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
+        // Lesson Constructor живе у /winterboard/boards (вкладка "Конструктор"), не у sidebar.
+        // Гейтується через isLessonConstructorEnabled() у WBBoardList.vue.
         { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
         { label: 'sidebar.item.myReplays', icon: 'film', to: '/winterboard/replays', hint: 'sidebar.hint.myReplays' },
         { label: 'sidebar.item.materials', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
@@ -103,6 +105,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.profile',
       items: [
         { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile', hint: 'sidebar.hint.tutorProfile' },
+        { label: 'sidebar.item.feedback', icon: 'lightbulb', to: '/feedback', hint: 'sidebar.hint.feedback' },
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings', hint: 'sidebar.hint.settings' },
       ],
     },
@@ -133,6 +136,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'profile',
       label: 'sidebar.section.profile',
       items: [
+        { label: 'sidebar.item.feedback', icon: 'lightbulb', to: '/feedback' },
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings' },
       ],
     },

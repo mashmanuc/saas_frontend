@@ -123,6 +123,12 @@ const __GC = (function () {
       let base = parseUnary();
       if (peek().t === TOKENS.OP && peek().v === '^') {
         eat(TOKENS.OP); const exp = parseFactor();
+        // Стандартна математична конвенція: -x^2 = -(x^2), а не (-x)^2.
+        // Виняток: якщо мінус був явно обгорнутий у дужки — (−x)^2 = (-x)^2 = x^2.
+        // `paren: true` ставиться в parseAtom() для виразів у дужках.
+        if (base.kind === 'unary' && base.op === '-' && !base.paren) {
+          return { kind: 'unary', op: '-', arg: { kind: 'binop', op: '^', left: base.arg, right: exp } };
+        }
         return { kind: 'binop', op: '^', left: base, right: exp };
       }
       return base;
@@ -161,6 +167,9 @@ const __GC = (function () {
           return { kind: 'tuple', items: [first, second] };
         }
         eat(TOKENS.RP);
+        // Позначаємо: вираз прийшов з явних дужок.
+        // Це дозволяє parseFactor() розрізнити (-x)^2 vs -x^2.
+        if (first.kind === 'unary') return { ...first, paren: true };
         return first;
       }
       throw new Error(`Несподіваний токен: ${tk.t} ${tk.v ?? ''}`);
