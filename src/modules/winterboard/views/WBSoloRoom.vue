@@ -792,6 +792,9 @@
 
     <!-- Phase 11: Replay mode banner -->
 
+    <!-- Help button: ? in bottom-left corner -->
+    <WBHelpButton />
+
     <!-- Share Layer S.2: Post-record proactive prompt з inline visibility + auto-copy -->
     <WBRecordingDonePrompt
       :visible="showRecordingDonePrompt"
@@ -927,6 +930,7 @@ import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import WBHelpButton from '../components/ui/WBHelpButton.vue'
 
 // Phase 37: Test system
 import { useTestStore } from '../board/state/testStore'

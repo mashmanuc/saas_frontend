@@ -342,6 +342,9 @@
       @dismiss="showRecordingDonePrompt = false"
     />
 
+    <!-- Help button: ? in bottom-left corner -->
+    <WBHelpButton />
+
     <!-- INV-22 PR-1b: finalize barrier blocking modal (504 / 429) -->
     <WBFinalizeBarrierModal
       :state="finalizeBarrierState"
@@ -472,6 +475,7 @@ import WBClassroomRecordingControls from '../components/replay/WBClassroomRecord
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
+import WBHelpButton from '../components/ui/WBHelpButton.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
