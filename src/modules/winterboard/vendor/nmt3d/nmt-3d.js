@@ -1861,6 +1861,70 @@
     },
   };
 
+  // Net unfolding for obliquePrism4.
+  // Each lateral parallelogram face rotates around its base edge by the exact
+  // dihedral angle needed to lie flat (y=0). The angle is computed analytically
+  // for each face, so it adapts to any combination of tx/tz slant.
+  TEMPLATES.obliquePrism4.buildUnfolded = function (p, t) {
+    const a = p.a / 2;
+    const base = [
+      v3(-a, 0,  a), // A
+      v3( a, 0,  a), // B
+      v3( a, 0, -a), // C
+      v3(-a, 0, -a), // D
+    ];
+    const offset = v3(p.tx, p.h, p.tz);
+    const top = base.map(v => add(v, offset)); // A1, B1, C1, D1
+
+    // Exact rotation angle around edge p0→p1 to bring p0t to y = 0.
+    // Solves v_perp.y·cos θ + cv.y·sin θ = 0 → θ = π − atan2(v_perp.y, cv.y).
+    function flattenAngle(p0, p1, p0t) {
+      const axis = nrm(sub(p1, p0));
+      const v    = sub(p0t, p0);
+      const vpar = scl(axis, dot(v, axis));
+      const vperp = sub(v, vpar);
+      const cv = cross(axis, vperp);
+      return Math.PI - Math.atan2(vperp.y, cv.y);
+    }
+
+    const n = 4;
+    const edges = [];
+    polyEdges(base, edges); // base square
+
+    for (let i = 0; i < n; i++) {
+      const p0 = base[i], p1 = base[(i + 1) % n];
+      const p0t = top[i],  p1t = top[(i + 1) % n];
+      const axis = nrm(sub(p1, p0));
+      const phi  = t * flattenAngle(p0, p1, p0t);
+      // Both top vertices rotate rigidly around the same hinge (through p0)
+      const p0r = rotAxis(p0t, p0, axis, phi);
+      const p1r = rotAxis(p1t, p0, axis, phi);
+      polyEdges([p0, p1, p1r, p0r], edges);
+    }
+
+    // Top face: double-rotation — first around base edge A→B (phase 1),
+    // then around the unfolded top edge A₁→B₁ (phase 2).
+    // Second angle is computed from the fully-unfolded phase1 positions.
+    const axis0 = nrm(sub(base[1], base[0]));
+    const ang0  = flattenAngle(base[0], base[1], top[0]);
+    const phase1Full = top.map(v => rotAxis(v, base[0], axis0, ang0));
+    const hAf = phase1Full[0], hBf = phase1Full[1];
+    const ang2 = flattenAngle(hAf, hBf, phase1Full[2]);
+
+    const phi0   = t * ang0;
+    const phase1 = top.map(v => rotAxis(v, base[0], axis0, phi0));
+    const hA = phase1[0], hB = phase1[1];
+    const topFinal = phase1.map(v => rotAxis(v, hA, nrm(sub(hB, hA)), t * ang2));
+    polyEdges(topFinal, edges);
+
+    return {
+      kind: 'unfolded',
+      edges,
+      labels: [],
+      preferredView: { yaw: 0, pitch: Math.PI / 2 - 0.001 },
+    };
+  };
+
   // ---- 15) Зрізаний конус ----
   TEMPLATES.frustumCone = {
     key: 'frustumCone',
@@ -1894,6 +1958,105 @@
         opts,
       };
     },
+  };
+
+  // Net unfolding for frustumCone (truncated cone).
+  // Lateral surface → annular sector; two circular caps fold out separately.
+  //
+  // Virtual full-cone apex is at height h·R/(R−r) above the frustum base.
+  // L_out = R·l/(R−r)  — radius of outer arc (bottom circle)
+  // L_in  = r·l/(R−r)  — radius of inner arc (top circle)
+  // sector angle θ = 2π·R/L_out = 2π·(R−r)/l
+  // seam direction (from virtual apex): ((R−r)/l, −h/l) in XY plane.
+  TEMPLATES.frustumCone.buildUnfolded = function (p, t) {
+    const R = p.r1, r = p.r2, h = p.h;
+    // Degenerate: R ≈ r (almost cylinder — no useful net)
+    if (Math.abs(R - r) < 0.01) return { kind: 'unfolded', edges: [], labels: [],
+      preferredView: { yaw: Math.PI / 2, pitch: 0 } };
+
+    const l    = Math.sqrt((R - r) * (R - r) + h * h); // slant height of frustum
+    const Lout = R * l / (R - r);                        // outer radius of annular sector
+    const Lin  = r * l / (R - r);                        // inner radius
+
+    // Virtual apex (fixed in space)
+    const Avx = 0, Avy = h * R / (R - r);              // (x, y) in XZ world coordinates
+    // Seam direction (from apex toward outer arc at φ=0)
+    const sdx = (R - r) / l, sdy = -h / l;             // unit vector in XY plane (z=0)
+
+    function flatPos(phi, tau) {
+      const rr   = Lout - tau * l;                      // radius in annular sector
+      const beta = phi * (R - r) / l;                   // angle in flat sector
+      const cb   = Math.cos(beta), sb = Math.sin(beta);
+      const dx   = sdx * cb - sdy * sb;
+      const dy   = sdx * sb + sdy * cb;
+      return v3(Avx + rr * dx, Avy + rr * dy, 0);
+    }
+    function frustPos(phi, tau) {
+      const rho = R + (r - R) * tau;
+      return v3(rho * Math.cos(phi), h * tau, rho * Math.sin(phi));
+    }
+    function morph(phi, tau) {
+      const a = frustPos(phi, tau), b = flatPos(phi, tau);
+      return v3(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y), a.z + t * (b.z - a.z));
+    }
+
+    const N = 72, M = 48;
+    const edges = [];
+    let prevBot = null, prevTop = null;
+    for (let i = 0; i <= N; i++) {
+      const phi = (i / N) * 2 * Math.PI;
+      const pb = morph(phi, 0), pt = morph(phi, 1);
+      if (prevBot) edges.push([prevBot, pb]);
+      if (prevTop) edges.push([prevTop, pt]);
+      prevBot = pb; prevTop = pt;
+    }
+    // Seam edges (two sides of the lateral cut)
+    edges.push([morph(0, 0), morph(0, 1)]);
+    edges.push([morph(2 * Math.PI, 0), morph(2 * Math.PI, 1)]);
+    // Intermediate generators (every 60°)
+    for (let i = 1; i < 6; i++) {
+      const phi = i * Math.PI / 3;
+      edges.push([morph(phi, 0), morph(phi, 1)]);
+    }
+
+    // Bottom cap (radius R): rotates around X-axis from horizontal to vertical, then drops
+    const alpha = t * Math.PI / 2;
+    const sinA = Math.sin(alpha), cosA = Math.cos(alpha);
+    const dropB = t * (R + 0.4);
+    let prevBotCap = null;
+    for (let i = 0; i <= M; i++) {
+      const theta = (i / M) * 2 * Math.PI;
+      const x = R * Math.cos(theta), z0 = R * Math.sin(theta);
+      const pt = v3(x, -z0 * sinA - dropB, z0 * cosA);
+      if (prevBotCap) edges.push([prevBotCap, pt]);
+      prevBotCap = pt;
+    }
+    // Top cap (radius r): rotates upward from the top of the flat sector
+    const dropT = t * (r + 0.4);
+    let prevTopCap = null;
+    for (let i = 0; i <= M; i++) {
+      const theta = (i / M) * 2 * Math.PI;
+      const x = r * Math.cos(theta), z0 = r * Math.sin(theta);
+      const pt = v3(x, h + z0 * sinA + dropT, z0 * cosA);
+      if (prevTopCap) edges.push([prevTopCap, pt]);
+      prevTopCap = pt;
+    }
+
+    const labels = [];
+    if (t > 0.85) {
+      labels.push({ pos: morph(Math.PI / 6, 0.5), text: 'ℓ', off: { x: 10, y: 2 }, italic: true });
+      labels.push({ pos: morph(0, 0), text: 'A',  off: { x: 8,  y: 18 } });
+      labels.push({ pos: morph(0, 1), text: 'A₁', off: { x: 8,  y: -8 } });
+    } else if (t < 0.15) {
+      labels.push({ pos: v3(R, 0, 0), text: 'A',  off: { x: 8, y: 18 } });
+      labels.push({ pos: v3(r, h, 0), text: 'A₁', off: { x: 8, y: -8 } });
+    }
+    return {
+      kind: 'unfolded',
+      edges,
+      labels,
+      preferredView: { yaw: Math.PI / 2, pitch: 0 }, // side view like cylinder
+    };
   };
 
   // =========================================================================
