@@ -3,6 +3,8 @@ import { useRouter } from 'vue-router'
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
+import LandingTrigCircle from './LandingTrigCircle.vue'
+import LandingNmt3d from './LandingNmt3d.vue'
 
 const router = useRouter()
 const { t, locale } = useI18n()
@@ -114,11 +116,44 @@ async function changeLanguage(langCode: string) {
     </nav>
 
     <div class="content-wrapper">
-      <header class="header">
-        <h1 class="title">{{ t('roleSelection.title') }}</h1>
-        <p class="subtitle">{{ t('roleSelection.subtitle') }}</p>
-        <p class="beta-notice">{{ t('roleSelection.betaNotice') }}</p>
+      <!-- Hero — split layout -->
+      <header class="header hero-split">
+        <div class="hero-text">
+          <p class="hero-eyebrow">{{ t('roleSelection.hero.eyebrow') }}</p>
+          <h1 class="title">{{ t('roleSelection.hero.title') }}</h1>
+          <p class="subtitle">{{ t('roleSelection.hero.subtitle') }}</p>
+          <div class="hero-actions">
+            <button class="hero-cta-primary" @click="selectTutor">
+              {{ t('roleSelection.hero.ctaTutor') }}
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+            <button class="hero-cta-ghost" @click="scrollToHowItWorks">{{ t('roleSelection.hero.ctaMore') }}</button>
+          </div>
+          <p class="beta-notice">{{ t('roleSelection.betaNotice') }}</p>
+        </div>
+        <div class="hero-demo">
+          <LandingTrigCircle />
+          <p class="hero-demo-caption">{{ t('roleSelection.hero.trigCaption') }}</p>
+        </div>
       </header>
+
+      <!-- Live Tools Demo — NMT3D Pyramid -->
+      <section class="info-section live-tools-section">
+        <div class="live-tools-grid">
+          <div class="live-tools-demo">
+            <LandingNmt3d />
+            <p class="live-tools-caption">{{ t('roleSelection.liveTools.pyramidCaption') }}</p>
+          </div>
+          <div class="live-tools-text">
+            <p class="hero-eyebrow">{{ t('roleSelection.liveTools.eyebrow') }}</p>
+            <h2 class="live-tools-title">{{ t('roleSelection.liveTools.title') }}</h2>
+            <p class="live-tools-body">{{ t('roleSelection.liveTools.body') }}</p>
+          </div>
+        </div>
+      </section>
 
       <div class="cards-container">
         <!-- Student Card -->
@@ -665,32 +700,153 @@ async function changeLanguage(langCode: string) {
 }
 
 .header {
-  text-align: center;
   margin-bottom: 3rem;
   padding-top: 2rem;
 }
 
+/* ── Hero split layout ── */
+.hero-split {
+  display: grid;
+  grid-template-columns: 2fr 3fr;  /* demo >= 600px при container >= 1100px */
+  gap: 3rem;
+  align-items: center;
+  min-height: calc(100vh - 9rem);
+  padding-bottom: 3rem;
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.hero-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
 .title {
-  font-size: 3rem;
+  font-family: 'Space Grotesk', var(--font-sans);
+  font-size: clamp(2.5rem, 4.5vw, 3.75rem);
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 1rem 0;
-  line-height: 1.2;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: pre-line;
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   color: var(--text-secondary);
   margin: 0;
   font-weight: 400;
+  line-height: 1.65;
+  max-width: 420px;
 }
 
 .beta-notice {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--accent);
   font-weight: 500;
-  opacity: 0.85;
+  opacity: 0.75;
+  margin: 0;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(5,150,105,0.35);
+}
+
+.hero-cta-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(5,150,105,0.45);
+}
+
+.hero-cta-primary svg {
+  transition: transform 0.2s ease;
+}
+
+.hero-cta-primary:hover svg {
+  transform: translateX(3px);
+}
+
+.hero-cta-ghost {
+  background: none;
+  border: 1.5px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.hero-cta-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hero-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hero-demo-caption {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  text-align: center;
+  margin: 0;
+}
+
+/* Responsive: stack on tablet/mobile (< 1100px щоб demo завжди >= 600px) */
+@media (max-width: 1100px) {
+  .hero-split {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 2.5rem;
+    padding-bottom: 2rem;
+  }
+
+  .hero-demo {
+    order: -1;  /* demo зверху, текст знизу — відвідувач бачить інтерактив першим */
+  }
+
+  .title {
+    font-size: clamp(2rem, 7vw, 2.75rem);
+  }
+
+  .subtitle {
+    max-width: 100%;
+  }
 }
 
 .cards-container {
@@ -881,6 +1037,76 @@ async function changeLanguage(langCode: string) {
   .card-icon svg {
     width: 48px;
     height: 48px;
+  }
+}
+
+/* Live Tools Section */
+.live-tools-section {
+  text-align: left;
+  margin-top: 5rem;
+}
+
+.live-tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.live-tools-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.live-tools-caption {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  text-align: center;
+  margin: 0;
+}
+
+.live-tools-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.live-tools-title {
+  font-family: 'Space Grotesk', var(--font-sans);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.live-tools-body {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .live-tools-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .live-tools-section {
+    text-align: center;
+  }
+
+  .live-tools-text {
+    align-items: center;
+  }
+
+  .live-tools-body {
+    max-width: 520px;
   }
 }
 

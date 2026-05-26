@@ -1039,13 +1039,17 @@
       "myPacks": "My Packs",
       "knowledgeAnalytics": "Analytics",
       "myBoards": "Lesson Studio",
+      "lessonConstructor": "Lesson Constructor",
       "materials": "Materials",
       "myPlan": "My Plan",
-      "myReplays": "My Replays"
+      "myReplays": "My Replays",
+      "feedback": "💡 Ideas & Feedback"
     },
     "hint": {
+      "feedback": "Suggest ideas and vote on priorities",
       "dashboard": "Home page with schedule and stats",
       "schedule": "Your lesson calendar and availability",
+      "lessonConstructor": "Generate a ready board with NMT-style problems",
       "knowledgeHub": "Your created lessons, templates, and courses",
       "lessonCatalog": "All public lessons from M4SH tutors",
       "myLessons": "My saved lessons with search and folders",
@@ -5698,6 +5702,14 @@
       "content": "Умови використання платформи M4SH",
       "lastUpdated": "Останнє оновлення: {date}",
       "title": "Угода користувача"
+    },
+    "tutorOffer": {
+      "title": "Tutor Offer",
+      "lastUpdated": "Version: {date}"
+    },
+    "studentOffer": {
+      "title": "Student Offer",
+      "lastUpdated": "Version: {date}"
     }
   },
   "profile": {
@@ -6432,6 +6444,20 @@
           "text": "Once a lesson is complete, the participant keeps access. Even if they leave the group, every completed lesson stays in their archive."
         }
       }
+    },
+    "hero": {
+      "eyebrow": "Interactive whiteboard for online lessons",
+      "title": "Math you can\nactually touch",
+      "subtitle": "Live formulas, 3D objects, graphs and interactive tasks — all in one board",
+      "ctaTutor": "Become a tutor",
+      "ctaMore": "Learn more",
+      "trigCaption": "Trigonometry — drag the point with your mouse"
+    },
+    "liveTools": {
+      "eyebrow": "Solid Geometry",
+      "title": "3D Solids with Broad Parameters",
+      "body": "Cubes, prisms, pyramids, solids of revolution — each shape with its own parameters. Adjust height, base, viewing angle — the solid updates instantly.",
+      "pyramidCaption": "Trapezoid-base pyramid SABCD — auto-rotation"
     }
   },
   "winterboard": {
@@ -6588,6 +6614,7 @@
         "jsonDesc": "Export raw board data"
       },
       "startExport": "Export",
+      "capturingWidgets": "Capturing widget previews… ({done}/{total})",
       "processing": "Exporting...",
       "ready": "Export ready!",
       "download": "Download",
@@ -8794,6 +8821,91 @@
       "self_invite_forbidden": "You cannot accept your own invite",
       "insufficient_contacts": "Tutor has insufficient contacts",
       "not_owner": "Only the owner can cancel an invite"
+    }
+  },
+  "feedback": {
+    "landing": {
+      "title": "Ideas & Feedback",
+      "subtitle": "Suggest improvements or vote for others' ideas",
+      "roadmap": "Roadmap",
+      "search": "Search",
+      "newThread": "New idea",
+      "loading": "Loading...",
+      "empty": "No ideas yet. Be the first!",
+      "beFirst": "Suggest an idea →"
+    },
+    "search": {
+      "back": "Back", "title": "Search ideas",
+      "placeholder": "Search... (min 3 chars)",
+      "go": "Search", "loading": "Searching...",
+      "empty": "Nothing found. Try other terms or create a new idea."
+    },
+    "sort": { "trending": "🔥 Trending", "top": "⬆ Top voted", "recent": "🆕 Recent" },
+    "filter": { "allTypes": "All types", "allCategories": "All categories" },
+    "type": {
+      "review": "Review",
+      "feature_request": "Feature request",
+      "bug_report": "Bug report",
+      "improvement": "Improvement",
+      "discussion": "Discussion"
+    },
+    "category": {
+      "ux": "UX", "classroom": "Classroom", "winterboard": "Whiteboard",
+      "performance": "Performance", "ai": "AI", "marketplace": "Marketplace", "other": "Other"
+    },
+    "status": {
+      "open": "Open", "under_review": "Under Review", "planned": "Planned",
+      "in_progress": "In Progress", "released": "Released", "done": "Done",
+      "rejected": "Rejected", "duplicate": "Duplicate", "archived": "Archived", "needs_info": "Needs Info"
+    },
+    "vote": {
+      "add": "Upvote", "remove": "Remove vote", "locked": "Voting unavailable",
+      "errors": {
+        "locked": "This thread is locked by moderator",
+        "hidden": "This thread is hidden",
+        "terminal": "Voting unavailable for closed ideas",
+        "rateLimit": "Too many votes. Try again in a minute",
+        "generic": "Vote failed. Please try again"
+      }
+    },
+    "staffResponded": "Team replied",
+    "new": {
+      "back": "Back", "title": "New idea",
+      "subtitle": "Describe your idea in detail. We'll check for similar ones first.",
+      "type": "Type", "category": "Category", "titleLabel": "Title",
+      "titlePlaceholder": "Brief idea summary (5-120 chars)",
+      "description": "Description",
+      "descriptionPlaceholder": "Detailed description: problem, context, expected behavior (min 20 chars)",
+      "publish": "Publish", "publishing": "Publishing...", "cancel": "Cancel"
+    },
+    "similar": {
+      "title": "Similar discussions found:", "loading": "Searching...",
+      "openAndVote": "Open →",
+      "hint": "Your idea may already exist — join the discussion instead of creating a duplicate."
+    },
+    "detail": {
+      "back": "Back", "loading": "Loading...", "subscribe": "Subscribe", "subscribed": "Subscribed",
+      "locked": "Locked", "duplicateOf": "Duplicate of:", "staffResponse": "Team response",
+      "staffPanel": "Moderator panel", "canonicalId": "Canonical ID",
+      "staffResponsePlaceholder": "Team comment (optional)",
+      "apply": "Apply", "lock": "Lock", "unlock": "Unlock", "hide": "Hide", "unhide": "Unhide"
+    },
+    "comments": {
+      "title": "Comments", "placeholder": "Write a comment...",
+      "send": "Send", "sending": "Sending...",
+      "empty": "No comments yet. Be the first!",
+      "locked": "Comments are closed by moderator.",
+      "terminal": "Discussion is closed — no new comments.",
+      "delete": "Delete"
+    },
+    "roadmap": {
+      "title": "Roadmap", "subtitle": "What we plan and what we're working on",
+      "backToFeedback": "Back to feedback", "loading": "Loading...",
+      "planned": "Planned", "in_progress": "In Progress", "released": "Released",
+      "empty": {
+        "planned": "Nothing planned yet", "in_progress": "No active work",
+        "released": "Released features will appear here"
+      }
     }
   }
 }
