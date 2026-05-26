@@ -353,11 +353,6 @@
 
     <!-- Phase 1: Recording controls moved into header -->
 
-    <!-- Phase 11 B5: Onboarding hints for empty board -->
-    <WBOnboardingHints
-      v-if="!isLoading"
-      :is-empty="isBoardEmpty"
-    />
 
     <!-- Phase 38: Test teacher panel -->
     <WBTestTeacherPanel
@@ -477,7 +472,6 @@ import WBClassroomRecordingControls from '../components/replay/WBClassroomRecord
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
-import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
@@ -994,13 +988,6 @@ const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showYouTubeModal = ref(false)
-
-// Phase 11 B5: Board empty check for onboarding hints
-const isBoardEmpty = computed(() => {
-  const page = store.currentPage
-  if (!page) return true
-  return page.assets.length === 0 && page.strokes.length === 0
-})
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 

@@ -791,11 +791,6 @@
     />
 
     <!-- Phase 11: Replay mode banner -->
-    <!-- Phase 11 B5: Onboarding hints for empty board -->
-    <WBOnboardingHints
-      v-if="!isLoading"
-      :is-empty="isBoardEmpty"
-    />
 
     <!-- Share Layer S.2: Post-record proactive prompt з inline visibility + auto-copy -->
     <WBRecordingDonePrompt
@@ -924,7 +919,6 @@ import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
-import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
@@ -1340,13 +1334,6 @@ const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate:
     }
   },
   debounceMs: 100,
-})
-
-// Phase 11 B5: Board empty check for onboarding hints
-const isBoardEmpty = computed(() => {
-  const page = store.currentPage
-  if (!page) return true
-  return page.assets.length === 0 && page.strokes.length === 0
 })
 
 // A1.4: Hide replay button on empty boards (check all pages)
