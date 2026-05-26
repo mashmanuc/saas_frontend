@@ -15,12 +15,36 @@
 
     <!-- Contextual inspectors — shown when a specific asset type is selected; replace tabs.
          Only one can be active at a time (single selection model). -->
-    <Nmt3dInspector       v-if="nmt3dUiState.ws" />
-    <TrigCircleInspector  v-else-if="trigCircleUiState.bridge" />
-    <HelixInspector       v-else-if="helixUiState.bridge" />
-    <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
-    <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
-    <CalculusInspector    v-else-if="calculusUiState.bridge" />
+    <template v-if="hasActiveInspector">
+      <!-- Zoom bar — A− / % / A+ — для демонстрацій учням (маленький шрифт скарги).
+           Знаходиться ПОЗАзумованою зоною, завжди кліковна.
+           Зберігається в localStorage між сесіями. -->
+      <div class="insp-zoom-bar">
+        <button
+          class="insp-zoom-btn"
+          :disabled="zoomIdx === 0"
+          title="Зменшити"
+          @click="zoomOut"
+        >A−</button>
+        <span class="insp-zoom-label">{{ ZOOM_LABELS[zoomIdx] }}</span>
+        <button
+          class="insp-zoom-btn"
+          :disabled="zoomIdx === ZOOM_LEVELS.length - 1"
+          title="Збільшити"
+          @click="zoomIn"
+        >A+</button>
+      </div>
+
+      <!-- Зумована обгортка — CSS zoom масштабує весь інспектор -->
+      <div class="insp-zoom-wrap" :style="{ zoom: ZOOM_LEVELS[zoomIdx] }">
+        <Nmt3dInspector       v-if="nmt3dUiState.ws" />
+        <TrigCircleInspector  v-else-if="trigCircleUiState.bridge" />
+        <HelixInspector       v-else-if="helixUiState.bridge" />
+        <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
+        <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
+        <CalculusInspector    v-else-if="calculusUiState.bridge" />
+      </div>
+    </template>
 
     <!-- Normal sidebar content (tabs + materials/tools) -->
     <template v-else>
@@ -263,6 +287,40 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// ── Inspector zoom (A− / A+) ──────────────────────────────────────────────
+// Масштабує всі contextual inspectors разом (CSS zoom).
+// Зберігається в localStorage щоб не скидати при переключенні між сторінками.
+const ZOOM_LEVELS = [0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2.0] as const
+const ZOOM_LABELS = ['80%', '90%', '100%', '120%', '140%', '160%', '180%', '200%'] as const
+const ZOOM_KEY = 'wb-inspector-zoom'
+const DEFAULT_ZOOM_IDX = 2 // 100%
+
+function _loadZoomIdx(): number {
+  try {
+    const v = parseInt(localStorage.getItem(ZOOM_KEY) ?? '', 10)
+    return Number.isFinite(v) && v >= 0 && v < ZOOM_LEVELS.length ? v : DEFAULT_ZOOM_IDX
+  } catch { return DEFAULT_ZOOM_IDX }
+}
+const zoomIdx = ref(_loadZoomIdx())
+
+function zoomIn(): void {
+  if (zoomIdx.value < ZOOM_LEVELS.length - 1) {
+    zoomIdx.value++
+    try { localStorage.setItem(ZOOM_KEY, String(zoomIdx.value)) } catch { /* blocked */ }
+  }
+}
+function zoomOut(): void {
+  if (zoomIdx.value > 0) {
+    zoomIdx.value--
+    try { localStorage.setItem(ZOOM_KEY, String(zoomIdx.value)) } catch { /* blocked */ }
+  }
+}
+
+const hasActiveInspector = computed(() =>
+  !!(nmt3dUiState.ws || trigCircleUiState.bridge || helixUiState.bridge ||
+     graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge),
+)
 
 // ── Folder navigation (library mode only) ──
 const selectedFolderId = ref<number | null>(null)
@@ -789,5 +847,67 @@ function onDrop(e: DragEvent) {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* ── Inspector zoom bar ── */
+.insp-zoom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.insp-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  user-select: none;
+}
+.insp-zoom-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.insp-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.insp-zoom-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 32px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Зумована обгортка — overflow-x hidden щоб при великому zoom не з'являвся горизонтальний скрол */
+.insp-zoom-wrap {
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* transform-origin не потрібен: CSS zoom розширює layout від top-left автоматично */
+}
+
+/* Sidebar має приховувати x-overflow при zoom > 100% */
+.content-sidebar {
+  overflow-x: hidden;
 }
 </style>

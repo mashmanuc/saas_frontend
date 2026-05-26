@@ -494,6 +494,30 @@
       </div>
     </template>
 
+    <!-- NmtTask (2026-05-23): nmt_task overlay — interactive NMT task cards (§3.7.9).
+         Lesson Constructor pipeline. Konva proxy underneath catches drag/resize/select. -->
+    <template v-for="asset in nmtTaskAssets" :key="`nmt-task-${asset.id}`">
+      <div
+        class="wb-nmt-task-overlay"
+        :class="{
+          'wb-nmt-task-overlay--selected': wbStore.selectedIds.includes(asset.id),
+        }"
+        :data-nmt-task-id="asset.id"
+        :data-testid="`nmt-task-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <NmtTaskRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @delete="emit('asset-delete', asset.id)"
+          @spawn-companions="handleSpawnCompanions"
+        />
+      </div>
+    </template>
+
+
     <!-- Strokes overlay: mirrors the Konva strokesLayer ABOVE widget overlays
          (z-index 6 > widget overlay z-index 4-5) when the user is in draw/pen/
          eraser mode. Committed strokes on the Konva canvas (z-index 0) would be
@@ -668,6 +692,14 @@ import HelixRenderer from '../board/objects/HelixRenderer.vue'
 import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 // NMT3D (2026-05-21): parametric 3D stereometry widget (§3.7.8)
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
+// NmtTask (2026-05-23): interactive NMT task card — Lesson Constructor (§3.7.9)
+import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
+// Companion spawn (2026-05-25): semantic-aware visual companion spawner
+import {
+  RENDERER_DEFAULTS,
+} from '../../services/capabilityRegistry'
+import type { CompanionResolution } from '../../services/capabilityRegistry'
+import { DEFAULT_GRAPH_STATE } from '../../constants/graphCalculatorDefaults'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -783,6 +815,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'helix',             // §3.7.6 — 3D helix                      → HelixRenderer
   'trig_solver',       // §3.7.7 — Unified trig eq+ineq solver   → TrigSolverRenderer
   'nmt3d',            // §3.7.8 — Parametric 3D stereometry     → Nmt3dRenderer
+  'nmt_task',         // §3.7.9 — Interactive NMT task card     → NmtTaskRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -795,6 +828,171 @@ const trigCircleAssets     = computed(() => assets.value.filter(a => a.type === 
 const helixAssets          = computed(() => assets.value.filter(a => a.type === 'helix'))
 const trigSolverAssets     = computed(() => assets.value.filter(a => a.type === 'trig_solver'))
 const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 'nmt3d'))
+const nmtTaskAssets        = computed(() => assets.value.filter(a => a.type === 'nmt_task'))
+
+// ── Companion spawn (2026-05-25) ──────────────────────────────────────────────
+// task.id → companion asset.id[]
+// Зберігаємо щоб не дублювати companions від однієї задачі.
+// Scope: in-memory per canvas mount (reset on page nav / reload).
+const companionLinks = new Map<string, string[]>()
+
+/**
+ * Обробляє spawn-companions від NmtTaskRenderer.
+ * Для кожного CompanionResolution — створює WBAsset і emit('asset-add').
+ * Якщо companion від цієї задачі вже існує — scroll/select до нього.
+ */
+function handleSpawnCompanions(payload: {
+  sourceAssetId: string
+  companions: CompanionResolution[]
+  spawnX: number
+  spawnY: number
+}) {
+  const { sourceAssetId, companions, spawnX, spawnY } = payload
+  const existingIds = companionLinks.get(sourceAssetId) ?? []
+
+  // Типи companions що вже існують на дошці від цієї задачі
+  const existingTypes = new Set<string>(
+    existingIds
+      .map(id => assets.value.find(a => a.id === id)?.type ?? '')
+      .filter(t => t !== ''),
+  )
+
+  // Знаходимо source task щоб правильно позиціонувати companion
+  const sourceAsset = assets.value.find(a => a.id === sourceAssetId)
+
+  // Companion спавниться у правому верхньому куті задачі з невеликим відступом.
+  // НЕ праворуч від задачі — task.w ≈ 1800px, тому праворуч = за межею canvas.
+  // Overlay перекриває задачу — вчитель сам перетягне куди потрібно.
+  let offsetX = spawnX
+  let offsetY = spawnY
+
+  for (const resolution of companions) {
+    if (existingTypes.has(resolution.rendererType)) {
+      // Companion цього типу вже є — вибираємо існуючий
+      const existing = assets.value.find(
+        a => existingIds.includes(a.id) && a.type === resolution.rendererType,
+      )
+      if (existing) emit('select', existing.id)
+      continue
+    }
+
+    const def = RENDERER_DEFAULTS[resolution.rendererType] ?? { w: 640, h: 520 }
+
+    // Позиціонування: правий верхній кут задачі, зсунуто всередину
+    // щоб companion гарантовано залишався в межах canvas
+    const taskRight = sourceAsset ? (sourceAsset.x + sourceAsset.w) : offsetX
+    const companionX = Math.max(60, taskRight - def.w - 20)
+    const companionY = sourceAsset ? (sourceAsset.y + 10) : offsetY
+
+    const companionAsset: WBAsset = {
+      id:       generateId(),
+      type:     resolution.rendererType as unknown as WBAsset['type'],
+      src:      '',
+      x:        companionX + (offsetX - spawnX),  // зсув якщо кілька companions
+      y:        companionY,
+      w:        def.w,
+      h:        def.h,
+      rotation: 0,
+      locked:   false,
+      data:     buildCompanionData(resolution) as unknown as WBAsset['data'],
+    }
+
+    emit('asset-add', companionAsset)
+    emit('select', companionAsset.id)
+
+    // Записуємо зв'язок task → companion
+    const ids = companionLinks.get(sourceAssetId) ?? []
+    ids.push(companionAsset.id)
+    companionLinks.set(sourceAssetId, ids)
+
+    offsetX += def.w + 24
+  }
+}
+
+// Палітра кольорів для кривих у графічному калькуляторі
+const GRAPH_EXPR_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed']
+
+/**
+ * GraphExpression.src формат: "y=expression"
+ * Без "y=" префіксу graph_calculator не будує криву.
+ * Якщо equation вже містить "y=" або "y =" — не дублюємо.
+ */
+function toGraphSrc(eq: string): string {
+  const s = eq.trim()
+  if (/^y\s*=/.test(s)) return s       // вже є y=
+  if (/^[a-zA-Z]\s*=/.test(s)) return s  // вже є щось = (x=, f=)
+  return `y=${s}`
+}
+
+/** Будує data для companion WBAsset з extracted_data fingerprint. */
+function buildCompanionData(resolution: CompanionResolution): Record<string, unknown> {
+  const d = resolution.data
+
+  switch (resolution.rendererType) {
+
+    case 'graph_calculator': {
+      // GraphCalculatorData = { version: 1, state: GraphCalculatorState }
+      // GraphExpression.src = "y=expression" (graph_calculator вимога)
+      const equations = (d.equations as string[] | undefined) ?? []
+      const expressions = equations.map((src, i) => ({
+        id:     generateId(),
+        src:    toGraphSrc(src),
+        color:  GRAPH_EXPR_COLORS[i % GRAPH_EXPR_COLORS.length],
+        hidden: false,
+      }))
+
+      return {
+        version: 1,
+        state: {
+          ...DEFAULT_GRAPH_STATE,
+          expressions,
+        },
+      }
+    }
+
+    case 'calculus': {
+      // Calculus теж використовує GraphCalculatorState-подібний формат
+      const equations = (d.equations as string[] | undefined) ?? []
+      const expressions = equations.map((src, i) => ({
+        id:     generateId(),
+        src:    toGraphSrc(src),
+        color:  GRAPH_EXPR_COLORS[i % GRAPH_EXPR_COLORS.length],
+        hidden: false,
+      }))
+      return {
+        version: 1,
+        state: {
+          ...DEFAULT_GRAPH_STATE,
+          expressions,
+        },
+      }
+    }
+
+    case 'nmt3d':
+      return {
+        shape:  (d.shape      as string | undefined) ?? 'prism',
+        base:   (d.base_shape as string | undefined),
+        params: (d.dimensions as Record<string, unknown> | undefined) ?? {},
+        points: (d.points     as unknown[] | undefined),
+      }
+
+    case 'geometry_2d':
+      return {
+        shape:  (d.shape_2d   as string | undefined),
+        sides:  (d.sides      as number[] | undefined),
+        angles: (d.angles_deg as number[] | undefined),
+        points: (d.points     as unknown[] | undefined),
+      }
+
+    case 'trig_circle':
+      return {
+        angles: (d.angles_rad as string[] | undefined),
+      }
+
+    default:
+      return { ...d }
+  }
+}
 
 // Expand-to-board: одночасно може бути розгорнутий тільки один asset.
 // Зберігає id розгорнутого asset, null = нічого не розгорнуто.
@@ -2127,8 +2325,11 @@ function mirrorStrokesLayer(): void {
   const overlayCanvas = strokesOverlayRef.value
   const ctx = strokesOverlayCtx
   if (!overlayCanvas || !ctx) return
-  if (currentTool.value === 'select' || wbStore.mode === 'replay') {
-    // In select/replay mode: clear overlay; Konva strokesLayer handles display.
+  if (currentTool.value === 'select' && wbStore.mode !== 'replay') {
+    // In select mode (live edit only): clear overlay so Konva strokesLayer
+    // handles display and strokes remain hittable/selectable via Konva.
+    // In replay mode we always mirror — strokes must appear above widget HTML
+    // overlays (z-index 4-5). Konva canvas is implicitly below them (z 0).
     const { width, height } = getStagePixelSize()
     ctx.clearRect(0, 0, width, height)
     return
@@ -4298,7 +4499,11 @@ watch(
     strokeConfigCache.clear()
     assetConfigCache.clear()
     clearSmoothedCache()
-    if (currentTool.value !== 'select' && wbStore.mode !== 'replay') {
+    if (currentTool.value !== 'select' || wbStore.mode === 'replay') {
+      // Re-mirror strokes onto wb-strokes-overlay (z-index 6) when:
+      //   a) draw mode (non-select, live edit): committed strokes stay above widget overlays
+      //   b) replay mode: strokes must appear above widget HTML overlays (z-index 4-5)
+      //      so recorded writing is visible over calculator/trig/helix/etc. cards.
       // PAGE-LEAK FIX: nextTick гарантує що vue-konva встиг знищити стейл v-path
       // ноди (Vue 'post' flush ставить onUnmounted vue-konva нодів ПІСЛЯ цього
       // watcher-а з 'pre' flush). Тільки після nextTick планувати rAF →
@@ -4310,6 +4515,19 @@ watch(
       nextTick(() => {
         requestAnimationFrame(() => mirrorStrokesLayer())
       })
+    }
+  },
+)
+
+// When replay starts: ensure wb-strokes-overlay shows existing strokes.
+// Needed if replay starts while tool='select' (overlay was cleared in select mode)
+// or when seeking mid-session. Without this, existing strokes would be invisible
+// until the first stroke-add event fires watch(props.strokes).
+watch(
+  () => wbStore.mode,
+  (newMode) => {
+    if (newMode === 'replay') {
+      nextTick(() => requestAnimationFrame(() => mirrorStrokesLayer()))
     }
   },
 )
@@ -4795,5 +5013,29 @@ defineExpose({
 .wb-nmt3d-overlay--selected {
   border-color: #c4622a;
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
+}
+
+/* NmtTask (§3.7.9) — interactive NMT task card, clean white card style. */
+.wb-nmt-task-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-nmt-task-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
+/* ParameterLineTask (§3.7.10) — числово-осьовий атом, teal accent. */
+.wb-param-line-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-param-line-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.35);
 }
 </style>
