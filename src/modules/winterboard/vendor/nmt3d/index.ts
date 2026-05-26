@@ -49,7 +49,7 @@ export interface Nmt3dWorkspace {
   readonly template: {
     name: string
     full?: string
-    params: Record<string, { value: number; min: number; max: number; label: string }>
+    params: Record<string, { value: number; min: number; max: number; label: string; step?: number }>
     aux?: Array<{ key: string; label: string }>
     buildUnfolded?: unknown
   }
@@ -63,7 +63,7 @@ declare global {
         key: string
         name: string
         full?: string
-        params: Record<string, { value: number; min: number; max: number; label: string }>
+        params: Record<string, { value: number; min: number; max: number; label: string; step?: number }>
         aux?: Array<{ key: string; label: string }>
       } | undefined>
       Workspace: new (container: HTMLElement, templateKey: string) => Nmt3dWorkspace

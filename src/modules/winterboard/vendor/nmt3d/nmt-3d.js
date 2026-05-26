@@ -209,6 +209,17 @@
     return 'M' + pts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L');
   }
 
+  // Radially-outward label offset for procedural n-gon templates.
+  // 'isTop' shifts up for the top ring of a prism.
+  function _ngonLabelOff(x, z, r, isTop) {
+    const nx = r > 1e-9 ? x / r : 0;
+    const nz = r > 1e-9 ? z / r : 0;
+    return {
+      x: Math.round(nx * 18),
+      y: isTop ? Math.round(-nz * 10 - 8) : Math.round(nz * 14 + 6),
+    };
+  }
+
   // ========== TEMPLATES ==========
   // Each template:
   //   key, name, full (formal label like ABCDA₁B₁C₁D₁)
@@ -1331,6 +1342,225 @@
     };
   };
 
+  // ════════════════════════════════════════════════════════════════════════
+  // PROCEDURAL SUBSYSTEM — regular n-gonal pyramid
+  //
+  // param n (integer 3–8) controls number of base sides at runtime.
+  // Old hand-crafted pyramid3/pyramid4/pyramid6 are NOT affected.
+  // unfoldNgonalPyramid() is already generic — reused as-is.
+  // ════════════════════════════════════════════════════════════════════════
+  TEMPLATES.ngonPyramid = {
+    key: 'ngonPyramid',
+    name: 'Правильна n-кутна піраміда',
+    full: 'S + n-кут',
+    params: {
+      n: { value: 5, min: 3, max: 8, step: 1, label: 'n' },
+      a: { value: 1.4, min: 0.4, max: 2.6, label: 'a' },
+      h: { value: 2.0, min: 0.4, max: 3.6, label: 'h' },
+    },
+    aux: [
+      { key: 'height',   label: 'висота SO' },
+      { key: 'apothem',  label: 'апофема SM' },
+      { key: 'axSect',   label: 'осьовий переріз' },
+      { key: 'baseInc',  label: 'вписане коло основи' },
+      { key: 'baseCirc', label: 'описане коло основи' },
+    ],
+  };
+
+  TEMPLATES.ngonPyramid.build = function (p, opts = {}) {
+    const n = Math.max(3, Math.min(8, Math.round(p.n)));
+    const a = p.a;
+    const PI = Math.PI;
+    const r_out = a / (2 * Math.sin(PI / n));
+    const r_in  = a / (2 * Math.tan(PI / n));
+    // startOff = -π/2: vertex A points left; front-right vertices are visible & draggable.
+    const startOff = -PI / 2;
+
+    const names = ['A','B','C','D','E','F','G','H'].slice(0, n);
+    const ring = names.map((nm, k) => {
+      const ang = 2 * PI * k / n + startOff;
+      return { nm, x: r_out * Math.sin(ang), z: r_out * Math.cos(ang) };
+    });
+
+    const V = { S: v3(0, p.h, 0), O: v3(0, 0, 0) };
+    for (const { nm, x, z } of ring) V[nm] = v3(x, 0, z);
+
+    const E = [];
+    for (let i = 0; i < n; i++) {
+      E.push([names[i], names[(i + 1) % n]]);
+      E.push(['S', names[i]]);
+    }
+    // base CCW from above + lateral triangles CCW outward
+    const F = [names.slice()];
+    for (let i = 0; i < n; i++) F.push(['S', names[(i + 1) % n], names[i]]);
+
+    const labels = ring.map(({ nm, x, z }) => ({
+      pos: v3(x, 0, z), text: nm, off: _ngonLabelOff(x, z, r_out, false),
+    }));
+    labels.push({ pos: V.S, text: 'S', off: { x: 8, y: -6 } });
+
+    // Handle for 'a': vertex with max (x + 0.3·z) — front-right, always visible.
+    let hIdx = 0, hScore = -Infinity;
+    for (let k = 0; k < n; k++) {
+      const s = ring[k].x + 0.3 * ring[k].z;
+      if (s > hScore) { hScore = s; hIdx = k; }
+    }
+    const hv = ring[hIdx];
+    const handles = [
+      { id: 'a', paramKey: 'a', worldPos: V[hv.nm], gradient: nrm(v3(hv.x, 0, hv.z)), hint: 'ребро a' },
+      { id: 'h', paramKey: 'h', worldPos: V.S,       gradient: v3(0, 1, 0),            hint: 'висота h' },
+    ];
+
+    const aux = [];
+    const M = lerp(V[names[0]], V[names[1]], 0.5); // apothem foot (midpoint of edge AB)
+    if (opts.height) {
+      aux.push({ kind: 'line', from: V.S, to: V.O, color: '#c4622a', w: 1.6, dash: '7 3 1 3' });
+      labels.push({ pos: V.O, text: 'O', off: { x: 6, y: 14 }, dot: true });
+      aux.push({ kind: 'rightAngle', at: V.O, dir1: v3(0, 1, 0), dir2: v3(1, 0, 0), size: 0.18 });
+    }
+    if (opts.apothem) {
+      aux.push({ kind: 'line', from: V.S, to: M, color: '#3b7b9b', w: 1.6 });
+      labels.push({ pos: M, text: 'M', off: { x: -8, y: 18 }, dot: true });
+    }
+    if (opts.axSect) {
+      const opp = V[names[Math.floor(n / 2)]]; // roughly opposite vertex to A
+      aux.push({ kind: 'poly', pts: [V[names[0]], opp, V.S],
+        color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
+    }
+    if (opts.baseInc)  aux.push({ kind: 'horizCircle', y: 0, radius: r_in,  color: '#7b6193', w: 1.4, dash: '3 3' });
+    if (opts.baseCirc) aux.push({ kind: 'horizCircle', y: 0, radius: r_out, color: '#3a8a4f', w: 1.4 });
+
+    return { kind: 'poly', V, E, F, labels, handles, aux };
+  };
+
+  TEMPLATES.ngonPyramid.buildUnfolded = function (p, t) {
+    const n = Math.max(3, Math.min(8, Math.round(p.n)));
+    const r_out = p.a / (2 * Math.sin(Math.PI / n));
+    const r_in  = p.a / (2 * Math.tan(Math.PI / n));
+    const startOff = -Math.PI / 2;
+    const ring = Array.from({ length: n }, (_, k) => {
+      const ang = 2 * Math.PI * k / n + startOff;
+      return v3(r_out * Math.sin(ang), 0, r_out * Math.cos(ang));
+    });
+    const result = unfoldNgonalPyramid(ring, v3(0, p.h, 0), t, r_in);
+    return { kind: 'unfolded', edges: result.edges, labels: [],
+      preferredView: { yaw: 0, pitch: Math.PI / 2 - 0.001 } };
+  };
+
+  // ════════════════════════════════════════════════════════════════════════
+  // PROCEDURAL SUBSYSTEM — regular n-gonal prism
+  //
+  // param n (integer 3–8) controls number of base sides at runtime.
+  // Old hand-crafted prism4/prism6 are NOT affected.
+  // unfoldNgonalPrism() is already generic — reused as-is.
+  // ════════════════════════════════════════════════════════════════════════
+  TEMPLATES.ngonPrism = {
+    key: 'ngonPrism',
+    name: 'Правильна n-кутна призма',
+    full: 'n-кут + n-кут',
+    params: {
+      n: { value: 5, min: 3, max: 8, step: 1, label: 'n' },
+      a: { value: 1.2, min: 0.4, max: 2.4, label: 'a' },
+      h: { value: 2.0, min: 0.6, max: 3.6, label: 'h' },
+    },
+    aux: [
+      { key: 'bodyDiag', label: 'діагональ тіла' },
+      { key: 'apothem',  label: 'апофема основи OM' },
+      { key: 'sides',    label: 'позначити a, h' },
+      { key: 'baseInc',  label: 'вписане коло основи' },
+      { key: 'baseCirc', label: 'описане коло основи' },
+    ],
+  };
+
+  TEMPLATES.ngonPrism.build = function (p, opts = {}) {
+    const n = Math.max(3, Math.min(8, Math.round(p.n)));
+    const a = p.a;
+    const PI = Math.PI;
+    const r_out = a / (2 * Math.sin(PI / n));
+    const r_in  = a / (2 * Math.tan(PI / n));
+    const startOff = -PI / 2;
+
+    const names = ['A','B','C','D','E','F','G','H'].slice(0, n);
+    const ring = names.map((nm, k) => {
+      const ang = 2 * PI * k / n + startOff;
+      return { nm, x: r_out * Math.sin(ang), z: r_out * Math.cos(ang) };
+    });
+
+    const V = {};
+    for (const { nm, x, z } of ring) {
+      V[nm]       = v3(x, 0,    z);
+      V[nm + '1'] = v3(x, p.h, z);
+    }
+
+    const E = [];
+    for (let i = 0; i < n; i++) {
+      const a0 = names[i], b0 = names[(i + 1) % n];
+      E.push([a0, b0]);
+      E.push([a0 + '1', b0 + '1']);
+      E.push([a0, a0 + '1']);
+    }
+    // bottom CCW from above + top (reversed) + lateral quads CCW outward
+    const F = [
+      names.slice(),
+      [...names].reverse().map(nm => nm + '1'),
+    ];
+    for (let i = 0; i < n; i++) {
+      const a0 = names[i], b0 = names[(i + 1) % n];
+      F.push([a0, a0 + '1', b0 + '1', b0]);
+    }
+
+    const labels = [];
+    for (const { nm, x, z } of ring) {
+      labels.push({ pos: V[nm],       text: nm,       off: _ngonLabelOff(x, z, r_out, false) });
+      labels.push({ pos: V[nm + '1'], text: nm + '₁', off: _ngonLabelOff(x, z, r_out, true)  });
+    }
+
+    let hIdx = 0, hScore = -Infinity;
+    for (let k = 0; k < n; k++) {
+      const s = ring[k].x + 0.3 * ring[k].z;
+      if (s > hScore) { hScore = s; hIdx = k; }
+    }
+    const hv = ring[hIdx];
+    const handles = [
+      { id: 'a', paramKey: 'a', worldPos: V[hv.nm],    gradient: nrm(v3(hv.x, 0, hv.z)), hint: 'ребро a' },
+      { id: 'h', paramKey: 'h', worldPos: v3(0, p.h, 0), gradient: v3(0, 1, 0),           hint: 'висота h' },
+    ];
+
+    const aux = [];
+    if (opts.bodyDiag) {
+      const oppNm = names[Math.floor(n / 2)];
+      aux.push({ kind: 'line', from: V[names[0]], to: V[oppNm + '1'], color: '#c4622a', w: 1.7 });
+    }
+    if (opts.apothem) {
+      const M = lerp(V[names[0]], V[names[1]], 0.5);
+      const O = v3(0, 0, 0);
+      aux.push({ kind: 'line', from: O, to: M, color: '#3b7b9b', w: 1.5 });
+      labels.push({ pos: M, text: 'M', off: { x: -8, y: 18 }, dot: true });
+      labels.push({ pos: O, text: 'O', off: { x: 6,  y: 14 }, dot: true });
+    }
+    if (opts.sides) {
+      labels.push({ pos: lerp(V[names[0]], V[names[1]], 0.5), text: 'a', off: { x: -6, y: 22 }, italic: true });
+      const lastNm = names[n - 1];
+      labels.push({ pos: lerp(V[lastNm], V[lastNm + '1'], 0.5), text: 'h', off: { x: 14, y: 4 }, italic: true });
+    }
+    if (opts.baseInc)  aux.push({ kind: 'horizCircle', y: 0, radius: r_in,  color: '#7b6193', w: 1.4, dash: '3 3' });
+    if (opts.baseCirc) aux.push({ kind: 'horizCircle', y: 0, radius: r_out, color: '#3a8a4f', w: 1.4 });
+
+    return { kind: 'poly', V, E, F, labels, handles, aux };
+  };
+
+  TEMPLATES.ngonPrism.buildUnfolded = function (p, t) {
+    const n = Math.max(3, Math.min(8, Math.round(p.n)));
+    const r_out = p.a / (2 * Math.sin(Math.PI / n));
+    const startOff = -Math.PI / 2;
+    const ring = Array.from({ length: n }, (_, k) => {
+      const ang = 2 * Math.PI * k / n + startOff;
+      return v3(r_out * Math.sin(ang), 0, r_out * Math.cos(ang));
+    });
+    const result = unfoldNgonalPrism(ring, p.h, t);
+    return { kind: 'unfolded', edges: result.edges, labels: [],
+      preferredView: { yaw: 0, pitch: Math.PI / 2 - 0.001 } };
+  };
 
   TEMPLATES.tetrahedron = {
     key: 'tetrahedron',

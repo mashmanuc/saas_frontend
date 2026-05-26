@@ -34,12 +34,12 @@
           class="nmt3d-inspector__slider"
           :min="def.min"
           :max="def.max"
-          :step="sliderStep(def.min, def.max)"
+          :step="def.step ?? sliderStep(def.min, def.max)"
           :value="nmt3dUiState.latestParams[key] ?? def.value"
           @input="onParamInput(key, $event)"
         />
         <span class="nmt3d-inspector__param-value">
-          {{ formatVal(nmt3dUiState.latestParams[key] ?? def.value) }}
+          {{ formatVal(nmt3dUiState.latestParams[key] ?? def.value, def) }}
         </span>
       </div>
     </div>
@@ -147,7 +147,8 @@ function sliderStep(min: number, max: number): number {
   return 0.25
 }
 
-function formatVal(v: number): string {
+function formatVal(v: number, def?: { step?: number }): string {
+  if (def?.step === 1) return String(Math.round(v))
   return v.toFixed(2)
 }
 
