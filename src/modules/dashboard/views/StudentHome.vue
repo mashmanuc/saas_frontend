@@ -15,6 +15,12 @@
     />
     <div v-else class="student-home__hero-skeleton" aria-hidden="true" />
 
+    <!-- Активні уроки (INSTANT in_progress + найближчі scheduled) -->
+    <StudentUpcomingLessonsSection
+      :upcoming-lessons="upcomingLessons"
+      :loading="isLoadingLessons"
+    />
+
     <!-- Активні тьютори студента -->
     <StudentActiveTutorsSection
       :active-tutors="activeTutors"
@@ -35,8 +41,9 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import DashboardHero from '../components/DashboardHero.vue'
 import DashboardSecondaryContext from '../components/DashboardSecondaryContext.vue'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
+import StudentUpcomingLessonsSection from '../components/StudentUpcomingLessonsSection.vue'
 import apiClient from '@/utils/apiClient'
-import type { DashboardSnapshotV2, AssignedTutor } from '../api/dashboard'
+import type { DashboardSnapshotV2, AssignedTutor, ActiveLesson } from '../api/dashboard'
 import { resolveCta } from '../utils/fallbackCta'
 
 const TrialBanner = defineAsyncComponent(
@@ -49,6 +56,9 @@ const isLoading = ref(true)
 
 const activeTutors = ref<AssignedTutor[]>([])
 const isLoadingTutors = ref(false)
+
+const upcomingLessons = ref<ActiveLesson[]>([])
+const isLoadingLessons = ref(false)
 
 // Fix #1: fallback до find_tutor якщо backend повернув null
 const heroCta = computed(() => resolveCta(snapshot.value?.primary_cta, 'student'))
@@ -79,9 +89,24 @@ async function loadActiveTutors() {
   }
 }
 
+async function loadUpcomingLessons() {
+  isLoadingLessons.value = true
+  try {
+    const data = await apiClient.get<{ upcoming_lessons: ActiveLesson[] }>(
+      '/v1/dashboard/student/'
+    )
+    upcomingLessons.value = data.upcoming_lessons ?? []
+  } catch (err) {
+    console.error('[StudentHome] Failed to load upcoming lessons:', err)
+  } finally {
+    isLoadingLessons.value = false
+  }
+}
+
 onMounted(() => {
   loadSnapshot()
   loadActiveTutors()
+  loadUpcomingLessons()
 })
 </script>
 
