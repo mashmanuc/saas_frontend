@@ -39,9 +39,10 @@
       :class="{ 'wb-test-element__label--placeholder': !testObject.label }"
       :data-test-id="testObject.id"
       @dblclick.stop="startLabelEdit"
-    >
-      {{ testObject.label || (mode === 'edit' ? t('winterboard.test.props.labelPlaceholder') : '') }}
-    </div>
+      v-html="testObject.label
+        ? renderTextWithLatex(testObject.label)
+        : (mode === 'edit' ? t('winterboard.test.props.labelPlaceholder') : '')"
+    />
 
     <!-- Dispatch by type -->
     <WBTestInputEl
@@ -90,6 +91,18 @@
       :answer="answer"
       @answer="onAnswer"
     />
+
+    <!-- Edit mode: solution panel (Lesson Constructor) -->
+    <div
+      v-if="mode === 'edit' && testObject.solution"
+      class="wb-test-element__solution"
+    >
+      <span class="wb-test-element__solution-label">📖</span>
+      <div
+        class="wb-test-element__solution-text"
+        v-html="renderTextWithLatex(testObject.solution)"
+      />
+    </div>
 
     <!-- Edit mode: type badge with icon -->
     <div v-if="mode === 'edit'" class="wb-test-element__badge">
@@ -142,6 +155,7 @@
  */
 import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBTestObject, WBTestInput, WBTestRadio, WBTestCheckbox, WBTestDropdown, WBTestGapFill, WBTestMatching } from '../../types/winterboard'
 import type { TestPhase, GradeResult } from '../../board/state/testStore'
 import WBTestInputEl from './elements/WBTestInputEl.vue'
@@ -528,6 +542,32 @@ function onAnswer(answer: unknown) {
 .wb-test-element__result-badge--wrong {
   background: #ef4444;
   color: white;
+}
+
+/* ── Solution panel (constructor edit mode) ── */
+.wb-test-element__solution {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  margin-top: 4px;
+  padding: 8px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.wb-test-element__solution-label {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.wb-test-element__solution-text {
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.55;
+  word-break: break-word;
 }
 
 /* ── Inline check button ── */

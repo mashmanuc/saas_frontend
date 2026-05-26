@@ -23,6 +23,7 @@
         {{ t('winterboard.boards.modeLibrary') }}
       </button>
       <button
+        v-if="lessonConstructorEnabled"
         type="button"
         class="wb-studio-mode-bar__btn"
         :class="{ 'wb-studio-mode-bar__btn--active': studioMode === 'constructor' }"
@@ -37,20 +38,11 @@
       </button>
     </div>
 
-    <!-- ── Constructor mode placeholder (parallel agent will fill this) ──── -->
-    <div v-if="studioMode === 'constructor'" class="wb-studio-constructor">
-      <div class="wb-studio-constructor__icon" aria-hidden="true">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <rect x="4" y="4" width="48" height="48" rx="12" fill="var(--wb-canvas-bg, #f1f5f9)"/>
-          <path d="M28 16 L40 22 L40 34 L28 40 L16 34 L16 22 Z" stroke="var(--wb-brand, #0066ff)" stroke-width="2" fill="none"/>
-          <circle cx="28" cy="28" r="4" stroke="var(--wb-brand, #0066ff)" stroke-width="2"/>
-          <path d="M28 22v2M28 32v2M22 28h2M32 28h2" stroke="var(--wb-brand, #0066ff)" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <h2 class="wb-studio-constructor__title">{{ t('winterboard.boards.constructorComingSoonTitle') }}</h2>
-      <p class="wb-studio-constructor__desc">{{ t('winterboard.boards.constructorComingSoonDesc') }}</p>
-      <span class="wb-studio-constructor__badge">{{ t('winterboard.boards.constructorComingSoonBadge') }}</span>
-    </div>
+    <!-- ── Constructor mode (Lesson Constructor wizard, dev-only via isLessonConstructorEnabled) ── -->
+    <LessonConstructorPage
+      v-if="studioMode === 'constructor' && lessonConstructorEnabled"
+      class="wb-studio-constructor-embedded"
+    />
 
     <!-- ── Library mode (existing board list) ─────────────────────────── -->
     <template v-if="studioMode === 'library'">
@@ -387,18 +379,27 @@ import { winterboardApi, type WBSessionListItem, type ListSessionsQuery, type Bo
 // `useToast` з composables — не mounted (legacy), повідомлення туди "в нікуди".
 // Міграція стандартна: showToast(msg,'success') → notifySuccess(msg).
 import { notifyError, notifySuccess } from '@/utils/notify'
+import { isLessonConstructorEnabled } from '../config/featureFlags'
 import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
 import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
 
 const WBShareDialog = defineAsyncComponent(() => import('../components/sharing/WBShareDialog.vue'))
 const WBExportDialog = defineAsyncComponent(() => import('../components/export/WBExportDialog.vue'))
+// Lesson Constructor — dev-only wizard (gated by isLessonConstructorEnabled())
+const LessonConstructorPage = defineAsyncComponent(
+  () => import('../../lesson_constructor/views/LessonConstructorPage.vue'),
+)
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'wb_board_view_mode'
 const STUDIO_MODE_KEY = 'wb_studio_mode'
 const LIMIT = 24
+
+// ─── Feature flags ────────────────────────────────────────────────────────────
+// Оцінюється один раз при монтуванні (env + localStorage статичні).
+const lessonConstructorEnabled = isLessonConstructorEnabled()
 
 // ─── Composables ──────────────────────────────────────────────────────────────
 
@@ -412,6 +413,9 @@ const router = useRouter()
 type StudioMode = 'library' | 'constructor'
 
 function _loadStudioMode(): StudioMode {
+  // Якщо конструктор вимкнено (prod) — завжди 'library',
+  // щоб застарілий localStorage не ставив порожню вкладку.
+  if (!isLessonConstructorEnabled()) return 'library'
   try {
     const saved = localStorage.getItem(STUDIO_MODE_KEY)
     if (saved === 'library' || saved === 'constructor') return saved
@@ -856,7 +860,14 @@ onMounted(() => {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ── Constructor placeholder ─────────────────────────────────────────── */
+/* ── Constructor embedded panel ──────────────────────────────────────── */
+
+.wb-studio-constructor-embedded {
+  /* Span full grid width in sidebar-grid layout (lib mode only, no-op in constructor mode) */
+  grid-column: 1 / -1;
+}
+
+/* ── Constructor placeholder (legacy — залишено для безпечного fallback) */
 
 .wb-studio-constructor {
   grid-column: 1 / -1;

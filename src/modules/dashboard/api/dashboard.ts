@@ -5,16 +5,18 @@ import apiClient from '@/utils/apiClient'
 
 // Types
 export interface ActiveLesson {
-  id: number
-  scheduled_at: string
-  duration_minutes: number
+  id: string | number
+  scheduled_at: string | null
+  duration_minutes: number | null
   status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
   tutor_name: string | null
   tutor_avatar: string | null
   student_name: string | null
   student_avatar: string | null
   classroom_session_id: string | null
+  wb_session_id?: string | null
   can_join: boolean
+  lesson_type?: string | null
   notes: string | null
 }
 

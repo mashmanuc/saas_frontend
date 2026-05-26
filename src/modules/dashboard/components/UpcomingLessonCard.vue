@@ -50,9 +50,15 @@ const router = useRouter()
 const joining = ref(false)
 
 async function handleJoinClassroom() {
+  // INSTANT lessons (solo→classroom): navigate directly to classroom URL
+  if (props.lesson.lesson_type === 'instant' || props.lesson.wb_session_id) {
+    router.push(`/winterboard/classroom/${props.lesson.id}`)
+    return
+  }
+  // Scheduled Booking: resolve room URL via calendar API
   joining.value = true
   try {
-    const response = await calendarV055Api.joinEventRoom(props.lesson.id)
+    const response = await calendarV055Api.joinEventRoom(props.lesson.id as number)
     if (response.room?.url) {
       router.push(response.room.url)
     }
@@ -65,11 +71,13 @@ async function handleJoinClassroom() {
 
 // Computed
 const formattedDate = computed(() => {
+  if (!props.lesson.scheduled_at) return 'Зараз'
   const date = new Date(props.lesson.scheduled_at)
   return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
 })
 
 const formattedTime = computed(() => {
+  if (!props.lesson.scheduled_at) return ''
   const date = new Date(props.lesson.scheduled_at)
   return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
 })

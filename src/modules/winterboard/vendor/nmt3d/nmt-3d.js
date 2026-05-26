@@ -1972,7 +1972,7 @@
     const R = p.r1, r = p.r2, h = p.h;
     // Degenerate: R ≈ r (almost cylinder — no useful net)
     if (Math.abs(R - r) < 0.01) return { kind: 'unfolded', edges: [], labels: [],
-      preferredView: { yaw: Math.PI / 2, pitch: 0 } };
+      preferredView: { yaw: 0, pitch: 0 } };
 
     const l    = Math.sqrt((R - r) * (R - r) + h * h); // slant height of frustum
     const Lout = R * l / (R - r);                        // outer radius of annular sector
@@ -2055,7 +2055,7 @@
       kind: 'unfolded',
       edges,
       labels,
-      preferredView: { yaw: Math.PI / 2, pitch: 0 }, // side view like cylinder
+      preferredView: { yaw: 0, pitch: 0 }, // front view: sector lies in XY plane (z=0)
     };
   };
 

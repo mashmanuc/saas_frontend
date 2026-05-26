@@ -4,15 +4,23 @@
       :type="inputObj.inputType || 'text'"
       class="test-input__field"
       :placeholder="inputObj.placeholder || t('winterboard.test.inputPlaceholder')"
-      :value="mode === 'live' || mode === 'review' ? String(answer ?? '') : inputObj.correctAnswer || ''"
+      :value="mode === 'live' || mode === 'review' ? String(answer ?? '') : ''"
       :readonly="mode !== 'live'"
       @input="onInput"
     />
-    <div v-if="mode === 'edit' && inputObj.correctAnswer" class="test-input__hint">
-      {{ t('winterboard.test.answer') }}: {{ inputObj.correctAnswer }}
+    <div
+      v-if="mode === 'edit' && inputObj.correctAnswer"
+      class="test-input__hint test-input__hint--edit"
+    >
+      <span class="test-input__hint-icon">✓</span>
+      <span v-html="renderTextWithLatex(String(inputObj.correctAnswer))" />
     </div>
-    <div v-if="mode === 'review' && inputObj.correctAnswer" class="test-input__hint test-input__hint--correct">
-      {{ t('winterboard.test.answer') }}: {{ inputObj.correctAnswer }}
+    <div
+      v-if="mode === 'review' && inputObj.correctAnswer"
+      class="test-input__hint test-input__hint--correct"
+    >
+      {{ t('winterboard.test.answer') }}:
+      <span v-html="renderTextWithLatex(String(inputObj.correctAnswer))" />
     </div>
   </div>
 </template>
@@ -20,6 +28,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBTestInput } from '../../../types/winterboard'
 import type { TestPhase } from '../../../board/state/testStore'
 
@@ -64,12 +73,26 @@ function onInput(e: Event) {
   cursor: default;
 }
 .test-input__hint {
-  font-size: 11px;
-  color: #9ca3af;
-  font-style: italic;
-  padding-left: 2px;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.test-input__hint--edit {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 500;
+}
+.test-input__hint-icon {
+  font-size: 13px;
+  flex-shrink: 0;
 }
 .test-input__hint--correct {
-  color: #6366f1;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
 }
 </style>

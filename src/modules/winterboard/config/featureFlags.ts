@@ -123,3 +123,35 @@ export function clearWinterboardOverrides(): void {
     // ignore
   }
 }
+
+// ─── Lesson Constructor Flag ─────────────────────────────────────────────────
+// Dev-only за замовчуванням (default: false).
+// Щоб увімкнути локально: VITE_LESSON_CONSTRUCTOR_ENABLED=true у .env.local
+// або localStorage.setItem('lc_enabled', 'true') у DevTools.
+
+const LS_KEY_LC = 'lc_enabled'
+
+/**
+ * Перевірити чи Lesson Constructor увімкнено.
+ *
+ * Priority (перша умова перемагає):
+ * 1. localStorage: lc_enabled=true/false  (QA / manual dev override)
+ * 2. Env variable: VITE_LESSON_CONSTRUCTOR_ENABLED=true/false
+ * 3. Default: false (прихований у prod)
+ */
+export function isLessonConstructorEnabled(): boolean {
+  // 1. localStorage override
+  const lsValue = getLocalStorage(LS_KEY_LC)
+  if (lsValue !== null) {
+    return lsValue === 'true'
+  }
+
+  // 2. Env variable
+  const envValue = getEnvVar('VITE_LESSON_CONSTRUCTOR_ENABLED')
+  if (envValue !== undefined) {
+    return envValue === 'true'
+  }
+
+  // 3. Default: disabled
+  return false
+}

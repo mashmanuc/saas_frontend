@@ -11,7 +11,7 @@
  *   - Inspector reads nmt3dUiState.ws (null = no active NMT3D)
  *   - latestParams / latestOpts updated by renderer's ws.onParamsChanged + on register
  */
-import { reactive } from 'vue'
+import { reactive, markRaw } from 'vue'
 import type { Nmt3dWorkspace } from '../../vendor/nmt3d'
 
 export interface Nmt3dUiActiveState {
@@ -42,7 +42,9 @@ export function registerNmt3dWorkspace(
   persistOpts: (opts: Record<string, boolean>) => void,
 ): void {
   nmt3dUiState.assetId = assetId
-  nmt3dUiState.ws = ws
+  // markRaw: Workspace is a class with RAF loop + canvas state.
+  // Vue must not deep-proxy it — property changes are bridged via latestParams/latestOpts.
+  nmt3dUiState.ws = markRaw(ws) as Nmt3dWorkspace
   nmt3dUiState.latestParams = { ...ws.params }
   nmt3dUiState.latestOpts = { ...ws.opts }
   nmt3dUiState.persistOpts = persistOpts
