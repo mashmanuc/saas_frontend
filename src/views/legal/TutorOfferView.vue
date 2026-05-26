@@ -149,8 +149,8 @@
       </div>
 
       <div class="flex justify-center pt-8">
-        <Button variant="outline" @click="$router.back()">
-          Повернутися назад
+        <Button variant="outline" @click="closeOrBack">
+          {{ isNewTab ? 'Закрити' : 'Повернутися назад' }}
         </Button>
       </div>
     </div>
@@ -159,9 +159,21 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from '@/ui/Button.vue'
 
+const router = useRouter()
 const lastUpdated = computed(() => '24.05.2026')
+
+const isNewTab = computed(() => window.history.length <= 1 || !!window.opener)
+
+function closeOrBack() {
+  if (isNewTab.value) {
+    window.close()
+  } else {
+    router.back()
+  }
+}
 </script>
 
 <style scoped>
