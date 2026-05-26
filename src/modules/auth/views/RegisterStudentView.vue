@@ -49,6 +49,40 @@
         autocomplete="new-password"
       />
 
+      <!-- Age Gate -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium" style="color: var(--text-primary);">
+          Вік учня
+        </label>
+        <div class="space-y-2">
+          <label
+            v-for="opt in ageOptions"
+            :key="opt.value"
+            class="flex items-center gap-3 rounded-lg border p-3 cursor-pointer"
+            :class="form.age_group === opt.value ? 'border-[var(--accent)]' : 'border-[var(--border)]'"
+          >
+            <input type="radio" v-model="form.age_group" :value="opt.value" class="shrink-0" />
+            <span class="text-sm" style="color: var(--text-primary);">{{ opt.label }}</span>
+          </label>
+        </div>
+        <!-- Блокуюче повідомлення для < 14 -->
+        <div
+          v-if="form.age_group === 'under14'"
+          class="rounded-lg border p-4 text-sm space-y-1"
+          style="border-color: var(--accent); background: var(--accent-subtle, #f0f4ff);"
+        >
+          <p class="font-medium" style="color: var(--text-primary);">
+            Реєстрація для дітей до 14 років
+          </p>
+          <p style="color: var(--text-secondary);">
+            Для учнів до 14 років реєстрацію здійснює батько або опікун від свого імені.
+            Зверніться на
+            <a href="mailto:support@m4sh.org" class="underline" style="color: var(--accent);">support@m4sh.org</a>
+            або зареєструйтесь як батько і додайте дитину до акаунту.
+          </p>
+        </div>
+      </div>
+
       <!-- Privacy Policy Checkbox -->
       <div class="space-y-2">
         <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
@@ -61,7 +95,7 @@
         <p v-if="fieldError('privacy_policy_accepted')" class="text-sm text-red-600">{{ fieldError('privacy_policy_accepted') }}</p>
       </div>
 
-      <Button class="w-full" type="submit" :disabled="auth.loading || !form.privacy_policy_accepted">
+      <Button class="w-full" type="submit" :disabled="auth.loading || !form.privacy_policy_accepted || !canSubmit">
         <span v-if="auth.loading">{{ $t('auth.register.loading') }}</span>
         <span v-else>{{ $t('auth.register.submit') }}</span>
       </Button>
@@ -142,6 +176,12 @@ const auth = useAuthStore()
 const showErrorModal = ref(false)
 const googleErrorMessage = ref('')
 
+const ageOptions = [
+  { value: 'adult', label: '18 років і старше' },
+  { value: 'teen', label: '14–17 років' },
+  { value: 'under14', label: 'Менше 14 років' },
+]
+
 // INV-OAUTH-S4 gate: показуємо лише коли env налаштований
 const googleEnabled = computed(() => Boolean(import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID))
 
@@ -168,7 +208,12 @@ const form = reactive({
   password: '',
   password_confirm: '',
   privacy_policy_accepted: false,
+  age_group: '',  // 'adult' | 'teen' | 'under14'
 })
+
+const canSubmit = computed(() =>
+  form.age_group !== '' && form.age_group !== 'under14'
+)
 
 async function onSubmit() {
   try {
