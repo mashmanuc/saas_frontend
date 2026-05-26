@@ -531,6 +531,11 @@ async function handleOpenChatWithStudent(relation) {
 }
 
 function closeChatModal() {
+  // Скидаємо кеш для цього студента — badge оновиться одразу з store
+  // (markThreadRead у ChatModal вже оновив unreadSummary синхронно)
+  if (chatModalStudentId.value) {
+    unreadCountsCache.value.delete(chatModalStudentId.value)
+  }
   chatModalOpen.value = false
   chatModalStudentId.value = null
   chatModalRelationId.value = null
