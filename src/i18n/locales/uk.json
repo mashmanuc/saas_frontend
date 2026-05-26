@@ -4863,6 +4863,7 @@
       "operations": "Операції",
       "reports": "Скарги",
       "tutorActivity": "Активність тьюторів",
+      "platformFeedback": "💡 Пропозиції платформи",
       "profileModeration": "Модерація профілів",
       "verification": "Верифікація",
       "billing": "Фінанси",
@@ -8929,6 +8930,54 @@
       "go": "Шукати",
       "loading": "Шукаю...",
       "empty": "Нічого не знайдено. Спробуйте інші слова або створіть нову ідею."
+    },
+    "staff": {
+      "title": "Модерація пропозицій",
+      "subtitle": "Triage threads, статуси, дублікати, модерація коментарів",
+      "totalLabel": "Всього",
+      "allStatuses": "Всі статуси",
+      "allTypes": "Всі типи",
+      "allCategories": "Всі категорії",
+      "searchPlaceholder": "Пошук за title/description...",
+      "apply": "Застосувати",
+      "loading": "Завантаження...",
+      "empty": "Жодного thread за поточними фільтрами",
+      "selectAll": "Виділити всі",
+      "selected": "Виділено: {n}",
+      "clearSelection": "Зняти виділення",
+      "cancel": "Скасувати",
+      "save": "Зберегти",
+      "col": {
+        "title": "Назва",
+        "type": "Тип",
+        "status": "Статус",
+        "author": "Автор",
+        "actions": "Дії"
+      },
+      "actions": {
+        "changeStatus": "Змінити статус / відповідь",
+        "editContent": "Редагувати контент (staff)"
+      },
+      "bulk": {
+        "hide": "Приховати",
+        "unhide": "Показати",
+        "lock": "Замкнути",
+        "unlock": "Відкрити",
+        "archive": "Архівувати"
+      },
+      "status": {
+        "title": "Зміна статусу",
+        "current": "Поточний",
+        "newStatus": "Новий статус",
+        "duplicateOf": "ID канонічного thread",
+        "duplicateHint": "Цей thread буде позначений як дубль вказаного. Голоси НЕ переносяться (backlog).",
+        "response": "Відповідь команди",
+        "responsePlaceholder": "Заплановано на Q3 / прийнято / відхилено бо..."
+      },
+      "edit": {
+        "title": "Редагування контенту автора",
+        "warning": "Це staff-edit чужого контенту. Зміни логуються у telemetry. Використовуй тільки для typo fixes або переклад."
+      }
     },
     "sort": {
       "trending": "🔥 Популярні",

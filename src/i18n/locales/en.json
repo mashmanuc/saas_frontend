@@ -4361,6 +4361,7 @@
       "operations": "Operations",
       "reports": "Reports",
       "tutorActivity": "Tutor Activity",
+      "platformFeedback": "💡 Platform Feedback",
       "billing": "Billing",
       "system": "System",
       "health": "Platform Status",
@@ -8839,6 +8840,49 @@
       "placeholder": "Search... (min 3 chars)",
       "go": "Search", "loading": "Searching...",
       "empty": "Nothing found. Try other terms or create a new idea."
+    },
+    "staff": {
+      "title": "Feedback Moderation",
+      "subtitle": "Triage threads, statuses, duplicates, comment moderation",
+      "totalLabel": "Total",
+      "allStatuses": "All statuses",
+      "allTypes": "All types",
+      "allCategories": "All categories",
+      "searchPlaceholder": "Search by title/description...",
+      "apply": "Apply",
+      "loading": "Loading...",
+      "empty": "No threads match current filters",
+      "selectAll": "Select all",
+      "selected": "Selected: {n}",
+      "clearSelection": "Clear selection",
+      "cancel": "Cancel",
+      "save": "Save",
+      "col": {
+        "title": "Title", "type": "Type", "status": "Status",
+        "author": "Author", "actions": "Actions"
+      },
+      "actions": {
+        "changeStatus": "Change status / response",
+        "editContent": "Edit content (staff)"
+      },
+      "bulk": {
+        "hide": "Hide", "unhide": "Unhide",
+        "lock": "Lock", "unlock": "Unlock",
+        "archive": "Archive"
+      },
+      "status": {
+        "title": "Status change",
+        "current": "Current",
+        "newStatus": "New status",
+        "duplicateOf": "Canonical thread ID",
+        "duplicateHint": "This thread will be marked as duplicate. Votes are NOT migrated (backlog).",
+        "response": "Team response",
+        "responsePlaceholder": "Planned for Q3 / accepted / rejected because..."
+      },
+      "edit": {
+        "title": "Edit author content",
+        "warning": "This is staff-edit of another user's content. Changes are logged in telemetry. Use only for typo fixes or translation."
+      }
     },
     "sort": { "trending": "🔥 Trending", "top": "⬆ Top voted", "recent": "🆕 Recent" },
     "filter": { "allTypes": "All types", "allCategories": "All categories" },

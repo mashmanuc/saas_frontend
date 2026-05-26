@@ -1,0 +1,161 @@
+/**
+ * Platform Feedback API client.
+ * Base path: /api/v1/platform-feedback/
+ *
+ * Response envelope: { data, meta }
+ * Error envelope:    { error, detail, fields? }
+ */
+import apiClient from '@/utils/apiClient'
+
+const BASE = '/v1/platform-feedback'
+
+function unwrap(res) {
+  return res?.data?.data ?? res?.data
+}
+
+function unwrapWithMeta(res) {
+  return {
+    data: res?.data?.data ?? [],
+    meta: res?.data?.meta ?? {},
+  }
+}
+
+// ---------- Threads ----------
+
+export async function listThreads(params = {}) {
+  const res = await apiClient.get(`${BASE}/threads/`, { params })
+  return unwrapWithMeta(res)
+}
+
+export async function getThread(id) {
+  const res = await apiClient.get(`${BASE}/threads/${id}/`)
+  return unwrap(res)
+}
+
+export async function createThread(payload) {
+  const res = await apiClient.post(`${BASE}/threads/`, payload)
+  return unwrap(res)
+}
+
+export async function updateThread(id, payload) {
+  const res = await apiClient.patch(`${BASE}/threads/${id}/`, payload)
+  return unwrap(res)
+}
+
+export async function deleteThread(id) {
+  await apiClient.delete(`${BASE}/threads/${id}/`)
+}
+
+export async function searchSimilar(q, { type } = {}) {
+  const params = { q }
+  if (type) params.type = type
+  const res = await apiClient.get(`${BASE}/threads/similar/`, { params })
+  return unwrap(res)
+}
+
+export async function fullSearch(q, { type, limit = 20 } = {}) {
+  const params = { q, limit }
+  if (type) params.type = type
+  const res = await apiClient.get(`${BASE}/threads/search/`, { params })
+  return unwrapWithMeta(res)
+}
+
+// ---------- Voting ----------
+
+export async function toggleVote(threadId) {
+  const res = await apiClient.post(`${BASE}/threads/${threadId}/vote/`)
+  return unwrap(res)
+}
+
+// ---------- Subscriptions ----------
+
+export async function subscribe(threadId) {
+  const res = await apiClient.post(`${BASE}/threads/${threadId}/subscribe/`)
+  return unwrap(res)
+}
+
+export async function unsubscribe(threadId) {
+  const res = await apiClient.delete(`${BASE}/threads/${threadId}/subscribe/`)
+  return unwrap(res)
+}
+
+// ---------- Comments ----------
+
+export async function listComments(threadId) {
+  const res = await apiClient.get(`${BASE}/threads/${threadId}/comments/`)
+  return unwrap(res)
+}
+
+export async function createComment(threadId, content) {
+  const res = await apiClient.post(`${BASE}/threads/${threadId}/comments/`, { content })
+  return unwrap(res)
+}
+
+export async function deleteComment(commentId) {
+  await apiClient.delete(`${BASE}/comments/${commentId}/`)
+}
+
+// ---------- Staff moderation ----------
+
+export async function changeStatus(threadId, payload) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/status/`, payload)
+  return unwrap(res)
+}
+
+export async function updateStaffResponse(threadId, staff_response) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/staff-response/`, { staff_response })
+  return unwrap(res)
+}
+
+export async function toggleLock(threadId) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/lock/`)
+  return unwrap(res)
+}
+
+export async function toggleHide(threadId) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/hide/`)
+  return unwrap(res)
+}
+
+// S1: staff може правити author content
+export async function staffEditThread(threadId, payload) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/staff-edit/`, payload)
+  return unwrap(res)
+}
+
+// S2: bulk hide/unhide/lock/unlock/archive
+export async function bulkAction(threadIds, action) {
+  const res = await apiClient.post(`${BASE}/threads/bulk/`, {
+    thread_ids: threadIds,
+    action,
+  })
+  return unwrap(res)
+}
+
+export async function toggleCommentHide(commentId) {
+  const res = await apiClient.patch(`${BASE}/comments/${commentId}/hide/`)
+  return unwrap(res)
+}
+
+export default {
+  listThreads,
+  getThread,
+  createThread,
+  updateThread,
+  deleteThread,
+  searchSimilar,
+  fullSearch,
+  toggleVote,
+  subscribe,
+  unsubscribe,
+  listComments,
+  createComment,
+  deleteComment,
+  changeStatus,
+  updateStaffResponse,
+  toggleLock,
+  toggleHide,
+  staffEditThread,
+  bulkAction,
+  toggleCommentHide,
+}

@@ -96,6 +96,15 @@
           <Activity class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.tutorActivity') }}</span>
         </router-link>
+        <router-link
+          to="/staff/feedback"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/feedback') }"
+          :title="collapsed ? $t('staff.sidebar.platformFeedback') : undefined"
+        >
+          <Lightbulb class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.platformFeedback') }}</span>
+        </router-link>
       </div>
 
       <div class="nav-section">
@@ -204,6 +213,7 @@ import {
   UserCheck,
   BadgeCheck,
   Activity,
+  Lightbulb,
   CreditCard,
   Banknote,
   HeartPulse,

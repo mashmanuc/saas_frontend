@@ -872,10 +872,22 @@ const routes = [
             path: 'tutor-activity',
             name: 'staff-tutor-activity',
             component: () => import('../modules/staff/views/TutorActivityManagement.vue'),
-            meta: { 
+            meta: {
               requiresAuth: true,
               roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
               requiresStaff: true
+            },
+          },
+          // S6 (audit 2026-05-24): Platform Feedback staff triage console.
+          // Permission `platform_feedback.moderate_feedback` enforced at API level.
+          {
+            path: 'feedback',
+            name: 'staff-platform-feedback',
+            component: () => import('../modules/platform-feedback/views/StaffFeedbackList.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true,
             },
           },
           {
