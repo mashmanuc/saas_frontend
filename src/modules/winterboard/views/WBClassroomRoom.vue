@@ -191,22 +191,10 @@
       </div>
     </header>
 
-    <!-- ── Main: Sidebar (teacher) + Toolbar + Canvas ──────────────────── -->
+    <!-- ── Main: Toolbar + Canvas + Sidebar (teacher) ──────────────────── -->
+    <!-- Order mirrors WBSoloRoom: toolbar/thumbnails ліворуч, canvas центр,
+         materials sidebar праворуч (consistency tutor UX між prep і classroom). -->
     <div class="wb-classroom-room__main">
-      <!-- Teacher sidebar: full-featured materials (same as solo board) -->
-      <aside
-        v-if="classroomRole.isTeacher.value"
-        class="wb-classroom-room__sidebar"
-        role="complementary"
-        :aria-label="t('learningContent.panel.title')"
-      >
-        <GroupContentSidebar
-          :group-id="classroomGroupId"
-          :is-tutor="classroomRole.isTeacher.value"
-          @place="handleSidebarPlace"
-        />
-      </aside>
-
       <!-- Toolbar (role-aware) — PR2 (2026-05-04): Solo parity Group A.
            Додано: :has-selection, :has-locked-in-selection, :can-clear-page
            пропси + @lock-selected, @unlock-selected, @clear-page-request events.
@@ -294,6 +282,21 @@
           :current-page-id="store.currentPage?.id ?? ''"
         />
       </div>
+
+      <!-- Teacher sidebar: full-featured materials (same as solo board).
+           Праворуч від canvas — дзеркалить WBSoloRoom layout. -->
+      <aside
+        v-if="classroomRole.isTeacher.value"
+        class="wb-classroom-room__sidebar"
+        role="complementary"
+        :aria-label="t('learningContent.panel.title')"
+      >
+        <GroupContentSidebar
+          :group-id="classroomGroupId"
+          :is-tutor="classroomRole.isTeacher.value"
+          @place="handleSidebarPlace"
+        />
+      </aside>
     </div>
 
     <!-- P2: Selection toolbar — floating actions for selected objects (desktop only) -->
@@ -2578,7 +2581,7 @@ onBeforeUnmount(async () => {
   width: 320px;
   flex-shrink: 0;
   background: var(--wb-bg-secondary, #f8fafc);
-  border-right: 1px solid var(--wb-border, #e2e8f0);
+  border-left: 1px solid var(--wb-border, #e2e8f0);
   overflow-y: auto;
   z-index: 20;
   display: flex;
