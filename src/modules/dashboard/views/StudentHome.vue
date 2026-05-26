@@ -15,6 +15,12 @@
     />
     <div v-else class="student-home__hero-skeleton" aria-hidden="true" />
 
+    <!-- Активні тьютори студента -->
+    <StudentActiveTutorsSection
+      :active-tutors="activeTutors"
+      :loading="isLoadingTutors"
+    />
+
     <!-- Secondary context (last completed lesson hint) -->
     <DashboardSecondaryContext
       v-if="snapshot?.secondary"
@@ -28,8 +34,9 @@ import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import DashboardHero from '../components/DashboardHero.vue'
 import DashboardSecondaryContext from '../components/DashboardSecondaryContext.vue'
+import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
 import apiClient from '@/utils/apiClient'
-import type { DashboardSnapshotV2 } from '../api/dashboard'
+import type { DashboardSnapshotV2, AssignedTutor } from '../api/dashboard'
 import { resolveCta } from '../utils/fallbackCta'
 
 const TrialBanner = defineAsyncComponent(
@@ -39,6 +46,9 @@ const TrialBanner = defineAsyncComponent(
 const auth = useAuthStore()
 const snapshot = ref<DashboardSnapshotV2 | null>(null)
 const isLoading = ref(true)
+
+const activeTutors = ref<AssignedTutor[]>([])
+const isLoadingTutors = ref(false)
 
 // Fix #1: fallback до find_tutor якщо backend повернув null
 const heroCta = computed(() => resolveCta(snapshot.value?.primary_cta, 'student'))
@@ -55,8 +65,23 @@ async function loadSnapshot() {
   }
 }
 
+async function loadActiveTutors() {
+  isLoadingTutors.value = true
+  try {
+    const data = await apiClient.get<{ activeTutors: AssignedTutor[] }>(
+      '/v1/dashboard/student/collaboration/snapshot/'
+    )
+    activeTutors.value = data.activeTutors ?? []
+  } catch (err) {
+    console.error('[StudentHome] Failed to load active tutors:', err)
+  } finally {
+    isLoadingTutors.value = false
+  }
+}
+
 onMounted(() => {
   loadSnapshot()
+  loadActiveTutors()
 })
 </script>
 
