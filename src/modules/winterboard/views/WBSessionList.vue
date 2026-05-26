@@ -49,9 +49,15 @@
         <circle cx="32" cy="8" r="4" fill="#94a3b8" />
       </svg>
       <p class="wb-session-list__empty-title">{{ t('winterboard.sessions.emptyTitle') }}</p>
-      <p class="wb-session-list__empty-message">{{ t('winterboard.sessions.emptyMessage') }}</p>
-      <router-link :to="{ name: 'winterboard-new' }" class="wb-session-list__cta-btn">
-        {{ t('winterboard.sessions.createFirst') }}
+      <!-- Guidance: новий тьютор спочатку створює урок у студії -->
+      <p class="wb-session-list__empty-message">
+        Спочатку створи урок у Студії — потім відкриєш його на дошці і запросиш учня
+      </p>
+      <router-link :to="{ name: 'winterboard-boards' }" class="wb-session-list__cta-btn">
+        Відкрити Студію уроків
+      </router-link>
+      <router-link :to="{ name: 'winterboard-new' }" class="wb-session-list__cta-secondary">
+        або відкрити порожню дошку
       </router-link>
     </div>
 
@@ -564,6 +570,21 @@ onUnmounted(() => {
 
 .wb-session-list__cta-btn:hover {
   background: var(--wb-brand-hover, #0052cc);
+}
+
+.wb-session-list__cta-secondary {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.wb-session-list__cta-secondary:hover {
+  color: var(--wb-fg, #0f172a);
 }
 
 /* ── Skeleton ────────────────────────────────────────────────────────── */

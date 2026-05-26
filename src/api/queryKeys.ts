@@ -44,6 +44,12 @@ export const queryKeys = {
   // ── Inquiries ─────────────────────────────
   inquiries: () => ['inquiries'] as const,
   inquiriesFiltered: (filters: InquiryFilters) => ['inquiries', filters] as const,
+
+  // ── Activation Engine (M3) ────────────────
+  // Ієрархія: ['activation'] → invalidates state + milestones + all gates
+  activationState: () => ['activation', 'state'] as const,
+  activationMilestones: () => ['activation', 'milestones'] as const,
+  activationGate: (slug: string) => ['activation', 'gate', slug] as const,
 } as const
 
 /**

@@ -8,6 +8,15 @@
       :dismissible="true"
     />
 
+    <!-- M4 Activation — TutorActivationCard (Intent question → Start card) -->
+    <TutorActivationCard :has-lesson="hasLesson" />
+
+    <!-- M4 Activation — Journey milestones panel -->
+    <TutorJourneyPanel
+      :state="activationState"
+      :draft-lessons-count="draftLessonsCount"
+    />
+
     <!-- Phase 29 (Activation) — Hero CTA (з fallback, Fix #1) -->
     <DashboardHero
       v-if="!isLoading"
@@ -56,6 +65,10 @@ import type { DashboardSnapshotV2 } from '../api/dashboard'
 import { resolveCta } from '../utils/fallbackCta'
 // Sprint 2: trial-offer trigger (composable + lazy modal).
 import { useTrialActivation } from '@/modules/billing/composables/useTrialActivation'
+// M4 Activation
+import TutorActivationCard from '@/modules/activation/components/TutorActivationCard.vue'
+import TutorJourneyPanel from '@/modules/activation/components/TutorJourneyPanel.vue'
+import { useActivation } from '@/modules/activation/composables/useActivation'
 
 const TrialBanner = defineAsyncComponent(
   () => import('@/modules/auth/components/TrialBanner.vue'),
@@ -67,6 +80,11 @@ const TrialActivationModal = defineAsyncComponent(
 const auth = useAuthStore()
 const snapshot = ref<DashboardSnapshotV2 | null>(null)
 const isLoading = ref(true)
+
+// M4 Activation
+const { state: activationState } = useActivation()
+const hasLesson = computed(() => (snapshot.value?.secondary?.draft_lessons?.length ?? 0) > 0)
+const draftLessonsCount = computed(() => snapshot.value?.secondary?.draft_lessons?.length ?? 0)
 
 // Сигнал first-lesson: snapshot.secondary.last_completed_lesson != null.
 // localStorage flag + backend eligibility-probe запобігають повторним показам.
