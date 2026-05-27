@@ -9,14 +9,23 @@ import apiClient from '@/utils/apiClient'
 
 const BASE = '/v1/platform-feedback'
 
+// J1 (2026-05-27): apiClient має global response interceptor що повертає
+// `res.data` (axios body). Тобто наш `res` = backend response = {data, meta?}.
+// Раніше unwrapWithMeta дивився на res.data.data — то інший шар, undefined →
+// fallback на [], FE показував порожній список попри валідну backend response.
+// Now: res — backend envelope; res.data — payload; res.meta — pagination.
 function unwrap(res) {
-  return res?.data?.data ?? res?.data
+  // Legacy support: якщо хтось ще не interceptor-aware і передає raw axios res,
+  // res.data може містити backend envelope. Try both.
+  return res?.data?.data ?? res?.data ?? res
 }
 
 function unwrapWithMeta(res) {
+  // Backend envelope: {data: [...], meta: {page, page_size, total}}
+  // res — це уже unwrapped backend body завдяки apiClient interceptor.
   return {
-    data: res?.data?.data ?? [],
-    meta: res?.data?.meta ?? {},
+    data: res?.data ?? [],
+    meta: res?.meta ?? {},
   }
 }
 
