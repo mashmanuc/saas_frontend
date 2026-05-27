@@ -22,8 +22,9 @@ export const DEFAULT_NMT3D_W = 680
 export const DEFAULT_NMT3D_H = 500
 
 /**
- * Canonical order of the 21 NMT3D templates (same order as standalone page).
+ * Canonical order of the 23 NMT3D templates (same order as standalone page).
  * Used by Nmt3dTray to render buttons in the sidebar.
+ * 21 original + ngonPyramid + ngonPrism (added 2026-05-26).
  */
 export const NMT3D_TEMPLATE_ORDER: ReadonlyArray<string> = [
   'cube', 'cuboid',

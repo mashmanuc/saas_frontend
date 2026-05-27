@@ -110,6 +110,12 @@
       this._pollTimers = [];
       [0, 50, 200, 500].forEach((ms) => this._pollTimers.push(setTimeout(() => this._render(), ms)));
       this._tickAnim = this._tickAnim.bind(this);
+      // Auto-start RAF loop if animate:true was passed in constructor opts
+      // (Object.assign bypasses setOption, so we must start the loop here).
+      if (this.opts.animate) {
+        this._animLast = performance.now();
+        requestAnimationFrame(this._tickAnim);
+      }
     }
 
     setOption(k, v) {
