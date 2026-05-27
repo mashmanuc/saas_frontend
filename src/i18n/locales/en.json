@@ -8925,8 +8925,10 @@
       "subtitle": "Describe your idea in detail. We'll check for similar ones first.",
       "type": "Type", "category": "Category", "titleLabel": "Title",
       "titlePlaceholder": "Brief idea summary (5-120 chars)",
+      "titleHint": "Brief, clear. Min 5 chars.",
       "description": "Description",
       "descriptionPlaceholder": "Detailed description: problem, context, expected behavior (min 20 chars)",
+      "descriptionHint": "What and why? Context, use case. Min 20 chars.",
       "publish": "Publish", "publishing": "Publishing...", "cancel": "Cancel"
     },
     "similar": {

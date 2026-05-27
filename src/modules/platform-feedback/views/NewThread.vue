@@ -49,13 +49,18 @@
           required
           minlength="5"
           maxlength="120"
-          class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+          class="w-full px-3 py-2 border rounded-lg focus:outline-none"
+          :class="titleErrorClass"
           :placeholder="$t('feedback.new.titlePlaceholder')"
           @input="onTitleInput"
           @compositionstart="onCompositionStart"
           @compositionend="onCompositionEnd"
         />
-        <p class="text-xs text-slate-500 mt-1">{{ form.title.length }}/120</p>
+        <div class="flex items-center justify-between mt-1">
+          <p v-if="titleError" class="text-xs text-rose-600">{{ titleError }}</p>
+          <p v-else class="text-xs text-slate-500">{{ $t('feedback.new.titleHint') }}</p>
+          <p class="text-xs text-slate-500 tabular-nums">{{ titleTrimmedLen }}/120</p>
+        </div>
         <!--
           C1.5: dropdown absolute → НЕ змінює layout сторінки.
           Батьківський div title-field має position: relative.
@@ -80,16 +85,21 @@
           minlength="20"
           maxlength="5000"
           rows="6"
-          class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+          class="w-full px-3 py-2 border rounded-lg focus:outline-none"
+          :class="descriptionErrorClass"
           :placeholder="$t('feedback.new.descriptionPlaceholder')"
         />
-        <p class="text-xs text-slate-500 mt-1">{{ form.description.length }}/5000 (min 20)</p>
+        <div class="flex items-center justify-between mt-1">
+          <p v-if="descriptionError" class="text-xs text-rose-600">{{ descriptionError }}</p>
+          <p v-else class="text-xs text-slate-500">{{ $t('feedback.new.descriptionHint') }}</p>
+          <p class="text-xs text-slate-500 tabular-nums">{{ descriptionTrimmedLen }}/5000</p>
+        </div>
       </div>
 
-      <!-- Error -->
-      <p v-if="store.createError" class="text-sm text-rose-600">
-        {{ store.createError }}
-      </p>
+      <!-- General error (non-field) -->
+      <div v-if="generalError" class="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded p-2">
+        {{ generalError }}
+      </div>
 
       <!-- Actions -->
       <div class="flex items-center justify-between pt-2">
@@ -127,9 +137,63 @@ const form = reactive({
   description: '',
 })
 
+// H1 (2026-05-27): trim-aware validation — backend serializer бачить trimmed values,
+// тому FE counter і canSubmit працюють з trimmed length теж. Інакше "ТІЛО " (4 chars
+// + пробіл = 5) валив форму, бо backend trim-ив назад до 4.
+const titleTrimmedLen = computed(() => form.title.trim().length)
+const descriptionTrimmedLen = computed(() => form.description.trim().length)
+
 const canSubmit = computed(
-  () => form.title.length >= 5 && form.description.length >= 20,
+  () => titleTrimmedLen.value >= 5 && descriptionTrimmedLen.value >= 20,
 )
+
+// H1: per-field error messages — приоритет server-side (з store.createFieldErrors),
+// fallback на client-side hint.
+function firstFieldError(field) {
+  const msgs = store.createFieldErrors?.[field]
+  if (Array.isArray(msgs) && msgs.length > 0) return msgs[0]
+  if (typeof msgs === 'string') return msgs
+  return ''
+}
+
+const titleError = computed(() => {
+  const server = firstFieldError('title')
+  if (server) return server
+  if (form.title.length > 0 && titleTrimmedLen.value < 5) {
+    return 'Мінімум 5 символів (без пробілів по краях).'
+  }
+  return ''
+})
+
+const descriptionError = computed(() => {
+  const server = firstFieldError('description')
+  if (server) return server
+  if (form.description.length > 0 && descriptionTrimmedLen.value < 20) {
+    return `Ще ${20 - descriptionTrimmedLen.value} символів до мінімуму.`
+  }
+  return ''
+})
+
+const titleErrorClass = computed(() =>
+  titleError.value
+    ? 'border-rose-400 focus:border-rose-500'
+    : 'border-slate-300 focus:border-blue-500'
+)
+
+const descriptionErrorClass = computed(() =>
+  descriptionError.value
+    ? 'border-rose-400 focus:border-rose-500'
+    : 'border-slate-300 focus:border-blue-500'
+)
+
+// Загальна (non-field) помилка — показуємо лише якщо немає inline errors.
+const generalError = computed(() => {
+  if (!store.createError) return ''
+  const hasFieldErrors = Object.keys(store.createFieldErrors || {}).length > 0
+  // Якщо є inline errors → загальне приховуємо щоб не дублювати.
+  if (hasFieldErrors) return ''
+  return store.createError
+})
 
 /*
  * C1 (audit 2026-05-24): similar-search input jank fix.

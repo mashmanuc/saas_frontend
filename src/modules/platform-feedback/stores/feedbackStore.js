@@ -13,6 +13,51 @@
 import { defineStore } from 'pinia'
 import api from '../api/feedbackApi'
 
+/**
+ * H1 (2026-05-27): parse API error response у user-friendly формат.
+ * Підтримує 3 contract shapes:
+ *   1. SSOT: {error: 'code', detail: 'message', fields?: {f: [msgs]}}
+ *   2. Wrapper: {code: 'VALIDATION_ERROR', detail: '...', fields?: {...}}
+ *   3. DRF raw: {field: ['msg1'], non_field_errors: [...]}
+ * Returns {message: string, fields: {[name]: string[]}}
+ */
+function parseApiError(data) {
+  const fallback = { message: 'Помилка створення', fields: {} }
+  if (!data) return fallback
+  if (typeof data === 'string') return { message: data, fields: {} }
+  if (typeof data !== 'object') return fallback
+
+  // Detect per-field errors
+  let fields = {}
+  if (data.fields && typeof data.fields === 'object' && !Array.isArray(data.fields)) {
+    fields = data.fields
+  } else {
+    // DRF raw: keys are field names, values are arrays of strings
+    const candidate = {}
+    for (const [k, v] of Object.entries(data)) {
+      if (['error', 'code', 'detail', 'message', 'meta'].includes(k)) continue
+      if (Array.isArray(v) && v.every((x) => typeof x === 'string')) {
+        candidate[k] = v
+      }
+    }
+    if (Object.keys(candidate).length > 0) fields = candidate
+  }
+
+  // User-facing message: prefer detail/message, fallback на field-summary
+  let message = data.detail || data.message
+  if (!message && Object.keys(fields).length > 0) {
+    // "title: error; description: error" — short summary
+    message = Object.entries(fields)
+      .map(([k, msgs]) => `${k}: ${Array.isArray(msgs) ? msgs[0] : msgs}`)
+      .join('; ')
+  }
+  if (!message) message = fallback.message
+  // Ensure string (захист від випадкового object dump)
+  if (typeof message !== 'string') message = fallback.message
+
+  return { message, fields }
+}
+
 const THREADS_CACHE_MAX = 200
 const COMMENTS_CACHE_MAX = 50
 
@@ -44,6 +89,9 @@ export const useFeedbackStore = defineStore('platformFeedback', {
     // create thread
     createLoading: false,
     createError: null,
+    // H1 (2026-05-27): per-field errors для inline display під inputs.
+    // Map: { title: [...], description: [...], category: [...] }
+    createFieldErrors: {},
 
     // A6 (audit 2026-05-24): optimistic vote tracking.
     // Set<threadId> з in-flight toggleVote → блокує double-click + race.
@@ -149,6 +197,7 @@ export const useFeedbackStore = defineStore('platformFeedback', {
     async createThread(payload) {
       this.createLoading = true
       this.createError = null
+      this.createFieldErrors = {}
       try {
         const t = await api.createThread(payload)
         this._upsertThread(t)
@@ -161,8 +210,15 @@ export const useFeedbackStore = defineStore('platformFeedback', {
         }
         return t
       } catch (err) {
+        // H1 (2026-05-27): robust error parsing — НЕ дампимо raw JSON на UI.
+        // Підтримуємо два error contract:
+        //   1. SSOT envelope: {error, detail, fields?}
+        //   2. Backend wrapper: {code, detail, fields?}  ← VALIDATION_ERROR
+        //   3. DRF raw:        {field: [...]}
         const data = err?.response?.data
-        this.createError = data?.detail || data?.error || 'Помилка створення'
+        const parsed = parseApiError(data)
+        this.createError = parsed.message
+        this.createFieldErrors = parsed.fields
         throw err
       } finally {
         this.createLoading = false
