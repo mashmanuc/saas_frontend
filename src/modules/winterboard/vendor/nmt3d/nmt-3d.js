@@ -338,10 +338,11 @@
       c: { value: 1.6, min: 0.6, max: 3.0, label: 'c' },
     },
     aux: [
-      { key: 'bodyDiag', label: 'діагональ AC₁' },
-      { key: 'diagSect', label: 'переріз AB₁C₁D' },
-      { key: 'sides',    label: 'позначити a, b, c' },
-      { key: 'baseCirc', label: 'описане коло основи' },
+      { key: 'bodyDiag',   label: 'діагональ AC₁' },
+      { key: 'diagSectAC', label: 'діаг. переріз ACC₁A₁' },
+      { key: 'diagSect',   label: 'переріз AB₁C₁D' },
+      { key: 'sides',      label: 'позначити a, b, c' },
+      { key: 'baseCirc',   label: 'описане коло основи' },
     ],
     build(p, opts = {}) {
       const a = p.a / 2, b = p.b / 2, c = p.c / 2;
@@ -388,7 +389,8 @@
       ];
       const aux = [];
       if (opts.bodyDiag) aux.push({ kind: 'line', from: V.A, to: V.C1, color: '#c4622a', w: 2 });
-      if (opts.diagSect) aux.push({ kind: 'poly', pts: [V.A, V.B1, V.C1, V.D], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
+      if (opts.diagSectAC) aux.push({ kind: 'poly', pts: [V.A, V.C, V.C1, V.A1], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
+      if (opts.diagSect)   aux.push({ kind: 'poly', pts: [V.A, V.B1, V.C1, V.D], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
       if (opts.sides) {
         labels.push({ pos: lerp(V.A, V.B, 0.5), text: 'a', off: { x: 0, y: 22 }, italic: true });
         labels.push({ pos: lerp(V.B, V.C, 0.5), text: 'b', off: { x: 16, y: 12 }, italic: true });
@@ -659,9 +661,10 @@
       h: { value: 2.0, min: 0.6, max: 3.4, label: 'h' },
     },
     aux: [
-      { key: 'bodyDiag', label: 'діагональ AC₁' },
-      { key: 'diagSect', label: 'переріз AB₁C₁D' },
-      { key: 'sides',    label: 'позначити a, h' },
+      { key: 'bodyDiag',   label: 'діагональ AC₁' },
+      { key: 'diagSectAC', label: 'діаг. переріз ACC₁A₁' },
+      { key: 'diagSect',   label: 'переріз AB₁C₁D' },
+      { key: 'sides',      label: 'позначити a, h' },
       { key: 'baseInc',  label: 'вписане коло основи' },
       { key: 'baseCirc', label: 'описане коло основи' },
     ],
@@ -698,8 +701,9 @@
         { id: 'a', paramKey: 'a', worldPos: V.B, gradient: v3(0.5, 0, 0.5), hint: 'a' },
       ];
       const aux = [];
-      if (opts.bodyDiag) aux.push({ kind: 'line', from: V.A, to: V.C1, color: '#c4622a', w: 2 });
-      if (opts.diagSect) aux.push({ kind: 'poly', pts: [V.A, V.B1, V.C1, V.D], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
+      if (opts.bodyDiag)   aux.push({ kind: 'line', from: V.A, to: V.C1, color: '#c4622a', w: 2 });
+      if (opts.diagSectAC) aux.push({ kind: 'poly', pts: [V.A, V.C, V.C1, V.A1], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
+      if (opts.diagSect)   aux.push({ kind: 'poly', pts: [V.A, V.B1, V.C1, V.D], color: '#3b7b9b', fill: '#3b7b9b', fillOpacity: 0.13, w: 1.8 });
       if (opts.sides) {
         labels.push({ pos: lerp(V.A, V.B, 0.5), text: 'a', off: { x: 0, y: 22 }, italic: true });
         labels.push({ pos: lerp(V.B, V.B1, 0.5), text: 'h', off: { x: 14, y: 4 }, italic: true });
