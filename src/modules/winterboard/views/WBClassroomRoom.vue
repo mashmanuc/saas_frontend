@@ -224,11 +224,15 @@
         />
       </aside>
 
-      <!-- Phase 11 A4: Page thumbnails (teacher only) -->
+      <!-- Page thumbnails: видимі для обох ролей.
+           Student бачить read-only: може переключати сторінки (soft-follow:
+           тимчасово виходить з teacher sync, наступний teacher page change
+           НЕ повертає student назад), але не може add/delete/duplicate/reorder.
+           Tutor — повна поведінка (readOnly=false default). -->
       <WBPageThumbnails
-        v-if="classroomRole.isTeacher.value"
         :pages="store.pages"
         :current-index="store.currentPageIndex"
+        :read-only="!classroomRole.isTeacher.value"
         @select="handlePageSelect($event)"
         @add="handlePageAdd"
         @delete="handlePageDelete($event)"
@@ -1447,7 +1451,14 @@ function handlePageNext(): void {
 
 function handlePageSelect(index: number): void {
   if (index === store.currentPageIndex) return
-  store.goToPage(index)
+  // Student soft-follow: локальна навігація без broadcast page_navigate op.
+  // Tutor — broadcast (учні з активним follow синхронізуються).
+  // Інваріант: student page change НЕ впливає на teacher і на інших students.
+  if (classroomRole.isTeacher.value) {
+    store.goToPage(index)
+  } else {
+    store.goToPageSilent(index)
+  }
 }
 
 function handlePageAdd(): void {
@@ -1456,6 +1467,9 @@ function handlePageAdd(): void {
 }
 
 function handlePageDelete(index: number): void {
+  // Defensive guard: button hidden у read-only mode, але це захист
+  // від programmatic виклику (console, automation, race).
+  if (!classroomRole.canDeletePage.value) return
   if (!store.pages[index]) return
   store.deletePageUndoable(index)
 }

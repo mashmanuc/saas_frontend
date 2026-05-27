@@ -21,15 +21,15 @@
       :aria-selected="index === currentIndex"
       :aria-label="t('winterboard.pages.page_n', { n: index + 1 })"
       :tabindex="index === currentIndex ? 0 : -1"
-      draggable="true"
+      :draggable="!readOnly"
       @click="emit('select', index)"
       @keydown.enter="emit('select', index)"
       @keydown.space.prevent="emit('select', index)"
-      @dragstart="handleDragStart(index, $event)"
-      @dragover.prevent="handleDragOver(index, $event)"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop(index, $event)"
-      @dragend="handleDragEnd"
+      @dragstart="!readOnly && handleDragStart(index, $event)"
+      @dragover.prevent="!readOnly && handleDragOver(index, $event)"
+      @dragleave="!readOnly && handleDragLeave()"
+      @drop="!readOnly && handleDrop(index, $event)"
+      @dragend="!readOnly && handleDragEnd()"
     >
       <!-- Thumbnail canvas preview.
            BUG FIX 2026-05-06: ref keyed by page.id (stable), not index.
@@ -52,7 +52,7 @@
 
       <!-- Duplicate page button -->
       <button
-        v-if="pages.length < MAX_PAGES"
+        v-if="!readOnly && pages.length < MAX_PAGES"
         type="button"
         class="wb-thumbnail__action wb-thumbnail__duplicate"
         :aria-label="t('winterboard.pages.duplicate_page', { n: index + 1 })"
@@ -67,7 +67,7 @@
 
       <!-- Delete button (not for last page) -->
       <button
-        v-if="pages.length > 1"
+        v-if="!readOnly && pages.length > 1"
         type="button"
         class="wb-thumbnail__action wb-thumbnail__delete"
         :aria-label="t('winterboard.pages.delete_page', { n: index + 1 })"
@@ -87,8 +87,9 @@
       />
     </div>
 
-    <!-- Add page button (disabled at limit) -->
+    <!-- Add page button (disabled at limit) — hidden у read-only mode -->
     <button
+      v-if="!readOnly"
       type="button"
       class="wb-thumbnail wb-thumbnail--add"
       :class="{ 'wb-thumbnail--add-disabled': pages.length >= MAX_PAGES }"
@@ -124,9 +125,18 @@ const MAX_PAGES = 50
 interface Props {
   pages: WBPage[]
   currentIndex: number
+  /**
+   * Read-only mode: ховає add/delete/duplicate кнопки + блокує drag-reorder.
+   * Click на сторінку (emit 'select') лишається активним — потрібно для
+   * student navigation у LIVE classroom (soft-follow invariant).
+   * Default false = повна тьюторська поведінка (нічого не міняється).
+   */
+  readOnly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readOnly: false,
+})
 
 const emit = defineEmits<{
   select: [index: number]
