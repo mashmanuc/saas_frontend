@@ -136,7 +136,6 @@ async function changeLanguage(langCode: string) {
         </div>
         <div class="hero-demo">
           <LandingTrigCircle />
-          <p class="hero-demo-caption">{{ t('roleSelection.hero.trigCaption') }}</p>
         </div>
       </header>
 
@@ -710,8 +709,7 @@ async function changeLanguage(langCode: string) {
   grid-template-columns: 2fr 3fr;  /* demo >= 600px при container >= 1100px */
   gap: 3rem;
   align-items: center;
-  min-height: calc(100vh - 9rem);
-  padding-bottom: 3rem;
+  padding-bottom: 2rem;
 }
 
 .hero-text {
@@ -817,14 +815,6 @@ async function changeLanguage(langCode: string) {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-}
-
-.hero-demo-caption {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  opacity: 0.65;
-  text-align: center;
-  margin: 0;
 }
 
 /* Responsive: stack on tablet/mobile (< 1100px щоб demo завжди >= 600px) */
@@ -1043,7 +1033,7 @@ async function changeLanguage(langCode: string) {
 /* Live Tools Section */
 .live-tools-section {
   text-align: left;
-  margin-top: 5rem;
+  margin-top: 3rem;
 }
 
 .live-tools-grid {
@@ -1112,7 +1102,7 @@ async function changeLanguage(langCode: string) {
 
 /* Info Sections */
 .info-section {
-  margin-top: 6rem;
+  margin-top: 4rem;
   text-align: center;
 }
 
