@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 import LandingTrigCircle from './LandingTrigCircle.vue'
 import LandingNmt3d from './LandingNmt3d.vue'
+import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 
 const router = useRouter()
 const { t, locale } = useI18n()
@@ -447,8 +448,8 @@ async function changeLanguage(langCode: string) {
         <div class="landing-footer-links">
           <router-link to="/legal/terms">{{ t('footer.legal.terms') }}</router-link>
           <router-link to="/legal/privacy">{{ t('footer.legal.privacy') }}</router-link>
-          <router-link to="/legal/refund">{{ t('footer.legal.refund') }}</router-link>
           <a href="mailto:support@m4sh.org">support@m4sh.org</a>
+          <ProjectSupportLink />
         </div>
       </div>
     </footer>

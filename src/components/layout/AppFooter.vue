@@ -1,7 +1,7 @@
 <template>
   <footer class="border-t border-border bg-background">
     <div class="container mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 gap-8 md:grid-cols-4">
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
         <!-- Company Info -->
         <div class="space-y-4">
           <h3 class="text-lg font-semibold text-foreground">M4SH</h3>
@@ -30,22 +30,6 @@
                 {{ $t('footer.legal.privacy') }}
               </router-link>
             </li>
-            <li>
-              <router-link
-                to="/legal/payment"
-                class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {{ $t('footer.legal.payment') }}
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/legal/refund"
-                class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {{ $t('footer.legal.refund') }}
-              </router-link>
-            </li>
           </ul>
         </div>
 
@@ -72,33 +56,6 @@
           </ul>
         </div>
 
-        <!-- Payment Methods -->
-        <div class="space-y-4">
-          <h4 class="text-sm font-semibold text-foreground">{{ $t('footer.payment.title') }}</h4>
-          <div class="flex items-center gap-4">
-            <!-- LiqPay Logo -->
-            <div class="flex items-center">
-              <img
-                src="/images/liqpay-logo.svg"
-                alt="LiqPay"
-                class="h-8 w-auto"
-                @error="handleImageError"
-              />
-            </div>
-            <!-- Stripe Logo (if needed) -->
-            <div class="flex items-center">
-              <img
-                src="/images/stripe-logo.svg"
-                alt="Stripe"
-                class="h-6 w-auto opacity-70"
-                @error="handleImageError"
-              />
-            </div>
-          </div>
-          <p class="text-xs text-muted-foreground">
-            {{ $t('footer.payment.secure') }}
-          </p>
-        </div>
       </div>
 
       <!-- Bottom Bar -->
@@ -108,6 +65,7 @@
             © {{ currentYear }} M4SH. {{ $t('footer.copyright') }}
           </p>
           <div class="flex items-center gap-4">
+            <ProjectSupportLink />
             <a
               v-if="socialLinks.facebook"
               :href="socialLinks.facebook"
@@ -141,6 +99,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 
 const currentYear = computed(() => new Date().getFullYear())
 
@@ -149,8 +108,4 @@ const socialLinks = {
   instagram: ''
 }
 
-function handleImageError(event) {
-  // Hide image if it fails to load
-  event.target.style.display = 'none'
-}
 </script>

@@ -27,6 +27,8 @@
       >
         <router-view />
       </main>
+
+      <AppFooter />
     </div>
 
     <!-- Toasts & Loader overlay -->
@@ -47,6 +49,7 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import TopNav from './TopNav.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
