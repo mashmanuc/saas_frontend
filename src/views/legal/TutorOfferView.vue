@@ -22,7 +22,7 @@
         <section>
           <h2>I. Визначення</h2>
           <p>
-            <strong>Адміністратор</strong> — ФОП Машнюк Д.С., власник і оператор Платформи M4SH.<br>
+            <strong>Адміністратор</strong> — ФОП Машманюк О.В., власник і оператор Платформи M4SH.<br>
             <strong>Платформа M4SH</strong> — технологічна освітня платформа на m4sh.org: marketplace,
             classroom (відеозв'язок, дошка, чат), планування, бібліотека матеріалів.<br>
             <strong>Тьютор</strong> — фізична особа від 18 років, що зареєструвала акаунт тьютора
@@ -142,7 +142,7 @@
           <p>
             Оферта регулюється правом України. Претензійний порядок — 30 днів.
             Актуальна редакція: <a href="/legal/tutor-offer">m4sh.org/legal/tutor-offer</a>.<br>
-            Контакт: <a href="mailto:support@m4sh.org">support@m4sh.org</a>
+            Контакт: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>
           </p>
         </section>
 

@@ -31,10 +31,9 @@
 
         <section>
           <h2>3. Способи оплати</h2>
-          <p>Ми приймаємо оплату через наступні платіжні системи:</p>
+          <p>Ми приймаємо оплату через наступну платіжну систему:</p>
           <ul>
-            <li><strong>LiqPay</strong> — для оплати картками українських банків</li>
-            <li><strong>Stripe</strong> — для міжнародних платежів</li>
+            <li><strong>LiqPay</strong> — для оплати картками</li>
           </ul>
           <p>
             При здійсненні оплати ви погоджуєтесь з умовами обраної платіжної системи.
@@ -89,10 +88,8 @@
         <section>
           <h2>8. Інформація про продавця</h2>
           <p>
-            <strong>Найменування:</strong> [Назва компанії]<br>
-            <strong>Адреса:</strong> [Адреса]<br>
-            <strong>ЄДРПОУ:</strong> [Код]<br>
-            <strong>Email:</strong> <a href="mailto:billing@m4sh.com">billing@m4sh.com</a>
+            <strong>Найменування:</strong> ФОП Машманюк О.В.<br>
+            <strong>Email:</strong> <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>
           </p>
         </section>
 
@@ -102,7 +99,7 @@
             З питань оплати звертайтесь:
           </p>
           <p>
-            Email: <a href="mailto:billing@m4sh.com">billing@m4sh.com</a>
+            Email: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>
           </p>
         </section>
       </div>

@@ -50,7 +50,7 @@
             Для отримання повернення коштів:
           </p>
           <ol>
-            <li>Зв'яжіться з нашою службою підтримки на <a href="mailto:refund@m4sh.org">refund@m4sh.org</a></li>
+            <li>Зв'яжіться з нашою службою підтримки на <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a></li>
             <li>Вкажіть причину повернення та деталі оплати</li>
             <li>Дочекайтесь розгляду вашого запиту (до 5 робочих днів)</li>
           </ol>
@@ -115,7 +115,7 @@
             З питань повернення коштів звертайтесь:
           </p>
           <p>
-            Email: <a href="mailto:refund@m4sh.org">refund@m4sh.org</a><br>
+            Email: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a><br>
             Час відповіді: до 5 робочих днів
           </p>
         </section>

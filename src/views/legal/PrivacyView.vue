@@ -12,8 +12,8 @@
         <section>
           <h2>1. Хто обробляє ваші дані</h2>
           <p>
-            Контролер персональних даних: ФОП Машнюк Д.С., Україна.<br>
-            Контакт: <a href="mailto:privacy@m4sh.org">privacy@m4sh.org</a>
+            Контролер персональних даних: ФОП Машманюк О.В., Україна.<br>
+            Контакт: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>
           </p>
           <p>
             Ця Політика конфіденційності пояснює, які персональні дані ми збираємо, як ми їх
@@ -82,7 +82,7 @@
           <p><strong>Ваші права щодо Replay:</strong></p>
           <ul>
             <li>Переглянути Replay через посилання від тьютора</li>
-            <li>Звернутись на privacy@m4sh.org щодо видалення Replay у якому ви брали участь</li>
+            <li>Звернутись на mashmanuc0@gmail.com щодо видалення Replay у якому ви брали участь</li>
           </ul>
           <p>
             <strong>Заняття з неповнолітніми:</strong> для учнів молодше 14 років Платформа
@@ -144,7 +144,7 @@
           </p>
           <p>
             Батьки та опікуни можуть звернутись на
-            <a href="mailto:privacy@m4sh.org">privacy@m4sh.org</a> для:
+            <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a> для:
           </p>
           <ul>
             <li>Перегляду даних, що зберігаються про їхню дитину</li>
@@ -160,15 +160,15 @@
             України ви маєте право:
           </p>
           <ul>
-            <li><strong>Доступ</strong> — отримати копію своїх персональних даних (Налаштування → Експорт даних)</li>
+            <li><strong>Доступ</strong> — отримати копію своїх персональних даних (запит через <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>)</li>
             <li><strong>Виправлення</strong> — оновити неточні дані в профілі</li>
-            <li><strong>Видалення</strong> — повністю видалити обліковий запис і дані (Налаштування → Видалити акаунт)</li>
+            <li><strong>Видалення</strong> — повністю видалити обліковий запис і дані (Налаштування → Конфіденційність)</li>
             <li><strong>Обмеження обробки</strong> — обмежити обробку даних у певних випадках</li>
             <li><strong>Заперечення</strong> — заперечити проти обробки на основі законного інтересу</li>
             <li><strong>Портабельність</strong> — отримати дані в машинозчитуваному форматі</li>
           </ul>
           <p>
-            Для реалізації прав звертайтесь: <a href="mailto:privacy@m4sh.org">privacy@m4sh.org</a>.
+            Для реалізації прав звертайтесь: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>.
             Термін відповіді — до 30 днів.
           </p>
         </section>
@@ -211,8 +211,8 @@
           <h2>12. Контакти</h2>
           <p>
             З питань конфіденційності та захисту даних:<br>
-            Email: <a href="mailto:privacy@m4sh.org">privacy@m4sh.org</a><br>
-            Загальна підтримка: <a href="mailto:support@m4sh.org">support@m4sh.org</a>
+            Email: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a><br>
+            Загальна підтримка: <a href="mailto:mashmanuc0@gmail.com">mashmanuc0@gmail.com</a>
           </p>
         </section>
       </div>
