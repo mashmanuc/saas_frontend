@@ -12,25 +12,19 @@ onMounted(async () => {
   const W = window as unknown as {
     TrigCircle: new (el: HTMLElement, o: object) => TrigCircleInstance
   }
-
-  // На вузьких екранах (< 700px) прибираємо labels/points/graph —
-  // vendor все одно не покаже dual-panel (потрібно >= 600px CSS-width),
-  // а мітки тільки засмічують малий canvas.
-  const mobile = window.innerWidth < 700
-
   trig = new W.TrigCircle(stageRef.value, {
     theta:             Math.PI / 4,
     showSin:           true,
     showCos:           true,
     showTan:           false,
     showCot:           false,
-    showSpecialPoints: !mobile,  // прибираємо помаранчеві крапки на мобільному
-    showRefLabels:     !mobile,  // прибираємо "sin θ = …" / "cos θ = …" на мобільному
-    showDeg:           !mobile,  // прибираємо 30°/60°… навколо кола
-    showRad:           false,    // π-мітки завжди вимкнені — надто дрібно
+    showSpecialPoints: true,
+    showRefLabels:     true,
+    showDeg:           true,
+    showRad:           false,   // π-мітки завжди вимкнені — надто дрібно
     showExactGrid:     false,
     showInscribed:     false,
-    showGraphs:        !mobile,  // синусоїда тільки на desktop (потребує >= 600px)
+    showGraphs:        true,
     snapPi12:          false,
     animate:           true,
     speed:             0.6,
@@ -54,8 +48,11 @@ onUnmounted(() => {
 .ltc-wrap {
   width: 100%;
   border-radius: 16px;
+  /* overflow:hidden вирішує два завдання:
+     1) клепає 660px stage до ширини екрану на мобільному
+     2) приховує calc-hud що може виходити за межі */
   overflow: hidden;
-  /* touch-action:none на контейнері — iOS Safari не перехоплює scroll
+  /* touch-action:none — iOS Safari не перехоплює scroll
      під час drag по canvas (canvas вже має touch-action:none від vendor,
      але батьківський div теж повинен блокувати) */
   touch-action: none;
@@ -67,9 +64,8 @@ onUnmounted(() => {
 
 .ltc-stage {
   /*
-    TrigCircle dual-panel (коло + синусоїда) тільки при w >= 600px (CSS).
-    aspect-ratio 16/9 на desktop; на мобільному (< 700px) — 1/1 (квадрат),
-    щоб коло не обрізалось і виглядало повноцінно.
+    Desktop: width:100%, aspect-ratio 16/9.
+    Vendor вмикає dual-panel (коло + синусоїда) коли w >= 600px CSS.
     position:relative обов'язковий — vendor canvas має position:absolute;inset:0.
   */
   position: relative;
@@ -78,15 +74,24 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-@media (max-width: 700px) {
+/* ── Мобільний hack для синусоїди ───────────────────────────────────────
+   На вузьких екранах vendor не активує dual-panel (потребує >= 600px CSS-width).
+   Рішення: примусово встановити stage 660px — vendor бачить 660 >= 600 і
+   малює коло + синусоїду. .ltc-wrap (overflow:hidden) обрізає до ширини
+   екрану: коло виходить повністю (займає ліві ~50%), синусоїда — перші хвилі.
+   Координати pointer-events коректні бо vendor читає canvas.getBoundingClientRect()
+   (повну 660px ширину), а клік в лівій половині = взаємодія з колом. ✓
+*/
+@media (max-width: 699px) {
   .ltc-stage {
-    aspect-ratio: 1 / 1;
+    width: 660px;
+    aspect-ratio: 16 / 9;   /* висота: 660 × 9/16 = 371px — компактно */
   }
 }
 
-/* Картка з θ/sin/cos/tg/ctg — прибираємо на мобільному.
-   На desktop вона корисна для інтерактиву; на мобільному перекриває коло. */
-@media (max-width: 700px) {
+/* HUD (картка з θ/sin/cos значеннями) — прибираємо на мобільному.
+   На desktop корисна; на мобільному перекриває коло. */
+@media (max-width: 699px) {
   .ltc-stage :deep(.calc-hud) {
     display: none !important;
   }

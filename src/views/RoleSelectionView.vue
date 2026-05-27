@@ -816,6 +816,10 @@ async function changeLanguage(langCode: string) {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  /* min-width:0 — grid items не розтягуються понад ширину треку
+     коли дочірній елемент (ltc-stage 660px) ширший за viewport */
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Responsive: stack on tablet/mobile (< 1100px щоб demo завжди >= 600px) */
