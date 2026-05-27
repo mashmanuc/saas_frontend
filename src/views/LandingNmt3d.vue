@@ -36,6 +36,8 @@ onUnmounted(() => {
   border-radius: 16px;
   overflow: hidden;
   background: #fffaf0;
+  /* touch-action:none — iOS Safari не перехоплює scroll під час orbit-drag */
+  touch-action: none;
   box-shadow:
     0 2px 8px rgba(43,33,24,0.08),
     0 8px 32px rgba(43,33,24,0.10),
@@ -51,5 +53,6 @@ onUnmounted(() => {
   width: 100%;
   aspect-ratio: 4 / 3;
   min-width: 0;
+  touch-action: none;
 }
 </style>
