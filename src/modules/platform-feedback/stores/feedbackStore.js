@@ -14,6 +14,21 @@ import { defineStore } from 'pinia'
 import api from '../api/feedbackApi'
 
 /**
+ * J2 (2026-05-27): parse DRF throttle detail "Request was throttled.
+ * Expected available in N seconds." → human-friendly "5 хв" / "2 год" / "1 день".
+ */
+function parseThrottleWait(detail) {
+  if (!detail || typeof detail !== 'string') return ''
+  const m = detail.match(/(\d+(?:\.\d+)?)\s*seconds?/i)
+  if (!m) return ''
+  const seconds = Math.ceil(parseFloat(m[1]))
+  if (seconds < 60) return `${seconds} сек`
+  if (seconds < 3600) return `${Math.ceil(seconds / 60)} хв`
+  if (seconds < 86400) return `${Math.ceil(seconds / 3600)} год`
+  return `${Math.ceil(seconds / 86400)} днів`
+}
+
+/**
  * H1 (2026-05-27): parse API error response у user-friendly формат.
  * Підтримує 3 contract shapes:
  *   1. SSOT: {error: 'code', detail: 'message', fields?: {f: [msgs]}}
@@ -215,10 +230,20 @@ export const useFeedbackStore = defineStore('platformFeedback', {
         //   1. SSOT envelope: {error, detail, fields?}
         //   2. Backend wrapper: {code, detail, fields?}  ← VALIDATION_ERROR
         //   3. DRF raw:        {field: [...]}
+        // J2 (2026-05-27): 429 throttle → friendly message з retry hint.
+        const status = err?.response?.status
         const data = err?.response?.data
-        const parsed = parseApiError(data)
-        this.createError = parsed.message
-        this.createFieldErrors = parsed.fields
+        if (status === 429) {
+          const wait = parseThrottleWait(data?.detail || data?.message || '')
+          this.createError = wait
+            ? `Перевищено ліміт створення ідей. Спробуйте за ${wait}.`
+            : 'Перевищено денний ліміт створення ідей. Спробуйте завтра.'
+          this.createFieldErrors = {}
+        } else {
+          const parsed = parseApiError(data)
+          this.createError = parsed.message
+          this.createFieldErrors = parsed.fields
+        }
         throw err
       } finally {
         this.createLoading = false
