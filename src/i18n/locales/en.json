@@ -8845,6 +8845,11 @@
       "title": "Feedback Moderation",
       "subtitle": "Triage threads, statuses, duplicates, comment moderation",
       "totalLabel": "Total",
+      "refresh": "Refresh",
+      "refreshTooltip": "Reload from backend",
+      "unreviewed": "Unreviewed: {n}",
+      "unreviewedOnly": "Unreviewed only",
+      "unreviewedBadge": "Not yet seen by staff",
       "allStatuses": "All statuses",
       "allTypes": "All types",
       "allCategories": "All categories",
@@ -8863,12 +8868,14 @@
       },
       "actions": {
         "changeStatus": "Change status / response",
-        "editContent": "Edit content (staff)"
+        "editContent": "Edit content (staff)",
+        "markReviewed": "Mark as reviewed"
       },
       "bulk": {
         "hide": "Hide", "unhide": "Unhide",
         "lock": "Lock", "unlock": "Unlock",
-        "archive": "Archive"
+        "archive": "Archive",
+        "markReviewed": "Mark reviewed"
       },
       "status": {
         "title": "Status change",

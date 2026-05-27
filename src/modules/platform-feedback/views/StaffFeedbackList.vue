@@ -7,13 +7,28 @@
         </h1>
         <p class="text-sm text-slate-500">{{ $t('feedback.staff.subtitle') }}</p>
       </div>
-      <div class="text-sm text-slate-600">
-        {{ $t('feedback.staff.totalLabel') }}: <b>{{ meta.total || 0 }}</b>
+      <div class="flex items-center gap-3 text-sm text-slate-600">
+        <span v-if="unreviewedCount > 0" class="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full font-medium">
+          🆕 {{ $t('feedback.staff.unreviewed', { n: unreviewedCount }) }}
+        </span>
+        <span>{{ $t('feedback.staff.totalLabel') }}: <b>{{ meta.total || 0 }}</b></span>
+        <button
+          class="px-2 py-1 text-xs border border-slate-300 rounded hover:bg-slate-100"
+          :title="$t('feedback.staff.refreshTooltip')"
+          :disabled="loading"
+          @click="load"
+        >
+          🔄 {{ loading ? '...' : $t('feedback.staff.refresh') }}
+        </button>
       </div>
     </header>
 
     <!-- Filters -->
     <div class="bg-white border border-slate-200 rounded-lg p-3 mb-4 flex flex-wrap gap-2 items-center">
+      <label class="flex items-center gap-1 text-sm bg-amber-50 border border-amber-300 rounded px-2 py-1 cursor-pointer">
+        <input type="checkbox" v-model="filter.unreviewed" @change="reload" />
+        🆕 {{ $t('feedback.staff.unreviewedOnly') }}
+      </label>
       <select v-model="filter.status" class="px-2 py-1 border border-slate-300 rounded text-sm">
         <option value="">{{ $t('feedback.staff.allStatuses') }}</option>
         <option v-for="s in STATUSES" :key="s" :value="s">{{ $t(`feedback.status.${s}`, s) }}</option>
@@ -60,6 +75,8 @@
           @click="runBulk('lock')">🔒 {{ $t('feedback.staff.bulk.lock') }}</button>
         <button class="px-3 py-1 text-xs bg-white border border-slate-300 rounded hover:bg-slate-100"
           @click="runBulk('unlock')">🔓 {{ $t('feedback.staff.bulk.unlock') }}</button>
+        <button class="px-3 py-1 text-xs bg-white border border-slate-300 rounded hover:bg-slate-100"
+          @click="runBulk('mark_reviewed')">✓ {{ $t('feedback.staff.bulk.markReviewed') }}</button>
         <button class="px-3 py-1 text-xs bg-amber-100 border border-amber-300 rounded hover:bg-amber-200"
           @click="runBulk('archive')">📦 {{ $t('feedback.staff.bulk.archive') }}</button>
         <button class="ml-auto text-xs text-slate-600 hover:underline" @click="clearSelection">
@@ -111,12 +128,16 @@
               />
             </td>
             <td class="px-2 py-2 max-w-[300px]">
-              <router-link
-                :to="{ name: 'FeedbackThread', params: { id: t.id } }"
-                class="text-blue-700 hover:underline font-medium block truncate"
-              >
-                {{ t.title }}
-              </router-link>
+              <div class="flex items-center gap-1.5">
+                <span v-if="!t.is_reviewed" class="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0"
+                      :title="$t('feedback.staff.unreviewedBadge')"></span>
+                <router-link
+                  :to="{ name: 'FeedbackThread', params: { id: t.id } }"
+                  class="text-blue-700 hover:underline font-medium block truncate"
+                >
+                  {{ t.title }}
+                </router-link>
+              </div>
               <div class="flex gap-1 mt-0.5">
                 <span v-if="t.is_locked" class="text-xs">🔒</span>
                 <span v-if="t.is_hidden" class="text-xs">🙈</span>
@@ -136,6 +157,10 @@
             </td>
             <td class="px-2 py-2 whitespace-nowrap text-right">
               <div class="inline-flex gap-1">
+                <button v-if="!t.is_reviewed"
+                        :title="$t('feedback.staff.actions.markReviewed')"
+                        class="px-1.5 py-0.5 hover:bg-slate-200 rounded text-xs"
+                        @click="onMarkReviewed(t)">✓</button>
                 <button :title="$t('feedback.staff.actions.changeStatus')"
                         class="px-1.5 py-0.5 hover:bg-slate-200 rounded text-xs"
                         @click="openStatusModal(t)">📋</button>
@@ -184,7 +209,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, reactive, ref } from 'vue'
 import api from '../api/feedbackApi'
 import StatusChangeModal from '../components/staff/StatusChangeModal.vue'
 import StaffEditModal from '../components/staff/StaffEditModal.vue'
@@ -206,7 +231,19 @@ const filter = reactive({
   sort: 'recent',
   q: '',
   page: 1,
+  unreviewed: false,  // E2
 })
+
+// E2: server-side unreviewed total (not just current page)
+const unreviewedTotal = ref(0)
+async function loadUnreviewedCount() {
+  try {
+    const res = await api.unreviewedCount()
+    unreviewedTotal.value = res?.unreviewed || 0
+  } catch (e) {
+    // silent
+  }
+}
 
 const modalThread = ref(null)
 const modalKind = ref(null)
@@ -216,6 +253,9 @@ const totalPages = computed(() => {
   const size = meta.value.page_size || 20
   return Math.max(1, Math.ceil(total / size))
 })
+
+// E2: backend-counted unreviewed total (включаючи інші сторінки)
+const unreviewedCount = computed(() => unreviewedTotal.value)
 
 const allSelected = computed(() =>
   threads.value.length > 0 && threads.value.every((t) => selectedIds.value.includes(t.id))
@@ -230,9 +270,11 @@ async function load() {
     if (filter.type) params.type = filter.type
     if (filter.category) params.category = filter.category
     if (filter.q.trim()) params.q = filter.q.trim()
+    if (filter.unreviewed) params.unreviewed = '1'
     const res = await api.listThreads(params)
     threads.value = res.data
     meta.value = res.meta
+    loadUnreviewedCount()  // refresh badge
   } catch (e) {
     error.value = e?.response?.data?.detail || 'Не вдалося завантажити'
   } finally {
@@ -289,6 +331,14 @@ async function onLock(t) {
 async function onHide(t) {
   await api.toggleHide(t.id)
   t.is_hidden = !t.is_hidden
+  t.is_reviewed = true
+  loadUnreviewedCount()
+}
+
+async function onMarkReviewed(t) {
+  await api.markReviewed(t.id)
+  t.is_reviewed = true
+  loadUnreviewedCount()
 }
 
 function openStatusModal(t) {
@@ -329,7 +379,23 @@ function statusBadgeClass(status) {
   }
 }
 
-onMounted(load)
+// E1: auto-reload on window focus — fixes stale data коли staff
+// тримає console відкритим, а thread created у іншій вкладці.
+// Без polling (не б'є backend без потреби).
+function onFocus() {
+  if (!loading.value && !modalThread.value) {
+    load()
+  }
+}
+
+onMounted(() => {
+  load()
+  window.addEventListener('focus', onFocus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', onFocus)
+})
 </script>
 
 <style scoped>

@@ -8935,6 +8935,11 @@
       "title": "Модерація пропозицій",
       "subtitle": "Triage threads, статуси, дублікати, модерація коментарів",
       "totalLabel": "Всього",
+      "refresh": "Оновити",
+      "refreshTooltip": "Перезавантажити список з backend",
+      "unreviewed": "Неоглянутих: {n}",
+      "unreviewedOnly": "Тільки неоглянуті",
+      "unreviewedBadge": "Цей thread ще не переглянутий staff",
       "allStatuses": "Всі статуси",
       "allTypes": "Всі типи",
       "allCategories": "Всі категорії",
@@ -8956,14 +8961,16 @@
       },
       "actions": {
         "changeStatus": "Змінити статус / відповідь",
-        "editContent": "Редагувати контент (staff)"
+        "editContent": "Редагувати контент (staff)",
+        "markReviewed": "Позначити як переглянуто"
       },
       "bulk": {
         "hide": "Приховати",
         "unhide": "Показати",
         "lock": "Замкнути",
         "unlock": "Відкрити",
-        "archive": "Архівувати"
+        "archive": "Архівувати",
+        "markReviewed": "Позначити переглянуто"
       },
       "status": {
         "title": "Зміна статусу",

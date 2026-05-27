@@ -137,6 +137,17 @@ export async function toggleCommentHide(commentId) {
   return unwrap(res)
 }
 
+// E2: diagnostic queue
+export async function unreviewedCount() {
+  const res = await apiClient.get(`${BASE}/threads/unreviewed-count/`)
+  return unwrap(res)
+}
+
+export async function markReviewed(threadId) {
+  const res = await apiClient.patch(`${BASE}/threads/${threadId}/mark-reviewed/`)
+  return unwrap(res)
+}
+
 export default {
   listThreads,
   getThread,
@@ -158,4 +169,6 @@ export default {
   staffEditThread,
   bulkAction,
   toggleCommentHide,
+  unreviewedCount,
+  markReviewed,
 }
