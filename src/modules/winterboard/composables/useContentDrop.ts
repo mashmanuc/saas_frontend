@@ -291,6 +291,23 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
+    // QuadraticCard (2026-05-28) — §3.7.10 drag handler.
+    const quadRaw = event.dataTransfer?.getData(QUAD_DRAG_MIME)
+    if (quadRaw) {
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: QuadraticAsset = {
+        id: `quad-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'quadratic_card', src: '',
+        x: canvasPos.x - DEFAULT_QUAD_W / 2,
+        y: canvasPos.y - DEFAULT_QUAD_H / 2,
+        w: DEFAULT_QUAD_W, h: DEFAULT_QUAD_H,
+        rotation: 0, locked: false,
+        data: buildDefaultQuadraticData(),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
     // Phase G v2 — Geometry 2D v2 drag (MIME 'application/x-geo2d').
     // Payload {preset, name?} — preset валідуємо проти runtime registry
     // (window.Geo2D.PRESETS), щоб додавання нової картки у bundle не потребувало
