@@ -7664,7 +7664,8 @@
     },
     "colorPicker": {
       "recent": "Нещодавні",
-      "custom": "Довільний"
+      "custom": "Довільний",
+      "hexInput": "HEX колір"
     },
     "gestures": {
       "pinchToZoom": "Зведіть пальці для масштабування",

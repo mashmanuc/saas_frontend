@@ -7629,7 +7629,8 @@
     },
     "colorPicker": {
       "recent": "Recent",
-      "custom": "Custom"
+      "custom": "Custom",
+      "hexInput": "HEX color"
     },
     "sidebar": {
       "dashboard": "Dashboard",

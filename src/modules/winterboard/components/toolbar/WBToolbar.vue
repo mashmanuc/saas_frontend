@@ -569,6 +569,7 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .wb-toolbar__btn {

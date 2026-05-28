@@ -132,6 +132,8 @@ onMounted(async () => {
   flex-shrink: 0;
   max-height: 40%;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
   padding: 8px 0;
 }
@@ -166,7 +168,10 @@ onMounted(async () => {
 
 .materials-browser__assets {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 12px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

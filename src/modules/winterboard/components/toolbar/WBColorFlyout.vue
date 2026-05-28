@@ -125,6 +125,21 @@
               <span v-if="!isPenCustomActive" class="wb-color-flyout__custom-icon" aria-hidden="true">+</span>
             </label>
           </div>
+          <!-- Hex input row — lets user type any color on tablet where native picker is poor -->
+          <div class="wb-color-flyout__hex-row">
+            <span class="wb-color-flyout__hex-swatch" :style="{ background: modelValue }" aria-hidden="true" />
+            <input
+              type="text"
+              class="wb-color-flyout__hex-input"
+              :value="hexDisplayValue"
+              maxlength="7"
+              placeholder="#000000"
+              spellcheck="false"
+              :aria-label="t('winterboard.colorPicker.hexInput', 'HEX колір')"
+              @input="onHexInput"
+              @blur="onHexBlur"
+            />
+          </div>
         </template>
 
         <template v-if="showHighlighterColors">
@@ -164,6 +179,21 @@
               />
               <span v-if="!isHlCustomActive" class="wb-color-flyout__custom-icon" aria-hidden="true">+</span>
             </label>
+          </div>
+          <!-- Hex input row for highlighter -->
+          <div class="wb-color-flyout__hex-row">
+            <span class="wb-color-flyout__hex-swatch" :style="{ background: modelValue + 'cc' }" aria-hidden="true" />
+            <input
+              type="text"
+              class="wb-color-flyout__hex-input"
+              :value="hexDisplayValue"
+              maxlength="7"
+              placeholder="#000000"
+              spellcheck="false"
+              :aria-label="t('winterboard.colorPicker.hexInput', 'HEX колір')"
+              @input="onHexInput"
+              @blur="onHexBlur"
+            />
           </div>
         </template>
       </div>
@@ -319,6 +349,30 @@ function onCustomColorChange(e: Event): void {
     hlCustomColor.value = hex
   }
   selectColor(hex)
+}
+
+// ─── Hex text input ───────────────────────────────────────────────────────────
+
+const HEX_RE = /^#[0-9a-fA-F]{6}$/
+
+const hexDisplayValue = computed(() => props.modelValue ?? '#000000')
+
+function onHexInput(e: Event): void {
+  const raw = (e.target as HTMLInputElement).value.trim()
+  const val = raw.startsWith('#') ? raw : `#${raw}`
+  if (HEX_RE.test(val)) {
+    selectColor(val)
+  }
+}
+
+function onHexBlur(e: Event): void {
+  // Normalize value back to current color if invalid
+  const input = e.target as HTMLInputElement
+  const raw = input.value.trim()
+  const val = raw.startsWith('#') ? raw : `#${raw}`
+  if (!HEX_RE.test(val)) {
+    input.value = props.modelValue ?? '#000000'
+  }
 }
 
 // ─── Restore last color on tool switch ───────────────────────────────────────
@@ -583,5 +637,46 @@ watch(
   pointer-events: none;
   position: relative; /* above the input overlay */
   z-index: 1;
+}
+
+/* ─── Hex input row ──────────────────────────────────────────────────────────── */
+
+.wb-color-flyout__hex-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.wb-color-flyout__hex-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.wb-color-flyout__hex-input {
+  flex: 1;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  outline: none;
+  letter-spacing: 0.03em;
+  min-width: 0;
+  touch-action: manipulation;
+}
+
+.wb-color-flyout__hex-input:focus {
+  border-color: var(--wb-brand, #2563eb);
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 }
 </style>

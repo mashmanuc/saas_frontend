@@ -822,8 +822,33 @@ async function changeLanguage(langCode: string) {
   overflow: hidden;
 }
 
-/* Responsive: stack on tablet/mobile (< 1100px щоб demo завжди >= 600px) */
-@media (max-width: 1100px) {
+/* Tablet (768-1100px): 2-column layout so demo doesn't block scroll.
+   Demo is ~45% wide → user can scroll by touching the text area on the left. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .hero-split {
+    grid-template-columns: 55fr 45fr;
+    gap: 2rem;
+    align-items: center;
+    padding-bottom: 2rem;
+    min-height: auto;
+  }
+
+  .hero-demo {
+    order: 0; /* text left, demo right */
+  }
+
+  .title {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    max-width: 100%;
+  }
+}
+
+/* Mobile (< 768px): stack vertically, demo at top */
+@media (max-width: 767px) {
   .hero-split {
     grid-template-columns: 1fr;
     min-height: auto;

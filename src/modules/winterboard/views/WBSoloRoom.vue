@@ -3386,12 +3386,15 @@ watch(() => store.workspaceName, (name) => {
 
 .wb-solo-room__content-sidebar {
   flex-shrink: 0;
+  min-height: 0;
   min-width: 240px;
   max-width: 800px;
   border-left: 1px solid var(--wb-border, #e2e8f0);
   background: var(--wb-bg-primary, #ffffff);
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   z-index: 15;
   transition: width 200ms ease;
 }
