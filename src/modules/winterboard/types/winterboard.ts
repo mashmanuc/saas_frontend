@@ -209,6 +209,8 @@ export interface WBAsset {
     | 'nmt3d'
     /** NmtTask (2026-05-23) — interactive NMT task card (single_choice/matching/open_answer). §3.7.9 */
     | 'nmt_task'
+    /** QuadraticCard (2026-05-28) — ax²+bx+c parabola, discriminant, roots. §3.7.10 */
+    | 'quadratic_card'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -299,6 +301,7 @@ export interface WBAsset {
     | import('./helix').HelixData
     | import('./trigSolver').TrigSolverData
     | import('./nmt3d').Nmt3dData
+    | import('./quad').QuadraticData
 }
 
 /**

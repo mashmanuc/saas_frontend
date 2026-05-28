@@ -75,6 +75,14 @@ import {
   type Nmt3dDragPayload,
 } from '../constants/nmt3dDefaults'
 import type { Nmt3dAsset } from '../types/nmt3d'
+// QuadraticCard (2026-05-28) — §3.7.10 ax²+bx+c discriminant visualizer drop wiring.
+import {
+  QUAD_DRAG_MIME,
+  DEFAULT_QUAD_W,
+  DEFAULT_QUAD_H,
+  buildDefaultQuadraticData,
+} from '../constants/quadDefaults'
+import type { QuadraticAsset } from '../types/quad'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -1073,6 +1081,20 @@ export function useContentDrop(options: UseContentDropOptions) {
         w: DEFAULT_NMT3D_W, h: DEFAULT_NMT3D_H,
         rotation: 0, locked: false,
         data: buildDefaultNmt3dData(parsed.templateKey),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    // QuadraticCard (2026-05-28) — §3.7.10 drop handler.
+    if (mime === QUAD_DRAG_MIME) {
+      const asset: QuadraticAsset = {
+        id: `quad-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'quadratic_card', src: '',
+        x: pos.x - DEFAULT_QUAD_W / 2, y: pos.y - DEFAULT_QUAD_H / 2,
+        w: DEFAULT_QUAD_W, h: DEFAULT_QUAD_H,
+        rotation: 0, locked: false,
+        data: buildDefaultQuadraticData(),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return

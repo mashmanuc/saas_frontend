@@ -43,6 +43,7 @@
         <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
         <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
         <CalculusInspector    v-else-if="calculusUiState.bridge" />
+        <QuadraticInspector   v-else-if="quadUiState.bridge" />
       </div>
     </template>
 
@@ -241,11 +242,13 @@ import HelixInspector from './HelixInspector.vue'
 import GraphCalcInspector from './GraphCalcInspector.vue'
 import TrigSolverInspector from './TrigSolverInspector.vue'
 import CalculusInspector from './CalculusInspector.vue'
+import QuadraticInspector from './QuadraticInspector.vue'
 import { trigCircleUiState } from '../../board/state/trigCircleUiState'
 import { helixUiState } from '../../board/state/helixUiState'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
 import { trigSolverUiState } from '../../board/state/trigSolverUiState'
 import { calculusUiState } from '../../board/state/calculusUiState'
+import { quadUiState } from '../../board/state/quadUiState'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray
@@ -319,7 +322,8 @@ function zoomOut(): void {
 
 const hasActiveInspector = computed(() =>
   !!(nmt3dUiState.ws || trigCircleUiState.bridge || helixUiState.bridge ||
-     graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge),
+     graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge ||
+     quadUiState.bridge),
 )
 
 // ── Folder navigation (library mode only) ──

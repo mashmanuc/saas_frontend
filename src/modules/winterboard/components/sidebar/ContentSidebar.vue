@@ -68,6 +68,11 @@
         <CalculusTray />
       </div>
 
+      <!-- QuadraticCard (2026-05-28): ax²+bx+c дискримінант + корені. -->
+      <div class="content-sidebar__quad-section">
+        <QuadraticTray />
+      </div>
+
       <!-- Phase 11 B8: YouTube URL inline input -->
       <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
@@ -179,6 +184,7 @@ import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray
 import CalculusTray from './CalculusTray.vue'
+import QuadraticTray from './QuadraticTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

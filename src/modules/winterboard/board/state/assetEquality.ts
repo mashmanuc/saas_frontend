@@ -134,6 +134,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'trig_solver',       // §3.7.7 — mode, func, sign, value, showInfo
   'nmt3d',            // §3.7.8 — templateKey, mode ('adapt'|'draw')
   'nmt_task',         // §3.7.9 — taskType, question, options/pairs/correctAnswer, showAnswer/showSolution
+  'quadratic_card',   // §3.7.10 — a, b, c, showVertex/Axis/Roots, viewport
 ])
 
 /**

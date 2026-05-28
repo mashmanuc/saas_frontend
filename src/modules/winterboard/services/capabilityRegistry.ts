@@ -47,6 +47,11 @@ export const INTENT_TO_RENDERERS: Record<string, string[]> = {
   show_tangent:       ['calculus'],
   show_extrema:       ['calculus'],
 
+  // ── Quadratic ──────────────────────────────────────────────────────────────
+  show_discriminant:  ['quadratic'],
+  show_parabola:      ['quadratic'],
+  show_quadratic_roots: ['quadratic'],
+
   // ── 3D Geometry ────────────────────────────────────────────────────────────
   show_3d_solid:      ['nmt3d'],
   show_cross_section: ['nmt3d'],
@@ -82,6 +87,7 @@ export const AVAILABLE_RENDERERS = new Set<string>([
   'geometry_2d',
   'trig_circle',
   'trig_solver',    // legacy, є в runtime
+  'quadratic',
 ])
 
 // ── Default sizes per renderer ─────────────────────────────────────────────────
@@ -93,6 +99,7 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
   geometry_2d:      { w: 520, h: 440 },
   trig_circle:      { w: 460, h: 460 },
   trig_solver:      { w: 520, h: 420 },
+  quadratic:        { w: 480, h: 360 },
 }
 
 // ── Core function ─────────────────────────────────────────────────────────────

@@ -391,6 +391,26 @@
       </div>
     </template>
 
+    <!-- QuadraticCard (2026-05-28): quadratic_card overlay (HTML, non-Konva).
+         Mirror .wb-calculus-overlay pattern. -->
+    <template v-for="asset in quadraticAssets" :key="`quad-${asset.id}`">
+      <div
+        class="wb-quad-overlay"
+        :class="{ 'wb-quad-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-quad-id="asset.id"
+        :data-testid="`quad-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <QuadraticRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- TrigCircle (2026-05-16): trig_circle overlay (HTML, non-Konva).
          Mirror .wb-calculus-overlay pattern. -->
     <template v-for="asset in trigCircleAssets" :key="`trig-${asset.id}`">
@@ -684,6 +704,7 @@ import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards renderer
 import CalculusRenderer from '../board/objects/CalculusRenderer.vue'
+import QuadraticRenderer from '../board/objects/QuadraticRenderer.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph renderer
 import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
 // Helix (2026-05-17): 3D helix P=(θ, sin θ, cos θ) renderer
@@ -816,6 +837,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'trig_solver',       // §3.7.7 — Unified trig eq+ineq solver   → TrigSolverRenderer
   'nmt3d',            // §3.7.8 — Parametric 3D stereometry     → Nmt3dRenderer
   'nmt_task',         // §3.7.9 — Interactive NMT task card     → NmtTaskRenderer
+  'quadratic_card',   // §3.7.10 — Quadratic eq visualizer       → QuadraticRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -829,6 +851,7 @@ const helixAssets          = computed(() => assets.value.filter(a => a.type === 
 const trigSolverAssets     = computed(() => assets.value.filter(a => a.type === 'trig_solver'))
 const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 'nmt3d'))
 const nmtTaskAssets        = computed(() => assets.value.filter(a => a.type === 'nmt_task'))
+const quadraticAssets      = computed(() => assets.value.filter(a => a.type === 'quadratic_card'))
 
 // ── Companion spawn (2026-05-25) ──────────────────────────────────────────────
 // task.id → companion asset.id[]
@@ -4944,6 +4967,22 @@ defineExpose({
 .wb-calculus-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
+}
+
+/* QuadraticCard (2026-05-28) — ax²+bx+c parabola overlay.
+   Blue accent (#3b7b9b) — mirrors calculus overlay pattern. */
+.wb-quad-overlay {
+  position: absolute;
+  z-index: 4;
+  background: rgba(59, 123, 155, 0.03);
+  border: 1px solid rgba(59, 123, 155, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-quad-overlay--selected {
+  border-color: rgba(59, 123, 155, 0.6);
+  box-shadow: 0 0 0 1px rgba(59, 123, 155, 0.4);
 }
 
 /* TrigCircle (2026-05-16) — unit circle ↔ sin/cos/tg/ctg graph overlay
