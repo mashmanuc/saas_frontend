@@ -8071,6 +8071,41 @@
       "errorServer": "Сервер тимчасово зайнятий. Спробуйте ще раз.",
       "errorInvalidStudent": "Учень не знайдений. Оновіть сторінку.",
       "errorGeneric": "Виникла помилка. Спробуйте ще раз."
+    },
+    "nmt3d": {
+      "trayHeader": "Стереометрія НМТ",
+      "loading": "завантаження…",
+      "trayHint": "Перетягни на дошку або натисни +",
+      "addToBoard": "Додати «{name}» на дошку",
+      "paramsLabel": "Параметри",
+      "viewLabel": "Вигляд",
+      "resetView": "Скинути вигляд",
+      "autoOrbit": "↻ авто-обертання",
+      "auxLabel": "Доп. побудови",
+      "unfold": "▦ розгортка",
+      "view3d": "3D вигляд",
+      "viewIso": "Ізометрія",
+      "viewFront": "Спереду",
+      "viewSide": "Збоку",
+      "viewTop": "Зверху",
+      "viewBottom": "Знизу"
+    },
+    "quadratic": {
+      "trayHeader": "Квадратне рівняння",
+      "trayTitle": "ax²+bx+c — дискримінант і корені",
+      "traySublabel": "D · корені · парабола",
+      "addToBoard": "Додати «Квадратне рівняння» на дошку",
+      "signLabel": "Знак",
+      "presetsLabel": "Приклади",
+      "coefficientsLabel": "Коефіцієнти",
+      "discriminantLabel": "Дискримінант",
+      "displayLabel": "Відображення",
+      "noRoots": "коренів немає",
+      "vertex": "вершина",
+      "solutionLabel": "Розв’язок",
+      "noSolution": "∅ (немає розв’язків)",
+      "allNumbers": "x ∈ ℝ (усі числа)",
+      "allReal": "x ∈ ℝ"
     }
   },
   "storage": {

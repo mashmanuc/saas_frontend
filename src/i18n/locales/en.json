@@ -7983,6 +7983,41 @@
       "errorServer": "Server is busy. Please try again.",
       "errorInvalidStudent": "Student not found. Please reload.",
       "errorGeneric": "Something went wrong. Please try again."
+    },
+    "nmt3d": {
+      "trayHeader": "NMT 3D Solids",
+      "loading": "Loading…",
+      "trayHint": "Drag onto the board or press +",
+      "addToBoard": "Add «{name}» to board",
+      "paramsLabel": "Parameters",
+      "viewLabel": "View",
+      "resetView": "Reset view",
+      "autoOrbit": "↻ auto-orbit",
+      "auxLabel": "Extra constructions",
+      "unfold": "▦ Unfold",
+      "view3d": "3D view",
+      "viewIso": "Isometric",
+      "viewFront": "Front",
+      "viewSide": "Side",
+      "viewTop": "Top",
+      "viewBottom": "Bottom"
+    },
+    "quadratic": {
+      "trayHeader": "Quadratic Equation",
+      "trayTitle": "ax²+bx+c — discriminant & roots",
+      "traySublabel": "D · roots · parabola",
+      "addToBoard": "Add Quadratic Equation to board",
+      "signLabel": "Sign",
+      "presetsLabel": "Examples",
+      "coefficientsLabel": "Coefficients",
+      "discriminantLabel": "Discriminant",
+      "displayLabel": "Display",
+      "noRoots": "no roots",
+      "vertex": "vertex",
+      "solutionLabel": "Solution",
+      "noSolution": "∅ (no solutions)",
+      "allNumbers": "x ∈ ℝ (all numbers)",
+      "allReal": "x ∈ ℝ"
     }
   },
   "storage": {
@@ -8837,9 +8872,11 @@
       "beFirst": "Suggest an idea →"
     },
     "search": {
-      "back": "Back", "title": "Search ideas",
+      "back": "Back",
+      "title": "Search ideas",
       "placeholder": "Search... (min 3 chars)",
-      "go": "Search", "loading": "Searching...",
+      "go": "Search",
+      "loading": "Searching...",
       "empty": "Nothing found. Try other terms or create a new idea."
     },
     "staff": {
@@ -8864,8 +8901,11 @@
       "cancel": "Cancel",
       "save": "Save",
       "col": {
-        "title": "Title", "type": "Type", "status": "Status",
-        "author": "Author", "actions": "Actions"
+        "title": "Title",
+        "type": "Type",
+        "status": "Status",
+        "author": "Author",
+        "actions": "Actions"
       },
       "actions": {
         "changeStatus": "Change status / response",
@@ -8873,8 +8913,10 @@
         "markReviewed": "Mark as reviewed"
       },
       "bulk": {
-        "hide": "Hide", "unhide": "Unhide",
-        "lock": "Lock", "unlock": "Unlock",
+        "hide": "Hide",
+        "unhide": "Unhide",
+        "lock": "Lock",
+        "unlock": "Unlock",
         "archive": "Archive",
         "markReviewed": "Mark reviewed"
       },
@@ -8892,8 +8934,15 @@
         "warning": "This is staff-edit of another user's content. Changes are logged in telemetry. Use only for typo fixes or translation."
       }
     },
-    "sort": { "trending": "🔥 Trending", "top": "⬆ Top voted", "recent": "🆕 Recent" },
-    "filter": { "allTypes": "All types", "allCategories": "All categories" },
+    "sort": {
+      "trending": "🔥 Trending",
+      "top": "⬆ Top voted",
+      "recent": "🆕 Recent"
+    },
+    "filter": {
+      "allTypes": "All types",
+      "allCategories": "All categories"
+    },
     "type": {
       "review": "Review",
       "feature_request": "Feature request",
@@ -8902,16 +8951,30 @@
       "discussion": "Discussion"
     },
     "category": {
-      "ux": "UX", "classroom": "Classroom", "winterboard": "Whiteboard",
-      "performance": "Performance", "ai": "AI", "marketplace": "Marketplace", "other": "Other"
+      "ux": "UX",
+      "classroom": "Classroom",
+      "winterboard": "Whiteboard",
+      "performance": "Performance",
+      "ai": "AI",
+      "marketplace": "Marketplace",
+      "other": "Other"
     },
     "status": {
-      "open": "Open", "under_review": "Under Review", "planned": "Planned",
-      "in_progress": "In Progress", "released": "Released", "done": "Done",
-      "rejected": "Rejected", "duplicate": "Duplicate", "archived": "Archived", "needs_info": "Needs Info"
+      "open": "Open",
+      "under_review": "Under Review",
+      "planned": "Planned",
+      "in_progress": "In Progress",
+      "released": "Released",
+      "done": "Done",
+      "rejected": "Rejected",
+      "duplicate": "Duplicate",
+      "archived": "Archived",
+      "needs_info": "Needs Info"
     },
     "vote": {
-      "add": "Upvote", "remove": "Remove vote", "locked": "Voting unavailable",
+      "add": "Upvote",
+      "remove": "Remove vote",
+      "locked": "Voting unavailable",
       "errors": {
         "locked": "This thread is locked by moderator",
         "hidden": "This thread is hidden",
@@ -8922,42 +8985,65 @@
     },
     "staffResponded": "Team replied",
     "new": {
-      "back": "Back", "title": "New idea",
+      "back": "Back",
+      "title": "New idea",
       "subtitle": "Describe your idea in detail. We'll check for similar ones first.",
-      "type": "Type", "category": "Category", "titleLabel": "Title",
+      "type": "Type",
+      "category": "Category",
+      "titleLabel": "Title",
       "titlePlaceholder": "Brief idea summary (5-120 chars)",
       "titleHint": "Brief, clear. Min 5 chars.",
       "description": "Description",
       "descriptionPlaceholder": "Detailed description: problem, context, expected behavior (min 20 chars)",
       "descriptionHint": "What and why? Context, use case. Min 20 chars.",
-      "publish": "Publish", "publishing": "Publishing...", "cancel": "Cancel"
+      "publish": "Publish",
+      "publishing": "Publishing...",
+      "cancel": "Cancel"
     },
     "similar": {
-      "title": "Similar discussions found:", "loading": "Searching...",
+      "title": "Similar discussions found:",
+      "loading": "Searching...",
       "openAndVote": "Open →",
       "hint": "Your idea may already exist — join the discussion instead of creating a duplicate."
     },
     "detail": {
-      "back": "Back", "loading": "Loading...", "subscribe": "Subscribe", "subscribed": "Subscribed",
-      "locked": "Locked", "duplicateOf": "Duplicate of:", "staffResponse": "Team response",
-      "staffPanel": "Moderator panel", "canonicalId": "Canonical ID",
+      "back": "Back",
+      "loading": "Loading...",
+      "subscribe": "Subscribe",
+      "subscribed": "Subscribed",
+      "locked": "Locked",
+      "duplicateOf": "Duplicate of:",
+      "staffResponse": "Team response",
+      "staffPanel": "Moderator panel",
+      "canonicalId": "Canonical ID",
       "staffResponsePlaceholder": "Team comment (optional)",
-      "apply": "Apply", "lock": "Lock", "unlock": "Unlock", "hide": "Hide", "unhide": "Unhide"
+      "apply": "Apply",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "hide": "Hide",
+      "unhide": "Unhide"
     },
     "comments": {
-      "title": "Comments", "placeholder": "Write a comment...",
-      "send": "Send", "sending": "Sending...",
+      "title": "Comments",
+      "placeholder": "Write a comment...",
+      "send": "Send",
+      "sending": "Sending...",
       "empty": "No comments yet. Be the first!",
       "locked": "Comments are closed by moderator.",
       "terminal": "Discussion is closed — no new comments.",
       "delete": "Delete"
     },
     "roadmap": {
-      "title": "Roadmap", "subtitle": "What we plan and what we're working on",
-      "backToFeedback": "Back to feedback", "loading": "Loading...",
-      "planned": "Planned", "in_progress": "In Progress", "released": "Released",
+      "title": "Roadmap",
+      "subtitle": "What we plan and what we're working on",
+      "backToFeedback": "Back to feedback",
+      "loading": "Loading...",
+      "planned": "Planned",
+      "in_progress": "In Progress",
+      "released": "Released",
       "empty": {
-        "planned": "Nothing planned yet", "in_progress": "No active work",
+        "planned": "Nothing planned yet",
+        "in_progress": "No active work",
         "released": "Released features will appear here"
       }
     }

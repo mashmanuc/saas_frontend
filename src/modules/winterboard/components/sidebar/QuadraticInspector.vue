@@ -21,7 +21,7 @@
 
     <!-- Sign selector -->
     <div class="quad-insp__section">
-      <div class="quad-insp__section-label">Знак</div>
+      <div class="quad-insp__section-label">{{ t('winterboard.quadratic.signLabel') }}</div>
       <div class="quad-insp__sign-row">
         <button
           v-for="s in SIGNS"
@@ -37,7 +37,7 @@
 
     <!-- Presets -->
     <div class="quad-insp__section">
-      <div class="quad-insp__section-label">Приклади</div>
+      <div class="quad-insp__section-label">{{ t('winterboard.quadratic.presetsLabel') }}</div>
       <div class="quad-insp__btn-row quad-insp__btn-row--wrap">
         <button
           v-for="p in PRESETS"
@@ -52,7 +52,7 @@
 
     <!-- Coefficients — number inputs (no range limit) -->
     <div class="quad-insp__section">
-      <div class="quad-insp__section-label">Коефіцієнти</div>
+      <div class="quad-insp__section-label">{{ t('winterboard.quadratic.coefficientsLabel') }}</div>
 
       <label class="quad-insp__num-row">
         <span class="quad-insp__num-label">a =</span>
@@ -95,7 +95,7 @@
 
     <!-- Discriminant + roots (computed readonly) -->
     <div class="quad-insp__section">
-      <div class="quad-insp__section-label">Дискримінант</div>
+      <div class="quad-insp__section-label">{{ t('winterboard.quadratic.discriminantLabel') }}</div>
 
       <div class="quad-insp__disc-row">
         <span class="quad-insp__disc-label">D =</span>
@@ -111,24 +111,24 @@
           <span class="quad-insp__root-item root-zero">x₀ = {{ fmtVal(vertexX) }}</span>
         </template>
         <template v-else>
-          <span class="quad-insp__root-item root-neg">коренів немає</span>
+          <span class="quad-insp__root-item root-neg">{{ t('winterboard.quadratic.noRoots') }}</span>
         </template>
       </div>
 
       <div class="quad-insp__vertex-row">
-        вершина: ({{ fmtVal(vertexX) }}; {{ fmtVal(vertexY) }})
+        {{ t('winterboard.quadratic.vertex') }}: ({{ fmtVal(vertexX) }}; {{ fmtVal(vertexY) }})
       </div>
 
       <!-- Solution summary for inequalities -->
       <div v-if="b.sign !== '='" class="quad-insp__sol-row">
-        <span class="quad-insp__sol-label">Розв'язок:</span>
+        <span class="quad-insp__sol-label">{{ t('winterboard.quadratic.solutionLabel') }}:</span>
         <span class="quad-insp__sol-val">{{ solutionText }}</span>
       </div>
     </div>
 
     <!-- Display toggles -->
     <div class="quad-insp__section">
-      <div class="quad-insp__section-label">Відображення</div>
+      <div class="quad-insp__section-label">{{ t('winterboard.quadratic.displayLabel') }}</div>
       <div class="quad-insp__btn-row">
         <button
           type="button"
@@ -158,9 +158,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { quadUiState } from '../../board/state/quadUiState'
 import { QUAD_PRESETS } from '../../constants/quadDefaults'
 import type { QuadSign } from '../../types/quad'
+
+const { t } = useI18n()
 
 const b = computed(() => quadUiState.bridge!)
 const PRESETS = QUAD_PRESETS
@@ -209,16 +212,16 @@ const solutionText = computed(() => {
   if (Math.abs(D) < 1e-9) {
     // D = 0 → один корінь x₀
     const x0 = fmtVal(vertexX.value)
-    if (wantPos && a > 0) return incl ? `x ∈ ℝ` : `x ≠ ${x0}`
-    if (wantNeg && a < 0) return incl ? `x ∈ ℝ` : `x ≠ ${x0}`
+    if (wantPos && a > 0) return incl ? t('winterboard.quadratic.allReal') : `x ≠ ${x0}`
+    if (wantNeg && a < 0) return incl ? t('winterboard.quadratic.allReal') : `x ≠ ${x0}`
     if (incl) return `x = ${x0}`
-    return `∅ (немає розв’язків)`
+    return t('winterboard.quadratic.noSolution')
   }
 
   if (D < -1e-9) {
     // D < 0 → коренів немає
-    if ((wantPos && a > 0) || (wantNeg && a < 0)) return `x ∈ ℝ (усі числа)`
-    return `∅ (немає розв’язків)`
+    if ((wantPos && a > 0) || (wantNeg && a < 0)) return t('winterboard.quadratic.allNumbers')
+    return t('winterboard.quadratic.noSolution')
   }
 
   // D > 0 → два корені x₁ < x₂

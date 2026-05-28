@@ -17,11 +17,11 @@
 <template>
   <div class="nmt3d-tray" data-testid="nmt3d-tray">
     <div class="nmt3d-tray__header">
-      Стереометрія НМТ
+      {{ t('winterboard.nmt3d.trayHeader') }}
     </div>
 
     <div v-if="!bundleLoaded" class="nmt3d-tray__loading">
-      завантаження…
+      {{ t('winterboard.nmt3d.loading') }}
     </div>
 
     <div class="nmt3d-tray__grid">
@@ -47,20 +47,21 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${templateLabel(key)}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: templateLabel(key) })"
           @click.stop="addToolToBoard(NMT3D_DRAG_MIME, JSON.stringify({ templateKey: key }))"
         >+</button>
       </div>
     </div>
 
     <div class="nmt3d-tray__hint">
-      Перетягни на дошку або натисни +
+      {{ t('winterboard.nmt3d.trayHint') }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { h, ref, onMounted, type FunctionalComponent } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   NMT3D_DRAG_MIME,
   NMT3D_TEMPLATE_ORDER,
@@ -70,6 +71,7 @@ import {
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 
+const { t } = useI18n()
 const addToolToBoard = useAddToolToBoard()
 const { dragHandlers } = useTouchDragFromTray()
 

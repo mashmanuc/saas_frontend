@@ -22,7 +22,7 @@
 
     <!-- ПАРАМЕТРИ -->
     <div v-if="hasParams" class="nmt3d-inspector__section">
-      <div class="nmt3d-inspector__section-label">Параметри</div>
+      <div class="nmt3d-inspector__section-label">{{ t('winterboard.nmt3d.paramsLabel') }}</div>
       <div
         v-for="(def, key) in templateParams"
         :key="key"
@@ -46,7 +46,7 @@
 
     <!-- View buttons -->
     <div class="nmt3d-inspector__section">
-      <div class="nmt3d-inspector__section-label">Вигляд</div>
+      <div class="nmt3d-inspector__section-label">{{ t('winterboard.nmt3d.viewLabel') }}</div>
       <div class="nmt3d-inspector__view-btns">
         <button
           v-for="v in VIEW_PRESETS"
@@ -59,7 +59,7 @@
         <button
           type="button"
           class="nmt3d-inspector__view-btn nmt3d-inspector__view-btn--reset"
-          title="Скинути вигляд"
+          :title="t('winterboard.nmt3d.resetView')"
           @click="ws?.resetView()"
         >↺</button>
       </div>
@@ -71,13 +71,13 @@
         :class="{ 'is-active': autoOrbit }"
         @click="toggleOrbit"
       >
-        ↻ авто-обертання
+        {{ t('winterboard.nmt3d.autoOrbit') }}
       </button>
     </div>
 
     <!-- ДОП. ПОБУДОВИ -->
     <div v-if="hasAux" class="nmt3d-inspector__section">
-      <div class="nmt3d-inspector__section-label">Доп. побудови</div>
+      <div class="nmt3d-inspector__section-label">{{ t('winterboard.nmt3d.auxLabel') }}</div>
       <label
         v-for="item in templateAux"
         :key="item.key"
@@ -100,7 +100,7 @@
         class="nmt3d-inspector__unfold-btn"
         @click="ws?.toggleUnfold()"
       >
-        ▦ розгортка
+        {{ t('winterboard.nmt3d.unfold') }}
       </button>
     </div>
   </div>
@@ -108,7 +108,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { nmt3dUiState } from '../../board/state/nmt3dUiState'
+
+const { t } = useI18n()
 
 const ws = computed(() => nmt3dUiState.ws)
 
@@ -122,14 +125,14 @@ const hasUnfold = computed(() => !!ws.value?.template?.buildUnfolded)
 
 const autoOrbit = ref(false)
 
-const VIEW_PRESETS = [
-  { preset: '3d'     as const, label: '3D',   title: '3D вигляд' },
-  { preset: 'iso'    as const, label: 'iso',  title: 'Ізометрія' },
-  { preset: 'front'  as const, label: '↑',    title: 'Спереду' },
-  { preset: 'side'   as const, label: '→',    title: 'Збоку' },
-  { preset: 'top'    as const, label: '⊙',    title: 'Зверху' },
-  { preset: 'bottom' as const, label: '⊕',    title: 'Знизу' },
-] as const
+const VIEW_PRESETS = computed(() => [
+  { preset: '3d'     as const, label: '3D',   title: t('winterboard.nmt3d.view3d') },
+  { preset: 'iso'    as const, label: 'iso',  title: t('winterboard.nmt3d.viewIso') },
+  { preset: 'front'  as const, label: '↑',    title: t('winterboard.nmt3d.viewFront') },
+  { preset: 'side'   as const, label: '→',    title: t('winterboard.nmt3d.viewSide') },
+  { preset: 'top'    as const, label: '⊙',    title: t('winterboard.nmt3d.viewTop') },
+  { preset: 'bottom' as const, label: '⊕',    title: t('winterboard.nmt3d.viewBottom') },
+])
 
 function setView(preset: '3d' | 'iso' | 'front' | 'side' | 'top' | 'bottom'): void {
   ws.value?.setView(preset)

@@ -10,7 +10,7 @@
 -->
 <template>
   <div class="quad-tray" data-testid="quad-tray">
-    <div class="quad-tray__header">Квадратне рівняння</div>
+    <div class="quad-tray__header">{{ t('winterboard.quadratic.trayHeader') }}</div>
 
     <div class="quad-tray__card-wrap">
       <button
@@ -18,9 +18,9 @@
         class="quad-tray__btn"
         data-testid="quad-tray-btn"
         :draggable="true"
-        title="ax²+bx+c — дискримінант і корені"
+        :title="t('winterboard.quadratic.trayTitle')"
         @dragstart="onDragStart"
-        v-bind="dragHandlers(QUAD_DRAG_MIME, '{}', 'Квадратне рівняння')"
+        v-bind="dragHandlers(QUAD_DRAG_MIME, '{}', t('winterboard.quadratic.trayHeader'))"
       >
         <!-- Tiny parabola SVG icon -->
         <span class="quad-tray__icon" aria-hidden="true">
@@ -38,13 +38,13 @@
         </span>
         <span class="quad-tray__labels">
           <span class="quad-tray__label">ax² + bx + c = 0</span>
-          <span class="quad-tray__sublabel">D · корені · парабола</span>
+          <span class="quad-tray__sublabel">{{ t('winterboard.quadratic.traySublabel') }}</span>
         </span>
       </button>
       <button
         type="button"
         class="tray-add-btn"
-        title="Додати «Квадратне рівняння» на дошку"
+        :title="t('winterboard.quadratic.addToBoard')"
         @click.stop="addToolToBoard(QUAD_DRAG_MIME, '{}')"
       >+</button>
     </div>
