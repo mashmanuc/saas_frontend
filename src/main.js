@@ -2,7 +2,7 @@ import { createApp, watch } from 'vue'
 import App from './App.vue'
 import router from './router'
 import pinia from './stores'
-import i18n, { setupI18n } from './i18n'
+import i18n, { setupI18n, getInitialLocale } from './i18n'
 import './styles/tokens.css'
 import './assets/main.css'
 import './assets/responsive.css'
@@ -43,7 +43,7 @@ const errorCollector = createErrorCollector({
 })
 app.use(errorCollector)
 
-setupI18n(localStorage.getItem('locale') || 'uk').then(async () => {
+setupI18n(getInitialLocale()).then(async () => {
   const settings = useSettingsStore()
   settings.init()
 
