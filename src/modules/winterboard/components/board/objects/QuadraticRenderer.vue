@@ -22,11 +22,11 @@
     :data-testid="`quad-renderer-${asset.id}`"
   >
     <header class="quad-header">
-      <span class="quad-title">ax² + bx + c</span>
+      <span class="quad-title">ax² + bx + c {{ asset.data.sign ?? '=' }} 0</span>
       <span v-if="!isSelected" class="quad-expr-readonly">
         {{ fmt(asset.data.a) }}x² {{ asset.data.b >= 0 ? '+' : '−' }}
         {{ fmt(Math.abs(asset.data.b)) }}x {{ asset.data.c >= 0 ? '+' : '−' }}
-        {{ fmt(Math.abs(asset.data.c)) }}
+        {{ fmt(Math.abs(asset.data.c)) }} {{ asset.data.sign ?? '=' }} 0
       </span>
       <button
         v-if="!asset.locked && isSelected"
@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { QuadraticAsset } from '../../../types/quad'
+import type { QuadraticAsset, QuadSign } from '../../../types/quad'
 import type { QuadraticCardInstance } from '../../../vendor/quad'
 import { registerQuadInspector, unregisterQuadInspector } from '../../../board/state/quadUiState'
 import type { QuadBridge } from '../../../board/state/quadUiState'
@@ -90,20 +90,23 @@ const _bridge = reactive<QuadBridge>({
   a: props.asset.data.a,
   b: props.asset.data.b,
   c: props.asset.data.c,
+  sign: (props.asset.data.sign ?? '=') as QuadSign,
   showVertex: props.asset.data.showVertex ?? true,
   showAxis:   props.asset.data.showAxis   ?? true,
   showRoots:  props.asset.data.showRoots  ?? true,
-  setA: (v) => patch({ a: v }),
-  setB: (v) => patch({ b: v }),
-  setC: (v) => patch({ c: v }),
-  toggle: (key) => patch({ [key]: !props.asset.data[key] } as Partial<QuadraticAsset['data']>),
+  setA:    (v) => patch({ a: v }),
+  setB:    (v) => patch({ b: v }),
+  setC:    (v) => patch({ c: v }),
+  setSign: (v) => patch({ sign: v }),
+  toggle:  (key) => patch({ [key]: !props.asset.data[key] } as Partial<QuadraticAsset['data']>),
   setPreset: (a, b, c) => patch({ a, b, c }),
 })
 
 watchEffect(() => {
-  _bridge.a = props.asset.data.a
-  _bridge.b = props.asset.data.b
-  _bridge.c = props.asset.data.c
+  _bridge.a    = props.asset.data.a
+  _bridge.b    = props.asset.data.b
+  _bridge.c    = props.asset.data.c
+  _bridge.sign = (props.asset.data.sign ?? '=') as QuadSign
   _bridge.showVertex = props.asset.data.showVertex ?? true
   _bridge.showAxis   = props.asset.data.showAxis   ?? true
   _bridge.showRoots  = props.asset.data.showRoots  ?? true
@@ -127,9 +130,10 @@ async function mount(): Promise<void> {
   }
 
   card = new W.QuadraticCard(stageRef.value, {
-    a: props.asset.data.a,
-    b: props.asset.data.b,
-    c: props.asset.data.c,
+    a:    props.asset.data.a,
+    b:    props.asset.data.b,
+    c:    props.asset.data.c,
+    sign: props.asset.data.sign ?? '=',
     showVertex: props.asset.data.showVertex ?? true,
     showAxis:   props.asset.data.showAxis   ?? true,
     showRoots:  props.asset.data.showRoots  ?? true,
@@ -177,6 +181,7 @@ watch(
     props.asset.data.a,
     props.asset.data.b,
     props.asset.data.c,
+    props.asset.data.sign,
     props.asset.data.showVertex,
     props.asset.data.showAxis,
     props.asset.data.showRoots,
@@ -184,7 +189,7 @@ watch(
   () => {
     if (!card) return
     const d = props.asset.data
-    const keys = ['a', 'b', 'c', 'showVertex', 'showAxis', 'showRoots'] as const
+    const keys = ['a', 'b', 'c', 'sign', 'showVertex', 'showAxis', 'showRoots'] as const
     for (const k of keys) {
       const v = d[k]
       if (v !== undefined && (card.opts as Record<string, unknown>)[k] !== v) {
@@ -205,9 +210,10 @@ function scheduleSnapshot(): void {
       ...props.asset,
       data: {
         ...props.asset.data,
-        a: card.opts.a,
-        b: card.opts.b,
-        c: card.opts.c,
+        a:    card.opts.a,
+        b:    card.opts.b,
+        c:    card.opts.c,
+        sign: (card.opts as Record<string, unknown>).sign as QuadSign | undefined ?? props.asset.data.sign,
         viewport: { ...card.viewport },
       },
     }

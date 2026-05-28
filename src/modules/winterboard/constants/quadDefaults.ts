@@ -32,6 +32,7 @@ export function buildDefaultQuadraticData(): QuadraticData {
     a: 1,
     b: -1,
     c: -6,
+    sign: '=',
     showVertex: true,
     showAxis:   true,
     showRoots:  true,

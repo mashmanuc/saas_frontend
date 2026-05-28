@@ -3,19 +3,36 @@
 
   Shown by GroupContentSidebar when quadUiState.bridge !== null.
   Sections:
-    1. Рівняння (equation display + presets)
-    2. Коефіцієнти a, b, c (sliders)
-    3. Дискримінант + корені (readonly computed)
-    4. Відображення (toggles: vertex, axis, roots)
+    1. Знак (sign selector: < ≤ = ≥ >)
+    2. Приклади (presets)
+    3. Коефіцієнти a, b, c (number inputs — без обмежень діапазону)
+    4. Дискримінант + корені (readonly computed)
+    5. Відображення (toggles: vertex, axis, roots)
 
   Pattern: mirrors CalculusInspector.vue.
 -->
 <template>
   <div class="quad-insp">
-    <!-- Header -->
+    <!-- Header — dynamic title with sign -->
     <div class="quad-insp__header">
-      <span class="quad-insp__title">ax² + bx + c = 0</span>
-      <span class="quad-insp__subtitle">дискримінант · корені на параболі</span>
+      <span class="quad-insp__title">ax² + bx + c <em class="quad-insp__sign">{{ b.sign }}</em> 0</span>
+      <span class="quad-insp__subtitle">{{ headerSubtitle }}</span>
+    </div>
+
+    <!-- Sign selector -->
+    <div class="quad-insp__section">
+      <div class="quad-insp__section-label">Знак</div>
+      <div class="quad-insp__sign-row">
+        <button
+          v-for="s in SIGNS"
+          :key="s.value"
+          type="button"
+          class="quad-insp__sign-btn"
+          :class="{ 'is-active': b.sign === s.value }"
+          :title="s.title"
+          @click="b.setSign(s.value)"
+        >{{ s.label }}</button>
+      </div>
     </div>
 
     <!-- Presets -->
@@ -33,44 +50,46 @@
       </div>
     </div>
 
-    <!-- Coefficients -->
+    <!-- Coefficients — number inputs (no range limit) -->
     <div class="quad-insp__section">
       <div class="quad-insp__section-label">Коефіцієнти</div>
 
-      <label class="quad-insp__slider-row">
-        <span class="quad-insp__slider-label">a =</span>
+      <label class="quad-insp__num-row">
+        <span class="quad-insp__num-label">a =</span>
         <input
-          type="range"
-          class="quad-insp__slider"
-          min="-5" max="5" step="0.1"
+          type="number"
+          class="quad-insp__num-input"
+          step="0.1"
           :value="b.a"
-          @input="onAInput"
+          title="Коефіцієнт a (a ≠ 0)"
+          @change="onAChange"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
-        <span class="quad-insp__slider-val">{{ fmtVal(b.a) }}</span>
+        <span class="quad-insp__num-hint">a ≠ 0</span>
       </label>
 
-      <label class="quad-insp__slider-row">
-        <span class="quad-insp__slider-label">b =</span>
+      <label class="quad-insp__num-row">
+        <span class="quad-insp__num-label">b =</span>
         <input
-          type="range"
-          class="quad-insp__slider"
-          min="-10" max="10" step="0.1"
+          type="number"
+          class="quad-insp__num-input"
+          step="0.1"
           :value="b.b"
-          @input="onBInput"
+          @change="onBChange"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
-        <span class="quad-insp__slider-val">{{ fmtVal(b.b) }}</span>
       </label>
 
-      <label class="quad-insp__slider-row">
-        <span class="quad-insp__slider-label">c =</span>
+      <label class="quad-insp__num-row">
+        <span class="quad-insp__num-label">c =</span>
         <input
-          type="range"
-          class="quad-insp__slider"
-          min="-10" max="10" step="0.1"
+          type="number"
+          class="quad-insp__num-input"
+          step="0.1"
           :value="b.c"
-          @input="onCInput"
+          @change="onCChange"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
-        <span class="quad-insp__slider-val">{{ fmtVal(b.c) }}</span>
       </label>
     </div>
 
@@ -79,14 +98,14 @@
       <div class="quad-insp__section-label">Дискримінант</div>
 
       <div class="quad-insp__disc-row">
-        <span class="quad-insp__disc-label">D = b² − 4ac =</span>
+        <span class="quad-insp__disc-label">D =</span>
         <span class="quad-insp__disc-val" :class="discClass">{{ fmtVal(disc) }}</span>
       </div>
 
       <div class="quad-insp__roots-row">
         <template v-if="disc > 1e-9">
-          <span class="quad-insp__root-item root-pos">x₁ = {{ fmtVal(root1) }}</span>
-          <span class="quad-insp__root-item root-pos">x₂ = {{ fmtVal(root2) }}</span>
+          <span class="quad-insp__root-item root-pos">x₁ = {{ fmtVal(Math.min(root1, root2)) }}</span>
+          <span class="quad-insp__root-item root-pos">x₂ = {{ fmtVal(Math.max(root1, root2)) }}</span>
         </template>
         <template v-else-if="Math.abs(disc) < 1e-9">
           <span class="quad-insp__root-item root-zero">x₀ = {{ fmtVal(vertexX) }}</span>
@@ -98,6 +117,12 @@
 
       <div class="quad-insp__vertex-row">
         вершина: ({{ fmtVal(vertexX) }}; {{ fmtVal(vertexY) }})
+      </div>
+
+      <!-- Solution summary for inequalities -->
+      <div v-if="b.sign !== '='" class="quad-insp__sol-row">
+        <span class="quad-insp__sol-label">Розв'язок:</span>
+        <span class="quad-insp__sol-val">{{ solutionText }}</span>
       </div>
     </div>
 
@@ -135,9 +160,18 @@
 import { computed } from 'vue'
 import { quadUiState } from '../../board/state/quadUiState'
 import { QUAD_PRESETS } from '../../constants/quadDefaults'
+import type { QuadSign } from '../../types/quad'
 
 const b = computed(() => quadUiState.bridge!)
 const PRESETS = QUAD_PRESETS
+
+const SIGNS: Array<{ value: QuadSign; label: string; title: string }> = [
+  { value: '<',  label: '<',  title: 'ax²+bx+c < 0' },
+  { value: '<=', label: '≤',  title: 'ax²+bx+c ≤ 0' },
+  { value: '=',  label: '=',  title: 'ax²+bx+c = 0 (рівняння)' },
+  { value: '>=', label: '≥',  title: 'ax²+bx+c ≥ 0' },
+  { value: '>',  label: '>',  title: 'ax²+bx+c > 0' },
+]
 
 function fmtVal(n: number): string {
   if (!Number.isFinite(n)) return '—'
@@ -145,25 +179,77 @@ function fmtVal(n: number): string {
   return r.toString().replace('.', ',')
 }
 
-const disc     = computed(() => b.value.b ** 2 - 4 * b.value.a * b.value.c)
-const vertexX  = computed(() => -b.value.b / (2 * b.value.a))
-const vertexY  = computed(() => b.value.a * vertexX.value ** 2 + b.value.b * vertexX.value + b.value.c)
-const root1    = computed(() => (-b.value.b - Math.sqrt(disc.value)) / (2 * b.value.a))
-const root2    = computed(() => (-b.value.b + Math.sqrt(disc.value)) / (2 * b.value.a))
+const disc    = computed(() => b.value.b ** 2 - 4 * b.value.a * b.value.c)
+const vertexX = computed(() => -b.value.b / (2 * b.value.a))
+const vertexY = computed(() => b.value.a * vertexX.value ** 2 + b.value.b * vertexX.value + b.value.c)
+const root1   = computed(() => (-b.value.b - Math.sqrt(disc.value)) / (2 * b.value.a))
+const root2   = computed(() => (-b.value.b + Math.sqrt(disc.value)) / (2 * b.value.a))
 
 const discClass = computed(() =>
   disc.value > 1e-9 ? 'disc-pos' : disc.value < -1e-9 ? 'disc-neg' : 'disc-zero',
 )
 
-function onAInput(e: Event): void {
-  const v = parseFloat((e.target as HTMLInputElement).value)
-  if (Number.isFinite(v) && Math.abs(v) >= 0.02) b.value.setA(v)
+const headerSubtitle = computed(() => {
+  if (b.value.sign === '=') return 'рівняння · дискримінант · корені'
+  return 'нерівність · метод інтервалів'
+})
+
+/** Текстовий опис розв'язку нерівності для Inspector */
+const solutionText = computed(() => {
+  const { a, sign } = b.value
+  const D = disc.value
+  const incl = sign === '>=' || sign === '<='
+  const wantPos = sign === '>' || sign === '>='
+  const wantNeg = sign === '<' || sign === '<='
+
+  if (Math.abs(D) < 1e-9) {
+    // D = 0 → один корінь x₀
+    const x0 = fmtVal(vertexX.value)
+    if (wantPos && a > 0) return incl ? `x ∈ ℝ` : `x ≠ ${x0}`
+    if (wantNeg && a < 0) return incl ? `x ∈ ℝ` : `x ≠ ${x0}`
+    if (incl) return `x = ${x0}`
+    return `∅ (немає розв’язків)`
+  }
+
+  if (D < -1e-9) {
+    // D < 0 → коренів немає
+    if ((wantPos && a > 0) || (wantNeg && a < 0)) return `x ∈ ℝ (усі числа)`
+    return `∅ (немає розв’язків)`
+  }
+
+  // D > 0 → два корені x₁ < x₂
+  const x1 = fmtVal(Math.min(root1.value, root2.value))
+  const x2 = fmtVal(Math.max(root1.value, root2.value))
+  const lo = incl ? '[' : '('
+  const hi = incl ? ']' : ')'
+
+  if ((wantPos && a > 0) || (wantNeg && a < 0)) {
+    // поза парабола-додатна зона → (-∞; x₁) ∪ (x₂; +∞)
+    return `(-∞; ${x1}${hi} ∪ ${lo}${x2}; +∞)`
+  }
+  // всередині
+  return `${lo}${x1}; ${x2}${hi}`
+})
+
+// ── Event handlers ────────────────────────────────────────────────────────
+
+function onAChange(e: Event): void {
+  const input = e.target as HTMLInputElement
+  const v = parseFloat(input.value)
+  if (Number.isFinite(v) && Math.abs(v) >= 0.01) {
+    b.value.setA(v)
+  } else {
+    // скидаємо до поточного значення якщо введено 0 або нечислове
+    input.value = String(b.value.a)
+  }
 }
-function onBInput(e: Event): void {
+
+function onBChange(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value)
   if (Number.isFinite(v)) b.value.setB(v)
 }
-function onCInput(e: Event): void {
+
+function onCChange(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value)
   if (Number.isFinite(v)) b.value.setC(v)
 }
@@ -191,6 +277,11 @@ function onCInput(e: Event): void {
   font-family: 'JetBrains Mono', monospace;
   line-height: 1.3;
 }
+.quad-insp__sign {
+  font-style: normal;
+  color: #c05a20;
+  font-size: 15px;
+}
 .quad-insp__subtitle {
   display: block;
   font-size: 10px;
@@ -210,6 +301,34 @@ function onCInput(e: Event): void {
   text-transform: uppercase;
   color: #6a8a9a;
   margin-bottom: 6px;
+}
+
+/* ── Sign selector ── */
+.quad-insp__sign-row {
+  display: flex;
+  gap: 4px;
+}
+.quad-insp__sign-btn {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 2px;
+  border: 1px solid rgba(59, 123, 155, 0.3);
+  border-radius: 4px;
+  background: #fffaf0;
+  color: #3b5a6a;
+  cursor: pointer;
+  user-select: none;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  text-align: center;
+}
+.quad-insp__sign-btn:hover { background: #deeef5; border-color: #3b7b9b; }
+.quad-insp__sign-btn.is-active {
+  background: #c05a20;
+  border-color: #c05a20;
+  color: #fff;
 }
 
 /* ── Buttons ── */
@@ -237,35 +356,45 @@ function onCInput(e: Event): void {
 .quad-insp__btn.is-active { background: #3b7b9b; border-color: #3b7b9b; color: #fffaf0; }
 .quad-insp__btn--preset { padding: 4px 6px; font-size: 10px; }
 
-/* ── Sliders ── */
-.quad-insp__slider-row {
+/* ── Number inputs ── */
+.quad-insp__num-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
-.quad-insp__slider-label {
+.quad-insp__num-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: #3b5a6a;
   white-space: nowrap;
   flex-shrink: 0;
-  min-width: 28px;
+  min-width: 26px;
 }
-.quad-insp__slider {
+.quad-insp__num-input {
   flex: 1;
-  height: 3px;
-  accent-color: #3b7b9b;
-  cursor: pointer;
-}
-.quad-insp__slider-val {
+  min-width: 0;
+  padding: 3px 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: #3b7b9b;
-  font-weight: 600;
-  min-width: 36px;
+  font-size: 12px;
+  color: #1e3a4a;
+  background: #fff;
+  border: 1px solid rgba(59, 123, 155, 0.35);
+  border-radius: 4px;
+  outline: none;
   text-align: right;
+  transition: border-color 0.1s;
+  -moz-appearance: textfield;
+}
+.quad-insp__num-input::-webkit-outer-spin-button,
+.quad-insp__num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.quad-insp__num-input:focus { border-color: #3b7b9b; box-shadow: 0 0 0 2px rgba(59,123,155,0.15); }
+.quad-insp__num-hint {
+  font-size: 9.5px;
+  color: #9aaa8a;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── Discriminant ── */
@@ -308,5 +437,31 @@ function onCInput(e: Event): void {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   color: #8a7a6a;
+  margin-bottom: 2px;
+}
+
+/* ── Solution summary ── */
+.quad-insp__sol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 5px 7px;
+  background: rgba(59,123,155,0.07);
+  border-radius: 5px;
+  border: 1px solid rgba(59,123,155,0.18);
+}
+.quad-insp__sol-label {
+  font-size: 10px;
+  color: #6a8a9a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.quad-insp__sol-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e3a4a;
+  word-break: break-all;
 }
 </style>
