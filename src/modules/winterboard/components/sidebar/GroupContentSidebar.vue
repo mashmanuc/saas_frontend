@@ -214,6 +214,7 @@
         <Nmt3dTray />
         <Geometry2DTray />
         <CalculusTray />
+        <QuadraticTray />
         <TrigCircleTray />
       </div>
     </template>
