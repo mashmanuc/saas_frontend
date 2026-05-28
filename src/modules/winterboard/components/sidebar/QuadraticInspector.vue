@@ -59,8 +59,8 @@
         <input
           type="number"
           class="quad-insp__num-input"
-          step="0.1"
-          :value="b.a"
+          step="0.01"
+          :value="r2(b.a)"
           title="Коефіцієнт a (a ≠ 0)"
           @change="onAChange"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
@@ -73,8 +73,8 @@
         <input
           type="number"
           class="quad-insp__num-input"
-          step="0.1"
-          :value="b.b"
+          step="0.01"
+          :value="r2(b.b)"
           @change="onBChange"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
@@ -85,8 +85,8 @@
         <input
           type="number"
           class="quad-insp__num-input"
-          step="0.1"
-          :value="b.c"
+          step="0.01"
+          :value="r2(b.c)"
           @change="onCChange"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
@@ -173,10 +173,14 @@ const SIGNS: Array<{ value: QuadSign; label: string; title: string }> = [
   { value: '>',  label: '>',  title: 'ax²+bx+c > 0' },
 ]
 
+/** Округлення до 2 знаків для відображення (навчальний контекст). */
+function r2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
 function fmtVal(n: number): string {
   if (!Number.isFinite(n)) return '—'
-  const r = Math.round(n * 100) / 100
-  return r.toString().replace('.', ',')
+  return r2(n).toString().replace('.', ',')
 }
 
 const disc    = computed(() => b.value.b ** 2 - 4 * b.value.a * b.value.c)
@@ -235,23 +239,26 @@ const solutionText = computed(() => {
 
 function onAChange(e: Event): void {
   const input = e.target as HTMLInputElement
-  const v = parseFloat(input.value)
+  const v = r2(parseFloat(input.value))
   if (Number.isFinite(v) && Math.abs(v) >= 0.01) {
     b.value.setA(v)
+    input.value = String(v)   // нормалізуємо відображення
   } else {
-    // скидаємо до поточного значення якщо введено 0 або нечислове
-    input.value = String(b.value.a)
+    // скидаємо до поточного округленого значення якщо введено 0 або нечислове
+    input.value = String(r2(b.value.a))
   }
 }
 
 function onBChange(e: Event): void {
-  const v = parseFloat((e.target as HTMLInputElement).value)
-  if (Number.isFinite(v)) b.value.setB(v)
+  const input = e.target as HTMLInputElement
+  const v = r2(parseFloat(input.value))
+  if (Number.isFinite(v)) { b.value.setB(v); input.value = String(v) }
 }
 
 function onCChange(e: Event): void {
-  const v = parseFloat((e.target as HTMLInputElement).value)
-  if (Number.isFinite(v)) b.value.setC(v)
+  const input = e.target as HTMLInputElement
+  const v = r2(parseFloat(input.value))
+  if (Number.isFinite(v)) { b.value.setC(v); input.value = String(v) }
 }
 </script>
 

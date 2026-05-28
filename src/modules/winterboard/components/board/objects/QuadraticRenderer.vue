@@ -144,7 +144,7 @@ async function mount(): Promise<void> {
   // Debounced snapshot on drag (handle moved)
   card.onChange = () => scheduleSnapshot()
   syncCanvasPointerEvents()
-  if (props.isSelected) registerQuadInspector(props.asset.id, _bridge)
+  // Bridge registration handled by watchEffect above (immediate, reactive).
 }
 
 function syncCanvasPointerEvents(): void {
@@ -159,8 +159,11 @@ function syncCanvasPointerEvents(): void {
 
 watch(() => props.interactive, syncCanvasPointerEvents)
 
-watch(() => props.isSelected, (sel) => {
-  if (sel) registerQuadInspector(props.asset.id, _bridge)
+// Register / unregister bridge as selection changes.
+// watchEffect (не watch) — fires immediately on mount so the bridge
+// is registered synchronously, without waiting for an isSelected→false→true transition.
+watchEffect(() => {
+  if (props.isSelected) registerQuadInspector(props.asset.id, _bridge)
   else unregisterQuadInspector(props.asset.id)
 })
 
