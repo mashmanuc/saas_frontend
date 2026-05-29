@@ -298,6 +298,16 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
+  /* 1-column on touch: fixes stacking/rendering bug with position:absolute
+     tray-add-btn inside 2-column CSS grid on touch screens */
+  .calculus-tray__grid {
+    grid-template-columns: 1fr;
+  }
+  /* graph calc no longer needs manual full-width span when grid is 1-column */
+  .calculus-tray__card-wrap--graph {
+    grid-column: auto;
+  }
+
   .tray-add-btn {
     opacity: 1;
     pointer-events: auto;

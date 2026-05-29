@@ -392,6 +392,12 @@ const TemplateIcon: FunctionalComponent<{ tplKey: string }> = (props) => {
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
+  /* 1-column on touch: fixes stacking/rendering bug with position:absolute
+     tray-add-btn inside 2-column CSS grid on touch screens */
+  .nmt3d-tray__grid {
+    grid-template-columns: 1fr;
+  }
+
   .tray-add-btn {
     opacity: 1;
     pointer-events: auto;
