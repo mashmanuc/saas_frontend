@@ -5,12 +5,16 @@
  * devices (iOS, Android, large touch panels). This composable replaces it with
  * Pointer Events API for touch input while leaving mouse @dragstart untouched.
  *
- * Pattern:
+ * Pattern (gesture disambiguation):
  *   1. Tray button adds v-bind="dragHandlers(mime, payload, label)".
- *   2. On touch pointerdown → setPointerCapture → floating ghost appears.
- *   3. On pointermove → ghost follows the finger.
+ *   2. On touch pointerdown → save start position, wait.
+ *   3. On pointermove → if |dx| > |dy| && dx > THRESHOLD → start drag (setPointerCapture).
+ *                        if |dy| > |dx| && dy > THRESHOLD → cancel drag, let browser scroll.
  *   4. On pointerup inside #wb-canvas → addAtClientPos called.
  *   5. On pointercancel → ghost hidden, state reset.
+ *
+ * This lets the user vertically scroll the sidebar by swiping on any item,
+ * while still dragging items to the canvas with a horizontal gesture.
  *
  * Mouse events (pointerType === 'mouse') are skipped — HTML5 DnD still handles those.
  *
@@ -81,11 +85,19 @@ function _hideGhost(): void {
 
 // ── Module-level drag state (no reactivity — perf sensitive) ───────────────
 
+// Minimum horizontal movement (px) before a drag gesture is confirmed.
+// Must be > |dx| of typical vertical scroll to avoid false positives.
+const DRAG_THRESHOLD_PX = 8
+
 const _drag = {
-  active: false,
+  active: false,    // drag confirmed and in progress
+  decided: false,   // gesture direction decided (drag or scroll)
   mime: '',
   payload: '',
   pointerId: -1,
+  startX: 0,
+  startY: 0,
+  el: null as Element | null,
 }
 
 // ── Composable ─────────────────────────────────────────────────────────────
@@ -104,26 +116,59 @@ export function useTouchDragFromTray() {
     return {
       onPointerdown(e: PointerEvent): void {
         if (e.pointerType === 'mouse') return   // mouse uses HTML5 DnD
-        e.preventDefault()                       // prevent text selection / long-press menu
-        _drag.active = true
+
+        // Save start position. Do NOT capture or prevent default yet —
+        // we need to wait for gesture direction to be determined on pointermove.
+        _drag.active = false
+        _drag.decided = false
         _drag.mime = mime
         _drag.payload = payload
         _drag.pointerId = e.pointerId
-        // Route all pointer events to this element even when finger moves off it
-        ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-        _showGhost(e.clientX, e.clientY, label)
+        _drag.startX = e.clientX
+        _drag.startY = e.clientY
+        _drag.el = e.currentTarget as Element
       },
 
       onPointermove(e: PointerEvent): void {
-        if (!_drag.active || e.pointerType === 'mouse' || e.pointerId !== _drag.pointerId) return
-        e.preventDefault()
-        _moveGhost(e.clientX, e.clientY)
+        if (e.pointerType === 'mouse' || e.pointerId !== _drag.pointerId) return
+
+        if (_drag.active) {
+          // Drag confirmed — move ghost, prevent scroll
+          e.preventDefault()
+          _moveGhost(e.clientX, e.clientY)
+          return
+        }
+
+        if (_drag.decided) return  // already decided to scroll — ignore
+
+        const dx = Math.abs(e.clientX - _drag.startX)
+        const dy = Math.abs(e.clientY - _drag.startY)
+
+        if (dx > dy && dx >= DRAG_THRESHOLD_PX) {
+          // Horizontal movement first → drag intent
+          e.preventDefault()            // prevent browser from starting a scroll
+          _drag.active = true
+          _drag.decided = true
+          _drag.el?.setPointerCapture(e.pointerId)
+          _showGhost(e.clientX, e.clientY, label)
+        } else if (dy > dx && dy >= DRAG_THRESHOLD_PX) {
+          // Vertical movement first → scroll intent; cancel drag
+          _drag.decided = true
+          _drag.pointerId = -1
+          _drag.el = null
+        }
       },
 
       onPointerup(e: PointerEvent): void {
-        if (!_drag.active || e.pointerType === 'mouse' || e.pointerId !== _drag.pointerId) return
+        if (e.pointerType === 'mouse' || e.pointerId !== _drag.pointerId) return
+        const wasDragging = _drag.active
         _drag.active = false
+        _drag.decided = false
+        _drag.pointerId = -1
+        _drag.el = null
         _hideGhost()
+
+        if (!wasDragging) return
 
         // Check if finger lifted inside the board canvas area
         const canvasEl = document.getElementById('wb-canvas')
@@ -142,6 +187,9 @@ export function useTouchDragFromTray() {
       onPointercancel(e: PointerEvent): void {
         if (e.pointerId !== _drag.pointerId) return
         _drag.active = false
+        _drag.decided = false
+        _drag.pointerId = -1
+        _drag.el = null
         _hideGhost()
       },
     }

@@ -311,7 +311,7 @@ const TemplateIcon: FunctionalComponent<{ tplKey: string }> = (props) => {
   color: #1e293b;
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
   min-height: 36px;

@@ -86,7 +86,7 @@ function onDragStart(e: DragEvent): void {
   background: #f8fafc;
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
   transition: background 0.12s, border-color 0.12s;
   text-align: left;
 }

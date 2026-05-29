@@ -559,6 +559,8 @@ function onDrop(e: DragEvent) {
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
