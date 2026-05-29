@@ -149,6 +149,11 @@
         >
           🔗
         </button>
+        <!-- Phase 2: Canvas Recording → Publisher -->
+        <WBVideoRecordButton
+          v-if="canvasRef"
+          :get-stage="() => canvasRef?.getStage?.() ?? null"
+        />
         <button
           type="button"
           class="wb-header-btn"
@@ -922,6 +927,7 @@ import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBFormulaInputModal from '../components/toolbar/WBFormulaInputModal.vue'
+import WBVideoRecordButton from '../components/WBVideoRecordButton.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
 // PropertiesPanel removed — selection toolbar handles all object actions inline
