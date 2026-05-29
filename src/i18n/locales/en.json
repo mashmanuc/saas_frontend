@@ -8167,6 +8167,15 @@
   },
   "knowledge": {
     "title": "Lessons",
+    "savedSuccess": {
+      "titleLesson": "Lesson saved",
+      "titleTemplate": "Template saved",
+      "bodyLesson": "Your lesson is saved under «My Lessons».",
+      "bodyTemplate": "Your template is saved under «My Lessons».",
+      "hint": "Open the list to view or edit — or stay here and keep working.",
+      "goToList": "Open My Lessons",
+      "continueHere": "Stay here"
+    },
     "hub": {
       "title": "Knowledge Hub",
       "quickActions": "Quick actions",

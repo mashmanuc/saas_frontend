@@ -728,6 +728,13 @@
       @saved="handleLessonSaved"
     />
 
+    <!-- Soft success confirmation after save як шаблон/урок -->
+    <LessonSavedSuccessModal
+      v-model="showSavedSuccessModal"
+      :lesson-title="savedItemTitle"
+      :kind="savedItemKind"
+    />
+
     <!-- Phase 37: Test grade results modal -->
     <WBTestGradeModal
       v-if="showGradeModal && currentGradeResult"
@@ -920,6 +927,7 @@ import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
+import LessonSavedSuccessModal from '@/modules/knowledge/components/LessonSavedSuccessModal.vue'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
@@ -1275,6 +1283,11 @@ const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showPublishDialog = ref(false)
 const showSaveTemplateDialog = ref(false)
+
+// Soft success modal — після save як шаблон/урок
+const showSavedSuccessModal = ref(false)
+const savedItemTitle = ref('')
+const savedItemKind = ref<'lesson' | 'template'>('lesson')
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showSaveLessonDialog = ref(false)
@@ -2496,8 +2509,11 @@ function handlePublished(publicUrl: string, lessonData?: { id: string; title: st
 }
 
 // Phase 14 B2.2: Handle template saved
-function handleTemplateSaved(): void {
+function handleTemplateSaved(template?: { title?: string }): void {
   showSaveTemplateDialog.value = false
+  savedItemTitle.value = template?.title || publishedLessonData.value?.title || ''
+  savedItemKind.value = 'template'
+  showSavedSuccessModal.value = true
 }
 
 // Phase 21: Force flush ALL pending ops before opening save dialog so latest
@@ -2547,6 +2563,9 @@ async function handleUpdateLessonSnapshot(): Promise<void> {
 function handleLessonSaved(lesson: { id: string; title: string }): void {
   showSaveLessonDialog.value = false
   console.info('[WBSoloRoom] Lesson saved:', lesson.id, lesson.title)
+  savedItemTitle.value = lesson.title || ''
+  savedItemKind.value = 'lesson'
+  showSavedSuccessModal.value = true
 }
 
 // BUG-1 FIX: Save all pending changes before exiting
