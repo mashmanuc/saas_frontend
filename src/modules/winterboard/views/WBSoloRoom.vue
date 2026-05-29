@@ -315,6 +315,7 @@
           @unlock-selected="handleUnlockSelected"
           @clear-page-request="handleClearPageRequest"
           @youtube-insert="showYouTubeModal = true"
+          @formula-card-insert="handleFormulaCardInsert"
         />
       </aside>
 
@@ -371,6 +372,7 @@
           @presentation-expand="handlePresentationExpand"
           @audio-badge-click="handleAudioBadgeClick"
           @doc-viewer-page-jump="openPageJumpInput"
+          @formula-card-edit="handleFormulaCardEdit"
         />
 
         <!-- Page jump overlay for DocumentViewer (double-click on page counter) -->
@@ -698,6 +700,16 @@
       @submit="handleYouTubeSubmit"
     />
 
+    <!-- FormulaCard (2026-05-30): LaTeX formula insert/edit modal -->
+    <WBFormulaInputModal
+      :visible="showFormulaModal"
+      :initial-formula="editingFormulaAssetId
+        ? ((store.currentPage?.assets.find(a => a.id === editingFormulaAssetId) as any)?.data?.formula ?? '')
+        : undefined"
+      @close="handleFormulaModalClose"
+      @submit="handleFormulaSubmit"
+    />
+
     <!-- Phase 13 A3.3: Publish dialog (Knowledge domain) -->
     <WBShareDialog
       v-if="showPublishDialog && sessionId"
@@ -909,6 +921,7 @@ import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
+import WBFormulaInputModal from '../components/toolbar/WBFormulaInputModal.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
 // PropertiesPanel removed — selection toolbar handles all object actions inline
@@ -937,6 +950,7 @@ import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 
 // Phase 37: Test system
 import { useTestStore } from '../board/state/testStore'
@@ -1130,6 +1144,15 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
     // alone processes only first FLUSH_BATCH_SIZE=50 ops, leaving rest у
     // pendingOps → barrier sees stale serverSeq → replay tail truncated.
     // Bug history: 2026-05-08 prod regression after 250+ strokes (~1500 ops).
+    //
+    // assetUpdateBatcher drain (INV-NMT3D-BATCHER):
+    // The RAF batcher coalesces asset_update ops over ~16ms. If the user stops
+    // recording within 16ms of the last NMT3D param/drag change, the buffered
+    // asset_update op has NOT yet reached pendingOps. flushAll() would miss it.
+    // flushPendingUpdates() synchronously drains all pending RAF-buffered updates
+    // into _applyAssetUpdate() → pendingOps BEFORE flushAll() sends them to BE.
+    // Same pattern as WBPublicView.vue (P2 fix, 2026-05-29).
+    flushPendingUpdates()
     try {
       await opsSync.flushAll()
     } catch (flushErr) {
@@ -1293,6 +1316,9 @@ const showExportDialog = ref(false)
 const showSaveLessonDialog = ref(false)
 const showInviteStudentModal = ref(false)
 const showYouTubeModal = ref(false)
+const showFormulaModal = ref(false)
+/** ID картки що редагується (null = нова картка) */
+const editingFormulaAssetId = ref<string | null>(null)
 
 // ── "Оновити шаблон" — коли solo board відкрито з існуючого уроку ──────
 // WBMyLessonsPage/KnowledgeHubPage передає ?source_lesson=<lesson_id> у query.
@@ -2100,6 +2126,66 @@ function handleSendToPage(pageIndex: number): void {
 }
 
 // ─── P3: YouTube insert handler ─────────────────────────────────────────────
+
+// ─── Handlers: Formula Card ──────────────────────────────────────────────────
+
+/** Викликається з WBToolbar → 'formula-card-insert' */
+function handleFormulaCardInsert(): void {
+  editingFormulaAssetId.value = null
+  showFormulaModal.value = true
+}
+
+/** Викликається з WBCanvas → 'formula-card-edit' (редагування існуючої картки) */
+function handleFormulaCardEdit(assetId: string): void {
+  editingFormulaAssetId.value = assetId
+  showFormulaModal.value = true
+}
+
+/** Закриває formula modal і скидає стан */
+function handleFormulaModalClose(): void {
+  showFormulaModal.value = false
+  editingFormulaAssetId.value = null
+}
+
+/** Submit: або створює нову картку, або оновлює існуючу */
+function handleFormulaSubmit(formula: string): void {
+  showFormulaModal.value = false
+  const page = store.currentPage
+  if (!page) return
+
+  if (editingFormulaAssetId.value) {
+    // Оновлення існуючої картки
+    const existing = page.assets.find(a => a.id === editingFormulaAssetId.value)
+    if (existing && existing.type === 'formula_card') {
+      store.updateAsset({
+        ...existing,
+        data: { ...(existing.data as any), formula },
+      } as any)
+    }
+    editingFormulaAssetId.value = null
+  } else {
+    // Створення нової картки по центру viewport
+    const asset = {
+      id: crypto.randomUUID(),
+      type: 'formula_card' as const,
+      src: '',
+      x: Math.round(((page.width ?? 1920) / 2) - 190),
+      y: Math.round(((page.height ?? 1080) / 2) - 55),
+      w: 380,
+      h: 110,
+      rotation: 0,
+      locked: false,
+      data: {
+        version: 1 as const,
+        formula,
+        fontSize: 22,
+        color: '#1e293b',
+        bg: '#f8fafc',
+      },
+    }
+    store.addAsset(asset as any, page.id ?? '')
+  }
+}
 
 function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
   showYouTubeModal.value = false

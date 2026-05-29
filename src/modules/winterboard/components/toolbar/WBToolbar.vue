@@ -129,6 +129,19 @@
           <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
         </svg>
       </button>
+
+      <!-- FormulaCard (2026-05-30): insert KaTeX formula card -->
+      <button
+        type="button"
+        class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+        aria-label="Додати формулу (LaTeX)"
+        data-tooltip="Формула (LaTeX)"
+        @click="emit('formula-card-insert')"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <text x="2" y="15" font-family="serif" font-size="14" font-style="italic" fill="currentColor">ƒx</text>
+        </svg>
+      </button>
     </div>
 
     <!-- Phase 4 B8: Tablet expand/collapse toggle (only visible on tablet variant) -->
@@ -248,6 +261,7 @@ const emit = defineEmits<{
   'unlock-selected': []
   'clear-page-request': []
   'youtube-insert': []
+  'formula-card-insert': []
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────

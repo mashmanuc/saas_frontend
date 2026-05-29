@@ -411,6 +411,26 @@
       </div>
     </template>
 
+    <!-- FormulaCard (2026-05-30): formula_card overlay (HTML, non-Konva).
+         KaTeX formula card — draggable, lightweight, no external bundle. -->
+    <template v-for="asset in formulaCardAssets" :key="`formula-${asset.id}`">
+      <div
+        class="wb-formula-card-overlay"
+        :class="{ 'wb-formula-card-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-formula-id="asset.id"
+        :data-testid="`formula-card-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <FormulaCardRenderer
+          :asset="asset"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @request-edit="emit('formula-card-edit', asset.id)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- TrigCircle (2026-05-16): trig_circle overlay (HTML, non-Konva).
          Mirror .wb-calculus-overlay pattern. -->
     <template v-for="asset in trigCircleAssets" :key="`trig-${asset.id}`">
@@ -506,6 +526,7 @@
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :board-mode="wbStore.mode"
           :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
@@ -715,6 +736,9 @@ import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 // NmtTask (2026-05-23): interactive NMT task card — Lesson Constructor (§3.7.9)
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
+// FormulaCard (2026-05-30): draggable KaTeX formula card (§3.7.11)
+import FormulaCardRenderer from '../board/objects/FormulaCardRenderer.vue'
+import type { FormulaCardAsset } from '../../types/formulaCard'
 // Companion spawn (2026-05-25): semantic-aware visual companion spawner
 import {
   RENDERER_DEFAULTS,
@@ -838,6 +862,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'nmt3d',            // §3.7.8 — Parametric 3D stereometry     → Nmt3dRenderer
   'nmt_task',         // §3.7.9 — Interactive NMT task card     → NmtTaskRenderer
   'quadratic_card',   // §3.7.10 — Quadratic eq visualizer       → QuadraticRenderer
+  'formula_card',     // §3.7.11 — KaTeX formula card             → FormulaCardRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -852,6 +877,7 @@ const trigSolverAssets     = computed(() => assets.value.filter(a => a.type === 
 const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 'nmt3d'))
 const nmtTaskAssets        = computed(() => assets.value.filter(a => a.type === 'nmt_task'))
 const quadraticAssets      = computed(() => assets.value.filter(a => a.type === 'quadratic_card'))
+const formulaCardAssets    = computed(() => assets.value.filter(a => a.type === 'formula_card') as FormulaCardAsset[])
 
 // ── Companion spawn (2026-05-25) ──────────────────────────────────────────────
 // task.id → companion asset.id[]
@@ -1387,6 +1413,8 @@ const emit = defineEmits<{
   'audio-badge-click': [url: string]
   // DocumentViewer: double-click on page counter → open page jump input
   'doc-viewer-page-jump': [assetId: string]
+  // FormulaCard (2026-05-30): request edit modal from parent
+  'formula-card-edit': [assetId: string]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
@@ -4971,6 +4999,19 @@ defineExpose({
 
 /* QuadraticCard (2026-05-28) — ax²+bx+c parabola overlay.
    Blue accent (#3b7b9b) — mirrors calculus overlay pattern. */
+/* FormulaCard (2026-05-30) — KaTeX formula card overlay (§3.7.11) */
+.wb-formula-card-overlay {
+  position: absolute;
+  z-index: 4;
+  background: transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-formula-card-overlay--selected {
+  /* border handled by FormulaCardRenderer.is-selected */
+}
+
 .wb-quad-overlay {
   position: absolute;
   z-index: 4;
