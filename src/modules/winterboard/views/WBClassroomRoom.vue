@@ -211,6 +211,7 @@
           :can-clear-page="!isCanvasEmpty"
           :disabled="isDrawingDisabled"
           :hide-clear="!classroomRole.canClear.value"
+          :variant="deviceModeState.deviceMode.value"
           @tool-change="handleToolChange"
           @color-change="handleColorChange"
           @size-change="handleSizeChange"
@@ -2585,6 +2586,8 @@ onBeforeUnmount(async () => {
   background: var(--wb-bg-secondary, #f8fafc);
   border-left: 1px solid var(--wb-border, #e2e8f0);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -2758,6 +2761,8 @@ onBeforeUnmount(async () => {
 .wb-homework-tab {
   padding: 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   flex: 1;
 }
 

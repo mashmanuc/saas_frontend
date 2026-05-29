@@ -304,6 +304,7 @@
           :has-selection="store.hasSelection"
           :has-locked-in-selection="hasLockedInSelection"
           :can-clear-page="!isCanvasEmpty"
+          :variant="deviceModeState.deviceMode.value"
           @tool-change="handleToolChange"
           @color-change="handleColorChange"
           @size-change="handleSizeChange"
