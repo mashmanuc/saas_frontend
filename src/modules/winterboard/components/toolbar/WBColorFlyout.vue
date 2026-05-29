@@ -468,6 +468,8 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 6px;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wb-color-flyout__arrow {
@@ -522,6 +524,7 @@ watch(
   cursor: pointer;
   transition: background 0.1s, border-color 0.1s;
   padding: 0 4px;
+  touch-action: manipulation;
 }
 
 .wb-color-flyout__stroke-btn:hover {
@@ -556,6 +559,7 @@ watch(
   border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+  touch-action: manipulation;
 }
 .wb-color-flyout__btn:hover { transform: scale(1.15); }
 .wb-color-flyout__btn--active {

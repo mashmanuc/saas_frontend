@@ -674,6 +674,7 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   transition: width 0.2s ease;
 }
 .wb-toolbar[data-variant="tablet"].wb-toolbar--expanded {
@@ -682,6 +683,7 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 .wb-toolbar[data-variant="tablet"] .wb-toolbar__btn {
   width: 44px;
   height: 44px;
+  touch-action: pan-y;
 }
 .wb-toolbar[data-variant="tablet"] .wb-toolbar__btn--tooltip::after {
   display: none;
