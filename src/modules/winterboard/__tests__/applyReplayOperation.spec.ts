@@ -104,11 +104,11 @@ describe('applyReplayOperation — asset ops', () => {
     expect(store._calls.addAsset).toBeUndefined()
   })
 
-  it('asset_update calls updateAsset with skipHistory', () => {
+  it('asset_update calls updateAsset with skipHistory + skipBuffer', () => {
     const store = makeStore()
     const asset = { id: 'a1', x: 100, y: 200 }
     applyReplayOperation(store, makeOp('asset_update', { asset }))
-    expect(store._calls.updateAsset?.[0]).toEqual([asset, { skipHistory: true }])
+    expect(store._calls.updateAsset?.[0]).toEqual([asset, { skipHistory: true, skipBuffer: true }])
   })
 
   it('asset_delete calls deleteAsset with skipHistory', () => {
@@ -416,7 +416,7 @@ describe('applyReplayOperation — objects_move (Phase 1)', () => {
     expect(store._calls.updateAsset?.length).toBe(1)
     const [asset, opts] = (store._calls.updateAsset as unknown[][])[0]
     expect(asset).toMatchObject({ id: 'a1', x: 100, y: 200 })
-    expect(opts).toEqual({ skipHistory: true })
+    expect(opts).toEqual({ skipHistory: true, skipBuffer: true })
   })
 
   it('reduced-motion preference → instant path', () => {

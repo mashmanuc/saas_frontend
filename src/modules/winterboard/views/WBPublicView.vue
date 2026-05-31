@@ -263,6 +263,7 @@ import { useReplayV2 } from '../composables/useReplayV2'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
 import { createReplayApplier } from '../engine/applyReplayOperation'
+import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 import { collectNewIdsFromOp, applyAppearanceFadeIn } from '../engine/animation/replayFadeIn'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -471,6 +472,7 @@ async function enterReplayMode(): Promise<void> {
 
   // Prepare store for replay
   store.setMode('replay')
+  flushPendingUpdates()    // P2: drain any pending live-edit RAF updates before replay entry
   store.resetForReplay()
   replayApplier.reset()  // P0: clean instance page-tracking state
 

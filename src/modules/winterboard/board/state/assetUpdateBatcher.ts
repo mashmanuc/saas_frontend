@@ -26,6 +26,12 @@ import type { WBAsset } from '../../types/winterboard'
 /** Apply callback — викликає реальну mutation + emit op у boardStore. */
 export interface UpdateAssetOpts {
   skipHistory?: boolean
+  /**
+   * Bypass RAF coalesce (assetUpdateBatcher) — apply synchronously.
+   * USE ONLY in replay applier (applyReplayOperation.ts).
+   * Live edit MUST NOT pass this — RAF batching is essential for drag perf.
+   */
+  skipBuffer?: boolean
 }
 type ApplyFn = (asset: WBAsset, opts?: UpdateAssetOpts) => void
 

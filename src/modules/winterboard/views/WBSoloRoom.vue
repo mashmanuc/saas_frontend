@@ -149,11 +149,8 @@
         >
           🔗
         </button>
-        <!-- Phase 2: Canvas Recording → Publisher -->
-        <WBVideoRecordButton
-          v-if="canvasRef"
-          :get-stage="() => canvasRef?.getStage?.() ?? null"
-        />
+        <!-- Phase 2: Canvas Recording → Publisher (тільки якщо VITE_PUBLISHER_ENABLED=true) -->
+        <WBVideoRecordButton v-if="publisherEnabled" />
         <button
           type="button"
           class="wb-header-btn"
@@ -1302,6 +1299,12 @@ watch(
     presence.sendViewport(store.scrollX, store.scrollY, store.zoom, pageId)
   },
 )
+
+// ─── Publisher feature flag ─────────────────────────────────────────────────────
+// Увімкнено локально через VITE_PUBLISHER_ENABLED=true у .env
+// На prod = false (не задано) — кнопка запису схована
+
+const publisherEnabled = import.meta.env.VITE_PUBLISHER_ENABLED === 'true'
 
 // ─── Refs ───────────────────────────────────────────────────────────────────────
 

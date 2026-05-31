@@ -25,6 +25,20 @@ export interface Nmt3dData {
   params?: Record<string, number>
   /** Current aux construction toggles. Persisted. */
   opts?: Record<string, boolean>
+  /**
+   * 3D camera state (rotation + zoom). Persisted so replay viewers see the SAME
+   * orientation the recording author had — otherwise board-level pen strokes (drawn
+   * on top of NMT3D in 2D screen coords) appear "shifted" / misaligned with the 3D
+   * shape after replay loads it at vendor default cam (yaw:-0.5, pitch:0.28).
+   *
+   * Emitted on pointerup after orbit/pan/slider (one emit per interaction end —
+   * RAF batcher coalesces with concurrent params/opts emits).
+   */
+  cam?: {
+    yaw: number
+    pitch: number
+    scale: number
+  }
 }
 
 export interface Nmt3dDragPayload {

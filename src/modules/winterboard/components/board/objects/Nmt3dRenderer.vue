@@ -87,6 +87,7 @@ import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
 import { NMT3D_TEMPLATE_LABELS } from '../../../constants/nmt3dDefaults'
 import { registerNmt3dWorkspace, unregisterNmt3dWorkspace, nmt3dUiState } from '../../../board/state/nmt3dUiState'
+import { getNmt3dEphemeralState, setNmt3dEphemeralState } from '../../../board/state/nmt3dEphemeralState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
@@ -97,8 +98,25 @@ const props = withDefaults(
     isSelected?: boolean
     interactive?: boolean
     isExpanded?: boolean
+    /**
+     * Board mode passed from WBCanvas — 'edit' | 'replay' | etc.
+     * REQUIRED for correct store→engine sync gate.
+     *
+     * Gate semantics:
+     *   boardMode === 'edit'  → engine is source of truth (user drives params via NMT3D handles).
+     *                           Params watcher MUST NOT call ws.setParams() — would create
+     *                           feedback loop: setParams → onParamsChanged → store update →
+     *                           watcher fires again → corrupt state after recording save.
+     *   boardMode !== 'edit'  → store is source of truth (replay applier drives params).
+     *                           Params watcher MUST call ws.setParams() to keep canvas in sync.
+     *
+     * NOTE: `interactive` prop alone is NOT sufficient as a gate — it becomes false also
+     * when the user switches to draw/pen tool during live recording (currentTool !== 'select'),
+     * which is NOT a replay scenario. Using boardMode eliminates this ambiguity.
+     */
+    boardMode?: string
   }>(),
-  { isSelected: false, interactive: true, isExpanded: false },
+  { isSelected: false, interactive: true, isExpanded: false, boardMode: 'edit' },
 )
 
 const emit = defineEmits<{
@@ -120,6 +138,86 @@ const localMode = ref<'adapt' | 'draw'>(props.asset.data.mode)
 
 let ws: any = null  // window.NMT3D.Workspace instance
 let bundleReady = false
+
+// ─── Camera persistence (interaction-end → emit asset_update with data.cam) ──
+// Tracks last cam state we emitted to avoid duplicate ops when nothing changed.
+let _lastEmittedCam: { yaw: number; pitch: number; scale: number } | null = null
+// Wheel zoom debounce timer — wheel events have no native "end" event.
+let _wheelDebounceTimer: number | null = null
+const WHEEL_DEBOUNCE_MS = 150
+// Track if the current pointer interaction STARTED inside our stage.
+// Orbit gestures often end outside the stage div (user drags past the edge) —
+// so checking e.target in pointerup is wrong. Instead track pointerdown origin.
+let _orbitStartedInStage = false
+
+function _camEqual(
+  a: { yaw: number; pitch: number; scale: number } | null,
+  b: { yaw: number; pitch: number; scale: number } | null,
+): boolean {
+  if (!a || !b) return false
+  // Float epsilon: yaw/pitch ~1e-3 (radians), scale ~0.5 (display units)
+  return Math.abs(a.yaw - b.yaw) < 0.001
+    && Math.abs(a.pitch - b.pitch) < 0.001
+    && Math.abs(a.scale - b.scale) < 0.5
+}
+
+/** Capture current ws.cam → emit asset_update with data.cam (if changed + edit mode). */
+function _emitCamIfChanged(): void {
+  if (!ws || !ws.cam) return
+  if (props.boardMode !== 'edit') return
+  const newCam = {
+    yaw: ws.cam.yaw,
+    pitch: ws.cam.pitch,
+    scale: ws.cam.scale,
+  }
+  if (_camEqual(_lastEmittedCam, newCam)) return
+  _lastEmittedCam = newCam
+  // Read opts from engine (consistent with onParamsChanged fix).
+  const currentOpts: Record<string, boolean> | undefined =
+    ws?.opts && Object.keys(ws.opts).length > 0
+      ? { ...ws.opts }
+      : props.asset.data.opts
+  emit('update:asset', {
+    ...props.asset,
+    data: {
+      ...props.asset.data,
+      cam: newCam,
+      ...(currentOpts !== undefined ? { opts: currentOpts } : {}),
+    },
+  })
+}
+
+/**
+ * Track pointerdown origin — orbit gestures often end outside the stage div
+ * (user drags past the edge), so pointerup.target is the Konva canvas, not the
+ * NMT3D canvas. Checking pointerup.target would always miss.
+ * Instead: mark that the interaction STARTED inside our stage on pointerdown,
+ * then emit cam on any pointerup that follows such a start.
+ */
+function _onWindowPointerDown(e: PointerEvent): void {
+  if (!ws || !stageRef.value) return
+  const target = e.target as Node | null
+  _orbitStartedInStage = !!target && stageRef.value.contains(target)
+}
+
+function _onWindowPointerUp(_e: PointerEvent): void {
+  if (!ws) return
+  const wasOrbit = _orbitStartedInStage
+  _orbitStartedInStage = false
+  if (!wasOrbit) return
+  _emitCamIfChanged()
+}
+
+function _onStageWheel(_e: WheelEvent): void {
+  // Wheel = zoom. No "wheelend" event; debounce 150ms after last wheel.
+  if (_wheelDebounceTimer !== null) {
+    window.clearTimeout(_wheelDebounceTimer)
+  }
+  _wheelDebounceTimer = window.setTimeout(() => {
+    _wheelDebounceTimer = null
+    _emitCamIfChanged()
+  }, WHEEL_DEBOUNCE_MS)
+}
 
 const cardTitle = computed(() => {
   const W = window as any
@@ -157,13 +255,115 @@ async function mount(): Promise<void> {
     for (const [k, v] of Object.entries(props.asset.data.opts)) ws.setOpt(k, v)
   }
 
-  // Persist params changes to store via update:asset
+  // ─── PATCH: Disable vendor auto-refit on container resize ─────────────────
+  //
+  // ROOT CAUSE (atomic-level, 2026-05-30):
+  //   Vendor nmt-3d.js:3119-3122 installs a ResizeObserver:
+  //     this._ro = new ResizeObserver(() => { this._needsFit = true; this._render(); });
+  //   When the host container resizes by even 1px, the vendor sets _needsFit=true
+  //   and calls _render() → _autoFit() (nmt-3d.js:2626-2631) recalculates cam.scale:
+  //     this.cam.scale = Math.max(40, Math.min(220, s * 0.92))
+  //   This causes visible zoom shift any time surrounding UI changes (toolbar,
+  //   sidebar inspector, popups, REC indicator etc.). Most visible at recording
+  //   stop: NMT3D deselects → Inspector hides → Tools panel shows → canvas resizes
+  //   → vendor refits camera → user perceives "shape changed".
+  //
+  // This is NOT a data corruption issue — asset.data.params in the store are
+  // correct. It's pure vendor visual behavior.
+  //
+  // FIX:
+  //   Disconnect the vendor's ResizeObserver and install our own that calls
+  //   _render() (so SVG redraws at new container size) but WITHOUT setting
+  //   _needsFit=true (so cam.scale is preserved). _autoFit() still re-centers
+  //   the bbox (always runs in _render()), but the user-chosen zoom is kept.
+  //
+  // TRADE-OFF: if container shrinks dramatically, shape may extend past edges.
+  // Acceptable — user can manually trigger fit via resetView button.
+  if (ws._ro && typeof ws._ro.disconnect === 'function') {
+    try { ws._ro.disconnect() } catch { /* idempotent */ }
+    ws._ro = new ResizeObserver(() => {
+      if (ws && typeof ws._render === 'function') ws._render()
+    })
+    try { ws._ro.observe(stageRef.value) } catch { /* node detached during reroute */ }
+  }
+
+  // Persist params changes to store via update:asset.
+  //
+  // OPTS SAFETY: use ws.opts (engine source of truth) instead of props.asset.data.opts.
+  // props.asset is the Vue reactive prop — it lags behind by one RAF cycle (~16ms).
+  // If the user checks an inspector checkbox and then immediately rotates the 3D shape,
+  // onParamsChanged fires before Vue propagates the opts change to props.asset.data.opts.
+  // Using stale props.asset.data.opts in this emit would overwrite the opts change in
+  // the RAF batcher (last-wins), silently dropping the checkbox state.
+  // ws.opts is always current because ws.setOpt() is called synchronously in Inspector.onOptChange.
   ws.onParamsChanged = (params: Record<string, number>) => {
     nmt3dUiState.latestParams = { ...params }
+    // Read opts from engine (always fresh) — not from props (may lag one Vue tick)
+    const currentOpts: Record<string, boolean> | undefined =
+      ws?.opts && Object.keys(ws.opts).length > 0
+        ? { ...ws.opts }
+        : props.asset.data.opts
     emit('update:asset', {
       ...props.asset,
-      data: { ...props.asset.data, params: { ...params } },
+      data: {
+        ...props.asset.data,
+        params: { ...params },
+        ...(currentOpts !== undefined ? { opts: currentOpts } : {}),
+      },
     })
+  }
+
+  // ─── RESTORE camera state ──────────────────────────────────────────────────
+  //
+  // Camera (yaw/pitch/scale) priority on mount:
+  //   1. Ephemeral cache (current session, per asset.id) — covers remount within
+  //      same tab (page switch, deselect→select). Most recent live state.
+  //   2. asset.data.cam (persisted in ops, survives recording → replay) — covers
+  //      replay viewers and reload-from-snapshot. Board-level strokes drawn over
+  //      NMT3D were aligned with this orientation, so replay MUST restore it.
+  //   3. Vendor default (yaw:-0.5, pitch:0.28, scale:auto-fit) — first-ever mount.
+  //
+  // Order matters: must come AFTER setParams/setOpt (which set _needsFit=true
+  // and call _autoFit() that recomputes cam.scale). We override after.
+  // _autoFit() ALSO recomputes offsetX/offsetY on every _render() — so we don't
+  // bother saving those (they're a function of yaw/pitch/scale + bbox).
+  const cached = getNmt3dEphemeralState(props.asset.id)
+  const persistedCam = props.asset.data.cam
+  // Effective cam: ephemeral cache wins (live state), falls back to persisted data.cam.
+  const effectiveCam = cached?.cam ?? persistedCam ?? null
+  if (effectiveCam && ws.cam) {
+    ws.cam.yaw = effectiveCam.yaw
+    ws.cam.pitch = effectiveCam.pitch
+    ws.cam.scale = effectiveCam.scale
+    ws._needsFit = false  // prevent _autoFit from recomputing scale
+  }
+  if (cached) {
+    if (Array.isArray(cached.strokes)) {
+      ws.strokes = [...cached.strokes]
+    }
+    if (typeof cached.autoOrbit === 'boolean') {
+      ws.autoOrbit = cached.autoOrbit
+    }
+  }
+  if (effectiveCam || cached) {
+    if (typeof ws._render === 'function') ws._render()
+  }
+
+  // ─── Persist camera state to data.cam on interaction-end ───────────────────
+  //
+  // ROOT CAUSE FIX (2026-05-31): orbit gestures often end OUTSIDE the stage div —
+  // the user drags past the NMT3D boundary while orbiting. In that case pointerup
+  // fires on the Konva canvas (e.target = CANVAS, not NMT3D vendor canvas), so
+  // checking e.target in pointerup always returns false → emit was silently dropped.
+  //
+  // Fix: track the ORIGIN of the drag (pointerdown target). If the drag started
+  // inside our stage, emit cam on the following pointerup regardless of release point.
+  window.addEventListener('pointerdown', _onWindowPointerDown, { capture: true })
+  window.addEventListener('pointerup', _onWindowPointerUp, { capture: true })
+  // Wheel listener stays on stage (only fires when pointer events enabled, which is OK
+  // for zoom — vendor only zooms when stage is interactive anyway).
+  if (stageRef.value) {
+    stageRef.value.addEventListener('wheel', _onStageWheel, { passive: true })
   }
 
   syncCanvasPointerEvents()
@@ -188,6 +388,39 @@ function _registerInspector(): void {
 
 function destroyWs(): void {
   if (ws) {
+    // Cleanup listeners before destroying ws/element refs
+    try {
+      window.removeEventListener('pointerdown', _onWindowPointerDown, { capture: true } as any)
+      window.removeEventListener('pointerup', _onWindowPointerUp, { capture: true } as any)
+      _orbitStartedInStage = false
+      if (stageRef.value) {
+        stageRef.value.removeEventListener('wheel', _onStageWheel)
+      }
+      if (_wheelDebounceTimer !== null) {
+        window.clearTimeout(_wheelDebounceTimer)
+        _wheelDebounceTimer = null
+      }
+      // Final cam emit if pointerup was missed (e.g. user navigated mid-drag).
+      // Same gate as _emitCamIfChanged — only in edit mode.
+      _emitCamIfChanged()
+    } catch { /* defensive */ }
+    // SAVE ephemeral state (cam, strokes, autoOrbit) to module cache BEFORE
+    // ws.destroy(). The next mount() for this asset.id will restore it.
+    // Without this save: page switch / deselect / templateKey-change loses
+    // user's rotation/zoom/internal-strokes (all are vendor-internal, not in data).
+    try {
+      if (ws.cam) {
+        setNmt3dEphemeralState(props.asset.id, {
+          cam: {
+            yaw: ws.cam.yaw,
+            pitch: ws.cam.pitch,
+            scale: ws.cam.scale,
+          },
+          strokes: Array.isArray(ws.strokes) ? [...ws.strokes] : undefined,
+          autoOrbit: !!ws.autoOrbit,
+        })
+      }
+    } catch { /* defensive — never block destroy on cache save */ }
     try { ws.destroy() } catch { /* idempotent */ }
     ws = null
   }
@@ -280,6 +513,58 @@ watch(
     if (newMode === localMode.value) return
     localMode.value = newMode
     if (ws) ws.setMode(newMode)
+  },
+)
+
+// Sync params from store → engine (replay / remote read-only path).
+//
+// GATE uses boardMode, NOT interactive:
+//   - boardMode === 'edit': engine drives params (user manipulates via NMT3D handles).
+//     DO NOT sync store → engine here — would create feedback loop:
+//     ws.setParams() → onParamsChanged() → store update → watcher fires → ws.setParams()...
+//     This loop was corrupting board state after recording save when pen tool was active
+//     (interactive=false, but boardMode still 'edit').
+//   - boardMode !== 'edit' (replay, view, etc.): store drives params (replay applier).
+//     MUST sync store → engine so NMT3D canvas follows recorded ops.
+//
+// Without this watch, replay asset_update ops update store but NMT3D canvas stays frozen.
+watch(
+  () => props.asset.data.params,
+  (newParams) => {
+    if (!ws || !newParams || props.boardMode === 'edit') return
+    ws.setParams(newParams)
+  },
+)
+
+// Sync opts from store → engine (replay / remote read-only path).
+// Same boardMode gate — opts feedback loop identical in structure to params loop.
+watch(
+  () => props.asset.data.opts,
+  (newOpts) => {
+    if (!ws || !newOpts || props.boardMode === 'edit') return
+    for (const [k, v] of Object.entries(newOpts)) ws.setOpt(k, v)
+  },
+)
+
+// Sync camera (yaw/pitch/scale) from store → engine in REPLAY mode.
+// This is the critical path for replay accuracy: when applyReplayOperation applies
+// an `asset_update` op containing data.cam, the watcher fires here and rotates
+// the engine to match — so 2D board strokes drawn over the 3D shape align with
+// the same orientation the recording author had.
+//
+// Same boardMode gate as params/opts: edit mode = engine drives (user orbits manually),
+// replay/readonly = store drives (applier sets cam via op).
+watch(
+  () => props.asset.data.cam,
+  (newCam) => {
+    if (!ws || !newCam || props.boardMode === 'edit') return
+    if (ws.cam) {
+      ws.cam.yaw = newCam.yaw
+      ws.cam.pitch = newCam.pitch
+      ws.cam.scale = newCam.scale
+      ws._needsFit = false
+      if (typeof ws._render === 'function') ws._render()
+    }
   },
 )
 

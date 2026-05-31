@@ -26,7 +26,7 @@ import type { RecordOperationRequest } from '../../types/replay'
 // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
 import { assetsEqualByOpsFields } from './assetEquality'
 // Phase 1B (Plan v1.1): Layer B per-asset_id RAF coalesce — батчинг async updates.
-import { scheduleBufferedUpdate } from './assetUpdateBatcher'
+import { scheduleBufferedUpdate, flushPendingUpdates } from './assetUpdateBatcher'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -1312,7 +1312,7 @@ export const useWBStore = defineStore('wb-board', {
      *
      * Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md
      */
-    updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
+    updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean; skipBuffer?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -1320,9 +1320,17 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.assets.findIndex((a) => a.id === asset.id)
       if (idx === -1) return
 
-      // Phase 1A — Layer A: whitelist filter
+      // Phase 1A — Layer A: whitelist filter (runs for both paths)
       const currentAsset = page.assets[idx]
       if (assetsEqualByOpsFields(currentAsset, asset)) {
+        return
+      }
+
+      if (opts?.skipBuffer) {
+        // Replay path: apply synchronously, no RAF coalesce.
+        // Prevents batcher last-wins from dropping intermediate param states
+        // during replay at speed ≥ 2x. Live edit MUST NOT use this.
+        this._applyAssetUpdate(asset, opts)
         return
       }
 
@@ -2256,6 +2264,15 @@ export const useWBStore = defineStore('wb-board', {
 
     goToPage(index: number): void {
       if (!Number.isFinite(index)) return
+      // FIX 2026-05-30: drain RAF asset buffer BEFORE switching pages.
+      // _applyAssetUpdate uses `this.currentPageIndex` to locate the page; if the
+      // user changes a per-asset prop (e.g. NMT3D params) and switches pages within
+      // 16ms, the RAF fires AFTER the page index changed → asset not on new page →
+      // findIndex === -1 → silent drop. When user returns to the original page,
+      // the component remounts with stale store data → visual "distortion".
+      // Same pattern as flushPendingUpdates() before opsSync.flushAll() in
+      // _attemptFinalizeWithBarrier (WBSoloRoom.vue).
+      flushPendingUpdates()
       const prevIndex = this.currentPageIndex
       this.currentPageIndex = Math.max(0, Math.min(this.pages.length - 1, index))
 

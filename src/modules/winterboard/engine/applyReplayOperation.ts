@@ -48,7 +48,7 @@ export interface ReplayStoreApi {
   deleteStroke: (id: string, opts?: { skipHistory?: boolean }) => void
   // TASK 1 (2026-04-29): pageId required — replay applier passes op.page_id.
   addAsset: (a: WBAsset, pageId: string, opts?: { skipHistory?: boolean }) => void
-  updateAsset: (a: WBAsset, opts?: { skipHistory?: boolean }) => void
+  updateAsset: (a: WBAsset, opts?: { skipHistory?: boolean; skipBuffer?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
   addPage: (opts?: {
     name?: string
@@ -343,7 +343,7 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         if (payload.asset) {
           const a = payload.asset as WBAsset
           stampGraphCalculatorMeta(a, op.seq)
-          store.updateAsset(a, { skipHistory: true })
+          store.updateAsset(a, { skipHistory: true, skipBuffer: true })
         }
         break
       }
@@ -477,7 +477,7 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
           if (op.op_type === 'add' && value && resolvedPageId)
             store.addAsset(value as unknown as WBAsset, resolvedPageId, { skipHistory: true })
           else if (op.op_type === 'update' && value)
-            store.updateAsset(value as unknown as WBAsset, { skipHistory: true })
+            store.updateAsset(value as unknown as WBAsset, { skipHistory: true, skipBuffer: true })
           else if (op.op_type === 'remove' && itemId)
             store.deleteAsset(itemId, { skipHistory: true })
         }
@@ -590,7 +590,7 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         } else if (kind === 'asset') {
           const asset = pageData.assets?.find((a) => a.id === objId)
           if (asset) {
-            store.updateAsset({ ...asset, ...changes } as WBAsset, { skipHistory: true })
+            store.updateAsset({ ...asset, ...changes } as WBAsset, { skipHistory: true, skipBuffer: true })
           }
         }
         break
@@ -668,7 +668,7 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
           for (const item of moveItems) {
             const asset = movePage.assets.find((a) => a.id === item.id)
             if (!asset) continue
-            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true, skipBuffer: true })
           }
           break
         }
@@ -700,7 +700,7 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
             if (!asset) continue
             // Skip if already at target (avoids needless reactive churn).
             if (asset.x === item.x && asset.y === item.y) continue
-            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true, skipBuffer: true })
           }
         }
         animator!
