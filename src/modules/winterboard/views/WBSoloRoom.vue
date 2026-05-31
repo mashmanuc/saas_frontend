@@ -159,7 +159,7 @@
         </button>
         <!-- Phase 21: Save as Lesson button -->
         <button
-          v-if="sessionId && isSessionOwner"
+          v-if="sessionId && isSessionOwner && !sourceLessonId"
           type="button"
           class="wb-header-btn wb-header-btn--save-lesson"
           :title="t('winterboard.lesson.saveButton') || 'Зберегти як шаблон уроку'"
@@ -167,9 +167,10 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Оновити шаблон: показується коли board відкрито з існуючого уроку (?source_lesson=) -->
+        <!-- Оновити шаблон: показується тільки в constructor mode (prep-board зі Студії).
+             is_lesson_play сесії теж мають origin_lesson_id — не показувати під час уроку. -->
         <button
-          v-if="sourceLessonId && sessionId && isSessionOwner"
+          v-if="sourceLessonId && sessionId && isSessionOwner && constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--update-lesson"
           :title="t('knowledge.lesson.updateSnapshot')"
