@@ -149,8 +149,6 @@
         >
           🔗
         </button>
-        <!-- Phase 2: Canvas Recording → Publisher (тільки якщо VITE_PUBLISHER_ENABLED=true) -->
-        <WBVideoRecordButton v-if="publisherEnabled" />
         <button
           type="button"
           class="wb-header-btn"
@@ -924,7 +922,6 @@ import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBFormulaInputModal from '../components/toolbar/WBFormulaInputModal.vue'
-import WBVideoRecordButton from '../components/WBVideoRecordButton.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
 // PropertiesPanel removed — selection toolbar handles all object actions inline
@@ -1299,12 +1296,6 @@ watch(
     presence.sendViewport(store.scrollX, store.scrollY, store.zoom, pageId)
   },
 )
-
-// ─── Publisher feature flag ─────────────────────────────────────────────────────
-// Увімкнено локально через VITE_PUBLISHER_ENABLED=true у .env
-// На prod = false (не задано) — кнопка запису схована
-
-const publisherEnabled = import.meta.env.VITE_PUBLISHER_ENABLED === 'true'
 
 // ─── Refs ───────────────────────────────────────────────────────────────────────
 
