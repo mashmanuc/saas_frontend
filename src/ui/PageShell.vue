@@ -19,7 +19,7 @@
 
       <main
         :class="[
-          'mx-auto w-full',
+          'mx-auto w-full grow',
           layout.isMobile ? 'px-3 py-4' : 'p-6',
           layout.isDesktop ? '' : 'max-w-full'
         ]"
