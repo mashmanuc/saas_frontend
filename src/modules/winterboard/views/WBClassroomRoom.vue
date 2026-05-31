@@ -2610,6 +2610,10 @@ onBeforeUnmount(async () => {
 .wb-classroom-room__toolbar {
   flex-shrink: 0;
   z-index: 20;
+  /* Constrain height so WBToolbar overflow-y:auto can scroll */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* A.4 (INV-X): read-only overlay в replay-режимі */

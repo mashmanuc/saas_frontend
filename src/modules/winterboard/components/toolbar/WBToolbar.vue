@@ -427,10 +427,16 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   background: var(--wb-toolbar-bg, #ffffff);
   border-right: 1px solid var(--wb-toolbar-border, #e2e8f0);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
-  overflow: visible;
-  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100%;
   z-index: 20;
   position: relative;
+  /* Hide scrollbar visually but keep it functional */
+  scrollbar-width: none;
+}
+.wb-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .wb-toolbar__group {

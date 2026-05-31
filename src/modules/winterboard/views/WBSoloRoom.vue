@@ -3374,6 +3374,10 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__toolbar {
   flex-shrink: 0;
   z-index: 20;
+  /* Constrain height so WBToolbar overflow-y:auto can scroll */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Page thumbnails panel (collapsible) ──────────────────────────────────── */
