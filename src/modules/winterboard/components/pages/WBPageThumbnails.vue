@@ -420,6 +420,8 @@ onUnmounted(() => {
 .wb-thumbnail {
   position: relative;
   width: 120px;
+  /* KEY FIX: без flex-shrink:0 flex-layout стискає мініатюри замість скролу */
+  flex-shrink: 0;
   border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;
@@ -511,6 +513,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 4px;
   height: 48px;
+  flex-shrink: 0;
   border: 2px dashed #cbd5e1;
   color: #94a3b8;
   font-size: 11px;
