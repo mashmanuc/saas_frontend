@@ -1,4 +1,10 @@
 import katex from 'katex'
+// KaTeX CSS (KaTeX_Math + KaTeX_Main fonts, positioning rules) — required
+// for `output: 'htmlAndMathml'` mode. Was unimported у `output: 'mathml'` only
+// mode (native browser MathML rendering didn't need it). Switched 2026-05-25
+// PR-2 fix-up so html2canvas export can capture the visible HTML branch —
+// it cannot render <math> elements. MathML stays present for screen readers.
+import 'katex/dist/katex.min.css'
 import type { ContentItemDetail } from '../types/learningContent'
 import {
   isProblem,
@@ -50,11 +56,18 @@ export function parseLatexSegments(text: string): Segment[] {
   return segments
 }
 
-// ── KaTeX → MathML string (no foreignObject) ─────────────────
+// ── KaTeX → htmlAndMathml string ─────────────────────────────
+// `htmlAndMathml` emits BOTH:
+//   - visible HTML+CSS (uses KaTeX_Math/Main fonts from katex.min.css)
+//   - hidden MathML inside .katex-mathml (for screen readers)
+// Rationale (PR-2 fix-up 2026-05-25): html2canvas-based PDF export cannot
+// render <math> elements at all. With pure 'mathml' mode, exported PDFs
+// missed every formula. htmlAndMathml: visible HTML is captured, MathML
+// stays for accessibility. Visual identity preserved.
 function renderLatexToMathML(formula: string, displayMode: boolean): string {
   try {
     return katex.renderToString(formula, {
-      output: 'mathml',
+      output: 'htmlAndMathml',
       displayMode,
       throwOnError: false,
     })

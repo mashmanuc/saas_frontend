@@ -25,6 +25,7 @@
 -->
 <template>
   <div
+    ref="rootEl"
     class="nmt-task"
     :class="[
       `nmt-task--${data.taskType}`,
@@ -177,6 +178,11 @@ import {
   hasAvailableCompanions,
 } from '../../../services/capabilityRegistry'
 import type { CompanionResolution } from '../../../services/capabilityRegistry'
+// EXPORT_PREPARATION_SSOT (PR-2 fix-up 2026-05-25): widget preview capture.
+// nmt_task is a DOM widget (HTML + KaTeX) — snapshotElement falls through
+// to foreignObject SVG rasterize path. INV-EP-8: thin adapter only.
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
 
@@ -197,6 +203,16 @@ const emit = defineEmits<{
     spawnY: number
   }]
 }>()
+
+// ── Template root for export capture ─────────────────────────────────────────
+const rootEl = ref<HTMLElement | null>(null)
+
+// INV-EP-8: thin adapter — snapshotElement тут пробує canvas → svg → DOM
+// rasterize (третій fallback саме для DOM widgets як nmt_task).
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(rootEl.value, signal),
+)
 
 // ── Data access ───────────────────────────────────────────────────────────────
 
