@@ -113,16 +113,23 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- A.1: Solo recording — тільки для lesson-play сесій (INV-LESSON-PLAY).
-             Студія уроків сесії: запис відключений (is_lesson_play=false).
-             @pause maps до handleStopRecording (= finalizeRecording API call). -->
+        <!-- Recording UX: 4-state semantics.
+             idle      → "Записати урок"
+             recording → REC + timer + [Пауза | Завершити]
+             paused    → paused indicator + [Продовжити | Завершити]
+             finalized → "Запис завершено" badge + "Новий запис" (з confirmation)
+             Backend: pause/resume — той самий Replay cycle; restart — новий Replay
+             (попередній archived). -->
         <WBRecordingBanner
           v-if="isSessionOwner && isLessonPlay && !constructorMode"
           :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
-          @pause="handleStopRecording"
+          @pause="handlePauseRecording"
+          @resume="handleResumeRecording"
+          @finalize="handleFinalizeRecording"
+          @restart="handleRestartRecordingRequest"
         />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode -->
         <button
@@ -748,6 +755,13 @@
       :kind="savedItemKind"
     />
 
+    <!-- Recording restart confirmation: finalized → новий cycle -->
+    <WBRecordingRestartConfirmModal
+      v-model="showRestartConfirmModal"
+      :is-loading="isRestartingRecording"
+      @confirm="confirmRestartRecording"
+    />
+
     <!-- Phase 37: Test grade results modal -->
     <WBTestGradeModal
       v-if="showGradeModal && currentGradeResult"
@@ -938,6 +952,7 @@ import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
+import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
@@ -1004,8 +1019,13 @@ const opsSync = useOpsSyncStore()
 const showShareModal = ref(false)
 
 const isManualRecording = ref(false)
+const isPausedRecording = ref(false)  // recording → paused state
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
+
+// Confirmation modal для restart (finalized → новий cycle)
+const showRestartConfirmModal = ref(false)
+const isRestartingRecording = ref(false)
 // INV-LESSON-PLAY: True = сесія відкрита через "Провести урок" (loadToSession).
 // Тільки для таких сесій показується WBRecordingBanner.
 // False = пряма Студія уроків сесія → запис відключений (тьютор не плутається).
@@ -1017,9 +1037,14 @@ const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
 
-// Solo recording state — 2 states: recording or not (no pause/resume).
+// Solo recording lifecycle — 4 states (UX semantics cleanup):
+//   idle      — нічого не записується, можна start
+//   recording — active recording cycle
+//   paused    — recording cycle на паузі (same Replay, resume повертає)
+//   finalized — Replay created/frozen, restart починає НОВИЙ cycle
 import type { RecordingState as ApiRecordingState } from '../api/replay'
 const soloRecordingState = computed<ApiRecordingState>(() => {
+  if (isManualRecording.value && isPausedRecording.value) return 'paused'
   if (isManualRecording.value) return 'recording'
   if (isReplayFrozen.value) return 'finalized'
   return 'idle'
@@ -1049,6 +1074,7 @@ function cleanupRecorder(): void {
 // recording_stopped_seq у logout view → reconnect покаже REC = Start.
 const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
   isManualRecording.value = false
+  isPausedRecording.value = false
   recordingStartedAt.value = null
 })
 
@@ -1062,6 +1088,7 @@ async function handleStartRecording(): Promise<void> {
     try { await autosave.saveNow() } catch (e) { console.warn('[WBSoloRoom] saveNow before start-recording failed', e) }
     const result = await import('../api/replay').then(m => m.startRecording(sid))
     isManualRecording.value = true
+    isPausedRecording.value = false
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
     // Re-record: скинути стан попереднього запису (BE архівував його у start_recording)
@@ -1070,12 +1097,63 @@ async function handleStartRecording(): Promise<void> {
     if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
     // Time-based pipeline health check видалений: false-positive коли юзер
     // не малює у перші 2с після REC. Behavior-based warnings лишаються:
-    // (1) handleStopRecording catch — реальна помилка stop API;
+    // (1) handleFinalizeRecording catch — реальна помилка stop API;
     // (2) onMounted stoppedLocally — recording перервано network death.
   } catch (e) {
     console.error('[WBSoloRoom] Failed to start recording:', e)
   } finally {
     isRecordingLoading.value = false
+  }
+}
+
+// Pause: recording → paused (same cycle, no Replay created)
+async function handlePauseRecording(): Promise<void> {
+  const sid = sessionId.value
+  if (!sid || !isManualRecording.value || isPausedRecording.value) return
+  if (isRecordingLoading.value) return
+  isRecordingLoading.value = true
+  try {
+    await import('../api/replay').then(m => m.pauseRecording(sid))
+    isPausedRecording.value = true
+  } catch (e) {
+    console.error('[WBSoloRoom] Failed to pause recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
+
+// Resume: paused → recording (same cycle)
+async function handleResumeRecording(): Promise<void> {
+  const sid = sessionId.value
+  if (!sid || !isManualRecording.value || !isPausedRecording.value) return
+  if (isRecordingLoading.value) return
+  isRecordingLoading.value = true
+  try {
+    await import('../api/replay').then(m => m.resumeRecording(sid))
+    isPausedRecording.value = false
+  } catch (e) {
+    console.error('[WBSoloRoom] Failed to resume recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
+
+// Restart: finalized → новий cycle (потребує user confirmation).
+// Banner emit('restart') → відкриваємо modal. Confirm → handleStartRecording
+// (BE сам архівує попередній Replay).
+function handleRestartRecordingRequest(): void {
+  if (isRecordingLoading.value || isRestartingRecording.value) return
+  showRestartConfirmModal.value = true
+}
+
+async function confirmRestartRecording(): Promise<void> {
+  if (isRestartingRecording.value) return
+  isRestartingRecording.value = true
+  try {
+    await handleStartRecording()
+    showRestartConfirmModal.value = false
+  } finally {
+    isRestartingRecording.value = false
   }
 }
 
@@ -1114,7 +1192,8 @@ onBeforeUnmount(() => {
   _finalizeAttemptInFlight.value = false
 })
 
-async function handleStopRecording(): Promise<void> {
+// Finalize: recording | paused → finalized (Replay created).
+async function handleFinalizeRecording(): Promise<void> {
   const sid = sessionId.value
   if (!sid || !isManualRecording.value) return
   // FE-local single-flight: BEFORE network. 429 from BE remains the
