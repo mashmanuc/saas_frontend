@@ -917,11 +917,22 @@ function handleSpawnCompanions(payload: {
 
   for (const resolution of companions) {
     if (existingTypes.has(resolution.rendererType)) {
-      // Companion цього типу вже є — вибираємо існуючий
+      // Companion цього типу вже є в companionLinks — вибираємо існуючий
       const existing = assets.value.find(
         a => existingIds.includes(a.id) && a.type === resolution.rendererType,
       )
       if (existing) emit('select', existing.id)
+      continue
+    }
+
+    // Перевіряємо чи companion цього типу вже є на сторінці (напр. від StateSerializer)
+    const existingOnPage = assets.value.find(a => a.type === resolution.rendererType)
+    if (existingOnPage) {
+      emit('select', existingOnPage.id)
+      // Записуємо в companionLinks щоб наступний клік теж йшов сюди
+      const ids = companionLinks.get(sourceAssetId) ?? []
+      if (!ids.includes(existingOnPage.id)) ids.push(existingOnPage.id)
+      companionLinks.set(sourceAssetId, ids)
       continue
     }
 
