@@ -49,16 +49,20 @@ interface CoachingStep {
 
 const steps: CoachingStep[] = [
   {
-    target: '[href="/knowledge"]',
+    target: '[href="/tutor/profile"]',
     text: 'sidebarCoaching.step1',
   },
   {
-    target: '[href="/tutor/schedule"]',
+    target: '[href="/winterboard/boards"]',
     text: 'sidebarCoaching.step2',
   },
   {
-    target: '[href="/winterboard/dashboard"]',
+    target: '[href="/tutor/schedule"]',
     text: 'sidebarCoaching.step3',
+  },
+  {
+    target: '[href="/knowledge/my-lessons"]',
+    text: 'sidebarCoaching.step4',
   },
 ]
 
@@ -68,6 +72,7 @@ const visible = ref(false)
 const currentStepIndex = ref(0)
 const tooltipTop = ref(0)
 const tooltipLeft = ref(0)
+let highlightedEl: Element | null = null
 
 const currentStep = computed(() => steps[currentStepIndex.value] ?? null)
 const isLastStep = computed(() => currentStepIndex.value >= steps.length - 1)
@@ -77,13 +82,21 @@ const tooltipPosition = computed(() => ({
   left: `${tooltipLeft.value}px`,
 }))
 
+function clearHighlight() {
+  if (highlightedEl) {
+    highlightedEl.classList.remove('coaching-target-active')
+    highlightedEl = null
+  }
+}
+
 function positionTooltip() {
   const step = currentStep.value
   if (!step) return
 
+  clearHighlight()
+
   const el = document.querySelector(step.target)
   if (!el) {
-    // Target not found — skip to next or dismiss
     if (!isLastStep.value) {
       currentStepIndex.value++
       nextTick(positionTooltip)
@@ -92,6 +105,9 @@ function positionTooltip() {
     }
     return
   }
+
+  el.classList.add('coaching-target-active')
+  highlightedEl = el
 
   const rect = el.getBoundingClientRect()
   tooltipTop.value = rect.top + rect.height / 2 - 40
@@ -108,13 +124,13 @@ function nextStep() {
 }
 
 function dismiss() {
+  clearHighlight()
   visible.value = false
   dismissHint(TutorHintId.SIDEBAR_COACHING)
 }
 
 onMounted(() => {
   if (isHintVisible(TutorHintId.SIDEBAR_COACHING)) {
-    // Delay slightly to let sidebar render
     setTimeout(() => {
       visible.value = true
       nextTick(positionTooltip)
@@ -123,6 +139,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearHighlight()
   visible.value = false
 })
 </script>
@@ -144,6 +161,30 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   z-index: 10000;
+}
+
+.sidebar-coaching-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 44px;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid var(--border-color, #e2e8f0);
+}
+
+.sidebar-coaching-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 45px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 7px solid var(--card-bg, #fff);
 }
 
 .sidebar-coaching-tooltip__step {
@@ -199,4 +240,13 @@ onBeforeUnmount(() => {
 .coach-fade-leave-active { transition: opacity 0.2s ease; }
 .coach-fade-enter-from,
 .coach-fade-leave-to { opacity: 0; }
+</style>
+
+<style>
+.coaching-target-active {
+  background: rgba(99, 102, 241, 0.12) !important;
+  border-radius: 8px;
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
 </style>

@@ -14,7 +14,7 @@ export const TUTOR_FALLBACK_CTA: PrimaryCta = {
   title_params: {},
   subtitle: null,
   label_key: 'dashboard.cta.create_lesson.label',
-  action_url: '/my-lessons/new',
+  action_url: '/winterboard/boards',
   urgency: 'low',
   metadata: {},
 }

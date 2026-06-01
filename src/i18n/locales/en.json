@@ -1087,9 +1087,10 @@
     "collections": "Collections"
   },
   "sidebarCoaching": {
-    "step1": "This is where your created lessons will be. Start with the board!",
-    "step2": "Set your available hours here — students will see them on the marketplace",
-    "step3": "The board — create and conduct lessons here",
+    "step1": "My Profile — fill it in so students can find you in the marketplace",
+    "step2": "Lesson Studio — create and prepare your lessons using the constructor or a board",
+    "step3": "Set your available hours here — students will see them on the marketplace",
+    "step4": "My Lessons — your library of ready materials. Click «Conduct» to start a class",
     "next": "Next",
     "done": "Got it",
     "skip": "Skip"
@@ -7546,7 +7547,8 @@
       "canvasSubtitle": "Preparing workspace"
     },
     "emptyCanvas": {
-      "hint": "Start drawing here"
+      "hint": "Start drawing here",
+      "sub": "Or drag materials from the right panel"
     },
     "documentViewer": {
       "pdf": "PDF",

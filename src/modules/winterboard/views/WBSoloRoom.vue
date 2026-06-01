@@ -174,19 +174,22 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Оновити шаблон: показується тільки в constructor mode (prep-board зі Студії).
-             is_lesson_play сесії теж мають origin_lesson_id — не показувати під час уроку. -->
+        <!-- Constructor mode: зберегти canvas → draft lesson. Іконка без тексту. -->
         <button
-          v-if="sourceLessonId && sessionId && isSessionOwner && constructorMode"
+          v-if="sourceLessonId && sessionId && isSessionOwner && constructorMode && !isCanvasEmpty"
           type="button"
-          class="wb-header-btn wb-header-btn--update-lesson"
+          class="wb-header-btn"
           :title="t('knowledge.lesson.updateSnapshot')"
           :disabled="isUpdatingSnapshot"
           @click="handleUpdateLessonSnapshot"
         >
-          <svg v-if="!isUpdatingSnapshot" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8a6 6 0 1 0 1.5-3.9M2 4v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="wb-spinner"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10"/></svg>
-          {{ t('knowledge.lesson.updateSnapshot') }}
+          <svg v-if="!isUpdatingSnapshot" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="wb-spinner">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
         </button>
         <!-- Phase 13 A3.3: Publish button — прихована: дублює Save as Lesson flow -->
         <!-- <button
@@ -405,11 +408,12 @@
             class="wb-empty-canvas-hint"
             aria-hidden="true"
           >
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" class="wb-empty-canvas-hint__icon">
+            <svg width="48" height="48" viewBox="0 0 40 40" fill="none" class="wb-empty-canvas-hint__icon">
               <path d="M8 32l6-6 4 4-2 2H8v0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M30.5 5.5a2.121 2.121 0 013 3L15 27l-4 1 1-4L30.5 5.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <span class="wb-empty-canvas-hint__text">{{ t('winterboard.emptyCanvas.hint') }}</span>
+            <span class="wb-empty-canvas-hint__sub">{{ t('winterboard.emptyCanvas.sub') }}</span>
           </div>
         </Transition>
 
@@ -3904,19 +3908,25 @@ watch(() => store.workspaceName, (name) => {
   align-items: center;
   gap: 8px;
   pointer-events: none;
-  opacity: 0.15;
+  opacity: 0.45;
   user-select: none;
 }
 
 .wb-empty-canvas-hint__icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   color: var(--wb-fg-secondary, #64748b);
 }
 
 .wb-empty-canvas-hint__text {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--wb-fg-secondary, #64748b);
+}
+
+.wb-empty-canvas-hint__sub {
+  font-size: 12px;
+  font-weight: 400;
   color: var(--wb-fg-secondary, #64748b);
 }
 
