@@ -10,6 +10,7 @@
  */
 
 import apiClient from './client'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 
 /**
  * Tutor Full Profile Interface
@@ -81,13 +82,12 @@ export async function updateTutorProfile(data: TutorProfileUpdate): Promise<Tuto
  */
 
 /**
- * Validate phone format (E.164)
- * Pattern: ^\+[1-9]\d{1,14}$
+ * Validate phone number via libphonenumber-js (Google libphonenumber port).
+ * Validates against real ITU-T country numbering plans — no hand-rolled regex.
  */
 export function isValidPhone(phone: string): boolean {
   if (!phone) return true // Optional field
-  const pattern = /^\+[1-9]\d{1,14}$/
-  return pattern.test(phone)
+  return isValidPhoneNumber(phone)
 }
 
 /**

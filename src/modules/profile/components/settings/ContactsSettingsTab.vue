@@ -106,6 +106,7 @@ import { getStudentProfile, updateStudentProfile } from '@/api/students'
 import { getTutorProfile, updateTutorProfile } from '@/api/tutors'
 import { notifySuccess, notifyError } from '@/utils/notify'
 import { useI18n } from 'vue-i18n'
+import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -120,29 +121,26 @@ const formData = ref({
   timezone: 'Europe/Kyiv'
 })
 
-const E164_PATTERN = /^\+[1-9]\d{1,14}$/
-
 /**
- * Normalize phone to E.164.
+ * Normalize phone to E.164 via libphonenumber-js.
  * Handles common Ukrainian input patterns:
- *   0501234567        → +380501234567
- *   380501234567      → +380501234567
- *   +380 50 123 4567  → +380501234567 (strip spaces/dashes)
- *   +380501234567     → +380501234567 (unchanged)
+ *   0501234567        → +380501234567  (UA local format)
+ *   380501234567      → +380501234567  (UA without +)
+ *   +380 50 123 4567  → +380501234567  (spaces stripped)
+ *   +380501234567     → +380501234567  (unchanged)
+ * Other valid E.164 numbers returned as-is.
  */
 function tryNormalizePhone(raw: string): string {
   if (!raw) return raw
-  // Strip spaces, hyphens, parentheses
-  let v = raw.replace(/[\s\-()]/g, '')
-  // Already valid E.164
-  if (E164_PATTERN.test(v)) return v
-  // 10-digit UA local: 0XXXXXXXXX → +380XXXXXXXXX
-  if (/^0\d{9}$/.test(v)) return '+38' + v
-  // UA without + sign: 380XXXXXXXXX → +380XXXXXXXXX
-  if (/^380\d{9}$/.test(v)) return '+' + v
-  // Has + but had spaces stripped
-  if (v.startsWith('+')) return v
-  return v
+  // Try as international number first
+  if (isValidPhoneNumber(raw)) return raw
+  // Try with UA country hint (catches 0501234567 and local UA formats)
+  try {
+    const parsed = parsePhoneNumber(raw, 'UA')
+    if (parsed.isValid()) return parsed.number as string
+  } catch { /* ignore parse errors for non-UA formats */ }
+  // Fallback: strip spaces/dashes and return for backend to validate
+  return raw.replace(/[\s\-()]/g, '')
 }
 
 function handlePhoneBlur(): void {
@@ -154,8 +152,7 @@ function handlePhoneBlur(): void {
   if (normalized !== formData.value.phone) {
     formData.value.phone = normalized
   }
-  // After normalization, re-validate
-  if (!E164_PATTERN.test(normalized)) {
+  if (!isValidPhoneNumber(normalized)) {
     phoneError.value = t('users.settings.contacts.phoneFormatError')
   } else {
     phoneError.value = ''
@@ -208,8 +205,8 @@ async function handleSubmit() {
     formData.value.phone = tryNormalizePhone(formData.value.phone)
   }
 
-  // Client-side phone validation — fail fast, no round-trip needed
-  if (formData.value.phone && !E164_PATTERN.test(formData.value.phone)) {
+  // Client-side phone validation via libphonenumber-js — fail fast, no round-trip needed
+  if (formData.value.phone && !isValidPhoneNumber(formData.value.phone)) {
     phoneError.value = t('users.settings.contacts.phoneFormatError')
     notifyError(t('users.settings.contacts.phoneFormatError'))
     return
