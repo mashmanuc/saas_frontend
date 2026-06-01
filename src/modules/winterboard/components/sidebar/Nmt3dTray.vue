@@ -294,7 +294,8 @@ const TemplateIcon: FunctionalComponent<{ tplKey: string }> = (props) => {
 
 .nmt3d-tray__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* auto-fill: drops to 1 column when sidebar < ~260px (e.g. desktop narrow resize) */
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 4px;
 }
 

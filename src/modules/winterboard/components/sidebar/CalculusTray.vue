@@ -152,10 +152,11 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
 }
 
 /* 2-column grid: graph calculator spans full width (1/-1),
-   derivative + integral у двох стовпцях */
+   derivative + integral у двох стовпцях.
+   auto-fill: drops to 1 column when sidebar < ~260px (e.g. desktop narrow resize) */
 .calculus-tray__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 4px;
 }
 
