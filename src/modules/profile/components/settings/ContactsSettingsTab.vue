@@ -22,10 +22,15 @@
           v-model="formData.phone"
           type="tel"
           class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          :class="{ 'border-destructive': phoneError }"
           :placeholder="$t('users.settings.contacts.phonePlaceholder')"
           :disabled="saving"
+          @blur="handlePhoneBlur"
         />
-        <p class="mt-1 text-xs text-muted-foreground">
+        <p v-if="phoneError" class="mt-1 text-xs text-destructive">
+          {{ phoneError }}
+        </p>
+        <p v-else class="mt-1 text-xs text-muted-foreground">
           {{ $t('users.settings.contacts.phoneHint') }}
         </p>
       </div>
@@ -108,11 +113,54 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
+const phoneError = ref('')
 const formData = ref({
   phone: '',
   telegram_username: '',
   timezone: 'Europe/Kyiv'
 })
+
+const E164_PATTERN = /^\+[1-9]\d{1,14}$/
+
+/**
+ * Normalize phone to E.164.
+ * Handles common Ukrainian input patterns:
+ *   0501234567        → +380501234567
+ *   380501234567      → +380501234567
+ *   +380 50 123 4567  → +380501234567 (strip spaces/dashes)
+ *   +380501234567     → +380501234567 (unchanged)
+ */
+function tryNormalizePhone(raw: string): string {
+  if (!raw) return raw
+  // Strip spaces, hyphens, parentheses
+  let v = raw.replace(/[\s\-()]/g, '')
+  // Already valid E.164
+  if (E164_PATTERN.test(v)) return v
+  // 10-digit UA local: 0XXXXXXXXX → +380XXXXXXXXX
+  if (/^0\d{9}$/.test(v)) return '+38' + v
+  // UA without + sign: 380XXXXXXXXX → +380XXXXXXXXX
+  if (/^380\d{9}$/.test(v)) return '+' + v
+  // Has + but had spaces stripped
+  if (v.startsWith('+')) return v
+  return v
+}
+
+function handlePhoneBlur(): void {
+  if (!formData.value.phone) {
+    phoneError.value = ''
+    return
+  }
+  const normalized = tryNormalizePhone(formData.value.phone)
+  if (normalized !== formData.value.phone) {
+    formData.value.phone = normalized
+  }
+  // After normalization, re-validate
+  if (!E164_PATTERN.test(normalized)) {
+    phoneError.value = t('users.settings.contacts.phoneFormatError')
+  } else {
+    phoneError.value = ''
+  }
+}
 
 const userRole = computed(() => authStore.user?.role)
 
@@ -152,8 +200,22 @@ async function loadContacts() {
 }
 
 async function handleSubmit() {
-  saving.value = true
   errorMessage.value = ''
+  phoneError.value = ''
+
+  // Normalize phone before sending
+  if (formData.value.phone) {
+    formData.value.phone = tryNormalizePhone(formData.value.phone)
+  }
+
+  // Client-side phone validation — fail fast, no round-trip needed
+  if (formData.value.phone && !E164_PATTERN.test(formData.value.phone)) {
+    phoneError.value = t('users.settings.contacts.phoneFormatError')
+    notifyError(t('users.settings.contacts.phoneFormatError'))
+    return
+  }
+
+  saving.value = true
 
   try {
     if (userRole.value === 'student') {
@@ -161,21 +223,28 @@ async function handleSubmit() {
     } else if (userRole.value === 'tutor') {
       await updateTutorProfile(formData.value)
     }
-    
+
     notifySuccess(t('users.settings.contacts.saveSuccess'))
   } catch (error) {
     console.error('Failed to save contacts:', error)
-    
+
     if (error.response?.data?.field_errors) {
       const fieldErrors = error.response.data.field_errors
-      const firstError = Object.values(fieldErrors)[0]
-      errorMessage.value = Array.isArray(firstError) ? firstError[0] : firstError
+      // Map phone field error to translated message
+      if (fieldErrors.phone) {
+        const msg = t('users.settings.contacts.phoneFormatError')
+        phoneError.value = msg
+        errorMessage.value = msg
+      } else {
+        const firstError = Object.values(fieldErrors)[0]
+        errorMessage.value = Array.isArray(firstError) ? String(firstError[0]) : String(firstError)
+      }
     } else if (error.response?.data?.detail) {
       errorMessage.value = error.response.data.detail
     } else {
       errorMessage.value = t('users.settings.contacts.saveError')
     }
-    
+
     notifyError(errorMessage.value)
   } finally {
     saving.value = false
