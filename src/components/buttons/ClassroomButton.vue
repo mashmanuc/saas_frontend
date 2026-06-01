@@ -12,7 +12,7 @@
 <script setup lang="ts">
 // [LEGACY→WB] ClassroomButton — кнопка входу в урок.
 // useClassroomEntry видалено разом з modules/classroom/.
-// Навігація тепер веде на winterboard-sessions.
+// Навігація тепер веде на winterboard-boards (Студію).
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Video, Clock, CheckCircle, XCircle } from 'lucide-vue-next'
@@ -67,8 +67,8 @@ const buttonClasses = computed(() => [
 
 function handleClick() {
   if (!canJoin.value) return
-  // [LEGACY→WB] modules/classroom видалено — перенаправляємо на список winterboard
-  const resolved = router.resolve({ name: 'winterboard-sessions' })
+  // [LEGACY→WB] modules/classroom видалено → ведемо у Студію уроків.
+  const resolved = router.resolve({ name: 'winterboard-boards' })
   window.open(resolved.href, '_blank', 'noopener')
 }
 </script>

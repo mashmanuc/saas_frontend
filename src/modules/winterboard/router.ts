@@ -30,12 +30,14 @@ function winterboardGuard(
 // ловить `router.beforeEach` → `!hasRoleAccess` → redirect на `/student`.
 // Ref: memory/project_nav_decisions.md (decision #2)
 
-// FIX-5: Session list route — mounted inside PageShell for full header + sidebar
+// Legacy route → redirect на Студію уроків (WBBoardList).
+// WBSessionList.vue видалено як dead code (sidebar веде на /winterboard/boards,
+// інші посилання прибрано). Цей route зберігається тільки як redirect для
+// старих закладок та legacy classroom/* redirects з router/index.js.
 const winterboardSessionListRoute: RouteRecordRaw = {
   path: 'winterboard',
   name: 'winterboard-sessions',
-  component: () => import('./views/WBSessionList.vue'),
-  meta: { title: 'Winterboard', roles: ['tutor'] },
+  redirect: { name: 'winterboard-boards' },
 }
 
 // Page-level routes — mounted inside PageShell (sidebar + header)
@@ -48,11 +50,11 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
     meta: { title: 'Classroom Hub', roles: ['student', 'tutor'] },
   },
   {
-    // Solo WBDashboard — tutor-only
+    // Legacy redirect — WBDashboard.vue видалено як dead code.
+    // Зберігаємо path як redirect на Студію для старих закладок.
     path: 'winterboard/dashboard',
     name: 'winterboard-dashboard',
-    component: () => import('./views/WBDashboard.vue'),
-    meta: { title: 'Winterboard — Dashboard', roles: ['tutor'] },
+    redirect: { name: 'winterboard-boards' },
   },
   {
     // Library з tutor матеріалами — tutor-only
@@ -114,11 +116,14 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
 // Standalone routes — own layout (solo room has compact header, public has no auth)
 const winterboardStandaloneRoutes: RouteRecordRaw[] = [
   {
-    // New solo session — tutor-only
+    // Legacy redirect — scratch board flow видалено. Все створення дошок
+    // йде через Студію (winterboard-boards), де "+ Нова дошка" викликає
+    // createDraftWithPrep() і веде у конструктор (winterboard-prepare).
+    // Зберігаємо path тільки як redirect для старих закладок і legacy
+    // solo/new + solo-v2/new redirects з router/index.js.
     path: '/winterboard/new',
     name: 'winterboard-new',
-    component: () => import('./views/WBSoloRoom.vue'),
-    meta: { title: 'Winterboard', roles: ['tutor'] },
+    redirect: { name: 'winterboard-boards' },
   },
   {
     path: '/winterboard/content-preview',

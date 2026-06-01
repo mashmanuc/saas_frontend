@@ -116,8 +116,8 @@ async function resolve() {
     }
 
     status.value = 'redirecting'
-    // [LEGACY→WB] Old classroom removed — redirect to winterboard sessions list
-    await router.replace({ name: 'winterboard-sessions' })
+    // [LEGACY→WB] Old classroom removed — redirect to Студія уроків.
+    await router.replace({ name: 'winterboard-boards' })
   } catch (err) {
     status.value = 'error'
     errorCode.value = normalizeErrorCode(err)

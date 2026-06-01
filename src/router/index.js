@@ -548,18 +548,20 @@ const routes = [
       // R4: Legacy redirects
       { path: 'chat', redirect: '/tutor/messages' },
       { path: 'chat/:threadId', redirect: to => `/tutor/messages/${to.params.threadId}` },
-      // [LEGACY→WB] Old classroom routes redirected to winterboard (classroom module removed)
-      { path: 'classroom/board', redirect: { name: 'winterboard-sessions' } },
-      { path: 'classroom/solo', redirect: { name: 'winterboard-sessions' } },
-      { path: 'classroom/:sessionId', redirect: { name: 'winterboard-sessions' } },
-      { path: 'classroom/:sessionId/summary', redirect: { name: 'winterboard-sessions' } },
-      { path: 'classroom/:sessionId/replay', redirect: { name: 'winterboard-sessions' } },
-      { path: 'classroom/:sessionId/history', redirect: { name: 'winterboard-sessions' } },
+      // [LEGACY→WB] Old classroom routes redirected to Студію (winterboard-boards).
+      // winterboard-sessions та winterboard-new redirect до boards теж, але через
+      // 2 hops — даємо короткий шлях для старих URL.
+      { path: 'classroom/board', redirect: { name: 'winterboard-boards' } },
+      { path: 'classroom/solo', redirect: { name: 'winterboard-boards' } },
+      { path: 'classroom/:sessionId', redirect: { name: 'winterboard-boards' } },
+      { path: 'classroom/:sessionId/summary', redirect: { name: 'winterboard-boards' } },
+      { path: 'classroom/:sessionId/replay', redirect: { name: 'winterboard-boards' } },
+      { path: 'classroom/:sessionId/history', redirect: { name: 'winterboard-boards' } },
       // [WB:A1.1] Solo → Winterboard redirects (v0.26-v0.27 routes deprecated)
-      { path: 'solo', redirect: { name: 'winterboard-sessions' } },
-      { path: 'solo/new', redirect: { name: 'winterboard-new' } },
+      { path: 'solo', redirect: { name: 'winterboard-boards' } },
+      { path: 'solo/new', redirect: { name: 'winterboard-boards' } },
       { path: 'solo/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
-      { path: 'solo-v2/new', redirect: { name: 'winterboard-new' } },
+      { path: 'solo-v2/new', redirect: { name: 'winterboard-boards' } },
       { path: 'solo-v2/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
       { path: 'solo/shared/:token', redirect: to => ({ name: 'winterboard-public', params: { token: to.params.token } }) },
       // v0.69: People & Negotiation Chat routes

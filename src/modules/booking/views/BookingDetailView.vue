@@ -18,7 +18,7 @@ import { useBooking } from '../composables/useBooking'
 // Components
 import BookingStatus from '../components/booking/BookingStatus.vue'
 import BookingActions from '../components/booking/BookingActions.vue'
-// [LEGACY→WB] ClassroomButton видалено — навігація через winterboard-sessions
+// [LEGACY→WB] ClassroomButton видалено — навігація через winterboard-boards (Студію)
 import Button from '@/ui/Button.vue'
 
 const route = useRoute()
@@ -61,7 +61,7 @@ function goBack() {
 
 // UX-1: Open classroom in new tab so tutor stays on current page
 function openClassroom() {
-  const resolved = router.resolve({ name: 'winterboard-sessions' })
+  const resolved = router.resolve({ name: 'winterboard-boards' })
   window.open(resolved.href, '_blank', 'noopener')
 }
 

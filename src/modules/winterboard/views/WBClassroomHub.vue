@@ -73,7 +73,7 @@
           <section class="wb-hub__section">
             <h2 class="wb-hub__section-title">{{ t('winterboard.classroomHub.tools') }}</h2>
             <div class="wb-hub__tools">
-              <router-link :to="{ name: 'winterboard-new' }" class="wb-hub__tool-card wb-hub__tool-card--primary">
+              <router-link :to="{ name: 'winterboard-boards' }" class="wb-hub__tool-card wb-hub__tool-card--primary">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
