@@ -93,7 +93,7 @@ const isVisible = computed<boolean>(() => {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary, #2563eb);
+  color: var(--accent, #10b981);
   margin: 0;
 }
 
@@ -124,7 +124,7 @@ const isVisible = computed<boolean>(() => {
   width: 16px;
   text-align: center;
   flex-shrink: 0;
-  color: var(--color-primary, #2563eb);
+  color: var(--accent, #10b981);
 }
 
 .tutor-journey-panel__item:not(.tutor-journey-panel__item--done) .tutor-journey-panel__icon {
@@ -145,8 +145,8 @@ const isVisible = computed<boolean>(() => {
   align-items: center;
   padding: 8px 16px;
   background: transparent;
-  color: var(--color-primary, #2563eb);
-  border: 1.5px solid var(--color-primary, #2563eb);
+  color: var(--accent, #10b981);
+  border: 1.5px solid var(--accent, #10b981);
   border-radius: var(--radius-md, 8px);
   font-size: 13px;
   font-weight: 600;
@@ -155,7 +155,7 @@ const isVisible = computed<boolean>(() => {
 }
 
 .tutor-journey-panel__cta:hover {
-  background: var(--color-primary, #2563eb);
+  background: var(--accent, #10b981);
   color: #fff;
 }
 </style>

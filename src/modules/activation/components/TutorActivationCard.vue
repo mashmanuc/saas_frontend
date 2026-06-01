@@ -168,7 +168,7 @@ function dismiss(): void {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary, #2563eb);
+  color: var(--accent, #10b981);
   margin: 0;
 }
 .tutor-activation-card__title {
@@ -206,7 +206,7 @@ function dismiss(): void {
   text-align: left;
 }
 .tutor-activation-card__intent-btn:hover:not(:disabled) {
-  border-color: var(--color-primary, #2563eb);
+  border-color: var(--accent, #10b981);
   background: var(--bg-card, #fff);
 }
 .tutor-activation-card__intent-btn:disabled {
@@ -226,7 +226,7 @@ function dismiss(): void {
   display: inline-flex;
   align-items: center;
   padding: 10px 20px;
-  background: var(--color-primary, #2563eb);
+  background: var(--accent, #10b981);
   color: #fff;
   border-radius: var(--radius-md, 8px);
   font-size: 14px;
@@ -235,7 +235,7 @@ function dismiss(): void {
   transition: background 0.15s;
 }
 .tutor-activation-card__cta:hover {
-  background: var(--color-primary-dark, #1d4ed8);
+  background: var(--accent-dark, #059669);
 }
 
 /* ── Transition ── */
