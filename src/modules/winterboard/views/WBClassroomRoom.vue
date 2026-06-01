@@ -130,6 +130,7 @@
           @pause="handlePauseRecording"
           @resume="handleResumeRecording"
           @finalize="handleFinalizeRecording"
+          @restart="handleRestartRecordingRequest"
         />
         <!-- Lock toggle (teacher only) -->
         <button
@@ -357,6 +358,14 @@
       @retry="onFinalizeBarrierRetry"
     />
 
+    <!-- Recording restart confirmation: finalized → новий cycle.
+         Backend архівує попередній active Replay у /start-recording/. -->
+    <WBRecordingRestartConfirmModal
+      v-model="showRestartConfirmModal"
+      :is-loading="isRestartingRecording"
+      @confirm="confirmRestartRecording"
+    />
+
     <!-- Phase 1: Recording controls moved into header -->
 
 
@@ -475,6 +484,7 @@ import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
+import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
@@ -714,6 +724,28 @@ async function handlePauseRecording(): Promise<void> {
     console.error('[WBClassroomRoom] Failed to pause recording:', e)
   } finally {
     isRecordingLoading.value = false
+  }
+}
+
+// ── Restart (finalized → новий cycle) — потребує user confirmation ──
+// Backend сам архівує попередній active Replay у start_recording логіці —
+// тому restart = handleStartRecording() з confirmation modal перед викликом.
+const showRestartConfirmModal = ref(false)
+const isRestartingRecording = ref(false)
+
+function handleRestartRecordingRequest(): void {
+  if (isRecordingLoading.value || isRestartingRecording.value) return
+  showRestartConfirmModal.value = true
+}
+
+async function confirmRestartRecording(): Promise<void> {
+  if (isRestartingRecording.value) return
+  isRestartingRecording.value = true
+  try {
+    await handleStartRecording()
+    showRestartConfirmModal.value = false
+  } finally {
+    isRestartingRecording.value = false
   }
 }
 

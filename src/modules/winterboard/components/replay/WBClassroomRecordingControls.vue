@@ -1,7 +1,7 @@
 <template>
   <div class="wb-classroom-recording" role="status" aria-live="polite">
-    <!-- IDLE / FINALIZED → 1 кнопка -->
-    <template v-if="recordingState === 'idle' || recordingState === 'finalized'">
+    <!-- IDLE → start NEW cycle (нічого ще не записувалось) -->
+    <template v-if="recordingState === 'idle'">
       <button
         type="button"
         class="wb-classroom-recording__btn wb-classroom-recording__btn--start"
@@ -12,12 +12,26 @@
         <span class="wb-classroom-recording__dot wb-classroom-recording__dot--idle" aria-hidden="true" />
         <span>{{ t('winterboard.recording.start') }}</span>
       </button>
-      <div v-if="recordingState === 'finalized'" class="wb-classroom-recording__frozen">
+    </template>
+
+    <!-- FINALIZED → "Запис завершено" badge + "Новий запис" (з confirmation у parent) -->
+    <template v-else-if="recordingState === 'finalized'">
+      <div class="wb-classroom-recording__frozen" :title="t('winterboard.recording.frozenHint')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
         <span>{{ t('winterboard.recording.frozen') }}</span>
       </div>
+      <button
+        type="button"
+        class="wb-classroom-recording__btn wb-classroom-recording__btn--restart"
+        :title="t('winterboard.recording.restartTitle')"
+        :disabled="isLoading"
+        @click="$emit('restart')"
+      >
+        <span class="wb-classroom-recording__dot wb-classroom-recording__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.restart') }}</span>
+      </button>
     </template>
 
     <!-- RECORDING → REC + Pause -->
@@ -40,7 +54,9 @@
     <!-- PAUSED → Resume + Finalize -->
     <template v-else-if="recordingState === 'paused'">
       <span class="wb-classroom-recording__dot wb-classroom-recording__dot--paused" aria-hidden="true" />
-      <span class="wb-classroom-recording__text wb-classroom-recording__text--paused">PAUSED</span>
+      <span class="wb-classroom-recording__text wb-classroom-recording__text--paused">
+        {{ t('winterboard.recording.pausedLabel') }}
+      </span>
       <span class="wb-classroom-recording__timer">{{ formattedDuration }}</span>
       <button
         type="button"
@@ -80,10 +96,17 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
+  /** idle → start NEW recording cycle (new Replay on finalize) */
   start: []
+  /** recording → paused (same cycle, no Replay created) */
   pause: []
+  /** paused → recording (same cycle, no Replay created) */
   resume: []
+  /** recording | paused → finalized (Replay created/finalized) */
   finalize: []
+  /** finalized → start a NEW cycle (BE archives previous Replay).
+   *  Parent повинен показати confirmation modal перед викликом API. */
+  restart: []
 }>()
 
 // ── Timer ──
@@ -151,13 +174,15 @@ const formattedDuration = computed(() => {
   cursor: not-allowed;
 }
 
-.wb-classroom-recording__btn--start {
+.wb-classroom-recording__btn--start,
+.wb-classroom-recording__btn--restart {
   background: rgba(255, 255, 255, 0.9);
   color: #374151;
   border-color: #d1d5db;
 }
 
-.wb-classroom-recording__btn--start:hover:not(:disabled) {
+.wb-classroom-recording__btn--start:hover:not(:disabled),
+.wb-classroom-recording__btn--restart:hover:not(:disabled) {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -266,13 +291,15 @@ const formattedDuration = computed(() => {
   50% { opacity: 0.3; }
 }
 
-:root[data-theme='dark'] .wb-classroom-recording__btn--start {
+:root[data-theme='dark'] .wb-classroom-recording__btn--start,
+:root[data-theme='dark'] .wb-classroom-recording__btn--restart {
   background: rgba(55, 65, 81, 0.9);
   color: #e5e7eb;
   border-color: #4b5563;
 }
 
-:root[data-theme='dark'] .wb-classroom-recording__btn--start:hover:not(:disabled) {
+:root[data-theme='dark'] .wb-classroom-recording__btn--start:hover:not(:disabled),
+:root[data-theme='dark'] .wb-classroom-recording__btn--restart:hover:not(:disabled) {
   background: #374151;
 }
 
