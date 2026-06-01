@@ -489,10 +489,23 @@ function dismissInfoBlock(): void {
   showInfoBlock.value = false
 }
 
-/** "+ Нова дошка": відкриває чисту scratch-дошку без автоматичного уроку.
- *  Урок створюється вручну через "Зберегти як урок" всередині дошки. */
-function createNewTemplate() {
-  router.push({ name: 'winterboard-new' })
+/** Lesson-first "+ Нова дошка": створює draft KnowledgeLesson + prep
+ *  WBSession і веде у конструктор (winterboard-prepare, constructorMode=true).
+ *  Race-guard `creatingNewBoard` блокує double-submit (disable у template). */
+const creatingNewBoard = ref(false)
+async function createNewTemplate(): Promise<void> {
+  if (creatingNewBoard.value) return
+  creatingNewBoard.value = true
+  try {
+    const { lessonViewApi } = await import('@/modules/knowledge/api/lessonViewApi')
+    const { wb_session_id } = await lessonViewApi.createDraftWithPrep()
+    await router.push({ name: 'winterboard-prepare', params: { id: wb_session_id } })
+  } catch (err) {
+    console.error('[WBBoardList] createNewTemplate failed:', err)
+    notifyError(t('winterboard.boards.createError'))
+  } finally {
+    creatingNewBoard.value = false
+  }
 }
 
 /** Build breadcrumb path: [root, ..., current] */
