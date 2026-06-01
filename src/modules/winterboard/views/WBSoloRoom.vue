@@ -174,14 +174,16 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Constructor mode: зберегти canvas → draft lesson. Іконка без тексту. -->
+        <!-- Constructor mode: зберегти дошку як урок.
+             sourceLessonId → оновити існуючий урок (prep-board).
+             scratch board → відкрити діалог "Зберегти як урок". -->
         <button
-          v-if="sourceLessonId && sessionId && isSessionOwner && constructorMode && !isCanvasEmpty"
+          v-if="constructorMode && sessionId && isSessionOwner && !isCanvasEmpty"
           type="button"
           class="wb-header-btn"
-          :title="t('knowledge.lesson.updateSnapshot')"
+          :title="t('knowledge.template.saveFromRoom') || 'Зберегти як урок'"
           :disabled="isUpdatingSnapshot"
-          @click="handleUpdateLessonSnapshot"
+          @click="sourceLessonId ? handleUpdateLessonSnapshot() : (showSaveTemplateDialog = true)"
         >
           <svg v-if="!isUpdatingSnapshot" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
