@@ -243,6 +243,7 @@ const typeIcon = computed(() => {
 /**
  * Чи показувати кнопку "Побудувати":
  * - fingerprint є і має непорожній intents[]
+ * - fp.companion НЕ встановлений (якщо є — StateSerializer вже поклав companion на дошку)
  * - CapabilityRegistry може resolve хоча б один renderer
  *
  * INV-CAP-1: Рішення який renderer spawn-ити — тільки в resolveCompanions().
@@ -251,6 +252,8 @@ const typeIcon = computed(() => {
 const hasCompanion = computed(() => {
   const fp = data.value.fingerprint
   if (!fp?.intents?.length) return false
+  // Якщо companion pre-placed StateSerializer-ом — кнопка не потрібна
+  if (fp.companion) return false
   return hasAvailableCompanions(fp.intents, fp.extracted_data ?? {})
 })
 
