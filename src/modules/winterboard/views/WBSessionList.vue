@@ -237,7 +237,9 @@ async function fetchSessions(): Promise<void> {
 // ── Actions ───────────────────────────────────────────────────────────────
 function openSession(id: string): void {
   openMenuId.value = null
-  router.push({ name: 'winterboard-solo', params: { id } })
+  // Дошки зі Студії відкриваємо у конструкторі (constructorMode=true).
+  // winterboard-solo лишається тільки для "Провести урок" (live recording).
+  router.push({ name: 'winterboard-prepare', params: { id } })
 }
 
 async function handleDuplicate(id: string): Promise<void> {
@@ -245,7 +247,7 @@ async function handleDuplicate(id: string): Promise<void> {
   try {
     const dup = await winterboardApi.duplicateSession(id)
     showToast(t('winterboard.sessions.duplicated'), 'success')
-    router.push({ name: 'winterboard-solo', params: { id: dup.id } })
+    router.push({ name: 'winterboard-prepare', params: { id: dup.id } })
   } catch (err) {
     console.error('[WB:SessionList] Duplicate failed', err)
     showToast(t('winterboard.sessions.duplicateError'), 'error')

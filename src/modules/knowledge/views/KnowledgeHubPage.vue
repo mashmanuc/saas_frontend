@@ -121,10 +121,10 @@
                 <span class="knowledge-hub__lesson-date">{{ formatDate(lesson.published_at || lesson.created_at) }}</span>
               </div>
             </router-link>
-            <!-- C1: Source board link -->
+            <!-- C1: Source board link — у конструкторі (це шаблон, не урок). -->
             <router-link
               v-if="lesson.source_session_id"
-              :to="`/winterboard/${lesson.source_session_id}`"
+              :to="{ name: 'winterboard-prepare', params: { id: lesson.source_session_id } }"
               class="knowledge-hub__board-link"
             >
               {{ t('knowledge.hub.openBoard') }} →

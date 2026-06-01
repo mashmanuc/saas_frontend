@@ -179,7 +179,8 @@ async function loadRecentBoards(): Promise<void> {
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 function openBoard(id: string): void {
-  router.push({ name: 'winterboard-solo', params: { id } })
+  // Recent board — це чернетка/шаблон для редагування. Конструктор, не урок.
+  router.push({ name: 'winterboard-prepare', params: { id } })
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -240,7 +240,8 @@ const { clone, isCloning } = useCloneTemplate()
 async function handleClone(templateId: string): Promise<void> {
   const result = await clone(templateId)
   if (result?.session_id) {
-    router.push(`/winterboard/${result.session_id}`)
+    // Клон шаблону з каталогу — відкриваємо у конструкторі для редагування.
+    router.push({ name: 'winterboard-prepare', params: { id: result.session_id } })
   }
 }
 

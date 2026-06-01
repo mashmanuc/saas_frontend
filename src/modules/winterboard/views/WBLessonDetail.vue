@@ -286,7 +286,8 @@ async function loadData(): Promise<void> {
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
 function openSession(sessionId: string): void {
-  router.push({ name: 'winterboard-solo', params: { id: sessionId } })
+  // Source board of a lesson — для редагування шаблону. Конструктор.
+  router.push({ name: 'winterboard-prepare', params: { id: sessionId } })
 }
 
 function startLesson(): void {
