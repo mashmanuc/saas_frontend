@@ -999,34 +999,65 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       }
     }
 
+    // Note: 'calculus' was the old renderer name; now handled as 'calculus_card' above.
+    // Keeping this case as a no-op fallback for any residual data.
     case 'calculus': {
-      // Calculus теж використовує GraphCalculatorState-подібний формат
-      const equations = (d.equations as string[] | undefined) ?? []
-      const expressions = equations.map((src, i) => ({
-        id:     generateId(),
-        src:    toGraphSrc(src),
-        color:  GRAPH_EXPR_COLORS[i % GRAPH_EXPR_COLORS.length],
-        hidden: false,
-      }))
+      return { version: 1, mode: 'derivative', expr: 'x^2', x0: 1.0,
+               showSecant: false, h: 0.5, showDerivTrace: false,
+               viewport: { cx: 0, cy: 0, scale: 50 } }
+    }
+
+    case 'nmt3d': {
+      // Map extracted_data.shape → Nmt3dData.templateKey (version 1 format).
+      // extracted_data comes from enrich_fingerprints (e.g. {shape:"pyramid"}).
+      const solidShape = (d.shape as string | undefined) ?? 'cube'
+      const baseShape  = (d.base_shape as string | undefined)
+      const SHAPE_TO_TEMPLATE: Record<string, string> = {
+        pyramid:  baseShape === 'triangle' ? 'pyramid3' : baseShape === 'hexagon' ? 'pyramid6' : 'pyramid4',
+        prism:    baseShape === 'hexagon' ? 'prism6' : 'prism4',
+        cylinder: 'cylinder',
+        cone:     'cone',
+        sphere:   'sphere',
+        cube:     'cube',
+        cuboid:   'cuboid',
+      }
       return {
-        version: 1,
-        state: {
-          ...DEFAULT_GRAPH_STATE,
-          expressions,
-        },
+        version:     1,
+        templateKey: SHAPE_TO_TEMPLATE[solidShape] ?? solidShape,
+        mode:        'adapt' as const,
       }
     }
 
-    case 'nmt3d':
+    case 'calculus_card': {
+      // CalculusData — mode determined by which intent triggered this.
+      const isIntegral = resolution.intent === 'show_integral_area'
+      if (isIntegral) {
+        return {
+          version: 1, mode: 'integral',
+          expr: 'x^2', a: -1.5, b: 1.5,
+          riemann: 'off', N: 12, showF: false,
+          viewport: { cx: 0, cy: 0, scale: 50 },
+        }
+      }
       return {
-        shape:  (d.shape      as string | undefined) ?? 'prism',
-        base:   (d.base_shape as string | undefined),
-        params: (d.dimensions as Record<string, unknown> | undefined) ?? {},
-        points: (d.points     as unknown[] | undefined),
+        version: 1, mode: 'derivative',
+        expr: 'x^2', x0: 1.0,
+        showSecant: false, h: 0.5, showDerivTrace: false,
+        viewport: { cx: 0, cy: 0, scale: 50 },
+      }
+    }
+
+    case 'quadratic_card':
+      return {
+        version: 1,
+        a: 1, b: 0, c: 0,
+        showVertex: true, showAxis: true, showRoots: true, sign: '=',
+        viewport: { cx: 0, cy: 0, scale: 50 },
       }
 
-    case 'geometry_2d':
+    case 'geometry_2d_v2':
       return {
+        version: 2,
         shape:  (d.shape_2d   as string | undefined),
         sides:  (d.sides      as number[] | undefined),
         angles: (d.angles_deg as number[] | undefined),
@@ -1035,7 +1066,19 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
 
     case 'trig_circle':
       return {
-        angles: (d.angles_rad as string[] | undefined),
+        version: 1,
+        theta: 1.047,  // 60° — all values non-trivial
+        showSin: true, showCos: true, showTan: false, showCot: false,
+        showSpecialPoints: true, showRefLabels: true,
+        showDeg: true, showRad: true, showGraphs: true,
+        snapPi12: false, speed: 0.6,
+      }
+
+    case 'trig_solver':
+      return {
+        version: 1,
+        type: 'sin', rel: '=', a: 0.5,
+        snapSpecial: true, showGraph: true, showAllSolutions: true,
       }
 
     default:
