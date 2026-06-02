@@ -3456,10 +3456,12 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__toolbar {
   flex-shrink: 0;
   z-index: 20;
-  /* Constrain height so WBToolbar overflow-y:auto can scroll */
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* NOTE: overflow:hidden навмисно відсутній — він обрізав би WBColorFlyout
+     (панель кольору/розміру), що виходить за межі тулбара.
+     Скрол тулбара працює через WBToolbar: overflow-y:auto + max-height:100%.
+     Висотне обмеження забезпечує flex-батько (.wb-solo-room__main overflow:hidden). */
 }
 
 /* ── Page thumbnails panel (collapsible) ──────────────────────────────────── */
