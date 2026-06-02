@@ -37,16 +37,18 @@
       <span class="wb-color-flyout__chevron" aria-hidden="true">›</span>
     </button>
 
-    <!-- Flyout panel -->
-    <Transition name="wb-flyout">
-      <div
-        v-if="isOpen"
-        ref="panelRef"
-        class="wb-color-flyout__panel"
-        role="dialog"
-        :aria-label="t('winterboard.toolbar.color')"
-        @keydown.escape="close"
-      >
+    <!-- Flyout panel — teleported to <body> so overflow:hidden на toolbar не обрізає -->
+    <Teleport to="body">
+      <Transition name="wb-flyout">
+        <div
+          v-if="isOpen"
+          ref="panelRef"
+          class="wb-color-flyout__panel wb-color-flyout__panel--fixed"
+          :style="panelStyle"
+          role="dialog"
+          :aria-label="t('winterboard.toolbar.color')"
+          @keydown.escape="close"
+        >
         <!-- Arrow pointer -->
         <div class="wb-color-flyout__arrow" aria-hidden="true" />
 
@@ -196,13 +198,14 @@
             />
           </div>
         </template>
-      </div>
-    </Transition>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBToolType } from '../../types/winterboard'
 
@@ -288,14 +291,55 @@ const panelRef = ref<HTMLElement | null>(null)
 function toggle(): void { isOpen.value = !isOpen.value }
 function close(): void { isOpen.value = false; triggerRef.value?.focus() }
 
+// Panel teleported to <body> — check both rootRef and panelRef
 function onClickOutside(e: MouseEvent): void {
-  if (rootRef.value && !rootRef.value.contains(e.target as Node)) {
-    isOpen.value = false
-  }
+  const target = e.target as Node
+  const inRoot  = rootRef.value?.contains(target)
+  const inPanel = panelRef.value?.contains(target)
+  if (!inRoot && !inPanel) isOpen.value = false
 }
 
 onMounted(() => document.addEventListener('mousedown', onClickOutside, true))
 onUnmounted(() => document.removeEventListener('mousedown', onClickOutside, true))
+
+// ─── Panel position (fixed, calculated from trigger rect) ─────────────────────
+
+interface PanelStyle {
+  position: 'fixed'
+  left: string
+  top?: string
+  bottom?: string
+  zIndex: string
+}
+
+const panelStyle = ref<PanelStyle>({ position: 'fixed', left: '0px', top: '0px', zIndex: '1000' })
+
+function calcPanelPos(): void {
+  if (!triggerRef.value) return
+  const rect = triggerRef.value.getBoundingClientRect()
+  const isMobile = window.innerWidth <= 768
+  if (isMobile) {
+    // Mobile: panel opens above the trigger
+    panelStyle.value = {
+      position: 'fixed',
+      left: `${Math.max(4, rect.left)}px`,
+      bottom: `${window.innerHeight - rect.top + 10}px`,
+      zIndex: '1000',
+    }
+  } else {
+    // Desktop / tablet: panel opens to the right of trigger
+    panelStyle.value = {
+      position: 'fixed',
+      left: `${rect.right + 10}px`,
+      top: `${rect.top}px`,
+      zIndex: '1000',
+    }
+  }
+}
+
+watch(isOpen, (open) => {
+  if (open) nextTick(calcPanelPos)
+})
 
 watch([showPenColors, showHighlighterColors], ([pen, hl]) => {
   if (!pen && !hl) isOpen.value = false
@@ -455,10 +499,8 @@ watch(
 /* ─── Flyout panel ───────────────────────────────────────────────────────────── */
 
 .wb-color-flyout__panel {
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 0;
-  z-index: 60;
+  /* position/left/top задається через JS panelStyle (Teleport to body).
+     position: fixed в .wb-color-flyout__panel--fixed нижче. */
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -469,7 +511,11 @@ watch(
   flex-direction: column;
   gap: 6px;
   touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
+}
+
+/* Teleported panel — position:fixed, координати від JS panelStyle */
+.wb-color-flyout__panel--fixed {
+  position: fixed !important;
 }
 
 .wb-color-flyout__arrow {
@@ -581,23 +627,7 @@ watch(
 .wb-flyout-enter-from,
 .wb-flyout-leave-to { opacity: 0; transform: translateX(-6px) scale(0.97); }
 
-/* ─── Mobile: panel opens upward ─────────────────────────────────────────────── */
-
-@media (max-width: 768px) {
-  .wb-color-flyout__panel {
-    left: 0;
-    top: auto;
-    bottom: calc(100% + 10px);
-  }
-  .wb-color-flyout__arrow {
-    left: 14px;
-    top: auto;
-    bottom: -6px;
-    transform: rotate(-135deg);
-  }
-  .wb-flyout-enter-from,
-  .wb-flyout-leave-to { opacity: 0; transform: translateY(6px) scale(0.97); }
-}
+/* Mobile: позиція тепер через JS (panelStyle) — стара CSS-позиція не потрібна */
 
 @media (prefers-reduced-motion: reduce) {
   .wb-flyout-enter-active,
