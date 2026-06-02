@@ -123,14 +123,16 @@ async function mount(): Promise<void> {
     makeGeoToolbar: (c: GeoCardInstance, h: HTMLElement) => HTMLDivElement
   }
   const rawPreset = props.asset.data.preset
-  let presetKey = rawPreset || 'blank'
-  if (!window.Geo2D?.PRESETS?.[presetKey]) {
-    // Якщо preset був заданий але невідомий (стара/бита картка) → показуємо
-    // 'triangle' (видима геометрія) замість порожнечі. Якщо preset порожній →
-    // справжній 'blank' (graph paper). Обидва гарантовано існують у PRESETS.
-    const fallback = rawPreset ? 'triangle' : 'blank'
-    console.warn('[Geometry2DRenderer] Unknown preset:', presetKey, '— falling back to', fallback)
-    presetKey = window.Geo2D?.PRESETS?.[fallback] ? fallback : 'triangle'
+  let presetKey: string
+  if (rawPreset && window.Geo2D?.PRESETS?.[rawPreset]) {
+    // Валідний preset (включно з явним 'blank' — graph paper).
+    presetKey = rawPreset
+  } else {
+    // Відсутній або невідомий preset. Стара/бита картка-компаньйон (data без
+    // поля preset, напр. старий {version:2} формат) → показуємо 'triangle'
+    // (видима геометрія) замість порожнечі. Явний 'blank' йде гілкою вище.
+    presetKey = 'triangle'
+    if (rawPreset) console.warn('[Geometry2DRenderer] Unknown preset:', rawPreset, '-> triangle')
   }
   card = new W.GeoCard(stageRef.value, { type: presetKey })
   applyPersistedToggles()
