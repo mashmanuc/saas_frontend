@@ -175,7 +175,7 @@
                       ? 'bg-gray-100 text-gray-600'
                       : 'bg-green-100 text-green-700'"
                   >
-                    {{ lesson.status }}
+                    {{ $t(`knowledge.lesson.statusBadge.${lesson.status}`, lesson.status) }}
                   </span>
                 </div>
 
@@ -320,14 +320,86 @@
         </p>
       </div>
 
+      <!-- Grid + bulk bar (v-else = є сесії) -->
+      <div v-else>
+
+      <!-- Bulk action bar — з'являється коли є виділені -->
+      <div
+        v-if="conductedSelectionMode"
+        class="flex items-center justify-between gap-3 px-4 py-2.5 mb-4 bg-blue-50 border border-blue-200 rounded-xl"
+      >
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <span
+            class="flex items-center justify-center w-5 h-5 rounded-[4px] border-[1.5px] cursor-pointer"
+            :class="conductedAllSelected
+              ? 'bg-blue-600 border-blue-600 text-white'
+              : 'bg-white border-blue-600 text-blue-600'"
+            @click="conductedAllSelected ? deselectAllConducted() : selectAllConducted()"
+          >
+            <svg v-if="conductedAllSelected" width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg v-else width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M2 5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="text-sm font-semibold text-blue-700">
+            {{ $t('winterboard.lesson.conducted.selectedCount', { n: conductedSelectedIds.length }) }}
+          </span>
+        </label>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-white transition-colors"
+            @click="deselectAllConducted"
+          >
+            {{ $t('winterboard.lesson.conducted.deselectAll') }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors inline-flex items-center gap-1.5"
+            :disabled="conductedBulkDeleting"
+            @click="showConductedBulkDeleteConfirm = true"
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M1.5 3.5h11M4.5 3.5V2.5a1 1 0 011-1h3a1 1 0 011 1v1M5.5 6.5v4M8.5 6.5v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M2 3.5l.7 7a1 1 0 001 .9h6.6a1 1 0 001-.9l.7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ $t('winterboard.lesson.conducted.deleteSelected', { n: conductedSelectedIds.length }) }}
+          </button>
+        </div>
+      </div>
+
       <!-- Grid of conducted sessions -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="session in conductedSessions"
           :key="session.id"
-          class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-          @click="openConductedSession(session)"
+          class="relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          :class="conductedSelectedIds.includes(session.id)
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-200'"
+          @click="conductedSelectionMode ? toggleConductedSelect(session.id) : openConductedSession(session)"
         >
+          <!-- Checkbox (top-left, visible on hover or when selected) -->
+          <div
+            class="absolute top-2 left-2 z-10 opacity-0 transition-opacity group-hover:opacity-100"
+            :class="{ 'opacity-100': conductedSelectedIds.includes(session.id) || conductedSelectionMode }"
+            style="transition: opacity 0.1s"
+            @click.stop="toggleConductedSelect(session.id)"
+          >
+            <span
+              class="flex items-center justify-center w-5 h-5 rounded-[4px] shadow-sm cursor-pointer"
+              :class="conductedSelectedIds.includes(session.id)
+                ? 'bg-blue-600 border-[1.5px] border-blue-600 text-white'
+                : 'bg-white/95 border-[1.5px] border-gray-300'"
+            >
+              <svg v-if="conductedSelectedIds.includes(session.id)" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+
           <!-- Preview -->
           <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
             <img
@@ -373,9 +445,23 @@
               </span>
               <span>{{ formatDate(session.created_at) }}</span>
             </div>
+
+            <!-- Actions -->
+            <div class="mt-3 flex gap-2" @click.stop>
+              <button
+                type="button"
+                class="px-3 py-1.5 border border-gray-300 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+                :title="$t('winterboard.lesson.conducted.delete')"
+                :disabled="conductedDeleting && conductedDeleteTarget?.id === session.id"
+                @click="conductedDeleteTarget = session"
+              >
+                🗑
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      </div><!-- /v-else: є сесії -->
     </div>
 
     <!-- Edit dialog (Phase 25 B1) -->
@@ -421,17 +507,88 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Conducted: single delete confirm dialog -->
+    <Teleport to="body">
+      <div
+        v-if="conductedDeleteTarget"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        @click.self="conductedDeleteTarget = null"
+      >
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ $t('winterboard.lesson.conducted.confirmDelete.title') }}
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            {{ $t('winterboard.lesson.conducted.confirmDelete.message', { name: conductedDeleteTarget.name }) }}
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              @click="conductedDeleteTarget = null"
+            >
+              {{ $t('winterboard.lesson.conducted.confirmDelete.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              :disabled="conductedDeleting"
+              @click="executeConductedDelete"
+            >
+              {{ conductedDeleting ? '…' : $t('winterboard.lesson.conducted.confirmDelete.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Conducted: bulk delete confirm dialog -->
+    <Teleport to="body">
+      <div
+        v-if="showConductedBulkDeleteConfirm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        @click.self="showConductedBulkDeleteConfirm = false"
+      >
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ $t('winterboard.lesson.conducted.confirmBulkDelete.title', { n: conductedSelectedIds.length }) }}
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            {{ $t('winterboard.lesson.conducted.confirmBulkDelete.message', { n: conductedSelectedIds.length }) }}
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              @click="showConductedBulkDeleteConfirm = false"
+            >
+              {{ $t('winterboard.lesson.conducted.confirmBulkDelete.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              :disabled="conductedBulkDeleting"
+              @click="handleConductedBulkDelete"
+            >
+              {{ conductedBulkDeleting ? '…' : $t('winterboard.lesson.conducted.confirmBulkDelete.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
 import type { ConductedLessonItem } from '../api/lessonViewApi'
+import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 import apiClient from '@/utils/apiClient'
 import { useNotifyStore } from '@/stores/notifyStore'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
@@ -479,7 +636,7 @@ const editTarget = ref<MyLesson | null>(null)
 const PAGE_SIZE = 20
 
 // ── Проведені уроки tab ──────────────────────────────────────────────
-// Окремий read-only список lesson-play WBSession з нового endpoint
+// Окремий список lesson-play WBSession з нового endpoint
 // GET /api/v1/knowledge/my-lessons/conducted/.
 // Існуючий "Шаблони" tab (lessons) залишається без змін.
 type TabKey = 'templates' | 'conducted'
@@ -489,6 +646,75 @@ const conductedLoading = ref(false)
 const conductedError = ref<string | null>(null)
 const conductedTotal = ref(0)
 const conductedLoaded = ref(false)
+
+// ── Conducted: bulk selection ────────────────────────────────────────
+const conductedSelectedIds = ref<string[]>([])
+const conductedSelectionMode = computed(() => conductedSelectedIds.value.length > 0)
+const conductedAllSelected = computed(
+  () => conductedSessions.value.length > 0 &&
+        conductedSessions.value.every(s => conductedSelectedIds.value.includes(s.id)),
+)
+
+function toggleConductedSelect(id: string): void {
+  const idx = conductedSelectedIds.value.indexOf(id)
+  if (idx >= 0) {
+    conductedSelectedIds.value.splice(idx, 1)
+  } else {
+    conductedSelectedIds.value.push(id)
+  }
+}
+
+function selectAllConducted(): void {
+  conductedSelectedIds.value = conductedSessions.value.map(s => s.id)
+}
+
+function deselectAllConducted(): void {
+  conductedSelectedIds.value = []
+}
+
+// ── Conducted: single delete ─────────────────────────────────────────
+const conductedDeleteTarget = ref<ConductedLessonItem | null>(null)
+const conductedDeleting = ref(false)
+
+async function executeConductedDelete(): Promise<void> {
+  if (!conductedDeleteTarget.value) return
+  const id = conductedDeleteTarget.value.id
+  conductedDeleting.value = true
+  try {
+    await winterboardApi.deleteSession(id)
+    conductedSessions.value = conductedSessions.value.filter(s => s.id !== id)
+    conductedTotal.value = Math.max(0, conductedTotal.value - 1)
+    conductedSelectedIds.value = conductedSelectedIds.value.filter(sid => sid !== id)
+    conductedDeleteTarget.value = null
+  } catch (err) {
+    console.error('[WBMyLessonsPage] conducted delete error:', err)
+    notify.error(t('winterboard.lesson.conducted.deleteError'))
+  } finally {
+    conductedDeleting.value = false
+  }
+}
+
+// ── Conducted: bulk delete ────────────────────────────────────────────
+const showConductedBulkDeleteConfirm = ref(false)
+const conductedBulkDeleting = ref(false)
+
+async function handleConductedBulkDelete(): Promise<void> {
+  if (conductedBulkDeleting.value || conductedSelectedIds.value.length === 0) return
+  conductedBulkDeleting.value = true
+  const idsToDelete = [...conductedSelectedIds.value]
+  try {
+    await Promise.all(idsToDelete.map(id => winterboardApi.deleteSession(id)))
+    conductedSessions.value = conductedSessions.value.filter(s => !idsToDelete.includes(s.id))
+    conductedTotal.value = Math.max(0, conductedTotal.value - idsToDelete.length)
+    conductedSelectedIds.value = []
+    showConductedBulkDeleteConfirm.value = false
+    notify.success(t('winterboard.lesson.conducted.deleteSelected', { n: idsToDelete.length }))
+  } catch {
+    notify.error(t('winterboard.lesson.conducted.deleteError'))
+  } finally {
+    conductedBulkDeleting.value = false
+  }
+}
 
 async function loadConducted() {
   conductedLoading.value = true

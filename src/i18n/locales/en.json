@@ -7696,7 +7696,24 @@
         "emptySubtitle": "Click \"Conduct\" on a lesson card and it will appear here",
         "loadError": "Failed to load conducted lessons",
         "fromTemplate": "From template",
-        "hasRecording": "Has recording"
+        "hasRecording": "Has recording",
+        "delete": "Delete lesson",
+        "deleteError": "Failed to delete lesson",
+        "selectedCount": "Selected: {n}",
+        "deselectAll": "Deselect all",
+        "deleteSelected": "Delete selected ({n})",
+        "confirmDelete": {
+          "title": "Delete lesson?",
+          "message": "Lesson \"{name}\" will be permanently deleted. This action cannot be undone.",
+          "confirm": "Delete",
+          "cancel": "Cancel"
+        },
+        "confirmBulkDelete": {
+          "title": "Delete {n} lessons?",
+          "message": "All {n} selected lessons will be permanently deleted. This action cannot be undone.",
+          "confirm": "Delete",
+          "cancel": "Cancel"
+        }
       }
     },
     "replay": {
