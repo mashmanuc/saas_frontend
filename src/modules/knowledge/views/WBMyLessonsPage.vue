@@ -177,15 +177,15 @@
             <div
               v-for="lesson in lessons"
               :key="lesson.id"
-              class="group wb-lesson-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow"
+              class="wb-lesson-card wb-template-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow"
               :class="templateSelectedIds.includes(lesson.id)
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200'"
             >
               <!-- Checkbox (top-left) -->
               <div
-                class="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                :class="{ 'opacity-100': templateSelectedIds.includes(lesson.id) || templateSelectionMode }"
+                class="wb-template-checkbox absolute top-2 left-2 z-10 transition-opacity"
+                :class="templateSelectedIds.includes(lesson.id) || templateSelectionMode ? 'opacity-100' : 'opacity-0'"
                 @click.stop="toggleTemplateSelect(lesson.id)"
               >
                 <span
@@ -443,7 +443,7 @@
         <div
           v-for="session in conductedSessions"
           :key="session.id"
-          class="group relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          class="wb-conducted-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
           :class="conductedSelectedIds.includes(session.id)
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200'"
@@ -451,9 +451,8 @@
         >
           <!-- Checkbox (top-left, visible on hover or when selected) -->
           <div
-            class="absolute top-2 left-2 z-10 opacity-0 transition-opacity group-hover:opacity-100"
-            :class="{ 'opacity-100': conductedSelectedIds.includes(session.id) || conductedSelectionMode }"
-            style="transition: opacity 0.1s"
+            class="wb-conducted-checkbox absolute top-2 left-2 z-10 transition-opacity"
+            :class="conductedSelectedIds.includes(session.id) || conductedSelectionMode ? 'opacity-100' : 'opacity-0'"
             @click.stop="toggleConductedSelect(session.id)"
           >
             <span
@@ -682,6 +681,20 @@
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+/* Checkbox on шаблони cards — visible on hover or when selected/selectionMode */
+.wb-template-card:hover .wb-template-checkbox,
+.wb-template-card--selected .wb-template-checkbox {
+  opacity: 1 !important;
+}
+
+/* Checkbox on conducted cards */
+.wb-conducted-card:hover .wb-conducted-checkbox,
+.wb-conducted-card--selected .wb-conducted-checkbox {
+  opacity: 1 !important;
+}
+</style>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
