@@ -126,12 +126,80 @@
 
         <!-- Grid of lessons -->
         <ErrorBoundary v-else>
+          <!-- Bulk action bar шаблонів -->
+          <div
+            v-if="templateSelectionMode"
+            class="flex items-center justify-between gap-3 px-4 py-2.5 mb-4 bg-blue-50 border border-blue-200 rounded-xl"
+          >
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <span
+                class="flex items-center justify-center w-5 h-5 rounded-[4px] border-[1.5px] cursor-pointer"
+                :class="templateAllSelected
+                  ? 'bg-blue-600 border-blue-600 text-white'
+                  : 'bg-white border-blue-600 text-blue-600'"
+                @click="templateAllSelected ? deselectAllTemplates() : selectAllTemplates()"
+              >
+                <svg v-if="templateAllSelected" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg v-else width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="text-sm font-semibold text-blue-700">
+                {{ $t('knowledge.lesson.bulkDelete.selectedCount', { n: templateSelectedIds.length }) }}
+              </span>
+            </label>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-white transition-colors"
+                @click="deselectAllTemplates"
+              >
+                {{ $t('knowledge.lesson.bulkDelete.deselectAll') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors inline-flex items-center gap-1.5"
+                :disabled="templateBulkDeleting"
+                @click="showTemplateBulkDeleteConfirm = true"
+              >
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1.5 3.5h11M4.5 3.5V2.5a1 1 0 011-1h3a1 1 0 011 1v1M5.5 6.5v4M8.5 6.5v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M2 3.5l.7 7a1 1 0 001 .9h6.6a1 1 0 001-.9l.7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ $t('knowledge.lesson.bulkDelete.deleteSelected', { n: templateSelectedIds.length }) }}
+              </button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               v-for="lesson in lessons"
               :key="lesson.id"
-              class="wb-lesson-card bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              class="group wb-lesson-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow"
+              :class="templateSelectedIds.includes(lesson.id)
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200'"
             >
+              <!-- Checkbox (top-left) -->
+              <div
+                class="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                :class="{ 'opacity-100': templateSelectedIds.includes(lesson.id) || templateSelectionMode }"
+                @click.stop="toggleTemplateSelect(lesson.id)"
+              >
+                <span
+                  class="flex items-center justify-center w-5 h-5 rounded-[4px] shadow-sm cursor-pointer"
+                  :class="templateSelectedIds.includes(lesson.id)
+                    ? 'bg-blue-600 border-[1.5px] border-blue-600 text-white'
+                    : 'bg-white/95 border-[1.5px] border-gray-300'"
+                >
+                  <svg v-if="templateSelectedIds.includes(lesson.id)" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </div>
+
               <!-- Preview: thumbnail or emoji fallback (Phase 25 BUG-6) -->
               <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img
@@ -375,7 +443,7 @@
         <div
           v-for="session in conductedSessions"
           :key="session.id"
-          class="relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          class="group relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
           :class="conductedSelectedIds.includes(session.id)
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200'"
@@ -470,6 +538,41 @@
       :lesson="editTarget"
       @saved="onLessonEdited"
     />
+
+    <!-- Templates: bulk delete confirm dialog -->
+    <Teleport to="body">
+      <div
+        v-if="showTemplateBulkDeleteConfirm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        @click.self="showTemplateBulkDeleteConfirm = false"
+      >
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ $t('knowledge.lesson.bulkDelete.title', { n: templateSelectedIds.length }) }}
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            {{ $t('knowledge.lesson.bulkDelete.message', { n: templateSelectedIds.length }) }}
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              @click="showTemplateBulkDeleteConfirm = false"
+            >
+              {{ $t('knowledge.lesson.bulkDelete.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              :disabled="templateBulkDeleting"
+              @click="handleTemplateBulkDelete"
+            >
+              {{ templateBulkDeleting ? '…' : $t('knowledge.lesson.bulkDelete.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Delete confirm dialog (Phase 25) -->
     <Teleport to="body">
@@ -634,6 +737,52 @@ const showEditDialog = ref(false)
 const editTarget = ref<MyLesson | null>(null)
 
 const PAGE_SIZE = 20
+
+// ── Шаблони: bulk selection ───────────────────────────────────────────
+const templateSelectedIds = ref<string[]>([])
+const templateSelectionMode = computed(() => templateSelectedIds.value.length > 0)
+const templateAllSelected = computed(
+  () => lessons.value.length > 0 && lessons.value.every(l => templateSelectedIds.value.includes(l.id)),
+)
+
+function toggleTemplateSelect(id: string): void {
+  const idx = templateSelectedIds.value.indexOf(id)
+  if (idx >= 0) {
+    templateSelectedIds.value.splice(idx, 1)
+  } else {
+    templateSelectedIds.value.push(id)
+  }
+}
+
+function selectAllTemplates(): void {
+  templateSelectedIds.value = lessons.value.map(l => l.id)
+}
+
+function deselectAllTemplates(): void {
+  templateSelectedIds.value = []
+}
+
+const showTemplateBulkDeleteConfirm = ref(false)
+const templateBulkDeleting = ref(false)
+
+async function handleTemplateBulkDelete(): Promise<void> {
+  if (templateBulkDeleting.value || templateSelectedIds.value.length === 0) return
+  templateBulkDeleting.value = true
+  const idsToDelete = [...templateSelectedIds.value]
+  try {
+    await Promise.all(idsToDelete.map(id => lessonSaveApi.deleteLesson(id)))
+    lessons.value = lessons.value.filter(l => !idsToDelete.includes(l.id))
+    total.value = Math.max(0, total.value - idsToDelete.length)
+    hasMore.value = lessons.value.length < total.value
+    templateSelectedIds.value = []
+    showTemplateBulkDeleteConfirm.value = false
+    notify.success(t('knowledge.lesson.bulkDelete.success', { n: idsToDelete.length }))
+  } catch {
+    notify.error(t('knowledge.lesson.deleteError'))
+  } finally {
+    templateBulkDeleting.value = false
+  }
+}
 
 // ── Проведені уроки tab ──────────────────────────────────────────────
 // Окремий список lesson-play WBSession з нового endpoint

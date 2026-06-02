@@ -8495,6 +8495,16 @@
       "deleteCancel": "Cancel",
       "deleting": "Deleting...",
       "deleteError": "Failed to delete lesson",
+      "bulkDelete": {
+        "selectedCount": "Selected: {n}",
+        "deselectAll": "Deselect all",
+        "deleteSelected": "Delete selected ({n})",
+        "title": "Delete {n} templates?",
+        "message": "All {n} selected templates will be deleted. This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel",
+        "success": "Deleted {n} templates"
+      },
       "shareError": "Failed to create share link",
       "toggleVisibilityError": "Failed to change lesson visibility",
       "empty": {
