@@ -122,13 +122,17 @@ async function mount(): Promise<void> {
     GeoCard: new (el: HTMLElement, o: { type: string }) => GeoCardInstance
     makeGeoToolbar: (c: GeoCardInstance, h: HTMLElement) => HTMLDivElement
   }
-  const presetKey = props.asset.data.preset || 'blank'
+  const rawPreset = props.asset.data.preset
+  let presetKey = rawPreset || 'blank'
   if (!window.Geo2D?.PRESETS?.[presetKey]) {
-    console.warn('[Geometry2DRenderer] Unknown preset:', presetKey, '— falling back to blank')
-    card = new W.GeoCard(stageRef.value, { type: 'blank' })
-  } else {
-    card = new W.GeoCard(stageRef.value, { type: presetKey })
+    // Якщо preset був заданий але невідомий (стара/бита картка) → показуємо
+    // 'triangle' (видима геометрія) замість порожнечі. Якщо preset порожній →
+    // справжній 'blank' (graph paper). Обидва гарантовано існують у PRESETS.
+    const fallback = rawPreset ? 'triangle' : 'blank'
+    console.warn('[Geometry2DRenderer] Unknown preset:', presetKey, '— falling back to', fallback)
+    presetKey = window.Geo2D?.PRESETS?.[fallback] ? fallback : 'triangle'
   }
+  card = new W.GeoCard(stageRef.value, { type: presetKey })
   applyPersistedToggles()
   applyPersistedPoints()
   wirePointMovePersistence()
