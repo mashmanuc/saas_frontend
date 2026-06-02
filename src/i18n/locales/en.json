@@ -7192,6 +7192,18 @@
         "message": "This will permanently delete \"{name}\". This action cannot be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
+      },
+      "selectBoard": "Select board",
+      "deselectBoard": "Deselect board",
+      "selectedCount": "Selected: {n}",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "deleteSelected": "Delete selected ({n})",
+      "confirmBulkDelete": {
+        "title": "Delete {n} boards?",
+        "message": "All {n} selected boards will be permanently deleted. This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
       }
     },
     "folders": {
@@ -8442,6 +8454,13 @@
       "updateSnapshot": "Update template",
       "snapshotUpdated": "Template updated ✓",
       "snapshotUpdateError": "Failed to update template. Please try again.",
+      "statusBadge": {
+        "draft": "Draft",
+        "public": "Published",
+        "DRAFT": "Draft",
+        "PUBLISHED": "Published",
+        "ARCHIVED": "Archived"
+      },
       "search": {
         "placeholder": "Search lessons...",
         "allStatuses": "All statuses",

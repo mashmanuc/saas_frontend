@@ -212,6 +212,44 @@
         </button>
       </aside>
 
+      <!-- Bulk action bar — з'являється коли є виділені дошки -->
+      <Transition name="wb-bulk-bar-fade">
+        <div v-if="selectionMode" class="wb-bulk-bar">
+          <label class="wb-bulk-bar__select-all">
+            <span
+              class="wb-bulk-bar__all-checkbox"
+              :class="{ 'wb-bulk-bar__all-checkbox--checked': allSelected }"
+              @click="allSelected ? deselectAll() : selectAll()"
+            >
+              <svg v-if="allSelected" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <svg v-else width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="wb-bulk-bar__count">{{ t('winterboard.boards.selectedCount', { n: selectedIds.length }) }}</span>
+          </label>
+          <div class="wb-bulk-bar__actions">
+            <button type="button" class="wb-bulk-bar__btn wb-bulk-bar__btn--ghost" @click="deselectAll">
+              {{ t('winterboard.boards.deselectAll') }}
+            </button>
+            <button
+              type="button"
+              class="wb-bulk-bar__btn wb-bulk-bar__btn--danger"
+              :disabled="bulkDeleting"
+              @click="showBulkDeleteConfirm = true"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M1.5 3.5h11M4.5 3.5V2.5a1 1 0 011-1h3a1 1 0 011 1v1M5.5 6.5v4M8.5 6.5v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M2 3.5l.7 7a1 1 0 001 .9h6.6a1 1 0 001-.9l.7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ t('winterboard.boards.deleteSelected', { n: selectedIds.length }) }}
+            </button>
+          </div>
+        </div>
+      </Transition>
+
       <!-- Loading: skeleton cards -->
       <div v-if="loading" class="wb-board-list__grid" aria-busy="true">
         <div v-for="i in 6" :key="i" class="wb-board-card wb-board-card--skeleton">
@@ -261,10 +299,12 @@
           :key="board.id"
           :board="board"
           :folders="flatFolders"
+          :selected="selectedIds.includes(board.id)"
           role="listitem"
           draggable="true"
           @dragstart="onBoardDragStart($event, board.id)"
-          @open="openBoard(board)"
+          @open="selectionMode ? toggleSelect(board.id) : openBoard(board)"
+          @toggle-select="toggleSelect(board.id)"
           @duplicate="handleDuplicate(board.id)"
           @share="handleShare(board.id)"
           @delete="confirmDelete(board)"
@@ -278,10 +318,12 @@
           v-for="board in boards"
           :key="board.id"
           :board="board"
+          :selected="selectedIds.includes(board.id)"
           role="listitem"
           draggable="true"
           @dragstart="onBoardDragStart($event, board.id)"
-          @open="openBoard(board)"
+          @open="selectionMode ? toggleSelect(board.id) : openBoard(board)"
+          @toggle-select="toggleSelect(board.id)"
           @duplicate="handleDuplicate(board.id)"
           @share="handleShare(board.id)"
           @delete="confirmDelete(board)"
@@ -343,6 +385,39 @@
                 @click="handleDelete"
               >
                 {{ deleting ? '…' : t('winterboard.boards.confirmDelete.confirm') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Bulk delete confirmation dialog -->
+    <Teleport to="body">
+      <Transition name="wb-dialog-fade">
+        <div
+          v-if="showBulkDeleteConfirm"
+          class="wb-dialog-overlay"
+          role="dialog"
+          aria-modal="true"
+          @click.self="showBulkDeleteConfirm = false"
+        >
+          <div class="wb-dialog">
+            <h2 class="wb-dialog__title">{{ t('winterboard.boards.confirmBulkDelete.title', { n: selectedIds.length }) }}</h2>
+            <p class="wb-dialog__message">
+              {{ t('winterboard.boards.confirmBulkDelete.message', { n: selectedIds.length }) }}
+            </p>
+            <div class="wb-dialog__actions">
+              <button type="button" class="wb-dialog__btn wb-dialog__btn--cancel" @click="showBulkDeleteConfirm = false">
+                {{ t('winterboard.boards.confirmBulkDelete.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="wb-dialog__btn wb-dialog__btn--danger"
+                :disabled="bulkDeleting"
+                @click="handleBulkDelete"
+              >
+                {{ bulkDeleting ? '…' : t('winterboard.boards.confirmBulkDelete.confirm') }}
               </button>
             </div>
           </div>
@@ -459,6 +534,52 @@ const deleteTarget = ref<WBSessionListItem | null>(null)
 const deleting = ref(false)
 const shareSessionId = ref<string | null>(null)
 const exportSessionId = ref<string | null>(null)
+
+// ─── Bulk selection ───────────────────────────────────────────────────────────
+
+const selectedIds = ref<string[]>([])
+const selectionMode = computed(() => selectedIds.value.length > 0)
+const allSelected = computed(
+  () => boards.value.length > 0 && boards.value.every(b => selectedIds.value.includes(b.id)),
+)
+
+function toggleSelect(id: string): void {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedIds.value.splice(idx, 1)
+  } else {
+    selectedIds.value.push(id)
+  }
+}
+
+function selectAll(): void {
+  selectedIds.value = boards.value.map(b => b.id)
+}
+
+function deselectAll(): void {
+  selectedIds.value = []
+}
+
+const showBulkDeleteConfirm = ref(false)
+const bulkDeleting = ref(false)
+
+async function handleBulkDelete(): Promise<void> {
+  if (bulkDeleting.value || selectedIds.value.length === 0) return
+  bulkDeleting.value = true
+  const idsToDelete = [...selectedIds.value]
+  try {
+    await Promise.all(idsToDelete.map(id => winterboardApi.deleteSession(id)))
+    boards.value = boards.value.filter(b => !idsToDelete.includes(b.id))
+    total.value = Math.max(0, total.value - idsToDelete.length)
+    selectedIds.value = []
+    showBulkDeleteConfirm.value = false
+    notifySuccess(t('winterboard.boards.deleteSelected', { n: idsToDelete.length }))
+  } catch {
+    notifyError(t('winterboard.boards.duplicateError'))
+  } finally {
+    bulkDeleting.value = false
+  }
+}
 
 // ─── Folder state ─────────────────────────────────────────────────────────────
 
@@ -717,9 +838,9 @@ onUnmounted(() => fetchAbort?.abort())
 // ─── Watchers: refetch on tab/search/offset/folder change ────────────────────
 
 watch(offset, fetchBoards)
-watch(activeTab, fetchBoards)
-watch(selectedFolderId, fetchBoards)
-watch(rootOnly, fetchBoards)
+watch(activeTab, () => { deselectAll(); fetchBoards() })
+watch(selectedFolderId, () => { deselectAll(); fetchBoards() })
+watch(rootOnly, () => { deselectAll(); fetchBoards() })
 
 // Search with debounce
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -1438,6 +1559,110 @@ onMounted(() => {
 .wb-dialog-fade-enter-from,
 .wb-dialog-fade-leave-to {
   opacity: 0;
+}
+
+/* ── Bulk action bar ─────────────────────────────────────────────────── */
+
+.wb-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.wb-bulk-bar__select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wb-bulk-bar__all-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--wb-brand, #0066ff);
+  border: 1.5px solid var(--wb-brand, #0066ff);
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+
+.wb-bulk-bar__all-checkbox:not(.wb-bulk-bar__all-checkbox--checked) {
+  background: #fff;
+  border-color: var(--wb-brand, #0066ff);
+  color: var(--wb-brand, #0066ff);
+}
+
+.wb-bulk-bar__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-brand, #0066ff);
+}
+
+.wb-bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-bulk-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.1s, opacity 0.1s;
+}
+
+.wb-bulk-bar__btn--ghost {
+  background: transparent;
+  color: var(--wb-fg-secondary, #64748b);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+}
+
+.wb-bulk-bar__btn--ghost:hover {
+  background: #fff;
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-bulk-bar__btn--danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.wb-bulk-bar__btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.wb-bulk-bar__btn--danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wb-bulk-bar-fade-enter-active,
+.wb-bulk-bar-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.wb-bulk-bar-fade-enter-from,
+.wb-bulk-bar-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 /* ── Mobile responsive ───────────────────────────────────────────────── */

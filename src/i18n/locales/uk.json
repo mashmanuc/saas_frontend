@@ -6896,6 +6896,18 @@
         "message": "Дошку \"{name}\" буде видалено назавжди. Цю дію неможливо скасувати.",
         "confirm": "Видалити",
         "cancel": "Скасувати"
+      },
+      "selectBoard": "Вибрати дошку",
+      "deselectBoard": "Зняти вибір",
+      "selectedCount": "Обрано: {n}",
+      "selectAll": "Обрати всі",
+      "deselectAll": "Зняти все",
+      "deleteSelected": "Видалити вибрані ({n})",
+      "confirmBulkDelete": {
+        "title": "Видалити {n} дошок?",
+        "message": "Усі {n} вибраних дошок буде видалено назавжди. Цю дію неможливо скасувати.",
+        "confirm": "Видалити",
+        "cancel": "Скасувати"
       }
     },
     "folders": {
@@ -8530,6 +8542,13 @@
       "updateSnapshot": "Оновити шаблон",
       "snapshotUpdated": "Шаблон оновлено ✓",
       "snapshotUpdateError": "Не вдалося оновити шаблон. Спробуйте ще раз.",
+      "statusBadge": {
+        "draft": "Чернетка",
+        "public": "Опубліковано",
+        "DRAFT": "Чернетка",
+        "PUBLISHED": "Опубліковано",
+        "ARCHIVED": "Архів"
+      },
       "search": {
         "placeholder": "Пошук уроків...",
         "allStatuses": "Всі статуси",

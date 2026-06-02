@@ -1,12 +1,22 @@
 <template>
   <div
     class="wb-board-list-item"
+    :class="{ 'wb-board-list-item--selected': selected }"
     role="row"
     tabindex="0"
     @click="emit('open')"
     @keydown.enter="emit('open')"
     @keydown.space.prevent="emit('open')"
   >
+    <!-- Selection checkbox -->
+    <div class="wb-board-list-item__select" @click.stop="emit('toggle-select')">
+      <span class="wb-board-list-item__checkbox" :class="{ 'wb-board-list-item__checkbox--checked': selected }" aria-hidden="true">
+        <svg v-if="selected" width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+
     <!-- Thumbnail -->
     <div class="wb-board-list-item__thumb" aria-hidden="true">
       <img
@@ -91,15 +101,19 @@ import type { WBSessionListItem } from '../../api/winterboardApi'
 
 interface Props {
   board: WBSessionListItem
+  selected?: boolean
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selected: false,
+})
 
 const emit = defineEmits<{
   open: []
   duplicate: []
   share: []
   delete: []
+  'toggle-select': []
 }>()
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
@@ -140,6 +154,45 @@ function formatTimeAgo(iso: string): string {
 .wb-board-list-item:focus-visible {
   background: var(--wb-canvas-bg, #f8fafc);
   border-color: var(--wb-toolbar-border, #e2e8f0);
+}
+
+.wb-board-list-item--selected {
+  background: #eff6ff;
+  border-color: var(--wb-brand, #0066ff);
+}
+
+/* ── Selection checkbox ───────────────────────────────────────────────── */
+
+.wb-board-list-item__select {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+}
+
+.wb-board-list-item__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--wb-card-bg, #fff);
+  border: 1.5px solid var(--wb-toolbar-border, #d1d5db);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+
+.wb-board-list-item__checkbox:hover {
+  border-color: var(--wb-brand, #0066ff);
+}
+
+.wb-board-list-item__checkbox--checked {
+  background: var(--wb-brand, #0066ff);
+  border-color: var(--wb-brand, #0066ff);
+  color: #fff;
 }
 
 /* ── Thumbnail ────────────────────────────────────────────────────────── */

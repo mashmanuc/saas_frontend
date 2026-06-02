@@ -1,6 +1,7 @@
 <template>
   <div
     class="wb-board-card"
+    :class="{ 'wb-board-card--selected': selected }"
     role="article"
     :aria-label="board.name || t('winterboard.boards.untitled')"
     tabindex="0"
@@ -8,6 +9,15 @@
     @keydown.enter="emit('open')"
     @keydown.space.prevent="emit('open')"
   >
+    <!-- Selection checkbox (top-left, visible on hover or when selected) -->
+    <div class="wb-board-card__select" @click.stop="emit('toggle-select')">
+      <span class="wb-board-card__checkbox" :class="{ 'wb-board-card__checkbox--checked': selected }" aria-hidden="true">
+        <svg v-if="selected" width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+
     <!-- Thumbnail -->
     <div class="wb-board-card__thumb">
       <img
@@ -159,10 +169,12 @@ import type { WBSessionListItem, BoardFolder } from '../../api/winterboardApi'
 interface Props {
   board: WBSessionListItem
   folders?: { id: number; name: string }[]
+  selected?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   folders: () => [],
+  selected: false,
 })
 
 const emit = defineEmits<{
@@ -171,6 +183,7 @@ const emit = defineEmits<{
   share: []
   delete: []
   'move-to-folder': [folderId: number | null]
+  'toggle-select': []
 }>()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -222,6 +235,52 @@ function formatTimeAgo(iso: string): string {
 .wb-board-card:focus-visible {
   border-color: var(--wb-brand, #0066ff);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.wb-board-card--selected {
+  border-color: var(--wb-brand, #0066ff);
+  background: #eff6ff;
+}
+
+/* ── Selection checkbox ───────────────────────────────────────────────── */
+
+.wb-board-card__select {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.wb-board-card:hover .wb-board-card__select,
+.wb-board-card:focus-within .wb-board-card__select,
+.wb-board-card--selected .wb-board-card__select {
+  opacity: 1;
+}
+
+.wb-board-card__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.wb-board-card__checkbox:hover {
+  border-color: var(--wb-brand, #0066ff);
+}
+
+.wb-board-card__checkbox--checked {
+  background: var(--wb-brand, #0066ff);
+  border-color: var(--wb-brand, #0066ff);
+  color: #fff;
 }
 
 /* ── Thumbnail ────────────────────────────────────────────────────────── */
