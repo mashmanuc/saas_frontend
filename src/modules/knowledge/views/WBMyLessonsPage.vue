@@ -361,6 +361,18 @@
 
     <!-- Tab: Проведені уроки -->
     <div v-else-if="activeTab === 'conducted'">
+
+      <!-- Search bar -->
+      <div class="mb-4">
+        <input
+          v-model="conductedSearchQuery"
+          type="search"
+          class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          :placeholder="$t('winterboard.lesson.conducted.searchPlaceholder')"
+          @input="onConductedSearch"
+        />
+      </div>
+
       <!-- Loading skeleton -->
       <div v-if="conductedLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -527,6 +539,18 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Load more -->
+      <div v-if="conductedHasMore" class="mt-6 text-center">
+        <button
+          type="button"
+          class="px-6 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
+          :disabled="conductedLoadingMore"
+          @click="loadConducted(true)"
+        >
+          {{ conductedLoadingMore ? '…' : $t('winterboard.lesson.conducted.loadMore') }}
+        </button>
       </div>
       </div><!-- /v-else: є сесії -->
     </div>
@@ -805,9 +829,15 @@ type TabKey = 'templates' | 'conducted'
 const activeTab = ref<TabKey>('templates')
 const conductedSessions = ref<ConductedLessonItem[]>([])
 const conductedLoading = ref(false)
+const conductedLoadingMore = ref(false)
 const conductedError = ref<string | null>(null)
 const conductedTotal = ref(0)
+const conductedOffset = ref(0)
+const conductedHasMore = ref(false)
 const conductedLoaded = ref(false)
+const conductedSearchQuery = ref('')
+const CONDUCTED_LIMIT = 24
+let conductedSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Conducted: bulk selection ────────────────────────────────────────
 const conductedSelectedIds = ref<string[]>([])
@@ -878,20 +908,44 @@ async function handleConductedBulkDelete(): Promise<void> {
   }
 }
 
-async function loadConducted() {
-  conductedLoading.value = true
+async function loadConducted(append = false) {
+  if (append) {
+    conductedLoadingMore.value = true
+  } else {
+    conductedLoading.value = true
+    conductedOffset.value = 0
+  }
   conductedError.value = null
   try {
-    const res = await lessonViewApi.listConducted({ limit: 50 })
-    conductedSessions.value = res.sessions
+    const res = await lessonViewApi.listConducted({
+      limit: CONDUCTED_LIMIT,
+      offset: append ? conductedOffset.value : 0,
+      q: conductedSearchQuery.value.trim() || undefined,
+    })
+    if (append) {
+      conductedSessions.value = [...conductedSessions.value, ...res.sessions]
+    } else {
+      conductedSessions.value = res.sessions
+    }
     conductedTotal.value = res.total
+    conductedHasMore.value = res.has_more
+    conductedOffset.value = (append ? conductedOffset.value : 0) + res.sessions.length
     conductedLoaded.value = true
   } catch (err) {
     console.error('[WBMyLessonsPage] loadConducted error:', err)
     conductedError.value = t('winterboard.lesson.conducted.loadError')
   } finally {
     conductedLoading.value = false
+    conductedLoadingMore.value = false
   }
+}
+
+function onConductedSearch() {
+  if (conductedSearchTimer) clearTimeout(conductedSearchTimer)
+  conductedSearchTimer = setTimeout(() => {
+    deselectAllConducted()
+    loadConducted(false)
+  }, 300)
 }
 
 function setTab(tab: TabKey) {

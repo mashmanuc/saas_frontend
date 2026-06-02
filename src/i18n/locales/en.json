@@ -7697,6 +7697,8 @@
         "loadError": "Failed to load conducted lessons",
         "fromTemplate": "From template",
         "hasRecording": "Has recording",
+        "searchPlaceholder": "Search lessons…",
+        "loadMore": "Load more",
         "delete": "Delete lesson",
         "deleteError": "Failed to delete lesson",
         "selectedCount": "Selected: {n}",

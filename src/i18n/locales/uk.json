@@ -7830,6 +7830,8 @@
         "loadError": "Не вдалося завантажити список проведених уроків",
         "fromTemplate": "Зі шаблону",
         "hasRecording": "Є запис",
+        "searchPlaceholder": "Пошук уроків…",
+        "loadMore": "Завантажити ще",
         "delete": "Видалити урок",
         "deleteError": "Не вдалося видалити урок",
         "selectedCount": "Обрано: {n}",
