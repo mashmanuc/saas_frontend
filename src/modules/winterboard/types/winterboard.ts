@@ -594,6 +594,19 @@ export interface WBExport {
   error: string | null
 }
 
+export interface WBExportV2Response {
+  id: string
+  status: 'completed' | 'failed'
+  file_url: string | null
+  file_size: number
+  page_count: number
+  engine: 'v2'
+  diagnostics: {
+    rendered_counts: Record<string, number>
+    skipped_types: string[]
+  }
+}
+
 // ─── Share Token ────────────────────────────────────────────────────────────
 
 export interface WBShareToken {

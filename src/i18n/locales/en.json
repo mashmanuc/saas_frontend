@@ -6616,6 +6616,8 @@
         "pngDesc": "Export current page as image",
         "pdf": "PDF Document",
         "pdfDesc": "Export all pages as PDF",
+        "pdfV2": "PDF with Formulas (beta)",
+        "pdfV2Desc": "New engine — NMT tasks with LaTeX math",
         "json": "JSON Data",
         "jsonDesc": "Export raw board data"
       },

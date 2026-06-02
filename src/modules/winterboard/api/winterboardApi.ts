@@ -13,6 +13,7 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import type {
   WBSession,
   WBExport,
+  WBExportV2Response,
   WBWorkspaceState,
 } from '../types/winterboard'
 
@@ -446,6 +447,12 @@ export const winterboardApi = {
     if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
     return apiClient
       .post(`${BASE}/sessions/${sessionId}/export/`, { format }, { headers })
+      .then((r: any) => r.data ?? r)
+  },
+
+  exportV2(sessionId: string): Promise<WBExportV2Response> {
+    return apiClient
+      .post(`${BASE}/sessions/${sessionId}/export-v2/`, {})
       .then((r: any) => r.data ?? r)
   },
 

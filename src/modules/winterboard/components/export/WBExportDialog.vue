@@ -307,11 +307,28 @@ const formats = computed(() => {
     })
   }
 
+  // V2 beta — PDF with native math rendering (NMT lessons).
+  // Shows regardless of pdfPages — V2 engine handles all session types.
+  base.push({
+    value: 'pdf_v2' as any,
+    label: t('winterboard.export.formats.pdfV2'),
+    desc: t('winterboard.export.formats.pdfV2Desc'),
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#7c3aed" stroke-width="1.5"/><path d="M14 2v6h6" stroke="#7c3aed" stroke-width="1.5"/><text x="7" y="19" font-size="6" fill="#7c3aed" font-weight="bold">V2</text></svg>',
+    disabled: false,
+    tooltip: '',
+  })
+
   return base
 })
 
 // ── Start export ──────────────────────────────────────────────────────────
 async function startExport(): Promise<void> {
+  // V2 path: sync, no capture phase, no polling.
+  if ((selectedFormat.value as string) === 'pdf_v2') {
+    await startExportV2()
+    return
+  }
+
   exporting.value = true
   errorMessage.value = null
 
@@ -355,6 +372,34 @@ async function startExport(): Promise<void> {
   } catch (err) {
     console.error('[WB:ExportDialog] Export request failed', err)
     showToast(t('winterboard.export.exportError'), 'error')
+    state.value = 'error'
+  } finally {
+    exporting.value = false
+  }
+}
+
+// ── V2 export (sync, no polling) ─────────────────────────────────────────
+async function startExportV2(): Promise<void> {
+  exporting.value = true
+  errorMessage.value = null
+  state.value = 'processing'
+  try {
+    const result = await winterboardApi.exportV2(props.sessionId)
+    if (result.status === 'completed' && result.file_url) {
+      fileUrl.value = result.file_url
+      state.value = 'ready'
+      emit('exported')
+    } else {
+      errorMessage.value = 'Export V2 failed'
+      state.value = 'error'
+    }
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail || err?.message || ''
+    if (err?.response?.status === 503) {
+      errorMessage.value = 'Export V2 вимкнено на сервері. Використовуйте звичайний PDF.'
+    } else {
+      errorMessage.value = detail || 'Export V2 error'
+    }
     state.value = 'error'
   } finally {
     exporting.value = false

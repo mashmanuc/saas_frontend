@@ -1649,6 +1649,7 @@
         "hourlyRatePositive": "Ставка за час должна быть больше 0.",
         "currencyRequired": "Выберите валюту.",
         "experienceNonNegative": "Стаж должен быть неотрицательным числом.",
+        "experienceTooHigh": "Стаж не может превышать 80 лет.",
         "birthYearInvalid": "Год рождения должен быть в диапазоне 1900–2100.",
         "subjectsRequired": "Выберите хотя бы один предмет.",
         "subjectCodeRequired": "Выберите предмет.",

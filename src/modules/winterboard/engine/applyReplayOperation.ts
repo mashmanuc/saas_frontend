@@ -418,9 +418,9 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
 
       case 'background_update':
         if (typeof payload.color === 'string') {
-          // Fix 2026-04-29: pass op.page_id so setBackgroundColor targets
-          // correct page, NOT currentPageIndex (wrong during replay seek).
-          store.setBackgroundColor(payload.color, (op as { page_id?: string }).page_id)
+          // Use resolvedPageId (post-ID-mapping), not raw op.page_id — consistent
+          // with asset_add, object_update and other handlers in this switch.
+          store.setBackgroundColor(payload.color, resolvedPageId || undefined)
         }
         break
 

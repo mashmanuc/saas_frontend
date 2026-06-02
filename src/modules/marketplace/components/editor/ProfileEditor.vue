@@ -729,6 +729,8 @@ const localErrors = computed(() => {
     next.experience_years = t('marketplace.profile.errors.experienceNonNegative')
   } else if (expYears < 0) {
     next.experience_years = t('marketplace.profile.errors.experienceNonNegative')
+  } else if (expYears > 80) {
+    next.experience_years = t('marketplace.profile.errors.experienceTooHigh')
   }
   if (typeof formData.value.birth_year === 'number') {
     if (formData.value.birth_year < 1900 || formData.value.birth_year > 2100) {
@@ -939,7 +941,7 @@ const stepCompletion = computed<Record<string, boolean>>(() => {
     photo: !!(props.profile?.media?.photo_url || avatarUrl.value),
     basic: (f.headline?.trim() || '').length >= 3 &&
            (f.bio?.trim() || '').length >= 10 &&
-           f.experience_years >= 0,
+           f.experience_years >= 0 && f.experience_years <= 80,
     subjects: f.subjects.length >= 1,
     'teaching-languages': (f.teaching_languages || []).length >= 1,
     pricing: f.hourly_rate > 0 && !!f.currency,
@@ -1377,9 +1379,10 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           v-model.number="formData.experience_years"
           type="number"
           min="0"
-          max="50"
+          max="80"
           :placeholder="t('marketplace.profile.editor.experienceYearsPlaceholder')"
           data-test="marketplace-editor-experience-years"
+          @blur="markFieldAsTouched('experience_years')"
         />
         <span class="hint">{{ t('marketplace.profile.editor.experienceYearsHint') }}</span>
         <div v-if="errors.experience_years" class="field-error" data-test="marketplace-editor-error-experience">
