@@ -560,7 +560,13 @@ function onDrop(e: DragEvent) {
   height: 100%;
   overflow-y: auto;
   touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
+  /* NOTE: -webkit-overflow-scrolling: touch видалено.
+     Воно викликало Android repaint bug: position:absolute (z-index) елементи
+     (кнопки "+") мали свій GPU layer і перемальовувались після скролу,
+     але normal-flow кнопки (основний контент) — ні.
+     transform: translateZ(0) форсує єдиний GPU compositing layer для всього
+     контенту скролу, що виправляє це. */
+  transform: translateZ(0);
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

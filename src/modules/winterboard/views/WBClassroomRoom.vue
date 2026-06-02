@@ -2618,7 +2618,6 @@ onBeforeUnmount(async () => {
   background: var(--wb-bg-secondary, #f8fafc);
   border-left: 1px solid var(--wb-border, #e2e8f0);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   z-index: 20;
   display: flex;
@@ -2797,7 +2796,6 @@ onBeforeUnmount(async () => {
 .wb-homework-tab {
   padding: 12px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   flex: 1;
 }

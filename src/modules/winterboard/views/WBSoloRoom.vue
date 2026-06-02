@@ -3586,7 +3586,6 @@ watch(() => store.workspaceName, (name) => {
   background: var(--wb-bg-primary, #ffffff);
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   z-index: 15;
   transition: width 200ms ease;
