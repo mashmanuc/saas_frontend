@@ -1066,14 +1066,25 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         viewport: { cx: 0, cy: 0, scale: 50 },
       }
 
-    case 'geometry_2d_v2':
-      return {
-        version: 2,
-        shape:  (d.shape_2d   as string | undefined),
-        sides:  (d.sides      as number[] | undefined),
-        angles: (d.angles_deg as number[] | undefined),
-        points: (d.points     as unknown[] | undefined),
+    case 'geometry_2d_v2': {
+      // Map AI-extracted shape_2d → geo2d preset key.
+      // Fallback: 'triangle' якщо shape невідомий або відсутній.
+      const SHAPE_TO_PRESET: Record<string, string> = {
+        triangle:             'triangle',
+        right_triangle:       'right_triangle',
+        isosceles_triangle:   'triangle',
+        equilateral_triangle: 'triangle',
+        parallelogram:        'parallelogram',
+        rhombus:              'parallelogram',
+        trapezoid:            'trapezium',
+        trapezium:            'trapezium',
+        rectangle:            'parallelogram',
+        square:               'parallelogram',
+        polygon:              'polygon',
       }
+      const preset = SHAPE_TO_PRESET[(d.shape_2d as string | undefined) ?? ''] ?? 'triangle'
+      return { version: 1, preset }
+    }
 
     case 'trig_circle':
       return {

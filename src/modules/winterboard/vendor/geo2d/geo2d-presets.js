@@ -1185,6 +1185,90 @@
       ],
     },
 
+    // ========================================================================
+    // right_triangle: Прямокутний трикутник (кут A = 90°).
+    //   Три вільні вершини A/B/C; маркер прямого кута у A.
+    //   Задачі НМТ: "катет", "гіпотенуза", "медіана до гіпотенузи",
+    //   "вписане/описане коло", "вписаний кут на гіпотенузу".
+    //   Корисна властивість: описана окружність має центр у середині гіпотенузи —
+    //   toggle circumcircle це показує наочно.
+    // ========================================================================
+    right_triangle: {
+      name: 'Прямокутний трикутник',
+      meta: 'α + β = 90° · кутова мітка · drag вершин',
+      defaults: { showGrid: false },
+      build(con) {
+        // A — прямий кут (ліворуч знизу), B — праворуч по основі, C — вгорі
+        add(con, G.free('A', -2.2, -1.6, { label: 'A', labelOffset: { x: -16, y:  8 } }));
+        add(con, G.free('B',  2.2, -1.6, { label: 'B', labelOffset: { x:  10, y:  8 } }));
+        add(con, G.free('C', -2.2,  1.6, { label: 'C', labelOffset: { x: -16, y: -6 } }));
+        add(con, G.polygon('tri', ['A', 'B', 'C']));
+        add(con, G.segment('AB', 'A', 'B'));
+        add(con, G.segment('BC', 'B', 'C'));  // hypotenuse
+        add(con, G.segment('CA', 'C', 'A'));
+        // Маркер прямого кута: rightAngle(id, from1, vertex, from2)
+        add(con, G.rightAngle('rA', 'B', 'A', 'C', { sizePx: 12 }));
+        // Мітки кутів і сторін
+        add(con, G.angleArc('ang_B', 'A', 'B', 'C', { rPx: 24 }));
+        add(con, G.angleArc('ang_C', 'B', 'C', 'A', { rPx: 24 }));
+        add(con, G.lengthLabel('lab_a', 'AB', { prefix: 'a=' }));   // leg AB
+        add(con, G.lengthLabel('lab_b', 'CA', { prefix: 'b=' }));   // leg CA
+        add(con, G.lengthLabel('lab_c', 'BC', { prefix: 'c=' }));   // hypotenuse
+        add(con, G.formula('eq', (r) => {
+          const A = r.get('A'), B = r.get('B'), C = r.get('C');
+          const u = window.Geo2D.util;
+          const a = u.dist(A, B), b = u.dist(C, A), c = u.dist(B, C);
+          const angB = (Math.acos(Math.min(1, a / c)) * 180 / Math.PI);
+          const angC = (Math.acos(Math.min(1, b / c)) * 180 / Math.PI);
+          return 'a=' + u.fmt(a,2) + ' b=' + u.fmt(b,2) + ' c=' + u.fmt(c,2) +
+                 '   β=' + u.fmt(angB,1) + '° γ=' + u.fmt(angC,1) + '°';
+        }, { anchor: 'bl' }));
+      },
+      toggles: [
+        { key: 'medians', label: 'Медіани', icon: '⊿', apply(con, on) {
+          con.removeByTag('medians');
+          if (on) {
+            const C = '#16a34a';
+            add(con, G.median('m_a', 'A', 'B', 'C', { color: C }), 'medians');
+            add(con, G.median('m_b', 'B', 'C', 'A', { color: C }), 'medians');
+            add(con, G.median('m_c', 'C', 'A', 'B', { color: C }), 'medians');
+            add(con, G.centroid('G_rt', 'A', 'B', 'C', { label: 'G', color: C }), 'medians');
+          }
+        }},
+        { key: 'altitudes', label: 'Висоти', icon: '⊥', apply(con, on) {
+          con.removeByTag('altitudes');
+          if (on) {
+            const C = '#dc2626';
+            // Висота з A (= сам прямий кут → deg case) показуємо тільки з B i C
+            add(con, G.altitude('h_b', 'B', 'C', 'A', { color: C }), 'altitudes');
+            add(con, G.altitude('h_c', 'C', 'A', 'B', { color: C }), 'altitudes');
+            // Висота з A до гіпотенузи BC — найважливіша для НМТ
+            add(con, G.altitude('h_a', 'A', 'B', 'C', { color: C }), 'altitudes');
+            add(con, G.orthocenter('H_rt', 'A', 'B', 'C', { label: 'H', color: C }), 'altitudes');
+          }
+        }},
+        { key: 'incircle', label: 'Вписане', icon: '◉', apply(con, on) {
+          con.removeByTag('incircle');
+          if (on) {
+            const C = '#ea580c';
+            add(con, G.incircle('inc_rt', 'A', 'B', 'C', { color: C, fill: 'circle' }), 'incircle');
+            add(con, G.incenter('I_rt', 'A', 'B', 'C', { label: 'I', color: C }), 'incircle');
+          }
+        }},
+        { key: 'circumcircle', label: 'Описане', icon: '◎', apply(con, on) {
+          // Для прямокутного △: центр описаного кола = середина гіпотенузи!
+          con.removeByTag('circumcircle');
+          if (on) {
+            const C = '#2563eb';
+            add(con, G.circumcircle('circ_rt', 'A', 'B', 'C', { color: C }), 'circumcircle');
+            add(con, G.circumcenter('O_rt', 'A', 'B', 'C', { label: 'O', color: C }), 'circumcircle');
+            add(con, G.midpoint('M_hyp', 'B', 'C', { size: 5, color: C, label: 'M' }), 'circumcircle');
+            add(con, G.segment('OM_c', 'O_rt', 'B', { style: 'dashed', width: 1.2, color: C }), 'circumcircle');
+          }
+        }},
+      ],
+    },
+
   };
 
   window.Geo2D.PRESETS = PRESETS;
