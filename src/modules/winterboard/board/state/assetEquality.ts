@@ -136,6 +136,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'nmt_task',         // §3.7.9 — taskType, question, options/pairs/correctAnswer, showAnswer/showSolution
   'quadratic_card',   // §3.7.10 — a, b, c, showVertex/Axis/Roots, viewport
   'formula_card',     // §3.7.11 — formula (LaTeX), fontSize, color, bg
+  'theory_card',      // §3.7.12 — title, body, hint, formulaTitle, formulas[]
 ])
 
 /**

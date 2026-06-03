@@ -558,6 +558,26 @@
       </div>
     </template>
 
+    <!-- TheoryCard (2026-06-03): рухома картка теорії+формул (Lesson Constructor).
+         Дзеркало nmt_task overlay — HTML overlay + Konva proxy → drag/select/copy. -->
+    <template v-for="asset in theoryCardAssets" :key="`theory-card-${asset.id}`">
+      <div
+        class="wb-theory-card-overlay"
+        :class="{ 'wb-theory-card-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-theory-card-id="asset.id"
+        :data-testid="`theory-card-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <TheoryCardRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
 
     <!-- Lesson Constructor: Theory overlay — page-level (theoryBlock/formulaBlock).
          Рендериться ВСЕРЕДИНІ canvas на z-index 3 (нижче strokes-overlay z6), щоб
@@ -571,6 +591,7 @@
       <WBTheoryOverlay
         :theory-block="theoryBlock"
         :formula-block="formulaBlock"
+        :page-id="wbStore.currentPage?.id ?? ''"
       />
     </div>
 
@@ -754,10 +775,10 @@ import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 // FormulaCard (2026-05-30): draggable KaTeX formula card (§3.7.11)
 import FormulaCardRenderer from '../board/objects/FormulaCardRenderer.vue'
 import type { FormulaCardAsset } from '../../types/formulaCard'
-// Theory overlay (Lesson Constructor) — рендериться ВСЕРЕДИНІ canvas (z-index 3),
-// нижче strokes-overlay (z6), щоб у draw-режимі по теорії можна було малювати
-// (як по інших об'єктах). Раніше жила у WBSoloRoom з z-index 10 → блокувала ink.
+// Theory overlay (Lesson Constructor) — LEGACY page-level (старі уроки), z-index 3.
 import WBTheoryOverlay from '../theory/WBTheoryOverlay.vue'
+// TheoryCard (2026-06-03) — рухома картка теорії як WBAsset (§3.7.12)
+import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 // Companion spawn (2026-05-25): semantic-aware visual companion spawner
 import {
   RENDERER_DEFAULTS,
@@ -882,6 +903,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'nmt_task',         // §3.7.9 — Interactive NMT task card     → NmtTaskRenderer
   'quadratic_card',   // §3.7.10 — Quadratic eq visualizer       → QuadraticRenderer
   'formula_card',     // §3.7.11 — KaTeX formula card             → FormulaCardRenderer
+  'theory_card',      // §3.7.12 — Рухома картка теорії+формул    → TheoryCardRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -897,8 +919,11 @@ const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 
 const nmtTaskAssets        = computed(() => assets.value.filter(a => a.type === 'nmt_task'))
 const quadraticAssets      = computed(() => assets.value.filter(a => a.type === 'quadratic_card'))
 const formulaCardAssets    = computed(() => assets.value.filter(a => a.type === 'formula_card') as FormulaCardAsset[])
+const theoryCardAssets     = computed(() => assets.value.filter(a => a.type === 'theory_card'))
 
-// Theory/formula blocks (Lesson Constructor) — page-level, не assets.
+// Theory/formula blocks (Lesson Constructor) — page-level, LEGACY (старі уроки).
+// Нові уроки генерують 'theory_card' WBAsset (рухома картка). Цей overlay лишається
+// тільки для backward-compat зі вже згенерованими уроками що мають theoryBlock.
 const theoryBlock   = computed(() => wbStore.currentPage?.theoryBlock)
 const formulaBlock  = computed(() => wbStore.currentPage?.formulaBlock)
 
@@ -5207,6 +5232,18 @@ defineExpose({
   pointer-events: none;
 }
 .wb-nmt-task-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
+/* TheoryCard (§3.7.12) — рухома картка теорії+формул. */
+.wb-theory-card-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 16px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-theory-card-overlay--selected {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
 }
 

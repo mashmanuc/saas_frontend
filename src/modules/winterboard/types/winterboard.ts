@@ -213,6 +213,9 @@ export interface WBAsset {
     | 'quadratic_card'
     /** FormulaCard (2026-05-30) — draggable KaTeX formula card. §3.7.11 */
     | 'formula_card'
+    /** TheoryCard (2026-06-03) — рухома картка теорії+формул (Lesson Constructor). §3.7.12
+     *  Замінює page-level theoryBlock/formulaBlock на повноцінний draggable WBAsset. */
+    | 'theory_card'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -305,6 +308,7 @@ export interface WBAsset {
     | import('./nmt3d').Nmt3dData
     | import('./quad').QuadraticData
     | import('./formulaCard').FormulaCardData
+    | TheoryCardData
 }
 
 /**
@@ -430,6 +434,22 @@ export interface WBFormulaBlock {
   title: string
   formulas: WBFormulaEntry[]
 }
+
+// ─── TheoryCard (2026-06-03) — рухома картка теорії як WBAsset ───────────────
+// Об'єднує theory (title/body/hint) + опційну сітку формул в ОДНІЙ draggable картці.
+// data зберігається у asset.data (flat-data asset). Рендериться TheoryCardRenderer.
+export interface TheoryCardData {
+  version: 1
+  title: string
+  body: string
+  hint?: string
+  /** Заголовок секції формул (якщо є формули). */
+  formulaTitle?: string
+  /** Сітка формул (latex+label). Порожній масив → секція формул не рендериться. */
+  formulas?: WBFormulaEntry[]
+}
+
+export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
 
