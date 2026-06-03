@@ -1067,8 +1067,11 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       }
 
     case 'geometry_2d_v2': {
-      // Map AI-extracted shape_2d → geo2d preset key.
-      // Fallback: 'triangle' якщо shape невідомий або відсутній.
+      // shape_2d (з backend extract_2d_data) → geo2d preset key.
+      // geo2d presets: triangle, right_triangle, parallelogram, trapezium, circle, polygon.
+      // rhombus/rectangle/square → parallelogram (geo2d не має окремих presets — спец-випадки).
+      // Fallback: 'triangle' якщо shape невідомий або відсутній (напр. fingerprint
+      // не пере-enrich-нутий після додавання extract_2d_data).
       const SHAPE_TO_PRESET: Record<string, string> = {
         triangle:             'triangle',
         right_triangle:       'right_triangle',
@@ -1076,10 +1079,11 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         equilateral_triangle: 'triangle',
         parallelogram:        'parallelogram',
         rhombus:              'parallelogram',
-        trapezoid:            'trapezium',
+        trapezoid:            'trapezium',   // geo2d preset зветься 'trapezium'
         trapezium:            'trapezium',
         rectangle:            'parallelogram',
         square:               'parallelogram',
+        circle:               'circle',
         polygon:              'polygon',
       }
       const preset = SHAPE_TO_PRESET[(d.shape_2d as string | undefined) ?? ''] ?? 'triangle'
