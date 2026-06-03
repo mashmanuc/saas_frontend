@@ -312,20 +312,32 @@ const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
-  /* 1-column on touch: fixes stacking/rendering bug with position:absolute
-     tray-add-btn inside 2-column CSS grid on touch screens */
   .geo2dv2-tray__grid {
     grid-template-columns: 1fr;
   }
 
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .geo2dv2-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .geo2dv2-tray__card-wrap .geo2dv2-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
+
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
 
   .geo2dv2-tray__btn {

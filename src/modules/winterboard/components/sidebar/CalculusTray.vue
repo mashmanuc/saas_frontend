@@ -299,24 +299,36 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
-  /* 1-column on touch: fixes stacking/rendering bug with position:absolute
-     tray-add-btn inside 2-column CSS grid on touch screens */
   .calculus-tray__grid {
     grid-template-columns: 1fr;
   }
-  /* graph calc no longer needs manual full-width span when grid is 1-column */
+
   .calculus-tray__card-wrap--graph {
     grid-column: auto;
   }
 
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .calculus-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .calculus-tray__card-wrap .calculus-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
+
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
 
   .calculus-tray__btn {

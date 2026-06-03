@@ -393,20 +393,36 @@ const TemplateIcon: FunctionalComponent<{ tplKey: string }> = (props) => {
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
-  /* 1-column on touch: fixes stacking/rendering bug with position:absolute
-     tray-add-btn inside 2-column CSS grid on touch screens */
   .nmt3d-tray__grid {
     grid-template-columns: 1fr;
   }
 
+  /* FIX Android repaint bug: position:absolute+z-index promoted tray-add-btn
+     to its own GPU layer → воно перемальовувалось після скролу, а нормальні
+     кнопки (main-btn) — ні → на місці кнопок були "шуми"/артефакти.
+     Рішення: на touch прибираємо absolute, робимо flex-sibling поряд з кнопкою.
+     Обидва елементи — на одному compositing layer → обидва перемальовуються. */
+  .nmt3d-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .nmt3d-tray__card-wrap .nmt3d-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
+
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
 
   .nmt3d-tray__btn {
