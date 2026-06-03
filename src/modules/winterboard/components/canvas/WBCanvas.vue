@@ -1106,13 +1106,19 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       }
     }
 
-    case 'quadratic_card':
+    case 'quadratic_card': {
+      // Реальні коефіцієнти з extracted_data.quadratic (backend extract_quadratic).
+      // Fallback a=1,b=0,c=0 лише якщо коефіцієнтів немає (старий fingerprint).
+      const quad = d.quadratic as { a?: number; b?: number; c?: number } | undefined
       return {
         version: 1,
-        a: 1, b: 0, c: 0,
+        a: quad?.a ?? 1,
+        b: quad?.b ?? 0,
+        c: quad?.c ?? 0,
         showVertex: true, showAxis: true, showRoots: true, sign: '=',
         viewport: { cx: 0, cy: 0, scale: 50 },
       }
+    }
 
     case 'geometry_2d_v2': {
       // shape_2d (з backend extract_2d_data) → geo2d preset key.

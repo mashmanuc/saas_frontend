@@ -128,9 +128,17 @@ function hasEquations(data: Record<string, unknown>): boolean {
   return Array.isArray(eqs) && eqs.length > 0
 }
 
+// quadratic_card має сенс лише з реальними коефіцієнтами (backend extract_quadratic).
+// Без них (generic парабола) кнопка прихована — функція піде у graph_calculator.
+function hasQuadratic(data: Record<string, unknown>): boolean {
+  const q = data.quadratic as { a?: unknown } | undefined
+  return !!q && typeof q.a === 'number'
+}
+
 const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boolean> = {
   graph_calculator: hasEquations,
   calculus:         hasEquations,
+  quadratic_card:   hasQuadratic,
 }
 
 export function resolveCompanions(
