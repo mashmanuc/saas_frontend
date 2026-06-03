@@ -434,12 +434,9 @@
           @check="handleTestCheck"
         />
 
-        <!-- Lesson Constructor: Theory overlay (HTML over canvas, read-only) -->
-        <WBTheoryOverlay
-          v-if="store.currentPage?.theoryBlock || store.currentPage?.formulaBlock"
-          :theory-block="store.currentPage?.theoryBlock"
-          :formula-block="store.currentPage?.formulaBlock"
-        />
+        <!-- Lesson Constructor: Theory overlay рендериться ВСЕРЕДИНІ WBCanvas
+             (z-index 3, нижче strokes-overlay), щоб по теорії можна було малювати
+             в draw-режимі. Раніше тут з z-index 10 → блокувала ink. -->
 
         <!-- Remote cursors overlay (A3.1) -->
         <WBRemoteCursors
@@ -974,7 +971,6 @@ import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Phase 37: Test system
 import { useTestStore } from '../board/state/testStore'
 import WBTestOverlay from '../components/test/WBTestOverlay.vue'
-import WBTheoryOverlay from '../components/theory/WBTheoryOverlay.vue'
 import WBTestGradeModal from '../components/test/WBTestGradeModal.vue'
 import TestObjectProperties from '../components/sidebar/properties/TestObjectProperties.vue'
 import type { WBTestObject, WBTestInput, WBTestRadio, WBTestCheckbox, WBTestDropdown, WBTestGapFill, WBTestMatching } from '../types/winterboard'

@@ -559,6 +559,21 @@
     </template>
 
 
+    <!-- Lesson Constructor: Theory overlay — page-level (theoryBlock/formulaBlock).
+         Рендериться ВСЕРЕДИНІ canvas на z-index 3 (нижче strokes-overlay z6), щоб
+         у draw-режимі ink малювався ПОВЕРХ теорії — як по інших об'єктах. Host
+         встановлює stacking context, тому inner z-index:10 локалізований. Завжди
+         pointer-events:none → draw/select події проходять до Konva stage. -->
+    <div
+      v-if="theoryBlock || formulaBlock"
+      class="wb-theory-host"
+    >
+      <WBTheoryOverlay
+        :theory-block="theoryBlock"
+        :formula-block="formulaBlock"
+      />
+    </div>
+
     <!-- Strokes overlay: mirrors the Konva strokesLayer ABOVE widget overlays
          (z-index 6 > widget overlay z-index 4-5) when the user is in draw/pen/
          eraser mode. Committed strokes on the Konva canvas (z-index 0) would be
@@ -739,6 +754,10 @@ import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 // FormulaCard (2026-05-30): draggable KaTeX formula card (§3.7.11)
 import FormulaCardRenderer from '../board/objects/FormulaCardRenderer.vue'
 import type { FormulaCardAsset } from '../../types/formulaCard'
+// Theory overlay (Lesson Constructor) — рендериться ВСЕРЕДИНІ canvas (z-index 3),
+// нижче strokes-overlay (z6), щоб у draw-режимі по теорії можна було малювати
+// (як по інших об'єктах). Раніше жила у WBSoloRoom з z-index 10 → блокувала ink.
+import WBTheoryOverlay from '../theory/WBTheoryOverlay.vue'
 // Companion spawn (2026-05-25): semantic-aware visual companion spawner
 import {
   RENDERER_DEFAULTS,
@@ -878,6 +897,10 @@ const nmt3dAssets          = computed(() => assets.value.filter(a => a.type === 
 const nmtTaskAssets        = computed(() => assets.value.filter(a => a.type === 'nmt_task'))
 const quadraticAssets      = computed(() => assets.value.filter(a => a.type === 'quadratic_card'))
 const formulaCardAssets    = computed(() => assets.value.filter(a => a.type === 'formula_card') as FormulaCardAsset[])
+
+// Theory/formula blocks (Lesson Constructor) — page-level, не assets.
+const theoryBlock   = computed(() => wbStore.currentPage?.theoryBlock)
+const formulaBlock  = computed(() => wbStore.currentPage?.formulaBlock)
 
 // ── Companion spawn (2026-05-25) ──────────────────────────────────────────────
 // task.id → companion asset.id[]
@@ -4756,6 +4779,17 @@ defineExpose({
   filter: none;
   backdrop-filter: none;
   box-shadow: none;
+}
+
+/* Theory overlay host — page-level theory/formula. z-index:3 (нижче strokes-overlay
+   z6), щоб у draw-режимі ink малювався поверх теорії (як по інших об'єктах).
+   position+z-index → новий stacking context, тож inner WBTheoryOverlay z-index:10
+   локалізований усередині host. pointer-events:none → події проходять до Konva. */
+.wb-theory-host {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* Strokes overlay — mirrors Konva strokesLayer above widget HTML overlays
