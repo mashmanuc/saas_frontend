@@ -7,7 +7,7 @@
             class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
             :class="statusClass"
           >
-            {{ lesson.status }}
+            {{ $t(`knowledge.lesson.statusBadge.${lesson.status}`, lesson.status) }}
           </span>
           <span
             v-if="lesson.student_is_demo"
