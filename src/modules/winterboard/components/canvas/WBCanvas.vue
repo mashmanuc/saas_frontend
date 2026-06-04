@@ -83,6 +83,18 @@
             @page-jump="(id: string) => emit('doc-viewer-page-jump', id)"
             @expand="handleDocViewerExpand"
           />
+          <!-- ASSET_LIFECYCLE_SSOT Phase 2B: провалена картинка (INV-ASSET-3/8).
+               Автор бачить ⚠ placeholder; учень/replay — нічого (наступна гілка). -->
+          <v-group
+            v-else-if="asset.type === 'image' && assetRenderMode(asset) === 'broken'"
+            :config="getBrokenPlaceholderGroupConfig(asset)"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          >
+            <v-rect :config="getBrokenPlaceholderRectConfig(asset)" />
+            <v-text :config="getBrokenPlaceholderTextConfig(asset)" />
+          </v-group>
+          <!-- hidden: учень/replay-глядач — провалена картинка тихо відсутня -->
+          <template v-else-if="asset.type === 'image' && assetRenderMode(asset) === 'hidden'" />
           <!-- Phase 35: Image with borderRadius > 0 — wrap in Group with clipFunc -->
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
@@ -752,6 +764,7 @@ import YouTubePlayerObject, { type WBYouTubeAsset } from '../board/objects/YouTu
 import type { WBAudioAsset, WBVideoAsset } from '../../types/mediaObjects'
 import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
+import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMode } from '../../composables/useAssetStatus'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
@@ -3988,6 +4001,82 @@ function normalizeAssetUrl(url: string): string {
 // кожна невдала картинка ретраєтиметься при кожному strokeEnd/mousemove.
 const failedImages = new Set<string>()
 
+// ── ASSET_LIFECYCLE_SSOT Phase 2B: render cross-reference ──────────────────
+// Стан upload-у asset береться з БД (GET /sessions/{id}/assets/), бо op.src
+// стрипається recorder-ом. Map: asset_id → {status, cdn_url}. INV-ASSET-3.
+const assetStatus = useAssetStatus()
+
+/** Чи поточний глядач — автор дошки (може діяти: retry/delete). INV-ASSET-8. */
+function isBoardAuthor(): boolean {
+  return props.isTutor !== false
+}
+
+/**
+ * Ефективний src для рендеру image asset (INV-ASSET-3 кроки 1-2).
+ * blob: (жива оптимістична вставка) — рендеримо напряму.
+ */
+function assetEffectiveSrc(asset: WBAsset): string {
+  const opSrc = asset.src ?? ''
+  if (opSrc.startsWith('blob:')) return opSrc // live optimistic paste
+  return resolveAssetSrc(opSrc, assetStatus.getEntry(asset.id))
+}
+
+/** Режим рендеру image asset: 'image' | 'broken' (⚠ автору) | 'hidden'. */
+function assetRenderMode(asset: WBAsset): AssetRenderMode {
+  const opSrc = asset.src ?? ''
+  const fresh = opSrc.startsWith('blob:')
+  return getAssetRenderMode(opSrc, assetStatus.getEntry(asset.id), isBoardAuthor(), fresh)
+}
+
+/** Konva GROUP config для ⚠ placeholder проваленого asset (тільки автор бачить). */
+function getBrokenPlaceholderGroupConfig(asset: WBAsset): Record<string, unknown> {
+  return {
+    id: asset.id,
+    name: `asset-${asset.id}`,
+    x: asset.x,
+    y: asset.y,
+    rotation: asset.rotation,
+    draggable: currentTool.value === 'select' && !asset.locked,
+    listening: currentTool.value === 'select',
+  }
+}
+
+/** Rect-фон placeholder (відносні координати у групі). */
+function getBrokenPlaceholderRectConfig(asset: WBAsset): Record<string, unknown> {
+  return {
+    x: 0,
+    y: 0,
+    width: asset.w,
+    height: asset.h,
+    fill: '#fff7ed',          // amber-50
+    stroke: '#f59e0b',        // amber-500
+    strokeWidth: 2,
+    dash: [8, 4],
+    cornerRadius: 6,
+    listening: false,
+    perfectDrawEnabled: false,
+  }
+}
+
+/** Текст placeholder (відносні координати у групі). */
+function getBrokenPlaceholderTextConfig(asset: WBAsset): Record<string, unknown> {
+  return {
+    x: 0,
+    y: 0,
+    width: asset.w,
+    height: asset.h,
+    text: '⚠\nЗображення не\nпотрапило в урок',
+    fontSize: Math.max(11, Math.min(16, asset.w / 14)),
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fill: '#b45309',          // amber-700
+    align: 'center',
+    verticalAlign: 'middle',
+    padding: 8,
+    listening: false,
+    perfectDrawEnabled: false,
+  }
+}
+
 // Media proxy: when CORS fails for images.m4sh.org, route through backend proxy
 // which adds proper CORS headers via Django middleware.
 const _PROXY_HOSTS = ['images.m4sh.org']
@@ -4010,7 +4099,7 @@ function _buildMediaProxyUrl(src: string): string | null {
 const VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'vimeo.com']
 
 function preloadAssetImage(asset: WBAsset): void {
-  const src = normalizeAssetUrl(asset.src)
+  const src = normalizeAssetUrl(assetEffectiveSrc(asset))
   if (loadedImages.has(src) || failedImages.has(src)) return
   // E3: Skip video URLs — they are embeds, not images
   if (VIDEO_HOSTS.some(h => src.includes(h))) return
@@ -4080,7 +4169,7 @@ function preloadAssetImage(asset: WBAsset): void {
 }
 
 function getAssetConfig(asset: WBAsset): Record<string, unknown> {
-  const src = normalizeAssetUrl(asset.src)
+  const src = normalizeAssetUrl(assetEffectiveSrc(asset))
   if (!loadedImages.has(src) && !failedImages.has(src)) {
     // Lazy-load image on first render (non-blocking — Konva node gets image imperatively on load)
     preloadAssetImage(asset)
@@ -4193,7 +4282,7 @@ function getClipGroupConfig(asset: WBAsset): Record<string, unknown> {
 
 // Phase 35: Child image config inside clip group (position = 0,0 relative to group)
 function getClipChildImageConfig(asset: WBAsset): Record<string, unknown> {
-  const src = normalizeAssetUrl(asset.src)
+  const src = normalizeAssetUrl(assetEffectiveSrc(asset))
   const baseOpacity = asset.opacity ?? 1
   const isLockedItem = !!asset.locked
   return {
@@ -4407,6 +4496,13 @@ function handleFitToPage(): void {
 
 onMounted(async () => {
   containerRef.value?.focus()
+
+  // ASSET_LIFECYCLE_SSOT Phase 2B: завантажити asset upload-статуси з БД для
+  // render cross-reference (INV-ASSET-3). Non-blocking — render деградує до
+  // op.src-only якщо не вдалось. wbStore.workspaceId = session.id.
+  if (wbStore.workspaceId) {
+    void assetStatus.load(wbStore.workspaceId)
+  }
 
   // A4.1: Capture native PointerEvent for pressure data
   const container = containerRef.value

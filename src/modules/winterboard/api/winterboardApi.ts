@@ -282,6 +282,16 @@ export const winterboardApi = {
   },
 
   /**
+   * Asset upload statuses для render cross-reference
+   * (ASSET_LIFECYCLE_SSOT INV-ASSET-3). FE резолвить op.src → cdn_url → placeholder.
+   */
+  getSessionAssets(
+    id: string,
+  ): Promise<{ assets: Array<{ id: string; status: string; cdn_url: string }> }> {
+    return apiClient.get(`${BASE}/sessions/${id}/assets/`).then((r: any) => r.data ?? r)
+  },
+
+  /**
    * Create a new WB session.
    *
    * INV-KNOW-1 (Knowledge plan 2026-05-02): `folder` is REQUIRED in the
