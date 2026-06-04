@@ -1,7 +1,9 @@
-// Phase 21→24→25: Tests for WBMyLessonsPage
+// Phase 21→24→25→26: Tests for WBMyLessonsPage
 // Updated: component now uses getMyLessonsFiltered + lessonViewApi.loadToSession
+// Phase 26 (2026-05-19): fix stale i18n key + add conducted tab tests
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import WBMyLessonsPage from '../views/WBMyLessonsPage.vue'
 
 const mockPush = vi.fn()
@@ -36,14 +38,18 @@ vi.mock('../api/lessonSaveApi', () => ({
   },
 }))
 
-// Mock lessonViewApi (Phase 23: loadToSession)
+// Mock lessonViewApi — всі методи що використовує компонент
 vi.mock('../api/lessonViewApi', () => ({
   lessonViewApi: {
     loadToSession: vi.fn(),
+    prepareLesson: vi.fn(),
+    listConducted: vi.fn(),
+    generateShareLink: vi.fn(),
+    updateSnapshot: vi.fn(),
   },
 }))
 
-// Mock apiClient (used by component for toggle visibility etc.)
+// Mock apiClient
 vi.mock('@/utils/apiClient', () => ({
   default: {
     patch: vi.fn(),
@@ -99,6 +105,26 @@ const MOCK_FILTERED_RESPONSE = {
   limit: 20,
 }
 
+// WBSession items, що повертає listConducted (is_lesson_play=True)
+const MOCK_CONDUCTED_SESSIONS = [
+  {
+    id: 'session-conducted-1',
+    name: 'Algebra Basics — урок 1',
+    created_at: '2026-05-10T09:00:00Z',
+    updated_at: '2026-05-10T10:00:00Z',
+    is_lesson_play: true,
+    origin_lesson_id: 'lesson-1',
+  },
+  {
+    id: 'session-conducted-2',
+    name: 'Physics Forces — урок 1',
+    created_at: '2026-05-11T11:00:00Z',
+    updated_at: '2026-05-11T12:00:00Z',
+    is_lesson_play: true,
+    origin_lesson_id: 'lesson-2',
+  },
+]
+
 function createWrapper() {
   return mount(WBMyLessonsPage, {
     global: {
@@ -118,10 +144,15 @@ function createWrapper() {
 
 describe('WBMyLessonsPage', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     mockPush.mockResolvedValue(undefined)
     vi.mocked(lessonSaveApi.getFolders).mockResolvedValue([])
+    // Default: conducted повертає порожній список щоб не блокувати інші тести
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue([])
   })
+
+  // ── Templates tab ────────────────────────────────────────────────────────
 
   it('shows loading skeleton initially', () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockReturnValue(new Promise(() => {}))
@@ -141,7 +172,9 @@ describe('WBMyLessonsPage', () => {
   })
 
   it('shows empty state when no lessons', async () => {
-    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue({ lessons: [], total: 0, has_more: false, offset: 0, limit: 20 })
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue({
+      lessons: [], total: 0, has_more: false, offset: 0, limit: 20,
+    })
     const wrapper = createWrapper()
     await flushPromises()
 
@@ -160,8 +193,9 @@ describe('WBMyLessonsPage', () => {
     const wrapper = createWrapper()
     await flushPromises()
 
+    // Кнопка "Провести" рендерить i18n-ключ knowledge.lesson.prepare.button
     const openBtns = wrapper.findAll('button').filter(b =>
-      b.text().includes('knowledge.lesson.reuse.useLesson'),
+      b.text().includes('knowledge.lesson.prepare.button'),
     )
     expect(openBtns.length).toBeGreaterThan(0)
     await openBtns[0].trigger('click')
@@ -183,7 +217,7 @@ describe('WBMyLessonsPage', () => {
     await flushPromises()
 
     const openBtns = wrapper.findAll('button').filter(b =>
-      b.text().includes('knowledge.lesson.reuse.useLesson'),
+      b.text().includes('knowledge.lesson.prepare.button'),
     )
     await openBtns[0].trigger('click')
     await flushPromises()
@@ -200,5 +234,95 @@ describe('WBMyLessonsPage', () => {
     await flushPromises()
 
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  })
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────
+
+  it('renders two tabs: templates and conducted', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    // Обидва таб-тригери мають відповідні i18n-ключі
+    expect(wrapper.text()).toContain('winterboard.lesson.tabs.templates')
+    expect(wrapper.text()).toContain('winterboard.lesson.tabs.conducted')
+  })
+
+  // ── Conducted tab ────────────────────────────────────────────────────────
+
+  it('calls listConducted when conducted tab is clicked', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    // Клікаємо на вкладку "Проведені уроки"
+    const conductedTab = wrapper.findAll('button').find(b =>
+      b.text().includes('winterboard.lesson.tabs.conducted'),
+    )
+    expect(conductedTab).toBeDefined()
+    await conductedTab!.trigger('click')
+    await flushPromises()
+
+    expect(lessonViewApi.listConducted).toHaveBeenCalled()
+  })
+
+  it('renders conducted sessions after switching tab', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const conductedTab = wrapper.findAll('button').find(b =>
+      b.text().includes('winterboard.lesson.tabs.conducted'),
+    )
+    await conductedTab!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Algebra Basics — урок 1')
+    expect(wrapper.text()).toContain('Physics Forces — урок 1')
+  })
+
+  it('shows empty state when no conducted sessions', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue([])
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const conductedTab = wrapper.findAll('button').find(b =>
+      b.text().includes('winterboard.lesson.tabs.conducted'),
+    )
+    await conductedTab!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('winterboard.lesson.conducted.emptyTitle')
+  })
+
+  it('navigates to winterboard-solo when clicking a conducted session', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const conductedTab = wrapper.findAll('button').find(b =>
+      b.text().includes('winterboard.lesson.tabs.conducted'),
+    )
+    await conductedTab!.trigger('click')
+    await flushPromises()
+
+    // Клік на карточку сесії (wb-conducted-card)
+    const card = wrapper.find('.wb-conducted-card')
+    expect(card.exists()).toBe(true)
+    await card.trigger('click')
+    await flushPromises()
+
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'winterboard-solo',
+      params: { id: 'session-conducted-1' },
+    })
   })
 })
