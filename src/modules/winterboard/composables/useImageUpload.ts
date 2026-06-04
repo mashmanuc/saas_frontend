@@ -347,17 +347,32 @@ const PERMANENT_QUOTA_CODES = new Set<string>(['quota_exceeded', 'storage_quota_
  * замапити сюди, а не покладатись на fallback.
  */
 function classify429(err: unknown): 'quota_exceeded' | 'rate_limited' | 'unknown_429' {
-  const data = (err as { response?: { data?: { error?: string } } })?.response?.data
-  const errorCode = data?.error?.toLowerCase()
+  // P0 fix (ASSET_LIFECYCLE_SSOT Phase 0): body.error може бути string
+  // ('quota_exceeded' з presign quota check) АБО object ({code, detail} з
+  // деяких throttle відповідей). Прямий .toLowerCase() на object кидав
+  // TypeError і ламав весь recovery-шлях (BACKLOG_PASTE_STORM_HANDLING P0).
+  // Нормалізуємо до code-рядка типобезпечно; класифікаційна семантика для
+  // існуючих кейсів (string / відсутній error) НЕ змінюється.
+  const data = (err as { response?: { data?: { error?: unknown } } })?.response?.data
+  const rawError = data?.error
+
+  // error відсутній → DRF UserRateThrottle (форма {detail: "..."}) → transient
+  if (rawError == null || rawError === '') {
+    return 'rate_limited'
+  }
+
+  let errorCode = ''
+  if (typeof rawError === 'string') {
+    errorCode = rawError.toLowerCase()
+  } else if (typeof rawError === 'object' && 'code' in rawError) {
+    errorCode = String((rawError as { code?: unknown }).code ?? '').toLowerCase()
+  }
 
   if (errorCode && PERMANENT_QUOTA_CODES.has(errorCode)) {
     return 'quota_exceeded'
   }
-  if (!errorCode) {
-    // No body.error → DRF throttle (стандартна форма {detail: "..."})
-    return 'rate_limited'
-  }
-  // body.error є, але не у whitelist → safe default: не retry
+  // error присутній, але code не у whitelist (або object без code) →
+  // safe default: не retry (узгоджено з документованою unknown_429 поведінкою).
   return 'unknown_429'
 }
 

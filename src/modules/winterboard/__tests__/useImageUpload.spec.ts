@@ -217,6 +217,43 @@ describe('uploadFileToStorage', () => {
     expect(mockPresignUpload).toHaveBeenCalledTimes(1)
   })
 
+  it('P0 regression: 429 з body.error як OBJECT {code} не кидає TypeError', async () => {
+    // BACKLOG_PASTE_STORM_HANDLING P0: деякі throttle повертають
+    // {error: {code, detail}} (object). Раніше data.error.toLowerCase()
+    // кидав TypeError і ламав весь recovery-шлях. Тепер — типобезпечно:
+    // object з code='quota_exceeded' класифікується як permanent quota.
+    const err = Object.assign(new Error('Too Many Requests'), {
+      response: { status: 429, data: { error: { code: 'quota_exceeded', detail: 'Max assets' } } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(uploadFileToStorage(SESSION_ID, file)).rejects.toMatchObject({
+      code: 'quota_exceeded',
+    })
+    // Permanent → НЕ retry (і головне: НЕ TypeError-краш у класифікаторі)
+    expect(mockPresignUpload).toHaveBeenCalledTimes(1)
+  })
+
+  it('P0 regression: 429 з object error БЕЗ code → unknown_429 (не краш)', async () => {
+    // object {detail: "..."} без code — невідома форма. Має дати safe default
+    // unknown_429 (НЕ TypeError, НЕ нескінченний retry).
+    const err = Object.assign(new Error('429'), {
+      response: { status: 429, data: { error: { detail: 'throttled, no code' } } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file).catch((e) => e)
+    await vi.advanceTimersByTimeAsync(5_000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result.code).toBe('unknown_429')
+    expect(mockPresignUpload).toHaveBeenCalledTimes(2) // 1 + 1 retry (MAX_RETRIES_UNKNOWN_429)
+  })
+
   it('повертає WBUploadError.details для quota з { current, limit }', async () => {
     const err = Object.assign(new Error('429'), {
       response: {
