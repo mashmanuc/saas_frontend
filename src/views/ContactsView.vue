@@ -21,8 +21,8 @@
               </svg>
               <div>
                 <p class="text-sm font-medium text-foreground">{{ $t('contacts.email') }}</p>
-                <a href="mailto:support@m4sh.com" class="text-sm text-primary hover:underline">
-                  support@m4sh.com
+                <a href="mailto:support@m4sh.org" class="text-sm text-primary hover:underline">
+                  support@m4sh.org
                 </a>
               </div>
             </div>

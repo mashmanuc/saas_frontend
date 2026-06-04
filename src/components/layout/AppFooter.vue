@@ -47,10 +47,10 @@
             </li>
             <li>
               <a
-                href="mailto:support@m4sh.com"
+                href="mailto:support@m4sh.org"
                 class="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                support@m4sh.com
+                support@m4sh.org
               </a>
             </li>
           </ul>
