@@ -957,11 +957,12 @@ function handleSpawnCompanions(payload: {
   // Знаходимо source task щоб правильно позиціонувати companion
   const sourceAsset = assets.value.find(a => a.id === sourceAssetId)
 
-  // Companion спавниться у правому верхньому куті задачі з невеликим відступом.
-  // НЕ праворуч від задачі — task.w ≈ 1800px, тому праворуч = за межею canvas.
-  // Overlay перекриває задачу — вчитель сам перетягне куди потрібно.
-  let offsetX = spawnX
-  let offsetY = spawnY
+  // Companion спавниться ПРАВОРУЧ від задачі (у звільненому місці — задачі тепер
+  // вузькі, по вмісту). Без overlap z-order між 2D/3D/task стає неважливим.
+  // Якщо праворуч не влазить (широка задача+companion) → ставимо ПІД задачею.
+  const PAGE_W = 1920
+  const G = 24
+  let cursorX = sourceAsset ? sourceAsset.x + sourceAsset.w + G : spawnX
 
   for (const resolution of companions) {
     if (existingTypes.has(resolution.rendererType)) {
@@ -986,17 +987,20 @@ function handleSpawnCompanions(payload: {
 
     const def = RENDERER_DEFAULTS[resolution.rendererType] ?? { w: 640, h: 520 }
 
-    // Позиціонування: правий верхній кут задачі, зсунуто всередину
-    // щоб companion гарантовано залишався в межах canvas
-    const taskRight = sourceAsset ? (sourceAsset.x + sourceAsset.w) : offsetX
-    const companionX = Math.max(60, taskRight - def.w - 20)
-    const companionY = sourceAsset ? (sourceAsset.y + 10) : offsetY
+    // Праворуч від задачі (стек кількох companions горизонтально). Якщо не влазить
+    // у ширину сторінки — під задачею.
+    let companionX = cursorX
+    let companionY = sourceAsset ? sourceAsset.y : spawnY
+    if (companionX + def.w > PAGE_W - 60) {
+      companionX = sourceAsset ? sourceAsset.x : 60
+      companionY = sourceAsset ? sourceAsset.y + sourceAsset.h + G : spawnY
+    }
 
     const companionAsset: WBAsset = {
       id:       generateId(),
       type:     resolution.rendererType as unknown as WBAsset['type'],
       src:      '',
-      x:        companionX + (offsetX - spawnX),  // зсув якщо кілька companions
+      x:        companionX,
       y:        companionY,
       w:        def.w,
       h:        def.h,
@@ -1013,7 +1017,7 @@ function handleSpawnCompanions(payload: {
     ids.push(companionAsset.id)
     companionLinks.set(sourceAssetId, ids)
 
-    offsetX += def.w + 24
+    cursorX = companionX + def.w + G   // наступний companion праворуч від цього
   }
 }
 
