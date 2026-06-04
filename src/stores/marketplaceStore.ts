@@ -10,7 +10,14 @@ import { ref, computed } from 'vue'
 import apiClient from '@/utils/apiClient'
 import type { TutorPublic, TutorPublicListResponse, TutorSearchParams } from '@/types/relations'
 
-export const useMarketplaceStore = defineStore('marketplace', () => {
+// ⚠️ Pinia ID 'marketplaceSearch' (НЕ 'marketplace') — розведено 2026-06-04.
+// Цей глобальний store = ТІЛЬКИ tutor search (searchTutors/filters/pagination),
+// функціонально окремий від modules/marketplace/stores/marketplaceStore.ts
+// (profile/draft, 550 рядків — НЕ має searchTutors). Обидва помилково ділили
+// ID 'marketplace' → конфлікт стану. Єдиний споживач цього store —
+// views/marketplace/TutorSearchView.vue (імпорт за іменем useMarketplaceStore,
+// не зачеплений). Module store лишається ID 'marketplace'.
+export const useMarketplaceStore = defineStore('marketplaceSearch', () => {
   const tutors = ref<TutorPublic[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)

@@ -21,7 +21,14 @@ import type {
   CreateReportRequest,
 } from '@/types/trust'
 
-export const useTrustStore = defineStore('trust', () => {
+// ⚠️ Pinia ID 'trustGlobal' (НЕ 'trust') — розведено 2026-06-04.
+// Цей глобальний store і modules/trust/stores/trustStore.ts ділили ID 'trust'
+// (конфлікт стану), АЛЕ мають РІЗНІ контракти: тут blockUser(payload),
+// createReport(payload); у module — blockUser(userId, reason). Тому НЕ зливаються
+// механічно. Споживачі цього store (InquiryModal, ReportModal) імпортують за
+// іменем useTrustStore — не зачеплені. Module store лишається ID 'trust'.
+// TODO: звести два trust-стеки в один (різні API/контракти — окремий рефакторинг).
+export const useTrustStore = defineStore('trustGlobal', () => {
   // State
   const blocks = ref<UserBlock[]>([])
   const reports = ref<UserReport[]>([])
