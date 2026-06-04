@@ -1096,6 +1096,8 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         sphere:   'sphere',
         cube:     'cube',
         cuboid:   'cuboid',
+        frustum_pyramid: 'frustumPyramid4',  // зрізана піраміда
+        frustum_cone:    'frustumCone',       // зрізаний конус
       }
       return {
         version:     1,
