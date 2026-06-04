@@ -10,7 +10,14 @@ import {
   CanReviewResponse,
 } from '../api/reviews'
 
-export const useReviewStore = defineStore('reviews', () => {
+// ⚠️ Pinia ID 'reviewSingle' (НЕ 'reviews') — розведено 2026-06-04 щоб усунути
+// конфлікт namespace з reviewsStore.ts (теж мав ID 'reviews' → два РІЗНІ store
+// ділили один стан, перший викликаний "вигравав"). Споживачі імпортують за
+// іменем функції (useReviewStore), тому зміна id їх не зачіпає.
+// TODO: звести два reviews-стеки (цей reviewStore+api/reviews vs
+// reviewsStore+api/reviewsApi) в один — окремий рефакторинг (різні API/типи/
+// назви методів, 9 живих споживачів, потребує вибору канону + ручної QA).
+export const useReviewStore = defineStore('reviewSingle', () => {
   // State
   const reviews = ref<Review[]>([])
   const myReviews = ref<Review[]>([])
