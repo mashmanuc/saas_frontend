@@ -307,27 +307,17 @@ const formats = computed(() => {
     })
   }
 
-  // V2 beta — PDF with native math rendering (NMT lessons).
-  // Shows regardless of pdfPages — V2 engine handles all session types.
-  base.push({
-    value: 'pdf_v2' as any,
-    label: t('winterboard.export.formats.pdfV2'),
-    desc: t('winterboard.export.formats.pdfV2Desc'),
-    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#7c3aed" stroke-width="1.5"/><path d="M14 2v6h6" stroke="#7c3aed" stroke-width="1.5"/><text x="7" y="19" font-size="6" fill="#7c3aed" font-weight="bold">V2</text></svg>',
-    disabled: false,
-    tooltip: '',
-  })
+  // V2 export (semantic vector engine) is FROZEN — hidden from the UI.
+  // BE engine + startExportV2()/exportV2() remain behind the flag in case
+  // it's revived; this dialog no longer offers it as a format choice.
 
   return base
 })
 
 // ── Start export ──────────────────────────────────────────────────────────
 async function startExport(): Promise<void> {
-  // V2 path: sync, no capture phase, no polling.
-  if ((selectedFormat.value as string) === 'pdf_v2') {
-    await startExportV2()
-    return
-  }
+  // V2 is frozen + hidden from the format list, so this dispatch is no longer
+  // reachable. startExportV2() is kept (dead) for a possible future revival.
 
   exporting.value = true
   errorMessage.value = null
@@ -382,6 +372,26 @@ async function startExport(): Promise<void> {
 async function startExportV2(): Promise<void> {
   exporting.value = true
   errorMessage.value = null
+
+  // Block D (hybrid): snapshot graphic widgets BEFORE export so the BE V2
+  // engine embeds editor-identical previews (graphs, circles, geometry).
+  // Text + formulas still render natively as vector. Capture failures are
+  // silent — BE falls back to matplotlib (INV-EP-3).
+  try {
+    await runCapturePhase()
+  } catch (err) {
+    console.warn('[WB:ExportDialog] v2_capture_phase_error', err)
+  }
+  if (captureAbort?.signal.aborted) {
+    captureAbort = null
+    captureProgress.value = 0
+    captureTotal.value = 0
+    state.value = 'idle'
+    exporting.value = false
+    return
+  }
+  captureAbort = null
+
   state.value = 'processing'
   try {
     const result = await winterboardApi.exportV2(props.sessionId)
@@ -417,10 +427,17 @@ async function startExportV2(): Promise<void> {
  * зареєстровані assets все одно будуть capture-нуті у наступному кроку —
  * unregistered повертають null від captureOne → BE placeholder per INV-EP-7).
  */
+// Heavy vendor widgets (graph_calculator/Desmos-like, nmt3d/Three.js,
+// trig_solver) can take several seconds to initialize their bundle before
+// useExportCapture registers. 2s was too short → they missed capture → no
+// preview → "widget not visible" in the PDF. 6s ceiling; the poll returns
+// the instant all widgets register, so fast widgets aren't slowed down.
+const _REGISTRATION_TIMEOUT_MS = 6000
+
 async function waitForRegistration(
   assetIds: string[],
   signal: AbortSignal,
-  timeoutMs: number = 2000,
+  timeoutMs: number = _REGISTRATION_TIMEOUT_MS,
   pollIntervalMs: number = 50,
 ): Promise<void> {
   // Give Vue 2-3 nextTick для mount + render children before polling.
@@ -444,13 +461,22 @@ async function runCapturePhase(): Promise<void> {
   const pageWidgets = new Map<number, string[]>() // pageIndex -> assetId[]
   let totalWidgets = 0
   boardStore.pages.forEach((page, pageIndex) => {
-    if (!Array.isArray(page.assets)) return
-    for (const asset of page.assets) {
-      const type = String(asset?.type ?? '')
-      const id = String(asset?.id ?? '')
-      if (!type || !id || NATIVE_ASSET_TYPES.has(type)) continue
+    if (Array.isArray(page.assets)) {
+      for (const asset of page.assets) {
+        const type = String(asset?.type ?? '')
+        const id = String(asset?.id ?? '')
+        if (!type || !id || NATIVE_ASSET_TYPES.has(type)) continue
+        if (!pageWidgets.has(pageIndex)) pageWidgets.set(pageIndex, [])
+        pageWidgets.get(pageIndex)!.push(id)
+        totalWidgets += 1
+      }
+    }
+    // Page-level theory (theoryBlock/formulaBlock) → snapshot the whole
+    // overlay under `theory-<pageId>`. V1.5 composites it at page top.
+    const pageId = String((page as any)?.id ?? '')
+    if (pageId && ((page as any)?.theoryBlock || (page as any)?.formulaBlock)) {
       if (!pageWidgets.has(pageIndex)) pageWidgets.set(pageIndex, [])
-      pageWidgets.get(pageIndex)!.push(id)
+      pageWidgets.get(pageIndex)!.push(`theory-${pageId}`)
       totalWidgets += 1
     }
   })
@@ -595,7 +621,7 @@ function buildExportFilename(rawName: string | undefined | null, format: WBExpor
   const ext = format === 'pdf' ? 'pdf' : format === 'png' ? 'png' : format
   const safe = String(rawName ?? '')
     // eslint-disable-next-line no-control-regex
-    .replace(/[ -<>:"/\\|?*]+/g, '-')
+    .replace(/[\x00-\x1f<>:"/\\|?*]+/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80)

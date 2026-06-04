@@ -1,6 +1,6 @@
 <template>
   <div class="wb-theory-overlay">
-    <div class="wb-theory-content">
+    <div ref="contentEl" class="wb-theory-content">
       <!-- Theory block: title + body + hint -->
       <div v-if="theoryBlock" class="wb-theory-section">
         <h2
@@ -19,7 +19,7 @@
       </div>
 
       <!-- Formula block: title + formula grid -->
-      <div v-if="formulaBlock" class="wb-formula-section">
+      <div v-if="formulaBlock" ref="formulaEl" class="wb-formula-section">
         <h3 class="wb-formula-title">{{ formulaBlock.title }}</h3>
         <div class="wb-formula-grid">
           <div
@@ -45,13 +45,32 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBTheoryBlock, WBFormulaBlock } from '../../types/winterboard'
+import { useExportCapture } from '../../composables/useExportCapture'
+import { snapshotElement } from '../../utils/snapshotElement'
 
-defineProps<{
+const props = defineProps<{
   theoryBlock?: WBTheoryBlock
   formulaBlock?: WBFormulaBlock
+  /** Current page id — used to build the synthetic export-preview id
+   *  `theory-<pageId>` so the export engine can embed this snapshot.
+   *  Theory is page-level (not an asset), hence the synthetic id. */
+  pageId?: string
 }>()
+
+// Export capture: snapshot the WHOLE theory overlay (title + body + formula
+// cards) under `theory-<pageId>`. V1.5 export composites this snapshot at the
+// top of the page — the browser already laid it out beautifully (KaTeX,
+// cyrillic, cards), so the screenshot is the "glamorous" result we want.
+// Theory is page-level (not an asset), hence the synthetic id.
+const contentEl = ref<HTMLElement | null>(null)
+const formulaEl = ref<HTMLElement | null>(null)
+useExportCapture(
+  () => (props.pageId && (props.theoryBlock || props.formulaBlock) ? `theory-${props.pageId}` : undefined),
+  (signal) => snapshotElement(contentEl.value, signal),
+)
 </script>
 
 <style scoped>

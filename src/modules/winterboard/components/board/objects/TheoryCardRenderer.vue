@@ -84,6 +84,8 @@
 import { computed, ref } from 'vue'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
+import { useExportCapture } from '../../../composables/useExportCapture'
+import { snapshotElement } from '../../../utils/snapshotElement'
 
 const props = withDefaults(
   defineProps<{
@@ -104,6 +106,15 @@ const rootEl = ref<HTMLElement | null>(null)
 const data = computed<TheoryCardData>(() => (props.asset.data as TheoryCardData) ?? {
   version: 1, title: '', body: '',
 })
+
+// Export capture: theory_card is a draggable WBAsset, so it snapshots by its
+// own asset.id like other widgets (the export engine embeds it at the card's
+// x/y/w/h). KaTeX renders cyrillic-in-formula via web fonts — server-side
+// MathJax SVG can't. Registered exactly like trig_circle / graph widgets.
+useExportCapture(
+  () => props.asset?.id,
+  (signal) => snapshotElement(rootEl.value, signal),
+)
 </script>
 
 <style scoped>

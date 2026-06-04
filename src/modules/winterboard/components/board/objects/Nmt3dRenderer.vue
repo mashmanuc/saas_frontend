@@ -246,13 +246,30 @@ async function mount(): Promise<void> {
     return
   }
 
-  ws = new W.NMT3D.Workspace(stageRef.value, props.asset.data.templateKey)
-  ws.setMode(localMode.value)
+  // Guard: missing data/templateKey would make the vendor constructor read
+  // `.params` off undefined and throw (nmt-3d.js:2404). Skip gracefully —
+  // critical during export capture, where a thrown mount() became an
+  // Uncaught promise rejection and could abort the whole capture phase.
+  const data = props.asset?.data
+  if (!data || !data.templateKey) {
+    console.warn('[Nmt3dRenderer] missing data/templateKey — skip mount', props.asset?.id)
+    return
+  }
 
-  // Restore persisted params + opts (if saved)
-  if (props.asset.data.params) ws.setParams(props.asset.data.params)
-  if (props.asset.data.opts) {
-    for (const [k, v] of Object.entries(props.asset.data.opts)) ws.setOpt(k, v)
+  // Vendor calls wrapped: a vendor-internal throw must not crash the host
+  // (off-screen capture mount can hit vendor edge cases). On failure the
+  // widget renders empty rather than killing capture.
+  try {
+    ws = new W.NMT3D.Workspace(stageRef.value, data.templateKey)
+    ws.setMode(localMode.value)
+    if (data.params) ws.setParams(data.params)
+    if (data.opts) {
+      for (const [k, v] of Object.entries(data.opts)) ws.setOpt(k, v)
+    }
+  } catch (err) {
+    console.warn('[Nmt3dRenderer] vendor Workspace init failed — skip', props.asset?.id, err)
+    ws = null
+    return
   }
 
   // ─── PATCH: Disable vendor auto-refit on container resize ─────────────────
@@ -430,7 +447,11 @@ function destroyWs(): void {
 function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
 
 onMounted(() => {
-  void mount()
+  // .catch: mount() is async; an unhandled rejection here surfaced as an
+  // Uncaught (in promise) during export capture. Swallow → widget skips.
+  mount().catch((err) => {
+    console.warn('[Nmt3dRenderer] mount() rejected', props.asset?.id, err)
+  })
   window.addEventListener('keydown', _onEsc)
 })
 onUnmounted(() => {
