@@ -270,14 +270,26 @@ const SolidIcon: FunctionalComponent<{ type: SolidType }> = (props) => {
 
 /* ── Touch / coarse pointer: always-visible + button, larger tap targets ── */
 @media (pointer: coarse) {
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .solids-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .solids-tray__card-wrap .solids-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
 
   .solids-tray__btn {

@@ -147,4 +147,32 @@ function onDrag(e: DragEvent): void {
   border-color: #818cf8;
   color: #4338ca;
 }
+
+@media (pointer: coarse) {
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .trig-solver-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .trig-solver-tray__card-wrap .trig-solver-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
+  .tray-add-btn {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
+  }
+  .trig-solver-tray__btn {
+    min-height: 44px;
+    padding: 9px 11px;
+  }
+}
 </style>

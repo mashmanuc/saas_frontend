@@ -337,14 +337,26 @@ const HelixIcon: FunctionalComponent = () =>
 
 /* ── Touch / coarse pointer ── */
 @media (pointer: coarse) {
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .trig-circle-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .trig-circle-tray__card-wrap .trig-circle-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
 
   .trig-circle-tray__btn {

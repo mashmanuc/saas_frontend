@@ -180,14 +180,26 @@ function onDragStart(e: DragEvent): void {
 .tray-add-btn:hover { background: #ede9fe; border-color: #818cf8; color: #4338ca; }
 
 @media (pointer: coarse) {
+  /* FIX Android repaint: position:static flex-sibling замість position:absolute */
+  .quad-tray__card-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .quad-tray__card-wrap .quad-tray__btn {
+    flex: 1;
+    min-width: 0;
+  }
   .tray-add-btn {
+    position: static;
     opacity: 1;
     pointer-events: auto;
-    width: 26px;
-    height: 26px;
-    font-size: 18px;
-    top: 4px;
-    right: 4px;
+    width: 36px;
+    height: auto;
+    flex-shrink: 0;
+    font-size: 20px;
+    border-radius: 6px;
+    z-index: auto;
   }
   .quad-tray__btn { min-height: 44px; padding: 9px 11px; }
 }
