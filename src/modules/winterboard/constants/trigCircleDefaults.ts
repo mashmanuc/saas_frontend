@@ -33,6 +33,7 @@ export function buildDefaultTrigCircleData(): TrigCircleData {
     showInscribed: false,
     showGraphs: true,
     snapPi12: false,
+    showHud: true,
     speed: 0.6,
   }
 }

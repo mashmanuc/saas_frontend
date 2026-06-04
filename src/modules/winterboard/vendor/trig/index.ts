@@ -28,6 +28,7 @@ export interface TrigCircleOpts {
   showInscribed?: boolean
   showGraphs?: boolean
   snapPi12?: boolean
+  showHud?: boolean
   animate?: boolean
   speed?: number
   partialCurves?: boolean

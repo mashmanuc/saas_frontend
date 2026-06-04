@@ -35,6 +35,16 @@
   >
     <header class="trig-circle-header">
       <span class="trig-circle-title">{{ t('winterboard.trigCircle.cardTitle') }}</span>
+      <!-- HUD toggle — show/hide values overlay (θ, sin, cos, tg, ctg) -->
+      <button
+        type="button"
+        class="trig-circle-hud-toggle"
+        :class="{ 'is-active': local.showHud }"
+        :title="local.showHud ? 'Приховати значення' : 'Показати значення'"
+        @click.stop="toggle('showHud')"
+        @mousedown.stop
+        @pointerdown.stop
+      >ⓘ</button>
       <!-- Expand / collapse button — always visible -->
       <button
         type="button"
@@ -54,7 +64,12 @@
     </header>
 
     <!-- Stage — canvas mounted by bundle's TrigCircle. -->
-    <div ref="stageRef" class="trig-circle-stage" data-testid="trig-circle-stage" />
+    <div
+      ref="stageRef"
+      class="trig-circle-stage"
+      :class="{ 'trig-hud-off': !local.showHud }"
+      data-testid="trig-circle-stage"
+    />
 
     <!-- Toolbar hidden: controls moved to TrigCircleInspector sidebar.
          Card shows only the visualization — inspector in sidebar handles all interactions. -->
@@ -232,7 +247,7 @@ type LocalState = {
   showSpecialPoints: boolean; showRefLabels: boolean
   showDeg: boolean; showRad: boolean
   showExactGrid: boolean; showInscribed: boolean
-  showGraphs: boolean; snapPi12: boolean; speed: number
+  showGraphs: boolean; snapPi12: boolean; showHud: boolean; speed: number
 }
 
 const local = reactive<LocalState>({
@@ -248,6 +263,8 @@ const local = reactive<LocalState>({
   showInscribed:     props.asset.data.showInscribed,
   showGraphs:        props.asset.data.showGraphs,
   snapPi12:          props.asset.data.snapPi12,
+  // Older assets may not have showHud → default to true (backward compat).
+  showHud:           props.asset.data.showHud ?? true,
   speed:             props.asset.data.speed,
 })
 
@@ -320,6 +337,7 @@ async function mount(): Promise<void> {
     showInscribed:     d.showInscribed,
     showGraphs:        d.showGraphs,
     snapPi12:          d.snapPi12,
+    showHud:           d.showHud ?? true,
     animate:           false,  // never auto-start on mount
     speed:             d.speed,
     partialCurves:     false,
@@ -382,7 +400,7 @@ const SYNC_KEYS: (keyof LocalState)[] = [
   'showSpecialPoints', 'showRefLabels',
   'showDeg', 'showRad',
   'showExactGrid', 'showInscribed',
-  'showGraphs', 'snapPi12', 'speed',
+  'showGraphs', 'snapPi12', 'showHud', 'speed',
 ]
 
 watch(
@@ -528,6 +546,7 @@ function scheduleSnapshot(): void {
         showInscribed:     o.showInscribed,
         showGraphs:        o.showGraphs,
         snapPi12:          o.snapPi12,
+        showHud:           o.showHud,
         speed:             o.speed,
       },
     }
@@ -596,6 +615,56 @@ function onDelete(): void { emit('delete') }
   min-height: 0;
   position: relative;
   pointer-events: auto;
+}
+
+/* ── HUD (values overlay injected by vendor TrigCircle into stageRef) ──
+   Provide own positioning so this component does NOT depend on calculus.css
+   being loaded (calculus.css loads only when a CalculusCard is on the board).
+   Uses :deep() to pierce the Vue scoping boundary (vendor-created DOM node). */
+.trig-circle-stage :deep(.calc-hud) {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  pointer-events: none;
+  z-index: 4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  background: rgba(255, 250, 240, 0.88);
+  border: 1px solid rgba(43, 33, 24, 0.10);
+  border-radius: 8px;
+  padding: 8px 10px;
+  backdrop-filter: blur(4px);
+  max-width: 340px;
+  color: #2b2118;
+}
+.trig-circle-stage :deep(.calc-hud .calc-line) {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+.trig-circle-stage :deep(.calc-hud .calc-line span) {
+  color: #8a7860;
+  font-size: 11px;
+  margin-right: 2px;
+}
+.trig-circle-stage :deep(.calc-hud .calc-line.key) {
+  font-weight: 600;
+  margin-top: 2px;
+}
+.trig-circle-stage :deep(.calc-hud .calc-line.key span) {
+  color: #c4622a;
+  font-weight: 600;
+}
+.trig-circle-stage :deep(.calc-hud .calc-line small) {
+  color: #8a7860;
+  font-size: 10px;
+  margin-left: 4px;
+}
+/* Hide HUD when trig-hud-off class is present */
+.trig-circle-stage.trig-hud-off :deep(.calc-hud) {
+  display: none;
 }
 
 /* ── Toolbar ── */
@@ -713,6 +782,39 @@ function onDelete(): void { emit('delete') }
 .trig-circle-delete:hover {
   background: #dc2626;
   border-color: #f87171;
+}
+
+/* ── HUD toggle button ── */
+.trig-circle-hud-toggle {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.25);
+  color: rgba(248, 250, 252, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.trig-circle-hud-toggle.is-active {
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.4);
+}
+.trig-circle-hud-toggle:hover {
+  background: #475569;
+  color: #f8fafc;
+  border-color: #94a3b8;
+}
+.trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
+  display: none;
 }
 
 /* ── Expand button ── */

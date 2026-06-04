@@ -25,6 +25,8 @@ export interface TrigCircleData {
   showInscribed: boolean
   showGraphs: boolean
   snapPi12: boolean
+  /** Whether the values overlay (θ, sin, cos, tg, ctg) is visible. Default true. */
+  showHud: boolean
   speed: number
 }
 

@@ -164,9 +164,9 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Phase 21: Save as Lesson button -->
+        <!-- Phase 21: Save as Lesson button — прихована в constructorMode (там є своя кнопка нижче) -->
         <button
-          v-if="sessionId && isSessionOwner && !sourceLessonId"
+          v-if="sessionId && isSessionOwner && !sourceLessonId && !constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--save-lesson"
           :title="t('winterboard.lesson.saveButton') || 'Зберегти як шаблон уроку'"

@@ -101,6 +101,7 @@
         showInscribed: false,      // inscribed square/hex/triangle from special angles
         showGraphs: true,          // sin and cos vs theta side panel
         snapPi12: false,           // snap to multiples of π/12
+        showHud: true,             // values overlay (θ, sin θ, cos θ, tg θ, ctg θ)
         animate: false,
         speed: 0.6,                // rad / sec for ▶ animation
         partialCurves: false,      // "draw sine" mode — only paint curve up to current θ
@@ -647,6 +648,7 @@
     }
 
     _renderHud() {
+      // Visibility is controlled externally (CSS class on parent) — always render content.
       const t = this.opts.theta;
       const sn = Math.sin(t), cs = Math.cos(t);
       const deg = (t * 180 / Math.PI);
