@@ -85,6 +85,10 @@ export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fall
   if (info.status === 400 || info.status === 422 || info.code === 'validation_failed') {
     // If we have per-field errors, show them; otherwise show generic message
     if (info.fields) {
+      // Special case: status=not_approved is a moderation gate, not a field validation error
+      if (info.fields.status?.includes('not_approved')) {
+        return t('marketplace.errors.statusNotApproved')
+      }
       const fieldMessages = Object.entries(info.fields)
         .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
         .slice(0, 3) // max 3 fields to avoid huge toast
