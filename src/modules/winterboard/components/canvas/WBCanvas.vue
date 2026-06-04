@@ -1178,12 +1178,17 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         snapPi12: false, speed: 0.6,
       }
 
-    case 'trig_solver':
+    case 'trig_solver': {
+      // Реальні type/rel/a з extracted_data.trig_solver (backend extract_trig_solver).
+      const ts = d.trig_solver as { type?: string; rel?: string; a?: number } | undefined
       return {
         version: 1,
-        type: 'sin', rel: '=', a: 0.5,
+        type: (ts?.type ?? 'sin') as 'sin' | 'cos' | 'tan' | 'cot',
+        rel:  (ts?.rel ?? '=') as '=' | '>' | '<' | '>=' | '<=',
+        a:    ts?.a ?? 0.5,
         snapSpecial: true, showGraph: true, showAllSolutions: true,
       }
+    }
 
     default:
       return { ...d }

@@ -73,6 +73,7 @@ export const INTENT_TO_RENDERERS: Record<string, string[]> = {
   // ── Trigonometry ───────────────────────────────────────────────────────────
   show_unit_circle:   ['trig_circle'],
   show_trig_values:   ['trig_circle'],
+  show_trig_solver:   ['trig_solver'],   // рівняння/нерівність sin/cos/tg/ctg x (рел) a
 }
 
 // ── Available renderers (runtime set) ─────────────────────────────────────────
@@ -135,10 +136,17 @@ function hasQuadratic(data: Record<string, unknown>): boolean {
   return !!q && typeof q.a === 'number'
 }
 
+// trig_solver має сенс лише з розпарсеними type/rel/a (інакше generic sin=0.5).
+function hasTrigSolver(data: Record<string, unknown>): boolean {
+  const t = data.trig_solver as { type?: unknown } | undefined
+  return !!t && typeof t.type === 'string'
+}
+
 const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boolean> = {
   graph_calculator: hasEquations,
   calculus_card:    hasEquations,   // FIX: було 'calculus' (стара назва) → guard не діяв
   quadratic_card:   hasQuadratic,
+  trig_solver:      hasTrigSolver,
 }
 
 export function resolveCompanions(
