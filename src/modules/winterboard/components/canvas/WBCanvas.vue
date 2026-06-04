@@ -1110,9 +1110,12 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       const expr = (eqs && eqs.length ? String(eqs[0]) : 'x^2').replace(/^y\s*=\s*/i, '')
       const isIntegral = resolution.intent === 'show_integral_area'
       if (isIntegral) {
+        const bounds = d.bounds as number[] | undefined
         return {
           version: 1, mode: 'integral',
-          expr, a: -1.5, b: 1.5,
+          expr,
+          a: bounds?.[0] ?? -1.5,
+          b: bounds?.[1] ?? 1.5,
           riemann: 'off', N: 12, showF: false,
           viewport: { cx: 0, cy: 0, scale: 50 },
         }
