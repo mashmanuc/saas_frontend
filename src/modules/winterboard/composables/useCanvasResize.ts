@@ -9,7 +9,7 @@
 // INV-1: Canvas NEVER resizes — only stage.scale() + stage.position()
 // INV-5: Never use 100vh — use visualViewport API
 
-import { ref, computed, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
 
 interface UseCanvasResizeOptions {
   /** Reference to the container element */
@@ -154,21 +154,34 @@ export function useCanvasResize(options: UseCanvasResizeOptions) {
     ),
   )
 
+  /**
+   * Attach ResizeObserver to the container. Idempotent — disconnects any
+   * previous observer first. Safe to call whenever containerRef changes.
+   */
+  function attachObserver() {
+    if (observer) {
+      observer.disconnect()
+      observer = null
+    }
+    const el = containerRef.value
+    if (!el) return
+    updateSize()
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(debouncedUpdate)
+      observer.observe(el)
+    }
+  }
+
   onMounted(() => {
     if (typeof window === 'undefined') return
-    if (!containerRef.value) return
-
-    // Initial size
-    updateSize()
 
     // INV-5: Initial visualViewport sync
     updateVisualViewport()
 
-    // ResizeObserver for container size changes
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(debouncedUpdate)
-      observer.observe(containerRef.value)
-    }
+    // Attach observer if container already present at mount (edit-mode views).
+    // For views where the container renders later (e.g. WBPublicView behind a
+    // v-if="isLoading" guard), the watch() below attaches it once it appears.
+    attachObserver()
 
     // Handle orientation change (mobile/tablet)
     window.addEventListener('orientationchange', handleOrientationChange, { passive: true })
@@ -178,6 +191,14 @@ export function useCanvasResize(options: UseCanvasResizeOptions) {
     if (vv) {
       vv.addEventListener('resize', updateVisualViewport)
     }
+  })
+
+  // Re-attach observer whenever the container element appears/changes.
+  // CRITICAL for views that render the canvas after async load (container ref
+  // is null at mount → onMounted's attach is a no-op → without this watch the
+  // observer would never attach and auto-fit would never run).
+  watch(containerRef, (el) => {
+    if (el) attachObserver()
   })
 
   onUnmounted(() => {

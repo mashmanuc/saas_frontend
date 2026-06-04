@@ -301,14 +301,25 @@ const epLashGroupRef = ref<SVGGElement | null>(null)
 const epBrowRef = ref<SVGPathElement | null>(null)
 const epIrisRaysRef = ref<SVGGElement | null>(null)
 
-// Auto-fit canvas to container (same as SoloRoom)
+// Auto-fit canvas to container (same as SoloRoom).
+// Читає актуальний розмір контейнера і виставляє zoom так, щоб уся сторінка
+// (1920×1080) вмістилась у viewport. Cap at 1 → не зумимо понад 100%.
+function applyReplayFit(): void {
+  const el = canvasContainerRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const w = Math.floor(rect.width)
+  const h = Math.floor(rect.height)
+  if (w > 0 && h > 0 && store.pageWidth > 0 && store.pageHeight > 0) {
+    const fitZoom = Math.min(w / store.pageWidth, h / store.pageHeight, 1)
+    store.setZoom(fitZoom)
+  }
+}
+
 useCanvasResize({
   containerRef: canvasContainerRef,
-  onResize(w, h) {
-    if (w > 0 && h > 0 && store.pageWidth > 0 && store.pageHeight > 0) {
-      const fitZoom = Math.min(w / store.pageWidth, h / store.pageHeight, 1)
-      store.setZoom(fitZoom)
-    }
+  onResize() {
+    applyReplayFit()
   },
   debounceMs: 100,
 })
@@ -872,6 +883,12 @@ onMounted(async () => {
     console.error('[WB:PublicView] Failed to load public session:', err)
   } finally {
     isLoading.value = false
+    // FIX (tablet/touch crop): canvasContainerRef рендериться лише ПІСЛЯ isLoading=false
+    // (v-if guard). На момент component-mount контейнера не було → ResizeObserver у
+    // useCanvasResize не приліпився, а hydrateFromSession() скинув zoom=1.
+    // Тому явно fit'имо після того як canvas з'явився у DOM.
+    await nextTick()
+    applyReplayFit()
   }
 })
 
