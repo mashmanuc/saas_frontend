@@ -275,8 +275,9 @@
                     :current-folder="lesson.folder"
                     @moved="onLessonMoved(lesson, $event)"
                   />
-                  <!-- Eye: оновлює snapshot перед переглядом (best-effort), потім навігує -->
-                  <button
+                  <!-- Eye: тимчасово прихована — preview веде на недороблений route.
+                       Розкоментувати коли LessonViewPage буде готова. -->
+                  <!-- <button
                     type="button"
                     class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center disabled:opacity-50 disabled:cursor-wait"
                     :title="$t('knowledge.lesson.startReplay')"
@@ -284,7 +285,7 @@
                     @click="handlePreview(lesson)"
                   >
                     {{ previewingLessonId === lesson.id ? '⏳' : '👁' }}
-                  </button>
+                  </button> -->
                   <!-- Edit button (Phase 25 B1) -->
                   <button
                     type="button"
