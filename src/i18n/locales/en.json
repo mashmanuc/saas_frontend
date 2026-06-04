@@ -5668,23 +5668,23 @@
   },
   "footer": {
     "contact": {
-      "link": "Зв'язатися з нами",
-      "title": "Контакти"
+      "link": "Contact us",
+      "title": "Contact"
     },
-    "copyright": "Всі права захищені.",
+    "copyright": "All rights reserved.",
     "legal": {
-      "payment": "Умови оплати",
-      "privacy": "Політика конфіденційності",
-      "refund": "Повернення коштів",
-      "terms": "Угода користувача",
-      "title": "Юридична інформація"
+      "payment": "Payment Terms",
+      "privacy": "Privacy Policy",
+      "refund": "Refund Policy",
+      "terms": "Terms of Service",
+      "title": "Legal"
     },
     "payment": {
-      "secure": "Безпечні платежі",
-      "title": "Способи оплати"
+      "secure": "Secure payments",
+      "title": "Payment methods"
     },
-    "tagline": "Платформа для репетиторів та студентів",
-    "support": "☕ Підтримати M4SH"
+    "tagline": "Platform for tutors and students",
+    "support": "☕ Support M4SH"
   },
   "legal": {
     "payment": {
