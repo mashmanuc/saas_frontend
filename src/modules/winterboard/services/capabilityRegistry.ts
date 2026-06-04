@@ -137,7 +137,7 @@ function hasQuadratic(data: Record<string, unknown>): boolean {
 
 const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boolean> = {
   graph_calculator: hasEquations,
-  calculus:         hasEquations,
+  calculus_card:    hasEquations,   // FIX: було 'calculus' (стара назва) → guard не діяв
   quadratic_card:   hasQuadratic,
 }
 

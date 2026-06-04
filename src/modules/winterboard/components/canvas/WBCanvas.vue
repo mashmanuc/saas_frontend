@@ -1105,19 +1105,21 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
     }
 
     case 'calculus_card': {
-      // CalculusData — mode determined by which intent triggered this.
+      // Реальна функція задачі з extracted_data.equations (RHS, mathjs), а не hardcoded.
+      const eqs = d.equations as string[] | undefined
+      const expr = (eqs && eqs.length ? String(eqs[0]) : 'x^2').replace(/^y\s*=\s*/i, '')
       const isIntegral = resolution.intent === 'show_integral_area'
       if (isIntegral) {
         return {
           version: 1, mode: 'integral',
-          expr: 'x^2', a: -1.5, b: 1.5,
+          expr, a: -1.5, b: 1.5,
           riemann: 'off', N: 12, showF: false,
           viewport: { cx: 0, cy: 0, scale: 50 },
         }
       }
       return {
         version: 1, mode: 'derivative',
-        expr: 'x^2', x0: 1.0,
+        expr, x0: 1.0,
         showSecant: false, h: 0.5, showDerivTrace: false,
         viewport: { cx: 0, cy: 0, scale: 50 },
       }
