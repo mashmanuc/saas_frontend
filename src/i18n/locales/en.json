@@ -5687,33 +5687,275 @@
     "support": "☕ Support M4SH"
   },
   "legal": {
-    "payment": {
-      "content": "Правила та умови оплати послуг",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Умови оплати"
+    "back": "Go back",
+    "close": "Close",
+    "terms": {
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: {date}",
+      "content": "Terms of use for the M4SH platform",
+      "s1": {
+        "title": "1. General Provisions",
+        "body": "<p>This User Agreement (hereinafter — \"Agreement\") governs the terms of use of the M4SH platform (hereinafter — \"Platform\"), provided by FOP Mashmanuk O.V. (hereinafter — \"M4SH\", \"we\").</p><p>By using the Platform, you confirm that you have read this Agreement and agree to its terms. If you do not agree — please do not use the Platform.</p><p><strong>Beta version.</strong> The Platform is currently in closed beta testing and is provided \"as is\". Features may change without prior notice.</p>"
+      },
+      "s2": {
+        "title": "2. Definitions",
+        "body": "<ul><li><strong>Platform</strong> — the M4SH web service (m4sh.org), an educational operating system for tutors and schools</li><li><strong>User</strong> — an individual who has registered and uses the Platform</li><li><strong>Tutor</strong> — a user who provides educational services through the Platform</li><li><strong>Student / Learner</strong> — a user who receives educational services</li><li><strong>Subscription</strong> — a paid subscription plan for access to Platform features</li></ul>"
+      },
+      "s3": {
+        "title": "3. What M4SH Is — and What It Is NOT",
+        "body": "<p>M4SH is a <strong>SaaS platform</strong> (Software as a Service). We provide tutors and schools with tools for conducting online lessons: an interactive whiteboard, lesson recording system, marketplace, calendar, and analytics.</p><p><strong>M4SH is not an intermediary in financial relations between tutors and students.</strong> The Platform does not process, hold, or transfer funds between users. Any financial settlements between a tutor and a student for educational services are made directly between them and are not subject to this Agreement.</p><p>Payment for an M4SH subscription is solely payment for access to Platform features, not payment for educational services.</p>"
+      },
+      "s4": {
+        "title": "4. Registration and Accounts",
+        "body": "<p>To use the Platform, you must create an account. You agree to provide accurate and current information during registration and to keep it up to date.</p><p>You are fully responsible for maintaining the confidentiality of your password and for all actions taken through your account.</p><p>Transferring your account to other persons is prohibited.</p>"
+      },
+      "s5": {
+        "title": "5. Rules of Use",
+        "body": "<p>By using the Platform, you agree to:</p><ul><li>Use the Platform only for lawful purposes</li><li>Not violate the rights of other users</li><li>Not post false, offensive, discriminatory, or illegal content</li><li>Not attempt to gain unauthorized access to Platform systems</li><li>Not use automated tools to collect data without our permission</li><li>Comply with all applicable laws of Ukraine and the EU</li></ul><p>Prohibited content categories: fraud, pornography, child sexual abuse material (CSAM), hate speech, illegal activities.</p>"
+      },
+      "s6": {
+        "title": "6. Right to Restrict Access and Block Accounts",
+        "body": "<p>M4SH reserves the right at any time, without prior notice and without obligation to explain reasons:</p><ul><li>Temporarily suspend or permanently block an account</li><li>Remove any content posted by a user</li><li>Restrict access to certain features</li></ul><p>Grounds for blocking: violation of this Agreement, suspicion of fraud, complaints from other users, legal requirements. Upon blocking, unused subscription balance may be refunded at the administration's discretion.</p>"
+      },
+      "s7": {
+        "title": "7. Paid Services and Subscriptions",
+        "body": "<p>Some Platform features are available under a paid subscription. Current prices are shown on the subscription page. Payment is processed through the LiqPay payment system in accordance with its terms.</p><p>Subscriptions automatically renew at the end of each paid period. You may cancel renewal at any time in your account settings — cancellation takes effect after the current paid period ends.</p>"
+      },
+      "s8": {
+        "title": "8. Intellectual Property",
+        "body": "<p>All rights to the Platform — design, source code, logos, trademarks, content — belong to M4SH or to third parties who have granted a license. You are not granted any rights to M4SH intellectual property, other than the right to use the Platform in accordance with this Agreement.</p><p>Content you create and upload to the Platform (lessons, recordings, materials) remains your property. You grant M4SH a non-exclusive license to store and technically display this content for the purpose of providing Platform services.</p>"
+      },
+      "s9": {
+        "title": "9. Limitation of Liability",
+        "body": "<p>The Platform is provided <strong>\"as is\"</strong> without any express or implied warranties, including warranties of fitness for a particular purpose, uninterrupted operation, or freedom from errors.</p><p>M4SH is not liable for:</p><ul><li>Damages resulting from temporary Platform unavailability</li><li>The quality of educational services provided by tutors</li><li>Disputes between tutors and students regarding lesson payments</li><li>Data loss due to circumstances beyond our control</li><li>Actions of third parties, including cyberattacks</li></ul><p>M4SH's maximum liability to you in any case shall not exceed the amount paid by you for a subscription over the last 12 months.</p>"
+      },
+      "s10": {
+        "title": "10. Jurisdiction and Dispute Resolution",
+        "body": "<p>This Agreement is governed by the laws of Ukraine. In the event of disputes, the parties agree to first resolve them through negotiations by contacting <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>. If negotiations are unsuccessful, the dispute shall be referred to the appropriate court of Ukraine.</p>"
+      },
+      "s11": {
+        "title": "11. Changes to the Agreement",
+        "body": "<p>We reserve the right to modify this Agreement. In the event of significant changes, we will notify you via email or a notification within the Platform. Continued use of the Platform after changes are published constitutes acceptance of the new terms.</p>"
+      },
+      "s12": {
+        "title": "12. Contact Information",
+        "body": "<p>For questions regarding this Agreement:</p><p>Email: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a><br>Website: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
+      }
     },
     "privacy": {
-      "content": "Політика обробки персональних даних",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Політика конфіденційності"
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: {date}",
+      "content": "Personal data processing policy",
+      "s1": {
+        "title": "1. Who Processes Your Data",
+        "body": "<p>Data controller: FOP Mashmanuk O.V., Ukraine.<br>Contact: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></p><p>This Privacy Policy explains what personal data we collect, how we use it, and how we protect it when you use the M4SH Platform (m4sh.org).</p>"
+      },
+      "s2": {
+        "title": "2. What Data We Collect",
+        "body": "<p><strong>Data you provide directly:</strong></p><ul><li>First name, last name, email address (upon registration)</li><li>Phone number (for SMS verification, optional)</li><li>Profile information: photo, description, subjects, prices (for tutors)</li><li>Payment data — processed exclusively by payment systems (we do not store card numbers)</li><li>Content you create: lesson materials, whiteboard recordings, chat messages</li></ul><p><strong>Data collected automatically:</strong></p><ul><li>IP address, browser type, operating system</li><li>Action logs: which features were used, session times</li><li>Technical metrics for monitoring platform stability</li></ul>"
+      },
+      "s3": {
+        "title": "3. Why We Use Your Data",
+        "body": "<ul><li>Providing Platform features (authentication, lesson recording, marketplace)</li><li>Processing subscriptions and payments</li><li>Sending transactional emails (registration confirmation, password recovery, payment notifications)</li><li>Technical support and responses to your requests</li><li>Detecting and preventing fraud</li><li>Analyzing and improving features (in aggregated/anonymized form)</li><li>Fulfilling legal obligations</li></ul>"
+      },
+      "s4": {
+        "title": "4. Replay — Saving the Course of a Session",
+        "body": "<p>M4SH Classroom has a technical function for saving the course of a session (Replay). A tutor can activate recording of the sequence of actions on the teaching whiteboard for later review by participants.</p><p><strong>Replay is not a video or audio recording.</strong> Your appearance and voice are not captured in Replay. In nature, Replay is similar to \"Version History\" in Google Docs or Figma — actions on the board are saved, not video.</p><p><strong>What is saved in Replay:</strong> the sequence of actions on the board (drawing, text, moving elements, page changes), attribution of each action to a participant, timestamps and session metadata. The textual content of the board and identity attribution constitute personal data of participants.</p><p><strong>Notification of active Replay:</strong> if the tutor has activated Replay — the platform displays an informational message to you during the session.</p><p><strong>Access to Replay:</strong> the tutor determines the access level after the session (tutor only / by link / public). M4SH may access Replay exclusively for technical support or pursuant to a legal request.</p><p><strong>Storage and deletion:</strong></p><ul><li>Replay is stored until deleted by the tutor</li><li>After being moved to the trash — deleted within 7 days</li><li>Upon deactivation of the tutor's account — all Replays are deleted</li></ul><p><strong>Your rights regarding Replay:</strong></p><ul><li>View Replay via a link from the tutor</li><li>Contact mashmanuc0@gmail.com regarding deletion of a Replay in which you participated</li></ul><p><strong>Sessions with minors:</strong> for students under 14 years old, the Platform restricts Replay visibility (private only by default). The tutor is obligated to notify parents/guardians about active Replay.</p><p><strong>Use for AI training:</strong> Replay data is not used for artificial intelligence training without separate explicit consent of the participants. Prohibited by default.</p>"
+      },
+      "s5": {
+        "title": "5. Sharing Data with Third Parties",
+        "body": "<p>We share data only with services necessary for the Platform to operate:</p><ul><li><strong>LiqPay</strong> (liqpay.ua) — processing subscription payments. Card data is transferred directly to LiqPay and is not stored on our servers.</li><li><strong>Fly.io</strong> — hosting for the server-side of the Platform.</li><li><strong>Cloudflare R2</strong> — storage of user files (images, PDFs, whiteboard materials).</li><li><strong>Sentry</strong> (sentry.io) — monitoring of technical errors (may contain technical request context).</li><li><strong>Gmail / Google Workspace</strong> — sending transactional emails via no-reply@m4sh.org.</li><li><strong>Twilio</strong> — SMS verification of phone numbers (optional).</li><li><strong>Telegram</strong> — technical notifications for administrators.</li></ul><p>We do not sell or share your personal data with third parties for marketing purposes. Data is shared with law enforcement only upon a lawful request.</p>"
+      },
+      "s6": {
+        "title": "6. Data Retention",
+        "body": "<p>We retain your data for as long as necessary to provide services and fulfill legal obligations:</p><ul><li>Account data — until account deletion + 30 days</li><li><strong>Replay (whiteboard actions)</strong> — until deleted by the tutor; after being moved to the trash — deleted within 7 days. See Section 4 for details.</li><li>Educational materials and whiteboard content — until deleted by you or upon account deletion</li><li>Payment history — 5 years (legal requirements)</li><li>Technical logs — 90 days</li></ul>"
+      },
+      "s7": {
+        "title": "7. Minor Users",
+        "body": "<p>M4SH serves both adult and minor students. Tutors on the Platform must be at least 18 years old.</p><p>For students under 14 years old, registration is made through a parental or guardian account. We do not collect personal data from children under 14 without confirmed parental or guardian consent.</p><p>Parents and guardians may contact <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a> to:</p><ul><li>View data stored about their child</li><li>Delete the child's account and all associated data</li><li>Withdraw consent to data processing</li></ul>"
+      },
+      "s8": {
+        "title": "8. Your Rights (GDPR)",
+        "body": "<p>Under the EU General Data Protection Regulation (GDPR) and Ukrainian law, you have the right to:</p><ul><li><strong>Access</strong> — obtain a copy of your personal data (request via <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>)</li><li><strong>Rectification</strong> — update inaccurate data in your profile</li><li><strong>Erasure</strong> — fully delete your account and data (Settings → Privacy)</li><li><strong>Restriction of processing</strong> — restrict data processing in certain cases</li><li><strong>Objection</strong> — object to processing based on legitimate interests</li><li><strong>Portability</strong> — receive your data in a machine-readable format</li></ul><p>To exercise your rights, contact: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>. Response time — up to 30 days.</p>"
+      },
+      "s9": {
+        "title": "9. Cookies",
+        "body": "<p>We use technically necessary cookies for authentication (the JWT token is stored in an httpOnly cookie). These cookies cannot be disabled without losing access to the Platform.</p><p>We do not use advertising cookies and do not track you across other websites.</p>"
+      },
+      "s10": {
+        "title": "10. Data Security",
+        "body": "<p>We apply technical and organizational measures to protect your data: HTTPS/TLS encryption, httpOnly cookies, CSRF protection, rate limiting, multi-factor authentication (MFA), and anomalous activity monitoring.</p><p>In the event of a data breach that could cause harm, we will notify you within 72 hours (in accordance with GDPR Article 33–34 requirements).</p>"
+      },
+      "s11": {
+        "title": "11. Changes to This Policy",
+        "body": "<p>We may update this Policy. In the event of significant changes, we will notify you via email or a notification within the Platform. Continued use after changes are published constitutes acceptance of the new version.</p>"
+      },
+      "s12": {
+        "title": "12. Contact",
+        "body": "<p>For privacy and data protection questions:<br>Email: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a><br>General support: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></p>"
+      }
+    },
+    "payment": {
+      "title": "Payment Terms",
+      "lastUpdated": "Last updated: {date}",
+      "content": "Rules and conditions for payment of services",
+      "s1": {
+        "title": "1. General Payment Terms",
+        "body": "<p>These Payment Terms govern the process of making payments for the use of paid services of the M4SH Platform.</p>"
+      },
+      "s2": {
+        "title": "2. Pricing Plans",
+        "body": "<p>The Platform offers various pricing plans with different features. Current prices and terms are shown on the subscription page.</p><p>Prices are listed in Ukrainian hryvnias (UAH) or US dollars (USD) depending on the selected payment method.</p>"
+      },
+      "s3": {
+        "title": "3. Payment Methods",
+        "body": "<p>We accept payment through the following payment system:</p><ul><li><strong>LiqPay</strong> — for card payments</li></ul><p>By making a payment, you agree to the terms of the selected payment system.</p>"
+      },
+      "s4": {
+        "title": "4. Automatic Subscription Renewal",
+        "body": "<p>Subscriptions automatically renew at the end of each billing period (monthly or annually). Payment is automatically charged to your card.</p><p>You may cancel automatic renewal at any time in your subscription settings. Cancellation takes effect at the end of the current paid period.</p>"
+      },
+      "s5": {
+        "title": "5. Changing Your Pricing Plan",
+        "body": "<p>You may change your pricing plan at any time:</p><ul><li><strong>Upgrading to a higher plan</strong> — changes take effect immediately, the price difference is calculated on a pro-rata basis</li><li><strong>Downgrading to a lower plan</strong> — changes take effect from the next billing period</li></ul>"
+      },
+      "s6": {
+        "title": "6. Payment Security",
+        "body": "<p>All payments are processed through secure payment systems using SSL/TLS encryption.</p><p>We do not store your full payment card details on our servers. All payment information is processed directly by the payment systems.</p>"
+      },
+      "s7": {
+        "title": "7. Taxes",
+        "body": "<p>All prices are listed inclusive of VAT (where applicable). Additional taxes may apply depending on your jurisdiction.</p>"
+      },
+      "s8": {
+        "title": "8. Seller Information",
+        "body": "<p><strong>Name:</strong> FOP Mashmanuk O.V.<br><strong>Email:</strong> <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></p>"
+      },
+      "s9": {
+        "title": "9. Contact",
+        "body": "<p>For payment questions, please contact:</p><p>Email: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></p>"
+      }
     },
     "refund": {
-      "content": "Політика повернення коштів",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Повернення коштів"
-    },
-    "terms": {
-      "content": "Умови використання платформи M4SH",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Угода користувача"
+      "title": "Refund Policy",
+      "lastUpdated": "Last updated: {date}",
+      "content": "Refund policy",
+      "s1": {
+        "title": "1. General Provisions",
+        "body": "<p>This Refund Policy describes the conditions under which you may receive a refund for paid services of the M4SH Platform.</p>"
+      },
+      "s2": {
+        "title": "2. Refund Period",
+        "body": "<p>You have the right to a refund within <strong>14 days</strong> of the first subscription payment, if:</p><ul><li>You have not used paid Platform features</li><li>You have not violated the User Agreement</li><li>The refund request was submitted within the specified period</li></ul>"
+      },
+      "s3": {
+        "title": "3. Refund Conditions",
+        "body": "<p>Refunds are <strong>not issued</strong> in the following cases:</p><ul><li>More than 14 days have passed since the payment</li><li>You actively used paid features</li><li>The subscription was cancelled after automatic renewal</li><li>You violated the User Agreement</li><li>The request was submitted for a subscription renewal (not the first payment)</li></ul>"
+      },
+      "s4": {
+        "title": "4. How to Submit a Refund Request",
+        "body": "<p>To receive a refund:</p><ol><li>Contact our support team at <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></li><li>Provide the reason for the refund and payment details</li><li>Wait for your request to be reviewed (up to 5 business days)</li></ol>"
+      },
+      "s5": {
+        "title": "5. Refund Process",
+        "body": "<p>Once a refund request is approved:</p><ul><li>Funds are returned to the card used for payment</li><li>Refund period: 5–14 business days (depends on your bank)</li><li>You will receive an email confirmation of the refund</li><li>Access to paid features will be terminated</li></ul>"
+      },
+      "s6": {
+        "title": "6. Partial Refunds",
+        "body": "<p>In exceptional cases, a partial refund may be issued:</p><ul><li>Technical issues on the Platform's side</li><li>Inability to provide services due to our fault</li><li>Other circumstances at the administration's discretion</li></ul><p>The partial refund amount is calculated proportionally to the unused subscription period.</p>"
+      },
+      "s7": {
+        "title": "7. Refund Denial",
+        "body": "<p>We reserve the right to deny a refund if:</p><ul><li>The request does not meet the conditions of this Policy</li><li>Abuse or fraud is detected</li><li>Incomplete or false information was provided</li></ul>"
+      },
+      "s8": {
+        "title": "8. Subscription Cancellation",
+        "body": "<p>Cancelling a subscription is <strong>not</strong> a refund. Upon cancellation:</p><ul><li>Access to paid features is retained until the end of the paid period</li><li>Automatic renewal is stopped</li><li>Funds for the current period are not refunded</li></ul>"
+      },
+      "s9": {
+        "title": "9. Contact",
+        "body": "<p>For refund questions, please contact:</p><p>Email: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a><br>Response time: up to 5 business days</p>"
+      }
     },
     "tutorOffer": {
-      "title": "Tutor Offer",
-      "lastUpdated": "Version: {date}"
+      "title": "Tutor Agreement",
+      "lastUpdated": "Version: {date}",
+      "s0": {
+        "title": "Summary",
+        "body": "<p>M4SH is a technology platform, not an employer. You provide educational services to students independently, on your own terms. We provide the tools: whiteboard, video, chat, marketplace. A subscription is the only form of monetization between you and M4SH.</p>"
+      },
+      "s1": {
+        "title": "I. Definitions",
+        "body": "<p><strong>Administrator</strong> — FOP Mashmanuk O.V., owner and operator of the M4SH Platform.<br><strong>M4SH Platform</strong> — a technological educational platform at m4sh.org: marketplace, classroom (video, whiteboard, chat), scheduling, materials library.<br><strong>Tutor</strong> — an individual aged 18 or older who has registered a tutor account and provides educational services to students through the Platform.<br><strong>Student</strong> — a Platform user who contacts tutors for educational services.<br><strong>Educational Services</strong> — lessons, consultations, and other forms of educational interaction between a Tutor and a Student.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).<br><strong>Subscription</strong> — a SaaS agreement between the Tutor and the Administrator for access to Platform features (FREE / PRO / BUSINESS).<br><strong>Acceptance Right</strong> — the technical ability to confirm one Request from a Student within the pricing plan.</p>"
+      },
+      "s2": {
+        "title": "IIA. Platform Status — Role Limitations",
+        "body": "<p><strong>M4SH is NOT and does NOT act as:</strong></p><ul><li><strong>An employer or contractor</strong> — the relationship is not an employment relationship. The Tutor independently determines methodology, schedule, prices, and terms of service delivery.</li><li><strong>A party to the agreement between the Tutor and the Student</strong> — any agreement regarding educational services is concluded exclusively between the Tutor and the Student.</li><li><strong>A payment agent or intermediary</strong> — the Platform does not accept or transfer funds in settlements between the Tutor and the Student for lessons.</li><li><strong>An educational institution</strong> — M4SH does not provide educational services, does not issue diplomas, and is not subject to education legislation.</li><li><strong>A guarantor of learning outcomes</strong> — the Platform is not responsible for the quality or effectiveness of the Tutor's educational services.</li></ul><p>The Tutor retains the right to simultaneously provide educational services through any other platforms or directly. The Tutor is independently responsible for providing technical means to work.</p>"
+      },
+      "s3": {
+        "title": "V. SaaS Subscription",
+        "body": "<p>The Administrator monetizes the Platform exclusively through the Tutor's SaaS subscription. The Administrator <strong>does not take any percentage</strong> of the cost of educational services.</p><p>Current pricing is on the <a href=\"/tutor/billing/plans\">m4sh.org/pricing</a> page. Payment is via LiqPay. The subscription automatically renews; a reminder is sent 5 days before the charge. Grace period for failed payment — 3 days.</p><p><strong>Acceptance Right</strong> — this is a technical capability of the Platform, not electronic money, prepaid credits, or a financial instrument. Acceptance rights have no monetary equivalent, are not subject to cash refund, and are cancelled upon subscription cancellation (this is clearly stated before payment).</p>"
+      },
+      "s4": {
+        "title": "VIA. Financial Settlements for Educational Services",
+        "body": "<p><strong>M4SH does not participate in financial settlements between the Tutor and the Student for educational services.</strong> The Administrator does not accept, store, or transfer funds for lessons; is not a merchant of record, escrow agent, or guarantor. Settlements are exclusively between the Tutor and the Student by any means agreed upon between them.</p>"
+      },
+      "s5": {
+        "title": "VIB. Replay — Saving the Course of a Session",
+        "body": "<p>Classroom provides the technical ability to save the sequence of actions on the whiteboard (Replay). <strong>Replay is not an audio or video recording.</strong> It is closer to \"Version History\" in Google Docs: actions (drawing, text, files) are saved, not video or voice.</p><p>By activating Replay, the Tutor confirms that they have notified the Student about the session being recorded. The Tutor determines the access level for Replay (private / by link / public). Replay with minor participants requires parental notification.</p><p>Using Replay for AI training is prohibited without separate explicit consent from both participants. Replay is stored until deleted by the Tutor; after being moved to the trash, it is deleted within 7 days.</p>"
+      },
+      "s6": {
+        "title": "VII. Minor Students",
+        "body": "<p>Tutors on the Platform must be at least 18 years old. When working with students under 18, the Tutor is obligated to: ensure parental permission for online learning exists; notify parents about Replay; not collect personal data of minors outside the Platform.</p><p>In the event of a complaint regarding the safety of a minor, the Administrator has the right to immediately suspend the Tutor's access pending investigation.</p>"
+      },
+      "s7": {
+        "title": "IX. Intellectual Property",
+        "body": "<p>The Tutor's content (photos, materials, tests, whiteboard content) remains the Tutor's property. By posting content on the Platform, the Tutor grants M4SH a narrow non-exclusive license solely for the functioning of the Platform (display, storage, indexing within the Platform). Marketing use — only with separate explicit consent from the Tutor.</p>"
+      },
+      "s8": {
+        "title": "XII. Liability and XIII. Final Provisions",
+        "body": "<p>The Administrator's liability for technical failures of the Platform is limited to the cost of the subscription for the last 3 months (except for intent or gross negligence).</p><p>The Agreement is governed by the laws of Ukraine. Pre-litigation procedure — 30 days. Current version: <a href=\"/legal/tutor-offer\">m4sh.org/legal/tutor-offer</a>.<br>Contact: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a></p>"
+      }
     },
     "studentOffer": {
-      "title": "Student Offer",
-      "lastUpdated": "Version: {date}"
+      "title": "Student Agreement",
+      "lastUpdated": "Version: {date}",
+      "s0": {
+        "title": "Summary",
+        "body": "<p>M4SH is a technology platform, not an educational institution. We provide tools for finding a tutor and conducting lessons. The Tutor is an independent specialist who independently determines the terms of work. M4SH is not a party to the agreement between you and the tutor and is not an intermediary in financial settlements.</p>"
+      },
+      "s1": {
+        "title": "I. Definitions",
+        "body": "<p><strong>Platform</strong> — the set of M4SH software tools (m4sh.org): tutor search, booking system, video room, and teaching whiteboard.<br><strong>Administrator</strong> — FOP Mashmanuk O.V., Ukraine.<br><strong>Student</strong> — an adult or parent/guardian of a minor who has accepted this Agreement by registering.<br><strong>Tutor</strong> — an independent specialist registered under the terms of the <a href=\"/legal/tutor-offer\">Tutor Agreement</a>.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).</p>"
+      },
+      "s2": {
+        "title": "II. Acceptance of the Agreement",
+        "body": "<p>Registering an account on m4sh.org constitutes full acceptance of this Agreement and the <a href=\"/legal/privacy\">Privacy Policy</a>.</p><p>For persons under 14 years old, registration is made exclusively through a parental or guardian account (Art. 32 of the Civil Code of Ukraine). Parents/guardians bear full responsibility for the minor's use of the Platform.</p>"
+      },
+      "s3": {
+        "title": "IIA. Platform Role — Important",
+        "body": "<p><strong>M4SH is NOT and does NOT act as:</strong></p><ul><li><strong>A party to the agreement between the Student and the Tutor</strong> — the terms of learning, price, and format are determined exclusively by the Student and the Tutor between themselves.</li><li><strong>A payment intermediary</strong> — the Platform does not accept or transfer funds for educational services.</li><li><strong>An educational institution</strong> — M4SH does not issue educational documents and is not responsible for tutors' pedagogical qualifications.</li><li><strong>A guarantor of learning outcomes</strong> — progress depends on the Student's efforts and the Tutor's methodology.</li><li><strong>Responsible for the Tutor's actions</strong> — the Tutor is responsible for the quality of lessons and fulfillment of agreements.</li></ul>"
+      },
+      "s4": {
+        "title": "V. Payment and Financial Matters",
+        "body": "<p><strong>Payment for educational services</strong> is made directly between the Student and the Tutor and does not pass through M4SH. Financial disputes are resolved exclusively between the Student and the Tutor without the Administrator's involvement.</p><p>Paid Platform features (if any) are paid via LiqPay to M4SH and are governed separately.</p>"
+      },
+      "s5": {
+        "title": "VI. Replay — Session Progress on the Whiteboard",
+        "body": "<p>The Tutor may activate saving of the sequence of actions on the teaching whiteboard (Replay). <strong>Replay is not an audio or video recording.</strong> Actions on the whiteboard (drawing, text, files) are saved, not the appearance or voice of participants. This is similar to \"Version History\" in Google Docs.</p><p>If the tutor has activated Replay — the Platform displays an informational message to you during the session.</p><p>The Tutor determines the access level for Replay: private (tutor only), by link, or public. If you wish to delete a Replay in which you participated — contact <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>.</p><p>Replay data is not used for AI training without separate explicit consent from participants.</p>"
+      },
+      "s6": {
+        "title": "VII. Protection of Minors",
+        "body": "<p><strong>Registration age:</strong></p><ul><li>18 and older — independent registration</li><li>14–17 years — independent registration; parents/guardians must be informed</li><li>Under 14 years — registration exclusively through a parental/guardian account</li></ul><p>M4SH does not collect personal data from children under 14 without confirmed parental or guardian consent. Parents and guardians may contact <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a> to view, update, or delete a child's data.</p><p>If you or your child have encountered unacceptable behavior from a tutor — report it immediately via <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>.</p>"
+      },
+      "s7": {
+        "title": "VIII. Student Rights and Obligations",
+        "body": "<p><strong>The Student agrees to:</strong> provide accurate data upon registration; not violate the tutor's copyright on materials; not distribute Replay without the tutor's explicit written consent; not use the Platform for illegal purposes.</p><p><strong>The Student has the right to:</strong> obtain a copy of their personal data (request via mashmanuc0@gmail.com); delete the account with all data (Settings → Privacy); file a complaint against a tutor through support.</p>"
+      },
+      "s8": {
+        "title": "XII. Personal Data and XIII. Dispute Resolution",
+        "body": "<p>Personal data processing is governed by the <a href=\"/legal/privacy\">Privacy Policy</a>. Requests: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a> (response within 30 days).</p><p>Complaint to M4SH: <a href=\"mailto:mashmanuc0@gmail.com\">mashmanuc0@gmail.com</a>, review period — 30 days. Consumer rights under the Law of Ukraine \"On Consumer Rights Protection\" take priority over the terms of this Agreement. Law of Ukraine.</p>"
+      }
     }
   },
   "profile": {
