@@ -301,6 +301,27 @@
       </div>
     </template>
 
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Unified overlay render (Z_ORDER_UNIFIED_PLAN v4.0, PR1, прапор VITE_UNIFIED_ZORDER).
+         Один ordered v-for замість 12 per-type блоків → DOM order = assets[] order.
+         Лікує cross-type z-order render-grouping bug (INV-RENDER-1).
+         Flag OFF → v-else нижче = старі блоки bit-identical (rollback = ENV OFF + rebuild).
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <WBOverlayLayer
+      v-if="unifiedRenderEnabled"
+      :assets="overlayAssets"
+      :tool="props.tool"
+      :get-overlay-style="getOverlayStyle"
+      @asset-update="asset => emit('asset-update', asset)"
+      @asset-delete="id => emit('asset-delete', id)"
+      @formula-card-edit="id => emit('formula-card-edit', id)"
+      @spawn-companions="handleSpawnCompanions"
+    />
+
+    <!-- v-else: legacy per-type blocks (flag OFF або rollback). Незмінені.
+         Видалити у PR3 після 30+ днів stable на проді. -->
+    <template v-if="!unifiedRenderEnabled">
+
     <!-- Phase O PR-O4 / PR-O4.3: geometry_solid overlay (Three.js — non-Konva).
          Konva proxy в assetsLayerRef рендериться під overlay (same x/y/w/h) і
          catches всі drag/resize/select interactions через existing asset
@@ -590,6 +611,8 @@
       </div>
     </template>
 
+    </template><!-- /v-if="!unifiedRenderEnabled" (legacy per-type blocks end) -->
+
 
     <!-- Lesson Constructor: Theory overlay — page-level (theoryBlock/formulaBlock).
          Рендериться ВСЕРЕДИНІ canvas на z-index 3 (нижче strokes-overlay z6), щоб
@@ -800,6 +823,10 @@ import type { CompanionResolution } from '../../services/capabilityRegistry'
 import { DEFAULT_GRAPH_STATE } from '../../constants/graphCalculatorDefaults'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
+// Unified overlay layer (Z_ORDER_UNIFIED_PLAN v4.0, PR1) — прапор VITE_UNIFIED_ZORDER
+import WBOverlayLayer from './WBOverlayLayer.vue'
+import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
+import { isOverlayType } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -1200,6 +1227,17 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
 // Expanded overlay займає position:absolute;inset:0 у межах .wb-canvas
 // (не full-viewport) — toolbar/sidebar залишаються видимими.
 const expandedAssetId = ref<string | null>(null)
+
+// ── Unified overlay render flag (Z_ORDER_UNIFIED_PLAN v4.0, PR1) ─────────────
+// Evaluated ONCE при mount — build-time прапор (VITE_UNIFIED_ZORDER, default OFF).
+// v-if → WBOverlayLayer (один ordered v-for, INV-RENDER-1).
+// v-else → старі 12 per-type блоки (bit-identical до PR1, rollback = флаг OFF).
+const unifiedRenderEnabled = isUnifiedOverlayRenderEnabled()
+
+// overlayAssets: assets[] filtered до OVERLAY_ASSET_TYPES, ORDER ЗБЕРЕЖЕНО.
+// Передається у WBOverlayLayer як єдине джерело рендеру.
+// media (audio/video/youtube) НЕ входить (окрема модель, z:5, не змінюється).
+const overlayAssets = computed(() => assets.value.filter(a => isOverlayType(a.type)))
 
 // Phase 3C: Type cast helpers for media assets
 function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as WBAudioAsset }

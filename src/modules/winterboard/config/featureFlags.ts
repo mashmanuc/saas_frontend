@@ -155,3 +155,42 @@ export function isLessonConstructorEnabled(): boolean {
   // 3. Default: disabled
   return false
 }
+
+// ─── Unified Overlay Render Flag (Z_ORDER_UNIFIED_PLAN v4.0, PR1) ─────────────
+// Перемикає WBCanvas overlay-рендер з 13 per-type блоків (групує за типом →
+// cross-type z-order баг) на один ordered WBOverlayLayer (render order = assets[]
+// order). OFF default → 0 змін на проді (v-else = старі блоки 1:1).
+//
+// Priority (перша умова перемагає):
+// 1. localStorage: wb_unified_zorder=true/false  (QA / manual dev override)
+// 2. Env variable: VITE_UNIFIED_ZORDER=true/false  (prod canary build-time)
+// 3. Default: false (OFF)
+
+const LS_KEY_UNIFIED_ZORDER = 'wb_unified_zorder'
+
+/**
+ * Перевірити чи увімкнено unified overlay render (single ordered v-for).
+ */
+export function isUnifiedOverlayRenderEnabled(): boolean {
+  // 1. localStorage override
+  const lsValue = getLocalStorage(LS_KEY_UNIFIED_ZORDER)
+  if (lsValue !== null) {
+    return lsValue === 'true'
+  }
+
+  // 2. Env variable
+  const envValue = getEnvVar('VITE_UNIFIED_ZORDER')
+  if (envValue !== undefined) {
+    return envValue === 'true'
+  }
+
+  // 3. Default: disabled
+  return false
+}
+
+/**
+ * Увімкнути/вимкнути unified overlay render вручну (persists to localStorage).
+ */
+export function setUnifiedOverlayRenderEnabled(enabled: boolean): void {
+  setLocalStorage(LS_KEY_UNIFIED_ZORDER, String(enabled))
+}
