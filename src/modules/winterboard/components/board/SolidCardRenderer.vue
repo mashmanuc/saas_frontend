@@ -29,6 +29,12 @@
       'is-rotate-mode': rotateMode,
     }"
   >
+    <!-- Step C (2026-06-05): динамічна назва тіла — SOLID_TYPES lookup по asset.src.
+         pointer-events:auto → клік на заголовку не пробиває до Konva (НЕ запускає drag). -->
+    <header class="solid-header">
+      <span class="solid-title">{{ shapeLabel }}</span>
+    </header>
+
     <div ref="container" class="solid-canvas" />
 
     <!--
@@ -178,6 +184,7 @@ import type {
   SolidAssetState,
 } from '@/modules/winterboard/types/winterboard'
 import { useSolidCardRenderer } from '../../composables/useSolidCardRenderer'
+import { SOLID_TYPES } from '../../constants/solidDefaults'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../composables/useExportCapture'
 import { snapshotElement } from '../../utils/snapshotElement'
@@ -345,6 +352,11 @@ function toggleRotateMode(): void {
  * compliance — no custom interaction logic).
  */
 const toolbarVisible = computed(() => props.isSelected)
+
+/** Назва тіла з SOLID_TYPES lookup (asset.src = SolidType). Fallback = src як є. */
+const shapeLabel = computed(
+  () => SOLID_TYPES.find(s => s.type === props.asset.src)?.label ?? props.asset.src,
+)
 
 /**
  * Computed read-only view of state — direct prop reference, NOT a local mirror.
@@ -516,6 +528,23 @@ onUnmounted(() => {
      Visible toolbar/delete children opt back in via pointer-events:auto
      below (only when shown). */
   pointer-events: none;
+}
+
+.solid-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: transparent;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+  pointer-events: auto; /* клік на заголовку не падає до Konva */
+}
+
+.solid-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.55);
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
 .solid-canvas {
