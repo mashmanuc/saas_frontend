@@ -42,6 +42,15 @@
 
     <header class="gc-header">
       <span class="gc-title">f(x)</span>
+      <!-- Expand to fill board canvas (mirrors nmt3d/trig_circle/helix pattern).
+           Незалежна від presenting mode — expand завжди доступний. -->
+      <button
+        type="button"
+        class="gc-expand-btn"
+        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        data-testid="graph-calc-expand-btn"
+        @click.stop="$emit('expand')"
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <!-- P2 (2026-05-08): режим презентації — приховує панель, plot 100%.
            Module-level UI state (NOT persisted, NOT replayed). -->
       <button
@@ -1630,7 +1639,8 @@ defineExpose({
 .gc-swatch,
 .gc-plot,
 .gc-param-mode-btn,
-.gc-present-btn {
+.gc-present-btn,
+.gc-expand-btn {
   pointer-events: auto;
 }
 
@@ -1656,6 +1666,35 @@ defineExpose({
   line-height: 1;
   color: var(--gc-error, #a83a5b);
   padding: 0 4px;
+}
+
+/* Expand-to-board button — mirrors nmt3d ⛶ pattern. Завжди видимий (не тільки
+   при interactive), бо expand = navigation, не редагування. */
+.gc-expand-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: 4px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
+  border-radius: var(--gc-radius-btn, 4px);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--gc-ink-2, #5a4a3a);
+  transition: background var(--gc-transition, 120ms ease), color var(--gc-transition, 120ms ease);
+}
+.gc-expand-btn:hover {
+  background: var(--gc-accent-2-faint, rgba(59, 123, 155, 0.08));
+  color: var(--gc-accent-2, #3b7b9b);
+  border-color: var(--gc-accent-2-strong, rgba(59, 123, 155, 0.4));
+}
+/* Якщо expand-btn перший у header, gc-present-btn не потребує margin-left:auto */
+.gc-expand-btn ~ .gc-present-btn {
+  margin-left: 0;
 }
 
 /* P2 (2026-05-08): presentation toggle — той самий visual stack що й

@@ -137,9 +137,10 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 </template>
 
 <style scoped>
-/* Wrapper CSS відтворено з WBCanvas.vue (1:1), з ОДНІЄЮ зміною:
-   graph_calculator z-index 5 → 4. Усі overlay-wrapper-и тепер на одному z:4 →
-   DOM order (= assets[] order) вирішує stacking (INV-RENDER-1, фікс render-grouping).
+/* Wrapper CSS відтворено з WBCanvas.vue, з двома змінами:
+   1. graph_calculator z-index 5 → 4 (нормалізовано для unified array-order stacking).
+   2. border-radius уніфіковано: 8px (більшість) / 12px (nmt_task) / 16px (theory_card).
+      Було: 4px/6px/10px/12px/16px без системи. Три чіткі рівні замість п'яти.
    media (z:5) лишається ВИЩЕ у WBCanvas (out of scope PR1, R1 документований). */
 
 .wb-solid-overlay {
@@ -147,7 +148,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   z-index: 4;
   background: rgba(15, 23, 42, 0.04);
   border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -160,7 +161,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-graph-calculator-overlay {
   position: absolute;
   z-index: 4;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: visible;
   pointer-events: none;
 }
@@ -175,7 +176,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   z-index: 4;
   background: rgba(15, 23, 42, 0.03);
   border: 1px solid rgba(59, 130, 246, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -189,7 +190,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   z-index: 4;
   background: rgba(196, 98, 42, 0.03);
   border: 1px solid rgba(196, 98, 42, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -202,7 +203,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   position: absolute;
   z-index: 4;
   background: transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -215,7 +216,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   z-index: 4;
   background: rgba(59, 123, 155, 0.03);
   border: 1px solid rgba(59, 123, 155, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -228,7 +229,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(168, 58, 91, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -241,7 +242,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(196, 98, 42, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -261,7 +262,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(196, 98, 42, 0.22);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -274,7 +275,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   position: absolute;
   z-index: 4;
   border: 1px solid #d6c8b2;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   pointer-events: none;
 }
