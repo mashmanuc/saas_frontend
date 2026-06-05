@@ -1043,9 +1043,11 @@
       "materials": "Materials",
       "myPlan": "My Plan",
       "myReplays": "My Replays",
-      "feedback": "💡 Ideas & Feedback"
+      "feedback": "💡 Ideas & Feedback",
+      "marketplace": "Marketplace"
     },
     "hint": {
+      "marketplace": "Browse the public tutor catalog",
       "feedback": "Suggest ideas and vote on priorities",
       "dashboard": "Home page with schedule and stats",
       "schedule": "Your lesson calendar and availability",
