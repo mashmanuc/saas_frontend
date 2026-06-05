@@ -185,8 +185,9 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     // Required number
     experience_years: Number.isFinite(experienceYears) ? experienceYears : 0,
 
-    // Publication status
-    is_published: model.is_published || false,
+    // Publication status — кероване ВИКЛЮЧНО через POST /publish/ + /unpublish/
+    // (MP-ARCH-01 single write-path). PUT /profile/ більше НЕ керує публікацією —
+    // це усуває dual-write вектор, що спричиняв розрив I-2 (autosave публікував).
 
     // Optional profile fields
     country: model.country?.trim() || undefined,

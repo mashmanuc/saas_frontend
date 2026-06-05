@@ -1208,6 +1208,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
             type="checkbox"
             :disabled="saving"
             data-test="marketplace-editor-publish-toggle"
+            @change="handlePublishToggle"
           />
           {{ t('marketplace.profile.publish') }}
         </label>
