@@ -2813,6 +2813,10 @@
         "minutes": "Урок через {minutes} хв",
         "label": "Приєднатись"
       },
+      "resume_active_lesson": {
+        "title": "Активний урок",
+        "label": "Повернутися"
+      },
       "answer_inquiry": {
         "single": "{student} хоче почати навчання",
         "multiple": "У тебе {count} нових запити",

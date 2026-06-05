@@ -1982,6 +1982,10 @@
         "minutes": "Lesson in {minutes} min",
         "label": "Join"
       },
+      "resume_active_lesson": {
+        "title": "Active lesson",
+        "label": "Return"
+      },
       "answer_inquiry": {
         "single": "{student} wants to start learning",
         "multiple": "You have {count} new inquiries",
