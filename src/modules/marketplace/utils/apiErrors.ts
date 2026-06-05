@@ -8,61 +8,115 @@ export type MarketplaceApiErrorInfo = {
 }
 
 import { i18n } from '@/i18n'
+import { buildFriendlyErrorSummary } from './validationMessages'
 
+/**
+ * Нормалізує вкладені field-errors до плаского Record<string, string[]>,
+ * collapse-ячи вкладеність до top-level поля.
+ *
+ * Backend (DRF nested serializers) повертає різні форми:
+ *   { headline: ["required"] }                          → { headline: ["required"] }
+ *   { subjects: { code: ["Subject X not found"] } }      → { subjects: ["Subject X not found"] }
+ *   { subjects: [ { code: ["msg1"] }, { tags: ["msg2"] } ] } → { subjects: ["msg1","msg2"] }
+ *
+ * Вкладені ключі (code/tags) НЕ показуються користувачу — він знає поле "subjects",
+ * а не "subjects.code". Усі вкладені повідомлення зливаються в масив батьківського поля.
+ */
+function flattenFieldErrors(raw: Record<string, unknown>): MarketplaceValidationErrors {
+  const out: MarketplaceValidationErrors = {}
+
+  const collect = (val: unknown, topKey: string): void => {
+    if (Array.isArray(val)) {
+      for (const item of val) {
+        if (typeof item === 'string') (out[topKey] ??= []).push(item)
+        else if (item && typeof item === 'object') collect(item, topKey)
+        else if (item != null) (out[topKey] ??= []).push(String(item))
+      }
+    } else if (typeof val === 'string') {
+      (out[topKey] ??= []).push(val)
+    } else if (val && typeof val === 'object') {
+      for (const v of Object.values(val as Record<string, unknown>)) collect(v, topKey)
+    } else if (val != null) {
+      (out[topKey] ??= []).push(String(val))
+    }
+  }
+
+  for (const [k, v] of Object.entries(raw)) {
+    if (k === 'detail' || k === 'error') continue
+    collect(v, k)
+  }
+  return out
+}
+
+/**
+ * Canonical parser для error-відповідей backend.
+ *
+ * Backend має ДВІ родини error-форматів — цей парсер нормалізує обидві до
+ * єдиного MarketplaceApiErrorInfo:
+ *
+ *   Format B (canonical, apps/core/errors.py exception handler + APIError):
+ *     { error: { code, detail, fields? } }
+ *   Format A (ручні Response() у views):
+ *     { error: 'code_string', fields?, detail?/message? }
+ *   + DRF raw fallback:
+ *     { field: ["msg"] }
+ */
 export function parseMarketplaceApiError(err: unknown): MarketplaceApiErrorInfo {
   const anyErr = err as any
   const status = anyErr?.response?.status ?? null
   const data = anyErr?.response?.data
 
-  const code = (data?.error ?? data?.code ?? null) as string | null
-  const detail = (data?.detail ?? data?.message ?? null) as string | null
+  const errVal = (data && typeof data === 'object') ? (data as any).error : undefined
+  // Format B: error — це об'єкт-обгортка { code, detail, fields }
+  const wrapper = (errVal && typeof errVal === 'object') ? (errVal as any) : null
 
-  let fields: MarketplaceValidationErrors | null = null
-  // DRF ValidationError returns 400 (not 422). Parse field errors for both.
-  if ((status === 400 || status === 422) && data && typeof data === 'object') {
-    // Try structured containers first: data.fields, data.errors
-    let raw = (data as any).fields && typeof (data as any).fields === 'object'
-      ? (data as any).fields
-      : (data as any).errors && typeof (data as any).errors === 'object'
-        ? (data as any).errors
-        : null
+  const code = (
+    wrapper
+      ? (wrapper.code ?? null)
+      : (typeof errVal === 'string' ? errVal : (data?.code ?? null))
+  ) as string | null
 
-    // DRF default: validation errors are directly in data (e.g. { "headline": ["This field is required."] })
-    if (!raw) {
-      const skipKeys = new Set(['detail', 'error', 'message', 'code', 'error_code', 'non_field_errors'])
-      const candidate: Record<string, unknown> = {}
-      let hasFieldErrors = false
-      for (const [k, v] of Object.entries(data)) {
-        if (skipKeys.has(k)) continue
-        if (Array.isArray(v) || typeof v === 'string') {
-          candidate[k] = v
-          hasFieldErrors = true
-        }
+  const detail = (
+    wrapper?.detail ?? data?.detail ?? data?.message ?? null
+  ) as string | null
+
+  // Витягуємо сирий контейнер field-errors з будь-якого формату.
+  let rawFields: Record<string, unknown> | null = null
+  if (wrapper && wrapper.fields && typeof wrapper.fields === 'object') {
+    rawFields = wrapper.fields // Format B
+  } else if ((data as any)?.fields && typeof (data as any).fields === 'object') {
+    rawFields = (data as any).fields // Format A
+  } else if ((data as any)?.errors && typeof (data as any).errors === 'object') {
+    rawFields = (data as any).errors // альтернативний контейнер
+  } else if ((status === 400 || status === 422) && data && typeof data === 'object' && !wrapper) {
+    // DRF raw { field: [...] } — поля лежать прямо в data
+    const skipKeys = new Set(['detail', 'error', 'message', 'code', 'error_code', 'non_field_errors'])
+    const candidate: Record<string, unknown> = {}
+    let hasFieldErrors = false
+    for (const [k, v] of Object.entries(data)) {
+      if (skipKeys.has(k)) continue
+      if (Array.isArray(v) || typeof v === 'string' || (v && typeof v === 'object')) {
+        candidate[k] = v
+        hasFieldErrors = true
       }
-      if (hasFieldErrors) raw = candidate
     }
-
-    if (raw && typeof raw === 'object') {
-      const next: MarketplaceValidationErrors = {}
-      for (const [k, v] of Object.entries(raw)) {
-        if (k === 'detail' || k === 'error') continue
-        if (Array.isArray(v)) next[k] = v.map((x) => String(x))
-        else if (typeof v === 'string') next[k] = [v]
-        else if (v != null) next[k] = [JSON.stringify(v)]
-      }
-      fields = Object.keys(next).length ? next : null
-    }
+    if (hasFieldErrors) rawFields = candidate
   }
+
+  const flat = rawFields ? flattenFieldErrors(rawFields) : null
+  const fields = flat && Object.keys(flat).length ? flat : null
 
   return { status, code, detail, fields }
 }
 
 export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fallback: string): string {
-  const t = (key: string): string => {
+  const t = (key: string, fb?: string): string => {
     try {
-      return (i18n as any)?.global?.t?.(key) ?? key
+      const res = (i18n as any)?.global?.t?.(key)
+      if (res && res !== key) return res
+      return fb ?? key
     } catch (_err) {
-      return key
+      return fb ?? key
     }
   }
 
@@ -82,17 +136,17 @@ export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fall
   }
 
   // Existing error codes — DRF uses 400 for ValidationError, not 422
-  if (info.status === 400 || info.status === 422 || info.code === 'validation_failed') {
+  if (info.status === 400 || info.status === 422 || info.code === 'validation_failed' || info.code === 'VALIDATION_ERROR') {
     // If we have per-field errors, show them; otherwise show generic message
     if (info.fields) {
       // Special case: status=not_approved is a moderation gate, not a field validation error
       if (info.fields.status?.includes('not_approved')) {
         return t('marketplace.errors.statusNotApproved')
       }
-      const fieldMessages = Object.entries(info.fields)
-        .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-        .slice(0, 3) // max 3 fields to avoid huge toast
-      return fieldMessages.join('\n') || t('marketplace.errors.validation')
+      // Friendly, localized per-field summary (label + перекладене повідомлення)
+      const lines = buildFriendlyErrorSummary(info.fields, t, 3)
+      if (lines.length > 0) return lines.join('\n')
+      return t('marketplace.errors.validation')
     }
     return t('marketplace.errors.validation')
   }
