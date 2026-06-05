@@ -119,6 +119,8 @@ const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
   'BILLING_PAYMENT_FAILED': 'Помилка платежу',
   'VERIFICATION_VERIFIED': 'Верифікація пройдена',
   'VERIFICATION_REJECTED': 'Верифікацію відхилено',
+  'LESSON_STARTED': 'Урок розпочався',
+  'lesson.started': 'Урок розпочався',
 }
 
 function getNotificationTitle(item: InAppNotification): string {
@@ -129,8 +131,14 @@ const canMarkAll = computed(() => unreadCount.value > 0)
 
 function toggle() {
   isOpen.value = !isOpen.value
-  if (isOpen.value && items.value.length === 0) {
-    notificationsStore.loadNotifications({ limit: 10 })
+  if (isOpen.value) {
+    if (items.value.length === 0) {
+      notificationsStore.loadNotifications({ limit: 10 })
+    }
+    // Відкрив дропдаун → позначаємо всі прочитаними (UX: видно = прочитано)
+    if (unreadCount.value > 0) {
+      notificationsStore.markAllAsRead()
+    }
   }
 }
 
@@ -154,12 +162,14 @@ async function handleNotificationClick(notification: InAppNotification) {
 
   const role = authStore.userRole // 'student' | 'tutor' | null
 
-  // inquiry_id або relation_id → відкриваємо список запитів за роллю
-  if (notification.data?.inquiry_id || notification.data?.relation_id) {
+  // LESSON_STARTED → перехід прямо до класрум
+  if (notification.data?.room_url) {
+    router.push(notification.data.room_url)
+  } else if (notification.data?.inquiry_id || notification.data?.relation_id) {
+    // inquiry_id або relation_id → відкриваємо список запитів за роллю
     if (role === 'tutor') {
       router.push('/tutor/inquiries')
     } else {
-      // student або невідома роль
       router.push('/student/inquiries')
     }
   } else if (notification.data?.booking_id) {

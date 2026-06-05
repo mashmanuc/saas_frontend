@@ -19,6 +19,7 @@ import { useLayoutStore } from '@/stores/layoutStore'
 import { websocketService } from '@/services/websocket'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
 import { jankDetector } from '@/utils/jankDetector'
+import { notifyInfo } from '@/utils/notify'
 
 const isDev = import.meta.env.DEV
 
@@ -109,6 +110,19 @@ function setupNotificationsRealtime(userId) {
           }))
           return
         }
+
+        // LESSON_STARTED → active toast з кнопкою "Приєднатись"
+        if (event.type === 'LESSON_STARTED' && event.payload) {
+          notifyInfo(event.payload.body || 'Тьютор чекає на вас', {
+            title: event.payload.title || 'Урок розпочався',
+            action: {
+              href: event.payload.data?.room_url,
+              label: 'Приєднатись',
+            },
+            timeout: 12000,
+          })
+        }
+
         notificationsStore.handleRealtimeNotification(event)
       }
     )

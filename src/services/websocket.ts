@@ -289,7 +289,12 @@ class WebSocketService {
         return
       }
 
-      const payload = data.payload || data.data || data
+      // realtimeService.handleMessage вже розгортає зовнішній frame.payload,
+      // тому `data` ТУТ — це сам notification-об'єкт { id, type, title, body, data, created_at }.
+      // НЕ розгортати вдруге через data.data — це поверне deep-link і втратить id/title,
+      // через що handleRealtimeNotification дропає подію (badge не оновлюється в реальному часі).
+      // Defensive: якщо frame прийшов нерозгорнутим (має .payload), беремо вкладений payload.
+      const payload = (data?.id || data?.title) ? data : (data.payload || data)
       handler({
         type: messageType || 'notification',
         payload: payload as RealtimeNotificationEvent['payload']

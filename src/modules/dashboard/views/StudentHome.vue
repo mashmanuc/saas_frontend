@@ -36,8 +36,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { storeToRefs } from 'pinia'
+import { useNotificationsStore } from '@/stores/notificationsStore'
 import DashboardHero from '../components/DashboardHero.vue'
 import DashboardSecondaryContext from '../components/DashboardSecondaryContext.vue'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
@@ -102,6 +104,20 @@ async function loadUpcomingLessons() {
     isLoadingLessons.value = false
   }
 }
+
+const notificationsStore = useNotificationsStore()
+const { items: notificationItems } = storeToRefs(notificationsStore)
+
+// Коли приходить LESSON_STARTED через WS — оновлюємо список уроків
+// щоб з'явилась кнопка "Приєднатися" без ручного перезавантаження.
+watch(
+  () => notificationItems.value[0],
+  (latest) => {
+    if (latest?.type === 'LESSON_STARTED' && !latest.read_at) {
+      loadUpcomingLessons()
+    }
+  },
+)
 
 onMounted(() => {
   loadSnapshot()

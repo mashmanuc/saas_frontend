@@ -14,14 +14,18 @@
 
         <div class="toast-body">
           <header>
-            <p class="toast-title">{{ $t(`notify.types.${item.meta.labelKey}`) }}</p>
+            <p class="toast-title">{{ item.meta.title || $t(`notify.types.${item.meta.labelKey}`) }}</p>
             <small>{{ item.meta.timestamp }}</small>
           </header>
           <p class="toast-message">
             {{ item.message }}
           </p>
           <div v-if="item.meta.action" class="toast-actions">
-            <a class="toast-action" :href="item.meta.action.href">
+            <a
+              class="toast-action"
+              :href="item.meta.action.href"
+              @click.prevent="navigateAction(item.meta.action.href, item.id)"
+            >
               {{ item.meta.action.label }}
             </a>
           </div>
@@ -45,12 +49,19 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useNotifyStore } from '../stores/notifyStore'
 
 const notify = useNotifyStore()
 const { items } = storeToRefs(notify)
 const { t } = useI18n()
+const router = useRouter()
+
+function navigateAction(href, toastId) {
+  notify.dismiss(toastId)
+  if (href) router.push(href)
+}
 
 const TYPE_META = {
   success: { icon: '✨', accent: '#0ea355', labelKey: 'success' },
