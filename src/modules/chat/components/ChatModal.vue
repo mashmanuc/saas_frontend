@@ -87,6 +87,8 @@ const props = defineProps({
   tutorId: { type: Number, default: null }, // For student: ID тьютора
   relationId: { type: [String, Number], default: null },
   otherUserName: { type: String, default: null }, // Priority display name for chat header
+  // Пряме відкриття по thread_id (з нотифікації, global overlay) — минає relation-резолюцію.
+  initialThreadId: { type: [String, Number], default: null },
 })
 
 const emit = defineEmits(['close'])
@@ -110,6 +112,15 @@ const chatLabel = computed(() => {
 const currentUserId = computed(() => authStore.user?.id)
 
 async function loadThread() {
+  // Пряме відкриття по thread_id (notification / global overlay) — минаємо relation-резолюцію.
+  if (props.initialThreadId) {
+    threadId.value = String(props.initialThreadId)
+    if (props.otherUserName) studentName.value = props.otherUserName
+    error.value = null
+    loading.value = false
+    return
+  }
+
   // Phase 1 v0.87: Підтримка обох режимів
   const isStudentMode = Boolean(props.tutorId)
   const isTutorMode = Boolean(props.studentId)
@@ -235,6 +246,13 @@ watch(() => props.isOpen, (open) => {
     loadThread()
   } else {
     document.body.style.overflow = ''
+  }
+})
+
+// Перемикання thread поки модалка вже відкрита (клік іншої chat-нотифікації)
+watch(() => props.initialThreadId, (tid, prev) => {
+  if (tid && tid !== prev && props.isOpen) {
+    loadThread()
   }
 })
 

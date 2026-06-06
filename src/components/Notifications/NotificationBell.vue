@@ -84,6 +84,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useNotificationsStore } from '@/stores/notificationsStore'
+import { useChatOverlayStore } from '@/stores/chatOverlayStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { InAppNotification } from '@/types/notifications'
 import dayjs from 'dayjs'
@@ -100,6 +101,7 @@ const isOpen = ref(false)
 const notificationsStore = useNotificationsStore()
 const { items, unreadCount, latestItems, isLoading, error } = storeToRefs(notificationsStore)
 const authStore = useAuthStore()
+const chatOverlay = useChatOverlayStore()
 
 // Fallback titles for notifications without title from backend
 const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
@@ -121,6 +123,7 @@ const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
   'VERIFICATION_REJECTED': 'Верифікацію відхилено',
   'LESSON_STARTED': 'Урок розпочався',
   'lesson.started': 'Урок розпочався',
+  'CHAT_MESSAGE': 'Нове повідомлення',
 }
 
 function getNotificationTitle(item: InAppNotification): string {
@@ -165,6 +168,10 @@ async function handleNotificationClick(notification: InAppNotification) {
   // LESSON_STARTED → перехід прямо до класрум
   if (notification.data?.room_url) {
     router.push(notification.data.room_url)
+  } else if (notification.data?.thread_id) {
+    // CHAT_MESSAGE → відкриваємо working ChatModal по thread_id (global overlay).
+    // Для ОБОХ ролей (раніше вело на порожній /tutor/messages/:id — ChatView negotiation-only).
+    chatOverlay.openByThread(notification.data.thread_id)
   } else if (notification.data?.inquiry_id || notification.data?.relation_id) {
     // inquiry_id або relation_id → відкриваємо список запитів за роллю
     if (role === 'tutor') {

@@ -23,8 +23,8 @@
           <div v-if="item.meta.action" class="toast-actions">
             <a
               class="toast-action"
-              :href="item.meta.action.href"
-              @click.prevent="navigateAction(item.meta.action.href, item.id)"
+              :href="item.meta.action.href || '#'"
+              @click.prevent="handleAction(item.meta.action, item.id)"
             >
               {{ item.meta.action.label }}
             </a>
@@ -52,15 +52,23 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useNotifyStore } from '../stores/notifyStore'
+import { useChatOverlayStore } from '../stores/chatOverlayStore'
 
 const notify = useNotifyStore()
 const { items } = storeToRefs(notify)
 const { t } = useI18n()
 const router = useRouter()
+const chatOverlay = useChatOverlayStore()
 
-function navigateAction(href, toastId) {
+function handleAction(action, toastId) {
   notify.dismiss(toastId)
-  if (href) router.push(href)
+  if (!action) return
+  // CHAT_MESSAGE → відкрити working ChatModal по threadId (не роут)
+  if (action.chatThreadId) {
+    chatOverlay.openByThread(action.chatThreadId, action.chatName)
+    return
+  }
+  if (action.href) router.push(action.href)
 }
 
 const TYPE_META = {

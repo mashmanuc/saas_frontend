@@ -3,6 +3,14 @@
     <router-view />
     <DiagnosticsPanel v-if="isDev" />
     <AuditOverlayAsync v-if="isAuditMode" />
+    <!-- Global chat overlay — відкривається з notification (bell/toast) по thread_id -->
+    <ChatModalAsync
+      v-if="authStore.isAuthenticated"
+      :is-open="chatOverlay.isOpen"
+      :initial-thread-id="chatOverlay.threadId"
+      :other-user-name="chatOverlay.otherUserName"
+      @close="chatOverlay.close"
+    />
   </PageThemeProvider>
 </template>
 
@@ -20,6 +28,9 @@ import { websocketService } from '@/services/websocket'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
 import { jankDetector } from '@/utils/jankDetector'
 import { notifyInfo } from '@/utils/notify'
+import { useChatOverlayStore } from '@/stores/chatOverlayStore'
+
+const ChatModalAsync = defineAsyncComponent(() => import('@/modules/chat/components/ChatModal.vue'))
 
 const isDev = import.meta.env.DEV
 
@@ -41,6 +52,10 @@ if (typeof window !== 'undefined') {
 const layout = useLayoutStore()
 layout.init()
 layout.bindRouteChanges(useRoute())
+
+// Global chat overlay — notification (bell/toast) відкриває working ChatModal по thread_id.
+// P4 suppression: не показувати toast якщо саме цей thread уже відкрито в overlay.
+const chatOverlay = useChatOverlayStore()
 
 // Phase 30 B4: Lazy-loaded audit overlay (INV-3: 0 bytes in prod if disabled)
 const AuditOverlayAsync = defineAsyncComponent(() => import('@/debug/AuditOverlay.vue'))
@@ -121,6 +136,21 @@ function setupNotificationsRealtime(userId) {
             },
             timeout: 12000,
           })
+        }
+
+        // CHAT_MESSAGE → toast з кнопкою "Відкрити" (відкриває working ChatModal по thread_id).
+        // P4 suppression: не показувати toast якщо саме цей thread уже відкрито в overlay.
+        // Bell badge оновлюється завжди (нижче через handleRealtimeNotification).
+        if (event.type === 'CHAT_MESSAGE' && event.payload) {
+          const threadId = event.payload.data?.thread_id
+          const viewingThisThread = threadId && chatOverlay.isOpen && chatOverlay.threadId === threadId
+          if (!viewingThisThread) {
+            notifyInfo(event.payload.body || 'Нове повідомлення', {
+              title: event.payload.title || 'Нове повідомлення',
+              action: threadId ? { label: 'Відкрити', chatThreadId: threadId } : undefined,
+              timeout: 8000,
+            })
+          }
         }
 
         notificationsStore.handleRealtimeNotification(event)
