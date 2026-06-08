@@ -31,6 +31,14 @@ export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 5.0
 
 /**
+ * Initial fit-zoom margin — makes grey workspace visible on first load.
+ * Page occupies 92% of the viewport at fit-zoom; 4% grey on each side.
+ * Applied only to the composable's `fitZoom` ref, not to `calculateFitZoom`
+ * (so pure-function tests remain unchanged).
+ */
+export const FIT_MARGIN = 0.92
+
+/**
  * Calculate optimal zoom to fit page in container (fit-to-container).
  * Returns scale factor such that the entire page is visible within the container.
  * INV-1: This is used for stage.scale(), NOT stage.width/height.
@@ -138,9 +146,9 @@ export function useCanvasResize(options: UseCanvasResizeOptions) {
 
   // ── Computed viewport transform (INV-1) ────────────────────────
 
-  /** Optimal zoom to fit the page in the current container */
+  /** Optimal zoom to fit the page in the current container (includes FIT_MARGIN) */
   const fitZoom: ComputedRef<number> = computed(() =>
-    calculateFitZoom(width.value, height.value),
+    calculateFitZoom(width.value, height.value) * FIT_MARGIN,
   )
 
   /** Center offset at fitZoom level */
