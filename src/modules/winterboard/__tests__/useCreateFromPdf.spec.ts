@@ -161,5 +161,36 @@ describe('useCreateFromPdf', () => {
       expect(error.value).toBe('winterboard.createFromPdf.error.processing')
       expect(error.value).not.toContain('Request failed')
     })
+
+    it('maps a 429 throttle (DRF detail shape) to the rateLimited message', async () => {
+      const e = new Error('Request failed with status code 429')
+      ;(e as unknown as { response: unknown }).response = {
+        status: 429,
+        data: { detail: 'Request was throttled. Expected available in 47 seconds.' },
+      }
+      mockImportPdf.mockRejectedValue(e)
+      const { createFromPdf, error } = useCreateFromPdf()
+      const p = createFromPdf(pdfFile())
+      await vi.advanceTimersByTimeAsync(50)
+      await p
+      expect(error.value).toBe('winterboard.createFromPdf.error.rateLimited')
+    })
+
+    it('handles an object-shaped backend error WITHOUT crashing (no toLowerCase throw)', async () => {
+      // Some throttle/validation responses return { error: { code, detail } } — an
+      // object, not a string. The mapper must not call .toLowerCase() on it.
+      const e = new Error('Request failed with status code 400')
+      ;(e as unknown as { response: unknown }).response = {
+        status: 400,
+        data: { error: { code: 'invalid_pdf', detail: 'Invalid PDF format' } },
+      }
+      mockImportPdf.mockRejectedValue(e)
+      const { createFromPdf, error, isCreating } = useCreateFromPdf()
+      const p = createFromPdf(pdfFile())
+      await vi.advanceTimersByTimeAsync(50)
+      await expect(p).resolves.toBeUndefined() // must NOT reject
+      expect(isCreating.value).toBe(false)
+      expect(error.value).toBe('winterboard.createFromPdf.error.invalidPdf')
+    })
   })
 })

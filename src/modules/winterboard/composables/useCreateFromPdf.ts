@@ -43,12 +43,27 @@ export function useCreateFromPdf() {
    */
   function toFriendlyError(err: unknown): string {
     const E = 'winterboard.createFromPdf.error'
-    const resp = (err as { response?: { status?: number; data?: { error?: string; detail?: string } } })?.response
+    const resp = (err as { response?: { status?: number; data?: { error?: unknown; detail?: unknown } } })?.response
     const httpStatus = resp?.status
-    const raw = resp?.data?.error || resp?.data?.detail
-      || (err instanceof Error ? err.message : String(err)) || ''
-    const m = raw.toLowerCase()
+    const data = resp?.data
 
+    // The backend error field may be a string OR an object { code, detail }
+    // (some throttle / validation responses). Extract a string SAFELY — calling
+    // .toLowerCase() on a non-string throws "toLowerCase is not a function" and
+    // kills the catch handler (same guard as useImageUpload.classify429).
+    let reason = ''
+    const rawError = data?.error
+    if (typeof rawError === 'string') {
+      reason = rawError
+    } else if (rawError && typeof rawError === 'object') {
+      const o = rawError as { detail?: unknown; code?: unknown }
+      reason = String(o.detail ?? o.code ?? '')
+    }
+    if (!reason && typeof data?.detail === 'string') reason = data.detail
+    if (!reason && err instanceof Error) reason = err.message
+    const m = reason.toLowerCase()
+
+    if (httpStatus === 429 || m.includes('throttled') || m.includes('too many request')) return t(`${E}.rateLimited`)
     if (httpStatus === 413 || m.includes('too large') || m.includes('занадто велик')) return t(`${E}.tooLarge`)
     if (m.includes('too many pages')) return t(`${E}.tooManyPages`)
     if (m.includes('encrypt') || m.includes('password')) return t(`${E}.encrypted`)
@@ -67,7 +82,7 @@ export function useCreateFromPdf() {
     }
     // A message we threw ourselves inside the flow is already localized — show it,
     // but NEVER surface the raw axios "Request failed with status code N".
-    if (err instanceof Error && err.message && !m.startsWith('request failed')) return err.message
+    if (reason && !m.startsWith('request failed')) return reason
     return t(`${E}.processing`)
   }
 
