@@ -128,7 +128,7 @@
           <button
             type="button"
             class="wb-board-list__new-btn"
-            :disabled="creatingNewBoard"
+            :disabled="creatingNewBoard || isCreatingFromPdf"
             @click="createNewTemplate"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -136,6 +136,35 @@
             </svg>
             {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
           </button>
+
+          <!-- Create lesson from PDF.
+               MANIFEST §3.2.1: title = VISIBLE limit hint; button text = PREDICTABLE progress;
+               notifyError on failure = EXPLAINABLE error. -->
+          <button
+            type="button"
+            class="wb-board-list__new-btn wb-board-list__new-btn--secondary"
+            :disabled="isCreatingFromPdf || creatingNewBoard"
+            :title="t('winterboard.createFromPdf.limit')"
+            @click="triggerPdfInput"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 9V1M4 4l3-3 3 3M1 11h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            {{ isCreatingFromPdf
+              ? t('winterboard.createFromPdf.creating', { progress: createFromPdfProgress })
+              : t('winterboard.createFromPdf.button') }}
+          </button>
+
+          <!-- Hidden file input for PDF selection -->
+          <input
+            ref="pdfInputRef"
+            type="file"
+            accept=".pdf,application/pdf"
+            aria-hidden="true"
+            tabindex="-1"
+            style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none"
+            @change="onPdfFileSelected"
+          />
         </div>
       </div>
 
@@ -455,6 +484,7 @@ import { winterboardApi, type WBSessionListItem, type ListSessionsQuery, type Bo
 // Міграція стандартна: showToast(msg,'success') → notifySuccess(msg).
 import { notifyError, notifySuccess } from '@/utils/notify'
 import { isLessonConstructorEnabled } from '../config/featureFlags'
+import { useCreateFromPdf } from '../composables/useCreateFromPdf'
 import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
 import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
@@ -626,6 +656,32 @@ async function createNewTemplate(): Promise<void> {
     notifyError(t('winterboard.boards.createError'))
   } finally {
     creatingNewBoard.value = false
+  }
+}
+
+// ── Create from PDF ─────────────────────────────────────────────────
+
+const pdfInputRef = ref<HTMLInputElement | null>(null)
+const {
+  isCreating: isCreatingFromPdf,
+  progress: createFromPdfProgress,
+  error: createFromPdfError,
+  createFromPdf,
+  cancel: cancelCreateFromPdf,
+} = useCreateFromPdf()
+
+function triggerPdfInput(): void {
+  pdfInputRef.value?.click()
+}
+
+async function onPdfFileSelected(event: Event): Promise<void> {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  // Reset so the same file can be re-selected after an error
+  ;(event.target as HTMLInputElement).value = ''
+  await createFromPdf(file)
+  if (createFromPdfError.value) {
+    notifyError(createFromPdfError.value)
   }
 }
 
@@ -833,7 +889,12 @@ async function fetchBoards(): Promise<void> {
   }
 }
 
-onUnmounted(() => fetchAbort?.abort())
+onUnmounted(() => {
+  fetchAbort?.abort()
+  // Stop any in-flight PDF import poll loop so it does not keep hitting
+  // /import-pdf/ in the background after the user leaves the studio.
+  cancelCreateFromPdf()
+})
 
 // ─── Watchers: refetch on tab/search/offset/folder change ────────────────────
 
@@ -1146,6 +1207,21 @@ onMounted(() => {
 
 .wb-board-list__new-btn:hover {
   background: var(--wb-brand-hover, #0052cc);
+}
+
+.wb-board-list__new-btn--secondary {
+  background: transparent;
+  color: var(--wb-brand, #0066ff);
+  border: 1.5px solid var(--wb-brand, #0066ff);
+}
+
+.wb-board-list__new-btn--secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wb-brand, #0066ff) 8%, transparent);
+}
+
+.wb-board-list__new-btn--secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ── Toolbar (tabs + search) ─────────────────────────────────────────── */
@@ -1509,6 +1585,10 @@ onMounted(() => {
   color: var(--wb-fg-secondary, #64748b);
   margin: 0 0 20px;
   line-height: 1.5;
+  /* Board names are often long single tokens (filenames like
+     receipt_CE91_3P6B_...) — wrap them instead of overflowing the dialog. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .wb-dialog__actions {

@@ -221,6 +221,9 @@ defineExpose({
 onBeforeUnmount(() => {
   if (dragLeaveTimer) clearTimeout(dragLeaveTimer)
   if (successTimer) clearTimeout(successTimer)
+  // Abort the import poll loop on unmount — otherwise usePdfImport keeps
+  // polling /import-pdf/ in the background after the toolbar is gone.
+  cancelPdfImport()
 })
 </script>
 

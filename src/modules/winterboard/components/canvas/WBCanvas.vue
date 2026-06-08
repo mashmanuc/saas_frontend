@@ -787,6 +787,7 @@ import YouTubePlayerObject, { type WBYouTubeAsset } from '../board/objects/YouTu
 import type { WBAudioAsset, WBVideoAsset } from '../../types/mediaObjects'
 import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
+import { containFit } from '../../engine/imageFit'
 import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMode } from '../../composables/useAssetStatus'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
@@ -1775,11 +1776,15 @@ const pdfBackgroundConfig = computed<Record<string, unknown> | null>(() => {
   const img = bgImageCache.get(bg.url)
   if (!img) return null
 
+  // Fit the PDF page WITHIN the page rect preserving aspect ratio — never stretch.
+  // useImageCache.get() returns the element only after onload, so naturalWidth/
+  // naturalHeight are valid here. For a portrait PDF on the (landscape) page this
+  // scales to height and centres horizontally — the intended "по висоті, без
+  // розтягування" instead of squashing it to the full page box.
+  const fit = containFit(img.naturalWidth, img.naturalHeight, props.width, props.height)
+
   return {
-    x: 0,
-    y: 0,
-    width: props.width,
-    height: props.height,
+    ...fit,
     image: img,
     listening: false,
     name: 'pdf-background',

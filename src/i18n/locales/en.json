@@ -7456,6 +7456,21 @@
         "cancel": "Cancel"
       }
     },
+    "createFromPdf": {
+      "button": "Create from PDF",
+      "creating": "Processing {progress}%…",
+      "limit": "Max 50 pages · 50 MB",
+      "error": {
+        "tooLarge": "File is too large. Maximum: 50 MB",
+        "tooManyPages": "Too many pages in the PDF. Maximum: 50 pages.",
+        "encrypted": "The PDF is password-protected. Remove the protection and try again.",
+        "invalidPdf": "Couldn't read the PDF. Make sure the file isn't corrupted and is a real PDF.",
+        "serverError": "The server is temporarily unavailable. Please try again in a minute.",
+        "processing": "PDF conversion failed. Try a different file.",
+        "timeout": "Processing took too long. Please try again.",
+        "generic": "Failed to create lesson from PDF. {detail}"
+      }
+    },
     "folders": {
       "allBoards": "All boards",
       "noFolder": "No folder",
