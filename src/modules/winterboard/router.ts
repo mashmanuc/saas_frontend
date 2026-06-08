@@ -43,11 +43,13 @@ const winterboardSessionListRoute: RouteRecordRaw = {
 // Page-level routes — mounted inside PageShell (sidebar + header)
 const winterboardPageRoutes: RouteRecordRaw[] = [
   {
-    // Classroom hub — tutor + student (входження до уроку)
+    // Classroom Hub RETIRED (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07).
+    // Функції перенесено: join → Dashboard «Майбутні» + LESSON_STARTED notif;
+    // re-entry → G4 CTA; conduct → «Мої уроки». Redirect на role-home (guard
+    // resolves '/' → getDefaultRouteForRole) для старих закладок/redirect-ів.
     path: 'winterboard/classroom-hub',
     name: 'winterboard-classroom-hub',
-    component: () => import('./views/WBClassroomHub.vue'),
-    meta: { title: 'Classroom Hub', roles: ['student', 'tutor'] },
+    redirect: '/',
   },
   {
     // Legacy redirect — WBDashboard.vue видалено як dead code.

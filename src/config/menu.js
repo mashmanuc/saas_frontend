@@ -77,11 +77,8 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
-        // Класна кімната — точка входу/повернення у проведення уроків (учні → уроки → Почати/Продовжити).
-        // Роут /winterboard/classroom-hub існував, але був недосяжний через nav (тільки redirect після
-        // "Завершити урок"). i18n ключі sidebar.item.classroomHub + sidebar.hint.classroomHub вже були.
-        // Ref: TUTOR_WORKSPACE_SURFACE_AUDIT.md (Phase 1 — surface Classroom Hub).
-        { label: 'sidebar.item.classroomHub', icon: 'graduation-cap', to: '/winterboard/classroom-hub', hint: 'sidebar.hint.classroomHub' },
+        // Classroom Hub RETIRED (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — пункт прибрано.
+        // join → Dashboard «Майбутні» + LESSON_STARTED notif; re-entry → G4 CTA; conduct → «Мої уроки».
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
         // Lesson Constructor живе у /winterboard/boards (вкладка "Конструктор"), не у sidebar.
         // Гейтується через isLessonConstructorEnabled() у WBBoardList.vue.

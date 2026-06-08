@@ -38,8 +38,9 @@ describe('Bundle Optimization (A7.1)', () => {
     it('WB module exports page routes for PageShell', async () => {
       const { winterboardPageRoutes } = await import('../router')
 
-      // Page routes grew to include replays/archive/trash + classroom-hub
-      // Core entries (dashboard, library, lessons, boards, students) remain
+      // Page routes include replays/archive/trash. classroom-hub RETIRED → redirect-only
+      // (route record kept for old bookmarks). Core entries (dashboard, library, lessons,
+      // boards, students) remain.
       expect(winterboardPageRoutes.length).toBeGreaterThanOrEqual(6)
 
       const pagePaths = winterboardPageRoutes.map((r) => r.path)

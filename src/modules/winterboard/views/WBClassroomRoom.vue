@@ -5,7 +5,7 @@
       <div class="wb-waiting-screen__spinner" />
       <h2 class="wb-waiting-screen__title">{{ t('winterboard.classroom.waitingForTeacher') }}</h2>
       <p class="wb-waiting-screen__text">{{ t('winterboard.classroom.waitingForTeacherHint') }}</p>
-      <button class="wb-waiting-screen__back" @click="router.push('/winterboard/classroom-hub')">
+      <button class="wb-waiting-screen__back" @click="router.push(dashboardPath)">
         {{ t('winterboard.classroom.backToHub') }}
       </button>
     </div>
@@ -17,7 +17,7 @@
       <div class="wb-waiting-screen__icon">✅</div>
       <h2 class="wb-waiting-screen__title">{{ t('winterboard.classroom.lessonCompleted') }}</h2>
       <p class="wb-waiting-screen__text">{{ t('winterboard.classroom.lessonCompletedHint') }}</p>
-      <button class="wb-waiting-screen__back" @click="router.push('/winterboard/classroom-hub')">
+      <button class="wb-waiting-screen__back" @click="router.push(dashboardPath)">
         {{ t('winterboard.classroom.backToHub') }}
       </button>
     </div>
@@ -957,6 +957,11 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
 const authStore = useAuthStore()
 const lessonRuntime = useLessonRuntimeStore()
 
+// Classroom Hub retired (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — навігація
+// «назад / після завершення» веде на role-aware dashboard замість видаленого
+// /winterboard/classroom-hub.
+const dashboardPath = computed(() => (authStore.userRole === 'tutor' ? '/tutor' : '/student'))
+
 const presence = usePresence({
   sessionId: resolvedSessionId,
   userId: String(authStore.user?.id ?? ''),
@@ -1588,7 +1593,7 @@ async function handleEndSession(): Promise<void> {
       lessonStatus.value = 'COMPLETED' as LessonStatus
       lessonRuntime.$reset()
     }
-    router.push('/winterboard/classroom-hub')
+    router.push(dashboardPath.value)
   } catch (err) {
     console.error('[WB:ClassroomRoom] End session failed', err)
   }
