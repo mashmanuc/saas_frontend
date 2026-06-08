@@ -149,7 +149,9 @@ describe('WBMyLessonsPage', () => {
     mockPush.mockResolvedValue(undefined)
     vi.mocked(lessonSaveApi.getFolders).mockResolvedValue([])
     // Default: conducted повертає порожній список щоб не блокувати інші тести
-    vi.mocked(lessonViewApi.listConducted).mockResolvedValue([])
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(
+      { sessions: [], has_more: false, total: 0 } as any,
+    )
   })
 
   // ── Templates tab ────────────────────────────────────────────────────────
@@ -252,7 +254,9 @@ describe('WBMyLessonsPage', () => {
 
   it('calls listConducted when conducted tab is clicked', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
-    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(
+      { sessions: MOCK_CONDUCTED_SESSIONS, has_more: false, total: 2 } as any,
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -270,7 +274,9 @@ describe('WBMyLessonsPage', () => {
 
   it('renders conducted sessions after switching tab', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
-    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(
+      { sessions: MOCK_CONDUCTED_SESSIONS, has_more: false, total: 2 } as any,
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -287,7 +293,7 @@ describe('WBMyLessonsPage', () => {
 
   it('shows empty state when no conducted sessions', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
-    vi.mocked(lessonViewApi.listConducted).mockResolvedValue([])
+    // default mock вже повертає порожній список
 
     const wrapper = createWrapper()
     await flushPromises()
@@ -303,7 +309,9 @@ describe('WBMyLessonsPage', () => {
 
   it('navigates to winterboard-solo when clicking a conducted session', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
-    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(MOCK_CONDUCTED_SESSIONS)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(
+      { sessions: MOCK_CONDUCTED_SESSIONS, has_more: false, total: 2 } as any,
+    )
 
     const wrapper = createWrapper()
     await flushPromises()
