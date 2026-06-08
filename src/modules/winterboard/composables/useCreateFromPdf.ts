@@ -100,11 +100,18 @@ export function useCreateFromPdf() {
     progress.value = 5
     cancelled = false
 
+    // The draft board is created BEFORE the import can be confirmed (the import
+    // endpoint needs a session to import into). Track it so we can remove the
+    // empty orphan if the import is rejected (e.g. a 128-page збірник → 400
+    // "too many pages").
+    let createdSessionId: string | null = null
+
     try {
       // Step 1: create KnowledgeLesson + WBSession (same path as "Нова дошка")
       const { lessonViewApi } = await import('@/modules/knowledge/api/lessonViewApi')
       const title = file.name.replace(/\.pdf$/i, '')
       const { wb_session_id } = await lessonViewApi.createDraftWithPrep(title)
+      createdSessionId = wb_session_id
       progress.value = 20
 
       // Step 2: upload PDF → Celery task
@@ -137,6 +144,13 @@ export function useCreateFromPdf() {
       throw new Error(t('winterboard.createFromPdf.error.timeout'))
     } catch (err) {
       error.value = toFriendlyError(err)
+      // Import failed → the draft board we created in Step 1 is now an empty
+      // orphan in the studio. Remove it (best-effort) so the failure is clean.
+      if (createdSessionId) {
+        winterboardApi.deleteSession(createdSessionId).catch((delErr) => {
+          console.warn('[WB:createFromPdf] orphan board cleanup failed', delErr)
+        })
+      }
     } finally {
       isCreating.value = false
       if (error.value) progress.value = 0

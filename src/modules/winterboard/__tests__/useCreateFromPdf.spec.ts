@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // ── Mocks ───────────────────────────────────────────────────────────────
 const mockImportPdf = vi.fn()
 const mockGetImportStatus = vi.fn()
+const mockDeleteSession = vi.fn()
 const mockCreateDraftWithPrep = vi.fn()
 const mockPush = vi.fn()
 
@@ -15,6 +16,7 @@ vi.mock('../api/winterboardApi', () => ({
   winterboardApi: {
     importPdf: (...a: unknown[]) => mockImportPdf(...a),
     getImportStatus: (...a: unknown[]) => mockGetImportStatus(...a),
+    deleteSession: (...a: unknown[]) => mockDeleteSession(...a),
   },
 }))
 
@@ -47,6 +49,7 @@ describe('useCreateFromPdf', () => {
     vi.useFakeTimers()
     mockCreateDraftWithPrep.mockResolvedValue({ wb_session_id: 's1' })
     mockImportPdf.mockResolvedValue({ task_id: 't1' })
+    mockDeleteSession.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -191,6 +194,52 @@ describe('useCreateFromPdf', () => {
       await expect(p).resolves.toBeUndefined() // must NOT reject
       expect(isCreating.value).toBe(false)
       expect(error.value).toBe('winterboard.createFromPdf.error.invalidPdf')
+    })
+  })
+
+  // ── Orphan cleanup: a board is created before the import is confirmed ──
+  describe('orphan board cleanup', () => {
+    it('deletes the draft board when the import is rejected (e.g. 128-page PDF)', async () => {
+      const e = new Error('Request failed with status code 400')
+      ;(e as unknown as { response: unknown }).response = {
+        status: 400,
+        data: { error: 'Too many pages: 128 (max 50)' },
+      }
+      mockImportPdf.mockRejectedValue(e)
+
+      const { createFromPdf, error } = useCreateFromPdf()
+      const p = createFromPdf(pdfFile())
+      await vi.advanceTimersByTimeAsync(50)
+      await p
+
+      expect(error.value).toBe('winterboard.createFromPdf.error.tooManyPages')
+      expect(mockDeleteSession).toHaveBeenCalledWith('s1') // orphan removed
+    })
+
+    it('does NOT delete the board on a successful import', async () => {
+      mockGetImportStatus.mockResolvedValue({ status: 'done' })
+
+      const { createFromPdf } = useCreateFromPdf()
+      const p = createFromPdf(pdfFile())
+      await vi.advanceTimersByTimeAsync(50)
+      await vi.advanceTimersByTimeAsync(2100)
+      await p
+
+      expect(mockPush).toHaveBeenCalled()
+      expect(mockDeleteSession).not.toHaveBeenCalled()
+    })
+
+    it('does NOT delete anything if the board was never created', async () => {
+      // createDraftWithPrep itself fails → no session to orphan.
+      mockCreateDraftWithPrep.mockRejectedValue(new Error('boom'))
+
+      const { createFromPdf, error } = useCreateFromPdf()
+      const p = createFromPdf(pdfFile())
+      await vi.advanceTimersByTimeAsync(50)
+      await p
+
+      expect(error.value).toBeTruthy()
+      expect(mockDeleteSession).not.toHaveBeenCalled()
     })
   })
 })
