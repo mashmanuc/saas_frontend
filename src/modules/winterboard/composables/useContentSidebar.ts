@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, type Ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
@@ -185,7 +185,65 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     }
   }
 
-  onMounted(load)
+  // ── Live "Обробка..." → ready updates ────────────────────────────────
+  // Backend broadcasts 'content.processing_complete' over WS when render
+  // finishes; App.vue re-dispatches it as a window event. Update the badge in
+  // place so the user doesn't have to hard-reload to see a material become ready.
+  function onProcessingComplete(e: Event) {
+    const detail = (e as CustomEvent).detail as Record<string, unknown> | undefined
+    if (!detail) return
+    const item = items.value.find(i => i.content_item_id === detail.content_item_id)
+    if (!item) return
+    item.processing_status = (detail.processing_status as string) ?? 'ready'
+    if (detail.thumbnail_url) item.thumbnail_url = detail.thumbnail_url as string
+    if (detail.pages) item.pages = detail.pages as AllowedContentItem['pages']
+    if (typeof detail.page_count === 'number') item.page_count = detail.page_count
+    if (detail.slides) item.slides = detail.slides as AllowedContentItem['slides']
+    if (typeof detail.slide_count === 'number') item.slide_count = detail.slide_count
+  }
+
+  // Poll fallback: the notifications WS channel can be denied/flaky on prod, so
+  // the 'processing_complete' event may never arrive and the badge would hang on
+  // "Обробка..." forever (only a hard reload clears it). While anything is still
+  // pending/processing, re-fetch the list until it resolves — bounded so a
+  // genuinely stuck item can't poll forever.
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let pollCount = 0
+  const POLL_INTERVAL_MS = 4000
+  const MAX_POLLS = 45 // ~3 min
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    pollCount = 0
+  }
+
+  function syncPolling() {
+    const hasPending = items.value.some(
+      i => i.processing_status === 'pending' || i.processing_status === 'processing',
+    )
+    if (hasPending && !pollTimer) {
+      pollCount = 0
+      pollTimer = setInterval(() => {
+        pollCount += 1
+        if (pollCount > MAX_POLLS) { stopPolling(); return }
+        load()
+      }, POLL_INTERVAL_MS)
+    } else if (!hasPending && pollTimer) {
+      stopPolling()
+    }
+  }
+
+  watch(items, syncPolling, { deep: true })
+
+  onMounted(() => {
+    load()
+    window.addEventListener('content:processing-complete', onProcessingComplete)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('content:processing-complete', onProcessingComplete)
+    stopPolling()
+  })
 
   return {
     items,
