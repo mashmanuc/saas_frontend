@@ -24,6 +24,8 @@ import { realtimeService } from '@/services/realtime'
 interface BridgeOptions {
   queryClient: QueryClient
   logger?: Pick<Console, 'debug'>
+  /** Current user id — required to subscribe to the user-scoped role channels. */
+  userId?: number | null
 }
 
 const EVENT_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
@@ -58,7 +60,7 @@ const EVENT_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
 
 let _unsubscribers: (() => void)[] = []
 
-export function setupQueryBridge({ queryClient, logger }: BridgeOptions): void {
+export function setupQueryBridge({ queryClient, logger, userId }: BridgeOptions): void {
   // Cleanup previous subscriptions (HMR safety)
   teardownQueryBridge()
 
@@ -84,8 +86,24 @@ export function setupQueryBridge({ queryClient, logger }: BridgeOptions): void {
     }
   }
 
-  // Subscribe to relevant channels where Agent C will emit domain events
-  const channels = ['notifications', 'tutor', 'student', 'inquiries'] as const
+  // Domain events are published to the USER-SCOPED role channels:
+  //   relation.* / limits.* / billing.* → tutor:{id} + student:{id}
+  //   dashboard.changed                 → {role}:{id}
+  // (backend apps/users/services/ws_events.py, apps/dashboard/services/ws_events.py)
+  //
+  // The gateway only authorizes user-scoped channel names. The previous bare
+  // roots ('notifications'/'tutor'/'student'/'inquiries') were ALWAYS denied
+  // (gateway _can_subscribe → False), which spammed "WS subscribe denied" on
+  // every reconnect AND meant this bridge never received a single event. Use the
+  // scoped role channels so invalidation actually works and the denies stop.
+  //
+  // NOTE: inquiry.* events publish to `inquiries:{id}`, which the gateway does
+  // NOT authorize (it expects `inquiries:user:{id}` / `inquiries_user_{id}`) —
+  // a separate backend channel-format mismatch. Left out here until that is
+  // aligned; inquiry lists stay fresh via their existing fetch/poll paths.
+  if (userId == null) return
+
+  const channels = [`tutor:${userId}`, `student:${userId}`]
 
   for (const channel of channels) {
     try {

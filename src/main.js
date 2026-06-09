@@ -69,7 +69,9 @@ setupI18n(getInitialLocale()).then(async () => {
   await authStore.bootstrap()
 
   // Phase 29: WS → Query invalidation bridge (after auth + realtime ready)
-  setupQueryBridge({ queryClient })
+  // Pass the user id so the bridge subscribes to the user-scoped role channels
+  // (tutor:{id}/student:{id}) the gateway authorizes — bare roots were denied.
+  setupQueryBridge({ queryClient, userId: authStore.user?.id ?? null })
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
