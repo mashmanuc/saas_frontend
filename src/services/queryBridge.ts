@@ -13,9 +13,12 @@
  * - relation.created  → invalidate relations, limits
  * - limits.changed    → invalidate limits, user-context
  * - billing.updated   → invalidate billing, user-context
- * - inquiry.updated   → invalidate inquiries
- * - inquiry.created   → invalidate inquiries
  * - dashboard.changed → invalidate student-dashboard, tutor-dashboard
+ *
+ * inquiry.* is intentionally NOT bridged here: inquiries have a dedicated WS
+ * consumer (/ws/inquiries/ → InquiryConsumer) whose FE composable
+ * (useInquiryWebSocket) refetches the list on inquiry.created/updated. The
+ * Phase 29 emit_inquiry_* path was never wired (dead code, removed).
  */
 import type { QueryClient } from '@tanstack/vue-query'
 import { queryKeys } from '@/api/queryKeys'
@@ -45,12 +48,6 @@ const EVENT_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
   'billing.updated': [
     queryKeys.billing(),
     queryKeys.userContext(),
-  ],
-  'inquiry.updated': [
-    queryKeys.inquiries(),
-  ],
-  'inquiry.created': [
-    queryKeys.inquiries(),
   ],
   'dashboard.changed': [
     queryKeys.studentDashboard(),
@@ -97,10 +94,8 @@ export function setupQueryBridge({ queryClient, logger, userId }: BridgeOptions)
   // every reconnect AND meant this bridge never received a single event. Use the
   // scoped role channels so invalidation actually works and the denies stop.
   //
-  // NOTE: inquiry.* events publish to `inquiries:{id}`, which the gateway does
-  // NOT authorize (it expects `inquiries:user:{id}` / `inquiries_user_{id}`) —
-  // a separate backend channel-format mismatch. Left out here until that is
-  // aligned; inquiry lists stay fresh via their existing fetch/poll paths.
+  // Inquiries are NOT bridged here — they have their own dedicated WS consumer
+  // (/ws/inquiries/) that refetches on inquiry events (see module docstring).
   if (userId == null) return
 
   const channels = [`tutor:${userId}`, `student:${userId}`]
