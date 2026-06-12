@@ -912,6 +912,7 @@ import { useAutosave } from '../composables/useAutosave'
 import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import { usePresence } from '../composables/usePresence'
+import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
@@ -1047,6 +1048,19 @@ const soloRecordingState = computed<ApiRecordingState>(() => {
   if (isManualRecording.value) return 'recording'
   if (isReplayFrozen.value) return 'finalized'
   return 'idle'
+})
+
+// Phase 2A solo-parity (2026-06-13): heartbeat ticker — BE watchdog
+// wb-auto-finalize-stale-recordings вважає запис без heartbeat зомбі
+// (NULL-гілка: started_at < now-10min) і фіналізує. Без ticker-а активний
+// соло-запис >10 хв був би вбитий посеред уроку. Ticks while recording OR
+// paused — дзеркало WBClassroomRoom.vue wiring (Plan v2.3).
+const isSoloRecordingActive = computed(() =>
+  soloRecordingState.value === 'recording' || soloRecordingState.value === 'paused',
+)
+useRecordingHeartbeat({
+  sessionId,
+  isRecording: isSoloRecordingActive,
 })
 
 // Recorder завжди enabled у solo edit board.
