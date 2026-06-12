@@ -1656,6 +1656,33 @@ function onRemoteStateUpdate(e: Event) {
 }
 window.addEventListener('wb:remote-state-update', onRemoteStateUpdate)
 
+// ─── INV-24 WS-CATCHUP: reconcile після кожного WS (re)connect ────────────
+// Live-канал (stroke.broadcast) — lossy за дизайном: BE rate-limit дропає,
+// wsBroadcast() silent-skip при isConnected=false, а (пере)підключений peer
+// не отримує broadcast-и, надіслані до завершення підписки. Ops-log — істина
+// → на кожен rising edge isConnected (включно з ПЕРШИМ connect, що закриває
+// mount-race window «state fetch → WS subscribe») тягнемо GET /state/ і, якщо
+// є розрив (last_seq > localSeq), гідруємо канву. Деталі: SSOT INV-24.
+// Prod-репро 2026-06-13 (classroom/71): учень після F5 назавжди втрачав
+// штрихи тьютора, намальовані у вікно перепідключення.
+watch(() => presence.isConnected.value, (up, was) => {
+  if (!up || was) return
+  void runWsCatchUp('ws-connected')
+})
+
+async function runWsCatchUp(trigger: string): Promise<void> {
+  if (!resolvedSessionId.value) return
+  try {
+    const result = await opsSync.catchUp((state) => store.applyCatchUpState(state))
+    console.info(
+      `[WB:Sync] INV-24 catch-up trigger=${trigger} status=${result.status} last_seq=${result.lastSeq}`,
+    )
+  } catch (e) {
+    // Подієва модель без retry (LAW §12) — наступний reconnect повторить.
+    console.warn('[WB:Sync] INV-24 catch-up failed (next reconnect re-triggers):', e)
+  }
+}
+
 // ─── Phase 0: Stroke broadcast for classroom sync ───────────────────────
 
 // Student: intercept addStroke → send via WS instead of local-only

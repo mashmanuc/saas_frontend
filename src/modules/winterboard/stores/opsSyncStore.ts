@@ -71,10 +71,24 @@ export interface OpsSyncOp {
 interface StateResponse {
   /** SSOT §5: last persisted seq. New session = 0 (INV-18). */
   last_seq: number
-  /** SSOT §5: optional snapshot of board state. */
+  /** SSOT §5: board state під ключем `state` (реальний BE контракт WBSessionStateView). */
+  state?: Record<string, unknown>
+  /** INV-24: BE-сигнал що state несвіжий (fallback path). true → skip hydrate. */
+  stale?: boolean
+  /** SSOT §5: optional snapshot of board state (legacy поле, BE не шле). */
   snapshot?: Record<string, unknown>
   /** SSOT §5: optional snapshot_seq for verifying replay. */
   snapshot_seq?: number
+}
+
+// ─── INV-24 WS-CATCHUP types ─────────────────────────────────────────
+
+export type CatchUpStatus = 'applied' | 'current' | 'stale' | 'blocked' | 'flush-failed'
+
+export interface CatchUpResult {
+  status: CatchUpStatus
+  /** localSeq після catch-up (advance лише при status='applied'). */
+  lastSeq: number
 }
 
 interface BroadcastMessage {
@@ -769,6 +783,88 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     desyncReason.value = null
   }
 
+  // ── INV-24 WS-CATCHUP (2026-06-13) ──────────────────────────────────
+
+  /** Coalescing mutex: конкурентні catchUp() повертають той самий Promise. */
+  let _catchUpPromise: Promise<CatchUpResult> | null = null
+
+  /**
+   * INV-24 WS-CATCHUP: read-side reconciliation після WS (re)subscribe.
+   *
+   * Live-канал (stroke.broadcast) — lossy за дизайном: BE rate-limit drops,
+   * `wsBroadcast()` silent-skip при isConnected=false, не-підписаний peer не
+   * отримує broadcast-и взагалі. Ops-log — істина (LAW §1) → після кожного
+   * successful (re)connect клієнт зобов'язаний звіритись із GET /state/.
+   *
+   * Контракт (SSOT INV-24):
+   *   1. SYNC-only — інакше 'blocked' (DESYNC recovery = resync()).
+   *   2. flushAll-first — щоб hydrate не стер власні незаписані ops з канви;
+   *      flush failure → ABORT ('flush-failed'), канва не чіпається.
+   *   3. stale-guard — body.stale=true → no hydrate, no seq advance (інакше
+   *      stale-канва маскується свіжим localSeq назавжди).
+   *   4. Hydrate ТІЛЬКИ якщо last_seq > localSeq; counters advance атомарно
+   *      ПІСЛЯ applyState.
+   *   5. Coalesced single-flight; trigger ВИКЛЮЧНО подієвий — NO timers,
+   *      NO retry loops (LAW §12). Fetch-помилки пропагуються caller-у.
+   *
+   * На відміну від resync(): pendingOps НЕ дропаються (здоровий SYNC-стан).
+   *
+   * @param applyState board applier (boardStore.applyCatchUpState) —
+   *   викликається синхронно перед advance лічильників.
+   */
+  async function catchUp(
+    applyState: (state: Record<string, unknown>) => void,
+  ): Promise<CatchUpResult> {
+    if (_catchUpPromise) return _catchUpPromise
+    _catchUpPromise = _doCatchUp(applyState).finally(() => {
+      _catchUpPromise = null
+    })
+    return _catchUpPromise
+  }
+
+  async function _doCatchUp(
+    applyState: (state: Record<string, unknown>) => void,
+  ): Promise<CatchUpResult> {
+    const sid = sessionId.value
+    if (mode.value !== 'SYNC' || !sid) {
+      return { status: 'blocked', lastSeq: localSeq.value }
+    }
+    if (pendingOps.value.length > 0 || inFlightOps.value.length > 0) {
+      try {
+        await flushAll()
+      } catch (err) {
+        console.warn('[opsSync] INV-24 catchUp: flushAll failed — abort (canvas untouched):', err)
+        return { status: 'flush-failed', lastSeq: localSeq.value }
+      }
+      // flushAll міг змінити mode (409→SeqResync лишає SYNC, але 503×3→PAUSED,
+      // protocol-mismatch→DESYNC кинули б; cross-tab DESYNC — мовчки). Re-check.
+      if (mode.value !== 'SYNC') {
+        return { status: 'blocked', lastSeq: localSeq.value }
+      }
+    }
+    const response = await _fetchState(sid)
+    const serverLast = response.last_seq | 0
+    if (response.stale === true) {
+      console.warn('[opsSync] INV-24 catchUp: BE state stale — skip hydrate (no seq advance)')
+      return { status: 'stale', lastSeq: localSeq.value }
+    }
+    if (serverLast <= localSeq.value) {
+      serverSeq.value = Math.max(serverSeq.value, serverLast)
+      return { status: 'current', lastSeq: localSeq.value }
+    }
+    // Розрив: пропущені ops існують (ephemeral канал їх не доставив).
+    const state = response.state
+    if (!state || typeof state !== 'object') {
+      // Contract guard: advance без hydrate замаскував би розрив назавжди.
+      console.warn('[opsSync] INV-24 catchUp: gap detected but no state payload — skip')
+      return { status: 'stale', lastSeq: localSeq.value }
+    }
+    applyState(state)
+    localSeq.value = serverLast
+    serverSeq.value = serverLast
+    return { status: 'applied', lastSeq: serverLast }
+  }
+
   /**
    * Reset: повністю очистити store (для unmount session, login change, etc.).
    * Cleanup BroadcastChannel.
@@ -829,6 +925,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     enterPaused,
     resumeFromPause,
     resync,
+    // INV-24 WS-CATCHUP (2026-06-13): read-side reconciliation після (re)connect
+    catchUp,
     reset,
 
     // Constants (consumer/test access)

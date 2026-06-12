@@ -502,6 +502,25 @@ function _emitPageAddDecomposed(
 }
 
 /**
+ * Спільна гігієна сторінок для hydrate-шляхів (hydrateFromSession +
+ * applyCatchUpState): гарантований background + стрип legacy pages[] з
+ * document_viewer assets (не персистяться).
+ */
+function _sanitizeStatePages(pages: WBPage[]): WBPage[] {
+  return pages.map(page => ({
+    ...page,
+    background: page.background ?? 'white',
+    assets: page.assets.map(asset => {
+      if (asset.type === 'document_viewer' && asset.pages) {
+        const { pages: _p, ...rest } = asset
+        return rest
+      }
+      return asset
+    }),
+  }))
+}
+
+/**
  * Split items into chunks, each chunk's JSON size ≤ maxBytes.
  * Used for batch ops with large stroke points arrays (prevents 64KB drop).
  * Self-contained chunks — no batch_id/reassembly needed, each applies atomically.
@@ -791,17 +810,7 @@ export const useWBStore = defineStore('wb-board', {
         if (state.pages && Array.isArray(state.pages) && state.pages.length > 0) {
           // Strip pages[] from document_viewer assets (legacy sessions may have them)
           // INV: ensure every page has background field (backend may omit it)
-          this.pages = (state.pages as WBPage[]).map(page => ({
-            ...page,
-            background: page.background ?? 'white',
-            assets: page.assets.map(asset => {
-              if (asset.type === 'document_viewer' && asset.pages) {
-                const { pages: _p, ...rest } = asset
-                return rest
-              }
-              return asset
-            }),
-          }))
+          this.pages = _sanitizeStatePages(state.pages as WBPage[])
         } else {
           this.pages = [createEmptyPage(0)]
         }
@@ -826,6 +835,34 @@ export const useWBStore = defineStore('wb-board', {
       this.scrollY = 0
       this.syncError = null
       this.objectLimitHitAt = null
+    },
+
+    /**
+     * INV-24 WS-CATCHUP applier: замінити board content авторитетним state
+     * з GET /state/ після WS (re)connect, зберігши user view-контекст.
+     *
+     * Відмінність від hydrateFromSession: НЕ чіпає zoom/scroll/workspace meta
+     * і зберігає поточну сторінку (clamped) — це mid-lesson reconciliation,
+     * не session switch. Undo/selection скидаються: команди/виділення можуть
+     * посилатись на перезатерті об'єкти.
+     */
+    applyCatchUpState(state: Record<string, unknown>): void {
+      const rawPages = (state as { pages?: WBPage[] }).pages
+      if (rawPages && Array.isArray(rawPages) && rawPages.length > 0) {
+        this.pages = _sanitizeStatePages(rawPages)
+      } else {
+        this.pages = [createEmptyPage(0)]
+      }
+      this.currentPageIndex = Math.min(
+        Math.max(0, this.currentPageIndex),
+        this.pages.length - 1,
+      )
+      this.undoStack = []
+      this.redoStack = []
+      this.selectedIds = []
+      this.selectionRect = null
+      this.isDirty = false
+      this.syncStatus = 'saved'
     },
 
     // ── R0: Mode & Replay Lifecycle ──────────────────────────────────────
