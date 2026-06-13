@@ -32,7 +32,7 @@ vi.mock('@/utils/apiClient', () => ({
 }))
 
 import apiClient from '@/utils/apiClient'
-import { useOpsSyncStore, DesyncError } from '../../stores/opsSyncStore'
+import { useOpsSyncStore, DesyncError, SeqResyncError } from '../../stores/opsSyncStore'
 
 const FAKE_SID = '00000000-0000-0000-0000-000000000001'
 
@@ -70,10 +70,12 @@ afterEach(() => {
 // GROUP 1: SEQ / 409 → DESYNC + resync (CRITICAL — 409 storm prevention)
 // ─────────────────────────────────────────────────────────────────────
 
-describe('INV-CONVERGENCE / SSOT §6 — 409 SEQ_MISMATCH → DESYNC → resync flow', () => {
-  it('flush() with wrong seq → 409 → mode flips to DESYNC', async () => {
+describe('INV-CONVERGENCE / SSOT §6 — 409 SEQ_MISMATCH → AUTO-RESYNC (Def-1, LAW §5 amended 2026-06-13)', () => {
+  it('flush() with wrong seq → 409 → AUTO-RESYNC (SeqResyncError, stays SYNCED)', async () => {
+    // LAW §5 amendment 2026-06-13 (Def-1 fix, прод d6fe9c6): SEQ_MISMATCH 409 більше
+    // НЕ тригерить DESYNC — auto-resync (correct seq з expected_seq, KEEP pendingOps,
+    // stay SYNC, SeqResyncError). Уникає втрати ops при transient 409 (network drop/WS 1006).
     const store = useOpsSyncStore()
-    // Fake bootstrap state (skip real GET /state/ — already tested elsewhere)
     store.sessionId = FAKE_SID
     store.mode = 'SYNC'
     store.serverSeq = 5
@@ -87,21 +89,25 @@ describe('INV-CONVERGENCE / SSOT §6 — 409 SEQ_MISMATCH → DESYNC → resync 
       _axiosError(409, 'SEQ_MISMATCH', { expected_seq: 12 }),
     )
 
-    await expect(store.flush()).rejects.toBeInstanceOf(DesyncError)
+    // Auto-resync throws SeqResyncError (caller логує, NOT DESYNC escalation)
+    await expect(store.flush()).rejects.toBeInstanceOf(SeqResyncError)
 
-    // Mode MUST be DESYNC (catches 409 storm — store stops accepting writes)
-    expect(store.mode).toBe('DESYNC')
-    expect(store.desyncReason).toContain('seq-mismatch')
-    // Pending + inFlight cleared (per SSOT §4 — stale post-DESYNC)
-    expect(store.pendingOps.length).toBe(0)
+    // Mode STAYS SYNCED (НЕ DESYNC — Def-1)
+    expect(store.mode).toBe('SYNC')
+    // serverSeq/localSeq corrected з body.expected_seq
+    expect(store.serverSeq).toBe(12)
+    expect(store.localSeq).toBe(12)
+    // inFlightOps dropped (stale — server already processed/rejected)
     expect(store.inFlightOps.length).toBe(0)
   })
 
-  it('after 409→DESYNC: record() returns false + pendingOps stays empty', () => {
+  // INV-16 DESYNC-state behavior (DESYNC тригериться protocol-mismatch/cross-tab,
+  // НЕ 409 після Def-1 amendment). Поведінка стану DESYNC незмінна.
+  it('in DESYNC state: record() returns false + pendingOps stays empty', () => {
     const store = useOpsSyncStore()
     store.sessionId = FAKE_SID
     store.mode = 'DESYNC'
-    store.desyncReason = 'seq-mismatch (server expected 12)'
+    store.desyncReason = 'protocol-version-mismatch'
 
     const accepted = store.record(_op())
 
@@ -109,11 +115,11 @@ describe('INV-CONVERGENCE / SSOT §6 — 409 SEQ_MISMATCH → DESYNC → resync 
     expect(store.pendingOps.length).toBe(0)
   })
 
-  it('after 409→DESYNC: flush() throws DesyncError (NO silent retry)', async () => {
+  it('in DESYNC state: flush() throws DesyncError (NO silent retry)', async () => {
     const store = useOpsSyncStore()
     store.sessionId = FAKE_SID
     store.mode = 'DESYNC'
-    store.desyncReason = 'seq-mismatch (server expected 12)'
+    store.desyncReason = 'protocol-version-mismatch'
 
     await expect(store.flush()).rejects.toBeInstanceOf(DesyncError)
     expect(apiClient.post).not.toHaveBeenCalled()  // CRITICAL: no network call у DESYNC
