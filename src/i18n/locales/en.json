@@ -751,6 +751,11 @@
       "loginLink": "Sign in",
       "privacyPolicyText": "I accept the ",
       "privacyPolicyLink": "Privacy Policy",
+      "termsLink": "Terms of Service",
+      "consentSep": ", ",
+      "studentOfferLink": "Student Agreement",
+      "tutorOfferLink": "Tutor Agreement",
+      "consentAnd": " and ",
       "passwordConfirm": "Confirm password"
     },
     "checkEmail": {

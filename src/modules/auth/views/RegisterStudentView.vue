@@ -83,12 +83,16 @@
         </div>
       </div>
 
-      <!-- Privacy Policy Checkbox -->
+      <!-- Legal consent: Terms + Student Offer + Privacy -->
       <div class="space-y-2">
         <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
           <input v-model="form.privacy_policy_accepted" type="checkbox" required />
           <div class="text-sm">
             <span style="color: var(--text-primary);">{{ $t('auth.register.privacyPolicyText') }}</span>
+            <RouterLink to="/legal/terms" target="_blank" class="hover:underline font-medium" style="color: var(--accent);">{{ $t('auth.register.termsLink') }}</RouterLink>
+            <span style="color: var(--text-primary);">{{ $t('auth.register.consentSep') }}</span>
+            <RouterLink to="/legal/student-offer" target="_blank" class="hover:underline font-medium" style="color: var(--accent);">{{ $t('auth.register.studentOfferLink') }}</RouterLink>
+            <span style="color: var(--text-primary);">{{ $t('auth.register.consentAnd') }}</span>
             <RouterLink to="/legal/privacy" target="_blank" class="hover:underline font-medium" style="color: var(--accent);">{{ $t('auth.register.privacyPolicyLink') }}</RouterLink>
           </div>
         </label>
