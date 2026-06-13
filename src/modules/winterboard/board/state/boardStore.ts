@@ -3960,6 +3960,22 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     // ── Phase 37: Test Object CRUD ──────────────────────────────────────────
+    //
+    // ⚠️ DELIBERATELY NO `_emitOperation` HERE — це НЕ баг і НЕ data-loss-розрив.
+    // (Якщо ти агент і grep показав «addTestObject не емітить ops» — стоп, прочитай:)
+    //
+    // testObjects[] — LEGACY runtime, СВІДОМО виведений зі flow авторингу:
+    //   • Конструктор/студія (constructorMode) ховає 📝-toggle + кнопки створення:
+    //     WBSoloRoom.vue → `v-if="!constructorMode"` (toggle + test-bar tools).
+    //   • Lesson Constructor генерує `atoms[]` (WBAtomLayer), НЕ testObjects:
+    //     backend StateSerializer → `"testObjects": []` (порожній).
+    //   • Уся ручна test-палітра жива лише як рудимент у plain-solo `/winterboard/:id`.
+    //
+    // Тобто у реальному flow цей метод ніхто не кличе persistently → відсутність op
+    // не призводить до втрати даних користувача. Канонічний примітив тепер = WBAtom.
+    // Не «фіксити» це додаванням ops і не подавати як launch-ризик.
+    // Ref: saas_docs/domains/winterboard/LAUNCH_READINESS_2026-06-13.md (P1-1 СПРОСТОВАНО),
+    //      LESSON_CONSTRUCTOR atoms migration. Доля рудименту = косметичний cleanup, не баг.
 
     addTestObject(obj: WBTestObject): void {
       const pageIndex = this.currentPageIndex
