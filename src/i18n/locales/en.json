@@ -5746,7 +5746,7 @@
       },
       "s10": {
         "title": "10. Jurisdiction and Dispute Resolution",
-        "body": "<p>This Agreement is governed by the laws of Ukraine. In the event of disputes, the parties agree to first resolve them through negotiations by contacting <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>. If negotiations are unsuccessful, the dispute shall be referred to the appropriate court of Ukraine.</p>"
+        "body": "<p>This Agreement is governed by the laws of Ukraine. In the event of disputes, the parties agree to first resolve them through negotiations by contacting <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>. If negotiations are unsuccessful, the dispute shall be referred to the appropriate court of Ukraine.</p>"
       },
       "s11": {
         "title": "11. Changes to the Agreement",
@@ -5754,7 +5754,7 @@
       },
       "s12": {
         "title": "12. Contact Information",
-        "body": "<p>For questions regarding this Agreement:</p><p>Email: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a><br>Website: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
+        "body": "<p>For questions regarding this Agreement:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Website: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
       }
     },
     "privacy": {
@@ -5763,7 +5763,7 @@
       "content": "Personal data processing policy",
       "s1": {
         "title": "1. Who Processes Your Data",
-        "body": "<p>Data controller: FOP Oleksandr Mashmaniuk, Ukraine.<br>Contact: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></p><p>This Privacy Policy explains what personal data we collect, how we use it, and how we protect it when you use the M4SH Platform (m4sh.org).</p>"
+        "body": "<p>Data controller: FOP Oleksandr Mashmaniuk, Ukraine.<br>Contact: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p><p>This Privacy Policy explains what personal data we collect, how we use it, and how we protect it when you use the M4SH Platform (m4sh.org).</p>"
       },
       "s2": {
         "title": "2. What Data We Collect",
@@ -5775,7 +5775,7 @@
       },
       "s4": {
         "title": "4. Replay — Saving the Course of a Session",
-        "body": "<p>M4SH Classroom has a technical function for saving the course of a session (Replay). A tutor can activate recording of the sequence of actions on the teaching whiteboard for later review by participants.</p><p><strong>Replay is not a video or audio recording.</strong> Your appearance and voice are not captured in Replay. In nature, Replay is similar to \"Version History\" in Google Docs or Figma — actions on the board are saved, not video.</p><p><strong>What is saved in Replay:</strong> the sequence of actions on the board (drawing, text, moving elements, page changes), attribution of each action to a participant, timestamps and session metadata. The textual content of the board and identity attribution constitute personal data of participants.</p><p><strong>Notification of active Replay:</strong> if the tutor has activated Replay — the platform displays an informational message to you during the session.</p><p><strong>Access to Replay:</strong> the tutor determines the access level after the session (tutor only / by link / public). M4SH may access Replay exclusively for technical support or pursuant to a legal request.</p><p><strong>Storage and deletion:</strong></p><ul><li>Replay is stored until deleted by the tutor</li><li>After being moved to the trash — deleted within 7 days</li><li>Upon deactivation of the tutor's account — all Replays are deleted</li></ul><p><strong>Your rights regarding Replay:</strong></p><ul><li>View Replay via a link from the tutor</li><li>Contact m4sh.studio@gmail.com regarding deletion of a Replay in which you participated</li></ul><p><strong>Sessions with minors:</strong> for students under 14 years old, the Platform restricts Replay visibility (private only by default). The tutor is obligated to notify parents/guardians about active Replay.</p><p><strong>Use for AI training:</strong> Replay data is not used for artificial intelligence training without separate explicit consent of the participants. Prohibited by default.</p>"
+        "body": "<p>M4SH Classroom has a technical function for saving the course of a session (Replay). A tutor can activate recording of the sequence of actions on the teaching whiteboard for later review by participants.</p><p><strong>Replay is not a video or audio recording.</strong> Your appearance and voice are not captured in Replay. In nature, Replay is similar to \"Version History\" in Google Docs or Figma — actions on the board are saved, not video.</p><p><strong>What is saved in Replay:</strong> the sequence of actions on the board (drawing, text, moving elements, page changes), attribution of each action to a participant, timestamps and session metadata. The textual content of the board and identity attribution constitute personal data of participants.</p><p><strong>Notification of active Replay:</strong> if the tutor has activated Replay — the platform displays an informational message to you during the session.</p><p><strong>Access to Replay:</strong> the tutor determines the access level after the session (tutor only / by link / public). M4SH may access Replay exclusively for technical support or pursuant to a legal request.</p><p><strong>Storage and deletion:</strong></p><ul><li>Replay is stored until deleted by the tutor</li><li>After being moved to the trash — deleted within 7 days</li><li>Upon deactivation of the tutor's account — all Replays are deleted</li></ul><p><strong>Your rights regarding Replay:</strong></p><ul><li>View Replay via a link from the tutor</li><li>Contact support@m4sh.org regarding deletion of a Replay in which you participated</li></ul><p><strong>Sessions with minors:</strong> for students under 14 years old, the Platform restricts Replay visibility (private only by default). The tutor is obligated to notify parents/guardians about active Replay.</p><p><strong>Use for AI training:</strong> Replay data is not used for artificial intelligence training without separate explicit consent of the participants. Prohibited by default.</p>"
       },
       "s5": {
         "title": "5. Sharing Data with Third Parties",
@@ -5787,11 +5787,11 @@
       },
       "s7": {
         "title": "7. Minor Users",
-        "body": "<p>M4SH serves both adult and minor students. Tutors on the Platform must be at least 18 years old.</p><p>For students under 14 years old, registration is made through a parental or guardian account. We do not collect personal data from children under 14 without confirmed parental or guardian consent.</p><p>Parents and guardians may contact <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a> to:</p><ul><li>View data stored about their child</li><li>Delete the child's account and all associated data</li><li>Withdraw consent to data processing</li></ul>"
+        "body": "<p>M4SH serves both adult and minor students. Tutors on the Platform must be at least 18 years old.</p><p>For students under 14 years old, registration is made through a parental or guardian account. We do not collect personal data from children under 14 without confirmed parental or guardian consent.</p><p>Parents and guardians may contact <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a> to:</p><ul><li>View data stored about their child</li><li>Delete the child's account and all associated data</li><li>Withdraw consent to data processing</li></ul>"
       },
       "s8": {
         "title": "8. Your Rights (GDPR)",
-        "body": "<p>Under the EU General Data Protection Regulation (GDPR) and Ukrainian law, you have the right to:</p><ul><li><strong>Access</strong> — obtain a copy of your personal data (request via <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>)</li><li><strong>Rectification</strong> — update inaccurate data in your profile</li><li><strong>Erasure</strong> — fully delete your account and data (Settings → Privacy)</li><li><strong>Restriction of processing</strong> — restrict data processing in certain cases</li><li><strong>Objection</strong> — object to processing based on legitimate interests</li><li><strong>Portability</strong> — receive your data in a machine-readable format</li></ul><p>To exercise your rights, contact: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>. Response time — up to 30 days.</p>"
+        "body": "<p>Under the EU General Data Protection Regulation (GDPR) and Ukrainian law, you have the right to:</p><ul><li><strong>Access</strong> — obtain a copy of your personal data (request via <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>)</li><li><strong>Rectification</strong> — update inaccurate data in your profile</li><li><strong>Erasure</strong> — fully delete your account and data (Settings → Privacy)</li><li><strong>Restriction of processing</strong> — restrict data processing in certain cases</li><li><strong>Objection</strong> — object to processing based on legitimate interests</li><li><strong>Portability</strong> — receive your data in a machine-readable format</li></ul><p>To exercise your rights, contact: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>. Response time — up to 30 days.</p>"
       },
       "s9": {
         "title": "9. Cookies",
@@ -5807,7 +5807,7 @@
       },
       "s12": {
         "title": "12. Contact",
-        "body": "<p>For privacy and data protection questions:<br>Email: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a><br>General support: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></p>"
+        "body": "<p>For privacy and data protection questions:<br>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>General support: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
       }
     },
     "payment": {
@@ -5844,11 +5844,11 @@
       },
       "s8": {
         "title": "8. Seller Information",
-        "body": "<p><strong>Seller:</strong> Individual entrepreneur (FOP) Oleksandr Mashmaniuk</p><p><strong>Tax ID (RNOKPP):</strong> 2955707673<br><strong>Registered address:</strong> Ukraine, Volyn region, Kovel district, Mokrets village, T.H. Shevchenka St. 52</p><p><strong>Bank details:</strong><br>IBAN: UA433220010000026001380015117<br>Bank: JSC «UNIVERSAL BANK», MFO 322001</p><p>Single tax payer (group 3, 5% rate, not a VAT payer).</p><p><strong>Email:</strong> <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></p>"
+        "body": "<p><strong>Seller:</strong> Individual entrepreneur (FOP) Oleksandr Mashmaniuk</p><p><strong>Tax ID (RNOKPP):</strong> 2955707673<br><strong>Registered address:</strong> Ukraine, Volyn region, Kovel district, Mokrets village, T.H. Shevchenka St. 52</p><p><strong>Bank details:</strong><br>IBAN: UA433220010000026001380015117<br>Bank: JSC «UNIVERSAL BANK», MFO 322001</p><p>Single tax payer (group 3, 5% rate, not a VAT payer).</p><p><strong>Email:</strong> <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
       },
       "s9": {
         "title": "9. Contact",
-        "body": "<p>For payment questions, please contact:</p><p>Email: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></p>"
+        "body": "<p>For payment questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
       }
     },
     "refund": {
@@ -5869,7 +5869,7 @@
       },
       "s4": {
         "title": "4. How to Submit a Refund Request",
-        "body": "<p>To receive a refund:</p><ol><li>Contact our support team at <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></li><li>Provide the reason for the refund and payment details</li><li>Wait for your request to be reviewed (up to 5 business days)</li></ol>"
+        "body": "<p>To receive a refund:</p><ol><li>Contact our support team at <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></li><li>Provide the reason for the refund and payment details</li><li>Wait for your request to be reviewed (up to 5 business days)</li></ol>"
       },
       "s5": {
         "title": "5. Refund Process",
@@ -5889,7 +5889,7 @@
       },
       "s9": {
         "title": "9. Contact",
-        "body": "<p>For refund questions, please contact:</p><p>Email: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a><br>Response time: up to 5 business days</p>"
+        "body": "<p>For refund questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Response time: up to 5 business days</p>"
       }
     },
     "tutorOffer": {
@@ -5929,7 +5929,7 @@
       },
       "s8": {
         "title": "XII. Liability and XIII. Final Provisions",
-        "body": "<p>The Administrator's liability for technical failures of the Platform is limited to the cost of the subscription for the last 3 months (except for intent or gross negligence).</p><p>The Agreement is governed by the laws of Ukraine. Pre-litigation procedure — 30 days. Current version: <a href=\"/legal/tutor-offer\">m4sh.org/legal/tutor-offer</a>.<br>Contact: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a></p>"
+        "body": "<p>The Administrator's liability for technical failures of the Platform is limited to the cost of the subscription for the last 3 months (except for intent or gross negligence).</p><p>The Agreement is governed by the laws of Ukraine. Pre-litigation procedure — 30 days. Current version: <a href=\"/legal/tutor-offer\">m4sh.org/legal/tutor-offer</a>.<br>Contact: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
       }
     },
     "studentOffer": {
@@ -5957,19 +5957,19 @@
       },
       "s5": {
         "title": "VI. Replay — Session Progress on the Whiteboard",
-        "body": "<p>The Tutor may activate saving of the sequence of actions on the teaching whiteboard (Replay). <strong>Replay is not an audio or video recording.</strong> Actions on the whiteboard (drawing, text, files) are saved, not the appearance or voice of participants. This is similar to \"Version History\" in Google Docs.</p><p>If the tutor has activated Replay — the Platform displays an informational message to you during the session.</p><p>The Tutor determines the access level for Replay: private (tutor only), by link, or public. If you wish to delete a Replay in which you participated — contact <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>.</p><p>Replay data is not used for AI training without separate explicit consent from participants.</p>"
+        "body": "<p>The Tutor may activate saving of the sequence of actions on the teaching whiteboard (Replay). <strong>Replay is not an audio or video recording.</strong> Actions on the whiteboard (drawing, text, files) are saved, not the appearance or voice of participants. This is similar to \"Version History\" in Google Docs.</p><p>If the tutor has activated Replay — the Platform displays an informational message to you during the session.</p><p>The Tutor determines the access level for Replay: private (tutor only), by link, or public. If you wish to delete a Replay in which you participated — contact <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>.</p><p>Replay data is not used for AI training without separate explicit consent from participants.</p>"
       },
       "s6": {
         "title": "VII. Protection of Minors",
-        "body": "<p><strong>Registration age:</strong></p><ul><li>18 and older — independent registration</li><li>14–17 years — independent registration; parents/guardians must be informed</li><li>Under 14 years — registration exclusively through a parental/guardian account</li></ul><p>M4SH does not collect personal data from children under 14 without confirmed parental or guardian consent. Parents and guardians may contact <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a> to view, update, or delete a child's data.</p><p>If you or your child have encountered unacceptable behavior from a tutor — report it immediately via <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>.</p>"
+        "body": "<p><strong>Registration age:</strong></p><ul><li>18 and older — independent registration</li><li>14–17 years — independent registration; parents/guardians must be informed</li><li>Under 14 years — registration exclusively through a parental/guardian account</li></ul><p>M4SH does not collect personal data from children under 14 without confirmed parental or guardian consent. Parents and guardians may contact <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a> to view, update, or delete a child's data.</p><p>If you or your child have encountered unacceptable behavior from a tutor — report it immediately via <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>.</p>"
       },
       "s7": {
         "title": "VIII. Student Rights and Obligations",
-        "body": "<p><strong>The Student agrees to:</strong> provide accurate data upon registration; not violate the tutor's copyright on materials; not distribute Replay without the tutor's explicit written consent; not use the Platform for illegal purposes.</p><p><strong>The Student has the right to:</strong> obtain a copy of their personal data (request via m4sh.studio@gmail.com); delete the account with all data (Settings → Privacy); file a complaint against a tutor through support.</p>"
+        "body": "<p><strong>The Student agrees to:</strong> provide accurate data upon registration; not violate the tutor's copyright on materials; not distribute Replay without the tutor's explicit written consent; not use the Platform for illegal purposes.</p><p><strong>The Student has the right to:</strong> obtain a copy of their personal data (request via support@m4sh.org); delete the account with all data (Settings → Privacy); file a complaint against a tutor through support.</p>"
       },
       "s8": {
         "title": "XII. Personal Data and XIII. Dispute Resolution",
-        "body": "<p>Personal data processing is governed by the <a href=\"/legal/privacy\">Privacy Policy</a>. Requests: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a> (response within 30 days).</p><p>Complaint to M4SH: <a href=\"mailto:m4sh.studio@gmail.com\">m4sh.studio@gmail.com</a>, review period — 30 days. Consumer rights under the Law of Ukraine \"On Consumer Rights Protection\" take priority over the terms of this Agreement. Law of Ukraine.</p>"
+        "body": "<p>Personal data processing is governed by the <a href=\"/legal/privacy\">Privacy Policy</a>. Requests: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a> (response within 30 days).</p><p>Complaint to M4SH: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a>, review period — 30 days. Consumer rights under the Law of Ukraine \"On Consumer Rights Protection\" take priority over the terms of this Agreement. Law of Ukraine.</p>"
       }
     }
   },
