@@ -49,11 +49,8 @@ const ProfileEditViewV2 = () => import('../modules/profileV2/views/ProfileEditVi
 const ProfileOverviewViewV2 = () => import('../modules/profileV2/views/ProfileOverviewView.vue')
 const UserAccountViewV2 = () => import('../modules/profileV2/views/UserAccountView.vue')
 
-// Onboarding views
-const OnboardingView = () => import('../modules/onboarding/views/OnboardingView.vue')
-const StudentOnboardingView = () => import('../modules/onboarding/views/StudentOnboardingView.vue')
-const TutorOnboardingView = () => import('../modules/onboarding/views/TutorOnboardingView.vue')
-const ChecklistView = () => import('../modules/onboarding/views/ChecklistView.vue')
+// Onboarding views ВИДАЛЕНО (2026-06-13): візард замінено на Activation Engine
+// (modules/activation). Мертві роути /onboarding/* + /checklist прибрано нижче.
 
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useProfileStore } from '../modules/profile/store/profileStore'
@@ -428,31 +425,8 @@ const routes = [
         component: DevThemePlaygroundView,
         meta: { roles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
       },
-      // Onboarding routes
-      {
-        path: 'onboarding',
-        name: 'onboarding',
-        component: OnboardingView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'onboarding/student',
-        name: 'onboarding-student',
-        component: StudentOnboardingView,
-        meta: { roles: [USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'onboarding/tutor',
-        name: 'onboarding-tutor',
-        component: TutorOnboardingView,
-        meta: { roles: [USER_ROLES.TUTOR] },
-      },
-      {
-        path: 'checklist',
-        name: 'checklist',
-        component: ChecklistView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
+      // Onboarding/checklist routes ВИДАЛЕНО (2026-06-13): візард замінено на
+      // Activation Engine (modules/activation). Жоден живий код сюди не лінкував.
       // Phase 1 v0.86: Inquiry routes
       {
         path: 'student/inquiries',
@@ -1138,29 +1112,13 @@ router.beforeEach(async (to, from, next) => {
     return next()
   }
 
-  // P0-6: Onboarding auto-trigger — redirect to onboarding if not completed
-  const isOnboardingRoute = to.path.startsWith('/onboarding') || to.path.startsWith('/checklist')
-  if (isAuthenticated && user?.role && !isOnboardingRoute) {
-    const isStudentOrTutor = [USER_ROLES.STUDENT, USER_ROLES.TUTOR].includes(user.role)
-    if (isStudentOrTutor) {
-      try {
-        const { useOnboardingStore } = await import('../modules/onboarding/stores/onboardingStore')
-        const onboardingStore = useOnboardingStore()
-        if (!onboardingStore.progressLoaded) {
-          await onboardingStore.loadProgress()
-        }
-        if (onboardingStore.shouldShowOnboarding) {
-          const onboardingPath = user.role === USER_ROLES.TUTOR
-            ? '/onboarding/tutor'
-            : '/onboarding/student'
-          return next(onboardingPath)
-        }
-      } catch (e) {
-        // Onboarding API failed — don't block navigation
-        console.warn('[router] Onboarding check failed', e)
-      }
-    }
-  }
+  // P0-6 ВИДАЛЕНО (2026-06-13): onboarding-візард замінено на Activation Engine
+  // (apps.activation / modules/activation, монтується в TutorHome). Старий eager
+  // onboardingStore.loadProgress() стріляв GET /api/onboarding/progress/ на КОЖНІЙ
+  // навігації → 404 (FE кликав легасі-шлях без /v1; роут живе лише під
+  // /api/v1/onboarding/*). Редірект і так був no-op (shouldShowOnboarding завжди
+  // false через catch у getProgress). Прибрано, щоб заглушити 404; onboarding
+  // лишається похованим. НЕ відновлювати — використовувати Activation Engine.
 
   // Redirect from root path based on auth status
   if (to.path === '/') {
