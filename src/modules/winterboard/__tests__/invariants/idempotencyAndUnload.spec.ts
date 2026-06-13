@@ -77,9 +77,10 @@ describe('INV-14 IDEMPOTENT-RETRY — op_id preserves on retry, BE dedups', () =
     await new Promise(r => setTimeout(r, 400))
 
     // Attempt 2: 201 success (BE deduplicated by op_id, applied_count tells reality)
+    // мок MUST дзеркалити apiClient {data, headers} (recordOperationsBatch
+    // читає res.data з meta.fullResponse 2026-05-10) — інакше response=undefined.
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 1,
-      applied_count: 1,
+      data: { last_seq: 1, applied_count: 1 },
     })
     await store.flush()
 
@@ -106,8 +107,7 @@ describe('INV-14 IDEMPOTENT-RETRY — op_id preserves on retry, BE dedups', () =
     store.record({ op_id: opId, op_type: 'stroke_add', page_id: 'p1', payload: {} })
 
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 5,        // unchanged
-      applied_count: 0,   // dedup → 0 ops persisted
+      data: { last_seq: 5, applied_count: 0 },  // unchanged seq, dedup → 0 persisted
     })
 
     await store.flush()

@@ -69,9 +69,10 @@ describe('INV-20 PROTOCOL-VERSION-ENFORCEMENT', () => {
     store.localSeq = 0
     store.record(_op())
 
+    // мок MUST дзеркалити apiClient {data, headers} (recordOperationsBatch
+    // читає res.data з meta.fullResponse 2026-05-10) — інакше response=undefined.
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 1,
-      applied_count: 1,
+      data: { last_seq: 1, applied_count: 1 },
     })
 
     await store.flush()

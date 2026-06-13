@@ -124,7 +124,10 @@ describe('INV-12 503 SERVER_BUSY — transient backpressure semantics', () => {
 
     // Second attempt: success
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 1, applied_count: 1,
+      // recordOperationsBatch reads res.data (meta.fullResponse 2026-05-10) →
+      // мок MUST дзеркалити реальний apiClient shape {data, headers}, інакше
+      // res.data=undefined → return undefined → SUT крешить на response._writePath.
+      data: { last_seq: 1, applied_count: 1 },
     })
     await store.flush()
     expect(apiClient.post).toHaveBeenCalledTimes(2)
@@ -212,7 +215,10 @@ describe('INV-12 503 SERVER_BUSY — transient backpressure semantics', () => {
 
     // Immediately retry — should be blocked by backoff (Error: backoff active)
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 1, applied_count: 1,
+      // recordOperationsBatch reads res.data (meta.fullResponse 2026-05-10) →
+      // мок MUST дзеркалити реальний apiClient shape {data, headers}, інакше
+      // res.data=undefined → return undefined → SUT крешить на response._writePath.
+      data: { last_seq: 1, applied_count: 1 },
     })
     await expect(store.flush()).rejects.toThrow(/backoff active/)
     // Network call should NOT have been made (blocked by retryUntil gate)
@@ -365,7 +371,10 @@ describe('Phase S PR-3 — Queue visibility refs (UI status)', () => {
     expect(store.lastFlushDuration).toBe(0)
 
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      last_seq: 1, applied_count: 1,
+      // recordOperationsBatch reads res.data (meta.fullResponse 2026-05-10) →
+      // мок MUST дзеркалити реальний apiClient shape {data, headers}, інакше
+      // res.data=undefined → return undefined → SUT крешить на response._writePath.
+      data: { last_seq: 1, applied_count: 1 },
     })
     await store.flush()
 
