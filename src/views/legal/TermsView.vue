@@ -28,7 +28,7 @@
 import { computed } from 'vue'
 import Button from '@/ui/Button.vue'
 
-const lastUpdated = computed(() => '22.04.2026')
+const lastUpdated = computed(() => '13.06.2026')
 const sections = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12']
 </script>
 
