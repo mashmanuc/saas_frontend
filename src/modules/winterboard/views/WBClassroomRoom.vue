@@ -114,6 +114,20 @@
         <span class="wb-student-badge__name">{{ t('winterboard.classroom.noStudents') }}</span>
       </div>
 
+      <!-- Teacher badge (student view, 1:1 model) — symmetric to student badge:
+           учень бачить присутність вчителя (онлайн/очікує), як вчитель бачить учня.
+           Той самий polling-источник (connectedUsers /participants/) + ті ж стилі/ключі. -->
+      <div v-else-if="classroomRole.isStudent.value && connectedTeacher" class="wb-student-badge">
+        <span
+          class="wb-student-badge__dot"
+          :class="connectedTeacher.is_online ? 'wb-student-badge__dot--online' : 'wb-student-badge__dot--offline'"
+        />
+        <span class="wb-student-badge__name">{{ connectedTeacher.display_name }}</span>
+        <span class="wb-student-badge__status">
+          {{ connectedTeacher.is_online ? t('winterboard.classroom.online') : t('winterboard.classroom.offline') }}
+        </span>
+      </div>
+
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
         <!-- PR1 (2026-05-03): Classroom recording parity з Solo — same WBSession,
@@ -1051,6 +1065,13 @@ const effectiveTool = computed<WBToolType>(() => {
 
 const connectedStudents = computed(() =>
   classroomSession.connectedUsers.value.filter((u) => u.role !== 'owner'),
+)
+
+// Дзеркало для учня: присутність ВЧИТЕЛЯ (owner). Participants endpoint завжди
+// включає owner з актуальним is_online (Redis presence) → учень бачить онлайн/очікує
+// так само, як вчитель бачить учня. Той самий polling-источник.
+const connectedTeacher = computed(() =>
+  classroomSession.connectedUsers.value.find((u) => u.role === 'owner') ?? null,
 )
 
 const lessonIdNum = computed(() => {
