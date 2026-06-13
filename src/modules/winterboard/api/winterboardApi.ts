@@ -10,6 +10,8 @@
 
 import apiClient from '@/utils/apiClient'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+// SSOT версія протоколу (replay.ts) замість hardcoded 'v3' — майбутній bump = одна правка.
+import { PROTOCOL_VERSION } from './replay'
 import type {
   WBSession,
   WBExport,
@@ -639,7 +641,7 @@ export const winterboardApi = {
       .post(
         `${BASE}/sessions/${sessionId}/lock/`,
         { is_locked: isLocked },
-        { headers: { 'X-Protocol-Version': 'v3' } },
+        { headers: { 'X-Protocol-Version': PROTOCOL_VERSION } },
       )
       .then((r: unknown) => (r as { data: WBLockResponse }).data ?? r as WBLockResponse)
   },
@@ -657,7 +659,7 @@ export const winterboardApi = {
       .post<{ pageIndex: number }>(
         `${BASE}/sessions/${sessionId}/page/`,
         { pageIndex },
-        { headers: { 'X-Protocol-Version': 'v3' } },
+        { headers: { 'X-Protocol-Version': PROTOCOL_VERSION } },
       )
   },
 
@@ -679,7 +681,7 @@ export const winterboardApi = {
       .post<{ ok: true }>(
         `${BASE}/sessions/${sessionId}/state-update/`,
         payload,
-        { headers: { 'X-Protocol-Version': 'v3' } },
+        { headers: { 'X-Protocol-Version': PROTOCOL_VERSION } },
       )
   },
 
