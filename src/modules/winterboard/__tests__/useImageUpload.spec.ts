@@ -68,9 +68,12 @@ describe('validateFile', () => {
     expect(validateFile(file)).toEqual({ valid: true })
   })
 
-  it('accepts SVG files', () => {
+  it('rejects SVG files (stored-XSS guard, 2026-06-13 P1-2)', () => {
+    // SVG видалено з SUPPORTED_FORMATS: може містити <script>, зберігався as-is.
+    // Зворотний регрес-guard — поверне хтось svg → цей тест впаде.
     const file = createFile('icon.svg', 256, 'image/svg+xml')
-    expect(validateFile(file)).toEqual({ valid: true })
+    const result = validateFile(file)
+    expect(result.valid).toBe(false)
   })
 
   it('rejects unsupported formats (PDF)', () => {

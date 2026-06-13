@@ -12,7 +12,10 @@ import { trackEvent } from '@/utils/telemetryAgent'
 
 const LOG = '[WB:ImageUpload]'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB (matches backend WB_MAX_ASSET_SIZE)
-const SUPPORTED_FORMATS = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
+// 'image/svg+xml' видалено 2026-06-13 (stored-XSS guard, P1-2): SVG може містити
+// <script>/on*, зберігався as-is на images.m4sh.org. BE-гейт (presign ChoiceField)
+// авторитетний; цей список — рання FE-відмова drag-drop/paste. Растр-only.
+const SUPPORTED_FORMATS = ['image/png', 'image/jpeg', 'image/webp']
 const DEFAULT_ASSET_SIZE = 300 // Default width/height for dropped images
 const WB_MAX_IMAGE_DIMENSION = 4096  // px — absolute limit, upload blocked (A15)
 const WB_WARN_IMAGE_DIMENSION = 2048 // px — warn threshold, upload continues (A15)

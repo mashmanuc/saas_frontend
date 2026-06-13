@@ -64,7 +64,7 @@
   <input
     ref="fileInputRef"
     type="file"
-    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+    accept="image/png,image/jpeg,image/webp"
     multiple
     class="wb-upload-input"
     :aria-label="t('winterboard.upload.pickFile')"
