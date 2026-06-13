@@ -5171,6 +5171,13 @@
   "billing": {
     "title": "Subscription & Billing",
     "subtitle": "Manage your subscription and payment settings",
+    "paywall": {
+      "title": "Out of contacts",
+      "body": "To accept new requests and unlock student contacts, subscribe to PRO or buy a contact package.",
+      "goPro": "Get PRO",
+      "buyPackage": "Buy package",
+      "later": "Later"
+    },
     "loading": "Loading...",
     "currentPlan": "Current Plan",
     "currentlyActive": "Currently Active",

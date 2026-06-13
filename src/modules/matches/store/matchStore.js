@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import matchesApi from '../api/matchesApi'
 import { trackEvent } from '@/utils/telemetry'
+import { useContactPaywallStore } from '@/stores/contactPaywallStore'
 
 export const useMatchStore = defineStore('match', {
   state: () => ({
@@ -73,6 +74,11 @@ export const useMatchStore = defineStore('match', {
         return data
       } catch (err) {
         this.error = err.response?.data?.message || err.message
+        // P0: недостатньо контактних токенів → глобальний paywall (CTA на підписку/пакет)
+        const code = err.response?.data?.code || err.response?.data?.error
+        if (code === 'CONTACTS_BALANCE_TOO_LOW') {
+          useContactPaywallStore().open(err.response?.data?.meta || {})
+        }
         trackEvent('match.accept_failed', {
           match_id: matchId,
           error: this.error,

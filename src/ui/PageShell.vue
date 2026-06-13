@@ -35,6 +35,9 @@
     <ToastContainer class="z-50" />
     <GlobalLoader />
 
+    <!-- P0: глобальний paywall контактних токенів (Modal сам Teleport-иться) -->
+    <ContactPaywallModal />
+
     <!-- Session Revoked Banner -->
     <SessionRevokedBanner
       :show="authStore.showSessionRevokedBanner"
@@ -53,6 +56,7 @@ import AppFooter from '../components/layout/AppFooter.vue'
 import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
+import ContactPaywallModal from '../modules/billing/components/ContactPaywallModal.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
 import { useLayoutStore } from '@/stores/layoutStore'

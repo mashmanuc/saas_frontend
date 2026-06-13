@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useInquiryAccept } from '../useInquiryAccept'
 import { useAcceptanceStore } from '@/stores/acceptanceStore'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useContactPaywallStore } from '@/stores/contactPaywallStore'
 import * as acceptanceApi from '@/api/acceptance'
 
 vi.mock('@/api/acceptance')
@@ -114,6 +115,28 @@ describe('useInquiryAccept', () => {
 
     // Should NOT retry
     expect(acceptanceApi.acceptInquiry).toHaveBeenCalledTimes(1)
+  })
+
+  it('should open contact paywall on CONTACTS_BALANCE_TOO_LOW (P0)', async () => {
+    setupStores({ grace_token: 'token123' })
+
+    vi.mocked(acceptanceApi.acceptInquiry).mockRejectedValue({
+      response: {
+        status: 400,
+        data: { code: 'CONTACTS_BALANCE_TOO_LOW', meta: { current_balance: 0 } },
+      },
+    } as any)
+
+    const paywall = useContactPaywallStore()
+    expect(paywall.visible).toBe(false)
+
+    const { handleAccept } = useInquiryAccept()
+
+    // handleAcceptError re-throws after opening the paywall
+    await expect(handleAccept('123')).rejects.toBeTruthy()
+
+    expect(paywall.visible).toBe(true)
+    expect(paywall.currentBalance).toBe(0)
   })
 
   it('should prevent double-click', async () => {
