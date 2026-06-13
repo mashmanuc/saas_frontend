@@ -58,6 +58,17 @@ interface WBPresenceLeaveMsg {
   userId: string
 }
 
+/**
+ * Roster уже-присутніх членів, що надсилається СОБІ при власному connect
+ * (fix presence-асиметрії 2026-06-13). Без цього учасник, що зайшов ПІСЛЯ
+ * інших (напр. student після teacher), їх не бачив — broadcast presence.join
+ * отримують лише вже-підписані. Дзеркалить BE `_handle_join` presence.sync.
+ */
+interface WBPresenceSyncMsg {
+  type: 'presence.sync'
+  users: Array<{ userId: string; displayName: string; color?: string; role?: string }>
+}
+
 interface WBCursorUpdateMsg {
   type: 'cursor.update'
   userId: string
@@ -184,6 +195,7 @@ interface WBLaserPointerMsg {
 type WBServerMessage =
   | WBPresenceJoinMsg
   | WBPresenceLeaveMsg
+  | WBPresenceSyncMsg
   | WBCursorUpdateMsg
   | WBViewportUpdateMsg
   | WBPresenceErrorMsg
@@ -577,6 +589,23 @@ export function usePresence(options: UsePresenceOptions) {
       case 'presence.leave': {
         onlineUsers.delete(msg.userId)
         remoteCursors.delete(msg.userId)
+        break
+      }
+
+      case 'presence.sync': {
+        // Roster уже-присутніх при власному connect (fix presence-асиметрії
+        // 2026-06-13). broadcast presence.join отримують лише вже-підписані →
+        // хто зайшов раніше (teacher до student), того новий учасник не бачив.
+        // Тепер joiner дістає повний roster. color дефолтний — реальний
+        // прийде з cursor.update; для «online»-індикатора достатньо.
+        for (const u of msg.users ?? []) {
+          if (u.userId === userId) continue
+          onlineUsers.set(u.userId, {
+            userId: u.userId,
+            displayName: u.displayName,
+            color: u.color ?? '#3b82f6',
+          })
+        }
         break
       }
 
