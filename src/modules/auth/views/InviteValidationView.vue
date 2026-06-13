@@ -77,7 +77,7 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime } from '../../../utils/datetime'
-import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
 const route = useRoute()
 const token = route.params.token

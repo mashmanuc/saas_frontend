@@ -116,7 +116,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Download, Copy } from 'lucide-vue-next'
-import OnboardingModal from '@/modules/onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import Button from '@/ui/Button.vue'
 import Input from '@/ui/Input.vue'
 import mfaApi from '@/api/mfa'

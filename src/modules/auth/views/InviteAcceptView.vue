@@ -71,7 +71,7 @@ import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import { getDefaultRouteForRole } from '../../../config/routes'
 import { useI18n } from 'vue-i18n'
-import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
 const route = useRoute()
 const router = useRouter()

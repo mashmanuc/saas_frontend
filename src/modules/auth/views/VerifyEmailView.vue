@@ -42,7 +42,7 @@ import { useRoute } from 'vue-router'
 import authApi from '../api/authApi'
 import Card from '../../../ui/Card.vue'
 import Button from '../../../ui/Button.vue'
-import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
 const route = useRoute()
 

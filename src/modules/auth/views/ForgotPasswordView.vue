@@ -49,7 +49,7 @@ import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
-import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
 const email = ref('')
 const loading = ref(false)

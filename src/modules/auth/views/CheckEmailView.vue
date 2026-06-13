@@ -48,7 +48,7 @@ import { useRoute } from 'vue-router'
 import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
-import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
 const route = useRoute()
