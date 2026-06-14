@@ -120,6 +120,10 @@ export interface WBSessionDetailResponse {
   // WBSoloRoom показує WBRecordingBanner тільки коли true.
   // False = пряма My Boards сесія → запис відключений.
   is_lesson_play?: boolean
+  // Live-classroom guard: присутнє лише якщо на сесію вказує IN_PROGRESS Lesson.
+  // WBSoloRoom редіректить у classroom-рантайм (інакше teacher edits live session
+  // поза classroom-синком → розсинхрон з учнем).
+  active_lesson?: { id: string; status: string } | null
 }
 
 // Phase 2 (2026-04-27): WBDiffOp / WBDiffSavePayload / WBDiffSaveResponse /

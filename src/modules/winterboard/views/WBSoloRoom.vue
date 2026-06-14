@@ -2949,6 +2949,16 @@ onMounted(async () => {
     try {
       const detail = await winterboardApi.getSession(id)
 
+      // Live-classroom guard: якщо ця wb-сесія = жива (IN_PROGRESS) classroom-сесія,
+      // solo-в'юха НЕ синхронізується з учнем (немає presence/broadcast/catchUp) →
+      // розсинхрон. Редіректимо у classroom-рантайм (там reconnect/catchUp resync-ить,
+      // як у студента). Завершені уроки → active_lesson=null → лишаються в solo для рев'ю.
+      if (detail.active_lesson?.id) {
+        console.info('[WB:Solo] active classroom lesson → redirect to classroom', detail.active_lesson)
+        router.replace({ name: 'winterboard-classroom', params: { lessonId: detail.active_lesson.id } })
+        return
+      }
+
       // Зберігаємо origin_lesson_id для "Оновити шаблон" в constructor-режимі
       originLessonId.value = detail.origin_lesson_id ?? null
 
