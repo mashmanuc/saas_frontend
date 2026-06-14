@@ -15,6 +15,9 @@
     </p>
 
     <!-- Empty State -->
+    <!-- 2026-06-13: прибрано кнопку «Записатись на урок» — вела в /student/schedule
+         (календар), де учень нічого не записував → плутанина. Шляхи до тьютора є
+         у Hero «Знайди тьютора» + «Активні репетитори». -->
     <template v-else-if="!hasLessons">
       <div
         class="rounded-2xl border border-dashed border-default bg-surface-soft p-4 space-y-1"
@@ -25,11 +28,6 @@
         <p class="text-sm text-muted">
           {{ $t('studentDashboard.upcomingLessons.empty.description') }}
         </p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <Button variant="primary" size="sm" @click="goToBookLesson">
-          {{ $t('studentDashboard.actions.bookLesson') }}
-        </Button>
       </div>
     </template>
 
@@ -69,9 +67,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import Button from '@/ui/Button.vue'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import UpcomingLessonCard from './UpcomingLessonCard.vue'
@@ -88,12 +83,5 @@ const props = withDefaults(defineProps<Props>(), {
   error: null,
 })
 
-const router = useRouter()
-const { t } = useI18n()
-
 const hasLessons = computed(() => props.upcomingLessons.length > 0)
-
-function goToBookLesson() {
-  router.push('/student/schedule').catch(() => {})
-}
 </script>
