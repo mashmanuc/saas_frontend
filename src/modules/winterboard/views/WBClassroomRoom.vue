@@ -561,6 +561,12 @@ const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
 /** group_id з lesson — для GroupContentSidebar у classroom */
 const classroomGroupId = ref<string | null>(null)
 
+// INV-SINGLE-WRITER (OPS_SYNC_SSOT §1778): classroomRole інстанціюється ТУТ (вгорі, а не
+// нижче з рештою composables) — бо isRecording gate + useReplayRecorder enabled-watch
+// читають classroomRole.isWriter синхронно при setup (immediate watch). Залежить лише від
+// resolvedSessionId, без сайд-ефектів (fetchRole/setRole викликаються пізніше). Move 2026-06-14.
+const classroomRole = useClassroomRole(resolvedSessionId)
+
 // ─── Lesson Domain state (C1.1 homework + C1.2 status) ─────────────────────
 const homeworkItems = ref<LessonHomework[]>([])
 const homeworkLoading = ref(false)
@@ -613,8 +619,13 @@ const autosave = useAutosave(resolvedSessionId, {
 // Phase 4a: Bridge — DELETED у Phase 2 (was no-op stub since Phase ops-only 2026-04-15).
 // Ops flow: boardStore → useReplayRecorder.record() → opsSyncStore → /replay/batch/.
 
-// REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'
-const isRecording = computed(() => store.mode === 'edit')
+// REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'.
+// INV-SINGLE-WRITER (OPS_SYNC_SSOT §1778): + ТІЛЬКИ writer (tutor/owner) пише ops у
+// /replay/batch/. Студент у edit-mode (canvas read-only) НЕ recorder'ить — інакше два
+// writer'и на одну сесію = постійний 409 SEQ_MISMATCH storm. Студент = broadcast-only
+// (WS stroke.broadcast); вчитель персистить штрихи учня через onRemoteStroke echo-record.
+// Fix 2026-06-14 (prod classroom/82 409-storm).
+const isRecording = computed(() => store.mode === 'edit' && classroomRole.isWriter.value)
 // Phase 2 G-fix (2026-04-28): opsSyncStore singleton — bootstrap()-ed у
 // initBoardWithSession() після resolvedSessionId set. Без wire-up store stays у
 // BOOTSTRAP mode → useReplayRecorder.record() returns false → ops silently dropped.
@@ -920,7 +931,8 @@ function _handleFinalizeFailureFallback(sid: string, e: unknown): void {
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
 
-const classroomRole = useClassroomRole(resolvedSessionId)
+// classroomRole інстанціюється вище (біля classroomGroupId) — INV-SINGLE-WRITER:
+// isRecording gate потребує classroomRole.isWriter ДО useReplayRecorder setup.
 const classroomSession = useClassroomSession()
 
 // Learning Content drop handler

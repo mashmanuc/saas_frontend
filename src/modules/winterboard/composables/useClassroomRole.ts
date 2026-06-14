@@ -68,6 +68,13 @@ export function useClassroomRole(sessionId: Ref<string | null>) {
   const isStudent = computed(() => role.value === 'student')
   const isViewer = computed(() => role.value === 'viewer')
 
+  // INV-SINGLE-WRITER (OPS_SYNC_SSOT §1778): тільки tutor (owner/host) пише ops у
+  // REST /replay/batch/. Студент/viewer — broadcast-only (WS stroke.broadcast); їхні
+  // штрихи персистить writer через onRemoteStroke echo-record. Два writer'и на одну
+  // сесію → 409 SEQ_MISMATCH storm (single session.last_op_seq). Окремий computed
+  // (не alias isTeacher) щоб writer-політику можна було звузити незалежно від UI-ролі.
+  const isWriter = computed(() => role.value === 'owner' || role.value === 'host')
+
   const canDraw = computed(() => permissions.value.can_draw)
   const canErase = computed(() => permissions.value.can_erase)
   const canAddPage = computed(() => permissions.value.can_add_page)
@@ -146,6 +153,7 @@ export function useClassroomRole(sessionId: Ref<string | null>) {
     isTeacher,
     isStudent,
     isViewer,
+    isWriter,
 
     canDraw,
     canErase,
