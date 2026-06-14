@@ -29,27 +29,15 @@
 
             <div class="flex items-start gap-3">
               <svg class="mt-1 h-5 w-5 flex-shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              <div>
-                <p class="text-sm font-medium text-foreground">{{ $t('contacts.phone') }}</p>
-                <a href="tel:+380123456789" class="text-sm text-primary hover:underline">
-                  +380 (12) 345-67-89
-                </a>
-              </div>
-            </div>
-
-            <div class="flex items-start gap-3">
-              <svg class="mt-1 h-5 w-5 flex-shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <div>
                 <p class="text-sm font-medium text-foreground">{{ $t('contacts.address') }}</p>
                 <p class="text-sm text-muted-foreground">
-                  вул. Хрещатик, 1<br>
-                  Київ, 01001<br>
-                  Україна
+                  Україна, Волинська обл.,<br>
+                  Ковельський р-н, с. Мокрець,<br>
+                  вул. Т.Г. Шевченка, буд. 52
                 </p>
               </div>
             </div>
@@ -63,28 +51,29 @@
           </h2>
           <div class="space-y-3 text-sm">
             <div>
-              <p class="font-medium text-foreground">Найменування:</p>
-              <p class="text-muted-foreground">ТОВ "М4Ш"</p>
+              <p class="font-medium text-foreground">Продавець:</p>
+              <p class="text-muted-foreground">Фізична особа-підприємець Машманюк Олександр Васильович</p>
             </div>
             <div>
-              <p class="font-medium text-foreground">ЄДРПОУ:</p>
-              <p class="text-muted-foreground">12345678</p>
+              <p class="font-medium text-foreground">РНОКПП:</p>
+              <p class="text-muted-foreground">2955707673</p>
             </div>
             <div>
-              <p class="font-medium text-foreground">Юридична адреса:</p>
+              <p class="font-medium text-foreground">Адреса реєстрації:</p>
               <p class="text-muted-foreground">
-                01001, м. Київ, вул. Хрещатик, буд. 1
+                Україна, Волинська обл., Ковельський р-н,<br>
+                с. Мокрець, вул. Т.Г. Шевченка, буд. 52
               </p>
             </div>
             <div>
-              <p class="font-medium text-foreground">ІПН:</p>
-              <p class="text-muted-foreground">123456789012</p>
+              <p class="font-medium text-foreground">Система оподаткування:</p>
+              <p class="text-muted-foreground">Єдиний податок, 3-тя група (5%, не платник ПДВ)</p>
             </div>
             <div>
               <p class="font-medium text-foreground">Банківські реквізити:</p>
               <p class="text-muted-foreground">
-                р/р UA123456789012345678901234567<br>
-                в АТ "ПриватБанк", МФО 305299
+                IBAN: UA433220010000026001380015117<br>
+                АТ «УНІВЕРСАЛ БАНК», МФО 322001
               </p>
             </div>
           </div>
