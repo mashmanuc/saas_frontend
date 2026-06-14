@@ -2174,12 +2174,23 @@ function onRemoteTestEnd(e: Event) {
   testStore.onRemoteTestEnd()
 }
 
+// Teacher locked/unlocked student drawing (BE session.lock broadcast → usePresence →
+// wb:session-lock). Mirror the teacher's local setLocked so the student's isLocked updates
+// → isDrawingDisabled → canvas read-only. Без цього замок діяв лише у вчителя.
+function onRemoteSessionLock(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail && typeof detail.locked === 'boolean') {
+    classroomSession.setLocked(detail.locked)
+  }
+}
+
 window.addEventListener('wb:test-start', onRemoteTestStart)
 window.addEventListener('wb:test-answer', onRemoteTestAnswer)
 window.addEventListener('wb:test-phase', onRemoteTestPhase)
 window.addEventListener('wb:test-grade', onRemoteTestGrade)
 window.addEventListener('wb:test-sync', onRemoteTestSync)
 window.addEventListener('wb:test-end', onRemoteTestEnd)
+window.addEventListener('wb:session-lock', onRemoteSessionLock)
 
 onUnmounted(() => {
   window.removeEventListener('wb:remote-state-update', onRemoteStateUpdate)
@@ -2190,6 +2201,7 @@ onUnmounted(() => {
   window.removeEventListener('wb:test-grade', onRemoteTestGrade)
   window.removeEventListener('wb:test-sync', onRemoteTestSync)
   window.removeEventListener('wb:test-end', onRemoteTestEnd)
+  window.removeEventListener('wb:session-lock', onRemoteSessionLock)
   _unsubStrokeInterceptor?.()
 })
 
@@ -2353,10 +2365,10 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
   await authStore.bootstrap()
   presence.connect(init.sessionId)
 
-  // Start polling connected users (teacher only)
-  if (classroomRole.isTeacher.value) {
-    classroomSession.startUserPolling()
-  }
+  // Start polling connected users — both roles: teacher sees students, student sees the
+  // teacher (presence badge). Без цього у учня connectedUsers порожній → connectedTeacher
+  // null → бейдж присутності вчителя не рендериться.
+  classroomSession.startUserPolling()
 
   // Students auto-follow teacher
   if (classroomRole.isStudent.value) {

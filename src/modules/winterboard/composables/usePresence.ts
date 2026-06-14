@@ -192,6 +192,14 @@ interface WBLaserPointerMsg {
   page_id: string
 }
 
+/** Teacher locked/unlocked student drawing — BE _broadcast_session_event (session.lock). */
+interface WBSessionLockMsg {
+  type: 'session.lock'
+  locked: boolean
+  userId: string
+  ts: number
+}
+
 type WBServerMessage =
   | WBPresenceJoinMsg
   | WBPresenceLeaveMsg
@@ -202,6 +210,7 @@ type WBServerMessage =
   | WBStateUpdateMsg
   | WBStrokeBroadcastMsg
   | WBLaserPointerMsg
+  | WBSessionLockMsg
   | WBTestStartMsg
   | WBTestAnswerMsg
   | WBTestPhaseMsg
@@ -692,6 +701,16 @@ export function usePresence(options: UsePresenceOptions) {
         if (msg.userId === userId) return // Ignore own saves
         window.dispatchEvent(new CustomEvent('wb:remote-state-update', {
           detail: { rev: msg.rev, pageIndex: msg.pageIndex, action: msg.action },
+        }))
+        break
+      }
+
+      // Teacher locked/unlocked student drawing → emit so WBClassroomRoom calls setLocked.
+      // BE broadcasts session.lock to the room; without this the student ignored it and
+      // could keep drawing while locked (lock applied only to the teacher who toggled it).
+      case 'session.lock': {
+        window.dispatchEvent(new CustomEvent('wb:session-lock', {
+          detail: { locked: msg.locked, userId: msg.userId },
         }))
         break
       }
