@@ -5303,7 +5303,7 @@
       "pleaseLogin": "Please log in again to view your subscription",
       "loginAgain": "Log in again",
       "pendingActivation": "Plan is activating. This can take a couple of minutes.",
-      "pendingMessage": "We’re confirming the payment. As soon as LiqPay finishes verification, your subscription will activate automatically."
+      "pendingMessage": "We’re confirming the payment. As soon as Plata finishes verification, your subscription will activate automatically."
     },
     "pendingPlan": {
       "title": "Plan {plan} is activating",
@@ -9205,8 +9205,28 @@
       "bookLesson": "Book Your First Lesson",
       "exploreMore": "Find More Tutors"
     },
+    "register": {
+      "subtitle": "Create an account to join the lessons",
+      "email": "Email",
+      "password": "Password",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "acceptPrefix": "I accept the",
+      "privacyDoc": "Privacy Policy",
+      "termsDoc": "Terms of Service",
+      "offerDoc": "Public Offer",
+      "consentRequired": "You must accept all terms",
+      "submit": "Join",
+      "haveAccount": "Already have an account?",
+      "login": "Log in",
+      "loginRequired": "Account created. Please log in.",
+      "accountExists": "An account with this email already exists. Log in to accept the invite."
+    },
     "errors": {
       "unknown": "An error occurred. Please try again",
+      "role_not_student": "Only a student can accept this invite",
+      "login_required": "Account created. Log in to continue",
+      "invite_account_exists": "An account with this email already exists. Log in",
       "not_tutor": "Only tutors can create invites",
       "rate_limit_exceeded": "You've reached the invite creation limit. Try again later",
       "max_active_invites": "You've reached the maximum number of active invites (20)",
