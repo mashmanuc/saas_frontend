@@ -17,6 +17,9 @@
     >
       <TopNav @toggle-side-nav="layout.openSidebar()" />
 
+      <!-- Global "урок зараз іде → Повернутися" strip — discoverability на всіх page-сторінках. -->
+      <GlobalActiveLessonBanner />
+
       <main
         :class="[
           'mx-auto w-full grow',
@@ -56,6 +59,7 @@ import AppFooter from '../components/layout/AppFooter.vue'
 import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
+import GlobalActiveLessonBanner from '../components/GlobalActiveLessonBanner.vue'
 import ContactPaywallModal from '../modules/billing/components/ContactPaywallModal.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
