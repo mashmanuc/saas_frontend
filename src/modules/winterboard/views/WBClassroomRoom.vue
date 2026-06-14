@@ -380,6 +380,13 @@
       @confirm="confirmRestartRecording"
     />
 
+    <!-- End session / complete lesson confirmation (teacher) — замінює native confirm() -->
+    <WBEndSessionDialog
+      v-model="showEndSessionConfirm"
+      :is-loading="isEndingSession"
+      @confirm="confirmEndSession"
+    />
+
     <!-- Phase 1: Recording controls moved into header -->
 
 
@@ -499,6 +506,7 @@ import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
 import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
+import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
@@ -1602,10 +1610,21 @@ function onContentDragStart(_payload: ContentDragPayload): void {
   // Future: show drop hint overlay on canvas.
 }
 
-async function handleEndSession(): Promise<void> {
+// End session / complete lesson — сайтова модалка замість native confirm().
+// handleEndSession лише відкриває діалог; реальний REST-виклик у confirmEndSession.
+const showEndSessionConfirm = ref(false)
+const isEndingSession = ref(false)
+
+function handleEndSession(): void {
   if (!classroomRole.canEnd.value || !resolvedSessionId.value) return
-  // Simple confirmation
-  if (!window.confirm(t('winterboard.classroom.endSessionConfirm'))) return
+  if (isEndingSession.value) return
+  showEndSessionConfirm.value = true
+}
+
+async function confirmEndSession(): Promise<void> {
+  if (isEndingSession.value) return
+  if (!classroomRole.canEnd.value || !resolvedSessionId.value) return
+  isEndingSession.value = true
   try {
     const res = await winterboardApi.endSession(resolvedSessionId.value)
     // B1: endSession тепер також завершує Lesson (COMPLETED + snapshot)
@@ -1614,9 +1633,12 @@ async function handleEndSession(): Promise<void> {
       lessonStatus.value = 'COMPLETED' as LessonStatus
       lessonRuntime.$reset()
     }
+    showEndSessionConfirm.value = false
     router.push(dashboardPath.value)
   } catch (err) {
     console.error('[WB:ClassroomRoom] End session failed', err)
+    // Лишаємо модалку відкритою — user може повторити спробу
+    isEndingSession.value = false
   }
 }
 
