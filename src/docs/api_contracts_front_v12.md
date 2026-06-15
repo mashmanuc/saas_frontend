@@ -15,8 +15,6 @@
 | `/auth/refresh/` | POST | `{ access }` | ✅ OK |
 | `/auth/logout/` | POST | `{}` | ✅ OK |
 | `/users/me/` | GET | `UserDTO` | ✅ OK |
-| `/auth/invite/validate/` | POST | `{ valid, email?, tutor? }` | ✅ OK |
-| `/auth/invite/accept/` | POST | `{ access, refresh, user }` | ✅ OK |
 
 ---
 

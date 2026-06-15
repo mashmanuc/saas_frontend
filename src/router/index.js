@@ -9,8 +9,6 @@ import CheckEmailView from '../modules/auth/views/CheckEmailView.vue'
 import VerifyEmailView from '../modules/auth/views/VerifyEmailView.vue'
 import ForgotPasswordView from '../modules/auth/views/ForgotPasswordView.vue'
 import ResetPasswordView from '../modules/auth/views/ResetPasswordView.vue'
-import InviteValidationView from '../modules/auth/views/InviteValidationView.vue'
-import InviteAcceptView from '../modules/auth/views/InviteAcceptView.vue'
 
 // Phase 29 (Activation): Dashboard as activation-focused entry point with hero CTA.
 // Legacy DashboardTutor.vue / DashboardStudent.vue deleted — see saas_docs/plans/DASHBOARD_ACTIVATION_PLAN.md.
@@ -91,17 +89,7 @@ const routes = [
       { path: 'reset-password', name: 'auth-reset-password', component: ResetPasswordView, meta: { requiresAuth: false } },
     ],
   },
-  {
-    path: '/invite',
-    component: AuthLayout,
-    meta: { requiresAuth: false },
-    children: [
-      { path: 'validation/:token', name: 'invite-validation', component: InviteValidationView, meta: { requiresAuth: false } },
-      { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView, meta: { requiresAuth: false } },
-    ],
-  },
-  // TutorInvite system (new invite-based onboarding)
-  // IMPORTANT: must be BEFORE legacy /invite children, so /invite/:token matches here first
+  // TutorInvite system (invite-based onboarding)
   {
     path: '/invite/:token',
     name: 'tutor-invite-accept',

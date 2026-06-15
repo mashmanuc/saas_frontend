@@ -121,16 +121,6 @@ const authApi = {
   deleteAvatar(): Promise<any> {
     return apiClient.delete('/v1/me/avatar')
   },
-
-  validateInvite(token: string): Promise<any> {
-    return apiClient.get('/auth/invite/validate/', {
-      params: { token },
-    })
-  },
-
-  acceptInvite(payload: any): Promise<any> {
-    return apiClient.post('/auth/invite/accept/', payload)
-  },
 }
 
 export default authApi

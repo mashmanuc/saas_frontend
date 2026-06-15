@@ -264,19 +264,6 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
-    async resendRelation(id) {
-      try {
-        await relationsApi.resendRelation(id)
-        notifySuccess(translate('relations.actions.resendSuccess'))
-      } catch (error) {
-        notifyError(error?.response?.data?.detail || translate('relations.actions.resendError'))
-        throw error
-      } finally {
-        // Phase 29 INV-3: mutation → invalidateQueries
-        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
-      }
-    },
-
     async bulkAcceptSelectedTutorRelations() {
       const ids = this.selectedTutorRelations.filter((relation) => relation.status === 'invited').map((relation) => relation.id)
       if (!ids.length) {

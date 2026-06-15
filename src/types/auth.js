@@ -18,6 +18,4 @@ export const AUTH_ENDPOINTS = Object.freeze({
   REFRESH: '/auth/refresh/',
   LOGOUT: '/auth/logout/',
   CURRENT_USER: '/users/me/',
-  INVITE_VALIDATE: '/auth/invite/validate/',
-  INVITE_ACCEPT: '/auth/invite/accept/',
 })

@@ -25,5 +25,4 @@
 
 export const TUTOR_STUDENT_ENDPOINTS = Object.freeze({
   LIST: '/tutor/students/',
-  INVITE: '/tutor/students/invite/',
 })

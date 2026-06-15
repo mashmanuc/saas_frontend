@@ -471,24 +471,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async validateInvite(token) {
-      this.loading = true
-      this.error = null
-      this.lastErrorCode = null
-      this.lastRequestId = null
-      this.lastFieldMessages = null
-      this.lastSummary = null
-
-      try {
-        return await authApi.validateInvite(token)
-      } catch (error) {
-        this.handleError(error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
     async register(form) {
       this.loading = true
       this.error = null
@@ -500,30 +482,6 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await authApi.register(form)
         return res
-      } catch (error) {
-        this.handleError(error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async acceptInvite(payload) {
-      this.loading = true
-      this.error = null
-      this.lastErrorCode = null
-      this.lastRequestId = null
-      this.lastFieldMessages = null
-      this.lastSummary = null
-
-      try {
-        const { access } = await authApi.acceptInvite(payload)
-        this.setAuth({ access })
-        await this.postAuthInit()
-        await this.ensureCsrfToken()
-        this.startProactiveRefresh()
-        await this.reloadUser()
-        return this.user
       } catch (error) {
         this.handleError(error)
         throw error

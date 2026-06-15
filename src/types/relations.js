@@ -46,10 +46,8 @@ export const RELATION_ENDPOINTS = Object.freeze({
   
   // Tutor endpoints (Flow: Student requests Tutor → Tutor accepts)
   TUTOR_ACCEPT: (id) => buildV1Url(`/tutor/relations/${id}/accept/`),
-  TUTOR_RESEND: (id) => buildV1Url(`/tutor/relations/${id}/resend/`),
-  
+
   // Legacy aliases (deprecated, use role-specific endpoints)
   ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),
   DECLINE: (id) => buildV1Url(`/student/relations/${id}/decline/`),
-  RESEND: (id) => buildV1Url(`/tutor/relations/${id}/resend/`),
 })

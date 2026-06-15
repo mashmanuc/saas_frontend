@@ -64,13 +64,6 @@ const relationsApi = {
   },
 
   /**
-   * Tutor resends invitation
-   */
-  tutorResendRelation(relationId) {
-    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RESEND(relationId))
-  },
-
-  /**
    * Restore archived relation back to active
    * v0.88.3: Archive management
    */
@@ -93,10 +86,6 @@ const relationsApi = {
 
   declineRelation(relationId) {
     return apiClient.post(RELATION_ENDPOINTS.DECLINE(relationId))
-  },
-
-  resendRelation(relationId) {
-    return apiClient.post(RELATION_ENDPOINTS.RESEND(relationId))
   },
 }
 
