@@ -50,6 +50,13 @@ const peerName = computed(() => {
 })
 
 async function fetchActiveLesson() {
+  // Банер «Урок зараз іде» стосується лише tutor/student — у admin/operator немає
+  // «своїх» уроків, endpoint для цих ролей завжди порожній. Не поллимо його.
+  const role = authStore.user?.role
+  if (role !== 'tutor' && role !== 'student') {
+    activeLesson.value = null
+    return
+  }
   try {
     const res = await lessonsApi.getActiveLessons({ status: 'in_progress' }, { silent: true })
     const list = res?.results ?? res?.data?.results ?? []
