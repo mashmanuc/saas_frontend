@@ -75,7 +75,7 @@
       <template v-if="invite.is_active">
         <!-- Authenticated student → bond button -->
         <button
-          v-if="auth.user"
+          v-if="auth.user && auth.user.role === 'student'"
           type="button"
           class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-bold text-white shadow transition hover:bg-accent/90 disabled:opacity-50"
           :disabled="isAccepting"
@@ -87,6 +87,22 @@
           </svg>
           {{ $t('invites.detail.acceptButton') }}
         </button>
+
+        <!-- Authenticated non-student (напр. репетитор) → пояснення, бонд як учень неможливий -->
+        <div
+          v-else-if="auth.user"
+          class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-center dark:border-amber-800 dark:bg-amber-900/20"
+        >
+          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">{{ $t('invites.detail.notStudentTitle') }}</p>
+          <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">{{ $t('invites.detail.notStudentHint', { email: auth.user.email }) }}</p>
+          <button
+            type="button"
+            class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-amber-400 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
+            @click="handleSwitchAccount"
+          >
+            {{ $t('invites.detail.switchAccount') }}
+          </button>
+        </div>
 
         <!-- Anonymous → inline registration form -->
         <form v-else class="flex flex-col gap-3" @submit.prevent="handleRegister">
@@ -201,6 +217,12 @@ const dashboardRoute = computed(() =>
 
 async function handleAccept() {
   await accept()
+}
+
+async function handleSwitchAccount() {
+  // logout зберігає invite-URL у auth_return_url → редірект /start?redirect=/invite/{token};
+  // після входу учнівським акаунтом юзер повертається сюди й бондиться (гілка student).
+  await auth.logout()
 }
 
 async function handleRegister() {
