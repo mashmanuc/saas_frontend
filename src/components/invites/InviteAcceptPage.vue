@@ -10,17 +10,12 @@
 
     <!-- Error -->
     <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center dark:border-red-800 dark:bg-red-900/20">
-      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/40">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-        </svg>
-      </div>
       <p class="text-sm font-medium text-red-800 dark:text-red-300">
         {{ $t(`invites.errors.${error.toLowerCase()}`, $t('invites.errors.unknown')) }}
       </p>
     </div>
 
-    <!-- Success (after accept) -->
+    <!-- Success (existing student bond) -->
     <div v-else-if="acceptResult" class="rounded-2xl border border-border-subtle bg-white p-8 text-center shadow-lg dark:bg-surface-dark">
       <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
@@ -31,20 +26,9 @@
       <p class="mb-6 text-sm text-muted">
         {{ $t('invites.viral.subtitle', { tutorName: invite?.tutor_info?.full_name || '' }) }}
       </p>
-
-      <!-- Viral hooks -->
       <div class="flex flex-col gap-3">
-        <router-link
-          :to="dashboardRoute"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accent/90"
-        >
+        <router-link :to="dashboardRoute" class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accent/90">
           {{ $t('invites.viral.goToDashboard') }}
-        </router-link>
-        <router-link
-          to="/tutors"
-          class="inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-4 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-soft hover:text-body"
-        >
-          {{ $t('invites.viral.exploreMore') }}
         </router-link>
       </div>
     </div>
@@ -72,16 +56,12 @@
 
       <!-- Subjects -->
       <div v-if="invite.tutor_info?.subjects?.length" class="mb-4 flex flex-wrap justify-center gap-2">
-        <span
-          v-for="subject in invite.tutor_info.subjects"
-          :key="subject"
-          class="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent"
-        >
+        <span v-for="subject in invite.tutor_info.subjects" :key="subject" class="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
           {{ subject }}
         </span>
       </div>
 
-      <!-- Status warnings -->
+      <!-- Status warnings (inactive invite) -->
       <div
         v-if="!invite.is_active"
         class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
@@ -92,12 +72,12 @@
         <template v-else>{{ $t('invites.detail.inactive') }}</template>
       </div>
 
-      <!-- Accept / Fallback -->
-      <div class="flex flex-col gap-2">
+      <template v-if="invite.is_active">
+        <!-- Authenticated student → bond button -->
         <button
-          v-if="invite.is_active"
+          v-if="auth.user"
           type="button"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-bold text-white shadow transition hover:bg-accent/90 disabled:opacity-50"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-bold text-white shadow transition hover:bg-accent/90 disabled:opacity-50"
           :disabled="isAccepting"
           @click="handleAccept"
         >
@@ -108,21 +88,93 @@
           {{ $t('invites.detail.acceptButton') }}
         </button>
 
-        <router-link
-          v-if="!invite.is_active"
-          :to="`/tutors/${invite.tutor_info?.id}`"
-          class="inline-flex items-center justify-center gap-2 rounded-lg border border-accent px-4 py-2.5 text-sm font-semibold text-accent transition hover:bg-accent/5"
-        >
-          {{ $t('invites.detail.viewProfile') }}
-        </router-link>
-      </div>
+        <!-- Anonymous → inline registration form -->
+        <form v-else class="flex flex-col gap-3" @submit.prevent="handleRegister">
+          <p class="text-center text-sm text-muted">{{ $t('invites.register.subtitle') }}</p>
 
+          <div>
+            <input
+              v-model="form.email" type="email" autocomplete="email" required
+              :placeholder="$t('invites.register.email')"
+              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark"
+            />
+            <p v-if="fieldErrors?.email" class="mt-1 text-xs text-red-600">{{ fieldErrors.email[0] }}</p>
+          </div>
+
+          <div>
+            <input
+              v-model="form.password" type="password" autocomplete="new-password" required
+              :placeholder="$t('invites.register.password')"
+              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark"
+            />
+            <p v-if="fieldErrors?.password" class="mt-1 text-xs text-red-600">{{ fieldErrors.password[0] }}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <input v-model="form.first_name" :placeholder="$t('invites.register.firstName')" autocomplete="given-name"
+              class="rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
+            <input v-model="form.last_name" :placeholder="$t('invites.register.lastName')" autocomplete="family-name"
+              class="rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
+          </div>
+
+          <!-- Consents (INV-INVITE-4 — обов'язкові) -->
+          <div class="flex flex-col gap-1.5 pt-1">
+            <label class="flex items-start gap-2 text-xs text-muted">
+              <input v-model="form.accept_privacy" type="checkbox" class="mt-0.5" />
+              <span>{{ $t('invites.register.acceptPrefix') }}
+                <a href="/legal/privacy" target="_blank" class="text-accent underline">{{ $t('invites.register.privacyDoc') }}</a>
+              </span>
+            </label>
+            <label class="flex items-start gap-2 text-xs text-muted">
+              <input v-model="form.accept_terms" type="checkbox" class="mt-0.5" />
+              <span>{{ $t('invites.register.acceptPrefix') }}
+                <a href="/legal/terms" target="_blank" class="text-accent underline">{{ $t('invites.register.termsDoc') }}</a>
+              </span>
+            </label>
+            <label class="flex items-start gap-2 text-xs text-muted">
+              <input v-model="form.accept_offer" type="checkbox" class="mt-0.5" />
+              <span>{{ $t('invites.register.acceptPrefix') }}
+                <a href="/legal/studentOffer" target="_blank" class="text-accent underline">{{ $t('invites.register.offerDoc') }}</a>
+              </span>
+            </label>
+            <p v-if="consentError" class="text-xs text-red-600">{{ $t('invites.register.consentRequired') }}</p>
+          </div>
+
+          <button
+            type="submit"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-bold text-white shadow transition hover:bg-accent/90 disabled:opacity-50"
+            :disabled="isAccepting || !allConsents"
+          >
+            <svg v-if="isAccepting" class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            {{ $t('invites.register.submit') }}
+          </button>
+
+          <p class="text-center text-xs text-muted">
+            {{ $t('invites.register.haveAccount') }}
+            <router-link :to="{ name: 'login', query: { redirect: `/invite/${token}` } }" class="text-accent underline">
+              {{ $t('invites.register.login') }}
+            </router-link>
+          </p>
+        </form>
+      </template>
+
+      <!-- Inactive → view profile -->
+      <router-link
+        v-else
+        :to="`/tutors/${invite.tutor_info?.id}`"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-accent px-4 py-2.5 text-sm font-semibold text-accent transition hover:bg-accent/5"
+      >
+        {{ $t('invites.detail.viewProfile') }}
+      </router-link>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInviteDetail } from '@/composables/useInviteDetail'
 import { useInviteAccept } from '@/composables/useInviteAccept'
@@ -134,14 +186,25 @@ const token = route.params.token as string
 const auth = useAuthStore()
 
 const { isLoading, invite, error, fetch } = useInviteDetail(token)
-const { isAccepting, result: acceptResult, accept } = useInviteAccept(token)
+const { isAccepting, result: acceptResult, accept, acceptWithRegistration, fieldErrors } = useInviteAccept(token)
 
-const dashboardRoute = computed(() => {
-  return auth.user?.role ? getDefaultRouteForRole(auth.user.role) : '/student'
+const form = reactive({
+  email: '', password: '', first_name: '', last_name: '',
+  accept_privacy: false, accept_terms: false, accept_offer: false,
 })
+const allConsents = computed(() => form.accept_privacy && form.accept_terms && form.accept_offer)
+const consentError = computed(() => Boolean(fieldErrors.value?.accept_privacy || fieldErrors.value?.accept_terms || fieldErrors.value?.accept_offer))
+
+const dashboardRoute = computed(() =>
+  auth.user?.role ? getDefaultRouteForRole(auth.user.role) : '/student'
+)
 
 async function handleAccept() {
   await accept()
+}
+
+async function handleRegister() {
+  await acceptWithRegistration({ ...form })
 }
 
 onMounted(() => {

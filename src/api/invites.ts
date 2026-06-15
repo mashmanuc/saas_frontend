@@ -43,8 +43,9 @@ export async function getInviteDetail(token: string): Promise<InviteDTO> {
  * @param token - invite token
  * @returns результат прийняття
  */
-export async function acceptInvite(token: string): Promise<InviteDTO> {
-  const response = await apiClient.post<AcceptInviteResponse>(`${BASE_URL}/invites/${token}/accept/`)
+export async function acceptInvite(token: string, body?: Record<string, unknown>): Promise<any> {
+  // body=undefined → existing authed student (bond); body present → anonymous register-inline.
+  const response = await apiClient.post<AcceptInviteResponse>(`${BASE_URL}/invites/${token}/accept/`, body)
   return response
 }
 
