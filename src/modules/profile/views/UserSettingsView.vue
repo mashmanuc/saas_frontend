@@ -37,11 +37,9 @@
 
 <script setup lang="ts">
 import { ref, computed, h } from 'vue'
-import { useAuthStore } from '@/stores/authStore'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import GeneralSettingsTab from '../components/settings/GeneralSettingsTab.vue'
-import ProfileSettingsTab from '../components/settings/ProfileSettingsTab.vue'
 import ContactsSettingsTab from '../components/settings/ContactsSettingsTab.vue'
 import NotificationsSettingsTab from '../components/settings/NotificationsSettingsTab.vue'
 import PrivacySettingsTab from '../components/settings/PrivacySettingsTab.vue'
@@ -49,8 +47,6 @@ import SecuritySettingsTab from '../components/settings/SecuritySettingsTab.vue'
 import AccountSettingsTab from '../components/settings/AccountSettingsTab.vue'
 
 const activeTab = ref('general')
-const authStore = useAuthStore()
-const userRole = computed(() => authStore.user?.role)
 
 const allTabs = [
   { 
@@ -61,15 +57,8 @@ const allTabs = [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z' })
     ])
   },
-  { 
-    id: 'profile', 
-    label: 'users.settings.tabs.profile',
-    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
-      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' })
-    ])
-  },
-  { 
-    id: 'contacts', 
+  {
+    id: 'contacts',
     label: 'users.settings.tabs.contacts',
     icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' })
@@ -105,21 +94,14 @@ const allTabs = [
   }
 ]
 
-const tabs = computed(() => {
-  // Для тьютора показуємо вкладку Account замість Profile
-  if (userRole.value === 'tutor') {
-    return allTabs.filter(tab => tab.id !== 'profile')
-  }
-  // Для студента прибираємо вкладку Profile (він має окремий профіль)
-  return allTabs.filter(tab => tab.id !== 'profile')
-})
+// Profile-вкладку прибрано (PR-5.2): identity тьютора редагується лише в marketplace-редакторі (/tutor/profile).
+// ProfileSettingsTab був мертвим (вкладка фільтрувалась для всіх ролей) — видалено.
+const tabs = computed(() => allTabs)
 
 const activeTabComponent = computed(() => {
   switch (activeTab.value) {
     case 'general':
       return GeneralSettingsTab
-    case 'profile':
-      return ProfileSettingsTab
     case 'contacts':
       return ContactsSettingsTab
     case 'notifications':

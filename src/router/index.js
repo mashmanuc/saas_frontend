@@ -31,10 +31,6 @@ const BookingRequestsView = () => import('../modules/booking/views/BookingReques
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
-// TEMPORARILY DISABLED - using marketplace/my-profile instead
-// const TutorProfileOverviewView = () => import('../modules/profile/views/TutorProfileOverviewView_NEW.vue')
-// const TutorProfileEditView = () => import('../modules/profile/views/TutorProfileEditView_NEW.vue')
-// const StudentProfileEditView = () => import('../modules/profile/views/StudentProfileEditView_NEW.vue')
 const UserAccountView = () => import('../modules/profile/views/UserAccountView.vue')
 const SettingsSecurityView = () => import('../modules/profile/views/SettingsSecurityView.vue')
 const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
