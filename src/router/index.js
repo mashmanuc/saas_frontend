@@ -208,18 +208,11 @@ const routes = [
         component: StudentHome,
         meta: { roles: [USER_ROLES.STUDENT] },
       },
-      {
-        path: 'practice',
-        name: 'practice',
-        component: () => import('../modules/practice/views/PracticeHomeView.vue'),
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
-      {
-        path: 'practice/worlds',
-        name: 'practice-worlds',
-        component: () => import('../modules/practice/views/PracticeProgressionView.vue'),
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
+      // practice routes TEMPORARILY REMOVED 2026-06-18 — `src/modules/practice/` is UNTRACKED
+      // WIP (not committed to the repo). These dynamic imports broke the Cloudflare clean-clone
+      // build ("Could not resolve PracticeHomeView.vue") → every FE deploy since 536291c failed.
+      // Restore these two routes together with committing the practice module. (Accidentally
+      // swept into 536291c via `git add` of the whole router file instead of `add -p`.)
       {
         path: 'notifications',
         name: 'notifications',
