@@ -5723,7 +5723,7 @@
       },
       "s3": {
         "title": "3. What M4SH Is — and What It Is NOT",
-        "body": "<p>M4SH is a <strong>SaaS platform</strong> (Software as a Service). We provide tutors and schools with tools for conducting online lessons: an interactive whiteboard, lesson recording system, marketplace, calendar, and analytics.</p><p><strong>M4SH is not an intermediary in financial relations between tutors and students.</strong> The Platform does not process, hold, or transfer funds between users. Any financial settlements between a tutor and a student for educational services are made directly between them and are not subject to this Agreement.</p><p>Payment for an M4SH subscription is solely payment for access to Platform features, not payment for educational services.</p>"
+        "body": "<p>M4SH is a <strong>SaaS platform</strong> (Software as a Service). We provide tutors and schools with tools for conducting online lessons: an interactive whiteboard, Replay (saving the course of a session on the board — actions and strokes, not video), chat, student invitations, and analytics.</p><p><strong>M4SH is not an intermediary in financial relations between tutors and students.</strong> The Platform does not process, hold, or transfer funds between users. Any financial settlements between a tutor and a student for educational services are made directly between them and are not subject to this Agreement.</p><p>Payment for an M4SH subscription is solely payment for access to Platform features, not payment for educational services.</p>"
       },
       "s4": {
         "title": "4. Registration and Accounts",
@@ -5776,7 +5776,7 @@
       },
       "s3": {
         "title": "3. Why We Use Your Data",
-        "body": "<ul><li>Providing Platform features (authentication, lesson recording, marketplace)</li><li>Processing subscriptions and payments</li><li>Sending transactional emails (registration confirmation, password recovery, payment notifications)</li><li>Technical support and responses to your requests</li><li>Detecting and preventing fraud</li><li>Analyzing and improving features (in aggregated/anonymized form)</li><li>Fulfilling legal obligations</li></ul>"
+        "body": "<ul><li>Providing Platform features (authentication, on-board session replay, student invitations)</li><li>Processing subscriptions and payments</li><li>Sending transactional emails (registration confirmation, password recovery, payment notifications)</li><li>Technical support and responses to your requests</li><li>Detecting and preventing fraud</li><li>Analyzing and improving features (in aggregated/anonymized form)</li><li>Fulfilling legal obligations</li></ul>"
       },
       "s4": {
         "title": "4. Replay — Saving the Course of a Session",
@@ -5902,11 +5902,11 @@
       "lastUpdated": "Version: {date}",
       "s0": {
         "title": "Summary",
-        "body": "<p>M4SH is a technology platform, not an employer. You provide educational services to students independently, on your own terms. We provide the tools: whiteboard, video, chat, marketplace. A subscription is the only form of monetization between you and M4SH.</p>"
+        "body": "<p>M4SH is a technology platform, not an employer. You provide educational services to students independently, on your own terms. We provide the tools: whiteboard, chat, Replay (playback of the session's actions on the board), and student invitations. A subscription is the only form of monetization between you and M4SH.</p>"
       },
       "s1": {
         "title": "I. Definitions",
-        "body": "<p><strong>Administrator</strong> — FOP Oleksandr Mashmaniuk, owner and operator of the M4SH Platform.<br><strong>M4SH Platform</strong> — a technological educational platform at m4sh.org: marketplace, classroom (video, whiteboard, chat), scheduling, materials library.<br><strong>Tutor</strong> — an individual aged 18 or older who has registered a tutor account and provides educational services to students through the Platform.<br><strong>Student</strong> — a Platform user who contacts tutors for educational services.<br><strong>Educational Services</strong> — lessons, consultations, and other forms of educational interaction between a Tutor and a Student.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).<br><strong>Subscription</strong> — a SaaS agreement between the Tutor and the Administrator for access to Platform features (FREE / PRO / BUSINESS).<br><strong>Acceptance Right</strong> — the technical ability to confirm one Request from a Student within the pricing plan.</p>"
+        "body": "<p><strong>Administrator</strong> — FOP Oleksandr Mashmaniuk, owner and operator of the M4SH Platform.<br><strong>M4SH Platform</strong> — a technological educational platform at m4sh.org: classroom (whiteboard, chat), Replay, student invitations, scheduling, materials library.<br><strong>Tutor</strong> — an individual aged 18 or older who has registered a tutor account and provides educational services to students through the Platform.<br><strong>Student</strong> — a Platform user who contacts tutors for educational services.<br><strong>Educational Services</strong> — lessons, consultations, and other forms of educational interaction between a Tutor and a Student.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).<br><strong>Subscription</strong> — a SaaS agreement between the Tutor and the Administrator for access to Platform features (FREE / PRO / BUSINESS).<br><strong>Acceptance Right</strong> — the technical ability to confirm one Request from a Student within the pricing plan.</p>"
       },
       "s2": {
         "title": "IIA. Platform Status — Role Limitations",
@@ -5942,11 +5942,11 @@
       "lastUpdated": "Version: {date}",
       "s0": {
         "title": "Summary",
-        "body": "<p>M4SH is a technology platform, not an educational institution. We provide tools for finding a tutor and conducting lessons. The Tutor is an independent specialist who independently determines the terms of work. M4SH is not a party to the agreement between you and the tutor and is not an intermediary in financial settlements.</p>"
+        "body": "<p>M4SH is a technology platform, not an educational institution. We provide tools for lessons with your tutor (who invited you to the Platform) and for independent practice. The Tutor is an independent specialist who independently determines the terms of work. M4SH is not a party to the agreement between you and the tutor and is not an intermediary in financial settlements.</p>"
       },
       "s1": {
         "title": "I. Definitions",
-        "body": "<p><strong>Platform</strong> — the set of M4SH software tools (m4sh.org): tutor search, booking system, video room, and teaching whiteboard.<br><strong>Administrator</strong> — FOP Oleksandr Mashmaniuk, Ukraine.<br><strong>Student</strong> — an adult or parent/guardian of a minor who has accepted this Agreement by registering.<br><strong>Tutor</strong> — an independent specialist registered under the terms of the <a href=\"/legal/tutor-offer\">Tutor Agreement</a>.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).</p>"
+        "body": "<p><strong>Platform</strong> — the set of M4SH software tools (m4sh.org): classroom, teaching whiteboard, chat, and practice tools.<br><strong>Administrator</strong> — FOP Oleksandr Mashmaniuk, Ukraine.<br><strong>Student</strong> — an adult or parent/guardian of a minor who has accepted this Agreement by registering.<br><strong>Tutor</strong> — an independent specialist registered under the terms of the <a href=\"/legal/tutor-offer\">Tutor Agreement</a>.<br><strong>Replay</strong> — a saved sequence of actions on the teaching whiteboard during a session (not an audio or video recording).</p>"
       },
       "s2": {
         "title": "II. Acceptance of the Agreement",
