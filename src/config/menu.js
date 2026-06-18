@@ -28,7 +28,6 @@ export const MENU_BY_ROLE = {
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
-    { label: 'menu.marketplace', icon: 'users', to: '/marketplace' },
     { label: 'menu.calendar', icon: 'calendar', to: '/student/schedule' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard/boards' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
@@ -66,8 +65,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.dashboard', icon: 'layout-dashboard', to: '/tutor', hint: 'sidebar.hint.dashboard' },
         { label: 'sidebar.item.schedule', icon: 'calendar', to: '/tutor/schedule', hint: 'sidebar.hint.schedule' },
-        // Marketplace — перегляд публічного каталогу тьюторів (як його бачать студенти).
-        { label: 'sidebar.item.marketplace', icon: 'search', to: '/marketplace', hint: 'sidebar.hint.marketplace' },
+        // Marketplace DISABLED 2026-06-17 — пункт прибрано (Marketplace extraction).
       ],
     },
     {
@@ -132,7 +130,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'tutors',
       label: 'sidebar.section.tutors',
       items: [
-        { label: 'sidebar.item.findTutor', icon: 'search', to: '/marketplace' },
+        // findTutor (/marketplace) DISABLED 2026-06-17 — Marketplace extraction.
         { label: 'sidebar.item.myInquiries', icon: 'inbox', to: '/student/inquiries' },
       ],
     },
