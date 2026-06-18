@@ -381,19 +381,11 @@ const routes = [
       },
       // Onboarding/checklist routes ВИДАЛЕНО (2026-06-13): візард замінено на
       // Activation Engine (modules/activation). Жоден живий код сюди не лінкував.
-      // Phase 1 v0.86: Inquiry routes
-      {
-        path: 'student/inquiries',
-        name: 'student-inquiries',
-        component: () => import('../modules/inquiries/views/StudentInquiriesView.vue'),
-        meta: { roles: [USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'tutor/inquiries',
-        name: 'tutor-inquiries',
-        component: () => import('../modules/inquiries/views/TutorInquiriesView.vue'),
-        meta: { roles: [USER_ROLES.TUTOR] },
-      },
+      // Inquiry routes DISABLED 2026-06-18 (Marketplace extraction) — без discovery нові
+      // inquiry не творяться; інбокси порожні. Redirect → role home (як marketplace).
+      // Імена лишено (backward-compat для {name:...}-навігації); компоненти lazy-importable.
+      { path: 'student/inquiries', name: 'student-inquiries', redirect: mpDisabledRedirect },
+      { path: 'tutor/inquiries', name: 'tutor-inquiries', redirect: mpDisabledRedirect },
       // v0.25-FIX: Booking routes
       {
         path: 'tutor/bookings',
@@ -493,24 +485,10 @@ const routes = [
       { path: 'solo-v2/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
       { path: 'solo/shared/:token', redirect: to => ({ name: 'winterboard-public', params: { token: to.params.token } }) },
       // v0.69: People & Negotiation Chat routes
-      {
-        path: 'beta/people',
-        name: 'people-inquiries-student',
-        component: () => import('../modules/people/views/StudentInquiriesView.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.STUDENT]
-        },
-      },
-      {
-        path: 'beta/people/inbox',
-        name: 'people-inquiries-tutor',
-        component: () => import('../modules/people/views/TutorInquiriesInbox.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR]
-        },
-      },
+      // People inquiry-inboxes DISABLED 2026-06-18 (Marketplace extraction) — negotiation
+      // inbox порожній без discovery. Redirect → role home. (Relation/CONTACT chat нижче ЛИШЕНО.)
+      { path: 'beta/people', name: 'people-inquiries-student', redirect: mpDisabledRedirect },
+      { path: 'beta/people/inbox', name: 'people-inquiries-tutor', redirect: mpDisabledRedirect },
       {
         path: 'chat/thread/:threadId',
         name: 'chat-thread-people',
