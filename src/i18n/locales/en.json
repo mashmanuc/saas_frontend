@@ -1,4 +1,79 @@
 {
+  "practice": {
+    "title": "Practice",
+    "chooseTopic": "Choose a topic",
+    "back": "Back",
+    "loading": "Loading…",
+    "completed": "Path completed! You can pick another topic.",
+    "chooseAnother": "Pick another topic",
+    "progress": {
+      "worldsTab": "Worlds",
+      "collectionTab": "Collection",
+      "loading": "Loading…",
+      "unavailable": "Progression is currently unavailable",
+      "topicsProgress": "{done} / {total} topics",
+      "allMastered": "All {total} topics mastered",
+      "status": { "new": "not started", "active": "in progress", "done": "done" },
+      "biome": {
+        "foundations": "Foundations",
+        "algebra": "Algebra",
+        "analysis": "Analysis",
+        "plane-geometry": "Plane",
+        "solid-geometry": "Space",
+        "vectors": "Vectors",
+        "probability": "Chance"
+      },
+      "summaryWorlds": "{done} / {total} worlds completed",
+      "summaryArts": "{count} artifact(s) earned on the way",
+      "summaryArtsZero": "Collect artifacts by mastering each world's topics",
+      "rewardLabel": "Artifact",
+      "rewardLabelLocked": "Reward ahead",
+      "badgeEarned": "Earned",
+      "badgeReward": "Reward",
+      "ahead": "reward ahead",
+      "hiddenArtifact": "Hidden artifact",
+      "locked": "not unlocked",
+      "collectionCount": "{have} / {total} artifacts",
+      "collectionSub": "Math visualizations earned on your journey",
+      "collectionHint": "Earned artifacts glow; undiscovered ones are silhouettes.",
+      "sourceWorld": "World · {world}",
+      "sourceXp": "{n} XP",
+      "sourceStreak": "Streak {n}"
+    },
+    "celebration": {
+      "eyebrow": "New artifact earned",
+      "add": "Add to collection",
+      "fromWorld": "World completed",
+      "fromWorldNamed": "World “{name}” completed",
+      "fromXp": "{n} XP reached",
+      "fromStreak": "{n}-day streak"
+    },
+    "stat": { "xp": "XP", "streak": "Streak", "progress": "Progress" },
+    "card": {
+      "difficulty": "Difficulty",
+      "answerPlaceholder": "Enter your answer…",
+      "correct": "Correct!",
+      "wrong": "Incorrect",
+      "check": "Check",
+      "next": "Next",
+      "retry": "Try again"
+    },
+    "type": {
+      "single_choice": "Single choice",
+      "open_answer": "Open answer",
+      "matching": "Matching"
+    },
+    "topics": {
+      "triangles": "Triangles",
+      "derivative": "Derivative",
+      "inequalities-systems": "Inequalities and systems",
+      "rational-irrational-expressions": "Rational and irrational expressions",
+      "probability-statistics": "Probability and statistics",
+      "sequences": "Sequences",
+      "prism": "Prism",
+      "function-basics": "Function basics"
+    }
+  },
   "call": {
     "shareScreen": "Share screen",
     "stopSharing": "Stop sharing",

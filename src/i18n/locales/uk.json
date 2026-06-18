@@ -1,4 +1,79 @@
 {
+  "practice": {
+    "title": "Практика",
+    "chooseTopic": "Оберіть тему",
+    "back": "Назад",
+    "loading": "Завантаження…",
+    "completed": "Стежку пройдено! Можна обрати іншу тему.",
+    "chooseAnother": "Обрати іншу тему",
+    "progress": {
+      "worldsTab": "Світи",
+      "collectionTab": "Колекція",
+      "loading": "Завантаження…",
+      "unavailable": "Прогресія наразі недоступна",
+      "topicsProgress": "{done} / {total} тем",
+      "allMastered": "Усі {total} тем опановано",
+      "status": { "new": "ще не починали", "active": "у процесі", "done": "пройдено" },
+      "biome": {
+        "foundations": "Основи",
+        "algebra": "Алгебра",
+        "analysis": "Аналіз",
+        "plane-geometry": "Площина",
+        "solid-geometry": "Простір",
+        "vectors": "Вектори",
+        "probability": "Випадковість"
+      },
+      "summaryWorlds": "{done} / {total} світів пройдено",
+      "summaryArts": "{count} артефакт(и) здобуто на цьому шляху",
+      "summaryArtsZero": "Збери артефакти, проходячи теми кожного світу",
+      "rewardLabel": "Артефакт",
+      "rewardLabelLocked": "Нагорода попереду",
+      "badgeEarned": "Здобуто",
+      "badgeReward": "Нагорода",
+      "ahead": "нагорода попереду",
+      "hiddenArtifact": "Прихований артефакт",
+      "locked": "не відкрито",
+      "collectionCount": "{have} / {total} артефактів",
+      "collectionSub": "Математичні візуалізації, здобуті в подорожі",
+      "collectionHint": "Здобуті артефакти світяться; нерозкриті — силует-принада.",
+      "sourceWorld": "Світ · {world}",
+      "sourceXp": "{n} XP",
+      "sourceStreak": "Стрік {n}"
+    },
+    "celebration": {
+      "eyebrow": "Новий артефакт здобуто",
+      "add": "Додати до колекції",
+      "fromWorld": "Світ пройдено",
+      "fromWorldNamed": "Світ «{name}» пройдено",
+      "fromXp": "{n} XP здобуто",
+      "fromStreak": "Стрік {n} днів"
+    },
+    "stat": { "xp": "XP", "streak": "Стрік", "progress": "Прогрес" },
+    "card": {
+      "difficulty": "Складність",
+      "answerPlaceholder": "Введіть відповідь…",
+      "correct": "Правильно!",
+      "wrong": "Неправильно",
+      "check": "Перевірити",
+      "next": "Далі",
+      "retry": "Спробувати ще"
+    },
+    "type": {
+      "single_choice": "Один варіант",
+      "open_answer": "Відкрита відповідь",
+      "matching": "Відповідність"
+    },
+    "topics": {
+      "triangles": "Трикутники",
+      "derivative": "Похідна",
+      "inequalities-systems": "Нерівності та системи",
+      "rational-irrational-expressions": "Раціональні та ірраціональні вирази",
+      "probability-statistics": "Ймовірність і статистика",
+      "sequences": "Послідовності",
+      "prism": "Призма",
+      "function-basics": "Функції — основи"
+    }
+  },
   "call": {
     "shareScreen": "Поділитися екраном",
     "stopSharing": "Зупинити показ екрана",

@@ -15,6 +15,16 @@
     />
     <div v-else class="student-home__hero-skeleton" aria-hidden="true" />
 
+    <!-- Practice-вхід — за флагом VITE_PRACTICE_ENABLED (default OFF у проді, ON у dev). -->
+    <router-link
+      v-if="practiceEnabled"
+      to="/practice"
+      style="display:flex; flex-direction:column; gap:2px; padding:14px 16px; margin:8px 0; border:1px solid var(--accent,#047857); border-radius:12px; background:var(--card-bg,#fff); text-decoration:none;"
+    >
+      <span style="font-weight:600; color:var(--accent,#047857);">{{ $t('practice.title') }} →</span>
+      <span style="font-size:12px; color:var(--text-secondary,#666);">потребує FEATURE_PRACTICE_ENABLED (backend)</span>
+    </router-link>
+
     <!-- Активні уроки (INSTANT in_progress + найближчі scheduled) -->
     <StudentUpcomingLessonsSection
       :upcoming-lessons="upcomingLessons"
@@ -53,6 +63,9 @@ const TrialBanner = defineAsyncComponent(
 )
 
 const auth = useAuthStore()
+// Practice-вхід — за флагом VITE_PRACTICE_ENABLED (default OFF у проді, завжди ON у dev).
+// Узгоджено з router-флагом PRACTICE_ENABLED + backend FEATURE_PRACTICE_ENABLED.
+const practiceEnabled = import.meta.env.DEV || import.meta.env.VITE_PRACTICE_ENABLED === 'true'
 const snapshot = ref<DashboardSnapshotV2 | null>(null)
 const isLoading = ref(true)
 

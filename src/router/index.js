@@ -33,6 +33,10 @@ const mpDisabledRedirect = () => {
   const auth = useAuthStore()
   return auth.user?.role === USER_ROLES.TUTOR ? '/tutor' : '/student'
 }
+// Practice (NMT puzzle-journey) — за флагом. import() нижче = BUILD-time залежність →
+// `src/modules/practice/` МУСИТЬ бути закомічений разом (інакше CF clean-clone падає).
+// Флаг лише runtime-gate (чи реєструються маршрути). Default OFF у проді, завжди ON у dev.
+const PRACTICE_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PRACTICE_ENABLED === 'true'
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -208,11 +212,24 @@ const routes = [
         component: StudentHome,
         meta: { roles: [USER_ROLES.STUDENT] },
       },
-      // practice routes TEMPORARILY REMOVED 2026-06-18 — `src/modules/practice/` is UNTRACKED
-      // WIP (not committed to the repo). These dynamic imports broke the Cloudflare clean-clone
-      // build ("Could not resolve PracticeHomeView.vue") → every FE deploy since 536291c failed.
-      // Restore these two routes together with committing the practice module. (Accidentally
-      // swept into 536291c via `git add` of the whole router file instead of `add -p`.)
+      // Practice (NMT puzzle-journey) — gated by VITE_PRACTICE_ENABLED (build-safe: модуль
+      // закомічено разом із цим; флаг = runtime-gate). Default OFF у проді, ON у dev.
+      ...(PRACTICE_ENABLED
+        ? [
+            {
+              path: 'practice',
+              name: 'practice',
+              component: () => import('../modules/practice/views/PracticeHomeView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
+            {
+              path: 'practice/worlds',
+              name: 'practice-worlds',
+              component: () => import('../modules/practice/views/PracticeProgressionView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
+          ]
+        : []),
       {
         path: 'notifications',
         name: 'notifications',
