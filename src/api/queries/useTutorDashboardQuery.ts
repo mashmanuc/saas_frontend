@@ -11,7 +11,6 @@ import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { queryKeys } from '@/api/queryKeys'
 import { dashboardApi } from '@/modules/dashboard/api/dashboard'
-import apiClient from '@/utils/apiClient'
 
 export function useTutorDashboardQuery(options?: { enabled?: boolean }) {
   return useQuery({
@@ -30,8 +29,11 @@ export function useTutorDashboardQuery(options?: { enabled?: boolean }) {
 export function useMarketplaceMeQuery(options?: { enabled?: boolean }) {
   const query = useQuery({
     queryKey: queryKeys.marketplaceMe(),
-    queryFn: () => apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any),
-    staleTime: 5 * 60_000, // 5 хв — рідко змінюється
+    // Marketplace Extraction 2026-06-18: `/v1/marketplace/me/` вимкнено (BYO не має
+    // публічного профілю). Повертаємо статичний дефолт замість 404-виклику (раніше
+    // 404 + необроблена відповідь → краш на дашборді / підвисання дзвіночка).
+    queryFn: () => Promise.resolve({ is_published: false } as any),
+    staleTime: Infinity,
     ...options,
   })
 

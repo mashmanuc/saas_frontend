@@ -18,7 +18,6 @@ import { ref, onMounted } from 'vue'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
-import apiClient from '@/utils/apiClient'
 import { useScheduleDeepLink } from '@/modules/booking/composables/useScheduleDeepLink'
 
 // Phase 1.5: deep-link ?booking={id} → scroll + highlight картки
@@ -28,12 +27,8 @@ useScheduleDeepLink()
 const hasAvailability = ref(false)
 
 onMounted(async () => {
-  try {
-    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)
-    hasAvailability.value = !!me?.has_availability
-  } catch {
-    // Silent — hint is non-critical
-  }
+  // Marketplace Extraction 2026-06-18: `/v1/marketplace/me/` вимкнено (BYO) → раніше
+  // 404 на кожен calendar-load. Hint некритичний — лишаємо дефолт (hasAvailability=false).
 })
 </script>
 
