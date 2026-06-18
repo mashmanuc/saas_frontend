@@ -6631,8 +6631,8 @@
     },
     "student": {
       "title": "Student",
-      "description": "Find tutors and learn new skills",
-      "feature1": "Access to verified tutors",
+      "description": "Learn with the tutor who invited you in a live interactive class — and practice on your own in Practice.",
+      "feature1": "Live lessons with your tutor on an interactive board",
       "feature2": "Flexible scheduling",
       "feature3": "Interactive learning tools",
       "cta": "Start Learning"
@@ -6653,8 +6653,8 @@
         "description": "Sign up as a student or tutor in minutes"
       },
       "step2": {
-        "title": "Find Match",
-        "description": "Browse profiles or receive inquiries"
+        "title": "Invite your students",
+        "description": "Tutors invite their students by email — no public catalog. You set your own rates and terms."
       },
       "step3": {
         "title": "Start Learning",
