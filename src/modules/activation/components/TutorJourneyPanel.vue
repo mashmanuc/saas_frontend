@@ -43,16 +43,15 @@ const props = defineProps<{
 
 // ── Milestones ────────────────────────────────────────────────────────────────
 
+// BYO journey (Marketplace Extraction 2026-06-18): marketplace-coupled milestones
+// видалено. `profile_created` re-keyed з мертвого `marketplace_draft_started_at` на
+// `profile_name_set_at` (виставляється на реєстрації); `subjects_added` (marketplace-
+// онбординг, перевіряв bio) прибрано. Лишилось: профіль → перший урок → провести урок.
 const milestones = computed(() => [
   {
     key: 'profile_created',
     label: 'Профіль створено',
-    done: !!props.state?.marketplace_draft_started_at,
-  },
-  {
-    key: 'subjects_added',
-    label: 'Предмети додані',
-    done: !!props.state?.profile_bio_set_at,
+    done: !!props.state?.profile_name_set_at,
   },
   {
     key: 'first_lesson',
@@ -61,7 +60,7 @@ const milestones = computed(() => [
   },
   {
     key: 'first_classroom',
-    label: 'Перший classroom',
+    label: 'Перший урок проведено',
     done: !!props.state?.first_lesson_completed_at,
   },
 ])
