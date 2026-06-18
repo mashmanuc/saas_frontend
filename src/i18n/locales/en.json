@@ -6639,7 +6639,7 @@
     },
     "tutor": {
       "title": "Tutor",
-      "description": "Share your knowledge and earn",
+      "description": "Share your knowledge, teaching students online",
       "feature1": "Invite your own students",
       "feature2": "Manage your schedule",
       "feature3": "Built-in teaching tools",
@@ -6670,7 +6670,7 @@
       },
       "affordablePrices": {
         "title": "For Tutors — The Whole Lesson in One Window",
-        "description": "Whiteboard, PDF, slides, video, YouTube, tests — not five tabs, but six modules of a single space. Drag material from your library onto the board — the student sees the same thing instantly."
+        "description": "Whiteboard, PDF, slides, video, audio, tests — not five tabs, but six modules of a single space. Drag material from your library onto the board — the student sees the same thing instantly."
       },
       "directConnection": {
         "title": "For Schools — A Space for Your Teachers",
