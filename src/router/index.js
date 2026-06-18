@@ -27,6 +27,12 @@ const MarketplaceTutorView = () => import('../modules/marketplace/views/TutorPro
 const MarketplaceMyProfileView = () => import('../modules/marketplace/views/MyProfileView.vue')
 const MarketplaceSearchResultsView = () => import('../modules/marketplace/views/SearchResultsView.vue')
 const MarketplaceCategoryView = () => import('../modules/marketplace/views/CategoryView.vue')
+
+// Marketplace DISABLED 2026-06-17 (extraction) — catalog routes redirect to role home.
+const mpDisabledRedirect = () => {
+  const auth = useAuthStore()
+  return auth.user?.role === USER_ROLES.TUTOR ? '/tutor' : '/student'
+}
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -203,6 +209,18 @@ const routes = [
         meta: { roles: [USER_ROLES.STUDENT] },
       },
       {
+        path: 'practice',
+        name: 'practice',
+        component: () => import('../modules/practice/views/PracticeHomeView.vue'),
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'practice/worlds',
+        name: 'practice-worlds',
+        component: () => import('../modules/practice/views/PracticeProgressionView.vue'),
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('../views/NotificationsView.vue'),
@@ -339,30 +357,12 @@ const routes = [
           requiresAdminOrOperator: true
         },
       },
-      {
-        path: 'marketplace',
-        name: 'marketplace-list',
-        component: MarketplaceListView,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
-      },
-      {
-        path: 'marketplace/tutors/:slug',
-        name: 'marketplace-tutor',
-        component: MarketplaceTutorView,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
-      },
-      {
-        path: 'marketplace/search',
-        name: 'marketplace-search',
-        component: MarketplaceSearchResultsView,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
-      },
-      {
-        path: 'marketplace/categories/:slug',
-        name: 'marketplace-category',
-        component: MarketplaceCategoryView,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
-      },
+      // Marketplace catalog DISABLED 2026-06-17 (extraction) — redirect to role home.
+      // Компоненти лишено lazy-importable для відновлення.
+      { path: 'marketplace', redirect: mpDisabledRedirect },
+      { path: 'marketplace/tutors/:slug', redirect: mpDisabledRedirect },
+      { path: 'marketplace/search', redirect: mpDisabledRedirect },
+      { path: 'marketplace/categories/:slug', redirect: mpDisabledRedirect },
       {
         path: 'tutor/profile',
         name: 'tutor-profile',
@@ -387,7 +387,7 @@ const routes = [
           }
 
           if (auth.user?.role !== USER_ROLES.TUTOR) {
-            return next('/marketplace')
+            return next('/student')  // Marketplace disabled — non-tutors to student home
           }
           return next()
         },
