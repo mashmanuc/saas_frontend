@@ -6640,7 +6640,7 @@
     "tutor": {
       "title": "Tutor",
       "description": "Share your knowledge and earn",
-      "feature1": "Set your own rates",
+      "feature1": "Invite your own students",
       "feature2": "Manage your schedule",
       "feature3": "Built-in teaching tools",
       "cta": "Start Teaching"
@@ -6654,7 +6654,7 @@
       },
       "step2": {
         "title": "Invite your students",
-        "description": "Tutors invite their students by email — no public catalog. You set your own rates and terms."
+        "description": "Tutors invite their students by email — no public catalog. All lessons, materials and recordings live in one space."
       },
       "step3": {
         "title": "Start Learning",
@@ -6673,8 +6673,8 @@
         "description": "Whiteboard, PDF, slides, video, YouTube, tests — not five tabs, but six modules of a single space. Drag material from your library onto the board — the student sees the same thing instantly."
       },
       "directConnection": {
-        "title": "For Schools — Infrastructure Without an IT Department",
-        "description": "A ready-made online space for teachers and classes: scheduling, analytics, lesson recordings, templates, single sign-on. No licenses for ten tools and no full-time administrator required."
+        "title": "For Schools — A Space for Your Teachers",
+        "description": "Each teacher gets their own space with a board, lesson recordings and a library. Advanced school features (shared classes, analytics, single sign-on) are in development."
       }
     },
     "replayDemo": {
@@ -6691,9 +6691,9 @@
           "title": "PDF and PPTX Flip Inline",
           "text": "Textbooks, slides, notes — pages flip right on the board. DOCX is auto-converted and becomes flippable too."
         },
-        "youtube": {
-          "title": "YouTube as a Board Object",
-          "text": "Paste a link — the video plays in a frame, synced between you and the student."
+        "liveMath": {
+          "title": "Live Math on the Board",
+          "text": "3D solids, graphs, the trig circle — objects you rotate and adjust right in the lesson. Not a textbook picture."
         },
         "media": {
           "title": "Audio and Video Are Players, Not Links",

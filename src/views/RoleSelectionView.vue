@@ -373,16 +373,17 @@ async function changeLanguage(langCode: string) {
             <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.pdfPptx.text') }}</p>
           </div>
 
-          <!-- YouTube -->
+          <!-- Live math objects -->
           <div class="feature-tile">
             <div class="feature-tile-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="3"></rect>
-                <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"></polygon>
+                <path d="M12 2 3 7v10l9 5 9-5V7z"></path>
+                <path d="M3 7l9 5 9-5"></path>
+                <path d="M12 12v10"></path>
               </svg>
             </div>
-            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.youtube.title') }}</h3>
-            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.youtube.text') }}</p>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.liveMath.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.liveMath.text') }}</p>
           </div>
 
           <!-- Audio/Video plеєри -->
