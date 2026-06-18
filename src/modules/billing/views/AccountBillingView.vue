@@ -49,9 +49,6 @@
         @cancel="handleCancel"
       />
 
-      <!-- Activity Status (moved from dashboard v0.88.2) -->
-      <ActivityStatusBlock v-if="activityStatus" :status="activityStatus" />
-
       <PlansList
         :plans="billingStore.plans"
         :current-plan-code="billingStore.currentPlanCode"
@@ -73,12 +70,9 @@ import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
-import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
-import marketplaceApi from '../../marketplace/api/marketplace'
 
 const router = useRouter()
 const billingStore = useBillingStore()
-const activityStatus = ref(null)
 
 const plansError = computed(() => {
   if (billingStore.lastError && billingStore.plans.length === 0) {
@@ -153,11 +147,8 @@ function handleVisibilityChange() {
 onMounted(async () => {
   loadData()
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  try {
-    activityStatus.value = await marketplaceApi.getTutorActivityStatus()
-  } catch {
-    // Silent fail - activity status is not critical
-  }
+  // Marketplace Extraction 2026-06-18: getTutorActivityStatus() прибрано (marketplace
+  // activity-status → 404 без marketplace; dormant у BYO).
 })
 
 onUnmounted(() => {

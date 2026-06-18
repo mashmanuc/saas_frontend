@@ -19,13 +19,16 @@ export const TUTOR_FALLBACK_CTA: PrimaryCta = {
   metadata: {},
 }
 
+// Marketplace Extraction 2026-06-18: find_tutor/'/marketplace' прибрано (BYO — учень не
+// шукає тьютора в каталозі, тьютор запрошує його). Fallback → власний розклад (live-роут,
+// без bounce). Показується лише коли backend не надіслав primary_cta (edge-case).
 export const STUDENT_FALLBACK_CTA: PrimaryCta = {
-  type: 'find_tutor',
-  title_key: 'dashboard.cta.find_tutor.title',
+  type: 'view_schedule',
+  title_key: 'dashboard.cta.my_schedule.title',
   title_params: {},
   subtitle: null,
-  label_key: 'dashboard.cta.find_tutor.label',
-  action_url: '/marketplace',
+  label_key: 'dashboard.cta.my_schedule.label',
+  action_url: '/student/schedule',
   urgency: 'low',
   metadata: {},
 }

@@ -30,20 +30,9 @@
       :data="snapshot.secondary"
     />
 
-    <!-- Onboarding hint (профіль не опубліковано) -->
-    <OnboardingHint
-      v-if="snapshot && snapshot.banners?.profile_published === false"
-      :hint-id="TutorHintId.DASHBOARD_WELCOME"
-      :condition="true"
-      icon="💡"
-    >
-      <strong>{{ $t('onboarding.hints.dashboard.welcome.title') }}</strong>
-      <template #actions>
-        <router-link to="/tutor/profile" class="hint-btn">
-          {{ $t('onboarding.hints.dashboard.welcome.editProfile') }}
-        </router-link>
-      </template>
-    </OnboardingHint>
+    <!-- Marketplace Extraction 2026-06-18: «профіль не опубліковано» onboarding-hint прибрано
+         (BYO — нема публічного профілю/публікації; `/tutor/profile` redirect'нуто; активаційний
+         онбординг тепер у TutorJourneyPanel). -->
 
     <!-- Sprint 2: trial offer modal — показуємо тільки якщо вже був завершений урок -->
     <TrialActivationModal

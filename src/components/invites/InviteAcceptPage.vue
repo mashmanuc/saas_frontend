@@ -150,7 +150,7 @@
             <label class="flex items-start gap-2 text-xs text-muted">
               <input v-model="form.accept_offer" type="checkbox" class="mt-0.5" />
               <span>{{ $t('invites.register.acceptPrefix') }}
-                <a href="/legal/studentOffer" target="_blank" class="text-accent underline">{{ $t('invites.register.offerDoc') }}</a>
+                <a href="/legal/student-offer" target="_blank" class="text-accent underline">{{ $t('invites.register.offerDoc') }}</a>
               </span>
             </label>
             <p v-if="consentError" class="text-xs text-red-600">{{ $t('invites.register.consentRequired') }}</p>

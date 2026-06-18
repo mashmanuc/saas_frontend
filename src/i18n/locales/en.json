@@ -2018,6 +2018,10 @@
         "title": "Find a tutor",
         "label": "Browse"
       },
+      "my_schedule": {
+        "title": "Your schedule",
+        "label": "Open"
+      },
       "dead_link": "This action is no longer available — refreshing the panel"
     },
     "secondary": {

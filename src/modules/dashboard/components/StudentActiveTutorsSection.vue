@@ -26,11 +26,8 @@
           {{ $t('studentDashboard.noTutor.description') }}
         </p>
       </div>
-      <div class="flex flex-wrap gap-3">
-        <Button variant="primary" size="sm" @click="goToMarketplace">
-          {{ $t('studentDashboard.actions.chooseTutor') }}
-        </Button>
-      </div>
+      <!-- Marketplace Extraction 2026-06-18: кнопку «Обрати тьютора»→/marketplace прибрано
+           (BYO — учень не обирає тьютора, тьютор запрошує його; кнопка лише bounce-їла). -->
     </template>
 
     <!-- Active Tutors List -->
@@ -216,10 +213,6 @@ function getTutorInitials(tutor: AssignedTutor): string {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
   return tutor.full_name[0]?.toUpperCase() || 'T'
-}
-
-function goToMarketplace() {
-  router.push('/marketplace').catch(() => {})
 }
 
 function goToLessons() {
