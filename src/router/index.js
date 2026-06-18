@@ -364,33 +364,10 @@ const routes = [
       { path: 'marketplace/search', redirect: mpDisabledRedirect },
       { path: 'marketplace/categories/:slug', redirect: mpDisabledRedirect },
       {
+        // tutor/profile (marketplace listing editor) DISABLED 2026-06-17 — BYO не потребує
+        // публічного лістингу; акаунт тьютора живе у /settings. Redirect → role home.
         path: 'tutor/profile',
-        name: 'tutor-profile',
-        component: MarketplaceMyProfileView,
-        meta: {
-          requiresAuth: true,
-          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
-        },
-        beforeEnter: async (to, from, next) => {
-          const auth = useAuthStore()
-
-          if (!auth.isBootstrapped) {
-            await auth.bootstrap()
-          }
-
-          if (!auth.user && auth.access) {
-            try {
-              await auth.reloadUser()
-            } catch (error) {
-              console.warn('[router] Failed to load user for tutor/profile', error)
-            }
-          }
-
-          if (auth.user?.role !== USER_ROLES.TUTOR) {
-            return next('/student')  // Marketplace disabled — non-tutors to student home
-          }
-          return next()
-        },
+        redirect: mpDisabledRedirect,
       },
       // R4: Legacy redirect
       { path: 'marketplace/my-profile', redirect: '/tutor/profile' },

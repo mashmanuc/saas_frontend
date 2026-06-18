@@ -21,7 +21,6 @@ export const MENU_BY_ROLE = {
     { label: 'menu.tutorCalendar', icon: 'book', to: '/tutor/schedule' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard/boards' },
     { label: 'menu.knowledge', icon: 'library', to: '/knowledge' },
-    { label: 'menu.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
     { label: 'menu.billing', icon: 'credit-card', to: '/tutor/billing' },    
     { label: 'menu.notifications', icon: 'bell', to: '/notifications' },
@@ -106,7 +105,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'profile',
       label: 'sidebar.section.profile',
       items: [
-        { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile', hint: 'sidebar.hint.tutorProfile' },
+        // tutorProfile (/tutor/profile) DISABLED 2026-06-17 — marketplace listing, BYO не потребує (акаунт = Налаштування).
         { label: 'sidebar.item.feedback', icon: 'lightbulb', to: '/feedback', hint: 'sidebar.hint.feedback' },
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings', hint: 'sidebar.hint.settings' },
       ],
