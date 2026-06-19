@@ -130,11 +130,8 @@
       <RevenuePanel />
     </Card>
 
-    <!-- Marketplace Health (Phase 7.2) -->
-    <Card class="section-card">
-      <h2 class="section-title">{{ $t('staff.marketplaceHealth.title') }}</h2>
-      <MarketplaceHealthPanel />
-    </Card>
+    <!-- Marketplace Extraction 2026-06-18: «Marketplace Health» панель прибрана з аналітики
+         (marketplace вимкнено — health-метрики мертві). -->
 
     <!-- Replay Analytics (2026-04-16, Replay Lifecycle v4.2) -->
     <Card class="section-card">
@@ -200,7 +197,7 @@ import AlertsPanel from '../components/AlertsPanel.vue'
 import CohortTable from '../components/CohortTable.vue'
 import EngagementPanel from '../components/EngagementPanel.vue'
 import RevenuePanel from '../components/RevenuePanel.vue'
-import MarketplaceHealthPanel from '../components/MarketplaceHealthPanel.vue'
+// MarketplaceHealthPanel import прибрано — Marketplace Extraction 2026-06-18
 import ExperimentsPanel from '../components/ExperimentsPanel.vue'
 import ReplayAnalyticsPanel from '../components/ReplayAnalyticsPanel.vue'
 

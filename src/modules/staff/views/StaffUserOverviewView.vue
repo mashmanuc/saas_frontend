@@ -319,20 +319,8 @@
         </div>
       </Card>
 
-      <!-- Activity Section -->
-      <Card class="section">
-        <h2 class="section-heading">{{ $t('staff.userOverview.activityInfo') }}</h2>
-        <div class="activity-stats">
-          <div class="mini-stat">
-            <span class="mini-stat-value">{{ staffStore.userOverview.activity.inquiries_count_30d }}</span>
-            <span class="mini-stat-label">{{ $t('staff.userOverview.inquiries30d') }}</span>
-          </div>
-          <div class="mini-stat">
-            <span class="mini-stat-value">{{ staffStore.userOverview.activity.contacts_unlocked_30d }}</span>
-            <span class="mini-stat-label">{{ $t('staff.userOverview.contactsUnlocked30d') }}</span>
-          </div>
-        </div>
-      </Card>
+      <!-- Marketplace Extraction 2026-06-18: «Активність за 30 днів» (inquiries / contacts
+           unlocked) прибрано — marketplace/inquiry-метрики, мертві в BYO (завжди 0). -->
 
       <!-- User Journey Timeline (Phase 6.1) -->
       <Card class="section">

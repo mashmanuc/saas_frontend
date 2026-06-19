@@ -103,11 +103,11 @@
       </div>
 
       <!-- Missing Steps -->
-      <div v-if="data.missing_steps.length > 0" class="missing-steps">
+      <div v-if="displayedMissingSteps.length > 0" class="missing-steps">
         <h4 class="missing-title">{{ t('staff.journey.missingSteps') }}</h4>
         <div class="missing-list">
           <span
-            v-for="step in data.missing_steps"
+            v-for="step in displayedMissingSteps"
             :key="step"
             class="missing-tag"
           >
@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import staffAnalyticsApi from '@/modules/staff/api/staffAnalyticsApi'
 import type { UserJourneyResponse } from '@/modules/staff/api/staffAnalyticsApi'
@@ -137,6 +137,9 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const actionsFilter = ref<'funnel' | 'all'>('funnel')
 
+// Marketplace Extraction 2026-06-18: profile_published + first_inquiry_sent прибрано з
+// воронки (marketplace-кроки публікації профілю + першого inquiry — мертві в BYO).
+const MARKETPLACE_STEPS = ['profile_published', 'first_inquiry_sent']
 const allSteps = [
   'registered',
   'email_verified',
@@ -144,9 +147,12 @@ const allSteps = [
   'onboarding_started',
   'onboarding_completed',
   'profile_saved',
-  'profile_published',
-  'first_inquiry_sent',
 ]
+
+// «Пропущені кроки» — без marketplace-кроків (backend ще може їх повертати)
+const displayedMissingSteps = computed(() =>
+  (data.value?.missing_steps ?? []).filter(s => !MARKETPLACE_STEPS.includes(s))
+)
 
 const completedSteps = new Set<string>()
 
@@ -188,8 +194,7 @@ function dotClass(action: string): string {
   const funnelActions = [
     'user.registered', 'user.email_verified', 'user.login',
     'onboarding.started', 'onboarding.completed',
-    'profile.first_saved', 'profile.published',
-    'student.inquiry_created',
+    'profile.first_saved',
   ]
   return funnelActions.includes(action) ? 'dot--funnel' : 'dot--other'
 }

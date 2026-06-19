@@ -69,33 +69,10 @@
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.reports') }}</span>
           <span v-if="!collapsed && openReportsCount > 0" class="nav-badge danger">{{ openReportsCount }}</span>
         </router-link>
-        <router-link
-          to="/staff/profile-moderation"
-          class="nav-item"
-          :class="{ active: route.path.startsWith('/staff/profile-moderation') }"
-          :title="collapsed ? $t('staff.sidebar.profileModeration') : undefined"
-        >
-          <UserCheck class="nav-icon-svg" :size="18" />
-          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.profileModeration') }}</span>
-        </router-link>
-        <router-link
-          to="/staff/verification"
-          class="nav-item"
-          :class="{ active: route.path.startsWith('/staff/verification') }"
-          :title="collapsed ? $t('staff.sidebar.verification') : undefined"
-        >
-          <BadgeCheck class="nav-icon-svg" :size="18" />
-          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.verification') }}</span>
-        </router-link>
-        <router-link
-          to="/staff/tutor-activity"
-          class="nav-item"
-          :class="{ active: route.path.startsWith('/staff/tutor-activity') }"
-          :title="collapsed ? $t('staff.sidebar.tutorActivity') : undefined"
-        >
-          <Activity class="nav-icon-svg" :size="18" />
-          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.tutorActivity') }}</span>
-        </router-link>
+        <!-- Marketplace Extraction 2026-06-18: profile-moderation / verification / tutor-activity
+             прибрано зі staff-нав — це marketplace staff-тулзи (модерація публічних профілів,
+             верифікація, activity-policy), мертві в BYO (їхні /v1/marketplace endpoints → 404).
+             Роути лишаються (redirect нижче не потрібен — staff не навігує без лінка). -->
         <router-link
           to="/staff/feedback"
           class="nav-item"
