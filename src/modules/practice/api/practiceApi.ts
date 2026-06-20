@@ -152,6 +152,11 @@ export interface CampaignStepChallenge {
   question: string
   payload: any
 }
+export interface CampaignSubmitResult extends SubmitResult {
+  step_complete: boolean
+  world_complete: boolean
+  campaign: CampaignState
+}
 
 export const practiceApi = {
   async getProfile(): Promise<GameProfile> {
@@ -198,5 +203,19 @@ export const practiceApi = {
       step: number
       challenges: CampaignStepChallenge[]
     }
+  },
+  async submitStep(
+    world: number,
+    step: number,
+    problemExternalId: string,
+    answer: Record<string, any>,
+    campaign?: string,
+  ): Promise<CampaignSubmitResult> {
+    const body: Record<string, any> = { world, step, problem_external_id: problemExternalId, answer }
+    if (campaign) body.campaign = campaign
+    return (await apiClient.post(
+      '/v1/practice/campaign/step/submit/',
+      body,
+    )) as unknown as CampaignSubmitResult
   },
 }

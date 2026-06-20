@@ -6,7 +6,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { practiceApi, type AssetManifest, type CampaignState } from '../api/practiceApi'
+import {
+  practiceApi,
+  type AssetManifest,
+  type CampaignState,
+  type CampaignSubmitResult,
+} from '../api/practiceApi'
 
 type Status = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error'
 
@@ -38,5 +43,20 @@ export const usePracticeCampaignStore = defineStore('practiceCampaign', () => {
     }
   }
 
-  return { campaign, manifest, status, error, load }
+  async function submitChallenge(
+    world: number,
+    step: number,
+    problemExternalId: string,
+    answer: Record<string, any>,
+  ): Promise<CampaignSubmitResult> {
+    // НЕ оновлюємо campaign тут — хост застосує applyCampaign ПІСЛЯ закриття вікна,
+    // щоб пішак повільно «доїхав» до нової сходинки на видимій карті (не за оверлеєм).
+    return practiceApi.submitStep(world, step, problemExternalId, answer, campaign.value?.id)
+  }
+
+  function applyCampaign(c: CampaignState): void {
+    campaign.value = c // тригерить watcher карти → пішак ковзає на нову сходинку
+  }
+
+  return { campaign, manifest, status, error, load, submitChallenge, applyCampaign }
 })

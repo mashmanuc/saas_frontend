@@ -12,19 +12,42 @@
       v-else-if="store.status === 'ready' && store.campaign"
       :campaign="store.campaign"
       :manifest="store.manifest"
+      @play="onPlay"
+    />
+
+    <CampaignStepPlayer
+      v-if="playing"
+      :world="playing.world"
+      :step="playing.step"
+      @close="playing = null"
+      @advance="onAdvance"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { usePracticeCampaignStore } from '../stores/practiceCampaignStore'
+import type { CampaignState } from '../api/practiceApi'
 import CampaignMap from '../components/CampaignMap.vue'
+import CampaignStepPlayer from '../components/CampaignStepPlayer.vue'
 
 const { t } = useI18n()
 const store = usePracticeCampaignStore()
+const playing = ref<{ world: number; step: number } | null>(null)
+
+function onPlay(payload: { world: number; step: number }) {
+  playing.value = payload
+}
+
+// correct → закрити вікно, тоді (наступний tick, оверлей уже зник) застосувати новий
+// стан → watcher карти → пішак повільно ковзає на наступну сходинку (видимий перехід).
+function onAdvance(newCampaign: CampaignState) {
+  playing.value = null
+  nextTick(() => store.applyCampaign(newCampaign))
+}
 
 onMounted(() => store.load())
 </script>

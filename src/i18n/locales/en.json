@@ -14,6 +14,7 @@
     "worldGoal": "World goal",
     "worldWord": "World",
     "step": "Step",
+    "close": "Close",
     "progress": {
       "worldsTab": "Worlds",
       "collectionTab": "Collection",
@@ -1132,9 +1133,11 @@
       "myPlan": "My Plan",
       "myReplays": "My Replays",
       "feedback": "💡 Ideas & Feedback",
-      "marketplace": "Marketplace"
+      "marketplace": "Marketplace",
+      "practiceGame": "🎮 Practice Game"
     },
     "hint": {
+      "practiceGame": "NMT practice game — worlds, steps, artifacts",
       "marketplace": "Browse the public tutor catalog",
       "feedback": "Suggest ideas and vote on priorities",
       "dashboard": "Home page with schedule and stats",

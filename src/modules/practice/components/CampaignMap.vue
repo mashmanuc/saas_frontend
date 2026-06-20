@@ -14,7 +14,19 @@
     </header>
 
     <div class="cmap__scene">
-      <div ref="mapEl" class="cmap__map"></div>
+      <div ref="mapEl" class="cmap__map">
+        <div ref="tilesEl" class="cmap__tiles"></div>
+        <div
+          v-show="pawn.show"
+          class="cmap__pawn"
+          :class="{ animate: pawn.animate }"
+          :style="{ left: pawn.x + 'px', top: pawn.y + 'px' }"
+        >
+          <div class="cmap__pawn-disc">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.5 6.1 6.5.5-5 4.2 1.6 6.4L12 17.3 5.9 20.7 7.5 14.3l-5-4.2 6.5-.5z"/></svg>
+          </div>
+        </div>
+      </div>
     </div>
 
     <nav class="cmap__bot">
@@ -32,7 +44,7 @@
           ></span>
         </div>
       </div>
-      <button type="button" class="cmap__cta" @click="scrollToCurrent(true)">
+      <button type="button" class="cmap__cta" @click="playCurrent">
         {{ t('practice.continue') }}
       </button>
     </nav>
@@ -40,14 +52,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AssetManifest, CampaignState, CampaignWorld } from '../api/practiceApi'
 
 const props = defineProps<{ campaign: CampaignState; manifest: AssetManifest }>()
+const emit = defineEmits<{ (e: 'play', payload: { world: number; step: number }): void }>()
 const { t } = useI18n()
 const mapEl = ref<HTMLElement | null>(null)
+const tilesEl = ref<HTMLElement | null>(null)
+// пішак-токен поточної сходинки — Vue-елемент (переживає rebuild tiles), ковзає по left/top
+const pawn = reactive({ x: 0, y: 0, show: false, animate: false })
 
 const progLabel = computed(() => {
   const w = props.campaign.worlds.find((x) => x.level === props.campaign.current_world)
@@ -75,6 +91,19 @@ const ICON = {
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10l6 6 6-6"/></svg>',
 }
+// мотиви декору-цивілізації (INV-WORLD-14: атмосфера; замінні плейсхолдери)
+const MOTIF: Record<string, string> = {
+  tree: '<svg width="42" height="50" viewBox="0 0 42 50" fill="currentColor"><path d="M21 2 33 24H9z"/><path d="M21 13 36 41H6z"/><rect x="18" y="39" width="6" height="11" rx="1"/></svg>',
+  shard: '<svg width="32" height="52" viewBox="0 0 32 52" fill="currentColor"><path d="M13 50 18 2 25 24 21 50z"/><path d="M5 50 9 18 15 34 12 50z" opacity=".55"/></svg>',
+  gear: '<svg width="42" height="42" viewBox="0 0 42 42" fill="currentColor"><path d="M21 4l2.3 4 4.6-1 1 4.7 4.3 1.8-2.2 4.1 2.8 3.8-3.9 2.6.3 4.7-4.7-.5-2.7 3.9-3.7-2.8-4.5 1.4-.9-4.6-4.3-1.8 2.4-4-2.6-3.9 4-2.4-.4-4.7 4.7.6 2.5-3.9z"/><circle cx="21" cy="21" r="6" fill="#000" opacity=".2"/></svg>',
+  pillar: '<svg width="36" height="54" viewBox="0 0 36 54" fill="currentColor"><rect x="6" y="2" width="24" height="7" rx="2"/><rect x="11" y="9" width="14" height="37"/><rect x="4" y="46" width="28" height="7" rx="2"/></svg>',
+  obelisk: '<svg width="30" height="56" viewBox="0 0 30 56" fill="currentColor"><path d="M15 2 22 45H8z"/><rect x="5" y="45" width="20" height="9" rx="2"/></svg>',
+  cluster: '<svg width="48" height="50" viewBox="0 0 48 50" fill="currentColor"><path d="M24 3 34 26 24 47 14 26z"/><path d="M9 18 16 33 10 48 3 33z" opacity=".68"/><path d="M39 18 45 33 39 48 33 33z" opacity=".68"/></svg>',
+  cloud: '<svg width="56" height="32" viewBox="0 0 56 32" fill="currentColor"><path d="M15 30a9 9 0 0 1 .5-18 12 12 0 0 1 22-3 8.5 8.5 0 0 1 6 21z"/></svg>',
+  rock: '<svg width="48" height="34" viewBox="0 0 48 34" fill="currentColor"><path d="M6 32 14 12l9 6 7-14 12 28z"/></svg>',
+}
+// матеріал світу → мотив (туман = нейтральний камінь)
+const MAT_DECOR: Record<string, string> = { wood: 'tree', glass: 'shard', copper: 'gear', silver: 'pillar', gold: 'obelisk', crystal: 'cluster', sky: 'cloud' }
 const FORTRESS_SVG = `<svg viewBox="0 0 150 158"><ellipse cx="75" cy="143" rx="48" ry="11" fill="rgba(0,0,0,.18)"/><polygon points="75,52 128,80 75,108 22,80" fill="var(--ft)"/><polygon points="22,80 75,108 75,143 22,115" fill="var(--fs)"/><polygon points="128,80 75,108 75,143 128,115" fill="var(--fm)"/><polygon points="75,22 104,38 75,54 46,38" fill="var(--ft)"/><polygon points="46,38 75,54 75,95 46,79" fill="var(--fs)"/><polygon points="104,38 75,54 75,95 104,79" fill="var(--fm)"/></svg>`
 const CITADEL_SVG = `<svg viewBox="0 0 210 232"><ellipse cx="105" cy="208" rx="74" ry="14" fill="rgba(0,0,0,.18)"/><polygon points="55,112 80,126 55,140 30,126" fill="var(--ft)"/><polygon points="30,126 55,140 55,178 30,164" fill="var(--fs)"/><polygon points="80,126 55,140 55,178 80,164" fill="var(--fm)"/><polygon points="155,112 180,126 155,140 130,126" fill="var(--ft)"/><polygon points="130,126 155,140 155,178 130,164" fill="var(--fs)"/><polygon points="180,126 155,140 155,178 180,164" fill="var(--fm)"/><polygon points="105,98 168,132 105,166 42,132" fill="var(--ft)"/><polygon points="42,132 105,166 105,208 42,174" fill="var(--fs)"/><polygon points="168,132 105,166 105,208 168,174" fill="var(--fm)"/><polygon points="105,40 142,60 105,80 68,60" fill="var(--ft)"/><polygon points="68,60 105,80 105,136 68,116" fill="var(--fs)"/><polygon points="142,60 105,80 105,136 142,116" fill="var(--fm)"/><circle cx="40" cy="74" r="2.4" fill="#fff" opacity=".85"/><circle cx="176" cy="86" r="2" fill="#fff" opacity=".7"/></svg>`
 
@@ -158,17 +187,28 @@ function build() {
         : `<span class="lvl">${w.level}</span> · <span class="mt">${esc(w.title)}</span>`
     html += `<div class="cmap__biome" style="top:${Math.max(0, topY)}px;height:${bottomY - Math.max(0, topY)}px;background:linear-gradient(165deg,${m.band[0]},${m.band[1]})"><span class="cmap__biome-l">${label}</span></div>`
 
-    // landmark-артефакт (через манифест, INV-WORLD-18)
+    // landmark-артефакт — ПЛЕЙСХОЛДЕР (INV-WORLD-18: реальні картинки свапнемо в кінці).
+    // CSS-заглушка (градієнт за матеріалом + самоцвіт/замок), БЕЗ <img> → без 404 у консолі.
+    // Манифест (props.manifest) лишається SSOT ключів — підставимо <img> коли буде арт.
     if (w.state !== 'fog') {
       const midY = (positions[r.a].y + positions[r.b].y) / 2
       const sideRight = positions[Math.round((r.a + r.b) / 2)].x < CX
       const lx = Math.max(86, Math.min(W - 86, sideRight ? CX + AMP + 78 : CX - AMP - 78))
-      const url = (props.manifest[w.artifact.asset_key] as string) || ''
       const cap = w.artifact.unlocked
         ? `<span class="art">${ICON.gem}</span><span>${esc(w.artifact.title)}</span>`
         : `<span class="art lock">${ICON.lock}</span><span>${t('practice.reward')}</span>`
-      html += `<div class="cmap__lm ${w.artifact.unlocked ? 'on' : 'off'}" style="left:${lx}px;top:${midY}px"><div class="cmap__lm-art"><img src="${esc(url)}" alt="${esc(w.artifact.title)}" loading="lazy"/>${w.artifact.unlocked ? '' : `<span class="cmap__lm-lock">${ICON.lock}</span>`}</div><span class="cmap__lm-cap">${cap}</span></div>`
+      html += `<div class="cmap__lm ${w.artifact.unlocked ? 'on' : 'off'}" style="left:${lx}px;top:${midY}px"><div class="cmap__lm-art" style="background:linear-gradient(150deg,${m.face[0]},${m.side})">${w.artifact.unlocked ? ICON.gem : ICON.lock}</div><span class="cmap__lm-cap">${cap}</span></div>`
     }
+
+    // декор-цивілізація (INV-WORLD-14): мотив за матеріалом світу, по краях смуги
+    const decorName = w.state === 'fog' ? 'rock' : MAT_DECOR[w.material] || 'rock'
+    const dColor = w.state === 'fog' ? FOG.side : m.side
+    const bandH = bottomY - Math.max(0, topY)
+    ;[0.22, 0.7].forEach((f, k) => {
+      const dx = k % 2 === 0 ? W * 0.13 : W * 0.87
+      const dy = Math.max(0, topY) + bandH * f
+      html += `<div class="cmap__decor" data-depth="${k === 0 ? '0.4' : '0.68'}" style="left:${dx}px;top:${dy}px;color:${dColor}">${MOTIF[decorName]}</div>`
+    })
   })
 
   // вузли (кроки / фортеці / цитадель)
@@ -190,16 +230,53 @@ function build() {
     const m = mat(n.w.material, n.w.state)
     let inner = String(n.s! + 1)
     if (st === 'done') inner = ICON.check
-    else if (st === 'current') inner = ICON.star
+    else if (st === 'current') inner = '' // маркер поточної = пішак-токен (cmap__pawn)
     else if (st === 'fog') inner = ICON.q
-    html += `<button type="button" class="cmap__tile ${st}" style="left:${p.x}px;top:${p.y}px;--mf0:${m.face[0]};--mf1:${m.face[1]};--ms:${m.side};--mi:${m.ink}" aria-label="${t('practice.step')} ${n.s! + 1}"><span class="cmap__side"></span><span class="cmap__face"></span><span class="cmap__lbl">${inner}</span></button>`
+    html += `<button type="button" class="cmap__tile ${st}" style="left:${p.x}px;top:${p.y}px;--mf0:${m.face[0]};--mf1:${m.face[1]};--ms:${m.side};--mi:${m.ink}" data-world="${n.w.level}" data-step="${n.s}" aria-label="${t('practice.step')} ${n.s! + 1}"><span class="cmap__side"></span><span class="cmap__face"></span><span class="cmap__lbl">${inner}</span></button>`
   })
 
   // підписи осі часу (INV-WORLD-12)
   html += `<div class="cmap__edge" style="top:14px">${ICON.up}<span>${t('practice.future')}</span></div>`
   html += `<div class="cmap__edge" style="top:${mapH - 34}px"><span>${t('practice.history')}</span>${ICON.down}</div>`
 
-  map.innerHTML = html
+  if (tilesEl.value) tilesEl.value.innerHTML = html
+  syncPawn()
+}
+
+// пішак на поточну сходинку; animate=true → CSS повільно везе його на нову позицію
+function syncPawn() {
+  if (currentIdx >= 0) {
+    pawn.x = positions[currentIdx].x
+    pawn.y = positions[currentIdx].y
+    pawn.show = true
+  } else {
+    pawn.show = false
+  }
+}
+
+// інкрементальне оновлення (крок у межах світу): лише змінені плитки + lit-стежка + пішак,
+// БЕЗ повного innerHTML rebuild → старт ковзання без jank/смикання.
+function applyProgress() {
+  const tiles = tilesEl.value
+  if (!tiles) return
+  const nodes = buildNodes()
+  currentIdx = nodes.findIndex((n) => n.type === 'step' && stepStatus(n.w, n.s!) === 'current')
+  tiles.querySelectorAll('.cmap__tile').forEach((node) => {
+    const el = node as HTMLElement
+    const w = props.campaign.worlds.find((x) => x.level === Number(el.dataset.world))
+    if (!w) return
+    const si = Number(el.dataset.step)
+    const st = stepStatus(w, si)
+    el.className = `cmap__tile ${st}`
+    const lbl = el.querySelector('.cmap__lbl')
+    if (lbl) {
+      lbl.innerHTML =
+        st === 'done' ? ICON.check : st === 'current' ? '' : st === 'fog' ? ICON.q : String(si + 1)
+    }
+  })
+  const lit = tiles.querySelector('.cmap__trail .lit')
+  if (lit) lit.setAttribute('d', pathD(positions.slice(0, Math.max(0, currentIdx) + 1)))
+  syncPawn()
 }
 
 function esc(s: string): string {
@@ -212,13 +289,42 @@ function scrollToCurrent(smooth: boolean) {
   window.scrollTo({ top: Math.max(0, y), behavior: smooth ? 'smooth' : 'auto' })
 }
 
+function playCurrent() {
+  emit('play', { world: props.campaign.current_world, step: props.campaign.current_step })
+}
+
+// делегований клік: грати можна ЛИШЕ поточну плитку (збігається з бек-гейтом)
+function onMapClick(e: MouseEvent) {
+  const tile = (e.target as HTMLElement).closest('.cmap__tile.current') as HTMLElement | null
+  if (!tile) return
+  emit('play', { world: Number(tile.dataset.world), step: Number(tile.dataset.step) })
+}
+
 onMounted(() => {
   build()
   scrollToCurrent(false)
+  mapEl.value?.addEventListener('click', onMapClick)
+  // вмикаємо ковзання ЛИШЕ після першого позиціювання (інакше пішак «їде» з кута)
+  window.setTimeout(() => { pawn.animate = true }, 60)
 })
 onBeforeUnmount(() => {
-  if (mapEl.value) mapEl.value.innerHTML = ''
+  mapEl.value?.removeEventListener('click', onMapClick)
+  if (tilesEl.value) tilesEl.value.innerHTML = ''
 })
+
+// Прогрес змінився (хост застосував advance ПІСЛЯ закриття вікна). Крок у межах світу →
+// інкрементально (без 348-node rebuild → ковзання без смикання); зміна світу → повний
+// rebuild (рідко: біоми/фортеці/landmark змінюють стан). Камера доганяє ПІСЛЯ ковзання.
+let prevWorld = props.campaign.current_world
+watch(
+  () => props.campaign.current_world * 1000 + props.campaign.current_step,
+  () => {
+    if (props.campaign.current_world !== prevWorld) build()
+    else applyProgress()
+    prevWorld = props.campaign.current_world
+    window.setTimeout(() => scrollToCurrent(true), 1250)
+  },
+)
 </script>
 
 <!-- НЕ scoped: карта будується через innerHTML (onMounted), scoped-data-v не потрапляє
@@ -229,6 +335,7 @@ onBeforeUnmount(() => {
 .cmap__top h1 { font: 700 1.1rem system-ui, sans-serif; margin: 0; }
 .cmap__scene { position: relative; padding-bottom: 96px; }
 .cmap__map { position: relative; margin: 0 auto; max-width: 600px; }
+.cmap__tiles { position: absolute; inset: 0; }
 
 .cmap__trail { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; overflow: visible; }
 .cmap__trail .dim { fill: none; stroke: rgba(5,150,105,.28); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1 16; opacity: .7; }
@@ -238,6 +345,8 @@ onBeforeUnmount(() => {
 .cmap__biome-l { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 9999px; background: rgba(0,0,0,.28); color: #fff; font: 700 .76rem system-ui, sans-serif; backdrop-filter: blur(4px); white-space: nowrap; }
 .cmap__biome-l .lvl { font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
 .cmap__biome-l svg { width: 14px; height: 14px; }
+.cmap__decor { position: absolute; transform: translate(-50%,-100%); z-index: 2; pointer-events: none; opacity: .42; }
+.cmap__decor svg { display: block; }
 
 .cmap__tile { position: absolute; width: var(--tile-w); height: var(--tile-h); transform: translate(-50%,-50%); padding: 0; border: none; background: none; cursor: pointer; z-index: 4; filter: drop-shadow(0 8px 7px rgba(0,0,0,.28)); }
 .cmap__side, .cmap__face { position: absolute; inset: 0; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
@@ -248,6 +357,13 @@ onBeforeUnmount(() => {
 .cmap__tile.current .cmap__face { background: linear-gradient(160deg,#ffd24a,#f5a623); } .cmap__tile.current .cmap__side { background: #b9760d; } .cmap__tile.current .cmap__lbl { color: #7a4a05; }
 .cmap__tile.open .cmap__face { background: linear-gradient(160deg,var(--mf0),var(--mf1)); filter: saturate(.85) brightness(.97); } .cmap__tile.open .cmap__side { background: var(--ms); } .cmap__tile.open .cmap__lbl { color: var(--mi); }
 .cmap__tile.fog { opacity: .6; } .cmap__tile.fog .cmap__face { background: linear-gradient(160deg,#9fb0ad,#6b7a77); } .cmap__tile.fog .cmap__side { background: #7d8e8b; } .cmap__tile.fog .cmap__lbl { color: #3a4543; }
+/* пішак-токен поточної сходинки — повільно ковзає на нову сходинку при прогресі */
+.cmap__pawn { position: absolute; transform: translate(-50%,-62%); z-index: 7; pointer-events: none; }
+.cmap__pawn.animate { transition: left 1.15s cubic-bezier(.45,.05,.25,1), top 1.15s cubic-bezier(.45,.05,.25,1); }
+.cmap__pawn-disc { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: radial-gradient(circle at 50% 36%, #fff6cf, #f5a623 66%, #c47d10); box-shadow: 0 7px 16px rgba(150,90,8,.55), 0 0 0 4px rgba(255,210,90,.42); animation: cmap-pawn-bob 1.7s ease-in-out infinite; }
+.cmap__pawn-disc svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 1px rgba(120,70,5,.5)); }
+@keyframes cmap-pawn-bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .cmap__pawn.animate { transition: none; } .cmap__pawn-disc { animation: none; } }
 
 .cmap__fort { position: absolute; transform: translate(-50%,-78%); z-index: 6; width: 150px; height: 158px; padding: 0; border: none; background: none; cursor: pointer; filter: drop-shadow(0 12px 12px rgba(0,0,0,.28)); }
 .cmap__fort svg { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -259,11 +375,9 @@ onBeforeUnmount(() => {
 .cmap__citadel .cmap__tag { top: auto; bottom: 10px; background: linear-gradient(90deg,#5e6fd6,#9b7be8); }
 
 .cmap__lm { position: absolute; transform: translate(-50%,-50%); z-index: 5; width: 140px; text-align: center; pointer-events: none; }
-.cmap__lm-art { position: relative; width: 104px; height: 104px; margin: 0 auto; border-radius: 18px; overflow: hidden; background: #05070d; box-shadow: 0 10px 26px rgba(0,0,0,.34); }
-.cmap__lm-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cmap__lm.off .cmap__lm-art img { filter: grayscale(1) brightness(.42); }
-.cmap__lm-lock { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
-.cmap__lm-lock svg { width: 26px; height: 26px; }
+.cmap__lm-art { position: relative; width: 104px; height: 104px; margin: 0 auto; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.34); display: grid; place-items: center; color: rgba(255,255,255,.92); }
+.cmap__lm-art > svg { width: 46px; height: 46px; filter: drop-shadow(0 2px 5px rgba(0,0,0,.4)); }
+.cmap__lm.off .cmap__lm-art { filter: grayscale(.7) brightness(.78); opacity: .85; }
 .cmap__lm-cap { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 9999px; background: rgba(255,255,255,.96); border: 1px solid rgba(5,150,105,.3); font: 700 .72rem system-ui, sans-serif; max-width: 138px; }
 .cmap__lm-cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmap__lm-cap .art svg { width: 12px; height: 12px; }
