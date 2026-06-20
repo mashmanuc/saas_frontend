@@ -115,6 +115,44 @@ export interface TopicWorld {
   topics: TopicItem[]
 }
 
+// ── F3 World-System (Campaign → World → Step → Challenge) ─────────────────────
+export interface CampaignArtifact {
+  id: string
+  title: string
+  asset_key: string
+  unlocked: boolean
+}
+export interface CampaignWorld {
+  level: number
+  material: string
+  title: string
+  steps: number
+  atmosphere_key: string
+  artifact: CampaignArtifact
+  state: 'done' | 'active' | 'next' | 'fog'
+  completed: boolean
+}
+export interface CampaignState {
+  id: string
+  title: string
+  current_world: number
+  current_step: number
+  total_challenges: number
+  asset_manifest: string
+  citadel_asset_key: string
+  worlds: CampaignWorld[]
+}
+export type AssetManifest = Record<string, string | string[] | number>
+export interface CampaignStepChallenge {
+  problem_external_id: string
+  index: number
+  total: number
+  problem_type: 'single_choice' | 'open_answer' | 'matching'
+  difficulty: number
+  question: string
+  payload: any
+}
+
 export const practiceApi = {
   async getProfile(): Promise<GameProfile> {
     return (await apiClient.get('/v1/practice/profile/')) as unknown as GameProfile
@@ -136,5 +174,29 @@ export const practiceApi = {
   },
   async getCollection(): Promise<Collection> {
     return (await apiClient.get('/v1/practice/collection/')) as unknown as Collection
+  },
+  // ── F3 campaign ──
+  async getCampaign(campaign?: string): Promise<{ campaign: CampaignState }> {
+    return (await apiClient.get('/v1/practice/campaign/', {
+      params: campaign ? { campaign } : {},
+    })) as unknown as { campaign: CampaignState }
+  },
+  async getManifest(campaign?: string): Promise<AssetManifest> {
+    return (await apiClient.get('/v1/practice/campaign/manifest/', {
+      params: campaign ? { campaign } : {},
+    })) as unknown as AssetManifest
+  },
+  async getStep(
+    world: number,
+    step: number,
+    campaign?: string,
+  ): Promise<{ world: number; step: number; challenges: CampaignStepChallenge[] }> {
+    const params: Record<string, any> = { world, step }
+    if (campaign) params.campaign = campaign
+    return (await apiClient.get('/v1/practice/campaign/step/', { params })) as unknown as {
+      world: number
+      step: number
+      challenges: CampaignStepChallenge[]
+    }
   },
 }

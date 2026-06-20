@@ -228,6 +228,13 @@ const routes = [
               component: () => import('../modules/practice/views/PracticeProgressionView.vue'),
               meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
             },
+            {
+              // F3 World-System (Campaign) — backend FEATURE_PRACTICE_PROGRESSION; 404 → 'unavailable'
+              path: 'practice/campaign',
+              name: 'practice-campaign',
+              component: () => import('../modules/practice/views/PracticeCampaignView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
           ]
         : []),
       {
