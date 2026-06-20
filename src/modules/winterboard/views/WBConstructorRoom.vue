@@ -197,7 +197,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { useWBStore } from '../board/state/boardStore'
@@ -432,7 +432,33 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => {
+// ── Flush-on-leave (ops-sync) ──────────────────────────────────────────────
+// opsSync.reset() DISCARDS unsent pending ops. Без попереднього flush останні
+// штрихи/ops, створені перед виходом, губляться (немає REST-persist). Дзеркало
+// WBSoloRoom.saveBeforeLeave(): best-effort злив ВСІЄЇ черги (flushAll, не один
+// батч). Помилки ЛОГУЮТЬСЯ, не глушаться (LAW §12); flushAll сам кидає поза SYNCED
+// і throw ловиться тут — без retry-loop, без debounce/sleep.
+async function saveBeforeLeave(): Promise<void> {
+  if (!sessionId.value) return
+  try {
+    await opsSync.flushAll()
+  } catch (err) {
+    console.warn('[WBConstructorRoom] Save before leave failed (best-effort, last ops may be unsaved):', err)
+  }
+}
+
+// НАДІЙНИЙ шлях: Vue ЧЕКАЄ route-leave guard перед навігацією (Вийти →
+// router.push), тож pending ops зливаються ДО того, як компонент розмонтується
+// і викличе opsSync.reset().
+onBeforeRouteLeave(async (_to, _from, next) => {
+  await saveBeforeLeave()
+  next()
+})
+
+onBeforeUnmount(async () => {
+  // Best-effort flush для краю «unmount без route-зміни»; для SPA-навігації
+  // route-leave вже злив. reset() — ПІСЛЯ flush, щоб не викинути неслані ops.
+  await saveBeforeLeave()
   opsSync.reset()
   store.$reset()
 })
