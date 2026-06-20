@@ -16,11 +16,6 @@ const howItWorksRef = ref<HTMLElement | null>(null)
 const benefitsRef = ref<HTMLElement | null>(null)
 const showLanguageMenu = ref(false)
 
-// Demo-відео для секції Replay. Поклади файл у frontend/public/demo/replay.mp4.
-// Якщо файлу немає — показується placeholder з іконкою play.
-const replayVideoUrl = '/demo/replay.mp4'
-const showReplayVideo = ref(true)
-
 const currentLanguage = computed(() => {
   const lang = languages.find(l => l.code === locale.value)
   return lang?.short ?? 'УКР'
@@ -330,24 +325,25 @@ async function changeLanguage(langCode: string) {
             <p class="demo-description">{{ t('roleSelection.replayDemo.description') }}</p>
           </div>
           <div class="demo-visual">
-            <div class="demo-frame" :aria-label="t('roleSelection.replayDemo.videoLabel')">
-              <video
-                v-show="showReplayVideo"
-                class="demo-video"
-                :src="replayVideoUrl"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-                @error="showReplayVideo = false"
-              ></video>
-              <div v-if="!showReplayVideo" class="demo-placeholder" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span class="demo-placeholder-label">{{ t('roleSelection.replayDemo.videoLabel') }}</span>
-              </div>
+            <div class="demo-frame replay-frame" role="img" :aria-label="t('roleSelection.replayDemo.videoLabel')">
+              <!-- Не відео: анімація відтворює штрихи дошки так, як їх малювали (це і є Replay). -->
+              <svg class="replay-strokes" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <g class="rs-grid">
+                  <path d="M0 60H400M0 110H400M0 160H400M0 210H400" />
+                  <path d="M60 0V250M130 0V250M200 0V250M270 0V250M340 0V250" />
+                </g>
+                <path class="rs-stroke rs-axis" pathLength="1" d="M44 202 H366" />
+                <path class="rs-stroke rs-axis rs-axis-y" pathLength="1" d="M72 224 V36" />
+                <path class="rs-stroke rs-curve" pathLength="1" d="M112 78 Q200 250 296 78" />
+                <circle class="rs-stroke rs-ring" pathLength="1" cx="296" cy="78" r="14" />
+                <circle class="rs-dot" cx="296" cy="78" r="4.5" />
+                <text class="rs-eq" x="150" y="52">y = x²</text>
+              </svg>
+              <div class="replay-scrub" aria-hidden="true"><span class="replay-scrub-fill"></span></div>
+              <span class="replay-badge">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
+                {{ t('roleSelection.replayDemo.videoLabel') }}
+              </span>
             </div>
           </div>
         </div>
@@ -1293,30 +1289,84 @@ async function changeLanguage(langCode: string) {
   border: 1px solid var(--border-color);
 }
 
-.demo-video {
+/* Replay demo — штрихи «домальовуються» як на відтворенні (Replay = playback штрихів, НЕ відео) */
+.replay-strokes {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-.demo-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
   background: linear-gradient(135deg, var(--bg-secondary), var(--card-bg));
-  color: var(--text-secondary);
+  animation: rs-loop 7s ease-in-out infinite;
 }
 
-.demo-placeholder-label {
-  font-size: 0.95rem;
-  font-weight: 500;
-  opacity: 0.75;
+.rs-grid path { fill: none; stroke: var(--border-color); stroke-width: 1; opacity: 0.45; }
+
+.rs-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.rs-axis   { stroke: var(--text-secondary); stroke-width: 2; animation: rs-draw 7s ease-out infinite; }
+.rs-axis-y { animation-delay: 0.3s; }
+.rs-curve  { stroke: var(--accent); stroke-width: 3.5; animation: rs-draw-curve 7s ease-out infinite; }
+.rs-ring   { stroke: var(--accent); stroke-width: 2.5; opacity: 0.85; animation: rs-draw-ring 7s ease-out infinite; }
+
+.rs-dot { fill: var(--accent); transform-box: fill-box; transform-origin: center; animation: rs-pop 7s ease-out infinite; }
+.rs-eq  { fill: var(--text-primary); font: italic 700 22px/1 Georgia, 'Times New Roman', serif; opacity: 0; animation: rs-eq 7s ease-out infinite; }
+
+@keyframes rs-loop       { 0% { opacity: 0 } 3% { opacity: 1 } 88% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes rs-draw       { 0%, 3%  { stroke-dashoffset: 1 } 15% { stroke-dashoffset: 0 } 100% { stroke-dashoffset: 0 } }
+@keyframes rs-draw-curve { 0%, 17% { stroke-dashoffset: 1 } 43% { stroke-dashoffset: 0 } 100% { stroke-dashoffset: 0 } }
+@keyframes rs-draw-ring  { 0%, 45% { stroke-dashoffset: 1 } 58% { stroke-dashoffset: 0 } 100% { stroke-dashoffset: 0 } }
+@keyframes rs-pop        { 0%, 55% { opacity: 0; transform: scale(0) } 62% { opacity: 1; transform: scale(1.25) } 68% { transform: scale(1) } 100% { opacity: 1; transform: scale(1) } }
+@keyframes rs-eq         { 0%, 60% { opacity: 0 } 72% { opacity: 1 } 100% { opacity: 1 } }
+
+/* Replay-скрабер — підкреслює: це відтворення (playback), не відео */
+.replay-scrub {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.85rem;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+.replay-scrub-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: rs-scrub 7s linear infinite;
+}
+@keyframes rs-scrub { 0% { transform: scaleX(0) } 88% { transform: scaleX(1) } 100% { transform: scaleX(1) } }
+
+.replay-badge {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replay-strokes, .rs-stroke, .rs-dot, .rs-eq, .replay-scrub-fill { animation: none !important; }
+  .replay-strokes { opacity: 1; }
+  .rs-stroke { stroke-dashoffset: 0; }
+  .rs-dot, .rs-eq { opacity: 1; transform: none; }
+  .replay-scrub-fill { transform: scaleX(1); }
 }
 
 /* Board features grid (6 реальних фішок) */

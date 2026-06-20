@@ -6757,8 +6757,8 @@
       }
     },
     "replayDemo": {
-      "title": "Rewind the Lesson to Any Second",
-      "description": "It's not a screen recording. It's a record of every action on the board: pen strokes, PDF page turns, voice annotations, slide transitions. Click a point — you return there exactly. Perfect for revision, for students who missed a class, and for parents who want to see progress.",
+      "title": "See How the Lesson Unfolded",
+      "description": "It's not a screen recording. M4SH remembers every action on the board — pen strokes, PDF page turns, voice annotations, slide transitions — and replays the lesson the way it happened. Perfect for revision, for students who missed a class, and for parents who want to see progress.",
       "videoLabel": "Lesson replay demo"
     },
     "boardDemo": {
