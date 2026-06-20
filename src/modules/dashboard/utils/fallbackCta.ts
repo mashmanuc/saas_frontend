@@ -51,5 +51,11 @@ export function resolveCta(
   if (!raw.type || !raw.action_url) {
     return role === 'tutor' ? TUTOR_FALLBACK_CTA : STUDENT_FALLBACK_CTA
   }
+  // BYO (marketplace disabled): never surface a find-tutor / catalog CTA — the student
+  // is invited by a tutor, not via a public catalog. Backend may still emit it; suppress
+  // → fallback. (Defense; root is compute_primary_cta_student returning find_tutor.)
+  if (raw.type === 'find_tutor' || (raw.action_url || '').startsWith('/marketplace')) {
+    return role === 'tutor' ? TUTOR_FALLBACK_CTA : STUDENT_FALLBACK_CTA
+  }
   return raw
 }

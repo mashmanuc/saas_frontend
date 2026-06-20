@@ -16,15 +16,12 @@
 </template>
 
 <script setup lang="ts">
-import { Search, Calendar, MessageSquare } from 'lucide-vue-next'
+import { Calendar, MessageSquare } from 'lucide-vue-next'
 import Card from '@/ui/Card.vue'
 
+// Marketplace Extraction: findTutor→/marketplace прибрано (BYO — учень не шукає тьютора
+// в каталозі, тьютор запрошує його). Лишились розклад + повідомлення.
 const actions = [
-  {
-    label: 'dashboard.quickActions.findTutor',
-    to: '/marketplace',
-    iconComponent: Search,
-  },
   {
     label: 'dashboard.quickActions.mySchedule',
     to: '/student/schedule',
