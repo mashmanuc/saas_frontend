@@ -178,7 +178,7 @@
         <button
           v-if="constructorMode && sessionId && isSessionOwner"
           type="button"
-          class="wb-header-btn"
+          class="wb-header-btn wb-header-btn--save-template"
           :title="t('knowledge.template.saveFromRoom') || 'Зберегти як урок'"
           @click="showSaveLessonDialog = true"
         >
@@ -189,6 +189,7 @@
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="wb-spinner">
             <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10"/>
           </svg>
+          <span class="wb-header-btn__label">{{ t('knowledge.template.saveFromRoom') }}</span>
         </button>
         <!-- Phase 13 A3.3: Publish button — прихована: дублює Save as Lesson flow -->
         <!-- <button
@@ -240,6 +241,20 @@
         </button>
       </div>
     </header>
+
+    <!-- FTUE: ненав'язлива підказка «зберегти як шаблон» — смуга під топбаром.
+         Inline-банер (НЕ floating tooltip), показ керується showSaveTemplateHint. -->
+    <div v-if="showSaveTemplateHint" class="wb-save-template-hint">
+      <OnboardingHint :hint-id="TutorHintId.CONSTRUCTOR_SAVE_TEMPLATE" variant="info">
+        <strong>{{ t('winterboard.constructor.saveTemplateHint.title') }}</strong>
+        <div>{{ t('winterboard.constructor.saveTemplateHint.body') }}</div>
+        <template #actions>
+          <button type="button" class="wb-save-template-hint__cta" @click="openSaveLessonDialog">
+            {{ t('winterboard.constructor.saveTemplateHint.cta') }}
+          </button>
+        </template>
+      </OnboardingHint>
+    </div>
 
     <!-- FIX-6: Sidebar overlay with autosave on navigation -->
     <Transition name="wb-sidebar">
@@ -958,6 +973,8 @@ import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import LessonSavedSuccessModal from '@/modules/knowledge/components/LessonSavedSuccessModal.vue'
+import OnboardingHint from '@/components/OnboardingHint.vue'
+import { useOnboardingHints, TutorHintId } from '@/composables/useOnboardingHints'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
@@ -1836,6 +1853,20 @@ const isCanvasEmpty = computed(() => {
   if (page.theoryBlock || page.formulaBlock) return false
   return page.strokes.length === 0 && page.assets.length === 0
 })
+
+// FTUE save-template hint: ненав'язлива inline-підказка під топбаром у конструкторі.
+// Показуємо лише коли юзер уже щось намалював, але урок ще НЕ збережено як шаблон
+// (origin_lesson === null). isHintVisible → per-user dismiss у localStorage.
+// Замість видаленого WBOnboardingHints (floating tooltips заборонені) — наявний OnboardingHint.
+const { isHintVisible, dismissHint } = useOnboardingHints()
+const showSaveTemplateHint = computed(
+  () =>
+    constructorMode.value &&
+    isSessionOwner.value &&
+    !originLessonId.value &&
+    !isCanvasEmpty.value &&
+    isHintVisible(TutorHintId.CONSTRUCTOR_SAVE_TEMPLATE),
+)
 
 // PROB-1 FIX: Check if any selected item is locked (for lock/unlock toggle in toolbar)
 const hasLockedInSelection = computed(() => {
@@ -2745,6 +2776,8 @@ function handleLessonSaved(lesson: { id: string; title: string }): void {
   savedItemTitle.value = lesson.title || ''
   savedItemKind.value = 'lesson'
   showSavedSuccessModal.value = true
+  // FTUE: ціль досягнута — підказку «зберегти як шаблон» більше не показуємо.
+  dismissHint(TutorHintId.CONSTRUCTOR_SAVE_TEMPLATE)
 }
 
 // BUG-1 FIX: Save all pending changes before exiting
@@ -3462,6 +3495,58 @@ watch(() => store.workspaceName, (name) => {
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Constructor: кнопка «Зберегти як шаблон» — іконка + видимий підпис (афорданс). */
+.wb-header-btn--save-template {
+  width: auto;
+  gap: 6px;
+  padding: 0 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.wb-header-btn__label {
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  /* Тісний топбар — лишаємо лише іконку, як було. */
+  .wb-header-btn--save-template {
+    width: 32px;
+    padding: 0;
+    gap: 0;
+  }
+  .wb-header-btn--save-template .wb-header-btn__label {
+    display: none;
+  }
+}
+
+/* FTUE save-template hint — смуга під топбаром (inline, не floating). */
+.wb-save-template-hint {
+  flex-shrink: 0;
+  padding: 10px 16px 0;
+}
+
+.wb-save-template-hint__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--accent, #2563eb);
+  background: var(--card-bg, #fff);
+  color: var(--accent, #2563eb);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.wb-save-template-hint__cta:hover {
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
 }
 
 /* ── Main ──────────────────────────────────────────────────────────────────── */

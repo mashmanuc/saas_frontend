@@ -6823,7 +6823,12 @@
       "templateUpdated": "Lesson template updated",
       "templateUpdateError": "Failed to update template",
       "loadError": "Failed to load constructor session",
-      "untitled": "Untitled"
+      "untitled": "Untitled",
+      "saveTemplateHint": {
+        "title": "Want to teach this lesson again?",
+        "body": "Save the board as a template — and reopen it anytime from “My lessons”, with any student.",
+        "cta": "Save as template"
+      }
     },
     "errors": {
       "protocolMismatch": {

@@ -15,6 +15,8 @@ export enum TutorHintId {
   PROFILE_PUBLISH_BLOCKED = 'tutor.profile.publish.blocked',
   DEMO_STUDENT_ONLY = 'tutor.dashboard.demoStudentOnly',
   SIDEBAR_COACHING = 'tutor.sidebar.coaching',
+  // FTUE у конструкторі дошки: підказка зберегти урок як багаторазовий шаблон.
+  CONSTRUCTOR_SAVE_TEMPLATE = 'tutor.constructor.saveTemplate',
 }
 
 const STORAGE_PREFIX = 'm4sh:hints:dismissed'
