@@ -281,6 +281,7 @@ import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
+import lessonsApi from '@/api/lessons'
 const InviteCreateButton = defineAsyncComponent(() => import('@/components/invites/InviteCreateButton.vue'))
 
 const auth = useAuthStore()
@@ -491,13 +492,27 @@ async function handleHide(relationId) {
   }
 }
 
-function handleCreateLesson(relation) {
+async function handleCreateLesson(relation) {
   const studentId = relation.student?.id
-  const targetRoute = {
-    name: 'tutor-calendar',
-    query: studentId ? { student: studentId } : undefined,
+  if (!studentId) return
+  const relationId = getRelationId(relation)
+  actionLoadingId.value = relationId
+  try {
+    // BYO instant lesson: створює Lesson + WBSession + IN_PROGRESS і нотифікує учня
+    // (notify_lesson_started у QuickLessonView) → тьютор одразу в живому класі, учневі
+    // приходить дзвінок. Раніше вело в tutor-calendar?student, який ?student ІГНОРУЄ
+    // (читає лише ?booking) → тьютор падав на порожній планувальник (dead-end).
+    const res = await lessonsApi.quickStart({ student_id: studentId })
+    const body = res?.data ?? res
+    const roomUrl = body?.room_url
+      || (body?.lesson_id ? `/winterboard/classroom/${body.lesson_id}` : null)
+    if (roomUrl) router.push(roomUrl)
+    else notifyError(t('dashboard.tutor.cta.createLessonError'))
+  } catch (error) {
+    notifyError(error?.response?.data?.detail || t('dashboard.tutor.cta.createLessonError'))
+  } finally {
+    actionLoadingId.value = null
   }
-  router.push(targetRoute).catch(() => {})
 }
 
 function canOpenChatWithStudent(relation) {

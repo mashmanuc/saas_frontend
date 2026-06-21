@@ -3004,6 +3004,7 @@
       },
       "cta": {
         "createLesson": "Створити урок",
+        "createLessonError": "Не вдалося почати урок. Спробуйте ще раз.",
         "openChat": "Відкрити чат",
         "chatWithStudent": "Чат зі студентом"
       },

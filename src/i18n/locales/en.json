@@ -2170,6 +2170,7 @@
       },
       "cta": {
         "createLesson": "Create lesson",
+        "createLessonError": "Couldn't start the lesson. Please try again.",
         "openChat": "Open chat",
         "chatWithStudent": "Chat with student"
       },
