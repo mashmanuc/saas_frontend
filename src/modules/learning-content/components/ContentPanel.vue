@@ -123,6 +123,12 @@
       <span v-else>{{ t('learningContent.upload.dropHere') }}</span>
     </div>
 
+    <!-- Phase 1 quota UX: показати юзеру причину провалу (раніше — тихий console-fail) -->
+    <div v-if="uploadError" class="lc-error lc-upload-error" role="alert">
+      <span>{{ uploadError }}</span>
+      <button class="lc-retry-btn" aria-label="dismiss" @click="uploadError = ''">×</button>
+    </div>
+
     <ContentItemPreview :item="previewItem" @close="previewItem = null" />
 
     <!-- Phase 1c: Delete confirmation dialog -->
@@ -250,6 +256,7 @@ function cancelDelete() {
 // Phase 1c: Upload zone logic
 const isDragOverUpload = ref(false)
 const isUploading = ref(false)
+const uploadError = ref('')
 
 function onDragOverUpload(event: DragEvent) {
   // Skip if this is a sidebar content drag (not a file upload)
@@ -269,6 +276,7 @@ async function onUploadDrop(event: DragEvent) {
 
   const file = files[0]
   isUploading.value = true
+  uploadError.value = ''
   try {
     const formData = new FormData()
     formData.append('file', file)
@@ -283,9 +291,10 @@ async function onUploadDrop(event: DragEvent) {
     }
   } catch (err: any) {
     const status = err?.response?.status
-    if (status === 507) {
-      console.warn('[ContentPanel] Storage quota exceeded')
-    }
+    // Phase 1 quota UX: показати юзеру повідомлення (раніше 507 лише логувався → тихий fail).
+    uploadError.value = status === 507
+      ? t('storage.quotaExceeded')
+      : t('storage.uploadFailed')
     console.error('[ContentPanel] Upload failed:', err)
   } finally {
     isUploading.value = false

@@ -8455,7 +8455,8 @@
     "quotaWarning": "Running low on space. Delete unnecessary files",
     "quotaCritical": "Storage almost full! Free up space or purchase additional storage",
     "quotaExceeded": "Storage limit exceeded. Delete unnecessary files or purchase additional storage",
-    "rateLimited": "Too many uploads. Please wait a minute"
+    "rateLimited": "Too many uploads. Please wait a minute",
+    "uploadFailed": "Failed to upload file. Please try again"
   },
   "learningContent": {
     "groups": {
