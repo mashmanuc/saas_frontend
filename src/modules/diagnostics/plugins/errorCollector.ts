@@ -166,7 +166,15 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
         const error = err as Error
         const componentName = instance?.$options?.name || 'Unknown'
 
-        handleError('error', error.message || String(err), error.stack, {
+        // Surface the REAL error (message + own stack + clickable source) to console.
+        // handleError() below logs only meta {vue_component, vue_info}, which hid the
+        // actual cause in production. Logging the raw `err` makes it diagnosable.
+        console.error(
+          '[Diagnostics] Vue error →', err,
+          '| info:', info, '| component:', componentName,
+        )
+
+        handleError('error', error?.message || String(err), error?.stack, {
           vue_component: componentName,
           vue_info: info,
           vue_version: app.version,
