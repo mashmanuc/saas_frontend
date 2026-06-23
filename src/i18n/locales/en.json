@@ -6737,7 +6737,7 @@
     },
     "student": {
       "title": "Student",
-      "description": "Learn with the tutor who invited you in a live interactive class — and practice on your own in Practice.",
+      "description": "Learn with the tutor who invited you in a live interactive class.",
       "feature1": "Live lessons with your tutor on an interactive board",
       "feature2": "Flexible scheduling",
       "feature3": "Interactive learning tools",
@@ -6760,7 +6760,7 @@
       },
       "step2": {
         "title": "Invite your students",
-        "description": "Tutors invite their students by email — no public catalog. All lessons, materials and recordings live in one space."
+        "description": "Tutors invite their students by link. All lessons, materials and recordings live in one space."
       },
       "step3": {
         "title": "Start Learning",
@@ -6772,7 +6772,7 @@
       "subtitle": "Every lesson tool plus a full action-level recording — in a single space",
       "noMiddlemen": {
         "title": "For Students — A Lesson You Can Rewind",
-        "description": "A full action-level replay of every lesson. Click a point on the timeline and see exactly what was on the board at that second. Before the exam, open the March 15 lesson and scrub to the moment a theorem was explained. Access stays with you even if you leave the group."
+        "description": "The whole lesson is saved — and you can rewatch it anytime, just the way it happened in class. Didn't quite get something? Open the recording, find the moment you need and go over it at your own pace, as many times as you like."
       },
       "affordablePrices": {
         "title": "For Tutors — The Whole Lesson in One Window",
@@ -6785,7 +6785,7 @@
     },
     "replayDemo": {
       "title": "See How the Lesson Unfolded",
-      "description": "It's not a screen recording. M4SH remembers every action on the board — pen strokes, PDF page turns, voice annotations, slide transitions — and replays the lesson the way it happened. Perfect for revision, for students who missed a class, and for parents who want to see progress.",
+      "description": "It's not a screen recording. M4SH remembers every action on the board — pen strokes, PDF page turns, voice annotations, slide transitions — and replays the lesson the way it happened. Perfect for revision.",
       "videoLabel": "Lesson replay demo"
     },
     "boardDemo": {
@@ -6806,16 +6806,16 @@
           "text": "Embedded, controllable players you can move, scale and pause at the exact second you need."
         },
         "voiceAnnotation": {
-          "title": "Voice Stuck to an Object",
-          "text": "Record up to 60 seconds of voice on a word, formula or arrow. One click — the student hears your explanation. Perfect for pronunciation, languages and chemistry."
+          "title": "Voice Pinned to an Object",
+          "text": "Record a short voice note right on a formula, step or arrow. The student taps the object and hears your explanation exactly where it matters."
         },
         "versionPinning": {
           "title": "Lessons Don't Break When Material Updates",
           "text": "Every card on the board remembers the material version. Update a textbook and past lessons still look exactly the way they did back then."
         },
         "lifetimeAccess": {
-          "title": "A Lesson Is a Student's Document Forever",
-          "text": "Once a lesson is complete, the participant keeps access. Even if they leave the group, every completed lesson stays in their archive."
+          "title": "Lessons Are Saved for Good",
+          "text": "Every finished lesson is saved in full — materials, actions and recording. Come back to it anytime, and you decide who gets access."
         }
       }
     },

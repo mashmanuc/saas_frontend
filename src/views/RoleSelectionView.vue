@@ -300,20 +300,6 @@ async function changeLanguage(langCode: string) {
             <h3 class="benefit-title">{{ t('roleSelection.benefits.affordablePrices.title') }}</h3>
             <p class="benefit-description">{{ t('roleSelection.benefits.affordablePrices.description') }}</p>
           </div>
-
-          <div class="benefit-card">
-            <div class="benefit-icon">
-              <!-- Школа + персона (dual-audience) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 21V10l6-4 6 4v11"></path>
-                <path d="M9 21v-6h3v6"></path>
-                <circle cx="18" cy="10" r="3"></circle>
-                <path d="M15 21v-2a3 3 0 0 1 6 0v2"></path>
-              </svg>
-            </div>
-            <h3 class="benefit-title">{{ t('roleSelection.benefits.directConnection.title') }}</h3>
-            <p class="benefit-description">{{ t('roleSelection.benefits.directConnection.description') }}</p>
-          </div>
         </div>
       </section>
 
