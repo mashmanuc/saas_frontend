@@ -31,6 +31,11 @@ export interface PriceDto {
   currency: string
 }
 
+/** Технічні ліміти плану (PLAN V2 Option A). Значення: int = cap, null = безліміт. */
+export interface PlanLimits {
+  [key: string]: number | null
+}
+
 /**
  * Plan DTO from backend
  */
@@ -41,7 +46,13 @@ export interface PlanDto {
   interval: string | null
   features: string[]
   is_active: boolean
+  is_featured?: boolean
   sort_order: number
+  // PLAN V2 Option A (2026-06-23): limits = технічна частина (FE авто-генерує
+  // характеристики картки через planLimitFeatures.ts); description(_uk) = опис тарифу.
+  limits?: PlanLimits
+  description?: string
+  description_uk?: string
 }
 
 /**
