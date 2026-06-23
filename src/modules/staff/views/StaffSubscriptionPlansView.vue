@@ -65,9 +65,6 @@
               <BookOpen :size="13" />
               {{ getLessonLimit(plan) }}
             </span>
-            <span v-if="(plan.contact_grant_on_purchase ?? 0) > 0" class="meta-item">
-              🎟 {{ plan.contact_grant_on_purchase }} {{ $t('staff.plans.contactTokens') }}
-            </span>
             <span v-if="plan.provider_price_id" class="meta-item mono">
               <Zap :size="13" /> {{ plan.provider_price_id }}
             </span>
@@ -165,7 +162,10 @@
               </div>
             </div>
 
-            <div class="form-row two-col">
+            <!-- Контактні токени (contact_grant_on_purchase) прибрано з форми:
+                 marketplace/inquiries вирізано у v1 → поле рудиментне. Модель + серіалізатор
+                 лишаються (backward-compat); просто не редагується через UI (default 0). -->
+            <div class="form-row">
               <div class="form-group">
                 <label>{{ $t('staff.plans.form.interval') }}</label>
                 <select v-model="form.interval" class="form-select">
@@ -173,19 +173,6 @@
                   <option value="quarterly">{{ $t('staff.plans.interval.quarterly') }}</option>
                   <option value="yearly">{{ $t('staff.plans.interval.yearly') }}</option>
                 </select>
-              </div>
-              <div class="form-group">
-                <!-- Sprint 3 Task 1d: contact grant — single source of truth для початкових токенів. -->
-                <label>
-                  {{ $t('staff.plans.form.contactGrant') }}
-                  <span class="hint">({{ $t('staff.plans.form.contactGrantHint') }})</span>
-                </label>
-                <input
-                  v-model.number="form.contact_grant_on_purchase"
-                  type="number"
-                  min="0"
-                  class="form-input"
-                />
               </div>
             </div>
 
