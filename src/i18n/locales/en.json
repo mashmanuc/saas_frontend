@@ -6786,7 +6786,8 @@
     "replayDemo": {
       "title": "See How the Lesson Unfolded",
       "description": "It's not a screen recording. M4SH remembers every action on the board — pen strokes, PDF page turns, voice annotations, slide transitions — and replays the lesson the way it happened. Perfect for revision.",
-      "videoLabel": "Lesson replay demo"
+      "videoLabel": "Lesson replay demo",
+      "watchReal": "Watch the real lesson"
     },
     "boardDemo": {
       "title": "A Board Where Material Is a First-Class Object",

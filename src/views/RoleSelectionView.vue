@@ -6,6 +6,7 @@ import { setLocale } from '@/i18n'
 import LandingTrigCircle from './LandingTrigCircle.vue'
 import LandingNmt3d from './LandingNmt3d.vue'
 import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
+import api from '@/api/client'
 
 const router = useRouter()
 const { t, locale } = useI18n()
@@ -15,6 +16,10 @@ const tutorCardRef = ref<HTMLElement | null>(null)
 const howItWorksRef = ref<HTMLElement | null>(null)
 const benefitsRef = ref<HTMLElement | null>(null)
 const showLanguageMenu = ref(false)
+
+// Реальний реплей для демо-секції (Staff-config). Порожнє → дефолтна заглушка.
+// PLAN: saas_docs/plans/LANDING_REPLAY_DEMO_CONFIG_PLAN_2026-06-24.md
+const replayUrl = ref('')
 
 const currentLanguage = computed(() => {
   const lang = languages.find(l => l.code === locale.value)
@@ -33,6 +38,12 @@ onMounted(() => {
     studentCardRef.value?.classList.add('animate-in')
     tutorCardRef.value?.classList.add('animate-in')
   }, 100)
+
+  // Публічний landing-config: якщо адмін вписав реальний реплей — показуємо лінк,
+  // інакше лишається дефолтна заглушка (graceful на помилку).
+  api.get('/landing-config/')
+    .then((res: any) => { replayUrl.value = res?.replay_demo_url || '' })
+    .catch(() => { /* заглушка */ })
 })
 
 function selectStudent() {
@@ -311,7 +322,14 @@ async function changeLanguage(langCode: string) {
             <p class="demo-description">{{ t('roleSelection.replayDemo.description') }}</p>
           </div>
           <div class="demo-visual">
-            <div class="demo-frame replay-frame" role="img" :aria-label="t('roleSelection.replayDemo.videoLabel')">
+            <!-- Адмін вписав реальний реплей (Staff) → клікабельна рамка (нова вкладка);
+                 інакше — дефолтна заглушка-анімація. -->
+            <div
+              class="demo-frame replay-frame"
+              :class="{ 'replay-frame--link': replayUrl }"
+              role="img"
+              :aria-label="t('roleSelection.replayDemo.videoLabel')"
+            >
               <!-- Не відео: анімація відтворює штрихи дошки так, як їх малювали (це і є Replay). -->
               <svg class="replay-strokes" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
                 <g class="rs-grid">
@@ -330,6 +348,18 @@ async function changeLanguage(langCode: string) {
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
                 {{ t('roleSelection.replayDemo.videoLabel') }}
               </span>
+              <!-- Реальний реплей (Staff): повнорамковий клікабельний оверлей-лінк (нова вкладка) -->
+              <a
+                v-if="replayUrl"
+                :href="replayUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="replay-cta"
+                :aria-label="t('roleSelection.replayDemo.watchReal')"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
+                {{ t('roleSelection.replayDemo.watchReal') }}
+              </a>
             </div>
           </div>
         </div>
@@ -1345,6 +1375,32 @@ async function changeLanguage(langCode: string) {
   color: var(--accent);
   font-size: 0.72rem;
   font-weight: 600;
+}
+
+/* Реальний реплей (Staff-config): рамка стає клікабельним лінком + CTA-оверлей */
+.replay-frame--link {
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+}
+
+.replay-cta {
+  position: absolute;
+  inset: 0;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.32);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.replay-frame--link:hover .replay-cta {
+  background: rgba(15, 23, 42, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {

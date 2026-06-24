@@ -51,6 +51,34 @@
         </div>
       </div>
 
+      <!-- Лендінг — реальний реплей для демо-секції «Перегляньте, як проходив урок» -->
+      <div class="settings-group">
+        <h2 class="group-title">Лендінг</h2>
+        <div class="setting-card">
+          <div class="setting-info">
+            <div class="setting-label">Реплей для демо-секції лендінгу</div>
+            <div class="setting-description">
+              Публічний URL реального реплею для секції «Перегляньте, як проходив урок».
+              Порожнє → показується дефолтна заглушка (анімація).
+            </div>
+            <input
+              v-model="landingReplayUrl"
+              type="url"
+              class="landing-input"
+              placeholder="https://m4sh.org/winterboard/public/..."
+              :disabled="landingSaving"
+            />
+            <p v-if="landingError" class="landing-msg landing-msg--error">{{ landingError }}</p>
+            <p v-else-if="landingSaved" class="landing-msg landing-msg--ok">Збережено ✓</p>
+          </div>
+          <div class="setting-control">
+            <button class="btn btn-sm" :disabled="landingSaving" @click="saveLandingConfig">
+              {{ landingSaving ? '…' : 'Зберегти' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Порожній стан -->
       <div v-if="settings.length === 0" class="empty-state">
         <Settings :size="40" />
@@ -71,9 +99,16 @@ const loading = ref(true)
 const error = ref('')
 const saving = ref<string | null>(null)
 
+// Лендінг-config (реплей для демо-секції) — окремий endpoint
+const landingReplayUrl = ref('')
+const landingSaving = ref(false)
+const landingError = ref('')
+const landingSaved = ref(false)
+
 const groupedSettings = computed(() => {
   const groups: Record<string, PlatformSetting[]> = {}
-  for (const s of settings.value) {
+  const list = Array.isArray(settings.value) ? settings.value : []
+  for (const s of list) {
     if (!groups[s.category]) groups[s.category] = []
     groups[s.category].push(s)
   }
@@ -114,7 +149,35 @@ async function toggleSetting(setting: PlatformSetting) {
   }
 }
 
-onMounted(loadSettings)
+async function loadLandingConfig() {
+  try {
+    const data = await platformSettingsApi.getLandingConfig()
+    landingReplayUrl.value = data.replay_demo_url || ''
+  } catch {
+    /* graceful — лишаємо порожнім */
+  }
+}
+
+async function saveLandingConfig() {
+  landingSaving.value = true
+  landingError.value = ''
+  landingSaved.value = false
+  try {
+    const data = await platformSettingsApi.updateLandingConfig(landingReplayUrl.value.trim())
+    landingReplayUrl.value = data.replay_demo_url || ''
+    landingSaved.value = true
+    setTimeout(() => { landingSaved.value = false }, 2500)
+  } catch (e: any) {
+    landingError.value = e?.response?.data?.detail || 'Не вдалося зберегти'
+  } finally {
+    landingSaving.value = false
+  }
+}
+
+onMounted(() => {
+  loadSettings()
+  loadLandingConfig()
+})
 </script>
 
 <style scoped>
@@ -275,6 +338,35 @@ onMounted(loadSettings)
 .toggle input:disabled + .toggle-slider {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.landing-input {
+  width: 100%;
+  margin-top: var(--space-sm);
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary, var(--card-bg));
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.landing-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.landing-msg {
+  font-size: var(--text-sm);
+  margin: var(--space-xs) 0 0;
+}
+
+.landing-msg--error {
+  color: var(--danger, #ef4444);
+}
+
+.landing-msg--ok {
+  color: var(--accent, #10b981);
 }
 
 .empty-state {
