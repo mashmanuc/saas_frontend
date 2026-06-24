@@ -34,12 +34,13 @@ export const TOPICS = [
   { value: 'word-problem-equations',            label: 'Задачі на складання рівнянь' },
 ] as const
 
-// Rapid (4 задачі/стор.) прибрано 2026-06-24 — картки не влазять на сторінку.
-// Backend LessonTheme.RAPID лишається (старі сесії/шаблони), але у picker НЕ показуємо.
+// Picker показує 2 стилі. Прибрано 2026-06-24:
+//  - Rapid (4 задачі/стор.) — картки не влазили;
+//  - visual (2 задачі/стор., крапки) — дублював academic за кількістю задач.
+// Backend LessonTheme.VISUAL/RAPID лишаються (старі сесії/шаблони), у picker НЕ показуємо.
 export const THEMES = [
-  { value: 'visual',   label: 'Наочний',    desc: '2 задачі на сторінку, фон у крапку', tasksPerPage: 2 },
-  { value: 'nmt_exam', label: 'Формат НМТ', desc: '1 задача на сторінку, чистий аркуш',  tasksPerPage: 1 },
-  { value: 'academic', label: 'Класичний',  desc: '2 задачі на сторінку, фон у клітинку', tasksPerPage: 2 },
+  { value: 'nmt_exam', label: 'Класичний', desc: '1 задача на сторінку, чистий аркуш',   tasksPerPage: 1 },
+  { value: 'academic', label: 'Наочний',   desc: '2 задачі на сторінку, фон у клітинку', tasksPerPage: 2 },
 ] as const
 
 export const DIFF_PROFILES = [
@@ -63,7 +64,8 @@ export interface GenerateLessonRequest {
   pacing_mode?:         string
   include_theory_page?: boolean
   include_solution_page?: boolean
-  board_bg?:            string   // hex color override for all pages (e.g. '#fef9f0')
+  board_bg?:            string    // hex color override for all pages (e.g. '#fef9f0')
+  board_bg_palette?:    string[]  // різнокольоровий режим: палітра, що циклиться по practice-сторінках
   name?:                string
   random_seed?:         number | null
 }

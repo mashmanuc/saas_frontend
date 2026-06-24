@@ -62,8 +62,6 @@
             <span v-if="theoryPages > 0" class="lc-preview-item lc-preview-item--theory">📖 1 теорія</span>
             <span v-if="theoryPages > 0" class="lc-preview-sep">+</span>
             <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
-            <span v-if="solutionPages > 0" class="lc-preview-sep">+</span>
-            <span v-if="solutionPages > 0" class="lc-preview-item lc-preview-item--solution">💡 {{ solutionPages }} розбір</span>
             <span class="lc-preview-sep lc-preview-total-sep">=</span>
             <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
           </div>
@@ -92,21 +90,67 @@
         <section class="lc-section">
           <h2 class="lc-section__title">4. Фон дошки</h2>
           <p class="lc-section__hint">Застосовується до всіх практичних сторінок уроку.</p>
-          <div class="lc-bg-grid">
+
+          <!-- Режим: один колір / різнокольорові -->
+          <div class="lc-bg-mode">
             <button
-              v-for="bg in BG_PRESETS"
-              :key="bg.value"
               type="button"
-              class="lc-bg-swatch"
-              :class="{ 'lc-bg-swatch--active': boardBg === bg.value }"
-              :style="{ background: bg.value }"
-              :title="bg.label"
-              @click="boardBg = bg.value"
-            >
-              <span v-if="boardBg === bg.value" class="lc-bg-swatch__check">✓</span>
-            </button>
+              class="lc-bg-mode__btn"
+              :class="{ 'lc-bg-mode__btn--active': !multicolorBg }"
+              @click="multicolorBg = false"
+            >Один колір</button>
+            <button
+              type="button"
+              class="lc-bg-mode__btn"
+              :class="{ 'lc-bg-mode__btn--active': multicolorBg }"
+              @click="multicolorBg = true"
+            >🌈 Різнокольорові</button>
           </div>
-          <p class="lc-bg-label">{{ activeBgLabel }}</p>
+
+          <!-- Режим A: один колір (пресети) -->
+          <template v-if="!multicolorBg">
+            <div class="lc-bg-grid">
+              <button
+                v-for="bg in BG_PRESETS"
+                :key="bg.value"
+                type="button"
+                class="lc-bg-swatch"
+                :class="{ 'lc-bg-swatch--active': boardBg === bg.value }"
+                :style="{ background: bg.value }"
+                :title="bg.label"
+                @click="boardBg = bg.value"
+              >
+                <span v-if="boardBg === bg.value" class="lc-bg-swatch__check">✓</span>
+              </button>
+            </div>
+            <p class="lc-bg-label">{{ activeBgLabel }}</p>
+          </template>
+
+          <!-- Режим B: різнокольорові — палітра пастелі циклом по сторінках -->
+          <template v-else>
+            <p class="lc-bg-label">
+              Кожна практична сторінка — свій м'який колір (циклом). Учням так веселіше.
+            </p>
+            <div class="lc-bg-strip">
+              <span
+                v-for="(c, i) in bgPalette"
+                :key="i"
+                class="lc-bg-strip__cell"
+                :style="{ background: c }"
+                :title="c"
+              />
+            </div>
+            <label class="lc-bg-sat">
+              <span class="lc-bg-sat__label">Насиченість</span>
+              <input
+                type="range"
+                min="0" max="100" step="5"
+                v-model.number="bgSaturation"
+                class="lc-bg-sat__range"
+              />
+              <span class="lc-bg-sat__val">{{ bgSaturation }}%</span>
+            </label>
+          </template>
         </section>
 
         <!-- ── Додаткові параметри (collapsed) ─────────────────────────────── -->
@@ -155,11 +199,8 @@
                 <input v-model="includeTheory" type="checkbox" :disabled="pacingMode === 'exam'" />
                 Сторінка теорії (визначення та формули)
               </label>
-              <label class="lc-checkbox">
-                <input v-model="includeSolution" type="checkbox" :disabled="pacingMode === 'exam'" />
-                Окремі сторінки розбору
-                <span class="lc-checkbox-hint">— повторює задачі з відповідями; зазвичай не потрібно, бо у кожній картці є "Показати розбір"</span>
-              </label>
+              <!-- "Окремі сторінки розбору" прибрано: дублювали задачі, а кожна
+                   картка вже має кнопку "Показати розбір". include_solution_page завжди false. -->
             </div>
 
             <div class="lc-field">
@@ -226,15 +267,35 @@ const BG_PRESETS = [
   { value: '#1e1e2e', label: 'Темний (нічний)' },
 ] as const
 
+// Відтінки пастельної палітри (HSL hue, 0–360) — розкидані по колу.
+// Світлість фіксована висока (пастель); насиченість керується слайдером.
+const PASTEL_HUES = [0, 28, 50, 130, 175, 210, 260, 320] as const
+const PASTEL_LIGHTNESS = 88   // % — світлий пастельний фон, комфортний для очей
+
+/** HSL → '#rrggbb'. h: 0–360, s/l: 0–100. */
+function hslToHex(h: number, s: number, l: number): string {
+  const sN = s / 100, lN = l / 100
+  const c = (1 - Math.abs(2 * lN - 1)) * sN
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = lN - c / 2
+  const [r, g, b] = (
+    h < 60  ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+    h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
+  )
+  const hex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0')
+  return `#${hex(r)}${hex(g)}${hex(b)}`
+}
+
 // ── Form state ─────────────────────────────────────────────────────────────
 const selectedTopics  = ref<string[]>([])
 const taskCount       = ref(4)
-const theme           = ref('visual')
+const theme           = ref('nmt_exam')   // default = перший стиль у THEMES (visual прибрано)
 const boardBg         = ref('#ffffff')
+const multicolorBg    = ref(false)   // різнокольоровий режим (палітра циклом по сторінках)
+const bgSaturation    = ref(60)      // 0–100 % — насиченість пастельної палітри
 const diffProfile     = ref('balanced')
 const pacingMode      = ref('tutorial')
 const includeTheory   = ref(true)
-const includeSolution = ref(false)  // задачі вже мають кнопки "Показати відповідь/розбір"
 const boardName       = ref('')
 const showAdvanced    = ref(false)
 
@@ -245,16 +306,15 @@ const errors    = ref<Record<string, string>>({})
 // ── Computed ───────────────────────────────────────────────────────────────
 const currentTheme = computed(() => THEMES.find(t => t.value === theme.value))
 
+/** Пастельна палітра за поточною насиченістю (циклиться по practice-сторінках). */
+const bgPalette = computed(() =>
+  PASTEL_HUES.map(h => hslToHex(h, bgSaturation.value, PASTEL_LIGHTNESS))
+)
+
 /** Кількість практичних сторінок */
 const practicePages = computed(() => {
   const perPage = currentTheme.value?.tasksPerPage ?? 1
   return Math.max(1, Math.ceil(taskCount.value / perPage))
-})
-
-/** Кількість сторінок розбору (= practicePages, той самий chunking що й practice). */
-const solutionPages = computed(() => {
-  if (pacingMode.value === 'exam' || !includeSolution.value) return 0
-  return practicePages.value
 })
 
 /** Кількість теоретичних сторінок (0 або 1). */
@@ -263,9 +323,9 @@ const theoryPages = computed(() => {
   return 1
 })
 
-/** Загальна кількість сторінок (practice + theory + solution). */
+/** Загальна кількість сторінок (practice + theory). Окремих сторінок розбору немає. */
 const totalPages = computed(() =>
-  practicePages.value + theoryPages.value + solutionPages.value
+  practicePages.value + theoryPages.value
 )
 
 const pageWord = computed(() => {
@@ -322,11 +382,12 @@ async function handleGenerate() {
       topics:                selectedTopics.value,
       task_count:            taskCount.value,
       theme:                 theme.value,
-      board_bg:              boardBg.value !== '#ffffff' ? boardBg.value : undefined,
+      board_bg:              !multicolorBg.value && boardBg.value !== '#ffffff' ? boardBg.value : undefined,
+      board_bg_palette:      multicolorBg.value ? bgPalette.value : undefined,
       diff_profile:          diffProfile.value,
       pacing_mode:           pacingMode.value,
       include_theory_page:   pacingMode.value !== 'exam' && includeTheory.value,
-      include_solution_page: pacingMode.value !== 'exam' && includeSolution.value,
+      include_solution_page: false,   // окремих сторінок розбору немає (картки мають "Показати розбір")
       name:                  boardName.value || undefined,
     })
 
@@ -501,7 +562,7 @@ async function handleGenerate() {
 
 @media (min-width: 600px) {
   .lc-themes {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -618,6 +679,77 @@ async function handleGenerate() {
   font-size: 0.8rem;
   color: #64748b;
   margin: 0;
+}
+
+/* ── Background: mode toggle ─────────────────────────────────────────────── */
+.lc-bg-mode {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.lc-bg-mode__btn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lc-bg-mode__btn--active {
+  background: #fff;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ── Background: multicolor preview strip ────────────────────────────────── */
+.lc-bg-strip {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  margin: 0.5rem 0 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.lc-bg-strip__cell {
+  flex: 1 1 0;
+  height: 36px;
+}
+
+/* ── Background: saturation slider ───────────────────────────────────────── */
+.lc-bg-sat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.lc-bg-sat__label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.lc-bg-sat__range {
+  flex: 1;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.lc-bg-sat__val {
+  min-width: 2.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #4f46e5;
+  font-weight: 600;
 }
 
 /* ── Advanced ───────────────────────────────────────────────────────────── */
