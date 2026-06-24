@@ -43,7 +43,9 @@
     <header class="nmt-task__header">
       <span class="nmt-task__type-icon">{{ typeIcon }}</span>
       <span class="nmt-task__type-badge">{{ typeBadge }}</span>
-      <span v-if="data.externalId" class="nmt-task__external-id">{{ data.externalId }}</span>
+      <!-- externalId (артикул задачі) НЕ показуємо користувачу — лишається в data
+           для traceability/provenance, але це технічний ідентифікатор, не для очей.
+           Delete-кнопка має власний margin-left:auto, тож притискається праворуч. -->
       <button
         v-if="!asset.locked && isSelected"
         type="button"
@@ -404,13 +406,6 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   padding: 2px 8px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-}
-
-.nmt-task__external-id {
-  font-size: 10px;
-  color: #94a3b8;
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
 }
 
 .nmt-task__delete-btn {
