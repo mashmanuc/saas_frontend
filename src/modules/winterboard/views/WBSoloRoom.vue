@@ -3454,11 +3454,13 @@ watch(() => store.workspaceName, (name) => {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .wb-header-btn {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3497,8 +3499,11 @@ watch(() => store.workspaceName, (name) => {
   text-overflow: ellipsis;
 }
 
-/* Constructor: кнопка «Зберегти як шаблон» — іконка + видимий підпис (афорданс). */
-.wb-header-btn--save-template {
+/* Constructor: кнопка «Зберегти як шаблон» — іконка + видимий підпис (афорданс).
+   Подвійний клас піднімає specificity (0,2,0), щоб width:auto перебивав
+   .wb-header-btn{width:Npx} з медіа-запитів (≥1920px р.4315 / ≤768px) — інакше
+   кнопку тиснуло до фікс-ширини й лейбл налазив на «Вийти». */
+.wb-header-btn.wb-header-btn--save-template {
   width: auto;
   gap: 6px;
   padding: 0 12px;
@@ -3513,7 +3518,7 @@ watch(() => store.workspaceName, (name) => {
 
 @media (max-width: 640px) {
   /* Тісний топбар — лишаємо лише іконку, як було. */
-  .wb-header-btn--save-template {
+  .wb-header-btn.wb-header-btn--save-template {
     width: 32px;
     padding: 0;
     gap: 0;
