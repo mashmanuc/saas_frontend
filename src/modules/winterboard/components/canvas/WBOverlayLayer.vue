@@ -70,7 +70,15 @@ const ctx = computed<OverlayCtx>(() => ({
   disableAnimation: wbStore.mode === 'replay',
   expandedId: expandedId.value,
   toggleExpand: (id: string) => {
-    expandedId.value = expandedId.value === id ? null : id
+    const willExpand = expandedId.value !== id
+    expandedId.value = willExpand ? id : null
+    // Розгортання авто-виділяє об'єкт → реєструється sidebar-інспектор (через
+    // перевірений шлях watch(isSelected)→register*). Розгорнутий оверлей покриває
+    // лише полотно (EXPANDED_STYLE absolute у canvas-шарі), НЕ сайтбар → інспектор
+    // лишається видимим і кліковним. Уніфікує контроли для всіх expandable-типів
+    // (graph/nmt3d/helix/trig_circle): раніше розгортання не виділяло → інспектор
+    // не з'являвся, а виділити в розгорнутому стані не можна (оверлей ловить кліки).
+    if (willExpand) wbStore.selectItems([id])
   },
   onUpdate: (asset: WBAsset) => emit('asset-update', asset),
   onDelete: (id: string) => emit('asset-delete', id),

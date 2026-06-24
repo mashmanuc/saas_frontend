@@ -94,7 +94,10 @@
     </header>
 
     <div class="gc-body">
-      <!-- Expression panel hidden when selected — moves to GraphCalcInspector sidebar. -->
+      <!-- Expression panel hidden when selected — controls move to GraphCalcInspector
+           sidebar. Розгортання тепер авто-виділяє об'єкт (WBOverlayLayer.toggleExpand)
+           → інспектор з'являється у сайтбарі (не перекритий) → панель НЕ дублюємо на
+           оверлеї, інакше були б дві копії контролів. -->
       <aside class="gc-panel" v-if="interactive && !isSelected">
         <div class="gc-expr-list">
           <div
@@ -238,7 +241,8 @@
              (SSoT per FE-RULE-1). Slider drag → emit('param-set', ...) per
              STORE-RULE-5 (coalesce per name). Click on name → expand row to
              reveal range editor (min/max/step).
-             Hidden when isSelected=true: params move to GraphCalcInspector sidebar. -->
+             Hidden when isSelected=true: params move to GraphCalcInspector sidebar
+             (розгортання авто-виділяє → інспектор у сайтбарі, на оверлеї не дублюємо). -->
         <div v-if="paramEntries.length > 0 && !isSelected" class="gc-params" data-testid="graph-calc-params">
           <div class="gc-params-header">
             Параметри
