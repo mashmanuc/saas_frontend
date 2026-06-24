@@ -516,14 +516,14 @@ async function handleGenerate() {
 }
 
 .lc-topic-chip:hover:not(.lc-topic-chip--disabled) {
-  border-color: #6366f1;
-  color: #4f46e5;
-  background: #eef2ff;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
 }
 
 .lc-topic-chip--active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #ffffff;
 }
 
@@ -542,13 +542,13 @@ async function handleGenerate() {
 
 .lc-slider {
   flex: 1;
-  accent-color: #4f46e5;
+  accent-color: var(--accent);
 }
 
 .lc-task-count__value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--accent);
   min-width: 2.5rem;
   text-align: center;
 }
@@ -580,13 +580,13 @@ async function handleGenerate() {
 }
 
 .lc-theme-card:hover {
-  border-color: #6366f1;
-  background: #eef2ff;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
 }
 
 .lc-theme-card--active {
-  border-color: #4f46e5;
-  background: #eef2ff;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
 }
 
 .lc-theme-card__name {
@@ -621,7 +621,7 @@ async function handleGenerate() {
   color: #334155;
 }
 
-.lc-preview-item--tasks    { color: #4f46e5; font-weight: 600; }
+.lc-preview-item--tasks    { color: var(--accent); font-weight: 600; }
 .lc-preview-item--theory   { color: #0369a1; }
 .lc-preview-item--practice { color: #0f172a; }
 .lc-preview-item--solution { color: #15803d; }
@@ -648,12 +648,12 @@ async function handleGenerate() {
 }
 
 .lc-bg-swatch:hover {
-  border-color: #6366f1;
+  border-color: var(--accent);
   transform: scale(1.08);
 }
 
 .lc-bg-swatch--active {
-  border-color: #4f46e5;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
 }
 
@@ -664,7 +664,7 @@ async function handleGenerate() {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: #4f46e5;
+  color: var(--accent);
   text-shadow: 0 0 3px #fff;
   font-weight: 700;
 }
@@ -705,7 +705,7 @@ async function handleGenerate() {
 
 .lc-bg-mode__btn--active {
   background: #fff;
-  color: #4f46e5;
+  color: var(--accent);
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -740,7 +740,7 @@ async function handleGenerate() {
 
 .lc-bg-sat__range {
   flex: 1;
-  accent-color: #6366f1;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -748,7 +748,7 @@ async function handleGenerate() {
   min-width: 2.6rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: #4f46e5;
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -756,7 +756,7 @@ async function handleGenerate() {
 .lc-advanced-toggle {
   background: none;
   border: none;
-  color: #4f46e5;
+  color: var(--accent);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -819,6 +819,7 @@ async function handleGenerate() {
   font-size: 0.875rem;
   color: #374151;
   cursor: pointer;
+  accent-color: var(--accent);   /* успадковується на <input>, узгоджує з темою */
 }
 
 .lc-checkbox {
@@ -828,6 +829,7 @@ async function handleGenerate() {
   font-size: 0.875rem;
   color: #374151;
   cursor: pointer;
+  accent-color: var(--accent);
 }
 
 .lc-input {
@@ -842,7 +844,7 @@ async function handleGenerate() {
 }
 
 .lc-input:focus {
-  border-color: #4f46e5;
+  border-color: var(--accent);
 }
 
 /* ── Actions ────────────────────────────────────────────────────────────── */
@@ -854,7 +856,7 @@ async function handleGenerate() {
 }
 
 .lc-btn-generate {
-  background: #4f46e5;
+  background: var(--accent);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -871,7 +873,7 @@ async function handleGenerate() {
 }
 
 .lc-btn-generate:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }

@@ -51,9 +51,9 @@ export const DIFF_PROFILES = [
 ] as const
 
 export const PACING_MODES = [
-  { value: 'tutorial', label: 'Tutorial (теорія + розбір)' },
-  { value: 'practice', label: 'Practice (тільки задачі)' },
-  { value: 'exam',     label: 'Exam (без підказок)' },
+  { value: 'tutorial', label: 'Навчальний (теорія + розбір)' },
+  { value: 'practice', label: 'Практика (тільки задачі)' },
+  { value: 'exam',     label: 'Іспит (без підказок)' },
 ] as const
 
 export interface GenerateLessonRequest {
