@@ -34,11 +34,12 @@ export const TOPICS = [
   { value: 'word-problem-equations',            label: 'Задачі на складання рівнянь' },
 ] as const
 
+// Rapid (4 задачі/стор.) прибрано 2026-06-24 — картки не влазять на сторінку.
+// Backend LessonTheme.RAPID лишається (старі сесії/шаблони), але у picker НЕ показуємо.
 export const THEMES = [
-  { value: 'visual',   label: 'Visual',   desc: '2 задачі/стор., пунктирний фон', tasksPerPage: 2 },
-  { value: 'nmt_exam', label: 'НМТ Exam', desc: '1 задача/стор., чистий білий',   tasksPerPage: 1 },
-  { value: 'academic', label: 'Academic', desc: '2 задачі/стор., сітка + пурпур', tasksPerPage: 2 },
-  { value: 'rapid',    label: 'Rapid',    desc: '4 задачі/стор., компактно',      tasksPerPage: 4 },
+  { value: 'visual',   label: 'Наочний',    desc: '2 задачі на сторінку, фон у крапку', tasksPerPage: 2 },
+  { value: 'nmt_exam', label: 'Формат НМТ', desc: '1 задача на сторінку, чистий аркуш',  tasksPerPage: 1 },
+  { value: 'academic', label: 'Класичний',  desc: '2 задачі на сторінку, фон у клітинку', tasksPerPage: 2 },
 ] as const
 
 export const DIFF_PROFILES = [

@@ -501,7 +501,7 @@ async function handleGenerate() {
 
 @media (min-width: 600px) {
   .lc-themes {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
