@@ -47,11 +47,10 @@ interface CoachingStep {
   text: string
 }
 
+// step1 (/tutor/profile) прибрано 2026-06-24 — профіль вимкнено 2026-06-17 (BYO,
+// marketplace-екстракція). Мертва ціль авто-скіпалась → тур стартував з «2/4».
+// Тепер 3 валідні кроки: Студія / Розклад / Мої уроки.
 const steps: CoachingStep[] = [
-  {
-    target: '[href="/tutor/profile"]',
-    text: 'sidebarCoaching.step1',
-  },
   {
     target: '[href="/winterboard/boards"]',
     text: 'sidebarCoaching.step2',
