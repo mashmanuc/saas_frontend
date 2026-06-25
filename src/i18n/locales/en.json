@@ -1133,6 +1133,7 @@
       "myPlan": "My Plan",
       "myReplays": "My Replays",
       "feedback": "💡 Ideas & Feedback",
+      "help": "Help",
       "marketplace": "Marketplace",
       "practiceGame": "🎮 Practice Game"
     },
@@ -1156,6 +1157,7 @@
       "tutorProfile": "Your public marketplace profile",
       "billing": "Finances, subscription, and payments",
       "settings": "Account and notification settings",
+      "help": "How to use M4SH",
       "notifications": "Unread notifications",
       "templateLibrary": "Community lesson templates",
       "myPacks": "Your lesson series",

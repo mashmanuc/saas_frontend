@@ -106,6 +106,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.profile',
       items: [
         // tutorProfile (/tutor/profile) DISABLED 2026-06-17 — marketplace listing, BYO не потребує (акаунт = Налаштування).
+        { label: 'sidebar.item.help', icon: 'life-buoy', to: '/help', hint: 'sidebar.hint.help' },
         { label: 'sidebar.item.feedback', icon: 'lightbulb', to: '/feedback', hint: 'sidebar.hint.feedback' },
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings', hint: 'sidebar.hint.settings' },
       ],

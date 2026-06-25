@@ -939,6 +939,13 @@ const routes = [
       // NOTE: these must be registered BEFORE standalone /winterboard/:id route
       // or else /winterboard/library would match as id='library' → 404.
       ...winterboardPageRoutes,
+      // Центр «Допомога» — вбудована довідка (план TUTOR_DOCUMENTATION_PLAN_2026-06-25).
+      // Будь-який залогінений користувач (PageShell → requiresAuth); контент тьютор-орієнтований.
+      {
+        path: 'help/:slug?',
+        name: 'help',
+        component: () => import('../modules/help/views/HelpView.vue'),
+      },
     ],
   },
   // P0.3: Lighthouse route без auth для performance testing

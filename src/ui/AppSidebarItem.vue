@@ -44,6 +44,7 @@ import {
   Folder,
   Circle,
   Gamepad2,
+  LifeBuoy,
 } from 'lucide-vue-next'
 
 import type { Component } from 'vue'
@@ -70,6 +71,7 @@ const ICON_MAP: Record<string, Component> = {
   'layout': Layout,
   'folder': Folder,
   'gamepad-2': Gamepad2,
+  'life-buoy': LifeBuoy,
 }
 
 const props = defineProps<{
