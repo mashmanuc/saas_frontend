@@ -106,7 +106,10 @@ const layout = useLayoutStore()
 .app-sidebar {
   /* G-2 Stage 2: dimensions from tokens.css (INV-G2-1, INV-G2-6). */
   width: var(--app-sidebar-width);
-  min-height: 100vh;
+  /* height (НЕ min-height): фіксований сайдбар = рівно вʼюпорт. При зумі/малому
+     екрані .sidebar-nav скролиться всередині, а не розростається за екран
+     (інакше низ — Допомога/футер — недосяжний). */
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--card-bg);
@@ -187,6 +190,7 @@ const layout = useLayoutStore()
 /* ── Navigation ── */
 .sidebar-nav {
   flex: 1;
+  min-height: 0;   /* дозволяє flex-дитині стискатись нижче контенту → реальний скрол */
   overflow-y: auto;
   padding: var(--space-sm) 0;
   scrollbar-width: thin;
