@@ -291,16 +291,19 @@ const panelRef = ref<HTMLElement | null>(null)
 function toggle(): void { isOpen.value = !isOpen.value }
 function close(): void { isOpen.value = false; triggerRef.value?.focus() }
 
-// Panel teleported to <body> — check both rootRef and panelRef
-function onClickOutside(e: MouseEvent): void {
+// Panel teleported to <body> — check both rootRef and panelRef.
+// pointerdown (не mousedown!) — щоб закривалось і при малюванні пером/дотиком на
+// планшеті (drawing = pointer/touch, mousedown там не стріляє → флайаут «завис би»).
+// Capture-фаза ловить подію до того, як Konva зупинить propagation.
+function onClickOutside(e: PointerEvent): void {
   const target = e.target as Node
   const inRoot  = rootRef.value?.contains(target)
   const inPanel = panelRef.value?.contains(target)
   if (!inRoot && !inPanel) isOpen.value = false
 }
 
-onMounted(() => document.addEventListener('mousedown', onClickOutside, true))
-onUnmounted(() => document.removeEventListener('mousedown', onClickOutside, true))
+onMounted(() => document.addEventListener('pointerdown', onClickOutside, true))
+onUnmounted(() => document.removeEventListener('pointerdown', onClickOutside, true))
 
 // ─── Panel position (fixed, calculated from trigger rect) ─────────────────────
 

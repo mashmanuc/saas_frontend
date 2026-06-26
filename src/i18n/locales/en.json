@@ -8432,7 +8432,7 @@
       "errorGeneric": "Something went wrong. Please try again."
     },
     "nmt3d": {
-      "trayHeader": "NMT 3D Solids",
+      "trayHeader": "Stereometry",
       "loading": "Loading…",
       "trayHint": "Drag onto the board or press +",
       "addToBoard": "Add «{name}» to board",

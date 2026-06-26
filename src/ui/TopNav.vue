@@ -67,7 +67,8 @@
 
     <!-- RIGHT SIDE -->
     <div class="flex items-center gap-3">
-      <ContactsBalanceWidget v-if="auth.user?.role === 'tutor'" class="hidden md:block" />
+      <!-- ContactsBalanceWidget видалено 2026-06-25 — leftover marketplace (баланс
+           контакт-токенів / unlock-контактів); у BYO-моделі контакт-анлоку немає. -->
       <NotificationBell class="hidden xs:block" />
       <AvatarDropdown />
     </div>
@@ -78,7 +79,6 @@
 import { computed } from 'vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import NotificationBell from '../components/Notifications/NotificationBell.vue'
-import ContactsBalanceWidget from '../components/contacts/ContactsBalanceWidget.vue'
 import AvatarDropdown from './AvatarDropdown.vue'
 import { Menu } from 'lucide-vue-next'
 

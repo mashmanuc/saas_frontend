@@ -322,7 +322,11 @@ const formattedDuration = computed(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #6b7280;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d1d5db;
+  color: #374151;
   font-size: 0.7rem;
 }
 
@@ -344,6 +348,8 @@ const formattedDuration = computed(() => {
 }
 
 :root[data-theme='dark'] .wb-recording-banner__frozen {
-  color: #9ca3af;
+  background: rgba(55, 65, 81, 0.9);
+  border-color: #4b5563;
+  color: #e5e7eb;
 }
 </style>
