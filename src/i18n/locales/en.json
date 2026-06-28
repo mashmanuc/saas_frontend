@@ -7206,7 +7206,7 @@
       "tabMaterials": "Materials",
       "tabTools": "Tools",
       "interactiveHeader": "Interactive",
-      "geo2dHeader": "2D Geometry",
+      "geo2dHeader": "Planimetry",
       "trayDragHint": "Drag onto the board",
       "addToBoard": "Add to board",
       "graphCalcLabel": "Function plotter",

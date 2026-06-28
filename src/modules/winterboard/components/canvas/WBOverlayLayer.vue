@@ -110,10 +110,14 @@ const renderList = computed<RenderItem[]>(() =>
 )
 
 function wrapperClasses(item: RenderItem): Array<string | Record<string, boolean>> {
+  const selected = wbStore.selectedIds.includes(item.asset.id)
   return [
     item.entry.wrapperClass,
     {
-      [`${item.entry.wrapperClass}--selected`]: wbStore.selectedIds.includes(item.asset.id),
+      [`${item.entry.wrapperClass}--selected`]: selected,
+      // Спільний клас — піднімає виділений overlay над іншими (z-index нижче у CSS),
+      // щоб у зоні накладання його pointer-events:auto stage вигравав клік.
+      'wb-overlay--selected': selected,
       'wb-overlay--board-expanded': item.entry.expandable && expandedId.value === item.asset.id,
     },
   ]
@@ -257,6 +261,15 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-helix-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
+}
+
+/* Виділений overlay піднімається над іншими (база z:4) → його внутрішній
+   pointer-events:auto stage стає топ-most і виграє клік у зоні накладання
+   (інакше нижній ВИДІЛЕНИЙ ловив клік крізь pointer-events:none верхнього).
+   ТРАНЗІЄНТНО — лише поки виділено; логічний z-порядок assets[] не змінюється
+   (ручне шарування + replay лишаються чистими). Нижче за expanded (z:50). */
+.wb-overlay--selected {
+  z-index: 5;
 }
 
 /* Board-expand state (shared) — позиція inline, тут скидаємо border/radius. */
