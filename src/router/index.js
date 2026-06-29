@@ -37,6 +37,9 @@ const mpDisabledRedirect = () => {
 // `src/modules/practice/` МУСИТЬ бути закомічений разом (інакше CF clean-clone падає).
 // Флаг лише runtime-gate (чи реєструються маршрути). Default OFF у проді, завжди ON у dev.
 const PRACTICE_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PRACTICE_ENABLED === 'true'
+// Exam (Assessment / НМТ-симулятор Solo) — runtime-gate. Модуль `src/modules/exam/`
+// закомічено разом (BUILD-time import). Default OFF у проді, завжди ON у dev.
+const ASSESSMENT_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ASSESSMENT_ENABLED === 'true'
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -233,6 +236,35 @@ const routes = [
               path: 'practice/campaign',
               name: 'practice-campaign',
               component: () => import('../modules/practice/views/PracticeCampaignView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
+          ]
+        : []),
+      // Exam (Assessment / НМТ-симулятор Solo) — gated by VITE_ASSESSMENT_ENABLED.
+      ...(ASSESSMENT_ENABLED
+        ? [
+            {
+              path: 'exam',
+              name: 'exam-start',
+              component: () => import('../modules/exam/views/ExamStartView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
+            {
+              path: 'exam/create',
+              name: 'exam-create',
+              component: () => import('../modules/exam/views/ExamCreateView.vue'),
+              meta: { roles: [USER_ROLES.TUTOR] },
+            },
+            {
+              path: 'exam/run/:runId',
+              name: 'exam-run',
+              component: () => import('../modules/exam/views/ExamRunView.vue'),
+              meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+            },
+            {
+              path: 'exam/run/:runId/result',
+              name: 'exam-result',
+              component: () => import('../modules/exam/views/ExamResultView.vue'),
               meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
             },
           ]

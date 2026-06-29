@@ -1,4 +1,70 @@
 {
+  "exam": {
+    "loading": "Loading…",
+    "answerPlaceholder": "Your answer",
+    "prev": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "finishConfirm": "Finish the run? Answers can no longer be changed afterwards.",
+    "minShort": "min",
+    "secShort": "s",
+    "type": {
+      "single_choice": "Single choice",
+      "open_answer": "Open answer",
+      "matching": "Matching"
+    },
+    "kind": {
+      "nmt": "NMT mock",
+      "teacher_test": "Test",
+      "homework": "Homework",
+      "olympiad": "Olympiad"
+    },
+    "start": {
+      "title": "NMT Simulator",
+      "subtitle": "Pick a variant and take it against the clock.",
+      "empty": "No available variants yet.",
+      "sections": "{n} section(s)",
+      "begin": "Start"
+    },
+    "result": {
+      "none": "Result is not ready yet.",
+      "title": "Result",
+      "testScore": "test score",
+      "rating": "Rating score",
+      "ratingPending": "The rating score (100–200) will be available after official calibration.",
+      "duration": "Duration",
+      "section": "Section",
+      "review": "Review",
+      "correct": "Correct",
+      "wrong": "Incorrect",
+      "skipped": "Not answered",
+      "toStart": "Back to variants"
+    },
+    "create": {
+      "title": "Create variant",
+      "name": "Variant name",
+      "namePlaceholder": "e.g. NMT mock — algebra",
+      "structure": "Structure",
+      "presetNmt": "NMT standard (15 + 3 + 4)",
+      "presetCustom": "Custom count",
+      "presetHint": "15 single-choice → 3 matching → 4 open-answer, in the same order as the real NMT.",
+      "count": "Number of tasks",
+      "minutes": "Time, min",
+      "difficulty": "Difficulty",
+      "topics": "Topics",
+      "selectAll": "Select all",
+      "clearAll": "Clear all",
+      "publish": "Publish",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "diff": {
+        "easy": "Easy",
+        "balanced": "Balanced",
+        "hard": "Hard",
+        "exam": "NMT-like"
+      }
+    }
+  },
   "practice": {
     "title": "Practice",
     "chooseTopic": "Choose a topic",
@@ -1135,10 +1201,12 @@
       "feedback": "💡 Ideas & Feedback",
       "help": "Help",
       "marketplace": "Marketplace",
-      "practiceGame": "🎮 Practice Game"
+      "practiceGame": "🎮 Practice Game",
+      "examSimulator": "📝 NMT Simulator"
     },
     "hint": {
       "practiceGame": "NMT practice game — worlds, steps, artifacts",
+      "examSimulator": "Take a timed NMT mock with review",
       "marketplace": "Browse the public tutor catalog",
       "feedback": "Suggest ideas and vote on priorities",
       "dashboard": "Home page with schedule and stats",
