@@ -25,7 +25,7 @@
       <!-- per-section + теми -->
       <section v-for="s in store.result.sections" :key="s.section_order" class="exam-res__sec">
         <div class="exam-res__sec-head">
-          {{ t('exam.result.section') }} {{ s.section_order + 1 }} · {{ s.subject }} —
+          {{ t('exam.result.section') }} {{ s.section_order + 1 }} · {{ s.subject_label || s.subject }} —
           {{ s.raw_score }}/{{ s.max_score }}
         </div>
         <ul class="exam-res__topics">

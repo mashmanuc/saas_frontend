@@ -49,6 +49,7 @@ export interface ReviewItem {
 export interface SectionResult {
   section_order: number
   subject: string
+  subject_label: string
   raw_score: number
   max_score: number
   rating: number | null
@@ -115,9 +116,9 @@ export const examApi = {
       {},
     )) as unknown as BlueprintSummary
   },
-  async startRun(blueprintId: string, seed?: number): Promise<RunState> {
+  async startRun(blueprintId: string, timeLimitSec?: number | null): Promise<RunState> {
     const body: Record<string, any> = { blueprint_id: blueprintId }
-    if (seed != null) body.seed = seed
+    if (timeLimitSec != null) body.time_limit_sec = timeLimitSec
     return (await apiClient.post('/v1/assessment/runs/', body)) as unknown as RunState
   },
   async getRun(runId: string): Promise<RunState> {

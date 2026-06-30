@@ -13,6 +13,11 @@
       "open_answer": "Open answer",
       "matching": "Matching"
     },
+    "match": {
+      "options": "Answer options",
+      "placeHere": "tap to place here",
+      "empty": "drag or tap an option"
+    },
     "kind": {
       "nmt": "NMT mock",
       "teacher_test": "Test",
@@ -24,7 +29,11 @@
       "subtitle": "Pick a variant and take it against the clock.",
       "empty": "No available variants yet.",
       "sections": "{n} section(s)",
-      "begin": "Start"
+      "begin": "Start",
+      "chooseTime": "Choose duration",
+      "standard": "standard",
+      "noLimit": "No limit",
+      "customTime": "Custom, min"
     },
     "result": {
       "none": "Result is not ready yet.",
