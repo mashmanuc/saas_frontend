@@ -1,0 +1,22 @@
+// ⚠️ UIA — спільний submit для ВСІХ Producer'ів (Закон №6).
+// Перша абстракція, що ЗАРОБИЛА право на існування (Rule #0): 2 реальні читачі — button + text.
+// Producer організовує захоплення вводу та формує Intent; sendIntent лише доставляє його
+// в єдиний ingress. НЕ знає підсистем, НЕ виконує. Видаляється разом з модулем intent.
+import apiClient from '../../utils/apiClient'
+
+export const INTENT_VERSION = 1 // F6 — версія контракту (адитивна еволюція)
+
+/**
+ * @param {string} verb      — платформний примітив, напр. 'CREATE'
+ * @param {Array<{type:string, params?:object}>} objects — семантичні обʼєкти ('Board')
+ * @param {string} clientId  — провенанс джерела: 'ui.button' | 'text' | 'ui.hotkey' | …
+ */
+export async function sendIntent(verb, objects, clientId) {
+  const res = await apiClient.post('/v1/intents/', {
+    v: INTENT_VERSION,
+    verb,
+    objects,
+    provenance: { client_id: clientId },
+  })
+  return res?.data ?? res
+}

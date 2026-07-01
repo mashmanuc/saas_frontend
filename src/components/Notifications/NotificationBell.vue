@@ -183,6 +183,9 @@ async function handleNotificationClick(notification: InAppNotification) {
     router.push('/bookings')
   } else if (notification.data?.billing) {
     router.push('/tutor/billing')
+  } else if (notification.data?.url) {
+    // Загальний deep-link (напр. ASSIGNMENT_* → /assignments/:id)
+    router.push(notification.data.url)
   }
   // Якщо немає посилання — просто закриваємо dropdown (вже зроблено вище)
 }

@@ -971,6 +971,30 @@ const routes = [
       // NOTE: these must be registered BEFORE standalone /winterboard/:id route
       // or else /winterboard/library would match as id='library' → 404.
       ...winterboardPageRoutes,
+      // Assignment (Homework) — Vertical Slice (SSOT 2026-07-01). Inside PageShell (header+sidebar).
+      {
+        path: 'assignments',
+        children: [
+          {
+            path: '',
+            name: 'assignments-list',
+            component: () => import('../modules/assignments/views/MyAssignmentsView.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: 'new',
+            name: 'assignment-compose',
+            component: () => import('../modules/assignments/views/AssignmentComposeView.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: ':id',
+            name: 'assignment-detail',
+            component: () => import('../modules/assignments/views/AssignmentDetailView.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+        ],
+      },
       // Центр «Допомога» — вбудована довідка (план TUTOR_DOCUMENTATION_PLAN_2026-06-25).
       // Будь-який залогінений користувач (PageShell → requiresAuth); контент тьютор-орієнтований.
       {

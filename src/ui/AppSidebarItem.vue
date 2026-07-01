@@ -45,6 +45,7 @@ import {
   Circle,
   Gamepad2,
   LifeBuoy,
+  ClipboardList,
 } from 'lucide-vue-next'
 
 import type { Component } from 'vue'
@@ -72,6 +73,7 @@ const ICON_MAP: Record<string, Component> = {
   'folder': Folder,
   'gamepad-2': Gamepad2,
   'life-buoy': LifeBuoy,
+  'clipboard-list': ClipboardList,
 }
 
 const props = defineProps<{

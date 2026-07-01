@@ -11,6 +11,9 @@
       :other-user-name="chatOverlay.otherUserName"
       @close="chatOverlay.close"
     />
+    <!-- UIA Command Palette (Ctrl+Shift+K) — глобальна продуктова точка входу (вкл. редактор дошки).
+         Gated VITE_FEATURE_UIA + tutor/staff усередині. Removable: видалити modules/intent + цей рядок. -->
+    <CommandPalette v-if="authStore.isAuthenticated" />
   </PageThemeProvider>
 </template>
 
@@ -31,6 +34,7 @@ import { notifyInfo } from '@/utils/notify'
 import { useChatOverlayStore } from '@/stores/chatOverlayStore'
 
 const ChatModalAsync = defineAsyncComponent(() => import('@/modules/chat/components/ChatModal.vue'))
+const CommandPalette = defineAsyncComponent(() => import('@/modules/intent/CommandPalette.vue'))
 
 const isDev = import.meta.env.DEV
 

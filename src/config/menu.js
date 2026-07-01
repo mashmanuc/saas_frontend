@@ -77,6 +77,7 @@ export const SECTIONED_MENU_BY_ROLE = {
         // Classroom Hub RETIRED (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — пункт прибрано.
         // join → Dashboard «Майбутні» + LESSON_STARTED notif; re-entry → G4 CTA; conduct → «Мої уроки».
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
+        { label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' },
         // Lesson Constructor живе у /winterboard/boards (вкладка "Конструктор"), не у sidebar.
         // Гейтується через isLessonConstructorEnabled() у WBBoardList.vue.
         { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
@@ -124,6 +125,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.dashboard', icon: 'layout-dashboard', to: '/student' },
         { label: 'sidebar.item.mySchedule', icon: 'calendar', to: '/student/schedule' },
+        { label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' },
       ],
     },
     {
