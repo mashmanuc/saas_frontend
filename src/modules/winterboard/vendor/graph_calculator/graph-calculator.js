@@ -16,174 +16,202 @@
 // LICENSE: внутрішнє використання у m4sh winterboard.
 
 const __GC = (function () {
-  // ---------- Tokenizer ----------------------------------------------------
-  const TOKENS = {
-    NUM: 'NUM', IDENT: 'IDENT', OP: 'OP', LP: 'LP', RP: 'RP',
-    COMMA: 'COMMA', EQ: 'EQ', END: 'END',
-  };
-  // Phase G review #2 (2026-05-06): normalize implicit-multiplication boundaries
-  // BEFORE tokenize. Patches `2a → 2*a`, `a2 → a*2`, `)a → )*a`, `a( → a*(`,
-  // `)( → )*(`. Single-identifier splits (e.g. `ax → a*x`) NOT applied —
-  // would break multi-letter params like `alpha`. Documented limitation.
-  function normalizeImplicit(src) {
-    if (typeof src !== 'string' || src.length === 0) return src;
-    let s = src;
-    // Number → identifier: 2a → 2*a (digit followed by letter — never inside identifier)
-    s = s.replace(/(\d)([a-zA-Zα-ωА-Яа-яπτ_])/g, '$1*$2');
-    // Number → '(': 2( → 2*( BUT skip if number is part of identifier
-    // (e.g. log10(x), atan2(x), x_2(...)). Lookbehind ensures preceding char
-    // is NOT identifier-letter or '_'.
-    s = s.replace(/(?<![a-zA-Zα-ωА-Яа-яπτ_])(\d)(\()/g, '$1*$2');
-    // ')' → identifier/digit/'(': )a → )*a, )2 → )*2, )( → )*(
-    s = s.replace(/(\))([a-zA-Zα-ωА-Яа-яπτ_0-9(])/g, '$1*$2');
-    // NOTE: `a2 → a*2` ambiguous (variable name "a2", "k1"). NOT applied.
-    // NOTE: `ax → a*x` multi-letter split — would break `alpha`, `theta`.
-    // NOTE: `log10(x)` preserved through lookbehind on (\d)(\(). Same для
-    // `atan2`, `log2`, named identifiers ending у digit.
-    return s;
-  }
+  // ---------- Parser: GraphMASH «CORE-ARITH v1» (adopted 2026-07) --------------
+  // Замінює попередній vendored-парсер. ТІЛЬКИ tokenize+parse; evaluator/classify/
+  // renderer/state нижче — БЕЗ ЗМІН. Профіль звужено до старого синтаксису:
+  //   - AST: 7 вузлів (num/ident/unary/binop/call/tuple/eq) — поля 1:1 зі старим.
+  //   - -x^2 = -(x²) (унарний мінус нижчий за ^), --x = x (стек знаків).
+  //   - Неявне множення 2x/2(x+1)/x y. Права асоц. ^.
+  //   - Вимкнено (throw / plain-call): ! % { } < > надрядкові, mandelbrot()→call.
+  // Специфікація+верифікація: GRAPHMASH_PARSER_COMPAT_REQUIREMENTS.md (repo root).
+  const T_NUM   = 'NUM';
+  const T_IDENT = 'IDENT';
+  const T_PLUS  = '+';
+  const T_MINUS = '-';
+  const T_STAR  = '*';
+  const T_SLASH = '/';
+  const T_CARET = '^';
+  const T_LP    = '(';
+  const T_RP    = ')';
+  const T_COMMA = ',';
+  const T_EQ    = '=';
+  const T_END   = 'END';
 
   function tokenize(src) {
-    src = normalizeImplicit(src);
-    const out = []; let i = 0;
+    // R9: normalise pretty math glyphs (optional, safe — §4.9)
+    src = src
+      .replace(/[·×∙⋅]/g, '*')   // ·×∙⋅ → *
+      .replace(/÷/g, '/')                         // ÷ → /
+      .replace(/[−–—]/g, '-');          // −–— → -
+
+    const tokens = [];
+    let i = 0;
+
     while (i < src.length) {
       const c = src[i];
-      if (c === ' ' || c === '\t') { i++; continue; }
-      if (/[0-9.]/.test(c)) {
-        let j = i; while (j < src.length && /[0-9.]/.test(src[j])) j++;
-        out.push({ t: TOKENS.NUM, v: parseFloat(src.slice(i, j)) }); i = j; continue;
+
+      // whitespace — skip
+      if (c === ' ' || c === '\t' || c === '\r' || c === '\n') { i++; continue; }
+
+      // number: [0-9.]+
+      if ((c >= '0' && c <= '9') || c === '.') {
+        let j = i;
+        while (j < src.length && ((src[j] >= '0' && src[j] <= '9') || src[j] === '.')) j++;
+        tokens.push({ t: T_NUM, v: parseFloat(src.slice(i, j)) });
+        i = j;
+        continue;
       }
-      if (/[a-zA-Zα-ωА-Яа-яπτ_]/.test(c)) {
-        let j = i; while (j < src.length && /[a-zA-Zα-ωА-Яа-я0-9_]/.test(src[j])) j++;
-        out.push({ t: TOKENS.IDENT, v: src.slice(i, j) }); i = j; continue;
+
+      // identifier: [A-Za-z α-ω А-Яа-я π τ _][A-Za-z α-ω А-Яа-я 0-9 _]*
+      if (/[A-Za-zα-ωА-Яа-яπτ_]/.test(c)) {
+        let j = i;
+        while (j < src.length && /[A-Za-zα-ωА-Яа-я0-9_]/.test(src[j])) j++;
+        tokens.push({ t: T_IDENT, v: src.slice(i, j) });
+        i = j;
+        continue;
       }
-      if (c === '(') { out.push({ t: TOKENS.LP }); i++; continue; }
-      if (c === ')') { out.push({ t: TOKENS.RP }); i++; continue; }
-      if (c === ',') { out.push({ t: TOKENS.COMMA }); i++; continue; }
-      if (c === '=') { out.push({ t: TOKENS.EQ }); i++; continue; }
-      if ('+-*/^'.includes(c)) { out.push({ t: TOKENS.OP, v: c }); i++; continue; }
-      throw new Error(`Невідомий символ: ${c}`);
+
+      // single-char tokens in the allowed set (§4.1)
+      if (c === '(') { tokens.push({ t: T_LP    }); i++; continue; }
+      if (c === ')') { tokens.push({ t: T_RP    }); i++; continue; }
+      if (c === ',') { tokens.push({ t: T_COMMA }); i++; continue; }
+      if (c === '=') { tokens.push({ t: T_EQ    }); i++; continue; }
+      if (c === '+') { tokens.push({ t: T_PLUS  }); i++; continue; }
+      if (c === '-') { tokens.push({ t: T_MINUS }); i++; continue; }
+      if (c === '*') { tokens.push({ t: T_STAR  }); i++; continue; }
+      if (c === '/') { tokens.push({ t: T_SLASH }); i++; continue; }
+      if (c === '^') { tokens.push({ t: T_CARET }); i++; continue; }
+
+      // §4.1: everything else → throw (R5)
+      throw new Error('Невідомий символ «' + c + '» на позиції ' + (i + 1));
     }
-    out.push({ t: TOKENS.END }); return out;
+
+    tokens.push({ t: T_END });
+    return tokens;
   }
 
-  // ---------- Parser (Pratt-style) ----------------------------------------
-  // Grammar:
-  //   stmt    := assign | implicit
-  //   assign  := IDENT '=' expr      (param or function — disambiguated later)
-  //   implicit:= expr '=' expr  | expr
-  //   expr    := term (('+'|'-') term)*
-  //   term    := factor (('*'|'/'|implicit-mult) factor)*
-  //   factor  := unary ('^' factor)?
-  //   unary   := '-' unary | atom
-  //   atom    := NUM | IDENT '(' args ')' | IDENT | '(' expr ')'
+  // Grammar (§4.2):
+  //   top    := expr ('=' expr)? END
+  //   expr   := term (('+' | '-') term)*               left-assoc
+  //   term   := unary (('*' | '/' | implicit) unary)*  left-assoc
+  //   unary  := '-' unary | '+' unary | pow            stacked signs (R-STACK); '+' absorbed
+  //   pow    := atom ('^' unary)?                       right-assoc (R8)
+  //   atom   := NUM | '(' expr ')' | '(' expr ',' expr ')' | IDENT ['(' args ')']
   function parse(src) {
     const toks = tokenize(src);
     let p = 0;
-    const peek = (k=0) => toks[p+k];
-    const eat = (t, v) => {
-      const tk = toks[p];
-      if (tk.t !== t || (v !== undefined && tk.v !== v)) {
-        throw new Error(`Очікувалось ${t}${v?'='+v:''}, отримано ${tk.t}=${tk.v}`);
-      }
-      p++; return tk;
-    };
 
-    function parseExpr() {
-      let left = parseTerm();
-      while (peek().t === TOKENS.OP && (peek().v === '+' || peek().v === '-')) {
-        const op = eat(TOKENS.OP).v;
-        const right = parseTerm();
-        left = { kind: 'binop', op, left, right };
+    function peek()  { return toks[p]; }
+    function peekT() { return toks[p].t; }
+    function eat(expected) {
+      const tk = toks[p];
+      if (tk.t !== expected) {
+        throw new Error('Очікувалось «' + expected + '», отримано «' + (tk.v !== undefined ? tk.v : tk.t) + '»');
+      }
+      p++;
+      return tk;
+    }
+
+    // top
+    const lhs = expr();
+    if (peekT() === T_EQ) {
+      p++;
+      const rhs = expr();
+      if (peekT() === T_EQ) throw new Error('Подвійний знак рівності заборонено (§4.5)');
+      if (peekT() !== T_END) throw new Error('Зайві токени після виразу');
+      return { kind: 'eq', lhs, rhs };
+    }
+    if (peekT() !== T_END) throw new Error('Зайві токени після виразу');
+    return lhs;
+
+    // expr := term (('+' | '-') term)*
+    function expr() {
+      let left = term();
+      for (;;) {
+        const t = peekT();
+        if (t !== T_PLUS && t !== T_MINUS) break;
+        const op = t === T_PLUS ? '+' : '-';
+        p++;
+        left = { kind: 'binop', op, left, right: term() };
       }
       return left;
     }
-    function parseTerm() {
-      let left = parseFactor();
-      while (true) {
-        const tk = peek();
-        if (tk.t === TOKENS.OP && (tk.v === '*' || tk.v === '/')) {
-          const op = eat(TOKENS.OP).v;
-          const right = parseFactor();
-          left = { kind: 'binop', op, left, right };
-        } else if (
-          // implicit multiplication: 2x, 2(x+1), )(  , x y, )x
-          (tk.t === TOKENS.NUM) ||
-          (tk.t === TOKENS.IDENT) ||
-          (tk.t === TOKENS.LP)
-        ) {
-          // only allow implicit mul if previous token was something that ends a value
-          const right = parseFactor();
-          left = { kind: 'binop', op: '*', left, right };
-        } else break;
-      }
-      return left;
-    }
-    function parseFactor() {
-      let base = parseUnary();
-      if (peek().t === TOKENS.OP && peek().v === '^') {
-        eat(TOKENS.OP); const exp = parseFactor();
-        // Стандартна математична конвенція: -x^2 = -(x^2), а не (-x)^2.
-        // Виняток: якщо мінус був явно обгорнутий у дужки — (−x)^2 = (-x)^2 = x^2.
-        // `paren: true` ставиться в parseAtom() для виразів у дужках.
-        if (base.kind === 'unary' && base.op === '-' && !base.paren) {
-          return { kind: 'unary', op: '-', arg: { kind: 'binop', op: '^', left: base.arg, right: exp } };
+
+    // term := unary (('*' | '/' | implicit-mul) unary)*
+    function term() {
+      let left = unary();
+      for (;;) {
+        const t = peekT();
+        if (t === T_STAR)  { p++; left = { kind: 'binop', op: '*', left, right: unary() }; }
+        else if (t === T_SLASH) { p++; left = { kind: 'binop', op: '/', left, right: unary() }; }
+        else if (t === T_NUM || t === T_IDENT || t === T_LP) {
+          // R7: implicit multiplication (§4.6)
+          left = { kind: 'binop', op: '*', left, right: unary() };
         }
-        return { kind: 'binop', op: '^', left: base, right: exp };
+        else break;
+      }
+      return left;
+    }
+
+    // unary := '-' unary | '+' unary | pow   (R-STACK: stacked signs, e.g. --x = x)
+    function unary() {
+      if (peekT() === T_MINUS) { p++; return { kind: 'unary', op: '-', arg: unary() }; }
+      if (peekT() === T_PLUS)  { p++; return unary(); }  // unary + absorbed (§4.3)
+      return pow();
+    }
+
+    // pow := atom ('^' unary)?   — right-assoc because rhs calls unary (not pow)
+    function pow() {
+      const base = atom();
+      if (peekT() === T_CARET) {
+        p++;
+        return { kind: 'binop', op: '^', left: base, right: unary() };
       }
       return base;
     }
-    function parseUnary() {
-      if (peek().t === TOKENS.OP && peek().v === '-') {
-        eat(TOKENS.OP); const u = parseUnary();
-        return { kind: 'unary', op: '-', arg: u };
-      }
-      if (peek().t === TOKENS.OP && peek().v === '+') { eat(TOKENS.OP); return parseUnary(); }
-      return parseAtom();
-    }
-    function parseAtom() {
+
+    // atom := NUM | '(' ... ')' | IDENT ['(' args ')']
+    function atom() {
       const tk = peek();
-      if (tk.t === TOKENS.NUM) { eat(TOKENS.NUM); return { kind: 'num', v: tk.v }; }
-      if (tk.t === TOKENS.IDENT) {
-        eat(TOKENS.IDENT);
-        if (peek().t === TOKENS.LP) {
-          eat(TOKENS.LP);
+
+      if (tk.t === T_NUM) {
+        p++;
+        return { kind: 'num', v: tk.v };
+      }
+
+      if (tk.t === T_LP) {
+        p++;
+        const first = expr();
+        if (peekT() === T_COMMA) {
+          // tuple — exactly 2 elements (§4.5)
+          p++;
+          const second = expr();
+          if (peekT() === T_COMMA) throw new Error('Кортеж може мати рівно 2 елементи (§4.5)');
+          eat(T_RP);
+          return { kind: 'tuple', items: [first, second] };
+        }
+        eat(T_RP);
+        return first;
+      }
+
+      if (tk.t === T_IDENT) {
+        p++;
+        if (peekT() === T_LP) {
+          // function call — ALL names are plain call, no special-casing (§4.4)
+          p++;
           const args = [];
-          if (peek().t !== TOKENS.RP) {
-            args.push(parseExpr());
-            while (peek().t === TOKENS.COMMA) { eat(TOKENS.COMMA); args.push(parseExpr()); }
+          if (peekT() !== T_RP) {
+            args.push(expr());
+            while (peekT() === T_COMMA) { p++; args.push(expr()); }
           }
-          eat(TOKENS.RP);
+          eat(T_RP);
           return { kind: 'call', name: tk.v, args };
         }
         return { kind: 'ident', name: tk.v };
       }
-      if (tk.t === TOKENS.LP) {
-        eat(TOKENS.LP);
-        // Detect tuple (point): (a, b)
-        const first = parseExpr();
-        if (peek().t === TOKENS.COMMA) {
-          eat(TOKENS.COMMA); const second = parseExpr(); eat(TOKENS.RP);
-          return { kind: 'tuple', items: [first, second] };
-        }
-        eat(TOKENS.RP);
-        // Позначаємо: вираз прийшов з явних дужок.
-        // Це дозволяє parseFactor() розрізнити (-x)^2 vs -x^2.
-        if (first.kind === 'unary') return { ...first, paren: true };
-        return first;
-      }
-      throw new Error(`Несподіваний токен: ${tk.t} ${tk.v ?? ''}`);
-    }
 
-    const lhs = parseExpr();
-    if (peek().t === TOKENS.EQ) {
-      eat(TOKENS.EQ);
-      const rhs = parseExpr();
-      if (peek().t !== TOKENS.END) throw new Error('Залишок після виразу');
-      return { kind: 'eq', lhs, rhs };
+      throw new Error('Неочікуваний токен «' + (tk.v !== undefined ? tk.v : tk.t) + '»');
     }
-    if (peek().t !== TOKENS.END) throw new Error('Залишок після виразу');
-    return lhs;
   }
 
   // ---------- Evaluator ----------------------------------------------------
