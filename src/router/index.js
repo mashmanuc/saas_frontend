@@ -40,6 +40,9 @@ const PRACTICE_ENABLED = import.meta.env.DEV || import.meta.env.VITE_PRACTICE_EN
 // Exam (Assessment / НМТ-симулятор Solo) — runtime-gate. Модуль `src/modules/exam/`
 // закомічено разом (BUILD-time import). Default OFF у проді, завжди ON у dev.
 const ASSESSMENT_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ASSESSMENT_ENABLED === 'true'
+// Домашні завдання (ДЗ) — приховано з прода (ламається). Роути лишаються зареєстровані
+// (щоб не зламати router.push з інших в'юх), але beforeEnter редіректить на home у проді.
+const ASSIGNMENTS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ASSIGNMENTS_ENABLED === 'true'
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -974,6 +977,8 @@ const routes = [
       // Assignment (Homework) — Vertical Slice (SSOT 2026-07-01). Inside PageShell (header+sidebar).
       {
         path: 'assignments',
+        // Приховано з прода: редірект на home, поки ДЗ не полагоджено (VITE_ASSIGNMENTS_ENABLED).
+        beforeEnter: () => (ASSIGNMENTS_ENABLED ? true : { path: '/' }),
         children: [
           {
             path: '',

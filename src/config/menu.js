@@ -1,3 +1,8 @@
+// Домашні завдання (ДЗ) — приховано з прода: на проді ламається ("Не вдалося завантажити
+// ДЗ"), контент/бекенд ще не готові. У dev працює; у проді вмикається VITE_ASSIGNMENTS_ENABLED.
+const ASSIGNMENTS_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ASSIGNMENTS_ENABLED === 'true'
+
 export const MENU_BY_ROLE = {
   superadmin: [
     { label: 'menu.dashboard', icon: 'home', to: '/staff' },
@@ -77,7 +82,9 @@ export const SECTIONED_MENU_BY_ROLE = {
         // Classroom Hub RETIRED (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — пункт прибрано.
         // join → Dashboard «Майбутні» + LESSON_STARTED notif; re-entry → G4 CTA; conduct → «Мої уроки».
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
-        { label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' },
+        ...(ASSIGNMENTS_ENABLED
+          ? [{ label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' }]
+          : []),
         // Lesson Constructor живе у /winterboard/boards (вкладка "Конструктор"), не у sidebar.
         // Гейтується через isLessonConstructorEnabled() у WBBoardList.vue.
         { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
@@ -125,7 +132,9 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.dashboard', icon: 'layout-dashboard', to: '/student' },
         { label: 'sidebar.item.mySchedule', icon: 'calendar', to: '/student/schedule' },
-        { label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' },
+        ...(ASSIGNMENTS_ENABLED
+          ? [{ label: 'sidebar.item.assignments', icon: 'clipboard-list', to: '/assignments', hint: 'sidebar.hint.assignments' }]
+          : []),
       ],
     },
     {
