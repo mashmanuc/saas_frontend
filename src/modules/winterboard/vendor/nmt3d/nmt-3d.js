@@ -92,12 +92,22 @@
 
   // Plane ∩ cube → ordered polygon vertices.
   // V — vertex dict {A, B, C, D, A1, B1, C1, D1}, planePts — 3 points defining the plane.
-  function computeCubeSection(V, planePts) {
-    const edges = [
-      ['A','B'],['B','C'],['C','D'],['D','A'],
-      ['A1','B1'],['B1','C1'],['C1','D1'],['D1','A1'],
-      ['A','A1'],['B','B1'],['C','C1'],['D','D1'],
-    ];
+  // Площа плоского 3D-полігона: ½·|Σ Vi×Vi₊₁| (вершини впорядковані, як їх віддає computeSection).
+  function polygonArea3(pts) {
+    if (!pts || pts.length < 3) return 0;
+    let sx = 0, sy = 0, sz = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      sx += p.y * q.z - p.z * q.y;
+      sy += p.z * q.x - p.x * q.z;
+      sz += p.x * q.y - p.y * q.x;
+    }
+    return Math.hypot(sx, sy, sz) / 2;
+  }
+
+  // Переріз площини (через 3 точки) з опуклим многогранником, заданим списком ребер.
+  // Загальний: працює для будь-якого шаблону з іменованими вершинами V + edge-list E.
+  function computeSection(V, edges, planePts) {
     const P0 = planePts[0];
     const n = cross(sub(planePts[1], P0), sub(planePts[2], P0));
     if (Math.hypot(n.x, n.y, n.z) < 1e-9) return planePts.slice();
@@ -2348,7 +2358,7 @@
       const P = lerp(V.A, V.B, p.t1);
       const Q = lerp(V.C, V.C1, p.t2);
       const R = lerp(V.D1, V.A1, p.t3);
-      const sectPts = computeCubeSection(V, [P, Q, R]);
+      const sectPts = computeSection(V, CUBE_E, [P, Q, R]);
       const labels = cubeLabels(V);
       labels.push({ pos: P, text: 'P', off: { x: -4, y: 22 }, dot: true });
       labels.push({ pos: Q, text: 'Q', off: { x: 14, y: 4 }, dot: true });
@@ -2388,7 +2398,165 @@
           aux.push({ kind: 'line', from: cnt, to: tip, color: '#3a8a4f', w: 1.6 });
         }
       }
-      return { kind: 'poly', V, E: CUBE_E, F: CUBE_F, labels, handles, aux };
+      return {
+        kind: 'poly', V, E: CUBE_E, F: CUBE_F, labels, handles, aux,
+        measures: { sectionArea: polygonArea3(sectPts), sectionVertices: sectPts.length },
+      };
+    },
+  };
+
+  // Спільний хвіст для section3-шаблонів: заливка перерізу + K-мітки + нормаль.
+  function sectionAux(sectPts, anchorPts, labels, aux, opts) {
+    if (opts.verticesLabel) {
+      let k = 1;
+      for (const sp of sectPts) {
+        const close = anchorPts.some(t => Math.hypot(t.x - sp.x, t.y - sp.y, t.z - sp.z) < 1e-3);
+        if (close) continue;
+        labels.push({ pos: sp, text: 'K' + k, off: { x: 6, y: -4 }, dot: true });
+        k++;
+      }
+    }
+    if (sectPts.length >= 3) {
+      aux.push({
+        kind: 'poly', pts: sectPts,
+        color: '#c4622a',
+        fill: '#c4622a',
+        fillOpacity: opts.fill ? 0.32 : 0.14,
+        w: 2,
+      });
+      if (opts.normal) {
+        let cx = 0, cy = 0, cz = 0;
+        for (const sp of sectPts) { cx += sp.x; cy += sp.y; cz += sp.z; }
+        cx /= sectPts.length; cy /= sectPts.length; cz /= sectPts.length;
+        const cnt = v3(cx, cy, cz);
+        const nVec = nrm(cross(sub(sectPts[1], sectPts[0]), sub(sectPts[2], sectPts[0])));
+        aux.push({ kind: 'line', from: cnt, to: v3(cnt.x + nVec.x * 0.45, cnt.y + nVec.y * 0.45, cnt.z + nVec.z * 0.45), color: '#3a8a4f', w: 1.6 });
+      }
+    }
+  }
+
+  TEMPLATES.pyramid4Section3 = {
+    key: 'pyramid4Section3',
+    name: 'Піраміда з перерізом через 3 точки',
+    full: 'SABCD · P ∈ SA · Q ∈ SC · R ∈ BC',
+    params: {
+      a:  { value: 1.8, min: 0.6, max: 2.8, label: 'a' },
+      h:  { value: 1.8, min: 0.4, max: 3.2, label: 'h' },
+      t1: { value: 0.5, min: 0.02, max: 0.98, label: 'P' },
+      t2: { value: 0.5, min: 0.02, max: 0.98, label: 'Q' },
+      t3: { value: 0.5, min: 0.02, max: 0.98, label: 'R' },
+    },
+    aux: [
+      { key: 'fill',          label: 'заливка перерізу' },
+      { key: 'verticesLabel', label: 'позначити вершини перерізу' },
+      { key: 'normal',        label: 'нормаль до перерізу' },
+    ],
+    build(p, opts = {}) {
+      const a = p.a / 2;
+      const V = {
+        A: v3(-a, 0,  a), B: v3( a, 0,  a), C: v3( a, 0, -a), D: v3(-a, 0, -a),
+        S: v3(0, p.h, 0),
+      };
+      const E = [
+        ['A','B'],['B','C'],['C','D'],['D','A'],
+        ['S','A'],['S','B'],['S','C'],['S','D'],
+      ];
+      const F = [
+        ['A','B','C','D'],
+        ['S','B','A'], ['S','C','B'], ['S','D','C'], ['S','A','D'],
+      ];
+      const P = lerp(V.S, V.A, p.t1);
+      const Q = lerp(V.S, V.C, p.t2);
+      const R = lerp(V.B, V.C, p.t3);
+      const sectPts = computeSection(V, E, [P, Q, R]);
+      const labels = [
+        { pos: V.A, text: 'A', off: { x: -8, y: 18 } },
+        { pos: V.B, text: 'B', off: { x: 10, y: 18 } },
+        { pos: V.C, text: 'C', off: { x: 12, y: 14 } },
+        { pos: V.D, text: 'D', off: { x: -12, y: 14 } },
+        { pos: V.S, text: 'S', off: { x: 8, y: -6 } },
+        { pos: P, text: 'P', off: { x: -14, y: 4 }, dot: true },
+        { pos: Q, text: 'Q', off: { x: 12, y: 4 }, dot: true },
+        { pos: R, text: 'R', off: { x: 10, y: 16 }, dot: true },
+      ];
+      const handles = [
+        { id: 'h',  paramKey: 'h',  worldPos: V.S, gradient: v3(0, 1, 0), hint: 'висота h' },
+        { id: 'a',  paramKey: 'a',  worldPos: V.B, gradient: v3(0.5, 0, 0.5), hint: 'ребро a' },
+        { id: 't1', paramKey: 't1', worldPos: P, gradient: sub(V.A, V.S), hint: 'P' },
+        { id: 't2', paramKey: 't2', worldPos: Q, gradient: sub(V.C, V.S), hint: 'Q' },
+        { id: 't3', paramKey: 't3', worldPos: R, gradient: sub(V.C, V.B), hint: 'R' },
+      ];
+      const aux = [];
+      sectionAux(sectPts, [P, Q, R], labels, aux, opts);
+      return {
+        kind: 'poly', V, E, F, labels, handles, aux,
+        measures: { sectionArea: polygonArea3(sectPts), sectionVertices: sectPts.length },
+      };
+    },
+  };
+
+  TEMPLATES.prism4Section3 = {
+    key: 'prism4Section3',
+    name: 'Призма з перерізом через 3 точки',
+    full: 'ABCDA₁B₁C₁D₁ · P ∈ AB · Q ∈ CC₁ · R ∈ D₁A₁',
+    params: {
+      a:  { value: 1.5, min: 0.6, max: 2.6, label: 'a' },
+      h:  { value: 2.0, min: 0.6, max: 3.4, label: 'h' },
+      t1: { value: 0.5, min: 0.02, max: 0.98, label: 'P' },
+      t2: { value: 0.5, min: 0.02, max: 0.98, label: 'Q' },
+      t3: { value: 0.5, min: 0.02, max: 0.98, label: 'R' },
+    },
+    aux: [
+      { key: 'fill',          label: 'заливка перерізу' },
+      { key: 'verticesLabel', label: 'позначити вершини перерізу' },
+      { key: 'normal',        label: 'нормаль до перерізу' },
+    ],
+    build(p, opts = {}) {
+      const a = p.a / 2;
+      const V = {
+        A:  v3(-a, 0,  a), B:  v3( a, 0,  a), C:  v3( a, 0, -a), D:  v3(-a, 0, -a),
+        A1: v3(-a, p.h,  a), B1: v3( a, p.h,  a), C1: v3( a, p.h, -a), D1: v3(-a, p.h, -a),
+      };
+      const E = [
+        ['A','B'],['B','C'],['C','D'],['D','A'],
+        ['A1','B1'],['B1','C1'],['C1','D1'],['D1','A1'],
+        ['A','A1'],['B','B1'],['C','C1'],['D','D1'],
+      ];
+      const F = [
+        ['A','B','C','D'], ['A1','D1','C1','B1'],
+        ['A','A1','B1','B'], ['D','C','C1','D1'],
+        ['B','B1','C1','C'], ['A','D','D1','A1'],
+      ];
+      const P = lerp(V.A, V.B, p.t1);
+      const Q = lerp(V.C, V.C1, p.t2);
+      const R = lerp(V.D1, V.A1, p.t3);
+      const sectPts = computeSection(V, E, [P, Q, R]);
+      const labels = [
+        { pos: V.A, text: 'A', off: { x: -8, y: 18 } },
+        { pos: V.B, text: 'B', off: { x: 10, y: 18 } },
+        { pos: V.C, text: 'C', off: { x: 12, y: 14 } },
+        { pos: V.D, text: 'D', off: { x: -12, y: 14 } },
+        { pos: V.A1, text: 'A₁', off: { x: -18, y: -8 } },
+        { pos: V.B1, text: 'B₁', off: { x: 10, y: -8 } },
+        { pos: V.C1, text: 'C₁', off: { x: 12, y: -6 } },
+        { pos: V.D1, text: 'D₁', off: { x: -22, y: -6 } },
+        { pos: P, text: 'P', off: { x: -4, y: 22 }, dot: true },
+        { pos: Q, text: 'Q', off: { x: 14, y: 4 }, dot: true },
+        { pos: R, text: 'R', off: { x: -8, y: -10 }, dot: true },
+      ];
+      const handles = [
+        { id: 'h',  paramKey: 'h',  worldPos: v3(0, p.h, 0), gradient: v3(0, 1, 0), hint: 'h' },
+        { id: 'a',  paramKey: 'a',  worldPos: V.B1, gradient: v3(0.5, 0, 0.5), hint: 'a' },
+        { id: 't1', paramKey: 't1', worldPos: P, gradient: v3(p.a, 0, 0), hint: 'P' },
+        { id: 't2', paramKey: 't2', worldPos: Q, gradient: v3(0, p.h, 0), hint: 'Q' },
+        { id: 't3', paramKey: 't3', worldPos: R, gradient: v3(0, 0, p.a), hint: 'R' },
+      ];
+      const aux = [];
+      sectionAux(sectPts, [P, Q, R], labels, aux, opts);
+      return {
+        kind: 'poly', V, E, F, labels, handles, aux,
+        measures: { sectionArea: polygonArea3(sectPts), sectionVertices: sectPts.length },
+      };
     },
   };
 
@@ -2606,6 +2774,8 @@
       } else {
         this.geom = this.template.build(this.params, this.opts);
       }
+      // Публічні виміри від шаблону (напр. sectionArea у section3-шаблонів); null якщо нема.
+      this.measures = (this.geom && this.geom.measures) || null;
     }
 
     _autoFit() {
@@ -2671,6 +2841,15 @@
       const fillPaths = [];
       const dotEls = [];
       const labelEls = [];
+      // External-renderer seam (frameSink): збираємо display-list лише коли sink задано.
+      // Без sink — нульова додаткова робота і байт-ідентичний SVG-рендер.
+      const wantFrame = typeof this.frameSink === 'function';
+      const frameFaces = wantFrame ? [] : null;
+      const frameEdges = wantFrame ? [] : null;
+      const frameCurves = wantFrame ? [] : null;
+      // Криві тіл обертання — ті самі path у SVG-масиви + семантична роль у frame.
+      const visCurve = (d, role) => { visiblePaths.push(d); if (wantFrame) frameCurves.push({ d, visible: true, role }); };
+      const hidCurve = (d, role) => { hiddenPaths.push(d); if (wantFrame) frameCurves.push({ d, visible: false, role }); };
 
       const proj = (P) => {
         const q = project(P, cam);
@@ -2691,6 +2870,29 @@
           const n = cross(sub(v1, v0), sub(v2, v0));
           const nCam = rotateByCam(n, cam);
           faceFront[fi] = nCam.z < 0;
+          if (wantFrame) {
+            const pts = f.map(name => proj(G.V[name]));
+            let zSum = 0;
+            for (const p of pts) zSum += p.z;
+            // Outward normal = -inward (winding CCW зсередини); Lambert від фіксованого
+            // camera-space світла зверху-зліва. shade — підказка 0..1, мапінг у кольори — renderer.
+            const nl = Math.hypot(nCam.x, nCam.y, nCam.z) || 1;
+            const shade = Math.max(0, (-nCam.x / nl) * -0.30 + (-nCam.y / nl) * 0.75 + (-nCam.z / nl) * 0.59);
+            frameFaces.push({
+              id: 'f' + fi,
+              pts: pts.map(p => ({ x: p.x, y: p.y })),
+              front: faceFront[fi],
+              shade: Math.round(shade * 100) / 100,
+              _z: zSum / pts.length,
+            });
+          }
+        }
+        if (wantFrame && frameFaces.length) {
+          // depth: 0 = найближча грань, 1 = найдальша (камера з +z ⇒ більший z = ближче)
+          let zMin = Infinity, zMax = -Infinity;
+          for (const ff of frameFaces) { if (ff._z < zMin) zMin = ff._z; if (ff._z > zMax) zMax = ff._z; }
+          const span = (zMax - zMin) || 1;
+          for (const ff of frameFaces) { ff.depth = Math.round(((zMax - ff._z) / span) * 100) / 100; delete ff._z; }
         }
         // For each edge, find adjacent faces and decide visibility
         const edgeFaces = new Map();
@@ -2712,12 +2914,14 @@
           const pB = proj(G.V[b]);
           const d = `M${pA.x.toFixed(1)},${pA.y.toFixed(1)} L${pB.x.toFixed(1)},${pB.y.toFixed(1)}`;
           (visible ? visiblePaths : hiddenPaths).push(d);
+          if (wantFrame) frameEdges.push({ pts: [{ x: pA.x, y: pA.y }, { x: pB.x, y: pB.y }], visible });
         }
       } else if (G.kind === 'unfolded') {
         // Net unfolding — flat geometry, all edges visible.
         for (const [a, b] of G.edges) {
           const pA = proj(a), pB = proj(b);
           visiblePaths.push(`M${pA.x.toFixed(1)},${pA.y.toFixed(1)} L${pB.x.toFixed(1)},${pB.y.toFixed(1)}`);
+          if (wantFrame) frameEdges.push({ pts: [{ x: pA.x, y: pA.y }, { x: pB.x, y: pB.y }], visible: true });
         }
       } else if (G.kind === 'cylinder') {
         const r = G.r, h = G.h;
@@ -2727,17 +2931,17 @@
         topRing.forEach(p => { p.x += ox; p.y += oy; });
         botRing.forEach(p => { p.x += ox; p.y += oy; });
         // top ring fully visible
-        visiblePaths.push(polylineToPath(topRing));
+        visCurve(polylineToPath(topRing), 'ring');
         // bottom: front half visible, back half hidden
         const split = frontBackOfRing(botRing);
-        visiblePaths.push(polylineToPath(split.front));
-        hiddenPaths.push(polylineToPath(split.back));
+        visCurve(polylineToPath(split.front), 'ring');
+        hidCurve(polylineToPath(split.back), 'ring');
         // silhouette generators: vertical lines from bottom split points to top split points
         // Find equivalent splits on the top ring at same screen-x extremes:
         const topSplit = frontBackOfRing(topRing);
         // Connect lower split A → upper split A, lower split B → upper split B
-        visiblePaths.push(`M${split.splitA.x.toFixed(1)},${split.splitA.y.toFixed(1)} L${topSplit.splitA.x.toFixed(1)},${topSplit.splitA.y.toFixed(1)}`);
-        visiblePaths.push(`M${split.splitB.x.toFixed(1)},${split.splitB.y.toFixed(1)} L${topSplit.splitB.x.toFixed(1)},${topSplit.splitB.y.toFixed(1)}`);
+        visCurve(`M${split.splitA.x.toFixed(1)},${split.splitA.y.toFixed(1)} L${topSplit.splitA.x.toFixed(1)},${topSplit.splitA.y.toFixed(1)}`, 'silhouette');
+        visCurve(`M${split.splitB.x.toFixed(1)},${split.splitB.y.toFixed(1)} L${topSplit.splitB.x.toFixed(1)},${topSplit.splitB.y.toFixed(1)}`, 'silhouette');
 
         // aux
         if (G.opts.height) {
@@ -2762,13 +2966,13 @@
         const ox = cx + (cam.offsetX || 0), oy = cy + (cam.offsetY || 0);
         botRing.forEach(p => { p.x += ox; p.y += oy; });
         const split = frontBackOfRing(botRing);
-        visiblePaths.push(polylineToPath(split.front));
-        hiddenPaths.push(polylineToPath(split.back));
+        visCurve(polylineToPath(split.front), 'ring');
+        hidCurve(polylineToPath(split.back), 'ring');
         // Apex
         const S = proj(v3(0, h, 0));
         // Generators to tangent points (split A and B)
-        visiblePaths.push(`M${split.splitA.x.toFixed(1)},${split.splitA.y.toFixed(1)} L${S.x.toFixed(1)},${S.y.toFixed(1)}`);
-        visiblePaths.push(`M${split.splitB.x.toFixed(1)},${split.splitB.y.toFixed(1)} L${S.x.toFixed(1)},${S.y.toFixed(1)}`);
+        visCurve(`M${split.splitA.x.toFixed(1)},${split.splitA.y.toFixed(1)} L${S.x.toFixed(1)},${S.y.toFixed(1)}`, 'silhouette');
+        visCurve(`M${split.splitB.x.toFixed(1)},${split.splitB.y.toFixed(1)} L${S.x.toFixed(1)},${S.y.toFixed(1)}`, 'silhouette');
 
         if (G.opts.height) {
           const O = proj(v3(0, 0, 0));
@@ -2792,13 +2996,13 @@
         const ox = cx + (cam.offsetX || 0), oy = cy + (cam.offsetY || 0);
         botRing.forEach(p => { p.x += ox; p.y += oy; });
         topRing.forEach(p => { p.x += ox; p.y += oy; });
-        visiblePaths.push(polylineToPath(topRing));
+        visCurve(polylineToPath(topRing), 'ring');
         const splitBot = frontBackOfRing(botRing);
-        visiblePaths.push(polylineToPath(splitBot.front));
-        hiddenPaths.push(polylineToPath(splitBot.back));
+        visCurve(polylineToPath(splitBot.front), 'ring');
+        hidCurve(polylineToPath(splitBot.back), 'ring');
         const splitTop = frontBackOfRing(topRing);
-        visiblePaths.push(`M${splitBot.splitA.x.toFixed(1)},${splitBot.splitA.y.toFixed(1)} L${splitTop.splitA.x.toFixed(1)},${splitTop.splitA.y.toFixed(1)}`);
-        visiblePaths.push(`M${splitBot.splitB.x.toFixed(1)},${splitBot.splitB.y.toFixed(1)} L${splitTop.splitB.x.toFixed(1)},${splitTop.splitB.y.toFixed(1)}`);
+        visCurve(`M${splitBot.splitA.x.toFixed(1)},${splitBot.splitA.y.toFixed(1)} L${splitTop.splitA.x.toFixed(1)},${splitTop.splitA.y.toFixed(1)}`, 'silhouette');
+        visCurve(`M${splitBot.splitB.x.toFixed(1)},${splitBot.splitB.y.toFixed(1)} L${splitTop.splitB.x.toFixed(1)},${splitTop.splitB.y.toFixed(1)}`, 'silhouette');
         if (G.opts.height) {
           const o0 = proj(v3(0, 0, 0)), o1 = proj(v3(0, h, 0));
           auxPaths.push({ d: `M${o0.x.toFixed(1)},${o0.y.toFixed(1)} L${o1.x.toFixed(1)},${o1.y.toFixed(1)}`, color: '#c4622a', w: 1.6, dash: '7 3 1 3' });
@@ -2819,7 +3023,7 @@
         // Sphere silhouette in orthographic = a circle of radius r*scale around projected center
         const c = proj(v3(0, 0, 0));
         const sr = r * cam.scale;
-        visiblePaths.push(`M${c.x - sr},${c.y} A${sr},${sr} 0 1 0 ${c.x + sr},${c.y} A${sr},${sr} 0 1 0 ${c.x - sr},${c.y} Z`);
+        visCurve(`M${c.x - sr},${c.y} A${sr},${sr} 0 1 0 ${c.x + sr},${c.y} A${sr},${sr} 0 1 0 ${c.x - sr},${c.y} Z`, 'silhouette');
         if (G.opts.equator) {
           const ring = projectHorizCircle(0, r, 0, cam);
           const ox = cx + (cam.offsetX || 0), oy = cy + (cam.offsetY || 0);
@@ -2933,8 +3137,39 @@
         }
       }
 
+      // ── frameSink: віддати display-list зовнішньому рендереру (додатковий seam) ──
+      if (wantFrame) {
+        const AUX_ROLE = {
+          '#c4622a': 'height', '#3b7b9b': 'section', '#7b6193': 'diagonal',
+          '#a83a5b': 'section', '#3a8a4f': 'inscribed', '#7a6b56': 'hiddenPart', '#1a1612': 'rightAngle',
+        };
+        const frame = {
+          kind: G.kind === 'poly' ? 'solid' : G.kind === 'unfolded' ? 'unfolded' : 'curved',
+          view: { w: W, h: H, dpr: (typeof window !== 'undefined' && window.devicePixelRatio) || 1 },
+          camera: { yaw: cam.yaw, pitch: cam.pitch, scale: cam.scale },
+          faces: frameFaces || [],
+          edges: frameEdges || [],
+          curves: frameCurves || [],
+          aux: auxPaths.map(a => ({ d: a.d, role: AUX_ROLE[a.color] || 'aux', colorHint: a.color, w: a.w || 1.6, dash: a.dash || '' })),
+          fills: fillPaths.map(f => ({ d: f.d, role: AUX_ROLE[f.color] || 'section', colorHint: f.color, fillOpacity: f.fillOpacity })),
+          labels: labelEls.map(l => ({ x: l.x, y: l.y, text: l.text, italic: l.italic !== false })),
+          dots: dotEls.map(d => ({ x: d.x, y: d.y })),
+          strokes: this.strokes.map(s => ({ d: s.d, color: s.color, width: s.width })),
+          handles: handleEls.map(h => ({ x: h.x, y: h.y, id: h.id, shape: h.shape || 'circle' })),
+        };
+        try {
+          this.frameSink(frame);
+        } catch (err) {
+          console.warn('[NMT3D] frameSink error', err);
+        }
+      }
+
       // ===== compose SVG =====
+      // frameOnly + frameSink: фігуру малює зовнішній рендерер; SVG лишає ТІЛЬКИ handles
+      // (їх hit-test — DOM-ний, через .nmt3-handle). Без frameSink поведінка незмінна.
+      const chromeOnly = wantFrame && this.frameOnly === true;
       let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="nmt3-svg">`;
+      if (!chromeOnly) {
       // fills first
       for (const f of fillPaths) svg += `<path d="${f.d}" fill="${f.color}" fill-opacity="${f.fillOpacity}" stroke="none"/>`;
       // hidden edges
@@ -2949,6 +3184,7 @@
       for (const l of labelEls) svg += `<text x="${l.x.toFixed(1)}" y="${l.y.toFixed(1)}" font-family="'Times New Roman','STIX Two Text',serif" font-style="${l.italic === false ? 'normal' : 'italic'}" font-size="18" fill="#1a1612">${l.text}</text>`;
       // user pen strokes (drawn ABOVE figure, in both modes)
       for (const s of this.strokes) svg += `<path d="${s.d}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
       // handles last (top)
       for (const h of handleEls) {
         svg += `<g class="nmt3-handle" data-handle="${h.id}">`;

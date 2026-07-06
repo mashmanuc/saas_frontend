@@ -45,6 +45,19 @@ export interface Nmt3dWorkspace {
   destroy(): void
 
   onParamsChanged?: ((params: Record<string, number>) => void) | null
+  /**
+   * External-renderer seam (контракт §2 MASH_STEREOMASH_VISUAL_TZ.md): якщо задано,
+   * кожен рендер-тік двигун віддає display-list цьому колбеку. Не задано → двигун
+   * поводиться байт-ідентично (нуль додаткової роботи, SVG як завжди).
+   */
+  frameSink?: ((frame: Nmt3dFrame) => void) | null
+  /** true + frameSink → внутрішній SVG містить ЛИШЕ handles; фігуру малює зовнішній рендерер. */
+  frameOnly?: boolean
+  /**
+   * Виміри активної геометрії від шаблону (оновлюються кожен rebuild; читати після
+   * onParamsChanged). Section3-шаблони віддають { sectionArea, sectionVertices }; решта — null.
+   */
+  readonly measures: { sectionArea: number; sectionVertices: number } | null
   readonly pen: { tool: 'pen' | 'erase'; color: string; width: number }
   readonly template: {
     name: string
@@ -53,6 +66,24 @@ export interface Nmt3dWorkspace {
     aux?: Array<{ key: string; label: string }>
     buildUnfolded?: unknown
   }
+}
+
+/** Display-list, який двигун віддає у frameSink (screen-space; §2 VISUAL_TZ). */
+export interface Nmt3dFrame {
+  kind: 'solid' | 'unfolded' | 'curved'
+  view: { w: number; h: number; dpr: number }
+  camera: { yaw: number; pitch: number; scale: number }
+  /** Лише для kind='solid': depth 0=найближча..1=найдальша; shade 0..1 Lambert-підказка. */
+  faces: Array<{ id: string; pts: Array<{ x: number; y: number }>; front: boolean; depth: number; shade: number }>
+  edges: Array<{ pts: [{ x: number; y: number }, { x: number; y: number }]; visible: boolean }>
+  /** Лише для kind='curved': готові path-рядки з семантичною роллю ('ring' = кільця основ/екватор-силует, 'silhouette' = обрисові твірні/коло кулі). */
+  curves: Array<{ d: string; visible: boolean; role: 'ring' | 'silhouette' }>
+  aux: Array<{ d: string; role: string; colorHint: string; w: number; dash: string }>
+  fills: Array<{ d: string; role: string; colorHint: string; fillOpacity: number }>
+  labels: Array<{ x: number; y: number; text: string; italic: boolean }>
+  dots: Array<{ x: number; y: number }>
+  strokes: Array<{ d: string; color: string; width: number }>
+  handles: Array<{ x: number; y: number; id: string; shape: string }>
 }
 
 declare global {
