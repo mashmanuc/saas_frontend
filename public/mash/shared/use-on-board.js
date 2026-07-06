@@ -24,6 +24,22 @@
       window.__mashUseOnBoard(envelope);
       return true;
     }
+    // A2-міст (host patch, upstream → Guide §6): envelope → localStorage →
+    // SPA-роут /mash/import (same-origin). Гість пройде реєстрацію/логін —
+    // handoff чекає у сховищі. preview у сховище не кладемо, якщо не влазить
+    // (quota) — сцена важливіша за картинку.
+    try {
+      try {
+        localStorage.setItem('mash:handoff', JSON.stringify(envelope));
+      } catch (_) {
+        localStorage.setItem('mash:handoff', JSON.stringify({ app: envelope.app, version: envelope.version, scene: envelope.scene, preview: null }));
+      }
+      // Відносний шлях: воронка і SPA — той самий origin (m4sh.org або dev-хост)
+      location.href = '/mash/import';
+      return true;
+    } catch (e) {
+      console.warn('MashUseOnBoard: handoff failed', e);
+    }
     const url = window.MASH_BOARD_URL;
     const msg = (window.MashI18n && MashI18n.ready)
       ? MashI18n.t('mash.common.boardFallback', { url })

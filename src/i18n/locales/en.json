@@ -9623,5 +9623,15 @@
         "released": "Released features will appear here"
       }
     }
+  },
+  "mashImport": {
+    "sessionName": "StereoMASH — funnel import",
+    "working": "Moving your object to the board…",
+    "empty": "Nothing to import. Build a figure in MASH and press “Use on board”.",
+    "invalid": "Could not read the scene. Please try again from the MASH calculator.",
+    "notStereo": "Board import currently works for StereoMASH. 2D, 3D and Geo are coming soon.",
+    "studentOnly": "Creating boards is available to tutors. Ask your tutor to add the object to a lesson.",
+    "error": "Failed to create the board. Please try again.",
+    "backToMash": "← Back to MASH"
   }
 }

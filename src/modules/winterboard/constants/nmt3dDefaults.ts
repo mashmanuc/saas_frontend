@@ -22,9 +22,10 @@ export const DEFAULT_NMT3D_W = 680
 export const DEFAULT_NMT3D_H = 500
 
 /**
- * Canonical order of the 23 NMT3D templates (same order as standalone page).
+ * Canonical order of the 25 NMT3D templates (same order as standalone page).
  * Used by Nmt3dTray to render buttons in the sidebar.
- * 21 original + ngonPyramid + ngonPrism (added 2026-05-26).
+ * 21 original + ngonPyramid + ngonPrism (2026-05-26)
+ * + pyramid4Section3 + prism4Section3 (B-lite, 2026-07-06).
  */
 export const NMT3D_TEMPLATE_ORDER: ReadonlyArray<string> = [
   'cube', 'cuboid',
@@ -35,7 +36,7 @@ export const NMT3D_TEMPLATE_ORDER: ReadonlyArray<string> = [
   'cylinder', 'cone', 'frustumCone', 'sphere',
   'cubeInscribedSphere', 'cubeCircumSphere', 'cylinderInscribedSphere',
   'sphereInscribedCone', 'coneInscribedCylinder',
-  'cubeSection3',
+  'cubeSection3', 'pyramid4Section3', 'prism4Section3',
 ]
 
 /**
@@ -66,6 +67,8 @@ export const NMT3D_TEMPLATE_LABELS: Readonly<Record<string, string>> = {
   sphereInscribedCone:  'Куля в конусі',
   coneInscribedCylinder:'Циліндр у конусі',
   cubeSection3:         'Переріз куба',
+  pyramid4Section3:     'Переріз піраміди',
+  prism4Section3:       'Переріз призми',
 }
 
 /** Build fresh default Nmt3dData for a newly dropped card. */

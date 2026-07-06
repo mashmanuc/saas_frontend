@@ -134,6 +134,16 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Content Preview', roles: ['tutor'] },
   },
   {
+    // A2 (MASH funnel bridge): «Використати на дошці» з публічної воронки /mash/*.
+    // Envelope чекає в localStorage['mash:handoff']; гість пройде auth-guard
+    // (?redirect=/mash/import) і повернеться сюди. student допущений до view —
+    // бачить чесний екран (solo-дошки tutor-only, Phase 5), а не глухий редирект.
+    path: '/mash/import',
+    name: 'mash-import',
+    component: () => import('./views/MashImportView.vue'),
+    meta: { title: 'MASH → дошка', roles: ['tutor', 'student'] },
+  },
+  {
     // Classroom runtime — tutor + student (живий урок)
     path: '/winterboard/classroom/:lessonId',
     name: 'winterboard-classroom',
