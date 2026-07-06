@@ -2,3 +2,11 @@
 # https://developers.cloudflare.com/pages/configuration/redirects/
 # NOTE: API calls go directly to backend (apiClient.js baseURL in production)
 # NOTE: SPA fallback is handled by Cloudflare Pages automatically (no rule needed)
+
+# MASH-воронка: короткі публічні адреси (301 → реальні файли; НЕ rewrite-200,
+# бо відносні шляхи всередині додатків резолвляться від реального каталогу)
+/mash        /mash/2d                        301
+/mash/2d     /mash/grapher/index.html        301
+/mash/3d     /mash/grapher-3d/index.html     301
+/mash/geo    /mash/geomash/GeoMASH.html      301
+/mash/stereo /mash/stereomash/index.html     301
