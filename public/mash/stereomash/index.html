@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StereoMASH — стереометрія НМТ</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="stereomash.css">
+<script src="../shared/mode-switch.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/use-on-board.js"></script>
+<script>MashI18n.initSync(null, '../i18n/');</script>
+<script src="./vendor/nmt-templates.js"></script>
+<script src="./vendor/nmt-3d.js"></script>
+<script src="gallery-thumbs.js"></script>
+<script src="analysis.js"></script>
+<script src="stereo-renderer.js"></script>
+<style>html, body { margin: 0; padding: 0; }</style>
+</head>
+<body>
+<div class="mash-stereo" id="stereo-root" tabindex="0">
+  <header class="st-header">
+    <div class="st-brand">
+      <svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M4 7.5 L11 3.5 L18 7.5 L18 14.5 L11 18.5 L4 14.5 Z"></path>
+        <path d="M4 7.5 L11 11 L18 7.5 M11 11 L11 18.5"></path>
+      </svg>
+      <span>Stereo<b>MASH</b></span>
+    </div>
+    <mash-mode-switch active="stereo" accent="#7c3aed"></mash-mode-switch>
+    <div class="st-header-right">
+      <button class="st-btn" id="st-lang" title="Мова / Language">UK</button>
+      <button class="st-btn" id="st-share" data-i18n="mash.common.share">Поділитися</button>
+      <button class="st-btn st-primary" id="st-board" data-i18n="mash.common.useOnBoard">Використати на дошці</button>
+    </div>
+  </header>
+  <div class="st-body">
+    <aside class="st-gallery" id="st-gallery"></aside>
+    <main class="st-stage-wrap">
+      <div class="st-figname" id="st-figname"></div>
+      <div class="st-stage" id="st-stage"></div>
+    </main>
+    <aside class="st-panel" id="st-panel"></aside>
+  </div>
+  <div class="st-toast" id="st-toast"></div>
+</div>
+<script>MashI18n.applyDom(document);</script>
+<script src="stereomash.js"></script>
+</body>
+</html>

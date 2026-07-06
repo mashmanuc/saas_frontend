@@ -1,0 +1,673 @@
+{
+  "mash": {
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "undo": "Undo",
+      "redo": "Redo",
+      "rename": "Rename",
+      "duplicate": "Duplicate",
+      "share": "Share",
+      "properties": "Properties",
+      "show": "Show",
+      "hide": "Hide",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "examples": "Examples",
+      "close": "Close",
+      "useOnBoard": "Use on board",
+      "boardFallback": "This scene is ready for the M4SH board — open {url} and paste it"
+    },
+    "modeSwitch": {
+      "title": "Switch calculator"
+    },
+    "g2d": {
+      "toolbar": {
+        "saved": "saved",
+        "help": "Help",
+        "settings": "Settings",
+        "addExpr": "Add expression",
+        "addTable": "Add data table",
+        "keypad": "Symbols & functions",
+        "docTitle": "Graph title"
+      },
+      "input": {
+        "placeholder": "y = x²   ·   x²+y²=9   ·   (2, 3)"
+      },
+      "gallery": {
+        "title": "Example collection"
+      },
+      "help": {
+        "title": "How to use",
+        "intro": "Enter one expression per field on the left."
+      },
+      "presets": {
+        "parabola": "Parabola",
+        "circle": "Circle",
+        "sine": "Sine",
+        "heart": "Heart",
+        "ellipse": "Ellipse",
+        "lemniscate": "Lemniscate",
+        "rose": "Rose r(θ)"
+      }
+    },
+    "g3d": {
+      "toolbar": {
+        "split": "Show a 2D slice next to 3D",
+        "fontDown": "Smaller font",
+        "fontUp": "Larger font",
+        "mylib": "My saved graphs",
+        "shareTitle": "Copy a link to this graph",
+        "addExpr": "+ Expression"
+      },
+      "slice": {
+        "label": "slice",
+        "valTitle": "Value (pi, pi/2 allowed)"
+      },
+      "camera": {
+        "undo": "Undo (Ctrl+Z)",
+        "redo": "Redo (Ctrl+Shift+Z)",
+        "reset": "Reset",
+        "fit": "Fit",
+        "ortho": "Ortho",
+        "rotate": "Rotate",
+        "views": "Views",
+        "speed": "Speed"
+      },
+      "clip": {
+        "btn": "Clip",
+        "btnTitle": "Cut the body in half — look inside",
+        "label": "Clipping plane",
+        "showPlane": "Show the plane"
+      },
+      "export": {
+        "btn": "Export",
+        "png": "PNG (snapshot)",
+        "rec": "⏺ Record video",
+        "stl": "STL (text)",
+        "stlBin": "STL (binary, smaller)"
+      },
+      "gallery": {
+        "title": "Example gallery",
+        "search": "🔍 Search…"
+      },
+      "mylib": {
+        "title": "My graphs",
+        "save": "+ Save current scene"
+      },
+      "expr": {
+        "drag": "Drag to reorder",
+        "editHint": "Click to edit",
+        "empty": "enter an expression…",
+        "options": "Options",
+        "visibility": "Visibility",
+        "duplicate": "Duplicate",
+        "remove": "Remove",
+        "colormap": "Colormap",
+        "cmSolid": "Solid",
+        "cmCurvature": "Curvature",
+        "cm_viridis": "Viridis",
+        "cm_jet": "Jet",
+        "cm_cool": "Cool",
+        "cm_warm": "Warm",
+        "cm_grey": "Grey",
+        "wireframe": "Wireframe",
+        "isolines": "Isolines",
+        "count": "Count",
+        "opacity": "Opacity",
+        "range": "Range",
+        "resolution": "Resolution",
+        "animation": "Animation",
+        "unfoldCurve": "▶ Unfold curve",
+        "tFrom": "t from",
+        "tTo": "t to",
+        "uRange": "u [from,to]",
+        "vRange": "v [from,to]",
+        "placeholder": "z=sin(x)*cos(y)  ·  # Group heading"
+      }
+    },
+    "geo": {
+      "toolbar": {
+        "select": "Select (Escape / V)",
+        "points": "Points (P)",
+        "lines": "Lines (S/L/R)",
+        "polygons": "Polygons (G)",
+        "circles": "Circles (C)",
+        "construct": "Construct (X/J/B/N/O)",
+        "measure": "Measure (A/D)",
+        "pan": "Pan (Space / Shift+drag)",
+        "colorGreen": "Green",
+        "colorBlue": "Blue",
+        "colorRed": "Red",
+        "colorOrange": "Orange",
+        "colorBlack": "Black",
+        "undo": "Undo Ctrl+Z",
+        "redo": "Redo Ctrl+Y",
+        "share": "Copy scene link",
+        "grid": "Grid Ctrl+Shift+G"
+      },
+      "tools": {
+        "POINT": "Point",
+        "MIDPOINT": "Midpoint",
+        "INTERSECT": "Intersect",
+        "SEGMENT": "Segment",
+        "LINE": "Line",
+        "RAY": "Ray",
+        "VECTOR": "Vector",
+        "POLYGON": "Polygon",
+        "REGPOLY": "Regular polygon",
+        "CIRCLE": "Circle (center + point)",
+        "CIRCLER": "Circle (center + radius)",
+        "CIRCLE3": "Circle through 3 points",
+        "SEMICIRCLE": "Semicircle",
+        "ARC": "Arc through 3 points",
+        "PERP": "Perpendicular line",
+        "PARALLEL": "Parallel line",
+        "PERPBIS": "Perpendicular bisector",
+        "ANGBIS": "Angle bisector",
+        "TANGENT": "Tangents",
+        "ANGLE": "Angle",
+        "DISTANCE": "Distance",
+        "SLIDER": "Slider"
+      },
+      "toolDesc": {
+        "POINT": "Add a free point",
+        "MIDPOINT": "Midpoint of two points",
+        "INTERSECT": "Click two objects",
+        "SEGMENT": "Between two points",
+        "LINE": "Through two points",
+        "RAY": "From a point through a point",
+        "VECTOR": "Directed segment",
+        "POLYGON": "Dbl-click or close the loop",
+        "REGPOLY": "Two vertices + count",
+        "CIRCLE": "Two clicks",
+        "CIRCLER": "Click + number",
+        "CIRCLE3": "Three clicks",
+        "SEMICIRCLE": "Two clicks — diameter",
+        "ARC": "Three clicks",
+        "PERP": "Point + line",
+        "PARALLEL": "Point + line",
+        "PERPBIS": "Two points",
+        "ANGBIS": "Three points (vertex second)",
+        "TANGENT": "Point + circle",
+        "ANGLE": "Three points (vertex second)",
+        "DISTANCE": "Two points",
+        "SLIDER": "Click on the canvas"
+      },
+      "statusTool": {
+        "SELECT": "Select",
+        "POINT": "Point",
+        "SEGMENT": "Segment",
+        "LINE": "Line",
+        "RAY": "Ray",
+        "VECTOR": "Vector",
+        "MIDPOINT": "Midpoint",
+        "POLYLINE": "Polyline",
+        "POLYGON": "Polygon",
+        "REGPOLY": "Reg. polygon",
+        "CIRCLE": "Circle",
+        "CIRCLER": "Circle R",
+        "CIRCLE3": "Circle 3pt",
+        "SEMICIRCLE": "Semicircle",
+        "ARC": "Arc",
+        "ANGLE": "Angle",
+        "DISTANCE": "Distance",
+        "SLIDER": "Slider",
+        "INTERSECT": "Intersect",
+        "PERP": "Perpendicular",
+        "PARALLEL": "Parallel",
+        "PERPBIS": "Perp. bis.",
+        "ANGBIS": "Bisector",
+        "TANGENT": "Tangents",
+        "PAN": "Pan"
+      },
+      "hints": {
+        "SELECT": "Click — select · Shift+click — multi-select · Drag — rubber-band · Shift+drag — pan",
+        "POINT": "Click — new point · Click an existing one — select",
+        "PAN": "Drag the canvas · Shift+drag in any tool",
+        "first": "Click — first point",
+        "second": "Click — second point",
+        "midSecond": "Click — second point (midpoint is created)",
+        "rayStart": "Click — start",
+        "rayDir": "Click — direction",
+        "vecStart": "Click — vector start",
+        "vecEnd": "Click — vector end",
+        "circleCenter": "Click — circle center",
+        "circleOn": "Click — a point on the circle",
+        "circleR": "Click — center (then radius as a number)",
+        "vertexN": "Vertex {n} (min {min})",
+        "polygonClose": "Another vertex, or click the first one to close (dbl-click)",
+        "polylineClose": "Another vertex, or dbl-click to finish",
+        "circle3_1": "Click — 1st point of the circle",
+        "circle3_2": "Click — 2nd point of the circle",
+        "circle3_3": "Click — 3rd point of the circle",
+        "arc1": "Click — arc start",
+        "arc2": "Click — a point on the arc",
+        "arc3": "Click — arc end",
+        "semi1": "Click — first end of the diameter",
+        "semi2": "Click — second end of the diameter",
+        "regpoly1": "Click — first vertex",
+        "regpoly2": "Click — second vertex (then the vertex count)",
+        "angle1": "Click — point on the first side",
+        "angle2": "Click — angle vertex",
+        "angle3": "Click — point on the second side",
+        "slider": "Click — place the slider (drag its handle in select mode)",
+        "intersect1": "Click — first object (line/circle)",
+        "intersect2": "Click — second object",
+        "lineOrSeg": "Click — line/segment",
+        "point": "Click — point",
+        "pointOrLine": "Click — point or line",
+        "circleClick": "Click — circle",
+        "pointOrCircle": "Click — point or circle",
+        "point1": "Click — first point",
+        "point2": "Click — second point"
+      },
+      "dialogs": {
+        "radius": "Radius:",
+        "vertices": "Number of vertices:",
+        "sliderRange": "min, max, step:",
+        "sliderValue": "{id} =",
+        "rename": "New name:",
+        "pointCoords": "{id} = x, y"
+      },
+      "ctx": {
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "center": "Center (0,0)",
+        "fit": "Fit all",
+        "selectAll": "Select all",
+        "rename": "Rename",
+        "duplicate": "Duplicate",
+        "copyStyle": "Copy style",
+        "properties": "Properties",
+        "hideObj": "Hide object",
+        "showObj": "Show object",
+        "lock": "Lock",
+        "unlock": "Unlock",
+        "labels": "Label",
+        "lmNone": "Don't show",
+        "lmName": "Name",
+        "lmNameValue": "Name + Value",
+        "lmValue": "Value",
+        "delete": "Delete"
+      },
+      "props": {
+        "color": "Color",
+        "thickness": "Thickness",
+        "sliderRange": "Slider range…",
+        "renameShort": "Rename",
+        "hide": "Hide",
+        "show": "Show",
+        "selected": "Selected: {n}"
+      },
+      "panel": {
+        "objects": "▷ Objects",
+        "inputPlaceholder": "Input: A=(2,3), f(x)=x²",
+        "groupPoints": "Points",
+        "groupLines": "Lines",
+        "groupCircles": "Circles",
+        "groupPolygons": "Polygons",
+        "groupShapes": "Shapes",
+        "types": {
+          "point": "point",
+          "segment": "segment",
+          "line": "line",
+          "ray": "ray",
+          "vector": "vector",
+          "polyline": "polyline",
+          "polygon": "polygon",
+          "polygonN": "{n}-gon",
+          "circle": "circle",
+          "circle3": "circle 3pt",
+          "arc": "arc",
+          "semicircle": "semicircle",
+          "distance": "distance",
+          "angle": "angle",
+          "slider": "slider",
+          "perp": "perpendicular",
+          "para": "parallel",
+          "perpbis": "perp. bisector",
+          "angbis": "bisector",
+          "tangent": "tangent"
+        },
+        "hide": "Hide"
+      },
+      "empty": {
+        "title": "The canvas is empty",
+        "body": "Pick a tool above and click here.<br>Shortcuts: <b>P</b> point · <b>S</b> segment · <b>C</b> circle"
+      },
+      "viewport": {
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "fit": "Fit all objects",
+        "home": "Reset view"
+      }
+    },
+    "stereo": {
+      "toolbar": {
+        "toBoard": "→ To board"
+      },
+      "groups": {
+        "poly": "Polyhedra",
+        "round": "Solids of revolution",
+        "combo": "Combined",
+        "sect": "Sections"
+      },
+      "gallery": {
+        "cube": "Cube",
+        "cuboid": "Rectangular cuboid",
+        "pyramid4": "Regular quadrilateral pyramid",
+        "pyramid3": "Regular triangular pyramid",
+        "prism4": "Regular quadrilateral prism",
+        "cylinder": "Cylinder",
+        "cone": "Cone",
+        "sphere": "Sphere",
+        "trapPyramid": "Pyramid with trapezoid base",
+        "prism6": "Regular hexagonal prism",
+        "pyramid6": "Regular hexagonal pyramid",
+        "ngonPyramid": "Regular n-gonal pyramid",
+        "ngonPrism": "Regular n-gonal prism",
+        "tetrahedron": "Regular tetrahedron",
+        "frustumPyramid4": "Frustum of a quadrilateral pyramid",
+        "obliquePrism4": "Oblique quadrilateral prism",
+        "frustumCone": "Truncated cone (frustum)",
+        "cubeInscribedSphere": "Sphere inscribed in a cube",
+        "cubeCircumSphere": "Sphere circumscribed about a cube",
+        "cylinderInscribedSphere": "Sphere inscribed in a cylinder",
+        "sphereInscribedCone": "Cone inscribed in a sphere",
+        "coneInscribedCylinder": "Cylinder inscribed in a cone",
+        "cubeSection3": "Cube with a section through 3 points",
+        "pyramid4Section3": "Pyramid with a section through 3 points",
+        "prism4Section3": "Prism with a section through 3 points"
+      },
+      "aux": {
+        "cube": {
+          "bodyDiag": "diagonal AC₁",
+          "faceDiag": "face diagonal A₁C₁",
+          "diagSect": "section AB₁C₁D",
+          "center": "center O",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "cuboid": {
+          "bodyDiag": "diagonal AC₁",
+          "diagSectAC": "diagonal section ACC₁A₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, b, c",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "pyramid4": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "diags": "base diagonals",
+          "axSect": "axial section SAC",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "pyramid3": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "median": "median CM",
+          "axSect": "axial section SCM",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "prism4": {
+          "bodyDiag": "diagonal AC₁",
+          "diagSectAC": "diagonal section ACC₁A₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, h",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "cylinder": {
+          "height": "height OO₁",
+          "axSect": "axial section",
+          "radius": "radius"
+        },
+        "cone": {
+          "height": "height SO",
+          "slant": "slant SA",
+          "axSect": "axial section"
+        },
+        "sphere": {
+          "equator": "equator",
+          "axis": "axis NS",
+          "radius": "radius OA"
+        },
+        "trapPyramid": {
+          "height": "height SO ⊥ base",
+          "axMid": "section through midpoints of AB and CD",
+          "axAC": "section SAC",
+          "axBD": "section SBD",
+          "baseDiags": "base diagonals",
+          "midSect": "section at height h/2",
+          "sides": "label a, b, d"
+        },
+        "prism6": {
+          "smallDiag": "minor diagonal AC",
+          "bigDiag": "major diagonal AD",
+          "bodyDiag": "diagonal AD₁",
+          "apothem": "base apothem OM",
+          "diagSect": "diagonal section AD D₁A₁",
+          "sides": "label a, h",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "pyramid6": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "bigDiag": "base diagonal AD",
+          "axSect": "axial section SAD",
+          "sides": "label a, h",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "ngonPyramid": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "axSect": "axial section",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "ngonPrism": {
+          "bodyDiag": "body diagonal",
+          "apothem": "base apothem OM",
+          "sides": "label a, h",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "tetrahedron": {
+          "height": "height DO",
+          "apothem": "apothem DM",
+          "median": "median CM",
+          "axSect": "axial section DCM",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "frustumPyramid4": {
+          "height": "height OO₁",
+          "apothem": "apothem MM₁",
+          "axSect": "axial section ACC₁A₁",
+          "sides": "label a, b, h",
+          "baseIncBot": "inscribed circle of the bottom base",
+          "baseCircBot": "circumscribed circle of the bottom base",
+          "baseIncTop": "inscribed circle of the top base",
+          "baseCircTop": "circumscribed circle of the top base"
+        },
+        "obliquePrism4": {
+          "height": "height A₁H (⊥ to the base)",
+          "lateral": "lateral edge AA₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, h",
+          "baseInc": "inscribed circle of the base",
+          "baseCirc": "circumscribed circle of the base"
+        },
+        "frustumCone": {
+          "height": "height OO₁",
+          "slant": "slant AA₁",
+          "axSect": "axial section"
+        },
+        "cubeInscribedSphere": {
+          "centerLabel": "center O",
+          "radius": "radius OM",
+          "cubeDiag": "cube diagonal AC₁",
+          "tangents": "tangency points"
+        },
+        "cubeCircumSphere": {
+          "centerLabel": "center O",
+          "radius": "radius OA",
+          "cubeDiag": "cube diagonal AC₁ = 2R"
+        },
+        "cylinderInscribedSphere": {
+          "sphereCenter": "center O",
+          "radius": "sphere radius",
+          "height": "cylinder height 2R",
+          "axSect": "axial section"
+        },
+        "sphereInscribedCone": {
+          "sphereCenter": "center O",
+          "coneHeight": "cone height",
+          "coneRadius": "cone base radius",
+          "sphereEquator": "sphere equator"
+        },
+        "coneInscribedCylinder": {
+          "cylHeight": "cylinder height",
+          "cylRadius": "cylinder radius",
+          "coneHeight": "cone height"
+        },
+        "cubeSection3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "normal to the section"
+        },
+        "pyramid4Section3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "normal to the section"
+        },
+        "prism4Section3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "normal to the section"
+        }
+      },
+      "panel": {
+        "params": "Parameters",
+        "aux": "Auxiliary elements",
+        "views": "View",
+        "mode": "Mode",
+        "adapt": "Shape",
+        "draw": "Draw",
+        "unfold": "⧉ Unfold",
+        "reset": "⟳ Reset",
+        "autoOrbit": "▶ Rotate",
+        "width": "Width",
+        "eraser": "Eraser",
+        "clear": "Clear all",
+        "style": "Style",
+        "material": "Material",
+        "saturation": "Saturation",
+        "customColor": "Custom color",
+        "constructions": "Constructions",
+        "analysis": "Analysis",
+        "highlightFace": "Face…",
+        "selectAll": "✓ Select all",
+        "selectNone": "✕ Clear all"
+      },
+      "views": {
+        "v3d": "3D",
+        "iso": "Iso",
+        "front": "Front",
+        "side": "Side",
+        "top": "Top",
+        "bottom": "Bottom"
+      },
+      "msg": {
+        "sceneCopied": "Scene copied — paste it onto the board",
+        "linkCopied": "Link copied",
+        "copyFail": "Copy failed"
+      },
+      "style": {
+        "rich": "Rich",
+        "exam": "Exam style"
+      },
+      "vis": {
+        "solid": "Solid",
+        "translucent": "Translucent",
+        "wire": "Wireframe",
+        "wireface": "Wireframe + face"
+      },
+      "combo": {
+        "inscribeSphere": "○ Inscribe sphere",
+        "circumSphere": "● Circumscribe sphere",
+        "inscribeCylinder": "▭ Inscribe cylinder",
+        "inscribeCone": "△ Inscribe cone"
+      },
+      "analysis": {
+        "given": "Given",
+        "showFormulas": "ƒ Show formulas",
+        "hideFormulas": "Hide formulas",
+        "q": {
+          "V": "Volume",
+          "Stot": "Total surface",
+          "Slat": "Lateral surface",
+          "Sbase": "Base area",
+          "dBody": "Body diagonal",
+          "dFace": "Face diagonal",
+          "dSmall": "Minor diagonal",
+          "dBig": "Major diagonal",
+          "dAx": "Axial section diagonal",
+          "apothem": "Apothem",
+          "slant": "Slant height",
+          "rIn": "Inscribed circle radius",
+          "RCirc": "Circumscribed circle radius",
+          "height": "Height",
+          "lateral": "Lateral edge",
+          "angleFace": "Face–base angle",
+          "angleEdge": "Edge–base angle",
+          "angleSlant": "Slant–base angle",
+          "Vsph": "Sphere volume",
+          "Vbody": "Body volume",
+          "ratio": "Volume ratio",
+          "rBase": "Base radius",
+          "sectionArea": "Section area"
+        },
+        "gon": "gon"
+      },
+      "tabs": {
+        "figures": "Figures",
+        "scenes": "Scenes"
+      },
+      "scenes": {
+        "builtin": "Study scenes",
+        "my": "My scenes",
+        "save": "+ Save my scene",
+        "namePrompt": "Scene name:",
+        "delete": "Delete",
+        "items": {
+          "cubeSect": "Cube with section AB₁C₁D",
+          "pyrHeight": "Pyramid: height & apothem",
+          "pyrAxSect": "Pyramid: axial section",
+          "coneAx": "Cone: axial section & slant",
+          "cylAx": "Cylinder: axial section",
+          "sphInCube": "Sphere inscribed in a cube",
+          "tetMedian": "Tetrahedron with a median",
+          "prism6Diag": "Prism: diagonal section",
+          "frustApothem": "Frustum: apothem",
+          "cubeSect3": "Cube section through 3 points",
+          "coneInSphere": "Cone inscribed in a sphere",
+          "pyrSect3": "Pyramid section through 3 points",
+          "prismSect3": "Prism section through 3 points"
+        }
+      },
+      "presets": {
+        "title": "States",
+        "save": "+ Save state",
+        "namePrompt": "State name:",
+        "applyHint": "Click — apply · Alt+click — delete"
+      }
+    }
+  }
+}

@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./geo-engine.js"></script>
+<script src="./geo-renderer.js"></script>
+<script src="../shared/mode-switch.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/use-on-board.js"></script>
+<script>MashI18n.initSync(null, '../i18n/');</script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { margin: 0; overflow: hidden; background: var(--mash-bg, #fff); }
+    .mash-geo button { font-family: var(--mash-font, 'Space Grotesk', sans-serif); }
+    .mash-geo button:focus-visible { outline: 2px solid #2060c8; outline-offset: 1px; }
+    .mash-geo ::-webkit-scrollbar { width: 5px; }
+    .mash-geo ::-webkit-scrollbar-thumb { background: #d0dcd0; border-radius: 3px; }
+    .mash-geo input::placeholder { color: #bbb; }
+    .geo-tooltip {
+      position: fixed; background: #1c2030; color: #fff;
+      font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+      padding: 4px 9px; border-radius: 5px; pointer-events: none;
+      white-space: nowrap; z-index: 9999; display: none;
+    }
+  </style>
+</helmet>
+
+<!-- Root -->
+<div class="mash-geo" style="display:flex;flex-direction:column;height:100vh;overflow:hidden;font-family:var(--mash-font, 'Space Grotesk', sans-serif);user-select:none;">
+
+  <!-- ══ TOP TOOLBAR ══ -->
+  <div style="display:flex;align-items:center;background:#fff;border-bottom:1px solid #e0e6ea;height:50px;padding:0 8px;gap:0;flex-shrink:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:6px;padding:0 10px;border-right:1px solid #e8eee8;margin-right:8px;height:50px;">
+      <span style="font-size:16px;font-weight:700;color:#1a5c38;letter-spacing:-.5px;">Geo<span style="color:#0d9488;">MASH</span></span>
+      <mash-mode-switch active="geo" accent="#1a5c38"></mash-mode-switch>
+    </div>
+
+    <!-- SELECT -->
+    <button onClick="{{ doSelect }}" title="Вибрати (Escape / V)" data-i18n-title="mash.geo.toolbar.select" style="{{ btnStyle('SELECT') }}">
+      <svg width="17" height="17" viewBox="0 0 17 17"><path d="M2 1.5l11 7.5-5.5 1.5-2 5-3.5-14z" fill="currentColor" stroke="currentColor" stroke-width=".3" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div style="width:1px;height:26px;background:#e0e6ea;margin:0 4px;"></div>
+
+    <!-- POINT GROUP btn -->
+    <button onClick="{{ doPtDrop }}" title="Точки (P)" data-i18n-title="mash.geo.toolbar.points" style="{{ btnGroupStyle('points') }}">
+      <span style="font-size:14px;font-weight:700;margin-right:2px;">●</span>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+
+    <!-- LINE GROUP btn -->
+    <button onClick="{{ doLineDrop }}" title="Лінії (S/L/R)" data-i18n-title="mash.geo.toolbar.lines" style="{{ btnGroupStyle('lines') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <circle cx="3" cy="15" r="2.5" fill="currentColor"/>
+        <line x1="3" y1="15" x2="15" y2="3" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="15" cy="3" r="2.5" fill="currentColor"/>
+      </svg>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5;margin-left:1px;"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+
+    <!-- POLYGON GROUP -->
+    <button onClick="{{ doPolyDrop }}" title="Многокутники (G)" data-i18n-title="mash.geo.toolbar.polygons" style="{{ btnGroupStyle('polygons') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <polygon points="9,2 17,15 1,15" fill="{{ polyFill }}" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="9" cy="2" r="2" fill="currentColor"/>
+        <circle cx="17" cy="15" r="2" fill="currentColor"/>
+        <circle cx="1" cy="15" r="2" fill="currentColor"/>
+      </svg>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5;margin-left:1px;"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+
+    <!-- CIRCLE GROUP -->
+    <button onClick="{{ doCircDrop }}" title="Кола (C)" data-i18n-title="mash.geo.toolbar.circles" style="{{ btnGroupStyle('circles') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="9" cy="2" r="2" fill="currentColor"/>
+        <circle cx="9" cy="9" r="2" fill="currentColor"/>
+      </svg>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5;margin-left:1px;"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+
+    <!-- CONSTRUCT GROUP -->
+    <button onClick="{{ doConsDrop }}" title="Побудови (X/J/B/N/O)" data-i18n-title="mash.geo.toolbar.construct" style="{{ btnGroupStyle('construct') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M2 15 H16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+        <path d="M9 15 V3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+        <path d="M9 11 H13 V15" stroke="currentColor" stroke-width="1.2" fill="none"></path>
+      </svg>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5;margin-left:1px;"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"></path></svg>
+    </button>
+
+    <!-- MEASURE GROUP -->
+    <button onClick="{{ doMeasDrop }}" title="Вимірювання (A/D)" data-i18n-title="mash.geo.toolbar.measure" style="{{ btnGroupStyle('measure') }}">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M2 16 L9 3 L16 16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path>
+        <path d="M5.6 9.4 A5.5 5.5 0 0 1 12.4 9.4" stroke="currentColor" stroke-width="1.4" fill="none"></path>
+      </svg>
+      <svg width="8" height="8" viewBox="0 0 8 8" style="opacity:.5;margin-left:1px;"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"></path></svg>
+    </button>
+
+    <div style="width:1px;height:26px;background:#e0e6ea;margin:0 4px;"></div>
+
+    <!-- MOVE CANVAS -->
+    <button onClick="{{ doPan }}" title="Переміщення (Space / Shift+drag)" data-i18n-title="mash.geo.toolbar.pan" style="{{ btnStyle('PAN') }}">
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+        <path d="M8.5 1v2.5M8.5 13.5V16M1 8.5h2.5M13.5 8.5H16M3.4 3.4l1.8 1.8M11.8 11.8l1.8 1.8M11.8 3.4l-1.8 1.8M3.4 11.8l1.8-1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- Spacer -->
+    <div style="flex:1;"></div>
+
+    <!-- COLOR SWATCHES -->
+    <div style="display:flex;gap:4px;align-items:center;margin-right:8px;">
+      <button onClick="{{ setColorGreen }}"  style="{{ colorBtn('#1a5c38') }}" title="Зелений" data-i18n-title="mash.geo.toolbar.colorGreen"></button>
+      <button onClick="{{ setColorBlue }}"   style="{{ colorBtn('#2060c8') }}" title="Синій" data-i18n-title="mash.geo.toolbar.colorBlue"></button>
+      <button onClick="{{ setColorRed }}"    style="{{ colorBtn('#e03030') }}" title="Червоний" data-i18n-title="mash.geo.toolbar.colorRed"></button>
+      <button onClick="{{ setColorOrange }}" style="{{ colorBtn('#e07030') }}" title="Помаранчевий" data-i18n-title="mash.geo.toolbar.colorOrange"></button>
+      <button onClick="{{ setColorBlack }}"  style="{{ colorBtn('#1c1c1c') }}" title="Чорний" data-i18n-title="mash.geo.toolbar.colorBlack"></button>
+    </div>
+
+    <div style="width:1px;height:26px;background:#e0e6ea;margin:0 4px;"></div>
+
+    <!-- UNDO REDO -->
+    <button onClick="{{ doUndo }}" title="Скасувати Ctrl+Z" data-i18n-title="mash.geo.toolbar.undo" style="{{ iconBtn }}" style-hover="background:#f0f5f0">↩</button>
+    <button onClick="{{ doRedo }}" title="Повторити Ctrl+Y" data-i18n-title="mash.geo.toolbar.redo" style="{{ iconBtn }}" style-hover="background:#f0f5f0">↪</button>
+    <button onClick="{{ doShare }}" title="Скопіювати посилання на сцену" data-i18n-title="mash.geo.toolbar.share" style="{{ iconBtn }}" style-hover="background:#f0f5f0">🔗</button>
+
+    <div style="width:1px;height:26px;background:#e0e6ea;margin:0 6px;"></div>
+
+    <!-- GRID toggle -->
+    <button onClick="{{ toggleGrid }}" title="Сітка Ctrl+Shift+G" data-i18n-title="mash.geo.toolbar.grid" style="{{ gridBtnStyle }}" style-hover="background:#f0f5f0">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 5h13M1 10h13M5 1v13M10 1v13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div style="display:flex;flex:1;overflow:hidden;position:relative;">
+
+    <!-- Algebra panel -->
+    <div style="{{ algebraPanelStyle }}">
+      <div style="padding:6px 8px;border-bottom:1px solid #eef2ee;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <input
+          value="{{ inputValue }}"
+          onChange="{{ onInputChange }}"
+          onKeyDown="{{ onInputKey }}"
+          placeholder="Ввод: A=(2,3), f(x)=x²" data-i18n-placeholder="mash.geo.panel.inputPlaceholder"
+          style="flex:1;border:1px solid #dde8dd;border-radius:6px;padding:5px 8px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:#222;outline:none;background:#fafcfa;"
+        ></input>
+      </div>
+
+      <!-- Object list -->
+      <div style="flex:1;overflow-y:auto;">
+        <sc-if value="{{ noObjs }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:40px 16px;text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;opacity:.3;">△</div>
+            <div style="font-size:12px;color:#aaa;line-height:1.6;">Об'єктів немає.<br>Оберіть інструмент<br>та клікніть на полотно.</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasPoints }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="padding:6px 10px 2px;font-size:10px;font-weight:700;color:#8a9e94;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;">
+              <span data-i18n="mash.geo.panel.groupPoints">Точки</span>
+            </div>
+            <sc-for list="{{ algoPts }}" as="p" hint-placeholder-count="0">
+              <div style="{{ p.row }}" onClick="{{ p.onSelect }}" style-hover="background:#f0f7f2">
+                <button onClick="{{ p.onToggleVis }}" style="width:18px;height:18px;border:none;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;border-radius:3px;color:{{ p.visColor }};" style-hover="background:#e0ece0">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" fill="{{ p.visFill }}"/></svg>
+                </button>
+                <span style="{{ p.dot }}"></span>
+                <span onDoubleClick="{{ p.onEdit }}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.label }}</span>
+                <button onClick="{{ p.onDel }}" title="Видалити" data-i18n-title="mash.common.delete" style="width:16px;height:16px;border:none;background:transparent;cursor:pointer;color:#d0c4c4;font-size:11px;flex-shrink:0;padding:0;line-height:1;" style-hover="color:#c02020">✕</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasLines }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="padding:6px 10px 2px;font-size:10px;font-weight:700;color:#8a9e94;letter-spacing:1.5px;text-transform:uppercase;" data-i18n="mash.geo.panel.groupLines">Лінії</div>
+            <sc-for list="{{ algoLines }}" as="l" hint-placeholder-count="0">
+              <div style="{{ l.row }}" onClick="{{ l.onSelect }}" style-hover="background:#f0f7f2">
+                <button onClick="{{ l.onToggleVis }}" style="width:18px;height:18px;border:none;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;border-radius:3px;color:{{ l.visColor }};" style-hover="background:#e0ece0">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" fill="{{ l.visFill }}"/></svg>
+                </button>
+                <span style="{{ l.dash }}"></span>
+                <span onDoubleClick="{{ l.onEdit }}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ l.label }}</span>
+                <button onClick="{{ l.onDel }}" title="Видалити" data-i18n-title="mash.common.delete" style="width:16px;height:16px;border:none;background:transparent;cursor:pointer;color:#d0c4c4;font-size:11px;flex-shrink:0;padding:0;line-height:1;" style-hover="color:#c02020">✕</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasCircles }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="padding:6px 10px 2px;font-size:10px;font-weight:700;color:#8a9e94;letter-spacing:1.5px;text-transform:uppercase;" data-i18n="mash.geo.panel.groupCircles">Кола</div>
+            <sc-for list="{{ algoCircles }}" as="c" hint-placeholder-count="0">
+              <div style="{{ c.row }}" onClick="{{ c.onSelect }}" style-hover="background:#f0f7f2">
+                <button onClick="{{ c.onToggleVis }}" style="width:18px;height:18px;border:none;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;border-radius:3px;color:{{ c.visColor }};" style-hover="background:#e0ece0">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" fill="{{ c.visFill }}"/></svg>
+                </button>
+                <span style="{{ c.ring }}"></span>
+                <span onDoubleClick="{{ c.onEdit }}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.label }}</span>
+                <button onClick="{{ c.onDel }}" title="Видалити" data-i18n-title="mash.common.delete" style="width:16px;height:16px;border:none;background:transparent;cursor:pointer;color:#d0c4c4;font-size:11px;flex-shrink:0;padding:0;line-height:1;" style-hover="color:#c02020">✕</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasPolys }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="padding:6px 10px 2px;font-size:10px;font-weight:700;color:#8a9e94;letter-spacing:1.5px;text-transform:uppercase;" data-i18n="mash.geo.panel.groupShapes">Фігури</div>
+            <sc-for list="{{ algoPolys }}" as="p" hint-placeholder-count="0">
+              <div style="{{ p.row }}" onClick="{{ p.onSelect }}" style-hover="background:#f0f7f2">
+                <button onClick="{{ p.onToggleVis }}" style="width:18px;height:18px;border:none;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;border-radius:3px;color:{{ p.visColor }};" style-hover="background:#e0ece0">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3" fill="{{ p.visFill }}"/></svg>
+                </button>
+                <span style="{{ p.sq }}"></span>
+                <span onDoubleClick="{{ p.onEdit }}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.label }}</span>
+                <button onClick="{{ p.onDel }}" title="Видалити" data-i18n-title="mash.common.delete" style="width:16px;height:16px;border:none;background:transparent;cursor:pointer;color:#d0c4c4;font-size:11px;flex-shrink:0;padding:0;line-height:1;" style-hover="color:#c02020">✕</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <!-- Toggle hide -->
+      <button onClick="{{ toggleAlgebra }}" style="border:none;border-top:1px solid #eef2ee;background:#fafcfa;cursor:pointer;font-size:11px;color:#8a9e94;height:28px;display:flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;width:100%;" style-hover="background:#f0f5f0">
+        ◁ <span data-i18n="mash.geo.panel.hide">Сховати</span>
+      </button>
+    </div>
+
+    <!-- Canvas area -->
+    <div style="flex:1;position:relative;overflow:hidden;background:#fff;">
+      <!-- Show algebra btn when hidden -->
+      <sc-if value="{{ algebraHidden }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ toggleAlgebra }}" style="position:absolute;top:10px;left:10px;z-index:5;background:#fff;border:1px solid #dde3e8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;color:#1a5c38;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.07);" style-hover="background:#f0f7f2" data-i18n="mash.geo.panel.objects">▷ Об'єкти</button>
+      </sc-if>
+
+      <!-- Properties panel -->
+      <sc-if value="{{ propsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:10px;right:10px;z-index:6;width:232px;background:#fff;border:1px solid #e0e8e0;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.10);font-size:13px;overflow:hidden;">
+          <div style="padding:10px 14px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0;">
+            <span style="font-weight:700;color:#0f2e1c;font-family:'IBM Plex Mono',monospace;font-size:13px;">{{ propTitle }}</span>
+            <span style="flex:1;"></span>
+            <button onClick="{{ propClose }}" style="border:none;background:transparent;cursor:pointer;color:#8a9e94;font-size:14px;padding:0;">✕</button>
+          </div>
+          <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:10px;font-weight:700;color:#aab;letter-spacing:1px;text-transform:uppercase;" data-i18n="mash.geo.props.color">Колір</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <sc-for list="{{ propSwatches }}" as="s" hint-placeholder-count="0">
+                <div onClick="{{ s.pick }}" style="{{ s.style }}"></div>
+              </sc-for>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:#aab;letter-spacing:1px;text-transform:uppercase;margin-top:2px;" data-i18n="mash.geo.props.thickness">Товщина</div>
+            <div style="display:flex;gap:6px;">
+              <sc-for list="{{ propWidths }}" as="w" hint-placeholder-count="0">
+                <button onClick="{{ w.pick }}" style="{{ w.style }}">{{ w.label }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ propIsSlider }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ propSliderRange }}" style="{{ propBtn }}" data-i18n="mash.geo.props.sliderRange">Діапазон повзунка…</button>
+            </sc-if>
+            <div style="display:flex;gap:6px;margin-top:2px;">
+              <sc-if value="{{ propCanRename }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ propRename }}" style="{{ propBtn }}" data-i18n="mash.geo.props.renameShort">Перейм.</button>
+              </sc-if>
+              <button onClick="{{ propToggleVis }}" style="{{ propBtn }}">{{ propVisLabel }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Zoom controls (Фаза 8) -->
+      <div style="position:absolute;right:10px;bottom:30px;z-index:5;display:flex;flex-direction:column;gap:4px;">
+        <button onClick="{{ zoomInBtn }}" title="Наблизити" data-i18n-title="mash.geo.viewport.zoomIn" style="{{ zoomBtn }}" style-hover="background:#f0f7f2">+</button>
+        <button onClick="{{ zoomOutBtn }}" title="Віддалити" data-i18n-title="mash.geo.viewport.zoomOut" style="{{ zoomBtn }}" style-hover="background:#f0f7f2">−</button>
+        <button onClick="{{ fitBtn }}" title="Вмістити всі об'єкти" data-i18n-title="mash.geo.viewport.fit" style="{{ zoomBtn }}" style-hover="background:#f0f7f2">⛶</button>
+        <button onClick="{{ homeBtn }}" title="Початковий вигляд" data-i18n-title="mash.geo.viewport.home" style="{{ zoomBtn }}" style-hover="background:#f0f7f2">⌂</button>
+      </div>
+
+      <!-- Empty state (Фаза 11) -->
+      <sc-if value="{{ emptyState }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:4;">
+          <div style="text-align:center;background:rgba(255,255,255,.88);border:1px dashed #c8d4cc;border-radius:14px;padding:22px 34px;backdrop-filter:blur(3px);">
+            <div style="font-size:26px;margin-bottom:6px;">✏︎</div>
+            <div style="font-size:14px;font-weight:600;color:#2a3a30;margin-bottom:4px;" data-i18n="mash.geo.empty.title">Полотно порожнє</div>
+            <div style="font-size:12px;color:#7a8e84;max-width:260px;line-height:1.5;" data-i18n-html="mash.geo.empty.body">Оберіть інструмент угорі й клікніть тут.<br>Швидкі клавіші: <b>P</b> точка · <b>S</b> відрізок · <b>C</b> коло</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Main canvas (visible) -->
+      <canvas ref="{{ mainCanvas }}" style="{{ canvasStyle }}"
+        onMouseDown="{{ onMD }}"
+        onMouseMove="{{ onMM }}"
+        onMouseUp="{{ onMU }}"
+        onMouseLeave="{{ onML }}"
+        onDoubleClick="{{ onDbl }}">
+      </canvas>
+
+      <!-- Hit canvas (offscreen) -->
+      <canvas ref="{{ hitCanvas }}" style="display:none;position:absolute;pointer-events:none;"></canvas>
+
+      <!-- COORD DISPLAY top-right -->
+      <div style="position:absolute;top:10px;right:12px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:#8a9e94;background:rgba(255,255,255,.85);padding:3px 8px;border-radius:5px;pointer-events:none;backdrop-filter:blur(4px);">{{ coordDisplay }}</div>
+
+      <!-- STATUS BAR bottom -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:28px;background:rgba(255,255,255,.94);border-top:1px solid #eef2ee;display:flex;align-items:center;padding:0 14px;gap:10px;pointer-events:none;backdrop-filter:blur(4px);">
+        <span style="font-size:11px;font-weight:700;color:#1a5c38;letter-spacing:.5px;text-transform:uppercase;min-width:70px;">{{ statusTool }}</span>
+        <span style="width:1px;height:14px;background:#e0e6e0;"></span>
+        <span style="font-size:12px;color:#5a7a64;">{{ statusHint }}</span>
+        <div style="flex:1;"></div>
+        <span style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:#aaa;">{{ zoomLabel }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DROPDOWN BACKDROP ══ -->
+  <sc-if value="{{ hasDropOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:300;" onClick="{{ closeDrops }}"></div>
+  </sc-if>
+
+  <!-- ══ DROPDOWN PANEL ══ -->
+  <sc-if value="{{ hasDropOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ dropStyle }}">
+      <sc-for list="{{ dropItems }}" as="it" hint-placeholder-count="0">
+        <div onClick="{{ it.action }}" style="{{ it.style }}" style-hover="background:#f0f7f2">
+          <span style="{{ it.iconSt }}">{{ it.icon }}</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;color:#1a1a1a;font-weight:{{ it.active }};">{{ it.name }}</div>
+            <div style="font-size:11px;color:#8a9e94;margin-top:1px;">{{ it.desc }}</div>
+          </div>
+          <span style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:#ccc;">{{ it.key }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- ══ CONTEXT MENU ══ -->
+  <sc-if value="{{ ctxOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:400;" onClick="{{ closeCtx }}">
+      <div style="{{ ctxStyle }}" onClick="{{ stopProp }}">
+        <sc-if value="{{ ctxIsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div onClick="{{ ctxZoomIn }}"  style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">🔍</span> <span data-i18n="mash.geo.ctx.zoomIn">Збільшити</span>
+            </div>
+            <div onClick="{{ ctxZoomOut }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">🔎</span> <span data-i18n="mash.geo.ctx.zoomOut">Зменшити</span>
+            </div>
+            <div style="height:1px;background:#f0f0f0;margin:2px 0;"></div>
+            <div onClick="{{ ctxCenter }}"  style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">⌂</span> <span data-i18n="mash.geo.ctx.center">Центрувати (0,0)</span>
+            </div>
+            <div onClick="{{ ctxFit }}"     style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">⊡</span> <span data-i18n="mash.geo.ctx.fit">Вписати все</span>
+            </div>
+            <div style="height:1px;background:#f0f0f0;margin:2px 0;"></div>
+            <div onClick="{{ ctxSelAll }}"  style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">☐</span> <span data-i18n="mash.geo.ctx.selectAll">Вибрати все</span> <span style="font-size:11px;color:#bbb;margin-left:auto;">Ctrl+A</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ ctxIsObj }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="padding:7px 14px 5px;font-size:11px;font-weight:700;color:#1a5c38;letter-spacing:.5px;">{{ ctxObjName }}</div>
+            <div style="height:1px;background:#f0f0f0;margin-bottom:2px;"></div>
+            <div onClick="{{ ctxToggleVis }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">◉</span> {{ ctxVisLabel }}
+            </div>
+            <div onClick="{{ ctxRename }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">✎</span> <span data-i18n="mash.geo.ctx.rename">Перейменувати</span>
+            </div>
+            <sc-if value="{{ ctxCanLock }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ ctxToggleLock }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+                <span style="opacity:.6;">🔒</span> {{ ctxLockLabel }}
+              </div>
+            </sc-if>
+            <div onClick="{{ ctxDup }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">⧉</span> <span data-i18n="mash.geo.ctx.duplicate">Дублювати</span>
+            </div>
+            <div onClick="{{ ctxCopyStyle }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">🖌</span> <span data-i18n="mash.geo.ctx.copyStyle">Взяти стиль</span>
+            </div>
+            <div onClick="{{ ctxProps }}" style="{{ ctxRowStyle }}" style-hover="background:#f0f7f2">
+              <span style="opacity:.6;">⚙</span> <span data-i18n="mash.geo.ctx.properties">Властивості</span>
+            </div>
+            <div style="padding:3px 0;">
+              <div style="padding:3px 14px 2px;font-size:10px;font-weight:700;color:#aaa;letter-spacing:1px;text-transform:uppercase;" data-i18n="mash.geo.ctx.labels">Позначення</div>
+              <div onClick="{{ lmNone }}"  style="{{ lmRow('none') }}"      style-hover="background:#f0f7f2" data-i18n="mash.geo.ctx.lmNone">Не показувати</div>
+              <div onClick="{{ lmName }}"  style="{{ lmRow('name') }}"      style-hover="background:#f0f7f2" data-i18n="mash.geo.ctx.lmName">Ім'я</div>
+              <div onClick="{{ lmNV }}"    style="{{ lmRow('nameValue') }}" style-hover="background:#f0f7f2" data-i18n="mash.geo.ctx.lmNameValue">Ім'я + Значення</div>
+              <div onClick="{{ lmVal }}"   style="{{ lmRow('value') }}"     style-hover="background:#f0f7f2" data-i18n="mash.geo.ctx.lmValue">Значення</div>
+            </div>
+            <div style="height:1px;background:#f0f0f0;margin:2px 0;"></div>
+            <div onClick="{{ ctxDel }}" style="padding:8px 14px;cursor:pointer;font-size:13px;color:#c02020;display:flex;align-items:center;gap:8px;" style-hover="background:#fde8e8">
+              <span style="opacity:.7;">🗑</span> <span data-i18n="mash.geo.ctx.delete">Видалити</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script>
+// i18n: dc-runtime рендерить <x-dc>-шаблон ПІСЛЯ цього скрипта —
+// повторюємо applyDom на відрендереному DOM (ретрай до появи хедера),
+// плюс ще раз через секунду — для пізніх гілок (панель алгебри тощо).
+MashI18n.applyDom(document);
+(function () {
+  if (!window.MashI18n || !MashI18n.ready || MashI18n.lang === 'uk') return;
+  let tries = 0;
+  const timer = setInterval(() => {
+    MashI18n.applyDom(document);
+    if (document.querySelector('mash-mode-switch') || ++tries > 100) {
+      clearInterval(timer);
+      // добиваємо елементи, що з'являються пізніше (умовні гілки шаблону)
+      setTimeout(() => MashI18n.applyDom(document), 600);
+      setTimeout(() => MashI18n.applyDom(document), 2000);
+    }
+  }, 100);
+})();
+// §5.3: мовна кнопка + CTA «Використати на дошці» — чекаємо на рендер dc-хедера,
+// додаємо праворуч (margin-left:auto) — стандартний порядок хедера MASH
+(function () {
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (++tries > 100) { clearInterval(timer); return; }
+    const sw = document.querySelector('mash-mode-switch');
+    if (!sw || !sw.parentElement || !sw.parentElement.parentElement) return;
+    const headerRow = sw.parentElement.parentElement; // рядок хедера (лого+тулбар)
+    if (headerRow.querySelector('.mash-header-right')) { clearInterval(timer); return; }
+    clearInterval(timer);
+    const wrap = document.createElement('div');
+    wrap.className = 'mash-header-right';
+    wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:auto;padding-right:6px;flex-shrink:0;';
+    const mkBtn = (txt, extra) => {
+      const b = document.createElement('button');
+      b.textContent = txt;
+      b.style.cssText = 'border:1px solid #d8e2da;background:#fff;color:#2a3a30;border-radius:7px;padding:6px 11px;font-size:11.5px;font-family:inherit;cursor:pointer;line-height:1;white-space:nowrap;' + (extra || '');
+      return b;
+    };
+    const lang = mkBtn('UK');
+    lang.title = 'Мова / Language';
+    window.MashLangInit(lang);
+    const T = (k, fb) => (window.MashI18n && MashI18n.ready && MashI18n.t(k) !== k) ? MashI18n.t(k) : fb;
+    const cta = mkBtn(T('mash.common.useOnBoard', 'Використати на дошці'),
+      'background:#0d9488;border-color:#0d9488;color:#fff;font-weight:600;');
+    cta.addEventListener('click', () => {
+      if (window.MashGeoApp) window.MashUseOnBoard('geo', window.MashGeoApp.serialize, 'canvas');
+    });
+    wrap.appendChild(lang);
+    wrap.appendChild(cta);
+    headerRow.appendChild(wrap);
+  }, 100);
+})();
+</script>
+<script type="text/x-dc" data-dc-script>
+/* ═══════════════════════════════════════════════════════════
+   GeoMASH — Phase 1: Foundation
+   Architecture: CoordSystem · GeoStore · HitTester ·
+                 SelectionState · Renderer · HistoryStack
+   ═══════════════════════════════════════════════════════════ */
+
+const T = (k, v) => (window.MashI18n && MashI18n.ready ? MashI18n.t('mash.geo.' + k, v) : k);
+
+// ── Опції вбудовування (гайд §2.1/§2.5): хост задає window.__mashGeoOpts ДО завантаження
+//   { state, onChange(scene), storage:'local'|'none', dialogs:{prompt,confirm}, lang }
+const GEO_OPTS = window.__mashGeoOpts || {};
+const GEO_DIALOGS = GEO_OPTS.dialogs || {
+  prompt:  (msg, def) => Promise.resolve(window.prompt(msg, def)),
+  confirm: (msg) => Promise.resolve(window.confirm(msg)),
+};
+const GEO_STORE_LOCAL = GEO_OPTS.storage !== 'none';
+
+class Component extends DCLogic {
+
+  // ── Refs ────────────────────────────────────────────────
+  mainCanvas = React.createRef();
+  hitCanvas  = React.createRef();
+
+  // ── Initial state (React-managed) ──────────────────────
+  state = {
+    tool:        'SELECT',   // SELECT | POINT | SEGMENT | LINE | RAY | VECTOR | POLYLINE | POLYGON | CIRCLE | CIRCLE3 | PAN
+    openDrop:    null,       // 'points'|'lines'|'polygons'|'circles'|null
+    dropAnchor:  {x:0,y:0},
+    objects:     new Map(),  // id → GeoObject
+    selection:   new Set(),  // selected ids
+    showAlgebra: true,
+    showProps:   true,
+    showGrid:    true,
+    gridMode:    'lines',    // 'lines' | 'polar'
+    ctx_:        null,       // { x, y, objId|null }
+    color:       '#1a5c38',
+    lw:          2,
+    inputValue:  '',
+    tick:        0,          // force re-render
+    cursorPos:   {wx:0,wy:0},// world coords of mouse
+  };
+
+  // ── Imperative / mutable (NOT in state) ────────────────
+  cs = null;    // CoordSystem
+  ctx = null;   // CanvasRenderingContext2D (main)
+  hx  = null;   // CanvasRenderingContext2D (hit)
+  raf = null;
+
+  hitMap   = new Map(); // "r,g,b" → id
+  hitDirty = true;
+
+  hovered  = null;  // id of hovered object
+  mDown    = false;
+  mDownPos = null;  // {sx,sy} screen px at mousedown
+  dragId   = null;  // point being dragged
+  dragFrom = null;  // {wx,wy} before drag started
+  panFrom  = null;  // {sx,sy,ox,oy} pan start
+  pending  = [];    // multi-click tool accumulator
+  pvPos    = null;  // {wx,wy} preview position or null
+
+  rubber   = null;  // {sx,sy,ex,ey} rubber-band rect
+
+  hist = []; // undo stack
+  fut  = []; // redo stack
+  nameCounters = {}; // { A:0, a:0, c:0, poly:0 }
+
+  // ── Lifecycle ──────────────────────────────────────────
+  componentDidMount() {
+    const mc = this.mainCanvas.current;
+    const hc = this.hitCanvas.current;
+    if (!mc || !hc) return;
+    this.ctx = mc.getContext('2d');
+    this.hx  = hc.getContext('2d');
+
+    this.cs = this.makeCS();
+    this.resize();
+    // chase: у свіжому iframe layout може стабілізуватись пізніше, а window.resize не прийде
+    { let tries = 0;
+      const chase = () => {
+        const mc = this.mainCanvas.current;
+        if (mc && mc.parentElement) {
+          const want = mc.parentElement.clientWidth;
+          if (want >= 50 && Math.abs(mc.width - want) > 2) this.resize();
+        }
+        if (++tries < 12) setTimeout(chase, 50);
+      };
+      setTimeout(chase, 50); }
+
+    mc.addEventListener('wheel', e => { e.preventDefault(); this.onWheel(e); }, { passive: false });
+    mc.addEventListener('contextmenu', e => { e.preventDefault(); this.onRClick(e); });
+    // keydown — лише коли фокус не в чужому UI (готовність до вбудовування в дошку):
+    // якщо задано window.__mashKeydownScope (елемент), реагуємо тільки всередині нього
+    document.addEventListener('keydown', this._keyHandler = e => {
+      const scope = window.__mashKeydownScope;
+      if (scope && e.target instanceof Node && !scope.contains(e.target)) return;
+      this.onKey(e);
+    });
+    window.addEventListener('resize', this._resizeHandler = () => this.resize());
+
+    this.raf = requestAnimationFrame(() => this.loop());
+    // rAF може не доставлятись у свіжому iframe — setTimeout-fallback запускає цикл сам
+    setTimeout(() => {
+      if (!this._loopStarted && !this._unmounted) {
+        cancelAnimationFrame(this.raf);
+        this._stFallback = true;
+        this.loop();
+      }
+    }, 120);
+
+    // ── Фаза 2.5: відновлення сцени (opts.state > URL-хеш > autosave) ──
+    try {
+      let saved = GEO_OPTS.state || null;
+      if (!saved && location.hash.length > 2) {
+        try { saved = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1))))); } catch (_) {}
+      }
+      if (!saved && GEO_STORE_LOCAL) { try { saved = JSON.parse(localStorage.getItem('mash:geo:scene') || localStorage.getItem('geomash-scene')); } catch (_) {} }
+      if (saved && Array.isArray(saved.objects) && saved.objects.length) {
+        const m = new Map(saved.objects.map(o => [o.id, { ...o }]));
+        this.hitDirty = true;
+        this.setState({ objects: m });
+        // камеру відновлюємо ПІСЛЯ chase-resize, щоб resize її не перетер
+        if (saved.cs) setTimeout(() => {
+          this.cs.ox = saved.cs.ox; this.cs.oy = saved.cs.oy; this.cs.sc = saved.cs.sc;
+        }, 700);
+      }
+    } catch (_) {}
+    // Autosave кожні 2с — лише при змінах (вимкнено при storage:'none')
+    this._saveTimer = setInterval(() => {
+      try {
+        const data = JSON.stringify(this.serializeScene());
+        if (data !== this._lastSave) {
+          if (GEO_STORE_LOCAL) localStorage.setItem('mash:geo:scene', data);
+          this._lastSave = data;
+          if (GEO_OPTS.onChange) GEO_OPTS.onChange(JSON.parse(data));
+        }
+      } catch (_) {}
+    }, GEO_OPTS.onChange ? 400 : 2000);
+
+    // ── Публічний API для хоста (гайд §2.1) ──
+    window.MashGeoApp = {
+      serialize: () => this.serializeScene(),
+      loadScene: (scene) => this.loadScene(scene),
+      destroy:   () => this.destroyApp(),
+    };
+  }
+
+  serializeScene() {
+    return GeoEngine.serialize(this.state.objects, this.cs);
+  }
+
+  loadScene(scene) {
+    if (!scene || !Array.isArray(scene.objects)) return;
+    const m = new Map(scene.objects.map(o => [o.id, { ...o }]));
+    this.hitDirty = true;
+    this.hist = []; this.fut = [];
+    if (scene.cs) { this.cs.ox = scene.cs.ox; this.cs.oy = scene.cs.oy; this.cs.sc = scene.cs.sc; }
+    this.setState({ objects: m, selection: new Set() });
+  }
+
+  destroyApp() {
+    this._unmounted = true;
+    cancelAnimationFrame(this.raf);
+    if (this.rr) { this.rr.destroy(); this.rr = null; }
+    clearInterval(this._saveTimer);
+    clearTimeout(this._stTimer);
+    if (this._keyHandler)    document.removeEventListener('keydown', this._keyHandler);
+    if (this._resizeHandler) window.removeEventListener('resize', this._resizeHandler);
+    if (window.MashGeoApp) delete window.MashGeoApp;
+  }
+
+  componentWillUnmount() {
+    if (GEO_STORE_LOCAL) {
+      try { localStorage.setItem('mash:geo:scene', JSON.stringify(this.serializeScene())); } catch (_) {}
+    }
+    this.destroyApp();
+  }
+
+  makeCS() {
+    return {
+      ox: 0, oy: 0, sc: 60,
+      MIN_SC: 4, MAX_SC: 800,
+      S(wx, wy) { return [this.ox + wx * this.sc, this.oy - wy * this.sc]; },
+      W(sx, sy) { return [(sx - this.ox) / this.sc, (this.oy - sy) / this.sc]; },
+      zoomAt(sx, sy, factor) {
+        const [wx, wy] = this.W(sx, sy);
+        this.sc = Math.max(this.MIN_SC, Math.min(this.MAX_SC, this.sc * factor));
+        this.ox = sx - wx * this.sc;
+        this.oy = sy + wy * this.sc;
+      },
+    };
+  }
+
+  resize() {
+    const mc = this.mainCanvas.current; if (!mc) return;
+    const p = mc.parentElement;
+    const W = p.clientWidth, H = p.clientHeight - 28; // minus status bar
+    mc.width  = W; mc.height  = H;
+    const hc = this.hitCanvas.current;
+    if (hc) { hc.width = W; hc.height = H; }
+    if (this.cs) { this.cs.ox = W / 2; this.cs.oy = H / 2; }
+  }
+
+  // ── RAF loop ───────────────────────────────────────────
+  loop() {
+    this._loopStarted = true;
+    this.render_();
+    if (this._stFallback) { this._stTimer = setTimeout(() => { if (!this._unmounted) this.loop(); }, 33); return; }
+    this.raf = requestAnimationFrame(() => this.loop());
+  }
+
+  render_() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    // §4: увесь малюнок сцени — через GeoRenderer (одна копія рендер-коду)
+    if (!this.rr) this.rr = createGeoRenderer(ctx.canvas, { engine: GeoEngine });
+    this._view = { ox: this.cs.ox, oy: this.cs.oy, sc: this.cs.sc, w: W, h: H, dpr: 1 };
+    this.rr.draw({ objects: this.state.objects }, this._view, {
+      selection:  this.state.selection,
+      hover:      this.hovered,
+      pendingIds: this.pending,
+      showGrid:   this.state.showGrid,
+      gridMode:   this.state.gridMode || 'lines',
+      rubber:     this.rubber,
+    });
+    // Tool-preview — input-шар standalone-UI, малюється поверх кадру рендерера
+    this.drawPreview(ctx, W, H);
+  }
+
+  // ── Рендер сцени: див. geo-renderer.js (§4) ────────────
+  fmt(n) { return GeoRenderer.fmt(n); }
+
+    // ── PREVIEW (tool in progress) ─────────────────────────
+  drawPreview(ctx, W, H) {
+    // Кільця pending-точок і rubber-band малює GeoRenderer (ui.pendingIds / ui.rubber)
+    if (!this.pvPos) return;
+    const cs   = this.cs;
+    const objs = this.state.objects;
+    const {wx, wy} = this.pvPos;
+    const [sx, sy] = cs.S(wx, wy);
+    const tool = this.state.tool;
+
+    ctx.save();
+    // Ghost point at cursor
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle   = this.state.color;
+    ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Tool-specific preview
+    ctx.strokeStyle = this.state.color;
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([6, 4]);
+
+    if (['SEGMENT','LINE','RAY','VECTOR'].includes(tool) && this.pending.length === 1) {
+      const p1 = objs.get(this.pending[0]);
+      if (p1) {
+        const [x1, y1] = cs.S(p1.wx, p1.wy);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(sx, sy); ctx.stroke();
+        if (tool === 'LINE') {
+          const pts = this.extLine(p1.wx, p1.wy, wx, wy, W, H);
+          if (pts) { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); ctx.lineTo(pts[2], pts[3]); ctx.stroke(); }
+        } else if (tool === 'RAY') {
+          const pts = this.extRay(p1.wx, p1.wy, wx, wy, W, H);
+          if (pts) { ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); ctx.lineTo(pts[2], pts[3]); ctx.stroke(); }
+        }
+      }
+    }
+    if (tool === 'CIRCLE' && this.pending.length === 1) {
+      const c = objs.get(this.pending[0]);
+      if (c) {
+        const [cx, cy] = cs.S(c.wx, c.wy);
+        const r = Math.hypot(c.wx - wx, c.wy - wy) * cs.sc;
+        if (r > 2) { ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); }
+      }
+    }
+    if (['CIRCLE3','ARC'].includes(tool) && this.pending.length >= 1) {
+      const A = objs.get(this.pending[0]);
+      if (this.pending.length === 1 && A) {
+        const [x1, y1] = cs.S(A.wx, A.wy);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(sx, sy); ctx.stroke();
+      } else if (A) {
+        const M = objs.get(this.pending[1]);
+        const cc = M && this.circum(A, M, { wx, wy });
+        if (cc) {
+          if (tool === 'ARC') {
+            const prm = this.arcFrom(A, M, { wx, wy });
+            if (prm) { ctx.beginPath(); ctx.arc(prm.cx, prm.cy, prm.r, prm.sa, prm.ea, prm.ccw); ctx.stroke(); }
+          } else {
+            const [cx, cy] = cs.S(cc[0], cc[1]);
+            const r = Math.hypot(A.wx - cc[0], A.wy - cc[1]) * cs.sc;
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+          }
+        }
+      }
+    }
+    if (tool === 'SEMICIRCLE' && this.pending.length === 1) {
+      const A = objs.get(this.pending[0]);
+      if (A) {
+        const dx = wx - A.wx, dy = wy - A.wy;
+        if (Math.hypot(dx, dy) > 1e-6) {
+          const T = { wx: (A.wx + wx) / 2 - dy / 2, wy: (A.wy + wy) / 2 + dx / 2 };
+          const prm = this.arcFrom(A, T, { wx, wy });
+          if (prm) { ctx.beginPath(); ctx.arc(prm.cx, prm.cy, prm.r, prm.sa, prm.ea, prm.ccw); ctx.stroke(); }
+        }
+      }
+    }
+    if (tool === 'DISTANCE' && this.pending.length === 1) {
+      const A = objs.get(this.pending[0]);
+      if (A) { const [x1, y1] = cs.S(A.wx, A.wy); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(sx, sy); ctx.stroke(); }
+    }
+    if ((tool === 'ANGLE' || tool === 'ANGBIS') && this.pending.length >= 1) {
+      const aps = this.pending.map(id => objs.get(id)).filter(Boolean);
+      if (aps.length) {
+        ctx.beginPath();
+        const [f1, f2] = cs.S(aps[0].wx, aps[0].wy); ctx.moveTo(f1, f2);
+        for (let i = 1; i < aps.length; i++) { const [vx, vy] = cs.S(aps[i].wx, aps[i].wy); ctx.lineTo(vx, vy); }
+        ctx.lineTo(sx, sy); ctx.stroke();
+      }
+    }
+    if (tool === 'REGPOLY' && this.pending.length === 1) {
+      const A = objs.get(this.pending[0]);
+      if (A && Math.hypot(wx - A.wx, wy - A.wy) > 1e-6) {
+        const rp = this.regPolyPts(A, { wx, wy }, 5);
+        ctx.beginPath();
+        rp.forEach((p, i) => { const [px2, py2] = cs.S(p[0], p[1]); i ? ctx.lineTo(px2, py2) : ctx.moveTo(px2, py2); });
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+    if (tool === 'PERPBIS' && this.pending.length === 1) {
+      const A = objs.get(this.pending[0]);
+      if (A && Math.hypot(wx - A.wx, wy - A.wy) > 1e-9) {
+        const [mx0, my0] = cs.S((A.wx + wx) / 2, (A.wy + wy) / 2);
+        let ux = -(wy - A.wy), uy = wx - A.wx;
+        const m = Math.hypot(ux, uy) || 1;
+        const sxd = ux / m, syd = -uy / m;
+        ctx.beginPath(); ctx.moveTo(mx0 - 4000 * sxd, my0 - 4000 * syd); ctx.lineTo(mx0 + 4000 * sxd, my0 + 4000 * syd); ctx.stroke();
+      }
+    }
+    if ((tool === 'PERP' || tool === 'PARALLEL') && this.pendLn) {
+      const L = objs.get(this.pendLn);
+      const ld = L && this.lineDef(L);
+      if (ld) {
+        const ux = tool === 'PERP' ? -ld.dy : ld.dx;
+        const uy = tool === 'PERP' ? ld.dx  : ld.dy;
+        const m = Math.hypot(ux, uy) || 1;
+        const sxd = ux / m, syd = -uy / m;
+        ctx.beginPath(); ctx.moveTo(sx - 4000 * sxd, sy - 4000 * syd); ctx.lineTo(sx + 4000 * sxd, sy + 4000 * syd); ctx.stroke();
+      }
+    }
+    if ((tool === 'POLYGON' || tool === 'POLYLINE') && this.pending.length >= 1) {
+      const pts = this.pending.map(id => objs.get(id)).filter(Boolean);
+      ctx.beginPath();
+      const [fx, fy] = cs.S(pts[0].wx, pts[0].wy); ctx.moveTo(fx, fy);
+      for (let i = 1; i < pts.length; i++) {
+        const [vx, vy] = cs.S(pts[i].wx, pts[i].wy); ctx.lineTo(vx, vy);
+      }
+      ctx.lineTo(sx, sy); ctx.stroke();
+      // Highlight first point (close hint)
+      if (tool === 'POLYGON' && this.pending.length >= 3) {
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#2060c8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cs.S(pts[0].wx, pts[0].wy)[0], cs.S(pts[0].wx, pts[0].wy)[1], 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── HIT MAP — делегуємо в GeoRenderer.hitTest ──────────
+  buildHitMap() { /* hit-canvas веде GeoRenderer */ }
+
+  getHitAt(sx, sy) {
+    if (!this.rr || !this._view) return null;
+    return this.rr.hitTest({ objects: this.state.objects }, this._view, sx, sy, 0);
+  }
+
+  getTopHit(sx, sy) {
+    return this.getHitAt(sx, sy);
+  }
+
+    // ── SNAP ───────────────────────────────────────────────
+  snap(wx, wy) {
+    // Priority 1: existing point
+    const tolPt = 12 / this.cs.sc;
+    let best = null, bestD = Infinity;
+    for (const o of this.state.objects.values()) {
+      if (o.type !== 'point') continue;
+      const d = Math.hypot(wx - o.wx, wy - o.wy);
+      if (d < tolPt && d < bestD) { bestD = d; best = o; }
+    }
+    if (best) return { wx: best.wx, wy: best.wy, snapId: best.id };
+
+    // Priority 2: snap to object (пряма/відрізок/коло)
+    const tolObj = 8 / this.cs.sc;
+    let boPt = null, boD = Infinity;
+    const LT = ['segment', 'line', 'ray', 'vector', 'dline'];
+    for (const o of this.state.objects.values()) {
+      if (!o.visible) continue;
+      if (LT.includes(o.type)) {
+        const lc = this.lineClamp(o); if (!lc) continue;
+        const len2 = lc.dx * lc.dx + lc.dy * lc.dy;
+        if (len2 < 1e-18) continue;
+        let t = ((wx - lc.x) * lc.dx + (wy - lc.y) * lc.dy) / len2;
+        t = Math.max(lc.t0, Math.min(lc.t1, t));
+        const qx = lc.x + t * lc.dx, qy = lc.y + t * lc.dy;
+        const d = Math.hypot(wx - qx, wy - qy);
+        if (d < tolObj && d < boD) { boD = d; boPt = [qx, qy]; }
+      } else if (o.type === 'circle' || o.type === 'circle3') {
+        const cd = this.circleDefW(o); if (!cd) continue;
+        const dc = Math.hypot(wx - cd.cx, wy - cd.cy);
+        if (dc < 1e-9) continue;
+        const d = Math.abs(dc - cd.r);
+        if (d < tolObj && d < boD) {
+          boD = d;
+          boPt = [cd.cx + (wx - cd.cx) / dc * cd.r, cd.cy + (wy - cd.cy) / dc * cd.r];
+        }
+      }
+    }
+    if (boPt) return { wx: boPt[0], wy: boPt[1], snapId: null };
+
+    // Priority 3: grid snap (always on)
+    const sc = this.cs.sc;
+    const st = sc >= 100 ? 0.5 : sc >= 30 ? 1 : sc >= 12 ? 2 : 5;
+    return { wx: Math.round(wx / st) * st, wy: Math.round(wy / st) * st, snapId: null };
+  }
+
+  // ── CURSOR ─────────────────────────────────────────────
+  getCursor(sx, sy) {
+    const tool = this.state.tool;
+    if (tool === 'PAN' || this.panFrom) return this.mDown ? 'grabbing' : 'grab';
+
+    if (tool === 'SELECT') {
+      if (!this.mDown) {
+        const id = this.getTopHit(sx, sy);
+        if (id) {
+          const o = this.state.objects.get(id);
+          if (!o) return 'default';
+          if (o.type === 'point') return o.locked ? 'not-allowed' : 'grab';
+          if (o.type === 'slider') return 'ew-resize';
+          return 'move';
+        }
+        return 'default';
+      }
+      return this.dragId ? 'grabbing' : (this.rubber ? 'crosshair' : 'grabbing');
+    }
+
+    if (['POINT','SEGMENT','LINE','RAY','VECTOR','MIDPOINT','POLYGON','POLYLINE','CIRCLE','CIRCLER','CIRCLE3','SEMICIRCLE','ARC','REGPOLY','ANGLE','DISTANCE','SLIDER','INTERSECT','PERP','PARALLEL','PERPBIS','ANGBIS','TANGENT'].includes(tool)) {
+      // Hovering existing point → grab
+      const id = this.getTopHit(sx, sy);
+      if (id && this.state.objects.get(id)?.type === 'point') return 'grab';
+      return 'crosshair';
+    }
+    return 'default';
+  }
+
+  // ── GEOMETRY UTILS — делегуємо в GeoRenderer ───────────
+  extLine(x1, y1, x2, y2, W, H) { return GeoRenderer.extLine(this.cs, x1, y1, x2, y2, W, H); }
+  extRay(x1, y1, x2, y2, W, H)  { return GeoRenderer.extRay(this.cs, x1, y1, x2, y2, W, H); }
+
+    // ── Фаза 3: геометричні хелпери ────────────────────────
+  // ── Фаза 4: похідні прямі та перетини — делегуємо в GeoEngine ──
+  lineDef(o)    { return GeoEngine.lineDef(this.state.objects, o); }
+  dlineDef(o)   { return GeoEngine.dlineDef(this.state.objects, o); }
+  circleDefW(o) { return GeoEngine.circleDefW(this.state.objects, o); }
+  lineClamp(o)  { return GeoEngine.lineClamp(this.state.objects, o); }
+  intersectObjs(aId, bId) { return GeoEngine.intersectObjs(this.state.objects, aId, bId); }
+  collectPts(id) { return GeoEngine.collectPts(this.state.objects, id); }
+
+  // ── Фаза 3: геометрія — делегуємо в GeoEngine ──
+  circum(a, b, c)     { return GeoEngine.circum(a, b, c); }
+  arcFrom(A, M, B)    { return GeoEngine.arcFrom(this.cs, A, M, B); }
+  arcParams(o)        { return GeoEngine.arcParams(this.state.objects, this.cs, o); }
+  regPolyPts(A, B, n) { return GeoEngine.regPolyPts(A, B, n); }
+
+  objVal(o) { return GeoRenderer.objVal(GeoEngine, this.state.objects, o); }
+
+    // ── AUTO NAMING ────────────────────────────────────────
+  nextId(type) { return GeoEngine.nextId(this.state.objects, type); }
+
+  // ── CRUD ───────────────────────────────────────────────
+  addObj(o) {
+    const m = new Map(this.state.objects);
+    m.set(o.id, o);
+    this.hist.push({ t: 'add', id: o.id, snap: { ...o } });
+    this.fut = [];
+    this.hitDirty = true;
+    this.setState({ objects: m });
+    return o.id;
+  }
+
+  mkPt(wx, wy, id) {
+    const pid = id || this.nextId('point');
+    return this.addObj({
+      id: pid, type: 'point', wx, wy,
+      labelMode: 'name', visible: true, locked: false,
+      color: this.state.color, lw: 2, deps: [],
+    });
+  }
+
+  mk2pt(type, p1, p2) {
+    return this.addObj({
+      id: this.nextId(type), type,
+      p1, p2, labelMode: 'none',
+      visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2],
+    });
+  }
+
+  mkCircle(cid, rid) {
+    return this.addObj({
+      id: this.nextId('circle'), type: 'circle',
+      cid, rid, labelMode: 'none',
+      visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [cid, rid],
+    });
+  }
+
+  mkPolygon(vids) {
+    return this.addObj({
+      id: this.nextId('polygon'), type: 'polygon',
+      vids: [...vids], labelMode: 'none',
+      visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [...vids],
+    });
+  }
+
+  // Фаза 2: ламана зберігає ВСІ вершини
+  mkPolyline(vids) {
+    return this.addObj({
+      id: this.nextId('polyline'), type: 'polyline',
+      vids: [...vids], labelMode: 'none',
+      visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [...vids],
+    });
+  }
+
+  // Фаза 2: середина відрізка — залежна точка (не тягнеться, оновлюється з батьками)
+  mkMidpoint(a, b) {
+    const objs = this.state.objects;
+    const p1 = objs.get(a), p2 = objs.get(b);
+    if (!p1 || !p2) return;
+    return this.addObj({
+      id: this.nextId('point'), type: 'point',
+      wx: (p1.wx + p2.wx) / 2, wy: (p1.wy + p2.wy) / 2,
+      midOf: [a, b], deps: [a, b], locked: true,
+      labelMode: 'name', visible: true,
+      color: this.state.color, lw: this.state.lw,
+    });
+  }
+
+  // ── Фаза 3: фабрики конструкцій ────────────────────────
+  mkCircle3(p1, p2, p3) {
+    return this.addObj({
+      id: this.nextId('circle'), type: 'circle3', p1, p2, p3,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2, p3],
+    });
+  }
+
+  mkArc(p1, p2, p3) {
+    return this.addObj({
+      id: this.nextId('arc'), type: 'arc', p1, p2, p3,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2, p3],
+    });
+  }
+
+  mkSemicircle(p1, p2) {
+    return this.addObj({
+      id: this.nextId('arc'), type: 'semicircle', p1, p2,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2],
+    });
+  }
+
+  mkAngle(p1, p2, p3) {
+    return this.addObj({
+      id: this.nextId('angle'), type: 'angle', p1, p2, p3,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2, p3],
+    });
+  }
+
+  mkDistance(p1, p2) {
+    return this.addObj({
+      id: this.nextId('dist'), type: 'distance', p1, p2,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2],
+    });
+  }
+
+  mkSlider(wx, wy) {
+    return this.addObj({
+      id: this.nextId('slider'), type: 'slider', wx, wy,
+      min: 0, max: 5, step: 0.1, val: 1,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: 2, deps: [],
+    });
+  }
+
+  mkRegPoly(aId, bId, n) {
+    const objs = this.state.objects;
+    const A = objs.get(aId), B = objs.get(bId);
+    if (!A || !B) return;
+    const pts = this.regPolyPts(A, B, n);
+    const vids = [aId, bId];
+    for (let k = 2; k < n; k++) {
+      const pid = this.addObj({
+        id: this.nextId('point'), type: 'point',
+        wx: pts[k][0], wy: pts[k][1],
+        regOf: [aId, bId, n, k], deps: [aId, bId], locked: true,
+        labelMode: 'name', visible: true,
+        color: this.state.color, lw: 2,
+      });
+      vids.push(pid);
+    }
+    return this.mkPolygon(vids);
+  }
+
+  // ── Фаза 4: фабрики ──────────────────────────────────
+  mkDLine(sub, pid, lid) {
+    return this.addObj({
+      id: this.nextId('line'), type: 'dline', sub, pid, lid,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [pid, lid],
+    });
+  }
+
+  mkPerpBis(p1, p2) {
+    return this.addObj({
+      id: this.nextId('line'), type: 'dline', sub: 'perpbis', p1, p2,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2],
+    });
+  }
+
+  mkAngBis(p1, p2, p3) {
+    return this.addObj({
+      id: this.nextId('line'), type: 'dline', sub: 'angbis', p1, p2, p3,
+      labelMode: 'none', visible: true, locked: false,
+      color: this.state.color, lw: this.state.lw, deps: [p1, p2, p3],
+    });
+  }
+
+  mkTangent(pid, lid) {
+    for (const branch of [0, 1]) {
+      this.addObj({
+        id: this.nextId('line'), type: 'dline', sub: 'tangent', pid, lid, branch,
+        labelMode: 'none', visible: true, locked: false,
+        color: this.state.color, lw: this.state.lw, deps: [pid, lid],
+      });
+    }
+  }
+
+  mkIntersect(aId, bId) {
+    const pts = this.intersectObjs(aId, bId);
+    if (!pts) return;
+    const deps = [aId, bId, ...this.collectPts(aId), ...this.collectPts(bId)];
+    pts.forEach((p, i) => {
+      if (!p) return;
+      this.addObj({
+        id: this.nextId('point'), type: 'point', wx: p[0], wy: p[1],
+        intOf: [aId, bId, i], deps, locked: true,
+        labelMode: 'name', visible: true,
+        color: this.state.color, lw: 2,
+      });
+    });
+  }
+
+  // ── Фаза 9: редагування з панелі алгебри ────────────────
+  algRename(id) {
+    GEO_DIALOGS.prompt(T('dialogs.rename'), id).then(nn => {
+      if (nn !== null) this.renameObj(id, nn);
+    });
+  }
+
+  algEditPoint(id) {
+    const o = this.state.objects.get(id);
+    if (!o) return;
+    if (o.locked) { this.algRename(id); return; }
+    GEO_DIALOGS.prompt(T('dialogs.pointCoords', { id }), `${o.wx.toFixed(2)}, ${o.wy.toFixed(2)}`).then(inp => {
+      if (inp === null) return;
+      const [nx, ny] = inp.split(',').map(s => parseFloat(s));
+      if (!isFinite(nx) || !isFinite(ny)) return;
+      const o2 = this.state.objects.get(id);
+      if (!o2) return;
+      this.hist.push({ t: 'move', id, from: [o2.wx, o2.wy], to: [nx, ny] });
+      this.fut = [];
+      o2.wx = nx; o2.wy = ny;
+      this.updateDeps(id);
+      this.hitDirty = true;
+      this.setState({ tick: (this.state.tick || 0) + 1 });
+    });
+  }
+
+  algEditSlider(id) {
+    const o = this.state.objects.get(id);
+    if (!o) return;
+    GEO_DIALOGS.prompt(T('dialogs.sliderValue', { id }), o.val).then(inp => {
+      const v = parseFloat(inp);
+      if (!isFinite(v)) return;
+      const o2 = this.state.objects.get(id);
+      if (!o2) return;
+      o2.val = Math.min(o2.max, Math.max(o2.min, Math.round(v / o2.step) * o2.step));
+      this.setState({ tick: (this.state.tick || 0) + 1 });
+    });
+  }
+
+  // ── Фаза 7: властивості ────────────────────────────────
+  applyProps(patch) {
+    const m = new Map(this.state.objects);
+    for (const id of this.state.selection) {
+      const o = m.get(id);
+      if (o) m.set(id, { ...o, ...patch });
+    }
+    this.hitDirty = true;
+    this.setState({ objects: m });
+  }
+
+  // ── Фаза 6: керування об'єктами ──────────────────────
+  renameObj(id, name) {
+    name = (name || '').trim();
+    if (!name || name === id || this.state.objects.has(name)) { this.setState({ ctx_: null }); return; }
+    const m = GeoEngine.renameRefs(this.state.objects, id, name);
+    const sel = new Set([...this.state.selection].map(v => v === id ? name : v));
+    this.hitDirty = true;
+    if (this.hovered === id) this.hovered = name;
+    this.setState({ objects: m, selection: sel, ctx_: null });
+  }
+
+  // ── Фаза 10: групова вставка (спільне замикання залежностей) ──
+  pasteIds(ids) {
+    if (!ids || !ids.length) return;
+    const { entries, map } = GeoEngine.cloneClosure(this.state.objects, ids);
+    if (!entries.length) return;
+    const m = new Map(this.state.objects);
+    const snaps = [];
+    for (const [nid, n] of entries) { m.set(nid, n); snaps.push({ ...n }); }
+    this.hist.push({ t: 'gadd', ids: snaps.map(s => s.id), snaps });
+    this.fut = [];
+    this.hitDirty = true;
+    this.setState({ objects: m, selection: new Set(ids.map(i => map[i]).filter(Boolean)) });
+  }
+
+  dupObj(id) {
+    this.pasteIds([id]);
+    this.setState({ ctx_: null });
+  }
+
+  delObj(id) {
+    const m = new Map(this.state.objects);
+    const toKill = [id];
+    for (const [, o] of m) {
+      if ((o.deps || []).includes(id) && !toKill.includes(o.id)) toKill.push(o.id);
+    }
+    this.hist.push({ t: 'del', ids: toKill, snaps: toKill.map(d => ({ ...m.get(d) })) });
+    this.fut = [];
+    toKill.forEach(d => m.delete(d));
+    const sel = new Set(this.state.selection);
+    toKill.forEach(d => sel.delete(d));
+    this.hitDirty = true;
+    this.setState({ objects: m, selection: sel, ctx_: null });
+    if (this.hovered && toKill.includes(this.hovered)) this.hovered = null;
+  }
+
+  toggleVis(id) {
+    const m = new Map(this.state.objects), o = m.get(id); if (!o) return;
+    m.set(id, { ...o, visible: !o.visible });
+    this.setState({ objects: m });
+  }
+
+  setLM(id, mode) {
+    const m = new Map(this.state.objects), o = m.get(id); if (!o) return;
+    m.set(id, { ...o, labelMode: mode });
+    this.setState({ objects: m, ctx_: null });
+  }
+
+  updateDeps(changedId) { GeoEngine.updateDeps(this.state.objects, changedId); }
+
+  // ── HISTORY ────────────────────────────────────────────
+  // Фаза 2.5: посилання на сцену — base64-хеш + clipboard
+  doShare() {
+    try {
+      const json = JSON.stringify({ format: 'geomash-scene', version: 1,
+        objects: [...this.state.objects.values()],
+        cs: { ox: this.cs.ox, oy: this.cs.oy, sc: this.cs.sc } });
+      const hash = btoa(unescape(encodeURIComponent(json)));
+      history.replaceState(null, '', '#' + hash);
+      navigator.clipboard.writeText(location.href).catch(() => {});
+    } catch (_) {}
+  }
+
+  doUndo() {
+    if (!this.hist.length) return;
+    const cmd = this.hist.pop(); this.fut.push(cmd);
+    const m = new Map(this.state.objects);
+    if (cmd.t === 'add') m.delete(cmd.id);
+    else if (cmd.t === 'move') { const o = m.get(cmd.id); if (o) m.set(cmd.id, { ...o, wx: cmd.from[0], wy: cmd.from[1] }); }
+    else if (cmd.t === 'gmove') cmd.moves.forEach(mv => { const o = m.get(mv.id); if (o) m.set(mv.id, { ...o, wx: mv.from[0], wy: mv.from[1] }); });
+    else if (cmd.t === 'gadd') cmd.ids.forEach(i => m.delete(i));
+    else if (cmd.t === 'del')  cmd.snaps.forEach(o => m.set(o.id, { ...o }));
+    this.hitDirty = true;
+    const sel = new Set();
+    this.setState({ objects: m, selection: sel });
+  }
+
+  doRedo() {
+    if (!this.fut.length) return;
+    const cmd = this.fut.pop(); this.hist.push(cmd);
+    const m = new Map(this.state.objects);
+    if (cmd.t === 'add') m.set(cmd.id, { ...cmd.snap });
+    else if (cmd.t === 'move') { const o = m.get(cmd.id); if (o) m.set(cmd.id, { ...o, wx: cmd.to[0], wy: cmd.to[1] }); }
+    else if (cmd.t === 'gmove') cmd.moves.forEach(mv => { const o = m.get(mv.id); if (o) m.set(mv.id, { ...o, wx: mv.to[0], wy: mv.to[1] }); });
+    else if (cmd.t === 'gadd') cmd.snaps.forEach(o => m.set(o.id, { ...o }));
+    else if (cmd.t === 'del')  cmd.ids.forEach(i => m.delete(i));
+    this.hitDirty = true;
+    this.setState({ objects: m });
+  }
+
+  // ── MOUSE ──────────────────────────────────────────────
+  screenPos(e) {
+    const r = this.mainCanvas.current.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+
+  onMD(e) {
+    if (this.state.openDrop) { this.setState({ openDrop: null }); return; }
+    if (this.state.ctx_) { this.setState({ ctx_: null }); return; }
+    const [sx, sy] = this.screenPos(e);
+    const [wx, wy] = this.cs.W(sx, sy);
+    this.mDown = true; this.mDownPos = { sx, sy };
+
+    // Shift: в SELECT на об'єкті — multi-select toggle; інакше — pan
+    if (e.shiftKey) {
+      if (this.state.tool === 'SELECT') {
+        const hit = this.getTopHit(sx, sy);
+        if (hit) {
+          const sel = new Set(this.state.selection);
+          sel.has(hit) ? sel.delete(hit) : sel.add(hit);
+          this.setState({ selection: sel });
+          return;
+        }
+      }
+      this.panFrom = { sx, sy, ox: this.cs.ox, oy: this.cs.oy };
+      return;
+    }
+
+    const tool = this.state.tool;
+    if (tool === 'PAN') { this.panFrom = { sx, sy, ox: this.cs.ox, oy: this.cs.oy }; return; }
+
+    if (tool === 'SELECT') {
+      const hit = this.getTopHit(sx, sy);
+      if (hit) {
+        // Select on mousedown
+        if (!e.shiftKey) {
+          this.setState({ selection: new Set([hit]) });
+        } else {
+          const sel = new Set(this.state.selection);
+          sel.has(hit) ? sel.delete(hit) : sel.add(hit);
+          this.setState({ selection: sel });
+        }
+        // Prepare drag if free point
+        const o = this.state.objects.get(hit);
+        if (o?.type === 'point' && !o.locked) {
+          this.dragId   = hit;
+          this.dragFrom = { wx: o.wx, wy: o.wy };
+          // Груповий drag: якщо точка в множинному виборі
+          const sel = this.state.selection;
+          if (sel.has(hit) && sel.size > 1) {
+            this.dragGroup = [...sel]
+              .map(id => this.state.objects.get(id))
+              .filter(g => g && g.type === 'point' && !g.locked)
+              .map(g => ({ id: g.id, wx: g.wx, wy: g.wy }));
+          } else {
+            this.dragGroup = null;
+          }
+        } else if (o?.type === 'slider') {
+          this.sliderDrag = hit;
+        }
+      } else {
+        if (!e.shiftKey) this.setState({ selection: new Set() });
+        // Start rubber band
+        this.rubber = { sx, sy, ex: sx, ey: sy };
+      }
+    }
+  }
+
+  onMM(e) {
+    const [sx, sy] = this.screenPos(e);
+    const [wx, wy] = this.cs.W(sx, sy);
+    const sn = this.snap(wx, wy);
+
+    // Update cursor pos for display
+    this.setState({ cursorPos: { wx: sn.wx, wy: sn.wy } });
+
+    // Hover detection (only when not in action)
+    if (!this.mDown) {
+      const hit = this.getTopHit(sx, sy);
+      if (hit !== this.hovered) {
+        this.hovered = hit;
+        // Force cursor update via setState tick
+        this.setState({ tick: (this.state.tick || 0) + 1 });
+      }
+    }
+
+    // Update preview for construction tools
+    const tool = this.state.tool;
+    const constructing = ['POINT','SEGMENT','LINE','RAY','VECTOR','MIDPOINT','POLYGON','POLYLINE','CIRCLE','CIRCLER','CIRCLE3','SEMICIRCLE','ARC','REGPOLY','ANGLE','DISTANCE','SLIDER','INTERSECT','PERP','PARALLEL','PERPBIS','ANGBIS','TANGENT'].includes(tool);
+    if (constructing) {
+      this.pvPos = { wx: sn.wx, wy: sn.wy };
+    } else {
+      this.pvPos = null;
+    }
+
+    if (!this.mDown) return;
+
+    // Pan
+    if (this.panFrom) {
+      this.cs.ox = this.panFrom.ox + sx - this.panFrom.sx;
+      this.cs.oy = this.panFrom.oy + sy - this.panFrom.sy;
+      return;
+    }
+
+    // Drag slider handle
+    if (this.sliderDrag) {
+      const o = this.state.objects.get(this.sliderDrag);
+      if (o) {
+        const [ax] = this.cs.S(o.wx, o.wy);
+        let t = Math.max(0, Math.min(1, (sx - ax) / 140));
+        const raw = o.min + t * (o.max - o.min);
+        o.val = Math.round(raw / o.step) * o.step;
+      }
+      return;
+    }
+
+    // Drag point (single or group)
+    if (this.dragId) {
+      const o = this.state.objects.get(this.dragId);
+      if (o) {
+        if (this.dragGroup && this.dragGroup.length > 1) {
+          const main = this.dragGroup.find(g => g.id === this.dragId);
+          const ddx = sn.wx - (main ? main.wx : this.dragFrom.wx);
+          const ddy = sn.wy - (main ? main.wy : this.dragFrom.wy);
+          for (const g of this.dragGroup) {
+            const go = this.state.objects.get(g.id);
+            if (go) { go.wx = g.wx + ddx; go.wy = g.wy + ddy; this.updateDeps(g.id); }
+          }
+        } else {
+          o.wx = sn.wx; o.wy = sn.wy;
+          this.updateDeps(this.dragId);
+        }
+      }
+      return;
+    }
+
+    // Rubber band
+    if (this.rubber) {
+      this.rubber = { ...this.rubber, ex: sx, ey: sy };
+    }
+  }
+
+  onMU(e) {
+    const [sx, sy] = this.screenPos(e);
+    const [wx, wy] = this.cs.W(sx, sy);
+    const sn = this.snap(wx, wy);
+
+    const moved = this.mDownPos &&
+      (Math.abs(sx - this.mDownPos.sx) > 4 || Math.abs(sy - this.mDownPos.sy) > 4);
+
+    // Finish pan
+    if (this.panFrom) { this.panFrom = null; this.mDown = false; this.mDownPos = null; return; }
+
+    if (this.sliderDrag) { this.sliderDrag = null; this.mDown = false; this.mDownPos = null; return; }
+
+    // Finish drag
+    if (this.dragId) {
+      const o = this.state.objects.get(this.dragId);
+      if (this.dragGroup && this.dragGroup.length > 1) {
+        const moves = this.dragGroup
+          .map(g => { const go = this.state.objects.get(g.id); return go && (go.wx !== g.wx || go.wy !== g.wy) ? { id: g.id, from: [g.wx, g.wy], to: [go.wx, go.wy] } : null; })
+          .filter(Boolean);
+        if (moves.length) { this.hist.push({ t: 'gmove', moves }); this.fut = []; }
+      } else if (o && this.dragFrom && (o.wx !== this.dragFrom.wx || o.wy !== this.dragFrom.wy)) {
+        this.hist.push({ t: 'move', id: this.dragId, from: [this.dragFrom.wx, this.dragFrom.wy], to: [o.wx, o.wy] });
+        this.fut = [];
+      }
+      this.dragId = null; this.dragFrom = null; this.dragGroup = null;
+      this.mDown = false; this.mDownPos = null;
+      return;
+    }
+
+    // Finish rubber band
+    if (this.rubber && moved) {
+      const {sx: rsx, sy: rsy, ex, ey} = this.rubber;
+      const minX = Math.min(rsx, ex), maxX = Math.max(rsx, ex);
+      const minY = Math.min(rsy, ey), maxY = Math.max(rsy, ey);
+      const sel = new Set();
+      const inBox = (bwx, bwy) => { const [px, py] = this.cs.S(bwx, bwy); return px >= minX && px <= maxX && py >= minY && py <= maxY; };
+      for (const o of this.state.objects.values()) {
+        if (!o.visible) continue;
+        if (o.type === 'point' || o.type === 'slider') {
+          if (inBox(o.wx, o.wy)) sel.add(o.id);
+        } else {
+          const dpts = this.collectPts(o.id).map(id => this.state.objects.get(id)).filter(Boolean);
+          if (dpts.length && dpts.every(p => inBox(p.wx, p.wy))) sel.add(o.id);
+        }
+      }
+      if (sel.size > 0 || !e.shiftKey) this.setState({ selection: sel });
+      this.rubber = null;
+      this.mDown = false; this.mDownPos = null;
+      return;
+    }
+    this.rubber = null;
+
+    // Click (not moved → tool action)
+    if (!moved) {
+      this.handleClick(sx, sy, sn.wx, sn.wy, sn.snapId);
+    }
+
+    this.mDown = false; this.mDownPos = null;
+  }
+
+  onML() {
+    this.pvPos  = null;
+    this.hovered = null;
+    if (this.rubber) { this.rubber = null; }
+    if (this.panFrom && !this.dragId) { this.panFrom = null; this.mDown = false; }
+  }
+
+  onDbl(e) {
+    const tool = this.state.tool;
+    if (tool === 'POLYGON' && this.pending.length >= 3) {
+      this.mkPolygon(this.pending); this.pending = []; this.pvPos = null;
+    } else if (tool === 'POLYLINE' && this.pending.length >= 2) {
+      this.mkPolyline(this.pending);
+      this.pending = []; this.pvPos = null;
+    }
+  }
+
+  handleClick(sx, sy, wx, wy, snapId) {
+    const tool = this.state.tool;
+    if (!['PERP', 'PARALLEL', 'TANGENT'].includes(tool)) { this.pendPt = null; this.pendLn = null; }
+
+    if (tool === 'SELECT') {
+      // SELECT click handled in onMD
+      return;
+    }
+
+    if (tool === 'POINT') {
+      if (snapId) return; // click on existing point → don't create new
+      this.mkPt(wx, wy);
+      return;
+    }
+
+    if (['SEGMENT','LINE','RAY','VECTOR','MIDPOINT'].includes(tool)) {
+      let pid = snapId;
+      if (!pid) { const h = this.getTopHit(sx, sy); if (h && this.state.objects.get(h)?.type === 'point') pid = h; }
+      if (!pid) pid = this.mkPt(wx, wy);
+      if (this.pending.length === 0) { this.pending = [pid]; }
+      else {
+        if (tool === 'MIDPOINT') { this.mkMidpoint(this.pending[0], pid); }
+        else {
+          const typeMap = { SEGMENT:'segment', LINE:'line', RAY:'ray', VECTOR:'vector' };
+          this.mk2pt(typeMap[tool], this.pending[0], pid);
+        }
+        this.pending = []; this.pvPos = null;
+      }
+      return;
+    }
+
+    if (tool === 'CIRCLE') {
+      let pid = snapId;
+      if (!pid) { const h = this.getTopHit(sx, sy); if (h && this.state.objects.get(h)?.type === 'point') pid = h; }
+      if (!pid) pid = this.mkPt(wx, wy);
+      if (this.pending.length === 0) { this.pending = [pid]; }
+      else { this.mkCircle(this.pending[0], pid); this.pending = []; this.pvPos = null; }
+      return;
+    }
+
+    if (tool === 'POLYGON' || tool === 'POLYLINE') {
+      let pid = snapId;
+      if (!pid) { const h = this.getTopHit(sx, sy); if (h && this.state.objects.get(h)?.type === 'point') pid = h; }
+      if (!pid) pid = this.mkPt(wx, wy);
+      // Close polygon on first point
+      if (tool === 'POLYGON' && this.pending.length >= 3 && pid === this.pending[0]) {
+        this.mkPolygon(this.pending); this.pending = []; this.pvPos = null; return;
+      }
+      this.pending.push(pid);
+      return;
+    }
+
+    // ── Фаза 3 ──
+    if (['CIRCLE3','ARC','ANGLE'].includes(tool)) {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      if (this.pending.includes(pid)) return;
+      this.pending.push(pid);
+      if (this.pending.length === 3) {
+        const [a, b, c] = this.pending;
+        if (tool === 'CIRCLE3') this.mkCircle3(a, b, c);
+        else if (tool === 'ARC') this.mkArc(a, b, c);
+        else this.mkAngle(a, b, c);
+        this.pending = []; this.pvPos = null;
+      }
+      return;
+    }
+
+    if (tool === 'SEMICIRCLE' || tool === 'DISTANCE') {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      if (this.pending.length === 0) { this.pending = [pid]; }
+      else if (this.pending[0] !== pid) {
+        if (tool === 'SEMICIRCLE') this.mkSemicircle(this.pending[0], pid);
+        else this.mkDistance(this.pending[0], pid);
+        this.pending = []; this.pvPos = null;
+      }
+      return;
+    }
+
+    if (tool === 'REGPOLY') {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      if (this.pending.length === 0) { this.pending = [pid]; }
+      else if (this.pending[0] !== pid) {
+        const first = this.pending[0];
+        this.pending = []; this.pvPos = null;
+        GEO_DIALOGS.prompt(T('dialogs.vertices'), '5').then(inp => {
+          if (inp === null) return;
+          let n = parseInt(inp, 10);
+          if (!isFinite(n) || n < 3) n = 5;
+          if (n > 60) n = 60;
+          this.mkRegPoly(first, pid, n);
+        });
+      }
+      return;
+    }
+
+    if (tool === 'CIRCLER') {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      this.pvPos = null;
+      GEO_DIALOGS.prompt(T('dialogs.radius'), '2').then(inp => {
+        const r = parseFloat(inp);
+        if (isFinite(r) && r > 0) {
+          this.addObj({
+            id: this.nextId('circle'), type: 'circle', cid: pid, r,
+            labelMode: 'none', visible: true, locked: false,
+            color: this.state.color, lw: this.state.lw, deps: [pid],
+          });
+        }
+      });
+      return;
+    }
+
+    if (tool === 'SLIDER') {
+      this.mkSlider(wx, wy);
+      this.setToolDirect('SELECT');
+      return;
+    }
+
+    // ── Фаза 4 ──
+    if (tool === 'INTERSECT') {
+      const h = this.getTopHit(sx, sy);
+      const ho = h && this.state.objects.get(h);
+      if (!ho || !['segment','line','ray','vector','dline','circle','circle3'].includes(ho.type)) return;
+      if (this.pending.length === 0) { this.pending = [h]; return; }
+      if (this.pending[0] === h) return;
+      this.mkIntersect(this.pending[0], h);
+      this.pending = []; this.pvPos = null;
+      return;
+    }
+
+    if (['PERP', 'PARALLEL', 'TANGENT'].includes(tool)) {
+      const lnTypes = tool === 'TANGENT' ? ['circle','circle3'] : ['segment','line','ray','vector','dline'];
+      const h = this.getTopHit(sx, sy);
+      const ho = h && this.state.objects.get(h);
+      if (snapId || (ho && ho.type === 'point')) { this.pendPt = snapId || h; }
+      else if (ho && lnTypes.includes(ho.type)) { this.pendLn = h; }
+      else if (!ho) { this.pendPt = this.mkPt(wx, wy); }
+      if (this.pendPt && this.pendLn) {
+        if (tool === 'TANGENT') this.mkTangent(this.pendPt, this.pendLn);
+        else this.mkDLine(tool === 'PERP' ? 'perp' : 'para', this.pendPt, this.pendLn);
+        this.pendPt = null; this.pendLn = null; this.pvPos = null;
+      }
+      return;
+    }
+
+    if (tool === 'PERPBIS') {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      if (this.pending.length === 0) { this.pending = [pid]; }
+      else if (this.pending[0] !== pid) {
+        this.mkPerpBis(this.pending[0], pid);
+        this.pending = []; this.pvPos = null;
+      }
+      return;
+    }
+
+    if (tool === 'ANGBIS') {
+      const pid = this.clickPt(sx, sy, wx, wy, snapId);
+      if (this.pending.includes(pid)) return;
+      this.pending.push(pid);
+      if (this.pending.length === 3) {
+        this.mkAngBis(this.pending[0], this.pending[1], this.pending[2]);
+        this.pending = []; this.pvPos = null;
+      }
+      return;
+    }
+  }
+
+  clickPt(sx, sy, wx, wy, snapId) {
+    let pid = snapId;
+    if (!pid) { const h = this.getTopHit(sx, sy); if (h && this.state.objects.get(h)?.type === 'point') pid = h; }
+    if (!pid) pid = this.mkPt(wx, wy);
+    return pid;
+  }
+
+  onWheel(e) {
+    const [sx, sy] = this.screenPos(e);
+    this.cs.zoomAt(sx, sy, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+  }
+
+  onRClick(e) {
+    const [sx, sy] = this.screenPos(e);
+    const hit = this.getTopHit(sx, sy);
+    this.setState({ ctx_: { x: e.clientX, y: e.clientY, objId: hit || null } });
+  }
+
+  onKey(e) {
+    if (e.key === 'Escape') {
+      this.pending = []; this.pvPos = null;
+      this.setState({ ctx_: null, openDrop: null, selection: new Set() });
+      this.setToolDirect('SELECT');
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.doUndo(); return; }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); this.doRedo(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      e.preventDefault();
+      const all = new Set(this.state.objects.keys());
+      this.setState({ selection: all }); return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'G') {
+      e.preventDefault(); this.cycleGrid(); return;
+    }
+    // Фаза 10: Copy / Paste / Duplicate
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && document.activeElement?.tagName !== 'INPUT') {
+      if (this.state.selection.size) { this.clipboard = [...this.state.selection]; e.preventDefault(); }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v' && document.activeElement?.tagName !== 'INPUT') {
+      e.preventDefault();
+      if (this.clipboard) this.pasteIds(this.clipboard.filter(id => this.state.objects.has(id)));
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd' && document.activeElement?.tagName !== 'INPUT') {
+      e.preventDefault();
+      if (this.state.selection.size) this.pasteIds([...this.state.selection]);
+      return;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && document.activeElement?.tagName !== 'INPUT') {
+      for (const id of this.state.selection) this.delObj(id);
+      return;
+    }
+
+    // Tool shortcuts (not when typing)
+    if (document.activeElement?.tagName === 'INPUT') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const km = { v:'SELECT', p:'POINT', s:'SEGMENT', l:'LINE', r:'RAY', c:'CIRCLE', z:'CIRCLER', g:'POLYGON', w:'POLYLINE', e:'VECTOR', m:'MIDPOINT', k:'CIRCLE3', h:'SEMICIRCLE', t:'ARC', q:'REGPOLY', a:'ANGLE', d:'DISTANCE', u:'SLIDER', i:'INTERSECT', x:'PERP', j:'PARALLEL', b:'PERPBIS', n:'ANGBIS', o:'TANGENT', ' ':'PAN' };
+    const t = km[e.key.toLowerCase()];
+    if (t) { e.preventDefault(); this.setToolDirect(t); }
+  }
+
+  setToolDirect(t) {
+    this.pending = []; this.pvPos = null;
+    this.setState({ tool: t, selection: t === 'SELECT' ? this.state.selection : new Set(), openDrop: null });
+  }
+
+  // ── INPUT BAR ──────────────────────────────────────────
+  execInput() {
+    const raw = (this.state.inputValue || '').trim();
+    if (!raw) return;
+    try { this.parseCmd(raw); this.setState({ inputValue: '' }); }
+    catch (err) { console.warn('[GeoMASH input]', err.message); }
+  }
+
+  parseCmd(s) {
+    // A = (x, y)
+    const pm = s.match(/^([A-Z])\s*=\s*\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)$/);
+    if (pm) {
+      const id = pm[1], wx = +pm[2], wy = +pm[3];
+      if (this.state.objects.has(id)) {
+        const m = new Map(this.state.objects), o = m.get(id);
+        m.set(id, { ...o, wx, wy }); this.setState({ objects: m });
+      } else this.mkPt(wx, wy, id);
+      return;
+    }
+    // f(x) = expr
+    const fm = s.match(/^([a-z])\(x\)\s*=\s*(.+)$/);
+    if (fm) {
+      const fn = this.compileFn(fm[2]);
+      if (!fn) throw new Error('Неправильний вираз');
+      this.addObj({ id: fm[1], type: 'function', expr: fm[2], fn, labelMode: 'name', visible: true, locked: false, color: '#e03030', lw: 2, deps: [] });
+      return;
+    }
+    // Command(args)
+    const cm = s.match(/^(\w+)\(([^)]+)\)$/);
+    if (cm) {
+      const cmd  = cm[1].toLowerCase();
+      const args = cm[2].split(',').map(a => a.trim());
+      if (['segment','line','ray','vector'].includes(cmd) && args.length >= 2) {
+        if (this.state.objects.has(args[0]) && this.state.objects.has(args[1]))
+          this.mk2pt(cmd, args[0], args[1]);
+        return;
+      }
+      if (cmd === 'circle' && args.length >= 2) {
+        if (this.state.objects.has(args[0]) && this.state.objects.has(args[1]))
+          this.mkCircle(args[0], args[1]);
+        return;
+      }
+    }
+    throw new Error('Невідома команда: ' + s);
+  }
+
+  compileFn(expr) {
+    const s = expr
+      .replace(/\^/g, '**')
+      .replace(/\bsin\b/g,'Math.sin').replace(/\bcos\b/g,'Math.cos')
+      .replace(/\btan\b/g,'Math.tan').replace(/\bsqrt\b/g,'Math.sqrt')
+      .replace(/\babs\b/g,'Math.abs').replace(/\bln\b/g,'Math.log')
+      .replace(/\blog\b/g,'Math.log10').replace(/\bpi\b/g,'Math.PI')
+      .replace(/\be\b/g,'Math.E');
+    try { return new Function('x', `"use strict"; return (${s});`); }
+    catch (e) { return null; }
+  }
+
+  // ── renderVals ─────────────────────────────────────────
+  renderVals() {
+    const { tool, objects, selection, showAlgebra, showGrid, ctx_, inputValue, color, lw, cursorPos } = this.state;
+    const allObjs = [...objects.values()];
+    const pts     = allObjs.filter(o => o.type === 'point');
+    const lines   = allObjs.filter(o => ['segment','line','ray','vector','polyline','distance','angle','slider','dline'].includes(o.type));
+    const circles = allObjs.filter(o => ['circle','circle3','arc','semicircle'].includes(o.type));
+    const polys   = allObjs.filter(o => o.type === 'polygon');
+
+    // ── Button styles ──
+    const TB = (active, extra = {}) => ({
+      width: '36px', height: '36px', border: 'none', borderRadius: '7px',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'relative', gap: '2px',
+      background: active ? '#1a5c38' : 'transparent',
+      color: active ? '#fff' : '#555',
+      transition: 'background .12s',
+      ...extra,
+    });
+    const TBG = (grp, tools) => {
+      const active = tools.includes(tool);
+      return {
+        ...TB(active),
+        width: '44px', padding: '0 4px',
+        color: active ? '#fff' : '#555',
+      };
+    };
+    const polyFill = ['POLYGON'].includes(tool) ? 'rgba(255,255,255,.3)' : 'none';
+
+    const colorBtn = (c) => ({
+      width: '20px', height: '20px', background: c, border: 'none',
+      borderRadius: '4px', cursor: 'pointer', flexShrink: 0,
+      outline: color === c ? '2.5px solid #1a5c38' : '2px solid transparent',
+      outlineOffset: '2px', transition: 'outline .12s',
+    });
+
+    const iconBtn = {
+      width: '30px', height: '30px', border: 'none', background: 'transparent',
+      cursor: 'pointer', borderRadius: '6px', fontSize: '16px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555',
+    };
+
+    const gridBtnStyle = {
+      ...iconBtn,
+      background: showGrid ? '#f0f7f2' : 'transparent',
+      color: showGrid ? '#1a5c38' : '#888',
+    };
+
+    // ── Algebra rows ──
+    const rowBase = (id) => ({
+      padding: '5px 10px', display: 'flex', alignItems: 'center', gap: '7px',
+      cursor: 'pointer', fontSize: '12px', fontFamily: "'IBM Plex Mono', monospace",
+      color: '#2a3a30',
+      background: selection.has(id) ? '#e8f4ec' : 'transparent',
+    });
+    const visColor = (o) => o.visible ? '#1a5c38' : '#ccc';
+    const visFill  = (o) => o.visible ? (o.color || '#1a5c38') : 'none';
+
+    const algoPts = pts.map(p => ({
+      dot:         { width: '9px', height: '9px', background: p.color || '#1a5c38', borderRadius: '50%', flexShrink: 0, opacity: p.visible ? 1 : 0.3 },
+      row:         rowBase(p.id),
+      label:       `${p.id} = (${p.wx.toFixed(2)}, ${p.wy.toFixed(2)})`,
+      visColor:    visColor(p), visFill: visFill(p),
+      onSelect:    () => this.setState({ selection: new Set([p.id]) }),
+      onToggleVis: (e) => { e.stopPropagation(); this.toggleVis(p.id); },
+      onDel:       (e) => { e.stopPropagation(); this.delObj(p.id); },
+      onEdit:      (e) => { e.stopPropagation(); this.algEditPoint(p.id); },
+    }));
+
+    const algoLines = lines.map(l => ({
+      dash:        { width: '14px', height: '2px', background: l.color || '#1a5c38', flexShrink: 0 },
+      row:         rowBase(l.id),
+      label:       `${l.id}: ${l.type === 'dline' ? T('panel.types.' + (l.sub || 'line')) : T('panel.types.' + l.type)}` + (l.p1 ? ` ${l.p1}${l.p2 || ''}${l.p3 || ''}` : '') + (['distance','angle','slider'].includes(l.type) ? ` = ${this.objVal(l)}` : ''),
+      visColor:    visColor(l), visFill: visFill(l),
+      onSelect:    () => this.setState({ selection: new Set([l.id]) }),
+      onToggleVis: (e) => { e.stopPropagation(); this.toggleVis(l.id); },
+      onDel:       (e) => { e.stopPropagation(); this.delObj(l.id); },
+      onEdit:      (e) => { e.stopPropagation(); l.type === 'slider' ? this.algEditSlider(l.id) : this.algRename(l.id); },
+    }));
+
+    const algoCircles = circles.map(c => ({
+      ring:        { width: '11px', height: '11px', border: `2px solid ${c.color || '#1a5c38'}`, borderRadius: '50%', flexShrink: 0 },
+      row:         rowBase(c.id),
+      label:       `${c.id}: ${T('panel.types.' + c.type)}` + (c.cid ? ` (${c.cid})` : '') + ` · ${this.objVal(c)}`,
+      visColor:    visColor(c), visFill: visFill(c),
+      onSelect:    () => this.setState({ selection: new Set([c.id]) }),
+      onToggleVis: (e) => { e.stopPropagation(); this.toggleVis(c.id); },
+      onDel:       (e) => { e.stopPropagation(); this.delObj(c.id); },
+      onEdit:      (e) => { e.stopPropagation(); this.algRename(c.id); },
+    }));
+
+    const algoPolys = polys.map(p => ({
+      sq:          { width: '11px', height: '11px', border: `2px solid ${p.color || '#1a5c38'}`, background: (p.color || '#1a5c38') + '22', flexShrink: 0 },
+      row:         rowBase(p.id),
+      label:       `${p.id}: ` + T('panel.types.polygonN', { n: p.vids?.length || 0 }),
+      visColor:    visColor(p), visFill: visFill(p),
+      onSelect:    () => this.setState({ selection: new Set([p.id]) }),
+      onToggleVis: (e) => { e.stopPropagation(); this.toggleVis(p.id); },
+      onDel:       (e) => { e.stopPropagation(); this.delObj(p.id); },
+      onEdit:      (e) => { e.stopPropagation(); this.algRename(p.id); },
+    }));
+
+    // ── Dropdown items ──
+    const DI = (t, name, desc, icon, key) => ({
+      name, desc, icon, key,
+      active: tool === t ? '600' : '400',
+      style: {
+        padding: '10px 16px', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        borderBottom: '1px solid #f5f5f5',
+        background: tool === t ? '#f0f7f2' : 'transparent',
+      },
+      iconSt: {
+        width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: tool === t ? '#1a5c38' : '#f0f4f0', borderRadius: '6px',
+        fontSize: '13px', color: tool === t ? '#fff' : '#555', flexShrink: 0,
+      },
+      action: () => { this.setToolDirect(t); },
+    });
+
+    const dropMap = {
+      points:   [DI('POINT',T('tools.POINT'),T('toolDesc.POINT'),'●','P'), DI('MIDPOINT',T('tools.MIDPOINT'),T('toolDesc.MIDPOINT'),'◐','M'), DI('INTERSECT',T('tools.INTERSECT'),T('toolDesc.INTERSECT'),'⨯','I')],
+      lines:    [DI('SEGMENT',T('tools.SEGMENT'),T('toolDesc.SEGMENT'),'╱','S'), DI('LINE',T('tools.LINE'),T('toolDesc.LINE'),'↔','L'), DI('RAY',T('tools.RAY'),T('toolDesc.RAY'),'→','R'), DI('VECTOR',T('tools.VECTOR'),T('toolDesc.VECTOR'),'⟶','')],
+      polygons: [DI('POLYGON',T('tools.POLYGON'),T('toolDesc.POLYGON'),'△','G'), DI('REGPOLY',T('tools.REGPOLY'),T('toolDesc.REGPOLY'),'⬠','Q')],
+      circles:  [DI('CIRCLE',T('tools.CIRCLE'),T('toolDesc.CIRCLE'),'○','C'), DI('CIRCLER',T('tools.CIRCLER'),T('toolDesc.CIRCLER'),'⊙','Z'), DI('CIRCLE3',T('tools.CIRCLE3'),T('toolDesc.CIRCLE3'),'◌','K'), DI('SEMICIRCLE',T('tools.SEMICIRCLE'),T('toolDesc.SEMICIRCLE'),'◗','H'), DI('ARC',T('tools.ARC'),T('toolDesc.ARC'),'◜','T')],
+      construct: [DI('PERP',T('tools.PERP'),T('toolDesc.PERP'),'⊥','X'), DI('PARALLEL',T('tools.PARALLEL'),T('toolDesc.PARALLEL'),'∥','J'), DI('PERPBIS',T('tools.PERPBIS'),T('toolDesc.PERPBIS'),'⋔','B'), DI('ANGBIS',T('tools.ANGBIS'),T('toolDesc.ANGBIS'),'∠','N'), DI('TANGENT',T('tools.TANGENT'),T('toolDesc.TANGENT'),'◎','O')],
+      measure:  [DI('ANGLE',T('tools.ANGLE'),T('toolDesc.ANGLE'),'∠','A'), DI('DISTANCE',T('tools.DISTANCE'),T('toolDesc.DISTANCE'),'↔','D'), DI('SLIDER',T('tools.SLIDER'),T('toolDesc.SLIDER'),'⬌','U')],
+    };
+    const dropItems = dropMap[this.state.openDrop] || [];
+
+    const dropAnchor = this.state.dropAnchor || { x: 0, y: 0 };
+
+    // ── Context menu ──
+    const ctxObj = ctx_?.objId ? objects.get(ctx_.objId) : null;
+    const lmRow = (m) => ({
+      padding: '7px 14px 7px 24px', cursor: 'pointer', fontSize: '13px',
+      color: ctxObj?.labelMode === m ? '#2060c8' : '#444',
+      fontWeight: ctxObj?.labelMode === m ? '600' : '400',
+    });
+
+    // Canvas cursor
+    let cursor = this.getCursor(0, 0);
+    const mc = this.mainCanvas.current;
+    if (mc) {
+      const r = mc.getBoundingClientRect();
+      // We don't have last sx/sy here easily, use a stored value
+    }
+
+    // Tool hints
+    const hints = {
+      SELECT:   T('hints.SELECT'),
+      POINT:    T('hints.POINT'),
+      SEGMENT:  this.pending.length === 0 ? T('hints.first') : T('hints.second'),
+      LINE:     this.pending.length === 0 ? T('hints.first') : T('hints.second'),
+      RAY:      this.pending.length === 0 ? T('hints.rayStart') : T('hints.rayDir'),
+      MIDPOINT: this.pending.length === 0 ? T('hints.first') : T('hints.midSecond'),
+      VECTOR:   this.pending.length === 0 ? T('hints.vecStart') : T('hints.vecEnd'),
+      CIRCLE:   this.pending.length === 0 ? T('hints.circleCenter') : T('hints.circleOn'),
+      POLYGON:  this.pending.length < 2 ? T('hints.vertexN', { n: this.pending.length + 1, min: 3 }) : T('hints.polygonClose'),
+      POLYLINE: this.pending.length < 2 ? T('hints.vertexN', { n: this.pending.length + 1, min: 2 }) : T('hints.polylineClose'),
+      CIRCLE3:  [T('hints.circle3_1'), T('hints.circle3_2'), T('hints.circle3_3')][this.pending.length] || '',
+      ARC:      [T('hints.arc1'), T('hints.arc2'), T('hints.arc3')][this.pending.length] || '',
+      SEMICIRCLE: this.pending.length === 0 ? T('hints.semi1') : T('hints.semi2'),
+      REGPOLY:  this.pending.length === 0 ? T('hints.regpoly1') : T('hints.regpoly2'),
+      ANGLE:    [T('hints.angle1'), T('hints.angle2'), T('hints.angle3')][this.pending.length] || '',
+      DISTANCE: this.pending.length === 0 ? T('hints.point1') : T('hints.point2'),
+      CIRCLER:  T('hints.circleR'),
+      SLIDER:   T('hints.slider'),
+      INTERSECT: this.pending.length === 0 ? T('hints.intersect1') : T('hints.intersect2'),
+      PERP:     this.pendPt ? T('hints.lineOrSeg') : this.pendLn ? T('hints.point') : T('hints.pointOrLine'),
+      PARALLEL: this.pendPt ? T('hints.lineOrSeg') : this.pendLn ? T('hints.point') : T('hints.pointOrLine'),
+      PERPBIS:  this.pending.length === 0 ? T('hints.point1') : T('hints.point2'),
+      ANGBIS:   [T('hints.angle1'), T('hints.angle2'), T('hints.angle3')][this.pending.length] || '',
+      TANGENT:  this.pendPt ? T('hints.circleClick') : this.pendLn ? T('hints.point') : T('hints.pointOrCircle'),
+      PAN:      T('hints.PAN'),
+    };
+
+    const zoomPct = Math.round(this.cs ? this.cs.sc * 100 / 60 : 100);
+
+    const cursorStyle = { SELECT: 'default', POINT: 'crosshair', SEGMENT: 'crosshair', LINE: 'crosshair', RAY: 'crosshair', VECTOR: 'crosshair', MIDPOINT: 'crosshair', CIRCLE: 'crosshair', CIRCLER: 'crosshair', CIRCLE3: 'crosshair', SEMICIRCLE: 'crosshair', ARC: 'crosshair', POLYGON: 'crosshair', POLYLINE: 'crosshair', REGPOLY: 'crosshair', ANGLE: 'crosshair', DISTANCE: 'crosshair', SLIDER: 'crosshair', INTERSECT: 'crosshair', PERP: 'crosshair', PARALLEL: 'crosshair', PERPBIS: 'crosshair', ANGBIS: 'crosshair', TANGENT: 'crosshair', PAN: 'grab' };
+
+    return {
+      // Refs
+      mainCanvas: this.mainCanvas, hitCanvas: this.hitCanvas,
+
+      // Canvas
+      canvasStyle: { position: 'absolute', top: 0, left: 0, right: 0, bottom: '28px', cursor: cursorStyle[tool] || 'default' },
+
+      // Toolbar
+      btnStyle:      (t) => TB(tool === t),
+      polyFill,
+      colorBtn,
+      iconBtn,
+      gridBtnStyle,
+
+      btnGroupStyle: (g) => {
+        const groupTools = { points:['POINT','MIDPOINT','INTERSECT'], lines:['SEGMENT','LINE','RAY','VECTOR'], polygons:['POLYGON','REGPOLY'], circles:['CIRCLE','CIRCLER','CIRCLE3','SEMICIRCLE','ARC'], construct:['PERP','PARALLEL','PERPBIS','ANGBIS','TANGENT'], measure:['ANGLE','DISTANCE','SLIDER'] };
+        const active = (groupTools[g] || []).includes(tool);
+        return { ...TB(active), width: '44px', padding: '0 4px' };
+      },
+
+      // Viewport (Фаза 8)
+      zoomBtn: {
+        width: '30px', height: '30px', border: '1px solid #dde3e8', borderRadius: '7px',
+        background: 'rgba(255,255,255,.95)', cursor: 'pointer', fontSize: '15px',
+        color: '#3a4a40', boxShadow: '0 1px 4px rgba(0,0,0,.07)', lineHeight: '1', padding: '0',
+      },
+      zoomInBtn:  () => { const c = this.mainCanvas.current; if (this.cs && c) this.cs.zoomAt(c.width / 2, c.height / 2, 1.3); this.setState({ tick: (this.state.tick || 0) + 1 }); },
+      zoomOutBtn: () => { const c = this.mainCanvas.current; if (this.cs && c) this.cs.zoomAt(c.width / 2, c.height / 2, 1 / 1.3); this.setState({ tick: (this.state.tick || 0) + 1 }); },
+      fitBtn:     () => { this.fitView(); this.setState({ tick: (this.state.tick || 0) + 1 }); },
+      homeBtn:    () => { const c = this.mainCanvas.current; if (this.cs && c) { this.cs.ox = c.width / 2; this.cs.oy = c.height / 2; this.cs.sc = 50; } this.setState({ tick: (this.state.tick || 0) + 1 }); },
+
+      // Properties panel (Фаза 7)
+      ...(() => {
+        const selObjs = [...selection].map(id => objects.get(id)).filter(Boolean);
+        const one = selObjs.length === 1 ? selObjs[0] : null;
+        const allVis = selObjs.length > 0 && selObjs.every(o => o.visible);
+        const propBtn = {
+          flex: '1', border: '1px solid #dde3de', background: '#fafcfa', borderRadius: '7px',
+          padding: '6px 8px', cursor: 'pointer', fontSize: '12px', color: '#2a3a30',
+        };
+        return {
+          propsOpen: this.state.showProps !== false && selObjs.length > 0,
+          propTitle: one ? `${one.id}` : T('props.selected', { n: selObjs.length }),
+          propClose: () => this.setState({ showProps: false }),
+          propBtn,
+          propSwatches: ['#1a5c38', '#2060c8', '#c02020', '#b35a00', '#6030b8', '#0e7490', '#374151', '#d63384'].map(c => ({
+            pick: () => this.applyProps({ color: c }),
+            style: {
+              width: '22px', height: '22px', borderRadius: '6px', background: c, cursor: 'pointer',
+              border: selObjs.length && selObjs.every(o => (o.color || '#1a5c38') === c) ? '2px solid #0f2e1c' : '2px solid #fff',
+              boxShadow: '0 0 0 1px #e0e8e0', boxSizing: 'border-box',
+            },
+          })),
+          propWidths: [1, 2, 3, 5].map(w => ({
+            label: `${w}`,
+            pick: () => this.applyProps({ lw: w }),
+            style: {
+              flex: '1', border: selObjs.length && selObjs.every(o => (o.lw || 2) === w) ? '2px solid #1a5c38' : '1px solid #dde3de',
+              background: '#fff', borderRadius: '7px', padding: '5px 0', cursor: 'pointer',
+              fontSize: '12px', color: '#2a3a30', fontFamily: "'IBM Plex Mono', monospace",
+            },
+          })),
+          propIsSlider: !!(one && one.type === 'slider'),
+          propSliderRange: () => {
+            if (!one || one.type !== 'slider') return;
+            GEO_DIALOGS.prompt(T('dialogs.sliderRange'), `${one.min}, ${one.max}, ${one.step}`).then(inp => {
+              if (inp === null) return;
+              const [mn, mx, st] = inp.split(',').map(s => parseFloat(s));
+              if (!isFinite(mn) || !isFinite(mx) || !isFinite(st) || mx <= mn || st <= 0) return;
+              const cur = this.state.objects.get(one.id);
+              if (!cur) return;
+              const m2 = new Map(this.state.objects);
+              m2.set(cur.id, { ...cur, min: mn, max: mx, step: st, val: Math.min(mx, Math.max(mn, cur.val)) });
+              this.setState({ objects: m2 });
+            });
+          },
+          propCanRename: !!one,
+          propRename: () => {
+            if (!one) return;
+            GEO_DIALOGS.prompt(T('dialogs.rename'), one.id).then(nn => {
+              if (nn !== null) this.renameObj(one.id, nn);
+            });
+          },
+          propVisLabel: allVis ? T('props.hide') : T('props.show'),
+          propToggleVis: () => this.applyProps({ visible: !allVis }),
+        };
+      })(),
+
+      // Algebra
+      algebraPanelStyle: {
+        width: '260px', borderRight: '1px solid #e4ece4',
+        background: '#fff', display: showAlgebra ? 'flex' : 'none',
+        flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
+      },
+      algebraHidden: !showAlgebra,
+      noObjs:    objects.size === 0,
+      hasPoints: pts.length > 0, hasLines: lines.length > 0,
+      hasCircles: circles.length > 0, hasPolys: polys.length > 0,
+      algoPts, algoLines, algoCircles, algoPolys,
+      inputValue,
+      onInputChange: (e) => this.setState({ inputValue: e.target.value }),
+      onInputKey:    (e) => { if (e.key === 'Enter') this.execInput(); },
+      toggleAlgebra: () => this.setState(s => ({ showAlgebra: !s.showAlgebra })),
+
+      // Dropdown
+      hasDropOpen: !!this.state.openDrop,
+      dropItems,
+      dropStyle: {
+        position: 'fixed',
+        top:  `${dropAnchor.y}px`,
+        left: `${dropAnchor.x}px`,
+        background: '#fff', borderRadius: '10px',
+        boxShadow: '0 8px 28px rgba(0,0,0,.14)',
+        border: '1px solid #e0e8e0',
+        minWidth: '270px', overflow: 'hidden', zIndex: 350,
+      },
+      closeDrops: () => this.setState({ openDrop: null }),
+
+      // Toolbar actions
+      doSelect: () => this.setToolDirect('SELECT'),
+      doPan:    () => this.setToolDirect('PAN'),
+      doPtDrop:   (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'points' ? null : 'points', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doLineDrop: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'lines' ? null : 'lines', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doPolyDrop: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'polygons' ? null : 'polygons', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doCircDrop: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'circles' ? null : 'circles', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doMeasDrop: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'measure' ? null : 'measure', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doConsDrop: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ openDrop: this.state.openDrop === 'construct' ? null : 'construct', dropAnchor: {x: r.left, y: r.bottom + 4} }); },
+      doUndo: () => this.doUndo(), doRedo: () => this.doRedo(),
+      toggleGrid: () => this.cycleGrid(),
+      setColorGreen:  () => this.setState({ color: '#1a5c38' }),
+      setColorBlue:   () => this.setState({ color: '#2060c8' }),
+      setColorRed:    () => this.setState({ color: '#e03030' }),
+      setColorOrange: () => this.setState({ color: '#e07030' }),
+      setColorBlack:  () => this.setState({ color: '#1c1c1c' }),
+
+      // Mouse
+      onMD: (e) => this.onMD(e), onMM: (e) => this.onMM(e),
+      onMU: (e) => this.onMU(e), onML: () => this.onML(),
+      onDbl: (e) => this.onDbl(e),
+
+      // Context menu
+      ctxOpen:       !!ctx_,
+      ctxIsEmpty:    !!(ctx_ && !ctx_.objId),
+      ctxIsObj:      !!(ctx_ && ctx_.objId),
+      ctxObjName:    ctxObj ? `${ctxObj.type} ${ctxObj.id}` : '',
+      ctxVisLabel:   ctxObj?.visible ? T('ctx.hideObj') : T('ctx.showObj'),
+      ctxStyle: {
+        position: 'fixed', top: `${ctx_?.y || 0}px`, left: `${ctx_?.x || 0}px`,
+        background: '#fff', borderRadius: '10px',
+        boxShadow: '0 6px 24px rgba(0,0,0,.15)', border: '1px solid #e0e8e0',
+        minWidth: '220px', overflow: 'hidden', zIndex: 500,
+      },
+      ctxRowStyle: { padding: '9px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#2a3a30', borderBottom: '1px solid #f4f4f4' },
+      lmRow,
+      stopProp:      (e) => e.stopPropagation(),
+      closeCtx:      () => this.setState({ ctx_: null }),
+      ctxZoomIn:     () => { if(this.cs){this.cs.zoomAt(this.mainCanvas.current.width/2,this.mainCanvas.current.height/2,1.3);}this.setState({ctx_:null}); },
+      ctxZoomOut:    () => { if(this.cs){this.cs.zoomAt(this.mainCanvas.current.width/2,this.mainCanvas.current.height/2,1/1.3);}this.setState({ctx_:null}); },
+      ctxCenter:     () => { if(this.cs&&this.mainCanvas.current){const c=this.mainCanvas.current;this.cs.ox=c.width/2;this.cs.oy=c.height/2;}this.setState({ctx_:null}); },
+      ctxFit:        () => { this.fitView(); this.setState({ctx_:null}); },
+      ctxSelAll:     () => { this.setState({selection:new Set(objects.keys()),ctx_:null}); },
+      ctxToggleVis:  () => { if(ctx_?.objId) this.toggleVis(ctx_.objId); this.setState({ctx_:null}); },
+      lmNone:        () => { if(ctx_?.objId) this.setLM(ctx_.objId,'none'); },
+      lmName:        () => { if(ctx_?.objId) this.setLM(ctx_.objId,'name'); },
+      lmNV:          () => { if(ctx_?.objId) this.setLM(ctx_.objId,'nameValue'); },
+      lmVal:         () => { if(ctx_?.objId) this.setLM(ctx_.objId,'value'); },
+      ctxDel:        () => { if(ctx_?.objId) this.delObj(ctx_.objId); },
+      ctxRename:     () => { if(ctx_?.objId){ const oid = ctx_.objId; this.setState({ ctx_: null }); GEO_DIALOGS.prompt(T('dialogs.rename'), oid).then(nn => { if (nn !== null) this.renameObj(oid, nn); }); } },
+      ctxDup:        () => { if(ctx_?.objId) this.dupObj(ctx_.objId); },
+      ctxToggleLock: () => { if(ctx_?.objId){ const m2 = new Map(objects); const o2 = m2.get(ctx_.objId); if (o2) m2.set(o2.id, { ...o2, locked: !o2.locked }); this.hitDirty = true; this.setState({ objects: m2, ctx_: null }); } },
+      ctxCopyStyle:  () => { const o2 = ctx_?.objId && objects.get(ctx_.objId); if (o2) this.setState({ color: o2.color || '#1a5c38', lw: o2.lw || 2, ctx_: null }); else this.setState({ ctx_: null }); },
+      ctxCanLock:    ['point', 'slider'].includes(ctxObj?.type),
+      ctxLockLabel:  ctxObj?.locked ? T('ctx.unlock') : T('ctx.lock'),
+      ctxProps:      () => { if(ctx_?.objId) this.setState({ selection: new Set([ctx_.objId]), showProps: true, ctx_: null }); },
+
+      // Status bar
+      statusTool: T('statusTool.' + tool) === 'statusTool.' + tool ? tool : T('statusTool.' + tool),
+      emptyState: objects.size === 0 && !this.pending.length,
+      statusHint: hints[tool] || '',
+      zoomLabel:  `${zoomPct}%`,
+      coordDisplay: `(${cursorPos.wx.toFixed(2)}, ${cursorPos.wy.toFixed(2)})`,
+    };
+  }
+
+  // ── Фаза 8: типи сітки ─────────────────────────────
+  cycleGrid() {
+    // лінії → полярна → без сітки → лінії
+    if (!this.state.showGrid) { this.setState({ showGrid: true, gridMode: 'lines' }); return; }
+    if (this.state.gridMode !== 'polar') { this.setState({ gridMode: 'polar' }); return; }
+    this.setState({ showGrid: false, gridMode: 'lines' });
+  }
+
+  fitView() {
+    const pts = [...this.state.objects.values()].filter(o => o.type === 'point');
+    if (!pts.length || !this.mainCanvas.current) return;
+    const W = this.mainCanvas.current.width, H = this.mainCanvas.current.height;
+    const xs = pts.map(p => p.wx), ys = pts.map(p => p.wy);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const rangeX = maxX - minX || 4, rangeY = maxY - minY || 4;
+    const sc = Math.min(W / (rangeX * 1.4), H / (rangeY * 1.4), 200);
+    this.cs.sc = sc;
+    this.cs.ox = W / 2 - ((minX + maxX) / 2) * sc;
+    this.cs.oy = H / 2 + ((minY + maxY) / 2) * sc;
+  }
+}
+
+</script>
+</body>
+</html>

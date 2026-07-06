@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphMASH — графічний калькулятор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="grapher.css">
+<script src="../shared/mode-switch.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/use-on-board.js"></script>
+<script>MashI18n.initSync(null, '../i18n/');</script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="brand" title="GraphMASH">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M2 18 C 6 18, 7 4, 11 4 S 16 18, 20 18" class="bk"></path>
+        </svg>
+        <span>Graph<span class="bk">MASH</span></span>
+      </div>
+      <mash-mode-switch active="2d" accent="#17a273"></mash-mode-switch>
+      <input class="doc-title" id="docTitle" value="Графік без назви" aria-label="Назва графіка" data-i18n-title="mash.g2d.toolbar.docTitle">
+      <div class="tb-divider"></div>
+      <button class="tb-btn" id="undoBtn" title="Скасувати" data-i18n-title="mash.common.undo" disabled>↶</button>
+      <button class="tb-btn" id="redoBtn" title="Повторити" data-i18n-title="mash.common.redo" disabled>↷</button>
+      <span class="saved" id="saved" data-i18n="mash.g2d.toolbar.saved">збережено</span>
+    </div>
+    <div class="tb-right">
+      <button class="tb-text" id="examplesBtn"><span class="spark">✨</span> <span data-i18n="mash.common.examples">Приклади</span></button>
+      <button class="tb-btn" id="helpBtn" title="Підказка" data-i18n-title="mash.g2d.toolbar.help">?</button>
+      <button class="tb-btn" id="settingsBtn" title="Налаштування" data-i18n-title="mash.g2d.toolbar.settings">⚙</button>
+      <button class="tb-btn" id="langBtn" title="Мова / Language">UK</button>
+      <button class="tb-share" id="shareBtn" data-i18n="mash.common.share">Поділитися</button>
+      <button class="tb-share" id="useOnBoardBtn" style="background:#0d9488;font-weight:600;" data-i18n="mash.common.useOnBoard">Використати на дошці</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="expr-toolbar">
+        <button class="add-expr" id="addExpr" title="Додати вираз" data-i18n-title="mash.g2d.toolbar.addExpr">+</button>
+        <div class="tool-icons">
+          <button id="addTable" title="Додати таблицю даних" data-i18n-title="mash.g2d.toolbar.addTable">⊞</button>
+          <button id="keypad" title="Символи й функції" data-i18n-title="mash.g2d.toolbar.keypad">⌨</button>
+        </div>
+      </div>
+      <ul class="expr-list" id="exprList"></ul>
+      <button class="keypad-toggle" id="keypadToggle" title="Символи й функції" data-i18n-title="mash.g2d.toolbar.keypad">∑</button>
+    </aside>
+
+    <div class="plot-wrap" id="plotWrap">
+      <div class="presets" id="presets"></div>
+    </div>
+  </div>
+</div>
+
+<!-- examples flyout -->
+<div class="ex-overlay" id="exOverlay"></div>
+<aside class="ex-drawer" id="exDrawer" aria-label="Колекція прикладів">
+  <div class="ex-head">
+    <h2><span class="spark">✨</span> <span data-i18n="mash.g2d.gallery.title">Колекція прикладів</span></h2>
+    <button class="ex-close" id="exClose" title="Закрити" data-i18n-title="mash.common.close">×</button>
+  </div>
+  <div class="ex-body" id="exBody"></div>
+</aside>
+
+<!-- help popover -->
+<div id="helpCard" style="display:none;position:fixed;inset:0;background:rgba(20,24,28,0.5);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;max-width:520px;width:92%;padding:26px 28px;box-shadow:0 24px 70px rgba(0,0,0,0.3);font-family:var(--sans);">
+    <h2 style="margin:0 0 4px;font-size:18px;" data-i18n="mash.g2d.help.title">Як користуватися</h2>
+    <p style="margin:0 0 16px;color:#6a6f73;font-size:13px;" data-i18n="mash.g2d.help.intro">Вводь по одному виразу в кожне поле зліва.</p>
+    <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.9;color:#3c3c3c;">
+      <li>Функція: <code>y = x^2</code>, <code>y = sin(x)</code>, <code>x = y^2</code></li>
+      <li>Власна функція: <code>f(x) = x^2 + 1</code>, далі <code>y = f(x-2)</code>, <code>g(x) = f(f(x))</code></li>
+      <li>Кускова функція: <code>y = {x &lt; 0: -x, x &gt;= 0: x^2}</code> — пара <b>умова: значення</b> через кому, останнє без умови = інакше</li>
+      <li>Факторіал <code>n!</code> (працює й для дробів через Γ), остача <code>%</code> або <code>mod(a,b)</code></li>
+      <li>Логарифми: <code>ln(x)</code> — натуральний, <code>log(x)</code> — десятковий, з основою — <code>log_2 x</code> або <code>log_2(x)</code>, <code>log_a(x)</code></li>
+      <li>Сума <b>Σ</b> та добуток <b>Π</b>: <code>sum(i, 1, 10, i)</code> = 55, <code>product(i, 1, 5, i)</code> = 120; з <code>x</code> у тілі — графік ряду, напр. ряд Фур'є <code>y = sum(n, 1, 20, sin(n x)/n)</code> (можна писати символами Σ, Π)</li>
+      <li>Рекурентна послідовність: задай <b>базові випадки</b> з числовим індексом <code>F(0) = 0</code>, <code>F(1) = 1</code> і <b>загальну формулу</b> <code>F(n) = F(n-1) + F(n-2)</code> — послідовність може посилатися сама на себе</li>
+      <li>Графік послідовності: <code>plot(F(n), n, 0, 12)</code> — точки <code>(0, F(0)), (1, F(1)), …</code> зі стовпчиками; працює з будь-якою послідовністю чи функцією, напр. <code>plot(n^2, n, 0, 8)</code></li>
+      <li>L-системи: вбудовані <code>koch(4)</code>, <code>dragon(12)</code>, <code>sierpinski(5)</code>, <code>hilbert(5)</code>, <code>plant(5)</code>; довільна форма: <code>lsystem("F", "F-&gt;F+F--F+F", 4, 60)</code> — аксіома, правила, ітерації, кут (°)</li>
+      <li>Фрактали: <code>mandelbrot()</code> — множина Мандельброта; <code>julia(-0.8, 0.156)</code> — множина Юлії; панорамуй та масштабуй мишкою</li>
+      <li>Рівняння (неявне): <code>x^2 + y^2 = 9</code>, <code>(x-2)^2+(y-1)^2=4</code></li>
+      <li>Нерівність (заливка області): <code>y &lt; x^2</code>, <code>x^2+y^2 &lt;= 9</code>, <code>y &gt;= sin(x)</code></li>
+      <li>Обмеження області у фігурних дужках: <code>y = x^2 {x &gt; 0}</code>, <code>y = sin(x) {-3 &lt; x &lt; 3}</code> — кілька дужок поспіль додаються разом</li>
+      <li>Полярна крива: <code>r = 4 cos(3θ)</code>, <code>r = 1 + 2 cos(θ)</code>, <code>r = θ</code> (кут θ або theta)</li>
+      <li>Параметрична крива: <code>(cos(t), sin(t))</code>, <code>(3 sin(3t), 3 sin(2t))</code> — пара з вільним <code>t</code>; діапазон <code>t</code> задається під виразом (типово 0…2π)</li>
+      <li>Логіка <b>and / or / not</b> у нерівностях і умовах: <code>y &gt; 0 and y &lt; x^2</code>, <code>x &lt; -2 or x &gt; 2</code>, <code>{x &gt; 0 and y &gt; 0}</code></li>
+      <li>Точка: <code>(2, 3)</code></li>
+      <li>Таблиця даних: кнопка <b>⊞</b> на панелі — ввід точок (x, y) у клітинки; відображення точками, лінією або обома</li>
+      <li>Регресія: у таблиці обери модель (лінійна, квадратична, кубічна, експонента, логарифм, степенева) — підгонка по точках, крива та рівняння з R²</li>
+      <li><b>Ctrl + перетягування</b> кривої з параметром на полотні змінює значення цього параметра (повзунок рухається разом)</li>
+      <li>Невідома буква (напр. <b>a</b>) → з'явиться кнопка <b>+a</b>: створює повзунок з анімацією <b>▶</b></li>
+      <li>Полотно: тягни — рух, колесо — масштаб, кнопки праворуч — +/−/дім</li>
+      <li>Кружок зліва: клік — сховати, правий клік — колір</li>
+    </ul>
+    <div style="text-align:right;margin-top:18px;"><button id="helpClose" style="background:#0d9488;color:#fff;border:0;border-radius:7px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600;">Зрозуміло</button></div>
+  </div>
+</div>
+
+<script>MashI18n.applyDom(document);</script>
+<script src="fractal-renderer.js"></script>
+<script src="grapher-engine.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
+<script src="mq-adapter.js"></script>
+<script src="grapher.js"></script>
+<script>
+(function(){
+  var help = document.getElementById('helpCard');
+  document.getElementById('helpBtn').addEventListener('click', function(){ help.style.display='flex'; });
+  document.getElementById('helpClose').addEventListener('click', function(){ help.style.display='none'; });
+  help.addEventListener('click', function(e){ if(e.target===help) help.style.display='none'; });
+  window.MashLangInit(document.getElementById('langBtn'));
+  document.getElementById('useOnBoardBtn').addEventListener('click', function(){
+    if (window.MashG2dApp) window.MashUseOnBoard('g2d', window.MashG2dApp.serialize, '#plotWrap canvas');
+  });
+  document.getElementById('shareBtn').addEventListener('click', function(){
+    var s=document.getElementById('saved'); s.textContent='посилання скопійовано'; setTimeout(function(){s.textContent='збережено';},1800);
+  });
+})();
+</script>
+</body>
+</html>
