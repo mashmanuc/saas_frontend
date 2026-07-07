@@ -9625,7 +9625,7 @@
     }
   },
   "mashImport": {
-    "sessionName": "StereoMASH — funnel import",
+    "sessionName": "{app} — funnel import",
     "working": "Moving your object to the board…",
     "empty": "Nothing to import. Build a figure in MASH and press “Use on board”.",
     "invalid": "Could not read the scene. Please try again from the MASH calculator.",

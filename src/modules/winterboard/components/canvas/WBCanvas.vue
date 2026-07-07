@@ -5430,6 +5430,18 @@ defineExpose({
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
 }
 
+/* MashScene (§3.7.13, A3) — MASH Live Asset картка, дзеркало theory-card правил. */
+.wb-mash-scene-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-mash-scene-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.35);
+}
+
 /* ParameterLineTask (§3.7.10) — числово-осьовий атом, teal accent. */
 .wb-param-line-overlay {
   position: absolute;

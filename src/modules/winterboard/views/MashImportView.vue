@@ -48,9 +48,15 @@ onMounted(async () => {
     state.value = 'invalid'
     return
   }
+  const APP_NAMES: Record<string, string> = {
+    stereo: 'StereoMASH',
+    g2d: 'GraphMASH 2D',
+    g3d: 'GraphMASH 3D',
+    geo: 'GeoMASH',
+  }
   try {
     const created = await winterboardApi.createSession({
-      name: t('mashImport.sessionName'),
+      name: t('mashImport.sessionName', { app: APP_NAMES[envelope.app] ?? 'MASH' }),
       state: buildSeedState(asset),
       folder: null,
     })

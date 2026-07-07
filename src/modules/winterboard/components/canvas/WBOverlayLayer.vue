@@ -326,4 +326,18 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-theory-card-overlay--selected {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
 }
+
+/* MashScene (§3.7.13, A3) — MASH Live Asset картка, дзеркало theory-card правил.
+   УВАГА-КОНВЕНЦІЯ: wrapperClass з overlayRegistry потребує CSS і ТУТ (unified),
+   і у WBCanvas.vue (legacy) — обидва scoped. */
+.wb-mash-scene-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-mash-scene-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.35);
+}
 </style>
