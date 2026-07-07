@@ -2,6 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GraphMASH 3D</title>
 <script>/* inlined: ../grapher/grapher-engine.js */
@@ -3326,6 +3327,19 @@
     if (typeof window.__mashUseOnBoard === 'function') {
       window.__mashUseOnBoard(envelope);
       return true;
+    }
+    // A2-мост (host patch, upstream -> Guide §7): envelope -> localStorage ->
+    // /mash/import (same-origin). preview не влазить у quota -> без нього.
+    try {
+      try {
+        localStorage.setItem('mash:handoff', JSON.stringify(envelope));
+      } catch (_) {
+        localStorage.setItem('mash:handoff', JSON.stringify({ app: envelope.app, version: envelope.version, scene: envelope.scene, preview: null }));
+      }
+      location.href = '/mash/import';
+      return true;
+    } catch (e) {
+      console.warn('MashUseOnBoard: handoff failed', e);
     }
     const url = window.MASH_BOARD_URL;
     const msg = (window.MashI18n && MashI18n.ready)

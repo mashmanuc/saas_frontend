@@ -828,15 +828,16 @@
   }
 
   document.getElementById('st-board').addEventListener('click', () => {
-    // §5.3: hook хоста → живий nmt3d-обʼєкт; standalone-fallback — копія scene-обʼєкта
-    if (typeof window.__mashUseOnBoard === 'function') {
-      window.__mashUseOnBoard({ app: 'stereo', version: 1, scene: serialize(), preview: null });
+    // §6.1 (host patch, upstream → Guide §7): єдиний шлях — shared-міст.
+    // MashUseOnBoard сам перевіряє hook хоста (__mashUseOnBoard), а без нього
+    // кладе envelope у localStorage['mash:handoff'] і веде на /mash/import
+    // (реєстрація → живий nmt3d-обʼєкт на дошці).
+    if (typeof window.MashUseOnBoard === 'function') {
+      window.MashUseOnBoard('stereo', serialize, null);
       return;
     }
+    // Останній рубіж (shared/use-on-board.js не завантажився): легасі-копія сцени
     const json = JSON.stringify(serialize(), null, 2);
-    if (window.parent !== window) {
-      try { window.parent.postMessage({ type: 'mash:toBoard', app: 'stereo', scene: serialize() }, '*'); } catch (_) {}
-    }
     navigator.clipboard.writeText(json).then(
       () => showToast(TS('msg.sceneCopied', 'Сцену скопійовано — вставте на дошку')),
       () => showToast(TS('msg.copyFail', 'Не вдалося скопіювати')));
