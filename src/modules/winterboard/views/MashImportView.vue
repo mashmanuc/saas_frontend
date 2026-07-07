@@ -19,8 +19,8 @@ import type { WBAsset } from '../types/winterboard'
 import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
+  buildGraphCalcAssetFromG2dScene,
   buildMashSceneAsset,
-  buildGraphmash2dAsset,
   buildSeedState,
   downscalePreview,
 } from '../utils/mashImport'
@@ -42,15 +42,20 @@ onMounted(async () => {
     state.value = 'student'
     return
   }
-  // На дошку: stereo → нативний nmt3d; g2d → нативний graphmash_2d (B2, живий графік);
-  // g3d/geo → mash_scene-картка з thumbnail (до їхньої нативізації B2-3D/B3).
+  // На дошку: stereo → нативний nmt3d; g2d → нативний graph_calculator (B2, живий
+  // об'єкт з правим інспектором); g3d/geo → mash_scene-картка з thumbnail (до нативізації).
   let asset: WBAsset | null
   if (envelope.app === 'stereo') {
     asset = buildNmt3dAssetFromStereoScene(envelope.scene)
   } else if (envelope.app === 'g2d') {
-    asset = buildGraphmash2dAsset(envelope)
+    // конвертуємо у наш нативний graph_calculator; якщо сцена без придатних виразів —
+    // fallback на mash_scene-картку з thumbnail
+    asset = buildGraphCalcAssetFromG2dScene(envelope.scene)
+    if (!asset) {
+      const thumb = await downscalePreview(envelope.preview)
+      asset = buildMashSceneAsset(envelope, thumb)
+    }
   } else {
-    // прев'ю зменшуємо+перекодовуємо у thumbnail (уникаємо роздування стану)
     const thumb = await downscalePreview(envelope.preview)
     asset = buildMashSceneAsset(envelope, thumb)
   }

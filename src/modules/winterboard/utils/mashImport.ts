@@ -11,6 +11,7 @@
  */
 import type { WBAsset, WBPage, WBWorkspaceState } from '../types/winterboard'
 import { DEFAULT_NMT3D_W, DEFAULT_NMT3D_H } from '../constants/nmt3dDefaults'
+import { DEFAULT_GRAPH_WIDTH, DEFAULT_GRAPH_HEIGHT } from '../constants/graphCalculatorDefaults'
 
 export const MASH_HANDOFF_KEY = 'mash:handoff'
 
@@ -96,10 +97,81 @@ export function buildNmt3dAssetFromStereoScene(scene: Record<string, unknown>): 
   } as unknown as WBAsset
 }
 
+/** Проста rand-id для виразів graph_calculator (inv-21: id REQUIRED). */
+function exprId(i: number): string {
+  return `expr-${i}-${Math.random().toString(36).slice(2, 8)}`
+}
+
 /**
- * g2d/g3d/geo → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
- * (Proposal §8 Board-first rule), рендер v1 — картка з deep-link. preview НЕ зберігаємо
- * (ops-recorder стрипає data:-URLs; state-bloat freeze).
+ * B2 (2026-07-07) — g2d-сцена → НАШ НАТИВНИЙ `graph_calculator` ассет.
+ * Board-graph_calculator = той самий двигун-форк, що GraphMASH (Phase G); має живий
+ * рендер + правий інспектор (GraphCalcInspector) + редагування + replay. Тому НЕ окремий
+ * віджет — конвертуємо сцену в його state (inv-21: кожен вираз з id).
+ * Таблиці/фрактали GraphMASH тут дропаємо (board-формат інший) — рідкість, лог не потрібен.
+ * Невалідна сцена (0 придатних виразів) → null (fallback на mash_scene-картку у викликачі).
+ */
+export function buildGraphCalcAssetFromG2dScene(scene: Record<string, unknown>): WBAsset | null {
+  const rawExprs = Array.isArray(scene.expressions) ? scene.expressions : []
+  const expressions: Array<{ id: string; src: string; color: string; hidden: boolean }> = []
+  let i = 0
+  for (const raw of rawExprs as Array<Record<string, unknown>>) {
+    if (raw.isTable) continue // board graph_calculator не має табличного формату GraphMASH
+    const src = typeof raw.src === 'string' ? raw.src.trim() : ''
+    if (!src) continue
+    expressions.push({
+      id: exprId(i++),
+      src,
+      color: typeof raw.color === 'string' ? raw.color : '#2d70b3',
+      hidden: !!raw.hidden,
+    })
+  }
+  if (!expressions.length) return null
+
+  // params: {name: value} → {name: {value,min,max,step}} (діапазон навколо значення)
+  const params: Record<string, { value: number; min: number; max: number; step: number }> = {}
+  const sceneParams = cleanNumbers(scene.params)
+  if (sceneParams) {
+    for (const [name, value] of Object.entries(sceneParams)) {
+      if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(name)) continue
+      const span = Math.max(10, Math.abs(value) * 2)
+      params[name] = {
+        value,
+        min: Math.round((value - span) * 100) / 100,
+        max: Math.round((value + span) * 100) / 100,
+        step: Math.abs(value) > 10 ? 1 : 0.1,
+      }
+    }
+  }
+
+  const vp = scene.viewport as { cx?: number; cy?: number; scale?: number } | undefined
+  const viewport = {
+    cx: typeof vp?.cx === 'number' && Number.isFinite(vp.cx) ? vp.cx : 0,
+    cy: typeof vp?.cy === 'number' && Number.isFinite(vp.cy) ? vp.cy : 0,
+    scale: typeof vp?.scale === 'number' && vp.scale > 0 ? vp.scale : 38,
+  }
+
+  return {
+    id: `gc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: 'graph_calculator',
+    src: '',
+    x: 120,
+    y: 80,
+    w: DEFAULT_GRAPH_WIDTH,
+    h: DEFAULT_GRAPH_HEIGHT,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      state: { expressions, params, viewport },
+      meta: { last_snapshot_seq: 0 },
+    },
+  } as unknown as WBAsset
+}
+
+/**
+ * g3d/geo → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
+ * (Proposal §8 Board-first rule), рендер v1 — картка-thumbnail з deep-link. g2d НЕ сюди —
+ * він конвертується у нативний graph_calculator (buildGraphCalcAssetFromG2dScene).
  */
 export function buildMashSceneAsset(envelope: MashEnvelope, previewUrl?: string | null): WBAsset | null {
   if (envelope.app === 'stereo') return null // stereo → нативний nmt3d, інша гілка
@@ -171,39 +243,6 @@ export function downscalePreview(
     img.onerror = () => resolve(null)
     img.src = src
   })
-}
-
-/**
- * g2d → НАТИВНИЙ `graphmash_2d`-ассет (B2, §3.7.14): живий графік движком на дошці,
- * не картка. data = MashSceneData (той самий envelope-shape). previewUrl не потрібен
- * (рендер живий), тому не кладемо.
- */
-export function buildGraphmash2dAsset(envelope: MashEnvelope): WBAsset | null {
-  if (envelope.app !== 'g2d') return null
-  const scene = envelope.scene
-  const sceneFormat = typeof scene.format === 'string' ? scene.format : ''
-  const title =
-    (typeof scene.title === 'string' && scene.title) ||
-    (typeof scene.name === 'string' && scene.name) ||
-    undefined
-  return {
-    id: `gm2d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    type: 'graphmash_2d',
-    src: '',
-    x: 140,
-    y: 100,
-    w: 460,
-    h: 340,
-    rotation: 0,
-    locked: false,
-    data: {
-      version: 1,
-      app: 'g2d',
-      sceneFormat,
-      scene,
-      ...(title ? { title } : {}),
-    },
-  } as unknown as WBAsset
 }
 
 /** Seed-state для createSession: одна сторінка (дзеркало createEmptyPage) з ассетом. */

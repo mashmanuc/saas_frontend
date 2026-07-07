@@ -220,9 +220,6 @@ export interface WBAsset {
      *  (Proposal §8): сцена GraphMASH 2D/3D/GeoMASH їде на дошку ЗАВЖДИ (data.scene),
      *  рендер v1 = картка з deep-link «Відкрити у MASH» (нативізація — по-двигунно). §3.7.13 */
     | 'mash_scene'
-    /** Graphmash2d (2026-07-07, B2) — ЖИВИЙ GraphMASH 2D графік (vendor/graphmash2d).
-     *  data = MashSceneData (app:'g2d', scene). Рендер нативний движком, не thumbnail. §3.7.14 */
-    | 'graphmash_2d'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -479,7 +476,6 @@ export interface MashSceneData {
   previewUrl?: string
 }
 export type MashSceneAsset = WBAsset & { type: 'mash_scene'; data: MashSceneData }
-export type Graphmash2dAsset = WBAsset & { type: 'graphmash_2d'; data: MashSceneData }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
 

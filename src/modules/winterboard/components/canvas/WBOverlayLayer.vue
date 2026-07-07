@@ -340,16 +340,4 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-mash-scene-overlay--selected {
   box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.35);
 }
-
-/* Graphmash2d (§3.7.14, B2) — живий 2D графік. */
-.wb-graphmash2d-overlay {
-  position: absolute;
-  z-index: 4;
-  border-radius: 10px;
-  overflow: hidden;
-  pointer-events: none;
-}
-.wb-graphmash2d-overlay--selected {
-  box-shadow: 0 0 0 2px rgba(23, 162, 115, 0.4);
-}
 </style>

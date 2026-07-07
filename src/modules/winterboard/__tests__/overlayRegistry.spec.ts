@@ -27,7 +27,6 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   'formula_card',
   'theory_card',
   'mash_scene', // §3.7.13 (A3) — MASH Live Asset з воронки
-  'graphmash_2d', // §3.7.14 (B2) — живий GraphMASH 2D графік
 ])
 
 describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {

@@ -14,8 +14,8 @@ import {
   MASH_HANDOFF_KEY,
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
+  buildGraphCalcAssetFromG2dScene,
   buildMashSceneAsset,
-  buildGraphmash2dAsset,
   buildSeedState,
 } from '../utils/mashImport'
 
@@ -112,19 +112,32 @@ describe('mashImport utils (A2)', () => {
     expect('previewUrl' in (noPrev.data as object)).toBe(false)
   })
 
-  it('INV-MI-8: buildGraphmash2dAsset — g2d → нативний graphmash_2d (не картка)', () => {
-    const asset = buildGraphmash2dAsset({
-      app: 'g2d', version: 1,
-      scene: { format: 'graphmash-2d', version: 2, title: 'Парабола', expressions: [{ src: 'x^2' }], viewport: { cx: 0, cy: 0, scale: 40 } },
+  it('INV-MI-8: g2d-сцена → нативний graph_calculator (inv-21: кожен вираз з id)', () => {
+    const asset = buildGraphCalcAssetFromG2dScene({
+      format: 'graphmash-2d', version: 2,
+      expressions: [
+        { src: 'y=sin(x)', color: '#c74440', hidden: false },
+        { src: 'a=1', color: '#2d70b3' },
+        { src: '', color: '#000' },              // порожній — дропається
+        { isTable: true, table: [] },            // таблиця — дропається
+      ],
+      params: { a: 1 },
+      viewport: { cx: 2, cy: -1, scale: 40 },
     })!
-    expect(asset.type).toBe('graphmash_2d')
-    expect(asset.id).toMatch(/^gm2d-/)
-    const data = asset.data as unknown as Record<string, unknown>
-    expect(data.app).toBe('g2d')
-    expect((data.scene as Record<string, unknown>).expressions).toHaveLength(1)
-    // не g2d → null (тільки 2D нативний)
-    expect(buildGraphmash2dAsset({ app: 'geo', version: 1, scene: {} })).toBeNull()
-    expect(buildGraphmash2dAsset({ app: 'g3d', version: 1, scene: {} })).toBeNull()
+    expect(asset.type).toBe('graph_calculator')
+    expect(asset.id).toMatch(/^gc-/)
+    const st = (asset.data as unknown as { state: { expressions: Array<{ id: string; src: string }>; params: Record<string, unknown>; viewport: { cx: number; scale: number } } }).state
+    expect(st.expressions).toHaveLength(2)                    // порожній+таблиця дропнуто
+    expect(st.expressions.every(e => typeof e.id === 'string' && e.id.length > 0)).toBe(true) // inv-21
+    expect(st.expressions[0].src).toBe('y=sin(x)')
+    expect(st.params.a).toMatchObject({ value: 1 })
+    expect(st.viewport).toMatchObject({ cx: 2, cy: -1, scale: 40 })
+  })
+
+  it('INV-MI-8b: g2d-сцена без придатних виразів → null (fallback на картку)', () => {
+    expect(buildGraphCalcAssetFromG2dScene({ expressions: [] })).toBeNull()
+    expect(buildGraphCalcAssetFromG2dScene({ expressions: [{ isTable: true }] })).toBeNull()
+    expect(buildGraphCalcAssetFromG2dScene({})).toBeNull()
   })
 
   it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {
