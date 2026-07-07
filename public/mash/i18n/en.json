@@ -30,13 +30,39 @@
         "addExpr": "Add expression",
         "addTable": "Add data table",
         "keypad": "Symbols & functions",
-        "docTitle": "Graph title"
+        "docTitle": "Graph title",
+        "duplicate": "Duplicate",
+        "deleteRow": "Delete",
+        "linkCopied": "link copied",
+        "docTitleDefault": "Untitled graph"
       },
       "input": {
         "placeholder": "y = x²   ·   x²+y²=9   ·   (2, 3)"
       },
       "gallery": {
-        "title": "Example collection"
+        "title": "Example collection",
+        "cat": {
+          "all": "All",
+          "funcs": "Functions y = f(x)",
+          "sums": "Sums Σ & products Π",
+          "sequences": "Recursive sequences",
+          "listsCalculus": "Lists · derivatives · integrals",
+          "stats": "Statistics",
+          "simulations": "Simulations (actions)",
+          "complex": "Complex numbers",
+          "fractals": "Fractals",
+          "lsystems": "L-systems · fractal curves",
+          "curves": "Curves & equations",
+          "sliders": "Sliders · animation",
+          "inequalities": "Inequalities · regions",
+          "domains": "Domain restrictions {…}",
+          "logic": "Logic · and / or / not",
+          "customFuncs": "Custom & piecewise functions",
+          "drawings": "Formula drawings",
+          "polar": "Polar curves r(θ)",
+          "parametric": "Parametric curves (t)",
+          "tables": "Data tables · regression"
+        }
       },
       "help": {
         "title": "How to use",
@@ -50,6 +76,9 @@
         "ellipse": "Ellipse",
         "lemniscate": "Lemniscate",
         "rose": "Rose r(θ)"
+      },
+      "errors": {
+        "generic": "Error"
       }
     },
     "g3d": {
@@ -587,7 +616,8 @@
       "msg": {
         "sceneCopied": "Scene copied — paste it onto the board",
         "linkCopied": "Link copied",
-        "copyFail": "Copy failed"
+        "copyFail": "Copy failed",
+        "pickFigureFirst": "Pick a figure first"
       },
       "style": {
         "rich": "Rich",

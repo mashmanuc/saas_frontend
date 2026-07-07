@@ -828,22 +828,24 @@
   }
 
   document.getElementById('st-board').addEventListener('click', () => {
-    // §6.1 (host patch, upstream → Guide §7): єдиний шлях — shared-міст.
-    // MashUseOnBoard сам перевіряє hook хоста (__mashUseOnBoard), а без нього
-    // кладе envelope у localStorage['mash:handoff'] і веде на /mash/import
-    // (реєстрація → живий nmt3d-обʼєкт на дошці).
+    // §7.1+§7.3: єдиний шлях CTA — міст MashUseOnBoard; guard до готовності ws
+    if (!ws) { showToast(TS('msg.pickFigureFirst', 'Спершу оберіть фігуру')); return; }
     if (typeof window.MashUseOnBoard === 'function') {
-      window.MashUseOnBoard('stereo', serialize, null);
+      window.MashUseOnBoard('stereo', serialize, null);   // міст сам перевірить hook хоста
       return;
     }
-    // Останній рубіж (shared/use-on-board.js не завантажився): легасі-копія сцени
+    // останній рубіж — clipboard як було
     const json = JSON.stringify(serialize(), null, 2);
+    if (window.parent !== window) {
+      try { window.parent.postMessage({ type: 'mash:toBoard', app: 'stereo', scene: serialize() }, '*'); } catch (_) {}
+    }
     navigator.clipboard.writeText(json).then(
       () => showToast(TS('msg.sceneCopied', 'Сцену скопійовано — вставте на дошку')),
       () => showToast(TS('msg.copyFail', 'Не вдалося скопіювати')));
   });
 
   document.getElementById('st-share').addEventListener('click', () => {
+    if (!ws) { showToast(TS('msg.pickFigureFirst', 'Спершу оберіть фігуру')); return; }
     const url = location.origin + location.pathname + '#' + sceneToHash();
     history.replaceState(null, '', '#' + sceneToHash());
     navigator.clipboard.writeText(url).then(

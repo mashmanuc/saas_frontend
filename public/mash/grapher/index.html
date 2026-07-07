@@ -2,11 +2,13 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GraphMASH — графічний калькулятор</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/m4sh-theme.css">
+<style>:root{--mash-app-accent:#17a273;}</style>
 <link rel="stylesheet" href="grapher.css">
 <script src="../shared/mode-switch.js"></script>
 <script src="../shared/i18n.js"></script>
@@ -36,7 +38,7 @@
       <button class="tb-btn" id="settingsBtn" title="Налаштування" data-i18n-title="mash.g2d.toolbar.settings">⚙</button>
       <button class="tb-btn" id="langBtn" title="Мова / Language">UK</button>
       <button class="tb-share" id="shareBtn" data-i18n="mash.common.share">Поділитися</button>
-      <button class="tb-share" id="useOnBoardBtn" style="background:#0d9488;font-weight:600;" data-i18n="mash.common.useOnBoard">Використати на дошці</button>
+      <button class="tb-cta" id="useOnBoardBtn" data-i18n="mash.common.useOnBoard">Використати на дошці</button>
     </div>
   </header>
 
@@ -106,9 +108,9 @@
 <script>MashI18n.applyDom(document);</script>
 <script src="fractal-renderer.js"></script>
 <script src="grapher-engine.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
+<link rel="stylesheet" href="./vendor/mathquill/mathquill.css">
+<script src="./vendor/jquery/jquery.min.js"></script>
+<script src="./vendor/mathquill/mathquill.min.js"></script>
 <script src="mq-adapter.js"></script>
 <script src="grapher.js"></script>
 <script>
@@ -118,11 +120,21 @@
   document.getElementById('helpClose').addEventListener('click', function(){ help.style.display='none'; });
   help.addEventListener('click', function(e){ if(e.target===help) help.style.display='none'; });
   window.MashLangInit(document.getElementById('langBtn'));
+  (function(){ // §7.4: дефолтна назва документа через словник
+    var dt=document.getElementById('docTitle');
+    if(dt && dt.value==='Графік без назви' && window.MashI18n && MashI18n.ready){
+      var v=MashI18n.t('mash.g2d.toolbar.docTitleDefault');
+      if(v && v.indexOf('mash.')!==0) dt.value=v;
+    }
+  })();
   document.getElementById('useOnBoardBtn').addEventListener('click', function(){
     if (window.MashG2dApp) window.MashUseOnBoard('g2d', window.MashG2dApp.serialize, '#plotWrap canvas');
   });
   document.getElementById('shareBtn').addEventListener('click', function(){
-    var s=document.getElementById('saved'); s.textContent='посилання скопійовано'; setTimeout(function(){s.textContent='збережено';},1800);
+    var s=document.getElementById('saved');
+    var t=(window.MashI18n&&MashI18n.ready)?MashI18n.t('mash.g2d.toolbar.linkCopied'):'посилання скопійовано';
+    var b=(window.MashI18n&&MashI18n.ready)?MashI18n.t('mash.g2d.toolbar.saved'):'збережено';
+    s.textContent=t; setTimeout(function(){s.textContent=b;},1800);
   });
 })();
 </script>

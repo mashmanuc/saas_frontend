@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
 <script src="./geo-engine.js"></script>
@@ -16,7 +16,9 @@
 <x-dc>
 <helmet>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
+  <link rel="stylesheet" href="../shared/m4sh-theme.css">
+<style>:root{--mash-app-accent:#1a5c38;}</style>
+<style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { margin: 0; overflow: hidden; background: var(--mash-bg, #fff); }
     .mash-geo button { font-family: var(--mash-font, 'Space Grotesk', sans-serif); }
@@ -37,10 +39,10 @@
 <div class="mash-geo" style="display:flex;flex-direction:column;height:100vh;overflow:hidden;font-family:var(--mash-font, 'Space Grotesk', sans-serif);user-select:none;">
 
   <!-- ══ TOP TOOLBAR ══ -->
-  <div style="display:flex;align-items:center;background:#fff;border-bottom:1px solid #e0e6ea;height:50px;padding:0 8px;gap:0;flex-shrink:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+  <div style="display:flex;align-items:center;background:var(--mash-header-bg,#fff);backdrop-filter:blur(var(--mash-header-blur,10px));border-bottom:1px solid var(--mash-header-border,#e0e6ea);height:var(--mash-header-h,64px);padding:0 var(--mash-header-px,24px);gap:0;flex-shrink:0;z-index:20;">
 
     <!-- Logo -->
-    <div style="display:flex;align-items:center;gap:6px;padding:0 10px;border-right:1px solid #e8eee8;margin-right:8px;height:50px;">
+    <div style="display:flex;align-items:center;gap:6px;padding:0 10px 0 0;border-right:1px solid #e8eee8;margin-right:8px;height:100%;">
       <span style="font-size:16px;font-weight:700;color:#1a5c38;letter-spacing:-.5px;">Geo<span style="color:#0d9488;">MASH</span></span>
       <mash-mode-switch active="geo" accent="#1a5c38"></mash-mode-switch>
     </div>
@@ -455,7 +457,7 @@ MashI18n.applyDom(document);
     window.MashLangInit(lang);
     const T = (k, fb) => (window.MashI18n && MashI18n.ready && MashI18n.t(k) !== k) ? MashI18n.t(k) : fb;
     const cta = mkBtn(T('mash.common.useOnBoard', 'Використати на дошці'),
-      'background:#0d9488;border-color:#0d9488;color:#fff;font-weight:600;');
+      'background:var(--mash-accent,#047857);border-color:var(--mash-accent,#047857);color:var(--mash-accent-contrast,#fff);font-weight:600;');
     cta.addEventListener('click', () => {
       if (window.MashGeoApp) window.MashUseOnBoard('geo', window.MashGeoApp.serialize, 'canvas');
     });

@@ -257,7 +257,7 @@
       const hideSlider = () => { sliderRow.style.display = 'none'; sliderRow.dataset.built = ''; };
       if (!c) { hideSlider(); return; }
       if (c.kind === 'invalid') {
-        if (input.value.trim() !== '') { err.textContent = c.error || 'Помилка'; err.style.display = 'block'; }
+        if (input.value.trim() !== '') { err.textContent = c.error || T2('errors.generic', 'Помилка'); err.style.display = 'block'; }
         li.classList.add('invalid'); hideSlider(); return;
       }
       if (c.kind === 'needsParam') {
@@ -345,11 +345,20 @@
       li.appendChild(tbtn);
     }
 
+    const dup = document.createElement('button');
+    dup.className = 'row-dup'; dup.textContent = '⧉'; dup.title = T2('toolbar.duplicate', 'Дублювати');
+    dup.addEventListener('click', () => {
+      // §7.6: копія виразу одразу під оригіналом (паритет з 3D dup-btn); колір — новий з палітри
+      const n = calc.addExpression(expr.src);
+      if (expr.hidden) calc.setHidden(n.id, true);
+      calc.moveExpression(n.id, calc.expressions.findIndex((x) => x.id === expr.id) + 1);
+      renderRows(); focusRow(n.id); snapshot();
+    });
     const del = document.createElement('button');
-    del.className = 'row-del'; del.textContent = '×'; del.title = 'Видалити';
+    del.className = 'row-del'; del.textContent = '×'; del.title = T2('toolbar.deleteRow', 'Видалити');
     del.addEventListener('click', () => { calc.removeExpression(expr.id); renderRows(); });
 
-    li.appendChild(idx); li.appendChild(body); li.appendChild(del);
+    li.appendChild(idx); li.appendChild(body); li.appendChild(dup); li.appendChild(del);
     li._refresh = () => { refreshIco(); refreshClass(); };
     li._tick = () => { expr._sliderRefresh && expr._sliderRefresh(); expr._playRefresh && expr._playRefresh(); };
     return li;
@@ -847,7 +856,7 @@
   // ---------- examples gallery (flyout) ----------
   const GC = window.GraphCalc;
   const GALLERY = [
-    { cat: 'Функції y = f(x)', items: [
+    { cat: T2('gallery.cat.funcs', 'Функції y = f(x)'), items: [
       { name: 'Парабола', set: ['y = x^2'] },
       { name: 'Кубічна', set: ['y = x^3 - 3 x'] },
       { name: 'Синусоїда', set: ['y = 2 sin(x)'] },
@@ -860,14 +869,14 @@
       { name: 'Остача mod', set: ['y = mod(x, 3)'], r: 5 },
       { name: 'Факторіал x!', set: ['y = x!'], r: 4 },
     ]},
-    { cat: 'Суми Σ та добутки Π', items: [
+    { cat: T2('gallery.cat.sums', 'Суми Σ та добутки Π'), items: [
       { name: 'Ряд Фур\'є (пилка)', set: ['y = sum(n, 1, 20, sin(n x) / n)'], r: 7 },
       { name: 'Ряд Фур\'є (меандр)', set: ['y = sum(n, 1, 15, sin((2 n - 1) x) / (2 n - 1))'], r: 6 },
       { name: 'Степеневий ряд eˣ', set: ['y = sum(n, 0, 8, x^n / n!)'], r: 6 },
       { name: 'Сума 1..x (трикутні)', set: ['y = sum(i, 1, x, i)'], r: 12 },
       { name: 'Добуток Π → x!', set: ['y = product(i, 1, x, i)'], r: 8 },
     ]},
-    { cat: 'Рекурентні послідовності', items: [
+    { cat: T2('gallery.cat.sequences', 'Рекурентні послідовності'), items: [
       { name: 'Фібоначчі', set: ['F(0) = 0', 'F(1) = 1', 'F(n) = F(n-1) + F(n-2)', 'plot(F(n), n, 0, 11)'], seqPlot: true },
       { name: 'Арифметична +3', set: ['a(0) = 1', 'a(n) = a(n-1) + 3', 'plot(a(n), n, 0, 10)'], seqPlot: true },
       { name: 'Геометрична ×2', set: ['g(0) = 1', 'g(n) = 2 g(n-1)', 'plot(g(n), n, 0, 8)'], seqPlot: true },
@@ -875,7 +884,7 @@
       { name: 'Куби n³', set: ['c(0) = 0', 'c(n) = c(n-1) + 3 n^2 - 3 n + 1', 'plot(c(n), n, 0, 8)'], seqPlot: true },
       { name: 'Мерсенна 2ⁿ−1', set: ['M(0) = 0', 'M(n) = 2 M(n-1) + 1', 'plot(M(n), n, 0, 8)'], seqPlot: true },
     ]},
-    { cat: 'Списки · похідні · інтеграли', items: [
+    { cat: T2('gallery.cat.listsCalculus', 'Списки · похідні · інтеграли'), items: [
       { name: 'Сімейство синусоїд', set: ['y = sin(x [1, 2, 3])'], r: 7 },
       { name: 'Сімейство парабол', set: ['y = [0.5, 1, 2] x^2'], r: 6 },
       { name: 'Зсунуті копії', set: ['y = sin(x) + [0, 2, 4]'], r: 8 },
@@ -891,20 +900,20 @@
       { name: 'Регресія-експонента', tableData: [[0,1.1],[1,2.6],[2,7.5],[3,19.8],[4,55]], set: ['y ~ a exp(b x)'], badge: '~' },
       { name: 'Підписані точки', set: ['y = x^2 - 2', '(0, -2) "Вершина"', '(1.41, 0) "Корінь"'], r: 5 },
     ]},
-    { cat: 'Статистика', items: [
+    { cat: T2('gallery.cat.stats', 'Статистика'), items: [
       { name: 'Гістограма випадкових', set: ['d = random(200, 0, 10)', 'histogram(d)'], r: 12 },
       { name: 'Гістограма + крок кошика', set: ['d = random(300, -5, 5)', 'histogram(d, 1)'], r: 8 },
       { name: 'Boxplot', set: ['d = [2, 3, 3.5, 4, 4.2, 5, 5.5, 6, 9.5]', 'boxplot(d, 1)'], r: 7 },
       { name: 'Нормальний розподіл', set: ['y = normalpdf(x, 0, 1)', 'y = normalpdf(x, 0, 2)'], r: 5 },
       { name: 'Середнє та медіана', set: ['d = [1, 2, 2, 3, 3, 3, 4, 4, 10]', 'histogram(d, 1)', 'x = mean(d)', 'x = median(d)'], r: 7 },
     ]},
-    { cat: 'Симуляції (дії)', items: [
+    { cat: T2('gallery.cat.simulations', 'Симуляції (дії)'), items: [
       { name: 'М\'ячик стрибає', set: ['h = 8', 'v = 0', '(0, h) "⚽"', 'h -> {h + v/10 < 0: 0, h + v/10}, v -> {h + v/10 < 0: -0.82 v, v - 0.5}'], r: 9,
         hint: 'Натисніть ⟳ біля дії' },
       { name: 'Випадкове блукання', set: ['a = 0', 'b = 0', '(a, b)', 'a -> a + random() - 0.5, b -> b + random() - 0.5'], r: 5 },
       { name: 'Лічильник', set: ['n = 0', '(n, 0) "n"', 'n -> n + 1'], r: 10 },
     ]},
-    { cat: 'Комплексні числа', items: [
+    { cat: T2('gallery.cat.complex', 'Комплексні числа'), items: [
       { name: 'Комплексні точки', set: ['2 + 3i', '(1 + i)^2', 'exp(i pi / 4)'], r: 5 },
       { name: 'Корені з одиниці (5)', set: ['exp(2 i pi / 5)', 'exp(4 i pi / 5)', 'exp(6 i pi / 5)', 'exp(8 i pi / 5)', '1 + 0 i'], r: 2 },
       { name: 'f(z) = z²', set: ['domaincolor(z^2)'], r: 3 },
@@ -914,7 +923,7 @@
       { name: 'sin(z) на площині', set: ['domaincolor(sin(z))'], r: 6 },
       { name: 'Поліном з коренями', set: ['domaincolor((z - 1) (z + 1) (z - i) (z + i))'], r: 2.5 },
     ]},
-    { cat: 'Фрактали', items: [
+    { cat: T2('gallery.cat.fractals', 'Фрактали'), items: [
       { name: 'Мандельброт', set: ['mandelbrot()'], fractal: true, fractalType: 'mandelbrot' },
       { name: 'Юлія (−0.8, 0.156)', set: ['julia(-0.8, 0.156)'], fractal: true, fractalType: 'julia', juliaC: [-0.8, 0.156] },
       { name: 'Юлія (−0.4, 0.6)', set: ['julia(-0.4, 0.6)'], fractal: true, fractalType: 'julia', juliaC: [-0.4, 0.6] },
@@ -926,7 +935,7 @@
       { name: 'Multibrot(3)', set: ['multibrot(3)'], fractal: true, fractalType: 'multibrot', fractalPower: 3 },
       { name: 'Multibrot(4)', set: ['multibrot(4)'], fractal: true, fractalType: 'multibrot', fractalPower: 4 },
     ]},
-    { cat: 'L-системи · фрактальні криві', items: [
+    { cat: T2('gallery.cat.lsystems', 'L-системи · фрактальні криві'), items: [
       { name: 'Крива Коха', set: ['koch(4)'], lsystem: true, lsystemData: {axiom:'F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[1]} },
       { name: 'Дракон Гайвея', set: ['dragon(12)'], lsystem: true, lsystemData: {axiom:'FX', rules:'X->X+YF+;Y->-FX-Y', iters:9, angle:90, color:COLORS[0]} },
       { name: 'Серпінський', set: ['sierpinski(5)'], lsystem: true, lsystemData: {axiom:'F-G-G', rules:'F->F-G+F+G-F;G->GG', iters:4, angle:120, color:COLORS[2]} },
@@ -934,7 +943,7 @@
       { name: 'Рослина', set: ['plant(5)'], lsystem: true, lsystemData: {axiom:'X', rules:'X->F+[[X]-X]-F[-FX]+X;F->FF', iters:3, angle:25, startAngle:90, color:COLORS[2]} },
       { name: 'Сніжинка Коха', set: ['lsystem("F--F--F", "F->F+F--F+F", 4, 60)'], lsystem: true, lsystemData: {axiom:'F--F--F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[4]} },
     ]},
-    { cat: 'Криві та рівняння', items: [
+    { cat: T2('gallery.cat.curves', 'Криві та рівняння'), items: [
       { name: 'Коло', set: ['x^2 + y^2 = 25'] },
       { name: 'Еліпс', set: ['x^2 / 9 + y^2 / 4 = 1'] },
       { name: 'Гіпербола', set: ['x^2 / 4 - y^2 / 4 = 1'] },
@@ -942,13 +951,13 @@
       { name: 'Лемніската', set: ['(x^2 + y^2)^2 = 4 (x^2 - y^2)'], r: 2.6 },
       { name: 'Супереліпс', set: ['abs(x / 4)^4 + abs(y / 3)^4 = 1'] },
     ]},
-    { cat: 'З повзунками · анімація', items: [
+    { cat: T2('gallery.cat.sliders', 'З повзунками · анімація'), items: [
       { name: 'Сімейство парабол', set: ['y = a x^2', 'a = 1'], badge: '▶ a' },
       { name: 'Хвиля A·sin(b·x)', set: ['y = A sin(b x)', 'A = 2', 'b = 1'], badge: '▶ A,b' },
       { name: 'Коло радіуса r', set: ['x^2 + y^2 = r^2', 'r = 5'], badge: '▶ r' },
       { name: 'Пряма k·x + b', set: ['y = k x + b', 'k = 1', 'b = 0'], badge: '▶ k,b' },
     ]},
-    { cat: 'Нерівності · області', items: [
+    { cat: T2('gallery.cat.inequalities', 'Нерівності · області'), items: [
       { name: 'Під параболою', set: ['y < x^2'] },
       { name: 'Над синусом', set: ['y >= sin(x)'] },
       { name: 'Круг (диск)', set: ['x^2 + y^2 <= 9'] },
@@ -956,7 +965,7 @@
       { name: 'Кільце (система)', set: ['x^2 + y^2 <= 16', 'x^2 + y^2 >= 4'] },
       { name: 'Смуга між кривими', set: ['y < x + 2', 'y > x^2 - 2'] },
     ]},
-    { cat: 'Обмеження області {…}', items: [
+    { cat: T2('gallery.cat.domains', 'Обмеження області {…}'), items: [
       { name: 'Промінь', set: ['y = x {x > 0}'] },
       { name: 'Півпарабола', set: ['y = x^2 {x >= 0}'] },
       { name: 'Відрізок синуса', set: ['y = 2 sin(x) {-3 < x < 3}'] },
@@ -964,7 +973,7 @@
       { name: 'Сходинки', set: ['y = x^2 {x < 0}', 'y = 1 {0 <= x < 2}', 'y = x - 1 {x >= 2}'] },
       { name: 'Сектор кола', set: ['x^2 + y^2 = 9 {y > 0}'] },
     ]},
-    { cat: 'Логіка · and / or / not', items: [
+    { cat: T2('gallery.cat.logic', 'Логіка · and / or / not'), items: [
       { name: 'Перша чверть', set: ['x > 0 and y > 0'] },
       { name: 'Між 0 і параболою', set: ['y > 0 and y < x^2'] },
       { name: 'Кільце (перетин)', set: ['x^2 + y^2 > 4 and x^2 + y^2 < 16'], r: 5 },
@@ -972,7 +981,7 @@
       { name: 'Хрест (or)', set: ['abs(x) < 1 or abs(y) < 1'] },
       { name: 'Поза колом, не нижче', set: ['x^2 + y^2 > 4 and y >= 0'], r: 4 },
     ]},
-    { cat: 'Власні функції · кускові', items: [
+    { cat: T2('gallery.cat.customFuncs', 'Власні функції · кускові'), items: [
       { name: 'Власна функція f(x)', set: ['f(x) = x^2 - 2 x', 'y = f(x)'] },
       { name: 'Композиція f(f(x))', set: ['f(x) = x^2 - 1', 'y = f(f(x))'] },
       { name: 'Модуль як кускова', set: ['y = {x < 0: 0 - x, x >= 0: x}'] },
@@ -980,7 +989,7 @@
       { name: 'Парабола / пряма', set: ['y = {x < 1: x^2, x >= 1: 2 x - 1}'] },
       { name: 'Факторіал x!', set: ['y = x!'], r: 4 },
     ]},
-    { cat: 'Малюнки з формул', items: [
+    { cat: T2('gallery.cat.drawings', 'Малюнки з формул'), items: [
       { name: 'Котик', set: [
         'x^2 + y^2 = 16',
         'y = 3.8x + 17.14 {-3.8<x<-2.8}',
@@ -1018,7 +1027,7 @@
         '(x-1.6)^2/0.5 + (y+0.2)^2/0.5 = 1',
       ], r: 5 },
     ]},
-    { cat: 'Полярні криві r(θ)', items: [
+    { cat: T2('gallery.cat.polar', 'Полярні криві r(θ)'), items: [
       { name: 'Коло', set: ['r = 4'], r: 5 },
       { name: 'Кардіоїда', set: ['r = 2 (1 + cos(θ))'], r: 4.6 },
       { name: 'Роза · 3 пелюстки', set: ['r = 4 cos(3 θ)'], r: 4.6 },
@@ -1026,7 +1035,7 @@
       { name: 'Спіраль Архімеда', set: ['r = θ'], r: 6.8 },
       { name: 'Равлик Паскаля', set: ['r = 1 + 2 cos(θ)'], r: 3.4 },
     ]},
-    { cat: 'Параметричні криві (t)', items: [
+    { cat: T2('gallery.cat.parametric', 'Параметричні криві (t)'), items: [
       { name: 'Коло', set: ['(cos(t), sin(t))'], r: 1.6 },
       { name: 'Еліпс', set: ['(3 cos(t), 2 sin(t))'], r: 4 },
       { name: 'Спіраль', set: ['(t cos(t), t sin(t))'], r: 7 },
@@ -1034,7 +1043,7 @@
       { name: 'Циклоїда', set: ['(t - sin(t), 1 - cos(t))'], r: 7 },
       { name: 'Астроїда', set: ['(3 cos(t)^3, 3 sin(t)^3)'], r: 4 },
     ]},
-    { cat: 'Таблиці даних · регресія', items: [
+    { cat: T2('gallery.cat.tables', 'Таблиці даних · регресія'), items: [
       { name: 'Лінійна регресія', tableData: [[-4, -3], [-2, -1.2], [0, 0.4], [2, 2.1], [4, 3.6], [6, 5.2]], tableStyle: { points: true, line: false }, regression: 'linear', r: 7 },
       { name: 'Квадратична', tableData: [[-3, 9.5], [-2, 4.2], [-1, 1.1], [0, -0.3], [1, 0.8], [2, 4.1], [3, 9.2]], tableStyle: { points: true, line: false }, regression: 'quadratic', r: 11 },
       { name: 'Кубічна', tableData: [[-3, -22], [-2, -5], [-1, 1], [0, 0.5], [1, 2], [2, 9], [3, 28]], tableStyle: { points: true, line: false }, regression: 'cubic', r: 30 },
@@ -1333,13 +1342,14 @@
   }
 
   let galleryBuilt = false;
-  let galCat = 'Всі';
+  const GAL_ALL = T2('gallery.cat.all', 'Всі');
+  let galCat = GAL_ALL;
   function buildGallery() {
     if (galleryBuilt) return; galleryBuilt = true;
     const body = $('#exBody');
     // Чіпи-фільтри категорій (як у 3D-галереї)
     const chips = document.createElement('div'); chips.className = 'ex-chips';
-    const cats = ['Всі', ...GALLERY.map(g => g.cat)];
+    const cats = [GAL_ALL, ...GALLERY.map(g => g.cat)];
     cats.forEach(cat => {
       const ch = document.createElement('button');
       ch.className = 'ex-chip' + (cat === galCat ? ' active' : '');
@@ -1348,7 +1358,7 @@
         galCat = cat;
         chips.querySelectorAll('.ex-chip').forEach(b => b.classList.toggle('active', b === ch));
         body.querySelectorAll('.ex-cat').forEach(sec => {
-          sec.style.display = (cat === 'Всі' || sec.dataset.cat === cat) ? '' : 'none';
+          sec.style.display = (cat === GAL_ALL || sec.dataset.cat === cat) ? '' : 'none';
         });
       });
       chips.appendChild(ch);

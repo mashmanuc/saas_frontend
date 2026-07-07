@@ -16,12 +16,13 @@
 }
 .mash-stereo * { box-sizing: border-box; }
 
-/* ── header ── */
+/* ── header (P1.2: єдиний M4SH-хедер) ── */
 .mash-stereo .st-header {
   display: flex; align-items: center; gap: 12px;
-  padding: 0 14px; height: 48px; flex-shrink: 0;
-  border-bottom: 1px solid var(--st-border);
-  background: var(--st-bg);
+  padding: 0 var(--mash-header-px, 24px); height: var(--mash-header-h, 64px); flex-shrink: 0;
+  background: var(--mash-header-bg, #fff);
+  backdrop-filter: blur(var(--mash-header-blur, 10px));
+  border-bottom: 1px solid var(--mash-header-border, var(--st-border));
 }
 .mash-stereo .st-brand { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 16px; letter-spacing: .2px; }
 .mash-stereo .st-brand svg { color: var(--st-accent); }
@@ -33,8 +34,8 @@
   cursor: pointer; line-height: 1; display: inline-flex; align-items: center; gap: 6px;
 }
 .mash-stereo .st-btn:hover { border-color: var(--st-accent); color: var(--st-accent); }
-.mash-stereo .st-btn.st-primary { background: var(--st-accent); border-color: var(--st-accent); color: #fff; font-weight: 600; }
-.mash-stereo .st-btn.st-primary:hover { filter: brightness(1.08); color: #fff; }
+.mash-stereo .st-btn.st-primary { background: var(--mash-accent, #047857); border-color: var(--mash-accent, #047857); color: var(--mash-accent-contrast, #fff); font-weight: 600; }
+.mash-stereo .st-btn.st-primary:hover { background: var(--mash-accent-hover, #065f46); border-color: var(--mash-accent-hover, #065f46); color: #fff; }
 .mash-stereo .st-btn.st-on { background: var(--st-accent); border-color: var(--st-accent); color: #fff; }
 
 /* ── body: gallery | stage | panel ── */
