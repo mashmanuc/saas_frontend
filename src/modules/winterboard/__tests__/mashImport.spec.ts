@@ -142,6 +142,27 @@ describe('mashImport utils (A2)', () => {
     expect(buildGraphCalcAssetFromG2dScene({})).toBeNull()
   })
 
+  it('INV-MI-8c: BE-safety — color→#rrggbb, ≤32 виразів, scale∈[1,1000], src≤256', () => {
+    const many = Array.from({ length: 40 }, (_, k) => ({ src: `y=${k}`, color: '#abc' }))
+    const asset = buildGraphCalcAssetFromG2dScene({
+      expressions: [
+        { src: 'y=x', color: '#c74440' },       // валідний 6-hex
+        { src: 'y=2x', color: '#abc' },          // короткий → розгортається
+        { src: 'y=3x', color: 'red' },           // назва → дефолт
+        { src: 'x'.repeat(300), color: '#000000' }, // src>256 → дроп
+        ...many,
+      ],
+      viewport: { cx: 0, cy: 0, scale: 5000 },   // поза межами → clamp 1000
+    })!
+    const st = (asset.data as unknown as { state: { expressions: Array<{ src: string; color: string }>; viewport: { scale: number } } }).state
+    expect(st.expressions.length).toBeLessThanOrEqual(32)                 // BE cap
+    expect(st.expressions.every(e => /^#[0-9a-f]{6}$/.test(e.color))).toBe(true) // усі 6-hex
+    expect(st.expressions.find(e => e.src === 'y=2x')!.color).toBe('#aabbcc')    // розгорнуто
+    expect(st.expressions.find(e => e.src === 'y=3x')!.color).toBe('#2d70b3')    // дефолт
+    expect(st.expressions.some(e => e.src.length > 256)).toBe(false)     // довгий дропнуто
+    expect(st.viewport.scale).toBe(1000)                                  // clamp
+  })
+
   it('INV-MI-9: geo-сцена → нативний geomash_scene (objects+cs збережено)', () => {
     const asset = buildGeomashSceneAsset({
       format: 'geomash-scene', version: 1,

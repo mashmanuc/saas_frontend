@@ -103,6 +103,26 @@ function exprId(i: number): string {
 }
 
 /**
+ * Нормалізація кольору у BE-строгий `#rrggbb` (WBGraphExpressionSerializer regex).
+ * Розгортає `#rgb`→`#rrggbb`; невалідне (rgb()/назва/порожнє) → дефолт.
+ */
+function normalizeHex(c: unknown, fallback = '#2d70b3'): string {
+  if (typeof c !== 'string') return fallback
+  const s = c.trim()
+  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase()
+  const m = /^#([0-9a-fA-F]{3})$/.exec(s)
+  if (m) return ('#' + m[1].split('').map(ch => ch + ch).join('')).toLowerCase()
+  return fallback
+}
+
+// BE-межі (apps/winterboard/api/serializers.py) — конвертер МУСИТЬ їх дотримати,
+// інакше asset_update (move) впаде на строгому graph_calculator-серіалізаторі.
+const GC_MAX_EXPRESSIONS = 32
+const GC_EXPR_SRC_MAX = 256
+const GC_SCALE_MIN = 1.0
+const GC_SCALE_MAX = 1000.0
+
+/**
  * B2 (2026-07-07) — g2d-сцена → НАШ НАТИВНИЙ `graph_calculator` ассет.
  * Board-graph_calculator = той самий двигун-форк, що GraphMASH (Phase G); має живий
  * рендер + правий інспектор (GraphCalcInspector) + редагування + replay. Тому НЕ окремий
@@ -115,13 +135,14 @@ export function buildGraphCalcAssetFromG2dScene(scene: Record<string, unknown>):
   const expressions: Array<{ id: string; src: string; color: string; hidden: boolean }> = []
   let i = 0
   for (const raw of rawExprs as Array<Record<string, unknown>>) {
+    if (expressions.length >= GC_MAX_EXPRESSIONS) break // BE cap 32
     if (raw.isTable) continue // board graph_calculator не має табличного формату GraphMASH
     const src = typeof raw.src === 'string' ? raw.src.trim() : ''
-    if (!src) continue
+    if (!src || src.length > GC_EXPR_SRC_MAX) continue // BE src ≤256 (довше — дропаємо, не ламаємо формулу truncate)
     expressions.push({
       id: exprId(i++),
       src,
-      color: typeof raw.color === 'string' ? raw.color : '#2d70b3',
+      color: normalizeHex(raw.color),
       hidden: !!raw.hidden,
     })
   }
@@ -144,10 +165,11 @@ export function buildGraphCalcAssetFromG2dScene(scene: Record<string, unknown>):
   }
 
   const vp = scene.viewport as { cx?: number; cy?: number; scale?: number } | undefined
+  const rawScale = typeof vp?.scale === 'number' && vp.scale > 0 ? vp.scale : 38
   const viewport = {
     cx: typeof vp?.cx === 'number' && Number.isFinite(vp.cx) ? vp.cx : 0,
     cy: typeof vp?.cy === 'number' && Number.isFinite(vp.cy) ? vp.cy : 0,
-    scale: typeof vp?.scale === 'number' && vp.scale > 0 ? vp.scale : 38,
+    scale: Math.min(GC_SCALE_MAX, Math.max(GC_SCALE_MIN, rawScale)), // BE clamp [1,1000]
   }
 
   return {
