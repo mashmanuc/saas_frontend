@@ -96,6 +96,39 @@ export function buildNmt3dAssetFromStereoScene(scene: Record<string, unknown>): 
   } as unknown as WBAsset
 }
 
+/**
+ * g2d/g3d/geo → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
+ * (Proposal §8 Board-first rule), рендер v1 — картка з deep-link. preview НЕ зберігаємо
+ * (ops-recorder стрипає data:-URLs; state-bloat freeze).
+ */
+export function buildMashSceneAsset(envelope: MashEnvelope): WBAsset | null {
+  if (envelope.app === 'stereo') return null // stereo → нативний nmt3d, інша гілка
+  const scene = envelope.scene
+  const sceneFormat = typeof scene.format === 'string' ? scene.format : ''
+  const title =
+    (typeof scene.title === 'string' && scene.title) ||
+    (typeof scene.name === 'string' && scene.name) ||
+    undefined
+  return {
+    id: `mashsc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type: 'mash_scene',
+    src: '',
+    x: 140,
+    y: 100,
+    w: 360,
+    h: 240,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      app: envelope.app,
+      sceneFormat,
+      scene,
+      ...(title ? { title } : {}),
+    },
+  } as unknown as WBAsset
+}
+
 /** Seed-state для createSession: одна сторінка (дзеркало createEmptyPage) з ассетом. */
 export function buildSeedState(asset: WBAsset): WBWorkspaceState {
   const page: WBPage = {

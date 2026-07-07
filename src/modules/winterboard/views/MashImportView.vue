@@ -18,6 +18,7 @@ import { winterboardApi } from '../api/winterboardApi'
 import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
+  buildMashSceneAsset,
   buildSeedState,
 } from '../utils/mashImport'
 
@@ -25,7 +26,7 @@ const router = useRouter()
 const { t } = useI18n()
 const auth = useAuthStore()
 
-type ImportState = 'working' | 'empty' | 'invalid' | 'not-stereo' | 'student' | 'error'
+type ImportState = 'working' | 'empty' | 'invalid' | 'student' | 'error'
 const state = ref<ImportState>('working')
 
 onMounted(async () => {
@@ -38,11 +39,11 @@ onMounted(async () => {
     state.value = 'student'
     return
   }
-  if (envelope.app !== 'stereo') {
-    state.value = 'not-stereo'
-    return
-  }
-  const asset = buildNmt3dAssetFromStereoScene(envelope.scene)
+  // A3: усі 4 додатки їдуть на дошку — stereo нативним nmt3d, решта mash_scene-карткою
+  const asset =
+    envelope.app === 'stereo'
+      ? buildNmt3dAssetFromStereoScene(envelope.scene)
+      : buildMashSceneAsset(envelope)
   if (!asset) {
     state.value = 'invalid'
     return
@@ -72,7 +73,6 @@ onMounted(async () => {
     <div v-else class="mi-card">
       <p v-if="state === 'empty'">{{ t('mashImport.empty') }}</p>
       <p v-else-if="state === 'invalid'">{{ t('mashImport.invalid') }}</p>
-      <p v-else-if="state === 'not-stereo'">{{ t('mashImport.notStereo') }}</p>
       <p v-else-if="state === 'student'">{{ t('mashImport.studentOnly') }}</p>
       <p v-else>{{ t('mashImport.error') }}</p>
       <a class="mi-link" href="/mash/stereomash/index.html">{{ t('mashImport.backToMash') }}</a>

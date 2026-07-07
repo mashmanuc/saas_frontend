@@ -34,6 +34,7 @@ import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
+import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
 
 // ─── Adapter context ──────────────────────────────────────────────────────────
 // WBOverlayLayer будує цей ctx (reactive snapshot) і передає у build* функції.
@@ -263,6 +264,17 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     expandable: true,
     buildProps: (a, ctx) => ({ ...expProps(a, ctx), boardMode: ctx.boardMode }),
     buildEvents: expEvents,
+  },
+
+  // §3.7.13 (A3 2026-07-07) — MASH Live Asset з публічної воронки (Proposal §8)
+  mash_scene: {
+    component: MashSceneRenderer,
+    wrapperClass: 'wb-mash-scene-overlay',
+    dataAttr: 'data-mash-scene-id',
+    testidPrefix: 'mash-scene-overlay',
+    expandable: false,
+    buildProps: stdProps,
+    buildEvents: stdEvents,
   },
 
   nmt_task: {

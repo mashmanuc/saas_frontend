@@ -216,6 +216,10 @@ export interface WBAsset {
     /** TheoryCard (2026-06-03) — рухома картка теорії+формул (Lesson Constructor). §3.7.12
      *  Замінює page-level theoryBlock/formulaBlock на повноцінний draggable WBAsset. */
     | 'theory_card'
+    /** MashScene (2026-07-07, A3) — MASH Live Asset envelope з публічної воронки /mash/*
+     *  (Proposal §8): сцена GraphMASH 2D/3D/GeoMASH їде на дошку ЗАВЖДИ (data.scene),
+     *  рендер v1 = картка з deep-link «Відкрити у MASH» (нативізація — по-двигунно). §3.7.13 */
+    | 'mash_scene'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -309,6 +313,7 @@ export interface WBAsset {
     | import('./quad').QuadraticData
     | import('./formulaCard').FormulaCardData
     | TheoryCardData
+    | MashSceneData
 }
 
 /**
@@ -450,6 +455,25 @@ export interface TheoryCardData {
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }
+
+/**
+ * MashScene (§3.7.13, A3 2026-07-07) — MASH Live Asset envelope (Proposal §8).
+ * data.scene = ПОВНА серіалізована сцена додатка as-is ({format,version,…} самого MASH) —
+ * зберігається завжди, щоб об'єкт «ожив» при нативізації двигуна без міграцій.
+ * preview data-URL НЕ зберігаємо: ops-recorder стрипає data:-URLs + state-bloat freeze.
+ */
+export interface MashSceneData {
+  version: 1
+  /** Який MASH-додаток: g2d (GraphMASH 2D) | g3d (3D) | geo (GeoMASH). stereo → нативний nmt3d. */
+  app: 'g2d' | 'g3d' | 'geo'
+  /** data.scene.format сцени (graphmash-2d | …-3d-scene | geomash-scene) — для майбутніх мігрувань. */
+  sceneFormat: string
+  /** Повна сцена MASH-додатка as-is. */
+  scene: Record<string, unknown>
+  /** Заголовок картки (назва графіка/сцени, якщо додаток його дав). */
+  title?: string
+}
+export type MashSceneAsset = WBAsset & { type: 'mash_scene'; data: MashSceneData }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
 

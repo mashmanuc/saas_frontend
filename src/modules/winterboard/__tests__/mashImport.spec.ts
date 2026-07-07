@@ -14,6 +14,7 @@ import {
   MASH_HANDOFF_KEY,
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
+  buildMashSceneAsset,
   buildSeedState,
 } from '../utils/mashImport'
 
@@ -78,6 +79,31 @@ describe('mashImport utils (A2)', () => {
     expect(buildNmt3dAssetFromStereoScene({ templateKey: '' })).toBeNull()
     const a = buildNmt3dAssetFromStereoScene({ templateKey: 'cube', mode: 'weird' })!
     expect((a.data as unknown as Record<string, unknown>).mode).toBe('adapt')
+  })
+
+  it('INV-MI-6: g2d/g3d/geo → mash_scene-ассет; сцена їде as-is, preview НЕ зберігається', () => {
+    const asset = buildMashSceneAsset({
+      app: 'g2d',
+      version: 1,
+      scene: { format: 'graphmash-2d', version: 2, title: 'Парабола', expressions: [{ latex: 'x^2' }] },
+      preview: 'data:image/png;base64,HUGE',
+    })!
+    expect(asset).not.toBeNull()
+    expect(asset.type).toBe('mash_scene')
+    expect(asset.id).toMatch(/^mashsc-/)
+    const data = asset.data as unknown as Record<string, unknown>
+    expect(data.app).toBe('g2d')
+    expect(data.sceneFormat).toBe('graphmash-2d')
+    expect(data.title).toBe('Парабола')
+    expect((data.scene as Record<string, unknown>).expressions).toHaveLength(1)
+    expect(JSON.stringify(data)).not.toContain('data:image') // жодного preview-растра в state
+  })
+
+  it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {
+    expect(buildMashSceneAsset({ app: 'stereo', version: 1, scene: { templateKey: 'cube' } })).toBeNull()
+    // geo без format — валідний (sceneFormat порожній, сцена їде)
+    const geo = buildMashSceneAsset({ app: 'geo', version: 1, scene: { v: 1, objects: [] } })!
+    expect((geo.data as unknown as Record<string, unknown>).sceneFormat).toBe('')
   })
 
   it('INV-MI-5: seed-state — 1 сторінка з дефолтами createEmptyPage і ассетом', () => {
