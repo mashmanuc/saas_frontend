@@ -15,11 +15,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/authStore'
 import { winterboardApi } from '../api/winterboardApi'
+import type { WBAsset } from '../types/winterboard'
 import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
   buildMashSceneAsset,
   buildSeedState,
+  downscalePreview,
 } from '../utils/mashImport'
 
 const router = useRouter()
@@ -40,10 +42,14 @@ onMounted(async () => {
     return
   }
   // A3: усі 4 додатки їдуть на дошку — stereo нативним nmt3d, решта mash_scene-карткою
-  const asset =
-    envelope.app === 'stereo'
-      ? buildNmt3dAssetFromStereoScene(envelope.scene)
-      : buildMashSceneAsset(envelope)
+  let asset: WBAsset | null
+  if (envelope.app === 'stereo') {
+    asset = buildNmt3dAssetFromStereoScene(envelope.scene)
+  } else {
+    // прев'ю зменшуємо+перекодовуємо у thumbnail (уникаємо роздування стану)
+    const thumb = await downscalePreview(envelope.preview)
+    asset = buildMashSceneAsset(envelope, thumb)
+  }
   if (!asset) {
     state.value = 'invalid'
     return

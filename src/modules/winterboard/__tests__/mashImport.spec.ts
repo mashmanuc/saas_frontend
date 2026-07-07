@@ -99,6 +99,18 @@ describe('mashImport utils (A2)', () => {
     expect(JSON.stringify(data)).not.toContain('data:image') // жодного preview-растра в state
   })
 
+  it('INV-MI-6b: previewUrl зберігається у data, коли переданий', () => {
+    const asset = buildMashSceneAsset(
+      { app: 'geo', version: 1, scene: { format: 'geomash-scene', v: 1 } },
+      'data:image/jpeg;base64,THUMB',
+    )!
+    const data = asset.data as unknown as Record<string, unknown>
+    expect(data.previewUrl).toBe('data:image/jpeg;base64,THUMB')
+    // без previewUrl — поле відсутнє (не undefined-шум у стані)
+    const noPrev = buildMashSceneAsset({ app: 'geo', version: 1, scene: {} })!
+    expect('previewUrl' in (noPrev.data as object)).toBe(false)
+  })
+
   it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {
     expect(buildMashSceneAsset({ app: 'stereo', version: 1, scene: { templateKey: 'cube' } })).toBeNull()
     // geo без format — валідний (sceneFormat порожній, сцена їде)

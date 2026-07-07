@@ -472,6 +472,8 @@ export interface MashSceneData {
   scene: Record<string, unknown>
   /** Заголовок картки (назва графіка/сцени, якщо додаток його дав). */
   title?: string
+  /** Стиснутий JPEG-thumbnail сцени (data-URL, кап ~90KB) — показ обʼєкта на картці. */
+  previewUrl?: string
 }
 export type MashSceneAsset = WBAsset & { type: 'mash_scene'; data: MashSceneData }
 

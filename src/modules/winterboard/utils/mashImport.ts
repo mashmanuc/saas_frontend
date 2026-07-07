@@ -101,7 +101,7 @@ export function buildNmt3dAssetFromStereoScene(scene: Record<string, unknown>): 
  * (Proposal §8 Board-first rule), рендер v1 — картка з deep-link. preview НЕ зберігаємо
  * (ops-recorder стрипає data:-URLs; state-bloat freeze).
  */
-export function buildMashSceneAsset(envelope: MashEnvelope): WBAsset | null {
+export function buildMashSceneAsset(envelope: MashEnvelope, previewUrl?: string | null): WBAsset | null {
   if (envelope.app === 'stereo') return null // stereo → нативний nmt3d, інша гілка
   const scene = envelope.scene
   const sceneFormat = typeof scene.format === 'string' ? scene.format : ''
@@ -125,8 +125,52 @@ export function buildMashSceneAsset(envelope: MashEnvelope): WBAsset | null {
       sceneFormat,
       scene,
       ...(title ? { title } : {}),
+      // previewUrl — стиснутий thumbnail (data.* НЕ стрипається, лише src). Кап у view.
+      ...(previewUrl ? { previewUrl } : {}),
     },
   } as unknown as WBAsset
+}
+
+/**
+ * Стиснути прев'ю-конверта (повнорозмірний PNG data-URL) у маленький JPEG-thumbnail,
+ * щоб показати обʼєкт на картці БЕЗ роздування стану (уникаємо 413 на save-stream).
+ * DOM-залежне (Image+canvas) → живе в browser-контексті. Повертає null, якщо джерело
+ * порожнє/криве або результат все одно завеликий (blank WebGL → чорний кадр теж null).
+ */
+export function downscalePreview(
+  src: string | null | undefined,
+  maxW = 480,
+  maxKB = 90,
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    if (!src || !src.startsWith('data:image')) return resolve(null)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        if (!img.width || !img.height) return resolve(null)
+        const scale = Math.min(1, maxW / img.width)
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const cv = document.createElement('canvas')
+        cv.width = w
+        cv.height = h
+        const ctx = cv.getContext('2d')
+        if (!ctx) return resolve(null)
+        ctx.fillStyle = '#ffffff' // JPEG без альфи — білий фон замість чорного
+        ctx.fillRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h)
+        const out = cv.toDataURL('image/jpeg', 0.7)
+        // кап: захист від роздування стану (чорний WebGL-кадр стискається у ~кб — теж пройде,
+        // але це прийнятно: покаже темний прямокутник, не зламає збереження)
+        if (out.length > maxKB * 1024) return resolve(null)
+        resolve(out)
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
 }
 
 /** Seed-state для createSession: одна сторінка (дзеркало createEmptyPage) з ассетом. */

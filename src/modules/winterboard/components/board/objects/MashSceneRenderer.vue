@@ -33,10 +33,13 @@
       >×</button>
     </header>
 
-    <div class="msc-body">
-      <div class="msc-icon" aria-hidden="true">{{ appIcon }}</div>
-      <div class="msc-title">{{ data.title || appLabel }}</div>
-      <div class="msc-sub">{{ sceneSummary }}</div>
+    <div class="msc-body" :class="{ 'msc-body--preview': data.previewUrl }">
+      <img v-if="data.previewUrl" class="msc-preview" :src="data.previewUrl" alt="" draggable="false" />
+      <template v-else>
+        <div class="msc-icon" aria-hidden="true">{{ appIcon }}</div>
+        <div class="msc-title">{{ data.title || appLabel }}</div>
+        <div class="msc-sub">{{ sceneSummary }}</div>
+      </template>
     </div>
 
     <footer class="msc-footer">
@@ -161,6 +164,14 @@ useExportCapture(
   gap: 4px;
   padding: 8px 12px;
   text-align: center;
+}
+.msc-body--preview { padding: 0; }
+.msc-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #ffffff;
 }
 .msc-icon { font-size: 30px; color: #047857; opacity: 0.85; }
 .msc-title {
