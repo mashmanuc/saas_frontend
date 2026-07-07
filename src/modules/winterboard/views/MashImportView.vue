@@ -20,6 +20,7 @@ import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
   buildMashSceneAsset,
+  buildGraphmash2dAsset,
   buildSeedState,
   downscalePreview,
 } from '../utils/mashImport'
@@ -41,10 +42,13 @@ onMounted(async () => {
     state.value = 'student'
     return
   }
-  // A3: усі 4 додатки їдуть на дошку — stereo нативним nmt3d, решта mash_scene-карткою
+  // На дошку: stereo → нативний nmt3d; g2d → нативний graphmash_2d (B2, живий графік);
+  // g3d/geo → mash_scene-картка з thumbnail (до їхньої нативізації B2-3D/B3).
   let asset: WBAsset | null
   if (envelope.app === 'stereo') {
     asset = buildNmt3dAssetFromStereoScene(envelope.scene)
+  } else if (envelope.app === 'g2d') {
+    asset = buildGraphmash2dAsset(envelope)
   } else {
     // прев'ю зменшуємо+перекодовуємо у thumbnail (уникаємо роздування стану)
     const thumb = await downscalePreview(envelope.preview)

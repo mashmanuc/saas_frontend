@@ -173,6 +173,39 @@ export function downscalePreview(
   })
 }
 
+/**
+ * g2d → НАТИВНИЙ `graphmash_2d`-ассет (B2, §3.7.14): живий графік движком на дошці,
+ * не картка. data = MashSceneData (той самий envelope-shape). previewUrl не потрібен
+ * (рендер живий), тому не кладемо.
+ */
+export function buildGraphmash2dAsset(envelope: MashEnvelope): WBAsset | null {
+  if (envelope.app !== 'g2d') return null
+  const scene = envelope.scene
+  const sceneFormat = typeof scene.format === 'string' ? scene.format : ''
+  const title =
+    (typeof scene.title === 'string' && scene.title) ||
+    (typeof scene.name === 'string' && scene.name) ||
+    undefined
+  return {
+    id: `gm2d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type: 'graphmash_2d',
+    src: '',
+    x: 140,
+    y: 100,
+    w: 460,
+    h: 340,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      app: 'g2d',
+      sceneFormat,
+      scene,
+      ...(title ? { title } : {}),
+    },
+  } as unknown as WBAsset
+}
+
 /** Seed-state для createSession: одна сторінка (дзеркало createEmptyPage) з ассетом. */
 export function buildSeedState(asset: WBAsset): WBWorkspaceState {
   const page: WBPage = {

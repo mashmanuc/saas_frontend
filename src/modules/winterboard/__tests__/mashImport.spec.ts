@@ -15,6 +15,7 @@ import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
   buildMashSceneAsset,
+  buildGraphmash2dAsset,
   buildSeedState,
 } from '../utils/mashImport'
 
@@ -109,6 +110,21 @@ describe('mashImport utils (A2)', () => {
     // без previewUrl — поле відсутнє (не undefined-шум у стані)
     const noPrev = buildMashSceneAsset({ app: 'geo', version: 1, scene: {} })!
     expect('previewUrl' in (noPrev.data as object)).toBe(false)
+  })
+
+  it('INV-MI-8: buildGraphmash2dAsset — g2d → нативний graphmash_2d (не картка)', () => {
+    const asset = buildGraphmash2dAsset({
+      app: 'g2d', version: 1,
+      scene: { format: 'graphmash-2d', version: 2, title: 'Парабола', expressions: [{ src: 'x^2' }], viewport: { cx: 0, cy: 0, scale: 40 } },
+    })!
+    expect(asset.type).toBe('graphmash_2d')
+    expect(asset.id).toMatch(/^gm2d-/)
+    const data = asset.data as unknown as Record<string, unknown>
+    expect(data.app).toBe('g2d')
+    expect((data.scene as Record<string, unknown>).expressions).toHaveLength(1)
+    // не g2d → null (тільки 2D нативний)
+    expect(buildGraphmash2dAsset({ app: 'geo', version: 1, scene: {} })).toBeNull()
+    expect(buildGraphmash2dAsset({ app: 'g3d', version: 1, scene: {} })).toBeNull()
   })
 
   it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {

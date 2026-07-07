@@ -138,6 +138,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'formula_card',     // §3.7.11 — formula (LaTeX), fontSize, color, bg
   'theory_card',      // §3.7.12 — title, body, hint, formulaTitle, formulas[]
   'mash_scene',       // §3.7.13 — app, sceneFormat, scene (envelope as-is), title
+  'graphmash_2d',     // §3.7.14 — app='g2d', scene (GraphMASH 2D), previewUrl?
 ])
 
 /**

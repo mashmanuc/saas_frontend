@@ -35,6 +35,7 @@ import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
+import Graphmash2dRenderer from '../board/objects/Graphmash2dRenderer.vue'
 
 // ─── Adapter context ──────────────────────────────────────────────────────────
 // WBOverlayLayer будує цей ctx (reactive snapshot) і передає у build* функції.
@@ -272,6 +273,17 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-mash-scene-overlay',
     dataAttr: 'data-mash-scene-id',
     testidPrefix: 'mash-scene-overlay',
+    expandable: false,
+    buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  // §3.7.14 (B2 2026-07-07) — ЖИВИЙ GraphMASH 2D графік (vendor/graphmash2d)
+  graphmash_2d: {
+    component: Graphmash2dRenderer,
+    wrapperClass: 'wb-graphmash2d-overlay',
+    dataAttr: 'data-graphmash2d-id',
+    testidPrefix: 'graphmash2d-overlay',
     expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
