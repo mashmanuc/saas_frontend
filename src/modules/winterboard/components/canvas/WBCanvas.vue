@@ -630,6 +630,25 @@
       </div>
     </template>
 
+    <!-- §3.7.14 GeoMASH жива геометрія (B3) -->
+    <template v-for="asset in geomashAssets" :key="`geomash-${asset.id}`">
+      <div
+        class="wb-geomash-overlay"
+        :class="{ 'wb-geomash-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-geomash-id="asset.id"
+        :data-testid="`geomash-overlay-${asset.id}`"
+        :style="getOverlayStyle(asset)"
+      >
+        <GeomashRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     </template><!-- /v-if="!unifiedRenderEnabled" (legacy per-type blocks end) -->
 
 
@@ -836,6 +855,7 @@ import WBTheoryOverlay from '../theory/WBTheoryOverlay.vue'
 // TheoryCard (2026-06-03) — рухома картка теорії як WBAsset (§3.7.12)
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
+import GeomashRenderer from '../board/objects/GeomashRenderer.vue'
 // Companion spawn (2026-05-25): semantic-aware visual companion spawner
 import {
   RENDERER_DEFAULTS,
@@ -966,6 +986,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'formula_card',     // §3.7.11 — KaTeX formula card             → FormulaCardRenderer
   'theory_card',      // §3.7.12 — Рухома картка теорії+формул    → TheoryCardRenderer
   'mash_scene',       // §3.7.13 — MASH Live Asset (воронка)       → MashSceneRenderer
+  'geomash_scene',    // §3.7.14 — жива GeoMASH-геометрія           → GeomashRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -983,6 +1004,7 @@ const quadraticAssets      = computed(() => assets.value.filter(a => a.type === 
 const formulaCardAssets    = computed(() => assets.value.filter(a => a.type === 'formula_card') as FormulaCardAsset[])
 const theoryCardAssets     = computed(() => assets.value.filter(a => a.type === 'theory_card'))
 const mashSceneAssets      = computed(() => assets.value.filter(a => a.type === 'mash_scene'))
+const geomashAssets        = computed(() => assets.value.filter(a => a.type === 'geomash_scene'))
 
 // Theory/formula blocks (Lesson Constructor) — page-level, LEGACY (старі уроки).
 // Нові уроки генерують 'theory_card' WBAsset (рухома картка). Цей overlay лишається
@@ -5440,6 +5462,18 @@ defineExpose({
 }
 .wb-mash-scene-overlay--selected {
   box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.35);
+}
+
+/* GeomashScene (§3.7.14, B3) — жива GeoMASH-геометрія. */
+.wb-geomash-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-geomash-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(26, 92, 56, 0.4);
 }
 
 /* ParameterLineTask (§3.7.10) — числово-осьовий атом, teal accent. */

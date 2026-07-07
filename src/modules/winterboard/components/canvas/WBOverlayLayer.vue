@@ -340,4 +340,16 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-mash-scene-overlay--selected {
   box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.35);
 }
+
+/* GeomashScene (§3.7.14, B3) — жива GeoMASH-геометрія. */
+.wb-geomash-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-geomash-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(26, 92, 56, 0.4);
+}
 </style>

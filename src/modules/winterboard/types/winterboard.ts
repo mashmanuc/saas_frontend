@@ -220,6 +220,9 @@ export interface WBAsset {
      *  (Proposal §8): сцена GraphMASH 2D/3D/GeoMASH їде на дошку ЗАВЖДИ (data.scene),
      *  рендер v1 = картка з deep-link «Відкрити у MASH» (нативізація — по-двигунно). §3.7.13 */
     | 'mash_scene'
+    /** GeomashScene (2026-07-07, B3) — ЖИВА GeoMASH-геометрія (vendor/geomash).
+     *  data = { version, scene:{objects,cs} }. Рендер нативний движком + інспектор. §3.7.14 */
+    | 'geomash_scene'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -314,6 +317,7 @@ export interface WBAsset {
     | import('./formulaCard').FormulaCardData
     | TheoryCardData
     | MashSceneData
+    | GeomashSceneData
 }
 
 /**
@@ -476,6 +480,19 @@ export interface MashSceneData {
   previewUrl?: string
 }
 export type MashSceneAsset = WBAsset & { type: 'mash_scene'; data: MashSceneData }
+
+/** GeomashScene (§3.7.14, B3) — жива GeoMASH-сцена. data.scene = {objects[], cs}. */
+export interface GeomashSceneData {
+  version: 1
+  scene: {
+    format?: string
+    version?: number
+    objects: Array<Record<string, unknown>>
+    cs?: { ox: number; oy: number; sc: number }
+  }
+  title?: string
+}
+export type GeomashSceneAsset = WBAsset & { type: 'geomash_scene'; data: GeomashSceneData }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
 

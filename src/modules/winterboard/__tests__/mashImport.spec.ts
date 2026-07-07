@@ -15,6 +15,7 @@ import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
   buildGraphCalcAssetFromG2dScene,
+  buildGeomashSceneAsset,
   buildMashSceneAsset,
   buildSeedState,
 } from '../utils/mashImport'
@@ -138,6 +139,26 @@ describe('mashImport utils (A2)', () => {
     expect(buildGraphCalcAssetFromG2dScene({ expressions: [] })).toBeNull()
     expect(buildGraphCalcAssetFromG2dScene({ expressions: [{ isTable: true }] })).toBeNull()
     expect(buildGraphCalcAssetFromG2dScene({})).toBeNull()
+  })
+
+  it('INV-MI-9: geo-сцена → нативний geomash_scene (objects+cs збережено)', () => {
+    const asset = buildGeomashSceneAsset({
+      format: 'geomash-scene', version: 1,
+      objects: [{ id: 'A', type: 'point', wx: 1, wy: 2 }, { id: 'a', type: 'line' }],
+      cs: { ox: 100, oy: 100, sc: 40 },
+    })!
+    expect(asset.type).toBe('geomash_scene')
+    expect(asset.id).toMatch(/^geo-/)
+    const sc = (asset.data as unknown as { scene: { objects: unknown[]; cs: { sc: number } } }).scene
+    expect(sc.objects).toHaveLength(2)
+    expect(sc.cs).toMatchObject({ sc: 40 })
+  })
+
+  it('INV-MI-9b: geo без масиву objects → null (fallback картка)', () => {
+    expect(buildGeomashSceneAsset({})).toBeNull()
+    expect(buildGeomashSceneAsset({ objects: 'nope' })).toBeNull()
+    // порожня сцена (0 об'єктів) — валідна (порожня дошка теж об'єкт)
+    expect(buildGeomashSceneAsset({ objects: [] })!.type).toBe('geomash_scene')
   })
 
   it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {

@@ -20,6 +20,7 @@ import {
   takeMashHandoff,
   buildNmt3dAssetFromStereoScene,
   buildGraphCalcAssetFromG2dScene,
+  buildGeomashSceneAsset,
   buildMashSceneAsset,
   buildSeedState,
   downscalePreview,
@@ -48,9 +49,15 @@ onMounted(async () => {
   if (envelope.app === 'stereo') {
     asset = buildNmt3dAssetFromStereoScene(envelope.scene)
   } else if (envelope.app === 'g2d') {
-    // конвертуємо у наш нативний graph_calculator; якщо сцена без придатних виразів —
-    // fallback на mash_scene-картку з thumbnail
+    // конвертуємо у наш нативний graph_calculator; fallback на mash_scene-картку
     asset = buildGraphCalcAssetFromG2dScene(envelope.scene)
+    if (!asset) {
+      const thumb = await downscalePreview(envelope.preview)
+      asset = buildMashSceneAsset(envelope, thumb)
+    }
+  } else if (envelope.app === 'geo') {
+    // нативна GeoMASH-геометрія (B3) + інспектор; fallback на картку
+    asset = buildGeomashSceneAsset(envelope.scene)
     if (!asset) {
       const thumb = await downscalePreview(envelope.preview)
       asset = buildMashSceneAsset(envelope, thumb)

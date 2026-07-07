@@ -169,9 +169,42 @@ export function buildGraphCalcAssetFromG2dScene(scene: Record<string, unknown>):
 }
 
 /**
- * g3d/geo → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
- * (Proposal §8 Board-first rule), рендер v1 — картка-thumbnail з deep-link. g2d НЕ сюди —
- * він конвертується у нативний graph_calculator (buildGraphCalcAssetFromG2dScene).
+ * B3 (2026-07-07) — geo-сцена → НАТИВНИЙ `geomash_scene` ассет.
+ * Жива GeoMASH-геометрія движком (vendor/geomash) + правий інспектор. Не картка.
+ * Невалідна сцена (нема масиву objects) → null (fallback на mash_scene-картку).
+ */
+export function buildGeomashSceneAsset(scene: Record<string, unknown>): WBAsset | null {
+  const objects = scene.objects
+  if (!Array.isArray(objects)) return null
+  const cs = scene.cs as { ox: number; oy: number; sc: number } | undefined
+  const title = typeof scene.title === 'string' ? scene.title : undefined
+  return {
+    id: `geo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: 'geomash_scene',
+    src: '',
+    x: 120,
+    y: 80,
+    w: 460,
+    h: 360,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      scene: {
+        format: typeof scene.format === 'string' ? scene.format : 'geomash-scene',
+        version: typeof scene.version === 'number' ? scene.version : 1,
+        objects: objects as Array<Record<string, unknown>>,
+        ...(cs ? { cs } : {}),
+      },
+      ...(title ? { title } : {}),
+    },
+  } as unknown as WBAsset
+}
+
+/**
+ * g3d → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
+ * (Proposal §8 Board-first rule), рендер v1 — картка-thumbnail з deep-link. g2d/geo НЕ сюди —
+ * вони конвертуються у нативні graph_calculator / geomash_scene.
  */
 export function buildMashSceneAsset(envelope: MashEnvelope, previewUrl?: string | null): WBAsset | null {
   if (envelope.app === 'stereo') return null // stereo → нативний nmt3d, інша гілка
