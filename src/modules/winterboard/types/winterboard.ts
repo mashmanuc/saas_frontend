@@ -223,6 +223,9 @@ export interface WBAsset {
     /** GeomashScene (2026-07-07, B3) — ЖИВА GeoMASH-геометрія (vendor/geomash).
      *  data = { version, scene:{objects,cs} }. Рендер нативний движком + інспектор. §3.7.14 */
     | 'geomash_scene'
+    /** Graphmash3d (2026-07-07, B4) — ЖИВА GraphMASH 3D-поверхня (vendor/graphmash3d, WebGL).
+     *  data = MashSceneData (app:'g3d', scene). Рендер нативний three.js-движком + інспектор. §3.7.15 */
+    | 'graphmash_3d'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -493,6 +496,7 @@ export interface GeomashSceneData {
   title?: string
 }
 export type GeomashSceneAsset = WBAsset & { type: 'geomash_scene'; data: GeomashSceneData }
+export type Graphmash3dAsset = WBAsset & { type: 'graphmash_3d'; data: MashSceneData }
 
 // ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
 

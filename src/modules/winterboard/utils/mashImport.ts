@@ -202,9 +202,36 @@ export function buildGeomashSceneAsset(scene: Record<string, unknown>): WBAsset 
 }
 
 /**
- * g3d → mash_scene-ассет (A3, §3.7.13): envelope-сцена їде на дошку ЗАВЖДИ
- * (Proposal §8 Board-first rule), рендер v1 — картка-thumbnail з deep-link. g2d/geo НЕ сюди —
- * вони конвертуються у нативні graph_calculator / geomash_scene.
+ * B4 (2026-07-07) — g3d-сцена → НАТИВНИЙ `graphmash_3d` ассет.
+ * Жива WebGL-поверхня движком (vendor/graphmash3d) + інспектор. data = MashSceneData
+ * (app:'g3d', scene). Невалідна сцена (нема objects[]) → null (fallback картка).
+ */
+export function buildGraphmash3dAsset(scene: Record<string, unknown>): WBAsset | null {
+  if (!Array.isArray(scene.objects)) return null
+  const title = typeof scene.title === 'string' ? scene.title : undefined
+  return {
+    id: `gm3d-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: 'graphmash_3d',
+    src: '',
+    x: 120,
+    y: 80,
+    w: 480,
+    h: 380,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      app: 'g3d',
+      sceneFormat: typeof scene.format === 'string' ? scene.format : 'graphmash-scene',
+      scene,
+      ...(title ? { title } : {}),
+    },
+  } as unknown as WBAsset
+}
+
+/**
+ * (deprecated для g2d/geo/g3d — усі нативні) mash_scene-ассет-картка з thumbnail.
+ * Лишається як fallback, коли нативна конвертація неможлива (сцена без придатних даних).
  */
 export function buildMashSceneAsset(envelope: MashEnvelope, previewUrl?: string | null): WBAsset | null {
   if (envelope.app === 'stereo') return null // stereo → нативний nmt3d, інша гілка

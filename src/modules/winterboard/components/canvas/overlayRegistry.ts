@@ -36,6 +36,7 @@ import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
 import GeomashRenderer from '../board/objects/GeomashRenderer.vue'
+import Graphmash3dRenderer from '../board/objects/Graphmash3dRenderer.vue'
 
 // ─── Adapter context ──────────────────────────────────────────────────────────
 // WBOverlayLayer будує цей ctx (reactive snapshot) і передає у build* функції.
@@ -284,6 +285,17 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-geomash-overlay',
     dataAttr: 'data-geomash-id',
     testidPrefix: 'geomash-overlay',
+    expandable: false,
+    buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  // §3.7.15 (B4 2026-07-07) — ЖИВА GraphMASH 3D-поверхня (vendor/graphmash3d, WebGL)
+  graphmash_3d: {
+    component: Graphmash3dRenderer,
+    wrapperClass: 'wb-graphmash3d-overlay',
+    dataAttr: 'data-graphmash3d-id',
+    testidPrefix: 'graphmash3d-overlay',
     expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,

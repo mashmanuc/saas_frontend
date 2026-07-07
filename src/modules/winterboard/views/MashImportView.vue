@@ -21,6 +21,7 @@ import {
   buildNmt3dAssetFromStereoScene,
   buildGraphCalcAssetFromG2dScene,
   buildGeomashSceneAsset,
+  buildGraphmash3dAsset,
   buildMashSceneAsset,
   buildSeedState,
   downscalePreview,
@@ -58,6 +59,13 @@ onMounted(async () => {
   } else if (envelope.app === 'geo') {
     // нативна GeoMASH-геометрія (B3) + інспектор; fallback на картку
     asset = buildGeomashSceneAsset(envelope.scene)
+    if (!asset) {
+      const thumb = await downscalePreview(envelope.preview)
+      asset = buildMashSceneAsset(envelope, thumb)
+    }
+  } else if (envelope.app === 'g3d') {
+    // нативна GraphMASH 3D-поверхня (B4, WebGL) + інспектор; fallback на картку
+    asset = buildGraphmash3dAsset(envelope.scene)
     if (!asset) {
       const thumb = await downscalePreview(envelope.preview)
       asset = buildMashSceneAsset(envelope, thumb)

@@ -16,6 +16,7 @@ import {
   buildNmt3dAssetFromStereoScene,
   buildGraphCalcAssetFromG2dScene,
   buildGeomashSceneAsset,
+  buildGraphmash3dAsset,
   buildMashSceneAsset,
   buildSeedState,
 } from '../utils/mashImport'
@@ -159,6 +160,21 @@ describe('mashImport utils (A2)', () => {
     expect(buildGeomashSceneAsset({ objects: 'nope' })).toBeNull()
     // порожня сцена (0 об'єктів) — валідна (порожня дошка теж об'єкт)
     expect(buildGeomashSceneAsset({ objects: [] })!.type).toBe('geomash_scene')
+  })
+
+  it('INV-MI-10: g3d-сцена → нативний graphmash_3d (scene as-is)', () => {
+    const asset = buildGraphmash3dAsset({
+      format: 'graphmash-scene', version: 2,
+      objects: [{ id: 'e1', src: 'z = sin(x)*cos(y)', color: '#2d70b3', style: { colorMap: 'cool' } }],
+    })!
+    expect(asset.type).toBe('graphmash_3d')
+    expect(asset.id).toMatch(/^gm3d-/)
+    const data = asset.data as unknown as Record<string, unknown>
+    expect(data.app).toBe('g3d')
+    expect((data.scene as Record<string, unknown>).objects).toHaveLength(1)
+    // не g3d без objects[] → null
+    expect(buildGraphmash3dAsset({})).toBeNull()
+    expect(buildGraphmash3dAsset({ objects: 'x' })).toBeNull()
   })
 
   it('INV-MI-7: buildMashSceneAsset для stereo → null (нативна гілка)', () => {

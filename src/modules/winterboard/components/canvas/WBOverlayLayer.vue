@@ -352,4 +352,16 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 .wb-geomash-overlay--selected {
   box-shadow: 0 0 0 2px rgba(26, 92, 56, 0.4);
 }
+
+/* Graphmash3d (§3.7.15, B4). */
+.wb-graphmash3d-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-graphmash3d-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(45, 112, 179, 0.4);
+}
 </style>

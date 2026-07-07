@@ -139,6 +139,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'theory_card',      // §3.7.12 — title, body, hint, formulaTitle, formulas[]
   'mash_scene',       // §3.7.13 — app, sceneFormat, scene (envelope as-is), title
   'geomash_scene',    // §3.7.14 — scene {objects, cs} (жива GeoMASH-геометрія)
+  'graphmash_3d',     // §3.7.15 — app='g3d', scene (жива GraphMASH 3D-поверхня)
 ])
 
 /**
