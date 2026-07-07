@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════
+   M4SH → MASH: токен-міст теми основного сайту (SSOT-візерунок)
+   ДЖЕРЕЛО ЗНАЧЕНЬ: frontend/src/assets/main.css :root [data-theme=light]
+   (значення продубльовані, бо SPA-css збирається Tailwind-ом і не
+   імпортується сюди; при зміні теми сайту — синхронізувати ЦЕЙ файл).
+
+   Підключення (у КОЖНОМУ додатку, ПЕРЕД власним css):
+     <link rel="stylesheet" href="../shared/m4sh-theme.css">
+   Додатки споживають ЛИШЕ змінні (Guide §2.4/§8) — жодних зашитих hex
+   у хромі (хедер/кнопки/панелі). Канва/графіка — поза цим файлом.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* ── бренд M4SH (main.css) ── */
+  --mash-accent:          #047857;   /* --accent */
+  --mash-accent-hover:    #065f46;   /* --accent-hover */
+  --mash-accent-contrast: #ffffff;   /* --accent-contrast */
+  --mash-bg:              #e0f7f4;   /* --bg-primary */
+  --mash-bg-gradient:     linear-gradient(135deg, #e0f7f4 0%, #f0fff4 100%);
+  --mash-surface:         rgba(255, 255, 255, 0.95);   /* --card-bg */
+  --mash-fg:              #0d4a3e;   /* --text-primary */
+  --mash-fg-secondary:    #1f6b5a;   /* --text-secondary */
+  --mash-border:          rgba(5, 150, 105, 0.3);      /* --border-color */
+  --mash-shadow:          rgba(5, 150, 105, 0.2);      /* --shadow */
+  --mash-hover:           rgba(5, 150, 105, 0.08);     /* --bg-hover */
+  --mash-danger:          #ef4444;
+  --mash-success:         #10b981;
+
+  /* ── стандарт хедера (дзеркало ui/TopNav.vue) ── */
+  --mash-header-h:        64px;                        /* h-16 */
+  --mash-header-bg:       rgba(255, 255, 255, 0.98);   /* --nav-bg */
+  --mash-header-border:   var(--mash-border);          /* border-bottom 1px */
+  --mash-header-blur:     10px;                        /* backdrop-filter */
+  --mash-header-px:       24px;                        /* px-6 desktop */
+
+  /* ── типографіка/форма ── */
+  --mash-font:            system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mash-radius:          8px;
+  --mash-btn-h:           36px;
+
+  /* ── акцент конкретного додатка (перевизначається на сторінці):
+        2D #17a273 · 3D #2d70b3 · Geo #1a5c38 · Stereo #7c3aed.
+        Використовувати ТІЛЬКИ для: активної пігулки mode-switch і
+        внутрішньо-канвових елементів. Хром хедера/кнопок — бренд M4SH. ── */
+  --mash-app-accent:      var(--mash-accent);
+}
