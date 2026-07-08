@@ -29,6 +29,7 @@ import { GEOMETRY_2D_V2_DRAG_MIME } from '../../constants/geometry2dV2Defaults'
 import { TRIG_CIRCLE_DRAG_MIME } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
+import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -59,6 +60,8 @@ export interface InsertEntry {
   iconKey: string
   /** Короткий підпис-підказка (як сублейбл у трею), опц. */
   sublabel?: string
+  /** Стартовий шаблон (для scene-tools з кількома entry одного asset.type). */
+  starterKind?: string
   /** Індекс пошуку (укр+латинь токени; НЕ локалізувати). */
   keywords: string[]
 }
@@ -188,12 +191,42 @@ const TRIG_INSERTS: InsertEntry[] = [
   },
 ]
 
+// ── 3D (graphmash_3d) — BoardMASH Ф3.1: стартовий НАБІР (один asset.type, різний src) ──
+const GRAPHMASH3D_INSERTS: InsertEntry[] = [
+  { id: '3d.blank', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
+    payload: JSON.stringify({ starterKind: 'blank' }), starterKind: 'blank',
+    labelFallback: 'Порожня 3D-сцена', iconKey: 'blank', sublabel: 'GraphMASH 3D',
+    keywords: kw('3d', 'порожня', 'сцена', 'graphmash', 'blank') },
+  { id: '3d.surface', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
+    payload: JSON.stringify({ starterKind: 'surface' }), starterKind: 'surface',
+    labelFallback: 'Поверхня z=f(x,y)', iconKey: 'surface', sublabel: 'z = sin(x)·cos(y)',
+    keywords: kw('поверхня', 'surface', '3d', 'z f x y', 'графік') },
+  { id: '3d.curve', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
+    payload: JSON.stringify({ starterKind: 'curve' }), starterKind: 'curve',
+    labelFallback: 'Параметрична крива', iconKey: 'curve', sublabel: '(cos t, sin t, t)',
+    keywords: kw('крива', 'curve', 'параметрична', '3d') },
+  { id: '3d.vectorField', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
+    payload: JSON.stringify({ starterKind: 'vectorField' }), starterKind: 'vectorField',
+    labelFallback: 'Векторне поле', iconKey: 'vectorField', sublabel: '(y, −x, z)',
+    keywords: kw('векторне поле', 'vector field', '3d', 'поле') },
+]
+
+// ── Geometry / GeoMASH (geomash_scene) — Ф3.1: один вхід (редагування через воронку) ──
+const GEOMASH_INSERTS: InsertEntry[] = [
+  { id: 'geomash.scene', family: 'geomash', category: 'geomash', dragMime: GEOMASH_DRAG_MIME,
+    payload: JSON.stringify({ starterKind: 'blank' }), starterKind: 'blank',
+    labelFallback: 'GeoMASH-сцена', iconKey: 'scene', sublabel: 'жива геометрія',
+    keywords: kw('geomash', 'гео', 'сцена', 'геометрія', 'geometry') },
+]
+
 /** Усі build-time вставки (без рантайм-geo). Для тестів + швидких шляхів. */
 export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...STEREO_INSERTS,
   ...ANALYSIS_INSERTS,
   ...QUADRATIC_INSERTS,
   ...TRIG_INSERTS,
+  ...GRAPHMASH3D_INSERTS,
+  ...GEOMASH_INSERTS,
 ]
 
 // ── planimetry (geometry_2d_v2) — РАНТАЙМ ──────────────────────────────────────

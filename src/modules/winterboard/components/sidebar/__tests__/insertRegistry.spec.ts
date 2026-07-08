@@ -27,6 +27,7 @@ import { TRIG_CIRCLE_DRAG_MIME } from '../../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../../constants/trigSolverDefaults'
 import { GEOMETRY_2D_V2_DRAG_MIME } from '../../../constants/geometry2dV2Defaults'
+import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../../constants/mashInsertDefaults'
 
 /**
  * MIME-и, що МАЮТЬ гілку-резолвер у useContentDrop.addAtPosition (useContentDrop.ts:1000)
@@ -42,6 +43,8 @@ const RESOLVER_MIMES = new Set<string>([
   NMT3D_DRAG_MIME,         // nmt3d
   QUAD_DRAG_MIME,          // quadratic_card
   GEOMETRY_2D_V2_DRAG_MIME, // geometry_2d_v2
+  GRAPHMASH_3D_DRAG_MIME,  // graphmash_3d (Ф3.1)
+  GEOMASH_DRAG_MIME,       // geomash_scene (Ф3.1)
 ])
 
 function ids(entries: readonly InsertEntry[]): string[] {
@@ -101,6 +104,21 @@ describe('insertRegistry (Фаза 0)', () => {
   it('INV-REG-1: усі id унікальні', () => {
     const all = ids(STATIC_INSERTS)
     expect(new Set(all).size).toBe(all.length)
+  })
+
+  it('Ф3.1: 3D — стартовий НАБІР (не один entry), усі один MIME + starterKind', () => {
+    const three = STATIC_INSERTS.filter((e) => e.family === '3d')
+    expect(three.length).toBeGreaterThanOrEqual(4) // blank/surface/curve/vectorField
+    for (const e of three) {
+      expect(e.dragMime).toBe(GRAPHMASH_3D_DRAG_MIME)
+      expect(e.starterKind, e.id).toBeTruthy()
+      expect(JSON.parse(e.payload).starterKind).toBe(e.starterKind)
+    }
+    expect(ids(three)).toContain('3d.surface')
+    // geomash — один вхід
+    const geomash = STATIC_INSERTS.filter((e) => e.family === 'geomash')
+    expect(ids(geomash)).toEqual(['geomash.scene'])
+    expect(geomash[0].dragMime).toBe(GEOMASH_DRAG_MIME)
   })
 
   it('INV-REG-1b: кожен entry має непорожній iconKey (для <InsertIcon>)', () => {

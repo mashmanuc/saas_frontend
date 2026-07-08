@@ -83,6 +83,14 @@ import {
   buildDefaultQuadraticData,
 } from '../constants/quadDefaults'
 import type { QuadraticAsset } from '../types/quad'
+// BoardMASH Ф3.1 — graphmash_3d / geomash_scene sidebar-insert (раніше лише funnel).
+import {
+  GRAPHMASH_3D_DRAG_MIME,
+  GEOMASH_DRAG_MIME,
+  type Graphmash3dDragPayload,
+  buildDefaultGraphmash3dAsset,
+  buildDefaultGeomashSceneAsset,
+} from '../constants/mashInsertDefaults'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -347,6 +355,19 @@ export function useContentDrop(options: UseContentDropOptions) {
         data: buildDefaultGeometry2DV2Data(parsed.preset),
       }
       onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    // BoardMASH Ф3.1 — graphmash_3d / geomash_scene drag (делегуємо в addAtPosition,
+    // без дублювання builder-логіки; hoisted function).
+    const gm3dRaw = event.dataTransfer?.getData(GRAPHMASH_3D_DRAG_MIME)
+    if (gm3dRaw) {
+      addAtPosition(GRAPHMASH_3D_DRAG_MIME, gm3dRaw, screenToCanvas(event.clientX, event.clientY))
+      return
+    }
+    const geomashRaw = event.dataTransfer?.getData(GEOMASH_DRAG_MIME)
+    if (geomashRaw) {
+      addAtPosition(GEOMASH_DRAG_MIME, geomashRaw, screenToCanvas(event.clientX, event.clientY))
       return
     }
 
@@ -1145,6 +1166,27 @@ export function useContentDrop(options: UseContentDropOptions) {
         rotation: 0, locked: false,
         data: { version: 1, state: { ...DEFAULT_SOLID_STATE } },
       }
+      onAssetAdd(asset)
+      return
+    }
+
+    // BoardMASH Ф3.1 — graphmash_3d із сайдбару (раніше лише funnel-import).
+    // Дефолт через buildDefaultGraphmash3dAsset (той самий build<Type>Asset, INV-BM-7).
+    if (mime === GRAPHMASH_3D_DRAG_MIME) {
+      let parsed: Graphmash3dDragPayload = {}
+      try { parsed = JSON.parse(payloadStr) as Graphmash3dDragPayload } catch { /* дефолт blank */ }
+      const asset = buildDefaultGraphmash3dAsset(parsed?.starterKind)
+      asset.x = pos.x - asset.w / 2
+      asset.y = pos.y - asset.h / 2
+      onAssetAdd(asset)
+      return
+    }
+
+    // BoardMASH Ф3.1 — geomash_scene із сайдбару (дефолт-порожня; редагування через воронку).
+    if (mime === GEOMASH_DRAG_MIME) {
+      const asset = buildDefaultGeomashSceneAsset()
+      asset.x = pos.x - asset.w / 2
+      asset.y = pos.y - asset.h / 2
       onAssetAdd(asset)
       return
     }
