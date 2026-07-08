@@ -7,7 +7,8 @@
  *   INV-MI-3  buildNmt3dAssetFromStereoScene: {templateKey,params,opts,mode} → нативний nmt3d-ассет;
  *             params фільтруються до скінченних чисел, opts — до boolean (двигун кидає на сміття)
  *   INV-MI-4  сцена без templateKey → null
- *   INV-MI-5  buildSeedState: 1 сторінка, дзеркало createEmptyPage-дефолтів, ассет усередині
+ *   INV-MI-5  buildEmptyInitialState + buildMashImportOps: порожній state + ops-посів
+ *             (page_add + asset_add), об'єкт НЕ у базовому снапшоті (SYSTEM_LAW §2)
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -18,7 +19,8 @@ import {
   buildGeomashSceneAsset,
   buildGraphmash3dAsset,
   buildMashSceneAsset,
-  buildSeedState,
+  buildEmptyInitialState,
+  buildMashImportOps,
 } from '../utils/mashImport'
 
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -205,17 +207,39 @@ describe('mashImport utils (A2)', () => {
     expect((geo.data as unknown as Record<string, unknown>).sceneFormat).toBe('')
   })
 
-  it('INV-MI-5: seed-state — 1 сторінка з дефолтами createEmptyPage і ассетом', () => {
-    const asset = buildNmt3dAssetFromStereoScene({ templateKey: 'cube' })!
-    const state = buildSeedState(asset)
+  it('INV-MI-5: initial state ПОРОЖНІЙ (об\'єкт не сидить у базовому снапшоті)', () => {
+    const state = buildEmptyInitialState()
     expect(state.currentPageIndex).toBe(0)
-    expect(state.pages).toHaveLength(1)
-    const page = state.pages[0]
-    expect(page.id).toMatch(/^page-/)
+    expect(state.pages).toEqual([])
+  })
+
+  it('INV-MI-5b: buildMashImportOps — page_add(метадані, БЕЗ assets) + asset_add на той самий page_id', () => {
+    const asset = buildNmt3dAssetFromStereoScene({ templateKey: 'cube' })!
+    const ops = buildMashImportOps(asset)
+    expect(ops).toHaveLength(2)
+
+    const [pageOp, assetOp] = ops
+    expect(pageOp.op_type).toBe('page_add')
+    expect(assetOp.op_type).toBe('asset_add')
+
+    // page_add: метадані сторінки, дзеркало createEmptyPage; БЕЗ strokes/assets у payload
+    const pageId = pageOp.page_id!
+    expect(pageId).toMatch(/^page-/)
+    const page = (pageOp.payload as { page: Record<string, unknown> }).page
+    expect(page.id).toBe(pageId)
     expect(page.name).toBe('Page 1')
-    expect(page.strokes).toEqual([])
     expect(page.background).toBe('white')
     expect(page.backgroundColor).toBe('#ffffff')
-    expect(page.assets).toEqual([asset])
+    expect('assets' in page).toBe(false)
+    expect('strokes' in page).toBe(false)
+
+    // asset_add: сам об'єкт на ту саму сторінку
+    expect(assetOp.page_id).toBe(pageId)
+    expect((assetOp.payload as { asset: unknown }).asset).toBe(asset)
+
+    // op_id (REPLAY-INV-8): унікальний UUID у кожного оп-а
+    expect(pageOp.op_id).toBeTruthy()
+    expect(assetOp.op_id).toBeTruthy()
+    expect(pageOp.op_id).not.toBe(assetOp.op_id)
   })
 })

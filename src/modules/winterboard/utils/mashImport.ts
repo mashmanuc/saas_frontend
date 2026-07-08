@@ -6,10 +6,13 @@
  * Передача — localStorage[MASH_HANDOFF_KEY] (same-origin: воронка і SPA живуть на m4sh.org).
  *
  * v1: stereo → НАТИВНИЙ nmt3d-ассет (дошка вже рендерить цей тип). Створення сесії —
- * generator-патерн (INV-STABLE-2): state сіється ОДИН раз у createSession, далі ops-pipeline.
- * Жодних нових write-шляхів (SYSTEM_LAW §2).
+ * ПОРОЖНІЙ initial state (SYSTEM_LAW §2, Plan v4 Phase I), а сам об'єкт сіється
+ * через ops-pipeline: page_add + asset_add у POST /replay/batch/. Так об'єкт стає
+ * seq-1..2 операціями, а не сидить у базовому снапшоті → replay чистий (INV #9
+ * SOURCE OF TRUTH) і не залежить від WB_ENFORCE_EMPTY_INITIAL_STATE.
  */
-import type { WBAsset, WBPage, WBWorkspaceState } from '../types/winterboard'
+import type { WBAsset, WBWorkspaceState } from '../types/winterboard'
+import type { RecordOperationRequest } from '../types/replay'
 import { DEFAULT_NMT3D_W, DEFAULT_NMT3D_H } from '../constants/nmt3dDefaults'
 import { DEFAULT_GRAPH_WIDTH, DEFAULT_GRAPH_HEIGHT } from '../constants/graphCalculatorDefaults'
 
@@ -327,15 +330,50 @@ export function downscalePreview(
   })
 }
 
-/** Seed-state для createSession: одна сторінка (дзеркало createEmptyPage) з ассетом. */
-export function buildSeedState(asset: WBAsset): WBWorkspaceState {
-  const page: WBPage = {
-    id: `page-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    name: 'Page 1',
-    strokes: [],
-    assets: [asset],
-    background: 'white' as WBPage['background'],
-    backgroundColor: '#ffffff',
-  }
-  return { pages: [page], currentPageIndex: 0 }
+/**
+ * Порожній initial state для createSession (SYSTEM_LAW §2, Plan v4 Phase I):
+ * сесія створюється БЕЗ сторінок/ассетів — уся геометрія додається через
+ * ops-pipeline (page_add + asset_add), не прямим write у state.
+ */
+export function buildEmptyInitialState(): WBWorkspaceState {
+  return { pages: [], currentPageIndex: 0 }
+}
+
+/** op_id (REPLAY-INV-8): UUID, стабільний ідентифікатор операції для ідемпотентності. */
+function genOpId(): string {
+  return crypto.randomUUID()
+}
+
+/**
+ * Ops для посіву імпортованого MASH-об'єкта у ПОРОЖНЮ сесію (SYSTEM_LAW §2):
+ *   1. page_add — метадані сторінки (дзеркало createEmptyPage-дефолтів), БЕЗ assets
+ *   2. asset_add — сам об'єкт, привʼязаний до page_id
+ *
+ * Обидва оп-и шлються ОДНИМ batch через POST /replay/batch/ зі свіжої сесії
+ * (seq=0, бо last_op_seq=0). BE призначить seq 1 (page_add) та 2 (asset_add) —
+ * об'єкт стає першою операцією, а не частиною базового снапшоту.
+ */
+export function buildMashImportOps(asset: WBAsset): RecordOperationRequest[] {
+  const pageId = `page-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  return [
+    {
+      op_id: genOpId(),
+      op_type: 'page_add',
+      page_id: pageId,
+      payload: {
+        page: {
+          id: pageId,
+          name: 'Page 1',
+          background: 'white',
+          backgroundColor: '#ffffff',
+        },
+      },
+    },
+    {
+      op_id: genOpId(),
+      op_type: 'asset_add',
+      page_id: pageId,
+      payload: { asset },
+    },
+  ]
 }

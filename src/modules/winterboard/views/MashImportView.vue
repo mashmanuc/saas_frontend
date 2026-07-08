@@ -5,8 +5,9 @@
  * Потік: воронка кладе envelope у localStorage['mash:handoff'] і веде сюди.
  * Гість → auth-guard роутера сам відправить на /start|/auth/login?redirect=/mash/import,
  * handoff переживає логін у localStorage. Тут: читаємо envelope →
- *   stereo → нативний nmt3d-ассет, посіяний у createSession (generator-патерн,
- *            INV-STABLE-2; жодних нових write-шляхів) → redirect на дошку;
+ *   stereo → нативний nmt3d-ассет; сесія створюється ПОРОЖНЬОЮ, а об'єкт сіється
+ *            через ops-pipeline (page_add + asset_add у POST /replay/batch/,
+ *            SYSTEM_LAW §2) → redirect на дошку;
  *   g2d/g3d/geo → чесний екран «поки лише stereo» (до A3 mash_scene);
  *   student → чесний екран (solo-дошки tutor-only, Phase 5).
  */
@@ -15,6 +16,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/authStore'
 import { winterboardApi } from '../api/winterboardApi'
+import { recordOperationsBatch } from '../api/replay'
 import type { WBAsset } from '../types/winterboard'
 import {
   takeMashHandoff,
@@ -23,7 +25,8 @@ import {
   buildGeomashSceneAsset,
   buildGraphmash3dAsset,
   buildMashSceneAsset,
-  buildSeedState,
+  buildEmptyInitialState,
+  buildMashImportOps,
   downscalePreview,
 } from '../utils/mashImport'
 
@@ -85,15 +88,21 @@ onMounted(async () => {
     geo: 'GeoMASH',
   }
   try {
+    // Сесія створюється ПОРОЖНЬОЮ (SYSTEM_LAW §2, Plan v4 Phase I); об'єкт —
+    // окремими ops, не у initial state.
     const created = await winterboardApi.createSession({
       name: t('mashImport.sessionName', { app: APP_NAMES[envelope.app] ?? 'MASH' }),
-      state: buildSeedState(asset),
+      state: buildEmptyInitialState(),
       folder: null,
     })
     if (!created?.id) throw new Error('createSession: no id in response')
+    // Посів об'єкта через ops-pipeline: page_add + asset_add одним batch.
+    // seq=0 бо сесія свіжа (last_op_seq=0). Один attempt — без retry-loop
+    // (LAW §12); fail → error-екран (сесія лишиться порожньою, replay не глючить).
+    await recordOperationsBatch(created.id, 0, buildMashImportOps(asset))
     router.replace(`/winterboard/${created.id}`)
   } catch (err) {
-    console.error('[mash-import] createSession failed', err)
+    console.error('[mash-import] import failed', err)
     state.value = 'error'
   }
 })
