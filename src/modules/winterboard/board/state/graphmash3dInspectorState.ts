@@ -55,6 +55,8 @@ export interface Graphmash3dInspectorBridge {
    * поточне значення ОДНИМ asset_update.
    */
   onParamPlay(name: string, play: boolean): void
+  /** Редагування меж параметра [min,max] → scene.params[name].min/max (слайдер+▶ діапазон). */
+  onParamRange(name: string, min: number, max: number): void
   /** Редагування формули поверхні: src → emit asset_update (движок re-classify). */
   onSrc(objIdx: number, src: string): void
   /** Показати/приховати поверхню: visible → emit asset_update. */

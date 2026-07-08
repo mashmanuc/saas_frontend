@@ -139,6 +139,21 @@
           :value="p.value"
           @input="onSlider(p.name, ($event.target as HTMLInputElement).value)"
         />
+        <!-- Межі [min…max] (діапазон слайдера + ▶ анімації) -->
+        <div class="gm3d-inspector__param-range">
+          <span class="gm3d-inspector__param-range-lbl">межі</span>
+          <input
+            type="number" class="gm3d-inspector__num" :value="p.min"
+            title="Мінімум"
+            @change="onPRange(p, 'min', ($event.target as HTMLInputElement).value)"
+          />
+          <span class="gm3d-inspector__prop-dash">…</span>
+          <input
+            type="number" class="gm3d-inspector__num" :value="p.max"
+            title="Максимум"
+            @change="onPRange(p, 'max', ($event.target as HTMLInputElement).value)"
+          />
+        </div>
       </div>
     </template>
 
@@ -179,6 +194,13 @@ function onSlider(name: string, raw: string) {
 }
 function onPlay(name: string, playing: boolean) {
   graphmash3dInspectorState.bridge?.onParamPlay(name, !playing)
+}
+function onPRange(p: Gm3dParamEntry, which: 'min' | 'max', raw: string) {
+  const v = parseFloat(raw)
+  if (!Number.isFinite(v)) return
+  const min = which === 'min' ? v : p.min
+  const max = which === 'max' ? v : p.max
+  graphmash3dInspectorState.bridge?.onParamRange(p.name, min, max)
 }
 const bridge = computed(() => graphmash3dInspectorState.bridge)
 const ortho = computed<boolean>(() => graphmash3dInspectorState.bridge?.ortho ?? false)
@@ -300,6 +322,8 @@ function fmt(n: number): string {
 .gm3d-inspector__cam-btn { font-size: 11px; padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border-color, #d0d7de); background: #fff; cursor: pointer; }
 .gm3d-inspector__cam-btn:hover { background: rgba(45,112,179,0.08); }
 .gm3d-inspector__param { margin-bottom: 8px; }
+.gm3d-inspector__param-range { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 11px; }
+.gm3d-inspector__param-range-lbl { min-width: 40px; color: var(--text-secondary, #4a6a86); }
 .gm3d-inspector__param-row { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 2px; }
 .gm3d-inspector__play {
   border: none; background: none; cursor: pointer; padding: 1px 5px; font-size: 11px;

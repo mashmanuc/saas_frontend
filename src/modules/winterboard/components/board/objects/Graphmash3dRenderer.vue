@@ -63,6 +63,7 @@ interface Gm3dEngine {
   updateExpression(id: number, src: string): void
   setVisible(id: number, v: boolean): void
   startAnimation(name: string, opts?: { min?: number; max?: number; speed?: number; mode?: string }): void
+  setAnimationOpts(name: string, opts?: { min?: number; max?: number; speed?: number; mode?: string }): void
   stopAnimation(name: string): void
   stopAllAnimations(): void
   getParam(name: string): number | undefined
@@ -178,6 +179,20 @@ function onParamInput(name: string, value: number) {
   const prev = params[name]
   params[name] = typeof prev === 'object' && prev !== null ? { ...(prev as object), value } : { value }
   patchSceneAndEmit({ ...sc, params })
+}
+
+/** Межі параметра [min,max] → scene.params[name].min/max (слайдер + ▶ діапазон). Персист. */
+function onParamRange(name: string, min: number, max: number) {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min >= max) return
+  const sc = curScene()
+  const params = { ...(sc.params as Record<string, unknown> ?? {}) }
+  const prev = params[name]
+  const base = typeof prev === 'object' && prev !== null ? (prev as Record<string, unknown>) : { value: prev }
+  params[name] = { ...base, min, max }
+  patchSceneAndEmit({ ...sc, params })
+  // якщо параметр зараз анімується — оновити межі в движку наживо
+  if (_playing.has(name)) { try { eng?.setAnimationOpts?.(name, { min, max }) } catch { /* noop */ } }
+  _bridge.params = sceneParams()
 }
 
 /**
@@ -342,7 +357,7 @@ function onOrtho(on: boolean) { try { eng?.setOrtho(on) } catch { /* noop */ }; 
 /** Bridge — вирази + параметри для інспектора; renderer синкає. */
 const _bridge = reactive<Graphmash3dInspectorBridge>({
   expressions: [], params: [], colorMaps: [], ortho: false, autoRotate: false, canAdd: true,
-  onParamInput, onParamPlay, onSrc, onVisible, onColor, onAdd, onDuplicate, onDelete,
+  onParamInput, onParamPlay, onParamRange, onSrc, onVisible, onColor, onAdd, onDuplicate, onDelete,
   onColorMap, onWireframe, onOpacity, onResolution, onRange,
   onResetView, onFitView, onOrtho, onAutoRotate,
 })
