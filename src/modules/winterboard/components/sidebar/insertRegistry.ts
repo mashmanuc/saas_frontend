@@ -277,3 +277,33 @@ export function insertsByFamily(entries: InsertEntry[] = allInserts()): Record<s
   }
   return out
 }
+
+// ── mashApp — 4 картки верхнього рівня (BoardMASH Ф3.2) ─────────────────────────
+export type MashApp = '2d' | '3d' | 'geometry' | 'stereo'
+
+/** family → 4-картка (analysis+quadratic+trig→2d; planimetry+geomash→geometry). */
+const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
+  analysis: '2d', quadratic: '2d', trig: '2d',
+  '3d': '3d',
+  planimetry: 'geometry', geomash: 'geometry',
+  stereo: 'stereo',
+}
+
+export function appOf(entry: InsertEntry): MashApp {
+  return FAMILY_TO_APP[entry.family] ?? '2d'
+}
+
+/** Метадані 4 карток (id, підпис, family-іконка через InsertIcon). */
+export const MASH_APPS: ReadonlyArray<{ app: MashApp; labelKey: string; labelFallback: string; iconFamily: string; iconKey: string }> = [
+  { app: '2d', labelKey: '', labelFallback: 'GraphMASH 2D', iconFamily: 'analysis', iconKey: 'graphCalc' },
+  { app: '3d', labelKey: '', labelFallback: 'GraphMASH 3D', iconFamily: '3d', iconKey: 'surface' },
+  { app: 'geometry', labelKey: '', labelFallback: 'Geometry', iconFamily: 'geomash', iconKey: 'scene' },
+  { app: 'stereo', labelKey: '', labelFallback: 'StereoMASH', iconFamily: 'stereo', iconKey: 'cube' },
+]
+
+/** Групування по 4 картках (для root-каталогу). */
+export function insertsByApp(entries: InsertEntry[] = allInserts()): Record<MashApp, InsertEntry[]> {
+  const out = { '2d': [], '3d': [], geometry: [], stereo: [] } as Record<MashApp, InsertEntry[]>
+  for (const e of entries) out[appOf(e)].push(e)
+  return out
+}

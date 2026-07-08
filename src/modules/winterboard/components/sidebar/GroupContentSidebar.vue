@@ -234,28 +234,60 @@
           </div>
         </template>
 
-        <!-- Порожній пошук → згортні секції-родини (живі трей всередині) -->
+        <!-- Порожній пошук → 4 картки-сімейства (root) АБО каталог сімейства -->
         <template v-else>
-          <details class="tools-section" open>
-            <summary class="tools-section__sum">{{ t('winterboard.nmt3d.trayHeader') }}</summary>
-            <Nmt3dTray />
-          </details>
-          <details class="tools-section" open>
-            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.geo2dHeader') }}</summary>
-            <Geometry2DTray />
-          </details>
-          <details class="tools-section" open>
-            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.calculusHeader') }}</summary>
-            <CalculusTray />
-          </details>
-          <details class="tools-section" open>
-            <summary class="tools-section__sum">{{ t('winterboard.quadratic.trayHeader') }}</summary>
-            <QuadraticTray />
-          </details>
-          <details class="tools-section" open>
-            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.trigCircleHeader') }}</summary>
-            <TrigCircleTray />
-          </details>
+          <!-- RIGHT_PANEL_MODE = catalog_root: 4 картки -->
+          <div v-if="catalogFamily === null" class="tools-cards">
+            <button
+              v-for="app in MASH_APPS"
+              :key="app.app"
+              type="button"
+              class="tools-card"
+              @click="catalogFamily = app.app"
+            >
+              <span class="tools-card__icon" aria-hidden="true">
+                <InsertIcon :family="app.iconFamily" :icon-key="app.iconKey" />
+              </span>
+              <span class="tools-card__label">{{ app.labelFallback }}</span>
+              <span class="tools-card__count">{{ appCounts[app.app] }}</span>
+            </button>
+          </div>
+
+          <!-- RIGHT_PANEL_MODE = catalog_family: drilldown -->
+          <div v-else class="tools-family">
+            <div class="tools-crumb">
+              <button type="button" class="tools-crumb__back" @click="catalogFamily = null">←</button>
+              <span class="tools-crumb__label">{{ currentAppLabel }}</span>
+            </div>
+
+            <!-- 2D: аналіз + квадратне + тригонометрія (трей із власними заголовками) -->
+            <template v-if="catalogFamily === '2d'">
+              <CalculusTray />
+              <QuadraticTray />
+              <TrigCircleTray />
+            </template>
+
+            <!-- Stereo -->
+            <template v-else-if="catalogFamily === 'stereo'">
+              <Nmt3dTray />
+            </template>
+
+            <!-- Geometry: Планіметрія + GeoMASH — ДВІ окремі підсекції (не мішати) -->
+            <template v-else-if="catalogFamily === 'geometry'">
+              <Geometry2DTray />
+              <div class="tools-subhead">GeoMASH</div>
+              <div class="tools-results">
+                <InsertResultTile v-for="e in geomashEntries" :key="e.id" :entry="e" />
+              </div>
+            </template>
+
+            <!-- 3D: стартовий набір -->
+            <template v-else-if="catalogFamily === '3d'">
+              <div class="tools-results">
+                <InsertResultTile v-for="e in threeDEntries" :key="e.id" :entry="e" />
+              </div>
+            </template>
+          </div>
         </template>
       </div>
     </template>
@@ -304,7 +336,11 @@ import CalculusTray from './CalculusTray.vue'
 import TrigCircleTray from './TrigCircleTray.vue'
 // BoardMASH panel Фаза 1: пошук каталогу через insertRegistry SSOT
 import InsertResultTile from './InsertResultTile.vue'
-import { searchInserts } from './insertRegistry'
+import { InsertIcon } from './insertIcons'
+import {
+  searchInserts, allInserts, insertsByApp, MASH_APPS,
+  type MashApp, type InsertEntry,
+} from './insertRegistry'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -385,9 +421,21 @@ const isFoldersPanelOpen = ref(false)
 // Tab switcher: 'materials' | 'tools'
 const activeTab = ref<'materials' | 'tools'>('materials')
 
-// Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → секції.
+// Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → картки.
 const toolQuery = ref('')
 const toolResults = computed(() => searchInserts(toolQuery.value))
+
+// Ф3.2: 4-картковий каталог. null = root (4 картки), інакше — drilldown у сімейство.
+const catalogFamily = ref<MashApp | null>(null)
+const appCounts = computed<Record<MashApp, number>>(() => {
+  const by = insertsByApp()
+  return { '2d': by['2d'].length, '3d': by['3d'].length, geometry: by.geometry.length, stereo: by.stereo.length }
+})
+const currentAppLabel = computed(() =>
+  MASH_APPS.find(a => a.app === catalogFamily.value)?.labelFallback ?? '',
+)
+const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
+const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
 const wbStore = useWBStore()
@@ -935,6 +983,53 @@ function onDrop(e: DragEvent) {
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 6px;
   padding: 8px;
+}
+
+/* ── Ф3.2: 4 картки-сімейства (root) ── */
+.tools-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 8px;
+}
+.tools-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  position: relative;
+}
+.tools-card:hover { background: #e0f2fe; border-color: #7dd3fc; }
+.tools-card__icon { color: #2563eb; display: flex; }
+.tools-card__icon :deep(svg) { width: 28px; height: 28px; }
+.tools-card__label { font-size: 12px; font-weight: 600; color: #334155; text-align: center; }
+.tools-card__count {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 10px; font-weight: 600; color: #64748b;
+  background: #e2e8f0; border-radius: 9px; padding: 0 6px;
+}
+
+/* ── Ф3.2: drilldown ── */
+.tools-crumb {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-bottom: 1px solid #f1f5f9;
+  position: sticky; top: 74px; background: #fff; z-index: 1;
+}
+.tools-crumb__back {
+  border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px;
+  width: 24px; height: 24px; cursor: pointer; color: #475569; font-size: 14px; line-height: 1;
+}
+.tools-crumb__back:hover { background: #e0f2fe; border-color: #7dd3fc; }
+.tools-crumb__label { font-size: 13px; font-weight: 700; color: #1e293b; }
+.tools-subhead {
+  padding: 8px 12px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #64748b; background: #f8fafc; border-top: 1px solid #f1f5f9;
 }
 
 /* ── Фаза 1: згортні секції-родини ── */
