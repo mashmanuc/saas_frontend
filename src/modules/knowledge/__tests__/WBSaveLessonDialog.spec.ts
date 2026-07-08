@@ -115,8 +115,9 @@ describe('WBSaveLessonDialog', () => {
     }
   })
 
-  it('shows error on save failure', async () => {
+  it('shows LOCALIZED friendly error on save failure (NOT raw BE/technical string)', async () => {
     const mockSave = vi.mocked(lessonSaveApi.saveLessonFromSession)
+    // BE віддає технічний англ. код — юзер його НЕ має бачити.
     mockSave.mockRejectedValue({
       response: { data: { error: 'Session not found' } },
     })
@@ -126,7 +127,11 @@ describe('WBSaveLessonDialog', () => {
     await saveBtn?.trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[role="alert"]').text()).toBe('Session not found')
+    const alertText = wrapper.find('[role="alert"]').text()
+    // Показуємо локалізований ключ, НЕ сирий BE-рядок і НЕ англ. хардкод.
+    expect(alertText).toBe('winterboard.lesson.saveError')
+    expect(alertText).not.toBe('Session not found')
+    expect(alertText).not.toBe('Failed to save lesson')
   })
 
   it('prevents double-click save (isSaving guard)', async () => {

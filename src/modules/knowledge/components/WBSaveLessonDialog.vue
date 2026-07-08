@@ -64,7 +64,10 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -115,8 +118,9 @@ async function save(): Promise<void> {
     emit('saved', { id: lesson.id, title: lesson.title })
     close()
   } catch (err: unknown) {
-    const axiosErr = err as { response?: { data?: { error?: string } } }
-    saveError.value = axiosErr?.response?.data?.error || 'Failed to save lesson'
+    // Юзеру — завжди локалізоване дружнє повідомлення (НЕ сирий BE-код/англ. рядок).
+    // Технічні деталі лишаємо у console для діагностики.
+    saveError.value = t('winterboard.lesson.saveError')
     console.error('[WBSaveLessonDialog] save error:', err)
   } finally {
     isSaving.value = false
