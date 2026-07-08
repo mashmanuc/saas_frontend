@@ -41,7 +41,7 @@
           v-bind="dragHandlers(GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: item.type }), presetLabel(item))"
         >
           <span class="geo2dv2-tray__icon" aria-hidden="true">
-            <PresetIcon :type="item.type" />
+            <InsertIcon family="planimetry" :icon-key="item.type" />
           </span>
           <span class="geo2dv2-tray__label">{{ presetLabel(item) }}</span>
         </button>
@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, type FunctionalComponent } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   GEOMETRY_2D_V2_DRAG_MIME,
@@ -69,6 +69,7 @@ import {
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
+import { InsertIcon } from './insertIcons'
 
 const addToolToBoard = useAddToolToBoard()
 const { dragHandlers } = useTouchDragFromTray()
@@ -105,84 +106,6 @@ function onDragStart(e: DragEvent, preset: string, name: string): void {
   e.dataTransfer.effectAllowed = 'copy'
 }
 
-/** Compact SVG icon per preset type. Fallback — grid square. */
-const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
-  const c = 'currentColor'
-  const sw = '1.6'
-  switch (props.type) {
-    case 'triangle':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [h('polygon', { points: '12,4 4,20 20,20' })])
-    case 'circle':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [h('circle', { cx: 12, cy: 12, r: 8 })])
-    case 'polygon':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [h('polygon', { points: '6,5 19,8 18,19 5,16' })])
-    case 'pythagoras':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        h('polygon', { points: '4,20 4,8 16,20' }),
-        h('rect', { x: 1, y: 8, width: 3, height: 3 }),
-        h('rect', { x: 16, y: 20, width: 3, height: 3 }),
-      ])
-    case 'thales':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        h('line', { x1: 3, y1: 6, x2: 21, y2: 6 }),
-        h('line', { x1: 3, y1: 12, x2: 21, y2: 12 }),
-        h('line', { x1: 3, y1: 18, x2: 21, y2: 18 }),
-        h('line', { x1: 6, y1: 3, x2: 18, y2: 21 }),
-      ])
-    case 'unitCircle':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        h('circle', { cx: 12, cy: 12, r: 8 }),
-        h('line', { x1: 4, y1: 12, x2: 20, y2: 12 }),
-        h('line', { x1: 12, y1: 4, x2: 12, y2: 20 }),
-        h('line', { x1: 12, y1: 12, x2: 18, y2: 7 }),
-      ])
-    case 'similar':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        // малий синій △ + великий помаранчевий ~△, обидва з common vertex
-        h('polygon', { points: '3,18 8,18 5,13', stroke: '#2563eb' }),
-        h('polygon', { points: '3,18 21,18 13,4', stroke: '#ea580c' }),
-      ])
-    case 'parallels':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        // дві сині паралельні + червона січна по діагоналі
-        h('line', { x1: 2, y1: 8, x2: 22, y2: 8, stroke: '#2563eb' }),
-        h('line', { x1: 2, y1: 16, x2: 22, y2: 16, stroke: '#2563eb' }),
-        h('line', { x1: 6, y1: 3, x2: 18, y2: 21, stroke: '#dc2626' }),
-      ])
-    case 'trapezium':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        // трапеція з більшою нижньою основою
-        h('polygon', { points: '3,19 21,19 17,6 7,6' }),
-      ])
-    case 'euler9':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        // △ + dashed Euler line + small inner circle
-        h('polygon', { points: '4,20 20,20 12,4' }),
-        h('circle', { cx: 12, cy: 14, r: 5, 'stroke-dasharray': '2 2', stroke: '#ea580c' }),
-        h('line', { x1: 6, y1: 17, x2: 18, y2: 11, stroke: '#a855f7', 'stroke-dasharray': '2 1.5' }),
-      ])
-    case 'simson':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        // △ + circumcircle + 3 dot перп
-        h('circle', { cx: 12, cy: 13, r: 9 }),
-        h('polygon', { points: '5,18 19,18 12,6' }),
-        h('circle', { cx: 4, cy: 13, r: 1, fill: '#dc2626', stroke: 'none' }),
-        h('line', { x1: 7, y1: 15, x2: 13, y2: 21, stroke: '#a855f7', 'stroke-width': '1.2' }),
-      ])
-    case 'inversion':
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        h('circle', { cx: 12, cy: 12, r: 8, stroke: '#2563eb' }),
-        h('circle', { cx: 12, cy: 12, r: 0.8, fill: c, stroke: 'none' }),
-        h('circle', { cx: 9, cy: 12, r: 1, fill: '#dc2626', stroke: 'none' }),
-        h('circle', { cx: 19, cy: 12, r: 1, fill: '#ea580c', stroke: 'none' }),
-        h('line', { x1: 12, y1: 12, x2: 21, y2: 12, stroke: '#94a3b8', 'stroke-dasharray': '1.5 1.5', 'stroke-width': '0.8' }),
-      ])
-    default:
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: c, 'stroke-width': sw }, [
-        h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 }),
-      ])
-  }
-}
 </script>
 
 <style scoped>

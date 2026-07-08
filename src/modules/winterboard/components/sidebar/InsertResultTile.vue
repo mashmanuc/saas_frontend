@@ -16,8 +16,11 @@
     @click.stop="addTool(entry.dragMime, entry.payload)"
     v-bind="dragHandlers(entry.dragMime, entry.payload, label)"
   >
-    <span class="insert-tile__icon" aria-hidden="true">{{ familyIcon }}</span>
+    <span class="insert-tile__icon" aria-hidden="true">
+      <InsertIcon :family="entry.family" :icon-key="entry.iconKey" />
+    </span>
     <span class="insert-tile__label">{{ label }}</span>
+    <span v-if="entry.sublabel" class="insert-tile__sub">{{ entry.sublabel }}</span>
   </button>
 </template>
 
@@ -26,6 +29,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
+import { InsertIcon } from './insertIcons'
 import type { InsertEntry } from './insertRegistry'
 
 const props = defineProps<{ entry: InsertEntry }>()
@@ -40,12 +44,6 @@ const label = computed(() =>
     ? t(props.entry.labelKey)
     : props.entry.labelFallback,
 )
-
-const FAMILY_ICON: Record<string, string> = {
-  stereo: '◳', planimetry: '△', analysis: 'ƒ', quadratic: '∆', trig: '◠',
-  '2d': '∿', '3d': '⬙', geomash: '⬡', other: '▪',
-}
-const familyIcon = computed(() => FAMILY_ICON[props.entry.family] ?? '▪')
 
 function onDragStart(e: DragEvent): void {
   if (!e.dataTransfer) return
@@ -77,8 +75,10 @@ function onDragStart(e: DragEvent): void {
   cursor: grabbing;
 }
 .insert-tile__icon {
-  font-size: 18px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
   color: #2563eb;
 }
 .insert-tile__label {
@@ -90,5 +90,14 @@ function onDragStart(e: DragEvent): void {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
+}
+.insert-tile__sub {
+  font-size: 8.5px;
+  line-height: 1.1;
+  color: #94a3b8;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 </style>

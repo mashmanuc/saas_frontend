@@ -55,6 +55,10 @@ export interface InsertEntry {
   labelKey?: string
   /** Статичний UA-фолбек підпису (завжди присутній — для пошуку/палітри до i18n). */
   labelFallback: string
+  /** Ключ іконки для <InsertIcon> (family+iconKey → SVG). */
+  iconKey: string
+  /** Короткий підпис-підказка (як сублейбл у трею), опц. */
+  sublabel?: string
   /** Індекс пошуку (укр+латинь токени; НЕ локалізувати). */
   keywords: string[]
 }
@@ -93,6 +97,7 @@ const STEREO_INSERTS: InsertEntry[] = NMT3D_TEMPLATE_ORDER.map((key) => {
     payload: JSON.stringify({ templateKey: key }),
     // stereo-підписи runtime (window.NMT3D.TEMPLATES[key].name) → стабільного i18n-ключа немає
     labelFallback: label,
+    iconKey: key,
     keywords: kw(key, label),
   }
 })
@@ -107,6 +112,8 @@ const ANALYSIS_INSERTS: InsertEntry[] = [
     payload: '{}',
     labelKey: 'winterboard.contentSidebar.graphCalcLabel',
     labelFallback: 'Графічний калькулятор',
+    iconKey: 'graphCalc',
+    sublabel: 'y = f(x) · графік · функції',
     keywords: kw('графічний калькулятор', 'graph', 'function', 'y f x', 'функції'),
   },
   ...CALCULUS_PRESETS.map((p) => {
@@ -119,6 +126,8 @@ const ANALYSIS_INSERTS: InsertEntry[] = [
       payload: JSON.stringify({ mode: p.mode }),
       labelKey: `winterboard.calculus.mode.${p.mode}.full`,
       labelFallback: label,
+      iconKey: p.mode,
+      sublabel: p.short,
       keywords: kw(p.mode, label, p.short),
     }
   }),
@@ -133,6 +142,8 @@ const QUADRATIC_INSERTS: InsertEntry[] = [
     dragMime: QUAD_DRAG_MIME,
     payload: '{}',
     labelFallback: 'ax² + bx + c = 0',
+    iconKey: 'card',
+    sublabel: 'D · корені · парабола',
     keywords: kw('квадратне рівняння', 'quadratic', 'парабола', 'дискримінант', 'корені', 'ax2 bx c'),
   },
 ]
@@ -147,6 +158,8 @@ const TRIG_INSERTS: InsertEntry[] = [
     payload: JSON.stringify({ type: 'trig_circle' }),
     labelKey: 'winterboard.trigCircle.btnLabel',
     labelFallback: 'Тригонометрія',
+    iconKey: 'circle',
+    sublabel: 'sin · cos · tg · ctg',
     keywords: kw('тригонометрія', 'коло', 'sin cos tg ctg', 'trig circle'),
   },
   {
@@ -157,6 +170,8 @@ const TRIG_INSERTS: InsertEntry[] = [
     payload: JSON.stringify({ type: 'helix' }),
     labelKey: 'winterboard.helix.btnLabel',
     labelFallback: 'Гелікс',
+    iconKey: 'helix',
+    sublabel: 'P = (θ, sin θ, cos θ)',
     keywords: kw('гелікс', 'helix', 'спіраль', 'theta sin cos'),
   },
   {
@@ -167,6 +182,8 @@ const TRIG_INSERTS: InsertEntry[] = [
     payload: JSON.stringify({ type: 'sin' }),
     // trig_solver підписи у трею hardcoded (без i18n) — дзеркалимо як fallback
     labelFallback: 'рівняння / нерівності',
+    iconKey: 'solver',
+    sublabel: 'sin · cos · tg · ctg · =/>/<',
     keywords: kw('рівняння', 'нерівності', 'тригонометричне', 'solver', 'sin cos tg ctg'),
   },
 ]
@@ -196,6 +213,8 @@ export function geoInserts(): InsertEntry[] {
     payload: JSON.stringify({ preset: p.type }),
     labelKey: `winterboard.geo2dV2.preset.${p.type}.full`,
     labelFallback: p.full || p.type,
+    iconKey: p.type,
+    sublabel: p.short || undefined,
     keywords: kw(p.type, p.full, p.short, p.desc),
   }))
 }

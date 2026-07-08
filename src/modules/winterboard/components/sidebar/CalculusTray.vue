@@ -58,7 +58,7 @@
           v-bind="dragHandlers(CALCULUS_DRAG_MIME, JSON.stringify({ mode: item.mode }), modeLabel(item.mode))"
         >
           <span class="calculus-tray__icon" aria-hidden="true">
-            <ModeIcon :mode="item.mode" />
+            <InsertIcon family="analysis" :icon-key="item.mode" />
           </span>
           <span class="calculus-tray__labels">
             <span class="calculus-tray__label">{{ modeLabel(item.mode) }}</span>
@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import { h, type FunctionalComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   CALCULUS_DRAG_MIME,
@@ -91,6 +90,7 @@ import { GRAPH_CALCULATOR_MIME } from '../../constants/graphCalculatorDefaults'
 import type { CalculusMode } from '../../vendor/calculus'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
+import { InsertIcon } from './insertIcons'
 
 const addToolToBoard = useAddToolToBoard()
 const { dragHandlers } = useTouchDragFromTray()
@@ -116,21 +116,6 @@ function onDragStartGraph(e: DragEvent): void {
   if (!e.dataTransfer) return
   e.dataTransfer.setData(GRAPH_CALCULATOR_MIME, JSON.stringify({}))
   e.dataTransfer.effectAllowed = 'copy'
-}
-
-const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
-  const sw = '1.6'
-  if (props.mode === 'derivative') {
-    return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': sw }, [
-      h('path', { d: 'M3 19 Q 9 19 12 12 T 21 5', fill: 'none' }),
-      h('line', { x1: 7, y1: 18, x2: 17, y2: 9, stroke: '#3b7b9b' }),
-      h('circle', { cx: 12, cy: 12, r: 1.8, fill: '#c4622a', stroke: 'none' }),
-    ])
-  }
-  return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': sw }, [
-    h('path', { d: 'M3 18 Q 12 4 21 18', fill: 'rgba(196,98,42,0.25)', stroke: 'currentColor' }),
-    h('line', { x1: 3, y1: 18, x2: 21, y2: 18 }),
-  ])
 }
 </script>
 

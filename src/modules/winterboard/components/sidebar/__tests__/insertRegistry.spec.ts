@@ -103,6 +103,15 @@ describe('insertRegistry (Фаза 0)', () => {
     expect(new Set(all).size).toBe(all.length)
   })
 
+  it('INV-REG-1b: кожен entry має непорожній iconKey (для <InsertIcon>)', () => {
+    for (const e of STATIC_INSERTS) {
+      expect(typeof e.iconKey === 'string' && e.iconKey.length > 0, e.id).toBe(true)
+    }
+    // stereo iconKey == tplKey (для точної SVG-іконки)
+    const cube = STATIC_INSERTS.find((e) => e.id === 'stereo.cube')!
+    expect(cube.iconKey).toBe('cube')
+  })
+
   it('INV-REG-2: кожен dragMime має резолвер у addAtPosition', () => {
     for (const e of STATIC_INSERTS) {
       expect(RESOLVER_MIMES.has(e.dragMime), `${e.id} → ${e.dragMime}`).toBe(true)
