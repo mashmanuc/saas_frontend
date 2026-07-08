@@ -213,11 +213,50 @@
     <!-- ── ІНСТРУМЕНТИ tab ── -->
     <template v-else>
       <div class="content-sidebar__tools-tab">
-        <Nmt3dTray />
-        <Geometry2DTray />
-        <CalculusTray />
-        <QuadraticTray />
-        <TrigCircleTray />
+        <!-- Пошук по всьому каталогу (SSOT insertRegistry) -->
+        <div class="tools-search-wrap">
+          <input
+            v-model="toolQuery"
+            type="search"
+            class="tools-search"
+            :placeholder="t('winterboard.contentSidebar.toolsSearch')"
+            autocomplete="off"
+          />
+        </div>
+
+        <!-- Пошук активний → плоский grid результатів (перекриває секції) -->
+        <template v-if="toolQuery.trim()">
+          <div v-if="toolResults.length" class="tools-results">
+            <InsertResultTile v-for="e in toolResults" :key="e.id" :entry="e" />
+          </div>
+          <div v-else class="content-sidebar__empty">
+            {{ t('winterboard.contentSidebar.noResults') }}
+          </div>
+        </template>
+
+        <!-- Порожній пошук → згортні секції-родини (живі трей всередині) -->
+        <template v-else>
+          <details class="tools-section" open>
+            <summary class="tools-section__sum">{{ t('winterboard.nmt3d.trayHeader') }}</summary>
+            <Nmt3dTray />
+          </details>
+          <details class="tools-section" open>
+            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.geo2dHeader') }}</summary>
+            <Geometry2DTray />
+          </details>
+          <details class="tools-section" open>
+            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.calculusHeader') }}</summary>
+            <CalculusTray />
+          </details>
+          <details class="tools-section" open>
+            <summary class="tools-section__sum">{{ t('winterboard.quadratic.trayHeader') }}</summary>
+            <QuadraticTray />
+          </details>
+          <details class="tools-section" open>
+            <summary class="tools-section__sum">{{ t('winterboard.contentSidebar.trigCircleHeader') }}</summary>
+            <TrigCircleTray />
+          </details>
+        </template>
       </div>
     </template>
 
@@ -263,6 +302,9 @@ import Geometry2DTray from './Geometry2DTray.vue'
 import CalculusTray from './CalculusTray.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
 import TrigCircleTray from './TrigCircleTray.vue'
+// BoardMASH panel Фаза 1: пошук каталогу через insertRegistry SSOT
+import InsertResultTile from './InsertResultTile.vue'
+import { searchInserts } from './insertRegistry'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -342,6 +384,10 @@ const isFoldersPanelOpen = ref(false)
 
 // Tab switcher: 'materials' | 'tools'
 const activeTab = ref<'materials' | 'tools'>('materials')
+
+// Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → секції.
+const toolQuery = ref('')
+const toolResults = computed(() => searchInserts(toolQuery.value))
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
 const wbStore = useWBStore()
@@ -857,6 +903,64 @@ function onDrop(e: DragEvent) {
 .content-sidebar__tools-tab :deep(.solids-tray) {
   border-top: none;
   padding-top: 14px;
+}
+
+/* ── Фаза 1: пошук каталогу ── */
+.tools-search-wrap {
+  padding: 8px 8px 6px;
+  position: sticky;
+  top: 38px; /* під табами (.content-sidebar__tabs height 38px) */
+  background: #ffffff;
+  z-index: 1;
+}
+.tools-search {
+  width: 100%;
+  box-sizing: border-box;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tools-search:focus {
+  border-color: #3b82f6;
+  background: #fff;
+}
+.tools-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+/* ── Фаза 1: згортні секції-родини ── */
+.tools-section {
+  border-top: 1px solid #f1f5f9;
+}
+.tools-section__sum {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  list-style: revert; /* лишаємо нативний disclosure-трикутник */
+}
+.tools-section__sum:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+/* Уникаємо ДУБЛЬ-заголовка: усі трей мають власний `*-tray__header` — ховаємо його
+   в режимі секцій, бо назву родини вже показує <summary>. */
+.tools-section :deep([class$="-tray__header"]) {
+  display: none;
 }
 
 /* ── Fade transition ── */

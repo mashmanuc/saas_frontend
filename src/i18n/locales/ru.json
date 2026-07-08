@@ -7447,6 +7447,7 @@
       }
     },
     "contentSidebar": {
+      "toolsSearch": "Поиск инструмента...",
       "loading": "Загрузка материалов...",
       "processing": "Обработка...",
       "failed": "Ошибка",

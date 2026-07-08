@@ -7270,6 +7270,7 @@
       }
     },
     "contentSidebar": {
+      "toolsSearch": "Search tools...",
       "loading": "Loading materials...",
       "processing": "Processing...",
       "failed": "Failed",
