@@ -296,9 +296,9 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-graphmash3d-overlay',
     dataAttr: 'data-graphmash3d-id',
     testidPrefix: 'graphmash3d-overlay',
-    expandable: false,
-    buildProps: stdProps,
-    buildEvents: stdEvents,
+    expandable: true,
+    buildProps: expProps,
+    buildEvents: expEvents,
   },
 
   nmt_task: {

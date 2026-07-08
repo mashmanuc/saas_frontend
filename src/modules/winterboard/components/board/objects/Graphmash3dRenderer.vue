@@ -14,21 +14,20 @@
   <div
     ref="rootEl"
     class="gm3d-card"
-    :class="{ 'is-selected': isSelected }"
+    :class="{ 'is-selected': isSelected, 'is-expanded': isExpanded }"
     :data-testid="`graphmash3d-${asset.id}`"
   >
     <header class="gm3d-header">
       <span class="gm3d-badge">GraphMASH 3D</span>
-      <a
-        class="gm3d-open"
-        href="/mash/grapher-3d/index.html"
-        target="_blank"
-        rel="noopener"
-        title="Відкрити у MASH"
+      <!-- Розгорнути на цілу дошку (НЕ виносить із дошки; дзеркало nmt3d) -->
+      <button
+        type="button"
+        class="gm3d-expand-btn"
+        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="emit('expand')"
         @mousedown.stop
         @pointerdown.stop
-        @click.stop
-      >↗</a>
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
         v-if="!asset.locked && isSelected"
         type="button"
@@ -78,10 +77,10 @@ interface Gm3dEngine {
 }
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean }>(),
-  { isSelected: false, interactive: true },
+  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; isExpanded?: boolean }>(),
+  { isSelected: false, interactive: true, isExpanded: false },
 )
-const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: [] }>()
+const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: []; expand: [] }>()
 
 const rootEl = ref<HTMLElement | null>(null)
 const stageEl = ref<HTMLElement | null>(null)
@@ -421,8 +420,17 @@ watch(() => props.isSelected, (sel) => {
   else unregisterGraphmash3dInspector(props.asset.id)
 }, { immediate: true })
 
+// Розгортання на цілу дошку → контейнер росте → resize WebGL (RO теж ловить, але
+// форсуємо на випадок таймінгу CSS-класу). ESC — згорнути (дзеркало nmt3d).
+watch(() => props.isExpanded, () => {
+  requestAnimationFrame(() => { try { eng?.resize?.() } catch { /* noop */ } })
+})
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
+if (typeof window !== 'undefined') window.addEventListener('keydown', _onEsc)
+
 onBeforeUnmount(() => {
   unregisterGraphmash3dInspector(props.asset.id)
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', _onEsc)
   stopAnimPoll()
   try { ro?.disconnect() } catch { /* noop */ }
   ro = null
@@ -457,7 +465,7 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
   flex-shrink: 0;
 }
 .gm3d-badge { font-size: 11px; font-weight: 700; color: #2d70b3; flex: 1; }
-.gm3d-open, .gm3d-delete {
+.gm3d-expand-btn, .gm3d-delete {
   pointer-events: auto;
   border: none;
   background: none;
@@ -467,6 +475,7 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
   text-decoration: none;
   color: #2d70b3;
 }
+.gm3d-expand-btn:hover { color: #22597f; }
 .gm3d-delete { color: #9ca3af; font-size: 16px; }
 .gm3d-delete:hover { color: #ef4444; }
 .gm3d-stage { flex: 1; min-height: 0; position: relative; pointer-events: none; }

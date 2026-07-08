@@ -2202,11 +2202,20 @@ function handleCursorMove(payload: { x: number; y: number; tool: WBToolType; col
 }
 
 function handleDeleteSelected(): void {
-  if (!selectedId.value) return
-  // Try stroke first, then asset
   const page = store.currentPage
   if (!page) return
 
+  // Мульти-виділення (Ctrl+A, marquee-drag) → видалити ВСЕ одним undo-батчем.
+  // Раніше читалось лише `selectedId` (однина), тож Ctrl+A (пише store.selectedIds
+  // масивом, не чіпає selectedId) → Del нічого не робив. store.selectedIds — SSOT.
+  if (store.selectedIds.length > 0) {
+    store.deleteSelected()
+    selectedId.value = null
+    return
+  }
+
+  // Fallback: одиничне локальне виділення.
+  if (!selectedId.value) return
   const isStroke = page.strokes.some((s) => s.id === selectedId.value)
   if (isStroke) {
     store.deleteStroke(selectedId.value)
