@@ -25,6 +25,15 @@
      GeoEngine.cloneClosure(objects, ids)      → {entries:[[nid,obj]…], map:{old→new}}
      GeoEngine.serialize(objects, cs)          → {format,version,objects[],cs}
      GeoEngine.deserialize(scene)              → {objects:Map, cs:{ox,oy,sc}|null}
+
+     Stage 2 (§2.8 headless-конструктор, без UI/canvas/React) — секція ── КОНСТРУКТОР ──:
+     GeoEngine.construct(objects, cs, cmd)     → {objects:Map, created:string[]} | {error}
+     GeoEngine.move(objects, cs, id, wx, wy)   → {objects:Map, moved:string[]} | {error}
+     GeoEngine.remove(objects, id, opts?)      → {objects:Map, removed:string[]} | {error}
+     GeoEngine.restyle(objects, id, patch)     → {objects:Map} | {error}
+     GeoEngine.toolSpec()                      → [{op,labelKey,category,inputs[]}]
+     GeoEngine.canConstruct(objects, cmd)      → {ok:true} | {ok:false, reason}
+     GeoEngine.getValue(objects, id)           → string (алгебра-рядок, опційно)
    ═══════════════════════════════════════════════════════════ */
 (function (global) {
 
@@ -238,6 +247,15 @@
           o.visible = false;
         }
       }
+      // point-on (stage 2 §3.1 'point-on'): перерахувати позицію за збереженим param,
+      // коли базовий об'єкт (пряма/коло) змінився
+      if (o.onObj && o.onKind) {
+        const p = positionFromParam(objects, o.onObj, o.onParam, o.onKind);
+        if (p && (o.wx !== p.wx || o.wy !== p.wy)) {
+          o.wx = p.wx; o.wy = p.wy;
+          updateDeps(objects, o.id);
+        }
+      }
     }
   }
 
@@ -303,6 +321,443 @@
     return { entries, map };
   }
 
+  // ── КОНСТРУКТОР ──────────────────────────────────────────────
+  // Stage 2 (§2.8 headless-конструктор): construct / move / remove / restyle
+  // + toolSpec / canConstruct. Дзеркало §4 (рендерер): чисті функції,
+  // нуль document./addEventListener/RAF/localStorage/React.
+  // Це — headless-винесення execute-сторони твого Command Pattern
+  // (AddObjectCmd/MovePointCmd/DeleteObjectCmd/ChangeStyleCmd з GeoEngine Docs):
+  // undo-стек та batching-drag залишаються на боці хоста (дошки) —
+  // ці функції віддають лише атомарний execute.
+  // ───────────────────────────────────────────────────────────
+
+  const DEF_COLOR = '#1a5c38', DEF_LW = 2;
+  const LINE_LIKE = ['segment', 'line', 'ray', 'vector', 'dline'];
+  const CIRCLE_LIKE = ['circle', 'circle3'];
+
+  function style_(cmd) {
+    return { color: cmd.color || DEF_COLOR, lw: (cmd.lw != null ? cmd.lw : DEF_LW) };
+  }
+  function base_(id, type, extra, cmd) {
+    return Object.assign({ id, type, labelMode: 'none', visible: true, locked: false }, style_(cmd || {}), extra);
+  }
+  function isPoint(objects, id) { const o = objects.get(id); return !!o && o.type === 'point'; }
+  function typeOf(objects, id) { const o = objects.get(id); return o ? o.type : null; }
+
+  // Проєкція точки на прямий/круговий об'єкт (для point-on) — повертає {wx,wy,param} | null
+  function projectOnObject(objects, onId, wx, wy) {
+    const t = typeOf(objects, onId);
+    if (!t) return null;
+    if (LINE_LIKE.includes(t)) {
+      const o = objects.get(onId);
+      const ld = lineClamp(objects, o);
+      if (!ld) return null;
+      const len2 = ld.dx * ld.dx + ld.dy * ld.dy || 1e-12;
+      let param = ((wx - ld.x) * ld.dx + (wy - ld.y) * ld.dy) / len2;
+      param = Math.max(ld.t0, Math.min(ld.t1, param));
+      return { wx: ld.x + param * ld.dx, wy: ld.y + param * ld.dy, param, kind: 'line' };
+    }
+    if (CIRCLE_LIKE.includes(t)) {
+      const o = objects.get(onId);
+      const cd = circleDefW(objects, o);
+      if (!cd || cd.r <= 1e-12) return null;
+      const param = Math.atan2(wy - cd.cy, wx - cd.cx);
+      return { wx: cd.cx + cd.r * Math.cos(param), wy: cd.cy + cd.r * Math.sin(param), param, kind: 'circle' };
+    }
+    return null;
+  }
+  function positionFromParam(objects, onId, param, kind) {
+    const o = objects.get(onId);
+    if (kind === 'line') {
+      const ld = lineClamp(objects, o);
+      if (!ld) return null;
+      const t = Math.max(ld.t0, Math.min(ld.t1, param));
+      return { wx: ld.x + t * ld.dx, wy: ld.y + t * ld.dy };
+    }
+    if (kind === 'circle') {
+      const cd = circleDefW(objects, o);
+      if (!cd) return null;
+      return { wx: cd.cx + cd.r * Math.cos(param), wy: cd.cy + cd.r * Math.sin(param) };
+    }
+    return null;
+  }
+
+  /**
+   * Створити об'єкт із декларативної команди (§3.1).
+   * Повертає { objects: НОВА Map, created: string[] } | { error }.
+   * Похідні (updateDeps) виконуються за потреби — контракт як у існуючого updateDeps.
+   */
+  function construct(objects, cs, cmd) {
+    if (!cmd || !cmd.op) return { error: 'no-op' };
+    const chk = canConstruct(objects, cmd);
+    if (!chk.ok) return { error: chk.reason };
+    const m = new Map(objects);
+    const created = [];
+    const add = (o) => { m.set(o.id, o); created.push(o.id); return o.id; };
+
+    switch (cmd.op) {
+      case 'point': {
+        const id = cmd.id || nextId(m, 'point');
+        add(base_(id, 'point', { wx: cmd.wx, wy: cmd.wy, deps: [] }, cmd));
+        break;
+      }
+      case 'point-on': {
+        const proj = projectOnObject(m, cmd.on, cmd.wx, cmd.wy);
+        if (!proj) return { error: 'projection-failed' };
+        const id = nextId(m, 'point');
+        add(base_(id, 'point', {
+          wx: proj.wx, wy: proj.wy, onObj: cmd.on, onParam: proj.param, onKind: proj.kind,
+          deps: [cmd.on, ...collectPts(m, cmd.on)], locked: false, labelMode: 'name',
+        }, cmd));
+        break;
+      }
+      case 'midpoint': {
+        const p1 = m.get(cmd.a), p2 = m.get(cmd.b);
+        const id = nextId(m, 'point');
+        add(base_(id, 'point', {
+          wx: (p1.wx + p2.wx) / 2, wy: (p1.wy + p2.wy) / 2,
+          midOf: [cmd.a, cmd.b], deps: [cmd.a, cmd.b], locked: true, labelMode: 'name',
+        }, cmd));
+        break;
+      }
+      case 'intersect': {
+        const pts = intersectObjs(m, cmd.a, cmd.b);
+        if (!pts) return { error: 'not-intersectable' };
+        const deps = [cmd.a, cmd.b, ...collectPts(m, cmd.a), ...collectPts(m, cmd.b)];
+        pts.forEach((p, i) => {
+          if (!p) return;
+          const id = nextId(m, 'point');
+          add(base_(id, 'point', { wx: p[0], wy: p[1], intOf: [cmd.a, cmd.b, i], deps, locked: true, labelMode: 'name' }, cmd));
+        });
+        if (!created.length) return { error: 'no-intersection' };
+        break;
+      }
+      case 'segment': case 'line': case 'ray': case 'vector': {
+        const id = nextId(m, cmd.op);
+        add(base_(id, cmd.op, { p1: cmd.a, p2: cmd.b, deps: [cmd.a, cmd.b] }, cmd));
+        break;
+      }
+      case 'perp': case 'para': {
+        const id = nextId(m, 'line');
+        add(base_(id, 'dline', { sub: cmd.op === 'perp' ? 'perp' : 'para', pid: cmd.through, lid: cmd.to, deps: [cmd.through, cmd.to] }, cmd));
+        break;
+      }
+      case 'perpbis': {
+        const id = nextId(m, 'line');
+        add(base_(id, 'dline', { sub: 'perpbis', p1: cmd.a, p2: cmd.b, deps: [cmd.a, cmd.b] }, cmd));
+        break;
+      }
+      case 'angbis': {
+        const id = nextId(m, 'line');
+        add(base_(id, 'dline', { sub: 'angbis', p1: cmd.a, p2: cmd.vertex, p3: cmd.b, deps: [cmd.a, cmd.vertex, cmd.b] }, cmd));
+        break;
+      }
+      case 'tangent': {
+        for (const branch of [0, 1]) {
+          const id = nextId(m, 'line');
+          add(base_(id, 'dline', { sub: 'tangent', pid: cmd.through, lid: cmd.to, branch, deps: [cmd.through, cmd.to] }, cmd));
+        }
+        break;
+      }
+      case 'circle': {
+        const id = nextId(m, 'circle');
+        if (cmd.through) add(base_(id, 'circle', { cid: cmd.center, rid: cmd.through, deps: [cmd.center, cmd.through] }, cmd));
+        else add(base_(id, 'circle', { cid: cmd.center, r: cmd.r, deps: [cmd.center] }, cmd));
+        break;
+      }
+      case 'circle3': {
+        const id = nextId(m, 'circle');
+        add(base_(id, 'circle3', { p1: cmd.a, p2: cmd.b, p3: cmd.c, deps: [cmd.a, cmd.b, cmd.c] }, cmd));
+        break;
+      }
+      case 'semicircle': {
+        const id = nextId(m, 'arc');
+        add(base_(id, 'semicircle', { p1: cmd.a, p2: cmd.b, deps: [cmd.a, cmd.b] }, cmd));
+        break;
+      }
+      case 'arc': {
+        const id = nextId(m, 'arc');
+        add(base_(id, 'arc', { p1: cmd.a, p2: cmd.m, p3: cmd.b, deps: [cmd.a, cmd.m, cmd.b] }, cmd));
+        break;
+      }
+      case 'polygon': {
+        const id = nextId(m, 'polygon');
+        add(base_(id, 'polygon', { vids: [...cmd.pts], deps: [...cmd.pts] }, cmd));
+        break;
+      }
+      case 'polygon-reg': {
+        const A = m.get(cmd.a), B = m.get(cmd.b), n = cmd.n | 0;
+        const pts = regPolyPts(A, B, n);
+        const vids = [cmd.a, cmd.b];
+        for (let k = 2; k < n; k++) {
+          const pid = nextId(m, 'point');
+          add(base_(pid, 'point', { wx: pts[k][0], wy: pts[k][1], regOf: [cmd.a, cmd.b, n, k], deps: [cmd.a, cmd.b], locked: true, labelMode: 'name' }, cmd));
+        }
+        const polyId = nextId(m, 'polygon');
+        add(base_(polyId, 'polygon', { vids, deps: [...vids] }, cmd));
+        break;
+      }
+      case 'polyline': {
+        const id = nextId(m, 'polyline');
+        add(base_(id, 'polyline', { vids: [...cmd.pts], deps: [...cmd.pts] }, cmd));
+        break;
+      }
+      case 'angle': {
+        const id = nextId(m, 'angle');
+        add(base_(id, 'angle', { p1: cmd.a, p2: cmd.vertex, p3: cmd.b, deps: [cmd.a, cmd.vertex, cmd.b] }, cmd));
+        break;
+      }
+      case 'distance': {
+        const id = nextId(m, 'dist');
+        add(base_(id, 'distance', { p1: cmd.a, p2: cmd.b, deps: [cmd.a, cmd.b] }, cmd));
+        break;
+      }
+      case 'function': {
+        const id = cmd.id || nextId(m, 'fn');
+        add({ id, type: 'function', expr: cmd.expr, fn: cmd.fn, labelMode: 'name', visible: true, locked: false, color: cmd.color || '#e03030', lw: (cmd.lw != null ? cmd.lw : 2), deps: [] });
+        break;
+      }
+      case 'slider': {
+        const id = nextId(m, 'slider');
+        add(base_(id, 'slider', {
+          wx: cmd.wx, wy: cmd.wy,
+          min: cmd.min != null ? cmd.min : 0, max: cmd.max != null ? cmd.max : 5,
+          step: cmd.step != null ? cmd.step : 0.1, val: cmd.value != null ? cmd.value : 1,
+          deps: [],
+        }, cmd));
+        break;
+      }
+      default:
+        return { error: 'unknown-op' };
+    }
+    return { objects: m, created };
+  }
+
+  /** Посунути вільну/constrained точку чи повзунок у нові світові координати (§3.2). */
+  function move(objects, cs, id, wx, wy) {
+    const o = objects.get(id);
+    if (!o) return { error: 'not-found' };
+    if (o.midOf || o.regOf || o.intOf) return { error: 'derived' };
+    if (typeof o.wx !== 'number') return { error: 'not-movable' };
+    const m = new Map(objects);
+    let nx = wx, ny = wy;
+    if (o.onObj) {
+      const p = positionFromParam(m, o.onObj, (function () {
+        const proj = projectOnObject(m, o.onObj, wx, wy);
+        return proj ? proj.param : o.onParam;
+      })(), o.onKind);
+      if (!p) return { error: 'projection-failed' };
+      nx = p.wx; ny = p.wy;
+      const proj2 = projectOnObject(m, o.onObj, wx, wy);
+      m.set(id, { ...o, wx: nx, wy: ny, onParam: proj2 ? proj2.param : o.onParam });
+    } else {
+      m.set(id, { ...o, wx: nx, wy: ny });
+    }
+    updateDeps(m, id);
+    const moved = [id];
+    for (const other of m.values()) {
+      if (other.id !== id && (other.deps || []).includes(id)) moved.push(other.id);
+    }
+    return { objects: m, moved };
+  }
+
+  /** Видалити об'єкт (+ залежний каскад за .deps — той самий алгоритм, що й у воронці) (§3.3). */
+  function remove(objects, id, opts) {
+    opts = opts || {};
+    const withDependents = opts.withDependents !== false;
+    if (!objects.has(id)) return { error: 'not-found' };
+    const toKill = [id];
+    for (const o of objects.values()) {
+      if ((o.deps || []).includes(id) && !toKill.includes(o.id)) toKill.push(o.id);
+    }
+    if (toKill.length > 1 && !withDependents) {
+      return { error: 'has-dependents', dependents: toKill.slice(1) };
+    }
+    const m = new Map(objects);
+    toKill.forEach(k => m.delete(k));
+    return { objects: m, removed: toKill };
+  }
+
+  /** Декларативний маніфест інструментів — дошка рендерить панель без хардкоду (§3.4). */
+  function toolSpec() {
+    const P = ['point'];
+    return [
+      { op: 'point',       labelKey: 'mash.geo.tools.POINT',     category: 'point',   inputs: [] },
+      { op: 'point-on',    labelKey: 'mash.geo.tools.POINT_ON',  category: 'point',   inputs: [{ role: 'on', accepts: [...LINE_LIKE, ...CIRCLE_LIKE, 'semicircle', 'arc'] }] },
+      { op: 'midpoint',    labelKey: 'mash.geo.tools.MIDPOINT',  category: 'point',   inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'intersect',   labelKey: 'mash.geo.tools.INTERSECT', category: 'point',   inputs: [{ role: 'a', accepts: [...LINE_LIKE, ...CIRCLE_LIKE] }, { role: 'b', accepts: [...LINE_LIKE, ...CIRCLE_LIKE] }] },
+      { op: 'segment',     labelKey: 'mash.geo.tools.SEGMENT',   category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'line',        labelKey: 'mash.geo.tools.LINE',      category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'ray',         labelKey: 'mash.geo.tools.RAY',       category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'vector',      labelKey: 'mash.geo.tools.VECTOR',    category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'perp',        labelKey: 'mash.geo.tools.PERP',      category: 'line',    inputs: [{ role: 'through', accepts: P }, { role: 'to', accepts: LINE_LIKE }] },
+      { op: 'para',        labelKey: 'mash.geo.tools.PARALLEL',  category: 'line',    inputs: [{ role: 'through', accepts: P }, { role: 'to', accepts: LINE_LIKE }] },
+      { op: 'perpbis',     labelKey: 'mash.geo.tools.PERPBIS',   category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'angbis',      labelKey: 'mash.geo.tools.ANGBIS',    category: 'line',    inputs: [{ role: 'a', accepts: P }, { role: 'vertex', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'tangent',     labelKey: 'mash.geo.tools.TANGENT',   category: 'line',    inputs: [{ role: 'through', accepts: P }, { role: 'to', accepts: CIRCLE_LIKE }] },
+      { op: 'circle',      labelKey: 'mash.geo.tools.CIRCLE',    category: 'circle',  inputs: [{ role: 'center', accepts: P }, { role: 'through', accepts: P }] },
+      { op: 'circle',      labelKey: 'mash.geo.tools.CIRCLER',   category: 'circle',  inputs: [{ role: 'center', accepts: P }] },
+      { op: 'circle3',     labelKey: 'mash.geo.tools.CIRCLE3',   category: 'circle',  inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }, { role: 'c', accepts: P }] },
+      { op: 'semicircle',  labelKey: 'mash.geo.tools.SEMICIRCLE',category: 'circle',  inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'arc',         labelKey: 'mash.geo.tools.ARC',       category: 'circle',  inputs: [{ role: 'a', accepts: P }, { role: 'm', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'polygon',     labelKey: 'mash.geo.tools.POLYGON',   category: 'polygon', inputs: [{ role: 'pts', accepts: P, multi: true }] },
+      { op: 'polygon-reg', labelKey: 'mash.geo.tools.REGPOLY',   category: 'polygon', inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'polyline',    labelKey: 'mash.geo.tools.POLYLINE',  category: 'line',    inputs: [{ role: 'pts', accepts: P, multi: true }] },
+      { op: 'angle',       labelKey: 'mash.geo.tools.ANGLE',     category: 'measure', inputs: [{ role: 'a', accepts: P }, { role: 'vertex', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'distance',    labelKey: 'mash.geo.tools.DISTANCE',  category: 'measure', inputs: [{ role: 'a', accepts: P }, { role: 'b', accepts: P }] },
+      { op: 'function',    labelKey: 'mash.geo.tools.FUNCTION',  category: 'line',    inputs: [] },
+      { op: 'slider',      labelKey: 'mash.geo.tools.SLIDER',    category: 'point',   inputs: [] },
+    ];
+  }
+
+  /** Валідація команди на поточній сцені — для enable/disable кнопок (§3.6). */
+  function canConstruct(objects, cmd) {
+    if (!cmd || !cmd.op) return { ok: false, reason: 'no-op' };
+    const pt = (id) => isPoint(objects, id);
+    const exists = (id) => objects.has(id);
+    const distinct = (...ids) => new Set(ids).size === ids.length;
+
+    switch (cmd.op) {
+      case 'point':
+        return (isFinite(cmd.wx) && isFinite(cmd.wy)) ? { ok: true } : { ok: false, reason: 'bad-coords' };
+      case 'point-on': {
+        if (!exists(cmd.on)) return { ok: false, reason: 'not-found' };
+        const t = typeOf(objects, cmd.on);
+        if (!LINE_LIKE.includes(t) && !CIRCLE_LIKE.includes(t) && t !== 'semicircle' && t !== 'arc') return { ok: false, reason: 'unsupported-on-type' };
+        return { ok: true };
+      }
+      case 'midpoint': case 'segment': case 'line': case 'ray': case 'vector': case 'perpbis': case 'distance':
+        if (!exists(cmd.a) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.b)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.b)) return { ok: false, reason: 'same-point' };
+        return { ok: true };
+      case 'intersect': {
+        if (!exists(cmd.a) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!distinct(cmd.a, cmd.b)) return { ok: false, reason: 'same-object' };
+        const ta = typeOf(objects, cmd.a), tb = typeOf(objects, cmd.b);
+        const isConstructible = (t) => LINE_LIKE.includes(t) || CIRCLE_LIKE.includes(t);
+        if (!isConstructible(ta) || !isConstructible(tb)) return { ok: false, reason: 'not-intersectable-type' };
+        return { ok: true };
+      }
+      case 'perp': case 'para': {
+        if (!exists(cmd.through) || !exists(cmd.to)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.through)) return { ok: false, reason: 'not-a-point' };
+        if (!LINE_LIKE.includes(typeOf(objects, cmd.to))) return { ok: false, reason: 'not-a-line' };
+        return { ok: true };
+      }
+      case 'angbis': case 'angle':
+        if (!exists(cmd.a) || !exists(cmd.vertex) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.vertex) || !pt(cmd.b)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.vertex, cmd.b)) return { ok: false, reason: 'same-point' };
+        return { ok: true };
+      case 'tangent': {
+        if (!exists(cmd.through) || !exists(cmd.to)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.through)) return { ok: false, reason: 'not-a-point' };
+        if (!CIRCLE_LIKE.includes(typeOf(objects, cmd.to))) return { ok: false, reason: 'not-a-circle' };
+        const P = objects.get(cmd.through), cd = circleDefW(objects, objects.get(cmd.to));
+        if (!cd) return { ok: false, reason: 'degenerate-circle' };
+        if (Math.hypot(P.wx - cd.cx, P.wy - cd.cy) <= cd.r + 1e-9) return { ok: false, reason: 'point-inside-circle' };
+        return { ok: true };
+      }
+      case 'circle': {
+        if (!exists(cmd.center) || !pt(cmd.center)) return { ok: false, reason: 'not-a-point' };
+        if (cmd.through) { if (!exists(cmd.through) || !pt(cmd.through)) return { ok: false, reason: 'not-a-point' }; }
+        else if (!(cmd.r > 0)) return { ok: false, reason: 'bad-radius' };
+        return { ok: true };
+      }
+      case 'circle3': {
+        if (!exists(cmd.a) || !exists(cmd.b) || !exists(cmd.c)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.b) || !pt(cmd.c)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.b, cmd.c)) return { ok: false, reason: 'same-point' };
+        if (!circum(objects.get(cmd.a), objects.get(cmd.b), objects.get(cmd.c))) return { ok: false, reason: 'collinear' };
+        return { ok: true };
+      }
+      case 'semicircle':
+        if (!exists(cmd.a) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.b)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.b)) return { ok: false, reason: 'same-point' };
+        return { ok: true };
+      case 'arc':
+        if (!exists(cmd.a) || !exists(cmd.m) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.m) || !pt(cmd.b)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.m, cmd.b)) return { ok: false, reason: 'same-point' };
+        if (!circum(objects.get(cmd.a), objects.get(cmd.m), objects.get(cmd.b))) return { ok: false, reason: 'collinear' };
+        return { ok: true };
+      case 'polygon':
+        if (!Array.isArray(cmd.pts) || cmd.pts.length < 3) return { ok: false, reason: 'need-3-points' };
+        if (!cmd.pts.every(exists) || !cmd.pts.every(pt)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(...cmd.pts)) return { ok: false, reason: 'duplicate-points' };
+        return { ok: true };
+      case 'polygon-reg':
+        if (!exists(cmd.a) || !exists(cmd.b)) return { ok: false, reason: 'not-found' };
+        if (!pt(cmd.a) || !pt(cmd.b)) return { ok: false, reason: 'not-a-point' };
+        if (!distinct(cmd.a, cmd.b)) return { ok: false, reason: 'same-point' };
+        if (!(Number.isInteger(cmd.n) && cmd.n >= 3)) return { ok: false, reason: 'bad-n' };
+        return { ok: true };
+      case 'polyline':
+        if (!Array.isArray(cmd.pts) || cmd.pts.length < 2) return { ok: false, reason: 'need-2-points' };
+        if (!cmd.pts.every(exists) || !cmd.pts.every(pt)) return { ok: false, reason: 'not-a-point' };
+        return { ok: true };
+      case 'function':
+        return (typeof cmd.expr === 'string' && cmd.expr.trim()) ? { ok: true } : { ok: false, reason: 'bad-expr' };
+      case 'slider':
+        return (isFinite(cmd.wx) && isFinite(cmd.wy)) ? { ok: true } : { ok: false, reason: 'bad-coords' };
+      default:
+        return { ok: false, reason: 'unknown-op' };
+    }
+  }
+
+  const RESTYLE_KEYS = ['color', 'opacity', 'lineWidth', 'lw', 'labelMode', 'visible', 'locked', 'caption'];
+
+  /** Патч стилю/підпису/стану = ChangeStyleCmd/ChangeLabelModeCmd headless (§3.4). */
+  function restyle(objects, id, patch) {
+    if (!objects.has(id)) return { error: 'not-found' };
+    if (!patch || typeof patch !== 'object') return { error: 'bad-patch' };
+    const keys = Object.keys(patch).filter(k => RESTYLE_KEYS.includes(k));
+    if (!keys.length) return { error: 'no-valid-keys' };
+    const m = new Map(objects);
+    const cur = m.get(id);
+    const next = { ...cur };
+    for (const k of keys) next[k] = patch[k];
+    // lineWidth — аліас до внутрішнього lw, щоб не дублювати схему draw()
+    if ('lineWidth' in patch) next.lw = patch.lineWidth;
+    m.set(id, next);
+    return { objects: m };
+  }
+
+  /** Текстове значення об'єкта для алгебра-рядка (§3.7, опційно). */
+  function getValue(objects, id) {
+    const o = objects.get(id);
+    if (!o) return '';
+    switch (o.type) {
+      case 'point':
+        return `${o.id} = (${o.wx.toFixed(2)}, ${o.wy.toFixed(2)})`;
+      case 'slider':
+        return `${o.id} = ${o.val}`;
+      case 'distance': {
+        const p1 = objects.get(o.p1), p2 = objects.get(o.p2);
+        if (!p1 || !p2) return `${o.id} = ?`;
+        return `${o.id} = ${Math.hypot(p1.wx - p2.wx, p1.wy - p2.wy).toFixed(3)}`;
+      }
+      case 'angle': {
+        const A = objects.get(o.p1), V = objects.get(o.p2), B = objects.get(o.p3);
+        if (!A || !V || !B) return `${o.id} = ?`;
+        const a1 = Math.atan2(A.wy - V.wy, A.wx - V.wx), a2 = Math.atan2(B.wy - V.wy, B.wx - V.wx);
+        let d = Math.abs(a2 - a1) * 180 / Math.PI;
+        if (d > 180) d = 360 - d;
+        return `${o.id} = ${d.toFixed(1)}\u00b0`;
+      }
+      case 'circle': {
+        const cd = circleDefW(objects, o);
+        return cd ? `${o.id}: r = ${cd.r.toFixed(3)}` : `${o.id} = ?`;
+      }
+      case 'function':
+        return `${o.id}: ${o.expr}`;
+      default:
+        return o.id;
+    }
+  }
+
   function serialize(objects, cs) {
     return { format: 'geomash-scene', version: 1,
       objects: [...objects.values()],
@@ -322,6 +777,7 @@
     lineDef, dlineDef, circleDefW, lineClamp,
     intersectObjs, collectPts, updateDeps, nextId,
     renameRefs, cloneClosure, serialize, deserialize,
+    construct, move, remove, restyle, toolSpec, canConstruct, getValue,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = GeoEngine;

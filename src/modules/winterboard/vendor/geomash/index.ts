@@ -49,9 +49,51 @@ export interface GeoRendererInstance {
   destroy(): void
 }
 
+/** Декларативна команда побудови (§3.1 конструктора). `op` — дискримінатор. */
+export interface GeoCmd {
+  op: string
+  [k: string]: unknown
+}
+
+/** Один інструмент із маніфесту `toolSpec()` — дошка рендерить панель без хардкоду. */
+export interface GeoToolSpecEntry {
+  op: string
+  labelKey: string
+  category: 'point' | 'line' | 'circle' | 'polygon' | 'measure'
+  inputs: Array<{ role: string; accepts: string[]; multi?: boolean }>
+}
+
+/** Патч стилю/підпису/стану об'єкта (§3.4 restyle). */
+export interface GeoStylePatch {
+  color?: string
+  opacity?: number
+  lineWidth?: number
+  labelMode?: 'none' | 'name' | 'nameValue' | 'value' | 'caption'
+  visible?: boolean
+  locked?: boolean
+  caption?: string
+}
+
+type Objs = Map<string, GeoObject>
+
 export interface GeoEngineApi {
-  deserialize(scene: GeoScene | null): { objects: Map<string, GeoObject>; cs: { ox: number; oy: number; sc: number } | null }
-  serialize(objects: Map<string, GeoObject>, cs?: unknown): GeoScene
+  deserialize(scene: GeoScene | null): { objects: Objs; cs: { ox: number; oy: number; sc: number } | null }
+  serialize(objects: Objs, cs?: unknown): GeoScene
+  // ── Конструктор (stage 2, §2.8) — headless execute-сторона Command Pattern ──
+  /** Створити об'єкт із декларативної команди. Повертає НОВУ Map + id нових об'єктів. */
+  construct(objects: Objs, cs: unknown, cmd: GeoCmd): { objects: Objs; created: string[] } | { error: string }
+  /** Посунути вільну точку/повзунок + перерахунок залежних (updateDeps). Похідні → {error:'derived'}. */
+  move(objects: Objs, cs: unknown, id: string, wx: number, wy: number): { objects: Objs; moved: string[] } | { error: string }
+  /** Видалити об'єкт (+ залежний каскад за .deps). withDependents:false і є залежні → {error, dependents}. */
+  remove(objects: Objs, id: string, opts?: { withDependents?: boolean }): { objects: Objs; removed: string[] } | { error: string; dependents?: string[] }
+  /** Патч стилю/підпису/стану (ChangeStyleCmd/ChangeLabelModeCmd headless). */
+  restyle(objects: Objs, id: string, patch: GeoStylePatch): { objects: Objs } | { error: string }
+  /** Декларативний маніфест інструментів — дошка рендерить панель побудови сама. */
+  toolSpec(): GeoToolSpecEntry[]
+  /** Валідація команди на поточній сцені — для enable/disable кнопок. */
+  canConstruct(objects: Objs, cmd: GeoCmd): { ok: true } | { ok: false; reason: string }
+  /** Текстове значення об'єкта для алгебра-рядка (опційно). */
+  getValue(objects: Objs, id: string): string
   [k: string]: unknown
 }
 

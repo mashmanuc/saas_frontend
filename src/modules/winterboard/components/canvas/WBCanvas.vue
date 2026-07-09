@@ -634,17 +634,24 @@
     <template v-for="asset in geomashAssets" :key="`geomash-${asset.id}`">
       <div
         class="wb-geomash-overlay"
-        :class="{ 'wb-geomash-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :class="{
+          'wb-geomash-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
         :data-geomash-id="asset.id"
         :data-testid="`geomash-overlay-${asset.id}`"
-        :style="getOverlayStyle(asset)"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : getOverlayStyle(asset)"
       >
         <GeomashRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
         />
       </div>
     </template>
