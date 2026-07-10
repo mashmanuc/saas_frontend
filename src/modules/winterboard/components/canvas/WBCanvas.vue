@@ -56,6 +56,7 @@
           <v-rect
             v-else-if="KONVA_PROXY_TYPES.has(asset.type)"
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @dragmove="handleAssetLiveTransform(asset, $event)"
             @transform="handleAssetLiveTransform(asset, $event)"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
@@ -649,10 +650,12 @@
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
           :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @update:asset="(updated: any) => emit('asset-update', { ...asset, data: (updated as WBAsset).data } as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
           @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-        />
+          @select-other="(id: string) => wbStore.selectItems([id])"
+        /><!-- ^ scene-рендерер міняє ЛИШЕ data; geometry (x/y/w/h) — зі свіжого store-asset,
+             інакше stale props.x/y у emit клоберить щойно завершений drag (рамка-примара) -->
       </div>
     </template>
 
@@ -675,10 +678,11 @@
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
           :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @update:asset="(updated: any) => emit('asset-update', { ...asset, data: (updated as WBAsset).data } as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
           @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-        />
+          @select-other="(id: string) => wbStore.selectItems([id])"
+        /><!-- ^ data-only merge — див. коментар у geomash-блоці (анти-clobber x/y) -->
       </div>
     </template>
 
@@ -3855,6 +3859,7 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
 
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   const node = e.target
+  liveTransform.value = null // clear drag live-sync — overlay знову читає зі store
   emit('asset-update', {
     ...asset,
     x: node.x(),

@@ -50,6 +50,7 @@ import { registerGraphmash3dInspector, unregisterGraphmash3dInspector } from '..
 import type { Gm3dExprEntry, Gm3dParamEntry, Graphmash3dInspectorBridge } from '../../../board/state/graphmash3dInspectorState'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
 
 interface Gm3dEngine {
   setState(state: { expressions: unknown[]; params?: Record<string, number> }): void
@@ -81,7 +82,23 @@ const props = withDefaults(
   defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; isExpanded?: boolean }>(),
   { isSelected: false, interactive: true, isExpanded: false },
 )
-const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: []; expand: [] }>()
+const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: []; expand: []; 'select-other': [assetId: string] }>()
+
+/**
+ * WYSIWYG при перекритті карток: тіло виділеної 3D-картки (pointer-events:auto,
+ * двигун ловить drag-orbit) перехоплює кліки навіть там, де ЗВЕРХУ намальована
+ * інша картка (невиділені обгортки pointer-events:none — hit-test їх не бачить).
+ * Capture-фаза ДО двигуна: чужа картка зверху → перемкнути виділення на неї.
+ */
+function onStageCapturePointerDown(ev: PointerEvent) {
+  if (!props.isSelected || props.isExpanded) return
+  const other = topmostForeignOverlayAssetId(ev.clientX, ev.clientY, rootEl.value)
+  if (other) {
+    ev.stopPropagation() // двигун (orbit) не має отримати цей клік
+    ev.preventDefault()
+    emit('select-other', other)
+  }
+}
 
 const rootEl = ref<HTMLElement | null>(null)
 const stageEl = ref<HTMLElement | null>(null)
@@ -415,6 +432,8 @@ async function mount() {
     ro = new ResizeObserver(() => eng?.resize?.())
     ro.observe(stageEl.value)
   }
+  // capture-фаза ПЕРЕД listeners двигуна (orbit) — WYSIWYG при перекритті карток
+  stageEl.value?.addEventListener('pointerdown', onStageCapturePointerDown, { capture: true })
 }
 
 onMounted(mount)
@@ -446,6 +465,7 @@ if (typeof window !== 'undefined') window.addEventListener('keydown', _onEsc)
 onBeforeUnmount(() => {
   unregisterGraphmash3dInspector(props.asset.id)
   if (typeof window !== 'undefined') window.removeEventListener('keydown', _onEsc)
+  stageEl.value?.removeEventListener('pointerdown', onStageCapturePointerDown, { capture: true })
   stopAnimPoll()
   try { ro?.disconnect() } catch { /* noop */ }
   ro = null

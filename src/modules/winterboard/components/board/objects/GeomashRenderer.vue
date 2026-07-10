@@ -73,17 +73,18 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { WBAsset } from '../../../types/winterboard'
 import type { GeoObject, GeoRendererInstance, GeoView, GeoCmd, GeoStylePatch, GeoToolSpecEntry } from '../../../vendor/geomash'
-import { registerGeomashInspector, unregisterGeomashInspector } from '../../../board/state/geomashInspectorState'
+import { geomashInspectorState, registerGeomashInspector, unregisterGeomashInspector } from '../../../board/state/geomashInspectorState'
 import type { GeomashInspectorBridge } from '../../../board/state/geomashInspectorState'
 import { geomashToolState, clearGeomashPicks, resetGeomashTool, enterSelectMode } from '../../../board/state/geomashToolState'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
 
 const props = withDefaults(
   defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; isExpanded?: boolean }>(),
   { isSelected: false, interactive: true, isExpanded: false },
 )
-const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: []; expand: [] }>()
+const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; delete: []; expand: []; 'select-other': [assetId: string] }>()
 
 const rootEl = ref<HTMLElement | null>(null)
 const stageEl = ref<HTMLElement | null>(null)
@@ -179,7 +180,7 @@ function bridgeValueOf(id: string): string {
 
 /* ── Canvas-click побудова (Stage B) ─────────────────────────── */
 const stageInteractive = computed(() =>
-  !!props.isSelected && !props.asset.locked)
+  !!props.isSelected && !props.asset.locked && props.interactive !== false)
 
 const dragging = ref(false)
 const hoverId = ref<string | null>(null)
@@ -340,12 +341,18 @@ function onDragUp() {
   dragging.value = false
 }
 
-/** Hover-підсвітка об'єкта під курсором (миша/перо; на тачі нема hover). */
+/** Hover-підсвітка об'єкта під курсором (миша/перо; на тачі нема hover).
+ *  rAF-тротл: hitTest+redraw максимум раз на кадр (сцена може мати десятки об'єктів). */
+let _hoverRaf = 0
 function onStagePointerMove(ev: PointerEvent) {
-  if (!props.isSelected || _dragId || ev.pointerType === 'touch') return
-  const { sx, sy } = worldFromEvent(ev)
-  const h = hitTestAt(sx, sy)
-  if (h !== hoverId.value) { hoverId.value = h; redraw() }
+  if (!props.isSelected || _dragId || ev.pointerType === 'touch' || _hoverRaf) return
+  const { clientX, clientY } = ev
+  _hoverRaf = requestAnimationFrame(() => {
+    _hoverRaf = 0
+    const { sx, sy } = worldFromEvent({ clientX, clientY } as PointerEvent)
+    const h = hitTestAt(sx, sy)
+    if (h !== hoverId.value) { hoverId.value = h; redraw() }
+  })
 }
 function onStagePointerLeave() {
   if (hoverId.value) { hoverId.value = null; redraw() }
@@ -360,6 +367,7 @@ const ctxMenuColor = computed(() => {
 })
 function onStageContextMenu(ev: MouseEvent) {
   if (!props.isSelected || props.asset.locked) return
+  if (!props.isExpanded && topmostForeignOverlayAssetId(ev.clientX, ev.clientY, rootEl.value)) return
   const p = worldFromEvent(ev)
   const hit = hitTestAt(p.sx, p.sy)
   if (!hit) { ctxMenu.value = null; return }
@@ -383,6 +391,13 @@ function closeCtx() { if (ctxMenu.value) ctxMenu.value = null }
 
 function onStagePointerDown(ev: PointerEvent) {
   if (!props.isSelected || props.asset.locked) return
+  // WYSIWYG при перекритті: якщо у цій точці ЗВЕРХУ намальована чужа картка
+  // (не бачить hit-test через pointer-events:none) — клік належить ЇЙ:
+  // перемикаємо виділення на неї, не редагуємо геометрію «крізь» неї
+  if (!props.isExpanded) {
+    const other = topmostForeignOverlayAssetId(ev.clientX, ev.clientY, rootEl.value)
+    if (other) { emit('select-other', other); return }
+  }
   pointerCoarse = ev.pointerType === 'touch'
   closeCtx()
   const entry = geomashToolState.activeEntry
@@ -412,7 +427,16 @@ function onStagePointerDown(ev: PointerEvent) {
   // multi (polygon/polyline) — авто-створюємо точку на кліку; завершення дабл-кліком
   if (entry.inputs.some((i) => i.multi)) {
     const pid = resolvePointAt(sx, sy, wx, wy)
-    if (pid) geomashToolState.poly.push(pid)
+    if (!pid) return
+    const poly = geomashToolState.poly
+    // замикання кліком по ПЕРШІЙ точці (як у застосунку: close polygon on first point)
+    if (entry.op === 'polygon' && poly.length >= 3 && pid === poly[0]) {
+      bridgeConstruct({ op: entry.op, pts: [...poly] } as GeoCmd)
+      clearGeomashPicks()
+      return
+    }
+    // dedupe: 2-й pointerdown дабл-кліку снапиться на щойно створену точку — не дублювати
+    if (poly[poly.length - 1] !== pid) poly.push(pid)
     return
   }
   // об'єктні інструменти — заповнюємо ролі по порядку (auto-create точок)
@@ -440,6 +464,8 @@ function onStageDblClick(ev: MouseEvent) {
   if (!entry || !props.isSelected || !entry.inputs.some((i) => i.multi)) return
   ev.stopPropagation()
   const pts = [...geomashToolState.poly]
+  // страховка від хвостового дубля (2-й pointerdown дабл-кліку)
+  while (pts.length > 1 && pts[pts.length - 1] === pts[pts.length - 2]) pts.pop()
   const min = entry.op === 'polyline' ? 2 : 3
   if (pts.length >= min) { bridgeConstruct({ op: entry.op, pts } as GeoCmd); clearGeomashPicks() }
 }
@@ -520,7 +546,14 @@ watch(() => JSON.stringify(scene.value), (json) => {
 // Правий інспектор — bridge при виділенні (дзеркало graph_calculator)
 watch(() => props.isSelected, (sel) => {
   if (sel) { registerGeomashInspector(props.asset.id, _bridge); enterSelectMode() }
-  else { unregisterGeomashInspector(props.asset.id); resetGeomashTool() }
+  else {
+    // reset tool-state ЛИШЕ якщо реєстрація ще наша: інша geomash-картка могла вже
+    // зареєструватись (порядок watcher-ів між інстансами не гарантований) —
+    // безумовний reset вимикав би її щойно увімкнений select-режим
+    const wasMine = geomashInspectorState.assetId === props.asset.id
+    unregisterGeomashInspector(props.asset.id)
+    if (wasMine) resetGeomashTool()
+  }
 }, { immediate: true })
 
 // підсвітка виділення/pending змінилась → перемалювати
@@ -533,13 +566,15 @@ watch(() => props.isExpanded, () => { requestAnimationFrame(() => { sizeCanvas()
 if (typeof window !== 'undefined') window.addEventListener('keydown', onEsc)
 
 onBeforeUnmount(() => {
+  const wasMine = geomashInspectorState.assetId === props.asset.id
   unregisterGeomashInspector(props.asset.id)
-  if (props.isSelected) resetGeomashTool()
+  if (wasMine) resetGeomashTool()
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', onEsc)
     window.removeEventListener('pointermove', onDragMove)
     window.removeEventListener('pointerup', onDragUp)
   }
+  if (_hoverRaf) { cancelAnimationFrame(_hoverRaf); _hoverRaf = 0 }
   try { ro?.disconnect() } catch { /* noop */ }
   ro = null
   try { rr?.destroy?.() } catch { /* noop */ }
