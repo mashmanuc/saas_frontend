@@ -66,6 +66,7 @@
             :sticky="asset"
             :is-selected="wbStore.selectedIds.includes(asset.id)"
             :scale="props.zoom"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
             @select="handleStickySelect"
             @drag-end="handleStickyDragEnd"
             @transform-end="handleStickyTransformEnd"
@@ -77,6 +78,7 @@
             :asset="asset"
             :is-selected="wbStore.selectedIds.includes(asset.id)"
             :scale="props.zoom"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
             @select="handleDocViewerSelect"
             @drag-end="handleDocViewerDragEnd"
             @transform-end="handleDocViewerTransformEnd"
@@ -1477,9 +1479,21 @@ const activeTextObject = computed(() => {
 })
 
 // Close overlay if object is deleted (watch selectedIds instead of deep pages — no perf cost)
-watch(() => wbStore.selectedIds, () => {
+watch(() => wbStore.selectedIds, (ids) => {
   if (activeTextObjectId.value && !wbStore.getObjectById(activeTextObjectId.value)) {
     activeTextObjectId.value = null
+  }
+  // GHOST FIX (delete): v-transformer рендериться за локальним selectedNode. Видалення
+  // (toolbar-🗑 → deleteSelected, картка × → deleteAsset) чистить store.selectedIds, але
+  // НЕ selectedNode → трансформер лишає рамку-примару над знищеною нодою. Знімаємо, коли
+  // виділення спорожніло АБО виділена нода вже не існує в стані. Покриває всі delete-шляхи.
+  if (selectedNode.value) {
+    const nid = selectedNode.value.id()
+    if (ids.length === 0 || !wbStore.getObjectById(nid)) {
+      selectedNode.value = null
+      const tr = transformerRef.value?.getNode?.()
+      if (tr) tr.nodes([])
+    }
   }
 })
 

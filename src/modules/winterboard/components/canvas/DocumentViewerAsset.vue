@@ -59,11 +59,16 @@ interface Props {
   asset: WBAsset
   isSelected?: boolean
   scale?: number
+  /** false коли активний НЕ select-інструмент (олівець/маркер/…) → нода не ловить
+   *  pointer, щоб штрих малювався ПОВЕРХ документа, а не тягнув його (дзеркало
+   *  KONVA_PROXY_TYPES: draggable/listening лише в select-режимі). */
+  interactive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
   scale: 1,
+  interactive: true,
 })
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
@@ -169,7 +174,10 @@ const groupConfig = computed(() => ({
   y: props.asset.y,
   width: props.asset.w,
   height: props.asset.h,
-  draggable: !props.asset.locked,
+  draggable: props.interactive && !props.asset.locked,
+  // не select-інструмент → listening:false: pointerdown падає на stage-handler
+  // малювання (штрих поверх PDF), а не на цю ноду (drag документа)
+  listening: props.interactive,
   id: props.asset.id,
   name: `asset-${props.asset.id}`,
   // Clip region gives Transformer explicit bounding box for resize

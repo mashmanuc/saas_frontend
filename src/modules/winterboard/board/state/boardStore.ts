@@ -2021,6 +2021,13 @@ export const useWBStore = defineStore('wb-board', {
         assets: page.assets.filter((_, i) => i !== idx),
       }
 
+      // Прибрати з виділення — інакше Konva-transformer тримає рамку-примару над
+      // видаленою нодою, поки юзер не клацне по порожньому (deleteSelected це вже робить).
+      if (this.selectedIds.includes(assetId)) {
+        this.selectedIds = this.selectedIds.filter((id) => id !== assetId)
+        if (this.selectedIds.length === 0) this.selectionRect = null
+      }
+
       this.markDirty()
       _emitOperation({
         op_type: 'asset_delete',

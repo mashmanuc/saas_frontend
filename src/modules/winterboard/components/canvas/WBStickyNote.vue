@@ -25,11 +25,15 @@ interface Props {
   sticky: WBAsset
   isSelected?: boolean
   scale?: number
+  /** false коли активний НЕ select-інструмент → нода не ловить pointer, штрих
+   *  малюється поверх нотатки (дзеркало DocumentViewerAsset/KONVA_PROXY_TYPES). */
+  interactive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
   scale: 1,
+  interactive: true,
 })
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
@@ -55,7 +59,8 @@ const groupConfig = computed(() => ({
   y: props.sticky.y,
   width: props.sticky.w,
   height: props.sticky.h,
-  draggable: !props.sticky.locked,
+  draggable: props.interactive && !props.sticky.locked,
+  listening: props.interactive,
   id: props.sticky.id,
   name: 'sticky',
 }))

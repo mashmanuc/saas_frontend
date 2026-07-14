@@ -49,6 +49,36 @@
       </div>
     </template>
 
+    <!-- Виділено PDF/DOCX/PPTX на дошці → сторінки цього документа (перетяг як у «Матеріалах») -->
+    <template v-else-if="selectedDocItem">
+      <!-- A−/A+ калібрує величину плитки → auto-fill рефлоує колонки, решта в скролі -->
+      <div class="insp-zoom-bar">
+        <button class="insp-zoom-btn" :disabled="zoomIdx === 0" title="Менші сторінки" @click="zoomOut">A−</button>
+        <span class="insp-zoom-label">{{ ZOOM_LABELS[zoomIdx] }}</span>
+        <button class="insp-zoom-btn" :disabled="zoomIdx === ZOOM_LEVELS.length - 1" title="Більші сторінки" @click="zoomIn">A+</button>
+      </div>
+      <div class="content-sidebar__doc-pages" :style="{ '--wb-doc-thumb': docThumbPx + 'px' }">
+        <PresentationSlideSelector
+          v-if="selectedDocKind === 'pptx'"
+          :item="selectedDocItem"
+          @close="closeDocPages"
+          @retry="() => {}"
+        />
+        <DocxPageSelector
+          v-else-if="selectedDocKind === 'docx'"
+          :item="selectedDocItem"
+          @close="closeDocPages"
+          @retry="() => {}"
+        />
+        <PdfPageSelector
+          v-else
+          :item="selectedDocItem"
+          @close="closeDocPages"
+          @retry="() => {}"
+        />
+      </div>
+    </template>
+
     <!-- Normal sidebar content (tabs + materials/tools) -->
     <template v-else>
 
@@ -305,6 +335,9 @@ import { useGroupSidebar } from '../../composables/useGroupSidebar'
 import { useWBStore } from '../../board/state/boardStore'
 import { fetchFoldersTree } from '../../api/library'
 import ContentSidebarItem from './ContentSidebarItem.vue'
+import PdfPageSelector from './PdfPageSelector.vue'
+import DocxPageSelector from './DocxPageSelector.vue'
+import PresentationSlideSelector from './PresentationSlideSelector.vue'
 import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 // NMT3D (2026-05-21): 21 parametric 3D stereometry templates (replaces Phase O SolidsTray)
 import Nmt3dTray from './Nmt3dTray.vue'
@@ -411,6 +444,35 @@ const hasActiveInspector = computed(() =>
      graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge ||
      quadUiState.bridge || geomashInspectorState.bridge || graphmash3dInspectorState.bridge),
 )
+
+// ── Виділено PDF/DOCX на дошці → права панель показує сторінки ЦЬОГО документа ──
+// (жодної нової логіки drag/asset — перевикористання PdfPageSelector/DocxPageSelector;
+//  матч board-asset ↔ матеріал за content_ref.content_id === item.content_item_id,
+//  див. useContentDrop.ts:778). Знято виділення → назад у «Матеріали».
+const selectedDocAsset = computed(() => {
+  const ids = wbStore.selectedIds
+  if (!ids || ids.length !== 1) return null
+  const a = wbStore.currentAssets.find(x => x.id === ids[0])
+  if (!a || a.type !== 'document_viewer') return null
+  const ct = (a.content_ref as { content_type?: string } | undefined)?.content_type
+  return (ct === 'pdf' || ct === 'document' || ct === 'presentation') ? a : null
+})
+const selectedDocItem = computed<AllowedContentItem | null>(() => {
+  const a = selectedDocAsset.value
+  const cid = (a?.content_ref as { content_id?: number } | undefined)?.content_id
+  if (cid == null) return null
+  return sidebar.items.value.find(it =>
+    it.content_item_id === cid || (it as { content_id?: number }).content_id === cid || it.id === cid,
+  ) ?? null
+})
+const selectedDocKind = computed<'pdf' | 'docx' | 'pptx'>(() => {
+  const ct = (selectedDocAsset.value?.content_ref as { content_type?: string } | undefined)?.content_type
+  return ct === 'document' ? 'docx' : ct === 'presentation' ? 'pptx' : 'pdf'
+})
+/** Розмір плитки сторінки (px) від A−/A+ zoom → грид auto-fill рефлоує колонки. */
+const docThumbPx = computed(() => Math.round(ZOOM_LEVELS[zoomIdx.value] * 82))
+/** Кнопка «закрити» у селекторі → зняти виділення → панель повернеться в «Матеріали». */
+function closeDocPages(): void { wbStore.clearSelection() }
 
 // ── Folder navigation (library mode only) ──
 const selectedFolderId = ref<number | null>(null)
@@ -1128,5 +1190,28 @@ function onDrop(e: DragEvent) {
 /* Sidebar має приховувати x-overflow при zoom > 100% */
 .content-sidebar {
   overflow-x: hidden;
+}
+
+/* Повнопанельний режим сторінок документа — на всю висоту сайдбару (не 400px-cap
+   як у вбудованому в список матеріалів). --wb-doc-thumb керує величиною плитки. */
+.content-sidebar__doc-pages {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.content-sidebar__doc-pages :deep(.pdf-selector),
+.content-sidebar__doc-pages :deep(.docx-selector),
+.content-sidebar__doc-pages :deep(.slide-selector) {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-top: none;
+}
+/* auto-fill за величиною плитки (var) → рефлоу колонок при A−/A+; fallback = 3 колонки */
+.content-sidebar__doc-pages :deep(.pdf-selector__grid),
+.content-sidebar__doc-pages :deep(.docx-selector__grid),
+.content-sidebar__doc-pages :deep(.slide-selector__grid) {
+  grid-template-columns: repeat(auto-fill, minmax(var(--wb-doc-thumb, 88px), 1fr));
 }
 </style>
