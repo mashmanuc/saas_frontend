@@ -7965,6 +7965,8 @@
       "showPagePanel": "Show page panel",
       "bgColor": "Page background",
       "bgColorShort": "BG",
+      "bgColorAllPages": "All pages",
+      "bgColorAllPagesTitle": "Apply background to all board pages",
       "syncError": "Sync error",
       "followMode": "Follow mode",
       "publish": "Publish lesson",

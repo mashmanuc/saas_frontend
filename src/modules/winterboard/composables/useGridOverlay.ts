@@ -26,13 +26,17 @@ export interface GridOption {
   icon: string
 }
 
+// 'coordinate' ПРИБРАНО з меню (2026-07): рендерилось як велика клітинка 40px БЕЗ осей
+// (див. gridTypeToSettings — «axes can be added later», не зроблено) → дублікат 'large-grid'
+// з оманливим прев'ю. Справжня координатна площина доступна як інструмент. Тип лишаємо у
+// GridType (backward-compat зі збереженими значеннями/ops), але не пропонуємо у виборі;
+// legacy 'coordinate' плавно мапиться на 'large-grid' у loadGridType.
 export const GRID_OPTIONS: GridOption[] = [
   { id: 'none',        nameKey: 'winterboard.grid.none',       icon: 'none' },
   { id: 'small-grid',  nameKey: 'winterboard.grid.smallGrid',  icon: 'small-grid' },
   { id: 'large-grid',  nameKey: 'winterboard.grid.largeGrid',  icon: 'large-grid' },
   { id: 'dots',        nameKey: 'winterboard.grid.dots',       icon: 'dots' },
   { id: 'ruled',       nameKey: 'winterboard.grid.ruled',      icon: 'ruled' },
-  { id: 'coordinate',  nameKey: 'winterboard.grid.coordinate', icon: 'coordinate' },
 ]
 
 const STORAGE_PREFIX = 'wb_grid_'
@@ -40,6 +44,8 @@ const STORAGE_PREFIX = 'wb_grid_'
 function loadGridType(sessionId: string): GridType {
   try {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}${sessionId}`)
+    // Legacy: 'coordinate' прибрано з опцій → мапимо на 'large-grid' (візуально те саме).
+    if (saved === 'coordinate') return 'large-grid'
     if (saved && GRID_OPTIONS.some(o => o.id === saved)) {
       return saved as GridType
     }
@@ -111,8 +117,18 @@ export function useGridOverlay(sessionId: string) {
     },
   )
 
-  function setGrid(type: GridType): void {
+  function setGrid(type: GridType, applyToAll = false): void {
+    // Зміна gridType → watch застосує до ПОТОЧНОЇ сторінки + збереже session-пref.
     gridType.value = type
+    // «Усі сторінки»: застосувати той самий стиль до КОЖНОЇ сторінки (per-page grid_update
+    // op через updatePageGrid — LAW-сумісно, як background_update). Поточна сторінка отримає
+    // ще один (ідемпотентний) update від watch — це один зайвий op на клік, не шторм.
+    if (applyToAll) {
+      const settings = gridTypeToSettings(type)
+      for (const page of wbStore.pages) {
+        if (page.id) wbStore.updatePageGrid(page.id, settings)
+      }
+    }
   }
 
   function toggleGrid(): void {

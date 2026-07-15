@@ -628,7 +628,7 @@
         <WBGridButton
           :model-value="gridOverlay.gridType.value"
           :is-grid-active="gridOverlay.isGridActive.value"
-          @update:model-value="gridOverlay.setGrid"
+          @update:model-value="onGridTypeChange"
         />
         <!-- Phase 35 B5: Grid size dropdown (visible when grid active) -->
         <select
@@ -653,9 +653,16 @@
             class="wb-bg-color__input"
             :value="store.currentPageBgColor"
             :title="t('winterboard.room.bgColor', 'Фон сторінки')"
-            @input="onBgColorChange"
+            @input="onBgColorInput"
             @change="onBgColorChange"
           />
+          <label
+            class="wb-bg-color__all"
+            :title="t('winterboard.room.bgColorAllPagesTitle', 'Застосувати фон до всіх сторінок дошки')"
+          >
+            <input type="checkbox" class="wb-bg-color__all-cb" v-model="applyBgToAllPages" />
+            <span class="wb-bg-color__all-text">{{ t('winterboard.room.bgColorAllPages', 'Усі сторінки') }}</span>
+          </label>
         </div>
         <div class="wb-page-nav__sep"></div>
         <!-- Toggle панелі мініатюр -->
@@ -977,7 +984,7 @@ import OnboardingHint from '@/components/OnboardingHint.vue'
 import { useOnboardingHints, TutorHintId } from '@/composables/useOnboardingHints'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
-import { useGridOverlay } from '../composables/useGridOverlay'
+import { useGridOverlay, type GridType } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { audioManager } from '../utils/audioManager'
@@ -2450,10 +2457,40 @@ function onGridSizeChange(e: Event) {
   if (store.setGridSize) store.setGridSize(val)
 }
 
-// Phase 35 B6: Background color change
-function onBgColorChange(e: Event) {
+// Phase 35 B6: Background color change.
+// Тогл «Усі сторінки» (керує і кольором фону, і типом сітки): live-перетяг (@input) завжди
+// міняє ЛИШЕ поточну сторінку (прев'ю). Фінальний коміт (@change) — усі сторінки, якщо
+// чекбокс увімкнено (на @change, не @input, щоб не плодити ops-шторм). Кожна сторінка →
+// власний background_update op через setBackgroundColor(color, pageId) (LAW-сумісно).
+const BG_ALL_PAGES_KEY = 'wb_bg_apply_all_pages'
+const applyBgToAllPages = ref<boolean>(
+  (() => { try { return localStorage.getItem(BG_ALL_PAGES_KEY) === '1' } catch { return false } })(),
+)
+watch(applyBgToAllPages, (v) => {
+  try { localStorage.setItem(BG_ALL_PAGES_KEY, v ? '1' : '0') } catch { /* quota — ignore */ }
+})
+
+function onBgColorInput(e: Event) {
+  // Live-прев'ю під час перетягування пікера — лише поточна сторінка.
   const color = (e.target as HTMLInputElement).value
-  if (store.setBackgroundColor) store.setBackgroundColor(color)
+  store.setBackgroundColor?.(color)
+}
+
+function onBgColorChange(e: Event) {
+  // Фінальний коміт обраного кольору.
+  const color = (e.target as HTMLInputElement).value
+  if (!store.setBackgroundColor) return
+  if (applyBgToAllPages.value) {
+    for (const page of store.pages) store.setBackgroundColor(color, page.id)
+  } else {
+    store.setBackgroundColor(color)
+  }
+}
+
+// Тип сітки/фон-патерн — той самий чекбокс «Усі сторінки»: увімкнено → стиль лягає на всі
+// сторінки (per-page grid_update ops у setGrid), інакше — лише поточна (як раніше).
+function onGridTypeChange(type: GridType): void {
+  gridOverlay.setGrid(type, applyBgToAllPages.value)
 }
 
 function handleZoomOut(): void {
@@ -3794,6 +3831,24 @@ watch(() => store.workspaceName, (name) => {
   padding: 1px;
   cursor: pointer;
   background: none;
+}
+.wb-bg-color__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  color: var(--wb-text-secondary, #6b7280);
+}
+.wb-bg-color__all-cb {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--wb-brand, #2563eb);
+}
+.wb-bg-color__all-text {
+  white-space: nowrap;
 }
 
 .wb-page-btn {

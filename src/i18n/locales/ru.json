@@ -7156,6 +7156,8 @@
       "publish": "Опубликовать урок",
       "bgColor": "Фон страницы",
       "bgColorShort": "BG",
+      "bgColorAllPages": "Все страницы",
+      "bgColorAllPagesTitle": "Применить фон ко всем страницам доски",
       "materials": "Материалы"
     },
     "sizePresets": {
