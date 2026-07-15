@@ -9311,7 +9311,12 @@
       "successTitle": "Lessons received!",
       "successHint": "{n} lessons added to \"My lessons\" — they are yours to edit and teach.",
       "goToMyLessons": "Go to my lessons",
-      "quickBtn": "Hand over this lesson (one-time code)"
+      "quickBtn": "Hand over this lesson (one-time code)",
+      "shareMenu": "Share",
+      "optShow": "👁 Show lesson",
+      "optShowHint": "View link — the colleague just looks at it (free).",
+      "optTransfer": "🎁 Hand over a copy",
+      "optTransferHint": "One-time code — the colleague gets their OWN copy to work with."
     }
   },
   "replay": {

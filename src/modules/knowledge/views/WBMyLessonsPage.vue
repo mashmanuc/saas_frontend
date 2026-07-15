@@ -270,25 +270,12 @@
                       ? '...'
                       : $t('knowledge.lesson.prepare.button') }}
                   </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    :title="$t('knowledge.lesson.share.shareLesson')"
-                    :disabled="sharingInProgress[lesson.id]"
-                    @click="handleShare(lesson)"
-                  >
-                    🔗
-                  </button>
-                  <!-- LessonGrant: одноразовий код передачі цього уроку (1 клік) -->
-                  <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    :title="$t('knowledge.grants.quickBtn')"
-                    :disabled="quickGrantingId === lesson.id"
-                    @click="quickGrant(lesson)"
-                  >
-                    {{ quickGrantingId === lesson.id ? '⏳' : '🎁' }}
-                  </button>
+                  <!-- Одна кнопка «Поділитися ▾»: 👁 Показати (демо-лінк) / 🎁 Передати копію (grant) -->
+                  <ShareLessonMenu
+                    :busy="sharingInProgress[lesson.id] || quickGrantingId === lesson.id"
+                    @share="handleShare(lesson)"
+                    @transfer="quickGrant(lesson)"
+                  />
                   <!-- Move to folder (Phase 25 BUG-4) -->
                   <MoveToFolderDropdown
                     :lesson-id="lesson.id"
@@ -754,6 +741,7 @@ import apiClient from '@/utils/apiClient'
 import { useNotifyStore } from '@/stores/notifyStore'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
 import GrantTransferModal from '../components/GrantTransferModal.vue'
+import ShareLessonMenu from '../components/ShareLessonMenu.vue'
 import { grantsApi, type LessonGrant } from '../api/grantsApi'
 
 // LessonGrant (2026-07): модалка «Передати уроки»
