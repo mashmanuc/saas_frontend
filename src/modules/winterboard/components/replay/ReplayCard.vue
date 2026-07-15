@@ -11,7 +11,15 @@
     @dragstart="onDragStart"
   >
     <div class="replay-card__thumb">
-      <div class="replay-card__thumb-placeholder">🎬</div>
+      <img
+        v-if="replay.thumbnail_url && !thumbFailed"
+        class="replay-card__thumb-img"
+        :src="replay.thumbnail_url"
+        :alt="replay.title || t('winterboard.replayList.untitled')"
+        loading="lazy"
+        @error="thumbFailed = true"
+      />
+      <div v-else class="replay-card__thumb-placeholder">🎬</div>
       <span v-if="durationLabel" class="replay-card__duration">
         {{ durationLabel }}
       </span>
@@ -190,6 +198,9 @@ const PURGE_GRACE_DAYS = 7
 
 const menuBtnRef = ref<HTMLButtonElement | null>(null)
 
+// Прев'ю не завантажилось (битий URL/видалений файл) → 🎬-плейсхолдер.
+const thumbFailed = ref(false)
+
 // ─── Formatting ─────────────────────────────────────────────────────
 
 const durationLabel = computed(() => formatDuration(props.replay.duration_ms))
@@ -354,6 +365,14 @@ const vClickOutside = {
   overflow: hidden;
   border-top-left-radius: var(--radius-lg, 12px);
   border-top-right-radius: var(--radius-lg, 12px);
+}
+
+.replay-card__thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #fff; /* рендер прев'ю на білому — уникає темної рамки в dark mode */
 }
 
 .replay-card__thumb-placeholder {

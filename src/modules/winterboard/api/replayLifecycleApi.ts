@@ -23,6 +23,8 @@ export interface Replay {
   public_token: string | null
   folder: string | null
   view_count: number
+  /** Перший кадр запису (BE рендер start_state_ref). '' = нема прев'ю. */
+  thumbnail_url?: string
   created_at?: string
   updated_at?: string
   archived_at: string | null
