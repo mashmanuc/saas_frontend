@@ -21,6 +21,7 @@ import {
 } from '../utils/graphCalculatorUtils'
 import { useWBStore } from '../board/state/boardStore'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
+import { GraphCalc } from '../vendor/graph_calculator/graph-calculator.js'
 import type { WBAsset } from '../types/winterboard'
 
 describe('extractParams (AST-based, PARSER-INV)', () => {
@@ -869,5 +870,54 @@ describe('boardStore.graphSetParamRange (HARD SPEC: range_set is snapshot)', () 
     store.graphSetParamRange('gc-1', 'a', { min: -1, max: 1, step: 0.01 })
     flushPendingUpdates()
     expect(ops.filter((o) => o.op_type === 'asset_update').length).toBe(1)
+  })
+})
+
+// ─── Bare expression → explicitY (classify, 2026-07-15) ─────────────────
+// Голий вираз без '=' (`x^2`) класифікується як y = <вираз> (Desmos-style).
+// src НЕ переписується — класифікація derived, replay-детермінована.
+describe('GraphCalc.classify — bare expression as y = f(x)', () => {
+  it('x^2 → explicitY (крива малюється без явного y=)', () => {
+    const r = GraphCalc.classify('x^2', [])
+    expect(r.kind).toBe('explicitY')
+    expect(r.src).toBe('x^2') // src користувача не переписано
+  })
+
+  it('sin(x), 2x+1, константа → explicitY', () => {
+    expect(GraphCalc.classify('sin(x)', []).kind).toBe('explicitY')
+    expect(GraphCalc.classify('2x + 1', []).kind).toBe('explicitY')
+    expect(GraphCalc.classify('5', []).kind).toBe('explicitY') // горизонтальна лінія
+  })
+
+  it('bare-вираз еквівалентний y = <вираз> при обчисленні', () => {
+    const bare = GraphCalc.classify('x^2 + 1', [])
+    const eq = GraphCalc.classify('y = x^2 + 1', [])
+    expect(bare.kind).toBe('explicitY')
+    expect(eq.kind).toBe('explicitY')
+    for (const x of [-2, 0, 3.5]) {
+      expect(GraphCalc.evalAst(bare.ast, { x })).toBe(GraphCalc.evalAst(eq.ast, { x }))
+    }
+  })
+
+  it('невідомий ідентифікатор → needsParam (шлях слайдера)', () => {
+    const r = GraphCalc.classify('a*x^2', [])
+    expect(r.kind).toBe('needsParam')
+    expect(r.unknown).toEqual(['a'])
+    // з відомим параметром → explicitY
+    expect(GraphCalc.classify('a*x^2', ['a']).kind).toBe('explicitY')
+  })
+
+  it('вираз із y без "=" лишається invalid (немає що розвʼязувати)', () => {
+    expect(GraphCalc.classify('y^2', []).kind).toBe('invalid')
+    expect(GraphCalc.classify('x^2 + y^2', []).kind).toBe('invalid')
+  })
+
+  it('регрес: рівняння/точки класифікуються як раніше', () => {
+    expect(GraphCalc.classify('y = x^2', []).kind).toBe('explicitY')
+    expect(GraphCalc.classify('x = y^2', []).kind).toBe('explicitX')
+    expect(GraphCalc.classify('a = 3', []).kind).toBe('param')
+    expect(GraphCalc.classify('(x)^2 + (y)^2 = 4', []).kind).toBe('implicit')
+    expect(GraphCalc.classify('(1, 2)', []).kind).toBe('point')
+    expect(GraphCalc.classify('x^^2', []).kind).toBe('invalid') // парсер-помилка
   })
 })

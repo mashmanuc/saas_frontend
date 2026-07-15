@@ -1,5 +1,6 @@
 // Graph Calculator — engine: parser, evaluator, canvas renderer
-// Supports: y = f(x), x = f(y), implicit equations f(x,y) = g(x,y),
+// Supports: y = f(x), x = f(y), bare expressions (x^2 → y = x^2),
+//           implicit equations f(x,y) = g(x,y),
 //           parameters with sliders (a = 1), points (2, 3).
 // Drawn on HTMLCanvas. Marching squares for implicit curves.
 (function () {
@@ -1184,6 +1185,19 @@
         return { kind: 'inequality', op: ast.ops[0], lhs: ast.operands[0], rhs: ast.operands[1], src };
       }
       return { kind: 'inequality', test: ast, src };
+    }
+    // Голий вираз без '=' (наприклад `x^2`) → трактуємо як `y = <вираз>`
+    // (Desmos-style; те саме у board graph_calculator, 2026-07-15). src НЕ
+    // переписуємо. Лише обчислювані вузли; `y` (нема що розв'язувати) та
+    // `i` (уявна одиниця — complexPoint-гілка вище) лишаються invalid.
+    if (['num', 'ident', 'unary', 'binop', 'call'].includes(ast.kind)) {
+      const fv = freeVars(ast);
+      if (!fv.has('y') && !fv.has('i')) {
+        const unknown = [];
+        for (const v of fv) if (v !== 'x' && !known.has(v)) unknown.push(v);
+        if (unknown.length) return { kind: 'needsParam', unknown, src, ast, target: 'y' };
+        return { kind: 'explicitY', ast, src };
+      }
     }
     return { kind: 'invalid', error: 'Очікується рівняння або точка', src };
   }

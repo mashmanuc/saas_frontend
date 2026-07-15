@@ -1,6 +1,7 @@
 // Graph Calculator — engine: parser, evaluator, canvas renderer
 // Supports: y = f(x), x = f(y), implicit equations f(x,y) = g(x,y),
-//           parameters with sliders (a = 1), points (2, 3).
+//           parameters with sliders (a = 1), points (2, 3),
+//           bare expressions without '=' (x^2 → y = x^2; 2026-07-15, classify).
 // Drawn on HTMLCanvas. Marching squares for implicit curves.
 //
 // Phase G (winterboard integration 2026-05-05):
@@ -321,6 +322,19 @@ const __GC = (function () {
       for (const v of fv) if (v !== 'x' && v !== 'y' && !known.has(v)) unknown.push(v);
       if (unknown.length) return { kind: 'needsParam', unknown, src, lhs: ast.lhs, rhs: ast.rhs, isEq: true };
       return { kind: 'implicit', lhs: ast.lhs, rhs: ast.rhs, src };
+    }
+    // Bare expression без '=' (наприклад `x^2`) → трактуємо як `y = <вираз>`
+    // (Desmos-style). src користувача НЕ переписуємо — класифікація derived
+    // з того самого рядка, тож ops/replay детерміновані. Вирази з `y` у
+    // вільних змінних лишаються invalid: без '=' немає що розв'язувати.
+    {
+      const fv = freeVars(ast);
+      if (!fv.has('y')) {
+        const unknown = [];
+        for (const v of fv) if (v !== 'x' && !known.has(v)) unknown.push(v);
+        if (unknown.length) return { kind: 'needsParam', unknown, src, ast, target: 'y' };
+        return { kind: 'explicitY', ast, src };
+      }
     }
     return { kind: 'invalid', error: 'Очікується рівняння або точка', src };
   }
