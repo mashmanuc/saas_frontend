@@ -640,25 +640,8 @@ const _gcBridge = reactive<GraphCalcInspectorBridge>({
   toggleExpand: () => emit('expand'),
 })
 
-// Keep bridge state in sync with reactive refs + computeds.
-watchEffect(() => {
-  _gcBridge.paramEntries = paramEntries.value.map((p) => ({ ...p }))
-  _gcBridge.paramExpanded = { ...paramExpanded.value }
-  _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
-    id: e.id,
-    src: e.src,
-    color: e.color,
-    hidden: e.hidden,
-    isParam: e.isParam,
-  }))
-  _gcBridge.slashPopup = slashPopup.value ? { ...slashPopup.value } : null
-  _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((t) => ({
-    id: t.id,
-    label: t.label,
-    src: t.src,
-  }))
-  _gcBridge.isExpanded = props.isExpanded ?? false
-})
+// Keep bridge state in sync — watchEffect живе нижче, після оголошень
+// slashPopup/slashFilteredTemplates (TDZ: синхронний перший запуск).
 
 // Register / unregister when selection changes.
 watch(() => props.isSelected, (sel) => {
@@ -1198,6 +1181,28 @@ const slashFilteredTemplates = computed<readonly SlashTemplate[]>(() => {
     t.id.toLowerCase().includes(q) ||
     t.keyword.toLowerCase().includes(q),
   )
+})
+
+// Keep bridge state in sync with reactive refs + computeds. Оголошено ПІСЛЯ
+// slashPopup/slashFilteredTemplates: watchEffect запускається синхронно при
+// створенні, розміщення вище цих const → TDZ ReferenceError на mount.
+watchEffect(() => {
+  _gcBridge.paramEntries = paramEntries.value.map((p) => ({ ...p }))
+  _gcBridge.paramExpanded = { ...paramExpanded.value }
+  _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
+    id: e.id,
+    src: e.src,
+    color: e.color,
+    hidden: e.hidden,
+    isParam: e.isParam,
+  }))
+  _gcBridge.slashPopup = slashPopup.value ? { ...slashPopup.value } : null
+  _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((t) => ({
+    id: t.id,
+    label: t.label,
+    src: t.src,
+  }))
+  _gcBridge.isExpanded = props.isExpanded ?? false
 })
 
 function applySlashTemplate(exprId: string, tpl: SlashTemplate | undefined) {
