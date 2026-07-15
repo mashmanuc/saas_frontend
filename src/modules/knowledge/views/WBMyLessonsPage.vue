@@ -5,7 +5,17 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('winterboard.lesson.myLessonsTitle') }}</h1>
+      <!-- LessonGrant: коди передачі паків між тьюторами (2026-07, Варіант A) -->
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+        @click="showGrantModal = true"
+      >
+        🎁 {{ $t('knowledge.grants.headerBtn') }}
+      </button>
     </div>
+
+    <GrantTransferModal v-if="showGrantModal" :initial-grant="quickGrantResult" @close="closeGrantModal" />
 
     <!-- Tabs: Шаблони | Проведені уроки -->
     <div class="flex border-b border-gray-200 mb-6">
@@ -268,6 +278,16 @@
                     @click="handleShare(lesson)"
                   >
                     🔗
+                  </button>
+                  <!-- LessonGrant: одноразовий код передачі цього уроку (1 клік) -->
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    :title="$t('knowledge.grants.quickBtn')"
+                    :disabled="quickGrantingId === lesson.id"
+                    @click="quickGrant(lesson)"
+                  >
+                    {{ quickGrantingId === lesson.id ? '⏳' : '🎁' }}
                   </button>
                   <!-- Move to folder (Phase 25 BUG-4) -->
                   <MoveToFolderDropdown
@@ -733,6 +753,37 @@ import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 import apiClient from '@/utils/apiClient'
 import { useNotifyStore } from '@/stores/notifyStore'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
+import GrantTransferModal from '../components/GrantTransferModal.vue'
+import { grantsApi, type LessonGrant } from '../api/grantsApi'
+
+// LessonGrant (2026-07): модалка «Передати уроки»
+const showGrantModal = ref(false)
+// Швидкий флоу з картки: 1 клік → одноразовий код цього уроку → одразу результат
+const quickGrantResult = ref<LessonGrant | null>(null)
+const quickGrantingId = ref<string | null>(null)
+
+async function quickGrant(lesson: MyLesson): Promise<void> {
+  if (quickGrantingId.value) return
+  quickGrantingId.value = lesson.id
+  try {
+    quickGrantResult.value = await grantsApi.create({
+      lesson_ids: [lesson.id],
+      max_uses: 1, // одноразовий — для одного отримувача
+      expires_days: null,
+    })
+    showGrantModal.value = true
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: string } } }
+    notify.error(err?.response?.data?.detail || t('knowledge.grants.createError'))
+  } finally {
+    quickGrantingId.value = null
+  }
+}
+
+function closeGrantModal(): void {
+  showGrantModal.value = false
+  quickGrantResult.value = null
+}
 import LessonEditDialog from '../components/LessonEditDialog.vue'
 import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'

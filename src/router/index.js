@@ -962,6 +962,15 @@ const routes = [
             component: () => import('../modules/knowledge/views/WBMyLessonsPage.vue'),
             meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
           },
+          // LessonGrant (2026-07): активація коду передачі паку уроків.
+          // STUDENT свідомо включено: сторінка сама показує чесний екран
+          // «доступно тьюторам» (redirect заплутав би покупця, що прийшов з лінка).
+          {
+            path: '/grant/:code',
+            name: 'GrantActivate',
+            component: () => import('../modules/knowledge/views/GrantActivatePage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.STUDENT] },
+          },
         ],
       },
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar

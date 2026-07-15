@@ -97,7 +97,11 @@
       "unavailable": "Progression is currently unavailable",
       "topicsProgress": "{done} / {total} topics",
       "allMastered": "All {total} topics mastered",
-      "status": { "new": "not started", "active": "in progress", "done": "done" },
+      "status": {
+        "new": "not started",
+        "active": "in progress",
+        "done": "done"
+      },
       "biome": {
         "foundations": "Foundations",
         "algebra": "Algebra",
@@ -132,7 +136,11 @@
       "fromXp": "{n} XP reached",
       "fromStreak": "{n}-day streak"
     },
-    "stat": { "xp": "XP", "streak": "Streak", "progress": "Progress" },
+    "stat": {
+      "xp": "XP",
+      "streak": "Streak",
+      "progress": "Progress"
+    },
     "card": {
       "difficulty": "Difficulty",
       "answerPlaceholder": "Enter your answer…",
@@ -5387,7 +5395,10 @@
       "subtitle": "Select the plan that fits your needs"
     },
     "planFeatures": {
-      "unit": { "gb": "{n} GB", "mb": "{n} MB" },
+      "unit": {
+        "gb": "{n} GB",
+        "mb": "{n} MB"
+      },
       "materialsStorage": "{value} for materials",
       "materialsStorageUnlimited": "Unlimited materials storage",
       "boardStorage": "{value} on board",
@@ -9255,6 +9266,52 @@
       "openClassroom": "Open Classroom",
       "boardSessions": "Boards for this lesson",
       "noSessions": "No associated boards"
+    },
+    "grants": {
+      "headerBtn": "Hand over lessons",
+      "title": "Hand over lessons to another tutor",
+      "tabCreate": "Hand over lessons",
+      "tabMyCodes": "My codes",
+      "step1": "Select the lessons you want to hand over",
+      "step2": "Get a code and send it to your colleague — Telegram, Viber, anywhere",
+      "step3": "They open the link and receive their own copies — free to edit and teach with",
+      "noLessonsAtAll": "You have no lessons yet. Create a lesson in the constructor and publish it.",
+      "badgePublished": "Published",
+      "badgeDraft": "Draft",
+      "draftsHint": "Drafts: {n}. To transfer a draft, close this window and press \"Publish\" on the lesson card.",
+      "advanced": "Advanced settings",
+      "maxUses": "How many people can receive:",
+      "maxUsesHint": "One use of the code = one tutor receives copies. You can revoke the code anytime.",
+      "expires": "Code valid for:",
+      "noExpiry": "No limit",
+      "days": "days",
+      "createBtnEmpty": "Select lessons above",
+      "createBtn": "Get a code for {n} lessons",
+      "codeReady": "Done! Send this code or link to your colleague:",
+      "copyLink": "Copy link",
+      "copied": "Copied ✓",
+      "buyerHowTitle": "What the recipient will see:",
+      "buyerHowText": "Opens the link → sees the lesson list → presses \"Receive\" → the lessons appear in their \"My lessons\" as their own copies.",
+      "createAnother": "Hand over more",
+      "noCodes": "You have not handed over any lessons yet.",
+      "usedOf": "received: {used} of {max}",
+      "usesTitle": "How many tutors already received lessons with this code",
+      "revoke": "Revoke",
+      "revoked": "Revoked",
+      "createError": "Failed to create the code. Please try again.",
+      "pageTitle": "Lesson transfer",
+      "tutorsOnly": "Only tutors can receive lessons. Sign in as a tutor.",
+      "unavailableTitle": "Code unavailable",
+      "unavailableHint": "The code does not exist, was revoked, expired, or reached its usage limit. Contact the sender.",
+      "previewTitle": "Lessons are being handed to you",
+      "fromSeller": "from {name}",
+      "alreadyActivated": "You have already received these lessons with this code.",
+      "activateBtn": "Receive {n} lessons",
+      "activateError": "Failed to receive the lessons. Please try again.",
+      "successTitle": "Lessons received!",
+      "successHint": "{n} lessons added to \"My lessons\" — they are yours to edit and teach.",
+      "goToMyLessons": "Go to my lessons",
+      "quickBtn": "Hand over this lesson (one-time code)"
     }
   },
   "replay": {
