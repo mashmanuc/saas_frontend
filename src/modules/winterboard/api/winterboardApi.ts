@@ -516,6 +516,27 @@ export const winterboardApi = {
       })
   },
 
+  /**
+   * 2026-07-15: client-знімок реального вигляду дошки → постійне прев'ю
+   * картки (WBSession.thumbnail_url, source='client'). Помилка → silent
+   * null: прев'ю — side-effect, ніколи не ламає роботу з дошкою.
+   */
+  uploadSessionThumbnail(
+    sessionId: string,
+    args: { blob: Blob },
+    signal?: AbortSignal,
+  ): Promise<{ thumbnail_url: string; source: string } | null> {
+    const form = new FormData()
+    form.append('file', args.blob, 'thumb.png')
+    return apiClient
+      .post(`${BASE}/sessions/${sessionId}/thumbnail/`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        signal,
+      })
+      .then((r: any) => r.data ?? r)
+      .catch(() => null)
+  },
+
   // ── Sharing ────────────────────────────────────────────────────────
 
   getShareStatus(sessionId: string): Promise<WBShareStatus> {

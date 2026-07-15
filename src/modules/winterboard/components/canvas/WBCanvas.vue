@@ -5014,6 +5014,9 @@ defineExpose({
   fitToPage: handleFitToPage,
   /** Open text overlay for object (called from WBSelectionToolbar via parent) */
   openTextOverlay: (objectId: string) => { activeTextObjectId.value = objectId },
+  /** 2026-07-15: корінь .wb-canvas (Konva-stage + WBOverlayLayer разом) —
+   *  для композитного знімка дошки (useBoardThumbnail, html2canvas). */
+  getContainer: () => containerRef.value || null,
 })
 </script>
 

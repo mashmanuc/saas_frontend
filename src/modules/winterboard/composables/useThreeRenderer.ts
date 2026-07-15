@@ -58,6 +58,12 @@ export function useThreeRenderer(
     canvas,
     antialias: true,
     alpha: true,
+    // 2026-07-15: без preserveDrawingBuffer WebGL-буфер очищується після
+    // compositing → html2canvas/toDataURL знімає ЧОРНИЙ прямокутник
+    // (board thumbnail + export capture). GraphMASH 3D вже роками живе
+    // з цим прапором (vendor/graphmash3d/grapher-3d-engine.js) без скарг;
+    // ціна — GPU-пам'ять одного буфера на віджет.
+    preserveDrawingBuffer: true,
     ...opts,
   })
 

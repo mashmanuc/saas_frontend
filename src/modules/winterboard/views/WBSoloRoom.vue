@@ -929,6 +929,7 @@ import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
+import { useBoardThumbnail } from '../composables/useBoardThumbnail'
 // Phase 2 (2026-04-27): useOpsBridge DELETED — was no-op stub (Phase ops-only 2026-04-15)
 // Phase 2 SSOT INV-16/INV-20 UI gates (mutually exclusive by reason taxonomy)
 import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
@@ -1418,6 +1419,19 @@ watch(
 
 const canvasRef = ref<InstanceType<typeof WBCanvas> | null>(null)
 const canvasContainerRef = ref<HTMLElement | null>(null)
+
+// ─── Board thumbnail (2026-07-15) ────────────────────────────────────────────────
+// Client-знімок реального вигляду (канва + віджет-оверлеї) як прев'ю картки.
+// Сигнал: зростання opsSync.localSeq = успішний flush контенту (read-only watch,
+// поза write path). Debounce/rate-limit усередині композабла; помилки silent.
+const boardThumbnail = useBoardThumbnail({
+  canvasRef,
+  getCurrentPageIndex: () => store.currentPageIndex,
+  getSessionId: () => sessionId.value,
+})
+watch(() => opsSync.localSeq, (seq, prev) => {
+  if (seq > (prev ?? 0)) boardThumbnail.schedule()
+})
 const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
