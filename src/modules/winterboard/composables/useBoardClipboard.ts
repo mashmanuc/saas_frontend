@@ -83,6 +83,12 @@ interface BoardClipboardOptions {
   lessonId?: () => number | null
   /** Phase 3: group context for dual-write (pass in SoloRoom for group boards) */
   groupId?: () => string | null
+  /**
+   * Local Workspace (ТЗ 2026-07-15 §4): викликається замість upload'у зображень,
+   * коли сесії немає (sessionId() === null). Caller показує CloudUpsellModal.
+   * Optional — існуючі callsites без опції поводяться як раніше (warning toast).
+   */
+  onNoSession?: () => void
 }
 
 // Internal clipboard for board objects (strokes + assets)
@@ -279,6 +285,12 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
     const sid = sessionId()
     if (!sid) {
+      // Local Workspace (ТЗ §4): без сесії upload неможливий — caller показує
+      // CloudUpsellModal замість сирого warning-toast.
+      if (options.onNoSession) {
+        options.onNoSession()
+        return
+      }
       console.warn('[BoardClipboard] Image paste: no active session, skipping')
       showToast('No active session', 'warning')
       return

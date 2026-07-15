@@ -194,3 +194,42 @@ export function isUnifiedOverlayRenderEnabled(): boolean {
 export function setUnifiedOverlayRenderEnabled(enabled: boolean): void {
   setLocalStorage(LS_KEY_UNIFIED_ZORDER, String(enabled))
 }
+
+// ─── Local Workspace Flag (ТЗ LOCAL_WORKSPACE 2026-07-15) ────────────────────
+// Локальний робочий стіл без авторизації (route /workspace): дошка живе у
+// браузері (localStorage), бекенд не викликається. Dev-ON / prod-OFF до
+// окремого рішення власника про rollout.
+//
+// Priority (перша умова перемагає):
+// 1. localStorage: local_ws_enabled=true/false  (QA / manual dev override)
+// 2. Env variable: VITE_LOCAL_WORKSPACE=true/false
+// 3. Default: false (прихований у prod)
+
+const LS_KEY_LOCAL_WS = 'local_ws_enabled'
+
+/**
+ * Перевірити чи Local Workspace увімкнено.
+ */
+export function isLocalWorkspaceEnabled(): boolean {
+  // 1. localStorage override
+  const lsValue = getLocalStorage(LS_KEY_LOCAL_WS)
+  if (lsValue !== null) {
+    return lsValue === 'true'
+  }
+
+  // 2. Env variable
+  const envValue = getEnvVar('VITE_LOCAL_WORKSPACE')
+  if (envValue !== undefined) {
+    return envValue === 'true'
+  }
+
+  // 3. Default: disabled
+  return false
+}
+
+/**
+ * Увімкнути/вимкнути Local Workspace вручну (persists to localStorage).
+ */
+export function setLocalWorkspaceEnabled(enabled: boolean): void {
+  setLocalStorage(LS_KEY_LOCAL_WS, String(enabled))
+}

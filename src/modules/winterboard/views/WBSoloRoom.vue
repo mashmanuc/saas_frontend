@@ -131,14 +131,15 @@
           @finalize="handleFinalizeRecording"
           @restart="handleRestartRecordingRequest"
         />
-        <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode -->
+        <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
+             Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
         <button
-          v-if="isSessionOwner && sessionId && !constructorMode"
+          v-if="((isSessionOwner && sessionId) || isLocalWorkspace) && !constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--invite"
           :title="t('winterboard.startClassroom.button')"
           :aria-label="t('winterboard.startClassroom.button')"
-          @click="showInviteStudentModal = true"
+          @click="isLocalWorkspace ? openCloudUpsell('invite') : (showInviteStudentModal = true)"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -146,13 +147,14 @@
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
-        <!-- Phase B: Share replay — прихована в constructor mode -->
+        <!-- Phase B: Share replay — прихована в constructor mode.
+             Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
         <button
-          v-if="isSessionOwner && hasOperations && !constructorMode"
+          v-if="((isSessionOwner && hasOperations) || isLocalWorkspace) && !constructorMode"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.replay.share.title', 'Поділитися записом')"
-          @click="showShareModal = true"
+          @click="isLocalWorkspace ? openCloudUpsell('share') : (showShareModal = true)"
         >
           🔗
         </button>
@@ -160,7 +162,7 @@
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.room.export')"
-          @click="showExportDialog = true"
+          @click="isLocalWorkspace ? openCloudUpsell('export') : (showExportDialog = true)"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -236,11 +238,30 @@
             <rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
           </svg>
         </button>
-        <button type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
+        <!-- Local Workspace (ТЗ §4): перемикач мови + [Підключити хмару] замість
+             профілю/виходу. Жодних «демо»-плашок. -->
+        <WBLanguageSwitcher v-if="isLocalWorkspace" />
+        <button
+          v-if="isLocalWorkspace"
+          type="button"
+          class="wb-header-btn wb-header-btn--cloud"
+          @click="goToCloudSignup"
+        >
+          {{ t('winterboard.localWorkspace.connectCloud') }}
+        </button>
+        <button v-else type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
           {{ t('winterboard.room.exit') }}
         </button>
       </div>
     </header>
+
+    <!-- Local Workspace Phase 2: хмарний upsell-модал -->
+    <CloudUpsellModal
+      :open="showCloudUpsell"
+      :message="cloudUpsellMessage"
+      @close="showCloudUpsell = false"
+      @connect="goToCloudSignup"
+    />
 
     <!-- FTUE: ненав'язлива підказка «зберегти як шаблон» — смуга під топбаром.
          Inline-банер (НЕ floating tooltip), показ керується showSaveTemplateHint. -->
@@ -516,6 +537,7 @@
           v-show="!(testStore.testMode && selectedTestObject)"
           :group-id="groupId"
           :is-tutor="true"
+          :local-mode="isLocalWorkspace"
           @place="placeItemAtCenter"
           @apply-template="handleApplyTemplate"
         />
@@ -612,9 +634,10 @@
 
       <!-- Page navigation -->
       <div class="wb-page-nav">
-        <!-- Phase 37: Test mode toggle button — hidden in constructorMode (tasks always visible there) -->
+        <!-- Phase 37: Test mode toggle button — hidden in constructorMode (tasks always visible there).
+             Local Workspace: прихований як і «Матеріали» (рішення власника 2026-07-15). -->
         <button
-          v-if="!constructorMode"
+          v-if="!constructorMode && !isLocalWorkspace"
           type="button"
           class="wb-page-btn"
           :class="{ 'wb-page-btn--active': testStore.testMode }"
@@ -993,6 +1016,27 @@ import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
+// Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
+// Стан живе у localStorage; opsSync/recorder/presence НЕ під'єднуються.
+import { isLocalWorkspaceEnabled } from '../config/featureFlags'
+import {
+  loadLocalWorkspace,
+  saveLocalWorkspace,
+  clearLocalWorkspace,
+  isLocalWorkspaceSeeded,
+  markLocalWorkspaceSeeded,
+  createThrottledSaver,
+  stashHandoff,
+  loadHandoff,
+  updateHandoff,
+  clearHandoff,
+  type ThrottledSaver,
+} from '../local/localWorkspaceStorage'
+import { buildLocalWelcomeState } from '../local/localWorkspaceSeed'
+import { buildHandoffOps } from '../local/localWorkspaceHandoff'
+// Local Workspace Phase 2 (ТЗ §4): хмарний upsell + перемикач мови для гостя
+import CloudUpsellModal from '../components/dialogs/CloudUpsellModal.vue'
+import WBLanguageSwitcher from '../components/WBLanguageSwitcher.vue'
 
 // Phase 37: Test system
 import { useTestStore } from '../board/state/testStore'
@@ -1014,6 +1058,39 @@ const testStore = useTestStore()
 // Той самий WBSoloRoom — тільки ховає запис/invite, показує badge + «Оновити шаблон».
 const constructorMode = computed(() => !!route.meta.constructorMode)
 const originLessonId = ref<string | null>(null)
+
+// ── Local Workspace mode (ТЗ 2026-07-15) ────────────────────────────────────
+// Активується на route /workspace (meta.localWorkspace = true). У цьому режимі
+// sessionId лишається null → усі cloud-шляхи (autosave flush, saveBeforeLeave,
+// title-persist, presence, heartbeat) відрубані існуючими sessionId-гейтами;
+// opsSync.bootstrap()/connectToStore() не викликаються → ops не існують.
+const isLocalWorkspace = route.meta.localWorkspace === true
+
+// Phase 2 (ТЗ §4): хмарні кнопки видимі у local-режимі, але клік відкриває
+// CloudUpsellModal з контекстним поясненням замість виконання дії.
+type CloudUpsellKind = 'generic' | 'share' | 'invite' | 'export' | 'media'
+const showCloudUpsell = ref(false)
+const cloudUpsellKind = ref<CloudUpsellKind>('generic')
+
+function openCloudUpsell(kind: CloudUpsellKind): void {
+  cloudUpsellKind.value = kind
+  showCloudUpsell.value = true
+}
+
+const cloudUpsellMessage = computed(() =>
+  t(`winterboard.localWorkspace.upsell.${cloudUpsellKind.value}`),
+)
+
+// ТЗ §5 (handoff): снапшот локального столу → буфер → реєстрація/логін →
+// повернення на /workspace вже authed → importCloudHandoff() переносить
+// контент у хмарну сесію.
+function goToCloudSignup(): void {
+  showCloudUpsell.value = false
+  // Буфер пишемо ЗАВЖДИ при кліку (навіть якщо на столі лише подарунок) —
+  // «те, що ти намалював — уже твоє» після реєстрації.
+  stashHandoff(store.workspaceName, store.serializedState)
+  router.push({ path: '/start', query: { redirect: '/workspace' } })
+}
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
@@ -2027,6 +2104,8 @@ const saveStatusText = computed(() => {
 const boardClipboard = useBoardClipboard({
   store,
   sessionId: () => sessionId.value,
+  // Local Workspace: paste зображення потребує upload → CloudUpsellModal
+  onNoSession: isLocalWorkspace ? () => openCloudUpsell('media') : undefined,
   canvasCenter: () => ({
     x: (store.pageWidth ?? 800) / 2,
     y: (store.pageHeight ?? 600) / 2,
@@ -2889,9 +2968,181 @@ async function connectPresenceSafe(sid: string): Promise<void> {
   }
 }
 
+// ─── Local Workspace: init + персистентність (ТЗ 2026-07-15) ─────────────────
+
+let _localSaver: ThrottledSaver | null = null
+let _unsubLocalPersist: (() => void) | null = null
+
+function persistLocalWorkspaceNow(): void {
+  const ok = saveLocalWorkspace(store.workspaceName, store.serializedState)
+  if (ok) {
+    store.setLastSaved(new Date())
+  } else {
+    // Quota / private mode — показуємо error-статус у save-індикаторі,
+    // дошка продовжує працювати в пам'яті.
+    store.setSyncStatus('error')
+  }
+}
+
+function _handleLocalVisibility(): void {
+  // Мобільні браузери можуть не стріляти beforeunload — hidden = останній
+  // надійний момент зберегти роботу (ТЗ §2A: F5/закриття без втрат).
+  if (document.visibilityState === 'hidden') _localSaver?.flush()
+}
+
+/**
+ * ТЗ §5 (Фаза 3): імпорт handoff-буфера у хмарну сесію.
+ *
+ * Retry-safe за ДВОМА checkpoint-ами у буфері:
+ *   - ops з op_id генеруються один раз і персистяться ДО відправки →
+ *     повторна спроба шле ті самі op_id, BE гасить дублікати (INV-IDEMPOTENCY);
+ *   - cloudSessionId персиститься після createSession → retry НЕ створює
+ *     другу сесію.
+ * Буфер і локальний стан чистяться ЛИШЕ після повного успіху (flushAll done).
+ *
+ * @returns id хмарної сесії або null (нема буфера / не тьютор / фейл).
+ */
+async function importCloudHandoff(): Promise<string | null> {
+  const buffer = loadHandoff()
+  if (!buffer) return null
+
+  // bootstrap безпечний: сюди потрапляємо ЛИШЕ з auth-маркером (не гість).
+  try {
+    await authStore.bootstrap()
+  } catch (e) {
+    console.warn('[LocalWS] auth bootstrap during handoff failed:', e)
+  }
+  // Solo-дошки — tutor-only (Phase 5 nav-рішення). Студент: буфер зберігаємо
+  // (нічого не втрачено), імпорт не робимо.
+  if (authStore.user?.role !== 'tutor') return null
+
+  isLoading.value = true
+  try {
+    // Checkpoint 1: стабільні ops (op_id) — до будь-якої відправки.
+    let ops = buffer.ops
+    if (!ops || ops.length === 0) {
+      ops = buildHandoffOps(buffer.state)
+      updateHandoff({ ops })
+    }
+    // Checkpoint 2: одна хмарна сесія на буфер.
+    let sid = buffer.cloudSessionId
+    if (!sid) {
+      const created = await winterboardApi.createSession({
+        name: buffer.name || t('winterboard.localWorkspace.title'),
+        folder: null,
+      })
+      sid = created.id
+      updateHandoff({ cloudSessionId: sid })
+    }
+
+    // Штатний write-шлях: bootstrap → record → flushAll (LAW §2, single write path).
+    await opsSync.bootstrap(sid)
+    for (const op of ops) {
+      opsSync.record(op)
+    }
+    await opsSync.flushAll()
+
+    // Успіх підтверджено — переносимо, не копіюємо: буфер + локальний стан
+    // чистяться; seeded-флаг лишається (подарунок вдруге не генерується).
+    clearHandoff()
+    clearLocalWorkspace()
+    return sid
+  } catch (err) {
+    // Буфер НЕ чистимо (ТЗ §5) — наступний візит /workspace повторить імпорт
+    // з тими самими op_id/сесією. Без retry-loop тут: одна спроба за візит.
+    console.error('[LocalWS] handoff import failed (buffer preserved):', err)
+    _folderFallbackToast.showToast(t('winterboard.localWorkspace.handoffFailed'), 'error')
+    return null
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function initLocalWorkspace(): Promise<void> {
+  // Флаг вимкнено (prod до rollout-рішення) → на лендінг.
+  if (!isLocalWorkspaceEnabled()) {
+    router.replace('/start')
+    return
+  }
+  // ТЗ §2: режим визначається наявністю auth-токена. Авторизований користувач
+  // на /workspace: якщо чекає handoff-буфер — імпортуємо його у хмарну сесію
+  // і відкриваємо її; інакше його дім — хмарна Студія.
+  if (authStore.access) {
+    const importedSessionId = await importCloudHandoff()
+    if (importedSessionId) {
+      // FULL reload, НЕ router.replace: /workspace і /winterboard/:id рендерять
+      // той самий WBSoloRoom → SPA-навігація ПЕРЕВИКОРИСТОВУЄ інстанс
+      // (onMounted не перезапускається, сесія не вантажиться, isLocalWorkspace
+      // застигає true). Повне перезавантаження дає чистий authed-mount.
+      // Це одноразовий момент конверсії — reload тут доречний UX.
+      window.location.assign(`/winterboard/${importedSessionId}`)
+    } else {
+      router.replace({ name: 'winterboard-boards' })
+    }
+    return
+  }
+
+  const snapshot = loadLocalWorkspace()
+  let state = snapshot?.state ?? null
+  const name = snapshot?.name || t('winterboard.localWorkspace.title')
+  const savedAtIso = snapshot ? new Date(snapshot.savedAt).toISOString() : new Date().toISOString()
+
+  if (!state) {
+    if (!isLocalWorkspaceSeeded()) {
+      // «Подарунок» першого візиту (ТЗ §3): 3D-куб + парабола + привітання.
+      state = buildLocalWelcomeState({
+        title: t('winterboard.localWorkspace.seedTitle'),
+        hint: t('winterboard.localWorkspace.seedHint'),
+      })
+      markLocalWorkspaceSeeded()
+    } else {
+      // Користувач свідомо очистив стіл раніше — порожня сторінка
+      // (hydrateFromSession сам створить empty page для pages: []).
+      state = { pages: [], currentPageIndex: 0 }
+    }
+  }
+
+  store.workspaceId = 'local-workspace'
+  store.hydrateFromSession({
+    id: 'local-workspace',
+    name,
+    owner_id: '',
+    state,
+    page_count: state.pages.length || 1,
+    thumbnail_url: null,
+    rev: 0,
+    created_at: savedAtIso,
+    updated_at: savedAtIso,
+  })
+  sessionName.value = name
+  isLoading.value = false
+
+  // Стартовий інструмент = «вибір»: overlay-об'єкти інтерактивні одразу
+  // (graph_calculator показує inline-панель виразів, nmt3d — drag-вершини;
+  // `interactive` у WBCanvas гейтиться на currentTool === 'select').
+  store.setTool('select')
+
+  // Персистентність: будь-яка мутація стора → throttled-запис у localStorage.
+  // sessionId залишається null — жоден cloud-шлях не активується.
+  _localSaver = createThrottledSaver(persistLocalWorkspaceNow, 800)
+  _unsubLocalPersist = store.$subscribe(() => {
+    _localSaver?.schedule()
+  })
+  document.addEventListener('visibilitychange', _handleLocalVisibility)
+
+  // Перший візит: записати seed одразу, щоб F5 до першої мутації не втратив подарунок.
+  if (!snapshot) persistLocalWorkspaceNow()
+}
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
+  // Local Workspace: повністю ізольована гілка — жодних REST/WS нижче.
+  if (isLocalWorkspace) {
+    await initLocalWorkspace()
+    return
+  }
+
   const id = route.params.id as string | undefined
 
   // New session flow: /winterboard/new → create via API → redirect to /winterboard/:id
@@ -3229,6 +3480,11 @@ document.addEventListener('keydown', onGlobalKeyDown, true) // capture: пере
 
 // B.6: Best-effort replay buffer flush on tab close via sendBeacon
 function _handleBeforeUnload(e: BeforeUnloadEvent): void {
+  // Local Workspace: замість beacon — синхронний запис у localStorage.
+  if (isLocalWorkspace) {
+    _localSaver?.flush()
+    return
+  }
   replayRecorder.flushViaSendBeacon()
   if (isManualRecording.value) {
     e.preventDefault()
@@ -3240,6 +3496,13 @@ window.addEventListener('beforeunload', _handleBeforeUnload)
 onBeforeUnmount(async () => {
   window.removeEventListener('beforeunload', _handleBeforeUnload)
   document.removeEventListener('keydown', onGlobalKeyDown, true)
+  // Local Workspace: фінальний запис + відписка (cloud-cleanup нижче no-op при sessionId=null)
+  if (isLocalWorkspace) {
+    _localSaver?.flush()
+    _unsubLocalPersist?.()
+    _unsubLocalPersist = null
+    document.removeEventListener('visibilitychange', _handleLocalVisibility)
+  }
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
   _unregisterRecordingAuthDeath()
   // INV I6: Stop audio on unmount
@@ -3262,6 +3525,11 @@ onBeforeRouteLeave(async (to, _from, next) => {
   const isSameComponent = to.name === 'winterboard-solo' || to.name === 'winterboard-new'
   if (!isSameComponent) {
     cleanupRecorder()
+  }
+  // Local Workspace: зберегти локально перед SPA-навігацією (saveBeforeLeave
+  // no-op при sessionId=null, тож cloud-шлях не зачіпається).
+  if (isLocalWorkspace) {
+    _localSaver?.flush()
   }
   await saveBeforeLeave()
   next()
@@ -3557,6 +3825,23 @@ watch(() => store.workspaceName, (name) => {
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Local Workspace (ТЗ §4): помітна кнопка [Підключити хмару] замість профілю */
+.wb-header-btn--cloud {
+  width: auto;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  background: #1db954;
+  color: #ffffff;
+}
+
+.wb-header-btn--cloud:hover {
+  background: #17a34a;
 }
 
 /* Constructor: кнопка «Зберегти як шаблон» — іконка + видимий підпис (афорданс).
@@ -4399,6 +4684,15 @@ watch(() => store.workspaceName, (name) => {
     font-size: 1.125rem;
   }
 
+  /* Текстові кнопки: width:40px з правила вище стискає їх і текст
+     наповзає на сусідів — повертаємо авто-ширину (як --exit нижче). */
+  .wb-header-btn--cloud,
+  .wb-header-btn--exit {
+    width: auto;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+
   .wb-title-input {
     font-size: 1rem;
   }
@@ -4431,6 +4725,14 @@ watch(() => store.workspaceName, (name) => {
     min-width: 64px;
     min-height: 64px;
     padding: 0 16px;
+    font-size: 1rem;
+  }
+
+  .wb-header-btn--cloud {
+    width: auto;
+    min-width: 64px;
+    min-height: 64px;
+    padding: 0 18px;
     font-size: 1rem;
   }
 

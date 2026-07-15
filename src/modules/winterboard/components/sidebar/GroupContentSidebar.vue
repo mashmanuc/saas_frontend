@@ -85,6 +85,7 @@
     <!-- Tab switcher -->
     <div class="content-sidebar__tabs" role="tablist">
       <button
+        v-if="!localMode"
         class="content-sidebar__tab"
         :class="{ 'content-sidebar__tab--active': activeTab === 'materials' }"
         role="tab"
@@ -401,6 +402,9 @@ const CATEGORY_ICONS: Record<string, string> = {
 const props = defineProps<{
   groupId: string | null
   isTutor: boolean
+  /** Local Workspace (ТЗ 2026-07-15): true → тільки вкладка «Інструменти»,
+   *  жодних API-викликів (materials/quota/folders недоступні без auth). */
+  localMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -481,7 +485,8 @@ const isLoadingFolders = ref(false)
 const isFoldersPanelOpen = ref(false)
 
 // Tab switcher: 'materials' | 'tools'
-const activeTab = ref<'materials' | 'tools'>('materials')
+// Local Workspace: materials-вкладка прихована → стартуємо з «Інструменти».
+const activeTab = ref<'materials' | 'tools'>(props.localMode ? 'tools' : 'materials')
 
 // Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → картки.
 const toolQuery = ref('')
@@ -499,7 +504,9 @@ const currentAppLabel = computed(() =>
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
 
-const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
+const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
+  enabled: () => !props.localMode,
+})
 const wbStore = useWBStore()
 
 function handleFolderSelect(id: number | null) {
@@ -598,6 +605,8 @@ async function loadQuota() {
 }
 
 onMounted(() => {
+  // Local Workspace: quota/folders — auth-only ресурси, не фетчимо.
+  if (props.localMode) return
   // FE-P1 (2026-04-30): defer non-critical sidebar fetches на 2.5s щоб не
   // конфліктувати з initial burst (session detail + auth + me + WS connect).
   // Quota/folders не потрібні у перші 2-3 секунди — user ще не взаємодіє з

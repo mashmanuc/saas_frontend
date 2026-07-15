@@ -6927,6 +6927,25 @@
     }
   },
   "winterboard": {
+    "localWorkspace": {
+      "title": "My workspace",
+      "seedTitle": "This is your workspace 👋",
+      "seedHint": "Spin the 3D shape, tweak the graph — or just draw.",
+      "language": "Language",
+      "connectCloud": "Connect cloud",
+      "handoffFailed": "Couldn't move your local board to the cloud. Nothing is lost — we'll retry next time you open the workspace.",
+      "upsell": {
+        "title": "Connect the cloud",
+        "generic": "Sign up to save your boards in the cloud, share them and work together with students.",
+        "share": "To share this board with a link, connect cloud sync.",
+        "invite": "To invite a student to a shared board, connect cloud sync.",
+        "export": "PDF and PNG export works through the cloud. Connect it and download boards in one click.",
+        "media": "To work with PDF documents and media files, connect the cloud.",
+        "note": "It's free and takes a few seconds. Your board stays right here.",
+        "cta": "Sign up",
+        "later": "Later"
+      }
+    },
     "constructor": {
       "badge": "CONSTRUCTOR",
       "backToLessons": "My Lessons",

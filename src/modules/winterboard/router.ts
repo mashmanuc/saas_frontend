@@ -191,6 +191,18 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { public: true, requiresAuth: false },
   },
   {
+    // Local Workspace (ТЗ 2026-07-15): локальний робочий стіл БЕЗ авторизації.
+    // Той самий WBSoloRoom, але local-режим: стан живе у localStorage,
+    // жодних REST/WS (opsSync/recorder/presence не під'єднуються).
+    // Гейт: isLocalWorkspaceEnabled() перевіряється у WBSoloRoom mount
+    // (flag OFF → redirect /start). Авторизований користувач → redirect
+    // у Студію (хмарний режим, ТЗ §2B).
+    path: '/workspace',
+    name: 'local-workspace',
+    component: () => import('./views/WBSoloRoom.vue'),
+    meta: { title: 'M4SH — Робочий стіл', public: true, requiresAuth: false, localWorkspace: true },
+  },
+  {
     // Студія уроків — редактор дошки. Той самий WBSoloRoom, але у режимі конструктора.
     // constructorMode: true → ховає запис/invite, показує amber badge + «Оновити шаблон».
     path: '/winterboard/prepare/:id',

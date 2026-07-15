@@ -27,7 +27,14 @@ const POLL_INTERVAL_MS = 4000
  * Loads materials from LearningGroup API and adapts them to AllowedContentItem format.
  * Used by WBSoloRoom when navigated from Knowledge Library with ?groupId=...
  */
-export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<number | null>) {
+export function useGroupSidebar(
+  groupId: Ref<string | null>,
+  folderId?: Ref<number | null>,
+  // Local Workspace (ТЗ 2026-07-15): enabled=false → жодних API-викликів
+  // (library/materials недоступні без auth). Optional — існуючі callsites
+  // не змінюються (default: enabled).
+  options?: { enabled?: () => boolean },
+) {
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -127,6 +134,8 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
   let lastLoadedFolderId: number | null | undefined = undefined
 
   async function load() {
+    // Local Workspace: sidebar-фетчі вимкнено — стіл живе без бекенду.
+    if (options?.enabled && !options.enabled()) return
     // Dedup: не перевантажувати якщо groupId+folderId не змінились і дані вже є
     const curFolder = folderId?.value ?? null
     if (loadInFlight) return
