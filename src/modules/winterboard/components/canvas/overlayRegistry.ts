@@ -287,14 +287,16 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
   },
 
   // §3.7.14 (B3 2026-07-07) — ЖИВА GeoMASH-геометрія (vendor/geomash)
+  // 2026-07-16: expandable — renderer завжди мав ⛶ + emit('expand') + isExpanded
+  // (legacy-блок WBCanvas їх мапив), а registry різав до std → кнопка була мертва в unified.
   geomash_scene: {
     component: GeomashRenderer,
     wrapperClass: 'wb-geomash-overlay',
     dataAttr: 'data-geomash-id',
     testidPrefix: 'geomash-overlay',
-    expandable: false,
-    buildProps: stdProps,
-    buildEvents: stdEvents,
+    expandable: true,
+    buildProps: expProps,
+    buildEvents: expEvents,
   },
 
   // §3.7.15 (B4 2026-07-07) — ЖИВА GraphMASH 3D-поверхня (vendor/graphmash3d, WebGL)
