@@ -46,6 +46,7 @@
         <QuadraticInspector   v-else-if="quadUiState.bridge" />
         <GeomashInspector     v-else-if="geomashInspectorState.bridge" />
         <Graphmash3dInspector v-else-if="graphmash3dInspectorState.bridge" />
+        <Geo2dInspector       v-else-if="geo2dInspectorState.bridge" :key="geo2dInspectorState.assetId ?? undefined" />
       </div>
     </template>
 
@@ -354,6 +355,7 @@ import QuadraticInspector from './QuadraticInspector.vue'
 import QuadraticTray from './QuadraticTray.vue'
 import GeomashInspector from './GeomashInspector.vue'
 import Graphmash3dInspector from './Graphmash3dInspector.vue'
+import Geo2dInspector from './Geo2dInspector.vue'
 import { trigCircleUiState } from '../../board/state/trigCircleUiState'
 import { helixUiState } from '../../board/state/helixUiState'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
@@ -362,6 +364,7 @@ import { calculusUiState } from '../../board/state/calculusUiState'
 import { quadUiState } from '../../board/state/quadUiState'
 import { geomashInspectorState } from '../../board/state/geomashInspectorState'
 import { graphmash3dInspectorState } from '../../board/state/graphmash3dInspectorState'
+import { geo2dInspectorState } from '../../board/state/geo2dInspectorState'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray
@@ -446,7 +449,8 @@ function zoomOut(): void {
 const hasActiveInspector = computed(() =>
   !!(nmt3dUiState.ws || trigCircleUiState.bridge || helixUiState.bridge ||
      graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge ||
-     quadUiState.bridge || geomashInspectorState.bridge || graphmash3dInspectorState.bridge),
+     quadUiState.bridge || geomashInspectorState.bridge || graphmash3dInspectorState.bridge ||
+     geo2dInspectorState.bridge),
 )
 
 // ── Виділено PDF/DOCX на дошці → права панель показує сторінки ЦЬОГО документа ──
