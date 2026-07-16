@@ -14,18 +14,18 @@
 
     <!-- ── Палітра-плитки ──────────────────────────────────── -->
     <template v-if="canEdit && toolSpec.length">
-      <button type="button" class="geo-select-btn" :class="{ 'is-active': selectMode && !active }" title="Вибір / перемістити об'єкти" @click="selectArrow">
-        <span class="geo-select-btn__ic">⬉</span> Вибір
+      <button type="button" class="geo-select-btn" :class="{ 'is-active': selectMode && !active }" :title="t('winterboard.geomash.selectBtnHint')" @click="selectArrow">
+        <span class="geo-select-btn__ic">⬉</span> {{ t('winterboard.geomash.selectBtn') }}
       </button>
       <div v-if="selectMode && !active && selectedObj" class="geo-selbar">
         <input type="color" class="geo-item__color" :value="colorOf(selectedObj)" title="Колір" @input="setColor(selectedObj, $event)" />
         <span class="geo-selbar__name">{{ valueOf(selectedObj) }}</span>
         <button type="button" class="geo-item__btn geo-item__btn--del" title="Видалити" @click="del(selectedObj)">×</button>
       </div>
-      <p class="geo-inspector__sub">Побудувати</p>
+      <p class="geo-inspector__sub">{{ t('winterboard.geomash.buildHeader') }}</p>
       <div class="geo-cats">
         <div v-for="cat in categories" :key="cat" class="geo-cat">
-          <span class="geo-cat__label">{{ CAT_LABELS[cat] }}</span>
+          <span class="geo-cat__label">{{ catLabel(cat) }}</span>
           <div class="geo-cat__grid">
             <button
               v-for="e in toolsByCat[cat]"
@@ -33,11 +33,11 @@
               type="button"
               class="geo-tile"
               :class="{ 'is-active': activeKey === e.labelKey }"
-              :title="TOOL_DESC[keyOf(e)] || ''"
+              :title="toolDesc(e)"
               @click="selectTool(e)"
             >
               <span class="geo-tile__glyph">{{ GLYPHS[keyOf(e)] || '•' }}</span>
-              <span class="geo-tile__label">{{ TOOL_LABELS[keyOf(e)] || e.op }}</span>
+              <span class="geo-tile__label">{{ toolLabel(e) }}</span>
             </button>
           </div>
         </div>
@@ -46,7 +46,7 @@
       <!-- ── Розширені (Повзунок/Функція) ────────────────────── -->
       <div v-if="advancedTools.length" class="geo-adv">
         <button type="button" class="geo-adv__toggle" @click="showAdvanced = !showAdvanced">
-          {{ showAdvanced ? '▾' : '▸' }} Розширені
+          {{ showAdvanced ? '▾' : '▸' }} {{ t('winterboard.geomash.advanced') }}
         </button>
         <div v-if="showAdvanced" class="geo-cat__grid geo-adv__grid">
           <button
@@ -55,11 +55,11 @@
             type="button"
             class="geo-tile"
             :class="{ 'is-active': activeKey === e.labelKey }"
-            :title="TOOL_DESC[keyOf(e)] || ''"
+            :title="toolDesc(e)"
             @click="selectTool(e)"
           >
             <span class="geo-tile__glyph">{{ GLYPHS[keyOf(e)] || '•' }}</span>
-            <span class="geo-tile__label">{{ TOOL_LABELS[keyOf(e)] || e.op }}</span>
+            <span class="geo-tile__label">{{ toolLabel(e) }}</span>
           </button>
         </div>
       </div>
@@ -67,8 +67,8 @@
       <!-- ── Активний інструмент ─────────────────────────────── -->
       <div v-if="active" class="geo-active">
         <div class="geo-active__bar">
-          <span class="geo-active__name">{{ TOOL_LABELS[activeK] }}</span>
-          <button type="button" class="geo-active__cancel" title="Скасувати" @click="cancelTool">✕</button>
+          <span class="geo-active__name">{{ active ? toolLabel(active) : '' }}</span>
+          <button type="button" class="geo-active__cancel" :title="t('winterboard.geomash.cancel')" @click="cancelTool">✕</button>
         </div>
 
         <!-- function: без полотна — ввід виразу -->
@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { geomashInspectorState } from '../../board/state/geomashInspectorState'
 import { geomashToolState, setGeomashTool, resetGeomashTool, enterSelectMode, clearGeomashPicks } from '../../board/state/geomashToolState'
 import type { GeoObject, GeoToolSpecEntry } from '../../vendor/geomash'
@@ -150,9 +151,25 @@ const activeKey = computed(() => geomashToolState.activeEntry?.labelKey ?? '')
 const activeK = computed(() => (active.value ? keyOf(active.value) : ''))
 const extra = geomashToolState.extra
 
+const { t, te } = useI18n()
+
 const categories = ['point', 'line', 'circle', 'polygon', 'measure'] as const
 const CAT_LABELS: Record<string, string> = {
   point: 'Точки', line: 'Лінії', circle: 'Кола', polygon: 'Многокутники', measure: 'Вимірювання',
+}
+// i18n-first (2026-07-16): winterboard.geomash.{tool,desc,cat}.* ×3 локалі;
+// локальні укр-мапи — fallback для ключів, яких ще нема у словнику.
+function catLabel(cat: string): string {
+  const k = `winterboard.geomash.cat.${cat}`
+  return te(k) ? t(k) : (CAT_LABELS[cat] ?? cat)
+}
+function toolLabel(e: GeoToolSpecEntry): string {
+  const k = `winterboard.geomash.tool.${keyOf(e)}`
+  return te(k) ? t(k) : (TOOL_LABELS[keyOf(e)] || e.op)
+}
+function toolDesc(e: GeoToolSpecEntry): string {
+  const k = `winterboard.geomash.desc.${keyOf(e)}`
+  return te(k) ? t(k) : (TOOL_DESC[keyOf(e)] || '')
 }
 // Розширені (рідко потрібні для геометрії) — під згорткою
 const ADVANCED_KEYS = new Set(['SLIDER', 'FUNCTION'])

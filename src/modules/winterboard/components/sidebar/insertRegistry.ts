@@ -58,6 +58,8 @@ export interface InsertEntry {
   labelFallback: string
   /** Ключ іконки для <InsertIcon> (family+iconKey → SVG). */
   iconKey: string
+  /** i18n-ключ сублейбла (якщо текст локалізовний; формули/бренди — лише sublabel). */
+  sublabelKey?: string
   /** Короткий підпис-підказка (як сублейбл у трею), опц. */
   sublabel?: string
   /** Стартовий шаблон (для scene-tools з кількома entry одного asset.type). */
@@ -196,18 +198,22 @@ const TRIG_INSERTS: InsertEntry[] = [
 const GRAPHMASH3D_INSERTS: InsertEntry[] = [
   { id: '3d.blank', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
     payload: JSON.stringify({ starterKind: 'blank' }), starterKind: 'blank',
+    labelKey: 'winterboard.insertTiles.blank3d',
     labelFallback: 'Порожня 3D-сцена', iconKey: 'blank', sublabel: 'GraphMASH 3D',
     keywords: kw('3d', 'порожня', 'сцена', 'graphmash', 'blank') },
   { id: '3d.surface', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
     payload: JSON.stringify({ starterKind: 'surface' }), starterKind: 'surface',
+    labelKey: 'winterboard.insertTiles.surface3d',
     labelFallback: 'Поверхня z=f(x,y)', iconKey: 'surface', sublabel: 'z = sin(x)·cos(y)',
     keywords: kw('поверхня', 'surface', '3d', 'z f x y', 'графік') },
   { id: '3d.curve', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
     payload: JSON.stringify({ starterKind: 'curve' }), starterKind: 'curve',
+    labelKey: 'winterboard.insertTiles.curve3d',
     labelFallback: 'Параметрична крива', iconKey: 'curve', sublabel: '(cos t, sin t, t)',
     keywords: kw('крива', 'curve', 'параметрична', '3d') },
   { id: '3d.vectorField', family: '3d', category: '3d', dragMime: GRAPHMASH_3D_DRAG_MIME,
     payload: JSON.stringify({ starterKind: 'vectorField' }), starterKind: 'vectorField',
+    labelKey: 'winterboard.insertTiles.vectorField3d',
     labelFallback: 'Векторне поле', iconKey: 'vectorField', sublabel: '(y, −x, z)',
     keywords: kw('векторне поле', 'vector field', '3d', 'поле') },
 ]
@@ -216,7 +222,9 @@ const GRAPHMASH3D_INSERTS: InsertEntry[] = [
 const GEOMASH_INSERTS: InsertEntry[] = [
   { id: 'geomash.scene', family: 'geomash', category: 'geomash', dragMime: GEOMASH_DRAG_MIME,
     payload: JSON.stringify({ starterKind: 'blank' }), starterKind: 'blank',
-    labelFallback: 'GeoMASH-сцена', iconKey: 'scene', sublabel: 'жива геометрія',
+    labelKey: 'winterboard.insertTiles.geomashScene',
+    labelFallback: 'GeoMASH-сцена', iconKey: 'scene',
+    sublabelKey: 'winterboard.insertTiles.geomashSceneSub', sublabel: 'жива геометрія',
     keywords: kw('geomash', 'гео', 'сцена', 'геометрія', 'geometry') },
 ]
 

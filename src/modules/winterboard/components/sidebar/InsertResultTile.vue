@@ -20,7 +20,7 @@
       <InsertIcon :family="entry.family" :icon-key="entry.iconKey" />
     </span>
     <span class="insert-tile__label">{{ label }}</span>
-    <span v-if="entry.sublabel" class="insert-tile__sub">{{ entry.sublabel }}</span>
+    <span v-if="sublabel" class="insert-tile__sub">{{ sublabel }}</span>
   </button>
 </template>
 
@@ -43,6 +43,13 @@ const label = computed(() =>
   props.entry.labelKey && te(props.entry.labelKey)
     ? t(props.entry.labelKey)
     : props.entry.labelFallback,
+)
+
+/** Сублейбл: локалізовний через sublabelKey; формули/бренди — статичний sublabel. */
+const sublabel = computed(() =>
+  props.entry.sublabelKey && te(props.entry.sublabelKey)
+    ? t(props.entry.sublabelKey)
+    : props.entry.sublabel,
 )
 
 function onDragStart(e: DragEvent): void {
