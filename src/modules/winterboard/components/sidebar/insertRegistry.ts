@@ -98,7 +98,8 @@ const STEREO_INSERTS: InsertEntry[] = NMT3D_TEMPLATE_ORDER.map((key) => {
     category: STEREO_CATEGORY[key] ?? 'other',
     dragMime: NMT3D_DRAG_MIME,
     payload: JSON.stringify({ templateKey: key }),
-    // stereo-підписи runtime (window.NMT3D.TEMPLATES[key].name) → стабільного i18n-ключа немає
+    // 2026-07-16: стабільні i18n-ключі З'ЯВИЛИСЬ — winterboard.nmt3d.template.<key> ×3 локалі
+    labelKey: `winterboard.nmt3d.template.${key}`,
     labelFallback: label,
     iconKey: key,
     keywords: kw(key, label),

@@ -72,14 +72,17 @@ import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import { useTouchDragFromTray } from '../../composables/useTouchDragFromTray'
 import { InsertIcon } from './insertIcons'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const addToolToBoard = useAddToolToBoard()
 const { dragHandlers } = useTouchDragFromTray()
 
 const bundleLoaded = ref(false)
 
-/** Return runtime name from bundle, or Ukrainian fallback. */
+/** i18n-first (2026-07-16): winterboard.nmt3d.template.<key> ×3 локалі;
+ *  vendor bundle name / укр LABELS — fallback (як cardTitle у Nmt3dRenderer). */
 function templateLabel(key: string): string {
+  const i18nKey = `winterboard.nmt3d.template.${key}`
+  if (te(i18nKey)) return t(i18nKey)
   const W = window as any
   return W.NMT3D?.TEMPLATES?.[key]?.name ?? NMT3D_TEMPLATE_LABELS[key] ?? key
 }

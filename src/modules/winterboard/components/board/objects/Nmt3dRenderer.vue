@@ -84,6 +84,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
 import { NMT3D_TEMPLATE_LABELS } from '../../../constants/nmt3dDefaults'
 import { registerNmt3dWorkspace, unregisterNmt3dWorkspace, nmt3dUiState } from '../../../board/state/nmt3dUiState'
@@ -219,11 +220,19 @@ function _onStageWheel(_e: WheelEvent): void {
   }, WHEEL_DEBOUNCE_MS)
 }
 
+const { t, te } = useI18n()
+
 const cardTitle = computed(() => {
+  // i18n-first (2026-07-16): vendor TEMPLATES.name — укр хардкод, не перекладався
+  // на en/ru. Ключі winterboard.nmt3d.template.<key> ×3 локалі; vendor = fallback
+  // для шаблонів, яких ще нема у словнику.
+  const key = props.asset.data.templateKey
+  const i18nKey = `winterboard.nmt3d.template.${key}`
+  if (te(i18nKey)) return t(i18nKey)
   const W = window as any
-  return W.NMT3D?.TEMPLATES?.[props.asset.data.templateKey]?.name
-    ?? NMT3D_TEMPLATE_LABELS[props.asset.data.templateKey]
-    ?? props.asset.data.templateKey
+  return W.NMT3D?.TEMPLATES?.[key]?.name
+    ?? NMT3D_TEMPLATE_LABELS[key]
+    ?? key
 })
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
