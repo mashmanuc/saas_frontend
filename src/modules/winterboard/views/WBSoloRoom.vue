@@ -241,6 +241,17 @@
         <!-- Local Workspace (ТЗ §4): перемикач мови + [Підключити хмару] замість
              профілю/виходу. Жодних «демо»-плашок. -->
         <WBLanguageSwitcher v-if="isLocalWorkspace" />
+        <!-- Точка 2 (2026-07-16): пряма «Увійти» для існуючих юзерів — субтильна
+             (вторинна дія), primary CTA = [Підключити хмару]. Веде на логін →
+             їхній кабінет (без handoff: хто просто входить, не переносить дошку). -->
+        <button
+          v-if="isLocalWorkspace"
+          type="button"
+          class="wb-header-btn wb-header-btn--login"
+          @click="goToLogin"
+        >
+          {{ t('winterboard.localWorkspace.login') }}
+        </button>
         <button
           v-if="isLocalWorkspace"
           type="button"
@@ -1092,6 +1103,12 @@ function goToCloudSignup(): void {
   router.push({ path: '/start', query: { redirect: '/workspace' } })
 }
 
+// Точка 2: існуючий користувач → прямий логін (без handoff-буфера —
+// він іде у свій кабінет, а не переносить локальну дошку).
+function goToLogin(): void {
+  router.push('/auth/login')
+}
+
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
 const { t } = useI18n()
@@ -1684,8 +1701,15 @@ onMounted(() => {
 })
 
 // ── Page thumbnails panel: два режими (compact / panel), стан у localStorage ──
+// Local Workspace (Точка 3, 2026-07-16): панель сторінок відкрита за
+// замовчуванням (щоб гість одразу бачив, що дошка багатосторінкова). Явний
+// вибір користувача поважається — якщо він її закриє, watch запише false.
 function _loadPagePanel(): boolean {
-  try { return localStorage.getItem('wb:pagePanel') === 'true' } catch { return false }
+  try {
+    const stored = localStorage.getItem('wb:pagePanel')
+    if (stored === null) return isLocalWorkspace
+    return stored === 'true'
+  } catch { return isLocalWorkspace }
 }
 const showPagePanel = ref(_loadPagePanel())
 watch(showPagePanel, (v) => { try { localStorage.setItem('wb:pagePanel', String(v)) } catch { /* Safari private */ } })
@@ -3844,6 +3868,22 @@ watch(() => store.workspaceName, (name) => {
   background: #17a34a;
 }
 
+/* Точка 2: субтильна «Увійти» — вторинна дія поруч з primary CTA */
+.wb-header-btn--login {
+  width: auto;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+  background: transparent;
+}
+
+.wb-header-btn--login:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 /* Constructor: кнопка «Зберегти як шаблон» — іконка + видимий підпис (афорданс).
    Подвійний клас піднімає specificity (0,2,0), щоб width:auto перебивав
    .wb-header-btn{width:Npx} з медіа-запитів (≥1920px р.4315 / ≤768px) — інакше
@@ -4687,6 +4727,7 @@ watch(() => store.workspaceName, (name) => {
   /* Текстові кнопки: width:40px з правила вище стискає їх і текст
      наповзає на сусідів — повертаємо авто-ширину (як --exit нижче). */
   .wb-header-btn--cloud,
+  .wb-header-btn--login,
   .wb-header-btn--exit {
     width: auto;
     height: 40px;

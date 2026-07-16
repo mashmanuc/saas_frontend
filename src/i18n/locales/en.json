@@ -6932,6 +6932,7 @@
       "seedTitle": "This is your workspace 👋",
       "seedHint": "Spin the 3D shape, tweak the graph — or just draw.",
       "language": "Language",
+      "login": "Log in",
       "connectCloud": "Connect cloud",
       "handoffFailed": "Couldn't move your local board to the cloud. Nothing is lost — we'll retry next time you open the workspace.",
       "upsell": {

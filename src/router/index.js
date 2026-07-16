@@ -77,6 +77,8 @@ const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
 
 // Winterboard v3 (lazy-loaded module routes)
 import winterboardRoutes, { winterboardSessionListRoute, winterboardPageRoutes } from '../modules/winterboard/router'
+// Local Workspace (ТЗ Точка 3): неавторизований корінь / → одразу робочий стіл
+import { isLocalWorkspaceEnabled } from '../modules/winterboard/config/featureFlags'
 
 const routes = [
   // Role selection landing page (root redirect)
@@ -1124,6 +1126,14 @@ router.beforeEach(async (to, from, next) => {
   if (!isAuthenticated) {
     if (isAuthRoute || isInviteRoute || isStartRoute) {
       return next()
+    }
+    // Local Workspace (ТЗ Точка 3, 2026-07-16): неавторизований корінь `/` веде
+    // ОДРАЗУ на робочий стіл `/workspace` (не на лендінг `/start`). Лендінг і
+    // логін лишаються доступні окремими кнопками ([Підключити хмару] → /start →
+    // «Увійти»), але не як обов'язковий перший крок. Гейт — той самий флаг фічі.
+    // Лише корінь: інші protected-роути неавторизованого досі ведуть на /start.
+    if (to.path === '/' && isLocalWorkspaceEnabled()) {
+      return next('/workspace')
     }
     return next({ path: '/start', query: { redirect: to.fullPath } })
   }
