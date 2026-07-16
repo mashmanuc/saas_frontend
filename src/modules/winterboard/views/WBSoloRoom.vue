@@ -256,7 +256,7 @@
           v-if="isLocalWorkspace"
           type="button"
           class="wb-header-btn wb-header-btn--cloud"
-          @click="goToCloudSignup"
+          @click="onHeaderConnectCloud"
         >
           {{ t('winterboard.localWorkspace.connectCloud') }}
         </button>
@@ -271,7 +271,7 @@
       :open="showCloudUpsell"
       :message="cloudUpsellMessage"
       @close="showCloudUpsell = false"
-      @connect="goToCloudSignup"
+      @connect="onUpsellConnect"
     />
 
     <!-- FTUE: ненав'язлива підказка «зберегти як шаблон» — смуга під топбаром.
@@ -1045,6 +1045,9 @@ import {
 } from '../local/localWorkspaceStorage'
 import { buildLocalWelcomeState } from '../local/localWorkspaceSeed'
 import { buildHandoffOps } from '../local/localWorkspaceHandoff'
+// Телеметрія воронки гостя (wb.local.*, анонімний ID без PII) — LAW §15 виняток
+import { trackLocal, trackEngagement } from '../local/localWorkspaceTelemetry'
+import { flush as flushTelemetry } from '@/utils/telemetryAgent'
 // Local Workspace Phase 2 (ТЗ §4): хмарний upsell + перемикач мови для гостя
 import CloudUpsellModal from '../components/dialogs/CloudUpsellModal.vue'
 import WBLanguageSwitcher from '../components/WBLanguageSwitcher.vue'
@@ -1086,6 +1089,7 @@ const cloudUpsellKind = ref<CloudUpsellKind>('generic')
 function openCloudUpsell(kind: CloudUpsellKind): void {
   cloudUpsellKind.value = kind
   showCloudUpsell.value = true
+  trackLocal('upsell_shown', { variant: kind })
 }
 
 const cloudUpsellMessage = computed(() =>
@@ -1103,9 +1107,21 @@ function goToCloudSignup(): void {
   router.push({ path: '/start', query: { redirect: '/workspace' } })
 }
 
+// Телеметрія: розрізняємо джерело CTA — хедер vs upsell-модал (яка з точок конвертує).
+function onHeaderConnectCloud(): void {
+  trackLocal('connect_cloud_clicked')
+  goToCloudSignup()
+}
+
+function onUpsellConnect(): void {
+  trackLocal('upsell_cta', { variant: cloudUpsellKind.value })
+  goToCloudSignup()
+}
+
 // Точка 2: існуючий користувач → прямий логін (без handoff-буфера —
 // він іде у свій кабінет, а не переносить локальну дошку).
 function goToLogin(): void {
+  trackLocal('login_clicked')
   router.push('/auth/login')
 }
 
@@ -2996,6 +3012,7 @@ async function connectPresenceSafe(sid: string): Promise<void> {
 
 let _localSaver: ThrottledSaver | null = null
 let _unsubLocalPersist: (() => void) | null = null
+let _unsubLocalTelemetry: (() => void) | null = null
 
 function persistLocalWorkspaceNow(): void {
   const ok = saveLocalWorkspace(store.workspaceName, store.serializedState)
@@ -3070,11 +3087,15 @@ async function importCloudHandoff(): Promise<string | null> {
     // чистяться; seeded-флаг лишається (подарунок вдруге не генерується).
     clearHandoff()
     clearLocalWorkspace()
+    // 🏁 Конверсія: стріляє АВТЕНТИФІКОВАНИМ → рядок телеметрії має і user_id,
+    // і anon_id (з context) — повна атрибуція шляху гість→юзер.
+    trackLocal('handoff_imported', { ok: true, ops_count: ops.length })
     return sid
   } catch (err) {
     // Буфер НЕ чистимо (ТЗ §5) — наступний візит /workspace повторить імпорт
     // з тими самими op_id/сесією. Без retry-loop тут: одна спроба за візит.
     console.error('[LocalWS] handoff import failed (buffer preserved):', err)
+    trackLocal('handoff_imported', { ok: false })
     _folderFallbackToast.showToast(t('winterboard.localWorkspace.handoffFailed'), 'error')
     return null
   } finally {
@@ -3094,6 +3115,9 @@ async function initLocalWorkspace(): Promise<void> {
   if (authStore.access) {
     const importedSessionId = await importCloudHandoff()
     if (importedSessionId) {
+      // Дослати буферизовану телеметрію ДО full reload — інакше 🏁-подія
+      // handoff_imported загубиться разом із JS-контекстом.
+      try { await flushTelemetry() } catch { /* телеметрія не блокує redirect */ }
       // FULL reload, НЕ router.replace: /workspace і /winterboard/:id рендерять
       // той самий WBSoloRoom → SPA-навігація ПЕРЕВИКОРИСТОВУЄ інстанс
       // (onMounted не перезапускається, сесія не вантажиться, isLocalWorkspace
@@ -3107,24 +3131,32 @@ async function initLocalWorkspace(): Promise<void> {
   }
 
   const snapshot = loadLocalWorkspace()
+  const wasSeededBefore = isLocalWorkspaceSeeded()
   let state = snapshot?.state ?? null
   const name = snapshot?.name || t('winterboard.localWorkspace.title')
   const savedAtIso = snapshot ? new Date(snapshot.savedAt).toISOString() : new Date().toISOString()
 
   if (!state) {
-    if (!isLocalWorkspaceSeeded()) {
+    if (!wasSeededBefore) {
       // «Подарунок» першого візиту (ТЗ §3): 3D-куб + парабола + привітання.
       state = buildLocalWelcomeState({
         title: t('winterboard.localWorkspace.seedTitle'),
         hint: t('winterboard.localWorkspace.seedHint'),
       })
       markLocalWorkspaceSeeded()
+      trackLocal('seed_shown')
     } else {
       // Користувач свідомо очистив стіл раніше — порожня сторінка
       // (hydrateFromSession сам створить empty page для pages: []).
       state = { pages: [], currentPageIndex: 0 }
     }
   }
+
+  // Воронка: вхід на робочий стіл (перший візит vs повторний).
+  trackLocal('workspace_opened', {
+    first_visit: !snapshot && !wasSeededBefore,
+    returning: !!snapshot,
+  })
 
   store.workspaceId = 'local-workspace'
   store.hydrateFromSession({
@@ -3153,6 +3185,22 @@ async function initLocalWorkspace(): Promise<void> {
     _localSaver?.schedule()
   })
   document.addEventListener('visibilitychange', _handleLocalVisibility)
+
+  // Телеметрія engagement: слухаємо семантичні op-и стора ЛИШЕ для лічильників
+  // (wb.local.engaged / tool_used, session-dedupe всередині). Це НЕ ops-протокол:
+  // recorder/opsSync не під'єднані, op-и нікуди не шляться (LAW §15 Rule 1 цілий).
+  _unsubLocalTelemetry = store.onOperation((op) => {
+    // grid_update емиться grid-watcher-ом ПРИ MOUNT (без дії юзера) —
+    // без фільтра кожен візит миттєво ставав «engaged» (шум у воронці).
+    if (op.op_type === 'grid_update') return
+    let kind = op.op_type
+    if (op.op_type === 'stroke_add') {
+      kind = `stroke:${(op.payload as { stroke?: { tool?: string } })?.stroke?.tool ?? 'unknown'}`
+    } else if (op.op_type === 'asset_add') {
+      kind = `asset:${(op.payload as { asset?: { type?: string } })?.asset?.type ?? 'unknown'}`
+    }
+    trackEngagement(kind)
+  })
 
   // Перший візит: записати seed одразу, щоб F5 до першої мутації не втратив подарунок.
   if (!snapshot) persistLocalWorkspaceNow()
@@ -3525,6 +3573,8 @@ onBeforeUnmount(async () => {
     _localSaver?.flush()
     _unsubLocalPersist?.()
     _unsubLocalPersist = null
+    _unsubLocalTelemetry?.()
+    _unsubLocalTelemetry = null
     document.removeEventListener('visibilitychange', _handleLocalVisibility)
   }
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }

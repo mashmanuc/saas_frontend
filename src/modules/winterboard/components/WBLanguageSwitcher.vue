@@ -40,6 +40,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
+import { trackLocal } from '../local/localWorkspaceTelemetry'
 
 const LANGS = [
   { code: 'uk', label: 'Українська', short: 'УКР' },
@@ -57,6 +58,7 @@ const currentShort = computed(
 async function pick(code: string): Promise<void> {
   await setLocale(code)
   open.value = false
+  trackLocal('language_changed', { lang: code })
 }
 </script>
 
