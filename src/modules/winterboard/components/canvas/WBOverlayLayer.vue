@@ -25,6 +25,7 @@ import { computed, ref } from 'vue'
 
 import type { WBAsset } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
+import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
@@ -82,6 +83,9 @@ const ctx = computed<OverlayCtx>(() => ({
   },
   onUpdate: (asset: WBAsset) => emit('asset-update', asset),
   onDelete: (id: string) => emit('asset-delete', id),
+  // WYSIWYG перекриття (overlayTopHit): той самий шлях, що @select-other у
+  // legacy-блоках WBCanvas — selectItems, без нових write-шляхів.
+  onSelectOther: (id: string) => wbStore.selectItems([id]),
   onFormulaEdit: (id: string) => emit('formula-card-edit', id),
   onSpawnCompanions: (payload: unknown) => emit('spawn-companions', payload),
   graph: {
@@ -129,6 +133,37 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   }
   return props.getOverlayStyle(item.asset)
 }
+
+/**
+ * INV-OVERLAY-CLICK v2 — центральний select-guard для ВСІХ overlay-типів.
+ *
+ * Capture-фаза на wrapper ловить pointerdown з будь-якої інтерактивної
+ * поверхні renderer-а (canvas/svg/кнопки) ДО його власних обробників:
+ *  - у точці кліку ЗВЕРХУ намальована чужа картка → клік належить ЇЙ:
+ *    перемикаємо виділення, подію гасимо (WYSIWYG перекриття);
+ *  - інакше картка ще не виділена → виділяємо ЇЇ тим самим жестом
+ *    (транзієнт z:5 «вискакує» наверх) і НЕ гасимо — інструмент картки
+ *    обробляє той самий дотик (виділення + взаємодія одним жестом).
+ *
+ * Тіла A-типів (geomash/nmt3d/...) невиділеними прозорі (pointer-events:none)
+ * → подія до wrapper не доходить, селект іде через Konva proxy як раніше.
+ * Expanded-оверлей покриває полотно свідомо — guard для нього пропускаємо.
+ */
+function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
+  if (wbStore.mode !== 'edit') return
+  if (item.entry.expandable && expandedId.value === item.asset.id) return
+  const own = ev.currentTarget as HTMLElement | null
+  const other = topmostForeignOverlayAssetId(ev.clientX, ev.clientY, own)
+  if (other) {
+    ev.stopPropagation()
+    ev.preventDefault()
+    wbStore.selectItems([other])
+    return
+  }
+  if (!wbStore.selectedIds.includes(item.asset.id)) {
+    wbStore.selectItems([item.asset.id])
+  }
+}
 </script>
 
 <template>
@@ -138,6 +173,7 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
       v-bind="{ [item.entry.dataAttr]: item.asset.id }"
       :data-testid="`${item.entry.testidPrefix}-${item.asset.id}`"
       :style="wrapperStyle(item)"
+      @pointerdown.capture="onWrapperPointerDownCapture(item, $event)"
     >
       <component
         :is="item.entry.component"
@@ -263,15 +299,6 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
 
-/* Виділений overlay піднімається над іншими (база z:4) → його внутрішній
-   pointer-events:auto stage стає топ-most і виграє клік у зоні накладання
-   (інакше нижній ВИДІЛЕНИЙ ловив клік крізь pointer-events:none верхнього).
-   ТРАНЗІЄНТНО — лише поки виділено; логічний z-порядок assets[] не змінюється
-   (ручне шарування + replay лишаються чистими). Нижче за expanded (z:50). */
-.wb-overlay--selected {
-  z-index: 5;
-}
-
 /* Board-expand state (shared) — позиція inline, тут скидаємо border/radius. */
 .wb-overlay--board-expanded {
   border-radius: 0 !important;
@@ -363,5 +390,20 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
 }
 .wb-graphmash3d-overlay--selected {
   box-shadow: 0 0 0 2px rgba(45, 112, 179, 0.4);
+}
+
+/* Виділений overlay піднімається над іншими (база z:4) → його внутрішній
+   pointer-events:auto stage стає топ-most і виграє клік у зоні накладання
+   (інакше нижній ВИДІЛЕНИЙ ловив клік крізь pointer-events:none верхнього).
+   ТРАНЗІЄНТНО — лише поки виділено; логічний z-порядок assets[] не змінюється
+   (ручне шарування + replay лишаються чистими). Нижче за expanded (z:50 inline).
+
+   ⚠️ МУСИТЬ бути ОСТАННІМ правилом блоку: специфічність однакова з базовими
+   .wb-*-overlay {z-index:4} → перемагає порядок у файлі. Коли правило стояло
+   посередині, типи оголошені ПІСЛЯ нього (nmt3d/trig_solver/nmt_task/theory/
+   mash_scene/geomash/graphmash3d) НЕ піднімались при виділенні (баг «піраміда
+   не вискакує», 2026-07-16). Нові wrapper-класи додавати ВИЩЕ цього правила. */
+.wb-overlay--selected {
+  z-index: 5;
 }
 </style>

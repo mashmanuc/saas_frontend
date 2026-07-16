@@ -84,6 +84,10 @@ export interface OverlayCtx {
   onFormulaEdit: (id: string) => void
   /** emit('spawn-companions', payload) */
   onSpawnCompanions: (payload: unknown) => void
+  /** WYSIWYG перекриття (overlayTopHit): renderer віддає клік картці, намальованій
+      вище у точці кліку → host перемикає виділення (selectItems). Раніше
+      @select-other жив ЛИШЕ у legacy-блоках WBCanvas — у unified губився. */
+  onSelectOther: (id: string) => void
   /** graph_calculator store-методи */
   graph: OverlayGraphHandlers
 }
@@ -122,6 +126,9 @@ const stdEvents = (
 ): Record<string, (...args: any[]) => void> => ({
   'update:asset': (updated: WBAsset) => ctx.onUpdate(updated),
   delete: () => ctx.onDelete(asset.id),
+  // WYSIWYG перекриття: emit-иться лише renderer-ами з overlayTopHit-гардом
+  // (geomash/graphmash3d/geo2dv2); для решти listener просто не викликається.
+  'select-other': (id: string) => ctx.onSelectOther(id),
 })
 
 /** stdProps + is-expanded (для expandable типів). */

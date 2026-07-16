@@ -24,6 +24,7 @@
 -->
 <template>
   <div
+    ref="rootEl"
     class="geo2dv2-renderer"
     :class="{
       'is-selected': isSelected,
@@ -47,8 +48,15 @@
     </header>
 
     <!-- Stage — JSXGraph-style SVG live engine. pointer-events:auto всередині
-         потрібно для drag free points. Сам stage container НЕ є drag-zone картки. -->
-    <div ref="stageRef" class="geo2dv2-stage geo-stage" data-testid="geometry-2d-v2-board" />
+         потрібно для drag free points. Сам stage container НЕ є drag-zone картки.
+         pointerdown.capture — WYSIWYG-гард перекриття (overlayTopHit) ПЕРЕД
+         vendor-обробниками JSXGraph (mirror GeomashRenderer.onStagePointerDown). -->
+    <div
+      ref="stageRef"
+      class="geo2dv2-stage geo-stage"
+      data-testid="geometry-2d-v2-board"
+      @pointerdown.capture="onStagePointerDownCapture"
+    />
 
     <!-- Toolbar host — bundle inject-ить туди button.tool elements (preset toggles:
          Медіани · Висоти · Бісектриси · Медіатриси · Вписане · Описане · Сер. лінія
@@ -70,6 +78,11 @@ import type { GeoCardInstance, GeoPresetMeta } from '../../../vendor/geo2d'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
+import {
+  registerGeo2dInspector,
+  unregisterGeo2dInspector,
+} from '../../../board/state/geo2dInspectorState'
 
 const { t, te, locale } = useI18n()
 
@@ -86,10 +99,33 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:asset': [asset: Geometry2DV2Asset]
   delete: []
+  'select-other': [assetId: string]
 }>()
 
+const rootEl = ref<HTMLElement | null>(null)
 const stageRef = ref<HTMLElement | null>(null)
 const toolbarRef = ref<HTMLElement | null>(null)
+
+/**
+ * WYSIWYG при перекритті (mirror GeomashRenderer): stage має pointer-events:auto
+ * на ВСІЙ площі (JSXGraph drag), тому без гарда з'їдає кліки навіть там, де
+ * ВІЗУАЛЬНО зверху лежить інша картка (її обгортка pointer-events:none —
+ * hit-test її не бачить). Якщо в точці кліку чужа картка намальована вище —
+ * клік належить ЇЙ: перемикаємо виділення, JSXGraph події не отримує (capture+stop).
+ */
+function onStagePointerDownCapture(ev: PointerEvent) {
+  const other = topmostForeignOverlayAssetId(ev.clientX, ev.clientY, rootEl.value)
+  if (other) {
+    ev.stopPropagation()
+    ev.preventDefault()
+    emit('select-other', other)
+    return
+  }
+  // INV-OVERLAY-CLICK v2 п.2: pointerdown по тілу = виділення + взаємодія ОДНИМ
+  // жестом — картка виділяється (транзієнт z:5, «вискакує» наверх), а JSXGraph
+  // далі обробляє той самий дотик (без stopPropagation). Той самий selectItems-шлях.
+  if (!props.isSelected) emit('select-other', props.asset.id)
+}
 
 // EXPORT_PREPARATION_SSOT INV-EP-8: thin adapter, no business logic here.
 // JSXGraph renders SVG inside stageRef — snapshotElement picks first <svg>.
@@ -104,8 +140,13 @@ let bundleReady = false
 let _pointMoveTimer: ReturnType<typeof setTimeout> | null = null
 
 const presetLabel = computed(() => {
-  const meta = (window.GEO_PRESETS || []).find((m: GeoPresetMeta) => m.type === props.asset.data.preset)
-  return meta?.full || props.asset.data.preset || 'Геометрія'
+  // i18n-first (2026-07-16): vendor GEO_PRESETS.full — укр хардкод; переклади
+  // winterboard.geo2dV2.preset.<key>.full давно існують ×3 локалі, але не читались.
+  const preset = props.asset.data.preset
+  const i18nKey = `winterboard.geo2dV2.preset.${preset}.full`
+  if (preset && te(i18nKey)) return t(i18nKey)
+  const meta = (window.GEO_PRESETS || []).find((m: GeoPresetMeta) => m.type === preset)
+  return meta?.full || preset || 'Геометрія'
 })
 
 async function ensureBundle(): Promise<void> {
@@ -143,6 +184,9 @@ async function mount(): Promise<void> {
     wireToolbarPersistence()
     toolbarRef.value.appendChild(toolbarEl)
     localizeToolbar()
+    // Тулбар народився ПІСЛЯ watch(isSelected immediate) — якщо картка вже
+    // виділена (напр. вставка з авто-виділенням), доганяємо реєстрацію інспектора.
+    syncInspector(props.isSelected)
   }
   // Apply pointer-events policy based on current interactive prop.
   syncPointerEvents()
@@ -230,7 +274,27 @@ function destroyCard(): void {
 }
 
 onMounted(() => { void mount() })
-onUnmounted(() => { destroyCard() })
+onUnmounted(() => {
+  unregisterGeo2dInspector(props.asset.id)
+  destroyCard()
+})
+
+// ── Правий сайдбар-інспектор: перемикачі побудов при виділенні (запит власника
+// 2026-07-16 — «кнопки знизу геометрії мають бути у правому сайдбарі»).
+// vendor-тулбар ТЕЛЕПОРТУЄТЬСЯ у Geo2dInspector (appendChild переміщує вузол
+// разом з live listeners); при знятті виділення — повертається у картку
+// (там CSS ховає його поза .is-selected, тож візуально кнопки живуть ЛИШЕ в сайдбарі).
+function syncInspector(sel: boolean): void {
+  if (sel && toolbarEl) {
+    registerGeo2dInspector(props.asset.id, { label: presetLabel.value, toolbarEl })
+  } else {
+    unregisterGeo2dInspector(props.asset.id)
+    if (toolbarEl && toolbarRef.value && toolbarEl.parentElement !== toolbarRef.value) {
+      toolbarRef.value.appendChild(toolbarEl) // повернути з сайдбар-хоста назад у картку
+    }
+  }
+}
+watch(() => props.isSelected, syncInspector, { immediate: true })
 
 watch(() => props.asset.data.preset, async (next, prev) => {
   if (next === prev) return

@@ -403,6 +403,7 @@
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
           @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
           @delete="emit('asset-delete', asset.id)"
+          @select-other="(id: string) => wbStore.selectItems([id])"
         />
       </div>
     </template>
@@ -845,6 +846,7 @@ import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { usePageGrid } from '../../composables/usePageGrid'
+import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
 import { useGrouping } from '../../composables/useGrouping'
 import { useLocking } from '../../composables/useLocking'
@@ -3871,13 +3873,38 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   }
 }
 
+/** Мінімум картки, що МУСИТЬ лишатись у межах сторінки, щоб хедер був досяжним. */
+const ASSET_REACH_PX = 48
+
+/**
+ * Клемп позиції картки: хедер (верх картки) ніколи не виходить за верхній край
+ * сторінки і завжди частково досяжний по горизонталі/знизу. Інакше картку
+ * неможливо перетягнути назад (drag-зона = лише header; тіло — інструмент).
+ * Низ/боки дозволяють звисання — досяжним лишається ASSET_REACH_PX хедера.
+ */
+function clampAssetToPage(asset: WBAsset, x: number, y: number): { x: number; y: number } {
+  const page = wbStore.currentPage
+  const pageW = page?.width ?? PAGE_WIDTH
+  const pageH = page?.height ?? PAGE_HEIGHT
+  return {
+    // ліворуч/праворуч: хоча б ASSET_REACH_PX ширини картки в межах сторінки
+    x: Math.min(Math.max(x, ASSET_REACH_PX - asset.w), pageW - ASSET_REACH_PX),
+    // верх: хедер не вище краю (y >= 0); низ: хедер не нижче краю сторінки
+    y: Math.min(Math.max(y, 0), pageH - ASSET_REACH_PX),
+  }
+}
+
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   const node = e.target
   liveTransform.value = null // clear drag live-sync — overlay знову читає зі store
+  const clamped = clampAssetToPage(asset, node.x(), node.y())
+  // Konva-нода лишилась за межами — повертаємо і її, інакше proxy розсинхрон з overlay
+  if (clamped.x !== node.x()) node.x(clamped.x)
+  if (clamped.y !== node.y()) node.y(clamped.y)
   emit('asset-update', {
     ...asset,
-    x: node.x(),
-    y: node.y(),
+    x: clamped.x,
+    y: clamped.y,
   })
 }
 
@@ -3933,11 +3960,16 @@ function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event
   node.scaleX(1)
   node.scaleY(1)
 
+  // Resize за верхній/лівий хендл теж може виштовхнути хедер за край — клемп як у drag
+  const newW = Math.round(node.width() * scaleX)
+  const clamped = clampAssetToPage({ ...asset, w: newW }, node.x(), node.y())
+  if (clamped.x !== node.x()) node.x(clamped.x)
+  if (clamped.y !== node.y()) node.y(clamped.y)
   emit('asset-update', {
     ...asset,
-    x: node.x(),
-    y: node.y(),
-    w: Math.round(node.width() * scaleX),
+    x: clamped.x,
+    y: clamped.y,
+    w: newW,
     h: Math.round(node.height() * scaleY),
     rotation: node.rotation(),
   })
