@@ -119,6 +119,7 @@ const ANALYSIS_INSERTS: InsertEntry[] = [
     labelKey: 'winterboard.contentSidebar.graphCalcLabel',
     labelFallback: 'Графічний калькулятор',
     iconKey: 'graphCalc',
+    sublabelKey: 'winterboard.insertTiles.graphCalcSub',
     sublabel: 'y = f(x) · графік · функції',
     keywords: kw('графічний калькулятор', 'graph', 'function', 'y f x', 'функції'),
   },
@@ -186,7 +187,7 @@ const TRIG_INSERTS: InsertEntry[] = [
     category: 'trig',
     dragMime: TRIG_SOLVER_DRAG_MIME,
     payload: JSON.stringify({ type: 'sin' }),
-    // trig_solver підписи у трею hardcoded (без i18n) — дзеркалимо як fallback
+    labelKey: 'winterboard.insertTiles.trigSolver',
     labelFallback: 'рівняння / нерівності',
     iconKey: 'solver',
     sublabel: 'sin · cos · tg · ctg · =/>/<',

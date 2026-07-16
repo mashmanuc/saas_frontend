@@ -7297,6 +7297,18 @@
         "thales": {
           "full": "Thales",
           "desc": "3 parallels · ratios"
+        },
+        "blank": {
+          "full": "Blank plane",
+          "desc": "coordinate grid"
+        },
+        "parallelogram": {
+          "full": "Parallelogram",
+          "desc": "diagonals · height"
+        },
+        "right_triangle": {
+          "full": "Right triangle",
+          "desc": "angle A = 90°"
         }
       }
     },
@@ -8588,6 +8600,178 @@
         "cubeSection3": "Cube with a section through 3 points",
         "pyramid4Section3": "Pyramid with a section through 3 points",
         "prism4Section3": "Prism with a section through 3 points"
+      },
+      "aux": {
+        "cube": {
+          "bodyDiag": "diagonal AC₁",
+          "faceDiag": "face diagonal A₁C₁",
+          "diagSect": "section AB₁C₁D",
+          "center": "center O",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "cuboid": {
+          "bodyDiag": "diagonal AC₁",
+          "diagSectAC": "diagonal section ACC₁A₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, b, c",
+          "baseCirc": "base circumcircle"
+        },
+        "pyramid4": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "diags": "base diagonals",
+          "axSect": "axial section SAC",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "pyramid3": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "median": "median CM",
+          "axSect": "axial section SCM",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "prism4": {
+          "bodyDiag": "diagonal AC₁",
+          "diagSectAC": "diagonal section ACC₁A₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, h",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "cylinder": {
+          "height": "height OO₁",
+          "axSect": "axial section",
+          "radius": "radius"
+        },
+        "cone": {
+          "height": "height SO",
+          "slant": "generatrix SA",
+          "axSect": "axial section"
+        },
+        "sphere": {
+          "equator": "equator",
+          "axis": "axis NS",
+          "radius": "radius OA"
+        },
+        "trapPyramid": {
+          "height": "height SO ⊥ of base",
+          "axMid": "section through midpoints of AB and CD",
+          "axAC": "section SAC",
+          "axBD": "section SBD",
+          "baseDiags": "base diagonals",
+          "midSect": "section at height h/2",
+          "sides": "label a, b, d"
+        },
+        "prism6": {
+          "smallDiag": "minor diagonal AC",
+          "bigDiag": "major diagonal AD",
+          "bodyDiag": "diagonal AD₁",
+          "apothem": "base apothem OM",
+          "diagSect": "diagonal section AD D₁A₁",
+          "sides": "label a, h",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "pyramid6": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "bigDiag": "base diagonal AD",
+          "axSect": "axial section SAD",
+          "sides": "label a, h",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "ngonPyramid": {
+          "height": "height SO",
+          "apothem": "apothem SM",
+          "axSect": "axial section",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "ngonPrism": {
+          "bodyDiag": "space diagonal",
+          "apothem": "base apothem OM",
+          "sides": "label a, h",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "tetrahedron": {
+          "height": "height DO",
+          "apothem": "apothem DM",
+          "median": "median CM",
+          "axSect": "axial section DCM",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "frustumPyramid4": {
+          "height": "height OO₁",
+          "apothem": "apothem MM₁",
+          "axSect": "axial section ACC₁A₁",
+          "sides": "label a, b, h",
+          "baseIncBot": "bottom base incircle",
+          "baseCircBot": "bottom base circumcircle",
+          "baseIncTop": "top base incircle",
+          "baseCircTop": "top base circumcircle"
+        },
+        "obliquePrism4": {
+          "height": "height A₁H (⊥ to base)",
+          "lateral": "lateral edge AA₁",
+          "diagSect": "section AB₁C₁D",
+          "sides": "label a, h",
+          "baseInc": "base incircle",
+          "baseCirc": "base circumcircle"
+        },
+        "frustumCone": {
+          "height": "height OO₁",
+          "slant": "generatrix AA₁",
+          "axSect": "axial section"
+        },
+        "cubeInscribedSphere": {
+          "centerLabel": "center O",
+          "radius": "radius OM",
+          "cubeDiag": "cube diagonal AC₁",
+          "tangents": "tangency points"
+        },
+        "cubeCircumSphere": {
+          "centerLabel": "center O",
+          "radius": "radius OA",
+          "cubeDiag": "cube diagonal AC₁ = 2R"
+        },
+        "cylinderInscribedSphere": {
+          "sphereCenter": "center O",
+          "radius": "sphere radius",
+          "height": "cylinder height 2R",
+          "axSect": "axial section"
+        },
+        "sphereInscribedCone": {
+          "sphereCenter": "center O",
+          "coneHeight": "cone height",
+          "coneRadius": "cone base radius",
+          "sphereEquator": "sphere equator"
+        },
+        "coneInscribedCylinder": {
+          "cylHeight": "cylinder height",
+          "cylRadius": "cylinder radius",
+          "coneHeight": "cone height"
+        },
+        "cubeSection3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "section normal"
+        },
+        "pyramid4Section3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "section normal"
+        },
+        "prism4Section3": {
+          "fill": "section fill",
+          "verticesLabel": "label section vertices",
+          "normal": "section normal"
+        }
       }
     },
     "quadratic": {
@@ -8681,7 +8865,40 @@
       "curve3d": "Parametric curve",
       "vectorField3d": "Vector field",
       "geomashScene": "GeoMASH scene",
-      "geomashSceneSub": "live geometry"
+      "geomashSceneSub": "live geometry",
+      "trigSolver": "Equations / inequalities",
+      "graphCalcSub": "y = f(x) · plot · functions",
+      "trigSolverHint": "Trigonometric equation / inequality"
+    },
+    "graphmash3d": {
+      "surfaces": "Surfaces",
+      "addSurface": "+ surface",
+      "addSurfaceHint": "Add a surface",
+      "limitReached": "Limit reached",
+      "surfaceColor": "Surface color",
+      "editFormula": "Edit formula (Enter to apply)",
+      "duplicateSurface": "Duplicate surface",
+      "deleteSurface": "Delete surface",
+      "wireframe": "wireframe",
+      "opacity": "opacity",
+      "detail": "detail",
+      "domain": "domain ±",
+      "camera": "Camera",
+      "resetCam": "Reset",
+      "fitCam": "Fit",
+      "ortho": "ortho",
+      "orbit": "orbit",
+      "orbitHint": "Mouse orbit: drag the surface while selected",
+      "editIn3d": "Edit in GraphMASH 3D",
+      "hide": "Hide",
+      "show": "Show",
+      "emptyScene": "Empty scene",
+      "params": "Parameters",
+      "pause": "Pause",
+      "autoPlay": "Auto-play",
+      "bounds": "bounds",
+      "min": "Minimum",
+      "max": "Maximum"
     }
   },
   "storage": {

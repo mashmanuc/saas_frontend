@@ -7468,6 +7468,18 @@
         "thales": {
           "full": "Фалес",
           "desc": "3 параллельных · ratios"
+        },
+        "blank": {
+          "full": "Пустая плоскость",
+          "desc": "координатная сетка"
+        },
+        "parallelogram": {
+          "full": "Параллелограмм",
+          "desc": "диагонали · высота"
+        },
+        "right_triangle": {
+          "full": "Прямоугольный треугольник",
+          "desc": "угол A = 90°"
         }
       }
     },
@@ -8450,6 +8462,178 @@
         "cubeSection3": "Куб с сечением через 3 точки",
         "pyramid4Section3": "Пирамида с сечением через 3 точки",
         "prism4Section3": "Призма с сечением через 3 точки"
+      },
+      "aux": {
+        "cube": {
+          "bodyDiag": "диагональ AC₁",
+          "faceDiag": "диагональ грани A₁C₁",
+          "diagSect": "сечение AB₁C₁D",
+          "center": "центр O",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "cuboid": {
+          "bodyDiag": "диагональ AC₁",
+          "diagSectAC": "диаг. сечение ACC₁A₁",
+          "diagSect": "сечение AB₁C₁D",
+          "sides": "обозначить a, b, c",
+          "baseCirc": "описанная окружность основания"
+        },
+        "pyramid4": {
+          "height": "высота SO",
+          "apothem": "апофема SM",
+          "diags": "диагонали основания",
+          "axSect": "осевое сечение SAC",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "pyramid3": {
+          "height": "высота SO",
+          "apothem": "апофема SM",
+          "median": "медиана CM",
+          "axSect": "осевое сечение SCM",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "prism4": {
+          "bodyDiag": "диагональ AC₁",
+          "diagSectAC": "диаг. сечение ACC₁A₁",
+          "diagSect": "сечение AB₁C₁D",
+          "sides": "обозначить a, h",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "cylinder": {
+          "height": "высота OO₁",
+          "axSect": "осевое сечение",
+          "radius": "радиус"
+        },
+        "cone": {
+          "height": "высота SO",
+          "slant": "образующая SA",
+          "axSect": "осевое сечение"
+        },
+        "sphere": {
+          "equator": "экватор",
+          "axis": "ось NS",
+          "radius": "радиус OA"
+        },
+        "trapPyramid": {
+          "height": "высота SO ⊥ основания",
+          "axMid": "сечение через серед. AB и CD",
+          "axAC": "сечение SAC",
+          "axBD": "сечение SBD",
+          "baseDiags": "диагонали основания",
+          "midSect": "сечение на высоте h/2",
+          "sides": "обозначить a, b, d"
+        },
+        "prism6": {
+          "smallDiag": "малая диагональ AC",
+          "bigDiag": "большая диагональ AD",
+          "bodyDiag": "диагональ AD₁",
+          "apothem": "апофема основания OM",
+          "diagSect": "диаг. сечение AD D₁A₁",
+          "sides": "обозначить a, h",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "pyramid6": {
+          "height": "высота SO",
+          "apothem": "апофема SM",
+          "bigDiag": "диагональ основания AD",
+          "axSect": "осевое сечение SAD",
+          "sides": "обозначить a, h",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "ngonPyramid": {
+          "height": "высота SO",
+          "apothem": "апофема SM",
+          "axSect": "осевое сечение",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "ngonPrism": {
+          "bodyDiag": "диагональ тела",
+          "apothem": "апофема основания OM",
+          "sides": "обозначить a, h",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "tetrahedron": {
+          "height": "высота DO",
+          "apothem": "апофема DM",
+          "median": "медиана CM",
+          "axSect": "осевое сечение DCM",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "frustumPyramid4": {
+          "height": "высота OO₁",
+          "apothem": "апофема MM₁",
+          "axSect": "осевое сечение ACC₁A₁",
+          "sides": "обозначить a, b, h",
+          "baseIncBot": "вписанная окружность нижнего основания",
+          "baseCircBot": "описанная окружность нижнего основания",
+          "baseIncTop": "вписанная окружность верхнего основания",
+          "baseCircTop": "описанная окружность верхнего основания"
+        },
+        "obliquePrism4": {
+          "height": "высота A₁H (⊥ к основанию)",
+          "lateral": "боковое ребро AA₁",
+          "diagSect": "сечение AB₁C₁D",
+          "sides": "обозначить a, h",
+          "baseInc": "вписанная окружность основания",
+          "baseCirc": "описанная окружность основания"
+        },
+        "frustumCone": {
+          "height": "высота OO₁",
+          "slant": "образующая AA₁",
+          "axSect": "осевое сечение"
+        },
+        "cubeInscribedSphere": {
+          "centerLabel": "центр O",
+          "radius": "радиус OM",
+          "cubeDiag": "диагональ куба AC₁",
+          "tangents": "точки касания"
+        },
+        "cubeCircumSphere": {
+          "centerLabel": "центр O",
+          "radius": "радиус OA",
+          "cubeDiag": "диагональ куба AC₁ = 2R"
+        },
+        "cylinderInscribedSphere": {
+          "sphereCenter": "центр O",
+          "radius": "радиус шара",
+          "height": "высота цилиндра 2R",
+          "axSect": "осевое сечение"
+        },
+        "sphereInscribedCone": {
+          "sphereCenter": "центр O",
+          "coneHeight": "высота конуса",
+          "coneRadius": "радиус основания конуса",
+          "sphereEquator": "экватор шара"
+        },
+        "coneInscribedCylinder": {
+          "cylHeight": "высота цилиндра",
+          "cylRadius": "радиус цилиндра",
+          "coneHeight": "высота конуса"
+        },
+        "cubeSection3": {
+          "fill": "заливка сечения",
+          "verticesLabel": "обозначить вершины сечения",
+          "normal": "нормаль к сечению"
+        },
+        "pyramid4Section3": {
+          "fill": "заливка сечения",
+          "verticesLabel": "обозначить вершины сечения",
+          "normal": "нормаль к сечению"
+        },
+        "prism4Section3": {
+          "fill": "заливка сечения",
+          "verticesLabel": "обозначить вершины сечения",
+          "normal": "нормаль к сечению"
+        }
       }
     },
     "quadratic": {
@@ -8543,7 +8727,40 @@
       "curve3d": "Параметрическая кривая",
       "vectorField3d": "Векторное поле",
       "geomashScene": "GeoMASH-сцена",
-      "geomashSceneSub": "живая геометрия"
+      "geomashSceneSub": "живая геометрия",
+      "trigSolver": "уравнения / неравенства",
+      "graphCalcSub": "y = f(x) · график · функции",
+      "trigSolverHint": "Тригонометрическое уравнение / неравенство"
+    },
+    "graphmash3d": {
+      "surfaces": "Поверхности",
+      "addSurface": "+ поверхность",
+      "addSurfaceHint": "Добавить поверхность",
+      "limitReached": "Достигнут лимит",
+      "surfaceColor": "Цвет поверхности",
+      "editFormula": "Редактировать формулу (Enter — применить)",
+      "duplicateSurface": "Дублировать поверхность",
+      "deleteSurface": "Удалить поверхность",
+      "wireframe": "каркас",
+      "opacity": "прозрачность",
+      "detail": "детализация",
+      "domain": "домен ±",
+      "camera": "Камера",
+      "resetCam": "Сбросить",
+      "fitCam": "Вписать",
+      "ortho": "орто",
+      "orbit": "вращение",
+      "orbitHint": "Вращение мышью: перетащи поверхность когда выделено",
+      "editIn3d": "Редактировать в GraphMASH 3D",
+      "hide": "Скрыть",
+      "show": "Показать",
+      "emptyScene": "Пустая сцена",
+      "params": "Параметры",
+      "pause": "Пауза",
+      "autoPlay": "Авто-изменение (проиграть)",
+      "bounds": "границы",
+      "min": "Минимум",
+      "max": "Максимум"
     }
   },
   "knowledge": {

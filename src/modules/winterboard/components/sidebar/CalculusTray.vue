@@ -31,7 +31,7 @@
           <span class="calculus-tray__icon calculus-tray__icon--graph" aria-hidden="true">f(x)</span>
           <span class="calculus-tray__labels">
             <span class="calculus-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
-            <span class="calculus-tray__sublabel">y = f(x) · графік · функції</span>
+            <span class="calculus-tray__sublabel">{{ t('winterboard.insertTiles.graphCalcSub') }}</span>
           </span>
         </button>
         <button

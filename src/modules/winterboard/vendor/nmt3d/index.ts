@@ -60,6 +60,8 @@ export interface Nmt3dWorkspace {
   readonly measures: { sectionArea: number; sectionVertices: number } | null
   readonly pen: { tool: 'pen' | 'erase'; color: string; width: number }
   readonly template: {
+    /** Ключ шаблона (TEMPLATES.<key>) — стабільний ідентифікатор для i18n. */
+    key?: string
     name: string
     full?: string
     params: Record<string, { value: number; min: number; max: number; label: string; step?: number }>

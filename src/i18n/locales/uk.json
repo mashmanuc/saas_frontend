@@ -8074,6 +8074,18 @@
         "thales": {
           "full": "Фалес",
           "desc": "3 паралельні · ratios"
+        },
+        "blank": {
+          "full": "Порожня площина",
+          "desc": "координатна сітка"
+        },
+        "parallelogram": {
+          "full": "Паралелограм",
+          "desc": "діагоналі · висота"
+        },
+        "right_triangle": {
+          "full": "Прямокутний трикутник",
+          "desc": "кут A = 90°"
         }
       }
     },
@@ -8676,6 +8688,178 @@
         "cubeSection3": "Куб з перерізом через 3 точки",
         "pyramid4Section3": "Піраміда з перерізом через 3 точки",
         "prism4Section3": "Призма з перерізом через 3 точки"
+      },
+      "aux": {
+        "cube": {
+          "bodyDiag": "діагональ AC₁",
+          "faceDiag": "діагональ грані A₁C₁",
+          "diagSect": "переріз AB₁C₁D",
+          "center": "центр O",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "cuboid": {
+          "bodyDiag": "діагональ AC₁",
+          "diagSectAC": "діаг. переріз ACC₁A₁",
+          "diagSect": "переріз AB₁C₁D",
+          "sides": "позначити a, b, c",
+          "baseCirc": "описане коло основи"
+        },
+        "pyramid4": {
+          "height": "висота SO",
+          "apothem": "апофема SM",
+          "diags": "діагоналі основи",
+          "axSect": "осьовий переріз SAC",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "pyramid3": {
+          "height": "висота SO",
+          "apothem": "апофема SM",
+          "median": "медіана CM",
+          "axSect": "осьовий переріз SCM",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "prism4": {
+          "bodyDiag": "діагональ AC₁",
+          "diagSectAC": "діаг. переріз ACC₁A₁",
+          "diagSect": "переріз AB₁C₁D",
+          "sides": "позначити a, h",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "cylinder": {
+          "height": "висота OO₁",
+          "axSect": "осьовий переріз",
+          "radius": "радіус"
+        },
+        "cone": {
+          "height": "висота SO",
+          "slant": "твірна SA",
+          "axSect": "осьовий переріз"
+        },
+        "sphere": {
+          "equator": "екватор",
+          "axis": "вісь NS",
+          "radius": "радіус OA"
+        },
+        "trapPyramid": {
+          "height": "висота SO ⊥ основи",
+          "axMid": "переріз через серед. AB і CD",
+          "axAC": "переріз SAC",
+          "axBD": "переріз SBD",
+          "baseDiags": "діагоналі основи",
+          "midSect": "переріз на висоті h/2",
+          "sides": "позначити a, b, d"
+        },
+        "prism6": {
+          "smallDiag": "мала діагональ AC",
+          "bigDiag": "велика діагональ AD",
+          "bodyDiag": "діагональ AD₁",
+          "apothem": "апофема основи OM",
+          "diagSect": "діаг. переріз AD D₁A₁",
+          "sides": "позначити a, h",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "pyramid6": {
+          "height": "висота SO",
+          "apothem": "апофема SM",
+          "bigDiag": "діагональ основи AD",
+          "axSect": "осьовий переріз SAD",
+          "sides": "позначити a, h",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "ngonPyramid": {
+          "height": "висота SO",
+          "apothem": "апофема SM",
+          "axSect": "осьовий переріз",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "ngonPrism": {
+          "bodyDiag": "діагональ тіла",
+          "apothem": "апофема основи OM",
+          "sides": "позначити a, h",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "tetrahedron": {
+          "height": "висота DO",
+          "apothem": "апофема DM",
+          "median": "медіана CM",
+          "axSect": "осьовий переріз DCM",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "frustumPyramid4": {
+          "height": "висота OO₁",
+          "apothem": "апофема MM₁",
+          "axSect": "осьовий переріз ACC₁A₁",
+          "sides": "позначити a, b, h",
+          "baseIncBot": "вписане коло нижньої основи",
+          "baseCircBot": "описане коло нижньої основи",
+          "baseIncTop": "вписане коло верхньої основи",
+          "baseCircTop": "описане коло верхньої основи"
+        },
+        "obliquePrism4": {
+          "height": "висота A₁H (⊥ до основи)",
+          "lateral": "бічне ребро AA₁",
+          "diagSect": "переріз AB₁C₁D",
+          "sides": "позначити a, h",
+          "baseInc": "вписане коло основи",
+          "baseCirc": "описане коло основи"
+        },
+        "frustumCone": {
+          "height": "висота OO₁",
+          "slant": "твірна AA₁",
+          "axSect": "осьовий переріз"
+        },
+        "cubeInscribedSphere": {
+          "centerLabel": "центр O",
+          "radius": "радіус OM",
+          "cubeDiag": "діагональ куба AC₁",
+          "tangents": "точки дотику"
+        },
+        "cubeCircumSphere": {
+          "centerLabel": "центр O",
+          "radius": "радіус OA",
+          "cubeDiag": "діагональ куба AC₁ = 2R"
+        },
+        "cylinderInscribedSphere": {
+          "sphereCenter": "центр O",
+          "radius": "радіус кулі",
+          "height": "висота циліндра 2R",
+          "axSect": "осьовий переріз"
+        },
+        "sphereInscribedCone": {
+          "sphereCenter": "центр O",
+          "coneHeight": "висота конуса",
+          "coneRadius": "радіус основи конуса",
+          "sphereEquator": "екватор кулі"
+        },
+        "coneInscribedCylinder": {
+          "cylHeight": "висота циліндра",
+          "cylRadius": "радіус циліндра",
+          "coneHeight": "висота конуса"
+        },
+        "cubeSection3": {
+          "fill": "заливка перерізу",
+          "verticesLabel": "позначити вершини перерізу",
+          "normal": "нормаль до перерізу"
+        },
+        "pyramid4Section3": {
+          "fill": "заливка перерізу",
+          "verticesLabel": "позначити вершини перерізу",
+          "normal": "нормаль до перерізу"
+        },
+        "prism4Section3": {
+          "fill": "заливка перерізу",
+          "verticesLabel": "позначити вершини перерізу",
+          "normal": "нормаль до перерізу"
+        }
       }
     },
     "quadratic": {
@@ -8769,7 +8953,40 @@
       "curve3d": "Параметрична крива",
       "vectorField3d": "Векторне поле",
       "geomashScene": "GeoMASH-сцена",
-      "geomashSceneSub": "жива геометрія"
+      "geomashSceneSub": "жива геометрія",
+      "trigSolver": "рівняння / нерівності",
+      "graphCalcSub": "y = f(x) · графік · функції",
+      "trigSolverHint": "Тригонометричне рівняння / нерівність"
+    },
+    "graphmash3d": {
+      "surfaces": "Поверхні",
+      "addSurface": "+ поверхня",
+      "addSurfaceHint": "Додати поверхню",
+      "limitReached": "Досягнуто ліміту",
+      "surfaceColor": "Колір поверхні",
+      "editFormula": "Редагувати формулу (Enter застосувати)",
+      "duplicateSurface": "Дублювати поверхню",
+      "deleteSurface": "Видалити поверхню",
+      "wireframe": "каркас",
+      "opacity": "прозорість",
+      "detail": "деталізація",
+      "domain": "домен ±",
+      "camera": "Камера",
+      "resetCam": "Скинути",
+      "fitCam": "Вписати",
+      "ortho": "орто",
+      "orbit": "обертання",
+      "orbitHint": "Обертання мишею: перетягни поверхню коли виділено",
+      "editIn3d": "Редагувати у GraphMASH 3D",
+      "hide": "Приховати",
+      "show": "Показати",
+      "emptyScene": "Порожня сцена",
+      "params": "Параметри",
+      "pause": "Пауза",
+      "autoPlay": "Авто-зміна (програти)",
+      "bounds": "межі",
+      "min": "Мінімум",
+      "max": "Максимум"
     }
   },
   "storage": {

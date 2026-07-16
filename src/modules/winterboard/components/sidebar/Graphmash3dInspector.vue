@@ -12,14 +12,14 @@
     </header>
 
     <div class="gm3d-inspector__sec-head">
-      <p class="gm3d-inspector__sub">Поверхні</p>
+      <p class="gm3d-inspector__sub">{{ t('winterboard.graphmash3d.surfaces') }}</p>
       <button
         type="button"
         class="gm3d-inspector__add"
         :disabled="!canAdd"
-        :title="canAdd ? 'Додати поверхню' : 'Досягнуто ліміту'"
+        :title="canAdd ? t('winterboard.graphmash3d.addSurfaceHint') : t('winterboard.graphmash3d.limitReached')"
         @click="onAdd"
-      >+ поверхня</button>
+      >{{ t('winterboard.graphmash3d.addSurface') }}</button>
     </div>
 
     <ul v-if="expressions.length" class="gm3d-inspector__list">
@@ -30,7 +30,7 @@
             class="gm3d-inspector__eye"
             :class="{ 'is-off': !e.visible }"
             :disabled="e.objIdx < 0"
-            :title="e.visible ? 'Приховати' : 'Показати'"
+            :title="e.visible ? t('winterboard.graphmash3d.hide') : t('winterboard.graphmash3d.show')"
             @click="onVis(e.objIdx, !e.visible)"
           >{{ e.visible ? '👁' : '🚫' }}</button>
           <input
@@ -38,7 +38,7 @@
             class="gm3d-inspector__color"
             :value="e.color"
             :disabled="e.objIdx < 0"
-            title="Колір поверхні"
+            :title="t('winterboard.graphmash3d.surfaceColor')"
             @change="onColorPick(e.objIdx, ($event.target as HTMLInputElement).value)"
           />
           <input
@@ -46,7 +46,7 @@
             :value="e.src"
             :disabled="e.objIdx < 0"
             spellcheck="false"
-            title="Редагувати формулу (Enter застосувати)"
+            :title="t('winterboard.graphmash3d.editFormula')"
             @change="onEditSrc(e.objIdx, ($event.target as HTMLInputElement).value)"
             @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
           />
@@ -54,14 +54,14 @@
             type="button"
             class="gm3d-inspector__act"
             :disabled="e.objIdx < 0"
-            title="Дублювати поверхню"
+            :title="t('winterboard.graphmash3d.duplicateSurface')"
             @click="onDup(e.objIdx)"
           >⧉</button>
           <button
             type="button"
             class="gm3d-inspector__act gm3d-inspector__act--del"
             :disabled="e.objIdx < 0"
-            title="Видалити поверхню"
+            :title="t('winterboard.graphmash3d.deleteSurface')"
             @click="onDel(e.objIdx)"
           >✕</button>
         </div>
@@ -81,11 +81,11 @@
               :disabled="e.objIdx < 0"
               @change="onWire(e.objIdx, e.id, ($event.target as HTMLInputElement).checked)"
             />
-            каркас
+            {{ t('winterboard.graphmash3d.wireframe') }}
           </label>
         </div>
         <div class="gm3d-inspector__prop">
-          <span class="gm3d-inspector__prop-lbl">прозорість</span>
+          <span class="gm3d-inspector__prop-lbl">{{ t('winterboard.graphmash3d.opacity') }}</span>
           <input
             type="range" min="0.1" max="1" step="0.05"
             class="gm3d-inspector__slider" :value="e.opacity" :disabled="e.objIdx < 0"
@@ -94,7 +94,7 @@
           <span class="gm3d-inspector__prop-val">{{ fmt(e.opacity) }}</span>
         </div>
         <div class="gm3d-inspector__prop">
-          <span class="gm3d-inspector__prop-lbl">деталізація</span>
+          <span class="gm3d-inspector__prop-lbl">{{ t('winterboard.graphmash3d.detail') }}</span>
           <input
             type="range" min="12" max="120" step="4"
             class="gm3d-inspector__slider" :value="e.resolution" :disabled="e.objIdx < 0"
@@ -103,7 +103,7 @@
           <span class="gm3d-inspector__prop-val">{{ e.resolution }}</span>
         </div>
         <div class="gm3d-inspector__prop">
-          <span class="gm3d-inspector__prop-lbl">домен ±</span>
+          <span class="gm3d-inspector__prop-lbl">{{ t('winterboard.graphmash3d.domain') }}</span>
           <input
             type="range" min="1" max="20" step="1"
             class="gm3d-inspector__slider" :value="e.range" :disabled="e.objIdx < 0"
@@ -113,18 +113,18 @@
         </div>
       </li>
     </ul>
-    <p v-else class="gm3d-inspector__empty">Порожня сцена</p>
+    <p v-else class="gm3d-inspector__empty">{{ t('winterboard.graphmash3d.emptyScene') }}</p>
 
     <!-- Параметри-слайдери (редагування → asset_update ops) -->
     <template v-if="params.length">
-      <p class="gm3d-inspector__sub">Параметри</p>
+      <p class="gm3d-inspector__sub">{{ t('winterboard.graphmash3d.params') }}</p>
       <div v-for="p in params" :key="p.name" class="gm3d-inspector__param">
         <div class="gm3d-inspector__param-row">
           <button
             type="button"
             class="gm3d-inspector__play"
             :class="{ 'is-playing': p.playing }"
-            :title="p.playing ? 'Пауза' : 'Авто-зміна (програти)'"
+            :title="p.playing ? t('winterboard.graphmash3d.pause') : t('winterboard.graphmash3d.autoPlay')"
             @click="onPlay(p.name, p.playing)"
           >{{ p.playing ? '⏸' : '▶' }}</button>
           <span class="gm3d-inspector__param-name">{{ p.name }}</span>
@@ -141,16 +141,16 @@
         />
         <!-- Межі [min…max] (діапазон слайдера + ▶ анімації) -->
         <div class="gm3d-inspector__param-range">
-          <span class="gm3d-inspector__param-range-lbl">межі</span>
+          <span class="gm3d-inspector__param-range-lbl">{{ t('winterboard.graphmash3d.bounds') }}</span>
           <input
             type="number" class="gm3d-inspector__num" :value="p.min"
-            title="Мінімум"
+            :title="t('winterboard.graphmash3d.min')"
             @change="onPRange(p, 'min', ($event.target as HTMLInputElement).value)"
           />
           <span class="gm3d-inspector__prop-dash">…</span>
           <input
             type="number" class="gm3d-inspector__num" :value="p.max"
-            title="Максимум"
+            :title="t('winterboard.graphmash3d.max')"
             @change="onPRange(p, 'max', ($event.target as HTMLInputElement).value)"
           />
         </div>
@@ -158,31 +158,34 @@
     </template>
 
     <!-- Камера (view-only) -->
-    <p class="gm3d-inspector__sub">Камера</p>
+    <p class="gm3d-inspector__sub">{{ t('winterboard.graphmash3d.camera') }}</p>
     <div class="gm3d-inspector__cam">
-      <button type="button" class="gm3d-inspector__cam-btn" @click="bridge?.onResetView()">Скинути</button>
-      <button type="button" class="gm3d-inspector__cam-btn" @click="bridge?.onFitView()">Вписати</button>
+      <button type="button" class="gm3d-inspector__cam-btn" @click="bridge?.onResetView()">{{ t('winterboard.graphmash3d.resetCam') }}</button>
+      <button type="button" class="gm3d-inspector__cam-btn" @click="bridge?.onFitView()">{{ t('winterboard.graphmash3d.fitCam') }}</button>
       <label class="gm3d-inspector__wire">
         <input type="checkbox" :checked="ortho" @change="bridge?.onOrtho(($event.target as HTMLInputElement).checked)" />
-        орто
+        {{ t('winterboard.graphmash3d.ortho') }}
       </label>
       <label class="gm3d-inspector__wire">
         <input type="checkbox" :checked="autoRotate" @change="bridge?.onAutoRotate(($event.target as HTMLInputElement).checked)" />
-        обертання
+        {{ t('winterboard.graphmash3d.orbit') }}
       </label>
     </div>
-    <p class="gm3d-inspector__hint">Обертання мишею: перетягни поверхню коли виділено</p>
+    <p class="gm3d-inspector__hint">{{ t('winterboard.graphmash3d.orbitHint') }}</p>
 
     <a class="gm3d-inspector__edit" href="/mash/grapher-3d/index.html" target="_blank" rel="noopener">
-      Редагувати у GraphMASH 3D ↗
+      {{ t('winterboard.graphmash3d.editIn3d') }} ↗
     </a>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { graphmash3dInspectorState } from '../../board/state/graphmash3dInspectorState'
 import type { Gm3dExprEntry, Gm3dParamEntry } from '../../board/state/graphmash3dInspectorState'
+
+const { t } = useI18n()
 
 const expressions = computed<Gm3dExprEntry[]>(() => graphmash3dInspectorState.bridge?.expressions ?? [])
 const params = computed<Gm3dParamEntry[]>(() => graphmash3dInspectorState.bridge?.params ?? [])

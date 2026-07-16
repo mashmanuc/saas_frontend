@@ -77,22 +77,22 @@
           class="trig-circle-tray__btn trig-circle-tray__btn--solver"
           data-testid="trig-solver-tray-btn"
           :draggable="true"
-          title="Тригонометричне рівняння / нерівність"
+          :title="t('winterboard.insertTiles.trigSolverHint')"
           @dragstart="onDragStartSolver"
-          v-bind="dragHandlers(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }), 'рівняння / нерівності')"
+          v-bind="dragHandlers(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }), t('winterboard.insertTiles.trigSolver'))"
         >
           <span class="trig-circle-tray__icon trig-circle-tray__icon--solver" aria-hidden="true">
             <TrigSolverIcon />
           </span>
           <span class="trig-circle-tray__labels">
-            <span class="trig-circle-tray__label">рівняння / нерівності</span>
+            <span class="trig-circle-tray__label">{{ t('winterboard.insertTiles.trigSolver') }}</span>
             <span class="trig-circle-tray__sublabel">sin · cos · tg · ctg · =/&gt;/&lt;</span>
           </span>
         </button>
         <button
           type="button"
           class="tray-add-btn"
-          title="Додати «рівняння / нерівності» на дошку"
+          :title="`${t('winterboard.insertTiles.trigSolver')}`"
           @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))"
         >+</button>
       </div>

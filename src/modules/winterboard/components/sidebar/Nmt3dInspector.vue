@@ -89,7 +89,7 @@
           :checked="!!nmt3dUiState.latestOpts[item.key]"
           @change="onOptChange(item.key, ($event.target as HTMLInputElement).checked)"
         />
-        <span class="nmt3d-inspector__aux-label">{{ item.label }}</span>
+        <span class="nmt3d-inspector__aux-label">{{ auxLabel(item) }}</span>
       </label>
     </div>
 
@@ -111,11 +111,23 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { nmt3dUiState } from '../../board/state/nmt3dUiState'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const ws = computed(() => nmt3dUiState.ws)
 
-const templateName = computed(() => ws.value?.template?.name ?? '')
+// i18n-first (2026-07-16): назва шаблона і aux-лейбли — з vendor (укр хардкод);
+// словник winterboard.nmt3d.{template,aux.<tpl>}.* ×3 локалі, vendor = fallback.
+const templateName = computed(() => {
+  const key = ws.value?.template?.key
+  const i18nKey = `winterboard.nmt3d.template.${key}`
+  if (key && te(i18nKey)) return t(i18nKey)
+  return ws.value?.template?.name ?? ''
+})
+function auxLabel(item: { key: string; label: string }): string {
+  const tpl = ws.value?.template?.key
+  const k = `winterboard.nmt3d.aux.${tpl}.${item.key}`
+  return tpl && te(k) ? t(k) : item.label
+}
 const templateParams = computed(() => ws.value?.template?.params ?? {})
 const templateAux = computed(() => ws.value?.template?.aux ?? [])
 
