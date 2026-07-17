@@ -202,7 +202,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
 import { parseAi, sendIntent } from './sendIntent'
-import { buildBoardSummary, runBoardAction } from './boardActions'
+import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
 import { THEMES } from '@/modules/lesson_constructor/api/lessonConstructorApi'
@@ -567,13 +567,15 @@ async function askAi(phrase) {
   const history = aiHistory()          // історія ДО поточної репліки
   aiPush({ kind: 'user', text: phrase })
   aiBusy.value = true
-  // Phase 2.6 «зір»: на відкритій дошці — read-only стан канви в контекст parse
+  // Phase 2.6 «зір» + 2.7 каталог: на відкритій дошці — стан канви + доступні інструменти
   let boardSummary = null
+  let toolCatalog = null
   if (currentBoardId.value) {
     try { boardSummary = await buildBoardSummary() } catch { /* без зору — не блокуємо parse */ }
+    try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })

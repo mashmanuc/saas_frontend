@@ -1819,14 +1819,24 @@ const contentDrop = useContentDrop({
 })
 
 // ── Tray "+" button: add tool to viewport center ──
-provide(ADD_TOOL_TO_BOARD_KEY, (mime: string, payloadStr: string) => {
+function insertToolAtCenter(mime: string, payloadStr: string) {
   const container = canvasContainerRef.value
   if (!container) return
   const zoom = store.zoom || 1
   const cx = (container.scrollLeft + container.clientWidth / 2) / zoom
   const cy = (container.scrollTop + container.clientHeight / 2) / zoom
   contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
-})
+}
+provide(ADD_TOOL_TO_BOARD_KEY, insertToolAtCenter)
+
+// Phase 2.7: Інтегралик вставляє мат-інструмент за смислом — той самий санкціонований
+// шлях, що tray "+" (addAtPosition). boardActions резолвить insert_id → mime+payload.
+function onIntegralykInsert(e: Event) {
+  const d = (e as CustomEvent).detail
+  if (d?.mime) insertToolAtCenter(d.mime, d.payload ?? '{}')
+}
+onMounted(() => window.addEventListener('m4sh:wb-insert', onIntegralykInsert))
+onBeforeUnmount(() => window.removeEventListener('m4sh:wb-insert', onIntegralykInsert))
 
 // ── Tray touch drag: place tool at touch release position ──
 provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: number, clientY: number) => {

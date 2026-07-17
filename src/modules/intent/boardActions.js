@@ -122,6 +122,53 @@ const HANDLERS = {
   },
 }
 
+// ── Phase 2.7: вставка мат-інструментів за смислом (planimetry/trig/3d/…) ──
+// Каталог = ЖИВИЙ insertRegistry (той самий, що сайдбар); Інтегралик обирає id,
+// вставка йде через САНКЦІОНОВАНИЙ addAtPosition (міст-подія m4sh:wb-insert →
+// WBSoloRoom) — нуль нових write-шляхів. Нова плитка в продукті = авто в каталозі.
+// family → людський «вид» (щоб модель не плутала 2D-трикутник з 3D-тетраедром)
+const FAMILY_KIND = {
+  planimetry: 'планіметрія 2D',
+  stereo: 'стереометрія 3D',
+  '3d': 'стереометрія 3D',
+  trig: 'тригонометрія',
+  analysis: 'графік/аналіз',
+  quadratic: 'квадратична',
+  geomash: 'жива геометрія',
+}
+
+async function _allInserts() {
+  // Примусово вантажимо geo2d-вендор → window.GEO_PRESETS (планіметрія), інакше на
+  // свіжій дошці каталог без 2D-фігур і модель бере найближче 3D/триго (owner-баг).
+  try { await import('@/modules/winterboard/vendor/geo2d') } catch { /* без планіметрії — не блокуємо */ }
+  const mod = await import('@/modules/winterboard/components/sidebar/insertRegistry')
+  return typeof mod.allInserts === 'function' ? mod.allInserts() : []
+}
+
+/** Компактний каталог доступних інструментів дошки для parse-контексту (id+label+desc). */
+export async function buildToolCatalog() {
+  const items = await _allInserts()
+  return items.map((e) => {
+    const kind = FAMILY_KIND[e.family] || ''
+    const tail = [e.sublabel, ...(e.keywords || [])].filter(Boolean).join(' · ')
+    return {
+      id: e.id,
+      label: e.labelFallback || e.id,
+      desc: (kind ? `[${kind}] ` : '') + tail.slice(0, 90),
+    }
+  }).slice(0, 80)
+}
+
+HANDLERS.add_tool = async function add_tool({ insert_id }) {
+  const items = await _allInserts()
+  const e = items.find((x) => x.id === insert_id)
+  if (!e) throw new Error('Такого інструмента поки немає на дошці.')  // fail-closed
+  // WBSoloRoom слухає й вставляє через addAtPosition (той самий шлях, що click-insert)
+  window.dispatchEvent(new CustomEvent('m4sh:wb-insert', {
+    detail: { mime: e.dragMime, payload: e.payload },
+  }))
+}
+
 /** Виконати дію Інтегралика на дошці. Кидає Error з людським повідомленням. */
 export async function runBoardAction(action) {
   const handler = HANDLERS[action?.kind]
