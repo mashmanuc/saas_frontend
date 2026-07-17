@@ -194,7 +194,7 @@
 <script setup lang="ts">
 // WB: WBExportDialog — export with format selection, polling, download
 // Ref: TASK_BOARD.md B4.3
-import { ref, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
@@ -222,6 +222,9 @@ const props = defineProps<{
   isOpen: boolean
   /** Number of pages with PDF background (enables annotated_pdf option) */
   pdfPageCount?: number
+  /** Палітра/Інтегралик: формат уже названо у фразі («експортуй у PDF») —
+      діалог відкривається ОДРАЗУ в процесі експорту цього формату (без повторного вибору). */
+  autostart?: 'pdf' | 'png' | null
 }>()
 
 const emit = defineEmits<{
@@ -312,6 +315,15 @@ const formats = computed(() => {
   // it's revived; this dialog no longer offers it as a format choice.
 
   return base
+})
+
+// Autostart (палітра/Інтегралик): формат уже відомий із фрази — стартуємо одразу,
+// користувач бачить прогрес (capture → обробка → файл), а не повторний вибір формату.
+onMounted(() => {
+  if (props.autostart === 'pdf' || props.autostart === 'png') {
+    selectedFormat.value = props.autostart
+    startExport()
+  }
 })
 
 // ── Start export ──────────────────────────────────────────────────────────

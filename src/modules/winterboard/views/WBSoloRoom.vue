@@ -838,7 +838,8 @@
       v-if="showExportDialog && sessionId"
       :session-id="sessionId"
       :is-open="showExportDialog"
-      @close="showExportDialog = false"
+      :autostart="exportAutostart"
+      @close="showExportDialog = false; exportAutostart = null"
     />
 
     <!-- Drag ghost preview — follows cursor while dragging from sidebar -->
@@ -1554,6 +1555,32 @@ const savedItemTitle = ref('')
 const savedItemKind = ref<'lesson' | 'template'>('lesson')
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
+// Палітра/AI-Producer: «експортуй дошку» відкриває ЦЕЙ продуктовий діалог (він робить
+// capture-фазу віджетів перед BE-експортом) — а не серверний шлях без capture, який
+// рендерить [nmt_task]-плейсхолдери. Якщо формат уже названо у фразі («у PDF») —
+// autostart: діалог одразу стартує експорт цього формату, без повторного вибору.
+// Вхід: подія (дошка вже відкрита) або ?export=1[&format=pdf|png] (з іншої сторінки).
+const exportAutostart = ref<'pdf' | 'png' | null>(null)
+function openExportFromOutside(format?: unknown) {
+  if (!sessionId.value || !isSessionOwner.value || isLocalWorkspace) return
+  exportAutostart.value = format === 'pdf' || format === 'png' ? format : null
+  showExportDialog.value = true
+}
+function onOpenExportEvent(e: Event) {
+  openExportFromOutside((e as CustomEvent).detail?.format)
+}
+onMounted(() => {
+  window.addEventListener('m4sh:open-export-dialog', onOpenExportEvent)
+})
+onBeforeUnmount(() => window.removeEventListener('m4sh:open-export-dialog', onOpenExportEvent))
+// ?export=1 — прийшли з палітри/AI з ІНШОЇ сторінки: діалог відкриваємо після завантаження сесії.
+let exportQueryHandled = false
+watch(sessionId, (id) => {
+  if (!exportQueryHandled && id && route.query.export === '1') {
+    exportQueryHandled = true
+    nextTick(() => openExportFromOutside(route.query.format))
+  }
+})
 const showSaveLessonDialog = ref(false)
 const showInviteStudentModal = ref(false)
 const showYouTubeModal = ref(false)

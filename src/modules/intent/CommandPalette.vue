@@ -8,6 +8,22 @@
 -->
 <template>
   <Teleport to="body">
+    <!-- Плаваючий «Інтегралик» (маскот з DATA/integral): живе поверх УСЬОГО застосунку
+         (і дошки, і сторінки з хедером — справа зверху, під дзвіночком). Клік = палітра. -->
+    <button
+      v-if="enabled && AI_ENABLED && !open"
+      class="cmdp-fab"
+      :style="fabStyle"
+      title="Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно"
+      aria-label="Відкрити Інтегралика — AI-помічника"
+      @pointerdown="fabPointerDown"
+      @pointermove="fabPointerMove"
+      @pointerup="fabPointerUp"
+      @pointercancel="fabPointerUp"
+      @click="onFabClick"
+      v-html="MASCOT_SVG"
+    ></button>
+
     <div v-if="enabled && open" class="cmdp-overlay" @click.self="close">
       <div class="cmdp-panel" role="dialog" aria-label="Командна палітра">
 
@@ -92,6 +108,50 @@
           </ul>
         </template>
 
+        <!-- MODE: AI-Producer #1 (parse ≠ execute): пропозиція → Resolution Policy → звичайний intent -->
+        <template v-else-if="mode === 'ai'">
+          <div class="cmdp-head">
+            <button class="cmdp-back" @click="toCommands">← Команди</button>
+            <span class="cmdp-mascot" :class="{ thinking: aiPhase === 'loading' }" v-html="MASCOT_SVG"></span>
+            <span class="cmdp-title">Інтегралик</span>
+            <span class="cmdp-meta">«{{ aiPhrase }}»</span>
+          </div>
+          <div class="cmdp-dialog">
+            <p v-if="aiPhase === 'loading'" class="cmdp-empty">Думаю…</p>
+
+            <!-- propose (medium/high) → підтвердження; high/destructive — ЗАВЖДИ -->
+            <template v-else-if="aiPhase === 'confirm'">
+              <p class="cmdp-ai-explain">{{ aiResp.explain }}</p>
+              <p v-if="aiResp.risk === 'high'" class="cmdp-ai-danger">⚠️ Незворотна дія — потрібне підтвердження.</p>
+              <div class="cmdp-ai-actions">
+                <button :class="['cmdp-btn', { 'cmdp-btn--danger': aiResp.risk === 'high' }]"
+                        :disabled="loading" @click="confirmAi">
+                  {{ aiResp.risk === 'high' ? 'Так, виконати' : 'Так, зробити' }}
+                </button>
+                <button class="cmdp-back" :disabled="loading" @click="toCommands">Скасувати</button>
+              </div>
+            </template>
+
+            <!-- clarify → кандидати (+Explain у label) -->
+            <template v-else-if="aiPhase === 'clarify'">
+              <p class="cmdp-ai-explain">{{ aiResp.question }}</p>
+              <ul class="cmdp-list">
+                <li v-for="c in aiResp.candidates" :key="c.id" class="cmdp-item"
+                    @click="pickAiCandidate(c)">{{ c.label }}</li>
+              </ul>
+            </template>
+
+            <!-- none → чесне пояснення + що робити далі (без глухого кута) -->
+            <template v-else>
+              <p class="cmdp-ai-explain">{{ aiResp.explain }}</p>
+              <p class="cmdp-ai-tip">Спробуйте перефразувати, напр.: «видали дошку Алгебра» · «відкрий останній урок» · «згенеруй урок з логарифмів на 6 задач»</p>
+              <div class="cmdp-ai-actions">
+                <button class="cmdp-back" @click="toCommands">← Спробувати ще раз</button>
+              </div>
+            </template>
+          </div>
+        </template>
+
         <!-- MODE: мої уроки -->
         <template v-else>
           <div class="cmdp-head">
@@ -115,7 +175,7 @@
         <div v-if="loading" class="cmdp-status">Виконую…</div>
         <div v-if="notice" class="cmdp-status">✓ {{ notice }}</div>
         <div v-if="error" class="cmdp-error">{{ error }}</div>
-        <div class="cmdp-hint">Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити</div>
+        <div class="cmdp-hint">Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити<span v-if="AI_ENABLED"> · ∫ Інтегралик: просто опишіть дію словами</span></div>
       </div>
     </div>
   </Teleport>
@@ -125,7 +185,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
-import { sendIntent } from './sendIntent'
+import { parseAi, sendIntent } from './sendIntent'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
 import { THEMES } from '@/modules/lesson_constructor/api/lessonConstructorApi'
@@ -278,8 +338,6 @@ async function fetchTopics() {
   return r.result.topics || []
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
 // IPC-5: продуктовий save/publish дренує ВСІ pending board-ops ПЕРЕД знімком стану
 // (WBSoloRoom.openSaveLessonDialog → opsSync.flushAll). Без цього palette зберегла б
 // застарілий стан дошки. Try/continue — дзеркало продукту (flush-fail не блокує).
@@ -360,7 +418,13 @@ const commands = computed(() => {
 })
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : commands.value
+  const list = q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : [...commands.value]
+  // AI-Producer: будь-яку фразу можна віддати AI — останній пункт списку (і єдиний, якщо збігів нема)
+  if (AI_ENABLED && query.value.trim().length >= 3) {
+    const phrase = query.value.trim()
+    list.push({ id: '__ai__', label: `∫ Спитати Інтегралика: «${phrase}»`, run: () => askAi(phrase) })
+  }
+  return list
 })
 
 // row-action specs
@@ -371,30 +435,28 @@ const actDuplicate = {
 const actRename = {
   params: [{ key: 'name', label: 'Нова назва дошки?', required: true }],
   act: (v) => sendIntent('MODIFY', [{ type: 'Board', params: { board_id: v.board_id, name: v.name } }], 'command-palette'),
-  after: () => { notice.value = 'Перейменовано'; fetchBoards() },
+  after: () => { notice.value = 'Перейменовано'; fetchBoards(); notifyBoardsChanged() },
+}
+// IPC-5 (виправлено після польового прогону): справжній продуктовий експорт — це
+// WBExportDialog, який ПЕРЕД BE-експортом робить capture-фазу інтерактивних віджетів
+// (GraphMASH 3D, графіки, NMT-картки). Прямий інтент-виклик оминав capture → PDF з
+// [nmt_task]-плейсхолдерами. Тому палітра/AI ЗАПУСКАЮТЬ продуктовий діалог:
+// дошка відкрита → подія; інша/зі списку → навігація з ?export=1.
+function openProductExport(boardId, format = 'pdf') {
+  close()
+  if (currentBoardId.value && String(currentBoardId.value) === String(boardId)) {
+    window.dispatchEvent(new CustomEvent('m4sh:open-export-dialog', { detail: { format } }))
+  } else {
+    router.push({ name: 'winterboard-solo', params: { id: boardId }, query: { export: '1', format } })
+  }
 }
 const actExport = {
-  // IPC-5: дзеркало WBSessionExportView — PDF асинхронний (status 'pending'),
-  // тож полимо QUERY×Export до 'completed' (як WBExportDialog: кожні 2s, ~60s).
-  act: async (v) => {
-    const start = await sendIntent('EXPORT', [{ type: 'Board', params: { board_id: v.board_id, format: 'pdf' } }], 'command-palette')
-    let { status, file_url, export_id } = start.result
-    for (let i = 0; i < 30 && status !== 'completed' && status !== 'failed'; i++) {
-      await sleep(2000)
-      const poll = await sendIntent('QUERY', [{ type: 'Export', params: { export_id } }], 'command-palette')
-      status = poll.result.status
-      file_url = poll.result.file_url
-    }
-    if (status !== 'completed') {
-      throw new Error(status === 'failed' ? 'Експорт не вдався' : 'Експорт ще триває — спробуйте пізніше')
-    }
-    return { file_url }
-  },
-  after: (r) => { notice.value = 'PDF готово'; if (r.file_url) window.open(r.file_url, '_blank') },
+  act: (v) => Promise.resolve(v.board_id),
+  after: (boardId) => openProductExport(boardId, 'pdf'),
 }
 const actDeleteBoard = {
   act: (v) => sendIntent('DELETE', [{ type: 'Board', params: { board_id: v.board_id } }], 'command-palette'),
-  after: () => { notice.value = 'Видалено'; fetchBoards() },
+  after: () => { notice.value = 'Видалено'; fetchBoards(); notifyBoardsChanged() },
 }
 const actOpenLesson = {
   act: (v) => sendIntent('CREATE', [{ type: 'Session', params: { lesson_id: v.lesson_id } }], 'command-palette'),
@@ -403,6 +465,12 @@ const actOpenLesson = {
 const actDeleteLesson = {
   act: (v) => sendIntent('DELETE', [{ type: 'Lesson', params: { lesson_id: v.lesson_id } }], 'command-palette'),
   after: () => { notice.value = 'Видалено'; fetchLessons() },
+}
+
+// Сторінка «Студія уроків» живе під палітрою зі своїм станом — після мутації дощок
+// повідомляємо її (WBBoardList слухає), інакше список застаріває до ручного F5.
+function notifyBoardsChanged() {
+  window.dispatchEvent(new CustomEvent('m4sh:boards-changed'))
 }
 
 // ── lists ──
@@ -430,16 +498,189 @@ async function openLast() {
   })
 }
 
+// ════════════ AI-PRODUCER #1 (Phase 1b) ════════════
+// parse ≠ execute: /intents/ai/parse лише ПРОПОНУЄ Intent; тут — Resolution Policy (§3.1):
+//   low + 1 кандидат  → авто-виконання
+//   medium            → confirm «Зроблю: …?»
+//   high/destructive  → ЗАВЖДИ confirm (навіть після explicit-вибору кандидата)
+//   2+ кандидатів     → вибір списком (explicit pick = підтвердження для low/medium)
+//   none              → чесне пояснення
+const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'
+
+// «Інтегралик» — маскот AI-помічника (перенесено з DATA/integral/assistant.js).
+// Анімації (дихання/кліпання/«думає») — у scoped-стилях через :deep().
+const MASCOT_SVG =
+  '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#d6f1ed" stroke="#0d9488" stroke-width="3"></circle>'
+  + '<g class="itg-body">'
+  + '<path d="M60 22 C55 12, 42 14, 42 27 C42 42, 58 52, 58 70 C58 85, 45 92, 40 82" fill="none" stroke="#0f5f57" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>'
+  + '<path d="M37 24 Q43 23 48 26" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
+  + '<path d="M51 29 Q56 28 61 31" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
+  + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="43" cy="34" r="3.5" fill="#0f5f57"></circle></g>'
+  + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
+  + '<path d="M46 49 Q50 53 54 48" fill="none" stroke="#0f5f57" stroke-width="2.5" stroke-linecap="round"></path>'
+  + '</g></svg>'
+const aiPhase = ref('loading')      // loading | confirm | clarify | none
+const aiResp = ref({})
+const aiPhrase = ref('')
+
+async function askAi(phrase) {
+  aiPhrase.value = phrase
+  mode.value = 'ai'
+  aiPhase.value = 'loading'
+  aiResp.value = {}
+  error.value = ''; notice.value = ''
+  try {
+    const r = await parseAi(phrase, currentBoardId.value)
+    aiResp.value = r
+    if (r.status === 'propose') {
+      if (r.risk === 'low') executeAi(r)
+      else aiPhase.value = 'confirm'
+    } else if (r.status === 'clarify') {
+      aiPhase.value = 'clarify'
+    } else {
+      aiPhase.value = 'none'
+    }
+  } catch (e) {
+    const d = e?.response?.data
+    aiResp.value = {
+      explain: d?.error === 'AI_UNAVAILABLE'
+        ? 'AI зараз недоступний — спробуйте пізніше.'
+        : (ERR_MSG[d?.error] || d?.detail || 'Помилка AI'),
+    }
+    aiPhase.value = 'none'
+  }
+}
+
+function confirmAi() { executeAi(aiResp.value) }
+
+function pickAiCandidate(c) {
+  const t = aiResp.value.pick_template
+  const proposal = {
+    capability: t.capability, risk: t.risk, verb: t.verb,
+    objects: [{ type: t.type, params: { [t.param]: c.id } }],
+    explain: `${aiResp.value.question} → «${c.label}»`,
+  }
+  aiResp.value = proposal
+  if (t.risk === 'high') aiPhase.value = 'confirm'   // destructive — ще один явний confirm
+  else executeAi(proposal)                            // explicit вибір = підтвердження
+}
+
+// Після успіху — ТА САМА поведінка, що в ручних команд палітри (per capability).
+const AI_AFTER = {
+  'workspace.create_board': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.board_id } }) },
+  'lesson.generate': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.session_id } }) },
+  'knowledge.open_lesson': (r) => { close(); router.push({ name: 'winterboard-solo', params: { id: r.result.session_id } }) },
+  'knowledge.list_lessons': (r) => { lessons.value = r.result.lessons || []; mode.value = 'lessons' },
+  'workspace.list_boards': (r) => { boards.value = r.result.boards || []; mode.value = 'boards' },
+  'workspace.rename_board': () => { notice.value = 'Перейменовано'; mode.value = 'commands'; notifyBoardsChanged() },
+  'workspace.delete_board': () => { notice.value = 'Видалено'; mode.value = 'commands'; notifyBoardsChanged() },
+  'knowledge.save_draft': (r) => { notice.value = 'Збережено чернетку: ' + (r.result?.title || ''); mode.value = 'commands' },
+}
+
+function executeAi(p) {
+  if (p.capability === 'workspace.export_board') {
+    // launcher-патерн: продуктовий діалог експорту (capture-фаза всередині) з autostart
+    // формату, який користувач назвав у фразі — без повторного вибору.
+    openProductExport(p.objects[0].params.board_id, p.objects[0].params.format || 'pdf')
+    return
+  }
+  run(async () => {
+    // IPC-5: перед збереженням/публікацією стану дошки — дренувати pending ops (як продукт)
+    if (p.capability === 'knowledge.save_draft' || p.capability === 'knowledge.publish_board') {
+      await flushBoardOps()
+    }
+    return sendIntent(p.verb, p.objects, 'ai')
+  }, (r) => {
+    const after = AI_AFTER[p.capability]
+    if (after) after(r)
+    else { notice.value = 'Готово'; mode.value = 'commands' }
+  })
+}
+
+// ── Інтегралик: перетягування (юзер сам обирає місце; позиція живе в localStorage) ──
+// Pointer-події: працює мишею, ПЕРОМ планшета і пальцем. Клік vs drag розрізняємо
+// порогом 5px; після перетягування click-подію гасимо, щоб палітра не відкривалась.
+const FAB_POS_KEY = 'm4sh_integralyk_pos'
+const FAB_SIZE = 46
+const fabPos = ref(null)               // {x,y} | null → дефолтна позиція з CSS (top-right)
+let fabDrag = null                     // {startX,startY,origX,origY,moved}
+let fabDragJustMoved = false
+
+const fabStyle = computed(() =>
+  fabPos.value ? { left: fabPos.value.x + 'px', top: fabPos.value.y + 'px', right: 'auto' } : {},
+)
+
+function clampFab(x, y) {
+  const maxX = window.innerWidth - FAB_SIZE - 4
+  const maxY = window.innerHeight - FAB_SIZE - 4
+  return { x: Math.min(Math.max(4, x), maxX), y: Math.min(Math.max(4, y), maxY) }
+}
+
+function fabPointerDown(e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  fabDrag = { startX: e.clientX, startY: e.clientY, origX: rect.left, origY: rect.top, moved: false }
+  try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* older browsers */ }
+}
+function fabPointerMove(e) {
+  if (!fabDrag) return
+  const dx = e.clientX - fabDrag.startX
+  const dy = e.clientY - fabDrag.startY
+  if (!fabDrag.moved && Math.hypot(dx, dy) < 5) return
+  fabDrag.moved = true
+  fabPos.value = clampFab(fabDrag.origX + dx, fabDrag.origY + dy)
+}
+function fabPointerUp() {
+  if (!fabDrag) return
+  fabDragJustMoved = fabDrag.moved
+  if (fabDrag.moved && fabPos.value) {
+    try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(fabPos.value)) } catch { /* private mode */ }
+  }
+  fabDrag = null
+}
+function onFabClick() {
+  if (fabDragJustMoved) { fabDragJustMoved = false; return }  // це був drag, не клік
+  openPalette()
+}
+function restoreFabPos() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAB_POS_KEY) || 'null')
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+      fabPos.value = clampFab(saved.x, saved.y)   // clamp — раптом екран став меншим
+    }
+  } catch { /* зіпсований запис — лишаємо дефолт */ }
+}
+
 // ── palette lifecycle ──
+// Compat-шим для ГОЛОСОВОГО вводу (Voice In та ін. розширення): вони пишуть текст
+// прямо в DOM-поле БЕЗ події `input`, тож v-model не оновлюється (поле заповнене,
+// а query порожній → AI-пункт не з'являється). Поки палітра відкрита — синкаємо
+// значення з DOM; при зміні скидаємо підсвітку на перший пункт.
+let domSyncTimer = null
+function syncQueryFromDom() {
+  const dom = inputEl.value?.value
+  if (typeof dom === 'string' && dom !== query.value) {
+    query.value = dom
+    selected.value = 0
+  }
+}
+
 function openPalette() {
   open.value = true; mode.value = 'commands'; query.value = ''; selected.value = 0
   error.value = ''; notice.value = ''
   nextTick(() => inputEl.value?.focus())
+  clearInterval(domSyncTimer)
+  domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
-function close() { open.value = false; loading.value = false }
+function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer) }
 function toCommands() { mode.value = 'commands'; error.value = ''; nextTick(() => inputEl.value?.focus()) }
-function move(d) { const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
-function runSelected() { const c = filtered.value[selected.value]; if (c) invoke(c) }
+function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
+function runSelected() {
+  syncQueryFromDom()
+  if (selected.value >= filtered.value.length) selected.value = 0
+  const c = filtered.value[selected.value]
+  if (c) invoke(c)
+}
 
 function onKeydown(e) {
   if (matchesShortcut(e)) {
@@ -449,11 +690,38 @@ function onKeydown(e) {
   }
 }
 
-onMounted(() => { if (enabled.value) window.addEventListener('keydown', onKeydown) })
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+onMounted(() => {
+  if (enabled.value) window.addEventListener('keydown', onKeydown)
+  restoreFabPos()
+})
+onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); clearInterval(domSyncTimer) })
 </script>
 
 <style scoped>
+/* Плаваючий «Інтегралик»: напівпрозорий, під зоною дзвіночка; z нижче за оверлей (60). */
+.cmdp-fab { position: fixed; top: 74px; right: 18px; z-index: 55;
+  width: 46px; height: 46px; border: 0; border-radius: 50%; cursor: grab;
+  background: transparent; padding: 0;
+  touch-action: none; /* drag пером/пальцем, а не скрол сторінки */
+  opacity: .6; transition: opacity .15s ease;
+  filter: drop-shadow(0 3px 8px rgba(13, 148, 136, .35)); }
+.cmdp-fab:hover { opacity: 1; }
+.cmdp-fab:active { cursor: grabbing; }
+.cmdp-fab :deep(svg) { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Маскот у шапці AI-режиму */
+.cmdp-mascot { width: 28px; height: 28px; display: inline-block; flex: none; }
+.cmdp-mascot :deep(svg) { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Анімації Інтегралика (перенесено з DATA/integral/assistant.css; :deep — svg іде через v-html) */
+@keyframes itg-breath { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.4px) scale(1.012); } }
+:deep(.itg-body) { transform-origin: 50px 62px; animation: itg-breath 4.2s ease-in-out infinite; }
+@keyframes itg-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
+:deep(.itg-eye) { animation: itg-blink 4.6s linear infinite; }
+:deep(.itg-e2) { animation-delay: .05s; }
+@keyframes itg-think { 0%, 100% { transform: rotate(0deg) translateY(0); } 25% { transform: rotate(-7deg) translateY(-2px); } 75% { transform: rotate(7deg) translateY(-1px); } }
+.cmdp-mascot.thinking :deep(.itg-body) { animation: itg-think .55s ease-in-out infinite; }
+
 .cmdp-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.35);
   display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
 .cmdp-panel { width: min(600px, 94vw); background: #fff; color: #111;
@@ -477,6 +745,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .cmdp-actions button:hover { background: #e9e9ef; border-radius: 6px; }
 .cmdp-actions button:disabled { opacity: .4; cursor: default; }
 .cmdp-empty { padding: 12px; color: #888; }
+.cmdp-ai-explain { font-size: 15px; color: #111; margin: 4px 0 10px; }
+.cmdp-ai-danger { color: #b91c1c; font-size: 13px; margin-bottom: 10px; }
+.cmdp-ai-tip { color: #6b7280; font-size: 13px; margin: 0 0 10px; }
+.cmdp-ai-actions { display: flex; gap: 8px; align-items: center; }
+.cmdp-btn { background: #16a34a; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+.cmdp-btn:disabled { opacity: .5; cursor: default; }
+.cmdp-btn--danger { background: #dc2626; }
 .cmdp-status { padding: 8px 16px; color: #555; }
 .cmdp-error { padding: 8px 16px; color: #c00; }
 .cmdp-hint { padding: 8px 16px; border-top: 1px solid #eee; color: #999; font-size: 12px; }

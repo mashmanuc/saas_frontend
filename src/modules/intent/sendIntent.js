@@ -20,3 +20,16 @@ export async function sendIntent(verb, objects, clientId) {
   })
   return res?.data ?? res
 }
+
+/**
+ * AI-Producer #1: parse-крок (parse ≠ execute). Фраза → пропозиція Intent
+ * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
+ * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
+ */
+export async function parseAi(phrase, boardId = null) {
+  const res = await apiClient.post('/v1/intents/ai/parse/', {
+    phrase,
+    context: { board_id: boardId },
+  })
+  return res?.data ?? res
+}

@@ -894,6 +894,7 @@ onUnmounted(() => {
   // Stop any in-flight PDF import poll loop so it does not keep hitting
   // /import-pdf/ in the background after the user leaves the studio.
   cancelCreateFromPdf()
+  window.removeEventListener('m4sh:boards-changed', onExternalBoardsChanged)
 })
 
 // ─── Watchers: refetch on tab/search/offset/folder change ────────────────────
@@ -970,9 +971,17 @@ async function handleDelete(): Promise<void> {
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
+// Командна палітра / AI-Producer мутують дошки поза цією сторінкою (delete/rename
+// через intent-ingress) — без цієї події список застаріває до ручного F5.
+function onExternalBoardsChanged() {
+  fetchBoards()
+  fetchFolders()
+}
+
 onMounted(() => {
   fetchBoards()
   fetchFolders()
+  window.addEventListener('m4sh:boards-changed', onExternalBoardsChanged)
 })
 </script>
 
