@@ -184,6 +184,33 @@ HANDLERS.set_param = async function set_param({ object_id, type, value }) {
   store.updateAsset({ ...asset, data })
 }
 
+// Phase 2.9: маніпуляції об'єктами (move/resize/delete) — усе через санкц. store-actions.
+async function _assetById(object_id) {
+  const { store } = await _store()
+  const page = store.currentPage
+  const asset = (page.assets || []).find((a) => a.id === object_id)
+  if (!asset) throw new Error('Не знайшов цей об’єкт на дошці.')
+  return { store, asset }
+}
+
+HANDLERS.move_object = async function move_object({ object_id, dx, dy }) {
+  const { store, asset } = await _assetById(object_id)
+  store.updateAsset({ ...asset, x: (asset.x || 0) + (dx || 0), y: (asset.y || 0) + (dy || 0) })
+}
+
+HANDLERS.resize_object = async function resize_object({ object_id, factor }) {
+  const { store, asset } = await _assetById(object_id)
+  const k = Number(factor) || 1
+  const w = Math.max(40, Math.round((asset.w || 200) * k))   // clamp min 40px (store min=20)
+  const h = Math.max(40, Math.round((asset.h || 150) * k))
+  store.updateAsset({ ...asset, w, h })
+}
+
+HANDLERS.delete_object = async function delete_object({ object_id }) {
+  const { store } = await _assetById(object_id)   // валідує існування
+  store.deleteAsset(object_id)                    // Command-pattern → undo працює
+}
+
 HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const items = await _allInserts()
   const e = items.find((x) => x.id === insert_id)

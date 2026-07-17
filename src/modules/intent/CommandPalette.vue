@@ -534,18 +534,62 @@ async function openLast() {
 //   none              → чесне пояснення
 const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'
 
-// «Інтегралик» — маскот AI-помічника (перенесено з DATA/integral/assistant.js).
-// Анімації (дихання/кліпання/«думає») — у scoped-стилях через :deep().
+// «Інтегралик» — маскот AI-помічника (вигляд оновлено з DATA/integral/integral4).
+// БЕЗ РОТА (дизайнерське рішення): вираз через очі/кліпання, руку (.itg-arm), слоти
+// настрою (.itg-mood: сльоза/сон) й аксесуара (.itg-accessory) — скіни за часом доби.
+// КЛАСИ (не id), бо маскот рендериться двічі (fab + шапка). Дихання/кліпання — у стилях.
 const MASCOT_SVG =
   '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#d6f1ed" stroke="#0d9488" stroke-width="3"></circle>'
+  + '<g class="itg-mood"></g>'
   + '<g class="itg-body">'
   + '<path d="M60 22 C55 12, 42 14, 42 27 C42 42, 58 52, 58 70 C58 85, 45 92, 40 82" fill="none" stroke="#0f5f57" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>'
   + '<path d="M37 24 Q43 23 48 26" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
   + '<path d="M51 29 Q56 28 61 31" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
   + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="43" cy="34" r="3.5" fill="#0f5f57"></circle></g>'
   + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<path d="M46 49 Q50 53 54 48" fill="none" stroke="#0f5f57" stroke-width="2.5" stroke-linecap="round"></path>'
+  + '<path class="itg-arm" d="M68 58 Q76 52 74 42" fill="none" stroke="#0f5f57" stroke-width="6" stroke-linecap="round"></path>'
+  + '<g class="itg-accessory"></g>'
   + '</g></svg>'
+
+// Настрої / аксесуари (з integral4 assistant-icon.js). Рота НЕМАЄ.
+const ITG_MOODS = {
+  tear: '<path d="M40 44 Q37 51 40 55 Q43 51 40 44 Z" fill="#60a5fa" stroke="#2563eb" stroke-width="1.2"></path>',
+  zzz: '<text x="64" y="20" font-size="11" fill="#0f5f57" opacity=".75">z</text><text x="72" y="13" font-size="8" fill="#0f5f57" opacity=".6">z</text><text x="78" y="8" font-size="6" fill="#0f5f57" opacity=".5">z</text>',
+}
+const ITG_ACC = {
+  coffee: '<g transform="translate(66,58)"><rect x="-2" y="2" width="18" height="15" rx="3" fill="#fff" stroke="#0f5f57" stroke-width="2.5"></rect><rect x="-2" y="2" width="18" height="4" fill="#7a4a1f"></rect><path d="M16 6 Q26 6 22 15 Q18 18 15 15" fill="none" stroke="#0f5f57" stroke-width="2.5"></path><path d="M1 -2 Q3 -8 0 -12" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"></path></g>',
+  nightcap: '<g transform="translate(0,-6)"><path d="M28 22 Q30 -6 62 8 Q68 14 66 22 Q47 12 28 22 Z" fill="#5b6cff" stroke="#0f5f57" stroke-width="2.5"></path><circle cx="63" cy="9" r="5.5" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle></g>',
+  stars: '<g fill="#f59e0b"><text x="10" y="24" font-size="16">✦</text><text x="70" y="30" font-size="13">✦</text><text x="16" y="66" font-size="11">✧</text></g>',
+  hat: '<g transform="translate(0,-4)"><ellipse cx="50" cy="24" rx="30" ry="6.5" fill="#f2c14e" stroke="#0f5f57" stroke-width="2.5"></ellipse><path d="M32 22 Q50 2 68 22 Q66 26 50 27 Q34 26 32 22 Z" fill="#f7d774" stroke="#0f5f57" stroke-width="2.5"></path></g>',
+  party: '<g transform="translate(0,-8)"><path d="M42 2 L60 24 L28 24 Z" fill="#f43f5e" stroke="#0f5f57" stroke-width="2"></path><rect x="30" y="16" width="26" height="3" fill="#fff" opacity=".85"></rect></g>',
+}
+
+// Оновлюємо ВСІ інстанси маскота (fab + шапка) через класи
+function itgSetMood(key) {
+  document.querySelectorAll('.itg-mood').forEach((el) => { el.innerHTML = key ? (ITG_MOODS[key] || '') : '' })
+}
+function itgSetAccessory(html) {
+  document.querySelectorAll('.itg-accessory').forEach((el) => { el.innerHTML = html || '' })
+}
+
+// Скін за часом доби (кава вранці · ковпак увечері · зірки+сон вночі · party п'ятниця · капелюх вихідні)
+let itgSkinMood = ''
+function applyItgSkin() {
+  const now = new Date()
+  const h = now.getHours()
+  const day = now.getDay()   // 0 нд .. 6 сб
+  let acc = ''
+  let mood = ''
+  const night = h >= 23 || h < 6
+  if (night) { acc = ITG_ACC.stars; mood = 'zzz' }
+  else if (h >= 18) { acc = ITG_ACC.nightcap }
+  else if (h >= 6 && h < 11) { acc = ITG_ACC.coffee }
+  if (day === 5) { acc = ITG_ACC.party + acc }
+  else if (day === 0 || day === 6) { acc = ITG_ACC.hat + acc }
+  itgSkinMood = mood
+  nextTick(() => { itgSetAccessory(acc); itgSetMood(mood) })
+}
+function itgRestoreFace() { itgSetMood(itgSkinMood) }
 // Phase 2 — ДІАЛОГ: тред бульбашок (user/bot/done/confirm/candidates) + історія ≤6 реплік
 // у кожен parse-запит (follow-up'и: «ні, ту що вчора», «а тепер експортуй її»).
 const aiThread = ref([])
@@ -598,15 +642,11 @@ async function askAi(phrase) {
         router.push('/winterboard/boards')
         return
       }
-      // Phase 2.5: дія НА дошці — санкціоновані store-actions (ops пишуться самі);
-      // risk=low (ратифіковано): виконуємо одразу, undo завжди доступний.
-      try {
-        await runBoardAction(r.action)
-        aiPush({ kind: 'done', text: r.explain })
-        react('happy')
-      } catch (be) {
-        aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
-        react('sad')
+      // Phase 2.9: medium/high (напр. delete) → спершу підтвердження; low → одразу.
+      if (r.risk === 'medium' || r.risk === 'high') {
+        aiPush({ kind: 'confirm', resp: r, done: false })
+      } else {
+        await execBoardAction(r)
       }
     } else {
       aiPush({ kind: 'bot', text: r.explain })   // відповідь-пояснення або чесний фолбек
@@ -634,18 +674,37 @@ function continueAi() {
   askAi(t)
 }
 
-function confirmAi(item) { item.done = true; executeAi(item.resp) }
+// Виконати board_action (санкц. store-action) + done/reaction-бульбашки
+async function execBoardAction(r) {
+  try {
+    await runBoardAction(r.action)
+    aiPush({ kind: 'done', text: r.explain })
+    react('happy')
+  } catch (be) {
+    aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
+    react('sad')
+  }
+}
+
+function confirmAi(item) {
+  item.done = true
+  if (item.resp?.action) execBoardAction(item.resp)   // Phase 2.9: підтверджений board_action (delete)
+  else executeAi(item.resp)
+}
 function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Скасовано. Що далі?' }) }
 
 function pickAiCandidate(item, c) {
   item.done = true
   const t = item.resp.pick_template
-  // Phase 2.8: clarify для дії НА дошці — пік будує board_action (не звичайний intent)
+  // Phase 2.8/2.9: clarify для дії НА дошці — пік будує board_action (не звичайний intent)
   if (t.board_action) {
-    const action = { kind: t.board_action, payload: { [t.param]: c.id, ...(t.extra || {}) } }
-    runBoardAction(action)
-      .then(() => { aiPush({ kind: 'done', text: `${item.resp.question} → «${c.label}»` }); react('happy') })
-      .catch((be) => { aiPush({ kind: 'bot', text: be?.message || 'Не вдалося.' }); react('sad') })
+    const extra = { ...(t.extra || {}) }
+    const confirm = extra.confirm
+    delete extra.confirm
+    const action = { kind: t.board_action, payload: { [t.param]: c.id, ...extra } }
+    const resp = { action, explain: `${item.resp.question} → «${c.label}»`, risk: confirm ? 'medium' : 'low' }
+    if (confirm) aiPush({ kind: 'confirm', resp, done: false })   // delete: ще одне підтвердження
+    else execBoardAction(resp)
     return
   }
   const proposal = {
@@ -703,8 +762,10 @@ let moodTimer = null
 function react(kind) {
   fabMood.value = kind
   clearTimeout(moodTimer)
-  moodTimer = setTimeout(() => { fabMood.value = '' }, 1700)
-  if (kind === 'happy') confettiBurst()
+  moodTimer = setTimeout(() => { fabMood.value = ''; itgRestoreFace() }, 1700)
+  if (kind === 'happy') { itgSetMood(''); confettiBurst() }        // радість — конфеті + погойдування
+  else if (kind === 'sad') { itgSetMood('tear') }                  // сум — сльоза
+  // wave — лише погойдування тіла/руки (без зміни настрою)
 }
 
 // Конфеті через Web Animations API (елементи поза scoped-CSS)
@@ -1057,6 +1118,7 @@ function openPalette() {
   tipVisible.value = false
   aiThread.value = []; aiInput.value = ''; aiBusy.value = false   // новий діалог на кожне відкриття
   restorePanelPos()   // відновити місце, куди юзер відсунув панель
+  applyItgSkin()      // маскот у шапці теж отримує скін часу доби
   nextTick(() => inputEl.value?.focus())
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
@@ -1084,6 +1146,7 @@ onMounted(() => {
   restoreFabPos()
   if (enabled.value && AI_ENABLED) {
     scheduleTip()
+    applyItgSkin()   // скін маскота за часом доби (кава/ковпак/зірки/party/капелюх)
     window.addEventListener('mousemove', onEyesMove, { passive: true })
   }
 })
@@ -1140,6 +1203,10 @@ onBeforeUnmount(() => {
 @keyframes itg-wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) translateY(-1.5px); }
   55% { transform: rotate(6deg) translateY(-1px); } 80% { transform: rotate(-3deg); } }
 .mood-wave :deep(.itg-body) { animation: itg-wave .9s ease-in-out !important; }
+/* Рука махає при wave (transform-origin — плече) */
+@keyframes itg-armwave { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-18deg); } 70% { transform: rotate(14deg); } }
+:deep(.itg-arm) { transform-origin: 70px 56px; transform-box: fill-box; }
+.mood-wave :deep(.itg-arm), .mood-happy :deep(.itg-arm) { animation: itg-armwave .55s ease-in-out 2; }
 
 /* Зіниці: плавно тягнуться за курсором (transform ставить onEyesMove) */
 :deep(.itg-pupil) { transition: transform .18s ease; }
