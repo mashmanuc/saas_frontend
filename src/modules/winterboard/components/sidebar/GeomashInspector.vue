@@ -171,17 +171,36 @@ function toolDesc(e: GeoToolSpecEntry): string {
   const k = `winterboard.geomash.desc.${keyOf(e)}`
   return te(k) ? t(k) : (TOOL_DESC[keyOf(e)] || '')
 }
+/**
+ * Приховані інструменти (2026-07-17, рішення власника «навіщо вона там — для
+ * цього в нас окремі об'єкти»).
+ *
+ * FUNCTION — НІКОЛИ не працював: інспектор шле construct({op:'function', expr}),
+ * двигун кладе `fn: cmd.fn` (geo-engine.js:517), а expr→fn ніхто не компілює →
+ * рендерер малює лише при `o.fn` (geo-renderer.js:392) → об'єкт з'являвся у
+ * списку сцени, але не на полотні. Геометричної інтеграції теж нема: point-on
+ * проєктує лише на прямі/кола, дотична — лише до кола. Отже кнопка не давала
+ * нічого понад GraphMASH 2D (graph_calculator) — прибрана з палітри.
+ * Двигун/рендерер НЕ чіпаю: старі сцени з function-об'єктами лишаються валідними.
+ */
+const HIDDEN_KEYS = new Set(['FUNCTION'])
+const isHidden = (e: GeoToolSpecEntry) => HIDDEN_KEYS.has(keyOf(e))
 // Розширені (рідко потрібні для геометрії) — під згорткою
-const ADVANCED_KEYS = new Set(['SLIDER', 'FUNCTION'])
+const ADVANCED_KEYS = new Set(['SLIDER'])
 const isAdvanced = (e: GeoToolSpecEntry) => ADVANCED_KEYS.has(keyOf(e))
 const showAdvanced = ref(false)
 const toolsByCat = computed<Record<string, GeoToolSpecEntry[]>>(() => {
   const m: Record<string, GeoToolSpecEntry[]> = {}
   for (const c of categories) m[c] = []
-  for (const e of toolSpec.value) { if (isAdvanced(e)) continue; (m[e.category] ??= []).push(e) }
+  for (const e of toolSpec.value) {
+    if (isHidden(e) || isAdvanced(e)) continue
+    ;(m[e.category] ??= []).push(e)
+  }
   return m
 })
-const advancedTools = computed<GeoToolSpecEntry[]>(() => toolSpec.value.filter(isAdvanced))
+const advancedTools = computed<GeoToolSpecEntry[]>(() =>
+  toolSpec.value.filter((e) => isAdvanced(e) && !isHidden(e)),
+)
 
 const GLYPHS: Record<string, string> = {
   POINT: '•', POINT_ON: '⦿', MIDPOINT: '⊷', INTERSECT: '✕', SEGMENT: '╱', LINE: '／',
