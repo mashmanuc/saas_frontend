@@ -82,6 +82,7 @@
       }
     },
     "g3d": {
+      "useOnBoard": "Bring to a lesson →",
       "toolbar": {
         "split": "Show a 2D slice next to 3D",
         "fontDown": "Smaller font",
@@ -97,9 +98,9 @@
       "camera": {
         "undo": "Undo (Ctrl+Z)",
         "redo": "Redo (Ctrl+Shift+Z)",
-        "reset": "Reset",
-        "fit": "Fit",
-        "ortho": "Ortho",
+        "reset": "Reset view",
+        "fit": "Show all",
+        "ortho": "No perspective",
         "rotate": "Rotate",
         "views": "Views",
         "speed": "Speed"
@@ -115,7 +116,9 @@
         "png": "PNG (snapshot)",
         "rec": "⏺ Record video",
         "stl": "STL (text)",
-        "stlBin": "STL (binary, smaller)"
+        "stlBin": "STL (binary, smaller)",
+        "stlPrint": "🖨 STL for 3D printer",
+        "stlPrintTitle": "Download STL — a ready file for 3D printing"
       },
       "gallery": {
         "title": "Example gallery",
@@ -141,7 +144,7 @@
         "cm_cool": "Cool",
         "cm_warm": "Warm",
         "cm_grey": "Grey",
-        "wireframe": "Wireframe",
+        "wireframe": "Wireframe mesh",
         "isolines": "Isolines",
         "count": "Count",
         "opacity": "Opacity",

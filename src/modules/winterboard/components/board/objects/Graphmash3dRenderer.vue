@@ -514,7 +514,9 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
 .gm3d-delete { color: #9ca3af; font-size: 16px; }
 .gm3d-delete:hover { color: #ef4444; }
 .gm3d-stage { flex: 1; min-height: 0; position: relative; pointer-events: none; }
-/* Orbit лише коли виділено (інакше board-drag/select через Konva-proxy) */
-.gm3d-stage--interactive { pointer-events: auto; }
+/* Orbit лише коли виділено (інакше board-drag/select через Konva-proxy).
+   touch-action:none — щоб на планшеті перетяг одним пальцем обертав 3D-модель,
+   а не запускав нативний скрол/зум браузера (паритет із Geomash/Nmt3d/Solid-рендерерами). */
+.gm3d-stage--interactive { pointer-events: auto; touch-action: none; }
 .gm3d-stage :deep(canvas) { display: block; width: 100%; height: 100%; }
 </style>

@@ -2752,6 +2752,9 @@
       if (this._camAnimTimer) { clearTimeout(this._camAnimTimer); this._camAnimTimer = null; }
       if (this._unfoldTimer) { clearTimeout(this._unfoldTimer); this._unfoldTimer = null; }
       if (this._ro) { try { this._ro.disconnect(); } catch (_) {} this._ro = null; }
+      // Fix (stale-render bug): знищена ws НЕ має пушити кадри у зовнішній рендерер —
+      // інакше стара фігура+штрихи малюються на полотні нової фігури.
+      this.frameSink = null;
     }
 
     _tickOrbit() {
@@ -2828,6 +2831,9 @@
     }
 
     _render() {
+      // Fix (stale-render bug): знищена ws нічого не рендерить (жоден тригер — таймер,
+      // pointer, seam — не має оживити її й намалювати стару фігуру/штрихи на новому полотні).
+      if (this._destroyed) return;
       this._autoFit();
       if (this._needsFit) this._needsFit = false;
       const rect = this.host.getBoundingClientRect();
