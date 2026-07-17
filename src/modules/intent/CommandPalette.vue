@@ -722,8 +722,8 @@ function pickAiCandidate(item, c) {
     const confirm = extra.confirm
     delete extra.confirm
     const action = { kind: t.board_action, payload: { [t.param]: c.id, ...extra } }
-    const resp = { action, explain: `${item.resp.question} → «${c.label}»`, risk: confirm ? 'medium' : 'low' }
-    if (confirm) aiPush({ kind: 'confirm', resp, done: false })   // delete: ще одне підтвердження
+    const resp = { action, explain: `Готово · ${c.label}`, risk: confirm ? 'medium' : 'low' }
+    if (confirm) { resp.explain = `Видалю «${c.label}». Скасувати — Ctrl+Z.`; aiPush({ kind: 'confirm', resp, done: false }) }
     else execBoardAction(resp)
     return
   }

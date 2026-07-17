@@ -352,6 +352,10 @@ watch(() => props.interactive, () => { syncPointerEvents() })
 // Trigger after each toggle change (toolbar action rebuilds geometry).
 watch(() => props.asset.data, () => { setTimeout(syncPointerEvents, 50) }, { deep: true })
 
+// Phase 2.11: Інтегралик міняє toggles (описане/вписане коло, медіани…) через updateAsset —
+// застосовуємо їх до ЖИВОЇ картки (без цього оновлення видно лише після перезавантаження).
+watch(() => props.asset.data.toggles, () => applyPersistedToggles(), { deep: true })
+
 function emitDataPatch(patch: Partial<Geometry2DV2Asset['data']>): void {
   const nextData = { ...props.asset.data, ...patch }
   emit('update:asset', { ...props.asset, data: nextData } as Geometry2DV2Asset)

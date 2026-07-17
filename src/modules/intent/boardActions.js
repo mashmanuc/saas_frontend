@@ -211,6 +211,14 @@ HANDLERS.delete_object = async function delete_object({ object_id }) {
   store.deleteAsset(object_id)                    // Command-pattern → undo працює
 }
 
+// Phase 2.11: геометричні побудови = toggles планіметрії (описане/вписане коло, медіани…)
+HANDLERS.set_geometry = async function set_geometry({ object_id, feature, on }) {
+  const { store, asset } = await _assetById(object_id)
+  if (asset.type !== 'geometry_2d_v2') throw new Error('Це не геометрична фігура.')
+  const toggles = { ...(asset.data?.toggles || {}), [feature]: on !== false }
+  store.updateAsset({ ...asset, data: { ...asset.data, toggles } })
+}
+
 HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const items = await _allInserts()
   const e = items.find((x) => x.id === insert_id)
@@ -244,6 +252,7 @@ export async function buildBoardSummary() {
   const { useWBStore } = await import('@/modules/winterboard/board/state/boardStore')
   const store = useWBStore()
   const pages = store.pages || []
+  const currentPage = (store.currentPageIndex ?? 0) + 1   // 1-based: сторінка, яку бачить юзер
   const items = []
   pages.forEach((page, idx) => {
     const p = idx + 1
@@ -264,6 +273,12 @@ export async function buildBoardSummary() {
       } else if (a.type === 'theory_card') {
         kind = 'картка'
         label = a.data?.title || String(a.data?.body || '').slice(0, 80)
+      } else if (a.type === 'geometry_2d_v2') {
+        // Назва пресета (Трикутник/Коло…) — щоб Інтегралик міг адресувати планіметрію
+        kind = 'планіметрія'
+        const preset = a.data?.preset
+        const meta = (typeof window !== 'undefined' ? window.GEO_PRESETS : null) || []
+        label = (meta.find((m) => m.type === preset)?.full) || preset || 'фігура'
       } else if (a.type === 'nmt_task') {
         // Умова задачі (data.question, LaTeX/HTML → плоский текст) + відповідь:
         // Інтегралик може РОЗВ'ЯЗУВАТИ задачі з дошки. Контент тьютора, не PII учнів.
@@ -284,5 +299,5 @@ export async function buildBoardSummary() {
       items.push({ page: p, kind: 'NMT-задача', label: (cond + (ans ? ` [відповідь: ${ans}]` : '')).slice(0, 240) })
     }
   })
-  return { pages: pages.length, items: items.slice(0, 60) }
+  return { pages: pages.length, currentPage, items: items.slice(0, 60) }
 }
