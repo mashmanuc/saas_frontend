@@ -12,7 +12,9 @@
          (і дошки, і сторінки з хедером — справа зверху, під дзвіночком). Клік = палітра. -->
     <button
       v-if="enabled && AI_ENABLED && !open"
+      ref="fabEl"
       class="cmdp-fab"
+      :class="fabMood && 'mood-' + fabMood"
       :style="fabStyle"
       title="Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно"
       aria-label="Відкрити Інтегралика — AI-помічника"
@@ -23,6 +25,15 @@
       @click="onFabClick"
       v-html="MASCOT_SVG"
     ></button>
+
+    <!-- Проактивна бульбашка-підказка Інтегралика (клік → палітра) -->
+    <button
+      v-if="enabled && AI_ENABLED && !open && tipVisible"
+      class="cmdp-tip"
+      :class="'tail-' + tipSide"
+      :style="tipStyle"
+      @click="tipClick"
+    >{{ tipText }}</button>
 
     <div v-if="enabled && open" class="cmdp-overlay" @click.self="close">
       <div class="cmdp-panel" role="dialog" aria-label="Командна палітра">
@@ -112,7 +123,7 @@
         <template v-else-if="mode === 'ai'">
           <div class="cmdp-head">
             <button class="cmdp-back" @click="toCommands">← Команди</button>
-            <span class="cmdp-mascot" :class="{ thinking: aiBusy }" v-html="MASCOT_SVG"></span>
+            <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
             <span class="cmdp-title">Інтегралик</span>
           </div>
 
@@ -191,6 +202,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
 import { parseAi, sendIntent } from './sendIntent'
+import { buildBoardSummary, runBoardAction } from './boardActions'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
 import { THEMES } from '@/modules/lesson_constructor/api/lessonConstructorApi'
@@ -520,8 +532,8 @@ const MASCOT_SVG =
   + '<path d="M60 22 C55 12, 42 14, 42 27 C42 42, 58 52, 58 70 C58 85, 45 92, 40 82" fill="none" stroke="#0f5f57" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>'
   + '<path d="M37 24 Q43 23 48 26" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
   + '<path d="M51 29 Q56 28 61 31" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
-  + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="43" cy="34" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
+  + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="43" cy="34" r="3.5" fill="#0f5f57"></circle></g>'
+  + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
   + '<path d="M46 49 Q50 53 54 48" fill="none" stroke="#0f5f57" stroke-width="2.5" stroke-linecap="round"></path>'
   + '</g></svg>'
 // Phase 2 — ДІАЛОГ: тред бульбашок (user/bot/done/confirm/candidates) + історія ≤6 реплік
@@ -555,13 +567,35 @@ async function askAi(phrase) {
   const history = aiHistory()          // історія ДО поточної репліки
   aiPush({ kind: 'user', text: phrase })
   aiBusy.value = true
+  // Phase 2.6 «зір»: на відкритій дошці — read-only стан канви в контекст parse
+  let boardSummary = null
+  if (currentBoardId.value) {
+    try { boardSummary = await buildBoardSummary() } catch { /* без зору — не блокуємо parse */ }
+  }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
     } else if (r.status === 'clarify') {
       aiPush({ kind: 'candidates', resp: r, done: false })
+    } else if (r.status === 'board_action') {
+      if (r.action?.kind === 'close_board') {
+        // Дзеркало кнопки «Вийти»: route-leave guard WBSoloRoom сам збереже зміни.
+        close()
+        router.push('/winterboard/boards')
+        return
+      }
+      // Phase 2.5: дія НА дошці — санкціоновані store-actions (ops пишуться самі);
+      // risk=low (ратифіковано): виконуємо одразу, undo завжди доступний.
+      try {
+        await runBoardAction(r.action)
+        aiPush({ kind: 'done', text: r.explain })
+        react('happy')
+      } catch (be) {
+        aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
+        react('sad')
+      }
     } else {
       aiPush({ kind: 'bot', text: r.explain })   // відповідь-пояснення або чесний фолбек
     }
@@ -573,6 +607,7 @@ async function askAi(phrase) {
         ? 'AI зараз недоступний — спробуйте пізніше.'
         : (ERR_MSG[d?.error] || d?.detail || 'Помилка AI'),
     })
+    react('sad')
   } finally {
     aiBusy.value = false
     nextTick(() => aiInputEl.value?.focus())
@@ -580,6 +615,7 @@ async function askAi(phrase) {
 }
 
 function continueAi() {
+  syncQueryFromDom()   // голосовий ввід: підхопити текст, який v-model ще не бачив
   const t = aiInput.value.trim()
   if (!t || aiBusy.value) return
   aiInput.value = ''
@@ -630,9 +666,243 @@ function executeAi(p) {
   }, (r) => {
     const after = AI_AFTER[p.capability]
     if (after) after(r)
-    // якщо лишились у діалозі — done-бульбашка (для історії follow-up'ів теж)
-    if (open.value && mode.value === 'ai') aiPush({ kind: 'done', text: p.explain || 'Готово' })
+    // якщо лишились у діалозі — done-бульбашка (для історії follow-up'ів теж) + радість
+    if (open.value && mode.value === 'ai') {
+      aiPush({ kind: 'done', text: p.explain || 'Готово' })
+      react('happy')
+    }
   })
+}
+
+// ── Інтегралик живий (порт з DATA/integral/integral2): підказки + реакції + конфеті ──
+const fabEl = ref(null)
+const mascotEl = ref(null)
+const fabMood = ref('')            // '' | 'happy' | 'sad'
+let moodTimer = null
+
+function react(kind) {
+  fabMood.value = kind
+  clearTimeout(moodTimer)
+  moodTimer = setTimeout(() => { fabMood.value = '' }, 1700)
+  if (kind === 'happy') confettiBurst()
+}
+
+// Конфеті через Web Animations API (елементи поза scoped-CSS)
+function confettiBurst() {
+  const anchor = (open.value ? mascotEl.value : fabEl.value)
+  const r = anchor?.getBoundingClientRect?.()
+  if (!r) return
+  const colors = ['#0d9488', '#f59e0b', '#ef4444', '#3b82f6', '#a855f7']
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div')
+    p.style.cssText = `position:fixed;width:6px;height:6px;border-radius:1px;z-index:70;pointer-events:none;`
+      + `left:${r.left + r.width / 2 + (Math.random() * 40 - 20)}px;top:${r.top + Math.random() * 10}px;`
+      + `background:${colors[i % colors.length]}`
+    document.body.appendChild(p)
+    p.animate(
+      [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+       { transform: `translateY(-70px) rotate(${160 + Math.random() * 80}deg)`, opacity: 0 }],
+      { duration: 900, easing: 'ease-out' },
+    )
+    setTimeout(() => p.remove(), 950)
+  }
+}
+
+// Зіниці стежать за курсором (порт pupil-tracking з оригінального assistant.js):
+// rAF-тротлінг, максимум ~2px зсуву; ціль — видимий маскот (fab або шапка діалогу).
+let pupilRaf = 0
+let pupilX = 0
+let pupilY = 0
+function onEyesMove(e) {
+  pupilX = e.clientX
+  pupilY = e.clientY
+  if (pupilRaf) return
+  pupilRaf = requestAnimationFrame(() => {
+    pupilRaf = 0
+    const host = open.value ? mascotEl.value : fabEl.value
+    if (!host) return
+    const r = host.getBoundingClientRect()
+    const ang = Math.atan2(pupilY - (r.top + r.height / 2), pupilX - (r.left + r.width / 2))
+    const m = r.width > 40 ? 2 : 1.3   // fab 46px / маскот у шапці 28px
+    const t = `translate(${(Math.cos(ang) * m).toFixed(2)}px, ${(Math.sin(ang) * m).toFixed(2)}px)`
+    host.querySelectorAll('.itg-pupil').forEach((p) => { p.style.transform = t })
+  })
+}
+
+// Проактивні бульбашки-підказки. КОНТЕКСТНІ: набір залежить від того, де користувач
+// (у дошці / у студії дощок / деінде). Показуємо лише коли палітра закрита.
+// Кожна фраза натякає на РЕАЛЬНУ команду, доступну в цьому контексті.
+const TIPS = {
+  // всередині відкритої дошки — малювання, графіки, формули, розв'язки, збереження, експорт
+  board: [
+    'Скажи «побудуй графік sin(x)» — намалюю прямо тут.',
+    '«Побудуй графік x² − 3» — і парабола на дошці.',
+    'Хочеш косинусоїду? Скажи «побудуй графік cos(x)».',
+    '«Встав формулу x²+2x+1» — покладу гарну картку.',
+    'Скажи «напиши на дошці: Тема уроку».',
+    '«Розв’яжи задачу з дошки» — розпишу покроково.',
+    'Спитай «що зараз є на дошці?» — я все бачу.',
+    '«Збережи цю дошку як урок» — і вона в «Мої уроки».',
+    'Скажи «експортуй дошку в PDF» — зберу файл.',
+    'Потрібен малюнок? «Експортуй дошку в PNG».',
+    '«Додай картку з поясненням» — формули відрендерю гарно.',
+    'Застряг? «Розв’яжи задачу і запиши на дошку».',
+    '«Побудуй графік ln(x)» — логарифм готовий.',
+    'Хочеш ще дошку? Скажи «створи дошку».',
+    '«Згенеруй урок з похідних на 5 задач».',
+    'Скажи «закрий дошку» — вийду й збережу зміни.',
+    '«Перейменуй дошку на Контрольна».',
+    '«Побудуй графік tg(x)» — обережно, там розриви!',
+    'Хочеш перевірити відповідь? Спитай мене про задачу.',
+    '«Побудуй графік e^x» — експонента летить угору.',
+    'Скажи «додай текст: Домашнє завдання».',
+    '«Розв’яжи задачу на цій сторінці» — прочитаю умову.',
+    '«Побудуй параболу y = x² − 4».',
+    '«Експортуй усі сторінки в PDF» — зберу весь урок.',
+    '«Збережи як урок» — відкриєш будь-коли.',
+    'Спитай «що на першій сторінці?» — перевірю.',
+    '«Побудуй графік 1/x» — гіпербола готова.',
+    '«Побудуй графік √x» — корінь плавно росте.',
+    'Розписати теорію? «Додай картку теорії».',
+    '«Побудуй графік |x|» — модуль кутиком.',
+    '«Побудуй графік sin(x)·cos(x)» — цікава хвиля.',
+    '«Побудуй графік x³» — кубічна парабола.',
+    '«Додай картку з розв’язком» — усе по кроках.',
+    '«Згенеруй урок з інтегралів на 6 задач».',
+    '«Побудуй графік cos(2x)» — частіші коливання.',
+    '«Встав формулу теореми Піфагора».',
+    '«Напиши на дошці: Розв’язання».',
+    '«Побудуй графік x² + 1» — вершина вгорі.',
+    'Хочеш дві функції? Проси обидва графіки поспіль.',
+    '«Розв’яжи задачу» — і перевіримо відповідь разом.',
+  ],
+  // студія дощок / список — створення, генерація, відкриття уроків
+  studio: [
+    'Скажи «створи дошку» — почнемо нову.',
+    '«Згенеруй урок з логарифмів на 6 задач».',
+    'Скажи «покажи мої уроки» — відкрию список.',
+    '«Покажи мої дошки» — зберу все докупи.',
+    '«Відкрий останній урок» — продовжимо роботу.',
+    '«Створи дошку Тригонометрія» — одразу з назвою.',
+    '«Згенеруй урок з квадратних рівнянь».',
+    '«Відкрий мої уроки» — усі збережені там.',
+    'Скажи «видали дошку …» — спитаю підтвердження.',
+    '«Створи урок з інтегралів на 8 задач».',
+    'Скажи «перейменуй дошку» — оновлю назву.',
+    '«Згенеруй урок з геометрії» — підберу задачі.',
+    '«Відкрий урок про похідну» — знайду серед твоїх.',
+    'Хочеш продовжити? «Відкрий останній урок».',
+    '«Згенеруй урок з прогресій на 5 задач».',
+    '«Покажи мої уроки» — виберемо, що провести.',
+    '«Створи дошку Контрольна 9 клас».',
+    'Готуєшся до НМТ? «Згенеруй урок з тригонометрії».',
+    '«Відкрий вкладку мої уроки» — усе там.',
+    '«Згенеруй урок з дробів на 4 задачі».',
+    '«Створи нову дошку для сьогоднішнього уроку».',
+    '«Згенеруй урок зі стереометрії» — 3D-задачі теж є.',
+    'Не знаєш з чого почати? Скажи «створи дошку».',
+    '«Згенеруй урок з функцій на 6 задач».',
+    '«Створи дошку Алгебра 8 клас».',
+    '«Покажи мої дошки» — і оберемо потрібну.',
+    '«Створи дошку для домашнього завдання».',
+    '«Згенеруй урок з рівнянь на 7 задач».',
+    '«Покажи мої уроки» — і одразу проведемо.',
+    '«Створи урок з відсотків на 5 задач».',
+    '«Згенеруй урок з векторів» — підберу задачі.',
+    '«Відкрий останній урок» — від того ж місця.',
+  ],
+  // деінде (дашборд, інші сторінки) — універсальні дії
+  other: [
+    'Скажи «створи дошку» — і почнемо працювати.',
+    '«Згенеруй урок з логарифмів на 6 задач».',
+    'Скажи «покажи мої уроки» — відкрию список.',
+    '«Відкрий останній урок» — продовжимо, де спинились.',
+    'Скажи «згенеруй урок» — і назви тему.',
+    'Я поруч — тисни на мене й опиши дію словами.',
+    '«Покажи мої дошки» — усе в один список.',
+    '«Створи урок з квадратних рівнянь».',
+    'Готуєшся до заняття? «Згенеруй урок за темою».',
+    'Тисни на мене — перекладу твої слова в дію.',
+    'Скажи «створи дошку» і малюй прямо пером.',
+    '«Згенеруй урок з геометрії на 5 задач».',
+    'Спитай мене про математику — поясню коротко.',
+    '«Відкрий мої уроки» — виберемо, що провести.',
+    'Хочеш почати? Скажи «створи дошку».',
+    '«Згенеруй урок з тригонометрії» — підберу задачі.',
+    'Я розумію звичайні слова — опиши, що треба.',
+    '«Покажи мої уроки» — усе під рукою.',
+    'Спитай «що ти вмієш?» — розкажу коротко.',
+    'Потрібна дошка? Скажи «створи дошку».',
+    'Хочеш урок за 10 секунд? «Згенеруй урок з теми».',
+    'Просто опиши дію — я зроблю решту.',
+    '«Відкрий останній урок» — повернемось до роботи.',
+    '«Покажи мої уроки» — оберемо і відкриємо.',
+  ],
+}
+
+// Контекст = де користувач зараз (визначає набір підказок)
+function tipContext() {
+  if (currentBoardId.value) return 'board'
+  if (route.name === 'winterboard-boards') return 'studio'
+  return 'other'
+}
+
+// Антиповтор: не показуємо жодну з останніх ~6 фраз (щоб не «бісило»)
+const recentTips = []
+function pickTip() {
+  const pool = TIPS[tipContext()] || TIPS.other
+  const avoid = recentTips.slice(-Math.min(6, pool.length - 1))
+  let t = pool[Math.floor(Math.random() * pool.length)]
+  for (let i = 0; i < 12 && avoid.includes(t); i++) {
+    t = pool[Math.floor(Math.random() * pool.length)]
+  }
+  recentTips.push(t)
+  if (recentTips.length > 8) recentTips.shift()
+  return t
+}
+const tipVisible = ref(false)
+const tipText = ref('')
+const tipStyle = ref({})
+const tipSide = ref('right')     // сторона ХВОСТИКА: 'right' = маскот справа від бульбашки
+let tipShowTimer = null
+let tipHideTimer = null
+
+// Ставимо бульбашку ПОРУЧ з Інтеграликом, хвостиком до нього (не «з кута»).
+// Вертикально центруємо на маскоті (top + translateY(-50%)) → хвостик завжди
+// дивиться йому в «обличчя». Горизонтально: ліворуч від нього, а біля лівого
+// краю екрана — праворуч (щоб бульбашка не вилазила).
+function placeTip() {
+  const host = fabEl.value
+  if (!host) return
+  const r = host.getBoundingClientRect()
+  const GAP = 13
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const centerY = Math.max(48, Math.min(r.top + r.height / 2, vh - 48))
+  if (r.left >= 250) {
+    tipSide.value = 'right'                                  // маскот праворуч → хвостик справа
+    tipStyle.value = { right: (vw - r.left + GAP) + 'px', top: centerY + 'px' }
+  } else {
+    tipSide.value = 'left'                                   // маскот ліворуч → хвостик зліва
+    tipStyle.value = { left: (r.right + GAP) + 'px', top: centerY + 'px' }
+  }
+}
+
+function tipClick() { tipVisible.value = false; openPalette() }
+
+function scheduleTip() {
+  clearTimeout(tipShowTimer)
+  tipShowTimer = setTimeout(() => {
+    if (!open.value && Math.random() < 0.7) {
+      tipText.value = pickTip()
+      placeTip()
+      tipVisible.value = true
+      react('wave')   // помах уваги при появі підказки (без конфеті)
+      clearTimeout(tipHideTimer)
+      tipHideTimer = setTimeout(() => { tipVisible.value = false }, 7000)
+    }
+    scheduleTip()
+  }, 40000 + Math.random() * 40000)   // кожні ~40–80с, з шансом 70%
 }
 
 // ── Інтегралик: перетягування (юзер сам обирає місце; позиція живе в localStorage) ──
@@ -701,11 +971,17 @@ function syncQueryFromDom() {
     query.value = dom
     selected.value = 0
   }
+  // Те саме для поля діалогу Інтегралика (інакше голосовий текст не активує «➤»)
+  const aiDom = aiInputEl.value?.value
+  if (typeof aiDom === 'string' && aiDom !== aiInput.value) {
+    aiInput.value = aiDom
+  }
 }
 
 function openPalette() {
   open.value = true; mode.value = 'commands'; query.value = ''; selected.value = 0
   error.value = ''; notice.value = ''
+  tipVisible.value = false
   aiThread.value = []; aiInput.value = ''; aiBusy.value = false   // новий діалог на кожне відкриття
   nextTick(() => inputEl.value?.focus())
   clearInterval(domSyncTimer)
@@ -732,8 +1008,18 @@ function onKeydown(e) {
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   restoreFabPos()
+  if (enabled.value && AI_ENABLED) {
+    scheduleTip()
+    window.addEventListener('mousemove', onEyesMove, { passive: true })
+  }
 })
-onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); clearInterval(domSyncTimer) })
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('mousemove', onEyesMove)
+  if (pupilRaf) cancelAnimationFrame(pupilRaf)
+  clearInterval(domSyncTimer)
+  clearTimeout(tipShowTimer); clearTimeout(tipHideTimer); clearTimeout(moodTimer)
+})
 </script>
 
 <style scoped>
@@ -747,6 +1033,42 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); clearI
 .cmdp-fab:hover { opacity: 1; }
 .cmdp-fab:active { cursor: grabbing; }
 .cmdp-fab :deep(svg) { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Бульбашка-підказка Інтегралика — спіч-бабл із ХВОСТИКОМ до маскота (JS ставить
+   left/right+top, translateY(-50%) центрує по вертикалі → хвостик дивиться йому в обличчя). */
+.cmdp-tip { position: fixed; z-index: 54; max-width: 230px;
+  background: #f0fbf9; border: 1px solid #bfe5df; border-radius: 12px;
+  padding: 9px 12px; font-size: 12.5px; line-height: 1.4; color: #114b45; text-align: left;
+  box-shadow: 0 10px 26px rgba(20, 30, 30, .18); cursor: pointer;
+  transform: translateY(-50%); }
+/* Хвостик — повернутий квадрат із 2 бордерами; половина стирчить у бік Інтегралика */
+.cmdp-tip::after { content: ''; position: absolute; top: 50%; width: 12px; height: 12px;
+  background: #f0fbf9; transform: translateY(-50%) rotate(45deg); }
+.cmdp-tip.tail-right { border-bottom-right-radius: 4px; animation: tip-in-right .22s ease; }
+.cmdp-tip.tail-right::after { right: -6px; border-top: 1px solid #bfe5df; border-right: 1px solid #bfe5df; }
+.cmdp-tip.tail-left { border-bottom-left-radius: 4px; animation: tip-in-left .22s ease; }
+.cmdp-tip.tail-left::after { left: -6px; border-bottom: 1px solid #bfe5df; border-left: 1px solid #bfe5df; }
+.cmdp-tip:hover { border-color: #0d9488; }
+/* Поява — «виїжджає» з боку маскота (translateY(-50%) зберігаємо, бо ним центруємось) */
+@keyframes tip-in-right { from { opacity: 0; transform: translateY(-50%) translateX(10px) scale(.96); }
+  to { opacity: 1; transform: translateY(-50%) translateX(0) scale(1); } }
+@keyframes tip-in-left { from { opacity: 0; transform: translateY(-50%) translateX(-10px) scale(.96); }
+  to { opacity: 1; transform: translateY(-50%) translateX(0) scale(1); } }
+
+/* Настрої Інтегралика (реакції на успіх/помилку) */
+@keyframes itg-happy { 0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-6px) scale(1.12); } 60% { transform: translateY(0) scale(1); }
+  80% { transform: translateY(-3px) scale(1.06); } }
+.mood-happy :deep(.itg-body) { animation: itg-happy .8s ease-in-out 2 !important; }
+@keyframes itg-sad { 0%, 100% { transform: rotate(0) translateY(0); }
+  40% { transform: rotate(7deg) translateY(2.5px); } 70% { transform: rotate(5deg) translateY(2px); } }
+.mood-sad :deep(.itg-body) { animation: itg-sad 1.5s ease-in-out !important; }
+@keyframes itg-wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) translateY(-1.5px); }
+  55% { transform: rotate(6deg) translateY(-1px); } 80% { transform: rotate(-3deg); } }
+.mood-wave :deep(.itg-body) { animation: itg-wave .9s ease-in-out !important; }
+
+/* Зіниці: плавно тягнуться за курсором (transform ставить onEyesMove) */
+:deep(.itg-pupil) { transition: transform .18s ease; }
 
 /* Маскот у шапці AI-режиму */
 .cmdp-mascot { width: 28px; height: 28px; display: inline-block; flex: none; }

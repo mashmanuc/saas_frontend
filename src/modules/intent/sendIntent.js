@@ -26,10 +26,11 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = []) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
-    context: { board_id: boardId },
+    // board_summary — Phase 2.6 «зір»: компактний read-only стан відкритої дошки
+    context: { board_id: boardId, board_summary: boardSummary },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })
   return res?.data ?? res

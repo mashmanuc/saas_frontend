@@ -171,7 +171,7 @@
           v-if="sessionId && isSessionOwner && !sourceLessonId && !constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--save-lesson"
-          :title="t('winterboard.lesson.saveButton') || 'Зберегти як шаблон уроку'"
+          :title="t('winterboard.lesson.saveButton') || 'Зберегти як урок'"
           @click="openSaveLessonDialog"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -208,7 +208,7 @@
           v-if="publishedLessonData"
           type="button"
           class="wb-header-btn wb-header-btn--template"
-          :title="t('knowledge.template.saveFromRoom') || 'Зберегти як шаблон'"
+          :title="t('knowledge.template.saveFromRoom') || 'Зберегти як урок'"
           @click="showSaveTemplateDialog = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
