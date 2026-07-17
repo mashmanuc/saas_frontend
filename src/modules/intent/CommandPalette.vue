@@ -648,6 +648,8 @@ async function askAi(phrase) {
       } else {
         await execBoardAction(r)
       }
+    } else if (r.status === 'board_action_plan') {
+      await runPlan(r)   // Phase 2.10: сценарій з кількох дій
     } else {
       aiPush({ kind: 'bot', text: r.explain })   // відповідь-пояснення або чесний фолбек
     }
@@ -684,6 +686,24 @@ async function execBoardAction(r) {
     aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
     react('sad')
   }
+}
+
+// Phase 2.10: сценарій — виконуємо кроки ПОСЛІДОВНО; будь-який falls → стоп + чесний звіт.
+async function runPlan(r) {
+  const actions = r.actions || []
+  aiPush({ kind: 'bot', text: r.explain })
+  for (let i = 0; i < actions.length; i++) {
+    try {
+      await runBoardAction(actions[i])
+      aiPush({ kind: 'done', text: `Крок ${i + 1}/${actions.length}` })
+      await new Promise((res) => setTimeout(res, 130))   // дати вставці «осісти» (add_tool — через подію)
+    } catch (be) {
+      aiPush({ kind: 'bot', text: `Крок ${i + 1} не вдався: ${be?.message || ''}. Зупиняюсь.` })
+      react('sad')
+      return
+    }
+  }
+  react('happy')
 }
 
 function confirmAi(item) {
