@@ -18,9 +18,9 @@
         <span class="geo-select-btn__ic">⬉</span> {{ t('winterboard.geomash.selectBtn') }}
       </button>
       <div v-if="selectMode && !active && selectedObj" class="geo-selbar">
-        <input type="color" class="geo-item__color" :value="colorOf(selectedObj)" title="Колір" @input="setColor(selectedObj, $event)" />
+        <input type="color" class="geo-item__color" :value="colorOf(selectedObj)" :title="t('winterboard.geomash.color')" @input="setColor(selectedObj, $event)" />
         <span class="geo-selbar__name">{{ valueOf(selectedObj) }}</span>
-        <button type="button" class="geo-item__btn geo-item__btn--del" title="Видалити" @click="del(selectedObj)">×</button>
+        <button type="button" class="geo-item__btn geo-item__btn--del" :title="t('winterboard.geomash.delete')" @click="del(selectedObj)">×</button>
       </div>
       <p class="geo-inspector__sub">{{ t('winterboard.geomash.buildHeader') }}</p>
       <div class="geo-cats">
@@ -78,32 +78,32 @@
             <input type="text" class="geo-field__ctl" placeholder="sin(x)" :value="extra.expr"
               @input="extra.expr = ($event.target as HTMLInputElement).value" />
           </label>
-          <button type="button" class="geo-active__add" :disabled="!extra.expr.trim()" @click="addFunction">+ Додати</button>
+          <button type="button" class="geo-active__add" :disabled="!extra.expr.trim()" @click="addFunction">{{ t('winterboard.geomash.addFn') }}</button>
         </template>
 
         <template v-else>
           <p class="geo-active__hint">{{ hint }}</p>
           <!-- многокутник/ламана: завершення кнопкою (тач без дабл-тапу) -->
           <button v-if="activeMulti" type="button" class="geo-active__add" :disabled="polyCount < polyMin" @click="finishPoly">
-            Завершити ({{ polyCount }})
+            {{ t('winterboard.geomash.finish') }} ({{ polyCount }})
           </button>
           <!-- додаткові скаляри під конкретний інструмент -->
           <label v-if="activeK === 'CIRCLER'" class="geo-field">
-            <span class="geo-field__lbl">Радіус</span>
+            <span class="geo-field__lbl">{{ t('winterboard.geomash.radius') }}</span>
             <input type="number" step="any" class="geo-field__ctl" :value="extra.r"
               @input="extra.r = Number(($event.target as HTMLInputElement).value)" />
           </label>
           <label v-if="active.op === 'polygon-reg'" class="geo-field">
-            <span class="geo-field__lbl">К-ть сторін</span>
+            <span class="geo-field__lbl">{{ t('winterboard.geomash.sides') }}</span>
             <input type="number" min="3" step="1" class="geo-field__ctl" :value="extra.n"
               @input="extra.n = Number(($event.target as HTMLInputElement).value)" />
           </label>
           <template v-if="active.op === 'slider'">
-            <label class="geo-field"><span class="geo-field__lbl">Ім'я</span>
+            <label class="geo-field"><span class="geo-field__lbl">{{ t('winterboard.geomash.name') }}</span>
               <input type="text" class="geo-field__ctl" :value="extra.name" @input="extra.name = ($event.target as HTMLInputElement).value" /></label>
             <div class="geo-field geo-field--row">
-              <label><span class="geo-field__lbl">Мін</span><input type="number" step="any" class="geo-field__ctl" :value="extra.min" @input="extra.min = Number(($event.target as HTMLInputElement).value)" /></label>
-              <label><span class="geo-field__lbl">Макс</span><input type="number" step="any" class="geo-field__ctl" :value="extra.max" @input="extra.max = Number(($event.target as HTMLInputElement).value)" /></label>
+              <label><span class="geo-field__lbl">{{ t('winterboard.geomash.min') }}</span><input type="number" step="any" class="geo-field__ctl" :value="extra.min" @input="extra.min = Number(($event.target as HTMLInputElement).value)" /></label>
+              <label><span class="geo-field__lbl">{{ t('winterboard.geomash.max') }}</span><input type="number" step="any" class="geo-field__ctl" :value="extra.max" @input="extra.max = Number(($event.target as HTMLInputElement).value)" /></label>
             </div>
           </template>
         </template>
@@ -111,21 +111,21 @@
     </template>
 
     <!-- ── Список об'єктів ──────────────────────────────────── -->
-    <p class="geo-inspector__sub">Об'єкти сцени</p>
+    <p class="geo-inspector__sub">{{ t('winterboard.geomash.objectsHeader') }}</p>
     <ul v-if="objects.length" class="geo-inspector__list">
       <li v-for="o in objects" :key="o.id" class="geo-inspector__item" :class="{ 'is-sel-row': o.id === selectedId }">
-        <input v-if="canEdit" type="color" class="geo-item__color" :value="colorOf(o)" title="Колір" @input="setColor(o, $event)" />
+        <input v-if="canEdit" type="color" class="geo-item__color" :value="colorOf(o)" :title="t('winterboard.geomash.color')" @input="setColor(o, $event)" />
         <span class="geo-item__val" :title="o.type" @click="selectRow(o)">{{ valueOf(o) }}</span>
         <template v-if="canEdit">
-          <button type="button" class="geo-item__btn" :title="isVisible(o) ? 'Приховати' : 'Показати'" @click="toggleVisible(o)">{{ isVisible(o) ? '👁' : '🚫' }}</button>
-          <button type="button" class="geo-item__btn" :title="o.locked ? 'Розблокувати' : 'Заблокувати'" @click="toggleLock(o)">{{ o.locked ? '🔒' : '🔓' }}</button>
-          <button type="button" class="geo-item__btn geo-item__btn--del" title="Видалити" @click="del(o)">×</button>
+          <button type="button" class="geo-item__btn" :title="isVisible(o) ? t('winterboard.geomash.hide') : t('winterboard.geomash.show')" @click="toggleVisible(o)">{{ isVisible(o) ? '👁' : '🚫' }}</button>
+          <button type="button" class="geo-item__btn" :title="o.locked ? t('winterboard.geomash.unlock') : t('winterboard.geomash.lock')" @click="toggleLock(o)">{{ o.locked ? '🔒' : '🔓' }}</button>
+          <button type="button" class="geo-item__btn geo-item__btn--del" :title="t('winterboard.geomash.delete')" @click="del(o)">×</button>
         </template>
       </li>
     </ul>
-    <p v-else class="geo-inspector__empty">Порожня сцена — оберіть інструмент і клікніть на полотні</p>
+    <p v-else class="geo-inspector__empty">{{ t('winterboard.geomash.emptyState') }}</p>
 
-    <a class="geo-inspector__edit" href="/mash/geomash/GeoMASH.html" target="_blank" rel="noopener">Повний редактор GeoMASH ↗</a>
+    <a class="geo-inspector__edit" href="/mash/geomash/GeoMASH.html" target="_blank" rel="noopener">{{ t('winterboard.geomash.fullEditor') }} ↗</a>
   </div>
 </template>
 
@@ -215,10 +215,11 @@ const hint = computed<string>(() => {
   const e = active.value
   if (!e) return ''
   const multi = e.inputs.find((i) => i.multi)
-  if (multi) return `Клікайте точки на полотні (${geomashToolState.poly.length}) · подвійний клік — завершити`
-  if (e.inputs.length === 0) return 'Клікніть на полотні'
+  if (multi) return t('winterboard.geomash.hintMulti', { n: geomashToolState.poly.length })
+  if (e.inputs.length === 0) return t('winterboard.geomash.hintClickCanvas')
   const next = e.inputs.filter((i) => !i.multi).find((i) => !geomashToolState.picks[i.role])
-  return next ? `Клікніть на полотні: ${next.role}` : 'Готово — будую…'
+  // next.role — vendor-рольовий текст (напр. "точка1"), НЕ локалізується тут
+  return next ? t('winterboard.geomash.hintClickAt', { role: next.role }) : t('winterboard.geomash.hintBuilding')
 })
 
 function selectTool(e: GeoToolSpecEntry) {
