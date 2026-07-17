@@ -108,47 +108,52 @@
           </ul>
         </template>
 
-        <!-- MODE: AI-Producer #1 (parse ≠ execute): пропозиція → Resolution Policy → звичайний intent -->
+        <!-- MODE: Інтегралик — ДІАЛОГ (Phase 2). parse ≠ execute: кожна дія — через Policy -->
         <template v-else-if="mode === 'ai'">
           <div class="cmdp-head">
             <button class="cmdp-back" @click="toCommands">← Команди</button>
-            <span class="cmdp-mascot" :class="{ thinking: aiPhase === 'loading' }" v-html="MASCOT_SVG"></span>
+            <span class="cmdp-mascot" :class="{ thinking: aiBusy }" v-html="MASCOT_SVG"></span>
             <span class="cmdp-title">Інтегралик</span>
-            <span class="cmdp-meta">«{{ aiPhrase }}»</span>
           </div>
-          <div class="cmdp-dialog">
-            <p v-if="aiPhase === 'loading'" class="cmdp-empty">Думаю…</p>
 
-            <!-- propose (medium/high) → підтвердження; high/destructive — ЗАВЖДИ -->
-            <template v-else-if="aiPhase === 'confirm'">
-              <p class="cmdp-ai-explain">{{ aiResp.explain }}</p>
-              <p v-if="aiResp.risk === 'high'" class="cmdp-ai-danger">⚠️ Незворотна дія — потрібне підтвердження.</p>
-              <div class="cmdp-ai-actions">
-                <button :class="['cmdp-btn', { 'cmdp-btn--danger': aiResp.risk === 'high' }]"
-                        :disabled="loading" @click="confirmAi">
-                  {{ aiResp.risk === 'high' ? 'Так, виконати' : 'Так, зробити' }}
-                </button>
-                <button class="cmdp-back" :disabled="loading" @click="toCommands">Скасувати</button>
+          <div ref="aiThreadEl" class="cmdp-ai-thread">
+            <template v-for="(it, i) in aiThread" :key="i">
+              <p v-if="it.kind === 'user'" class="ai-msg ai-msg--user">{{ it.text }}</p>
+              <p v-else-if="it.kind === 'bot'" class="ai-msg ai-msg--bot">{{ it.text }}</p>
+              <p v-else-if="it.kind === 'done'" class="ai-msg ai-msg--done">✓ {{ it.text }}</p>
+
+              <!-- propose medium/high → confirm-картка; high/destructive — ЗАВЖДИ -->
+              <div v-else-if="it.kind === 'confirm'" class="ai-msg ai-msg--bot ai-card">
+                <p class="cmdp-ai-explain">{{ it.resp.explain }}</p>
+                <p v-if="it.resp.risk === 'high'" class="cmdp-ai-danger">⚠️ Незворотна дія — потрібне підтвердження.</p>
+                <div v-if="!it.done" class="cmdp-ai-actions">
+                  <button :class="['cmdp-btn', { 'cmdp-btn--danger': it.resp.risk === 'high' }]"
+                          :disabled="loading" @click="confirmAi(it)">
+                    {{ it.resp.risk === 'high' ? 'Так, виконати' : 'Так, зробити' }}
+                  </button>
+                  <button class="cmdp-back" :disabled="loading" @click="dismissAi(it)">Скасувати</button>
+                </div>
+              </div>
+
+              <!-- clarify → кандидати (розрізнювані label — Закон B) -->
+              <div v-else-if="it.kind === 'candidates'" class="ai-msg ai-msg--bot ai-card">
+                <p class="cmdp-ai-explain">{{ it.resp.question }}</p>
+                <ul v-if="!it.done" class="cmdp-list cmdp-list--inline">
+                  <li v-for="c in it.resp.candidates" :key="c.id" class="cmdp-item"
+                      @click="pickAiCandidate(it, c)">{{ c.label }}</li>
+                </ul>
               </div>
             </template>
+            <p v-if="aiBusy" class="ai-msg ai-msg--bot ai-typing"><span></span><span></span><span></span></p>
+          </div>
 
-            <!-- clarify → кандидати (+Explain у label) -->
-            <template v-else-if="aiPhase === 'clarify'">
-              <p class="cmdp-ai-explain">{{ aiResp.question }}</p>
-              <ul class="cmdp-list">
-                <li v-for="c in aiResp.candidates" :key="c.id" class="cmdp-item"
-                    @click="pickAiCandidate(c)">{{ c.label }}</li>
-              </ul>
-            </template>
-
-            <!-- none → чесне пояснення + що робити далі (без глухого кута) -->
-            <template v-else>
-              <p class="cmdp-ai-explain">{{ aiResp.explain }}</p>
-              <p class="cmdp-ai-tip">Спробуйте перефразувати, напр.: «видали дошку Алгебра» · «відкрий останній урок» · «згенеруй урок з логарифмів на 6 задач»</p>
-              <div class="cmdp-ai-actions">
-                <button class="cmdp-back" @click="toCommands">← Спробувати ще раз</button>
-              </div>
-            </template>
+          <div class="cmdp-ai-inputrow">
+            <input
+              ref="aiInputEl" v-model="aiInput" class="cmdp-input cmdp-input--ai"
+              placeholder="Продовжте діалог або спитайте про математику…"
+              :disabled="aiBusy" @keydown.enter.prevent="continueAi"
+            />
+            <button class="cmdp-btn" :disabled="aiBusy || !aiInput.trim()" @click="continueAi">➤</button>
           </div>
         </template>
 
@@ -519,62 +524,94 @@ const MASCOT_SVG =
   + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
   + '<path d="M46 49 Q50 53 54 48" fill="none" stroke="#0f5f57" stroke-width="2.5" stroke-linecap="round"></path>'
   + '</g></svg>'
-const aiPhase = ref('loading')      // loading | confirm | clarify | none
-const aiResp = ref({})
-const aiPhrase = ref('')
+// Phase 2 — ДІАЛОГ: тред бульбашок (user/bot/done/confirm/candidates) + історія ≤6 реплік
+// у кожен parse-запит (follow-up'и: «ні, ту що вчора», «а тепер експортуй її»).
+const aiThread = ref([])
+const aiBusy = ref(false)
+const aiInput = ref('')
+const aiThreadEl = ref(null)
+const aiInputEl = ref(null)
+
+function aiScroll() {
+  nextTick(() => { const el = aiThreadEl.value; if (el) el.scrollTop = el.scrollHeight })
+}
+function aiPush(item) { aiThread.value.push(item); aiScroll() }
+
+function aiHistory() {
+  const msgs = []
+  for (const it of aiThread.value) {
+    if (it.kind === 'user') msgs.push({ role: 'user', content: it.text })
+    else if (it.kind === 'bot') msgs.push({ role: 'assistant', content: it.text })
+    else if (it.kind === 'done') msgs.push({ role: 'assistant', content: 'Виконано: ' + it.text })
+    else if (it.kind === 'confirm') msgs.push({ role: 'assistant', content: it.resp.explain })
+    else if (it.kind === 'candidates') msgs.push({ role: 'assistant', content: it.resp.question })
+  }
+  return msgs.slice(-6)   // ліміт ратифіковано; сервер теж обрізає
+}
 
 async function askAi(phrase) {
-  aiPhrase.value = phrase
   mode.value = 'ai'
-  aiPhase.value = 'loading'
-  aiResp.value = {}
   error.value = ''; notice.value = ''
+  const history = aiHistory()          // історія ДО поточної репліки
+  aiPush({ kind: 'user', text: phrase })
+  aiBusy.value = true
   try {
-    const r = await parseAi(phrase, currentBoardId.value)
-    aiResp.value = r
+    const r = await parseAi(phrase, currentBoardId.value, history)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
-      else aiPhase.value = 'confirm'
+      else aiPush({ kind: 'confirm', resp: r, done: false })
     } else if (r.status === 'clarify') {
-      aiPhase.value = 'clarify'
+      aiPush({ kind: 'candidates', resp: r, done: false })
     } else {
-      aiPhase.value = 'none'
+      aiPush({ kind: 'bot', text: r.explain })   // відповідь-пояснення або чесний фолбек
     }
   } catch (e) {
     const d = e?.response?.data
-    aiResp.value = {
-      explain: d?.error === 'AI_UNAVAILABLE'
+    aiPush({
+      kind: 'bot',
+      text: d?.error === 'AI_UNAVAILABLE'
         ? 'AI зараз недоступний — спробуйте пізніше.'
         : (ERR_MSG[d?.error] || d?.detail || 'Помилка AI'),
-    }
-    aiPhase.value = 'none'
+    })
+  } finally {
+    aiBusy.value = false
+    nextTick(() => aiInputEl.value?.focus())
   }
 }
 
-function confirmAi() { executeAi(aiResp.value) }
+function continueAi() {
+  const t = aiInput.value.trim()
+  if (!t || aiBusy.value) return
+  aiInput.value = ''
+  askAi(t)
+}
 
-function pickAiCandidate(c) {
-  const t = aiResp.value.pick_template
+function confirmAi(item) { item.done = true; executeAi(item.resp) }
+function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Скасовано. Що далі?' }) }
+
+function pickAiCandidate(item, c) {
+  item.done = true
+  const t = item.resp.pick_template
   const proposal = {
     capability: t.capability, risk: t.risk, verb: t.verb,
     objects: [{ type: t.type, params: { [t.param]: c.id } }],
-    explain: `${aiResp.value.question} → «${c.label}»`,
+    explain: `${item.resp.question} → «${c.label}»`,
   }
-  aiResp.value = proposal
-  if (t.risk === 'high') aiPhase.value = 'confirm'   // destructive — ще один явний confirm
-  else executeAi(proposal)                            // explicit вибір = підтвердження
+  if (t.risk === 'high') aiPush({ kind: 'confirm', resp: proposal, done: false })  // destructive — ще один confirm
+  else executeAi(proposal)                                                          // explicit вибір = підтвердження
 }
 
-// Після успіху — ТА САМА поведінка, що в ручних команд палітри (per capability).
+// Після успіху: навігація закриває палітру; списки перемикають режим;
+// решта — «✓ done»-бульбашка в треді, діалог продовжується.
 const AI_AFTER = {
   'workspace.create_board': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.board_id } }) },
   'lesson.generate': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.session_id } }) },
   'knowledge.open_lesson': (r) => { close(); router.push({ name: 'winterboard-solo', params: { id: r.result.session_id } }) },
   'knowledge.list_lessons': (r) => { lessons.value = r.result.lessons || []; mode.value = 'lessons' },
   'workspace.list_boards': (r) => { boards.value = r.result.boards || []; mode.value = 'boards' },
-  'workspace.rename_board': () => { notice.value = 'Перейменовано'; mode.value = 'commands'; notifyBoardsChanged() },
-  'workspace.delete_board': () => { notice.value = 'Видалено'; mode.value = 'commands'; notifyBoardsChanged() },
-  'knowledge.save_draft': (r) => { notice.value = 'Збережено чернетку: ' + (r.result?.title || ''); mode.value = 'commands' },
+  'workspace.rename_board': () => notifyBoardsChanged(),
+  'workspace.delete_board': () => notifyBoardsChanged(),
+  'knowledge.save_draft': () => {},
 }
 
 function executeAi(p) {
@@ -593,7 +630,8 @@ function executeAi(p) {
   }, (r) => {
     const after = AI_AFTER[p.capability]
     if (after) after(r)
-    else { notice.value = 'Готово'; mode.value = 'commands' }
+    // якщо лишились у діалозі — done-бульбашка (для історії follow-up'ів теж)
+    if (open.value && mode.value === 'ai') aiPush({ kind: 'done', text: p.explain || 'Готово' })
   })
 }
 
@@ -668,6 +706,7 @@ function syncQueryFromDom() {
 function openPalette() {
   open.value = true; mode.value = 'commands'; query.value = ''; selected.value = 0
   error.value = ''; notice.value = ''
+  aiThread.value = []; aiInput.value = ''; aiBusy.value = false   // новий діалог на кожне відкриття
   nextTick(() => inputEl.value?.focus())
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
@@ -745,10 +784,29 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); clearI
 .cmdp-actions button:hover { background: #e9e9ef; border-radius: 6px; }
 .cmdp-actions button:disabled { opacity: .4; cursor: default; }
 .cmdp-empty { padding: 12px; color: #888; }
-.cmdp-ai-explain { font-size: 15px; color: #111; margin: 4px 0 10px; }
-.cmdp-ai-danger { color: #b91c1c; font-size: 13px; margin-bottom: 10px; }
-.cmdp-ai-tip { color: #6b7280; font-size: 13px; margin: 0 0 10px; }
+.cmdp-ai-explain { font-size: 14px; color: #111; margin: 0 0 8px; }
+.cmdp-ai-danger { color: #b91c1c; font-size: 13px; margin: 0 0 8px; }
 .cmdp-ai-actions { display: flex; gap: 8px; align-items: center; }
+
+/* Phase 2 — діалоговий тред */
+.cmdp-ai-thread { padding: 12px 14px; max-height: 46vh; min-height: 110px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; }
+.ai-msg { max-width: 88%; font-size: 14px; line-height: 1.45; padding: 8px 11px;
+  border-radius: 10px; white-space: pre-wrap; margin: 0; }
+.ai-msg--user { background: #16a34a; color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+.ai-msg--bot { background: #f3f4f6; color: #111; align-self: flex-start; border-bottom-left-radius: 3px; }
+.ai-msg--done { background: #dcfce7; color: #166534; align-self: flex-start; }
+.ai-card { max-width: 95%; }
+.cmdp-list--inline { max-height: 190px; padding: 4px 0 0; }
+.ai-typing { display: flex; gap: 4px; align-items: center; padding: 11px 13px; }
+.ai-typing span { width: 5px; height: 5px; border-radius: 50%; background: #9ca3af;
+  animation: ai-dot 1s infinite ease-in-out; }
+.ai-typing span:nth-child(2) { animation-delay: .15s; }
+.ai-typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes ai-dot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+.cmdp-ai-inputrow { display: flex; gap: 7px; padding: 10px; border-top: 1px solid #eee; }
+.cmdp-input--ai { flex: 1; border: 1px solid #ddd; border-radius: 8px; }
+.cmdp-ai-inputrow .cmdp-btn { padding: 10px 14px; }
 .cmdp-btn { background: #16a34a; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
 .cmdp-btn:disabled { opacity: .5; cursor: default; }
 .cmdp-btn--danger { background: #dc2626; }
