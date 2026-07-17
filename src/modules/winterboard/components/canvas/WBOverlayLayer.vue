@@ -46,6 +46,8 @@ const emit = defineEmits<{
   'asset-delete': [assetId: string]
   'formula-card-edit': [assetId: string]
   'spawn-companions': [payload: unknown]
+  /** Клік належить картці, намальованій ЗВЕРХУ — WBCanvas стартує її Konva-drag. */
+  'foreign-drag': [payload: { assetId: string; ev: PointerEvent }]
 }>()
 
 const wbStore = useWBStore()
@@ -158,6 +160,12 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
     ev.stopPropagation()
     ev.preventDefault()
     wbStore.selectItems([other])
+    // Подія НЕ дійде до Konva-stage: її з'їло pointer-events:auto тіло НИЖНЬОЇ
+    // картки (напр. .gc-plot графкалькулятора), а тіло верхньої — прозоре
+    // (drag там іде через Konva-proxy). Без цього виділена картка «не рухається,
+    // поки під нею щось є» (репорт власника 2026-07-17). WBCanvas стартує drag
+    // на proxy-ноді — той самий Konva-pipeline (dragend → clamp → asset-update).
+    emit('foreign-drag', { assetId: other, ev })
     return
   }
   if (!wbStore.selectedIds.includes(item.asset.id)) {

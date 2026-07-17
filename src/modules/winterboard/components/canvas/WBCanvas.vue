@@ -319,6 +319,7 @@
       @asset-delete="id => emit('asset-delete', id)"
       @formula-card-edit="id => emit('formula-card-edit', id)"
       @spawn-companions="handleSpawnCompanions"
+      @foreign-drag="handleOverlayForeignDrag"
     />
 
     <!-- v-else: legacy per-type blocks (flag OFF або rollback). Незмінені.
@@ -3892,6 +3893,30 @@ function clampAssetToPage(asset: WBAsset, x: number, y: number): { x: number; y:
     // верх: хедер не вище краю (y >= 0); низ: хедер не нижче краю сторінки
     y: Math.min(Math.max(y, 0), pageH - ASSET_REACH_PX),
   }
+}
+
+/**
+ * Overlay повідомив: клік у цій точці належить картці `assetId`, намальованій
+ * ЗВЕРХУ, але HTML-подію з'їло pointer-events:auto тіло нижньої картки
+ * (напр. .gc-plot) → до Konva-stage вона не дійшла й drag не стартував би.
+ * Стартуємо його напряму на proxy-ноді: далі все як завжди (Konva веде drag
+ * через свої window-listeners → dragend → clampAssetToPage → asset-update).
+ * Клік без руху = dragstart+dragend з тими самими координатами → store
+ * відфільтрує no-op update (assetsEqualByOpsFields).
+ */
+function handleOverlayForeignDrag(payload: { assetId: string; ev: PointerEvent }): void {
+  if (currentTool.value !== 'select' || wbStore.mode !== 'edit') return
+  const stage = stageRef.value?.getStage?.()
+  if (!stage) return
+  const node = stage.findOne('#' + payload.assetId)
+  if (!node || !node.draggable()) return // locked / не Konva-proxy тип
+  stage.setPointersPositions(payload.ev) // старт-позиція drag (clientX/clientY)
+  // ⚠️ startDrag() БЕЗ аргументу: Konva матчить drag-елемент за pointerId, а свої
+  // window-listeners вішає на MOUSEmove — у MouseEvent pointerId немає, тож
+  // Util._getFirstPointerId дає 999. Передали б PointerEvent (pointerId=1) →
+  // elem.pointerId=1 ≠ 999 → нода не рухалась би за курсором. Без аргументу
+  // pointerId лишається undefined і Konva сам підставляє його з першого руху.
+  node.startDrag()
 }
 
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
