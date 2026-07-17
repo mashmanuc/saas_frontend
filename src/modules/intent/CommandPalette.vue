@@ -36,7 +36,17 @@
     >{{ tipText }}</button>
 
     <div v-if="enabled && open" class="cmdp-overlay" @click.self="close">
-      <div class="cmdp-panel" role="dialog" aria-label="Командна палітра">
+      <div
+        ref="panelEl"
+        class="cmdp-panel"
+        :style="panelStyle"
+        role="dialog"
+        aria-label="Командна палітра"
+        @pointerdown="panelPointerDown"
+        @pointermove="panelPointerMove"
+        @pointerup="panelPointerUp"
+        @pointercancel="panelPointerUp"
+      >
 
         <!-- MODE: команди -->
         <template v-if="mode === 'commands'">
@@ -630,6 +640,14 @@ function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Ска
 function pickAiCandidate(item, c) {
   item.done = true
   const t = item.resp.pick_template
+  // Phase 2.8: clarify для дії НА дошці — пік будує board_action (не звичайний intent)
+  if (t.board_action) {
+    const action = { kind: t.board_action, payload: { [t.param]: c.id, ...(t.extra || {}) } }
+    runBoardAction(action)
+      .then(() => { aiPush({ kind: 'done', text: `${item.resp.question} → «${c.label}»` }); react('happy') })
+      .catch((be) => { aiPush({ kind: 'bot', text: be?.message || 'Не вдалося.' }); react('sad') })
+    return
+  }
   const proposal = {
     capability: t.capability, risk: t.risk, verb: t.verb,
     objects: [{ type: t.type, params: { [t.param]: c.id } }],
@@ -961,6 +979,59 @@ function restoreFabPos() {
   } catch { /* зіпсований запис — лишаємо дефолт */ }
 }
 
+// ── Панель перетягувана за ШАПКУ (щоб не закривала дошку під час дій Інтегралика) ──
+// Позиція живе в localStorage; перетягнув убік раз — лишається там. Pointer-події →
+// миша/перо/палець. Клік по кнопках/полях НЕ починає drag.
+const CMDP_POS_KEY = 'm4sh_cmdp_pos'
+const panelEl = ref(null)
+const panelPos = ref(null)             // {x,y} | null → центр (флекс оверлея)
+let panelDrag = null
+
+const panelStyle = computed(() =>
+  panelPos.value
+    ? { position: 'fixed', left: panelPos.value.x + 'px', top: panelPos.value.y + 'px', margin: '0' }
+    : {},
+)
+
+function clampPanel(x, y) {
+  const el = panelEl.value
+  const w = el?.offsetWidth || 600
+  const h = el?.offsetHeight || 200
+  return {
+    x: Math.min(Math.max(4, x), window.innerWidth - Math.min(w, 120)),   // лишаємо видимим край
+    y: Math.min(Math.max(4, y), window.innerHeight - 48),
+  }
+}
+
+function panelPointerDown(e) {
+  // drag лише за шапку; не за кнопки/поля/списки
+  if (!e.target.closest('.cmdp-head')) return
+  if (e.target.closest('button, input, a')) return
+  const r = panelEl.value.getBoundingClientRect()
+  panelDrag = { dx: e.clientX - r.left, dy: e.clientY - r.top }
+  try { panelEl.value.setPointerCapture(e.pointerId) } catch { /* older */ }
+}
+function panelPointerMove(e) {
+  if (!panelDrag) return
+  panelPos.value = clampPanel(e.clientX - panelDrag.dx, e.clientY - panelDrag.dy)
+}
+function panelPointerUp() {
+  if (!panelDrag) return
+  panelDrag = null
+  if (panelPos.value) {
+    try { localStorage.setItem(CMDP_POS_KEY, JSON.stringify(panelPos.value)) } catch { /* private */ }
+  }
+}
+function restorePanelPos() {
+  try {
+    const s = JSON.parse(localStorage.getItem(CMDP_POS_KEY) || 'null')
+    if (s && Number.isFinite(s.x) && Number.isFinite(s.y)) {
+      panelPos.value = s
+      nextTick(() => { if (panelPos.value) panelPos.value = clampPanel(panelPos.value.x, panelPos.value.y) })
+    }
+  } catch { /* зіпсований запис — центр */ }
+}
+
 // ── palette lifecycle ──
 // Compat-шим для ГОЛОСОВОГО вводу (Voice In та ін. розширення): вони пишуть текст
 // прямо в DOM-поле БЕЗ події `input`, тож v-model не оновлюється (поле заповнене,
@@ -985,6 +1056,7 @@ function openPalette() {
   error.value = ''; notice.value = ''
   tipVisible.value = false
   aiThread.value = []; aiInput.value = ''; aiBusy.value = false   // новий діалог на кожне відкриття
+  restorePanelPos()   // відновити місце, куди юзер відсунув панель
   nextTick(() => inputEl.value?.focus())
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
@@ -1091,7 +1163,9 @@ onBeforeUnmount(() => {
   border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: hidden; }
 .cmdp-input { width: 100%; box-sizing: border-box; padding: 14px 16px; border: 0;
   border-bottom: 1px solid #eee; font-size: 16px; outline: none; }
-.cmdp-head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #eee; }
+.cmdp-head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #eee;
+  cursor: move; touch-action: none; user-select: none; }
+.cmdp-head button, .cmdp-head input { cursor: pointer; }
 .cmdp-back { border: 0; background: #f3f3f3; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
 .cmdp-title { font-weight: 600; flex: 1; }
 .cmdp-dialog { padding: 14px 16px; }

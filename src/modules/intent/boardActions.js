@@ -159,6 +159,31 @@ export async function buildToolCatalog() {
   }).slice(0, 80)
 }
 
+// ── Phase 2.8: редагування параметра ІСНУЮЧОГО об'єкта (через updateAsset) ──
+// BE резолвить object_id (Закон C), сюди приходить готовий id + що змінити.
+HANDLERS.set_param = async function set_param({ object_id, type, value }) {
+  const { store } = await _store()
+  const page = store.currentPage
+  const asset = (page.assets || []).find((a) => a.id === object_id)
+  if (!asset) throw new Error('Не знайшов цей об’єкт на дошці.')
+  const data = JSON.parse(JSON.stringify(asset.data || {}))
+  if (type === 'graph_expression') {
+    // Міняємо вираз ПЕРШОГО графіка (data.state.expressions[0].src)
+    if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
+    const src = String(value).replace(/^\s*y\s*=\s*/i, '').trim()
+    if (data.state.expressions?.length) {
+      data.state.expressions[0] = { ...data.state.expressions[0], src }
+    } else {
+      data.state.expressions = [{ id: `e-${_uuid().slice(0, 8)}`, src, color: '#dc2626', hidden: false }]
+    }
+  } else if (type === 'formula') {
+    data.formula = String(value)
+  } else {
+    throw new Error('Цей тип зміни поки не підтримується.')  // fail-closed
+  }
+  store.updateAsset({ ...asset, data })
+}
+
 HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const items = await _allInserts()
   const e = items.find((x) => x.id === insert_id)
@@ -220,7 +245,9 @@ export async function buildBoardSummary() {
         const ans = String(a.data?.correctAnswer || '').trim().slice(0, 40)
         label = q + (ans ? ` [відповідь: ${ans}]` : '')
       }
-      items.push({ page: p, kind, label: String(label).slice(0, 240) })
+      // id — для Resolution об'єкта на BE (Phase 2.8 set_param). LLM його НЕ бачить
+      // (у промпт іде лише kind+label; Закон C: навігацію робить Runtime, не модель).
+      items.push({ page: p, kind, label: String(label).slice(0, 240), id: a.id })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
