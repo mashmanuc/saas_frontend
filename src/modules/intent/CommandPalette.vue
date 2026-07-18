@@ -43,7 +43,7 @@
       @click="tipClick"
     >{{ tipText }}</button>
 
-    <div v-if="enabled && open" class="cmdp-overlay" @click.self="close">
+    <div v-if="enabled && open" class="cmdp-overlay" :style="overlayStyle" @click.self="close">
       <div
         ref="panelEl"
         class="cmdp-panel"
@@ -587,6 +587,12 @@ async function loadIntegralykPref() {
 }
 // Приховати Інтегралика (× на маскоті) — синхронно в акаунт + миттєво в UI
 async function hideIntegralyk() {
+  // На дотику × завжди видимий (hover немає) → легко зачепити випадково; підтвердимо,
+  // бо ввімкнути назад — лише в Налаштуваннях. На desktop (hover) — без зайвого кроку.
+  try {
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches &&
+        !window.confirm('Приховати Інтегралика? Увімкнути назад — у Налаштуваннях.')) return
+  } catch { /* matchMedia недоступний — ховаємо без підтвердження */ }
   close()
   if (profileStore.settings) profileStore.settings = { ...profileStore.settings, integralyk_enabled: false }
   try {
@@ -1214,19 +1220,43 @@ function restoreFabPos() {
   } catch { /* зіпсований запис — лишаємо дефолт */ }
 }
 
+// ── Мобільний layout (телефон): палітра стає нижнім «листом», не плаваючим вікном.
+// isNarrow (≤640px) → CSS-лист + вимкнений drag панелі + ігнор desktop-позиції.
+// kbInset (VisualViewport) піднімає лист над екранною клавіатурою на iOS (де layout-
+// viewport не стискається) і обмежує висоту, щоб верх листа / поле вводу не обрізались.
+// Стратегія: на телефоні палітра — голос-перша й текст-знизу, поле завжди над клавіатурою.
+const isNarrow = ref(false)
+const kbInset = ref(0)
+let narrowMq = null
+function updateNarrow() { isNarrow.value = !!(narrowMq && narrowMq.matches) }
+const overlayStyle = computed(() =>
+  isNarrow.value && kbInset.value ? { paddingBottom: kbInset.value + 'px' } : {},
+)
+function onViewportResize() {
+  const vv = window.visualViewport
+  if (!vv || !isNarrow.value || !open.value) { kbInset.value = 0; return }
+  const inset = Math.round(window.innerHeight - vv.height - vv.offsetTop)
+  kbInset.value = inset > 90 ? inset : 0   // >90px ≈ клавіатура (не URL-бар)
+}
+
 // ── Панель перетягувана за ШАПКУ (щоб не закривала дошку під час дій Інтегралика) ──
 // Позиція живе в localStorage; перетягнув убік раз — лишається там. Pointer-події →
-// миша/перо/палець. Клік по кнопках/полях НЕ починає drag.
+// миша/перо/палець. Клік по кнопках/полях НЕ починає drag. На телефоні (isNarrow) drag
+// вимкнено й desktop-позиція ігнорується — лист завжди знизу.
 const CMDP_POS_KEY = 'm4sh_cmdp_pos'
 const panelEl = ref(null)
 const panelPos = ref(null)             // {x,y} | null → центр (флекс оверлея)
 let panelDrag = null
 
-const panelStyle = computed(() =>
-  panelPos.value
+const panelStyle = computed(() => {
+  if (isNarrow.value) {
+    // лист над клавіатурою: обмежуємо висоту видимою областю (innerHeight − клавіатура)
+    return kbInset.value ? { maxHeight: (window.innerHeight - kbInset.value - 8) + 'px' } : {}
+  }
+  return panelPos.value
     ? { position: 'fixed', left: panelPos.value.x + 'px', top: panelPos.value.y + 'px', margin: '0' }
-    : {},
-)
+    : {}
+})
 
 function clampPanel(x, y) {
   const el = panelEl.value
@@ -1239,6 +1269,7 @@ function clampPanel(x, y) {
 }
 
 function panelPointerDown(e) {
+  if (isNarrow.value) return                     // телефон: лист фіксований знизу, не тягається
   // drag лише за шапку; не за кнопки/поля/списки
   if (!e.target.closest('.cmdp-head')) return
   if (e.target.closest('button, input, a')) return
@@ -1297,7 +1328,7 @@ function openPalette() {
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
-function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); stopVoice() }
+function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); stopVoice(); kbInset.value = 0 }
 function toCommands() { mode.value = 'commands'; error.value = ''; nextTick(() => inputEl.value?.focus()) }
 function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
 function runSelected() {
@@ -1318,6 +1349,16 @@ function onKeydown(e) {
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   restoreFabPos()
+  // Мобільний layout: стежимо за шириною екрана + екранною клавіатурою (VisualViewport)
+  try {
+    narrowMq = window.matchMedia('(max-width: 640px)')
+    updateNarrow()
+    narrowMq.addEventListener ? narrowMq.addEventListener('change', updateNarrow) : narrowMq.addListener(updateNarrow)
+  } catch { /* matchMedia недоступний */ }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize)
+    window.visualViewport.addEventListener('scroll', onViewportResize)
+  }
   if (enabled.value && AI_ENABLED) {
     loadIntegralykPref()   // per-акаунт вимкнення (може сховати маскот)
     scheduleTip()
@@ -1328,6 +1369,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('mousemove', onEyesMove)
+  try { narrowMq && (narrowMq.removeEventListener ? narrowMq.removeEventListener('change', updateNarrow) : narrowMq.removeListener(updateNarrow)) } catch { /* noop */ }
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', onViewportResize)
+    window.visualViewport.removeEventListener('scroll', onViewportResize)
+  }
   if (pupilRaf) cancelAnimationFrame(pupilRaf)
   clearInterval(domSyncTimer)
   clearTimeout(tipShowTimer); clearTimeout(tipHideTimer); clearTimeout(moodTimer)
@@ -1472,4 +1518,24 @@ onBeforeUnmount(() => {
 .cmdp-status { padding: 8px 16px; color: #555; }
 .cmdp-error { padding: 8px 16px; color: #c00; }
 .cmdp-hint { padding: 8px 16px; border-top: 1px solid #eee; color: #999; font-size: 12px; }
+
+/* ═══════════ ДОТИК (планшет + телефон) ═══════════ */
+/* На дотику hover не існує → × «сховати» завжди видимий (інакше приховати неможливо),
+   а сам маскот тримаємо помітнішим (без hover-підсвітки). */
+@media (hover: none) {
+  .cmdp-fab { opacity: .82; }
+  .cmdp-fab-hide { opacity: 1; transform: scale(1); width: 20px; height: 20px; font-size: 14px; }
+}
+
+/* ═══════════ ТЕЛЕФОН (≤640px) ═══════════ */
+/* Палітра = нижній «лист» на всю ширину, а не плаваюче центроване вікно: поле вводу
+   лишається над клавіатурою (JS overlayStyle/panelStyle піднімає й обмежує лист по
+   VisualViewport). Маскот дефолтно — у зоні великого пальця (знизу-праворуч). */
+@media (max-width: 640px) {
+  .cmdp-overlay { align-items: flex-end; justify-content: center; padding: 0; }
+  .cmdp-panel { width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; }
+  .cmdp-list, .cmdp-ai-thread { max-height: 38vh; }
+  .cmdp-tip { max-width: min(230px, 74vw); }
+  .cmdp-fab-wrap { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: 14px; }
+}
 </style>
