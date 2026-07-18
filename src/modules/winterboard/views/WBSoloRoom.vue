@@ -1838,9 +1838,13 @@ const contentDrop = useContentDrop({
   screenToCanvas: (x: number, y: number) => {
     const rect = canvasContainerRef.value?.getBoundingClientRect()
     if (rect) {
+      // Віднімаємо canvasOffset (stage.position() = центр-offset + scroll), інакше
+      // при fit-по-ширині / скролі координата зміщена (див. ADD_TOOL_AT_CLIENT).
+      const offset = store.canvasOffset
+      const zoom = store.zoom || 1
       return {
-        x: (x - rect.left) / (store.zoom || 1),
-        y: (y - rect.top) / (store.zoom || 1),
+        x: (x - rect.left - offset.x) / zoom,
+        y: (y - rect.top - offset.y) / zoom,
       }
     }
     return { x: (store.pageWidth ?? 800) / 2, y: 100 }
@@ -1872,9 +1876,15 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
   const rect = canvasContainerRef.value?.getBoundingClientRect()
   if (!rect) return
   const zoom = store.zoom || 1
+  // Screen→page має віднімати canvasOffset (= stage.position() = центр-offset +
+  // scroll), інакше при ненульовому offset (напр. fit-по-ширині на планшеті, коли
+  // ландшафтний аркуш центрується вертикально) координата летить за сторінку →
+  // об'єкт не вставляється / лягає за полотном. Той самий патерн, що badge/overlay
+  // positioning (WBCanvas «include canvasOffset for correct positioning»).
+  const offset = store.canvasOffset
   contentDrop.addAtPosition(mime, payloadStr, {
-    x: (clientX - rect.left) / zoom,
-    y: (clientY - rect.top) / zoom,
+    x: (clientX - rect.left - offset.x) / zoom,
+    y: (clientY - rect.top - offset.y) / zoom,
   })
 })
 
