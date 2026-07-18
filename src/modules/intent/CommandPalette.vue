@@ -151,6 +151,16 @@
               <p v-else-if="it.kind === 'bot'" class="ai-msg ai-msg--bot">{{ it.text }}</p>
               <p v-else-if="it.kind === 'done'" class="ai-msg ai-msg--done">✓ {{ it.text }}</p>
 
+              <!-- онбординг: крок провідника -->
+              <div v-else-if="it.kind === 'guidecta'" class="cmdp-ai-actions" style="margin:2px 0 4px">
+                <button v-if="!it.done" class="cmdp-btn" :disabled="loading"
+                        @click="it.done = true; guideNext()">{{ it.label }}</button>
+              </div>
+              <div v-else-if="it.kind === 'guidecreate'" class="cmdp-ai-actions" style="margin:2px 0 4px">
+                <button v-if="!it.done" class="cmdp-btn" :disabled="loading"
+                        @click="it.done = true; guideCreate()">{{ it.label }}</button>
+              </div>
+
               <!-- propose medium/high → confirm-картка; high/destructive — ЗАВЖДИ -->
               <div v-else-if="it.kind === 'confirm'" class="ai-msg ai-msg--bot ai-card">
                 <p class="cmdp-ai-explain">{{ it.resp.explain }}</p>
@@ -460,6 +470,11 @@ const commands = computed(() => {
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const list = q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : [...commands.value]
+  // Онбординг: провідник у списку. Новачкам (ще не проходили) — першим пунктом.
+  if (AI_ENABLED && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
+    const gi = { id: '__guide__', label: `${guided.value ? '🧭 Провідник Інтегралика' : '✨ Новенький? Провідник Інтегралика'}`, run: () => startGuide() }
+    guided.value ? list.push(gi) : list.unshift(gi)
+  }
   // AI-Producer: будь-яку фразу можна віддати AI — останній пункт списку (і єдиний, якщо збігів нема)
   if (AI_ENABLED && query.value.trim().length >= 3) {
     const phrase = query.value.trim()
@@ -768,6 +783,57 @@ function confirmAi(item) {
   else executeAi(item.resp)
 }
 function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Скасовано. Що далі?' }) }
+
+// ── Онбординг: Інтегралик-ПРОВІДНИК — ще один КЛІЄНТ Runtime. Гід не має власної
+// бізнес-логіки: кожен крок викликає ТІ САМІ операції (create_board / add_graph /
+// add_card), що палітра, голос і AI-режим. Скрипт розмови + виклики Runtime.
+const GUIDE_KEY = 'm4sh_integralyk_guided'
+const guided = ref((() => { try { return localStorage.getItem(GUIDE_KEY) === '1' } catch { return false } })())
+const GUIDE_STEPS = [
+  { say: 'Привіт! Я Інтегралик 👋 За кілька кроків покажу, що вмію — прямо на цій дошці. Поїхали?', cta: 'Почнемо' },
+  { run: () => runBoardAction({ kind: 'add_graph', payload: { expression: 'sin(x)' } }),
+    say: 'Крок 1 — я будую графіки функцій. Ось y = sin(x) вже на дошці 📈', cta: 'Далі' },
+  { run: () => runBoardAction({ kind: 'add_card', payload: { title: 'Приклад картки', body: 'Пояснення з формулами: похідна $(\\sin x)\' = \\cos x$.' } }),
+    say: 'Крок 2 — пишу теорію й розв\'язки гарними картками з формулами.', cta: 'Далі' },
+  { say: 'Крок 3 — я БАЧУ дошку й розв\'язую задачі. Спробуй: «розв\'яжи задачу», «намалюй трикутник», «опиши навколо нього коло». А ще розумію голос — тисни 🎤 і говори.', cta: 'Далі' },
+  { say: 'Готово 🎉 Коли урок готовий — скажи «збережи як урок», і він з\'явиться в «Мої уроки». Тепер просто описуй дії словами — я поруч!', cta: 'Дякую!' },
+]
+let _gidx = -1
+function startGuide() {
+  mode.value = 'ai'; aiThread.value = []; aiInput.value = ''
+  if (!currentBoardId.value) {
+    aiPush({ kind: 'bot', text: 'Привіт! Я Інтегралик 👋 Найкраще показати все прямо на дошці. Створю нову — і проведу тебе?' })
+    aiPush({ kind: 'guidecreate', label: 'Створити дошку і почати' })
+    react('wave')
+    return
+  }
+  _gidx = -1
+  guideNext()
+}
+async function guideNext() {
+  _gidx++
+  const step = GUIDE_STEPS[_gidx]
+  if (!step) { finishGuide(); return }
+  if (step.run) {
+    try { await step.run() } catch (e) { aiPush({ kind: 'bot', text: 'Ой, крок не вдався: ' + (e?.message || '') }) }
+  }
+  aiPush({ kind: 'bot', text: step.say })
+  aiPush({ kind: 'guidecta', label: step.cta })
+  react(_gidx >= GUIDE_STEPS.length - 1 ? 'happy' : 'wave')
+}
+function finishGuide() {
+  guided.value = true
+  try { localStorage.setItem(GUIDE_KEY, '1') } catch { /* private */ }
+  aiPush({ kind: 'bot', text: 'Провідник завершено. Клич будь-коли — «провідник» у палітрі.' })
+}
+function guideCreate() {
+  run(() => sendIntent('CREATE', [{ type: 'Board', params: { title: 'Моя перша дошка' } }], 'guide'),
+    (r) => {
+      try { localStorage.setItem(GUIDE_KEY, '1') } catch { /* private */ }
+      close()
+      router.push({ name: 'winterboard-prepare', params: { id: r.result.board_id } })
+    })
+}
 
 function pickAiCandidate(item, c) {
   item.done = true
