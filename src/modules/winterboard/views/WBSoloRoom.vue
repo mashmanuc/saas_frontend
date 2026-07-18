@@ -1674,6 +1674,18 @@ const touchCtxVisible = ref(false)
 const touchCtxX = ref(0)
 const touchCtxY = ref(0)
 
+// 3D/self-interactive віджети: мають власний stage з orbit-взаємодією (вендор
+// ловить один палець → обертання). Board-жест «два пальці = ресайз картки» для
+// них хибний (на телефоні збивав з пантелику — див. дефект 2026-07-18). Для цих
+// типів two-finger падає у canvas pan+zoom, орбіта (один палець) — у вендора.
+const SELF_INTERACTIVE_3D_TYPES = new Set(['nmt3d', 'graphmash_3d', 'geometry_solid', 'helix'])
+function isSelfInteractive3dSelected(): boolean {
+  const id = store.selectedIds[0]
+  if (!id) return false
+  const asset = store.currentPage?.assets.find((a) => a.id === id)
+  return !!asset && SELF_INTERACTIVE_3D_TYPES.has(asset.type)
+}
+
 const touchGestures = useTouchGestures(canvasContainerRef, {
   onPan(dx, dy) {
     store.setScroll(store.scrollX + dx, store.scrollY + dy)
@@ -1734,14 +1746,31 @@ const touchGestures = useTouchGestures(canvasContainerRef, {
 }, {
   mode: touchGestureMode,
   currentZoom: computed(() => store.zoom),
-  // A10: Route 2-finger pinch to object mode when selection is active
-  hasSelection: () => store.selectedIds.length > 0,
+  // A10: Route 2-finger pinch to object mode when selection is active.
+  // Виняток: для 3D-віджетів (див. isSelfInteractive3dSelected) two-finger НЕ
+  // ресайзить картку, а йде у canvas pan+zoom — щоб не конфліктувати з orbit.
+  hasSelection: () => store.selectedIds.length > 0 && !isSelfInteractive3dSelected(),
 })
 
 // Attach touch gestures after mount
 onMounted(() => {
   touchGestures.attach()
 })
+
+// Mobile (2026-07-18): фіксований 1920px-аркуш ширший за вузький екран → на
+// старті вписуємо ПО ШИРИНІ (вертикаль лишається під скрол). Одноразово, після
+// того як завантаження завершилось і canvas став видимим (v-show → вимірний).
+// Не чіпаємо планшет/десктоп (там контейнер достатньо широкий).
+let _didInitialMobileFit = false
+watch(
+  isLoading,
+  (loading) => {
+    if (loading || _didInitialMobileFit || !isMobileDevice.value) return
+    _didInitialMobileFit = true
+    nextTick(() => requestAnimationFrame(() => canvasRef.value?.fitToWidth?.()))
+  },
+  { immediate: true },
+)
 
 // ── Page thumbnails panel: два режими (compact / panel), стан у localStorage ──
 // Local Workspace (Точка 3, 2026-07-16): панель сторінок відкрита за
@@ -4091,6 +4120,10 @@ watch(() => store.workspaceName, (name) => {
   justify-content: center;
   position: relative;
   background: var(--wb-canvas-area-bg, #e2e8f0);
+  /* useTouchGestures висить саме тут. touch-action: none, щоб браузер не
+     перехоплював палець у прокрутку/жест (→ pointercancel → штрих гине).
+     Пан/зум/малювання повністю на JS+Konva (2026-07-18). */
+  touch-action: none;
 }
 
 /* ── Resize handle for right sidebar ────────────────────────────────────── */

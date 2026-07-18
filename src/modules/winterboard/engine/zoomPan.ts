@@ -118,6 +118,25 @@ export function fitToPage(
   return snapZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom)))
 }
 
+/**
+ * Обчислити zoom, щоб вписати ШИРИНУ аркуша у ширину контейнера.
+ *
+ * На вузьких (мобільних) екранах фіксований 1920px-аркуш ширший за viewport →
+ * контент обрізається праворуч. Фіт по ширині вписує аркуш точно у ширину
+ * контейнера, а вертикаль лишається під скрол. Без padding — щоб аркуш
+ * заповнив ширину впритул (scaledPageWidth === containerWidth → offset X = 0,
+ * без горизонтального overflow). Не snap-имо (точний фіт, не «зручний» рівень).
+ *
+ * @param pageWidth - Page width in canvas units (напр. 1920)
+ * @param containerWidth - Container width in pixels
+ * @returns Zoom level, що вписує ширину аркуша (clamped у [ZOOM_MIN, ZOOM_MAX])
+ */
+export function fitToWidth(pageWidth: number, containerWidth: number): number {
+  if (pageWidth <= 0 || containerWidth <= 0) return 1
+  const zoom = containerWidth / pageWidth
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom))
+}
+
 // ─── Responsive Phase 2 A4: Snap-to-fit + Bounce-back + Double-tap ──────────
 
 /** Snap threshold: if zoom is within ±5% of a snap level, snap to it */

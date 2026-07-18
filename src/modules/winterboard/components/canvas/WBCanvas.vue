@@ -918,6 +918,7 @@ import {
   snapZoom,
   zoomToCursor,
   fitToPage,
+  fitToWidth,
   pinchDistance,
   pinchCenter,
   ZOOM_WHEEL_STEP,
@@ -4703,6 +4704,15 @@ function handleFitToPage(): void {
   emit('scroll-change', 0, 0)
 }
 
+/** Fit page WIDTH to viewport — mobile: 1920px-аркуш ширший за вузький екран. */
+function handleFitToWidth(): void {
+  const container = containerRef.value
+  if (!container) return
+  const zoom = fitToWidth(props.width, container.clientWidth)
+  emit('zoom-change', zoom)
+  emit('scroll-change', 0, 0)
+}
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -5069,6 +5079,7 @@ watch(
 defineExpose({
   getStage: () => stageRef.value?.getStage?.() || null,
   fitToPage: handleFitToPage,
+  fitToWidth: handleFitToWidth,
   /** Open text overlay for object (called from WBSelectionToolbar via parent) */
   openTextOverlay: (objectId: string) => { activeTextObjectId.value = objectId },
   /** 2026-07-15: корінь .wb-canvas (Konva-stage + WBOverlayLayer разом) —
@@ -5086,6 +5097,16 @@ defineExpose({
   background: var(--wb-canvas-area-bg, #d5e0d8);
   outline: none;
   /* A6.3: Prevent browser zoom on canvas — pinch handled by JS */
+  touch-action: none;
+}
+
+/* Konva створює .konvajs-content + <canvas> у РАНТАЙМІ. touch-action НЕ
+   успадковується (CSS), тож `none` на .wb-canvas їх НЕ покриває → на планшеті
+   палець-драг запускає дефолтний браузерний жест → pointercancel → активний
+   штрих гине (forceStopDrawing) → «перо не пише». Форсимо none на самій
+   поверхні малювання (2026-07-18). :deep — бо вузли поза scope-розміткою. */
+.wb-canvas :deep(.konvajs-content),
+.wb-canvas :deep(.konvajs-content > canvas) {
   touch-action: none;
 }
 
