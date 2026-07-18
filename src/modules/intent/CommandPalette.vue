@@ -246,6 +246,7 @@ import { useAuthStore } from '../auth/store/authStore'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
+import { useVoiceDictation } from '@/composables/useVoiceDictation'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
 import { THEMES } from '@/modules/lesson_constructor/api/lessonConstructorApi'
@@ -602,78 +603,15 @@ async function hideIntegralyk() {
 }
 
 // ── Phase V: ГОЛОС — ще один клієнт Runtime (не «голосовий AI»). Мікрофон → Web Speech
-// (uk-UA) → текст у те саме поле → той самий parseAi. Нуль нової бізнес-логіки: лише
-// заміна клавіатури як способу вводу. Ти бачиш розпізнаний текст у полі перед відправкою.
-const _SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
-const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && !!_SR
-const voiceListening = ref(false)
-let recognition = null
-let voiceTarget = null       // 'ai' | 'cmd' — у яке поле лягає розпізнане
-let voiceManualStop = false  // true = користувач сам натиснув «стоп» (не перезапускати)
-let voiceCommitted = ''      // фіналізований текст сесії слухання (переживає авто-рестарт)
-let voiceRestartTimer = null // таймер авто-рестарту після onend (тиша не глушить мікрофон)
-
-function setVoiceField(text) {
-  if (voiceTarget === 'ai') aiInput.value = text
-  else { query.value = text; selected.value = 0 }
-}
-
-function ensureRecognition() {
-  if (recognition || !_SR) return recognition
-  recognition = new _SR()
-  recognition.lang = 'uk-UA'
-  recognition.interimResults = true   // проміжний текст видно живцем
-  recognition.continuous = true       // слухати ДАЛІ через паузи (не зупинятись після 1 фрази)
-  recognition.maxAlternatives = 1
-  // Накопичуємо фіналізовані шматки у voiceCommitted; поле = committed + поточний interim.
-  // Через resultIndex беремо лише НОВІ результати → кожен final додається рівно раз.
-  recognition.onresult = (e) => {
-    let interim = ''
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const res = e.results[i]
-      if (res.isFinal) voiceCommitted = (voiceCommitted + ' ' + res[0].transcript).trim()
-      else interim += res[0].transcript
-    }
-    setVoiceField((voiceCommitted + ' ' + interim).trim())
-  }
-  // Web Speech зупиняється сам після тиші (навіть при continuous). Поки користувач НЕ
-  // натиснув «стоп» — перезапускаємо, щоб мікрофон не глух посеред думки. voiceCommitted
-  // переживає рестарт → раніше сказане НЕ втрачається, диктувати з початку НЕ треба.
-  recognition.onend = () => {
-    if (voiceManualStop) { voiceListening.value = false; return }
-    clearTimeout(voiceRestartTimer)
-    voiceRestartTimer = setTimeout(() => {
-      if (voiceManualStop) { voiceListening.value = false; return }
-      try { recognition.start() } catch { voiceListening.value = false }
-    }, 250)   // невелика пауза уникає InvalidStateError (start одразу після end)
-  }
-  recognition.onerror = (ev) => {
-    // no-speech/aborted — часті й нестрашні (onend перезапустить). Лише відмова доступу
-    // до мікрофона / фатальні — реально зупиняють слухання.
-    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
-      voiceManualStop = true
-      voiceListening.value = false
-    }
-  }
-  return recognition
-}
-
+// (uk-UA) → текст у поле → той самий parseAi. Тепер через СПІЛЬНИЙ composable
+// `useVoiceDictation` (той самий рушій, що в чаті) — one source of truth, без дубля.
+// Обгортки нижче зберігають старі імена (voiceListening/VOICE_ENABLED/toggleVoice) для шаблону.
+const voice = useVoiceDictation()
+const voiceListening = voice.listening
+const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && voice.supported
 function toggleVoice(target) {
-  if (voiceListening.value) { stopVoice(); return }
-  const r = ensureRecognition()
-  if (!r) return
-  voiceTarget = target
-  voiceManualStop = false
-  clearTimeout(voiceRestartTimer)   // скасувати відкладений авто-рестарт від попередньої сесії
-  // База — те, що вже в полі → голос ДОПИСУЄ до набраного/сказаного, а не стирає.
-  voiceCommitted = (target === 'ai' ? aiInput.value : query.value).trim()
-  try { r.start(); voiceListening.value = true } catch { /* вже слухає */ }
-}
-function stopVoice() {
-  voiceManualStop = true
-  clearTimeout(voiceRestartTimer)
-  try { recognition && recognition.stop() } catch { /* noop */ }
-  voiceListening.value = false
+  if (target === 'ai') voice.toggle(aiInput)
+  else { selected.value = 0; voice.toggle(query) }   // 'cmd' — диктовка у пошук команд
 }
 
 // «Інтегралик» — маскот AI-помічника (вигляд оновлено з DATA/integral/integral4).
@@ -815,7 +753,7 @@ function continueAi() {
   const t = aiInput.value.trim()
   if (!t || aiBusy.value) return
   aiInput.value = ''
-  voiceCommitted = ''   // після відправки голос диктує з чистого, не дописує надіслане
+  voice.reset()   // після відправки голос диктує з чистого, не дописує надіслане
   askAi(t)
 }
 
@@ -1362,7 +1300,7 @@ function openPalette() {
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
-function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); stopVoice(); kbInset.value = 0 }
+function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); voice.stop(); kbInset.value = 0 }
 function toCommands() { mode.value = 'commands'; error.value = ''; nextTick(() => inputEl.value?.focus()) }
 function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
 function runSelected() {
@@ -1411,7 +1349,7 @@ onBeforeUnmount(() => {
   if (pupilRaf) cancelAnimationFrame(pupilRaf)
   clearInterval(domSyncTimer)
   clearTimeout(tipShowTimer); clearTimeout(tipHideTimer); clearTimeout(moodTimer)
-  stopVoice()
+  voice.stop()
 })
 </script>
 
