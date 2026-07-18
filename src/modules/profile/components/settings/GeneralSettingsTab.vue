@@ -45,6 +45,22 @@
           <option value="America/Los_Angeles">America/Los_Angeles</option>
         </select>
       </div>
+
+      <!-- Помічник Інтегралик — увімк/вимк (per-акаунт, синхронно) -->
+      <div class="flex items-start gap-3 pt-2">
+        <input
+          id="integralyk"
+          v-model="formData.integralyk_enabled"
+          type="checkbox"
+          :disabled="saving"
+          class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          @change="handleChange"
+        />
+        <label for="integralyk" class="text-sm">
+          <span class="block font-medium text-foreground">Помічник Інтегралик</span>
+          <span class="block text-muted-foreground">Показувати AI-помічника (маскот + командна палітра). Вимкніть, якщо не потрібен.</span>
+        </label>
+      </div>
     </div>
 
     <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
@@ -84,7 +100,8 @@ const profileStore = useProfileStore()
 
 const formData = ref({
   ui_language: 'uk',
-  timezone: 'UTC'
+  timezone: 'UTC',
+  integralyk_enabled: true
 })
 
 const initialData = ref({ ...formData.value })
@@ -110,7 +127,8 @@ onMounted(async () => {
   if (settings) {
     formData.value = {
       ui_language: settings.ui_language || settings.language || 'uk',
-      timezone: settings.timezone || 'UTC'
+      timezone: settings.timezone || 'UTC',
+      integralyk_enabled: settings.integralyk_enabled !== false
     }
     initialData.value = { ...formData.value }
   }

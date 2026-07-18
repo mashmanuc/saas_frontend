@@ -10,25 +10,33 @@
   <Teleport to="body">
     <!-- Плаваючий «Інтегралик» (маскот з DATA/integral): живе поверх УСЬОГО застосунку
          (і дошки, і сторінки з хедером — справа зверху, під дзвіночком). Клік = палітра. -->
-    <button
-      v-if="enabled && AI_ENABLED && !open"
-      ref="fabEl"
-      class="cmdp-fab"
-      :class="fabMood && 'mood-' + fabMood"
-      :style="fabStyle"
-      title="Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно"
-      aria-label="Відкрити Інтегралика — AI-помічника"
-      @pointerdown="fabPointerDown"
-      @pointermove="fabPointerMove"
-      @pointerup="fabPointerUp"
-      @pointercancel="fabPointerUp"
-      @click="onFabClick"
-      v-html="MASCOT_SVG"
-    ></button>
+    <div v-if="enabled && showAI && !open" class="cmdp-fab-wrap" :style="fabStyle">
+      <button
+        ref="fabEl"
+        class="cmdp-fab"
+        :class="fabMood && 'mood-' + fabMood"
+        title="Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно"
+        aria-label="Відкрити Інтегралика — AI-помічника"
+        @pointerdown="fabPointerDown"
+        @pointermove="fabPointerMove"
+        @pointerup="fabPointerUp"
+        @pointercancel="fabPointerUp"
+        @click="onFabClick"
+        v-html="MASCOT_SVG"
+      ></button>
+      <!-- Швидке приховування (owner: «не всім потрібен»). Увімкнути — у Налаштуваннях. -->
+      <button
+        class="cmdp-fab-hide"
+        title="Приховати помічника (увімкнути назад — у Налаштуваннях)"
+        aria-label="Приховати Інтегралика"
+        @pointerdown.stop
+        @click.stop="hideIntegralyk"
+      >×</button>
+    </div>
 
     <!-- Проактивна бульбашка-підказка Інтегралика (клік → палітра) -->
     <button
-      v-if="enabled && AI_ENABLED && !open && tipVisible"
+      v-if="enabled && showAI && !open && tipVisible"
       class="cmdp-tip"
       :class="'tail-' + tipSide"
       :style="tipStyle"
@@ -58,7 +66,7 @@
               @keydown.enter.prevent="runSelected"
             />
             <button
-              v-if="VOICE_ENABLED" class="cmdp-mic" :class="{ listening: voiceListening }"
+              v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
               @click="toggleVoice('cmd')"
               :title="voiceListening ? 'Зупинити' : 'Голосовий ввід'"
               aria-label="Голосовий ввід"
@@ -193,7 +201,7 @@
               :disabled="aiBusy" @keydown.enter.prevent="continueAi"
             />
             <button
-              v-if="VOICE_ENABLED" class="cmdp-mic" :class="{ listening: voiceListening }"
+              v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
               :disabled="aiBusy" @click="toggleVoice('ai')"
               :title="voiceListening ? 'Зупинити' : 'Говоріть — Інтегралик слухає'"
               aria-label="Голосовий ввід"
@@ -225,7 +233,7 @@
         <div v-if="loading" class="cmdp-status">Виконую…</div>
         <div v-if="notice" class="cmdp-status">✓ {{ notice }}</div>
         <div v-if="error" class="cmdp-error">{{ error }}</div>
-        <div class="cmdp-hint">Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити<span v-if="AI_ENABLED"> · ∫ Інтегралик: просто опишіть дію словами</span></div>
+        <div class="cmdp-hint">Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити<span v-if="showAI"> · ∫ Інтегралик: просто опишіть дію словами</span></div>
       </div>
     </div>
   </Teleport>
@@ -235,6 +243,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
+import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
@@ -471,12 +480,12 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const list = q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : [...commands.value]
   // Онбординг: провідник у списку. Новачкам (ще не проходили) — першим пунктом.
-  if (AI_ENABLED && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
+  if (showAI.value && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
     const gi = { id: '__guide__', label: `${guided.value ? '🧭 Провідник Інтегралика' : '✨ Новенький? Провідник Інтегралика'}`, run: () => startGuide() }
     guided.value ? list.push(gi) : list.unshift(gi)
   }
   // AI-Producer: будь-яку фразу можна віддати AI — останній пункт списку (і єдиний, якщо збігів нема)
-  if (AI_ENABLED && query.value.trim().length >= 3) {
+  if (showAI.value && query.value.trim().length >= 3) {
     const phrase = query.value.trim()
     list.push({ id: '__ai__', label: `∫ Спитати Інтегралика: «${phrase}»`, run: () => askAi(phrase) })
   }
@@ -561,7 +570,30 @@ async function openLast() {
 //   high/destructive  → ЗАВЖДИ confirm (навіть після explicit-вибору кандидата)
 //   2+ кандидатів     → вибір списком (explicit pick = підтвердження для low/medium)
 //   none              → чесне пояснення
-const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'
+const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'   // build-флаг (усе розгортання)
+
+// ── Per-акаунт вимкнення (owner: «не всім потрібен»). Джерело — profileStore.settings
+// (спільне реактивне: і тумблер у Налаштуваннях, і quick-hide пишуть туди → палітра
+// реагує миттєво). Дефолт — показувати. showAI гейтить маскот/AI/підказки/провідник/голос.
+const profileStore = useProfileStore()
+const integralykOn = computed(() => profileStore.settings?.integralyk_enabled !== false)
+const showAI = computed(() => AI_ENABLED && integralykOn.value)
+async function loadIntegralykPref() {
+  if (!AI_ENABLED || profileStore.settings) return
+  try {
+    const { getUserSettings } = await import('@/api/users')
+    profileStore.settings = await getUserSettings()
+  } catch { /* нема даних — дефолт (показувати) */ }
+}
+// Приховати Інтегралика (× на маскоті) — синхронно в акаунт + миттєво в UI
+async function hideIntegralyk() {
+  close()
+  if (profileStore.settings) profileStore.settings = { ...profileStore.settings, integralyk_enabled: false }
+  try {
+    const { updateUserSettings } = await import('@/api/users')
+    await updateUserSettings({ integralyk_enabled: false })
+  } catch { /* збережеться при наступній спробі */ }
+}
 
 // ── Phase V: ГОЛОС — ще один клієнт Runtime (не «голосовий AI»). Мікрофон → Web Speech
 // (uk-UA) → текст у те саме поле → той самий parseAi. Нуль нової бізнес-логіки: лише
@@ -1287,6 +1319,7 @@ onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   restoreFabPos()
   if (enabled.value && AI_ENABLED) {
+    loadIntegralykPref()   // per-акаунт вимкнення (може сховати маскот)
     scheduleTip()
     applyItgSkin()   // скін маскота за часом доби (кава/ковпак/зірки/party/капелюх)
     window.addEventListener('mousemove', onEyesMove, { passive: true })
@@ -1304,15 +1337,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Плаваючий «Інтегралик»: напівпрозорий, під зоною дзвіночка; z нижче за оверлей (60). */
-.cmdp-fab { position: fixed; top: 74px; right: 18px; z-index: 55;
-  width: 46px; height: 46px; border: 0; border-radius: 50%; cursor: grab;
-  background: transparent; padding: 0;
+.cmdp-fab-wrap { position: fixed; top: 74px; right: 18px; z-index: 55; width: 46px; height: 46px; }
+.cmdp-fab { position: absolute; inset: 0; width: 46px; height: 46px; border: 0; border-radius: 50%;
+  cursor: grab; background: transparent; padding: 0;
   touch-action: none; /* drag пером/пальцем, а не скрол сторінки */
   opacity: .6; transition: opacity .15s ease;
   filter: drop-shadow(0 3px 8px rgba(13, 148, 136, .35)); }
-.cmdp-fab:hover { opacity: 1; }
+.cmdp-fab-wrap:hover .cmdp-fab { opacity: 1; }
 .cmdp-fab:active { cursor: grabbing; }
 .cmdp-fab :deep(svg) { width: 100%; height: 100%; display: block; overflow: visible; }
+/* «×» — приховати помічника; видно лише на hover обгортки */
+.cmdp-fab-hide { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; z-index: 1;
+  border: 1px solid #e5e7eb; border-radius: 50%; background: #fff; color: #6b7280; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 0; display: grid; place-items: center;
+  opacity: 0; transform: scale(.7); transition: opacity .12s ease, transform .12s ease; }
+.cmdp-fab-wrap:hover .cmdp-fab-hide { opacity: 1; transform: scale(1); }
+.cmdp-fab-hide:hover { color: #ef4444; border-color: #ef4444; }
 
 /* Бульбашка-підказка Інтегралика — спіч-бабл із ХВОСТИКОМ до маскота (JS ставить
    left/right+top, translateY(-50%) центрує по вертикалі → хвостик дивиться йому в обличчя). */
