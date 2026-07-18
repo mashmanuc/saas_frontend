@@ -50,12 +50,20 @@
 
         <!-- MODE: команди -->
         <template v-if="mode === 'commands'">
-          <input
-            ref="inputEl" v-model="query" class="cmdp-input"
-            placeholder="Що зробити? (напр. «урок», «дошку», «мої уроки»)"
-            @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)"
-            @keydown.enter.prevent="runSelected"
-          />
+          <div class="cmdp-cmdrow">
+            <input
+              ref="inputEl" v-model="query" class="cmdp-input"
+              :placeholder="voiceListening ? 'Слухаю… говоріть' : 'Що зробити? (напр. «урок», «дошку», «мої уроки»)'"
+              @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)"
+              @keydown.enter.prevent="runSelected"
+            />
+            <button
+              v-if="VOICE_ENABLED" class="cmdp-mic" :class="{ listening: voiceListening }"
+              @click="toggleVoice('cmd')"
+              :title="voiceListening ? 'Зупинити' : 'Голосовий ввід'"
+              aria-label="Голосовий ввід"
+            >🎤</button>
+          </div>
           <ul class="cmdp-list">
             <li
               v-for="(c, i) in filtered" :key="c.id"
@@ -171,9 +179,15 @@
           <div class="cmdp-ai-inputrow">
             <input
               ref="aiInputEl" v-model="aiInput" class="cmdp-input cmdp-input--ai"
-              placeholder="Продовжте діалог або спитайте про математику…"
+              :placeholder="voiceListening ? 'Слухаю… говоріть' : 'Продовжте діалог або спитайте про математику…'"
               :disabled="aiBusy" @keydown.enter.prevent="continueAi"
             />
+            <button
+              v-if="VOICE_ENABLED" class="cmdp-mic" :class="{ listening: voiceListening }"
+              :disabled="aiBusy" @click="toggleVoice('ai')"
+              :title="voiceListening ? 'Зупинити' : 'Говоріть — Інтегралик слухає'"
+              aria-label="Голосовий ввід"
+            >🎤</button>
             <button class="cmdp-btn" :disabled="aiBusy || !aiInput.trim()" @click="continueAi">➤</button>
           </div>
         </template>
@@ -533,6 +547,48 @@ async function openLast() {
 //   2+ кандидатів     → вибір списком (explicit pick = підтвердження для low/medium)
 //   none              → чесне пояснення
 const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'
+
+// ── Phase V: ГОЛОС — ще один клієнт Runtime (не «голосовий AI»). Мікрофон → Web Speech
+// (uk-UA) → текст у те саме поле → той самий parseAi. Нуль нової бізнес-логіки: лише
+// заміна клавіатури як способу вводу. Ти бачиш розпізнаний текст у полі перед відправкою.
+const _SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && !!_SR
+const voiceListening = ref(false)
+let recognition = null
+let voiceTarget = null   // 'ai' | 'cmd' — у яке поле лягає розпізнане
+
+function ensureRecognition() {
+  if (recognition || !_SR) return recognition
+  recognition = new _SR()
+  recognition.lang = 'uk-UA'
+  recognition.interimResults = true   // проміжний текст видно живцем
+  recognition.continuous = false
+  recognition.maxAlternatives = 1
+  recognition.onresult = (e) => {
+    let txt = ''
+    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript
+    txt = txt.trim()
+    if (voiceTarget === 'ai') aiInput.value = txt
+    else { query.value = txt; selected.value = 0 }
+  }
+  recognition.onend = () => { voiceListening.value = false }
+  recognition.onerror = () => { voiceListening.value = false }
+  return recognition
+}
+
+function toggleVoice(target) {
+  if (voiceListening.value) { stopVoice(); return }
+  const r = ensureRecognition()
+  if (!r) return
+  voiceTarget = target
+  if (target === 'ai') aiInput.value = ''
+  else { query.value = ''; selected.value = 0 }
+  try { r.start(); voiceListening.value = true } catch { /* вже слухає */ }
+}
+function stopVoice() {
+  try { recognition && recognition.stop() } catch { /* noop */ }
+  voiceListening.value = false
+}
 
 // «Інтегралик» — маскот AI-помічника (вигляд оновлено з DATA/integral/integral4).
 // БЕЗ РОТА (дизайнерське рішення): вираз через очі/кліпання, руку (.itg-arm), слоти
@@ -1143,7 +1199,7 @@ function openPalette() {
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
-function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer) }
+function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); stopVoice() }
 function toCommands() { mode.value = 'commands'; error.value = ''; nextTick(() => inputEl.value?.focus()) }
 function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
 function runSelected() {
@@ -1176,6 +1232,7 @@ onBeforeUnmount(() => {
   if (pupilRaf) cancelAnimationFrame(pupilRaf)
   clearInterval(domSyncTimer)
   clearTimeout(tipShowTimer); clearTimeout(tipHideTimer); clearTimeout(moodTimer)
+  stopVoice()
 })
 </script>
 
@@ -1289,6 +1346,17 @@ onBeforeUnmount(() => {
 .ai-typing span:nth-child(2) { animation-delay: .15s; }
 .ai-typing span:nth-child(3) { animation-delay: .3s; }
 @keyframes ai-dot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
+/* Phase V — кнопка мікрофона (голос = ще один клієнт) */
+.cmdp-cmdrow { display: flex; gap: 7px; align-items: center; }
+.cmdp-cmdrow .cmdp-input { flex: 1; }
+.cmdp-mic { flex: none; width: 38px; height: 38px; border: 1px solid #ddd; border-radius: 8px;
+  background: #fff; cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center;
+  transition: background .15s ease, border-color .15s ease; }
+.cmdp-mic:hover { border-color: #0d9488; }
+.cmdp-mic:disabled { opacity: .5; cursor: default; }
+.cmdp-mic.listening { background: #fee2e2; border-color: #ef4444; animation: mic-pulse 1.1s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, .5); } 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } }
+
 .cmdp-ai-inputrow { display: flex; gap: 7px; padding: 10px; border-top: 1px solid #eee; }
 .cmdp-input--ai { flex: 1; border: 1px solid #ddd; border-radius: 8px; }
 .cmdp-ai-inputrow .cmdp-btn { padding: 10px 14px; }
