@@ -608,24 +608,53 @@ const _SR = typeof window !== 'undefined' && (window.SpeechRecognition || window
 const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && !!_SR
 const voiceListening = ref(false)
 let recognition = null
-let voiceTarget = null   // 'ai' | 'cmd' — у яке поле лягає розпізнане
+let voiceTarget = null       // 'ai' | 'cmd' — у яке поле лягає розпізнане
+let voiceManualStop = false  // true = користувач сам натиснув «стоп» (не перезапускати)
+let voiceCommitted = ''      // фіналізований текст сесії слухання (переживає авто-рестарт)
+let voiceRestartTimer = null // таймер авто-рестарту після onend (тиша не глушить мікрофон)
+
+function setVoiceField(text) {
+  if (voiceTarget === 'ai') aiInput.value = text
+  else { query.value = text; selected.value = 0 }
+}
 
 function ensureRecognition() {
   if (recognition || !_SR) return recognition
   recognition = new _SR()
   recognition.lang = 'uk-UA'
   recognition.interimResults = true   // проміжний текст видно живцем
-  recognition.continuous = false
+  recognition.continuous = true       // слухати ДАЛІ через паузи (не зупинятись після 1 фрази)
   recognition.maxAlternatives = 1
+  // Накопичуємо фіналізовані шматки у voiceCommitted; поле = committed + поточний interim.
+  // Через resultIndex беремо лише НОВІ результати → кожен final додається рівно раз.
   recognition.onresult = (e) => {
-    let txt = ''
-    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript
-    txt = txt.trim()
-    if (voiceTarget === 'ai') aiInput.value = txt
-    else { query.value = txt; selected.value = 0 }
+    let interim = ''
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const res = e.results[i]
+      if (res.isFinal) voiceCommitted = (voiceCommitted + ' ' + res[0].transcript).trim()
+      else interim += res[0].transcript
+    }
+    setVoiceField((voiceCommitted + ' ' + interim).trim())
   }
-  recognition.onend = () => { voiceListening.value = false }
-  recognition.onerror = () => { voiceListening.value = false }
+  // Web Speech зупиняється сам після тиші (навіть при continuous). Поки користувач НЕ
+  // натиснув «стоп» — перезапускаємо, щоб мікрофон не глух посеред думки. voiceCommitted
+  // переживає рестарт → раніше сказане НЕ втрачається, диктувати з початку НЕ треба.
+  recognition.onend = () => {
+    if (voiceManualStop) { voiceListening.value = false; return }
+    clearTimeout(voiceRestartTimer)
+    voiceRestartTimer = setTimeout(() => {
+      if (voiceManualStop) { voiceListening.value = false; return }
+      try { recognition.start() } catch { voiceListening.value = false }
+    }, 250)   // невелика пауза уникає InvalidStateError (start одразу після end)
+  }
+  recognition.onerror = (ev) => {
+    // no-speech/aborted — часті й нестрашні (onend перезапустить). Лише відмова доступу
+    // до мікрофона / фатальні — реально зупиняють слухання.
+    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
+      voiceManualStop = true
+      voiceListening.value = false
+    }
+  }
   return recognition
 }
 
@@ -634,11 +663,15 @@ function toggleVoice(target) {
   const r = ensureRecognition()
   if (!r) return
   voiceTarget = target
-  if (target === 'ai') aiInput.value = ''
-  else { query.value = ''; selected.value = 0 }
+  voiceManualStop = false
+  clearTimeout(voiceRestartTimer)   // скасувати відкладений авто-рестарт від попередньої сесії
+  // База — те, що вже в полі → голос ДОПИСУЄ до набраного/сказаного, а не стирає.
+  voiceCommitted = (target === 'ai' ? aiInput.value : query.value).trim()
   try { r.start(); voiceListening.value = true } catch { /* вже слухає */ }
 }
 function stopVoice() {
+  voiceManualStop = true
+  clearTimeout(voiceRestartTimer)
   try { recognition && recognition.stop() } catch { /* noop */ }
   voiceListening.value = false
 }
@@ -782,6 +815,7 @@ function continueAi() {
   const t = aiInput.value.trim()
   if (!t || aiBusy.value) return
   aiInput.value = ''
+  voiceCommitted = ''   // після відправки голос диктує з чистого, не дописує надіслане
   askAi(t)
 }
 
