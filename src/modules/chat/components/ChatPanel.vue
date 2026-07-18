@@ -73,6 +73,15 @@
       <div class="flex items-center justify-between text-xs text-muted">
         <span>{{ $t('chat.input.hint') }}</span>
         <div class="flex items-center gap-2">
+          <button
+            v-if="micSupported"
+            type="button"
+            class="text-base leading-none px-1 rounded transition"
+            :class="micListening ? 'text-red-500 animate-pulse' : 'text-muted hover:text-body'"
+            :title="micListening ? 'Зупинити диктовку' : 'Диктувати голосом'"
+            aria-label="Голосовий ввід"
+            @click="toggleMic"
+          >🎤</button>
           <button class="text-muted hover:text-body" @click="handleSend" :disabled="sending || sendLocked">
             {{
               sending
@@ -92,6 +101,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useVoiceDictation } from '../../../composables/useVoiceDictation'
 import { useChatStore } from '../../../stores/chatStore'
 import { useAuthStore } from '../../auth/store/authStore'
 import ChatMessage from './ChatMessage.vue'
@@ -128,6 +138,10 @@ const {
 const listRef = ref(null)
 const draft = ref('')
 const editingMessage = ref(null)
+
+// Голосова диктовка (той самий composable, що в negotiation-чаті та Інтегралику).
+const { supported: micSupported, listening: micListening, toggle: micToggle, reset: micReset } = useVoiceDictation()
+function toggleMic() { micToggle(draft) }
 const lastTypingSent = ref(0)
 
 const currentUserId = computed(() => authStore.user?.id)
@@ -222,6 +236,7 @@ async function handleSend() {
   
   const text = draft.value.trim()
   draft.value = ''
+  micReset()   // після відправки голос диктує з чистого
   
   if (isEditing.value) {
     try {
