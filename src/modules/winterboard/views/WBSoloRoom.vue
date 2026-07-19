@@ -4264,6 +4264,28 @@ watch(() => store.workspaceName, (name) => {
   z-index: 20;
 }
 
+/* Mobile (2026-07-19): хедер і футер мають більше кнопок, ніж влазить у вузький
+   екран. Без горизонтального скролу вони обрізались і кнопки були недоступні
+   (трей інструментів уже скролиться так само). Робимо ці смуги прокручуваними
+   по горизонталі: пакуємо вліво (не space-between), дозволяємо overflow-x, не
+   даємо дітям стискатись. Скролбар ховаємо для чистоти. */
+@media (max-width: 768px) {
+  .wb-solo-room__header,
+  .wb-solo-room__footer {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .wb-solo-room__header::-webkit-scrollbar,
+  .wb-solo-room__footer::-webkit-scrollbar { display: none; }
+  .wb-solo-room__header > *,
+  .wb-solo-room__footer > * { flex-shrink: 0; }
+  /* title більше не «розпихає» правий блок за екран — натуральна ширина + скрол */
+  .wb-solo-room__header .wb-solo-room__title { flex: 0 0 auto; }
+}
+
 .wb-page-nav {
   display: flex;
   align-items: center;
