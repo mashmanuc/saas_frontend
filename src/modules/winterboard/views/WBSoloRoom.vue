@@ -1852,12 +1852,22 @@ const contentDrop = useContentDrop({
 })
 
 // ── Tray "+" button: add tool to viewport center ──
+// Каскад-лічильник: повторні вставки НЕ лягають ідеально одна на одну.
+// Раніше кожен «+» клав картку рівно в центр → невидимі стекані дублі
+// (подвоєні лінії/кнопки, «мазаня»-плутанина на планшеті 2026-07-19).
+let _insertCascade = 0
 function insertToolAtCenter(mime: string, payloadStr: string) {
   const container = canvasContainerRef.value
   if (!container) return
   const zoom = store.zoom || 1
-  const cx = (container.scrollLeft + container.clientWidth / 2) / zoom
-  const cy = (container.scrollTop + container.clientHeight / 2) / zoom
+  // Центр видимої області у page-координатах: віднімаємо canvasOffset
+  // (= stage.position() = центр-offset + scroll) — той самий патерн, що
+  // ADD_TOOL_AT_CLIENT/screenToCanvas. Старий scrollLeft/Top тут завжди 0
+  // (скрол живе у canvasOffset), а offset ігнорувався → зсув на fit-width.
+  const offset = store.canvasOffset
+  const step = (_insertCascade++ % 5) * 28
+  const cx = (container.clientWidth / 2 - offset.x) / zoom + step
+  const cy = (container.clientHeight / 2 - offset.y) / zoom + step
   contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
 }
 provide(ADD_TOOL_TO_BOARD_KEY, insertToolAtCenter)
