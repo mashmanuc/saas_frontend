@@ -4510,6 +4510,19 @@ watch(() => store.workspaceName, (name) => {
     min-height: 0;
   }
 
+  /* Mobile (2026-07-19): панель сторінок — повноширинна горизонтальна смуга
+     зверху (order:0), а не вузька ліва колонка 156px, що обрізала список.
+     Thumbnails усередині вже мають overflow-x:auto → видно ~4 сторінки, решта
+     свайпом по горизонталі. */
+  .wb-solo-room__page-panel {
+    order: 0;
+  }
+  .wb-solo-room__page-panel--open {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--wb-border, #e2e8f0);
+  }
+
   .wb-solo-room__footer {
     height: 40px;
     padding: 0 8px;

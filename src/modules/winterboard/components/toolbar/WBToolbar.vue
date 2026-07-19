@@ -643,17 +643,24 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 
 /* ── Responsive Phase 2 B3: Variant-specific overrides (INV-3) ──── */
 
-/* Mobile: horizontal bottom bar, scrollable, glass effect, safe area */
+/* Mobile: horizontal bottom bar, glass effect, safe area.
+   2026-07-19: flex-wrap → усі 15 інструментів у 2 ряди, видимі одразу без
+   свайпу (раніше 801px в один ряд overflow-x:auto → перо/малювальні за екраном).
+   height:auto + overflow:visible → 2-й ряд показується (не клипається), а
+   WBColorFlyout не обрізається. */
 .wb-toolbar[data-variant="mobile"] {
   flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
   width: 100%;
-  height: 56px;
+  height: auto;
   max-height: none;
   padding: 4px 6px;
   padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   gap: 2px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  row-gap: 4px;
+  overflow: visible;
   border-right: none;
   border-top: 1px solid var(--wb-toolbar-border, #e2e8f0);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
@@ -663,9 +670,16 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   z-index: var(--wb-z-mobile-toolbar, 20);
 }
 .wb-toolbar[data-variant="mobile"] .wb-toolbar__group {
-  flex-direction: row;
-  gap: 2px;
-  flex-shrink: 0;
+  /* display:contents — група перестає бути окремим flex-боксом, її кнопки стають
+     прямими flex-елементами тулбара → усі 16 інструментів течуть одним потоком і
+     рівно переносяться у 2 ряди (~8+8), а не 10-кнопкова група окремо у 3-й ряд. */
+  display: contents;
+}
+/* На компактному 2-рядному тач-тулбарі роздільники з'їдають ширину і збивають
+   у 3-й ряд — ховаємо їх (групування вже не критичне на мобільному). */
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__sep,
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__subsep {
+  display: none;
 }
 .wb-toolbar[data-variant="mobile"] .wb-toolbar__sep {
   width: 1px;
