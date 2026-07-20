@@ -346,6 +346,19 @@ function onDragEnd() {
   border-color: #818cf8;
   color: #4338ca;
 }
+
+/* Touch (2026-07-19): на тачі немає hover → «+» був невидимий на матеріалах.
+   Показуємо постійно + більший тап-таргет (як у матем-треях і WBAssetItem). */
+@media (pointer: coarse) {
+  .sidebar-item__add-btn {
+    display: flex;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  /* drag-hint ↗ на тачі зайвий (drag капризний) — «+» тепер основний шлях */
+  .sidebar-item__drag-hint { display: none !important; }
+}
 .sidebar-item__pdf-inline {
   display: block;
 }

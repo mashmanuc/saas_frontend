@@ -44,6 +44,14 @@
           draggable="false"
         />
         <span class="pdf-selector__page-num">{{ page.number }}</span>
+        <!-- Touch/hover «+»: додати сторінку в центр дошки (альтернатива drag). -->
+        <button
+          v-if="placeContent"
+          type="button"
+          class="pdf-selector__add-btn"
+          :title="t('winterboard.pdfSelector.pageAlt', { n: page.number })"
+          @click.stop="addPage(page.number)"
+        >+</button>
       </div>
     </div>
 
@@ -69,6 +77,10 @@ import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
 import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
+import { usePlaceSidebarContent } from '../../composables/usePlaceSidebarContent'
+
+// Touch «+» → кладе сторінку в центр видимої дошки (null у read-only контексті).
+const placeContent = usePlaceSidebarContent()
 
 const props = defineProps<{
   item: AllowedContentItem
@@ -202,6 +214,15 @@ function dragFullDocument(e: DragEvent) {
   requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
 }
 
+function addPage(pageNumber: number) {
+  placeContent?.({
+    content_item_id: props.item.content_item_id,
+    asset_category: 'pdf',
+    content_type: 'pdf',
+    extra: { page_number: pageNumber },
+  })
+}
+
 function onDragEnd() {
   window.dispatchEvent(new CustomEvent('wb-drag-stop'))
 }
@@ -276,6 +297,7 @@ function onDragEnd() {
   padding: 8px;
 }
 .pdf-selector__page {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -287,6 +309,45 @@ function onDragEnd() {
 }
 .pdf-selector__page:hover {
   background: #f1f5f9;
+}
+
+/* «+» додати сторінку — hover-reveal на десктопі, постійно на тачі. */
+.pdf-selector__add-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid #c7d2fe;
+  background: #f5f3ff;
+  color: #6366f1;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.pdf-selector__page:hover .pdf-selector__add-btn {
+  display: flex;
+}
+.pdf-selector__add-btn:hover {
+  background: #ede9fe;
+  border-color: #818cf8;
+  color: #4338ca;
+}
+@media (pointer: coarse) {
+  .pdf-selector__add-btn {
+    display: flex;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
 }
 .pdf-selector__page-thumb {
   width: 72px;

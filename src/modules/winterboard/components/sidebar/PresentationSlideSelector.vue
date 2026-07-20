@@ -65,6 +65,14 @@
           draggable="false"
         />
         <span class="slide-selector__slide-num">{{ slide.index }}</span>
+        <!-- Touch/hover «+»: додати слайд у центр дошки (альтернатива drag). -->
+        <button
+          v-if="placeContent"
+          type="button"
+          class="slide-selector__add-btn"
+          :title="t('winterboard.slideSelector.slideAlt', { n: slide.index })"
+          @click.stop="addSlide(slide.index)"
+        >+</button>
       </div>
     </div>
 
@@ -91,6 +99,10 @@ import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
 import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
 import PresentationPlayer from './PresentationPlayer.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
+import { usePlaceSidebarContent } from '../../composables/usePlaceSidebarContent'
+
+// Touch «+» → кладе слайд у центр видимої дошки (null у read-only контексті).
+const placeContent = usePlaceSidebarContent()
 
 const props = defineProps<{
   item: AllowedContentItem
@@ -237,6 +249,15 @@ function dragFullPresentation(e: DragEvent) {
   requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
 }
 
+function addSlide(slideIndex: number) {
+  placeContent?.({
+    content_item_id: props.item.content_item_id,
+    asset_category: 'presentation',
+    content_type: 'presentation',
+    extra: { slide_index: slideIndex },
+  })
+}
+
 function onDragEnd() {
   window.dispatchEvent(new CustomEvent('wb-drag-stop'))
 }
@@ -326,6 +347,7 @@ function onDragEnd() {
   padding: 8px;
 }
 .slide-selector__slide {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -337,6 +359,43 @@ function onDragEnd() {
 }
 .slide-selector__slide:hover {
   background: #e0f2fe;
+}
+
+/* «+» додати слайд — hover-reveal на десктопі, постійно на тачі. */
+.slide-selector__add-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid #c7d2fe;
+  background: #f5f3ff;
+  color: #6366f1;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.slide-selector__slide:hover .slide-selector__add-btn { display: flex; }
+.slide-selector__add-btn:hover {
+  background: #ede9fe;
+  border-color: #818cf8;
+  color: #4338ca;
+}
+@media (pointer: coarse) {
+  .slide-selector__add-btn {
+    display: flex;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
 }
 .slide-selector__slide-thumb {
   width: 100%;

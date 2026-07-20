@@ -977,6 +977,8 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
 import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
+import { PLACE_SIDEBAR_CONTENT_KEY } from '../composables/usePlaceSidebarContent'
+import type { SidebarDragPayload } from '../types/boardDrop'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
 import { parseFolderQuery, isFolderUnavailableError } from '../utils/folderRoute'
@@ -1896,6 +1898,19 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
     x: (clientX - rect.left - offset.x) / zoom,
     y: (clientY - rect.top - offset.y) / zoom,
   })
+})
+
+// ── Touch «+» на контенті сайдбару (файли / сторінки PDF·DOCX / слайди PPTX):
+// кладемо payload у ЦЕНТР ВИДИМОЇ області (canvasOffset-патерн, як drag-вставка).
+// Раніше сторінки документів були drag-only → на тачі їх не поставити.
+provide(PLACE_SIDEBAR_CONTENT_KEY, (payload: SidebarDragPayload) => {
+  const rect = canvasContainerRef.value?.getBoundingClientRect()
+  const zoom = store.zoom || 1
+  const offset = store.canvasOffset
+  const pos = rect
+    ? { x: (rect.width / 2 - offset.x) / zoom, y: (rect.height / 2 - offset.y) / zoom }
+    : { x: (store.pageWidth ?? 800) / 2, y: (store.pageHeight ?? 600) / 2 }
+  void contentDrop.handleSidebarDrop(payload, pos)
 })
 
 // ── Quick Gallery: dblclick places item at canvas center ──
