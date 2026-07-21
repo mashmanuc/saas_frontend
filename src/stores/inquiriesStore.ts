@@ -145,7 +145,6 @@ export const useInquiriesStore = defineStore('inquiries', () => {
       // Refetch після accept + trigger relationsStore refetch
       // Phase 29: also invalidate cross-domain queries (accept affects relations + contacts)
       queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.contactBalance() })
       queryClient.invalidateQueries({ queryKey: queryKeys.contactStats() })
       queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
       queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })

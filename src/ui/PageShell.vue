@@ -38,9 +38,6 @@
     <ToastContainer class="z-50" />
     <GlobalLoader />
 
-    <!-- P0: глобальний paywall контактних токенів (Modal сам Teleport-иться) -->
-    <ContactPaywallModal />
-
     <!-- Ф3: глобальний paywall SaaS-лімітів (403 LIMIT_EXCEEDED) -->
     <LimitPaywallModal />
 
@@ -63,7 +60,6 @@ import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import GlobalActiveLessonBanner from '../components/GlobalActiveLessonBanner.vue'
-import ContactPaywallModal from '../modules/billing/components/ContactPaywallModal.vue'
 import LimitPaywallModal from '../modules/billing/components/LimitPaywallModal.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebarBadges } from '../composables/useSidebarBadges'

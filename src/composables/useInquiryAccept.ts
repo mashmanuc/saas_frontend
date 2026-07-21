@@ -3,7 +3,6 @@ import { useAcceptanceStore } from '@/stores/acceptanceStore'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useContactAccessStore } from '@/stores/contactAccessStore'
 import { useRelationsStore } from '@/stores/relationsStore'
-import { useContactPaywallStore } from '@/stores/contactPaywallStore'
 import { acceptInquiry } from '@/api/acceptance'
 import { notifySuccess, notifyError } from '@/utils/notify'
 
@@ -17,7 +16,6 @@ export function useInquiryAccept() {
   const inquiriesStore = useInquiriesStore()
   const contactAccessStore = useContactAccessStore()
   const relationsStore = useRelationsStore()
-  const contactPaywallStore = useContactPaywallStore()
 
   const isAccepting = ref(false)
   
@@ -163,14 +161,9 @@ export function useInquiryAccept() {
    * Shows notification AND re-throws so caller can react.
    */
   function handleAcceptError(error: any): void {
-    // P0 (2026-06-13): недостатньо контактних токенів (монетизація enforced) →
-    // показуємо paywall-модалку з CTA на підписку/пакет замість generic toast.
-    if (isInsufficientContactsError(error)) {
-      const meta = error?.response?.data?.meta || {}
-      contactPaywallStore.open(meta)
-      trackAcceptLimitReached()
-      throw error
-    }
+    // Ф5 (token-teardown): CONTACTS_BALANCE_TOO_LOW більше не існує (accept завжди
+    // безкоштовний, BE-гілку видалено) — paywall-детект прибрано. SaaS-ліміти (403
+    // LIMIT_EXCEEDED) обробляє глобальний інтерсептор apiClient → LimitPaywallModal.
 
     const message = getErrorMessage(error)
 
@@ -188,17 +181,6 @@ export function useInquiryAccept() {
     throw error
   }
 
-  /**
-   * P0: Чи це помилка "недостатньо контактних токенів".
-   * Backend (apps/core/errors.py) повертає DomainError як 400 з тілом
-   * { code: 'CONTACTS_BALANCE_TOO_LOW', meta }. Матчимо по code (не по статусу),
-   * щоб бути стійкими навіть якщо handler пізніше вирівняють на 409.
-   */
-  function isInsufficientContactsError(error: any): boolean {
-    const d = error?.response?.data
-    return d?.code === 'CONTACTS_BALANCE_TOO_LOW' || d?.error === 'CONTACTS_BALANCE_TOO_LOW'
-  }
-  
   /**
    * Check if error is "grace token expired" or "grace token required".
    * Backend returns { code, message, meta } via DomainError handler.

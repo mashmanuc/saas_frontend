@@ -620,64 +620,6 @@ const routes = [
       },
       // R4: Legacy redirect
       { path: 'billing/cancel', redirect: '/tutor/billing/cancel' },
-      // DOMAIN-07: Contacts module routes
-      {
-        path: 'tutor/contacts',
-        name: 'tutor-contacts',
-        component: () => import('../modules/contacts/views/ContactsView.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR]
-        },
-      },
-      // R4: Legacy redirect
-      { path: 'contacts', redirect: '/tutor/contacts' },
-      {
-        path: 'tutor/contacts/purchase',
-        name: 'contacts-purchase',
-        component: () => import('../modules/contacts/views/ContactsView.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR]
-        },
-        beforeEnter: (to, from, next) => {
-          // Auto-open purchase modal via query param
-          to.query.openPurchase = 'true'
-          next()
-        }
-      },
-      // R4: Legacy redirect
-      { path: 'contacts/purchase', redirect: '/tutor/contacts/purchase' },
-      {
-        path: 'tutor/contacts/purchase/success',
-        name: 'contacts-purchase-success',
-        component: () => import('../modules/contacts/views/ContactsView.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR]
-        },
-        beforeEnter: (to, from, next) => {
-          to.query.purchaseSuccess = 'true'
-          next()
-        }
-      },
-      // R4: Legacy redirect
-      { path: 'contacts/purchase/success', redirect: '/tutor/contacts/purchase/success' },
-      {
-        path: 'tutor/contacts/purchase/cancel',
-        name: 'contacts-purchase-cancel',
-        component: () => import('../modules/contacts/views/ContactsView.vue'),
-        meta: { 
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR]
-        },
-        beforeEnter: (to, from, next) => {
-          to.query.purchaseCancelled = 'true'
-          next()
-        }
-      },
-      // R4: Legacy redirect
-      { path: 'contacts/purchase/cancel', redirect: '/tutor/contacts/purchase/cancel' },
       // DOMAIN-06: Entitlements module routes
       {
         path: 'plan-features',
