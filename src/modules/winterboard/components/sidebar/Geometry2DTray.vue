@@ -234,7 +234,7 @@ function onDragStart(e: DragEvent, preset: string, name: string): void {
 }
 
 /* ── Touch / coarse pointer ── */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   .geo2dv2-tray__grid {
     grid-template-columns: 1fr;
   }

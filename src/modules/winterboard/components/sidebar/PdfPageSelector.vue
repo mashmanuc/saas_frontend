@@ -341,7 +341,7 @@ function onDragEnd() {
   border-color: #818cf8;
   color: #4338ca;
 }
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   .pdf-selector__add-btn {
     display: flex;
     width: 30px;

@@ -362,7 +362,7 @@ function selectRow(o: GeoObject) {
 .geo-inspector__edit { display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 600; color: #fff; background: #1a5c38; border-radius: 7px; padding: 6px 14px; text-decoration: none; }
 .geo-inspector__edit:hover { background: #124028; }
 /* тач: більші таргети (≥44px) */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   .geo-tile { padding: 12px 4px; }
   .geo-tile__glyph { font-size: 22px; }
   .geo-tile__label { font-size: 11px; }
