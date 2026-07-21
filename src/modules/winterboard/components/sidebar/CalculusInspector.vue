@@ -128,6 +128,32 @@
           >∫ F(x)</button>
         </div>
 
+        <!-- Межі інтегрування — ручний ввід (доповнює drag на канві) -->
+        <div class="calc-insp__bounds-row" :title="t('winterboard.calculus.boundsTitle')">
+          <label class="calc-insp__bound">
+            <span class="calc-insp__slider-label">a =</span>
+            <input
+              type="number"
+              class="calc-insp__bound-input"
+              step="0.1"
+              :value="b.a"
+              @change="onBoundChange('a', $event)"
+              @keydown.enter.prevent="onBoundChange('a', $event)"
+            />
+          </label>
+          <label class="calc-insp__bound">
+            <span class="calc-insp__slider-label">b =</span>
+            <input
+              type="number"
+              class="calc-insp__bound-input"
+              step="0.1"
+              :value="b.b"
+              @change="onBoundChange('b', $event)"
+              @keydown.enter.prevent="onBoundChange('b', $event)"
+            />
+          </label>
+        </div>
+
         <!-- N slider -->
         <label class="calc-insp__slider-row">
           <span class="calc-insp__slider-label">N =</span>
@@ -216,6 +242,11 @@ function onHInput(e: Event): void {
 function onNInput(e: Event): void {
   const v = parseInt((e.target as HTMLInputElement).value, 10)
   if (Number.isFinite(v)) b.value.setN(v)
+}
+
+function onBoundChange(which: 'a' | 'b', e: Event): void {
+  const v = parseFloat((e.target as HTMLInputElement).value)
+  if (Number.isFinite(v)) b.value.setBound(which, v)
 }
 </script>
 
@@ -377,6 +408,40 @@ function onNInput(e: Event): void {
 }
 
 .calc-insp__expr-preview:hover {
+  border-color: #c4622a;
+  background: #fff;
+}
+
+/* ── Межі інтегрування ── */
+.calc-insp__bounds-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.calc-insp__bound {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.calc-insp__bound-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid rgba(196, 98, 42, 0.35);
+  border-radius: 4px;
+  font: 11px 'JetBrains Mono', monospace;
+  background: #fffaf0;
+  color: #1e293b;
+  outline: none;
+}
+
+.calc-insp__bound-input:focus {
   border-color: #c4622a;
   background: #fff;
 }

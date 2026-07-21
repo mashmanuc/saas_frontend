@@ -190,12 +190,15 @@ const _calcBridge = reactive<CalculusBridge>({
   riemann: props.asset.data.riemann ?? 'off',
   N: props.asset.data.N ?? 12,
   showF: !!props.asset.data.showF,
+  a: props.asset.data.a ?? -1.5,
+  b: props.asset.data.b ?? 1.5,
   setExpr: setExprForBridge,
   commitExpr: onExprCommit,
   toggle,
   setRiemann,
   setH: (v: number) => patch({ h: v }),
   setN: (v: number) => patch({ N: v }),
+  setBound: (which: 'a' | 'b', v: number) => patch(which === 'a' ? { a: v } : { b: v }),
   onExprPreset,
 })
 
@@ -209,6 +212,8 @@ watchEffect(() => {
   _calcBridge.riemann = props.asset.data.riemann ?? 'off'
   _calcBridge.N = props.asset.data.N ?? 12
   _calcBridge.showF = !!props.asset.data.showF
+  _calcBridge.a = props.asset.data.a ?? -1.5
+  _calcBridge.b = props.asset.data.b ?? 1.5
 })
 
 const modeLabel = computed(() => t(`winterboard.calculus.mode.${props.asset.data.mode}.full`))

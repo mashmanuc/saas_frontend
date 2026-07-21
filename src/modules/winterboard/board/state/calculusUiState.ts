@@ -19,6 +19,11 @@ export interface CalculusBridge {
   riemann: RiemannMode
   N: number
   showF: boolean
+  /** Межі інтегрування (integral mode; ігноруються у derivative). */
+  a: number
+  b: number
+  /** Задати межу вручну з інспектора (той самий patch-шлях, що h/N). */
+  setBound(which: 'a' | 'b', v: number): void
   /** Live-update engine without committing to store (for inspector typing). */
   setExpr(v: string): void
   /** Commit current expr draft to store (on blur / Enter). */

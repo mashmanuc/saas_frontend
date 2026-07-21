@@ -216,7 +216,13 @@
           const r = this.canvas.getBoundingClientRect();
           const px = (e.clientX - r.left) * (this._dpr || 1);
           const m = this._pxToMath(px, 0);
-          this.opts[dragging] = m.x;
+          // Снап меж інтегрування до 0.01: інфо-бокс показує a/b з 2 знаками,
+          // тож «сира» перетягнута межа (2.0069) виглядала як 2, а інтеграл
+          // чесно рахував 2.021 — розбіжність збивала учнів. x0 лишаємо
+          // плавним (по ньому малюється трейл похідної).
+          this.opts[dragging] = (dragging === 'a' || dragging === 'b')
+            ? Math.round(m.x * 100) / 100
+            : m.x;
           // Record derivative trail
           if (dragging === 'x0' && this.opts.showDerivTrace) {
             this._derivTrail.push({ x: m.x, y: numDeriv(this._fnFn, m.x) });

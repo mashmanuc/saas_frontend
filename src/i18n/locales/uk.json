@@ -8523,6 +8523,7 @@
       "examples": "Приклади",
       "expression": "Вираз",
       "sectionIntegral": "Інтеграл",
+      "boundsTitle": "Межі інтегрування (можна тягнути і на графіку)",
       "titles": {
         "showSecant": "Показати січну",
         "showDerivTrace": "Показати графік f'(x)",

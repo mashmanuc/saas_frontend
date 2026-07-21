@@ -27,12 +27,15 @@ function makeBridge(overrides: Partial<CalculusBridge> = {}): CalculusBridge {
     riemann: 'off',
     N: 12,
     showF: false,
+    a: -1.5,
+    b: 1.5,
     setExpr: () => {},
     commitExpr: () => {},
     toggle: () => {},
     setRiemann: () => {},
     setH: () => {},
     setN: () => {},
+    setBound: () => {},
     onExprPreset: () => {},
     ...overrides,
   }
@@ -113,6 +116,49 @@ describe('CalculusInspector — KaTeX-рендер (P0-B)', () => {
     // fallback = <code> з сирим виразом, БЕЗ .katex
     expect(w.find('.calc-insp__title .katex').exists()).toBe(false)
     expect(w.find('.calc-insp__title').text()).toContain('3x^^2')
+    w.unmount()
+  })
+})
+
+describe('CalculusInspector — поля меж інтегрування (2026-07-21)', () => {
+  it('integral mode: поля a/b видимі зі значеннями bridge; derivative — ні', () => {
+    __resetCalculusUiForTests()
+    registerCalculusInspector('calc-b-1', makeBridge({ mode: 'integral', a: 0, b: 2 }))
+    const w = mountWith('uk')
+    const inputs = w.findAll('.calc-insp__bound-input')
+    expect(inputs.length).toBe(2)
+    expect((inputs[0].element as HTMLInputElement).value).toBe('0')
+    expect((inputs[1].element as HTMLInputElement).value).toBe('2')
+    w.unmount()
+
+    __resetCalculusUiForTests()
+    registerCalculusInspector('calc-b-2', makeBridge({ mode: 'derivative' }))
+    const w2 = mountWith('uk')
+    expect(w2.findAll('.calc-insp__bound-input').length).toBe(0)
+    w2.unmount()
+  })
+
+  it('@change поля → setBound з розпарсеним числом; сміття ігнорується', async () => {
+    const calls: Array<['a' | 'b', number]> = []
+    __resetCalculusUiForTests()
+    registerCalculusInspector('calc-b-3', makeBridge({
+      mode: 'integral', a: 0, b: 2,
+      setBound: (which, v) => calls.push([which, v]),
+    }))
+    const w = mountWith('uk')
+    const [aInput, bInput] = w.findAll('.calc-insp__bound-input')
+
+    await aInput.setValue('-1.25')
+    await aInput.trigger('change')
+    await bInput.setValue('3')
+    await bInput.trigger('change')
+    expect(calls).toContainEqual(['a', -1.25])
+    expect(calls).toContainEqual(['b', 3])
+
+    const before = calls.length
+    await aInput.setValue('')
+    await aInput.trigger('change')
+    expect(calls.length).toBe(before) // NaN не проходить
     w.unmount()
   })
 })

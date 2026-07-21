@@ -33,9 +33,10 @@ function i18nPlugin() {
 function calcBridge(): CalculusBridge {
   return {
     mode: 'derivative', expr: 'x^2', showSecant: false, showDerivTrace: false,
-    h: 0.5, riemann: 'off', N: 12, showF: false,
+    h: 0.5, riemann: 'off', N: 12, showF: false, a: -1.5, b: 1.5,
     setExpr: () => {}, commitExpr: () => {}, toggle: () => {},
-    setRiemann: () => {}, setH: () => {}, setN: () => {}, onExprPreset: () => {},
+    setRiemann: () => {}, setH: () => {}, setN: () => {}, setBound: () => {},
+    onExprPreset: () => {},
   }
 }
 

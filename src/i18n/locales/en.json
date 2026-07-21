@@ -8390,6 +8390,7 @@
       "examples": "Examples",
       "expression": "Expression",
       "sectionIntegral": "Integral",
+      "boundsTitle": "Integration bounds (draggable on the graph too)",
       "titles": {
         "showSecant": "Show secant line",
         "showDerivTrace": "Show f'(x) graph",
