@@ -38,8 +38,11 @@
         @pointerdown.stop
       >×</button>
     </header>
-    <!-- orbit доступний лише коли виділено (інакше board-drag) -->
-    <div ref="stageEl" class="gm3d-stage" :class="{ 'gm3d-stage--interactive': isSelected }" />
+    <!-- INV-OVERLAY-CLICK v2 крок 2 (2026-07-16): тіло ЗАВЖДИ інтерактивне у
+         select-режимі (interactive) — orbit одним жестом; wrapper-capture guard
+         виділяє картку тим самим дотиком. Pen/readonly (interactive=false) →
+         none, ink поверх. Drag картки — лише за header. -->
+    <div ref="stageEl" class="gm3d-stage" :class="{ 'gm3d-stage--interactive': interactive }" />
   </div>
 </template>
 

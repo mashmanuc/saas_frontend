@@ -179,8 +179,14 @@ function bridgeValueOf(id: string): string {
 }
 
 /* ── Canvas-click побудова (Stage B) ─────────────────────────── */
+// INV-OVERLAY-CLICK v2 крок 2 (2026-07-16): тіло ЗАВЖДИ інтерактивне у
+// select-режимі (interactive) — консистентний overlap-select через
+// wrapper-capture guard + транзієнт-pop. isSelected прибрано з умови.
+// Drag картки — лише за Title-header (тіло тепер ловить pointer). Точковий
+// перетяг лишається select-first (onStagePointerDown гейтить isSelected) —
+// безпечно, без випадкового розміщення точок на невиділеній картці.
 const stageInteractive = computed(() =>
-  !!props.isSelected && !props.asset.locked && props.interactive !== false)
+  !props.asset.locked && props.interactive !== false)
 
 const dragging = ref(false)
 const hoverId = ref<string | null>(null)

@@ -500,7 +500,11 @@ function syncCanvasPointerEvents(): void {
   const el = stageRef.value
   if (!el) return
 
-  if (props.interactive && (props.isSelected || props.isExpanded)) {
+  // INV-OVERLAY-CLICK v2 крок 2 (2026-07-16): тіло ЗАВЖДИ auto у select-режимі
+  // (interactive) — orbit одним жестом (wrapper-capture guard виділяє тим самим
+  // дотиком). isSelected прибрано з умови; expanded лишається окремим тригером.
+  // Pen/readonly (interactive=false) → none (гілка else), ink поверх.
+  if (props.interactive || props.isExpanded) {
     // Enable: stage = auto; clear our forced 'none' from children
     ;(el as HTMLElement).style.pointerEvents = 'auto'
     el.querySelectorAll<HTMLElement>('*').forEach((child) => {
