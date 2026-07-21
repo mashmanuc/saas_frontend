@@ -39,7 +39,17 @@
       <div class="calc-insp__section-label">{{ t('winterboard.calculus.expression') }}</div>
       <div class="calc-insp__expr-row">
         <span class="calc-insp__expr-prefix">y =</span>
+        <!-- Гібрид «рендер у спокої»: KaTeX-прев'ю поки не редагується;
+             клік → той самий <input>. Порожній вираз → одразу input. -->
+        <button
+          v-if="!exprFocused && localExpr.trim()"
+          type="button"
+          class="calc-insp__expr-preview"
+          @click="startExprEdit"
+        ><MathExpr :expr="localExpr" /></button>
         <input
+          v-else
+          ref="exprInputEl"
           type="text"
           class="calc-insp__expr-input"
           :value="localExpr"
@@ -138,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
 import { calculusUiState } from '../../board/state/calculusUiState'
@@ -167,6 +177,16 @@ function riemannLabel(mode: RiemannMode): string {
 // We sync localExpr ← b.expr ONLY when input is not focused (no typing conflict).
 const localExpr = ref(calculusUiState.bridge?.expr ?? '')
 const exprFocused = ref(false)
+const exprInputEl = ref<HTMLInputElement | null>(null)
+
+/** Гібрид: клік по KaTeX-прев'ю → перемкнутись на input і сфокусувати. */
+function startExprEdit(): void {
+  exprFocused.value = true
+  nextTick(() => {
+    exprInputEl.value?.focus()
+    exprInputEl.value?.select()
+  })
+}
 
 watch(
   () => calculusUiState.bridge?.expr,
@@ -336,6 +356,27 @@ function onNInput(e: Event): void {
 }
 
 .calc-insp__expr-input:focus {
+  border-color: #c4622a;
+  background: #fff;
+}
+
+/* Гібрид: KaTeX-прев'ю дзеркалить метрики input (без стрибка лейауту) */
+.calc-insp__expr-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 7px;
+  border: 1px solid rgba(196, 98, 42, 0.2);
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fffaf0;
+  color: #1e293b;
+  cursor: text;
+  text-align: left;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.calc-insp__expr-preview:hover {
   border-color: #c4622a;
   background: #fff;
 }

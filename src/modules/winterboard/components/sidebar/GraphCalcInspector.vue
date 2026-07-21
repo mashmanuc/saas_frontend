@@ -8,7 +8,7 @@
   Pattern: mirrors Nmt3dInspector.vue.
 -->
 <template>
-  <div class="gc-insp">
+  <div ref="rootEl" class="gc-insp">
     <!-- Header -->
     <div class="gc-insp__header">
       <div class="gc-insp__header-row">
@@ -57,14 +57,24 @@
             @click="b.onToggleHidden(expr.id)"
           />
 
-          <!-- Expression text input -->
+          <!-- Гібрид «рендер у спокої»: KaTeX-прев'ю поки рядок не редагується;
+               клік → живий <input> (той самий, з усіма slash/enter-хендлерами).
+               Порожній src → одразу input. Сходинка до повного MathQuill (§0.1). -->
+          <button
+            v-if="editingId !== expr.id && expr.src.trim()"
+            type="button"
+            class="gc-insp__expr-preview"
+            @click="startEdit(expr.id)"
+          ><MathExpr :expr="expr.src" /></button>
           <input
+            v-else
             type="text"
             class="gc-insp__expr-input"
             :value="expr.src"
+            :data-expr-id="expr.id"
             placeholder="y = ..."
             @input="b.onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
-            @blur="b.onInputBlur(expr.id)"
+            @blur="editingId = null; b.onInputBlur(expr.id)"
             @keydown.enter.prevent="b.onEnterPress(expr.id)"
             @keydown.down.prevent="b.onArrowNav(expr.id, 1)"
             @keydown.up.prevent="b.onArrowNav(expr.id, -1)"
@@ -200,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
@@ -209,6 +219,21 @@ const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => graphCalcInspectorState.bridge!)
+
+// ── Гібрид «рендер у спокої» ──────────────────────────────────────────────
+// editingId = рядок у режимі вводу; решта показують KaTeX-прев'ю.
+// Порожні рядки завжди input (прев'ю нема чого рендерити).
+const editingId = ref<string | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
+
+function startEdit(id: string): void {
+  editingId.value = id
+  nextTick(() => {
+    const el = rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(id)}"]`)
+    el?.focus()
+    el?.select()
+  })
+}
 
 // Mirrors QUICK_TEMPLATES in GraphCalculatorRenderer (Phase G4)
 const QUICK_TEMPLATES = [
@@ -472,6 +497,27 @@ const QUICK_TEMPLATES = [
   color: #1e293b;
   outline: none;
   transition: border-color 0.12s;
+}
+
+/* Гібрид: KaTeX-прев'ю дзеркалить метрики input (без стрибка лейауту) */
+.gc-insp__expr-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid rgba(59, 123, 155, 0.18);
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fffaf0;
+  color: #1e293b;
+  cursor: text;
+  text-align: left;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.gc-insp__expr-preview:hover {
+  border-color: rgba(59, 123, 155, 0.45);
+  background: #fff;
 }
 
 .gc-insp__expr-input:focus {
