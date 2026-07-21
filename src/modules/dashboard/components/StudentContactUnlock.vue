@@ -19,48 +19,48 @@
 
     <!-- Якщо relation ACTIVE - ЗАВЖДИ показуємо контакти -->
     <div v-if="relation.status === 'active'" class="contacts-display">
-      <h4>{{ $t('contacts.studentContacts') }}</h4>
-      
+      <p class="contacts-label">{{ $t('contacts.studentContacts') }}</p>
+
       <!-- Завантаження -->
       <div v-if="loading" class="loading-state">
         {{ $t('common.loading') }}...
       </div>
-      
+
       <!-- Контакти завантажені -->
-      <div v-else-if="studentContacts">
-        <div class="contact-item" v-if="studentContacts.phone">
-          <span class="contact-icon">📱</span>
+      <div v-else-if="studentContacts" class="contacts-rows">
+        <a class="contact-item" v-if="studentContacts.phone" :href="`tel:${studentContacts.phone}`">
+          <svg class="contact-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           <span class="contact-value">{{ studentContacts.phone }}</span>
-        </div>
-        <div class="contact-item" v-if="studentContacts.telegram">
-          <span class="contact-icon">💬</span>
+        </a>
+        <a class="contact-item" v-if="studentContacts.telegram" :href="`https://t.me/${studentContacts.telegram}`" target="_blank" rel="noopener">
+          <svg class="contact-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 4.5 2.5 12l6 2m13-9.5-4 15-5-5.5m9-9.5-11 9.5m0 0V21l3-3"/></svg>
           <span class="contact-value">@{{ studentContacts.telegram }}</span>
-        </div>
-        <div class="contact-item" v-if="studentContacts.email">
-          <span class="contact-icon">📧</span>
+        </a>
+        <a class="contact-item" v-if="studentContacts.email" :href="`mailto:${studentContacts.email}`">
+          <svg class="contact-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
           <span class="contact-value">{{ studentContacts.email }}</span>
-        </div>
-        
+        </a>
+
         <!-- Якщо жодного контакту немає -->
         <div v-if="!studentContacts.phone && !studentContacts.telegram && !studentContacts.email" class="no-contacts">
           {{ $t('contacts.noContactsAvailable') }}
         </div>
       </div>
-      
+
       <!-- Контакти ще не завантажені - показуємо стан завантаження, НЕ кнопку (SSOT: ACTIVE = контакти завжди доступні) -->
       <div v-if="relation.status === 'active' && !studentContacts && !loading" class="loading-state">
         {{ $t('common.loading') }}...
       </div>
 
       <!-- Кнопка revoke (опціонально) -->
-      <Button
+      <button
         v-if="showRevokeButton && studentContacts"
-        variant="danger"
-        size="sm"
+        type="button"
+        class="revoke-link"
         @click="handleRevoke"
       >
         {{ $t('contacts.revokeButton') }}
-      </Button>
+      </button>
     </div>
   </div>
 </template>
@@ -167,25 +167,72 @@ async function handleRevoke() {
 }
 
 .contacts-display {
-  padding: var(--space-md);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
+  padding: 0;
+  background: transparent;
+}
+
+.contacts-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.contacts-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .contact-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-xs);
+  gap: 0.6rem;
+  width: fit-content;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md, 8px);
+  transition: color 0.15s ease;
 }
 
-.contact-icon {
-  font-size: var(--text-xl);
+.contact-item:hover {
+  color: var(--accent);
+}
+
+.contact-ic {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--text-secondary);
+  flex: 0 0 auto;
+}
+
+.contact-item:hover .contact-ic {
+  color: var(--accent);
 }
 
 .contact-value {
-  font-family: monospace;
-  color: var(--text-primary);
+  color: inherit;
+}
+
+.revoke-link {
+  margin-top: 0.6rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--danger, #dc2626);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.revoke-link:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .loading-state {

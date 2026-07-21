@@ -101,115 +101,136 @@
           <li
             v-for="relation in filteredRelations"
             :key="getRelationId(relation)"
-            class="space-y-3 rounded-2xl border border-border-subtle bg-surface-soft/60 p-4"
+            class="group rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm transition hover:border-accent/40 hover:shadow-md"
           >
-            <div class="flex flex-wrap items-start gap-4">
-              <input
-                type="checkbox"
-                class="h-4 w-4 cursor-pointer rounded border-border-subtle accent-accent"
-                :checked="relationsStore.isTutorSelected(getRelationId(relation))"
-                @change="toggleSelection(getRelationId(relation))"
-              />
-              <div class="flex-1 min-w-0 space-y-1">
-                <p class="text-base font-semibold text-body break-words">
-                  {{ getStudentName(relation.student) }}
+            <!-- Хедер: аватар + ім'я/статус + чекбокс -->
+            <div class="flex items-start gap-4">
+              <div
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-semibold"
+                :class="relation.status === 'archived'
+                  ? 'bg-surface-soft text-muted'
+                  : 'bg-accent/10 text-accent'"
+                aria-hidden="true"
+              >
+                {{ getStudentInitials(relation.student) }}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-base font-semibold text-body break-words">
+                    {{ getStudentName(relation.student) }}
+                  </span>
+                  <span
+                    v-if="relation.status === 'active'"
+                    class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                    :data-test="`relation-status-${getRelationId(relation)}`"
+                  >
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    {{ statusLabels[relation.status] || relation.status }}
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center rounded-full border border-default px-2.5 py-0.5 text-xs font-medium text-muted"
+                    :data-test="`relation-status-${getRelationId(relation)}`"
+                  >
+                    {{ statusLabels[relation.status] || relation.status }}
+                  </span>
                   <span
                     v-if="relation.student?.is_demo"
-                    class="ml-1.5 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                    class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
                   >
                     {{ $t('student.demoBadge') }}
                   </span>
-                </p>
-                <p class="text-sm text-muted break-all" v-if="relation.status === 'active'">{{ relation.student?.email }}</p>
-                <p class="text-xs text-muted">
-                  {{ $t('dashboard.tutor.timezoneLabel') }}
-                  <span class="font-medium">
-                    {{ relation.student?.timezone || $t('dashboard.tutor.timezoneUnknown') }}
+                  <span
+                    v-if="relation.student?.is_deleted"
+                    class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                  >
+                    {{ $t('dashboard.tutor.accountDeleted') }}
                   </span>
-                </p>
-                <p v-if="relation.notes" class="text-xs text-muted break-words">
-                  {{ relation.notes }}
+                </div>
+                <p class="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>
+                  {{ relation.student?.timezone || $t('dashboard.tutor.timezoneUnknown') }}
                 </p>
               </div>
+
+              <input
+                type="checkbox"
+                class="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-border-subtle accent-accent"
+                :checked="relationsStore.isTutorSelected(getRelationId(relation))"
+                @change="toggleSelection(getRelationId(relation))"
+                :aria-label="getStudentName(relation.student)"
+              />
             </div>
 
-            <!-- Contact Access Component - тільки для active -->
+            <p v-if="relation.notes" class="mt-3 text-sm text-muted break-words">
+              {{ relation.notes }}
+            </p>
+
+            <!-- Контакти — тільки для active -->
             <StudentContactUnlock
               v-if="relation.status === 'active'"
+              class="mt-4"
               :relation="relation"
               :show-revoke-button="true"
             />
 
-            <!-- Кнопки дій для active студентів -->
-            <div v-if="relation.status === 'active'" class="flex flex-wrap items-center gap-2">
-              <span
-                class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
-                :data-test="`relation-status-${getRelationId(relation)}`"
+            <!-- Футер дій -->
+            <div
+              v-if="relation.status === 'active'"
+              class="mt-4 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4"
+            >
+              <Button variant="primary" size="sm" @click="handleCreateLesson(relation)">
+                {{ $t('dashboard.tutor.cta.createLesson') }}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="!canOpenChatWithStudent(relation)"
+                @click="handleOpenChatWithStudent(relation)"
+                class="relative"
               >
-                {{ statusLabels[relation.status] || relation.status }}
-              </span>
-              <div class="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" @click="handleCreateLesson(relation)">
-                  {{ $t('dashboard.tutor.cta.createLesson') }}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  :disabled="!canOpenChatWithStudent(relation)"
-                  @click="handleOpenChatWithStudent(relation)"
-                  class="relative"
+                {{ $t('dashboard.tutor.cta.chatWithStudent') }}
+                <span
+                  v-if="getUnreadCountForStudent(relation) > 0"
+                  class="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
                 >
-                  {{ $t('dashboard.tutor.cta.chatWithStudent') }}
-                  <span
-                    v-if="getUnreadCountForStudent(relation) > 0"
-                    class="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
-                  >
-                    {{ getUnreadCountForStudent(relation) }}
-                  </span>
-                </Button>
-              </div>
+                  {{ getUnreadCountForStudent(relation) }}
+                </span>
+              </Button>
             </div>
 
             <!-- Архівні студенти -->
-            <div v-if="relation.status === 'archived'" class="flex flex-wrap items-center gap-2">
-              <span
-                class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
-                :data-test="`relation-status-${getRelationId(relation)}`"
+            <div
+              v-if="relation.status === 'archived'"
+              class="mt-4 flex flex-wrap gap-2 border-t border-border-subtle pt-4"
+            >
+              <Button
+                v-if="!relation.student?.is_deleted"
+                variant="primary"
+                size="sm"
+                :disabled="actionLoadingId === getRelationId(relation)"
+                :loading="actionLoadingId === getRelationId(relation)"
+                @click="handleRestore(getRelationId(relation))"
               >
-                {{ statusLabels[relation.status] || relation.status }}
-              </span>
-
-              <span
-                v-if="relation.student?.is_deleted"
-                class="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                {{ $t('common.restore') }}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                class="text-danger border-danger hover:bg-danger/10"
+                :disabled="actionLoadingId === getRelationId(relation)"
+                @click="handleHide(getRelationId(relation))"
               >
-                {{ $t('dashboard.tutor.accountDeleted') }}
-              </span>
-
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  v-if="!relation.student?.is_deleted"
-                  variant="primary"
-                  size="sm"
-                  :disabled="actionLoadingId === getRelationId(relation)"
-                  :loading="actionLoadingId === getRelationId(relation)"
-                  @click="handleRestore(getRelationId(relation))"
-                >
-                  {{ $t('common.restore') }}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="text-danger border-danger hover:bg-danger/10"
-                  :disabled="actionLoadingId === getRelationId(relation)"
-                  @click="handleHide(getRelationId(relation))"
-                >
-                  {{ $t('common.hide') }}
-                </Button>
-              </div>
+                {{ $t('common.hide') }}
+              </Button>
             </div>
 
-            <div class="flex flex-wrap gap-2" v-if="relation.status === 'invited'">
+            <!-- Запрошені студенти -->
+            <div
+              v-if="relation.status === 'invited'"
+              class="mt-4 flex flex-wrap gap-2 border-t border-border-subtle pt-4"
+            >
               <Button
                 variant="primary"
                 size="sm"
@@ -401,6 +422,16 @@ function getStudentName(student) {
   if (!student) return '—'
   if (student.is_deleted) return t('dashboard.tutor.deletedUser')
   return student.display_name || student.full_name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || '—'
+}
+
+// Ініціали для аватара картки: перші літери 1-2 слів імені (fallback — «•»).
+function getStudentInitials(student) {
+  const name = getStudentName(student)
+  if (!name || name === '—') return '•'
+  const parts = name.split(/\s+/).filter(Boolean)
+  const first = parts[0]?.[0] ?? ''
+  const second = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : ''
+  return (first + second).toUpperCase() || '•'
 }
 
 function getRelationId(relation) {
