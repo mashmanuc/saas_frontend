@@ -349,7 +349,7 @@ function onDragEnd() {
 
 /* Touch (2026-07-19): на тачі немає hover → «+» був невидимий на матеріалах.
    Показуємо постійно + більший тап-таргет (як у матем-треях і WBAssetItem). */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   .sidebar-item__add-btn {
     display: flex;
     width: 32px;

@@ -179,7 +179,7 @@ function onDragStart(e: DragEvent): void {
 }
 .tray-add-btn:hover { background: #ede9fe; border-color: #818cf8; color: #4338ca; }
 
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   /* FIX Android repaint: position:static flex-sibling замість position:absolute */
   .quad-tray__card-wrap {
     display: flex;

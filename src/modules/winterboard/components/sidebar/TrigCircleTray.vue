@@ -336,7 +336,7 @@ const HelixIcon: FunctionalComponent = () =>
 }
 
 /* ── Touch / coarse pointer ── */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   /* FIX Android repaint: position:static flex-sibling замість position:absolute */
   .trig-circle-tray__card-wrap {
     display: flex;

@@ -283,7 +283,7 @@ function onDragStartGraph(e: DragEvent): void {
 }
 
 /* ── Touch / coarse pointer ── */
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   .calculus-tray__grid {
     grid-template-columns: 1fr;
   }

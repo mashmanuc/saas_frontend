@@ -148,7 +148,7 @@ function onDrag(e: DragEvent): void {
   color: #4338ca;
 }
 
-@media (pointer: coarse) {
+@media (any-pointer: coarse) {
   /* FIX Android repaint: position:static flex-sibling замість position:absolute */
   .trig-solver-tray__card-wrap {
     display: flex;
