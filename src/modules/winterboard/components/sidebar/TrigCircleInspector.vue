@@ -11,12 +11,12 @@
   <div class="trig-insp">
     <!-- Header -->
     <div class="trig-insp__header">
-      <span class="trig-insp__title">Тригонометричне коло</span>
+      <span class="trig-insp__title">{{ t('winterboard.trigCircle.cardTitle') }}</span>
     </div>
 
     <!-- Функції -->
     <div class="trig-insp__section">
-      <div class="trig-insp__section-label">Функції</div>
+      <div class="trig-insp__section-label">{{ t('winterboard.trigCircle.funcsLabel') }}</div>
       <div class="trig-insp__btn-row">
         <button
           v-for="fn in FUNC_TOGGLES"
@@ -31,7 +31,7 @@
 
     <!-- Підписи -->
     <div class="trig-insp__section">
-      <div class="trig-insp__section-label">Підписи</div>
+      <div class="trig-insp__section-label">{{ t('winterboard.trigCircle.labelsLabel') }}</div>
       <div class="trig-insp__btn-row">
         <button
           v-for="lb in LABEL_TOGGLES"
@@ -46,7 +46,7 @@
 
     <!-- Сітка -->
     <div class="trig-insp__section">
-      <div class="trig-insp__section-label">Сітка</div>
+      <div class="trig-insp__section-label">{{ t('winterboard.trigCircle.gridLabel') }}</div>
       <div class="trig-insp__btn-row">
         <button
           v-for="gr in GRID_TOGGLES"
@@ -61,20 +61,20 @@
 
     <!-- Рух -->
     <div class="trig-insp__section">
-      <div class="trig-insp__section-label">Рух</div>
+      <div class="trig-insp__section-label">{{ t('winterboard.trigCircle.motionLabel') }}</div>
       <div class="trig-insp__btn-row">
         <button
           type="button"
           class="trig-insp__btn"
           :class="{ 'is-active': b.drawMode }"
           @click="b.toggleDraw()"
-        >✎ Синусоїда</button>
+        >✎ {{ t('winterboard.trigCircle.sinusoid') }}</button>
         <button
           type="button"
           class="trig-insp__btn"
           :class="{ 'is-active': b.animating }"
           @click="b.toggleAnimate()"
-        >▶ Обертання</button>
+        >▶ {{ t('winterboard.trigCircle.rotation') }}</button>
         <button
           type="button"
           class="trig-insp__btn"
@@ -85,7 +85,7 @@
 
       <!-- Швидкість -->
       <label class="trig-insp__speed">
-        <span class="trig-insp__speed-label">Швидкість</span>
+        <span class="trig-insp__speed-label">{{ t('winterboard.trigCircle.speedLabel') }}</span>
         <input
           type="range"
           class="trig-insp__slider"
@@ -101,7 +101,7 @@
 
     <!-- Пресети кутів -->
     <div class="trig-insp__section">
-      <div class="trig-insp__section-label">Кут θ</div>
+      <div class="trig-insp__section-label">{{ t('winterboard.trigCircle.angleLabel') }}</div>
       <div class="trig-insp__btn-row trig-insp__btn-row--wrap">
         <button
           v-for="p in ANGLE_PRESETS"
@@ -117,7 +117,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { trigCircleUiState } from '../../board/state/trigCircleUiState'
+
+const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => trigCircleUiState.bridge!)
@@ -129,17 +132,17 @@ const FUNC_TOGGLES = [
   { key: 'showCot', label: 'ctg' },
 ]
 
-const LABEL_TOGGLES = [
-  { key: 'showDeg',       label: 'градуси'  },
-  { key: 'showRad',       label: 'радіани'  },
-  { key: 'showRefLabels', label: 'значення' },
-]
+const LABEL_TOGGLES = computed(() => [
+  { key: 'showDeg',       label: t('winterboard.trigCircle.degrees') },
+  { key: 'showRad',       label: t('winterboard.trigCircle.radians') },
+  { key: 'showRefLabels', label: t('winterboard.trigCircle.values') },
+])
 
-const GRID_TOGGLES = [
-  { key: 'showExactGrid',     label: 'осі ½·√2/2·√3/2' },
-  { key: 'showInscribed',     label: 'вписані фігури'  },
-  { key: 'showSpecialPoints', label: 'особл. точки'    },
-]
+const GRID_TOGGLES = computed(() => [
+  { key: 'showExactGrid',     label: t('winterboard.trigCircle.exactGrid') },
+  { key: 'showInscribed',     label: t('winterboard.trigCircle.inscribed') },
+  { key: 'showSpecialPoints', label: t('winterboard.trigCircle.specialPoints') },
+])
 
 const ANGLE_PRESETS = [
   { label: '0',    t: 0 },

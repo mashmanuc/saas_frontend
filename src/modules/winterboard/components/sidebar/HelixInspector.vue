@@ -11,12 +11,12 @@
   <div class="helix-insp">
     <!-- Header -->
     <div class="helix-insp__header">
-      <span class="helix-insp__title">Гелікс</span>
+      <span class="helix-insp__title">{{ t('winterboard.helix.btnLabel') }}</span>
     </div>
 
     <!-- Огляд (view presets) -->
     <div class="helix-insp__section">
-      <div class="helix-insp__section-label">Огляд</div>
+      <div class="helix-insp__section-label">{{ t('winterboard.helix.viewLabel') }}</div>
       <div class="helix-insp__btn-row">
         <button
           v-for="v in VIEW_PRESETS"
@@ -30,7 +30,7 @@
 
     <!-- Тіні -->
     <div class="helix-insp__section">
-      <div class="helix-insp__section-label">Тіні</div>
+      <div class="helix-insp__section-label">{{ t('winterboard.helix.shadowsLabel') }}</div>
       <div class="helix-insp__btn-row">
         <button
           v-for="s in SHADOW_TOGGLES"
@@ -45,7 +45,7 @@
 
     <!-- Вигляд -->
     <div class="helix-insp__section">
-      <div class="helix-insp__section-label">Вигляд</div>
+      <div class="helix-insp__section-label">{{ t('winterboard.helix.displayLabel') }}</div>
       <div class="helix-insp__btn-row">
         <button
           v-for="d in DISPLAY_TOGGLES"
@@ -60,31 +60,31 @@
 
     <!-- Рух -->
     <div class="helix-insp__section">
-      <div class="helix-insp__section-label">Рух</div>
+      <div class="helix-insp__section-label">{{ t('winterboard.helix.motionLabel') }}</div>
       <div class="helix-insp__btn-row">
         <button
           type="button"
           class="helix-insp__btn"
           :class="{ 'is-active': b.animating }"
           @click="b.toggleAnimate()"
-        >▶ обертати θ</button>
+        >▶ {{ t('winterboard.helix.rotateTheta') }}</button>
         <button
           type="button"
           class="helix-insp__btn"
           :class="{ 'is-active': b.animatingCam }"
           @click="b.toggleAnimateCam()"
-        >↻ камеру</button>
+        >↻ {{ t('winterboard.helix.cameraBtn') }}</button>
         <button
           type="button"
           class="helix-insp__btn"
           :class="{ 'is-active': b.local.emitMode }"
           @click="b.toggle('emitMode')"
-        >⤴ хвиля</button>
+        >⤴ {{ t('winterboard.helix.wave') }}</button>
       </div>
 
       <!-- Швидкість -->
       <label class="helix-insp__speed">
-        <span class="helix-insp__speed-label">Швидкість</span>
+        <span class="helix-insp__speed-label">{{ t('winterboard.helix.speedLabel') }}</span>
         <input
           type="range"
           class="helix-insp__slider"
@@ -100,7 +100,7 @@
 
     <!-- Пресети кутів -->
     <div class="helix-insp__section">
-      <div class="helix-insp__section-label">Кут θ</div>
+      <div class="helix-insp__section-label">{{ t('winterboard.helix.angleLabel') }}</div>
       <div class="helix-insp__btn-row helix-insp__btn-row--wrap">
         <button
           v-for="p in ANGLE_PRESETS"
@@ -116,32 +116,35 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { helixUiState } from '../../board/state/helixUiState'
 import type { HelixViewName } from '../../vendor/helix'
+
+const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => helixUiState.bridge!)
 
-const VIEW_PRESETS: { name: HelixViewName; label: string }[] = [
-  { name: '3d',     label: '3D'    },
-  { name: 'iso',    label: 'ізо'   },
-  { name: 'circle', label: '○ коло' },
+const VIEW_PRESETS = computed<{ name: HelixViewName; label: string }[]>(() => [
+  { name: '3d',     label: '3D' },
+  { name: 'iso',    label: t('winterboard.helix.viewIso') },
+  { name: 'circle', label: `○ ${t('winterboard.helix.circle')}` },
   { name: 'sin',    label: '∿ sin' },
   { name: 'cos',    label: '∿ cos' },
-]
+])
 
-const SHADOW_TOGGLES = [
-  { key: 'showHelix',  label: 'гелікс' },
-  { key: 'showSin',    label: 'sin'    },
-  { key: 'showCos',    label: 'cos'    },
-  { key: 'showCircle', label: 'коло'   },
-]
+const SHADOW_TOGGLES = computed(() => [
+  { key: 'showHelix',  label: t('winterboard.helix.helixToggle') },
+  { key: 'showSin',    label: 'sin' },
+  { key: 'showCos',    label: 'cos' },
+  { key: 'showCircle', label: t('winterboard.helix.circle') },
+])
 
-const DISPLAY_TOGGLES = [
-  { key: 'showWalls',      label: 'стіни'         },
-  { key: 'showDropLines',  label: 'лінії скидання' },
-  { key: 'showAxisLabels', label: 'підписи θ'     },
-]
+const DISPLAY_TOGGLES = computed(() => [
+  { key: 'showWalls',      label: t('winterboard.helix.walls') },
+  { key: 'showDropLines',  label: t('winterboard.helix.dropLines') },
+  { key: 'showAxisLabels', label: t('winterboard.helix.axisLabels') },
+])
 
 const ANGLE_PRESETS = [
   { label: '0',    t: 0 },

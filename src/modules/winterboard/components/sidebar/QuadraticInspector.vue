@@ -61,7 +61,7 @@
           class="quad-insp__num-input"
           step="0.01"
           :value="r2(b.a)"
-          title="Коефіцієнт a (a ≠ 0)"
+          :title="t('winterboard.quadratic.coefATitle')"
           @change="onAChange"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
@@ -134,23 +134,23 @@
           type="button"
           class="quad-insp__btn"
           :class="{ 'is-active': b.showVertex }"
-          title="Показати вершину параболи"
+          :title="t('winterboard.quadratic.showVertexTitle')"
           @click="b.toggle('showVertex')"
-        >● Вершина</button>
+        >● {{ t('winterboard.quadratic.vertexBtn') }}</button>
         <button
           type="button"
           class="quad-insp__btn"
           :class="{ 'is-active': b.showAxis }"
-          title="Вісь симетрії x = x₀"
+          :title="t('winterboard.quadratic.axisTitle')"
           @click="b.toggle('showAxis')"
-        >| Вісь</button>
+        >| {{ t('winterboard.quadratic.axisBtn') }}</button>
         <button
           type="button"
           class="quad-insp__btn"
           :class="{ 'is-active': b.showRoots }"
-          title="Корені на осі x"
+          :title="t('winterboard.quadratic.rootsTitle')"
           @click="b.toggle('showRoots')"
-        >✕ Корені</button>
+        >✕ {{ t('winterboard.quadratic.rootsBtn') }}</button>
       </div>
     </div>
   </div>
@@ -168,13 +168,13 @@ const { t } = useI18n()
 const b = computed(() => quadUiState.bridge!)
 const PRESETS = QUAD_PRESETS
 
-const SIGNS: Array<{ value: QuadSign; label: string; title: string }> = [
+const SIGNS = computed<Array<{ value: QuadSign; label: string; title: string }>>(() => [
   { value: '<',  label: '<',  title: 'ax²+bx+c < 0' },
   { value: '<=', label: '≤',  title: 'ax²+bx+c ≤ 0' },
-  { value: '=',  label: '=',  title: 'ax²+bx+c = 0 (рівняння)' },
+  { value: '=',  label: '=',  title: t('winterboard.quadratic.signEquationTitle') },
   { value: '>=', label: '≥',  title: 'ax²+bx+c ≥ 0' },
   { value: '>',  label: '>',  title: 'ax²+bx+c > 0' },
-]
+])
 
 /** Округлення до 2 знаків для відображення (навчальний контекст). */
 function r2(n: number): number {
@@ -197,8 +197,8 @@ const discClass = computed(() =>
 )
 
 const headerSubtitle = computed(() => {
-  if (b.value.sign === '=') return 'рівняння · дискримінант · корені'
-  return 'нерівність · метод інтервалів'
+  if (b.value.sign === '=') return t('winterboard.quadratic.subtitleEquation')
+  return t('winterboard.quadratic.subtitleInequality')
 })
 
 /** Текстовий опис розв'язку нерівності для Inspector */

@@ -5,14 +5,14 @@
 -->
 <template>
   <div class="trig-solver-tray" data-testid="trig-solver-tray">
-    <div class="trig-solver-tray__header">Тригонометрія</div>
+    <div class="trig-solver-tray__header">{{ t('winterboard.contentSidebar.trigCircleHeader') }}</div>
 
     <div class="trig-solver-tray__card-wrap">
       <button
         type="button"
         class="trig-solver-tray__btn"
         :draggable="true"
-        title="Тригонометричне рівняння / нерівність"
+        :title="t('winterboard.insertTiles.trigSolverHint')"
         data-testid="trig-solver-tray-btn"
         @dragstart="onDrag"
       >
@@ -26,12 +26,12 @@
             <line x1="17.5" y1="13.5" x2="22" y2="13.5" stroke="#475569" stroke-width="1.6"/>
           </svg>
         </span>
-        <span class="trig-solver-tray__label">рівняння / нерівності</span>
+        <span class="trig-solver-tray__label">{{ t('winterboard.insertTiles.trigSolver') }}</span>
       </button>
       <button
         type="button"
         class="tray-add-btn"
-        title="Додати на дошку"
+        :title="t('winterboard.contentSidebar.addToBoard')"
         @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ type: 'sin' }))"
       >+</button>
     </div>

@@ -48,7 +48,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${presetLabel(item)}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: presetLabel(item) })"
           @click.stop="addToolToBoard(GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: item.type }))"
         >+</button>
       </div>

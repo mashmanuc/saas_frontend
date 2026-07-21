@@ -19,27 +19,27 @@
       <span class="ts-insp__title">
         {{ typeLabel }}(x) {{ relLabel }} {{ roundedA }}
       </span>
-      <span class="ts-insp__subtitle">Тригонометричні рівняння / нерівності</span>
+      <span class="ts-insp__subtitle">{{ t('winterboard.trigSolver.subtitle') }}</span>
     </div>
 
     <!-- Функція -->
     <div class="ts-insp__section">
-      <div class="ts-insp__section-label">Функція</div>
+      <div class="ts-insp__section-label">{{ t('winterboard.trigSolver.funcLabel') }}</div>
       <div class="ts-insp__btn-row">
         <button
-          v-for="t in TYPE_OPTS"
-          :key="t.v"
+          v-for="opt in TYPE_OPTS"
+          :key="opt.v"
           type="button"
           class="ts-insp__btn"
-          :class="{ 'is-active': b.local.type === t.v }"
-          @click="b.setType(t.v)"
-        >{{ t.lab }}</button>
+          :class="{ 'is-active': b.local.type === opt.v }"
+          @click="b.setType(opt.v)"
+        >{{ opt.lab }}</button>
       </div>
     </div>
 
     <!-- Знак -->
     <div class="ts-insp__section">
-      <div class="ts-insp__section-label">Знак</div>
+      <div class="ts-insp__section-label">{{ t('winterboard.quadratic.signLabel') }}</div>
       <div class="ts-insp__btn-row">
         <button
           v-for="r in REL_OPTS"
@@ -54,7 +54,7 @@
 
     <!-- Значення a -->
     <div class="ts-insp__section">
-      <div class="ts-insp__section-label">Значення a</div>
+      <div class="ts-insp__section-label">{{ t('winterboard.trigSolver.valueLabel') }}</div>
 
       <!-- Slider -->
       <label class="ts-insp__slider-row">
@@ -86,29 +86,29 @@
 
     <!-- Опції -->
     <div class="ts-insp__section">
-      <div class="ts-insp__section-label">Опції</div>
+      <div class="ts-insp__section-label">{{ t('winterboard.trigSolver.optionsLabel') }}</div>
       <div class="ts-insp__btn-row">
         <button
           type="button"
           class="ts-insp__btn"
           :class="{ 'is-active': b.local.snapSpecial }"
-          title="Snap до табличних значень"
+          :title="t('winterboard.trigSolver.snapTitle')"
           @click="b.toggleOpt('snapSpecial')"
         >⊙ snap</button>
         <button
           type="button"
           class="ts-insp__btn"
           :class="{ 'is-active': b.local.showGraph }"
-          title="Показати графік"
+          :title="t('winterboard.trigSolver.graphTitle')"
           @click="b.toggleOpt('showGraph')"
-        >~ графік</button>
+        >~ {{ t('winterboard.trigSolver.graphBtn') }}</button>
         <button
           type="button"
           class="ts-insp__btn"
           :class="{ 'is-active': b.local.showAllSolutions }"
-          title="Показати всі розв'язки"
+          :title="t('winterboard.trigSolver.allSolutionsTitle')"
           @click="b.toggleOpt('showAllSolutions')"
-        >∞ всі</button>
+        >∞ {{ t('winterboard.trigSolver.allBtn') }}</button>
       </div>
     </div>
   </div>
@@ -116,8 +116,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { trigSolverUiState } from '../../board/state/trigSolverUiState'
 import type { TrigFuncType, TrigRelation } from '../../types/trigSolver'
+
+const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => trigSolverUiState.bridge!)

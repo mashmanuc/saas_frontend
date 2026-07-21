@@ -37,7 +37,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${t('winterboard.contentSidebar.graphCalcLabel')}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: t('winterboard.contentSidebar.graphCalcLabel') })"
           @click.stop="addToolToBoard(GRAPH_CALCULATOR_MIME, '{}')"
         >+</button>
       </div>
@@ -68,7 +68,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${modeLabel(item.mode)}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: modeLabel(item.mode) })"
           @click.stop="addToolToBoard(CALCULUS_DRAG_MIME, JSON.stringify({ mode: item.mode }))"
         >+</button>
       </div>

@@ -38,7 +38,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${solidName(item)}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: solidName(item) })"
           @click.stop="addToolToBoard(SOLID_DRAG_MIME, JSON.stringify({ src: item.type }))"
         >+</button>
       </div>

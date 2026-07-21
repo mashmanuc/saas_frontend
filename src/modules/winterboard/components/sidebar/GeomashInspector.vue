@@ -154,22 +154,20 @@ const extra = geomashToolState.extra
 const { t, te } = useI18n()
 
 const categories = ['point', 'line', 'circle', 'polygon', 'measure'] as const
-const CAT_LABELS: Record<string, string> = {
-  point: 'Точки', line: 'Лінії', circle: 'Кола', polygon: 'Многокутники', measure: 'Вимірювання',
-}
 // i18n-first (2026-07-16): winterboard.geomash.{tool,desc,cat}.* ×3 локалі;
-// локальні укр-мапи — fallback для ключів, яких ще нема у словнику.
+// словник покриває всі поточні ключі; te()-guard лишається для майбутніх
+// vendor-ключів (fallback = технічний ідентифікатор, без хардкод-текстів).
 function catLabel(cat: string): string {
   const k = `winterboard.geomash.cat.${cat}`
-  return te(k) ? t(k) : (CAT_LABELS[cat] ?? cat)
+  return te(k) ? t(k) : cat
 }
 function toolLabel(e: GeoToolSpecEntry): string {
   const k = `winterboard.geomash.tool.${keyOf(e)}`
-  return te(k) ? t(k) : (TOOL_LABELS[keyOf(e)] || e.op)
+  return te(k) ? t(k) : e.op
 }
 function toolDesc(e: GeoToolSpecEntry): string {
   const k = `winterboard.geomash.desc.${keyOf(e)}`
-  return te(k) ? t(k) : (TOOL_DESC[keyOf(e)] || '')
+  return te(k) ? t(k) : ''
 }
 /**
  * Приховані інструменти (2026-07-17, рішення власника). Обидва — vendor-заготовки
@@ -217,26 +215,6 @@ const GLYPHS: Record<string, string> = {
   RAY: '→', VECTOR: '⇀', POLYGON: '⬠', REGPOLY: '⬡', CIRCLE: '◯', CIRCLER: '◎',
   CIRCLE3: '◍', SEMICIRCLE: '◗', ARC: '⌒', PERP: '⊥', PARALLEL: '∥', PERPBIS: '⟂',
   ANGBIS: '∡', TANGENT: '◔', ANGLE: '∠', DISTANCE: '↔', SLIDER: '⇔', POLYLINE: '⋁', FUNCTION: 'ƒ',
-}
-const TOOL_LABELS: Record<string, string> = {
-  POINT: 'Точка', MIDPOINT: 'Середина', INTERSECT: 'Перетин', SEGMENT: 'Відрізок',
-  LINE: 'Пряма', RAY: 'Промінь', VECTOR: 'Вектор', POLYGON: 'Многокутник',
-  REGPOLY: 'Правильний', CIRCLE: 'Коло', CIRCLER: 'Коло R', CIRCLE3: 'Коло 3т',
-  SEMICIRCLE: 'Півколо', ARC: 'Дуга', PERP: 'Перпенд.', PARALLEL: 'Паралельна',
-  PERPBIS: 'Сер.перп.', ANGBIS: 'Бісектриса', TANGENT: 'Дотичні', ANGLE: 'Кут',
-  DISTANCE: 'Відстань', SLIDER: 'Повзунок', POLYLINE: 'Ламана', FUNCTION: 'Функція',
-  POINT_ON: 'Точка на об.',
-}
-const TOOL_DESC: Record<string, string> = {
-  POINT: 'Клік — вільна точка', MIDPOINT: 'Клік по двох точках', INTERSECT: 'Клік по двох об\'єктах',
-  SEGMENT: 'Клік по двох точках', LINE: 'Клік по двох точках', RAY: 'Клік: початок, потім напрям',
-  VECTOR: 'Клік по двох точках', POLYGON: 'Клікайте точки, дабл-клік — замкнути',
-  REGPOLY: 'Дві точки + к-ть сторін', CIRCLE: 'Клік: центр, потім точка кола',
-  CIRCLER: 'Клік центр + радіус', CIRCLE3: 'Клік по трьох точках', SEMICIRCLE: 'Дві точки (діаметр)',
-  ARC: 'Три точки', PERP: 'Клік: точка, потім пряма', PARALLEL: 'Клік: точка, потім пряма',
-  PERPBIS: 'Клік по двох точках', ANGBIS: 'Три точки (вершина — друга)', TANGENT: 'Клік: точка, потім коло',
-  ANGLE: 'Три точки (вершина — друга)', DISTANCE: 'Клік по двох точках', SLIDER: 'Клік — повзунок',
-  POLYLINE: 'Клікайте точки, дабл-клік — завершити', FUNCTION: 'Введіть вираз', POINT_ON: 'Клік по об\'єкту',
 }
 function keyOf(e: GeoToolSpecEntry): string { return e.labelKey.split('.').pop() || e.op }
 

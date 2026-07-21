@@ -25,7 +25,7 @@
       <button
         type="button"
         class="tray-add-btn"
-        :title="`Додати «${t('winterboard.contentSidebar.graphCalcLabel')}» на дошку`"
+        :title="t('winterboard.nmt3d.addToBoard', { name: t('winterboard.contentSidebar.graphCalcLabel') })"
         @click.stop="addToolToBoard(GRAPH_CALCULATOR_MIME, '{}')"
       >+</button>
     </div>

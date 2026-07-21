@@ -38,7 +38,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${t('winterboard.trigCircle.btnLabel')}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: t('winterboard.trigCircle.btnLabel') })"
           @click.stop="addToolToBoard(TRIG_CIRCLE_DRAG_MIME, JSON.stringify({ type: 'trig_circle' }))"
         >+</button>
       </div>
@@ -65,7 +65,7 @@
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${t('winterboard.helix.btnLabel')}» на дошку`"
+          :title="t('winterboard.nmt3d.addToBoard', { name: t('winterboard.helix.btnLabel') })"
           @click.stop="addToolToBoard(HELIX_DRAG_MIME, JSON.stringify({ type: 'helix' }))"
         >+</button>
       </div>

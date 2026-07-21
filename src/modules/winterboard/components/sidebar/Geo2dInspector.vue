@@ -15,7 +15,7 @@
   <div class="g2d-insp">
     <div class="g2d-insp__header">
       <span class="g2d-insp__title">{{ b.label }}</span>
-      <span class="g2d-insp__subtitle">Геометрія · побудови</span>
+      <span class="g2d-insp__subtitle">{{ t('winterboard.geo2dV2.inspectorSubtitle') }}</span>
     </div>
     <div ref="hostEl" class="g2d-insp__host" />
   </div>
@@ -23,7 +23,10 @@
 
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { geo2dInspectorState } from '../../board/state/geo2dInspectorState'
+
+const { t } = useI18n()
 
 // bridge гарантовано не null: GroupContentSidebar рендерить компонент лише
 // коли geo2dInspectorState.bridge задано (v-else-if ланцюг).
