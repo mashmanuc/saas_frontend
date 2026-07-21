@@ -88,7 +88,9 @@ export const lessonSaveApi = {
   async getMyLessons(): Promise<MyLesson[]> {
     const res = await apiClient.get('/v1/knowledge/my-lessons/')
     const data = res.data ?? res
-    return Array.isArray(data) ? data : (data.results ?? [])
+    // BE повертає { lessons: [...] } (MyLessonsListView). Раніше читали `results`
+    // → завжди []; через це GrantTransferModal показувала «немає уроків».
+    return Array.isArray(data) ? data : (data.lessons ?? data.results ?? [])
   },
 
   /** Phase 24: Get my lessons with search, filter, pagination */
