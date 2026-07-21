@@ -11,7 +11,10 @@
       <div class="prose prose-slate max-w-none dark:prose-invert">
         <section v-for="s in sections" :key="s">
           <h2>{{ $t(`legal.terms.${s}.title`) }}</h2>
-          <div v-html="$t(`legal.terms.${s}.body`)"></div>
+          <!-- $tm = сирий рядок без компіляції vue-i18n: legal-HTML містить '@'
+               (емейли) тощо, і у прод-білді компілятор кидав SyntaxError → blank.
+               Тіла — статичний HTML, інтерполяція не потрібна. -->
+          <div v-html="$tm(`legal.terms.${s}.body`)"></div>
         </section>
       </div>
 

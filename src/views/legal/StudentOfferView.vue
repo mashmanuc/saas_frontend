@@ -11,7 +11,8 @@
       <div class="prose prose-slate max-w-none dark:prose-invert">
         <section v-for="s in sections" :key="s">
           <h2>{{ $t(`legal.studentOffer.${s}.title`) }}</h2>
-          <div v-html="$t(`legal.studentOffer.${s}.body`)"></div>
+          <!-- $tm = сирий рядок (legal-HTML з '@' ламав vue-i18n compiler у прод → blank) -->
+          <div v-html="$tm(`legal.studentOffer.${s}.body`)"></div>
         </section>
       </div>
 
