@@ -166,6 +166,11 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   // OS clipboard перезаписаний external'ом, text ≠ marker → йдемо у branch 2/3.
   async function handlePaste(e: ClipboardEvent): Promise<void> {
     if (disabled?.()) return
+    // 2026-07-21 (репорт власника): коли відкрита модалка Інтегралика (командна
+    // палітра) — вставка належить ЇЇ полю, не дошці. Не перехоплюємо: браузер
+    // вставить у сфокусоване поле палітри натив­но. Без цього текст лягав стікером
+    // на дошку, бо focus зісковзував на канву (tabindex=0) і editable-гард не ловив.
+    if (document.querySelector('.cmdp-overlay')) return
     const dt = e.clipboardData
     if (!dt) return
 

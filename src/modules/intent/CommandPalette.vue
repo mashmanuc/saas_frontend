@@ -58,6 +58,20 @@
 
         <!-- MODE: команди -->
         <template v-if="mode === 'commands'">
+          <!-- Брендований хедер із ЖИВИМ Інтегралчиком (маскот з очима/настроями,
+               не значок). .cmdp-head → панель тягається за нього (drag). -->
+          <div class="cmdp-head cmdp-brand">
+            <span
+              class="cmdp-mascot cmdp-mascot--brand"
+              :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]"
+              v-html="MASCOT_SVG"
+            ></span>
+            <div class="cmdp-brandtitle">
+              <span class="cmdp-title">Інтегралик</span>
+              <span class="cmdp-subtitle">AI-помічник</span>
+            </div>
+            <button class="cmdp-close" @click="close" aria-label="Закрити" title="Закрити (Esc)">✕</button>
+          </div>
           <div class="cmdp-cmdrow">
             <input
               ref="inputEl" v-model="query" class="cmdp-input"
@@ -1436,12 +1450,24 @@ onBeforeUnmount(() => {
 .cmdp-head button, .cmdp-head input { cursor: pointer; }
 .cmdp-back { border: 0; background: #f3f3f3; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
 .cmdp-title { font-weight: 600; flex: 1; }
+
+/* Брендований зелений хедер (режим команд) — маскот живий, як на відео */
+.cmdp-brand { background: #047857; border-bottom: 0; padding: 12px 16px; }
+.cmdp-brand .cmdp-title { color: #fff; font-size: 15px; line-height: 1.1; flex: none; }
+.cmdp-brandtitle { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cmdp-subtitle { color: #a7f3d0; font-size: 12px; }
+.cmdp-mascot--brand { width: 36px; height: 36px; flex: none; }
+.cmdp-close { border: 0; background: rgba(255,255,255,.14); color: #d1fae5; width: 28px; height: 28px;
+  border-radius: 8px; font-size: 15px; line-height: 1; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: background .15s, color .15s; }
+.cmdp-close:hover { background: rgba(255,255,255,.28); color: #fff; }
 .cmdp-dialog { padding: 14px 16px; }
 .cmdp-dlabel { display: block; margin-bottom: 6px; font-size: 14px; color: #333; }
 .cmdp-dialog .cmdp-input { border: 1px solid #ddd; border-radius: 8px; }
 .cmdp-list { list-style: none; margin: 0; padding: 6px; max-height: 46vh; overflow: auto; }
-.cmdp-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; }
-.cmdp-item.active { background: #eef2ff; }
+.cmdp-item { padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background .12s; }
+.cmdp-item.active { background: #ecfdf5; color: #065f46; }
+.cmdp-item:hover { background: #f0fdf4; }
 .cmdp-board { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 8px; }
 .cmdp-board:hover { background: #f7f7f8; }
 .cmdp-bname { cursor: pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

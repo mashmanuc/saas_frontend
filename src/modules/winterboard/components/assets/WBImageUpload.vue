@@ -211,6 +211,9 @@ async function onDrop(e: DragEvent): Promise<void> {
 // ── Clipboard paste ──────────────────────────────────────────────────────
 async function onPaste(e: ClipboardEvent): Promise<void> {
   if (props.disabled) return
+  // 2026-07-21: відкрита модалка Інтегралика — вставка (у т.ч. картинка) належить
+  // її полю, не дошці. Не перехоплюємо (парно з useBoardClipboard.handlePaste).
+  if (document.querySelector('.cmdp-overlay')) return
   // FIX: Skip if already handled by useBoardClipboard (prevents double-paste)
   if (e.defaultPrevented) return
   const items = e.clipboardData?.items
