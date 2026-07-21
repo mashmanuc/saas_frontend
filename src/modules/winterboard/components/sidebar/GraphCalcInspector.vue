@@ -12,21 +12,21 @@
     <!-- Header -->
     <div class="gc-insp__header">
       <div class="gc-insp__header-row">
-        <span class="gc-insp__title">Графічний калькулятор</span>
+        <span class="gc-insp__title">{{ t('winterboard.graphCalc.title') }}</span>
         <button
           type="button"
           class="gc-insp__expand-btn"
           :class="{ 'is-active': b.isExpanded }"
-          :title="b.isExpanded ? 'Згорнути' : 'На всю дошку'"
+          :title="b.isExpanded ? t('winterboard.graphCalc.collapse') : t('winterboard.graphCalc.expand')"
           @click="b.toggleExpand()"
         >{{ b.isExpanded ? '⊠' : '⛶' }}</button>
       </div>
-      <span class="gc-insp__subtitle">f(x) · вирази і параметри</span>
+      <span class="gc-insp__subtitle">{{ t('winterboard.graphCalc.subtitle') }}</span>
     </div>
 
     <!-- ── Швидко додати (quick templates — always first, always visible) ── -->
     <div class="gc-insp__section">
-      <div class="gc-insp__section-label">Швидко додати</div>
+      <div class="gc-insp__section-label">{{ t('winterboard.graphCalc.quickAdd') }}</div>
       <div class="gc-insp__quick-row">
         <button
           v-for="tpl in QUICK_TEMPLATES"
@@ -35,13 +35,13 @@
           class="gc-insp__quick-btn"
           :title="tpl.src"
           @click="b.onQuickAdd(tpl.src)"
-        >{{ tpl.label }}</button>
+        ><MathExpr :expr="tpl.src" /></button>
       </div>
     </div>
 
     <!-- ── Вирази ── -->
     <div class="gc-insp__section gc-insp__section--exprs">
-      <div class="gc-insp__section-label">Вирази</div>
+      <div class="gc-insp__section-label">{{ t('winterboard.graphCalc.expressions') }}</div>
 
       <div class="gc-insp__expr-list">
         <div
@@ -53,7 +53,7 @@
           <span
             class="gc-insp__swatch"
             :style="{ background: expr.color, opacity: expr.hidden ? 0.3 : 1 }"
-            title="Приховати / показати"
+            :title="t('winterboard.graphCalc.toggleVisibility')"
             @click="b.onToggleHidden(expr.id)"
           />
 
@@ -78,7 +78,7 @@
           <button
             type="button"
             class="gc-insp__row-del"
-            title="Видалити"
+            :title="t('winterboard.graphCalc.delete')"
             @click="b.onRemoveExpression(expr.id)"
           >−</button>
 
@@ -100,7 +100,7 @@
               <span class="gc-insp__slash-label">{{ tpl.label }}</span>
             </div>
             <div v-if="b.slashFilteredTemplates.length === 0" class="gc-insp__slash-empty">
-              Нема шаблонів
+              {{ t('winterboard.graphCalc.noTemplates') }}
             </div>
           </div>
         </div>
@@ -111,28 +111,28 @@
         type="button"
         class="gc-insp__add-btn"
         @click="b.onAddExpression()"
-      >+ вираз</button>
+      >{{ t('winterboard.graphCalc.addExpression') }}</button>
     </div>
 
     <!-- ── Параметри ── -->
     <div v-if="b.paramEntries.length === 0" class="gc-insp__empty">
       <span class="gc-insp__empty-icon">💡</span>
-      <span>Додай параметр у формулу, напр. <code>y = a·x</code></span>
+      <span>{{ t('winterboard.graphCalc.emptyHint') }} <code>y = a·x</code></span>
     </div>
 
     <!-- Параметри -->
     <div v-if="b.paramEntries.length > 0" class="gc-insp__section">
       <div class="gc-insp__section-label">
-        Параметри
+        {{ t('winterboard.graphCalc.params') }}
         <span
           v-if="b.paramEntries.length === 1"
           class="gc-insp__hint"
-          title="Shift+drag по графіку керує параметром"
+          :title="t('winterboard.graphCalc.shiftDragHint')"
         >Shift-drag</span>
         <span
           v-else
           class="gc-insp__hint gc-insp__hint--muted"
-          title="Drag-param доступний тільки для 1 параметра"
+          :title="t('winterboard.graphCalc.shiftDragOneParam')"
         >Shift-drag (1 param)</span>
       </div>
 
@@ -145,7 +145,7 @@
         <button
           type="button"
           class="gc-insp__param-name"
-          :title="b.paramExpanded[p.name] ? 'Згорнути' : 'Налаштувати діапазон'"
+          :title="b.paramExpanded[p.name] ? t('winterboard.graphCalc.collapse') : t('winterboard.graphCalc.configureRange')"
           @click="b.toggleParamExpand(p.name)"
         >{{ p.name }} =</button>
         <input
@@ -201,7 +201,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import MathExpr from '../shared/MathExpr.vue'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
+
+const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => graphCalcInspectorState.bridge!)

@@ -15,13 +15,13 @@
   <div class="calc-insp">
     <!-- Header -->
     <div class="calc-insp__header">
-      <span class="calc-insp__title">{{ modeLabel }}: y = {{ b.expr }}</span>
-      <span class="calc-insp__subtitle">Похідна та інтеграл</span>
+      <span class="calc-insp__title">{{ modeLabel }}: <MathExpr :expr="'y = ' + b.expr" /></span>
+      <span class="calc-insp__subtitle">{{ t('winterboard.calculus.subtitle') }}</span>
     </div>
 
     <!-- Швидкі пресети — завжди перші, завжди видно -->
     <div class="calc-insp__section">
-      <div class="calc-insp__section-label">Приклади</div>
+      <div class="calc-insp__section-label">{{ t('winterboard.calculus.examples') }}</div>
       <div class="calc-insp__btn-row calc-insp__btn-row--wrap">
         <button
           v-for="p in EXPR_PRESETS"
@@ -30,13 +30,13 @@
           class="calc-insp__btn calc-insp__btn--preset"
           :class="{ 'is-active': b.expr === p.expr }"
           @click="b.onExprPreset(p.expr)"
-        >{{ p.label }}</button>
+        ><MathExpr :expr="p.expr" /></button>
       </div>
     </div>
 
     <!-- Вираз — editable input -->
     <div class="calc-insp__section">
-      <div class="calc-insp__section-label">Вираз</div>
+      <div class="calc-insp__section-label">{{ t('winterboard.calculus.expression') }}</div>
       <div class="calc-insp__expr-row">
         <span class="calc-insp__expr-prefix">y =</span>
         <input
@@ -57,21 +57,21 @@
     <!-- Derivative controls -->
     <template v-if="b.mode === 'derivative'">
       <div class="calc-insp__section">
-        <div class="calc-insp__section-label">Похідна</div>
+        <div class="calc-insp__section-label">{{ t('winterboard.calculus.mode.derivative.full') }}</div>
 
         <div class="calc-insp__btn-row">
           <button
             type="button"
             class="calc-insp__btn"
             :class="{ 'is-active': b.showSecant }"
-            title="Показати січну"
+            :title="t('winterboard.calculus.titles.showSecant')"
             @click="b.toggle('showSecant')"
-          >/ Січна</button>
+          >/ {{ t('winterboard.calculus.toggle.secant') }}</button>
           <button
             type="button"
             class="calc-insp__btn"
             :class="{ 'is-active': b.showDerivTrace }"
-            title="Показати графік f'(x)"
+            :title="t('winterboard.calculus.titles.showDerivTrace')"
             @click="b.toggle('showDerivTrace')"
           >~ f'(x)</button>
         </div>
@@ -96,7 +96,7 @@
     <!-- Integral controls -->
     <template v-if="b.mode === 'integral'">
       <div class="calc-insp__section">
-        <div class="calc-insp__section-label">Інтеграл</div>
+        <div class="calc-insp__section-label">{{ t('winterboard.calculus.sectionIntegral') }}</div>
 
         <!-- Riemann mode + Первісна -->
         <div class="calc-insp__riemann-row">
@@ -113,7 +113,7 @@
             type="button"
             class="calc-insp__btn"
             :class="{ 'is-active': b.showF }"
-            title="Показати первісну F(x)"
+            :title="t('winterboard.calculus.titles.showAntiderivative')"
             @click="b.toggle('showF')"
           >∫ F(x)</button>
         </div>
@@ -139,9 +139,13 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import MathExpr from '../shared/MathExpr.vue'
 import { calculusUiState } from '../../board/state/calculusUiState'
 import { CALCULUS_EXPR_PRESETS } from '../../constants/calculusDefaults'
 import type { RiemannMode } from '../../vendor/calculus'
+
+const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => calculusUiState.bridge!)
