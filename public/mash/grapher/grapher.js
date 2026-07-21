@@ -47,8 +47,8 @@
         if (node.op === 'not') return { h: '<b class="lg">not</b> ' + H(node.arg).h, p: 0 };
         return { h: H(node.left).h + ' <b class="lg">' + node.op + '</b> ' + H(node.right).h, p: 0 };
       case 'piecewise': {
-        const rows = node.pieces.map((pc) => '<span class="pwv">' + H(pc.val).h + '</span><span class="pwc">якщо ' + H(pc.cond).h + '</span>');
-        if (node.elseNode) rows.push('<span class="pwv">' + H(node.elseNode).h + '</span><span class="pwc">інакше</span>');
+        const rows = node.pieces.map((pc) => '<span class="pwv">' + H(pc.val).h + '</span><span class="pwc">' + T2('ui.piecewiseIf', 'якщо') + ' ' + H(pc.cond).h + '</span>');
+        if (node.elseNode) rows.push('<span class="pwv">' + H(node.elseNode).h + '</span><span class="pwc">' + T2('ui.piecewiseElse', 'інакше') + '</span>');
         return { h: '<span class="pw"><span class="pwbrace">{</span><span class="pwrows">' + rows.join('') + '</span></span>', p: 10 };
       }
       // L-06: sum / product / sequences / L-systems / fractals
@@ -90,6 +90,63 @@
     palette: COLORS,
   });
   window.__calc = calc;
+
+  // ── A2: локалізація помилок двигуна НА ПОКАЗІ (engine не чіпаємо) ──────
+  // Двигун кидає укр-тексти; тут мапимо їх на T2-ключі + олюднюємо токени
+  // (RP → «)») — «Несподіваний токен: RP» нікому нічого не каже жодною мовою.
+  // Невідома помилка → показуємо як є (укр fallback, нічого не ковтаємо).
+  const TOK_HUMAN = {
+    RP: ')', LP: '(', RBRACE: '}', LBRACE: '{', RBRACK: ']', LBRACK: '[',
+    COMMA: ',', COLON: ':', EQ: '=',
+    NUM: () => T2('engineErr.tokNum', 'число'),
+    IDENT: () => T2('engineErr.tokIdent', 'ім’я'),
+    STR: () => T2('engineErr.tokStr', 'рядок'),
+    OP: () => T2('engineErr.tokOp', 'оператор'),
+    REL: () => T2('engineErr.tokRel', 'знак порівняння'),
+    LOGIC: () => T2('engineErr.tokLogic', 'логічний оператор'),
+    END: () => T2('engineErr.tokEnd', 'кінець виразу'),
+  };
+  const humanTok = (t) => { const h = TOK_HUMAN[t]; return typeof h === 'function' ? h() : (h || t); };
+  const ERR_EXACT = {
+    'Очікується рівняння або точка': ['engineErr.expectEq', 'Очікується рівняння або точка'],
+    'Очікувалось порівняння (напр. x > 0)': ['engineErr.expectCmp', 'Очікувалось порівняння (напр. x > 0)'],
+    'Залишок після виразу': ['engineErr.trailing', 'Залишок після виразу'],
+    'Забагато рекурсії': ['engineErr.tooDeep', 'Забагато рекурсії'],
+    'n! недоступний для комплексних': ['engineErr.cxFactorial', 'n! недоступний для комплексних'],
+    'Комплексний вираз: непідтримувана конструкція': ['engineErr.cxUnsupported', 'Комплексний вираз: непідтримувана конструкція'],
+    'Дія: очікується name -> вираз': ['engineErr.actionShape', 'Дія: очікується name -> вираз'],
+    'Регресія: очікується y ~ формула': ['engineErr.fitShape', 'Регресія: очікується y ~ формула'],
+    'Регресія: немає параметрів для підгонки (напр. y ~ a x + b)': ['engineErr.fitNoParams', 'Регресія: немає параметрів для підгонки (напр. y ~ a x + b)'],
+    'Регресія: занадто багато параметрів (макс 6)': ['engineErr.fitTooMany', 'Регресія: занадто багато параметрів (макс 6)'],
+    'Аксіома і правила — рядки у лапках': ['engineErr.lsysStrings', 'Аксіома і правила — рядки у лапках'],
+    'Потрібна таблиця з даними': ['engineErr.fitNeedTable', 'Потрібна таблиця з даними'],
+    'Не вдалося підігнати': ['engineErr.fitFailed', 'Не вдалося підігнати'],
+  };
+  const ERR_RX = [
+    [/^Несподіваний токен: (\S+)\s*(.*)$/, (m) => T2('engineErr.unexpectedToken', 'Несподіваний токен: {tok}').replace('{tok}', m[2] || humanTok(m[1]))],
+    [/^Невідомий символ «(.+)» на позиції (\d+)$/, (m) => T2('engineErr.unknownChar', 'Невідомий символ «{ch}» на позиції {pos}').replace('{ch}', m[1]).replace('{pos}', m[2])],
+    [/^Очікувалось (\S+?)(?:=(\S+))?, отримано (\S+)=?(.*)$/, (m) => T2('engineErr.expectedGot', 'Очікувалось {want}, отримано {got}').replace('{want}', m[2] || humanTok(m[1])).replace('{got}', m[4] || humanTok(m[3]))],
+    [/^Невідома змінна: (.+)$/, (m) => T2('engineErr.unknownVar', 'Невідома змінна: {name}').replace('{name}', m[1])],
+    [/^Невідома функція: (.+)$/, (m) => T2('engineErr.unknownFn', 'Невідома функція: {name}').replace('{name}', m[1])],
+    [/^Дія: некоректне ім'я (.+)$/, (m) => T2('engineErr.actionBadName', 'Дія: некоректне ім’я {name}').replace('{name}', m[1])],
+    [/^Функція (.+) недоступна для комплексних$/, (m) => T2('engineErr.cxFnUnavailable', 'Функція {name} недоступна для комплексних').replace('{name}', m[1])],
+    [/^Забагато рекурсії \(>(\d+)\)$/, (m) => T2('engineErr.tooDeepN', 'Забагато рекурсії (>{n})').replace('{n}', m[1])],
+    [/^Забагато ітерацій \(>(\d+)\)$/, (m) => T2('engineErr.tooManyIter', 'Забагато ітерацій (>{n})').replace('{n}', m[1])],
+    [/^Забагато точок \(>(\d+)\)$/, (m) => T2('engineErr.tooManyPts', 'Забагато точок (>{n})').replace('{n}', m[1])],
+  ];
+  function localizeEngineError(msg) {
+    if (!msg) return msg;
+    const ex = ERR_EXACT[msg];
+    if (ex) return T2(ex[0], ex[1]);
+    for (const [rx, fn] of ERR_RX) { const m = msg.match(rx); if (m) return fn(m); }
+    return msg; // невідомий текст — показуємо як є (double-safe fallback)
+  }
+
+  // Зум-кнопки створює engine з укр title-ами — патчимо на показі
+  for (const [z, key, fb] of [['in', 'ui.zoomIn', 'Збільшити'], ['out', 'ui.zoomOut', 'Зменшити'], ['home', 'ui.zoomHome', 'До початку']]) {
+    const btn = plotWrap.querySelector(`.gc-zb[data-z="${z}"]`);
+    if (btn) btn.title = T2(key, fb);
+  }
 
   const list = $('#exprList');
 
@@ -153,26 +210,26 @@
       if (c && c.kind === 'param') {
         idx.classList.add('param-cell');
         ico.innerHTML = '<svg class="pico" viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="2" y1="9" x2="16" y2="9"/><circle cx="11" cy="9" r="3" fill="currentColor" stroke="none"/></svg>';
-        idx.title = 'параметр — повзунок';
+        idx.title = T2('ui.paramSliderTitle', 'параметр — повзунок');
         return;
       }
       if (c && c.kind === 'funcDef') {
         idx.classList.add('param-cell');
         ico.innerHTML = '<span class="ficon">ƒ</span>';
-        idx.title = c.isSeqGeneral ? 'рекурентна формула' : 'визначення функції';
+        idx.title = c.isSeqGeneral ? T2('tags.seqGeneral', 'рекурентна формула') : T2('ui.funcDefTitle', 'визначення функції');
         return;
       }
       if (c && c.kind === 'seqBase') {
         idx.classList.add('param-cell');
         ico.innerHTML = '<span class="ficon">ƒ</span>';
-        idx.title = 'базовий випадок послідовності';
+        idx.title = T2('ui.seqBaseTitle', 'базовий випадок послідовності');
         return;
       }
       if (c && c.kind === 'fractal') {
         ico.innerHTML = '';
         ico.style.cssText = 'display:block;width:12px;height:12px;border-radius:2px;background:conic-gradient(#00d4ff 0%,#7b2fbe 40%,#ff6b35 70%,#00d4ff 100%)';
-        const fnames = { mandelbrot: 'Мандельброт', julia: 'Множина Юлії', burningship: 'Burning Ship', tricorn: 'Tricorn', multibrot: 'Multibrot' };
-        idx.title = fnames[c.type] || 'Фрактал';
+        const fnames = { mandelbrot: T2('tags.fractalMandelbrot', 'Мандельброт'), julia: T2('tags.fractalJuliaSet', 'Множина Юлії'), burningship: 'Burning Ship', tricorn: 'Tricorn', multibrot: 'Multibrot' };
+        idx.title = fnames[c.type] || T2('tags.fractalGeneric', 'Фрактал');
         return;
       }
       if (c && (c.kind === 'point' || c.kind === 'sequencePlot')) {
@@ -193,7 +250,7 @@
         l.style.background = expr.color;
         ico.appendChild(l);
       }
-      idx.title = 'клік — сховати/показати · правий клік — колір';
+      idx.title = T2('ui.rowIcoTitle', 'клік — сховати/показати · правий клік — колір');
     };
     refreshIco();
     wireRowDrag(li, idx, expr);
@@ -222,7 +279,7 @@
     input.addEventListener('blur', () => { li.classList.remove('editing'); updatePretty(); });
     body.appendChild(input);
     const pretty = document.createElement('div'); pretty.className = 'row-pretty';
-    pretty.title = 'Клік — редагувати';
+    pretty.title = T2('ui.clickToEdit', 'Клік — редагувати');
     pretty.addEventListener('mousedown', (e) => {
       e.preventDefault();
       li.classList.add('editing');
@@ -257,13 +314,13 @@
       const hideSlider = () => { sliderRow.style.display = 'none'; sliderRow.dataset.built = ''; };
       if (!c) { hideSlider(); return; }
       if (c.kind === 'invalid') {
-        if (input.value.trim() !== '') { err.textContent = c.error || T2('errors.generic', 'Помилка'); err.style.display = 'block'; }
+        if (input.value.trim() !== '') { err.textContent = localizeEngineError(c.error) || T2('errors.generic', 'Помилка'); err.style.display = 'block'; }
         li.classList.add('invalid'); hideSlider(); return;
       }
       if (c.kind === 'needsParam') {
         li.classList.add('needs'); suggest.style.display = 'flex'; hideSlider();
         const t = document.createElement('span');
-        t.textContent = c.unknown.length === 1 ? `Додати повзунок для ${c.unknown[0]}?` : `Додати повзунки: ${c.unknown.join(', ')}?`;
+        t.textContent = c.unknown.length === 1 ? T2('ui.addSliderOne', 'Додати повзунок для {name}?').replace('{name}', c.unknown[0]) : T2('ui.addSliderMany', 'Додати повзунки: {names}?').replace('{names}', c.unknown.join(', '));
         suggest.appendChild(t);
         c.unknown.forEach((nm) => {
           const b = document.createElement('button'); b.className = 'sbtn';
@@ -273,17 +330,17 @@
         });
         return;
       }
-      const tags = { explicitY: 'функція y(x)', explicitX: 'функція x(y)', implicit: 'рівняння', inequality: 'нерівність · область', polar: 'полярна r(θ)', parametric: 'параметрична (t)', point: 'точка', param: 'параметр', funcDef: 'функція ƒ(x)', seqBase: 'базовий випадок', sequencePlot: 'послідовність · точки', lsystem: 'L-система', fitExpr: 'регресія', domainColor: 'комплексна f(z) · domain coloring', complexPoint: 'комплексне число', action: 'дія', histogram: 'гістограма', boxplot: 'boxplot' };
-      const fractalNames = { mandelbrot: 'Мандельброт', julia: 'Юлія', burningship: 'Burning Ship', tricorn: 'Tricorn', multibrot: 'Multibrot' };
-      tag.textContent = (c.kind === 'funcDef' && c.isSeqGeneral) ? 'рекурентна формула' : c.kind === 'fractal' ? `фрактал · ${fractalNames[c.type] || c.type}` : c.kind === 'point' && c.label ? `точка · «${c.label}»` : (tags[c.kind] || ''); tag.style.display = 'block';
+      const tags = { explicitY: T2('tags.explicitY', 'функція y(x)'), explicitX: T2('tags.explicitX', 'функція x(y)'), implicit: T2('tags.implicit', 'рівняння'), inequality: T2('tags.inequality', 'нерівність · область'), polar: T2('tags.polar', 'полярна r(θ)'), parametric: T2('tags.parametric', 'параметрична (t)'), point: T2('tags.point', 'точка'), param: T2('tags.param', 'параметр'), funcDef: T2('tags.funcDef', 'функція ƒ(x)'), seqBase: T2('tags.seqBase', 'базовий випадок'), sequencePlot: T2('tags.sequencePlot', 'послідовність · точки'), lsystem: T2('tags.lsystem', 'L-система'), fitExpr: T2('tags.fitExpr', 'регресія'), domainColor: T2('tags.domainColor', 'комплексна f(z) · domain coloring'), complexPoint: T2('tags.complexPoint', 'комплексне число'), action: T2('tags.action', 'дія'), histogram: T2('tags.histogram', 'гістограма'), boxplot: 'boxplot' };
+      const fractalNames = { mandelbrot: T2('tags.fractalMandelbrot', 'Мандельброт'), julia: T2('tags.fractalJulia', 'Юлія'), burningship: 'Burning Ship', tricorn: 'Tricorn', multibrot: 'Multibrot' };
+      tag.textContent = (c.kind === 'funcDef' && c.isSeqGeneral) ? T2('tags.seqGeneral', 'рекурентна формула') : c.kind === 'fractal' ? T2('tags.fractal', 'фрактал · {name}').replace('{name}', fractalNames[c.type] || c.type) : c.kind === 'point' && c.label ? T2('tags.pointLabeled', 'точка · «{label}»').replace('{label}', c.label) : (tags[c.kind] || ''); tag.style.display = 'block';
       if (c.kind === 'fitExpr') {
         // Показати підігнані параметри після рендеру (fitResult з'являється асинхронно)
         const showFit = () => {
           const fr = expr.fitResult;
           if (!fr) { setTimeout(showFit, 250); return; }
-          if (fr.error) { tag.textContent = 'регресія · ' + fr.error; return; }
+          if (fr.error) { tag.textContent = T2('tags.fitExpr', 'регресія') + ' · ' + localizeEngineError(fr.error); return; }
           const ps = Object.entries(fr.params).map(([n, v]) => `${n} = ${(+v.toPrecision(4))}`).join(', ');
-          tag.textContent = `регресія · ${ps} · R² = ${(+fr.r2.toFixed(4))}`;
+          tag.textContent = `${T2('tags.fitExpr', 'регресія')} · ${ps} · R² = ${(+fr.r2.toFixed(4))}`;
         };
         setTimeout(showFit, 120);
       }
@@ -335,12 +392,12 @@
       });
       li._mq = mq;
       const tbtn = document.createElement('button');
-      tbtn.className = 'row-textmode'; tbtn.title = 'Текстовий режим (для лапок, кускових функцій)'; tbtn.textContent = 'ab';
+      tbtn.className = 'row-textmode'; tbtn.title = T2('ui.textMode', 'Текстовий режим (для лапок, кускових функцій)'); tbtn.textContent = 'ab';
       tbtn.addEventListener('click', () => { expr._textMode = true; renderRows(); focusRow(expr.id); });
       li.appendChild(tbtn);
     } else if (window.MQAdapter && MQAdapter.ready() && expr._textMode) {
       const tbtn = document.createElement('button');
-      tbtn.className = 'row-textmode active'; tbtn.title = 'Візуальний режим'; tbtn.textContent = 'ƒx';
+      tbtn.className = 'row-textmode active'; tbtn.title = T2('ui.visualMode', 'Візуальний режим'); tbtn.textContent = 'ƒx';
       tbtn.addEventListener('click', () => { expr._textMode = false; renderRows(); focusRow(expr.id); });
       li.appendChild(tbtn);
     }
@@ -381,13 +438,13 @@
       ico.appendChild(d);
     };
     refreshDot();
-    idx.title = 'клік — сховати/показати · правий клік — колір';
+    idx.title = T2('ui.rowIcoTitle', 'клік — сховати/показати · правий клік — колір');
     wireRowDrag(li, idx, expr);
     idx.addEventListener('click', () => { calc.setHidden(expr.id, !expr.hidden); refreshDot(); });
     idx.addEventListener('contextmenu', (e) => { e.preventDefault(); colorPopover(idx, expr.color, (c) => { calc.setColor(expr.id, c); refreshDot(); }); });
 
     const body = document.createElement('div'); body.className = 'row-body';
-    const tag = document.createElement('div'); tag.className = 'row-tag'; tag.textContent = 'таблиця даних'; tag.style.display = 'block';
+    const tag = document.createElement('div'); tag.className = 'row-tag'; tag.textContent = T2('tags.dataTable', 'таблиця даних'); tag.style.display = 'block';
     body.appendChild(tag);
 
     const grid = document.createElement('div'); grid.className = 'dtable';
@@ -425,7 +482,7 @@
           });
           tr.appendChild(inp);
         });
-        const rm = document.createElement('button'); rm.className = 'dt-del'; rm.textContent = '×'; rm.title = 'Видалити рядок';
+        const rm = document.createElement('button'); rm.className = 'dt-del'; rm.textContent = '×'; rm.title = T2('ui.deleteTableRow', 'Видалити рядок');
         rm.addEventListener('click', () => {
           expr.table.rows.splice(ri, 1);
           if (!expr.table.rows.length) expr.table.rows.push(['', '']);
@@ -439,12 +496,12 @@
     buildGrid();
 
     const ctrls = document.createElement('div'); ctrls.className = 'dt-ctrls';
-    const addBtn = document.createElement('button'); addBtn.className = 'dt-add'; addBtn.textContent = '+ рядок';
+    const addBtn = document.createElement('button'); addBtn.className = 'dt-add'; addBtn.textContent = T2('ui.addRow', '+ рядок');
     addBtn.addEventListener('click', () => { addRow(); const rows = grid.querySelectorAll('.dt-row'); const last = rows[rows.length - 1]; last && last.querySelector('.dt-c').focus(); });
     ctrls.appendChild(addBtn);
 
     const seg = document.createElement('div'); seg.className = 'dt-seg';
-    const styles = [['точки', { points: true, line: false }], ['лінія', { points: false, line: true }], ['обидва', { points: true, line: true }]];
+    const styles = [[T2('ui.stylePoints', 'точки'), { points: true, line: false }], [T2('ui.styleLine', 'лінія'), { points: false, line: true }], [T2('ui.styleBoth', 'обидва'), { points: true, line: true }]];
     const syncSeg = () => {
       const st = expr.tableStyle || { points: true, line: false };
       [...seg.children].forEach((b, i) => b.classList.toggle('on', styles[i][1].points === !!st.points && styles[i][1].line === !!st.line));
@@ -460,9 +517,9 @@
 
     // regression control
     const regRow = document.createElement('div'); regRow.className = 'dt-reg';
-    const regLab = document.createElement('span'); regLab.className = 'dt-reg-lab'; regLab.textContent = 'регресія';
+    const regLab = document.createElement('span'); regLab.className = 'dt-reg-lab'; regLab.textContent = T2('ui.regressionLabel', 'регресія');
     const regSel = document.createElement('select'); regSel.className = 'dt-reg-sel';
-    [['none', 'немає'], ['linear', 'лінійна'], ['quadratic', 'квадратична'], ['cubic', 'кубічна'], ['exponential', 'експонента'], ['logarithmic', 'логарифм'], ['power', 'степенева']]
+    [['none', T2('regression.none', 'немає')], ['linear', T2('regression.linear', 'лінійна')], ['quadratic', T2('regression.quadratic', 'квадратична')], ['cubic', T2('regression.cubic', 'кубічна')], ['exponential', T2('regression.exponential', 'експонента')], ['logarithmic', T2('regression.logarithmic', 'логарифм')], ['power', T2('regression.power', 'степенева')]]
       .forEach(([v, lab]) => { const o = document.createElement('option'); o.value = v; o.textContent = lab; regSel.appendChild(o); });
     regSel.value = expr.regression || 'none';
     regSel.addEventListener('change', () => { calc.setRegression(expr.id, regSel.value); refreshReg(); });
@@ -477,14 +534,14 @@
         eqBox.innerHTML = `<span class="dt-eq-f">${expr.regFit.label}</span><span class="dt-eq-r">R² = ${r2}</span>`;
         eqBox.style.display = 'flex';
       } else {
-        eqBox.innerHTML = '<span class="dt-eq-err">недостатньо даних або модель не підходить</span>';
+        eqBox.innerHTML = '<span class="dt-eq-err">' + T2('ui.regNotEnough', 'недостатньо даних або модель не підходить') + '</span>';
         eqBox.style.display = 'flex';
       }
     };
     refreshReg();
 
     const del = document.createElement('button');
-    del.className = 'row-del'; del.textContent = '×'; del.title = 'Видалити таблицю';
+    del.className = 'row-del'; del.textContent = '×'; del.title = T2('ui.deleteTable', 'Видалити таблицю');
     del.addEventListener('click', () => { calc.removeExpression(expr.id); renderRows(); });
 
     li.appendChild(idx); li.appendChild(body); li.appendChild(del);
@@ -525,7 +582,7 @@
   function buildSlider(row, expr, name) {
     row.style.display = 'flex'; row.innerHTML = ''; row.dataset.built = name;
     const play = document.createElement('button'); play.className = 'play';
-    const refreshPlay = () => { play.textContent = expr.animating ? '❚❚' : '▶'; play.classList.toggle('on', !!expr.animating); play.title = expr.animating ? 'Стоп' : 'Анімувати'; };
+    const refreshPlay = () => { play.textContent = expr.animating ? '❚❚' : '▶'; play.classList.toggle('on', !!expr.animating); play.title = expr.animating ? T2('ui.stop', 'Стоп') : T2('ui.animate', 'Анімувати'); };
     refreshPlay();
     expr._playRefresh = refreshPlay;
     play.addEventListener('click', () => { calc.setParamAnimating(expr.id, !expr.animating); refreshPlay(); });
@@ -558,15 +615,15 @@
   function buildAction(row, expr) {
     row.style.display = 'flex'; row.innerHTML = ''; row.dataset.built = '#act';
     const play = document.createElement('button'); play.className = 'play';
-    play.textContent = '▶'; play.title = 'Виконати дію';
+    play.textContent = '▶'; play.title = T2('ui.runAction', 'Виконати дію');
     const loop = document.createElement('button'); loop.className = 'play';
-    loop.textContent = '⟳'; loop.title = 'Тікер: виконувати безперервно';
+    loop.textContent = '⟳'; loop.title = T2('ui.ticker', 'Тікер: виконувати безперервно');
     const speed = document.createElement('input');
     speed.type = 'range'; speed.min = '1'; speed.max = '60'; speed.step = '1'; speed.value = '20';
-    speed.title = 'Кроків за секунду';
+    speed.title = T2('ui.stepsPerSecond', 'Кроків за секунду');
     speed.style.flex = '1';
     const lbl = document.createElement('span'); lbl.className = 'trange-lbl';
-    lbl.textContent = '20/с';
+    lbl.textContent = '20' + T2('ui.perSecond', '/с');
     play.addEventListener('click', () => { calc.runAction(expr.id); snapshot(); });
     let timer = null;
     const stopT = () => { if (timer) { clearInterval(timer); timer = null; loop.classList.remove('running'); loop.textContent = '⟳'; } };
@@ -582,7 +639,7 @@
       start();
       speed.addEventListener('input', () => { if (timer) { clearInterval(timer); timer = null; start(); } });
     });
-    speed.addEventListener('input', () => { lbl.textContent = speed.value + '/с'; });
+    speed.addEventListener('input', () => { lbl.textContent = speed.value + T2('ui.perSecond', '/с'); });
     row.appendChild(play); row.appendChild(loop); row.appendChild(speed); row.appendChild(lbl);
   }
 
@@ -813,7 +870,7 @@
     [{l:'sin',t:'sin('},{l:'cos',t:'cos('},{l:'tan',t:'tan('},{l:'ln',t:'ln('},{l:'log',t:'log('},{l:'exp',t:'exp('},{l:'∛',t:'cbrt('},{l:'mod',t:'mod('}],
     [{l:'asin',t:'asin('},{l:'acos',t:'acos('},{l:'atan',t:'atan('},{l:'sinh',t:'sinh('},{l:'cosh',t:'cosh('},{l:'tanh',t:'tanh('},{l:'floor',t:'floor('},{l:'ceil',t:'ceil('}],
     [{l:'Σ',t:'sum(n, 1, 10, '},{l:'∏',t:'product(n, 1, 5, '},{l:'∫',t:'integral(f, t, 0, x)'},{l:"f'",t:"f'("},{l:'mean',t:'mean('},{l:'stdev',t:'stdev('},{l:'random',t:'random('},{l:'hist',t:'histogram('}],
-    [{l:'i',t:'i'},{l:'dc',t:'domaincolor(z^2)'},{l:'коло',t:'x^2 + y^2 = 25'},{l:'r(θ)',t:'r = cos(3 theta)'},{l:'{умова',t:'{x < 0: -x, x}'},{l:'дія',t:'n -> n + 1'},{l:'⌫',ks:'Backspace',cls:'kb-del'}],
+    [{l:'i',t:'i'},{l:'dc',t:'domaincolor(z^2)'},{l:T2('ui.kbCircle','коло'),t:'x^2 + y^2 = 25'},{l:'r(θ)',t:'r = cos(3 theta)'},{l:T2('ui.kbCond','{умова'),t:'{x < 0: -x, x}'},{l:T2('ui.kbAction','дія'),t:'n -> n + 1'},{l:'⌫',ks:'Backspace',cls:'kb-del'}],
   ];
   function renderKb() {
     const grid = _kbEl.querySelector('.kb-grid');
@@ -857,140 +914,140 @@
   const GC = window.GraphCalc;
   const GALLERY = [
     { cat: T2('gallery.cat.funcs', 'Функції y = f(x)'), items: [
-      { name: 'Парабола', set: ['y = x^2'] },
-      { name: 'Кубічна', set: ['y = x^3 - 3 x'] },
-      { name: 'Синусоїда', set: ['y = 2 sin(x)'] },
-      { name: 'Дзвін Гауса', set: ['y = 4 exp(0 - x^2 / 4)'] },
-      { name: 'Квадратний корінь', set: ['y = sqrt(x)'] },
-      { name: 'Модуль', set: ['y = abs(x) - 3'] },
-      { name: 'Гіпербола 1/x', set: ['y = 6 / x'] },
-      { name: 'Логарифм', set: ['y = 2 ln(x)'] },
-      { name: 'Логарифм з основою', set: ['y = log_2 x'] },
-      { name: 'Остача mod', set: ['y = mod(x, 3)'], r: 5 },
-      { name: 'Факторіал x!', set: ['y = x!'], r: 4 },
+      { name: T2('gallery.item.parabola', 'Парабола'), set: ['y = x^2'] },
+      { name: T2('gallery.item.cubic', 'Кубічна'), set: ['y = x^3 - 3 x'] },
+      { name: T2('gallery.item.sine', 'Синусоїда'), set: ['y = 2 sin(x)'] },
+      { name: T2('gallery.item.gauss', 'Дзвін Гауса'), set: ['y = 4 exp(0 - x^2 / 4)'] },
+      { name: T2('gallery.item.sqrt', 'Квадратний корінь'), set: ['y = sqrt(x)'] },
+      { name: T2('gallery.item.abs', 'Модуль'), set: ['y = abs(x) - 3'] },
+      { name: T2('gallery.item.hyperbola1x', 'Гіпербола 1/x'), set: ['y = 6 / x'] },
+      { name: T2('gallery.item.log', 'Логарифм'), set: ['y = 2 ln(x)'] },
+      { name: T2('gallery.item.logBase', 'Логарифм з основою'), set: ['y = log_2 x'] },
+      { name: T2('gallery.item.mod', 'Остача mod'), set: ['y = mod(x, 3)'], r: 5 },
+      { name: T2('gallery.item.factorial', 'Факторіал x!'), set: ['y = x!'], r: 4 },
     ]},
     { cat: T2('gallery.cat.sums', 'Суми Σ та добутки Π'), items: [
-      { name: 'Ряд Фур\'є (пилка)', set: ['y = sum(n, 1, 20, sin(n x) / n)'], r: 7 },
-      { name: 'Ряд Фур\'є (меандр)', set: ['y = sum(n, 1, 15, sin((2 n - 1) x) / (2 n - 1))'], r: 6 },
-      { name: 'Степеневий ряд eˣ', set: ['y = sum(n, 0, 8, x^n / n!)'], r: 6 },
-      { name: 'Сума 1..x (трикутні)', set: ['y = sum(i, 1, x, i)'], r: 12 },
-      { name: 'Добуток Π → x!', set: ['y = product(i, 1, x, i)'], r: 8 },
+      { name: T2('gallery.item.fourierSaw', 'Ряд Фур\'є (пилка)'), set: ['y = sum(n, 1, 20, sin(n x) / n)'], r: 7 },
+      { name: T2('gallery.item.fourierSquare', 'Ряд Фур\'є (меандр)'), set: ['y = sum(n, 1, 15, sin((2 n - 1) x) / (2 n - 1))'], r: 6 },
+      { name: T2('gallery.item.powerSeriesExp', 'Степеневий ряд eˣ'), set: ['y = sum(n, 0, 8, x^n / n!)'], r: 6 },
+      { name: T2('gallery.item.triangular', 'Сума 1..x (трикутні)'), set: ['y = sum(i, 1, x, i)'], r: 12 },
+      { name: T2('gallery.item.productFactorial', 'Добуток Π → x!'), set: ['y = product(i, 1, x, i)'], r: 8 },
     ]},
     { cat: T2('gallery.cat.sequences', 'Рекурентні послідовності'), items: [
-      { name: 'Фібоначчі', set: ['F(0) = 0', 'F(1) = 1', 'F(n) = F(n-1) + F(n-2)', 'plot(F(n), n, 0, 11)'], seqPlot: true },
-      { name: 'Арифметична +3', set: ['a(0) = 1', 'a(n) = a(n-1) + 3', 'plot(a(n), n, 0, 10)'], seqPlot: true },
-      { name: 'Геометрична ×2', set: ['g(0) = 1', 'g(n) = 2 g(n-1)', 'plot(g(n), n, 0, 8)'], seqPlot: true },
-      { name: 'Факторіал (рекурсія)', set: ['p(0) = 1', 'p(n) = n p(n-1)', 'plot(p(n), n, 0, 6)'], seqPlot: true },
-      { name: 'Куби n³', set: ['c(0) = 0', 'c(n) = c(n-1) + 3 n^2 - 3 n + 1', 'plot(c(n), n, 0, 8)'], seqPlot: true },
-      { name: 'Мерсенна 2ⁿ−1', set: ['M(0) = 0', 'M(n) = 2 M(n-1) + 1', 'plot(M(n), n, 0, 8)'], seqPlot: true },
+      { name: T2('gallery.item.fibonacci', 'Фібоначчі'), set: ['F(0) = 0', 'F(1) = 1', 'F(n) = F(n-1) + F(n-2)', 'plot(F(n), n, 0, 11)'], seqPlot: true },
+      { name: T2('gallery.item.arithmetic', 'Арифметична +3'), set: ['a(0) = 1', 'a(n) = a(n-1) + 3', 'plot(a(n), n, 0, 10)'], seqPlot: true },
+      { name: T2('gallery.item.geometric', 'Геометрична ×2'), set: ['g(0) = 1', 'g(n) = 2 g(n-1)', 'plot(g(n), n, 0, 8)'], seqPlot: true },
+      { name: T2('gallery.item.factorialRec', 'Факторіал (рекурсія)'), set: ['p(0) = 1', 'p(n) = n p(n-1)', 'plot(p(n), n, 0, 6)'], seqPlot: true },
+      { name: T2('gallery.item.cubes', 'Куби n³'), set: ['c(0) = 0', 'c(n) = c(n-1) + 3 n^2 - 3 n + 1', 'plot(c(n), n, 0, 8)'], seqPlot: true },
+      { name: T2('gallery.item.mersenne', 'Мерсенна 2ⁿ−1'), set: ['M(0) = 0', 'M(n) = 2 M(n-1) + 1', 'plot(M(n), n, 0, 8)'], seqPlot: true },
     ]},
     { cat: T2('gallery.cat.listsCalculus', 'Списки · похідні · інтеграли'), items: [
-      { name: 'Сімейство синусоїд', set: ['y = sin(x [1, 2, 3])'], r: 7 },
-      { name: 'Сімейство парабол', set: ['y = [0.5, 1, 2] x^2'], r: 6 },
-      { name: 'Зсунуті копії', set: ['y = sin(x) + [0, 2, 4]'], r: 8 },
-      { name: 'Сімейство точок', set: ['([1, 2, 3, 4], [1, 4, 9, 16])'], r: 18 },
-      { name: "Похідна f'(x)", set: ['f(x) = x^3 - 3 x', "y = f'(x)"], r: 6 },
-      { name: "f, f' і f'' разом", set: ['f(x) = sin(x)', 'y = f(x)', "y = f'(x)", "y = f''(x)"], r: 7 },
-      { name: 'Дотична в точці a', set: ['f(x) = x^2 / 2', 'a = 1', "y = f(a) + f'(a) (x - a)", 'y = f(x)'], badge: '▶ a', r: 6 },
-      { name: 'Інтеграл-накопичення', set: ['y = integral(sin(t), t, 0, x)'], r: 8 },
-      { name: 'Площа під кривою', set: ['f(x) = 4 - x^2', 'y = f(x)', 'S = integral(f(t), t, 0 - 2, 2)'], r: 6 },
-      { name: 'Ерф-подібна крива', set: ['y = integral(exp(0 - t^2), t, 0, x)'], r: 4 },
-      { name: 'Регресія y ~ a·x + b', tableData: [[1,2.1],[2,3.9],[3,6.2],[4,7.8],[5,10.1]], set: ['y ~ a x + b'], badge: '~' },
-      { name: 'Регресія y ~ a·sin(b·x)', tableData: [[0,0],[0.5,1.4],[1,2.5],[1.5,2.9],[2,2.6],[2.5,1.7],[3,0.3],[3.5,-1.2],[4,-2.4]], set: ['y ~ a sin(b x)'], badge: '~' },
-      { name: 'Регресія-експонента', tableData: [[0,1.1],[1,2.6],[2,7.5],[3,19.8],[4,55]], set: ['y ~ a exp(b x)'], badge: '~' },
-      { name: 'Підписані точки', set: ['y = x^2 - 2', '(0, -2) "Вершина"', '(1.41, 0) "Корінь"'], r: 5 },
+      { name: T2('gallery.item.sineFamily', 'Сімейство синусоїд'), set: ['y = sin(x [1, 2, 3])'], r: 7 },
+      { name: T2('gallery.item.parabolaFamily', 'Сімейство парабол'), set: ['y = [0.5, 1, 2] x^2'], r: 6 },
+      { name: T2('gallery.item.shiftedCopies', 'Зсунуті копії'), set: ['y = sin(x) + [0, 2, 4]'], r: 8 },
+      { name: T2('gallery.item.pointFamily', 'Сімейство точок'), set: ['([1, 2, 3, 4], [1, 4, 9, 16])'], r: 18 },
+      { name: T2('gallery.item.derivative', "Похідна f'(x)"), set: ['f(x) = x^3 - 3 x', "y = f'(x)"], r: 6 },
+      { name: T2('gallery.item.derivativesTogether', "f, f' і f'' разом"), set: ['f(x) = sin(x)', 'y = f(x)', "y = f'(x)", "y = f''(x)"], r: 7 },
+      { name: T2('gallery.item.tangentAt', 'Дотична в точці a'), set: ['f(x) = x^2 / 2', 'a = 1', "y = f(a) + f'(a) (x - a)", 'y = f(x)'], badge: '▶ a', r: 6 },
+      { name: T2('gallery.item.integralAccum', 'Інтеграл-накопичення'), set: ['y = integral(sin(t), t, 0, x)'], r: 8 },
+      { name: T2('gallery.item.areaUnderCurve', 'Площа під кривою'), set: ['f(x) = 4 - x^2', 'y = f(x)', 'S = integral(f(t), t, 0 - 2, 2)'], r: 6 },
+      { name: T2('gallery.item.erfLike', 'Ерф-подібна крива'), set: ['y = integral(exp(0 - t^2), t, 0, x)'], r: 4 },
+      { name: T2('gallery.item.regLinear', 'Регресія y ~ a·x + b'), tableData: [[1,2.1],[2,3.9],[3,6.2],[4,7.8],[5,10.1]], set: ['y ~ a x + b'], badge: '~' },
+      { name: T2('gallery.item.regSine', 'Регресія y ~ a·sin(b·x)'), tableData: [[0,0],[0.5,1.4],[1,2.5],[1.5,2.9],[2,2.6],[2.5,1.7],[3,0.3],[3.5,-1.2],[4,-2.4]], set: ['y ~ a sin(b x)'], badge: '~' },
+      { name: T2('gallery.item.regExp', 'Регресія-експонента'), tableData: [[0,1.1],[1,2.6],[2,7.5],[3,19.8],[4,55]], set: ['y ~ a exp(b x)'], badge: '~' },
+      { name: T2('gallery.item.labeledPoints', 'Підписані точки'), set: ['y = x^2 - 2', '(0, -2) "' + T2('gallery.lbl.vertex', 'Вершина') + '"', '(1.41, 0) "' + T2('gallery.lbl.root', 'Корінь') + '"'], r: 5 },
     ]},
     { cat: T2('gallery.cat.stats', 'Статистика'), items: [
-      { name: 'Гістограма випадкових', set: ['d = random(200, 0, 10)', 'histogram(d)'], r: 12 },
-      { name: 'Гістограма + крок кошика', set: ['d = random(300, -5, 5)', 'histogram(d, 1)'], r: 8 },
+      { name: T2('gallery.item.histRandom', 'Гістограма випадкових'), set: ['d = random(200, 0, 10)', 'histogram(d)'], r: 12 },
+      { name: T2('gallery.item.histBin', 'Гістограма + крок кошика'), set: ['d = random(300, -5, 5)', 'histogram(d, 1)'], r: 8 },
       { name: 'Boxplot', set: ['d = [2, 3, 3.5, 4, 4.2, 5, 5.5, 6, 9.5]', 'boxplot(d, 1)'], r: 7 },
-      { name: 'Нормальний розподіл', set: ['y = normalpdf(x, 0, 1)', 'y = normalpdf(x, 0, 2)'], r: 5 },
-      { name: 'Середнє та медіана', set: ['d = [1, 2, 2, 3, 3, 3, 4, 4, 10]', 'histogram(d, 1)', 'x = mean(d)', 'x = median(d)'], r: 7 },
+      { name: T2('gallery.item.normalDist', 'Нормальний розподіл'), set: ['y = normalpdf(x, 0, 1)', 'y = normalpdf(x, 0, 2)'], r: 5 },
+      { name: T2('gallery.item.meanMedian', 'Середнє та медіана'), set: ['d = [1, 2, 2, 3, 3, 3, 4, 4, 10]', 'histogram(d, 1)', 'x = mean(d)', 'x = median(d)'], r: 7 },
     ]},
     { cat: T2('gallery.cat.simulations', 'Симуляції (дії)'), items: [
-      { name: 'М\'ячик стрибає', set: ['h = 8', 'v = 0', '(0, h) "⚽"', 'h -> {h + v/10 < 0: 0, h + v/10}, v -> {h + v/10 < 0: -0.82 v, v - 0.5}'], r: 9,
-        hint: 'Натисніть ⟳ біля дії' },
-      { name: 'Випадкове блукання', set: ['a = 0', 'b = 0', '(a, b)', 'a -> a + random() - 0.5, b -> b + random() - 0.5'], r: 5 },
-      { name: 'Лічильник', set: ['n = 0', '(n, 0) "n"', 'n -> n + 1'], r: 10 },
+      { name: T2('gallery.item.bouncingBall', 'М\'ячик стрибає'), set: ['h = 8', 'v = 0', '(0, h) "⚽"', 'h -> {h + v/10 < 0: 0, h + v/10}, v -> {h + v/10 < 0: -0.82 v, v - 0.5}'], r: 9,
+        hint: T2('gallery.hint.ticker', 'Натисніть ⟳ біля дії') },
+      { name: T2('gallery.item.randomWalk', 'Випадкове блукання'), set: ['a = 0', 'b = 0', '(a, b)', 'a -> a + random() - 0.5, b -> b + random() - 0.5'], r: 5 },
+      { name: T2('gallery.item.counter', 'Лічильник'), set: ['n = 0', '(n, 0) "n"', 'n -> n + 1'], r: 10 },
     ]},
     { cat: T2('gallery.cat.complex', 'Комплексні числа'), items: [
-      { name: 'Комплексні точки', set: ['2 + 3i', '(1 + i)^2', 'exp(i pi / 4)'], r: 5 },
-      { name: 'Корені з одиниці (5)', set: ['exp(2 i pi / 5)', 'exp(4 i pi / 5)', 'exp(6 i pi / 5)', 'exp(8 i pi / 5)', '1 + 0 i'], r: 2 },
+      { name: T2('gallery.item.complexPoints', 'Комплексні точки'), set: ['2 + 3i', '(1 + i)^2', 'exp(i pi / 4)'], r: 5 },
+      { name: T2('gallery.item.rootsOfUnity', 'Корені з одиниці (5)'), set: ['exp(2 i pi / 5)', 'exp(4 i pi / 5)', 'exp(6 i pi / 5)', 'exp(8 i pi / 5)', '1 + 0 i'], r: 2 },
       { name: 'f(z) = z²', set: ['domaincolor(z^2)'], r: 3 },
-      { name: 'f(z) = 1/z (полюс)', set: ['domaincolor(1 / z)'], r: 3 },
-      { name: 'Нулі та полюси', set: ['domaincolor((z^2 - 1) / (z^2 + 1))'], r: 3 },
-      { name: 'Суттєва особливість', set: ['domaincolor(exp(1 / z))'], r: 1.6 },
-      { name: 'sin(z) на площині', set: ['domaincolor(sin(z))'], r: 6 },
-      { name: 'Поліном з коренями', set: ['domaincolor((z - 1) (z + 1) (z - i) (z + i))'], r: 2.5 },
+      { name: T2('gallery.item.pole', 'f(z) = 1/z (полюс)'), set: ['domaincolor(1 / z)'], r: 3 },
+      { name: T2('gallery.item.zerosPoles', 'Нулі та полюси'), set: ['domaincolor((z^2 - 1) / (z^2 + 1))'], r: 3 },
+      { name: T2('gallery.item.essentialSingularity', 'Суттєва особливість'), set: ['domaincolor(exp(1 / z))'], r: 1.6 },
+      { name: T2('gallery.item.sinZ', 'sin(z) на площині'), set: ['domaincolor(sin(z))'], r: 6 },
+      { name: T2('gallery.item.polyRoots', 'Поліном з коренями'), set: ['domaincolor((z - 1) (z + 1) (z - i) (z + i))'], r: 2.5 },
     ]},
     { cat: T2('gallery.cat.fractals', 'Фрактали'), items: [
-      { name: 'Мандельброт', set: ['mandelbrot()'], fractal: true, fractalType: 'mandelbrot' },
-      { name: 'Юлія (−0.8, 0.156)', set: ['julia(-0.8, 0.156)'], fractal: true, fractalType: 'julia', juliaC: [-0.8, 0.156] },
-      { name: 'Юлія (−0.4, 0.6)', set: ['julia(-0.4, 0.6)'], fractal: true, fractalType: 'julia', juliaC: [-0.4, 0.6] },
-      { name: 'Юлія (0.285, 0.01)', set: ['julia(0.285, 0.01)'], fractal: true, fractalType: 'julia', juliaC: [0.285, 0.01] },
-      { name: 'Юлія (−0.74, 0.18)', set: ['julia(-0.74, 0.18)'], fractal: true, fractalType: 'julia', juliaC: [-0.74, 0.18] },
-      { name: 'Юлія (0, 0.8)', set: ['julia(0, 0.8)'], fractal: true, fractalType: 'julia', juliaC: [0, 0.8] },
+      { name: T2('gallery.item.mandelbrot', 'Мандельброт'), set: ['mandelbrot()'], fractal: true, fractalType: 'mandelbrot' },
+      { name: T2('gallery.item.julia', 'Юлія') + ' (−0.8, 0.156)', set: ['julia(-0.8, 0.156)'], fractal: true, fractalType: 'julia', juliaC: [-0.8, 0.156] },
+      { name: T2('gallery.item.julia', 'Юлія') + ' (−0.4, 0.6)', set: ['julia(-0.4, 0.6)'], fractal: true, fractalType: 'julia', juliaC: [-0.4, 0.6] },
+      { name: T2('gallery.item.julia', 'Юлія') + ' (0.285, 0.01)', set: ['julia(0.285, 0.01)'], fractal: true, fractalType: 'julia', juliaC: [0.285, 0.01] },
+      { name: T2('gallery.item.julia', 'Юлія') + ' (−0.74, 0.18)', set: ['julia(-0.74, 0.18)'], fractal: true, fractalType: 'julia', juliaC: [-0.74, 0.18] },
+      { name: T2('gallery.item.julia', 'Юлія') + ' (0, 0.8)', set: ['julia(0, 0.8)'], fractal: true, fractalType: 'julia', juliaC: [0, 0.8] },
       { name: 'Burning Ship', set: ['burningship()'], fractal: true, fractalType: 'burningship' },
       { name: 'Tricorn', set: ['tricorn()'], fractal: true, fractalType: 'tricorn' },
       { name: 'Multibrot(3)', set: ['multibrot(3)'], fractal: true, fractalType: 'multibrot', fractalPower: 3 },
       { name: 'Multibrot(4)', set: ['multibrot(4)'], fractal: true, fractalType: 'multibrot', fractalPower: 4 },
     ]},
     { cat: T2('gallery.cat.lsystems', 'L-системи · фрактальні криві'), items: [
-      { name: 'Крива Коха', set: ['koch(4)'], lsystem: true, lsystemData: {axiom:'F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[1]} },
-      { name: 'Дракон Гайвея', set: ['dragon(12)'], lsystem: true, lsystemData: {axiom:'FX', rules:'X->X+YF+;Y->-FX-Y', iters:9, angle:90, color:COLORS[0]} },
-      { name: 'Серпінський', set: ['sierpinski(5)'], lsystem: true, lsystemData: {axiom:'F-G-G', rules:'F->F-G+F+G-F;G->GG', iters:4, angle:120, color:COLORS[2]} },
-      { name: 'Крива Гільберта', set: ['hilbert(5)'], lsystem: true, lsystemData: {axiom:'A', rules:'A->-BF+AFA+FB-;B->+AF-BFB-FA+', iters:4, angle:90, color:COLORS[3]} },
-      { name: 'Рослина', set: ['plant(5)'], lsystem: true, lsystemData: {axiom:'X', rules:'X->F+[[X]-X]-F[-FX]+X;F->FF', iters:3, angle:25, startAngle:90, color:COLORS[2]} },
-      { name: 'Сніжинка Коха', set: ['lsystem("F--F--F", "F->F+F--F+F", 4, 60)'], lsystem: true, lsystemData: {axiom:'F--F--F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[4]} },
+      { name: T2('gallery.item.koch', 'Крива Коха'), set: ['koch(4)'], lsystem: true, lsystemData: {axiom:'F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[1]} },
+      { name: T2('gallery.item.dragon', 'Дракон Гайвея'), set: ['dragon(12)'], lsystem: true, lsystemData: {axiom:'FX', rules:'X->X+YF+;Y->-FX-Y', iters:9, angle:90, color:COLORS[0]} },
+      { name: T2('gallery.item.sierpinski', 'Серпінський'), set: ['sierpinski(5)'], lsystem: true, lsystemData: {axiom:'F-G-G', rules:'F->F-G+F+G-F;G->GG', iters:4, angle:120, color:COLORS[2]} },
+      { name: T2('gallery.item.hilbert', 'Крива Гільберта'), set: ['hilbert(5)'], lsystem: true, lsystemData: {axiom:'A', rules:'A->-BF+AFA+FB-;B->+AF-BFB-FA+', iters:4, angle:90, color:COLORS[3]} },
+      { name: T2('gallery.item.plant', 'Рослина'), set: ['plant(5)'], lsystem: true, lsystemData: {axiom:'X', rules:'X->F+[[X]-X]-F[-FX]+X;F->FF', iters:3, angle:25, startAngle:90, color:COLORS[2]} },
+      { name: T2('gallery.item.kochSnowflake', 'Сніжинка Коха'), set: ['lsystem("F--F--F", "F->F+F--F+F", 4, 60)'], lsystem: true, lsystemData: {axiom:'F--F--F', rules:'F->F+F--F+F', iters:3, angle:60, color:COLORS[4]} },
     ]},
     { cat: T2('gallery.cat.curves', 'Криві та рівняння'), items: [
-      { name: 'Коло', set: ['x^2 + y^2 = 25'] },
-      { name: 'Еліпс', set: ['x^2 / 9 + y^2 / 4 = 1'] },
-      { name: 'Гіпербола', set: ['x^2 / 4 - y^2 / 4 = 1'] },
-      { name: 'Серце', set: ['(x^2 + y^2 - 1)^3 = x^2 y^3'], r: 1.7 },
-      { name: 'Лемніската', set: ['(x^2 + y^2)^2 = 4 (x^2 - y^2)'], r: 2.6 },
-      { name: 'Супереліпс', set: ['abs(x / 4)^4 + abs(y / 3)^4 = 1'] },
+      { name: T2('gallery.item.circle', 'Коло'), set: ['x^2 + y^2 = 25'] },
+      { name: T2('gallery.item.ellipse', 'Еліпс'), set: ['x^2 / 9 + y^2 / 4 = 1'] },
+      { name: T2('gallery.item.hyperbola', 'Гіпербола'), set: ['x^2 / 4 - y^2 / 4 = 1'] },
+      { name: T2('gallery.item.heart', 'Серце'), set: ['(x^2 + y^2 - 1)^3 = x^2 y^3'], r: 1.7 },
+      { name: T2('gallery.item.lemniscate', 'Лемніската'), set: ['(x^2 + y^2)^2 = 4 (x^2 - y^2)'], r: 2.6 },
+      { name: T2('gallery.item.superellipse', 'Супереліпс'), set: ['abs(x / 4)^4 + abs(y / 3)^4 = 1'] },
     ]},
     { cat: T2('gallery.cat.sliders', 'З повзунками · анімація'), items: [
-      { name: 'Сімейство парабол', set: ['y = a x^2', 'a = 1'], badge: '▶ a' },
-      { name: 'Хвиля A·sin(b·x)', set: ['y = A sin(b x)', 'A = 2', 'b = 1'], badge: '▶ A,b' },
-      { name: 'Коло радіуса r', set: ['x^2 + y^2 = r^2', 'r = 5'], badge: '▶ r' },
-      { name: 'Пряма k·x + b', set: ['y = k x + b', 'k = 1', 'b = 0'], badge: '▶ k,b' },
+      { name: T2('gallery.item.parabolaFamily', 'Сімейство парабол'), set: ['y = a x^2', 'a = 1'], badge: '▶ a' },
+      { name: T2('gallery.item.wave', 'Хвиля A·sin(b·x)'), set: ['y = A sin(b x)', 'A = 2', 'b = 1'], badge: '▶ A,b' },
+      { name: T2('gallery.item.circleRadius', 'Коло радіуса r'), set: ['x^2 + y^2 = r^2', 'r = 5'], badge: '▶ r' },
+      { name: T2('gallery.item.lineKxB', 'Пряма k·x + b'), set: ['y = k x + b', 'k = 1', 'b = 0'], badge: '▶ k,b' },
     ]},
     { cat: T2('gallery.cat.inequalities', 'Нерівності · області'), items: [
-      { name: 'Під параболою', set: ['y < x^2'] },
-      { name: 'Над синусом', set: ['y >= sin(x)'] },
-      { name: 'Круг (диск)', set: ['x^2 + y^2 <= 9'] },
-      { name: 'Над модулем', set: ['y > abs(x) - 2'] },
-      { name: 'Кільце (система)', set: ['x^2 + y^2 <= 16', 'x^2 + y^2 >= 4'] },
-      { name: 'Смуга між кривими', set: ['y < x + 2', 'y > x^2 - 2'] },
+      { name: T2('gallery.item.underParabola', 'Під параболою'), set: ['y < x^2'] },
+      { name: T2('gallery.item.aboveSine', 'Над синусом'), set: ['y >= sin(x)'] },
+      { name: T2('gallery.item.disk', 'Круг (диск)'), set: ['x^2 + y^2 <= 9'] },
+      { name: T2('gallery.item.aboveAbs', 'Над модулем'), set: ['y > abs(x) - 2'] },
+      { name: T2('gallery.item.annulusSystem', 'Кільце (система)'), set: ['x^2 + y^2 <= 16', 'x^2 + y^2 >= 4'] },
+      { name: T2('gallery.item.stripBetween', 'Смуга між кривими'), set: ['y < x + 2', 'y > x^2 - 2'] },
     ]},
     { cat: T2('gallery.cat.domains', 'Обмеження області {…}'), items: [
-      { name: 'Промінь', set: ['y = x {x > 0}'] },
-      { name: 'Півпарабола', set: ['y = x^2 {x >= 0}'] },
-      { name: 'Відрізок синуса', set: ['y = 2 sin(x) {-3 < x < 3}'] },
-      { name: 'Кускова (дві гілки)', set: ['y = 0 - x {x < 0}', 'y = x {x >= 0}'] },
-      { name: 'Сходинки', set: ['y = x^2 {x < 0}', 'y = 1 {0 <= x < 2}', 'y = x - 1 {x >= 2}'] },
-      { name: 'Сектор кола', set: ['x^2 + y^2 = 9 {y > 0}'] },
+      { name: T2('gallery.item.ray', 'Промінь'), set: ['y = x {x > 0}'] },
+      { name: T2('gallery.item.halfParabola', 'Півпарабола'), set: ['y = x^2 {x >= 0}'] },
+      { name: T2('gallery.item.sineSegment', 'Відрізок синуса'), set: ['y = 2 sin(x) {-3 < x < 3}'] },
+      { name: T2('gallery.item.piecewiseTwo', 'Кускова (дві гілки)'), set: ['y = 0 - x {x < 0}', 'y = x {x >= 0}'] },
+      { name: T2('gallery.item.steps', 'Сходинки'), set: ['y = x^2 {x < 0}', 'y = 1 {0 <= x < 2}', 'y = x - 1 {x >= 2}'] },
+      { name: T2('gallery.item.circleSector', 'Сектор кола'), set: ['x^2 + y^2 = 9 {y > 0}'] },
     ]},
     { cat: T2('gallery.cat.logic', 'Логіка · and / or / not'), items: [
-      { name: 'Перша чверть', set: ['x > 0 and y > 0'] },
-      { name: 'Між 0 і параболою', set: ['y > 0 and y < x^2'] },
-      { name: 'Кільце (перетин)', set: ['x^2 + y^2 > 4 and x^2 + y^2 < 16'], r: 5 },
-      { name: 'Дві смуги (or)', set: ['x < -2 or x > 2'] },
-      { name: 'Хрест (or)', set: ['abs(x) < 1 or abs(y) < 1'] },
-      { name: 'Поза колом, не нижче', set: ['x^2 + y^2 > 4 and y >= 0'], r: 4 },
+      { name: T2('gallery.item.firstQuadrant', 'Перша чверть'), set: ['x > 0 and y > 0'] },
+      { name: T2('gallery.item.betweenZeroAndParabola', 'Між 0 і параболою'), set: ['y > 0 and y < x^2'] },
+      { name: T2('gallery.item.annulusIntersect', 'Кільце (перетин)'), set: ['x^2 + y^2 > 4 and x^2 + y^2 < 16'], r: 5 },
+      { name: T2('gallery.item.twoStrips', 'Дві смуги (or)'), set: ['x < -2 or x > 2'] },
+      { name: T2('gallery.item.cross', 'Хрест (or)'), set: ['abs(x) < 1 or abs(y) < 1'] },
+      { name: T2('gallery.item.outsideCircleUpper', 'Поза колом, не нижче'), set: ['x^2 + y^2 > 4 and y >= 0'], r: 4 },
     ]},
     { cat: T2('gallery.cat.customFuncs', 'Власні функції · кускові'), items: [
-      { name: 'Власна функція f(x)', set: ['f(x) = x^2 - 2 x', 'y = f(x)'] },
-      { name: 'Композиція f(f(x))', set: ['f(x) = x^2 - 1', 'y = f(f(x))'] },
-      { name: 'Модуль як кускова', set: ['y = {x < 0: 0 - x, x >= 0: x}'] },
-      { name: 'Сходинка (sign)', set: ['y = {x < 0: -1, x >= 0: 1}'] },
-      { name: 'Парабола / пряма', set: ['y = {x < 1: x^2, x >= 1: 2 x - 1}'] },
-      { name: 'Факторіал x!', set: ['y = x!'], r: 4 },
+      { name: T2('gallery.item.customFunc', 'Власна функція f(x)'), set: ['f(x) = x^2 - 2 x', 'y = f(x)'] },
+      { name: T2('gallery.item.composition', 'Композиція f(f(x))'), set: ['f(x) = x^2 - 1', 'y = f(f(x))'] },
+      { name: T2('gallery.item.absPiecewise', 'Модуль як кускова'), set: ['y = {x < 0: 0 - x, x >= 0: x}'] },
+      { name: T2('gallery.item.signStep', 'Сходинка (sign)'), set: ['y = {x < 0: -1, x >= 0: 1}'] },
+      { name: T2('gallery.item.parabolaOrLine', 'Парабола / пряма'), set: ['y = {x < 1: x^2, x >= 1: 2 x - 1}'] },
+      { name: T2('gallery.item.factorial', 'Факторіал x!'), set: ['y = x!'], r: 4 },
     ]},
     { cat: T2('gallery.cat.drawings', 'Малюнки з формул'), items: [
-      { name: 'Котик', set: [
+      { name: T2('gallery.item.cat', 'Котик'), set: [
         'x^2 + y^2 = 16',
         'y = 3.8x + 17.14 {-3.8<x<-2.8}',
         'y = -1.8x + 1.46 {-2.8<x<-1.3}',
@@ -1013,7 +1070,7 @@
         'y = -0.55 {1.8<x<5.5}',
         'y = 0.18x - 1 {1.8<x<5.5}',
       ], r: 7 },
-      { name: 'Будиночок', set: [
+      { name: T2('gallery.item.house', 'Будиночок'), set: [
         'y = -3 {-3<x<3}',
         'y = 1 {-3<x<3}',
         'x = -3 {-3<y<1}',
@@ -1028,29 +1085,29 @@
       ], r: 5 },
     ]},
     { cat: T2('gallery.cat.polar', 'Полярні криві r(θ)'), items: [
-      { name: 'Коло', set: ['r = 4'], r: 5 },
-      { name: 'Кардіоїда', set: ['r = 2 (1 + cos(θ))'], r: 4.6 },
-      { name: 'Роза · 3 пелюстки', set: ['r = 4 cos(3 θ)'], r: 4.6 },
-      { name: 'Роза · 4 пелюстки', set: ['r = 4 sin(2 θ)'], r: 4.6 },
-      { name: 'Спіраль Архімеда', set: ['r = θ'], r: 6.8 },
-      { name: 'Равлик Паскаля', set: ['r = 1 + 2 cos(θ)'], r: 3.4 },
+      { name: T2('gallery.item.circle', 'Коло'), set: ['r = 4'], r: 5 },
+      { name: T2('gallery.item.cardioid', 'Кардіоїда'), set: ['r = 2 (1 + cos(θ))'], r: 4.6 },
+      { name: T2('gallery.item.rose3', 'Роза · 3 пелюстки'), set: ['r = 4 cos(3 θ)'], r: 4.6 },
+      { name: T2('gallery.item.rose4', 'Роза · 4 пелюстки'), set: ['r = 4 sin(2 θ)'], r: 4.6 },
+      { name: T2('gallery.item.archimedeanSpiral', 'Спіраль Архімеда'), set: ['r = θ'], r: 6.8 },
+      { name: T2('gallery.item.limacon', 'Равлик Паскаля'), set: ['r = 1 + 2 cos(θ)'], r: 3.4 },
     ]},
     { cat: T2('gallery.cat.parametric', 'Параметричні криві (t)'), items: [
-      { name: 'Коло', set: ['(cos(t), sin(t))'], r: 1.6 },
-      { name: 'Еліпс', set: ['(3 cos(t), 2 sin(t))'], r: 4 },
-      { name: 'Спіраль', set: ['(t cos(t), t sin(t))'], r: 7 },
-      { name: 'Фігура Ліссажу', set: ['(3 sin(3 t), 3 sin(2 t))'], r: 4 },
-      { name: 'Циклоїда', set: ['(t - sin(t), 1 - cos(t))'], r: 7 },
-      { name: 'Астроїда', set: ['(3 cos(t)^3, 3 sin(t)^3)'], r: 4 },
+      { name: T2('gallery.item.circle', 'Коло'), set: ['(cos(t), sin(t))'], r: 1.6 },
+      { name: T2('gallery.item.ellipse', 'Еліпс'), set: ['(3 cos(t), 2 sin(t))'], r: 4 },
+      { name: T2('gallery.item.spiral', 'Спіраль'), set: ['(t cos(t), t sin(t))'], r: 7 },
+      { name: T2('gallery.item.lissajous', 'Фігура Ліссажу'), set: ['(3 sin(3 t), 3 sin(2 t))'], r: 4 },
+      { name: T2('gallery.item.cycloid', 'Циклоїда'), set: ['(t - sin(t), 1 - cos(t))'], r: 7 },
+      { name: T2('gallery.item.astroid', 'Астроїда'), set: ['(3 cos(t)^3, 3 sin(t)^3)'], r: 4 },
     ]},
     { cat: T2('gallery.cat.tables', 'Таблиці даних · регресія'), items: [
-      { name: 'Лінійна регресія', tableData: [[-4, -3], [-2, -1.2], [0, 0.4], [2, 2.1], [4, 3.6], [6, 5.2]], tableStyle: { points: true, line: false }, regression: 'linear', r: 7 },
-      { name: 'Квадратична', tableData: [[-3, 9.5], [-2, 4.2], [-1, 1.1], [0, -0.3], [1, 0.8], [2, 4.1], [3, 9.2]], tableStyle: { points: true, line: false }, regression: 'quadratic', r: 11 },
-      { name: 'Кубічна', tableData: [[-3, -22], [-2, -5], [-1, 1], [0, 0.5], [1, 2], [2, 9], [3, 28]], tableStyle: { points: true, line: false }, regression: 'cubic', r: 30 },
-      { name: 'Експонента', tableData: [[0, 2.1], [1, 3.2], [2, 5.6], [3, 9.1], [4, 14.8], [5, 24.5]], tableStyle: { points: true, line: false }, regression: 'exponential', r: 26 },
-      { name: 'Логарифм', tableData: [[1, 0.1], [2, 1.5], [3, 2.3], [4, 2.9], [5, 3.3], [6, 3.7]], tableStyle: { points: true, line: false }, regression: 'logarithmic', r: 7 },
-      { name: 'Степенева', tableData: [[1, 2.1], [2, 8.3], [3, 18.5], [4, 32.1], [5, 50.4]], tableStyle: { points: true, line: false }, regression: 'power', r: 55 },
-      { name: 'Ламана лінія', tableData: [[-5, 2], [-3, -1], [-1, 3], [1, 0], [3, 4], [5, 1]], tableStyle: { points: true, line: true }, r: 6 },
+      { name: T2('gallery.item.linearRegression', 'Лінійна регресія'), tableData: [[-4, -3], [-2, -1.2], [0, 0.4], [2, 2.1], [4, 3.6], [6, 5.2]], tableStyle: { points: true, line: false }, regression: 'linear', r: 7 },
+      { name: T2('gallery.item.quadratic', 'Квадратична'), tableData: [[-3, 9.5], [-2, 4.2], [-1, 1.1], [0, -0.3], [1, 0.8], [2, 4.1], [3, 9.2]], tableStyle: { points: true, line: false }, regression: 'quadratic', r: 11 },
+      { name: T2('gallery.item.cubic', 'Кубічна'), tableData: [[-3, -22], [-2, -5], [-1, 1], [0, 0.5], [1, 2], [2, 9], [3, 28]], tableStyle: { points: true, line: false }, regression: 'cubic', r: 30 },
+      { name: T2('gallery.item.exponential', 'Експонента'), tableData: [[0, 2.1], [1, 3.2], [2, 5.6], [3, 9.1], [4, 14.8], [5, 24.5]], tableStyle: { points: true, line: false }, regression: 'exponential', r: 26 },
+      { name: T2('gallery.item.log', 'Логарифм'), tableData: [[1, 0.1], [2, 1.5], [3, 2.3], [4, 2.9], [5, 3.3], [6, 3.7]], tableStyle: { points: true, line: false }, regression: 'logarithmic', r: 7 },
+      { name: T2('gallery.item.power', 'Степенева'), tableData: [[1, 2.1], [2, 8.3], [3, 18.5], [4, 32.1], [5, 50.4]], tableStyle: { points: true, line: false }, regression: 'power', r: 55 },
+      { name: T2('gallery.item.polyline', 'Ламана лінія'), tableData: [[-5, 2], [-3, -1], [-1, 3], [1, 0], [3, 4], [5, 1]], tableStyle: { points: true, line: true }, r: 6 },
     ]},
   ];
 
@@ -1378,7 +1435,7 @@
         const fm = document.createElement('div'); fm.className = 'ex-formula';
         fm.textContent = ex.set
           ? ex.set[0].replace(/\*/g, '·').replace(/sqrt/g, '√').replace(/<=/g, '≤').replace(/>=/g, '≥').replace(/\bpi\b/g, 'π')
-          : (ex.tableData ? `${ex.tableData.length} точок` + (ex.regression ? ' · регресія' : '') : '');
+          : (ex.tableData ? `${ex.tableData.length} ${T2('ui.pointsCount', 'точок')}` + (ex.regression ? ' · ' + T2('tags.fitExpr', 'регресія') : '') : '');
         meta.appendChild(nm); meta.appendChild(fm);
         if (ex.badge) { const bd = document.createElement('span'); bd.className = 'ex-badge'; bd.textContent = ex.badge; meta.appendChild(bd); }
         card.appendChild(cv); card.appendChild(meta);
@@ -1426,31 +1483,31 @@
   const pop = document.createElement('div');
   pop.id = 'settingsPop';
   pop.innerHTML = `
-    <div class="sp-title">Налаштування графіка</div>
+    <div class="sp-title">${T2('settings.title', 'Налаштування графіка')}</div>
     <div class="sp-row">
-      <span class="sp-label">Кути</span>
+      <span class="sp-label">${T2('settings.angles', 'Кути')}</span>
       <div class="sp-seg">
-        <button data-am="rad" class="active">Радіани</button>
-        <button data-am="deg">Градуси</button>
+        <button data-am="rad" class="active">${T2('settings.radians', 'Радіани')}</button>
+        <button data-am="deg">${T2('settings.degrees', 'Градуси')}</button>
       </div>
     </div>
     <div class="sp-sep"></div>
-    <div class="sp-row"><span class="sp-label">Вісь X</span>
+    <div class="sp-row"><span class="sp-label">${T2('settings.axisX', 'Вісь X')}</span>
       <input id="spXmin" class="sp-num" placeholder="min">
       <span class="sp-dash">–</span>
       <input id="spXmax" class="sp-num" placeholder="max">
     </div>
-    <div class="sp-row"><span class="sp-label">Вісь Y</span>
+    <div class="sp-row"><span class="sp-label">${T2('settings.axisY', 'Вісь Y')}</span>
       <input id="spYmin" class="sp-num" placeholder="min">
       <span class="sp-dash">–</span>
       <input id="spYmax" class="sp-num" placeholder="max">
     </div>
-    <button id="spApplyBounds" class="sp-apply">Застосувати межі</button>
+    <button id="spApplyBounds" class="sp-apply">${T2('settings.applyBounds', 'Застосувати межі')}</button>
     <div class="sp-sep"></div>
-    <div class="sp-row"><span class="sp-label">Підпис X</span><input id="spXname" class="sp-text" placeholder="напр. час, с"></div>
-    <div class="sp-row"><span class="sp-label">Підпис Y</span><input id="spYname" class="sp-text" placeholder="напр. шлях, м"></div>
+    <div class="sp-row"><span class="sp-label">${T2('settings.labelX', 'Підпис X')}</span><input id="spXname" class="sp-text" placeholder="${T2('settings.labelXPlaceholder', 'напр. час, с')}"></div>
+    <div class="sp-row"><span class="sp-label">${T2('settings.labelY', 'Підпис Y')}</span><input id="spYname" class="sp-text" placeholder="${T2('settings.labelYPlaceholder', 'напр. шлях, м')}"></div>
     <div class="sp-sep"></div>
-    <button id="spAddImage" class="sp-apply">🖼 Додати картинку на графік</button>
+    <button id="spAddImage" class="sp-apply">${T2('settings.addImage', '🖼 Додати картинку на графік')}</button>
     <div id="spImgList"></div>
   `;
   document.body.appendChild(pop);
@@ -1491,7 +1548,7 @@
     const ok = calc.setBounds(
       num(document.getElementById('spXmin').value), num(document.getElementById('spXmax').value),
       num(document.getElementById('spYmin').value), num(document.getElementById('spYmax').value));
-    if (!ok) { document.getElementById('spApplyBounds').textContent = 'Невалідні межі'; setTimeout(() => { document.getElementById('spApplyBounds').textContent = 'Застосувати межі'; }, 1400); return; }
+    if (!ok) { document.getElementById('spApplyBounds').textContent = T2('settings.invalidBounds', 'Невалідні межі'); setTimeout(() => { document.getElementById('spApplyBounds').textContent = T2('settings.applyBounds', 'Застосувати межі'); }, 1400); return; }
     snapshot();
   });
 
@@ -1525,9 +1582,9 @@
     const box = document.getElementById('spImgList');
     const imgs = calc.images || [];
     box.innerHTML = imgs.length
-      ? imgs.map((r, i) => '<div class="sp-row"><span class="sp-label">Фото ' + (i + 1) + '</span>' +
+      ? imgs.map((r, i) => '<div class="sp-row"><span class="sp-label">' + T2('settings.photo', 'Фото') + ' ' + (i + 1) + '</span>' +
           '<input type="range" class="sp-imgop" data-id="' + r.id + '" min="0.1" max="1" step="0.05" value="' + r.opacity + '" style="flex:1">' +
-          '<button class="sp-imgdel" data-id="' + r.id + '" title="Прибрати">✕</button></div>').join('')
+          '<button class="sp-imgdel" data-id="' + r.id + '" title="' + T2('settings.removeImage', 'Прибрати') + '">✕</button></div>').join('')
       : '';
     box.querySelectorAll('.sp-imgop').forEach((s) => s.addEventListener('input', () => {
       const rec = (calc.images || []).find((r) => r.id === s.dataset.id);
