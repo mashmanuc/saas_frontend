@@ -5362,6 +5362,22 @@
       "buyPackage": "Buy package",
       "later": "Later"
     },
+    "limitPaywall": {
+      "title": "Plan limit reached",
+      "titleByKey": {
+        "monthly_ai_requests": "AI request limit reached",
+        "monthly_exports": "Export limit reached",
+        "monthly_imports": "Import limit reached"
+      },
+      "bodyByKey": {
+        "monthly_ai_requests": "You've used all AI requests this month on your current plan. Upgrade to PRO for a higher limit.",
+        "monthly_exports": "You've used all board exports this month. Upgrade to PRO for unlimited exports.",
+        "monthly_imports": "You've used all material imports this month. Upgrade to PRO for a higher limit."
+      },
+      "bodyDefault": "You've reached your plan limit. Upgrade to PRO to keep working without limits.",
+      "goPro": "Get PRO",
+      "later": "Later"
+    },
     "loading": "Loading...",
     "currentPlan": "Current Plan",
     "currentlyActive": "Currently Active",

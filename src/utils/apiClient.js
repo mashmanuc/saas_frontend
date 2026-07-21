@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useLoaderStore } from '../stores/loaderStore'
+import { useLimitPaywallStore } from '../stores/limitPaywallStore'
 import { notifyError, notifyWarning } from './notify'
 import { isAuthDead } from '../core/auth/onAuthDeath'
 
@@ -142,6 +143,20 @@ const isCsrfError = (error) => {
   const csrfField = data.csrf || data.fields?.csrf
   if (!Array.isArray(csrfField)) return false
   return csrfField.some(msg => typeof msg === 'string' && (msg === 'missing' || msg === 'invalid'))
+}
+
+/**
+ * Ф3: детект SaaS-ліміт-помилки для paywall. Підтримує пласку і вкладену
+ * форму error-response (dual-shape). Повертає limit-key або null.
+ * ЛИШЕ 403 LIMIT_EXCEEDED (тьютор понад власний ліміт); 409 не тут.
+ */
+export const detectLimitExceeded = (status, data) => {
+  if (status !== 403 || !data || typeof data !== 'object') return null
+  const code = data.error === 'LIMIT_EXCEEDED'
+    ? 'LIMIT_EXCEEDED'
+    : (data?.error?.code || data?.code)
+  if (code !== 'LIMIT_EXCEEDED') return null
+  return data.key || data?.error?.key || 'generic'
 }
 
 const enqueueRequestWhileRefreshing = (callback) => {
@@ -522,6 +537,17 @@ api.interceptors.response.use(
     const isFinalizeBarrierTimeout = (
       original?._finalizeBarrierToastSuppressed === true && status === 504
     )
+
+    // Ф3: SaaS-ліміт тарифу → глобальний paywall замість generic 403 toast.
+    // 403 LIMIT_EXCEEDED з `key` = власні дії тьютора (AI/export/import).
+    // (Точка №3 max_active_students = 409, НЕ тут — обробляє invite-флоу.)
+    const limitKey = detectLimitExceeded(status, data)
+    if (limitKey !== null) {
+      try {
+        useLimitPaywallStore().open(limitKey)
+      } catch (_) { /* store/pinia недоступний (напр. поза app) — no-op */ }
+      return Promise.reject(error)
+    }
 
     if (status === 403) {
       notifyError('Доступ заборонено. Зверніться до адміністратора.')
