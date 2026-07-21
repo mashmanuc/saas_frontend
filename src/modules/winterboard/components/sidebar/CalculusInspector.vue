@@ -47,6 +47,16 @@
           class="calc-insp__expr-preview"
           @click="startExprEdit"
         ><MathExpr :expr="localExpr" /></button>
+        <!-- MathQuill WYSIWYG у edit-режимі; fallback — plain input нижче -->
+        <MathQuillField
+          v-else-if="exprFocused && mqAvailable && isRenderableAscii(localExpr)"
+          :model-value="localExpr"
+          autofocus
+          @update:model-value="onMqInput"
+          @enter="onExprCommit"
+          @blur="exprFocused = false; onExprCommit()"
+          @unavailable="mqAvailable = false"
+        />
         <input
           v-else
           ref="exprInputEl"
@@ -177,6 +187,9 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
+import MathQuillField from '../shared/MathQuillField.vue'
+import { isRenderableAscii } from '../../utils/asciiMathToLatex'
+import { loadMathQuill } from '../../utils/mathquillLoader'
 import { calculusUiState } from '../../board/state/calculusUiState'
 import { CALCULUS_EXPR_PRESETS } from '../../constants/calculusDefaults'
 import type { RiemannMode } from '../../vendor/calculus'
@@ -205,13 +218,28 @@ const localExpr = ref(calculusUiState.bridge?.expr ?? '')
 const exprFocused = ref(false)
 const exprInputEl = ref<HTMLInputElement | null>(null)
 
-/** Гібрид: клік по KaTeX-прев'ю → перемкнутись на input і сфокусувати. */
-function startExprEdit(): void {
+// MathQuill: перевіряємо доступність до першого показу (без flash input→MQ)
+const mqAvailable = ref(false)
+let mqChecked = false
+
+/** Гібрид: клік по KaTeX-прев'ю → MathQuill-поле (або input, якщо MQ недоступний). */
+async function startExprEdit(): Promise<void> {
+  if (!mqChecked) {
+    mqChecked = true
+    mqAvailable.value = (await loadMathQuill()) !== null
+  }
   exprFocused.value = true
   nextTick(() => {
+    // plain-input гілка
     exprInputEl.value?.focus()
     exprInputEl.value?.select()
   })
+}
+
+/** MQ-ввід: живий апдейт двигуна тим самим шляхом, що typing в input. */
+function onMqInput(v: string): void {
+  localExpr.value = v
+  b.value.setExpr(v)
 }
 
 watch(

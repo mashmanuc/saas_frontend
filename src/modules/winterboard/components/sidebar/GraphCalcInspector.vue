@@ -66,6 +66,18 @@
             class="gc-insp__expr-preview"
             @click="startEdit(expr.id)"
           ><MathExpr :expr="expr.src" /></button>
+          <!-- MathQuill WYSIWYG (як standalone /mash/grapher/): тільки коли
+               бібліотека доступна і вираз renderable; інакше plain input.
+               «/» = дріб; slash-меню в MQ-режимі відсутнє (шаблони в quick-add). -->
+          <MathQuillField
+            v-else-if="editingId === expr.id && mqAvailable && isRenderableAscii(expr.src)"
+            :model-value="expr.src"
+            autofocus
+            @update:model-value="(v: string) => b.onSrcInput(expr.id, v)"
+            @enter="b.onEnterPress(expr.id)"
+            @blur="editingId = null; b.onInputBlur(expr.id)"
+            @unavailable="mqAvailable = false"
+          />
           <input
             v-else
             type="text"
@@ -213,6 +225,9 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
+import MathQuillField from '../shared/MathQuillField.vue'
+import { isRenderableAscii } from '../../utils/asciiMathToLatex'
+import { loadMathQuill } from '../../utils/mathquillLoader'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
 
 const { t } = useI18n()
@@ -226,9 +241,19 @@ const b = computed(() => graphCalcInspectorState.bridge!)
 const editingId = ref<string | null>(null)
 const rootEl = ref<HTMLElement | null>(null)
 
-function startEdit(id: string): void {
+// MathQuill: доступність визначаємо ПЕРЕД першим показом edit-поля (await
+// loader-а в startEdit — один раз, далі кеш), щоб не було flash input→MQ.
+const mqAvailable = ref(false)
+let mqChecked = false
+
+async function startEdit(id: string): Promise<void> {
+  if (!mqChecked) {
+    mqChecked = true
+    mqAvailable.value = (await loadMathQuill()) !== null
+  }
   editingId.value = id
   nextTick(() => {
+    // plain-input гілка (MQ недоступний або вираз не renderable)
     const el = rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(id)}"]`)
     el?.focus()
     el?.select()

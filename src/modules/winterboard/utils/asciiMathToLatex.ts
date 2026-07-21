@@ -98,3 +98,17 @@ export function asciiMathToLatex(src: string): string {
   const ast = GraphCalc.parse(src) as GcNode
   return toLatex(ast)
 }
+
+/**
+ * Чи вираз конвертований у LaTeX (аналог canWysiwyg з mq-adapter):
+ * true → можна монтувати MathQuill-поле/KaTeX; false → plain input/text.
+ * false у catch — ВИЗНАЧЕНИЙ результат перевірки, не suppression.
+ */
+export function isRenderableAscii(src: string): boolean {
+  try {
+    asciiMathToLatex(src)
+    return true
+  } catch {
+    return false
+  }
+}
