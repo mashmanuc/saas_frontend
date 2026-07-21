@@ -1,6 +1,10 @@
 <template>
   <PageThemeProvider>
-    <router-view />
+    <!-- Глобальний fallback: краш верхнього рівня / збій чанка → брендована
+         сторінка «Онови», а не порожній екран (замість blank 2026-07-21). -->
+    <AppErrorBoundary>
+      <router-view />
+    </AppErrorBoundary>
     <DiagnosticsPanel v-if="isDev" />
     <AuditOverlayAsync v-if="isAuditMode" />
     <!-- Global chat overlay — відкривається з notification (bell/toast) по thread_id -->
@@ -21,6 +25,7 @@
 import { onMounted, onBeforeUnmount, watch, ref, computed, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { PageThemeProvider } from './modules/ui/theme'
+import AppErrorBoundary from './components/AppErrorBoundary.vue'
 import { DiagnosticsPanel } from './modules/diagnostics'
 import { isAuditEnabled } from '@/debug/isAuditEnabled'
 import { useAuthStore } from '@/modules/auth/store/authStore'
