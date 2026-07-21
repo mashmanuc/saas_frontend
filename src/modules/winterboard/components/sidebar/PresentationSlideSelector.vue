@@ -389,7 +389,7 @@ function onDragEnd() {
   border-color: #818cf8;
   color: #4338ca;
 }
-@media (any-pointer: coarse) {
+@media (pointer: coarse) {
   .slide-selector__add-btn {
     display: flex;
     width: 30px;

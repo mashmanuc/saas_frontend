@@ -152,7 +152,7 @@ function onDragStart(e: DragEvent): void {
 }
 
 /* ── Touch / coarse pointer ── */
-@media (any-pointer: coarse) {
+@media (pointer: coarse) {
   /* FIX Android repaint: position:static flex-sibling замість position:absolute */
   .gc-tray__card-wrap {
     display: flex;

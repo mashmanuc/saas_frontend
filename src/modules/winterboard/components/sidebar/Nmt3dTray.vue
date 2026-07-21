@@ -225,7 +225,7 @@ onMounted(async () => {
 }
 
 /* ── Touch / coarse pointer ── */
-@media (any-pointer: coarse) {
+@media (pointer: coarse) {
   .nmt3d-tray__grid {
     grid-template-columns: 1fr;
   }

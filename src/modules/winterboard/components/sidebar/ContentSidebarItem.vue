@@ -190,11 +190,11 @@ function handleDblClick() {
 
 function handleAddBtn() {
   if (!isInteractable.value) return
-  // 2026-07-21 (репорт власника зі шкільної дошки): «+» на PDF/PPTX/DOCX
-  // відкривав селектор сторінок — ДУБЛЬ звичайного кліку по картці, а на
-  // дошку файл покласти не було як. Тепер «+» = ВЕСЬ документ на дошку
-  // (document_viewer через place → handleSidebarDrop, з панеллю сторінок);
-  // розгортання сторінок — звичайним кліком по картці, як і було.
+  // PDF / presentation / docx → open inline selector (same as single click)
+  if (isPdf.value || isPresentation.value || isDocx.value) {
+    handleClick()
+    return
+  }
   emit('place', props.item)
 }
 
@@ -349,7 +349,7 @@ function onDragEnd() {
 
 /* Touch (2026-07-19): на тачі немає hover → «+» був невидимий на матеріалах.
    Показуємо постійно + більший тап-таргет (як у матем-треях і WBAssetItem). */
-@media (any-pointer: coarse) {
+@media (pointer: coarse) {
   .sidebar-item__add-btn {
     display: flex;
     width: 32px;

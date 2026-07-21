@@ -20,17 +20,6 @@
 import { onBeforeUnmount, type Ref } from 'vue'
 import { winterboardApi } from '../api/winterboardApi'
 
-/**
- * ⛔ KILL-SWITCH (2026-07-21): знімок ТИМЧАСОВО вимкнено.
- * Репорт власника зі шкільної тач-дошки: після логіна сторінка періодично
- * «підвисає», drag матеріалів губиться. html2canvas обходить весь DOM дошки
- * СИНХРОННО у main thread — на великому екрані це 1-3с freeze кожні ~30с
- * активної роботи; заморожений потік дропає pointer/drag події.
- * Повернути ПІСЛЯ оптимізації: idle-slice (requestIdleCallback), знімок лише
- * при виході з дошки/явному save, або offscreen-рендер меншого регіону.
- */
-const BOARD_THUMBNAIL_ENABLED = false
-
 const SNAPSHOT_DEBOUNCE_MS = 4000
 const MIN_UPLOAD_INTERVAL_MS = 30_000
 /** Цільова ширина прев'ю (2x retina для карток ~350px, як BE-рендер 800×600). */
@@ -97,7 +86,6 @@ export function useBoardThumbnail(deps: BoardThumbnailDeps) {
    * Сигнал «дошка збережена» (після успішного flush). Debounce + rate-limit.
    */
   function schedule(): void {
-    if (!BOARD_THUMBNAIL_ENABLED) return
     if (disposed) return
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
