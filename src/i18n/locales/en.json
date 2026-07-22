@@ -359,36 +359,36 @@
   "userProfile": {
     "account": {
       "yourPlan": "Your Plan",
-      "avatarDeleteError": "Не вдалося видалити аватар.",
-      "avatarDeleted": "Аватар видалено.",
-      "avatarUpdateError": "Не вдалося оновити аватар.",
-      "avatarUpdated": "Аватар оновлено.",
-      "changeEmail": "Змінити email",
-      "changePassword": "Змінити пароль",
+      "avatarDeleteError": "Could not delete avatar.",
+      "avatarDeleted": "Avatar deleted.",
+      "avatarUpdateError": "Could not update avatar.",
+      "avatarUpdated": "Avatar updated.",
+      "changeEmail": "Change email",
+      "changePassword": "Change password",
       "personalInfo": "Personal Information",
       "emailDescription": "Your email address for login and notifications",
       "passwordDescription": "Change your login password",
       "email": "Email",
       "password": "Password",
-      "firstName": "Ім'я",
-      "lastName": "Прізвище",
-      "loadError": "Не вдалося завантажити акаунт.",
-      "save": "Зберегти",
-      "saveError": "Не вдалося зберегти.",
-      "saveSuccess": "Збережено.",
-      "subtitle": "Основні дані користувача.",
-      "timezone": "Таймзона",
-      "title": "Акаунт",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "loadError": "Could not load account.",
+      "save": "Save",
+      "saveError": "Could not save.",
+      "saveSuccess": "Saved.",
+      "subtitle": "Basic user details.",
+      "timezone": "Time zone",
+      "title": "Account",
       "username": "Username"
     },
     "changeEmail": {
-      "error": "Не вдалося змінити email.",
-      "newEmail": "Новий email",
-      "password": "Поточний пароль",
-      "submit": "Змінити email",
-      "subtitle": "Введіть новий email та поточний пароль.",
-      "success": "Лист підтвердження надіслано на нову адресу.",
-      "title": "Зміна email"
+      "error": "Could not change email.",
+      "newEmail": "New email",
+      "password": "Current password",
+      "submit": "Change email",
+      "subtitle": "Enter a new email and your current password.",
+      "success": "A confirmation email has been sent to the new address.",
+      "title": "Change email"
     },
     "changePassword": {
       "confirmPassword": "Confirm new password",
@@ -6195,10 +6195,10 @@
     "accountSettingsDescription": "Мова, приватність та сповіщення.",
     "accountSettingsTitle": "Акаунт та вподобання",
     "actions": {
-      "cancel": "Скасувати",
-      "revert": "Відкотити зміни",
-      "save": "Зберегти зміни",
-      "saving": "Зберігаємо..."
+      "cancel": "Cancel",
+      "revert": "Revert changes",
+      "save": "Save changes",
+      "saving": "Saving..."
     },
     "activity": {
       "columns": {
@@ -6238,13 +6238,13 @@
     },
     "avatar": {
       "title": "Avatar",
-      "change": "Змінити",
-      "drop": "Відпустіть",
-      "hint": "Перетягніть або оберіть файл. До 5 МБ, JPG/PNG/WebP.",
-      "remove": "Видалити фото",
-      "update": "Оновити фото",
-      "upload": "Завантажити",
-      "uploading": "Оновлюємо…"
+      "change": "Change",
+      "drop": "Drop to upload",
+      "hint": "Drag & drop or choose a file. Up to 5 MB, JPG/PNG/WebP.",
+      "remove": "Remove photo",
+      "update": "Update photo",
+      "upload": "Upload",
+      "uploading": "Uploading…"
     },
     "bio": "Про себе",
     "bioEmpty": "Додайте короткий опис про себе.",
@@ -6320,105 +6320,105 @@
     "role": "Роль",
     "security": {
       "mfa": {
-        "backupCodesSubtitle": "Збережіть їх у безпечному місці. Кожен код можна використати один раз.",
-        "backupCodesTitle": "Резервні коди відновлення",
-        "cancel": "Скасувати",
-        "codesCopied": "Коди скопійовано в буфер обміну",
-        "confirm": "Підтвердити",
-        "copyCodes": "Копіювати коди",
-        "downloadCodes": "Завантажити коди",
+        "backupCodesSubtitle": "Store them in a safe place. Each code can be used once.",
+        "backupCodesTitle": "Backup recovery codes",
+        "cancel": "Cancel",
+        "codesCopied": "Codes copied to clipboard",
+        "confirm": "Confirm",
+        "copyCodes": "Copy codes",
+        "downloadCodes": "Download codes",
         "otpForRegenerate": "Enter verification code from authenticator app to regenerate codes",
         "errors": {
-          "confirmFailed": "Не вдалося підтвердити MFA.",
-          "loadCodesFailed": "Не вдалося завантажити коди",
-          "regenerateFailed": "Не вдалося згенерувати коди",
-          "setupFailed": "Не вдалося розпочати налаштування MFA.",
+          "confirmFailed": "Could not confirm MFA.",
+          "loadCodesFailed": "Could not load codes",
+          "regenerateFailed": "Could not generate codes",
+          "setupFailed": "Could not start MFA setup.",
           "invalidOtpForRegenerate": "Invalid verification code. Regeneration cancelled"
         },
-        "otpLabel": "Код підтвердження",
-        "qrSubtitle": "Скануйте в застосунку-автентифікаторі, щоб підʼєднати MFA.",
-        "qrTitle": "Скануйте QR-код",
-        "regenerateCodes": "Згенерувати нові коди",
-        "regenerateConfirm": "Це призведе до скасування всіх попередніх кодів. Продовжити?",
-        "reset": "Почати заново",
-        "secretHintLabel": "Підказка секрету",
-        "start": "Увімкнути MFA",
-        "subtitle": "Додайте додатковий рівень захисту до акаунта.",
+        "otpLabel": "Verification code",
+        "qrSubtitle": "Scan it in your authenticator app to connect MFA.",
+        "qrTitle": "Scan the QR code",
+        "regenerateCodes": "Generate new codes",
+        "regenerateConfirm": "This will revoke all previous codes. Continue?",
+        "reset": "Start over",
+        "secretHintLabel": "Secret hint",
+        "start": "Enable MFA",
+        "subtitle": "Add an extra layer of protection to your account.",
         "success": {
-          "enabled": "MFA увімкнено."
+          "enabled": "MFA enabled."
         },
-        "title": "Двофакторна автентифікація (MFA)",
-        "viewBackupCodes": "Переглянути резервні коди",
-        "backupCodesNotAvailable": "Резервні коди недоступні"
+        "title": "Two-factor authentication (MFA)",
+        "viewBackupCodes": "View backup codes",
+        "backupCodesNotAvailable": "Backup codes unavailable"
       },
-      "navLabel": "Безпека",
+      "navLabel": "Security",
       "sessions": {
-        "current": "Поточна",
-        "empty": "Немає активних сесій.",
+        "current": "Current",
+        "empty": "No active sessions.",
         "errors": {
-          "currentForbidden": "Неможливо завершити поточну сесію.",
-          "loadFailed": "Не вдалося завантажити сесії.",
-          "notFound": "Сесію не знайдено.",
-          "revokeFailed": "Не вдалося завершити сесію."
+          "currentForbidden": "Cannot end the current session.",
+          "loadFailed": "Could not load sessions.",
+          "notFound": "Session not found.",
+          "revokeFailed": "Could not end the session."
         },
         "ip": "IP",
-        "lastActive": "Остання активність",
-        "loading": "Завантажуємо сесії…",
-        "revoke": "Вийти",
-        "show": "Показати активні сесії",
-        "hide": "Сховати активні сесії",
-        "subtitle": "Перевірте пристрої, з яких виконано вхід.",
+        "lastActive": "Last active",
+        "loading": "Loading sessions…",
+        "revoke": "Sign out",
+        "show": "Show active sessions",
+        "hide": "Hide active sessions",
+        "subtitle": "Review the devices you have signed in from.",
         "success": {
-          "revoked": "Сесію завершено."
+          "revoked": "Session ended."
         },
-        "title": "Активні сесії",
-        "unknownDevice": "Невідомий пристрій"
+        "title": "Active sessions",
+        "unknownDevice": "Unknown device"
       },
-      "subtitle": "Керуйте захистом входу та активними сесіями.",
-      "title": "Безпека",
+      "subtitle": "Manage login protection and active sessions.",
+      "title": "Security",
       "webauthn": {
-        "credentialsList": "Зареєстровані ключі",
-        "enrollCta": "Додати ключ безпеки",
-        "enrollError": "Не вдалося додати ключ безпеки.",
-        "enrollSuccess": "Ключ безпеки успішно додано.",
-        "lastUsed": "Останнє використання",
-        "remove": "Видалити",
-        "removeConfirm": "Підтвердити видалення",
-        "removeError": "Помилка видалення",
-        "removeSuccess": "Успішно видалено",
-        "subtitle": "Використовуйте біометрію або апаратні ключі для входу.",
-        "title": "WebAuthn / Ключі безпеки",
-        "unknownDevice": "Невідомий пристрій"
+        "credentialsList": "Registered keys",
+        "enrollCta": "Add a security key",
+        "enrollError": "Could not add the security key.",
+        "enrollSuccess": "Security key added successfully.",
+        "lastUsed": "Last used",
+        "remove": "Remove",
+        "removeConfirm": "Confirm removal",
+        "removeError": "Removal error",
+        "removeSuccess": "Removed successfully",
+        "subtitle": "Use biometrics or hardware keys to sign in.",
+        "title": "WebAuthn / Security keys",
+        "unknownDevice": "Unknown device"
       }
     },
     "settingsButton": "Налаштування акаунта",
     "settingsPage": {
       "actions": {
-        "saveTimezone": "Зберегти таймзону",
-        "saving": "Зберігаємо..."
+        "saveTimezone": "Save time zone",
+        "saving": "Saving..."
       },
-      "description": "Керуйте таймзоною, мовою інтерфейсу та приватністю.",
+      "description": "Manage your time zone, interface language, and privacy.",
       "language": {
-        "label": "Мова інтерфейсу",
-        "subtitle": "Застосовується одразу у всіх розділах."
+        "label": "Interface language",
+        "subtitle": "Applies immediately across all sections."
       },
       "notifications": {
-        "label": "Email-сповіщення",
-        "subtitle": "Отримуйте новини про уроки та запрошення."
+        "label": "Email notifications",
+        "subtitle": "Get updates about lessons and invitations."
       },
       "preferences": {
-        "subtitle": "Сповіщення та публічність профілю.",
-        "title": "Уподобання"
+        "subtitle": "Notifications and profile visibility.",
+        "title": "Preferences"
       },
       "privacy": {
-        "label": "Публічний профіль",
-        "subtitle": "Показувати профіль у маркетплейсі."
+        "label": "Public profile",
+        "subtitle": "Show your profile in the marketplace."
       },
       "timezone": {
-        "subtitle": "Вкажіть, де прив’язаний ваш календар.",
-        "title": "Таймзона"
+        "subtitle": "Specify where your calendar is anchored.",
+        "title": "Time zone"
       },
-      "title": "Налаштування профілю"
+      "title": "Profile settings"
     },
     "subjectsAddButton": "Додати",
     "subjectsAddPlaceholder": "Новий предмет",
@@ -6449,19 +6449,19 @@
       "title": "Редагування профілю"
     },
     "fields": {
-      "bio": "Про себе",
-      "bioHelper": "Розкажіть про свій досвід та підхід до навчання (до 1000 символів)",
+      "bio": "About you",
+      "bioHelper": "Tell students about your experience and teaching approach (up to 1000 characters)",
       "email": "Email",
-      "experience": "Досвід (років)",
-      "experienceHelper": "Скільки років ви викладаєте",
-      "firstName": "Ім'я",
-      "headline": "Заголовок",
-      "headlineHelper": "Короткий опис вашої експертизи (до 120 символів)",
-      "hourlyRate": "Погодинна ставка",
-      "hourlyRateHelper": "Вкажіть вашу ставку за годину в UAH",
-      "lastName": "Прізвище",
-      "timezone": "Часовий пояс",
-      "timezoneHelper": "Оберіть ваш часовий пояс для коректного відображення розкладу"
+      "experience": "Experience (years)",
+      "experienceHelper": "How many years you have been teaching",
+      "firstName": "First name",
+      "headline": "Headline",
+      "headlineHelper": "A short description of your expertise (up to 120 characters)",
+      "hourlyRate": "Hourly rate",
+      "hourlyRateHelper": "Enter your hourly rate in UAH",
+      "lastName": "Last name",
+      "timezone": "Time zone",
+      "timezoneHelper": "Choose your time zone for correct schedule display"
     },
     "overview": {
       "accountSettings": "Налаштування акаунта",
@@ -6619,28 +6619,28 @@
         "passwordDescription": "Change your login password"
       },
       "contacts": {
-        "title": "Контактна інформація",
-        "description": "Керуйте вашими контактними даними для зв'язку з тьюторами та студентами",
-        "phone": "Номер телефону",
+        "title": "Contact information",
+        "description": "Manage your contact details for reaching tutors and students",
+        "phone": "Phone number",
         "phonePlaceholder": "+380501234567",
         "phoneHint": "International format: +[country code][number]",
         "phoneFormatError": "Invalid format. Enter the number as +380501234567",
         "phoneAutoFixed": "Phone number automatically converted to E.164 format",
         "telegram": "Telegram",
         "telegramPlaceholder": "@.literal @username",
-        "telegramHint": "Ваш Telegram username (наприклад: @.literal @username)",
+        "telegramHint": "Your Telegram username (e.g. @username)",
         "timezone": "Timezone",
         "loadError": "Failed to load contact data",
-        "saveSuccess": "Контактні дані успішно збережено",
-        "saveError": "Не вдалося зберегти контактні дані"
+        "saveSuccess": "Contact details saved successfully",
+        "saveError": "Could not save contact details"
       },
       "profile": {
-        "title": "Профіль",
-        "description": "Оновіть вашу особисту інформацію",
-        "loadError": "Не вдалося завантажити профіль",
-        "saveSuccess": "Профіль успішно збережено",
-        "saveError": "Не вдалося зберегти профіль",
-        "noRole": "Роль користувача не визначена"
+        "title": "Profile",
+        "description": "Update your personal information",
+        "loadError": "Could not load profile",
+        "saveSuccess": "Profile saved successfully",
+        "saveError": "Could not save profile",
+        "noRole": "User role is not defined"
       },
       "security": {
         "sessions": {
@@ -6664,6 +6664,30 @@
           "success": {
             "revoked": "Session terminated successfully"
           }
+        }
+      },
+      "telegram": {
+        "title": "Telegram notifications",
+        "subtitle": "Get instant notifications about new requests from students",
+        "connected": "Telegram connected",
+        "connectedAt": "Connected: {date}",
+        "notifyLabel": "New request notifications",
+        "notifyDesc": "Receive a Telegram message when a student sends a new request",
+        "disconnect": "Disconnect Telegram",
+        "disconnecting": "Disconnecting...",
+        "disconnectConfirm": "Are you sure you want to disconnect Telegram notifications?",
+        "qrHint": "Scan the QR code or tap the button to connect the Telegram bot for notifications.",
+        "openInTelegram": "Open in Telegram",
+        "linkValid": "Link valid for {time}",
+        "linkExpired": "The link has expired.",
+        "generateNew": "Generate a new one",
+        "generating": "Generating...",
+        "connect": "Connect Telegram",
+        "errors": {
+          "loadFailed": "Could not load Telegram status",
+          "generateFailed": "Could not generate the link",
+          "toggleFailed": "Could not change the setting",
+          "disconnectFailed": "Could not disconnect Telegram"
         }
       }
     },
@@ -10152,5 +10176,13 @@
     "studentOnly": "Creating boards is available to tutors. Ask your tutor to add the object to a lesson.",
     "error": "Failed to create the board. Please try again.",
     "backToMash": "← Back to MASH"
+  },
+  "help": {
+    "page": {
+      "title": "Help",
+      "subtitle": "How to use M4SH — short and to the point.",
+      "navLabel": "Help sections",
+      "notFound": "Article not found."
+    }
   }
 }

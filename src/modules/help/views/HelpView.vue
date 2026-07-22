@@ -1,13 +1,13 @@
 <template>
   <div class="help-page" data-testid="help-page">
     <header class="help-head">
-      <h1 class="help-title">Допомога</h1>
-      <p class="help-subtitle">Як користуватися M4SH — коротко й по ділу.</p>
+      <h1 class="help-title">{{ t('help.page.title') }}</h1>
+      <p class="help-subtitle">{{ t('help.page.subtitle') }}</p>
     </header>
 
     <div class="help-layout">
       <!-- Навігація за сценаріями -->
-      <aside class="help-nav" aria-label="Розділи допомоги">
+      <aside class="help-nav" :aria-label="t('help.page.navLabel')">
         <nav v-for="section in sections" :key="section.key" class="help-nav__section">
           <div class="help-nav__section-title">
             <span class="help-nav__icon" aria-hidden="true">{{ section.icon }}</span>
@@ -36,7 +36,7 @@
           <!-- eslint-disable-next-line vue/no-v-html -- довірений статичний контент (не user-input) -->
           <div class="help-article__body" v-html="current.article.body" />
         </template>
-        <p v-else class="help-empty">Статтю не знайдено.</p>
+        <p v-else class="help-empty">{{ t('help.page.notFound') }}</p>
       </main>
     </div>
   </div>
@@ -44,19 +44,30 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { HELP_SECTIONS, DEFAULT_HELP_SLUG, findHelpArticle } from '../data/helpArticles'
+import { HELP_SECTIONS, DEFAULT_HELP_SLUG } from '../data/helpArticles'
+import { HELP_SECTIONS_EN } from '../data/helpArticles.en'
 
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const sections = HELP_SECTIONS
+// slug/key/icon ідентичні в обох локалях — перемикаємо лише контент.
+const sections = computed(() => (locale.value === 'en' ? HELP_SECTIONS_EN : HELP_SECTIONS))
 
 const currentSlug = computed(() => (route.params.slug as string) || DEFAULT_HELP_SLUG)
 
-const current = computed(
-  () => findHelpArticle(currentSlug.value) ?? findHelpArticle(DEFAULT_HELP_SLUG),
-)
+const current = computed(() => {
+  const find = (slug: string) => {
+    for (const section of sections.value) {
+      const article = section.articles.find((a) => a.slug === slug)
+      if (article) return { section, article }
+    }
+    return null
+  }
+  return find(currentSlug.value) ?? find(DEFAULT_HELP_SLUG)
+})
 
 function select(slug: string): void {
   if (slug === currentSlug.value) return

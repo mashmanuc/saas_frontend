@@ -8,9 +8,9 @@
         </svg>
       </div>
       <div>
-        <h4 class="font-medium text-foreground">Telegram-сповіщення</h4>
+        <h4 class="font-medium text-foreground">{{ t('users.settings.telegram.title') }}</h4>
         <p class="text-sm text-muted-foreground">
-          Отримуйте миттєві сповіщення про нові запити від студентів
+          {{ t('users.settings.telegram.subtitle') }}
         </p>
       </div>
     </div>
@@ -27,19 +27,19 @@
           <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium text-green-700 dark:text-green-300">Telegram підключено</span>
+          <span class="font-medium text-green-700 dark:text-green-300">{{ t('users.settings.telegram.connected') }}</span>
         </div>
         <p v-if="status?.connected_at" class="mt-1 text-sm text-green-600 dark:text-green-400">
-          Підключено: {{ formatDate(status.connected_at) }}
+          {{ t('users.settings.telegram.connectedAt', { date: formatDate(status.connected_at) }) }}
         </p>
       </div>
 
       <!-- Toggle -->
       <div class="flex items-center justify-between rounded-lg border border-border p-4">
         <div>
-          <p class="font-medium text-foreground">Сповіщення про нові запити</p>
+          <p class="font-medium text-foreground">{{ t('users.settings.telegram.notifyLabel') }}</p>
           <p class="text-sm text-muted-foreground">
-            Отримувати повідомлення в Telegram при новому запиті від студента
+            {{ t('users.settings.telegram.notifyDesc') }}
           </p>
         </div>
         <button
@@ -66,7 +66,7 @@
           :disabled="disconnecting"
           @click="handleDisconnect"
         >
-          {{ disconnecting ? 'Відключення...' : 'Відключити Telegram' }}
+          {{ disconnecting ? t('users.settings.telegram.disconnecting') : t('users.settings.telegram.disconnect') }}
         </button>
       </div>
     </template>
@@ -75,7 +75,7 @@
     <template v-else>
       <div class="rounded-lg border border-border p-4 space-y-4">
         <p class="text-sm text-muted-foreground">
-          Відскануйте QR-код або натисніть кнопку, щоб підключити Telegram-бот для отримання сповіщень.
+          {{ t('users.settings.telegram.qrHint') }}
         </p>
 
         <!-- QR Code: server-side SVG via v-html (MFA pattern) -->
@@ -91,16 +91,16 @@
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
             </svg>
-            Відкрити в Telegram
+            {{ t('users.settings.telegram.openInTelegram') }}
           </a>
 
           <!-- Timer -->
           <p v-if="timeLeft > 0" class="text-xs text-muted-foreground">
-            Посилання дійсне ще {{ formatTimeLeft(timeLeft) }}
+            {{ t('users.settings.telegram.linkValid', { time: formatTimeLeft(timeLeft) }) }}
           </p>
           <p v-else class="text-xs text-destructive">
-            Посилання закінчилось.
-            <button type="button" class="underline" @click="generateLink">Згенерувати нове</button>
+            {{ t('users.settings.telegram.linkExpired') }}
+            <button type="button" class="underline" @click="generateLink">{{ t('users.settings.telegram.generateNew') }}</button>
           </p>
         </div>
 
@@ -116,7 +116,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {{ generating ? 'Генерація...' : 'Підключити Telegram' }}
+            {{ generating ? t('users.settings.telegram.generating') : t('users.settings.telegram.connect') }}
           </button>
         </div>
       </div>
@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   generateTelegramLink,
   getTelegramStatus,
@@ -140,6 +141,8 @@ import {
 import type { TelegramLinkResponse, TelegramStatusResponse } from '@/api/telegram'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { realtimeService } from '@/services/realtime'
+
+const { t, locale } = useI18n()
 
 const loading = ref(true)
 const generating = ref(false)
@@ -211,7 +214,7 @@ async function loadStatus() {
     }
   } catch (err: any) {
     if (err?.response?.status !== 403 && err?.response?.status !== 404) {
-      errorMessage.value = 'Не вдалося завантажити статус Telegram'
+      errorMessage.value = t('users.settings.telegram.errors.loadFailed')
     }
   } finally {
     loading.value = false
@@ -232,7 +235,7 @@ async function generateLink() {
     // Start polling for connection
     startPolling()
   } catch (err: any) {
-    errorMessage.value = err?.response?.data?.detail || 'Не вдалося згенерувати посилання'
+    errorMessage.value = err?.response?.data?.detail || t('users.settings.telegram.errors.generateFailed')
   } finally {
     generating.value = false
   }
@@ -291,14 +294,14 @@ async function handleToggle() {
       status.value.connected = result.connected
     }
   } catch (err: any) {
-    errorMessage.value = err?.response?.data?.detail || 'Не вдалося змінити налаштування'
+    errorMessage.value = err?.response?.data?.detail || t('users.settings.telegram.errors.toggleFailed')
   } finally {
     toggling.value = false
   }
 }
 
 async function handleDisconnect() {
-  if (!confirm('Ви впевнені, що хочете відключити Telegram-сповіщення?')) return
+  if (!confirm(t('users.settings.telegram.disconnectConfirm'))) return
 
   disconnecting.value = true
   errorMessage.value = ''
@@ -311,14 +314,14 @@ async function handleDisconnect() {
       connected_at: null,
     }
   } catch (err: any) {
-    errorMessage.value = err?.response?.data?.detail || 'Не вдалося відключити Telegram'
+    errorMessage.value = err?.response?.data?.detail || t('users.settings.telegram.errors.disconnectFailed')
   } finally {
     disconnecting.value = false
   }
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(locale.value === 'en' ? 'en-US' : 'uk-UA', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
