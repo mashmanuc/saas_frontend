@@ -43,6 +43,6 @@ export function isDSTTransitionDay(date: Date, timezone: string): boolean {
 
 function getTimezoneOffset(date: Date, timezone: string): number {
   const utcDate = date.getTime()
-  const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone })).getTime()
+  const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone })).getTime() // i18n-date-ok
   return (localDate - utcDate) / (1000 * 60)
 }

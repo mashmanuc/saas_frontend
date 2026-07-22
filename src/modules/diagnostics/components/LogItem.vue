@@ -57,6 +57,7 @@
 import { ref, computed } from 'vue'
 import { AlertCircle, AlertTriangle, Info, ChevronDown } from 'lucide-vue-next'
 import type { LocalLogEntry } from '../types'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   log: LocalLogEntry
@@ -88,6 +89,6 @@ const severityColor = computed(() => {
 })
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString()
+  return new Date(timestamp).toLocaleTimeString(activeLocale())
 }
 </script>

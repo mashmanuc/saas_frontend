@@ -109,6 +109,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNegotiationChatStore } from '@/stores/negotiationChatStore'
 import type { ChatMessageDTO } from '@/types/inquiries'
+import { activeLocale } from '@/utils/i18nDate'
 
 const route = useRoute()
 const router = useRouter()
@@ -224,7 +225,7 @@ function isOwnMessage(message: ChatMessageDTO): boolean {
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
-  return date.toLocaleTimeString('en-US', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: 'numeric',
     minute: '2-digit'
   })

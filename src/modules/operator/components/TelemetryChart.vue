@@ -53,6 +53,7 @@ import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Loader2, AlertCircle } from 'lucide-vue-next'
 import operatorApi from '../api/operatorApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps({
   title: {
@@ -99,7 +100,7 @@ const formatValue = (value) => {
 const formatTime = (timestamp) => {
   if (!timestamp) return ''
   const date = new Date(timestamp)
-  return date.toLocaleTimeString()
+  return date.toLocaleTimeString(activeLocale())
 }
 
 async function loadData() {

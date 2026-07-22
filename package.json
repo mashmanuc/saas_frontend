@@ -14,6 +14,7 @@
     "check:no-raw-axios": "node scripts/check-no-raw-axios.mjs",
     "check:layout": "node scripts/check-layout.mjs",
     "check:layout:strict": "node scripts/check-layout.mjs --strict",
+    "check:date-locale": "node scripts/check-date-locale.mjs",
     "prepare": "husky || true",
     "test": "vitest run",
     "test:unit": "vitest",

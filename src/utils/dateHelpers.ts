@@ -1,3 +1,4 @@
+import { activeLocale } from '@/utils/i18nDate'
 /**
  * Date and weekday helpers for M4SH Calendar
  * Handles ISO 8601 day-of-week mapping (Monday=1, Sunday=7)
@@ -153,7 +154,7 @@ export function formatTime(timeStr: string, format24h: boolean = true): string {
     date.setHours(hours, minutes, 0, 0)
   }
   
-  return date.toLocaleTimeString(undefined, {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     hour12: !format24h

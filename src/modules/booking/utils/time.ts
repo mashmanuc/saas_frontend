@@ -56,7 +56,7 @@ export function formatDateInCalendarTz(iso: string, timezone: string, locale = a
 export function formatShortDateInCalendarTz(iso: string, timezone: string): string {
   try {
     const date = new Date(iso)
-    const parts = new Intl.DateTimeFormat('en-CA', {
+    const parts = new Intl.DateTimeFormat('en-CA', { // i18n-date-ok
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',

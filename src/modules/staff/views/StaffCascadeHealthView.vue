@@ -134,6 +134,7 @@ import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import { getCascadeMetrics, type CascadeMetrics } from '../api/staffHealthApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const hours = ref(1)
 const data = ref<CascadeMetrics | null>(null)
@@ -169,7 +170,7 @@ const statusLabel = computed(() => {
 })
 const lastUpdated = computed(() => {
   if (!data.value) return ''
-  return new Date(data.value.timestamp).toLocaleTimeString()
+  return new Date(data.value.timestamp).toLocaleTimeString(activeLocale())
 })
 
 import { computed } from 'vue'

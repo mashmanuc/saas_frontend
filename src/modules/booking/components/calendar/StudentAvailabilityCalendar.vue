@@ -200,7 +200,7 @@ function formatLastSync(date: Date): string {
   if (minutes < 1) return t('calendar.justNow')
   if (minutes === 1) return t('calendar.oneMinuteAgo')
   if (minutes < 60) return t('calendar.minutesAgo', { count: minutes })
-  return date.toLocaleTimeString()
+  return date.toLocaleTimeString(activeLocale())
 }
 
 function reconnectWebSocket(): void {

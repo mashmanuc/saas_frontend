@@ -148,14 +148,14 @@ function formatRelativeTime(datetime: string): string {
   }
   
   if (diffDays === 0) {
-    return t('marketplace.profile.today') + ', ' + date.toLocaleTimeString(undefined, {
+    return t('marketplace.profile.today') + ', ' + date.toLocaleTimeString(activeLocale(), {
       hour: '2-digit',
       minute: '2-digit'
     })
   }
   
   if (diffDays === 1) {
-    return t('marketplace.profile.tomorrow') + ', ' + date.toLocaleTimeString(undefined, {
+    return t('marketplace.profile.tomorrow') + ', ' + date.toLocaleTimeString(activeLocale(), {
       hour: '2-digit',
       minute: '2-digit'
     })

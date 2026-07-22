@@ -8,6 +8,7 @@ import { useReviewStore } from '../stores/reviewStore'
 import type { Booking, ReviewInput } from '../api/reviews'
 import ReviewForm from '../components/forms/ReviewForm.vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,7 +71,7 @@ function goBack() {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

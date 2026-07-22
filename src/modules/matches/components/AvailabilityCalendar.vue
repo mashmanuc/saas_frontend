@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAvailabilityStore } from '../store/availabilityStore'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-vue-next'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   tutorSlug: string
@@ -87,7 +88,7 @@ onMounted(() => {
     <div class="calendar-grid">
       <div v-for="day in weekDays" :key="day.toISOString()" class="day-column">
         <div class="day-header">
-          <span class="day-name">{{ t(`common.weekdays.${day.toLocaleDateString('en', { weekday: 'long' }).toLowerCase()}`) }}</span>
+          <span class="day-name">{{ t(`common.weekdays.${day.toLocaleDateString('en', { weekday: 'long' }).toLowerCase()}`) }}</span> <!-- i18n-date-ok -->
           <span class="day-date">{{ day.getDate() }}</span>
         </div>
 
@@ -98,9 +99,9 @@ onMounted(() => {
             :class="['slot', { selected: selectedSlot === slot, available: slot.status === 'available' }]"
             @click="selectSlot(slot)"
           >
-            {{ new Date(slot.start).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }}
+            {{ new Date(slot.start).toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' }) }}
             -
-            {{ new Date(slot.end).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }}
+            {{ new Date(slot.end).toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' }) }}
           </div>
 
           <div v-if="getSlotsForDay(day).length === 0" class="no-slots">

@@ -6,6 +6,7 @@ import { Calendar, Clock, User, BookOpen } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 import type { Booking } from '../../api/booking'
 import BookingStatus from './BookingStatus.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   booking: Booking
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 const router = useRouter()
 
 const formattedDate = computed(() => {
-  return new Date(props.booking.time_slot.start_datetime).toLocaleDateString('en-US', {
+  return new Date(props.booking.time_slot.start_datetime).toLocaleDateString(activeLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -30,10 +31,10 @@ const formattedDate = computed(() => {
 const formattedTime = computed(() => {
   const start = new Date(props.booking.time_slot.start_datetime)
   const end = new Date(props.booking.time_slot.end_datetime)
-  return `${start.toLocaleTimeString('en-US', {
+  return `${start.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
-  })} - ${end.toLocaleTimeString('en-US', {
+  })} - ${end.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })}`

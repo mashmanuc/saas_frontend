@@ -232,7 +232,7 @@ async function handleCreate() {
     
     // Optimistic update: show slot immediately
     const timezone = calendarStore.meta?.timezone || 'Europe/Kiev'
-    const tzOffset = new Date().toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop()
+    const tzOffset = new Date().toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop() // i18n-date-ok
     const offset = tzOffset === 'GMT+2' ? '+02:00' : '+03:00'
     
     const optimisticSlot = {

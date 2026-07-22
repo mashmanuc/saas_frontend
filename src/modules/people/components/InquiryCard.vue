@@ -32,6 +32,7 @@
 import { computed } from 'vue'
 import type { InquiryDTO, UserSummary } from '@/types/inquiries'
 import InquiryStatusPill from './InquiryStatusPill.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   inquiry: InquiryDTO
@@ -49,7 +50,7 @@ const userInitials = computed(() => {
 
 const formattedDate = computed(() => {
   const date = new Date(props.inquiry.created_at)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric'

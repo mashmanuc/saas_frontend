@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { DashboardSecondary } from '../api/dashboard'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   data: DashboardSecondary
@@ -85,7 +86,7 @@ function formatTodayList(items: NonNullable<DashboardSecondary['today_lessons_re
   return items
     .slice(0, 3)
     .map((it) => {
-      const time = it.time ? new Date(it.time).toLocaleTimeString('uk', {
+      const time = it.time ? new Date(it.time).toLocaleTimeString(activeLocale(), {
         hour: '2-digit',
         minute: '2-digit',
       }) : '—'

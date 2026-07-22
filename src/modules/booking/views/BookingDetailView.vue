@@ -3,6 +3,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   ArrowLeft,
   Calendar,
@@ -40,7 +41,7 @@ const isStudent = computed(() => {
 
 // Format helpers
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -49,7 +50,7 @@ function formatDate(dateStr: string): string {
 }
 
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('en-US', {
+  return new Date(dateStr).toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

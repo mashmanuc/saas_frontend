@@ -3,6 +3,7 @@
 import { ref, computed, watch } from 'vue'
 import Button from '@/ui/Button.vue'
 import type { TimeSlot } from '../../api/booking'
+import { activeLocale } from '@/utils/i18nDate'
 
 import CalendarHeader from '../calendar/CalendarHeader.vue'
 import WeekCalendar from '../calendar/WeekCalendar.vue'
@@ -45,7 +46,7 @@ function clearSelection() {
 
 function formatSelectedTime(slot: TimeSlot): string {
   const date = new Date(slot.start_datetime)
-  return date.toLocaleString('en-US', {
+  return date.toLocaleString(activeLocale(), {
     weekday: 'long',
     month: 'long',
     day: 'numeric',

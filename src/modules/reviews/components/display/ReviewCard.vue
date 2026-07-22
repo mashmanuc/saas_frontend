@@ -8,6 +8,7 @@ import ReviewResponse from './ReviewResponse.vue'
 import HelpfulButton from '../actions/HelpfulButton.vue'
 import ReportButton from '../actions/ReportButton.vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   review: Review
@@ -27,7 +28,7 @@ const hasDetailedRatings = computed(() =>
 )
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

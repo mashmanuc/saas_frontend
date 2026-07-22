@@ -181,7 +181,7 @@ function formatTime(date) {
   try {
     return new Intl.DateTimeFormat(activeLocale(), { hour: '2-digit', minute: '2-digit' }).format(date)
   } catch (_err) {
-    return date.toLocaleTimeString()
+    return date.toLocaleTimeString(activeLocale())
   }
 }
 

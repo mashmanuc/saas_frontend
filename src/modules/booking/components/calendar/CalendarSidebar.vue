@@ -41,6 +41,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Calendar as CalendarIcon, Clock as ClockIcon } from 'lucide-vue-next'
 import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   events: CalendarEvent[]
@@ -64,7 +65,7 @@ const upcomingEvents = computed(() => {
 function formatEventTime(event: CalendarEvent): string {
   const start = new Date(event.start)
   const end = new Date(event.end)
-  const formatter = new Intl.DateTimeFormat(undefined, {
+  const formatter = new Intl.DateTimeFormat(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit'
   })
@@ -85,7 +86,7 @@ function formatEventDate(event: CalendarEvent): string {
   } else if (isTomorrow) {
     return t('calendar.sidebar.tomorrow')
   } else {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(activeLocale(), {
       weekday: 'short',
       month: 'short',
       day: 'numeric'

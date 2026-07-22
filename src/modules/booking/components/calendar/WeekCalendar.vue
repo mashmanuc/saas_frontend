@@ -3,6 +3,7 @@
 import { ref, computed } from 'vue'
 import type { TimeSlot } from '../../api/booking'
 import DayColumn from './DayColumn.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   slotsByDate: Record<string, TimeSlot[]>
@@ -29,7 +30,7 @@ function formatDateKey(date: Date): string {
 }
 
 function formatDayLabel(date: Date): string {
-  return date.toLocaleDateString('en-US', { weekday: 'short' })
+  return date.toLocaleDateString(activeLocale(), { weekday: 'short' })
 }
 
 function formatDayNumber(date: Date): string {

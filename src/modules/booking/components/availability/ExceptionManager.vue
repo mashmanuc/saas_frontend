@@ -5,6 +5,7 @@ import { Plus, X, Calendar } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 import { bookingApi } from '../../api/booking'
 import type { ExceptionInput, DateException } from '../../api/booking'
+import { activeLocale } from '@/utils/i18nDate'
 
 const exceptions = ref<DateException[]>([])
 const isLoading = ref(false)
@@ -39,7 +40,7 @@ function formatDate(date: Date): string {
 }
 
 function formatDisplayDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

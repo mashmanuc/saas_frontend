@@ -130,7 +130,7 @@ function formatTime(timeStr: string): string {
   // Handle both full datetime strings and time-only strings
   if (timeStr.includes('T')) {
     const date = new Date(timeStr)
-    return date.toLocaleTimeString(undefined, { 
+    return date.toLocaleTimeString(activeLocale(), { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false

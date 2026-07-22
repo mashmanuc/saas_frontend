@@ -164,10 +164,10 @@ function formatTime(slot: TimeSlot): string {
   const end = new Date(slot.end_datetime)
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   
-  return `${start.toLocaleTimeString(undefined, { 
+  return `${start.toLocaleTimeString(activeLocale(), { 
     hour: '2-digit', 
     minute: '2-digit' 
-  })} - ${end.toLocaleTimeString(undefined, { 
+  })} - ${end.toLocaleTimeString(activeLocale(), { 
     hour: '2-digit', 
     minute: '2-digit' 
   })} (${timezone})`

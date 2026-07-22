@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // F11: Review Response Component
 import type { ReviewResponse } from '../../api/reviews'
+import { activeLocale } from '@/utils/i18nDate'
 
 defineProps<{
   response: ReviewResponse
 }>()
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

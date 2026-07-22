@@ -225,6 +225,21 @@ fi
 # (non-bypassable). Husky тут — fast SSOT grep filter (<5s).
 # Reference: DEV_QUALITY_GATES.md "Husky <10s" rule.
 
+# ── i18n date-locale — no hardcoded / browser locale in date formatters ──
+# Guard для sweep 2026-07-22: дати мають брати активну i18n-локаль
+# (utils/i18nDate activeLocale()), не 'uk-UA'/undefined/браузерну. Fast Node
+# scan (<2s). Escape hatch: `// i18n-date-ok` (парсинг/обчислення, не display).
+echo ""
+echo "🔍 i18n date-locale (activeLocale enforcement)"
+if [ -f frontend/scripts/check-date-locale.mjs ]; then
+  if ! ( cd frontend && node scripts/check-date-locale.mjs ); then
+    echo "   Fix: локаль → activeLocale() з '@/utils/i18nDate' (або // i18n-date-ok для парсингу)"
+    FAIL=1
+  fi
+else
+  echo "✅ skip (frontend/ не в цьому дереві — worktree/CI context)"
+fi
+
 # ── Final ───────────────────────────────────────────────────────────────
 echo ""
 if [ "$FAIL" = "1" ]; then
