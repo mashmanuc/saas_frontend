@@ -2260,7 +2260,8 @@
         "createLesson": "Create lesson",
         "createLessonError": "Couldn't start the lesson. Please try again.",
         "openChat": "Open chat",
-        "chatWithStudent": "Chat with student"
+        "chatWithStudent": "Chat with student",
+        "homework": "Homework"
       },
       "bulk": {
         "selectHint": "Select students to perform bulk actions.",
@@ -10193,6 +10194,22 @@
       "firstLesson": "First lesson",
       "firstClassroom": "First lesson conducted",
       "cta": "Lesson Studio"
+    }
+  },
+  "assignments": {
+    "student": {
+      "title": "Homework: {name}",
+      "backToStudents": "Back to students",
+      "create": "New homework",
+      "empty": "This student has no homework yet.",
+      "loadError": "Could not load homework"
+    },
+    "status": {
+      "draft": "Draft",
+      "assigned": "Assigned",
+      "submitted": "Submitted",
+      "graded": "Graded",
+      "closed": "Closed"
     }
   }
 }

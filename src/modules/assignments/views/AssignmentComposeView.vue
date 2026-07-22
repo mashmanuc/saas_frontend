@@ -39,13 +39,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { assignmentsApi } from '../api/assignmentsApi'
 import { useRelationsStore } from '@/stores/relationsStore'
 import { notifyError, notifySuccess } from '@/utils/notify'
 
+const route = useRoute()
 const router = useRouter()
 const relations = useRelationsStore()
+
+// Передвибір учня, коли зайшли з картки учня (?student=<id>).
+const presetStudentId = route.query.student ? String(route.query.student) : null
 
 const title = ref('')
 const assigneeId = ref(null)
@@ -67,6 +71,10 @@ onMounted(async () => {
   studentsLoading.value = true
   try {
     await relations.fetchTutorRelations({ force: true })
+    // Передвибрати учня з картки, якщо він є серед активних.
+    if (presetStudentId && students.value.some((s) => String(s.id) === presetStudentId)) {
+      assigneeId.value = students.value.find((s) => String(s.id) === presetStudentId).id
+    }
   } catch (e) {
     notifyError('Не вдалося завантажити список учнів')
   } finally {

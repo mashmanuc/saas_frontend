@@ -946,6 +946,13 @@ const routes = [
             meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
           },
           {
+            // ДЗ конкретного учня (вхід — картка «Мої учні»); product intent 2026-07-22.
+            path: 'student/:studentId',
+            name: 'student-assignments',
+            component: () => import('../modules/assignments/views/StudentAssignmentsView.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
             path: ':id',
             name: 'assignment-detail',
             component: () => import('../modules/assignments/views/AssignmentDetailView.vue'),

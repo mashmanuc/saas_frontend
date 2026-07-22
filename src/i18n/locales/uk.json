@@ -3094,7 +3094,8 @@
         "createLesson": "Створити урок",
         "createLessonError": "Не вдалося почати урок. Спробуйте ще раз.",
         "openChat": "Відкрити чат",
-        "chatWithStudent": "Чат зі студентом"
+        "chatWithStudent": "Чат зі студентом",
+        "homework": "Домашні завдання"
       },
       "accepts": {
         "title": "Доступні прийняття",
@@ -10281,6 +10282,22 @@
       "firstLesson": "Перший урок",
       "firstClassroom": "Перший урок проведено",
       "cta": "Студія уроків"
+    }
+  },
+  "assignments": {
+    "student": {
+      "title": "Домашні завдання: {name}",
+      "backToStudents": "До учнів",
+      "create": "Нове ДЗ",
+      "empty": "У цього учня ще немає домашніх завдань.",
+      "loadError": "Не вдалося завантажити домашні завдання"
+    },
+    "status": {
+      "draft": "Чернетка",
+      "assigned": "Призначено",
+      "submitted": "Здано",
+      "graded": "Оцінено",
+      "closed": "Закрито"
     }
   }
 }

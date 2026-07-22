@@ -198,6 +198,15 @@
                   {{ getUnreadCountForStudent(relation) }}
                 </span>
               </Button>
+              <!-- ДЗ у контексті учня (за флагом ASSIGNMENTS_ENABLED; прод-OFF). -->
+              <Button
+                v-if="ASSIGNMENTS_ENABLED"
+                variant="outline"
+                size="sm"
+                @click="handleOpenHomework(relation)"
+              >
+                {{ $t('dashboard.tutor.cta.homework') }}
+              </Button>
             </div>
 
             <!-- Архівні студенти -->
@@ -297,6 +306,10 @@ import ChatModal from '../../chat/components/ChatModal.vue'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
 import { usePresenceStore } from '../../../stores/presenceStore'
+
+// Гейт ДЗ — той самий, що в menu.js/router (dev-ON, прод-OFF).
+const ASSIGNMENTS_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ASSIGNMENTS_ENABLED === 'true'
 import { useChatThreadsStore } from '../../../stores/chatThreadsStore'
 import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
@@ -521,6 +534,17 @@ async function handleHide(relationId) {
   } finally {
     actionLoadingId.value = null
   }
+}
+
+function handleOpenHomework(relation) {
+  const studentId = relation.student?.id
+  if (!studentId) return
+  // ДЗ саме цього учня (список + створення). Ім'я — для заголовка без зайвого fetch.
+  router.push({
+    name: 'student-assignments',
+    params: { studentId: String(studentId) },
+    query: { name: getStudentName(relation.student) },
+  })
 }
 
 async function handleCreateLesson(relation) {
