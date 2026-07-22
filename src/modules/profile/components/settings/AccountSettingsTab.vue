@@ -166,12 +166,16 @@ watch(
 )
 
 async function savePersonalInfo() {
-  await meStore.save({
-    first_name: form.first_name,
-    last_name: form.last_name,
-    username: form.username,
-    timezone: form.timezone,
-  })
+  // Шлемо ЛИШЕ змінені поля (PATCH = часткове оновлення). Раніше слався й
+  // незмінний username → бекенд re-валідував його (cooldown) і міг відхилити
+  // зміну ІМЕНІ через username_changed_at. 2026-07-21.
+  const payload = {}
+  for (const key of ['first_name', 'last_name', 'username', 'timezone']) {
+    if (form[key] !== initialForm[key]) payload[key] = form[key]
+  }
+  if (Object.keys(payload).length === 0) return
+
+  await meStore.save(payload)
   // Update initial form after successful save
   Object.assign(initialForm, {
     first_name: form.first_name,

@@ -85,6 +85,14 @@ const authApi = {
     return api.get('/v1/me').then((res) => res?.user || res)
   },
 
+  // Оновлення профілю поточного юзера (ім'я/прізвище/username/timezone/phone/
+  // telegram). 2026-07-21: метод був ВІДСУТНІЙ → meStore.save() падав з
+  // "authApi.updateMe is not a function" (юзер не міг змінити ім'я). Бекенд:
+  // PATCH /v1/me (V1MeView, слеш опційний), приймає лише allowed_fields.
+  updateMe(payload) {
+    return api.patch('/v1/me', payload).then((res) => res?.user || res)
+  },
+
   verifyEmail(payload) {
     return api.post('/v1/auth/verify-email', payload)
   },
