@@ -4,8 +4,8 @@
  *
  * CalculusInspector + GraphCalcInspector, реальні локалі + справжній KaTeX.
  */
-import { describe, expect, it, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
 
@@ -131,6 +131,72 @@ describe('GraphCalcInspector — гібрид прев\'ю ↔ input', () => {
     const btns = w.findAll('.gc-insp__quick-btn')
     expect(btns.length).toBe(4)
     for (const b of btns) expect(b.find('.katex').exists()).toBe(true)
+    w.unmount()
+  })
+})
+
+// ─── MathQuill edit-mode: регресія втрати фокуса (2026-07-22) ───────────
+// Баг: v-else-if містив isRenderableAscii(expr.src), що переобчислювався на
+// кожен keystroke; проміжний ввід (`x+`) тимчасово невалідний → поле
+// розмонтовувалось → втрата фокуса на кожен символ. Фікс: рішення MQ/input
+// фіксується один раз у startEdit (mqEditing).
+import { __resetMathQuillLoaderForTests } from '../../../utils/mathquillLoader'
+
+function installFakeMQGlobal(): void {
+  ;(window as never as { MathQuill: unknown }).MathQuill = {
+    getInterface: () => ({
+      MathField: (_el: HTMLElement, _opts: unknown) => ({
+        latexValue: '',
+        latex(v?: string) { if (v === undefined) return this.latexValue; this.latexValue = v },
+        focus: () => {},
+        revert: () => {},
+      }),
+    }),
+  }
+}
+
+describe('GraphCalcInspector — MQ-поле НЕ розмонтовується на проміжному вводі', () => {
+  beforeEach(() => {
+    __resetMathQuillLoaderForTests()
+    installFakeMQGlobal()
+    __resetGraphCalcInspectorForTests()
+    registerGraphCalcInspector('gc-mq-1', gcBridge())
+  })
+
+  afterEach(() => {
+    delete (window as never as { MathQuill?: unknown }).MathQuill
+    __resetMathQuillLoaderForTests()
+  })
+
+  it('клік → MQ-поле; невалідний проміжний src → поле ЛИШАЄТЬСЯ змонтованим', async () => {
+    const w = mount(GraphCalcInspector, { attachTo: document.body, global: { plugins: [i18nPlugin()] } })
+    const row = w.findAll('.gc-insp__expr-row')[0]
+    await row.find('.gc-insp__expr-preview').trigger('click')
+    await flushPromises()
+    expect(row.find('.wb-mq-field').exists()).toBe(true)
+    expect(row.find('.gc-insp__expr-input').exists()).toBe(false)
+
+    // Симулюємо набір: bridge отримує транзитно-НЕВАЛІДНИЙ ascii (як від typing)
+    const st = await import('../../../board/state/graphCalcInspectorState')
+    st.graphCalcInspectorState.bridge!.displayExpressions[0].src = 'y = a*x^2+'
+    await nextTick()
+    await nextTick()
+
+    // Регресія: раніше поле зникало і з'являвся input → втрата фокуса
+    expect(row.find('.wb-mq-field').exists()).toBe(true)
+    expect(row.find('.gc-insp__expr-input').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('fallback-гілка не зламана: без MQ-глобала клік → plain input (як раніше)', async () => {
+    delete (window as never as { MathQuill?: unknown }).MathQuill
+    __resetMathQuillLoaderForTests()
+    const w = mount(GraphCalcInspector, { attachTo: document.body, global: { plugins: [i18nPlugin()] } })
+    const row = w.findAll('.gc-insp__expr-row')[0]
+    await row.find('.gc-insp__expr-preview').trigger('click')
+    await flushPromises()
+    expect(row.find('.gc-insp__expr-input').exists()).toBe(true)
+    expect(row.find('.wb-mq-field').exists()).toBe(false)
     w.unmount()
   })
 })

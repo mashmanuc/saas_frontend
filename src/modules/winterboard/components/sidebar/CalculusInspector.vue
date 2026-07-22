@@ -48,8 +48,10 @@
           @click="startExprEdit"
         ><MathExpr :expr="localExpr" /></button>
         <!-- MathQuill WYSIWYG у edit-режимі; fallback — plain input нижче -->
+        <!-- mqEditing фіксується один раз у startExprEdit — перевірка renderable
+             на кожен keystroke розмонтовувала б поле на проміжному вводі (x+) -->
         <MathQuillField
-          v-else-if="exprFocused && mqAvailable && isRenderableAscii(localExpr)"
+          v-else-if="exprFocused && mqEditing"
           :model-value="localExpr"
           autofocus
           @update:model-value="onMqInput"
@@ -220,6 +222,8 @@ const exprInputEl = ref<HTMLInputElement | null>(null)
 
 // MathQuill: перевіряємо доступність до першого показу (без flash input→MQ)
 const mqAvailable = ref(false)
+// Фіксується на вході в редагування (НЕ на кожен keystroke — див. template)
+const mqEditing = ref(false)
 let mqChecked = false
 
 /** Гібрид: клік по KaTeX-прев'ю → MathQuill-поле (або input, якщо MQ недоступний). */
@@ -228,6 +232,7 @@ async function startExprEdit(): Promise<void> {
     mqChecked = true
     mqAvailable.value = (await loadMathQuill()) !== null
   }
+  mqEditing.value = mqAvailable.value && isRenderableAscii(localExpr.value)
   exprFocused.value = true
   nextTick(() => {
     // plain-input гілка

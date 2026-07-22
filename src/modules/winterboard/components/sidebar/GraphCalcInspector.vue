@@ -69,8 +69,12 @@
           <!-- MathQuill WYSIWYG (як standalone /mash/grapher/): тільки коли
                бібліотека доступна і вираз renderable; інакше plain input.
                «/» = дріб; slash-меню в MQ-режимі відсутнє (шаблони в quick-add). -->
+          <!-- mqEditing фіксується ОДИН раз у startEdit: перевіряти renderable
+               на кожен keystroke не можна — проміжний ввід (`x+`) тимчасово
+               невалідний, умова б падала і розмонтовувала поле посеред набору
+               (втрата фокуса на кожен символ — баг 2026-07-22). -->
           <MathQuillField
-            v-else-if="editingId === expr.id && mqAvailable && isRenderableAscii(expr.src)"
+            v-else-if="editingId === expr.id && mqEditing"
             :model-value="expr.src"
             autofocus
             @update:model-value="(v: string) => b.onSrcInput(expr.id, v)"
@@ -244,6 +248,10 @@ const rootEl = ref<HTMLElement | null>(null)
 // MathQuill: доступність визначаємо ПЕРЕД першим показом edit-поля (await
 // loader-а в startEdit — один раз, далі кеш), щоб не було flash input→MQ.
 const mqAvailable = ref(false)
+// Рішення «MQ чи input» приймається НА ВХОДІ в редагування і не міняється
+// до blur — інакше транзитно-невалідний ввід розмонтовує поле (див. коментар
+// у template).
+const mqEditing = ref(false)
 let mqChecked = false
 
 async function startEdit(id: string): Promise<void> {
@@ -251,6 +259,8 @@ async function startEdit(id: string): Promise<void> {
     mqChecked = true
     mqAvailable.value = (await loadMathQuill()) !== null
   }
+  const src = b.value.displayExpressions.find((e) => e.id === id)?.src ?? ''
+  mqEditing.value = mqAvailable.value && isRenderableAscii(src)
   editingId.value = id
   nextTick(() => {
     // plain-input гілка (MQ недоступний або вираз не renderable)

@@ -12,7 +12,7 @@
   MQ-режимі відсутнє (шаблони — у quick-add кнопках).
 -->
 <template>
-  <span ref="host" class="wb-mq-field" @focusout="onFocusOut" />
+  <span ref="host" class="wb-mq-field" @focusin="focused = true" @focusout="onFocusOut" />
 </template>
 
 <script setup lang="ts">
@@ -37,7 +37,9 @@ const emit = defineEmits<{
 const host = ref<HTMLElement | null>(null)
 let mqField: MQFieldApi | null = null
 let silent = false
-let focused = false
+// ref (не let): пишеться з template (@focusin); true під час набору, щоб
+// echo власного вводу (store → prop) не переписував поле і не збивав курсор
+const focused = ref(false)
 
 onMounted(async () => {
   const MQ = await loadMathQuill()
@@ -70,7 +72,7 @@ onMounted(async () => {
     }
     silent = false
     if (props.autofocus) mqField.focus()
-    focused = props.autofocus === true
+    focused.value = props.autofocus === true
   } catch (err) {
     console.warn('[MathQuillField] mount failed — falling back to plain input:', err)
     mqField = null
@@ -80,7 +82,7 @@ onMounted(async () => {
 
 // Зовнішні зміни (ops з іншої вкладки/реплей) — тихо синхронізуємо, коли не друкуємо.
 watch(() => props.modelValue, (v) => {
-  if (!mqField || focused) return
+  if (!mqField || focused.value) return
   silent = true
   try {
     mqField.latex(asciiMathToLatex(v || ''))
@@ -96,7 +98,7 @@ function onFocusOut(e: FocusEvent): void {
   // focusout спливає з внутрішніх textarea MathQuill; ігноруємо переходи всередині поля
   const to = e.relatedTarget as Node | null
   if (to && host.value?.contains(to)) return
-  focused = false
+  focused.value = false
   emit('blur')
 }
 
