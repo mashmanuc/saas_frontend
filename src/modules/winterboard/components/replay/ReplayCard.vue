@@ -188,7 +188,7 @@ const emit = defineEmits<{
   'close-menu': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const VISIBILITY_OPTIONS: ReadonlyArray<ReplayVisibility> = ['private', 'unlisted', 'public']
 
@@ -242,7 +242,7 @@ const dateTooltip = computed<string>(() => {
     })
   }
   try {
-    return new Date(replay.recorded_at).toLocaleString()
+    return new Date(replay.recorded_at).toLocaleString(locale.value)
   } catch {
     return replay.recorded_at
   }
@@ -250,7 +250,7 @@ const dateTooltip = computed<string>(() => {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale.value, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

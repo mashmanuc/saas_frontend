@@ -778,7 +778,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const lessons = ref<MyLesson[]>([])
 const isLoading = ref(true)
@@ -1086,7 +1086,7 @@ async function loadLessons(append = false) {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale.value, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
