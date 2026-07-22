@@ -6834,7 +6834,8 @@
     "email": "Email",
     "phone": "Телефон",
     "address": "Адреса",
-    "sellerInfo": "Інформація про продавця"
+    "sellerInfo": "Інформація про продавця",
+    "revokeConfirm": "Ви впевнені, що хочете відкликати доступ до контактів?"
   },
   "entitlements": {
     "features": {

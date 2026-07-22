@@ -67,6 +67,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useContactAccessStore } from '@/stores/contactAccessStore'
 import Button from '@/ui/Button.vue'
 
@@ -81,6 +82,7 @@ const props = defineProps({
   },
 })
 
+const { t } = useI18n()
 const contactAccessStore = useContactAccessStore()
 
 const studentId = computed(() => props.relation.student?.id || props.relation.student_id)
@@ -140,7 +142,7 @@ async function loadContacts() {
 }
 
 async function handleRevoke() {
-  if (!confirm('Ви впевнені, що хочете відкликати доступ до контактів?')) {
+  if (!confirm(t('contacts.revokeConfirm'))) {
     return
   }
 
