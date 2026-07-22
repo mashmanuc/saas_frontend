@@ -214,9 +214,9 @@
       "editTitle": "Edit student profile",
       "editDescription": "Update your information",
       "saveSuccess": "Profile saved successfully",
-      "loadError": "Не вдалося завантажити профіль студента",
-      "notStudent": "У вас немає доступу до профілю студента",
-      "saveError": "Не вдалося зберегти профіль студента"
+      "loadError": "Failed to load student profile",
+      "notStudent": "You don't have access to the student profile",
+      "saveError": "Failed to save student profile"
     }
   },
   "limits": {
@@ -307,10 +307,10 @@
       "maxOpenReachedUpgrade": "Upgrade to PRO for unlimited inquiries",
       "rateLimitExceeded": "Rate limit exceeded: {limit_display}",
       "alreadyExists": "You already have an active inquiry with this tutor",
-      "contactRequired": "Необхідна контактна інформація",
-      "contactRequiredMessage": "Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.",
-      "invalidPhoneFormat": "Невірний формат телефону",
-      "invalidPhoneFormatMessage": "Використовуйте міжнародний формат: +[код країни][номер]"
+      "contactRequired": "Contact information required",
+      "contactRequiredMessage": "Please add a phone number or Telegram in your profile settings before creating an inquiry.",
+      "invalidPhoneFormat": "Invalid phone format",
+      "invalidPhoneFormatMessage": "Use international format: +[country code][number]"
     },
     "success": {
       "created": "Inquiry sent successfully!",
@@ -336,21 +336,21 @@
       "sessionExpired": "Session expired. Please log in again"
     },
     "spam": {
-      "title": "Скарга на спам",
-      "report": "Поскаржитися",
-      "reported": "Скаргу надіслано",
-      "warning": "Цю дію неможливо скасувати",
-      "reasonLabel": "Причина",
-      "reasonPlaceholder": "Вкажіть причину скарги",
-      "submit": "Відправити",
-      "alreadyReported": "Вже поскаржено",
-      "inquiryPreview": "Попередній перегляд"
+      "title": "Spam report",
+      "report": "Report",
+      "reported": "Report submitted",
+      "warning": "This action cannot be undone",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Specify the reason for the report",
+      "submit": "Submit",
+      "alreadyReported": "Already reported",
+      "inquiryPreview": "Preview"
     },
     "recommended": {
-      "title": "Рекомендації",
-      "description": "Рекомендовані запити",
-      "empty": "Немає рекомендацій",
-      "viewAll": "Переглянути всі"
+      "title": "Recommendations",
+      "description": "Recommended inquiries",
+      "empty": "No recommendations",
+      "viewAll": "View all"
     }
   },
   "loader": {
@@ -430,12 +430,12 @@
       "dark": "Dark",
       "classic": "Classic"
     },
-    "calendar": "Календар",
-    "inquiries": "Запити",
-    "bookings": "Бронювання",
-    "chat": "Чат",
-    "contacts": "Контакти",
-    "billing": "Оплата",
+    "calendar": "Calendar",
+    "inquiries": "Inquiries",
+    "bookings": "Bookings",
+    "chat": "Chat",
+    "contacts": "Contacts",
+    "billing": "Billing",
     "learningContent": "Learning Materials",
     "avatar": {
       "ariaLabel": "User menu",
@@ -687,18 +687,18 @@
     "prev": "Previous",
     "changeLanguage": "Change Language",
     "offline": {
-      "lastSync": "Остання синхронізація",
-      "message": "Ви не в мережі",
-      "retry": "Повторити",
-      "retrying": "Повторна спроба",
-      "title": "Офлайн"
+      "lastSync": "Last synced",
+      "message": "You're offline",
+      "retry": "Retry",
+      "retrying": "Retrying",
+      "title": "Offline"
     },
     "rateLimit": {
-      "message": "Забагато запитів. Зачекайте перед повтором.",
-      "seconds": "секунд",
-      "title": "Ліміт запитів перевищено",
-      "tryNow": "Спробувати зараз",
-      "waiting": "Очікування..."
+      "message": "Too many requests. Please wait before retrying.",
+      "seconds": "seconds",
+      "title": "Rate limit exceeded",
+      "tryNow": "Try now",
+      "waiting": "Waiting..."
     },
     "sessionExpired": "Session expired. Please log in again.",
     "delete": "Delete",
@@ -707,100 +707,100 @@
     "menu": "Menu",
     "weekdays": {
       "short": {
-        "fri": "Пт",
-        "mon": "Пн",
-        "sat": "Сб",
-        "sun": "Нд",
-        "thu": "Чт",
-        "tue": "Вт",
-        "wed": "Ср"
+        "fri": "Fri",
+        "mon": "Mon",
+        "sat": "Sat",
+        "sun": "Sun",
+        "thu": "Thu",
+        "tue": "Tue",
+        "wed": "Wed"
       },
       "${day}": "{day}",
       "${weekday}": "{weekday}",
-      "friday": "Пʼятниця",
-      "monday": "Понеділок",
-      "saturday": "Субота",
-      "sunday": "Неділя",
-      "thursday": "Четвер",
-      "tuesday": "Вівторок",
-      "wednesday": "Середа"
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday"
     },
     "years": "years",
     "previous": "Back",
-    "no": "Ні",
-    "yes": "Так",
+    "no": "No",
+    "yes": "Yes",
     "emptyState": {
-      "defaultDescription": "Немає даних для відображення.",
-      "defaultTitle": "Поки порожньо"
+      "defaultDescription": "No data to display.",
+      "defaultTitle": "Nothing here yet"
     },
-    "notSet": "Не вказано",
-    "submitting": "Надсилання...",
-    "accept": "Прийняти",
-    "all": "Усі",
-    "apply": "Застосувати",
-    "bookLesson": "Забронювати урок",
-    "bookLessonToChat": "Забронюйте урок для чату",
-    "clear": "Очистити",
-    "confirm": "Підтвердити",
-    "confirmDelete": "Ви впевнені, що хочете видалити?",
-    "confirmDiscard": "Скасувати незбережені зміни?",
-    "continue": "Продовжити",
-    "copy": "Копіювати",
-    "creating": "Створюємо",
-    "currency": "Валюта",
-    "daysAgo": "{count} дн. тому",
-    "decline": "Відхилити",
-    "executing": "Виконуємо",
-    "exit": "Вийти",
-    "hour": "год",
-    "hoursAgo": "{count} год тому",
-    "joinCurrentLesson": "Приєднатися до уроку",
-    "justNow": "Щойно",
-    "later": "Пізніше",
+    "notSet": "Not set",
+    "submitting": "Submitting...",
+    "accept": "Accept",
+    "all": "All",
+    "apply": "Apply",
+    "bookLesson": "Book a lesson",
+    "bookLessonToChat": "Book a lesson to chat",
+    "clear": "Clear",
+    "confirm": "Confirm",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "confirmDiscard": "Discard unsaved changes?",
+    "continue": "Continue",
+    "copy": "Copy",
+    "creating": "Creating",
+    "currency": "Currency",
+    "daysAgo": "{count}d ago",
+    "decline": "Decline",
+    "executing": "Executing",
+    "exit": "Exit",
+    "hour": "h",
+    "hoursAgo": "{count}h ago",
+    "joinCurrentLesson": "Join lesson",
+    "justNow": "Just now",
+    "later": "Later",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "loadMore": "Завантажити ще",
-    "lock": "Заблокувати",
-    "min": "хв",
-    "minutes": "Хвилини",
-    "minutesAgo": "{count} хв тому",
-    "moreActions": "Більше дій",
-    "moveDown": "Перемістити вниз",
-    "moveUp": "Перемістити вгору",
-    "never": "Ніколи",
-    "nextWeek": "Наступний тиждень",
-    "notSpecified": "Не вказано",
-    "of": "з",
-    "open": "Відкрити",
-    "openLessonChat": "Відкрити чат уроку",
-    "optional": "необов'язково",
-    "other": "Інше",
-    "previousWeek": "Попередній тиждень",
-    "refresh": "Оновити",
-    "reject": "Відхилити",
-    "remove": "Видалити",
-    "retry": "Спробувати знову",
-    "saving": "Зберігаємо",
-    "search": "Пошук",
-    "searching": "Пошук",
-    "selected": "обрано",
-    "showing": "Показано",
-    "there": "там",
-    "today": "Сьогодні",
-    "understood": "Зрозуміло",
-    "unlock": "Розблокувати",
-    "unavailable": "Недоступно",
-    "unknown": "Невідомо",
-    "error": "Помилка",
-    "edit": "Редагувати",
-    "filter": "Фільтр",
-    "sort": "Сортування",
-    "reset": "Скинути",
-    "dismiss": "Закрити",
-    "sending": "Відправляємо...",
-    "restore": "Відновити",
-    "hide": "Приховати",
-    "unlocked": "Розблоковано"
+    "loadMore": "Load more",
+    "lock": "Lock",
+    "min": "min",
+    "minutes": "Minutes",
+    "minutesAgo": "{count}m ago",
+    "moreActions": "More actions",
+    "moveDown": "Move down",
+    "moveUp": "Move up",
+    "never": "Never",
+    "nextWeek": "Next week",
+    "notSpecified": "Not specified",
+    "of": "of",
+    "open": "Open",
+    "openLessonChat": "Open lesson chat",
+    "optional": "optional",
+    "other": "Other",
+    "previousWeek": "Previous week",
+    "refresh": "Refresh",
+    "reject": "Reject",
+    "remove": "Remove",
+    "retry": "Try again",
+    "saving": "Saving",
+    "search": "Search",
+    "searching": "Searching",
+    "selected": "selected",
+    "showing": "Showing",
+    "there": "there",
+    "today": "Today",
+    "understood": "Got it",
+    "unlock": "Unlock",
+    "unavailable": "Unavailable",
+    "unknown": "Unknown",
+    "error": "Error",
+    "edit": "Edit",
+    "filter": "Filter",
+    "sort": "Sort",
+    "reset": "Reset",
+    "dismiss": "Dismiss",
+    "sending": "Sending...",
+    "restore": "Restore",
+    "hide": "Hide",
+    "unlocked": "Unlocked"
   },
   "ui": {
     "cancel": "Cancel",
@@ -819,7 +819,7 @@
       "defaultTitle": "Nothing here yet",
       "defaultDescription": "No data to display."
     },
-    "optional": "Необов'язково"
+    "optional": "Optional"
   },
   "auth": {
     "layout": {
@@ -1160,9 +1160,9 @@
     "tutorProfile": "Tutor profile",
     "account": "Account",
     "settings": "Settings",
-    "billing": "Білінг",
-    "booking": "Бронювання",
-    "notifications": "Сповіщення",
+    "billing": "Billing",
+    "booking": "Booking",
+    "notifications": "Notifications",
     "knowledge": "Lessons"
   },
   "sidebar": {
@@ -1472,8 +1472,8 @@
       "errorHorizon": "Cannot load calendar beyond 4 weeks",
       "errorLoad": "Failed to load availability",
       "bookSlotAria": "Book slot at {time}",
-      "title": "Календар",
-      "infoNote": "Це інформаційний розклад. Забронювати урок можна через запит",
+      "title": "Calendar",
+      "infoNote": "This is an informational schedule. You can book a lesson via a request",
       "scheduleTitle": "Tutor schedule"
     },
     "trialRequest": {
@@ -1485,8 +1485,8 @@
       "submitting": "Sending...",
       "success": "Request sent successfully!",
       "error": "Failed to send request",
-      "refreshCalendar": "Оновити календар",
-      "slotUnavailable": "Слот недоступний"
+      "refreshCalendar": "Refresh calendar",
+      "slotUnavailable": "Slot unavailable"
     },
     "common": {
       "perHour": "/ hour"
@@ -1876,16 +1876,16 @@
       },
       "status": {
         "pending_review": "Pending review",
-        "approved": "Опубліковано",
-        "draft": "Чернетка",
-        "rejected": "Відхилено",
-        "suspended": "Призупинено"
+        "approved": "Published",
+        "draft": "Draft",
+        "rejected": "Rejected",
+        "suspended": "Suspended"
       },
       "about": {
-        "notProvided": "Інформація не надана"
+        "notProvided": "No information provided"
       },
       "calendar": {
-        "notConfigured": "Календар ще не налаштовано"
+        "notConfigured": "Calendar not set up yet"
       }
     },
     "profileV3": {
@@ -1979,81 +1979,81 @@
       "loadError": "Failed to load availability."
     },
     "analytics": {
-      "exportCSV": "Експорт CSV",
-      "inquiryConversion": "Конверсія запитів",
-      "loadError": "Не вдалося завантажити аналітику",
+      "exportCSV": "Export CSV",
+      "inquiryConversion": "Inquiry conversion",
+      "loadError": "Failed to load analytics",
       "profileViews": {
-        "daily": "Перегляди за день",
-        "weekly": "Перегляди за тиждень"
+        "daily": "Daily views",
+        "weekly": "Weekly views"
       },
       "range": {
-        "30d": "30 днів",
-        "7d": "7 днів",
-        "90d": "90 днів"
+        "30d": "30 days",
+        "7d": "7 days",
+        "90d": "90 days"
       },
-      "responseRate": "Відсоток відповідей",
-      "title": "Аналітика профілю",
-      "topSubjects": "Топ предметів",
-      "viewsOverTime": "Перегляди за період",
+      "responseRate": "Response rate",
+      "title": "Profile analytics",
+      "topSubjects": "Top subjects",
+      "viewsOverTime": "Views over time",
       "zeroResults": {
-        "description": "Додайте ці предмети, щоб з'являтися у пошуку",
-        "searches": "пошуків",
-        "title": "Запити без результатів"
+        "description": "Add these subjects to appear in search",
+        "searches": "searches",
+        "title": "Searches with no results"
       }
     },
     "featured": {
-      "empty": "Наразі немає обраних тьюторів",
-      "loadError": "Не вдалося завантажити обраних тьюторів",
-      "sponsored": "Спонсоровано",
-      "subtitle": "Найкращі тьютори нашої платформи",
-      "title": "Обрані тьютори"
+      "empty": "No featured tutors at the moment",
+      "loadError": "Failed to load featured tutors",
+      "sponsored": "Sponsored",
+      "subtitle": "The best tutors on our platform",
+      "title": "Featured tutors"
     },
     "recommendations": {
-      "empty": "Наразі немає рекомендацій",
-      "loadError": "Не вдалося завантажити рекомендації",
-      "reason": "Відповідає вашим предметам",
-      "subtitle": "На основі ваших інтересів",
-      "title": "Рекомендовано для вас"
+      "empty": "No recommendations at the moment",
+      "loadError": "Failed to load recommendations",
+      "reason": "Matches your subjects",
+      "subtitle": "Based on your interests",
+      "title": "Recommended for you"
     },
     "verification": {
       "badge": {
-        "advanced": "Розширена",
-        "advancedTooltip": "Розширена верифікація: підтверджено освіту та досвід",
-        "basic": "Базова",
-        "basicTooltip": "Базова верифікація: підтверджено документи",
-        "premium": "Преміум",
-        "premiumTooltip": "Преміум верифікація: повна перевірка та рекомендації"
+        "advanced": "Advanced",
+        "advancedTooltip": "Advanced verification: education and experience confirmed",
+        "basic": "Basic",
+        "basicTooltip": "Basic verification: documents confirmed",
+        "premium": "Premium",
+        "premiumTooltip": "Premium verification: full check and references"
       },
       "modal": {
-        "backgroundDescription": "Розкажіть про ваш досвід викладання (мінімум 50 символів)",
-        "backgroundLabel": "Опис досвіду",
-        "backgroundPlaceholder": "Я викладаю математику понад 5 років...",
-        "backgroundTitle": "Про ваш досвід",
-        "documentsDescription": "Паспорт, диплом або сертифікати (PDF, JPG, PNG, до 10MB)",
-        "documentsTitle": "Завантажте документи",
-        "invalidFiles": "Деякі файли не відповідають вимогам",
-        "step1": "Документи",
-        "step2": "Відео",
-        "step3": "Інформація",
-        "submitError": "Не вдалося надіслати запит. Спробуйте пізніше",
-        "submitSuccess": "Запит надіслано! Очікуйте на розгляд протягом 24-48 годин",
-        "title": "Запит на верифікацію: {level}",
-        "uploadDocuments": "Завантажити документи",
-        "uploadHint": "PDF, JPG, PNG до 10MB",
-        "videoDescription": "Посилання на відео (YouTube, Vimeo)",
-        "videoLinkLabel": "Посилання на відео",
+        "backgroundDescription": "Tell us about your teaching experience (minimum 50 characters)",
+        "backgroundLabel": "Experience description",
+        "backgroundPlaceholder": "I have been teaching math for over 5 years...",
+        "backgroundTitle": "About your experience",
+        "documentsDescription": "Passport, diploma or certificates (PDF, JPG, PNG, up to 10MB)",
+        "documentsTitle": "Upload documents",
+        "invalidFiles": "Some files do not meet the requirements",
+        "step1": "Documents",
+        "step2": "Video",
+        "step3": "Information",
+        "submitError": "Failed to submit request. Please try again later",
+        "submitSuccess": "Request submitted! Please allow 24-48 hours for review",
+        "title": "Verification request: {level}",
+        "uploadDocuments": "Upload documents",
+        "uploadHint": "PDF, JPG, PNG up to 10MB",
+        "videoDescription": "Video link (YouTube, Vimeo)",
+        "videoLinkLabel": "Video link",
         "videoLinkPlaceholder": "https://youtube.com/...",
-        "videoTitle": "Відео-презентація"
+        "videoTitle": "Video presentation"
       },
       "widget": {
-        "currentLevel": "Поточний рівень",
-        "expiresOn": "Діє до",
-        "noVerification": "Ви ще не верифіковані",
-        "pendingReview": "На розгляді",
-        "pendingTasks": "Необхідно виконати",
-        "requestUpgrade": "Підвищити до {level}",
-        "requestVerification": "Запросити верифікацію",
-        "title": "Верифікація профілю"
+        "currentLevel": "Current level",
+        "expiresOn": "Valid until",
+        "noVerification": "You are not verified yet",
+        "pendingReview": "Under review",
+        "pendingTasks": "Action required",
+        "requestUpgrade": "Upgrade to {level}",
+        "requestVerification": "Request verification",
+        "title": "Profile verification"
       }
     }
   },
@@ -2271,11 +2271,11 @@
         "archiveSelected": "Archive selected"
       },
       "accepts": {
-        "title": "Доступні прийняття",
-        "loading": "Завантаження...",
-        "suffixOne": "запит",
-        "suffix": "запитів",
-        "expires": "Оновлення {time}"
+        "title": "Available acceptances",
+        "loading": "Loading...",
+        "suffixOne": "inquiry",
+        "suffix": "inquiries",
+        "expires": "Resets {time}"
       },
       "emptyState": {
         "title": "Start your tutor journey",
@@ -2285,7 +2285,7 @@
     },
     "student": {
       "cta": {
-        "chatWithTutor": "Написати репетитору"
+        "chatWithTutor": "Message tutor"
       },
       "emptyState": {
         "title": "Welcome!",
@@ -2362,15 +2362,15 @@
       "declineError": "Failed to decline invitation",
       "resendSuccess": "Invitation resent",
       "resendError": "Failed to resend invitation",
-      "requestSuccess": "Запит надіслано",
-      "requestError": "Не вдалося надіслати запит",
-      "deleteConfirm": "Видалити стосунки?",
-      "deleteError": "Не вдалося видалити",
-      "restoreError": "Не вдалося відновити",
-      "restoreSuccess": "Стосунки відновлено",
-      "hideConfirm": "Приховати стосунки?",
-      "hideSuccess": "Стосунки приховано",
-      "hideError": "Не вдалося приховати"
+      "requestSuccess": "Request sent",
+      "requestError": "Failed to send request",
+      "deleteConfirm": "Delete relationship?",
+      "deleteError": "Failed to delete",
+      "restoreError": "Failed to restore",
+      "restoreSuccess": "Relationship restored",
+      "hideConfirm": "Hide relationship?",
+      "hideSuccess": "Relationship hidden",
+      "hideError": "Failed to hide"
     },
     "bulk": {
       "noInvited": "Select at least one invited relation to continue.",
@@ -2586,10 +2586,10 @@
     "status": {
       "offline": "Offline",
       "connected": "Connected",
-      "connecting": "Підключення...",
-      "pollingMode": "Режим опитування",
-      "reconnecting": "Перепідключення...",
-      "unknown": "Невідомий статус"
+      "connecting": "Connecting...",
+      "pollingMode": "Polling mode",
+      "reconnecting": "Reconnecting...",
+      "unknown": "Unknown status"
     },
     "typing": {
       "single": "{name} is typing…",
@@ -2631,43 +2631,43 @@
     },
     "errors": {
       "failedToSend": "Message failed to send. Please retry.",
-      "threadCreationFailed": "Не вдалося створити чат. Спробуйте ще раз.",
-      "relationNotFound": "Зв'язок не знайдено.",
-      "tutorRelationNotFound": "Зв'язок з тьютором не знайдено.",
-      "studentRelationNotFound": "Зв'язок зі студентом не знайдено.",
-      "contactAccessRequired": "Для відкриття чату потрібно розблокувати контакти студента."
+      "threadCreationFailed": "Couldn't create chat. Please try again.",
+      "relationNotFound": "Relationship not found.",
+      "tutorRelationNotFound": "Tutor relationship not found.",
+      "studentRelationNotFound": "Student relationship not found.",
+      "contactAccessRequired": "You need to unlock the student's contacts to open the chat."
     },
     "confirm": {
       "delete": "Delete this message?"
     },
-    "loadError": "Не вдалося завантажити чат",
-    "loadMessagesError": "Не вдалося завантажити повідомлення",
-    "messagePlaceholder": "Напишіть повідомлення...",
-    "noMessages": "Повідомлень ще немає. Напишіть першим!",
-    "noThreadFound": "Чат не знайдено. Спочатку створіть запит до тьютора.",
-    "pressEnterToSend": "Enter — надіслати",
-    "readOnly": "Цей чат тільки для читання",
-    "send": "Надіслати",
-    "sendError": "Не вдалося надіслати повідомлення",
-    "sending": "Надсилаємо...",
-    "threadInfo": "Тип чату: {kind}",
-    "title": "Чат з тьютором",
+    "loadError": "Couldn't load chat",
+    "loadMessagesError": "Couldn't load messages",
+    "messagePlaceholder": "Write a message...",
+    "noMessages": "No messages yet. Be the first to write!",
+    "noThreadFound": "Chat not found. Send a request to the tutor first.",
+    "pressEnterToSend": "Enter to send",
+    "readOnly": "This chat is read-only",
+    "send": "Send",
+    "sendError": "Couldn't send message",
+    "sending": "Sending...",
+    "threadInfo": "Chat type: {kind}",
+    "title": "Chat with tutor",
     "notifications": {
-      "title": "Повідомлення",
-      "empty": "Немає нових повідомлень"
+      "title": "Messages",
+      "empty": "No new messages"
     },
-    "connecting": "Підключення...",
-    "retry": "Повторити",
+    "connecting": "Connecting...",
+    "retry": "Retry",
     "error": {
-      "generic": "Помилка чату",
-      "maxRetries": "Досягнуто максимальну кількість спроб",
-      "networkFailed": "Помилка мережі",
-      "retry": "Повторити",
-      "retrying": "Повторна спроба...",
-      "timeout": "Час очікування вичерпано",
-      "title": "Помилка з'єднання",
-      "usePolling": "Використовуємо режим опитування",
-      "websocketFailed": "WebSocket не вдалося підключити"
+      "generic": "Chat error",
+      "maxRetries": "Maximum number of attempts reached",
+      "networkFailed": "Network error",
+      "retry": "Retry",
+      "retrying": "Retrying...",
+      "timeout": "Request timed out",
+      "title": "Connection error",
+      "usePolling": "Switching to polling mode",
+      "websocketFailed": "WebSocket connection failed"
     }
   },
   "presence": {
@@ -2705,16 +2705,16 @@
       "slotEditor": {
         "strategies": {
           "override": {
-            "description": "Застосувати зміни навіть якщо є конфлікти",
-            "title": "Перевизначити слот"
+            "description": "Apply changes even if there are conflicts",
+            "title": "Override slot"
           },
           "templateUpdate": {
-            "description": "Внести правки в базовий шаблон та майбутні слоти",
-            "title": "Оновити шаблон"
+            "description": "Make edits to the base template and future slots",
+            "title": "Update template"
           },
           "userChoice": {
-            "description": "Вибрати іншу кастомну стратегію для цього кейсу",
-            "title": "Ручний вибір"
+            "description": "Choose a different custom strategy for this case",
+            "title": "Manual choice"
           },
           "${strategy.name}": {
             "title": "{strategy.name}"
@@ -2722,14 +2722,14 @@
         }
       },
       "status": {
-        "available": "Доступно",
-        "blocked": "Заблоковано",
-        "booked": "Заброньовано",
-        "cancelled": "Скасовано",
-        "completed": "Завершено",
-        "confirmed": "Підтверджено",
-        "pending": "Очікує підтвердження",
-        "unavailable": "Недоступно",
+        "available": "Available",
+        "blocked": "Blocked",
+        "booked": "Booked",
+        "cancelled": "Cancelled",
+        "completed": "Completed",
+        "confirmed": "Confirmed",
+        "pending": "Pending confirmation",
+        "unavailable": "Unavailable",
         "${slot.status}": "{slot.status}"
       }
     },
@@ -2811,7 +2811,7 @@
         "refreshPage": "Try refreshing the page",
         "title": "Tips:"
       },
-      "title": "ReconnectingтАж",
+      "title": "Reconnecting...",
       "connecting": "Reconnecting",
       "connectionLost": "Connection lost",
       "retryIn": "Retry in {seconds}s"
@@ -3298,10 +3298,10 @@
       "syncing": "Reconnected — syncing data..."
     },
     "somethingWentWrong": "Something went wrong",
-    "forbidden": "Доступ заборонено.",
-    "limitExceeded": "Ліміт {type} вичерпано ({used}/{max}). Оновлення {resetDate}",
-    "notFound": "Не знайдено.",
-    "unknown": "Невідома помилка."
+    "forbidden": "Access denied.",
+    "limitExceeded": "{type} limit exhausted ({used}/{max}). Resets {resetDate}",
+    "notFound": "Not found.",
+    "unknown": "Unknown error."
   },
   "network": {
     "title": "Network status",
@@ -4431,9 +4431,9 @@
       "user_blocked": "You cannot interact with this user"
     },
     "contactRequired": {
-      "title": "Необхідна контактна інформація",
-      "description": "Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.",
-      "goToProfile": "Перейти до профілю"
+      "title": "Contact information required",
+      "description": "Please add a phone number or Telegram in your profile settings before creating an inquiry.",
+      "goToProfile": "Go to profile"
     }
   },
   "trust": {
@@ -4463,62 +4463,62 @@
         "generic": "Error submitting report. Please try again later.",
         "rateLimited": "You have already reported this target. Please try again in {hours} hours."
       },
-      "categoryLabel": "Категорія",
-      "commentLabel": "Коментар",
-      "commentPlaceholder": "Ваш коментар...",
-      "warning": "Увага",
-      "inquiryPreview": "Попередній перегляд скарги",
+      "categoryLabel": "Category",
+      "commentLabel": "Comment",
+      "commentPlaceholder": "Your comment...",
+      "warning": "Warning",
+      "inquiryPreview": "Report preview",
       "comment": {
-        "label": "Коментар",
-        "placeholder": "Опишіть проблему..."
+        "label": "Comment",
+        "placeholder": "Describe the problem..."
       },
-      "cancel": "Скасувати"
+      "cancel": "Cancel"
     },
     "block": {
       "action": "Block User",
       "confirmMessage": "Are you sure you want to block this user? You will no longer be able to interact with each other.",
       "error": "Error blocking user",
-      "title": "Заблокувати користувача",
-      "userHint": "Цей користувач не зможе з вами контактувати",
-      "reasonLabel": "Причина блокування",
+      "title": "Block user",
+      "userHint": "This user won't be able to contact you",
+      "reasonLabel": "Reason for blocking",
       "reasons": {
-        "select": "Оберіть причину",
-        "harassment": "Домагання",
-        "spam": "Спам",
-        "inappropriate": "Невідповідний контент",
-        "other": "Інше"
+        "select": "Select a reason",
+        "harassment": "Harassment",
+        "spam": "Spam",
+        "inappropriate": "Inappropriate content",
+        "other": "Other"
       },
-      "noteLabel": "Примітка",
-      "notePlaceholder": "Додайте приватну нотатку...",
-      "warning": "Ви впевнені, що хочете заблокувати цього користувача?",
-      "submit": "Заблокувати",
-      "alreadyBlocked": "Цей користувач вже заблокований"
+      "noteLabel": "Note",
+      "notePlaceholder": "Add a private note...",
+      "warning": "Are you sure you want to block this user?",
+      "submit": "Block",
+      "alreadyBlocked": "This user is already blocked"
     },
     "blocked": {
-      "title": "Заблоковані користувачі",
-      "subtitle": "Користувачі, яких ви заблокували",
-      "reason": "Причина",
-      "since": "Заблоковано з",
-      "unblock": "Розблокувати",
-      "empty": "Немає заблокованих користувачів"
+      "title": "Blocked users",
+      "subtitle": "Users you've blocked",
+      "reason": "Reason",
+      "since": "Blocked since",
+      "unblock": "Unblock",
+      "empty": "No blocked users"
     },
     "appeals": {
-      "title": "Блокування та апеляції",
-      "subtitle": "Керуйте блокуваннями та подавайте апеляції",
-      "activeBans": "Активні блокування",
-      "permanent": "Назавжди",
-      "expires": "Закінчується",
-      "reason": "Причина блокування",
-      "fileAppeal": "Подати апеляцію",
-      "pending": "Очікує розгляду",
-      "history": "Історія апеляцій",
-      "response": "Відповідь модератора",
-      "modalTitle": "Апеляція на блокування",
-      "modalHint": "Опишіть чому ви вважаєте блокування помилковим",
-      "reasonPlaceholder": "Поясніть чому блокування є помилковим",
-      "submit": "Подати апеляцію",
-      "noActiveBans": "Немає активних блокувань",
-      "appealed": "Апеляцію подано"
+      "title": "Blocks and appeals",
+      "subtitle": "Manage blocks and submit appeals",
+      "activeBans": "Active bans",
+      "permanent": "Permanent",
+      "expires": "Expires",
+      "reason": "Reason for ban",
+      "fileAppeal": "File an appeal",
+      "pending": "Pending review",
+      "history": "Appeal history",
+      "response": "Moderator response",
+      "modalTitle": "Appeal a ban",
+      "modalHint": "Explain why you believe the ban was a mistake",
+      "reasonPlaceholder": "Explain why the ban is a mistake",
+      "submit": "Submit appeal",
+      "noActiveBans": "No active bans",
+      "appealed": "Appeal submitted"
     }
   },
   "contact": {
@@ -4939,9 +4939,9 @@
         "SPAM": "Spam"
       },
       "status${report.status}": "{report.status}",
-      "statusACTIONED": "Опрацьована",
-      "statusDISMISSED": "Відхилена",
-      "statusOPEN": "Відкрита",
+      "statusACTIONED": "Actioned",
+      "statusDISMISSED": "Dismissed",
+      "statusOPEN": "Open",
       "helpText": "User reports that require review. Filter by status for convenience. Click \"View\" for details."
     },
     "userOverview": {
@@ -5448,19 +5448,19 @@
       "ADVANCED_MATCHING": "Advanced Matching",
       "TEAM_MANAGEMENT": "Team Management",
       "CUSTOM_BRANDING": "Custom Branding",
-      "ADVANCED_SCHEDULING": "Розширене планування",
-      "CALENDAR_INTEGRATION": "Інтеграція з календарем",
-      "CUSTOM_DOMAIN": "Власний домен",
-      "DEDICATED_SUPPORT": "Виділена підтримка",
-      "EMAIL_NOTIFICATIONS": "Email сповіщення",
-      "HOMEWORK_TRACKING": "Відстеження домашніх завдань",
-      "ONBOARDING_ASSISTANCE": "Допомога при впровадженні",
-      "PROGRESS_REPORTS": "Звіти про прогрес",
-      "SCREEN_SHARING": "Демонстрація екрану",
-      "SMS_NOTIFICATIONS": "SMS сповіщення",
-      "UNLIMITED_STUDENTS": "Необмежена кількість студентів",
-      "VIDEO_CALLS": "Відеодзвінки",
-      "WHITE_LABEL": "White-label рішення"
+      "ADVANCED_SCHEDULING": "Advanced scheduling",
+      "CALENDAR_INTEGRATION": "Calendar integration",
+      "CUSTOM_DOMAIN": "Custom domain",
+      "DEDICATED_SUPPORT": "Dedicated support",
+      "EMAIL_NOTIFICATIONS": "Email notifications",
+      "HOMEWORK_TRACKING": "Homework tracking",
+      "ONBOARDING_ASSISTANCE": "Onboarding assistance",
+      "PROGRESS_REPORTS": "Progress reports",
+      "SCREEN_SHARING": "Screen sharing",
+      "SMS_NOTIFICATIONS": "SMS notifications",
+      "UNLIMITED_STUDENTS": "Unlimited students",
+      "VIDEO_CALLS": "Video calls",
+      "WHITE_LABEL": "White-label solution"
     },
     "faq": {
       "title": "Frequently Asked Questions",
@@ -5484,9 +5484,9 @@
       "checkoutNotAllowed": "Checkout not allowed",
       "invalidPlan": "Invalid plan",
       "alreadySubscribed": "You already have an active subscription",
-      "checkout_not_allowed": "Оформлення підписки зараз недоступне",
-      "limit_exceeded": "Досягнуто ліміт використання для вашого плану",
-      "subscription_required": "Для використання цієї функції потрібна підписка"
+      "checkout_not_allowed": "Subscription checkout is currently unavailable",
+      "limit_exceeded": "You've reached the usage limit for your plan",
+      "subscription_required": "A subscription is required to use this feature"
     },
     "cta": {
       "upgradeToContinue": "Upgrade to continue",
@@ -5563,7 +5563,7 @@
       "pay": "Pay",
       "intervalMonthly": "month",
       "intervalYearly": "year",
-      "unavailable": "Недоступно"
+      "unavailable": "Unavailable"
     },
     "errors": {
       "loadFailed": "Failed to load billing data",
@@ -5571,14 +5571,14 @@
     },
     "retryButton": "Try Again",
     "cancel": {
-      "backToDashboard": "Повернутися на головну",
-      "message": "Ваша оплата не була завершена. Ви можете спробувати ще раз або обрати інший план.",
-      "subtitle": "Ви скасували процес оплати",
-      "title": "Оплату скасовано",
-      "viewPlans": "Переглянути плани"
+      "backToDashboard": "Back to dashboard",
+      "message": "Your payment wasn't completed. You can try again or choose a different plan.",
+      "subtitle": "You canceled the payment process",
+      "title": "Payment canceled",
+      "viewPlans": "View plans"
     },
     "checkout": {
-      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:",
+      "agreement": "By clicking the payment button, you agree to:",
       "locked": {
         "title": "Checkout locked",
         "message": "We are already processing your previous request. Please wait for it to finish or refresh the status.",
@@ -5595,18 +5595,18 @@
       "remaining": "Remaining",
       "days": "days"
     },
-    "history": "Історія платежів",
-    "historyComingSoon": "Історія платежів скоро буде доступна",
+    "history": "Payment history",
+    "historyComingSoon": "Payment history is coming soon",
     "planDescriptions": {
-      "BUSINESS": "Повний функціонал для команд та шкіл",
-      "FREE": "Базові можливості для початку роботи",
-      "PRO": "Розширені функції для професійних репетиторів"
+      "BUSINESS": "Full feature set for teams and schools",
+      "FREE": "Basic features to get started",
+      "PRO": "Advanced features for professional tutors"
     },
     "subscriptionRequired": {
-      "defaultMessage": "Оновіть свій план, щоб отримати доступ до розширених можливостей",
-      "message": "Для доступу до цієї функції необхідна активна підписка",
-      "title": "Потрібна підписка",
-      "unlockFeatures": "Розблокуйте можливості:"
+      "defaultMessage": "Upgrade your plan to access advanced features",
+      "message": "An active subscription is required to access this feature",
+      "title": "Subscription required",
+      "unlockFeatures": "Unlock features:"
     },
     "trialActivation": {
       "title": "14 days of PRO for free",
@@ -5622,152 +5622,152 @@
     "upgradeCta": "Learn more"
   },
   "commonExtended": {
-    "accept": "Прийняти",
-    "all": "Усі",
-    "apply": "Застосувати",
-    "back": "Назад",
-    "cancel": "Скасувати",
-    "clear": "Очистити",
-    "close": "Закрити",
-    "confirmDelete": "Видалити запис?",
-    "confirmDiscard": "Скасувати незбережені зміни?",
-    "continue": "Продовжити",
-    "copy": "Копіювати",
-    "creating": "Створюємо",
-    "currency": "Валюта",
-    "daysAgo": "{count} дн. тому",
-    "decline": "Відхилити",
-    "delete": "Видалити",
-    "executing": "Виконуємо",
-    "exit": "Вийти",
-    "hour": "год",
-    "hoursAgo": "TODO: годин тому",
-    "justNow": "TODO: Щойно",
-    "later": "TODO: Пізніше",
-    "loadMore": "Завантажити ще",
-    "loading": "Завантаження...",
-    "lock": "Заблокувати",
-    "minutesAgo": "TODO: хвилин тому",
-    "moveDown": "Перемістити вниз",
-    "moveUp": "Перемістити вгору",
-    "next": "Далі",
-    "nextWeek": "Наступний тиждень",
-    "notSpecified": "Не вказано",
-    "of": "з",
+    "accept": "Accept",
+    "all": "All",
+    "apply": "Apply",
+    "back": "Back",
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "close": "Close",
+    "confirmDelete": "Delete this entry?",
+    "confirmDiscard": "Discard unsaved changes?",
+    "continue": "Continue",
+    "copy": "Copy",
+    "creating": "Creating",
+    "currency": "Currency",
+    "daysAgo": "{count}d ago",
+    "decline": "Decline",
+    "delete": "Delete",
+    "executing": "Executing",
+    "exit": "Exit",
+    "hour": "h",
+    "hoursAgo": "TODO: hours ago",
+    "justNow": "TODO: Just now",
+    "later": "TODO: Later",
+    "loadMore": "Load more",
+    "loading": "Loading...",
+    "lock": "Lock",
+    "minutesAgo": "TODO: minutes ago",
+    "moveDown": "Move down",
+    "moveUp": "Move up",
+    "next": "Next",
+    "nextWeek": "Next week",
+    "notSpecified": "Not specified",
+    "of": "of",
     "offline": {
-      "lastSync": "TODO: Остання синхронізація",
-      "message": "TODO: Ви не в мережі",
-      "retry": "TODO: Повторити",
-      "retrying": "TODO: Повторна спроба",
-      "title": "TODO: Офлайн"
+      "lastSync": "TODO: Last synced",
+      "message": "TODO: You're offline",
+      "retry": "TODO: Retry",
+      "retrying": "TODO: Retrying",
+      "title": "TODO: Offline"
     },
-    "open": "Відкрити",
-    "optional": "необов'язково",
-    "other": "Інше",
-    "previous": "Назад",
-    "previousWeek": "Попередній тиждень",
+    "open": "Open",
+    "optional": "optional",
+    "other": "Other",
+    "previous": "Back",
+    "previousWeek": "Previous week",
     "rateLimit": {
-      "message": "Забагато запитів. Зачекайте перед повтором.",
-      "seconds": "секунд",
-      "title": "Ліміт запитів перевищено",
-      "tryNow": "Спробувати зараз",
-      "waiting": "Очікування..."
+      "message": "Too many requests. Please wait before retrying.",
+      "seconds": "seconds",
+      "title": "Rate limit exceeded",
+      "tryNow": "Try now",
+      "waiting": "Waiting..."
     },
-    "refresh": "Оновити",
-    "reject": "Відхилити",
-    "remove": "Видалити",
-    "retry": "TODO: Повторити",
-    "save": "Зберегти",
-    "saving": "Зберігаємо",
-    "search": "Пошук",
-    "searching": "Пошук",
-    "showing": "Показано",
-    "there": "там",
-    "today": "Сьогодні",
-    "understood": "Зрозуміло",
-    "unlock": "Розблокувати",
+    "refresh": "Refresh",
+    "reject": "Reject",
+    "remove": "Remove",
+    "retry": "TODO: Retry",
+    "save": "Save",
+    "saving": "Saving",
+    "search": "Search",
+    "searching": "Searching",
+    "showing": "Showing",
+    "there": "there",
+    "today": "Today",
+    "understood": "Got it",
+    "unlock": "Unlock",
     "weekdays": {
       "${day}": "{day}",
       "${weekday}": "{weekday}",
-      "friday": "Пʼятниця",
-      "monday": "Понеділок",
-      "saturday": "Субота",
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
       "short": {
-        "fri": "Пт",
-        "mon": "Пн",
-        "sat": "Сб",
-        "sun": "Нд",
-        "thu": "Чт",
-        "tue": "Вт",
-        "wed": "Ср"
+        "fri": "Fri",
+        "mon": "Mon",
+        "sat": "Sat",
+        "sun": "Sun",
+        "thu": "Thu",
+        "tue": "Tue",
+        "wed": "Wed"
       },
-      "sunday": "Неділя",
-      "thursday": "Четвер",
-      "tuesday": "Вівторок",
-      "wednesday": "Середа"
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday"
     },
-    "years": "років"
+    "years": "years"
   },
   "tutorSearch": {
     "actions": {
-      "resend": "Надіслати ще раз"
+      "resend": "Resend"
     },
     "lessonLinks": {
       "backup": {
-        "description": "Буде використовуватися, якщо основне посилання недоступне",
-        "title": "Резервне посилання"
+        "description": "Used if the primary link is unavailable",
+        "title": "Backup link"
       },
       "errors": {
-        "conflict": "Налаштування були змінені в іншій сесії. Оновіть сторінку.",
-        "loadFailed": "Не вдалося завантажити посилання",
-        "saveFailed": "Не вдалося зберегти посилання"
+        "conflict": "Settings were changed in another session. Refresh the page.",
+        "loadFailed": "Couldn't load links",
+        "saveFailed": "Couldn't save links"
       },
-      "notSet": "Не встановлено",
-      "platformGenerated": "Генерується автоматично",
-      "platformInfo": "Платформа автоматично генерує унікальні посилання для кожного уроку",
+      "notSet": "Not set",
+      "platformGenerated": "Generated automatically",
+      "platformInfo": "The platform automatically generates a unique link for each lesson",
       "preview": {
-        "current": "Активне посилання",
-        "title": "Поточне посилання"
+        "current": "Active link",
+        "title": "Current link"
       },
       "primary": {
-        "description": "Це посилання буде використовуватися для всіх уроків за замовчуванням",
-        "title": "Основне посилання"
+        "description": "This link will be used for all lessons by default",
+        "title": "Primary link"
       },
-      "provider": "Платформа",
+      "provider": "Platform",
       "providers": {
-        "custom": "Власне посилання",
+        "custom": "Custom link",
         "meet": "Google Meet",
-        "platform": "Платформа M4SH",
+        "platform": "M4SH platform",
         "zoom": "Zoom"
       },
-      "subtitle": "Налаштуйте основне та резервне посилання для проведення уроків",
+      "subtitle": "Set up a primary and backup link for running lessons",
       "success": {
-        "saved": "Посилання успішно збережено"
+        "saved": "Link saved successfully"
       },
-      "title": "Посилання на уроки",
-      "url": "Посилання",
+      "title": "Lesson links",
+      "url": "Link",
       "validation": {
-        "fixErrors": "Виправте помилки перед збереженням",
-        "invalidProtocol": "Посилання має починатися з https://",
-        "invalidUrl": "Невірний формат посилання",
-        "required": "Поле обов'язкове"
+        "fixErrors": "Fix the errors before saving",
+        "invalidProtocol": "The link must start with https://",
+        "invalidUrl": "Invalid link format",
+        "required": "This field is required"
       }
     },
-    "loadError": "Не вдалося завантажити список тьюторів",
+    "loadError": "Couldn't load the list of tutors",
     "notifications": {
-      "acceptError": "Не вдалося підтвердити запрошення",
-      "acceptSuccess": "Запрос підтверджено",
-      "declineError": "Не вдалося скасувати запрошення",
-      "declineSuccess": "Запрос скасовано",
-      "resendError": "Не вдалося повторно надіслати запрошення",
-      "resendSuccess": "Запрошення повторно надіслано"
+      "acceptError": "Couldn't accept the invitation",
+      "acceptSuccess": "Request accepted",
+      "declineError": "Couldn't decline the invitation",
+      "declineSuccess": "Request declined",
+      "resendError": "Couldn't resend the invitation",
+      "resendSuccess": "Invitation resent"
     },
     "request": {
-      "button": "Подати запит",
-      "error": "Не вдалося надіслати запит",
-      "success": "Запит надіслано тьютору"
+      "button": "Send request",
+      "error": "Couldn't send request",
+      "success": "Request sent to tutor"
     },
-    "title": "Знайти тьютора"
+    "title": "Find a tutor"
   },
   "contacts": {
     "address": "Address",
@@ -6193,8 +6193,8 @@
     }
   },
   "profile": {
-    "accountSettingsDescription": "Мова, приватність та сповіщення.",
-    "accountSettingsTitle": "Акаунт та вподобання",
+    "accountSettingsDescription": "Language, privacy, and notifications.",
+    "accountSettingsTitle": "Account and preferences",
     "actions": {
       "cancel": "Cancel",
       "revert": "Revert changes",
@@ -6203,34 +6203,34 @@
     },
     "activity": {
       "columns": {
-        "action": "Дія",
-        "metadata": "Метадані",
-        "timestamp": "Час"
+        "action": "Action",
+        "metadata": "Metadata",
+        "timestamp": "Time"
       },
-      "empty": "Порожньо",
-      "endOfLog": "Кінець журналу",
-      "eventsTitle": "Події",
+      "empty": "Empty",
+      "endOfLog": "End of log",
+      "eventsTitle": "Events",
       "filters": {
-        "action": "Дія",
-        "apply": "Застосувати",
-        "dateFrom": "Дата від",
-        "dateTo": "Дата до",
-        "entity": "Сутність",
-        "reset": "Скинути"
+        "action": "Action",
+        "apply": "Apply",
+        "dateFrom": "Date from",
+        "dateTo": "Date to",
+        "entity": "Entity",
+        "reset": "Reset"
       },
-      "hideMetadata": "Приховати метадані",
-      "loadMore": "Завантажити більше",
-      "loading": "Завантаження...",
-      "refresh": "Оновити",
-      "refreshing": "Оновлення...",
-      "showMetadata": "Показати метадані",
-      "subtitle": "Підзаголовок",
-      "title": "Активність"
+      "hideMetadata": "Hide metadata",
+      "loadMore": "Load more",
+      "loading": "Loading...",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "showMetadata": "Show metadata",
+      "subtitle": "Subtitle",
+      "title": "Activity"
     },
     "autosave": {
-      "clean": "Зміни відсутні",
+      "clean": "No changes",
       "saved": "Saved",
-      "error": "Не вдалося зберегти чернетку",
+      "error": "Couldn't save draft",
       "rateLimited": "Too many requests. Please try again later.",
       "restored": "Draft restored",
       "savedAt": "Saved at {time}",
@@ -6247,78 +6247,78 @@
       "upload": "Upload",
       "uploading": "Uploading…"
     },
-    "bio": "Про себе",
-    "bioEmpty": "Додайте короткий опис про себе.",
+    "bio": "About",
+    "bioEmpty": "Add a short description about yourself.",
     "draft": {
-      "discard": "Скасувати чернетку",
-      "discardError": "Не вдалося видалити чернетку",
-      "error": "Не вдалося отримати чернетку",
-      "foundDescription": "Є незбережені зміни від {time}. Відновити їх чи почати заново?",
-      "foundDescriptionNoTime": "Є незбережені зміни. Відновити їх чи почати заново?",
-      "foundTitle": "Виявлено чернетку",
-      "loading": "Перевіряємо наявність чернетки…",
-      "restore": "Відновити"
+      "discard": "Discard draft",
+      "discardError": "Couldn't delete draft",
+      "error": "Couldn't load draft",
+      "foundDescription": "There are unsaved changes from {time}. Restore them or start over?",
+      "foundDescriptionNoTime": "There are unsaved changes. Restore them or start over?",
+      "foundTitle": "Draft found",
+      "loading": "Checking for a draft…",
+      "restore": "Restore"
     },
-    "editButton": "Редагувати профіль",
-    "editDescription": "Оновіть персональні дані та те, як вас бачать студенти.",
-    "editTitle": "Редагування профілю",
+    "editButton": "Edit profile",
+    "editDescription": "Update your personal details and how students see you.",
+    "editTitle": "Edit profile",
     "editor": {
       "certifications": {
-        "add": "Додати сертифікат",
-        "issuer": "Видавець",
-        "name": "Назва",
-        "title": "Сертифікати",
-        "year": "Рік"
+        "add": "Add certificate",
+        "issuer": "Issuer",
+        "name": "Name",
+        "title": "Certificates",
+        "year": "Year"
       },
       "education": {
-        "add": "Додати освіту",
-        "degree": "Ступінь",
-        "endYear": "Рік закінчення",
-        "field": "Напрямок",
-        "institution": "Заклад",
-        "startYear": "Рік початку",
-        "title": "Освіта"
+        "add": "Add education",
+        "degree": "Degree",
+        "endYear": "End year",
+        "field": "Field",
+        "institution": "Institution",
+        "startYear": "Start year",
+        "title": "Education"
       },
       "languages": {
-        "add": "Додати мову",
-        "language": "Мова",
-        "level": "Рівень",
-        "title": "Мови"
+        "add": "Add language",
+        "language": "Language",
+        "level": "Level",
+        "title": "Languages"
       },
       "pricing": {
-        "discount": "Знижка %",
-        "hourlyRate": "Погодинна ставка",
-        "lessons": "Занять",
-        "packages": "Пакети",
-        "price": "Ціна",
-        "title": "Ціни",
-        "trialRate": "Пробне заняття"
+        "discount": "Discount %",
+        "hourlyRate": "Hourly rate",
+        "lessons": "Lessons",
+        "packages": "Packages",
+        "price": "Price",
+        "title": "Pricing",
+        "trialRate": "Trial lesson"
       }
     },
     "email": "Email",
     "form": {
-      "bio": "Про себе",
-      "bioPlaceholder": "Розкажіть про свій підхід, досвід чи цілі.",
-      "firstName": "Ім’я",
-      "headline": "Заголовок",
-      "headlineHint": "Короткий слоган, який бачать студенти.",
-      "lastName": "Прізвище",
-      "timezone": "Таймзона",
-      "timezonePlaceholder": "Оберіть таймзону"
+      "bio": "About",
+      "bioPlaceholder": "Tell students about your approach, experience, or goals.",
+      "firstName": "First name",
+      "headline": "Headline",
+      "headlineHint": "A short tagline students will see.",
+      "lastName": "Last name",
+      "timezone": "Time zone",
+      "timezonePlaceholder": "Select a time zone"
     },
-    "headline": "Заголовок",
+    "headline": "Headline",
     "messages": {
-      "avatarDeleteError": "Помилка видалення аватара",
-      "avatarDeleteSuccess": "Аватар успішно видалено",
-      "avatarUpdateError": "Не вдалося оновити фото.",
-      "avatarUpdateSuccess": "Фото оновлено.",
-      "loadError": "Не вдалося завантажити профіль",
-      "saveError": "Не вдалося зберегти зміни",
-      "saveSuccess": "Зміни збережено",
-      "validationName": "Введіть щонайменше 2 символи.",
-      "validationTimezone": "Оберіть таймзону."
+      "avatarDeleteError": "Failed to delete avatar",
+      "avatarDeleteSuccess": "Avatar deleted",
+      "avatarUpdateError": "Couldn't update photo.",
+      "avatarUpdateSuccess": "Photo updated.",
+      "loadError": "Couldn't load profile",
+      "saveError": "Couldn't save changes",
+      "saveSuccess": "Changes saved",
+      "validationName": "Enter at least 2 characters.",
+      "validationTimezone": "Select a time zone."
     },
-    "role": "Роль",
+    "role": "Role",
     "security": {
       "mfa": {
         "backupCodesSubtitle": "Store them in a safe place. Each code can be used once.",
@@ -6392,7 +6392,7 @@
         "unknownDevice": "Unknown device"
       }
     },
-    "settingsButton": "Налаштування акаунта",
+    "settingsButton": "Account settings",
     "settingsPage": {
       "actions": {
         "saveTimezone": "Save time zone",
@@ -6421,33 +6421,33 @@
       },
       "title": "Profile settings"
     },
-    "subjectsAddButton": "Додати",
-    "subjectsAddPlaceholder": "Новий предмет",
-    "subjectsEmpty": "Додайте предмети, які викладаєте, щоб виділити експертизу.",
-    "subjectsTitle": "Предмети",
-    "subtitle": "Актуалізуйте свою особисту інформацію.",
-    "timezone": "Таймзона",
-    "title": "Профіль",
+    "subjectsAddButton": "Add",
+    "subjectsAddPlaceholder": "New subject",
+    "subjectsEmpty": "Add the subjects you teach to highlight your expertise.",
+    "subjectsTitle": "Subjects",
+    "subtitle": "Keep your personal information up to date.",
+    "timezone": "Time zone",
+    "title": "Profile",
     "account": {
-      "avatar": "Фото профілю",
-      "chooseAvatar": "Оберіть фото",
-      "deleteAvatar": "Видалити фото",
-      "deleteAvatarMessage": "Ця дія незворотна. Ви впевнені?",
-      "deleteAvatarTitle": "Видалити фото профілю?",
-      "emailHelper": "Email не можна змінити. Зверніться до підтримки, якщо потрібна зміна.",
-      "managePassword": "Керувати паролем",
-      "personalInfo": "Особиста інформація",
-      "security": "Безпека",
-      "securityDescription": "Керуйте паролем та двофакторною автентифікацією",
-      "title": "Налаштування акаунта",
-      "uploadAvatar": "Завантажити фото"
+      "avatar": "Profile photo",
+      "chooseAvatar": "Choose a photo",
+      "deleteAvatar": "Delete photo",
+      "deleteAvatarMessage": "This action can't be undone. Are you sure?",
+      "deleteAvatarTitle": "Delete profile photo?",
+      "emailHelper": "Email can't be changed. Contact support if you need to change it.",
+      "managePassword": "Manage password",
+      "personalInfo": "Personal information",
+      "security": "Security",
+      "securityDescription": "Manage your password and two-factor authentication",
+      "title": "Account settings",
+      "uploadAvatar": "Upload photo"
     },
     "edit": {
-      "discardConfirm": "Так, скасувати",
-      "discardMessage": "У вас є незбережені зміни. Ви впевнені, що хочете їх скасувати?",
-      "discardTitle": "Скасувати зміни?",
-      "subtitle": "Оновіть свою особисту інформацію",
-      "title": "Редагування профілю"
+      "discardConfirm": "Yes, discard",
+      "discardMessage": "You have unsaved changes. Are you sure you want to discard them?",
+      "discardTitle": "Discard changes?",
+      "subtitle": "Update your personal information",
+      "title": "Edit profile"
     },
     "fields": {
       "bio": "About you",
@@ -6465,21 +6465,21 @@
       "timezoneHelper": "Choose your time zone for correct schedule display"
     },
     "overview": {
-      "accountSettings": "Налаштування акаунта",
-      "completeness": "Заповненість профілю",
-      "editProfile": "Редагувати профіль",
-      "noBio": "Опис ще не додано",
-      "title": "Огляд профілю"
+      "accountSettings": "Account settings",
+      "completeness": "Profile completeness",
+      "editProfile": "Edit profile",
+      "noBio": "No description added yet",
+      "title": "Profile overview"
     },
     "sections": {
-      "about": "Про себе",
-      "basicInfo": "Основна інформація",
-      "professional": "Професійна інформація"
+      "about": "About",
+      "basicInfo": "Basic information",
+      "professional": "Professional information"
     },
-    "phone": "Номер телефону",
-    "phoneHint": "Міжнародний формат: +380501234567",
+    "phone": "Phone number",
+    "phoneHint": "International format: +380501234567",
     "telegram": "Telegram",
-    "telegramHint": "Ваш Telegram username (наприклад: @username)"
+    "telegramHint": "Your Telegram username (for example: @username)"
   },
   "tutors": {
     "analytics": {
@@ -6723,139 +6723,139 @@
     }
   },
   "phone_verification": {
-    "title": "Підтвердження телефону",
-    "description": "Підтвердіть ваш номер телефону для верифікації акаунту",
-    "send_code": "Надіслати код",
-    "verify_code": "Підтвердити код",
-    "resend_code": "Надіслати код повторно",
-    "code_sent": "Код надіслано на номер {phone}",
-    "enter_code": "Введіть 6-значний код з SMS",
+    "title": "Phone verification",
+    "description": "Confirm your phone number to verify your account",
+    "send_code": "Send code",
+    "verify_code": "Verify code",
+    "resend_code": "Resend code",
+    "code_sent": "Code sent to {phone}",
+    "enter_code": "Enter the 6-digit code from the SMS",
     "code_placeholder": "000000",
-    "code_valid_for": "Код дійсний {time}",
-    "expired": "прострочено",
-    "success_title": "Телефон підтверджено!",
-    "success_message": "Ваш номер телефону успішно верифіковано",
+    "code_valid_for": "Code valid for {time}",
+    "expired": "expired",
+    "success_title": "Phone verified!",
+    "success_message": "Your phone number has been successfully verified",
     "errors": {
-      "no_phone": "Будь ласка, додайте номер телефону до вашого профілю",
-      "invalid_phone": "Невірний формат телефону. Використовуйте міжнародний формат: +[код країни][номер]",
-      "rate_limited": "Забагато спроб верифікації. Спробуйте пізніше",
-      "send_failed": "Не вдалося надіслати код. Спробуйте ще раз",
-      "session_not_found": "Сесія верифікації не знайдена",
-      "session_expired": "Сесія верифікації прострочена. Запитайте новий код",
-      "invalid_code": "Невірний код верифікації",
-      "too_many_attempts": "Забагато спроб. Запитайте новий код",
-      "phone_already_verified": "Цей номер вже верифіковано іншим тьютором",
-      "no_session": "Немає активної сесії верифікації",
-      "unknown": "Сталася невідома помилка. Спробуйте ще раз"
+      "no_phone": "Please add a phone number to your profile",
+      "invalid_phone": "Invalid phone format. Use international format: +[country code][number]",
+      "rate_limited": "Too many verification attempts. Try again later",
+      "send_failed": "Failed to send code. Please try again",
+      "session_not_found": "Verification session not found",
+      "session_expired": "Verification session expired. Request a new code",
+      "invalid_code": "Invalid verification code",
+      "too_many_attempts": "Too many attempts. Request a new code",
+      "phone_already_verified": "This number has already been verified by another tutor",
+      "no_session": "No active verification session",
+      "unknown": "An unknown error occurred. Please try again"
     }
   },
   "entitlements": {
     "features": {
-      "title": "Можливості тарифу",
-      "subtitle": "Ваш тариф: {plan}",
-      "included": "Включено",
-      "upgradeRequired": "Потрібне оновлення",
-      "limit": "Ліміт: {value}",
-      "upgradePrompt": "Оновіть тариф для більших можливостей",
-      "upgradeCta": "Оновити тариф",
-      "graceAlert": "Grace period: {days} днів",
-      "trialAlert": "Пробний період: {days} днів"
+      "title": "Plan features",
+      "subtitle": "Your plan: {plan}",
+      "included": "Included",
+      "upgradeRequired": "Upgrade required",
+      "limit": "Limit: {value}",
+      "upgradePrompt": "Upgrade your plan for more features",
+      "upgradeCta": "Upgrade plan",
+      "graceAlert": "Grace period: {days} days",
+      "trialAlert": "Trial period: {days} days"
     },
     "grace": {
       "title": "Grace Period",
-      "message": "Підписка закінчилась. Залишилось {days} днів.",
-      "submessage": "Після grace period доступ буде обмежено.",
-      "renew": "Оновити підписку",
-      "dismiss": "Зрозуміло"
+      "message": "Subscription has ended. {days} days remaining.",
+      "submessage": "After the grace period, access will be limited.",
+      "renew": "Renew subscription",
+      "dismiss": "Got it"
     },
     "locked": {
-      "title": "Функція недоступна",
-      "upgrade": "Оновити тариф"
+      "title": "Feature unavailable",
+      "upgrade": "Upgrade plan"
     }
   },
   "reviews": {
-    "title": "Відгуки",
-    "myReviews": "Мої відгуки",
-    "myReviewsSubtitle": "Відгуки, які ви написали",
-    "writtenByMe": "Написані мною",
-    "pendingReviews": "Очікує написання",
-    "reviewsCount": "відгуків",
-    "stars": "зірок",
-    "star": "зірка",
-    "verified": "Перевірено",
-    "verifiedReviews": "перевірених",
-    "anonymous": "Анонімно",
-    "tutorResponse": "Відповідь тьютора",
-    "helpful": "Корисно",
-    "report": "Поскаржитися",
-    "edit": "Редагувати",
-    "delete": "Видалити",
-    "writeReview": "Написати відгук",
-    "writeAReview": "Залишити відгук",
-    "writeReviewHint": "Поділіться досвідом",
-    "yourRating": "Ваша оцінка",
-    "yourReview": "Ваш відгук",
-    "selectRating": "Оберіть оцінку",
+    "title": "Reviews",
+    "myReviews": "My reviews",
+    "myReviewsSubtitle": "Reviews you have written",
+    "writtenByMe": "Written by me",
+    "pendingReviews": "Awaiting review",
+    "reviewsCount": "reviews",
+    "stars": "stars",
+    "star": "star",
+    "verified": "Verified",
+    "verifiedReviews": "verified",
+    "anonymous": "Anonymous",
+    "tutorResponse": "Tutor's response",
+    "helpful": "Helpful",
+    "report": "Report",
+    "edit": "Edit",
+    "delete": "Delete",
+    "writeReview": "Write a review",
+    "writeAReview": "Leave a review",
+    "writeReviewHint": "Share your experience",
+    "yourRating": "Your rating",
+    "yourReview": "Your review",
+    "selectRating": "Select a rating",
     "rating": {
-      "poor": "Погано",
-      "fair": "Задовільно",
-      "average": "Середньо",
-      "good": "Добре",
-      "excellent": "Відмінно"
+      "poor": "Poor",
+      "fair": "Fair",
+      "average": "Average",
+      "good": "Good",
+      "excellent": "Excellent"
     },
-    "reviewPlaceholder": "Напишіть відгук...",
-    "anonymousLabel": "Анонімно",
-    "anonymousHint": "Ваше ім'я не буде відображено",
-    "editWarning": "Редагування доступне 24 години",
-    "submitReview": "Надіслати",
-    "alreadyReviewed": "Вже залишено відгук",
-    "noCompletedLessons": "Немає завершених занять",
-    "tooSoon": "Занадто рано",
-    "reviewBlocked": "Відгук заблоковано",
-    "allReviewsFor": "Всі відгуки про",
-    "tutor": "тьютора",
-    "viewAllReviews": "Переглянути всі",
-    "strengths": "Сильні сторони",
+    "reviewPlaceholder": "Write your review...",
+    "anonymousLabel": "Anonymous",
+    "anonymousHint": "Your name will not be shown",
+    "editWarning": "Editing is available for 24 hours",
+    "submitReview": "Submit",
+    "alreadyReviewed": "Review already left",
+    "noCompletedLessons": "No completed lessons",
+    "tooSoon": "Too soon",
+    "reviewBlocked": "Review blocked",
+    "allReviewsFor": "All reviews about",
+    "tutor": "tutor",
+    "viewAllReviews": "View all",
+    "strengths": "Strengths",
     "filters": {
-      "all": "Всі",
-      "verifiedOnly": "Тільки перевірені",
-      "withResponse": "З відповідями"
+      "all": "All",
+      "verifiedOnly": "Verified only",
+      "withResponse": "With responses"
     },
     "sort": {
-      "newest": "Спочатку нові",
-      "oldest": "Спочатку старі",
-      "highest": "Спочатку висока оцінка",
-      "lowest": "Спочатку низька оцінка",
-      "helpful": "Найкорисніші"
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "highest": "Highest rating first",
+      "lowest": "Lowest rating first",
+      "helpful": "Most helpful"
     },
-    "noReviews": "Немає відгуків",
-    "noReviewsSubtitle": "Будьте першим",
-    "writeFirst": "Написати перший",
-    "loadMore": "Завантажити ще",
-    "noWrittenReviews": "Немає написаних відгуків",
-    "noWrittenReviewsSubtitle": "Залиште відгук після заняття",
-    "noPendingReviews": "Немає очікуючих відгуків",
-    "noPendingReviewsSubtitle": "Всі відгуки залишено",
-    "completedLesson": "Завершене заняття",
-    "canReviewUntil": "Можна відгукнутися до",
-    "editPlaceholder": "Редагуйте відгук...",
-    "minLengthError": "Мінімум 50 символів",
-    "reportCommentPlaceholder": "Опишіть проблему...",
-    "reportSubtitle": "Скарга на відгук",
-    "reportTitle": "Поскаржитися",
-    "submitReport": "Відправити скаргу",
-    "writeReviewSubtitle": "Поділіться досвідом"
+    "noReviews": "No reviews",
+    "noReviewsSubtitle": "Be the first",
+    "writeFirst": "Write the first",
+    "loadMore": "Load more",
+    "noWrittenReviews": "No written reviews",
+    "noWrittenReviewsSubtitle": "Leave a review after a lesson",
+    "noPendingReviews": "No pending reviews",
+    "noPendingReviewsSubtitle": "All reviews have been left",
+    "completedLesson": "Completed lesson",
+    "canReviewUntil": "You can review until",
+    "editPlaceholder": "Edit your review...",
+    "minLengthError": "Minimum 50 characters",
+    "reportCommentPlaceholder": "Describe the problem...",
+    "reportSubtitle": "Report a review",
+    "reportTitle": "Report",
+    "submitReport": "Submit report",
+    "writeReviewSubtitle": "Share your experience"
   },
   "contactModal": {
-    "title": "Контакти",
-    "inquiryPreview": "Попередній перегляд",
-    "unlockedContactsTitle": "Розблоковані контакти",
-    "contactTypeLabel": "Тип контакту",
-    "tokenCostLabel": "Вартість",
-    "noTokensMessage": "Недостатньо токенів",
-    "buyTokensButton": "Купити токени",
-    "cancelButton": "Скасувати",
-    "unlockButton": "Розблокувати"
+    "title": "Contacts",
+    "inquiryPreview": "Preview",
+    "unlockedContactsTitle": "Unlocked contacts",
+    "contactTypeLabel": "Contact type",
+    "tokenCostLabel": "Cost",
+    "noTokensMessage": "Not enough tokens",
+    "buyTokensButton": "Buy tokens",
+    "cancelButton": "Cancel",
+    "unlockButton": "Unlock"
   },
   "roleSelection": {
     "title": "Choose Your Role",
@@ -9102,7 +9102,7 @@
     },
     "language": {
       "all": "All languages",
-      "uk": "Українська",
+      "uk": "Ukrainian",
       "en": "English"
     },
     "item": {
