@@ -130,6 +130,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   getMarketplaceVerifications,
   reviewMarketplaceVerification,
@@ -231,7 +232,7 @@ function statusLabel(status: string): string {
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

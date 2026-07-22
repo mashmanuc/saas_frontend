@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import VerificationBadge from './VerificationBadge.vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 export interface VerificationStatus {
   level: 'none' | 'basic' | 'advanced' | 'premium'
@@ -53,7 +54,7 @@ function handleRequestClick() {
 
       <div v-if="status.expiryDate" class="expiry-info">
         <span class="label">{{ t('marketplace.verification.widget.expiresOn') }}</span>
-        <span class="value">{{ new Date(status.expiryDate).toLocaleDateString() }}</span>
+        <span class="value">{{ new Date(status.expiryDate).toLocaleDateString(activeLocale()) }}</span>
       </div>
 
       <div v-if="status.status === 'pending'" class="pending-notice">

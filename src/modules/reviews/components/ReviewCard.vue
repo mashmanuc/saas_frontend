@@ -166,6 +166,7 @@ import { useReviewsStore } from '../stores/reviewsStore'
 import Button from '@/ui/Button.vue'
 import Modal from '@/ui/Modal.vue'
 import Textarea from '@/ui/Textarea.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps({
   review: {
@@ -210,7 +211,7 @@ const canSaveEdit = computed(() => {
 // Methods
 function formatDate(dateString) {
   const date = new Date(dateString)
-  return date.toLocaleDateString('uk-UA', {
+  return date.toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

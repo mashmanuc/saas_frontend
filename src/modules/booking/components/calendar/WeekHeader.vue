@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   weekStart: string
@@ -37,7 +38,7 @@ const weekDays = computed((): DayInfo[] => {
     date.setDate(date.getDate() + i)
     
     const dateStr = date.toISOString().split('T')[0]
-    const label = date.toLocaleDateString('uk-UA', { weekday: 'short' })
+    const label = date.toLocaleDateString(activeLocale(), { weekday: 'short' })
     const number = date.getDate().toString()
     const isToday = dateStr === today
     

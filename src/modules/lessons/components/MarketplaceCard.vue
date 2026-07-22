@@ -67,6 +67,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Badge from '@/ui/Badge.vue'
 import type { MarketplaceTemplateSummary } from '../types/lessonTypes'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   template: MarketplaceTemplateSummary
@@ -97,7 +98,7 @@ const priceClass = computed(() => {
 
 const formattedDate = computed(() => {
   try {
-    return new Date(props.template.created_at).toLocaleDateString('uk-UA', {
+    return new Date(props.template.created_at).toLocaleDateString(activeLocale(), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

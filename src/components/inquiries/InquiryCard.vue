@@ -48,6 +48,7 @@
 import { computed } from 'vue'
 import type { InquiryDTO } from '@/types/inquiries'
 import CountdownTimer from './CountdownTimer.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface UserSummary {
   id: string
@@ -91,7 +92,7 @@ const statusLabel = computed(() => {
 
 const formattedDate = computed(() => {
   const date = new Date(props.inquiry.created_at)
-  return date.toLocaleDateString('uk-UA', { 
+  return date.toLocaleDateString(activeLocale(), { 
     day: 'numeric', 
     month: 'short',
     hour: '2-digit',

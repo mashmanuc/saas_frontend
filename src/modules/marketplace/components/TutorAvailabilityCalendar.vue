@@ -91,6 +91,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -302,17 +303,17 @@ function formatWeekRange(start: Date): string {
   const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000)
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
   const yearStr = end.getFullYear()
-  return `${start.toLocaleDateString('uk-UA', opts)}-${end.toLocaleDateString('uk-UA', opts)}, ${yearStr}`
+  return `${start.toLocaleDateString(activeLocale(), opts)}-${end.toLocaleDateString(activeLocale(), opts)}, ${yearStr}`
 }
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })
+  return date.toLocaleDateString(activeLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function formatDayWeekday(dateStr: string): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString('uk-UA', { weekday: 'short' }).toUpperCase()
+  return date.toLocaleDateString(activeLocale(), { weekday: 'short' }).toUpperCase()
 }
 
 function formatDayNumber(dateStr: string): string {
@@ -330,7 +331,7 @@ function isToday(dateStr: string): boolean {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: props.timezone,

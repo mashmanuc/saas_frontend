@@ -128,6 +128,7 @@ import { useFeedbackStore } from '../stores/feedbackStore'
 import StatusBadge from '../components/StatusBadge.vue'
 import VoteButton from '../components/VoteButton.vue'
 import CommentList from '../components/CommentList.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const STATUSES = [
   'open', 'under_review', 'planned', 'in_progress',
@@ -208,7 +209,7 @@ async function onToggleHide() {
 function formatDate(iso) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })
+    return new Date(iso).toLocaleString(activeLocale(), { dateStyle: 'short', timeStyle: 'short' })
   } catch (e) {
     return iso
   }

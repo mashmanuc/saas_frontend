@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { Calendar, BookOpen, RefreshCw } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 import type { Plan, Subscription } from '../../api/payments'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   subscription: Subscription
@@ -29,7 +30,7 @@ function formatCurrency(amount: number, currency: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

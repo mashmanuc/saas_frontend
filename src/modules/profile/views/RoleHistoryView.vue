@@ -131,6 +131,7 @@ import Button from '@/ui/Button.vue'
 import { getRoleHistory, type RoleHistoryEntry } from '@/api/users'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
+import { activeLocale } from '@/utils/i18nDate'
 
 const route = useRoute()
 const router = useRouter()
@@ -172,7 +173,7 @@ async function loadHistory() {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return new Intl.DateTimeFormat('uk-UA', {
+  return new Intl.DateTimeFormat(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

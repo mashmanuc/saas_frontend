@@ -40,6 +40,7 @@ import Card from '@/components/ui/Card.vue'
 import Badge from '@/components/ui/Badge.vue'
 import Alert from '@/components/ui/Alert.vue'
 import type { ContactLimit } from '@/types/relations'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   limitType: 'student_request' | 'tutor_accept'
@@ -75,7 +76,7 @@ function getBadgeVariant(limit: ContactLimit): 'success' | 'warning' | 'error' {
 }
 
 function formatResetDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short'
   })

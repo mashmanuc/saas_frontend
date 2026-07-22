@@ -8,6 +8,7 @@ import { useSubscriptionStore } from '../stores/subscriptionStore'
 import CurrentPlan from '../components/subscription/CurrentPlan.vue'
 import CancelModal from '../components/subscription/CancelModal.vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const store = useSubscriptionStore()
@@ -56,7 +57,7 @@ async function handleReactivate() {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

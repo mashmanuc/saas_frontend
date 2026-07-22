@@ -163,6 +163,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem, BoardFolder } from '../../api/winterboardApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ function formatTimeAgo(iso: string): string {
   if (hours < 24) return t('winterboard.time.hoursAgo', { n: hours })
   const days = Math.floor(hours / 24)
   if (days < 30) return t('winterboard.time.daysAgo', { n: days })
-  return new Date(iso).toLocaleDateString()
+  return new Date(iso).toLocaleDateString(activeLocale())
 }
 </script>
 

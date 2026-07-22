@@ -61,6 +61,7 @@ import { AlertTriangle, AlertCircle } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
 import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const loading = ref(true)
@@ -176,7 +177,7 @@ onMounted(async () => {
     }
     alerts.value = newAlerts
 
-    checkedAt.value = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+    checkedAt.value = new Date().toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
   } catch (e: any) {
     error.value = e?.message || t('staff.health.errorLoad')
   } finally {

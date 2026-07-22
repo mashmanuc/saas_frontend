@@ -8,6 +8,7 @@ import { useBookingStore } from '../stores/bookingStore'
 import marketplaceApi from '@/modules/marketplace/api/marketplace'
 import type { TutorProfileFull } from '@/modules/marketplace/api/marketplace'
 import type { BookingInput } from '../api/booking'
+import { activeLocale } from '@/utils/i18nDate'
 
 // Components
 import SlotPicker from '../components/booking/SlotPicker.vue'
@@ -197,7 +198,7 @@ function goToLessons() {
           <div class="summary-card">
             <div class="summary-row">
               <span>Date & Time</span>
-              <span>{{ new Date(selectedSlot.start_datetime).toLocaleString() }}</span>
+              <span>{{ new Date(selectedSlot.start_datetime).toLocaleString(activeLocale()) }}</span>
             </div>
             <div class="summary-row">
               <span>Duration</span>

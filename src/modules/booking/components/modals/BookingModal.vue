@@ -118,6 +118,7 @@ import Textarea from '@/ui/Textarea.vue'
 import { bookingApi } from '../../api/bookingApi'
 import type { TimeSlot } from '../../api/availabilityApi'
 import type { Booking } from '../../api/bookingApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   show: boolean
@@ -150,7 +151,7 @@ const isValid = computed(() => {
 })
 
 function formatDate(datetime: string): string {
-  return new Date(datetime).toLocaleDateString(undefined, {
+  return new Date(datetime).toLocaleDateString(activeLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

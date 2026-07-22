@@ -67,6 +67,7 @@ import { Clock as ClockIcon, User as UserIcon, Timer as TimerIcon } from 'lucide
 import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import JoinLessonPicker from './JoinLessonPicker.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   event: CalendarEvent
@@ -102,7 +103,7 @@ async function handleOpenClassroom() {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

@@ -91,6 +91,7 @@ import { bookingApi } from '@/modules/booking/api/booking'
 import { useSlotStore } from '@/stores/slotStore'
 import { useToast } from '@/composables/useToast'
 import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   slot: AccessibleSlot
@@ -115,7 +116,7 @@ const isLoading = ref(false)
 function formatDate(dateStr: string): string {
   // AccessibleSlot doesn't have date field, extract from start
   const date = new Date(dateStr || props.slot.start)
-  return date.toLocaleDateString(undefined, { 
+  return date.toLocaleDateString(activeLocale(), { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 

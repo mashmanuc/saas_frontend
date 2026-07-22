@@ -143,6 +143,7 @@ import type { AdminProfile } from '../api/profileModerationApi'
 import Button from '@/ui/Button.vue'
 import Badge from '@/ui/Badge.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -237,7 +238,7 @@ function statusLabel(status: string): string {
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

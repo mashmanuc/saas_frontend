@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Clock } from 'lucide-vue-next'
 import type { BadgeHistoryItem } from '../../api/marketplace'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   history?: BadgeHistoryItem[]
@@ -21,7 +22,7 @@ function formatDateTime(value: string): string {
   try {
     const dt = new Date(value)
     if (Number.isNaN(dt.getTime())) return value
-    return dt.toLocaleString()
+    return dt.toLocaleString(activeLocale())
   } catch {
     return value
   }

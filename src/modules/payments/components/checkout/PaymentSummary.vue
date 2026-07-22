@@ -2,6 +2,7 @@
 // F13: Payment Summary Component
 import { computed } from 'vue'
 import { ShoppingCart, Calendar, User } from 'lucide-vue-next'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   booking?: {
@@ -23,7 +24,7 @@ const formattedAmount = computed(() =>
 )
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

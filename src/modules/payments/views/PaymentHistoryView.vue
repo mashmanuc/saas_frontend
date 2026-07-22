@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { CreditCard, Filter, Download } from 'lucide-vue-next'
 import { usePaymentStore } from '../stores/paymentStore'
 import type { Payment } from '../api/payments'
+import { activeLocale } from '@/utils/i18nDate'
 
 const store = usePaymentStore()
 const { payments, isLoading, error, hasMore, totalCount } = storeToRefs(store)
@@ -77,7 +78,7 @@ function formatCurrency(amount: number, currency: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

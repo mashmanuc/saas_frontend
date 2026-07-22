@@ -86,6 +86,7 @@ import { ref } from 'vue'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import type { StaffReport } from '@/types/staff'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   report: StaffReport
@@ -118,7 +119,7 @@ async function handleResolve(status: 'DISMISSED' | 'ACTIONED') {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

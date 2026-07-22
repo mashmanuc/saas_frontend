@@ -155,6 +155,7 @@ import InquiryCard from '@/components/inquiries/InquiryCard.vue'
 import InquiryCardSkeleton from '@/components/inquiries/InquiryCardSkeleton.vue'
 import RejectInquiryModal from '@/components/inquiries/RejectInquiryModal.vue'
 import DeclineStreakWarning from '@/components/contacts/DeclineStreakWarning.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const inquiriesStore = useInquiriesStore()
 const contactsStore = useContactsStore()
@@ -186,7 +187,7 @@ const nextAvailableText = computed(() => {
   } else if (diffDays <= 7) {
     return `через ${diffDays} днів`
   } else {
-    return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
+    return date.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'long' })
   }
 })
 

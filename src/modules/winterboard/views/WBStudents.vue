@@ -75,6 +75,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/apiClient'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -122,7 +123,7 @@ function viewStudentSessions(student: Student): void {
 
 function formatDate(iso: string): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('uk-UA')
+  return new Date(iso).toLocaleDateString(activeLocale())
 }
 
 onMounted(fetchStudents)

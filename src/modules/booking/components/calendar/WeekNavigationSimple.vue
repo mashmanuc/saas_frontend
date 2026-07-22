@@ -37,6 +37,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -63,7 +64,7 @@ const weekRangeFormatted = computed(() => {
   const start = new Date(props.weekStart)
   const end = new Date(props.weekEnd)
 
-  return `${start.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
+  return `${start.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
 function handleNavigate(direction: -1 | 1) {

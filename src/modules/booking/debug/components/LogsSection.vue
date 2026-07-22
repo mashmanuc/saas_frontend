@@ -93,6 +93,7 @@
 import { ref } from 'vue'
 import { Copy as CopyIcon, ChevronDown as ChevronDownIcon, Trash as TrashIcon } from 'lucide-vue-next'
 import type { ApiLogEntry, WebSocketLogEntry } from '../types/calendarDebug'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   apiLogs: ApiLogEntry[]
@@ -127,7 +128,7 @@ function clearLogs() {
 function formatTime(isoString: string): string {
   try {
     const date = new Date(isoString)
-    return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   } catch {
     return isoString
   }

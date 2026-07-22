@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ChatMessageDTO } from '@/types/inquiries'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   message: ChatMessageDTO
@@ -98,7 +99,7 @@ const formattedTime = computed(() => {
   const timestamp = props.message.created_at ?? props.message.createdAt
   if (!timestamp) return ''
   const date = new Date(timestamp)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 })
 
 const isRead = computed(() => props.message.is_read ?? false)

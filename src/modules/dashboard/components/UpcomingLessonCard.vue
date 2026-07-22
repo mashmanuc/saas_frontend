@@ -36,6 +36,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import type { ActiveLesson } from '../api/dashboard'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   lesson: ActiveLesson
@@ -73,13 +74,13 @@ async function handleJoinClassroom() {
 const formattedDate = computed(() => {
   if (!props.lesson.scheduled_at) return 'Зараз'
   const date = new Date(props.lesson.scheduled_at)
-  return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+  return date.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short' })
 })
 
 const formattedTime = computed(() => {
   if (!props.lesson.scheduled_at) return ''
   const date = new Date(props.lesson.scheduled_at)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 })
 
 const participantName = computed(() => {

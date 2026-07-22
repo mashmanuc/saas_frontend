@@ -93,6 +93,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Copy as CopyIcon, ChevronDown as ChevronDownIcon } from 'lucide-vue-next'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   meta: any
@@ -131,7 +132,7 @@ async function copyMetadata() {
 function formatTime(isoString?: string): string {
   if (!isoString) return 'N/A'
   try {
-    return new Date(isoString).toLocaleString('uk-UA')
+    return new Date(isoString).toLocaleString(activeLocale())
   } catch {
     return isoString
   }

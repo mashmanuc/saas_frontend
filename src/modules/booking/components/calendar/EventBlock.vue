@@ -39,6 +39,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GripVertical as GripVerticalIcon } from 'lucide-vue-next'
 import type { CalendarEvent, EventLayout } from '@/modules/booking/types/calendarWeek'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -79,7 +80,7 @@ const ariaLabel = computed(() => {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

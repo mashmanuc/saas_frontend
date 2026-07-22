@@ -184,6 +184,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import staffAnalyticsApi from '../api/staffAnalyticsApi'
+import { activeLocale } from '@/utils/i18nDate'
 import type {
   FunnelSnapshotItem,
   FunnelRealtimeRoleData,
@@ -249,7 +250,7 @@ const realtimeData = ref<FunnelRealtimeRoleData>({
   first_inquiry_sent: 0,
 })
 
-const todayDate = computed(() => new Date().toLocaleDateString('uk-UA'))
+const todayDate = computed(() => new Date().toLocaleDateString(activeLocale()))
 
 // Dropoff
 const dropoffLoading = ref(false)

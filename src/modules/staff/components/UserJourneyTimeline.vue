@@ -125,6 +125,7 @@ import { useI18n } from 'vue-i18n'
 import staffAnalyticsApi from '@/modules/staff/api/staffAnalyticsApi'
 import type { UserJourneyResponse } from '@/modules/staff/api/staffAnalyticsApi'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   userId: number | string
@@ -213,7 +214,7 @@ function formatAction(action: string): string {
 }
 
 function formatTimestamp(ts: string): string {
-  return new Date(ts).toLocaleDateString('uk-UA', {
+  return new Date(ts).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

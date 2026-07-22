@@ -91,6 +91,7 @@ import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import authApi from '../../auth/api/authApi'
 import MFAStatusWidget from '../../auth/components/MFAStatusWidget.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -112,7 +113,7 @@ function formatDateTime(value) {
   try {
     const dt = new Date(value)
     if (Number.isNaN(dt.getTime())) return String(value)
-    return dt.toLocaleString()
+    return dt.toLocaleString(activeLocale())
   } catch {
     return String(value)
   }

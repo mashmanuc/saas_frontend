@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   Info as InfoIcon,
   Check as CheckIcon,
@@ -86,7 +87,7 @@ function handleClose() {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleString('uk-UA', {
+  return date.toLocaleString(activeLocale(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

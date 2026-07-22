@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-vue-next'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import type { Subscription } from '../../api/payments'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   subscription: Subscription | null
@@ -18,7 +19,7 @@ const emit = defineEmits<{
 const cancelImmediately = ref(false)
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

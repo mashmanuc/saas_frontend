@@ -376,6 +376,7 @@ import UserJourneyTimeline from '@/modules/staff/components/UserJourneyTimeline.
 import apiClient from '@/utils/apiClient'
 import { getSubscriptionPlans } from '@/modules/staff/api/subscriptionPlansApi'
 import type { PlanItem } from '@/modules/staff/api/subscriptionPlansApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -586,7 +587,7 @@ async function handleCancelBilling(mode: 'at_period_end' | 'immediate') {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

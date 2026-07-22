@@ -106,6 +106,7 @@ import { useRouter } from 'vue-router'
 import { useChatThreadsStore } from '@/stores/chatThreadsStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const chatThreadsStore = useChatThreadsStore()
@@ -171,7 +172,7 @@ function formatRelativeTime(isoString) {
   if (diffHours < 24) return `${diffHours} год тому`
   if (diffDays < 7) return `${diffDays} дн тому`
   
-  return date.toLocaleDateString('uk-UA', { 
+  return date.toLocaleDateString(activeLocale(), { 
     day: 'numeric', 
     month: 'short' 
   })

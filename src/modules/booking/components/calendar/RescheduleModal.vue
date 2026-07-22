@@ -72,6 +72,7 @@ import Button from '@/ui/Button.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import type { CalendarEvent, ReschedulePreviewResponse } from '@/modules/booking/types/calendarV055'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   event: CalendarEvent | null
@@ -102,7 +103,7 @@ const canConfirm = computed(() => {
 
 const formatDateTime = (datetime: string): string => {
   const date = new Date(datetime)
-  return date.toLocaleDateString('uk-UA', { 
+  return date.toLocaleDateString(activeLocale(), { 
     weekday: 'short', 
     day: 'numeric', 
     month: 'short',

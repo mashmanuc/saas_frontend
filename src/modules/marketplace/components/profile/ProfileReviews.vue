@@ -6,6 +6,7 @@ import marketplaceApi, { type Review } from '../../api/marketplace'
 import { notifyError } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   slug: string
@@ -89,7 +90,7 @@ watch(
       <article v-for="r in reviews" :key="r.id" class="review">
         <div class="review-header">
           <Rating :value="r.rating" :count="0" />
-          <time class="date">{{ new Date(r.created_at).toLocaleDateString() }}</time>
+          <time class="date">{{ new Date(r.created_at).toLocaleDateString(activeLocale()) }}</time>
         </div>
         <p class="text">{{ r.text }}</p>
       </article>

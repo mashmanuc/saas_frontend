@@ -28,6 +28,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CalendarCell } from '@/modules/booking/types/calendarWeek'
+import { activeLocale } from '@/utils/i18nDate'
 import '@/styles/calendar-tokens.css'
 
 const { t } = useI18n()
@@ -72,7 +73,7 @@ const tooltipText = computed(() => {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: props.timezone,

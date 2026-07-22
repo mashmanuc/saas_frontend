@@ -125,6 +125,7 @@ import ChatModal from '@/modules/chat/components/ChatModal.vue'
 import { useChatThreadsStore } from '@/stores/chatThreadsStore'
 import { notifyError, notifyWarning } from '@/utils/notify'
 import type { AssignedTutor } from '../api/dashboard'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   activeTutors: AssignedTutor[]
@@ -238,7 +239,7 @@ function getStatusBadgeClass(status: string): string {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return new Intl.DateTimeFormat('uk-UA', {
+    return new Intl.DateTimeFormat(activeLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

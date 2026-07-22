@@ -53,6 +53,7 @@ import { Calendar as CalendarIcon, AlertCircle as AlertCircleIcon, RefreshCw as 
 import marketplaceApi from '@/modules/marketplace/api/marketplace'
 import type { AvailableSlot } from '@/modules/marketplace/api/marketplace'
 import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   tutorId: number
@@ -83,7 +84,7 @@ const weekDays = computed(() => {
     date.setDate(date.getDate() + i)
     
     days.push({
-      name: date.toLocaleDateString('uk-UA', { weekday: 'short' }),
+      name: date.toLocaleDateString(activeLocale(), { weekday: 'short' }),
       date: date.getDate().toString(),
     })
   }
@@ -112,7 +113,7 @@ function getCellsForDay(dayOffset: number): AccessibleSlot[] {
 
 function formatTime(isoTime: string): string {
   const date = new Date(isoTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

@@ -116,6 +116,7 @@
 import { ref } from 'vue'
 import { useInviteCreate } from '@/composables/useInviteCreate'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const { isCreating, invite, create } = useInviteCreate()
@@ -151,7 +152,7 @@ async function copyToClipboard() {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

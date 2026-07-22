@@ -226,6 +226,7 @@ import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import Heading from '@/ui/Heading.vue'
 import type { SubscriptionStatus } from '../api/billingApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -350,7 +351,7 @@ function getStatusClass(status: SubscriptionStatus): string {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return new Intl.DateTimeFormat('uk-UA', {
+    return new Intl.DateTimeFormat(activeLocale(), {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

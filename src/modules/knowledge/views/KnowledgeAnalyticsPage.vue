@@ -146,6 +146,7 @@ import { useI18n } from 'vue-i18n'
 import { useKnowledgeAnalytics } from '../composables/useKnowledgeAnalytics'
 import KnowledgeGraph from '../components/KnowledgeGraph.vue'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   Trophy, GitFork, BookOpen, Star, Users, Package, Award, Flame, Heart,
 } from 'lucide-vue-next'
@@ -208,7 +209,7 @@ function formatChartDate(dateStr: string): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
-  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })
+  return d.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────

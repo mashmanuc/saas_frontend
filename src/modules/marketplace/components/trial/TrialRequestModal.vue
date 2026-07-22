@@ -6,6 +6,7 @@ import marketplaceApi, { type TrialRequestPayload } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface CalendarSlot {
   slot_id: string
@@ -34,7 +35,7 @@ const isSlotConflict = ref(false)
 
 const localTime = computed(() => {
   const d = new Date(props.slot.start_at)
-  return d.toLocaleString('uk-UA', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString(activeLocale(), { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 })
 
 async function submit() {

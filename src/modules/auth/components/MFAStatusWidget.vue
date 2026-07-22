@@ -95,6 +95,7 @@ import BackupCodesModal from './BackupCodesModal.vue'
 import mfaApi from '@/api/mfa'
 import authApi from '../api/authApi'
 import { logAuthEvent, AUTH_EVENTS } from '@/utils/telemetry/authEvents'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -129,7 +130,7 @@ async function checkMfaStatus() {
 function formatDate(dateStr: string): string {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+  return date.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function handleEnable() {

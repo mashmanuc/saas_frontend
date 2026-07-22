@@ -1,6 +1,8 @@
+import { activeLocale } from '@/utils/i18nDate'
+
 export function formatInTimezone(utcDate: string, timezone: string): string {
   const date = new Date(utcDate)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: timezone,
@@ -9,7 +11,7 @@ export function formatInTimezone(utcDate: string, timezone: string): string {
 
 export function formatDateInTimezone(utcDate: string, timezone: string): string {
   const date = new Date(utcDate)
-  return date.toLocaleDateString('uk-UA', {
+  return date.toLocaleDateString(activeLocale(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

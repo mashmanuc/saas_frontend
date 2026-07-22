@@ -52,6 +52,7 @@
 import { onMounted, ref } from 'vue'
 import { useTrustStore } from '../stores/trustStore'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const store = useTrustStore()
 
@@ -77,7 +78,7 @@ function getInitials(name) {
 
 function formatDate(dateString) {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

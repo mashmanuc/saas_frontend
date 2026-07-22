@@ -94,6 +94,7 @@ import { useTrustStore } from '../stores/trustStore'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const store = useTrustStore()
 
@@ -124,7 +125,7 @@ function formatScope(scope) {
 
 function formatDate(dateString) {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

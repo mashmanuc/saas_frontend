@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Activity, AlertCircle, TrendingUp, Loader2 } from 'lucide-vue-next'
 import operatorApi, { type ActivityFeedItem } from '../api/operatorApi'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -63,7 +64,7 @@ async function executeAction(action: string, payload: Record<string, any>) {
 
 function formatTimestamp(ts: number): string {
   try {
-    return new Date(ts).toLocaleString()
+    return new Date(ts).toLocaleString(activeLocale())
   } catch {
     return String(ts)
   }

@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   activityStatus?: 'ACTIVE' | 'INACTIVE_SOFT'
@@ -97,7 +98,7 @@ const statusMessage = computed(() => {
 const exemptionInfo = computed(() => {
   if (userFriendlyStatus.value !== 'EXEMPTED' || !props.exemptionUntil) return null
   
-  const until = new Date(props.exemptionUntil).toLocaleDateString('uk-UA', {
+  const until = new Date(props.exemptionUntil).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

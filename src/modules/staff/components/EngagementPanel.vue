@@ -131,6 +131,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import staffAnalyticsApi from '@/modules/staff/api/staffAnalyticsApi'
+import { activeLocale } from '@/utils/i18nDate'
 import type {
   EngagementListResponse,
   EngagementSummaryResponse,
@@ -205,7 +206,7 @@ function pct(val: number): string {
 }
 
 function formatDate(ts: string): string {
-  return new Date(ts).toLocaleDateString('uk-UA', {
+  return new Date(ts).toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',

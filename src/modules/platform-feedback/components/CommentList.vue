@@ -64,6 +64,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps({
   thread: { type: Object, required: true },
@@ -93,7 +94,7 @@ function canDelete(c) {
 function formatDate(iso) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })
+    return new Date(iso).toLocaleString(activeLocale(), { dateStyle: 'short', timeStyle: 'short' })
   } catch (e) {
     return iso
   }

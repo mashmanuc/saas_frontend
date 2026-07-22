@@ -197,6 +197,7 @@ import { getUserBillingSnapshot, type UserBillingSnapshotDto, type CheckoutSessi
 import Button from '@/ui/Button.vue'
 import FinalizeModal from './FinalizeModal.vue'
 import DevModeBadge from './DevModeBadge.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -351,7 +352,7 @@ function handleFinalized(data: { orderId: string; sessionId?: string }) {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return t('staff.billingOps.never')
   const date = new Date(dateStr)
-  return date.toLocaleDateString('uk-UA', { 
+  return date.toLocaleDateString(activeLocale(), { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric' 
@@ -361,7 +362,7 @@ function formatDate(dateStr: string | null): string {
 function formatDateTime(dateStr: string | null): string {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
-  return date.toLocaleString('uk-UA', { 
+  return date.toLocaleString(activeLocale(), { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric',

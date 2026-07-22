@@ -77,6 +77,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLessonHistory } from '../composables/useLessonHistory'
 import SaveAsTemplateModal from '@/modules/lessons/components/SaveAsTemplateModal.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const { lessons, isLoading, error, reload, cloningId, cloneError, cloneLesson } = useLessonHistory()
@@ -104,7 +105,7 @@ function onTemplateSaved(templateId: number) {
 
 function formatDate(dt: string | null): string {
   if (!dt) return '—'
-  return new Date(dt).toLocaleDateString('uk-UA', {
+  return new Date(dt).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

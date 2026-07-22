@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   Bug as BugIcon,
   Camera as CameraIcon,
@@ -149,7 +150,7 @@ const bundleSize = computed(() => {
 
 const lastUpdateTime = computed(() => {
   const now = new Date()
-  return now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  return now.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 })
 
 function formatSize(bytes: number): string {

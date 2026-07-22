@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import { ArrowUpRight, ArrowDownLeft, Gift, RefreshCw, Minus, Plus } from 'lucide-vue-next'
 import type { WalletTransaction } from '../../api/payments'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   transaction: WalletTransaction
@@ -33,7 +34,7 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

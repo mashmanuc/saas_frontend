@@ -5,12 +5,14 @@
  * by formatting in the calendar's timezone, not browser's locale.
  */
 
+import { activeLocale } from '@/utils/i18nDate'
+
 /**
  * Format ISO datetime string in specific timezone as HH:MM
  */
 export function formatTimeInCalendarTz(iso: string, timezone: string): string {
   try {
-    return new Intl.DateTimeFormat('uk-UA', {
+    return new Intl.DateTimeFormat(activeLocale(), {
       timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
@@ -27,7 +29,7 @@ export function formatTimeInCalendarTz(iso: string, timezone: string): string {
 /**
  * Format ISO datetime string in specific timezone as full date
  */
-export function formatDateInCalendarTz(iso: string, timezone: string, locale = 'uk-UA'): string {
+export function formatDateInCalendarTz(iso: string, timezone: string, locale = activeLocale()): string {
   try {
     return new Intl.DateTimeFormat(locale, {
       timeZone: timezone,

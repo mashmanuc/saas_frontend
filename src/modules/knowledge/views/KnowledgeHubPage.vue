@@ -236,6 +236,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
+import { activeLocale } from '@/utils/i18nDate'
 import {
   Eye, EyeOff, BookOpen, PenTool, Search, Layout,
   Package, ChevronRight, BarChart3, FolderOpen, Trash2,
@@ -404,7 +405,7 @@ async function toggleVisibility(lesson: RecentLesson): Promise<void> {
 function formatDate(dateStr?: string): string {
   if (!dateStr) return ''
   const d = new Date(dateStr)
-  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short' })
 }
 
 onMounted(async () => {

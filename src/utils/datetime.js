@@ -1,4 +1,5 @@
 import { useAuthStore } from '../modules/auth/store/authStore'
+import { activeLocale } from '@/utils/i18nDate'
 
 export function getUserTimezone() {
   const auth = useAuthStore()
@@ -16,7 +17,7 @@ export function formatDateTime(value, options = {}) {
   const normalizedOptions = typeof options === 'string' ? { timeZone: options } : { ...options }
   const tz = normalizedOptions.timeZone || getUserTimezone()
 
-  return new Intl.DateTimeFormat('uk-UA', {
+  return new Intl.DateTimeFormat(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: '2-digit',

@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 export interface SavedTemplateItem {
   id: number
@@ -53,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 const formattedDate = computed(() => {
-  return new Date(props.template.created_at).toLocaleDateString()
+  return new Date(props.template.created_at).toLocaleDateString(activeLocale())
 })
 
 function confirmDelete() {

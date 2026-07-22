@@ -158,6 +158,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import staffAnalyticsApi, { type ReplayAnalyticsResponse } from '../api/staffAnalyticsApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -181,7 +182,7 @@ function formatNumber(n: number): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(activeLocale(), {
       month: 'short',
       day: 'numeric',
     })

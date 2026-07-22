@@ -626,6 +626,7 @@ import { lessonPlanApi } from '@/modules/groups/api/lessonPlanApi'
 import type { LessonPlan } from '@/modules/groups/api/lessonPlanApi'
 import { lessonsTemplateApi } from '@/modules/lessons/api/lessonsTemplateApi'
 import type { KnowledgeTemplate } from './api/knowledgeApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -1190,7 +1191,7 @@ async function handleDeleteTemplate(templateId: number) {
 // ── Helpers ─────────────────────────────────────────────────
 function formatDate(dt: string): string {
   if (!dt) return '—'
-  return new Date(dt).toLocaleDateString('uk-UA', {
+  return new Date(dt).toLocaleDateString(activeLocale(), {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })

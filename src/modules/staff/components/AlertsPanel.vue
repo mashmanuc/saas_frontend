@@ -94,6 +94,7 @@ import type { FunnelAlert } from '../api/staffAnalyticsApi'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import Alert from '@/ui/Alert.vue'
 import EmptyState from '@/ui/EmptyState.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -112,7 +113,7 @@ function capitalize(s: string): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('uk-UA', {
+    return new Date(iso).toLocaleString(activeLocale(), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

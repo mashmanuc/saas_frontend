@@ -49,6 +49,7 @@
 import { ref } from 'vue'
 import { User as UserIcon, Clock as ClockIcon, X as XIcon, Check as CheckIcon } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   request: {
@@ -80,7 +81,7 @@ const processing = ref(false)
 
 function formatDateTime(datetime: string): string {
   const date = new Date(datetime)
-  return date.toLocaleString('uk-UA', {
+  return date.toLocaleString(activeLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

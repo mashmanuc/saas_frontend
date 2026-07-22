@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { KnowledgeLesson } from '../api/knowledgeApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   lesson: KnowledgeLesson
@@ -69,7 +70,7 @@ defineEmits<{
 }>()
 
 const formattedDate = computed(() => {
-  return new Date(props.lesson.start).toLocaleDateString()
+  return new Date(props.lesson.start).toLocaleDateString(activeLocale())
 })
 
 const statusClass = computed(() => {

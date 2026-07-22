@@ -59,6 +59,7 @@ import { bookingApi } from '@/modules/booking/api/booking'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useRouter } from 'vue-router'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   show: boolean
@@ -85,7 +86,7 @@ const submitting = ref(false)
 
 function formatDate(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleDateString('uk-UA', {
+  return date.toLocaleDateString(activeLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -95,7 +96,7 @@ function formatDate(utcTime: string): string {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', {
+  return date.toLocaleTimeString(activeLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   })

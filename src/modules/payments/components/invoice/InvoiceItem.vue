@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import { FileText, Download, CheckCircle, Clock, XCircle } from 'lucide-vue-next'
 import type { Invoice } from '../../api/payments'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   invoice: Invoice
@@ -20,7 +21,7 @@ function formatCurrency(amount: number, currency: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
+  return new Date(dateStr).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

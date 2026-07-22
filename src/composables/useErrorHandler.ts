@@ -7,6 +7,7 @@
 
 import { useI18n } from 'vue-i18n'
 import { isLimitExceededError } from '@/utils/errors'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface ToastOptions {
   error: (message: string) => void
@@ -21,7 +22,7 @@ export function useErrorHandler() {
     
     if (isLimitExceededError(error)) {
       const { limit_type, used, max, reset_at } = error.meta
-      const resetDate = new Date(reset_at).toLocaleString('uk-UA', { 
+      const resetDate = new Date(reset_at).toLocaleString(activeLocale(), { 
         dateStyle: 'medium', 
         timeStyle: 'short' 
       })

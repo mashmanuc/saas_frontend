@@ -271,6 +271,7 @@ import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
 import PublicMarkersList from '../components/public/PublicMarkersList.vue'
 import type { WBSession } from '../types/winterboard'
 import type { ReplaySpeed } from '../engine/WBReplayEngine'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -398,7 +399,7 @@ const displayTitle = computed(() => {
   if (sessionCreatedAt.value) {
     try {
       const d = new Date(sessionCreatedAt.value)
-      const formatted = d.toLocaleDateString(undefined, {
+      const formatted = d.toLocaleDateString(activeLocale(), {
         day: '2-digit', month: '2-digit', year: 'numeric',
       })
       return t('winterboard.public.lessonFromDate', { date: formatted })

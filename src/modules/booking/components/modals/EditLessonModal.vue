@@ -295,6 +295,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { activeLocale } from '@/utils/i18nDate'
 import { 
   X as XIcon, 
   AlertCircle as AlertCircleIcon, 
@@ -614,7 +615,7 @@ function formatWithOffset(date: Date) {
 
 function formatDateTime(isoString: string) {
   const date = new Date(isoString)
-  return date.toLocaleString('uk-UA', {
+  return date.toLocaleString(activeLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

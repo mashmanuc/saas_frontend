@@ -56,6 +56,7 @@ import { useToast } from '@/composables/useToast'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   visible: boolean
@@ -106,12 +107,12 @@ function handleClose() {
 
 function formatDate(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })
+  return date.toLocaleDateString(activeLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 

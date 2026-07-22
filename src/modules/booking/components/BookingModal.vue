@@ -67,6 +67,7 @@ import SlotPicker from './booking/SlotPicker.vue'
 import { bookingApi } from '../api/booking'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   tutorId: number
@@ -94,7 +95,7 @@ const isLoadingSlots = ref(false)
 const formattedDate = computed(() => {
   if (!selectedSlot.value) return ''
   const date = new Date(selectedSlot.value.start_datetime)
-  return date.toLocaleDateString('uk-UA', {
+  return date.toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -104,7 +105,7 @@ const formattedDate = computed(() => {
 const formattedTime = computed(() => {
   if (!selectedSlot.value) return ''
   const date = new Date(selectedSlot.value.start_datetime)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 })
 
 // Methods

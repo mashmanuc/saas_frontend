@@ -90,6 +90,7 @@ import { Calendar, CalendarX, Loader2, AlertCircle, X, Clock } from 'lucide-vue-
 import Button from '@/ui/Button.vue'
 import { availabilityApi } from '../../booking/api/availabilityApi'
 import type { AvailabilitySummary, TutorAvailabilityFull } from '../../booking/api/availabilityApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   tutorSlug: string
@@ -164,7 +165,7 @@ function formatRelativeTime(datetime: string): string {
     return t('marketplace.profile.inDays', { count: diffDays })
   }
   
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -174,7 +175,7 @@ function formatRelativeTime(datetime: string): string {
 
 function formatSlotTime(datetime: string): string {
   const date = new Date(datetime)
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(activeLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

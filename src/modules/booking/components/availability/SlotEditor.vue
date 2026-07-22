@@ -150,6 +150,7 @@ import ConflictResolver from './ConflictResolver.vue'
 import TimeRangeInput from './TimeRangeInput.vue'
 import type { Slot, SlotEditStrategy, Conflict } from '../../types/slot'
 import { formatDateInCalendarTz } from '@/modules/booking/utils/time'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   slot: Slot
@@ -195,7 +196,7 @@ function formatDate(dateStr: string): string {
   }
   // Fallback to browser locale
   const date = new Date(dateStr)
-  return date.toLocaleDateString(undefined, { 
+  return date.toLocaleDateString(activeLocale(), { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 

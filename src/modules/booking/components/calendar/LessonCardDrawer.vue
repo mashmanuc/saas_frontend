@@ -76,6 +76,7 @@ import { useCalendarGrid } from '@/modules/booking/composables/useCalendarGrid'
 import type { CalendarEvent } from '@/modules/booking/types/calendarV055'
 import RescheduleModal from './RescheduleModal.vue'
 import NoShowReasonModal from './NoShowReasonModal.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
   lesson: CalendarEvent | null
@@ -101,7 +102,7 @@ const close = () => {
 
 const formatDateTime = (datetime: string): string => {
   const date = new Date(datetime)
-  return date.toLocaleDateString('uk-UA', { 
+  return date.toLocaleDateString(activeLocale(), { 
     weekday: 'short', 
     day: 'numeric', 
     month: 'short',

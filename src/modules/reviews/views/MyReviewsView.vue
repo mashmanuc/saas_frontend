@@ -135,6 +135,7 @@ import ReviewCard from '../components/ReviewCard.vue'
 import ReviewForm from '../components/ReviewForm.vue'
 import Button from '@/ui/Button.vue'
 import Modal from '@/ui/Modal.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const store = useReviewsStore()
 
@@ -180,7 +181,7 @@ async function onReviewSubmitted() {
 
 function formatDate(dateString) {
   const date = new Date(dateString)
-  return date.toLocaleDateString('uk-UA', {
+  return date.toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

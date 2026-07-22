@@ -84,6 +84,7 @@
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import type { ConflictEntry } from '@/modules/booking/api/calendarAvailabilityApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 defineProps<{
   isOpen: boolean
@@ -99,7 +100,7 @@ defineEmits<{
 
 const formatTime = (isoString: string) => {
   const date = new Date(isoString)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 

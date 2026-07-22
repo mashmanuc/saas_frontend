@@ -108,6 +108,7 @@ import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { activeLocale } from '@/utils/i18nDate'
 import 'dayjs/locale/uk'
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
@@ -278,12 +279,12 @@ async function handleJoinLesson() {
 
 function formatTime(isoString: string): string {
   const date = new Date(isoString)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatDateTime(isoString: string): string {
   const date = new Date(isoString)
-  return date.toLocaleString('uk-UA', {
+  return date.toLocaleString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

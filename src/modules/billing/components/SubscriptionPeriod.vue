@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useBillingStore } from '../stores/billingStore'
+import { activeLocale } from '@/utils/i18nDate'
 
 /**
  * SubscriptionPeriod Component
@@ -56,7 +57,7 @@ const periodStart = computed(() => {
 
 const formattedPeriodStart = computed(() => {
   if (!periodStart.value) return ''
-  return periodStart.value.toLocaleDateString('uk-UA', {
+  return periodStart.value.toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -65,7 +66,7 @@ const formattedPeriodStart = computed(() => {
 
 const formattedPeriodEnd = computed(() => {
   if (!periodEnd.value) return ''
-  return periodEnd.value.toLocaleDateString('uk-UA', {
+  return periodEnd.value.toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric'

@@ -180,6 +180,7 @@ import apiClient from '@/utils/apiClient'
 import Card from '@/ui/Card.vue'
 import Badge from '@/ui/Badge.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -242,7 +243,7 @@ function formatAge(seconds: number) {
 
 function formatDate(iso: string) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('uk-UA', {
+  return new Date(iso).toLocaleDateString(activeLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

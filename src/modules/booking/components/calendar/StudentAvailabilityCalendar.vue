@@ -108,6 +108,7 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import { useCalendarDeepLink } from '@/composables/useCalendarDeepLink'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { TimeSlot } from '../../api/availabilityApi'
+import { activeLocale } from '@/utils/i18nDate'
 
 interface Props {
   tutorSlug: string
@@ -160,7 +161,7 @@ function getSlotsForDay(day: Date): TimeSlot[] {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, { 
+  return new Date(dateStr).toLocaleDateString(activeLocale(), { 
     month: 'long', 
     day: 'numeric',
     year: 'numeric'
@@ -168,11 +169,11 @@ function formatDate(dateStr: string): string {
 }
 
 function formatDayName(day: Date): string {
-  return day.toLocaleDateString(undefined, { weekday: 'short' })
+  return day.toLocaleDateString(activeLocale(), { weekday: 'short' })
 }
 
 function formatDayDate(day: Date): string {
-  return day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  return day.toLocaleDateString(activeLocale(), { day: 'numeric', month: 'short' })
 }
 
 function formatSlotTime(slot: TimeSlot): string {

@@ -119,6 +119,7 @@ import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import EmptyState from '@/ui/EmptyState.vue'
 import ReportDetailsModal from '../components/ReportDetailsModal.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const staffStore = useStaffStore()
 const statusFilter = ref<string>('')
@@ -170,7 +171,7 @@ async function handleResolve(status: 'DISMISSED' | 'ACTIONED', note?: string) {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

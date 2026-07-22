@@ -211,6 +211,7 @@ import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 import UnlockConfirmModal from '../components/UnlockConfirmModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import RolePickerModal from '../components/RolePickerModal.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const route = useRoute()
@@ -537,7 +538,7 @@ function formatLockedUntil(dateString) {
   if (!dateString) return ''
   try {
     const date = new Date(dateString)
-    return date.toLocaleString()
+    return date.toLocaleString(activeLocale())
   } catch {
     return dateString
   }

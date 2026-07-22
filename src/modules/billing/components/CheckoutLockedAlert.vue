@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 /**
  * CheckoutLockedAlert Component
@@ -73,7 +74,7 @@ const emit = defineEmits<{
 const formattedPendingSince = computed(() => {
   if (!props.existingCheckout?.pending_since) return ''
   const date = new Date(props.existingCheckout.pending_since)
-  return date.toLocaleString('uk-UA', {
+  return date.toLocaleString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

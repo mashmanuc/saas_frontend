@@ -115,6 +115,7 @@ import { invitesApi } from '@/api/invites'
 import type { InviteDTO } from '@/types/invites'
 import { useI18n } from 'vue-i18n'
 import InviteCreateButton from './InviteCreateButton.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 
@@ -175,7 +176,7 @@ function statusBadgeClass(status: string): string {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',

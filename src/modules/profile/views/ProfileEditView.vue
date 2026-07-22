@@ -111,6 +111,7 @@ import { USER_ROLES } from '../../../types/user'
 import { TIMEZONES } from '../../../utils/timezones'
 import { notifySuccess } from '../../../utils/notify'
 import { buildDirtyPayload, hasDirtyChanges, createAutosaveScheduler } from '../utils/autosave'
+import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -178,7 +179,7 @@ const draftDescription = computed(() => {
 function formatTime(date) {
   if (!date) return ''
   try {
-    return new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(date)
+    return new Intl.DateTimeFormat(activeLocale(), { hour: '2-digit', minute: '2-digit' }).format(date)
   } catch (_err) {
     return date.toLocaleTimeString()
   }

@@ -69,6 +69,7 @@
 import { ref, computed } from 'vue'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
+import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps({
   isOpen: {
@@ -99,7 +100,7 @@ const reason = ref('')
 
 function formatDate(dateString) {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleDateString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
