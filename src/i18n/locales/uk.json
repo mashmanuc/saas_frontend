@@ -10272,5 +10272,14 @@
       "navLabel": "Розділи допомоги",
       "notFound": "Статтю не знайдено."
     }
+  },
+  "activation": {
+    "journey": {
+      "title": "Твій прогрес",
+      "profileCreated": "Профіль створено",
+      "firstLesson": "Перший урок",
+      "firstClassroom": "Перший урок проведено",
+      "cta": "Студія уроків"
+    }
   }
 }

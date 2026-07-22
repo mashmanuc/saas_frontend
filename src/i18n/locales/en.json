@@ -3490,7 +3490,7 @@
   },
   "booking": {
     "bookingCommon": {
-      "minutes": "хвилин"
+      "minutes": "minutes"
     },
     "selectStudent": "Select a student",
     "noStudentsFound": "No students found",
@@ -3728,7 +3728,7 @@
     },
     "calenderPlaceholder": "Booking calendar",
     "common": {
-      "minutes": "хвилин"
+      "minutes": "minutes"
     }
   },
   "matches": {
@@ -3932,7 +3932,7 @@
       }
     },
     "marketplace": "Marketplace",
-    "status": "Статус",
+    "status": "Status",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
       "conflictsDetected": "Conflicts detected on days: {days}",
@@ -4036,7 +4036,7 @@
         }
       },
       "header": {
-        "title": "Налаштування доступності"
+        "title": "Availability settings"
       }
     },
     "cellStatus": {
@@ -4073,7 +4073,7 @@
       "seriesPartialSuccess": "Lesson series partially created",
       "seriesSuccess": "Lesson series created successfully",
       "skipConflicts": "Skip Conflicts",
-      "success": "Урок успішно створено"
+      "success": "Lesson created successfully"
     },
     "no_show": {
       "comment_optional": "Comment (optional)",
@@ -4093,16 +4093,16 @@
       "clickToCreate": "Click to create a lesson"
     },
     "trialRequest": {
-      "durationLabel": "Тривалість",
-      "error": "Не вдалося надіслати запит",
-      "minutesShort": "хв",
-      "refreshCalendar": "Оновити календар",
-      "slotUnavailable": "Цей слот більше недоступний",
-      "submit": "Надіслати запит",
-      "submitting": "Надсилаємо...",
-      "success": "Запит надіслано успішно!",
-      "timeLabel": "Час",
-      "title": "Запит на пробний урок"
+      "durationLabel": "Duration",
+      "error": "Failed to send request",
+      "minutesShort": "min",
+      "refreshCalendar": "Refresh calendar",
+      "slotUnavailable": "This slot is no longer available",
+      "submit": "Send request",
+      "submitting": "Sending...",
+      "success": "Request sent successfully!",
+      "timeLabel": "Time",
+      "title": "Trial lesson request"
     },
     "footer": {
       "copied": "Copied!",
@@ -4324,62 +4324,62 @@
     },
     "weekAnalytics": {
       "activity": {
-        "batchEdit": "{count} слотів оновлено пакетом",
-        "conflictDetected": "Виявлено конфлікт під час оновлення слоту",
-        "slotEdited": "Слот {id} відредаговано"
+        "batchEdit": "{count} slots updated in batch",
+        "conflictDetected": "Conflict detected while updating slot",
+        "slotEdited": "Slot {id} edited"
       },
-      "availableSlots": "Доступні слоти",
-      "avgDuration": "Середня тривалість",
-      "blockedSlots": "Заблоковані слоти",
-      "bookedSlots": "Заброньовані слоти",
-      "conflictAnalysis": "Аналіз конфліктів",
-      "editOperations": "Операції редагування",
-      "failedEdits": "Невдалі зміни",
-      "loading": "Завантажуємо аналітику…",
+      "availableSlots": "Available slots",
+      "avgDuration": "Average duration",
+      "blockedSlots": "Blocked slots",
+      "bookedSlots": "Booked slots",
+      "conflictAnalysis": "Conflict analysis",
+      "editOperations": "Edit operations",
+      "failedEdits": "Failed edits",
+      "loading": "Loading analytics…",
       "period": {
-        "custom": "Власний період",
-        "month": "Цей місяць",
-        "today": "Сьогодні",
-        "week": "Цей тиждень"
+        "custom": "Custom period",
+        "month": "This month",
+        "today": "Today",
+        "week": "This week"
       },
-      "recentActivity": "Нещодавня активність",
+      "recentActivity": "Recent activity",
       "status": {
-        "error": "Помилка",
-        "success": "Успішно",
-        "warning": "Попередження"
+        "error": "Error",
+        "success": "Success",
+        "warning": "Warning"
       },
-      "strategyDistribution": "Розподіл стратегій",
-      "successfulEdits": "Успішні зміни",
+      "strategyDistribution": "Strategy distribution",
+      "successfulEdits": "Successful edits",
       "time": {
-        "daysAgo": "{count} днів тому",
-        "hoursAgo": "{count} год тому",
-        "justNow": "щойно",
-        "minutesAgo": "{count} хв тому"
+        "daysAgo": "{count} days ago",
+        "hoursAgo": "{count} h ago",
+        "justNow": "just now",
+        "minutesAgo": "{count} min ago"
       },
-      "title": "Аналітика доступності",
-      "totalConflicts": "Усього конфліктів",
-      "totalEdits": "Всього змін",
-      "totalSlots": "Усього слотів"
+      "title": "Availability analytics",
+      "totalConflicts": "Total conflicts",
+      "totalEdits": "Total edits",
+      "totalSlots": "Total slots"
     },
-    "time": "Час",
-    "today": "Сьогодні",
-    "tutor": "Тьютор",
+    "time": "Time",
+    "today": "Today",
+    "tutor": "Tutor",
     "statusLabels": {
-      "active": "Активна",
-      "canceled": "Скасована",
-      "past_due": "Прострочена",
-      "pending": "Очікує активації"
+      "active": "Active",
+      "canceled": "Canceled",
+      "past_due": "Past due",
+      "pending": "Pending activation"
     },
     "statuses": {
-      "active": "Активна",
-      "canceled": "Скасована",
-      "incomplete": "Неповна",
-      "incomplete_expired": "Прострочена оплата",
-      "none": "Без підписки",
-      "past_due": "Прострочена",
-      "pending": "Очікує активації",
-      "trialing": "Пробний період",
-      "unpaid": "Не оплачена"
+      "active": "Active",
+      "canceled": "Canceled",
+      "incomplete": "Incomplete",
+      "incomplete_expired": "Payment overdue",
+      "none": "No subscription",
+      "past_due": "Past due",
+      "pending": "Pending activation",
+      "trialing": "Trial period",
+      "unpaid": "Unpaid"
     }
   },
   "admin": {
@@ -10183,6 +10183,15 @@
       "subtitle": "How to use M4SH — short and to the point.",
       "navLabel": "Help sections",
       "notFound": "Article not found."
+    }
+  },
+  "activation": {
+    "journey": {
+      "title": "Your progress",
+      "profileCreated": "Profile created",
+      "firstLesson": "First lesson",
+      "firstClassroom": "First lesson conducted",
+      "cta": "Lesson Studio"
     }
   }
 }

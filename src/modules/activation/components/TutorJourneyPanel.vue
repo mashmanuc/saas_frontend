@@ -1,6 +1,6 @@
 <template>
   <div v-if="isVisible" class="tutor-journey-panel">
-    <p class="tutor-journey-panel__title">Твій прогрес</p>
+    <p class="tutor-journey-panel__title">{{ t('activation.journey.title') }}</p>
 
     <ul class="tutor-journey-panel__list" role="list">
       <li
@@ -22,7 +22,7 @@
         :to="{ name: 'winterboard-boards' }"
         class="tutor-journey-panel__cta"
       >
-        Студія уроків →
+        {{ t('activation.journey.cta') }} →
       </router-link>
     </div>
   </div>
@@ -30,7 +30,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ActivationStateDTO } from '@/types/activation'
+
+const { t } = useI18n()
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -50,17 +53,17 @@ const props = defineProps<{
 const milestones = computed(() => [
   {
     key: 'profile_created',
-    label: 'Профіль створено',
+    label: t('activation.journey.profileCreated'),
     done: !!props.state?.profile_name_set_at,
   },
   {
     key: 'first_lesson',
-    label: 'Перший урок',
+    label: t('activation.journey.firstLesson'),
     done: (props.draftLessonsCount ?? 0) > 0,
   },
   {
     key: 'first_classroom',
-    label: 'Перший урок проведено',
+    label: t('activation.journey.firstClassroom'),
     done: !!props.state?.first_lesson_completed_at,
   },
 ])
