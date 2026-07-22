@@ -76,7 +76,7 @@ import {
 } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps<{
   weekStart?: string
@@ -100,7 +100,7 @@ const weekRangeFormatted = computed(() => {
   const start = new Date(props.weekStart)
   const end = new Date(props.weekEnd)
 
-  return `${start.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
+  return `${start.toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
 const formattedHours = computed(() => {

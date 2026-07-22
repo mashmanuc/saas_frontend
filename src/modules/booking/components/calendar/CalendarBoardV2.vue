@@ -154,7 +154,7 @@ const emit = defineEmits<{
   'open-guide': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const timezone = computed(() => props.timezone || 'UTC')
 const { pxPerMinute, hours, gridHeight, isPast, startHour } = useCalendarGrid({ timezone: timezone.value })
 const dragDrop = useDragDrop()
@@ -172,7 +172,7 @@ const formatDayName = (dateStr: string): string => {
   try {
     const date = new Date(dateStr)
     if (Number.isNaN(date.getTime())) return '—'
-    return date.toLocaleDateString('uk-UA', { weekday: 'short' })
+    return date.toLocaleDateString(locale.value, { weekday: 'short' })
   } catch {
     return '—'
   }
@@ -182,7 +182,7 @@ const formatDayDate = (dateStr: string): string => {
   try {
     const date = new Date(dateStr)
     if (Number.isNaN(date.getTime())) return '—'
-    return date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
+    return date.toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' })
   } catch {
     return '—'
   }

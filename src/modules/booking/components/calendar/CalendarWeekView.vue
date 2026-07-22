@@ -235,7 +235,7 @@ const isDebugMode = false
 const CalendarDebugPanel = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.CalendarDebugPanel)) : null
 const DebugToggleButton = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.DebugToggleButton)) : null
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const isDebugLoggingEnabled = false
 const logDebug = (...args: unknown[]) => {
   if (isDebugLoggingEnabled) {
@@ -326,7 +326,7 @@ const weekRangeDisplay = computed(() => {
   const startDate = new Date(start)
   const endDate = new Date(end)
   
-  return `${startDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
+  return `${startDate.toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
 const allEvents = computed(() => eventsV055Computed.value)
