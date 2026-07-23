@@ -1016,6 +1016,7 @@ import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
+import type { LessonTemplate } from '@/modules/knowledge/api/templateApi'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import LessonSavedSuccessModal from '@/modules/knowledge/components/LessonSavedSuccessModal.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
@@ -1107,7 +1108,11 @@ function goToCloudSignup(): void {
   // Буфер пишемо ЗАВЖДИ при кліку (навіть якщо на столі лише подарунок) —
   // «те, що ти намалював — уже твоє» після реєстрації.
   stashHandoff(store.workspaceName, store.serializedState)
-  router.push({ path: '/start', query: { redirect: '/workspace' } })
+  // 2026-07-23: раніше вело на лендінг (/start) — людина мусила шукати форму серед
+  // маркетингових секцій, а ?redirect губився на наступних кроках, тож після
+  // реєстрації вона не поверталась на /workspace і її дошка не імпортувалась.
+  // Ведемо напряму на форму тьютора (перемикач на студента є всередині форми).
+  router.push({ path: '/auth/register/tutor', query: { redirect: '/workspace' } })
 }
 
 // Телеметрія: розрізняємо джерело CTA — хедер vs upsell-модал (яка з точок конвертує).
@@ -2999,9 +3004,14 @@ function handlePublished(publicUrl: string, lessonData?: { id: string; title: st
 }
 
 // Phase 14 B2.2: Handle template saved
-function handleTemplateSaved(template?: { title?: string }): void {
+// 2026-07-23 (типи): раніше параметр був `{ title?: string }`, а діалог емітить
+// `LessonTemplate` — звідси TS2322 у CI. Додатково `.title` у LessonTemplate НЕМАЄ
+// (там `source_lesson_title`), тож `template?.title` завжди був undefined і код
+// мовчки падав у fallback. Тепер тип збігається з emit, а назву беремо з реального
+// поля. Рядок на екрані той самий: шаблон створюється з цього ж уроку.
+function handleTemplateSaved(template?: LessonTemplate): void {
   showSaveTemplateDialog.value = false
-  savedItemTitle.value = template?.title || publishedLessonData.value?.title || ''
+  savedItemTitle.value = template?.source_lesson_title || publishedLessonData.value?.title || ''
   savedItemKind.value = 'template'
   showSavedSuccessModal.value = true
 }

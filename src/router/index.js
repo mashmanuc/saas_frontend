@@ -94,7 +94,11 @@ const routes = [
     meta: { requiresAuth: false },
     children: [
       { path: 'login', name: 'login', component: LoginView, meta: { requiresAuth: false } },
-      { path: 'register', redirect: '/start' },
+      // 2026-07-23: раніше вело на лендінг і МОВЧКИ губило query (?redirect=/workspace,
+      // ?ref=...). Гість, що клікнув «в хмару», втрачав шлях назад до своєї дошки.
+      // v1 = BYO tutor-tool → безролеве /auth/register веде одразу на форму тьютора
+      // (перемикач «зареєструватися як студент» є всередині форми), query зберігаємо.
+      { path: 'register', redirect: (to) => ({ path: '/auth/register/tutor', query: to.query }) },
       { path: 'register/student', name: 'register-student', component: RegisterStudentView, meta: { requiresAuth: false } },
       { path: 'register/tutor', name: 'register-tutor', component: RegisterTutorView, meta: { requiresAuth: false } },
       { path: 'check-email', name: 'auth-check-email', component: CheckEmailView, meta: { requiresAuth: false } },

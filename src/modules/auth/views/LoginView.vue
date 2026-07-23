@@ -257,12 +257,15 @@ onMounted(() => {
 
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
 
+// 2026-07-23: раніше вело на лендінг (/start) — людина, що тиснула «Зареєструватися»,
+// мусила шукати форму серед маркетингових секцій. Ведемо напряму на форму і
+// зберігаємо ?redirect (інакше губиться шлях назад, напр. на /workspace).
 const registerLink = computed(() => {
   const roleParam = route.query.role
-  if (roleParam === 'student' || roleParam === 'tutor') {
-    return `/start?role=${roleParam}`
-  }
-  return '/start'
+  const redirect = route.query.redirect
+  const query = typeof redirect === 'string' && redirect ? { redirect } : {}
+  const path = roleParam === 'student' ? '/auth/register/student' : '/auth/register/tutor'
+  return { path, query }
 })
 
 const modalSuppressedErrors = new Set([

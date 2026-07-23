@@ -128,7 +128,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
@@ -139,8 +139,25 @@ import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const auth = useAuthStore()
+
+// 2026-07-23: після реєстрації повертаємо людину туди, звідки вона прийшла
+// (?redirect, напр. /workspace — там initLocalWorkspace() → importCloudHandoff()
+// перенесе її локальну дошку в акаунт). Без цього гість, що клікнув «в хмару»,
+// потрапляв у порожній кабінет, не бачив своєї дошки і йшов назавжди.
+// Приймаємо ЛИШЕ внутрішні шляхи (один '/' на початку) — захист від open-redirect.
+// Дефолт — '/tutor' (роль-дім), а не легасі '/tutor/profile': той роут вимкнений
+// з 2026-06-17 (marketplace extraction) і лише редіректить сюди ж.
+const TUTOR_HOME = '/tutor'
+function resolvePostAuthTarget() {
+  const target = route.query.redirect
+  if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+    return target
+  }
+  return TUTOR_HOME
+}
 
 const showErrorModal = ref(false)
 const googleErrorMessage = ref('')
@@ -176,7 +193,7 @@ const form = reactive({
 async function onSubmit() {
   try {
     const origin = getCanonicalOrigin()
-    const redirect = '/tutor/profile'
+    const redirect = resolvePostAuthTarget()
     const redirectQuery = `&redirect=${encodeURIComponent(redirect)}`
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
 
@@ -196,7 +213,7 @@ async function onGoogleSuccess(res) {
   if (res && typeof res === 'object' && res.registration_required) {
     try {
       await auth.completeGoogleRegistration(res.registration_token, 'tutor')
-      router.push('/tutor/profile')
+      router.push(resolvePostAuthTarget())
       return
     } catch (e) {
       onGoogleError(e)
@@ -207,8 +224,8 @@ async function onGoogleSuccess(res) {
     router.push({ name: 'auth-login' })
     return
   }
-  // Existing user — переходимо на tutor profile
-  router.push('/tutor/profile')
+  // Existing user — у його дім (або туди, звідки прийшов: ?redirect)
+  router.push(resolvePostAuthTarget())
 }
 
 function onGoogleError(error) {

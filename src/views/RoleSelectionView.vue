@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
@@ -9,6 +9,7 @@ import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 import api from '@/api/client'
 
 const router = useRouter()
+const route = useRoute()
 const { t, locale } = useI18n()
 
 const studentCardRef = ref<HTMLElement | null>(null)
@@ -46,12 +47,20 @@ onMounted(() => {
     .catch(() => { /* заглушка */ })
 })
 
+// 2026-07-23: прокидаємо ?redirect далі. Гість із /workspace приходить сюди з
+// redirect=/workspace; без цього шлях назад до його дошки губився, і після
+// реєстрації людина потрапляла у порожній кабінет замість своєї дошки.
+const registerQuery = computed<Record<string, string>>(() => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect ? { redirect } : {}
+})
+
 function selectStudent() {
-  router.push('/auth/register/student')
+  router.push({ path: '/auth/register/student', query: registerQuery.value })
 }
 
 function selectTutor() {
-  router.push('/auth/register/tutor')
+  router.push({ path: '/auth/register/tutor', query: registerQuery.value })
 }
 
 function scrollToHowItWorks() {
