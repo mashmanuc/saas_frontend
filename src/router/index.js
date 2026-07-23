@@ -1046,6 +1046,21 @@ router.beforeEach(async (to, from, next) => {
   // P0: Public routes (requiresAuth: false) — skip bootstrap entirely.
   // Without this, expired cookies trigger 401 → "Сесію завершено" toast → redirect to /start
   // even though the page doesn't need auth (e.g. /winterboard/public/:token).
+  // 2026-07-23: авторизованого НЕ тримаємо на сторінках входу/реєстрації.
+  // Логіка «authenticated + /auth/* → додому» нижче була МЕРТВИМ кодом: гілка
+  // /auth має meta.requiresAuth:false, тож isPublicRoute-early-return спрацьовував
+  // раніше і виходив з гарда. Наслідок — залогінена людина вічно бачила форму
+  // реєстрації («авторизувався, а ніфіга»).
+  // Читаємо ЛИШЕ відновлений із localStorage стан (access+user, див. authStore
+  // state-init) — bootstrap() свідомо НЕ викликаємо, щоб не зачепити P0-кейс
+  // публічних winterboard-роутів (протухла cookie → 401 → «Сесію завершено»).
+  // Свідомо звужено до login/register: verify-email, reset-password,
+  // forgot-password, check-email залогіненому бувають потрібні.
+  const isAuthEntryPage = to.path === '/auth/login' || to.path.startsWith('/auth/register')
+  if (isAuthEntryPage && auth.isAuthenticated) {
+    return next(getDefaultRouteForRole(auth.user?.role))
+  }
+
   const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
   if (isPublicRoute) {
     return next()
