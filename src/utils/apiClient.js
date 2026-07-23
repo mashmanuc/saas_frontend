@@ -159,6 +159,15 @@ export const detectLimitExceeded = (status, data) => {
   return data.key || data?.error?.key || 'generic'
 }
 
+/**
+ * Ф3: чи це SaaS-ліміт-помилка (403 LIMIT_EXCEEDED) — приймає СИРУ axios-помилку.
+ * Використовується у catch-блоках поверхонь (export/AI/import), щоб НЕ показувати
+ * власну «Помилка …» поряд із глобальним LimitPaywallModal (interceptor уже відкрив
+ * paywall). Один зрозумілий екран замість двох.
+ */
+export const isLimitError = (error) =>
+  detectLimitExceeded(error?.response?.status, error?.response?.data) !== null
+
 const enqueueRequestWhileRefreshing = (callback) => {
   refreshQueue.push(callback)
 }

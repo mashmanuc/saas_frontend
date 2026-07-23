@@ -259,6 +259,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
+import { isLimitError } from '@/utils/apiClient'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
@@ -332,6 +333,9 @@ async function run(fn, onOk) {
   loading.value = true; error.value = ''; notice.value = ''
   try { const r = await fn(); if (onOk) onOk(r) }
   catch (e) {
+    // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal уже показано
+    // interceptor'ом; не дублюємо власним inline-повідомленням (finally скине loading).
+    if (isLimitError(e)) return
     const d = e?.response?.data
     error.value = ERR_MSG[d?.error] || d?.detail || e?.message || 'Помилка'
   } finally { loading.value = false }
@@ -748,6 +752,9 @@ async function askAi(phrase) {
       aiPush({ kind: 'bot', text: r.explain })   // відповідь-пояснення або чесний фолбек
     }
   } catch (e) {
+    // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal («Оформи PRO»)
+    // уже показано interceptor'ом; не пхаємо в тред ще й «Помилка AI» (finally скине aiBusy).
+    if (isLimitError(e)) return
     const d = e?.response?.data
     aiPush({
       kind: 'bot',

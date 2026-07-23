@@ -18,6 +18,12 @@
     <!-- UIA Command Palette (Ctrl+Shift+K) — глобальна продуктова точка входу (вкл. редактор дошки).
          Gated VITE_FEATURE_UIA + tutor/staff усередині. Removable: видалити modules/intent + цей рядок. -->
     <CommandPalette v-if="authStore.isAuthenticated" />
+    <!-- Ф3: глобальний paywall SaaS-лімітів (403 LIMIT_EXCEEDED). Live-верифіковано
+         2026-07-22: винесено з PageShell — winterboard-роути мають ВЛАСНИЙ layout
+         (router/index.js: "Winterboard v3 routes (top-level, own layout)"), тож
+         модалка з PageShell НІКОЛИ не рендерилась там, де ліміти реально спрацьовують
+         (export/import/AI). App.vue = єдиний корінь, спільний для всіх layout'ів. -->
+    <LimitPaywallModalAsync v-if="authStore.isAuthenticated" />
   </PageThemeProvider>
 </template>
 
@@ -40,6 +46,7 @@ import { useChatOverlayStore } from '@/stores/chatOverlayStore'
 
 const ChatModalAsync = defineAsyncComponent(() => import('@/modules/chat/components/ChatModal.vue'))
 const CommandPalette = defineAsyncComponent(() => import('@/modules/intent/CommandPalette.vue'))
+const LimitPaywallModalAsync = defineAsyncComponent(() => import('@/modules/billing/components/LimitPaywallModal.vue'))
 
 const isDev = import.meta.env.DEV
 
@@ -160,6 +167,19 @@ function setupNotificationsRealtime(userId) {
               timeout: 8000,
             })
           }
+        }
+
+        // ASSIGNMENT_* → toast з дією "Відкрити" (product intent 2026-07-22: жива
+        // доставка ДЗ, не лише badge). data.url з apps/assignments/events.py.
+        if (
+          (event.type === 'ASSIGNMENT_ASSIGNED' || event.type === 'ASSIGNMENT_SUBMITTED' || event.type === 'ASSIGNMENT_GRADED')
+          && event.payload
+        ) {
+          notifyInfo(event.payload.body || '', {
+            title: event.payload.title || 'Домашнє завдання',
+            action: event.payload.data?.url ? { href: event.payload.data.url, label: 'Відкрити' } : undefined,
+            timeout: 8000,
+          })
         }
 
         notificationsStore.handleRealtimeNotification(event)

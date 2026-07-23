@@ -200,6 +200,7 @@ import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import { nextTick } from 'vue'
 import { winterboardApi } from '../../api/winterboardApi'
+import { isLimitError } from '@/utils/apiClient'
 import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): widget snapshot pre-export phase.
@@ -371,7 +372,14 @@ async function startExport(): Promise<void> {
       state.value = 'processing'
       startPolling()
     }
-  } catch (err) {
+  } catch (err: any) {
+    // Ф3: SaaS-ліміт тарифу (403 LIMIT_EXCEEDED) — НЕ показуємо суху «Помилка
+    // експорту». Глобальний apiClient-інтерсептор уже відкрив LimitPaywallModal
+    // («Оформи PRO»). Тихо закриваємо діалог, щоб лишилась одна зрозуміла картка.
+    if (isLimitError(err)) {
+      emit('close')
+      return
+    }
     console.error('[WB:ExportDialog] Export request failed', err)
     showToast(t('winterboard.export.exportError'), 'error')
     state.value = 'error'

@@ -38,9 +38,6 @@
     <ToastContainer class="z-50" />
     <GlobalLoader />
 
-    <!-- Ф3: глобальний paywall SaaS-лімітів (403 LIMIT_EXCEEDED) -->
-    <LimitPaywallModal />
-
     <!-- Session Revoked Banner -->
     <SessionRevokedBanner
       :show="authStore.showSessionRevokedBanner"
@@ -60,7 +57,6 @@ import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import GlobalActiveLessonBanner from '../components/GlobalActiveLessonBanner.vue'
-import LimitPaywallModal from '../modules/billing/components/LimitPaywallModal.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
 import { useLayoutStore } from '@/stores/layoutStore'

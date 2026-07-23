@@ -4,6 +4,7 @@
 
 import { ref, type Ref } from 'vue'
 import { winterboardApi } from '../api/winterboardApi'
+import { isLimitError } from '@/utils/apiClient'
 import type { PdfPageResult, ImportStatusResponse } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
 
@@ -107,6 +108,11 @@ export function usePdfImport(sessionId: Ref<string>) {
       progressText.value = 'Done!'
       console.info(`${LOG} Import complete`, { pageCount: statusResult.pages.length })
     } catch (err) {
+      // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal уже показано
+      // interceptor'ом; не дублюємо власним inline-повідомленням про помилку імпорту.
+      if (isLimitError(err)) {
+        return
+      }
       if (err instanceof PdfImportError) {
         error.value = err.message
         console.error(`${LOG} Import failed [${err.code}]`, err.message)
