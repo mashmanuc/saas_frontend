@@ -17,6 +17,15 @@ const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   'application/msword': 'document',
 }
 
+// ── Ліміти розміру, МБ ──
+// ⚠️ ДЗЕРКАЛО бекенду, НЕ джерело істини: SSOT — `ContentItemUploadView.UPLOAD_SIZE_LIMITS_MB`
+// у backend/apps/learning_content/api/views.py. Тут лише для pre-flight UX: не гнати
+// 20 МБ по мережі, щоб отримати 400, і не малювати фальшиве «Обробка…». Бекенд усе одно
+// перевіряє сам — якщо значення розійдуться, істина за ним (ми лише покажемо його відповідь).
+const UPLOAD_SIZE_LIMITS_MB: Record<string, number> = {
+  image: 10, pdf: 20, audio: 20, video: 50, presentation: 20, document: 20,
+}
+
 /**
  * Composable for ContentSidebar: lesson-specific material list + drag-upload.
  *
@@ -28,6 +37,14 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  // 2026-07-26: `error` — це i18n-КЛЮЧ (ContentSidebar рендерить t(`...${error}`)),
+  // тож деталі (розмір файлу, ліміт) несемо окремо як параметри до t().
+  const errorParams = ref<Record<string, string | number>>({})
+
+  function setError(key: string, params: Record<string, string | number> = {}) {
+    error.value = key
+    errorParams.value = params
+  }
 
   async function load() {
     if (!lessonId.value) return
@@ -58,7 +75,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
       })
     } catch (e) {
       console.warn('[useContentSidebar] Load failed:', e)
-      error.value = 'load_failed'
+      setError('load_failed')
       items.value = []
     } finally {
       isLoading.value = false
@@ -115,7 +132,20 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
 
   async function uploadFile(file: File) {
     if (!isUploadAllowed(file)) {
-      error.value = 'unsupported_format'
+      setError('unsupported_format')
+      return
+    }
+
+    // 2026-07-26 pre-flight: раніше завеликий файл летів на сервер цілком, отримував
+    // 400, і юзер бачив загальне «Помилка завантаження файлу» — БЕЗ причини (owner
+    // 20 хв шукав, чому 20.48 МБ збірник не вантажиться). Тепер ловимо тут: без
+    // марної передачі мегабайтів і без фальшивого «Обробка…» на файл, що не долетить.
+    const limitMb = UPLOAD_SIZE_LIMITS_MB[guessContentType(file)] ?? 10
+    if (file.size > limitMb * 1024 * 1024) {
+      setError('file_too_large', {
+        actual: (file.size / 1024 / 1024).toFixed(1),
+        limit: limitMb,
+      })
       return
     }
 
@@ -161,14 +191,27 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
       items.value = items.value.filter(i => (i.content_item_id as unknown) !== tempId)
 
       // Phase 3.1: Differentiate error codes
-      const axiosErr = e as { response?: { status?: number } }
+      const axiosErr = e as {
+        response?: { status?: number; data?: { error?: string; limit_mb?: number; actual_mb?: number } }
+      }
       const status = axiosErr?.response?.status
+      // apiClient віддає і пласку, і вкладену форму помилки → нормалізуємо обидві.
+      const body = axiosErr?.response?.data
+      const code = body?.error
+
       if (status === 507) {
-        error.value = 'quota_exceeded'
+        setError('quota_exceeded')
       } else if (status === 429) {
-        error.value = 'rate_limited'
+        setError('rate_limited')
+      } else if (code === 'file_too_large') {
+        // 2026-07-26: бекенд ЗАВЖДИ присилав причину з цифрами
+        // ({error, limit_mb, actual_mb}), а ми її викидали в загальний upload_failed.
+        setError('file_too_large', {
+          actual: body?.actual_mb ?? '?',
+          limit: body?.limit_mb ?? '?',
+        })
       } else {
-        error.value = 'upload_failed'
+        setError('upload_failed')
       }
     }
   }
@@ -251,6 +294,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     totalCount,
     isLoading,
     error,
+    errorParams,
     reload: load,
     uploadFile,
     uploadFiles,
