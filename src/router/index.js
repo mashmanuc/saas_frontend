@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { reportFatalError } from '../core/errors/appFatalError'
 import AuthLayout from '../modules/auth/components/AuthLayout.vue'
 import PageShell from '../ui/PageShell.vue'
 
@@ -1203,6 +1204,13 @@ router.onError((error) => {
   if (alreadyAttempted) {
     sessionStorage.removeItem(RELOAD_KEY)
     console.error('[router] Chunk reload failed twice — giving up to avoid loop', error)
+    // 2026-07-26: раніше на цьому й закінчувалось — мовчазний console.error, а юзер
+    // лишався на застряглій сторінці без жодного пояснення (owner зловив це після
+    // УСПІШНОЇ реєстрації: акаунт створено, а показати /tutor не вдалось).
+    // AppErrorBoundary не бачить цей збій сам (`onErrorCaptured` спрацьовує лише для
+    // ВЖЕ змонтованих компонентів, а тут chunk не завантажився ДО монтування), тому
+    // кажемо йому явно показати готову сторінку «Онови».
+    reportFatalError('stale-version')
     return
   }
 

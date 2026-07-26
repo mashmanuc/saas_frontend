@@ -14,8 +14,12 @@
   <div v-if="hasError" class="aeb">
     <div class="aeb__card">
       <span class="aeb__mascot" aria-hidden="true" v-html="MASCOT_SVG"></span>
-      <h1 class="aeb__title">Щось пішло не так</h1>
-      <p class="aeb__text">Нічого не втрачено — просто онови сторінку, і ми повернемось туди, де ти був.</p>
+      <h1 class="aeb__title">{{ isStaleVersion ? 'Вийшла нова версія' : 'Щось пішло не так' }}</h1>
+      <p class="aeb__text">
+        {{ isStaleVersion
+          ? 'Ця вкладка була відкрита до оновлення. Онови сторінку — усе зроблене збережено.'
+          : 'Нічого не втрачено — просто онови сторінку, і ми повернемось туди, де ти був.' }}
+      </p>
       <div class="aeb__actions">
         <button type="button" class="aeb__btn aeb__btn--primary" @click="reload">
           <svg class="aeb__btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
@@ -30,7 +34,11 @@
 </template>
 
 <script setup>
-import { ref, onErrorCaptured } from 'vue'
+import { computed, ref, onErrorCaptured } from 'vue'
+// Єдина залежність (умисно): крихітний ref-прапорець без власних залежностей —
+// див. коментар про самодостатність вище. Через нього router.onError повідомляє
+// про stale-chunk, який `onErrorCaptured` не бачить (chunk падає ДО монтування).
+import { appFatalError } from '../core/errors/appFatalError'
 
 // Той самий Інтегралик, що в CommandPalette — дихає/кліпає (класи в стилях).
 // Легка сльозинка (#7fc8ff) — трохи винуватий, що підвів. Рота немає (за дизайном).
@@ -45,10 +53,15 @@ const MASCOT_SVG =
   + '<path d="M40 44 Q37 51 40 55 Q43 51 40 44 Z" fill="#7fc8ff" stroke="#3b9fe0" stroke-width="1"></path>'
   + '</g></svg>'
 
-const hasError = ref(false)
+// Локальний краш (компонент упав під час рендеру).
+const localError = ref(false)
+
+// Показуємо сторінку і на локальний краш, і на сигнал знадвору (router.onError).
+const hasError = computed(() => localError.value || appFatalError.value !== null)
+const isStaleVersion = computed(() => !localError.value && appFatalError.value === 'stale-version')
 
 onErrorCaptured((err) => {
-  hasError.value = true
+  localError.value = true
   // Best-effort лог; НЕ кидаємо далі (return false зупиняє propagation).
   try { console.error('[AppErrorBoundary]', err) } catch { /* noop */ }
   return false
