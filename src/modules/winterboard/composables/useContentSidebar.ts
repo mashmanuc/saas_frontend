@@ -2,6 +2,7 @@ import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
+import { checkUploadSize, parseUploadError } from './uploadLimits'
 
 // ── Allowed MIME types for drag-upload ──
 const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
@@ -15,15 +16,6 @@ const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   // Phase 35 B7: DOCX/Word documents
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'document',
   'application/msword': 'document',
-}
-
-// ── Ліміти розміру, МБ ──
-// ⚠️ ДЗЕРКАЛО бекенду, НЕ джерело істини: SSOT — `ContentItemUploadView.UPLOAD_SIZE_LIMITS_MB`
-// у backend/apps/learning_content/api/views.py. Тут лише для pre-flight UX: не гнати
-// 20 МБ по мережі, щоб отримати 400, і не малювати фальшиве «Обробка…». Бекенд усе одно
-// перевіряє сам — якщо значення розійдуться, істина за ним (ми лише покажемо його відповідь).
-const UPLOAD_SIZE_LIMITS_MB: Record<string, number> = {
-  image: 10, pdf: 20, audio: 20, video: 50, presentation: 20, document: 20,
 }
 
 /**
@@ -140,12 +132,9 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     // 400, і юзер бачив загальне «Помилка завантаження файлу» — БЕЗ причини (owner
     // 20 хв шукав, чому 20.48 МБ збірник не вантажиться). Тепер ловимо тут: без
     // марної передачі мегабайтів і без фальшивого «Обробка…» на файл, що не долетить.
-    const limitMb = UPLOAD_SIZE_LIMITS_MB[guessContentType(file)] ?? 10
-    if (file.size > limitMb * 1024 * 1024) {
-      setError('file_too_large', {
-        actual: (file.size / 1024 / 1024).toFixed(1),
-        limit: limitMb,
-      })
+    const tooBig = checkUploadSize(file, guessContentType(file))
+    if (tooBig) {
+      setError(tooBig.key, tooBig.params)
       return
     }
 
@@ -190,29 +179,10 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
       // Remove temp item on error
       items.value = items.value.filter(i => (i.content_item_id as unknown) !== tempId)
 
-      // Phase 3.1: Differentiate error codes
-      const axiosErr = e as {
-        response?: { status?: number; data?: { error?: string; limit_mb?: number; actual_mb?: number } }
-      }
-      const status = axiosErr?.response?.status
-      // apiClient віддає і пласку, і вкладену форму помилки → нормалізуємо обидві.
-      const body = axiosErr?.response?.data
-      const code = body?.error
-
-      if (status === 507) {
-        setError('quota_exceeded')
-      } else if (status === 429) {
-        setError('rate_limited')
-      } else if (code === 'file_too_large') {
-        // 2026-07-26: бекенд ЗАВЖДИ присилав причину з цифрами
-        // ({error, limit_mb, actual_mb}), а ми її викидали в загальний upload_failed.
-        setError('file_too_large', {
-          actual: body?.actual_mb ?? '?',
-          limit: body?.limit_mb ?? '?',
-        })
-      } else {
-        setError('upload_failed')
-      }
+      // 2026-07-26: бекенд ЗАВЖДИ присилав причину з цифрами
+      // ({error, limit_mb, actual_mb}), а ми її викидали в загальний upload_failed.
+      const info = parseUploadError(e)
+      setError(info.key, info.params)
     }
   }
 

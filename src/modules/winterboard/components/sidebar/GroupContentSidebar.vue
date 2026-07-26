@@ -207,7 +207,8 @@
 
     <!-- Error -->
     <div v-else-if="sidebar.error.value" class="content-sidebar__error">
-      <span>{{ t(`winterboard.contentSidebar.${sidebar.error.value}`) }}</span>
+      <!-- errorParams несе деталі (напр. розмір файлу й ліміт для file_too_large) -->
+      <span>{{ t(`winterboard.contentSidebar.${sidebar.error.value}`, sidebar.errorParams.value) }}</span>
       <button class="content-sidebar__retry" @click="sidebar.reload">&#8635;</button>
     </div>
 

@@ -5,6 +5,7 @@ import { fetchAssets, fetchRecentAssets } from '@/modules/winterboard/api/librar
 import type { LibraryAsset } from '@/modules/winterboard/types/library'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
+import { checkUploadSize, parseUploadError } from './uploadLimits'
 
 const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   'image/jpeg': 'image', 'image/png': 'image', 'image/gif': 'image',
@@ -38,6 +39,14 @@ export function useGroupSidebar(
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  // 2026-07-26: `error` — це i18n-КЛЮЧ (GroupContentSidebar рендерить t(`...${error}`)),
+  // тож деталі (розмір файлу, ліміт) несемо окремо як параметри до t().
+  const errorParams = ref<Record<string, string | number>>({})
+
+  function setError(key: string, params: Record<string, string | number> = {}) {
+    error.value = key
+    errorParams.value = params
+  }
   // 2026-04-16: paste-spam filter. Default false — user бачить лише upload
   // матеріали. Чіпся «📋 Вставлене» вмикає paste-only view.
   const showPasteOnly = ref(false)
@@ -207,7 +216,7 @@ export function useGroupSidebar(
         startPolling()  // poll processing status for library items too
       }
     } catch {
-      error.value = 'load_failed'
+      setError('load_failed')
       items.value = []
     } finally {
       isLoading.value = false
@@ -324,7 +333,16 @@ export function useGroupSidebar(
 
   async function uploadFile(file: File) {
     if (!isUploadAllowed(file)) {
-      error.value = 'unsupported_format'
+      setError('unsupported_format')
+      return
+    }
+
+    // 2026-07-26 pre-flight (ПРОД-шлях — цей сайдбар рендериться у Solo/Constructor/
+    // Classroom): не гнати десятки МБ по мережі даремно і не малювати фальшиве
+    // «Обробка…» на файл, який не долетить.
+    const tooBig = checkUploadSize(file, guessContentType(file))
+    if (tooBig) {
+      setError(tooBig.key, tooBig.params)
       return
     }
 
@@ -378,15 +396,10 @@ export function useGroupSidebar(
     } catch (e: unknown) {
       console.warn('[useGroupSidebar] Upload failed:', e)
       items.value = items.value.filter(i => (i.content_item_id as unknown) !== tempId)
-      const axiosErr = e as { response?: { status?: number } }
-      const status = axiosErr?.response?.status
-      if (status === 507) {
-        error.value = 'quota_exceeded'
-      } else if (status === 429) {
-        error.value = 'rate_limited'
-      } else {
-        error.value = 'upload_failed'
-      }
+      // 2026-07-26: бекенд ЗАВЖДИ присилав причину з цифрами
+      // ({error, limit_mb, actual_mb}), а ми її викидали в загальний upload_failed.
+      const info = parseUploadError(e)
+      setError(info.key, info.params)
     }
   }
 
@@ -406,6 +419,7 @@ export function useGroupSidebar(
     totalCount,
     isLoading,
     error,
+    errorParams,
     reload,
     uploadFile,
     uploadFiles,
