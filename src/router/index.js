@@ -48,7 +48,6 @@ const BookingRequestsView = () => import('../modules/booking/views/BookingReques
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
-const UserAccountView = () => import('../modules/profile/views/UserAccountView.vue')
 const SettingsSecurityView = () => import('../modules/profile/views/SettingsSecurityView.vue')
 const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
 const ChangePasswordView = () => import('../modules/profile/views/ChangePasswordView.vue')
@@ -296,12 +295,11 @@ const routes = [
         component: () => import('../views/NotificationsView.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
-      {
-        path: 'dashboard/account',
-        name: 'user-account',
-        component: UserAccountView,
-        meta: { requiresAuth: true, roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
+      // 2026-07-28: роут 'user-account' (/dashboard/account) ВИДАЛЕНО як дубль
+      // /settings (вкладка «account» = AccountSettingsTab, окремий живий компонент).
+      // Сторінка була сиротою: у сайдбарі «Акаунт» веде на /settings, а сюди не
+      // вело нічого, крім кнопки «Назад» з білінгу (прибрана 7e312554).
+      // change-email / change-password лишаються — вони досяжні з /settings.
       {
         path: 'dashboard/account/billing',
         name: 'account-billing',
