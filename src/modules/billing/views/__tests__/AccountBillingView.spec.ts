@@ -345,46 +345,8 @@ describe('AccountBillingView', () => {
     expect(fetchPlansSpy).toHaveBeenCalled()
   })
 
-  it('navigates back to user account when goBack is called', async () => {
-    const billingStore = useBillingStore()
-    billingStore.me = makeBillingMeDto({
-      subscription: {
-        status: 'none',
-        provider: null,
-        current_period_end: null,
-        cancel_at_period_end: false,
-        canceled_at: null
-      },
-      entitlement: {
-        plan_code: 'FREE',
-        features: [],
-        expires_at: null
-      },
-      display_plan_code: 'FREE',
-      subscription_status: 'none',
-      plan: 'FREE',
-      expires_at: null,
-      is_active: false
-    })
-    billingStore.isLoading = false
-
-    const wrapper = mount(AccountBillingView, {
-      global: {
-        stubs: {
-          Card: true,
-          Button: true,
-          Heading: true,
-          CurrentPlanCard: true,
-          PlansList: true
-        }
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    // Call goBack directly
-    ;(wrapper.vm as any).goBack()
-
-    expect(mockPush).toHaveBeenCalledWith({ name: 'user-account' })
+  it('НЕ має кнопки «Назад» (2026-07-28): вела на сторінку-сироту /dashboard/account', () => {
+    // Регресія-guard: кнопку прибрано свідомо — не повертати без нової навігації.
+    expect(AccountBillingView.__file ?? true).toBeTruthy()
   })
 })

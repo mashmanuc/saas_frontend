@@ -6,9 +6,11 @@
           <Heading :level="1">{{ $t('billing.page.title') }}</Heading>
           <p class="text-sm text-muted-foreground">{{ $t('billing.page.subtitle') }}</p>
         </div>
-        <Button variant="outline" size="sm" @click="goBack">
-          {{ $t('common.back') }}
-        </Button>
+        <!-- 2026-07-28: кнопку «Назад» ПРИБРАНО. Вона вела на /dashboard/account —
+             сторінку-СИРОТУ, на яку не веде НІЧОГО з навігації (сайдбар «Акаунт»
+             веде на /settings). Юзер із сайдбару «Мій план» тиснув «Назад» і
+             потрапляв у покинутий кут (де й була бита кнопка «Безпека»).
+             Ця сторінка самостійна — вихід із неї = сайдбар або браузерне «назад». -->
       </div>
     </Card>
 
@@ -68,7 +70,6 @@
 
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useBillingStore } from '../stores/billingStore'
 import Button from '@/ui/Button.vue'
 import PaymentHistorySection from '../components/PaymentHistorySection.vue'
@@ -77,7 +78,6 @@ import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
 
-const router = useRouter()
 const billingStore = useBillingStore()
 
 const plansError = computed(() => {
@@ -139,9 +139,6 @@ async function handleCancel() {
   }
 }
 
-function goBack() {
-  router.push({ name: 'user-account' })
-}
 
 // Auto-refresh billing status when user returns from payment tab
 function handleVisibilityChange() {
