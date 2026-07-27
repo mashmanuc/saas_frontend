@@ -140,8 +140,19 @@ describe('isUntouchedSeed — захист роботи користувача',
     expect(isUntouchedSeed(v2)).toBe(true)
   })
 
-  it('НЕ чіпає ПОТОЧНУ вітрину v3 (уже актуальна — апгрейд не потрібен)', () => {
-    expect(isUntouchedSeed(buildLocalWelcomeState(TEXTS))).toBe(false)
+  it('впізнає ПОТОЧНУ вітрину v3 — потрібно для перемальовування іншою мовою', () => {
+    // Повторний version-апгрейд це не вмикає — його стримує гейт
+    // seenVersion < LOCAL_SEED_VERSION у WBSoloRoom.
+    expect(isUntouchedSeed(buildLocalWelcomeState(TEXTS))).toBe(true)
+  })
+
+  it('НЕ перемальовує вітрину v3, якщо на ній вже малювали', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    s.pages[0].strokes.push({
+      id: 'user', tool: 'pen', color: '#f00', size: 4, opacity: 1,
+      points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
+    } as unknown as (typeof s.pages)[0]['strokes'][0])
+    expect(isUntouchedSeed(s)).toBe(false)
   })
 
   it('стійка до порожнього / некоректного стану', () => {

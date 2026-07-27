@@ -334,6 +334,19 @@ const KNOWN_SEED_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadonlyArray<string>>> = 
     ['calculus_card', 'calculus_card', 'graph_calculator'],
     ['geometry_2d_v2', 'geometry_2d_v2', 'geometry_solid'],
   ],
+  // v3 (поточна) — потрібна й тут: за нею впізнаємо «вітрину ще не чіпали»,
+  // коли перемальовуємо її іншою мовою (тексти на дошці — це намальовані
+  // об'єкти, вони не перекладаються самі при зміні мови інтерфейсу).
+  // Повторний version-апгрейд це НЕ вмикає — його стримує гейт
+  // `seenVersion < LOCAL_SEED_VERSION`.
+  [
+    ['graph_calculator', 'nmt3d', 'quadratic_card'],
+    ['graph_calculator', 'trig_circle', 'trig_solver'],
+    ['calculus_card', 'calculus_card', 'graph_calculator'],
+    ['geometry_2d_v2', 'geometry_2d_v2', 'geometry_2d_v2'],
+    ['nmt3d', 'nmt3d', 'nmt3d'],
+    ['graphmash_3d', 'graphmash_3d'],
+  ],
 ]
 
 /**

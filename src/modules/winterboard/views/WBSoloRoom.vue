@@ -1141,7 +1141,7 @@ function goToLogin(): void {
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { announce } = useAnnouncer()
 
 const history = useHistory({ maxSize: 100 })
@@ -3130,6 +3130,8 @@ async function connectPresenceSafe(sid: string): Promise<void> {
 let _localSaver: ThrottledSaver | null = null
 let _unsubLocalPersist: (() => void) | null = null
 let _unsubLocalTelemetry: (() => void) | null = null
+/** Watcher мови: перемальовує НЕторкану вітрину новою мовою. */
+let _unwatchLocale: (() => void) | null = null
 
 function persistLocalWorkspaceNow(): void {
   const ok = saveLocalWorkspace(store.workspaceName, store.serializedState)
@@ -3220,6 +3222,36 @@ async function importCloudHandoff(): Promise<string | null> {
   }
 }
 
+/**
+ * Тексти «подарунка» поточною мовою інтерфейсу.
+ *
+ * На рівні компонента (а не всередині init), бо ними користується ще й
+ * watcher мови: написи на дошці — це намальовані об'єкти, вони НЕ
+ * перекладаються самі при перемиканні УКР/ENG.
+ */
+function seedTexts(): LocalSeedTexts {
+  return {
+    title: t('winterboard.localWorkspace.seedTitle'),
+    hint: t('winterboard.localWorkspace.seedHint'),
+    pageTry: t('winterboard.localWorkspace.seedPageTry'),
+    pageTrig: t('winterboard.localWorkspace.seedPageTrig'),
+    pageCalculus: t('winterboard.localWorkspace.seedPageCalculus'),
+    pageGeometry: t('winterboard.localWorkspace.seedPageGeometry'),
+    pageStereo: t('winterboard.localWorkspace.seedPageStereo'),
+    page3d: t('winterboard.localWorkspace.seedPage3d'),
+    captionTrig: t('winterboard.localWorkspace.seedCaptionTrig'),
+    captionCalculus: t('winterboard.localWorkspace.seedCaptionCalculus'),
+    captionGeometry: t('winterboard.localWorkspace.seedCaptionGeometry'),
+    captionStereo: t('winterboard.localWorkspace.seedCaptionStereo'),
+    caption3d: t('winterboard.localWorkspace.seedCaption3d'),
+    descCubeSection: t('winterboard.localWorkspace.seedDescCubeSection'),
+    descSphereInCube: t('winterboard.localWorkspace.seedDescSphereInCube'),
+    descCylInCone: t('winterboard.localWorkspace.seedDescCylInCone'),
+    descSurface: t('winterboard.localWorkspace.seedDescSurface'),
+    descCurve: t('winterboard.localWorkspace.seedDescCurve'),
+  }
+}
+
 async function initLocalWorkspace(): Promise<void> {
   // Флаг вимкнено (prod до rollout-рішення) → на лендінг.
   if (!isLocalWorkspaceEnabled()) {
@@ -3255,30 +3287,9 @@ async function initLocalWorkspace(): Promise<void> {
   const name = snapshot?.name || t('winterboard.localWorkspace.title')
   const savedAtIso = snapshot ? new Date(snapshot.savedAt).toISOString() : new Date().toISOString()
 
-  const seedTexts = (): LocalSeedTexts => ({
-    title: t('winterboard.localWorkspace.seedTitle'),
-    hint: t('winterboard.localWorkspace.seedHint'),
-    pageTry: t('winterboard.localWorkspace.seedPageTry'),
-    pageTrig: t('winterboard.localWorkspace.seedPageTrig'),
-    pageCalculus: t('winterboard.localWorkspace.seedPageCalculus'),
-    pageGeometry: t('winterboard.localWorkspace.seedPageGeometry'),
-    pageStereo: t('winterboard.localWorkspace.seedPageStereo'),
-    page3d: t('winterboard.localWorkspace.seedPage3d'),
-    captionTrig: t('winterboard.localWorkspace.seedCaptionTrig'),
-    captionCalculus: t('winterboard.localWorkspace.seedCaptionCalculus'),
-    captionGeometry: t('winterboard.localWorkspace.seedCaptionGeometry'),
-    captionStereo: t('winterboard.localWorkspace.seedCaptionStereo'),
-    caption3d: t('winterboard.localWorkspace.seedCaption3d'),
-    descCubeSection: t('winterboard.localWorkspace.seedDescCubeSection'),
-    descSphereInCube: t('winterboard.localWorkspace.seedDescSphereInCube'),
-    descCylInCone: t('winterboard.localWorkspace.seedDescCylInCone'),
-    descSurface: t('winterboard.localWorkspace.seedDescSurface'),
-    descCurve: t('winterboard.localWorkspace.seedDescCurve'),
-  })
-
   if (!state) {
     if (!wasSeededBefore) {
-      // «Подарунок» першого візиту (ТЗ §3): 4 тематичні сторінки-вітрина.
+      // «Подарунок» першого візиту (ТЗ §3): 6 тематичних сторінок-вітрина.
       state = buildLocalWelcomeState(seedTexts())
       markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
       trackLocal('seed_shown')
@@ -3289,9 +3300,8 @@ async function initLocalWorkspace(): Promise<void> {
     }
   } else if (seenSeedVersion > 0 && seenSeedVersion < LOCAL_SEED_VERSION && isUntouchedSeed(state)) {
     // М'який апгрейд вітрини: людина заходила на демо-дошку раніше, але нічого
-    // свого не додала (відбиток = НЕторканий seed v1) → показуємо новий контент.
-    // Щойно вона намалювала бодай щось — відбиток не збігається і ми НЕ чіпаємо
-    // її роботу.
+    // свого не додала → показуємо новий контент. Щойно вона намалювала бодай
+    // штрих — відбиток не збігається і ми НЕ чіпаємо її роботу.
     state = buildLocalWelcomeState(seedTexts())
     markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
     trackLocal('seed_upgraded', { from: seenSeedVersion, to: LOCAL_SEED_VERSION })
@@ -3331,6 +3341,30 @@ async function initLocalWorkspace(): Promise<void> {
     _localSaver?.schedule()
   })
   document.addEventListener('visibilitychange', _handleLocalVisibility)
+
+  // Перемикання мови інтерфейсу: написи на дошці — це намальовані об'єкти, тож
+  // самі вони не перекладаються. Поки вітрину НЕ чіпали — перемальовуємо її
+  // новою мовою. Щойно людина щось намалювала — не втручаємось (її текст
+  // лишається так, як вона його написала).
+  _unwatchLocale = watch(locale, () => {
+    if (!isUntouchedSeed(store.serializedState)) return
+    const fresh = buildLocalWelcomeState(seedTexts())
+    store.hydrateFromSession({
+      id: 'local-workspace',
+      name: t('winterboard.localWorkspace.title'),
+      owner_id: '',
+      state: fresh,
+      page_count: fresh.pages.length,
+      thumbnail_url: null,
+      rev: 0,
+      created_at: savedAtIso,
+      updated_at: new Date().toISOString(),
+    })
+    sessionName.value = t('winterboard.localWorkspace.title')
+    store.setTool('select')
+    persistLocalWorkspaceNow()
+    trackLocal('seed_relocalized', { locale: String(locale.value) })
+  })
 
   // Телеметрія engagement: слухаємо семантичні op-и стора ЛИШЕ для лічильників
   // (wb.local.engaged / tool_used, session-dedupe всередині). Це НЕ ops-протокол:
@@ -3722,6 +3756,8 @@ onBeforeUnmount(async () => {
     _unsubLocalPersist = null
     _unsubLocalTelemetry?.()
     _unsubLocalTelemetry = null
+    _unwatchLocale?.()
+    _unwatchLocale = null
     document.removeEventListener('visibilitychange', _handleLocalVisibility)
   }
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
