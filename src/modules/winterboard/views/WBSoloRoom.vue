@@ -1050,7 +1050,7 @@ import {
 } from '../local/localWorkspaceStorage'
 import {
   buildLocalWelcomeState,
-  isUntouchedSeedV1,
+  isUntouchedSeed,
   LOCAL_SEED_VERSION,
   type LocalSeedTexts,
 } from '../local/localWorkspaceSeed'
@@ -3287,7 +3287,7 @@ async function initLocalWorkspace(): Promise<void> {
       // (hydrateFromSession сам створить empty page для pages: []).
       state = { pages: [], currentPageIndex: 0 }
     }
-  } else if (seenSeedVersion > 0 && seenSeedVersion < LOCAL_SEED_VERSION && isUntouchedSeedV1(state)) {
+  } else if (seenSeedVersion > 0 && seenSeedVersion < LOCAL_SEED_VERSION && isUntouchedSeed(state)) {
     // М'який апгрейд вітрини: людина заходила на демо-дошку раніше, але нічого
     // свого не додала (відбиток = НЕторканий seed v1) → показуємо новий контент.
     // Щойно вона намалювала бодай щось — відбиток не збігається і ми НЕ чіпаємо

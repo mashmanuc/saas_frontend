@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest'
 import type { WBWorkspaceState } from '../../types/winterboard'
 import {
   buildLocalWelcomeState,
-  isUntouchedSeedV1,
+  isUntouchedSeed,
   LOCAL_SEED_VERSION,
   type LocalSeedTexts,
 } from '../localWorkspaceSeed'
@@ -106,9 +106,9 @@ describe('buildLocalWelcomeState — вітрина v2', () => {
   })
 })
 
-describe('isUntouchedSeedV1 — захист роботи користувача', () => {
-  it('впізнає НЕторканий seed v1', () => {
-    expect(isUntouchedSeedV1(seedV1State())).toBe(true)
+describe('isUntouchedSeed — захист роботи користувача', () => {
+  it('впізнає НЕторкану вітрину v1', () => {
+    expect(isUntouchedSeed(seedV1State())).toBe(true)
   })
 
   it('НЕ чіпає дошку, де людина щось намалювала', () => {
@@ -117,28 +117,42 @@ describe('isUntouchedSeedV1 — захист роботи користувача
       id: 'user', tool: 'pen', color: '#f00', size: 4, opacity: 1,
       points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
     } as unknown as (typeof s.pages)[0]['strokes'][0])
-    expect(isUntouchedSeedV1(s)).toBe(false)
+    expect(isUntouchedSeed(s)).toBe(false)
   })
 
   it('НЕ чіпає дошку, де людина додала об’єкт', () => {
     const s = seedV1State()
     s.pages[0].assets.push({ id: 'extra', type: 'trig_circle' } as unknown as (typeof s.pages)[0]['assets'][0])
-    expect(isUntouchedSeedV1(s)).toBe(false)
+    expect(isUntouchedSeed(s)).toBe(false)
   })
 
-  it('НЕ чіпає дошку з кількома сторінками (в т.ч. вже оновлену v2)', () => {
-    expect(isUntouchedSeedV1(buildLocalWelcomeState(TEXTS))).toBe(false)
+  it('впізнає НЕторкану вітрину v2 (4 сторінки з застарілим конусом)', () => {
+    // Саме цей випадок не оновлювався у власника — регресійний тест.
+    const v2 = {
+      pages: [
+        { id:'p1', name:'', strokes:[], assets:[{type:'graph_calculator'},{type:'nmt3d'},{type:'quadratic_card'}] },
+        { id:'p2', name:'', strokes:[], assets:[{type:'trig_circle'},{type:'trig_solver'},{type:'graph_calculator'}] },
+        { id:'p3', name:'', strokes:[], assets:[{type:'calculus_card'},{type:'calculus_card'},{type:'graph_calculator'}] },
+        { id:'p4', name:'', strokes:[], assets:[{type:'geometry_2d_v2'},{type:'geometry_2d_v2'},{type:'geometry_solid'}] },
+      ],
+      currentPageIndex: 0,
+    } as unknown as WBWorkspaceState
+    expect(isUntouchedSeed(v2)).toBe(true)
+  })
+
+  it('НЕ чіпає ПОТОЧНУ вітрину v3 (уже актуальна — апгрейд не потрібен)', () => {
+    expect(isUntouchedSeed(buildLocalWelcomeState(TEXTS))).toBe(false)
   })
 
   it('стійка до порожнього / некоректного стану', () => {
-    expect(isUntouchedSeedV1(null)).toBe(false)
-    expect(isUntouchedSeedV1(undefined)).toBe(false)
-    expect(isUntouchedSeedV1({ pages: [], currentPageIndex: 0 } as WBWorkspaceState)).toBe(false)
+    expect(isUntouchedSeed(null)).toBe(false)
+    expect(isUntouchedSeed(undefined)).toBe(false)
+    expect(isUntouchedSeed({ pages: [], currentPageIndex: 0 } as WBWorkspaceState)).toBe(false)
   })
 })
 
 describe('LOCAL_SEED_VERSION', () => {
-  it('дорівнює 2 (вітрина з 6 сторінок)', () => {
-    expect(LOCAL_SEED_VERSION).toBe(2)
+  it('дорівнює 3 (вітрина з 6 сторінок)', () => {
+    expect(LOCAL_SEED_VERSION).toBe(3)
   })
 })

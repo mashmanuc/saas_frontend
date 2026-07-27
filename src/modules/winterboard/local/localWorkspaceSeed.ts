@@ -61,8 +61,17 @@ import {
 } from '../constants/geometry2dV2Defaults'
 import { buildDefaultGraphmash3dAsset } from '../constants/mashInsertDefaults'
 
-/** Поточна версія «подарунка». Bump → НЕторканий seed оновиться при візиті. */
-export const LOCAL_SEED_VERSION = 2
+/**
+ * Поточна версія «подарунка». Bump → НЕторканий seed оновиться при візиті.
+ *
+ * ⚠️ ПІДНІМАТИ ЩОРАЗУ, коли змінюється склад вітрини, І додавати відбиток
+ * попередньої версії у KNOWN_SEED_LAYOUTS — інакше ті, хто вже бачив стару
+ * вітрину, не отримають нову (гейт `seenVersion < LOCAL_SEED_VERSION`).
+ *   v1 — одна сторінка (парабола + піраміда)
+ *   v2 — чотири сторінки (остання з застарілим конусом)
+ *   v3 — шість сторінок (стереометрія + 3D-функції, без конуса)
+ */
+export const LOCAL_SEED_VERSION = 3
 
 /** Фон-референс власника (2026-07-15, знятий з BG-пікера) — світло-зелений стіл. */
 const SEED_BG = '#cdf9d0'
@@ -309,24 +318,47 @@ export function buildLocalWelcomeState(texts: LocalSeedTexts): WBWorkspaceState 
 }
 
 /**
- * Чи це НЕторканий «подарунок» v1 (одна сторінка: 2 текстові штрихи +
- * парабола + піраміда)?
+ * Відбитки ВСІХ раніше випущених вітрин — типи об'єктів посторінково
+ * (відсортовані). Використовуються, щоб відрізнити «людина ще нічого не
+ * робила» від «тут уже є її робота».
  *
- * Використовується для м'якого апгрейду вітрини: людині, яка заходила на
- * демо-дошку й нічого свого не додала, показуємо новий контент. Щойно вона
- * намалювала/додала бодай щось — відбиток не збігається, і її роботу
- * НЕ чіпаємо.
+ * ⚠️ Додавати сюди попередній макет ПЕРЕД тим, як міняти склад вітрини.
  */
-export function isUntouchedSeedV1(state: WBWorkspaceState | null | undefined): boolean {
-  if (!state || !Array.isArray(state.pages) || state.pages.length !== 1) return false
-  const p = state.pages[0]
-  if (!p) return false
+const KNOWN_SEED_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadonlyArray<string>>> = [
+  // v1 — одна сторінка
+  [['graph_calculator', 'nmt3d']],
+  // v2 — чотири сторінки, остання з застарілим конусом
+  [
+    ['graph_calculator', 'nmt3d', 'quadratic_card'],
+    ['graph_calculator', 'trig_circle', 'trig_solver'],
+    ['calculus_card', 'calculus_card', 'graph_calculator'],
+    ['geometry_2d_v2', 'geometry_2d_v2', 'geometry_solid'],
+  ],
+]
 
-  const strokes = p.strokes ?? []
-  const assets = p.assets ?? []
-  if (strokes.length !== 2 || !strokes.every((s) => s.tool === 'text')) return false
-  if (assets.length !== 2) return false
+/**
+ * Чи це НЕторкана вітрина (будь-якої раніше випущеної версії)?
+ *
+ * Використовується для м'якого апгрейду: людині, яка заходила на демо-дошку
+ * й нічого свого не додала, показуємо новий контент. Щойно вона намалювала
+ * бодай штрих або додала/видалила об'єкт — відбиток не збігається, і її
+ * роботу НЕ чіпаємо.
+ */
+export function isUntouchedSeed(state: WBWorkspaceState | null | undefined): boolean {
+  if (!state || !Array.isArray(state.pages) || state.pages.length === 0) return false
 
-  const types = assets.map((a) => a.type).sort()
-  return types[0] === 'graph_calculator' && types[1] === 'nmt3d'
+  // Будь-який намальований (не текстовий) штрих = робота людини.
+  for (const page of state.pages) {
+    if (!(page.strokes ?? []).every((s) => s.tool === 'text')) return false
+  }
+
+  const actual = state.pages.map((p) => (p.assets ?? []).map((a) => a.type).sort())
+  return KNOWN_SEED_LAYOUTS.some(
+    (layout) =>
+      layout.length === actual.length &&
+      layout.every((pageTypes, i) =>
+        pageTypes.length === actual[i].length &&
+        pageTypes.every((t, j) => t === actual[i][j]),
+      ),
+  )
 }
