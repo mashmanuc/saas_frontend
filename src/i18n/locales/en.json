@@ -7159,6 +7159,7 @@
       "retry": "Retry",
       "close": "Close",
       "exportError": "Failed to start export",
+      "previewsFailed": "Could not prepare {count} widget(s) — they will be blank in the file.",
       "pollError": "Failed to check export status"
     },
     "board": {

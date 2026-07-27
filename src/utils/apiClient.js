@@ -351,8 +351,17 @@ api.interceptors.response.use(
 
     // Network or CORS problems (also includes server timeout / 5xx from proxy)
     if (!error.response) {
-      _cbRecordFailure()
-      notifyError("Немає з’єднання з сервером. Перевірте мережу.")
+      // 2026-07-27: запити, явно позначені як НЕкритичні (meta.nonCriticalRequest),
+      // не мають ні лякати юзера глобальним тостом, ні впливати на circuit breaker.
+      // Кейс: export великої дошки шле десятки disposable widget-прев'ю; їх збій за
+      // дизайном нешкідливий (INV-EP-3 — BE малює placeholder), але раніше кожен давав
+      // тост «Немає з'єднання», а 5 підряд відкривали CB і блокували ВЕСЬ застосунок
+      // на 30с. Збій некритичного запиту — не доказ, що бекенд мертвий.
+      // Викликач сам відповідає за показ підсумку (див. WBExportDialog previewsFailed).
+      if (!error?.config?.meta?.nonCriticalRequest) {
+        _cbRecordFailure()
+        notifyError("Немає з’єднання з сервером. Перевірте мережу.")
+      }
       return Promise.reject(error)
     }
 

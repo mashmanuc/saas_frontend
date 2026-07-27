@@ -205,6 +205,7 @@ import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): widget snapshot pre-export phase.
 import { exportPreviewService } from '../../services/exportPreviewService'
+import type { CapturedPreview } from '../../services/exportPreviewService'
 import { useWBStore } from '../../board/state/boardStore'
 
 // Asset types що рендеряться нативно бекендом (image/sticky/media plaholders).
@@ -515,9 +516,37 @@ async function runCapturePhase(): Promise<void> {
   const pageIndices = Array.from(pageWidgets.keys()).sort((a, b) => a - b)
   let capturedAcrossPages = 0
 
+  // 2026-07-27: раніше uploadAll() стояв ВСЕРЕДИНІ цього циклу — тобто на 20-сторінковій
+  // дошці ми робили 20 окремих раундів відправки, ПЕРЕМІЖ важким рендером (кожне
+  // захоплення = 1-2.2с CPU + блоки головного потоку по 300-400мс, зміряно у DevTools).
+  // Відправка, що не встигла, приходила в apiClient як «no response» → глобальний тост
+  // «Немає з'єднання з сервером» + інкремент circuit breaker (5 підряд = ВСІ запити
+  // застосунку блокуються на 30с). Юзер бачив «зависло» + 3 тости про мережу, хоча
+  // сам код вважає ці прев'ю неважливими (INV-EP-3: BE domalює placeholder).
+  // Тепер: збираємо все за цикл → відправляємо ОДНИМ пакетом після рендеру.
+  const pendingUploads = new Map<string, CapturedPreview>()
+  let pendingBytes = 0
+  let uploadFailedCount = 0
+  // Запобіжник пам'яті: BE тримає 2 МБ на прев'ю, тож 22 віджети — до 44 МБ у
+  // найгіршому разі. На планшеті це відчутно, тож скидаємо пакет достроково.
+  const FLUSH_THRESHOLD_BYTES = 24 * 1024 * 1024
+
+  async function flushUploads(): Promise<void> {
+    if (pendingUploads.size === 0) return
+    const batch = new Map(pendingUploads)
+    pendingUploads.clear()
+    pendingBytes = 0
+    const res = await exportPreviewService.uploadAll(
+      props.sessionId,
+      batch,
+      captureAbort!.signal,
+    )
+    uploadFailedCount += res.failed
+  }
+
   try {
     // 2. Sequentially iterate pages with widgets, mount via goToPageSilent,
-    //    poll registry until widgets register, capture, upload, advance.
+    //    poll registry until widgets register, capture, collect. Upload — після циклу.
     for (const pageIdx of pageIndices) {
       if (captureAbort.signal.aborted) break
 
@@ -558,15 +587,20 @@ async function runCapturePhase(): Promise<void> {
 
       if (captureAbort.signal.aborted) break
 
-      // 2d. Upload this page's captures (parallel-bounded inside service).
-      if (captureResult.captured.size > 0) {
-        await exportPreviewService.uploadAll(
-          props.sessionId,
-          captureResult.captured,
-          captureAbort.signal,
-        )
+      // 2d. Збираємо у пакет замість негайної відправки (див. коментар вище).
+      for (const [id, cap] of captureResult.captured) {
+        pendingUploads.set(id, cap)
+        pendingBytes += cap.blob.size
+      }
+      if (pendingBytes >= FLUSH_THRESHOLD_BYTES) {
+        await flushUploads()
       }
       // failed[] / skipped[] — silent; BE renders placeholders per INV-EP-7.
+    }
+
+    // 3. Один пакет після завершення рендеру — мережа більше не конкурує з CPU.
+    if (!captureAbort.signal.aborted) {
+      await flushUploads()
     }
   } catch (err) {
     // INV-EP-3: capture failure must never block export — log and continue.
@@ -575,6 +609,12 @@ async function runCapturePhase(): Promise<void> {
     // Always restore original active page — навіть при abort/throw.
     if (boardStore.currentPageIndex !== originalPageIndex) {
       boardStore.goToPageSilent(originalPageIndex)
+    }
+    // 2026-07-27: прев'ю більше не кричать «немає інтернету» (див. meta.nonCriticalRequest
+    // у winterboardApi.uploadExportPreview), але й мовчки зникати не мають — інакше юзер
+    // отримає файл з порожніми віджетами і без пояснення. Кажемо чесно, не блокуючи export.
+    if (uploadFailedCount > 0 && !captureAbort?.signal.aborted) {
+      showToast(t('winterboard.export.previewsFailed', { count: uploadFailedCount }), 'warning')
     }
   }
 }

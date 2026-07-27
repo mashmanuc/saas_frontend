@@ -505,7 +505,14 @@ export const winterboardApi = {
       .post(`${BASE}/sessions/${sessionId}/export-preparations/`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         signal,
-      })
+        // 2026-07-27: прев'ю віджета — свідомо НЕкритичний запит (INV-EP-3: збій не
+        // блокує export, BE малює placeholder). Без цього прапорця кожен збій показував
+        // глобальний тост «Немає з'єднання з сервером» і рахувався у circuit breaker
+        // (5 підряд → ВСІ запити застосунку блокуються на 30с). Великий export = десятки
+        // таких запитів, тож один поганий момент морозив усю дошку. Про реальні збої
+        // юзер дізнається з підсумкового повідомлення в діалозі експорту.
+        meta: { nonCriticalRequest: true },
+      } as any)
       .then((r: any) => r.data ?? r)
       .catch((err: any) => {
         // INV-EP-3: preview failure NEVER blocks export — silent null.
