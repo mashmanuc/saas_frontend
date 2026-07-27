@@ -9985,6 +9985,7 @@
       "invite_cancelled": "Invite was cancelled by the tutor",
       "invite_not_active": "Invite is no longer active",
       "self_invite_forbidden": "You cannot accept your own invite",
+      "student_limit_exceeded": "This tutor has no open spots for new students right now. Please contact the tutor directly.",
       "insufficient_contacts": "Tutor has insufficient contacts",
       "not_owner": "Only the owner can cancel an invite"
     }
