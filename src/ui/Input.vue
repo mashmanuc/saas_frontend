@@ -106,3 +106,27 @@ const cleanAttrs = computed(() => {
   return rest
 })
 </script>
+
+<style scoped>
+/* Дзеркалить FormField.vue / Textarea.vue — той самий паттерн, тут його
+   бракувало: .form-field__error ніде не мав кольору й зливався зі звичайним
+   текстом, тож помилку не було видно з першого погляду. */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.form-field__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.form-field__error {
+  font-size: var(--text-xs);
+  color: var(--danger-bg);
+}
+.form-field__hint {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+</style>
