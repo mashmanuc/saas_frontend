@@ -4,12 +4,15 @@
  *
  * Характеристики картки АВТО-генеруються з Plan.limits (buildPlanFeatures) —
  * зміна квоти в Staff оновлює картку без коду/деплою (Rule 2). `description_uk`
- * = звичайний опис тарифу (прозою, НЕ булети). Платні кнопки = «Незабаром»
- * (монетизація ще off). Marketplace-фічі (Plan.features) НЕ рендеримо.
+ * = звичайний опис тарифу (прозою, НЕ булети). Marketplace-фічі (Plan.features) НЕ рендеримо.
+ *
+ * Ф4 (2026-07-23, вимога власника): заглушку «Незабаром» замінено РОБОЧОЮ кнопкою
+ * оплати через billingStore.startCheckout (той самий флоу, що PlanCard/PlansList;
+ * LiqPay redirect робить submitCheckoutForm усередині стора).
  *
  * SSOT: saas_docs/plans/TARIFFS_V2_MARKETING_SSOT_2026-06-23.md
  */
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sparkles, Check, Star } from 'lucide-vue-next'
 import { useBillingStore } from '@/modules/billing/stores/billingStore'
@@ -52,6 +55,28 @@ function formatPrice(plan: PlanDto): string {
   const amount = plan.price?.amount ?? 0
   const cur = plan.price?.currency === 'UAH' ? '₴' : plan.price?.currency || ''
   return `${amount} ${cur}`.trim()
+}
+
+function isFree(plan: PlanDto): boolean {
+  return (plan.code || '').toUpperCase() === 'FREE' || (plan.price?.amount ?? 0) === 0
+}
+
+// Ф4: реальна купівля. startCheckout сам робить LiqPay-redirect (checkoutHelper).
+const checkoutLoading = ref<string | null>(null)
+const checkoutError = ref<string | null>(null)
+
+async function buyPlan(plan: PlanDto): Promise<void> {
+  if (checkoutLoading.value) return
+  checkoutLoading.value = plan.code
+  checkoutError.value = null
+  try {
+    await billingStore.startCheckout(plan.code)
+  } catch (err: any) {
+    checkoutError.value =
+      err?.response?.data?.error?.detail || err?.message || t('billing.plans.checkoutError')
+  } finally {
+    checkoutLoading.value = null
+  }
 }
 </script>
 
@@ -120,9 +145,28 @@ function formatPrice(plan: PlanDto): string {
           </li>
         </ul>
 
-        <Button variant="secondary" class="w-full" disabled>
-          {{ isCurrentPlan(plan) ? $t('billing.yourCurrentPlan') : $t('billing.comingSoon') }}
+        <!-- Ф4: поточний/FREE = disabled; платний = робоча оплата -->
+        <Button
+          v-if="isCurrentPlan(plan) || isFree(plan)"
+          variant="secondary"
+          class="w-full"
+          disabled
+        >
+          {{ isCurrentPlan(plan) ? $t('billing.yourCurrentPlan') : $t('billing.plans.freeLabel') }}
         </Button>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full"
+          :loading="checkoutLoading === plan.code"
+          :disabled="checkoutLoading !== null"
+          @click="buyPlan(plan)"
+        >
+          {{ $t('billing.plans.subscribe') }}
+        </Button>
+        <p v-if="checkoutError && checkoutLoading === null" class="mt-2 text-sm text-danger text-center">
+          {{ checkoutError }}
+        </p>
       </Card>
     </div>
   </div>
