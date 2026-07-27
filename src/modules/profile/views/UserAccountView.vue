@@ -113,7 +113,10 @@ function goToChangePassword() {
 }
 
 function goToSecurity() {
-  router.push({ name: 'profile-security' })
+  // 2026-07-27: name 'profile-security' НЕ ІСНУЄ в роутері (був лише
+  // path-redirect без name) → push кидав router error → юзер отримував
+  // «Щось пішло не так» (спіймано власником у Назад-флоу з білінгу).
+  router.push({ name: 'settings-security' })
 }
 
 async function onAvatarUpload(file) {

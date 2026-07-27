@@ -87,7 +87,7 @@
             <svg class="h-4 w-4 flex-shrink-0 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span>{{ $t(`billing.features.${feature}`) }}</span>
+            <span>{{ featureLabel(feature) }}</span>
           </li>
         </ul>
       </div>
@@ -120,6 +120,17 @@ import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import UpgradeHint from './UpgradeHint.vue'
 
+/**
+ * 2026-07-27 (скрін власника): невідомі коди фіч рендерились СИРИМИ ключами
+ * «billing.features.BULK_MESSAGING». te()-фолбек: нема перекладу → показуємо
+ * сам код без техпрефікса (не ховаємо: юзер, що заплатив, має бачити ВСЕ,
+ * що йому синкнули, а не «мінус 4 позиції мовчки»).
+ */
+function featureLabel(code) {
+  const key = `billing.features.${code}`
+  return te(key) ? t(key) : code
+}
+
 const props = defineProps({
   planCode: {
     type: String,
@@ -149,7 +160,7 @@ const props = defineProps({
 
 defineEmits(['cancel'])
 
-const { d } = useI18n()
+const { d, t, te } = useI18n()
 
 function formatDate(dateString) {
   if (!dateString) return ''

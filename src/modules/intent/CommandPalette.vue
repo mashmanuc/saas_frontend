@@ -298,6 +298,10 @@ const currentBoardId = computed(() =>
 )
 const enabled = computed(() => {
   if (import.meta.env.VITE_FEATURE_UIA !== 'true' || !auth.user) return false
+  // 2026-07-27 (зауваження власника): в staff-АДМІНЦІ Інтегралик недоречний —
+  // його інструменти (дошка/уроки/навігація тьютора) там не мають сенсу,
+  // а FAB висів поверх адмін-таблиць. Staff-РОЛІ на звичайних сторінках — ок.
+  if (route.path.startsWith('/staff')) return false
   return ALLOWED_ROLES.includes(auth.user.role) || auth.user.is_staff === true
 })
 
