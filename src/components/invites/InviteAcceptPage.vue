@@ -13,6 +13,10 @@
       <p class="text-sm font-medium text-red-800 dark:text-red-300">
         {{ $t(`invites.errors.${error.toLowerCase()}`, $t('invites.errors.unknown')) }}
       </p>
+      <!-- Той самий глухий кут, що й у неактивного запрошення: сказати, що робити. -->
+      <p class="mt-1 text-xs text-red-700 opacity-90 dark:text-red-400">
+        {{ $t('invites.detail.askNewHint') }}
+      </p>
     </div>
 
     <!-- Success (existing student bond) -->
@@ -66,10 +70,24 @@
         v-if="!invite.is_active"
         class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
       >
-        <template v-if="invite.status === 'expired'">{{ $t('invites.detail.expired') }}</template>
-        <template v-else-if="invite.status === 'used'">{{ $t('invites.detail.used') }}</template>
-        <template v-else-if="invite.status === 'cancelled'">{{ $t('invites.detail.cancelled') }}</template>
-        <template v-else>{{ $t('invites.detail.inactive') }}</template>
+        <p class="font-medium">
+          <template v-if="invite.status === 'expired'">{{ $t('invites.detail.expired') }}</template>
+          <template v-else-if="invite.status === 'used'">{{ $t('invites.detail.used') }}</template>
+          <template v-else-if="invite.status === 'cancelled'">{{ $t('invites.detail.cancelled') }}</template>
+          <template v-else>{{ $t('invites.detail.inactive') }}</template>
+        </p>
+        <!-- Без цього рядка учень бачив лише «прострочене» і не знав, що робити
+             далі — глухий кут. Тьютор просто створює нове запрошення. -->
+        <p class="mt-1 text-xs opacity-90">
+          {{ invite.status === 'used' ? $t('invites.detail.usedHint') : $t('invites.detail.askNewHint') }}
+        </p>
+        <router-link
+          v-if="invite.status === 'used' && !auth.user"
+          to="/auth/login"
+          class="mt-2 inline-block text-xs font-semibold underline"
+        >
+          {{ $t('invites.detail.goToLogin') }}
+        </router-link>
       </div>
 
       <template v-if="invite.is_active">

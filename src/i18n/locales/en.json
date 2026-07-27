@@ -9968,7 +9968,10 @@
       "expired": "This invite has expired",
       "used": "This invite has already been used",
       "cancelled": "This invite was cancelled by the tutor",
-      "inactive": "This invite is no longer active"
+      "inactive": "This invite is no longer active",
+      "askNewHint": "Ask your tutor to send a new link — it takes them one click.",
+      "usedHint": "Looks like an account was already created with this invitation.",
+      "goToLogin": "Sign in"
     },
     "viral": {
       "title": "Great! You're connected",
