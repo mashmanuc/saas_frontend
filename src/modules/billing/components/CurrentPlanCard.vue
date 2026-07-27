@@ -62,7 +62,9 @@
           </span>
         </div>
 
-        <div v-if="subscription.provider" class="mt-2 flex items-center justify-between text-sm">
+        <!-- Ф1-1 (2026-07-27): BE віддає РЯДОК 'none' коли підписки нема —
+           truthy-рядок проходив v-if і юзер бачив технічне «None». -->
+        <div v-if="subscription.provider && subscription.provider !== 'none'" class="mt-2 flex items-center justify-between text-sm">
           <span class="text-muted-foreground">
             {{ $t('billing.currentPlanCard.providerLabel') }}
           </span>

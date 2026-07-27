@@ -5603,7 +5603,15 @@
       "days": "days"
     },
     "history": "Payment history",
-    "historyComingSoon": "Payment history is coming soon",
+    "historyEmpty": "No payments yet",
+    "historyError": "Failed to load payment history",
+    "historyLoadMore": "Show more",
+    "paymentStatus": {
+      "SUCCEEDED": "Paid",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded",
+      "REQUIRES_ACTION": "Action required"
+    },
     "planDescriptions": {
       "BUSINESS": "Full feature set for teams and schools",
       "FREE": "Basic features to get started",

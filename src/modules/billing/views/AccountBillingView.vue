@@ -57,6 +57,11 @@
         @select="handleSelectPlan"
         @retry="retryPlans"
       />
+
+      <!-- §5З Крок 3: історія платежів (замість заглушки «скоро буде») -->
+      <Card>
+        <PaymentHistorySection />
+      </Card>
     </div>
   </div>
 </template>
@@ -66,6 +71,7 @@ import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBillingStore } from '../stores/billingStore'
 import Button from '@/ui/Button.vue'
+import PaymentHistorySection from '../components/PaymentHistorySection.vue'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'

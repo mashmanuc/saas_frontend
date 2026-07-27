@@ -595,7 +595,10 @@ const routes = [
       {
         path: 'tutor/billing',
         name: 'tutor-billing',
-        component: () => import('../modules/billing/views/BillingView.vue'),
+        // §5З Крок 3 (2026-07-27): канонічна сторінка підписки = AccountBillingView.
+        // BillingView видалено як дубль (менше вміла, мала баг «None», 390 рядків
+        // inline проти 157 на компонентах). Обидві адреси → одна сторінка.
+        component: AccountBillingView,
         meta: { 
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]

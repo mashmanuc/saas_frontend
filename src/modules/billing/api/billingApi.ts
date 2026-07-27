@@ -28,7 +28,8 @@ import type {
   CancelRequest,
   CancelResponse,
   DomainError,
-  ApiErrorResponse
+  ApiErrorResponse,
+  PaymentHistoryResponse,
 } from './dto'
 
 // Re-export DTOs for convenience
@@ -206,4 +207,17 @@ export async function cancelSubscription(atPeriodEnd: boolean = true): Promise<C
   } catch (error) {
     throw parseDomainError(error)
   }
+}
+
+/**
+ * GET /v1/billing/payments/ — історія платежів поточного юзера.
+ * §5З Крок 2. Пагінація limit/offset (конвенція проєкту, без cursor).
+ */
+export async function getPaymentHistory(
+  limit = 20,
+  offset = 0,
+): Promise<PaymentHistoryResponse> {
+  return await apiClient.get<PaymentHistoryResponse>(
+    `/v1/billing/payments/?limit=${limit}&offset=${offset}`,
+  ) as unknown as PaymentHistoryResponse
 }

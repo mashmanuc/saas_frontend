@@ -6133,7 +6133,15 @@
       "days": "днів"
     },
     "history": "Історія платежів",
-    "historyComingSoon": "Історія платежів скоро буде доступна",
+    "historyEmpty": "Платежів ще не було",
+    "historyError": "Не вдалося завантажити історію платежів",
+    "historyLoadMore": "Показати ще",
+    "paymentStatus": {
+      "SUCCEEDED": "Оплачено",
+      "FAILED": "Не вдалося",
+      "REFUNDED": "Повернено",
+      "REQUIRES_ACTION": "Очікує дії"
+    },
     "subscriptionRequired": {
       "title": "Потрібна підписка",
       "message": "Для доступу до цієї функції необхідна активна підписка",

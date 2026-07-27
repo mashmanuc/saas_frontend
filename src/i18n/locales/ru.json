@@ -5912,7 +5912,15 @@
       "days": "дней"
     },
     "history": "История платежей",
-    "historyComingSoon": "История платежей скоро будет доступна",
+    "historyEmpty": "Платежей ещё не было",
+    "historyError": "Не удалось загрузить историю платежей",
+    "historyLoadMore": "Показать ещё",
+    "paymentStatus": {
+      "SUCCEEDED": "Оплачено",
+      "FAILED": "Не удалось",
+      "REFUNDED": "Возвращено",
+      "REQUIRES_ACTION": "Требуется действие"
+    },
     "subscriptionRequired": {
       "title": "Нужна подписка",
       "message": "Для доступа к этой функции необходима активная подписка",

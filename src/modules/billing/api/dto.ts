@@ -188,3 +188,22 @@ export const BillingErrorCodes = {
 } as const
 
 export type BillingErrorCode = typeof BillingErrorCodes[keyof typeof BillingErrorCodes]
+
+/**
+ * §5З Крок 2/3 (2026-07-27): рядок історії платежів.
+ * Джерело — BE `billing.Payment`; суми — РЕАЛЬНО сплачені (снапшот на момент
+ * оплати), тому зміна ціни плану в Staff не переписує минуле.
+ */
+export interface PaymentHistoryItemDto {
+  date: string
+  amount: string
+  currency: string
+  status: 'SUCCEEDED' | 'FAILED' | 'REFUNDED' | 'REQUIRES_ACTION'
+  provider: string
+  plan_code: string | null
+}
+
+export interface PaymentHistoryResponse {
+  results: PaymentHistoryItemDto[]
+  count: number
+}
