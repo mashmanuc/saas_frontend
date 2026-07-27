@@ -55,7 +55,10 @@
         
         <div v-if="subscription.current_period_end" class="flex items-center justify-between text-sm">
           <span class="text-muted-foreground">
-            {{ subscription.cancel_at_period_end ? $t('billing.currentPlanCard.expiresAtLabel') : $t('billing.currentPlanCard.renewsAt') }}
+            <!-- 2026-07-28: завжди «Діє до». «Продовжується» БРЕХАЛО: Plata/mono
+                 не має автопродовження — кожен платіж це разовий інвойс, гроші
+                 вдруге не спишуться, тож «продовження» не буває. -->
+            {{ $t('billing.currentPlanCard.validUntil') }}
           </span>
           <span class="font-medium text-foreground">
             {{ formatDate(subscription.current_period_end) }}
@@ -72,6 +75,30 @@
             {{ subscription.provider }}
           </span>
         </div>
+      </div>
+
+      <!-- 2026-07-28 (скарга власника: «під планом ніхера не пише, що
+           надається»): картка називала план і мовчала про те, за що людина
+           заплатила. Показуємо РЕЗОЛВЛЕНІ ліміти з BE (entitlement.limits) —
+           ті самі, за якими система реально пускає чи блокує. Не беремо їх зі
+           списку тарифів: чинний план може бути знятий з продажу (Business),
+           і тоді у списку його вже нема. -->
+      <div v-if="planLimitFeatures.length > 0" class="space-y-2">
+        <h3 class="text-sm font-semibold text-foreground">
+          {{ $t('billing.currentPlanCard.includedTitle') }}
+        </h3>
+        <ul class="space-y-2">
+          <li
+            v-for="line in planLimitFeatures"
+            :key="line"
+            class="flex items-center gap-2 text-sm text-foreground"
+          >
+            <svg class="h-4 w-4 flex-shrink-0 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{{ line }}</span>
+          </li>
+        </ul>
       </div>
 
       <div v-if="entitlement && entitlement.features && entitlement.features.length > 0" class="space-y-2">
@@ -92,23 +119,12 @@
         </ul>
       </div>
 
-      <div v-if="subscription.cancel_at_period_end" class="rounded-lg border border-warning bg-warning/10 p-3">
-        <p class="text-sm text-warning-dark">
-          {{ $t('billing.currentPlanCard.cancelScheduledWarning') }}
-        </p>
-      </div>
-
-      <div v-if="subscription.status === 'active' && !subscription.cancel_at_period_end" class="pt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          :loading="loading"
-          :disabled="loading"
-          @click="$emit('cancel')"
-        >
-          {{ $t('billing.currentPlanCard.cancelButton') }}
-        </Button>
-      </div>
+      <!-- 2026-07-28: кнопку «Скасувати підписку» ПРИБРАНО (рішення власника).
+           Вона ставила cancel_at_period_end=true — «не поновлювати наступного
+           періоду». Але Plata/mono НЕ має recurring: кожен платіж — разовий
+           інвойс, автосписання не буде в будь-якому разі. Тобто кнопка
+           «скасовувала» те, чого не станеться, і плодила питання в юзера.
+           Повернути — лише якщо зʼявиться реальне автопродовження. -->
     </div>
   </Card>
 </template>
@@ -119,6 +135,7 @@ import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import UpgradeHint from './UpgradeHint.vue'
+import { buildPlanFeatures } from '@/modules/payments/planLimitFeatures'
 
 /**
  * 2026-07-27 (скрін власника): невідомі коди фіч рендерились СИРИМИ ключами
@@ -158,9 +175,14 @@ const props = defineProps({
   }
 })
 
-defineEmits(['cancel'])
-
 const { d, t, te } = useI18n()
+
+/**
+ * Що людині реально надається за її план — з `entitlement.limits` (BE віддає
+ * резолвлені ліміти, за якими LimitChecker пускає/блокує). Той самий білдер,
+ * що й на картках тарифів, тож формулювання «до / необмежено» ідентичні.
+ */
+const planLimitFeatures = computed(() => buildPlanFeatures(props.entitlement?.limits, t))
 
 function formatDate(dateString) {
   if (!dateString) return ''

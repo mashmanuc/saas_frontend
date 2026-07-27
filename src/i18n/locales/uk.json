@@ -6055,12 +6055,14 @@
       "title": "Поточний план",
       "subtitle": "Інформація про вашу підписку",
       "planName": "План",
+      "validUntil": "Діє до",
       "renewsAt": "Продовжується",
       "expiresAtLabel": "Закінчується",
       "providerLabel": "Платіжна система",
       "featuresTitle": "Можливості",
       "cancelScheduledWarning": "Підписка буде скасована в кінці періоду",
-      "cancelButton": "Скасувати підписку"
+      "cancelButton": "Скасувати підписку",
+      "includedTitle": "Що входить"
     },
     "noPlanState": {
       "title": "Без підписки",

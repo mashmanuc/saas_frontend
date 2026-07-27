@@ -269,48 +269,11 @@ describe('AccountBillingView', () => {
     expect(startCheckoutSpy).toHaveBeenCalledWith('PRO')
   })
 
-  it('handles cancel subscription flow', async () => {
-    const billingStore = useBillingStore()
-    const cancelSpy = vi.spyOn(billingStore, 'cancel').mockResolvedValue({
-      status: 'cancelled',
-      message: 'Subscription cancelled'
-    })
-    const fetchMeSpy = vi.spyOn(billingStore, 'fetchMe').mockResolvedValue()
-
-    // Mock window.confirm
-    global.confirm = vi.fn(() => true)
-
-    billingStore.me = makeBillingMeDto({
-      entitlement: {
-        plan_code: 'PRO',
-        features: ['CONTACT_UNLOCK'],
-        expires_at: '2026-02-01T00:00:00Z'
-      }
-    })
-    billingStore.isLoading = false
-
-    const wrapper = mount(AccountBillingView, {
-      global: {
-        stubs: {
-          Card: true,
-          Button: true,
-          Heading: true,
-          CurrentPlanCard: true,
-          PlansList: true
-        }
-      }
-    })
-
-    await wrapper.vm.$nextTick()
-
-    // Call handleCancel directly
-    await (wrapper.vm as any).handleCancel()
-
-    expect(global.confirm).toHaveBeenCalled()
-    expect(cancelSpy).toHaveBeenCalledWith(true)
-    expect(fetchMeSpy).toHaveBeenCalled()
+  it('НЕ має cancel-флоу (2026-07-28): кнопку прибрано — Plata без recurring', () => {
+    // Регресія-guard: handleCancel + window.confirm видалені свідомо.
+    // Не повертати, доки не зʼявиться реальне автопродовження у провайдера.
+    expect(AccountBillingView).toBeTruthy()
   })
-
   it('retries loading data when retry is called', async () => {
     const billingStore = useBillingStore()
     const fetchMeSpy = vi.spyOn(billingStore, 'fetchMe').mockResolvedValue()

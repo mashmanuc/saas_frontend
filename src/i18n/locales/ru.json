@@ -5834,12 +5834,14 @@
       "title": "Текущий план",
       "subtitle": "Информация о вашей подписке",
       "planName": "План",
+      "validUntil": "Действует до",
       "renewsAt": "Продлевается",
       "expiresAtLabel": "Заканчивается",
       "providerLabel": "Платёжная система",
       "featuresTitle": "Возможности",
       "cancelScheduledWarning": "Подписка будет отменена в конце периода",
-      "cancelButton": "Отменить подписку"
+      "cancelButton": "Отменить подписку",
+      "includedTitle": "Что входит"
     },
     "noPlanState": {
       "title": "Без подписки",

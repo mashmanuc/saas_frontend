@@ -48,7 +48,6 @@
         :subscription="billingStore.subscription"
         :entitlement="billingStore.entitlement"
         :loading="billingStore.isLoadingAction"
-        @cancel="handleCancel"
       />
 
       <PlansList
@@ -126,18 +125,6 @@ async function handleSelectPlan(planCode) {
   }
 }
 
-async function handleCancel() {
-  if (!confirm('Are you sure you want to cancel your subscription?')) {
-    return
-  }
-  
-  try {
-    await billingStore.cancel(true)
-    await billingStore.fetchMe()
-  } catch (error) {
-    console.error('Cancel failed:', error)
-  }
-}
 
 
 // Auto-refresh billing status when user returns from payment tab

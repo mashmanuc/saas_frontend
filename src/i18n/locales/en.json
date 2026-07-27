@@ -5549,12 +5549,14 @@
       "title": "Current Plan",
       "subtitle": "Your subscription information",
       "planName": "Plan",
+      "validUntil": "Valid until",
       "renewsAt": "Renews on",
       "expiresAtLabel": "Expires on",
       "providerLabel": "Payment Provider",
       "featuresTitle": "Features",
       "cancelScheduledWarning": "Subscription will be canceled at period end",
-      "cancelButton": "Cancel Subscription"
+      "cancelButton": "Cancel Subscription",
+      "includedTitle": "What's included"
     },
     "noPlanState": {
       "title": "No Subscription",
