@@ -1,17 +1,25 @@
 // Local Workspace — стартовий контент першого візиту («подарунок», ТЗ §3).
 //
 // v2 (2026-07-26, рішення власника): демо-дошка на корені = вітрина продукту,
-// тому 4 сторінки замість однієї — відвідувач гортає їх як книжку й бачить
+// тому 6 сторінок замість однієї — відвідувач гортає їх як книжку й бачить
 // ширину інструментів:
-//   1. «Спробуй»          — вітання + парабола + 3D-піраміда + квадратична
+//   1. «Спробуй»          — вітання + парабола + StereoMASH-піраміда + квадратична
 //   2. «Тригонометрія»    — тригонометричне коло + розв'язник + графік sin
 //   3. «Похідна/інтеграл» — картка похідної + картка інтеграла + кубічна
-//   4. «Геометрія»        — Піфагор + Фалес (жива геометрія) + конус
+//   4. «Геометрія»        — Піфагор + Фалес + пряма Ейлера (живі побудови)
+//   5. «Стереометрія»     — переріз куба + куля в кубі + циліндр у конусі
+//   6. «3D-функції»       — поверхня z=f(x,y) + просторова крива
 //
-// ⚠️ WebGL-бюджет: контекст реєструє ЛИШЕ `geometry_solid`
-// (useSolidCardRenderer → webglContextRegistry, MAX_CONTEXTS=2). Тому тіло у
-// seed рівно одне і на окремій сторінці. Рендериться лише поточна сторінка
-// (`wbStore.currentPage`), тож при гортанні контекст вивільняється.
+// ⚠️ Вживаємо ЛИШЕ типи, що є в панелі вставки (insertRegistry). Застарілий
+// `geometry_solid` (конус зі старого solidCard) свідомо НЕ використовуємо —
+// його немає в панелі; живі тіла = `nmt3d` (StereoMASH, 25 шаблонів).
+//
+// ⚠️ Вартість рендера (перевірено по vendor-коду):
+//   - StereoMASH (`nmt3d`) — SVG, дешевий → кілька на сторінці безпечно;
+//   - GraphMASH 3D (`graphmash_3d`) — THREE.WebGLRenderer → дорогий, тому на
+//     сторінці 3D-функцій їх рівно два.
+// Рендериться лише поточна сторінка (`wbStore.currentPage`), тож при гортанні
+// контексти вивільняються.
 //
 // Форми asset-ів дзеркалять UI-створення 1:1 (useContentDrop.ts drop-handlers),
 // НЕ вигадуються з нуля — інакше розсинхрон із рендерерами/equality-фільтром.
@@ -51,11 +59,7 @@ import {
   DEFAULT_GEOMETRY_2D_V2_H,
   buildDefaultGeometry2DV2Data,
 } from '../constants/geometry2dV2Defaults'
-import {
-  DEFAULT_SOLID_W,
-  DEFAULT_SOLID_H,
-  DEFAULT_SOLID_STATE,
-} from '../constants/solidDefaults'
+import { buildDefaultGraphmash3dAsset } from '../constants/mashInsertDefaults'
 
 /** Поточна версія «подарунка». Bump → НЕторканий seed оновиться при візиті. */
 export const LOCAL_SEED_VERSION = 2
@@ -73,10 +77,20 @@ export interface LocalSeedTexts {
   pageTrig: string
   pageCalculus: string
   pageGeometry: string
-  /** Підписи-заголовки на сторінках 2-4. */
+  pageStereo: string
+  page3d: string
+  /** Підписи-заголовки на сторінках 2-6. */
   captionTrig: string
   captionCalculus: string
   captionGeometry: string
+  captionStereo: string
+  caption3d: string
+  /** Описи під об'єктами (стор. 5-6) — показують, що саме демонструє картка. */
+  descCubeSection: string
+  descSphereInCube: string
+  descCylInCone: string
+  descSurface: string
+  descCurve: string
 }
 
 function seedId(prefix: string): string {
@@ -105,9 +119,14 @@ function textStroke(
   return stroke
 }
 
-/** Заголовок сторінки (однаковий стиль на стор. 2-4). */
+/** Заголовок сторінки (однаковий стиль на стор. 2-6). */
 function captionStroke(text: string): WBStroke {
   return textStroke('text-caption', text, 140, 110, 34, '#0f172a', 700)
+}
+
+/** Опис під об'єктом — пояснює, що саме демонструє картка. */
+function descStroke(text: string, x: number, y: number): WBStroke {
+  return textStroke('text-desc', text, x, y, 20, '#475569')
 }
 
 function makeAsset(
@@ -224,8 +243,7 @@ export function buildLocalWelcomeState(texts: LocalSeedTexts): WBWorkspaceState 
     ],
   )
 
-  // ── Стор. 4 «Геометрія» ───────────────────────────────────────────────────
-  // Єдиний geometry_solid у seed (WebGL-бюджет, див. шапку файлу).
+  // ── Стор. 4 «Геометрія» — живі планіметричні побудови ─────────────────────
   const pageGeometry = page(
     'page-geometry',
     texts.pageGeometry,
@@ -237,13 +255,55 @@ export function buildLocalWelcomeState(texts: LocalSeedTexts): WBWorkspaceState 
       makeAsset('geo2d-t', 'geometry_2d_v2', 580, 210,
         DEFAULT_GEOMETRY_2D_V2_W, DEFAULT_GEOMETRY_2D_V2_H,
         buildDefaultGeometry2DV2Data('thales')),
-      makeAsset('solid', 'geometry_solid', 1060, 210, DEFAULT_SOLID_W, DEFAULT_SOLID_H,
-        { version: 1, state: { ...DEFAULT_SOLID_STATE } }, 'cone'),
+      makeAsset('geo2d-e', 'geometry_2d_v2', 1020, 210,
+        DEFAULT_GEOMETRY_2D_V2_W, DEFAULT_GEOMETRY_2D_V2_H,
+        buildDefaultGeometry2DV2Data('euler9')),
     ],
   )
 
+  // ── Стор. 5 «Стереометрія» — StereoMASH (SVG, дешевий) ────────────────────
+  // Шаблони з перерізами та вписаними тілами — те, що реально просять на НМТ.
+  const STEREO_W = 540
+  const STEREO_H = 400
+  const stereoY = 220
+  const descY = stereoY + STEREO_H + 24
+  const pageStereo = page(
+    'page-stereo',
+    texts.pageStereo,
+    [
+      captionStroke(texts.captionStereo),
+      descStroke(texts.descCubeSection, 140, descY),
+      descStroke(texts.descSphereInCube, 740, descY),
+      descStroke(texts.descCylInCone, 1340, descY),
+    ],
+    [
+      makeAsset('nmt3d-sec', 'nmt3d', 140, stereoY, STEREO_W, STEREO_H,
+        buildDefaultNmt3dData('cubeSection3')),
+      makeAsset('nmt3d-sph', 'nmt3d', 740, stereoY, STEREO_W, STEREO_H,
+        buildDefaultNmt3dData('cubeInscribedSphere')),
+      makeAsset('nmt3d-cyl', 'nmt3d', 1340, stereoY, STEREO_W, STEREO_H,
+        buildDefaultNmt3dData('coneInscribedCylinder')),
+    ],
+  )
+
+  // ── Стор. 6 «3D-функції» — GraphMASH 3D (WebGL, тому рівно два) ───────────
+  const g3dSurface = buildDefaultGraphmash3dAsset('surface')
+  g3dSurface.x = 140; g3dSurface.y = 220; g3dSurface.w = 640; g3dSurface.h = 470
+  const g3dCurve = buildDefaultGraphmash3dAsset('curve')
+  g3dCurve.x = 900; g3dCurve.y = 220; g3dCurve.w = 640; g3dCurve.h = 470
+  const page3d = page(
+    'page-3d',
+    texts.page3d,
+    [
+      captionStroke(texts.caption3d),
+      descStroke(texts.descSurface, 140, 720),
+      descStroke(texts.descCurve, 900, 720),
+    ],
+    [g3dSurface, g3dCurve],
+  )
+
   return {
-    pages: [pageTry, pageTrig, pageCalculus, pageGeometry],
+    pages: [pageTry, pageTrig, pageCalculus, pageGeometry, pageStereo, page3d],
     currentPageIndex: 0,
   }
 }

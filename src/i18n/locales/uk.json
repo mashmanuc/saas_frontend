@@ -7087,7 +7087,16 @@
       "seedPageGeometry": "Геометрія",
       "seedCaptionTrig": "Тригонометрія — рухай кут і дивись, як міняються значення",
       "seedCaptionCalculus": "Похідна та інтеграл — зміни функцію й межі",
-      "seedCaptionGeometry": "Жива геометрія — тягни точки, побудова перебудується"
+      "seedCaptionGeometry": "Жива геометрія — тягни точки, побудова перебудується",
+      "seedPageStereo": "Стереометрія",
+      "seedPage3d": "3D-функції",
+      "seedCaptionStereo": "Стереометрія — обертай фігуру, перерізи будуються самі",
+      "seedCaption3d": "3D-функції — поверхні та просторові криві, які можна крутити",
+      "seedDescCubeSection": "Переріз куба площиною через три точки",
+      "seedDescSphereInCube": "Куля, вписана в куб — видно точки дотику",
+      "seedDescCylInCone": "Циліндр, вписаний у конус",
+      "seedDescSurface": "Поверхня z = sin(x)·cos(y) — обертай мишею",
+      "seedDescCurve": "Просторова крива (cos t, sin t, t/3) — гвинтова лінія"
     },
     "constructor": {
       "badge": "КОНСТРУКТОР",

@@ -1,4 +1,4 @@
-// Local Workspace seed v2 — тести «подарунка» (4 сторінки-вітрина) і, головне,
+// Local Workspace seed v2 — тести «подарунка» (6 сторінок-вітрина) і, головне,
 // захисту роботи користувача при м'якому апгрейді вітрини.
 
 import { describe, it, expect } from 'vitest'
@@ -20,6 +20,15 @@ const TEXTS: LocalSeedTexts = {
   captionTrig: 'Підпис тригонометрії',
   captionCalculus: 'Підпис аналізу',
   captionGeometry: 'Підпис геометрії',
+  pageStereo: 'Стереометрія',
+  page3d: '3D-функції',
+  captionStereo: 'Підпис стереометрії',
+  caption3d: 'Підпис 3D',
+  descCubeSection: 'Опис перерізу',
+  descSphereInCube: 'Опис кулі в кубі',
+  descCylInCone: 'Опис циліндра',
+  descSurface: 'Опис поверхні',
+  descCurve: 'Опис кривої',
 }
 
 /** Відбиток НЕторканого seed v1 (одна сторінка: 2 тексти + парабола + піраміда). */
@@ -46,11 +55,11 @@ function seedV1State(): WBWorkspaceState {
 }
 
 describe('buildLocalWelcomeState — вітрина v2', () => {
-  it('будує 4 тематичні сторінки з переданими назвами', () => {
+  it('будує 6 тематичних сторінок з переданими назвами', () => {
     const state = buildLocalWelcomeState(TEXTS)
-    expect(state.pages).toHaveLength(4)
+    expect(state.pages).toHaveLength(6)
     expect(state.pages.map((p) => p.name)).toEqual([
-      'Спробуй', 'Тригонометрія', 'Похідна та інтеграл', 'Геометрія',
+      'Спробуй', 'Тригонометрія', 'Похідна та інтеграл', 'Геометрія', 'Стереометрія', '3D-функції',
     ])
     expect(state.currentPageIndex).toBe(0)
   })
@@ -62,12 +71,19 @@ describe('buildLocalWelcomeState — вітрина v2', () => {
     }
   })
 
-  it('WebGL-бюджет: рівно один geometry_solid у всьому seed', () => {
-    // Контекст реєструє лише solid card (webglContextRegistry, MAX_CONTEXTS=2).
+  it('НЕ вживає застарілий geometry_solid (немає в панелі вставки)', () => {
     const solids = buildLocalWelcomeState(TEXTS)
       .pages.flatMap((p) => p.assets)
       .filter((a) => a.type === 'geometry_solid')
-    expect(solids).toHaveLength(1)
+    expect(solids).toHaveLength(0)
+  })
+
+  it('WebGL-бюджет: не більше двох graphmash_3d (THREE.WebGLRenderer)', () => {
+    const g3d = buildLocalWelcomeState(TEXTS)
+      .pages.flatMap((p) => p.assets)
+      .filter((a) => a.type === 'graphmash_3d')
+    expect(g3d.length).toBeLessThanOrEqual(2)
+    expect(g3d.length).toBeGreaterThan(0)
   })
 
   it('ідентифікатори унікальні (сторінки, штрихи, об’єкти)', () => {
@@ -122,7 +138,7 @@ describe('isUntouchedSeedV1 — захист роботи користувача
 })
 
 describe('LOCAL_SEED_VERSION', () => {
-  it('дорівнює 2 (вітрина з 4 сторінок)', () => {
+  it('дорівнює 2 (вітрина з 6 сторінок)', () => {
     expect(LOCAL_SEED_VERSION).toBe(2)
   })
 })

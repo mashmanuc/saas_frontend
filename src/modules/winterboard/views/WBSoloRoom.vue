@@ -3262,9 +3262,18 @@ async function initLocalWorkspace(): Promise<void> {
     pageTrig: t('winterboard.localWorkspace.seedPageTrig'),
     pageCalculus: t('winterboard.localWorkspace.seedPageCalculus'),
     pageGeometry: t('winterboard.localWorkspace.seedPageGeometry'),
+    pageStereo: t('winterboard.localWorkspace.seedPageStereo'),
+    page3d: t('winterboard.localWorkspace.seedPage3d'),
     captionTrig: t('winterboard.localWorkspace.seedCaptionTrig'),
     captionCalculus: t('winterboard.localWorkspace.seedCaptionCalculus'),
     captionGeometry: t('winterboard.localWorkspace.seedCaptionGeometry'),
+    captionStereo: t('winterboard.localWorkspace.seedCaptionStereo'),
+    caption3d: t('winterboard.localWorkspace.seedCaption3d'),
+    descCubeSection: t('winterboard.localWorkspace.seedDescCubeSection'),
+    descSphereInCube: t('winterboard.localWorkspace.seedDescSphereInCube'),
+    descCylInCone: t('winterboard.localWorkspace.seedDescCylInCone'),
+    descSurface: t('winterboard.localWorkspace.seedDescSurface'),
+    descCurve: t('winterboard.localWorkspace.seedDescCurve'),
   })
 
   if (!state) {

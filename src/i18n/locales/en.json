@@ -6999,7 +6999,16 @@
       "seedPageGeometry": "Geometry",
       "seedCaptionTrig": "Trigonometry — drag the angle and watch the values change",
       "seedCaptionCalculus": "Derivative and integral — change the function and the limits",
-      "seedCaptionGeometry": "Live geometry — drag the points, the construction rebuilds"
+      "seedCaptionGeometry": "Live geometry — drag the points, the construction rebuilds",
+      "seedPageStereo": "Solid geometry",
+      "seedPage3d": "3D functions",
+      "seedCaptionStereo": "Solid geometry — rotate the shape, sections build themselves",
+      "seedCaption3d": "3D functions — surfaces and space curves you can rotate",
+      "seedDescCubeSection": "Cube section through three points",
+      "seedDescSphereInCube": "Sphere inscribed in a cube — tangent points visible",
+      "seedDescCylInCone": "Cylinder inscribed in a cone",
+      "seedDescSurface": "Surface z = sin(x)·cos(y) — drag to rotate",
+      "seedDescCurve": "Space curve (cos t, sin t, t/3) — a helix"
     },
     "constructor": {
       "badge": "CONSTRUCTOR",
