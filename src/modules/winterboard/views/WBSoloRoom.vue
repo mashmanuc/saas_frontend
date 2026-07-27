@@ -1040,7 +1040,7 @@ import {
   clearLocalWorkspace,
   isLocalWorkspaceSeeded,
   markLocalWorkspaceSeeded,
-  getLocalWorkspaceSeedVersion,
+  getLocalWorkspaceSeedDigest,
   createThrottledSaver,
   stashHandoff,
   loadHandoff,
@@ -1050,8 +1050,8 @@ import {
 } from '../local/localWorkspaceStorage'
 import {
   buildLocalWelcomeState,
-  isUntouchedSeed,
-  LOCAL_SEED_VERSION,
+  computeSeedDigest,
+  matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../local/localWorkspaceSeed'
 import { buildHandoffOps } from '../local/localWorkspaceHandoff'
@@ -3252,6 +3252,22 @@ function seedTexts(): LocalSeedTexts {
   }
 }
 
+/**
+ * Чи це НЕторкана вітрина, яку ми самі намалювали?
+ *
+ * Основний шлях — «пломба»: відбиток, записаний у момент малювання. Збігається
+ * з поточним вмістом → людина нічого не робила, вітрину можна оновити.
+ * Не збігається → тут її робота, не чіпаємо.
+ *
+ * Запасний шлях — лише для тих, хто був тут ДО появи пломб: звіряємо макет із
+ * замороженим legacy-списком. Після цього входу їм запишеться пломба.
+ */
+function isUntouchedShowcase(state: WBWorkspaceState): boolean {
+  const sealed = getLocalWorkspaceSeedDigest()
+  if (sealed) return sealed === computeSeedDigest(state)
+  return matchesLegacySeedLayout(state)
+}
+
 async function initLocalWorkspace(): Promise<void> {
   // Флаг вимкнено (prod до rollout-рішення) → на лендінг.
   if (!isLocalWorkspaceEnabled()) {
@@ -3281,7 +3297,6 @@ async function initLocalWorkspace(): Promise<void> {
 
   const snapshot = loadLocalWorkspace()
   const wasSeededBefore = isLocalWorkspaceSeeded()
-  const seenSeedVersion = getLocalWorkspaceSeedVersion()
   let seedWasUpgraded = false
   let state = snapshot?.state ?? null
   const name = snapshot?.name || t('winterboard.localWorkspace.title')
@@ -3291,21 +3306,26 @@ async function initLocalWorkspace(): Promise<void> {
     if (!wasSeededBefore) {
       // «Подарунок» першого візиту (ТЗ §3): 6 тематичних сторінок-вітрина.
       state = buildLocalWelcomeState(seedTexts())
-      markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
+      markLocalWorkspaceSeeded(computeSeedDigest(state))
       trackLocal('seed_shown')
     } else {
       // Користувач свідомо очистив стіл раніше — порожня сторінка
       // (hydrateFromSession сам створить empty page для pages: []).
       state = { pages: [], currentPageIndex: 0 }
     }
-  } else if (seenSeedVersion > 0 && seenSeedVersion < LOCAL_SEED_VERSION && isUntouchedSeed(state)) {
-    // М'який апгрейд вітрини: людина заходила на демо-дошку раніше, але нічого
-    // свого не додала → показуємо новий контент. Щойно вона намалювала бодай
-    // штрих — відбиток не збігається і ми НЕ чіпаємо її роботу.
-    state = buildLocalWelcomeState(seedTexts())
-    markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
-    trackLocal('seed_upgraded', { from: seenSeedVersion, to: LOCAL_SEED_VERSION })
-    seedWasUpgraded = true
+  } else if (isUntouchedShowcase(state)) {
+    // Вітрину ще не чіпали → показуємо актуальну (новий склад АБО інша мова).
+    // Якщо актуальна збігається з тим, що вже лежить — нічого не робимо.
+    const fresh = buildLocalWelcomeState(seedTexts())
+    if (computeSeedDigest(fresh) !== computeSeedDigest(state)) {
+      state = fresh
+      markLocalWorkspaceSeeded(computeSeedDigest(state))
+      trackLocal('seed_refreshed')
+      seedWasUpgraded = true
+    } else if (!getLocalWorkspaceSeedDigest()) {
+      // Legacy-браузер із тією самою вітриною — просто ставимо пломбу.
+      markLocalWorkspaceSeeded(computeSeedDigest(state))
+    }
   }
 
   // Воронка: вхід на робочий стіл (перший візит vs повторний).
@@ -3347,7 +3367,7 @@ async function initLocalWorkspace(): Promise<void> {
   // новою мовою. Щойно людина щось намалювала — не втручаємось (її текст
   // лишається так, як вона його написала).
   _unwatchLocale = watch(locale, () => {
-    if (!isUntouchedSeed(store.serializedState)) return
+    if (!isUntouchedShowcase(store.serializedState)) return
     const fresh = buildLocalWelcomeState(seedTexts())
     store.hydrateFromSession({
       id: 'local-workspace',
@@ -3362,6 +3382,7 @@ async function initLocalWorkspace(): Promise<void> {
     })
     sessionName.value = t('winterboard.localWorkspace.title')
     store.setTool('select')
+    markLocalWorkspaceSeeded(computeSeedDigest(fresh))
     persistLocalWorkspaceNow()
     trackLocal('seed_relocalized', { locale: String(locale.value) })
   })

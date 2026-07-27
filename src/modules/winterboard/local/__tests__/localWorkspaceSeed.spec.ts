@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest'
 import type { WBWorkspaceState } from '../../types/winterboard'
 import {
   buildLocalWelcomeState,
-  isUntouchedSeed,
-  LOCAL_SEED_VERSION,
+  computeSeedDigest,
+  matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../localWorkspaceSeed'
 
@@ -106,28 +106,60 @@ describe('buildLocalWelcomeState — вітрина v2', () => {
   })
 })
 
-describe('isUntouchedSeed — захист роботи користувача', () => {
-  it('впізнає НЕторкану вітрину v1', () => {
-    expect(isUntouchedSeed(seedV1State())).toBe(true)
+describe('computeSeedDigest — пломба вітрини', () => {
+  it('однаковий вміст → однаковий відбиток', () => {
+    expect(computeSeedDigest(buildLocalWelcomeState(TEXTS)))
+      .toBe(computeSeedDigest(buildLocalWelcomeState(TEXTS)))
   })
 
-  it('НЕ чіпає дошку, де людина щось намалювала', () => {
-    const s = seedV1State()
+  it('НЕ залежить від випадкових id (інакше пломба ніколи б не збігалась)', () => {
+    const a = buildLocalWelcomeState(TEXTS)
+    const b = buildLocalWelcomeState(TEXTS)
+    expect(a.pages[0].id).not.toBe(b.pages[0].id)
+    expect(computeSeedDigest(a)).toBe(computeSeedDigest(b))
+  })
+
+  it('домальований штрих → інший відбиток (робота людини помітна)', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const before = computeSeedDigest(s)
     s.pages[0].strokes.push({
       id: 'user', tool: 'pen', color: '#f00', size: 4, opacity: 1,
       points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
     } as unknown as (typeof s.pages)[0]['strokes'][0])
-    expect(isUntouchedSeed(s)).toBe(false)
+    expect(computeSeedDigest(s)).not.toBe(before)
   })
 
-  it('НЕ чіпає дошку, де людина додала об’єкт', () => {
-    const s = seedV1State()
-    s.pages[0].assets.push({ id: 'extra', type: 'trig_circle' } as unknown as (typeof s.pages)[0]['assets'][0])
-    expect(isUntouchedSeed(s)).toBe(false)
+  it('доданий об’єкт → інший відбиток', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const before = computeSeedDigest(s)
+    s.pages[0].assets.push({ id: 'x', type: 'trig_circle', x: 0, y: 0, w: 10, h: 10 } as unknown as (typeof s.pages)[0]['assets'][0])
+    expect(computeSeedDigest(s)).not.toBe(before)
   })
 
-  it('впізнає НЕторкану вітрину v2 (4 сторінки з застарілим конусом)', () => {
-    // Саме цей випадок не оновлювався у власника — регресійний тест.
+  it('пересунутий об’єкт → інший відбиток', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const before = computeSeedDigest(s)
+    s.pages[0].assets[0].x += 50
+    expect(computeSeedDigest(s)).not.toBe(before)
+  })
+
+  it('інша мова текстів → інший відбиток (звідси й перемальовування)', () => {
+    const en = buildLocalWelcomeState({ ...TEXTS, pageTry: 'Try it', captionTrig: 'Trigonometry' })
+    expect(computeSeedDigest(en)).not.toBe(computeSeedDigest(buildLocalWelcomeState(TEXTS)))
+  })
+
+  it('стійкий до порожнього / некоректного стану', () => {
+    expect(computeSeedDigest(null)).toBe('')
+    expect(computeSeedDigest(undefined)).toBe('')
+  })
+})
+
+describe('matchesLegacySeedLayout — міграція старих браузерів', () => {
+  it('впізнає вітрину v1 (одна сторінка)', () => {
+    expect(matchesLegacySeedLayout(seedV1State())).toBe(true)
+  })
+
+  it('впізнає вітрину v2 (чотири сторінки з застарілим конусом)', () => {
     const v2 = {
       pages: [
         { id:'p1', name:'', strokes:[], assets:[{type:'graph_calculator'},{type:'nmt3d'},{type:'quadratic_card'}] },
@@ -137,33 +169,15 @@ describe('isUntouchedSeed — захист роботи користувача',
       ],
       currentPageIndex: 0,
     } as unknown as WBWorkspaceState
-    expect(isUntouchedSeed(v2)).toBe(true)
+    expect(matchesLegacySeedLayout(v2)).toBe(true)
   })
 
-  it('впізнає ПОТОЧНУ вітрину v3 — потрібно для перемальовування іншою мовою', () => {
-    // Повторний version-апгрейд це не вмикає — його стримує гейт
-    // seenVersion < LOCAL_SEED_VERSION у WBSoloRoom.
-    expect(isUntouchedSeed(buildLocalWelcomeState(TEXTS))).toBe(true)
-  })
-
-  it('НЕ перемальовує вітрину v3, якщо на ній вже малювали', () => {
-    const s = buildLocalWelcomeState(TEXTS)
+  it('НЕ впізнає дошку, де людина малювала', () => {
+    const s = seedV1State()
     s.pages[0].strokes.push({
       id: 'user', tool: 'pen', color: '#f00', size: 4, opacity: 1,
       points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
     } as unknown as (typeof s.pages)[0]['strokes'][0])
-    expect(isUntouchedSeed(s)).toBe(false)
-  })
-
-  it('стійка до порожнього / некоректного стану', () => {
-    expect(isUntouchedSeed(null)).toBe(false)
-    expect(isUntouchedSeed(undefined)).toBe(false)
-    expect(isUntouchedSeed({ pages: [], currentPageIndex: 0 } as WBWorkspaceState)).toBe(false)
-  })
-})
-
-describe('LOCAL_SEED_VERSION', () => {
-  it('дорівнює 3 (вітрина з 6 сторінок)', () => {
-    expect(LOCAL_SEED_VERSION).toBe(3)
+    expect(matchesLegacySeedLayout(s)).toBe(false)
   })
 })

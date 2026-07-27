@@ -14,7 +14,11 @@ import type { WBWorkspaceState } from '../types/winterboard'
 
 export const LOCAL_WORKSPACE_STATE_KEY = 'm4sh:local-ws:v1'
 export const LOCAL_WORKSPACE_SEEDED_KEY = 'm4sh:local-ws:seeded'
+/** LEGACY: ручний номер версії вітрини. Більше не пишеться — лишився, щоб
+ *  прибрати його зі сховища при міграції на відбитки. */
 export const LOCAL_WORKSPACE_SEED_VERSION_KEY = 'm4sh:local-ws:seed-version'
+/** Відбиток («пломба») вітрини, яку ми намалювали цьому браузеру. */
+export const LOCAL_WORKSPACE_SEED_DIGEST_KEY = 'm4sh:local-ws:seed-digest'
 
 export interface LocalWorkspaceSnapshot {
   version: 1
@@ -186,24 +190,21 @@ export function isLocalWorkspaceSeeded(): boolean {
 }
 
 /**
- * Версія «подарунка», яку бачив цей браузер.
- *   0 — не бачив нічого (перший візит);
- *   1 — legacy: заходив ДО версіонування (був лише boolean-флаг).
- * Дозволяє оновити вітрину при bump LOCAL_SEED_VERSION.
+ * Відбиток вітрини, яку ми намалювали цьому браузеру (null — ще не писали:
+ * або перший візит, або людина була тут до появи відбитків).
  */
-export function getLocalWorkspaceSeedVersion(): number {
-  const raw = _adapter.read(LOCAL_WORKSPACE_SEED_VERSION_KEY)
-  if (raw !== null) {
-    const parsed = Number(raw)
-    if (Number.isFinite(parsed) && parsed > 0) return parsed
-  }
-  return isLocalWorkspaceSeeded() ? 1 : 0
+export function getLocalWorkspaceSeedDigest(): string | null {
+  return _adapter.read(LOCAL_WORKSPACE_SEED_DIGEST_KEY)
 }
 
-export function markLocalWorkspaceSeeded(version = 1): void {
-  // Boolean-ключ лишаємо для зворотної сумісності (старі збірки читають його).
+/**
+ * Зафіксувати, що вітрину намальовано, разом з її відбитком.
+ * Заразом прибирає legacy-ключ ручної версії — він більше не потрібен.
+ */
+export function markLocalWorkspaceSeeded(digest: string): void {
   _adapter.write(LOCAL_WORKSPACE_SEEDED_KEY, '1')
-  _adapter.write(LOCAL_WORKSPACE_SEED_VERSION_KEY, String(version))
+  _adapter.write(LOCAL_WORKSPACE_SEED_DIGEST_KEY, digest)
+  _adapter.remove(LOCAL_WORKSPACE_SEED_VERSION_KEY)
 }
 
 // ─── Throttled saver ─────────────────────────────────────────────────────────
