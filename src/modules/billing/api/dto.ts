@@ -53,6 +53,8 @@ export interface PlanDto {
   limits?: PlanLimits
   description?: string
   description_uk?: string
+  /** Ф4 (2026-07-27): staff «НАЗВА (UA)» — тепер віддається публічним API */
+  title_uk?: string
 }
 
 /**

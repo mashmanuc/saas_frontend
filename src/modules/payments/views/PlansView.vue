@@ -40,6 +40,12 @@ function isCurrentPlan(plan: PlanDto): boolean {
 }
 
 /** Опис тарифу (прозою). uk-локаль → description_uk, інакше description. */
+/** Ф4 E2E-фікс: назва картки locale-aware — staff «НАЗВА (UA)» тепер ДІЄ. */
+function planTitle(plan: PlanDto): string {
+  const uk = plan.title_uk?.trim()
+  return (locale.value.startsWith('uk') ? uk || plan.title : plan.title || uk) || plan.title
+}
+
 function planDescription(plan: PlanDto): string {
   const uk = plan.description_uk?.trim()
   const en = plan.description?.trim()
@@ -123,7 +129,7 @@ async function buyPlan(plan: PlanDto): Promise<void> {
           <Star :size="14" /> {{ $t('billing.recommended') }}
         </div>
 
-        <h3 class="text-2xl font-bold mb-2">{{ plan.title }}</h3>
+        <h3 class="text-2xl font-bold mb-2">{{ planTitle(plan) }}</h3>
 
         <div class="flex items-baseline gap-1 mb-4">
           <span class="text-4xl font-bold">{{ formatPrice(plan) }}</span>
