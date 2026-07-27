@@ -1040,6 +1040,7 @@ import {
   clearLocalWorkspace,
   isLocalWorkspaceSeeded,
   markLocalWorkspaceSeeded,
+  getLocalWorkspaceSeedVersion,
   createThrottledSaver,
   stashHandoff,
   loadHandoff,
@@ -1047,7 +1048,12 @@ import {
   clearHandoff,
   type ThrottledSaver,
 } from '../local/localWorkspaceStorage'
-import { buildLocalWelcomeState } from '../local/localWorkspaceSeed'
+import {
+  buildLocalWelcomeState,
+  isUntouchedSeedV1,
+  LOCAL_SEED_VERSION,
+  type LocalSeedTexts,
+} from '../local/localWorkspaceSeed'
 import { buildHandoffOps } from '../local/localWorkspaceHandoff'
 // Телеметрія воронки гостя (wb.local.*, анонімний ID без PII) — LAW §15 виняток
 import { trackLocal, trackEngagement } from '../local/localWorkspaceTelemetry'
@@ -3243,24 +3249,44 @@ async function initLocalWorkspace(): Promise<void> {
 
   const snapshot = loadLocalWorkspace()
   const wasSeededBefore = isLocalWorkspaceSeeded()
+  const seenSeedVersion = getLocalWorkspaceSeedVersion()
+  let seedWasUpgraded = false
   let state = snapshot?.state ?? null
   const name = snapshot?.name || t('winterboard.localWorkspace.title')
   const savedAtIso = snapshot ? new Date(snapshot.savedAt).toISOString() : new Date().toISOString()
 
+  const seedTexts = (): LocalSeedTexts => ({
+    title: t('winterboard.localWorkspace.seedTitle'),
+    hint: t('winterboard.localWorkspace.seedHint'),
+    pageTry: t('winterboard.localWorkspace.seedPageTry'),
+    pageTrig: t('winterboard.localWorkspace.seedPageTrig'),
+    pageCalculus: t('winterboard.localWorkspace.seedPageCalculus'),
+    pageGeometry: t('winterboard.localWorkspace.seedPageGeometry'),
+    captionTrig: t('winterboard.localWorkspace.seedCaptionTrig'),
+    captionCalculus: t('winterboard.localWorkspace.seedCaptionCalculus'),
+    captionGeometry: t('winterboard.localWorkspace.seedCaptionGeometry'),
+  })
+
   if (!state) {
     if (!wasSeededBefore) {
-      // «Подарунок» першого візиту (ТЗ §3): 3D-куб + парабола + привітання.
-      state = buildLocalWelcomeState({
-        title: t('winterboard.localWorkspace.seedTitle'),
-        hint: t('winterboard.localWorkspace.seedHint'),
-      })
-      markLocalWorkspaceSeeded()
+      // «Подарунок» першого візиту (ТЗ §3): 4 тематичні сторінки-вітрина.
+      state = buildLocalWelcomeState(seedTexts())
+      markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
       trackLocal('seed_shown')
     } else {
       // Користувач свідомо очистив стіл раніше — порожня сторінка
       // (hydrateFromSession сам створить empty page для pages: []).
       state = { pages: [], currentPageIndex: 0 }
     }
+  } else if (seenSeedVersion > 0 && seenSeedVersion < LOCAL_SEED_VERSION && isUntouchedSeedV1(state)) {
+    // М'який апгрейд вітрини: людина заходила на демо-дошку раніше, але нічого
+    // свого не додала (відбиток = НЕторканий seed v1) → показуємо новий контент.
+    // Щойно вона намалювала бодай щось — відбиток не збігається і ми НЕ чіпаємо
+    // її роботу.
+    state = buildLocalWelcomeState(seedTexts())
+    markLocalWorkspaceSeeded(LOCAL_SEED_VERSION)
+    trackLocal('seed_upgraded', { from: seenSeedVersion, to: LOCAL_SEED_VERSION })
+    seedWasUpgraded = true
   }
 
   // Воронка: вхід на робочий стіл (перший візит vs повторний).
@@ -3313,8 +3339,9 @@ async function initLocalWorkspace(): Promise<void> {
     trackEngagement(kind)
   })
 
-  // Перший візит: записати seed одразу, щоб F5 до першої мутації не втратив подарунок.
-  if (!snapshot) persistLocalWorkspaceNow()
+  // Перший візит (або апгрейд вітрини): записати seed одразу, щоб F5 до першої
+  // мутації не втратив подарунок / не прокрутив апгрейд удруге.
+  if (!snapshot || seedWasUpgraded) persistLocalWorkspaceNow()
 }
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────────

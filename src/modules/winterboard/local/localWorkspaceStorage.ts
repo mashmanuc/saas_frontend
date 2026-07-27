@@ -14,6 +14,7 @@ import type { WBWorkspaceState } from '../types/winterboard'
 
 export const LOCAL_WORKSPACE_STATE_KEY = 'm4sh:local-ws:v1'
 export const LOCAL_WORKSPACE_SEEDED_KEY = 'm4sh:local-ws:seeded'
+export const LOCAL_WORKSPACE_SEED_VERSION_KEY = 'm4sh:local-ws:seed-version'
 
 export interface LocalWorkspaceSnapshot {
   version: 1
@@ -184,8 +185,25 @@ export function isLocalWorkspaceSeeded(): boolean {
   return _adapter.read(LOCAL_WORKSPACE_SEEDED_KEY) === '1'
 }
 
-export function markLocalWorkspaceSeeded(): void {
+/**
+ * Версія «подарунка», яку бачив цей браузер.
+ *   0 — не бачив нічого (перший візит);
+ *   1 — legacy: заходив ДО версіонування (був лише boolean-флаг).
+ * Дозволяє оновити вітрину при bump LOCAL_SEED_VERSION.
+ */
+export function getLocalWorkspaceSeedVersion(): number {
+  const raw = _adapter.read(LOCAL_WORKSPACE_SEED_VERSION_KEY)
+  if (raw !== null) {
+    const parsed = Number(raw)
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return isLocalWorkspaceSeeded() ? 1 : 0
+}
+
+export function markLocalWorkspaceSeeded(version = 1): void {
+  // Boolean-ключ лишаємо для зворотної сумісності (старі збірки читають його).
   _adapter.write(LOCAL_WORKSPACE_SEEDED_KEY, '1')
+  _adapter.write(LOCAL_WORKSPACE_SEED_VERSION_KEY, String(version))
 }
 
 // ─── Throttled saver ─────────────────────────────────────────────────────────

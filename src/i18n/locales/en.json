@@ -6992,7 +6992,14 @@
         "note": "It's free and takes a few seconds. Your board stays right here.",
         "cta": "Sign up",
         "later": "Later"
-      }
+      },
+      "seedPageTry": "Try it",
+      "seedPageTrig": "Trigonometry",
+      "seedPageCalculus": "Derivative & integral",
+      "seedPageGeometry": "Geometry",
+      "seedCaptionTrig": "Trigonometry — drag the angle and watch the values change",
+      "seedCaptionCalculus": "Derivative and integral — change the function and the limits",
+      "seedCaptionGeometry": "Live geometry — drag the points, the construction rebuilds"
     },
     "constructor": {
       "badge": "CONSTRUCTOR",
