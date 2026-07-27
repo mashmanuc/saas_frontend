@@ -100,7 +100,18 @@ const routes = [
       // v1 = BYO tutor-tool → безролеве /auth/register веде одразу на форму тьютора
       // (перемикач «зареєструватися як студент» є всередині форми), query зберігаємо.
       { path: 'register', redirect: (to) => ({ path: '/auth/register/tutor', query: to.query }) },
-      { path: 'register/student', name: 'register-student', component: RegisterStudentView, meta: { requiresAuth: false } },
+      // 2026-07-26: у моделі BYO учень потрапляє в продукт ЛИШЕ за запрошенням
+      // тьютора (`/invite/:token` → POST /v1/invites/{token}/accept/). Публічна
+      // самореєстрація створювала «сирітські» акаунти без зв'язку з тьютором —
+      // шлях, якого в продукті не існує. Компонент лишаємо (легкий відкат),
+      // але вхід закриваємо: гість іде на лендінг, авторизований — до себе.
+      {
+        path: 'register/student',
+        name: 'register-student',
+        component: RegisterStudentView,
+        meta: { requiresAuth: false },
+        beforeEnter: () => ({ path: '/start' }),
+      },
       { path: 'register/tutor', name: 'register-tutor', component: RegisterTutorView, meta: { requiresAuth: false } },
       { path: 'check-email', name: 'auth-check-email', component: CheckEmailView, meta: { requiresAuth: false } },
       { path: 'verify-email', name: 'auth-verify-email', component: VerifyEmailView, meta: { requiresAuth: false } },

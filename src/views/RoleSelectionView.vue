@@ -12,7 +12,6 @@ const router = useRouter()
 const route = useRoute()
 const { t, locale } = useI18n()
 
-const studentCardRef = ref<HTMLElement | null>(null)
 const tutorCardRef = ref<HTMLElement | null>(null)
 const howItWorksRef = ref<HTMLElement | null>(null)
 const benefitsRef = ref<HTMLElement | null>(null)
@@ -36,7 +35,6 @@ const languages = [
 onMounted(() => {
   // Trigger animations on mount
   setTimeout(() => {
-    studentCardRef.value?.classList.add('animate-in')
     tutorCardRef.value?.classList.add('animate-in')
   }, 100)
 
@@ -54,10 +52,6 @@ const registerQuery = computed<Record<string, string>>(() => {
   const redirect = route.query.redirect
   return typeof redirect === 'string' && redirect ? { redirect } : {}
 })
-
-function selectStudent() {
-  router.push({ path: '/auth/register/student', query: registerQuery.value })
-}
 
 function selectTutor() {
   router.push({ path: '/auth/register/tutor', query: registerQuery.value })
@@ -171,50 +165,6 @@ async function changeLanguage(langCode: string) {
       </section>
 
       <div class="cards-container">
-        <!-- Student Card -->
-        <div 
-          ref="studentCardRef"
-          class="role-card student-card"
-          @click="selectStudent"
-          data-test="role-select-student"
-        >
-          <div class="card-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-            </svg>
-          </div>
-          <h2 class="card-title">{{ t('roleSelection.student.title') }}</h2>
-          <p class="card-description">{{ t('roleSelection.student.description') }}</p>
-          <div class="card-features">
-            <div class="feature">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>{{ t('roleSelection.student.feature1') }}</span>
-            </div>
-            <div class="feature">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>{{ t('roleSelection.student.feature2') }}</span>
-            </div>
-            <div class="feature">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>{{ t('roleSelection.student.feature3') }}</span>
-            </div>
-          </div>
-          <button class="card-button">
-            {{ t('roleSelection.student.cta') }}
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
-        </div>
-
         <!-- Tutor Card -->
         <div 
           ref="tutorCardRef"
@@ -261,6 +211,17 @@ async function changeLanguage(langCode: string) {
           </button>
         </div>
       </div>
+
+      <!-- Учень приходить лише за запрошенням тьютора (BYO): не рівноправний
+           вибір, а тиха підказка, щоб не вести людину шляхом, якого немає. -->
+      <p class="student-note">
+        {{ t('roleSelection.studentNote.invited') }}
+        <span class="student-note-sep">·</span>
+        {{ t('roleSelection.studentNote.lost') }}
+        <button type="button" class="student-note-link" @click="goToLogin">
+          {{ t('roleSelection.studentNote.haveAccount') }}
+        </button>
+      </p>
 
       <!-- How It Works Section -->
       <section ref="howItWorksRef" class="info-section how-it-works">
@@ -893,11 +854,35 @@ async function changeLanguage(langCode: string) {
 
 .cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: 1fr;
   gap: 2rem;
-  max-width: 900px;
+  max-width: 460px;   /* одна картка — тьюторська; учень приходить за запрошенням */
   margin: 0 auto;
 }
+
+/* Підказка для учня — свідомо другорядна, не конкурує з головною дією */
+.student-note {
+  max-width: 640px;
+  margin: 1.25rem auto 0;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.student-note-sep { opacity: 0.45; margin: 0 0.35rem; }
+
+.student-note-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.student-note-link:hover { color: var(--accent-hover); }
 
 .role-card {
   background: var(--card-bg);
@@ -931,23 +916,8 @@ async function changeLanguage(langCode: string) {
   transform: translateY(0);
 }
 
-.student-card.animate-in {
-  animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
 .tutor-card.animate-in {
   animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-50px) translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) translateY(0);
-  }
 }
 
 @keyframes slideInRight {

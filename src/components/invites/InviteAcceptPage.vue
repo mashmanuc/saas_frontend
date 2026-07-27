@@ -126,12 +126,8 @@
             <p v-if="fieldErrors?.password" class="mt-1 text-xs text-red-600">{{ fieldErrors.password[0] }}</p>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <input v-model="form.first_name" :placeholder="$t('invites.register.firstName')" autocomplete="given-name"
-              class="rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
-            <input v-model="form.last_name" :placeholder="$t('invites.register.lastName')" autocomplete="family-name"
-              class="rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
-          </div>
+          <input v-model="form.full_name" :placeholder="$t('invites.register.fullName')" autocomplete="name"
+            class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
 
           <!-- Consents (INV-INVITE-4 — обов'язкові) -->
           <div class="flex flex-col gap-1.5 pt-1">
@@ -204,10 +200,19 @@ const auth = useAuthStore()
 const { isLoading, invite, error, fetch } = useInviteDetail(token)
 const { isAccepting, result: acceptResult, accept, acceptWithRegistration, fieldErrors } = useInviteAccept(token)
 
+// 2026-07-26: одне поле «Ім'я та прізвище» замість двох (як і в реєстрації
+// тьютора) — менше полів, менше відмов. Ділимо перед відправкою; API приймає
+// first_name/last_name як optional-пару, схема БД не змінюється.
 const form = reactive({
-  email: '', password: '', first_name: '', last_name: '',
+  email: '', password: '', full_name: '',
   accept_privacy: false, accept_terms: false, accept_offer: false,
 })
+
+/** «Іван Сірко» → { first_name: 'Іван', last_name: 'Сірко' }; одне слово → прізвище порожнє. */
+function splitFullName(value: string) {
+  const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean)
+  return { first_name: parts[0] ?? '', last_name: parts.slice(1).join(' ') }
+}
 const allConsents = computed(() => form.accept_privacy && form.accept_terms && form.accept_offer)
 const consentError = computed(() => Boolean(fieldErrors.value?.accept_privacy || fieldErrors.value?.accept_terms || fieldErrors.value?.accept_offer))
 
@@ -226,7 +231,8 @@ async function handleSwitchAccount() {
 }
 
 async function handleRegister() {
-  await acceptWithRegistration({ ...form })
+  const { full_name, ...rest } = form
+  await acceptWithRegistration({ ...rest, ...splitFullName(full_name) })
 }
 
 onMounted(() => {

@@ -6,22 +6,13 @@
     </header>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input
-          :label="$t('auth.register.firstName')"
-          v-model="form.first_name"
-          :error="fieldError('first_name')"
-          required
-          autocomplete="given-name"
-        />
-        <Input
-          :label="$t('auth.register.lastName')"
-          v-model="form.last_name"
-          :error="fieldError('last_name')"
-          required
-          autocomplete="family-name"
-        />
-      </div>
+      <Input
+        :label="$t('auth.register.fullName')"
+        v-model="form.full_name"
+        :error="nameError"
+        required
+        autocomplete="name"
+      />
 
       <Input
         :label="$t('auth.register.email')"
@@ -180,15 +171,29 @@ function fieldError(field) {
   return String(list[0])
 }
 
+// 2026-07-26: одне поле «Ім'я та прізвище» замість двох — кожне зайве поле
+// відсіює частину людей на реєстрації, а бекенду обидва потрібні лише як пара
+// (в API вони optional, схема БД не змінюється). Ділимо по першому пробілу
+// перед відправкою — так само, як це робить User.full_name-сеттер на бекенді.
 const form = reactive({
   account_type: 'tutor',
-  first_name: '',
-  last_name: '',
+  full_name: '',
   email: '',
   password: '',
   password_confirm: '',
   privacy_policy_accepted: false,
 })
+
+/** «Іван Сірко» → { first_name: 'Іван', last_name: 'Сірко' }; одне слово → прізвище порожнє. */
+function splitFullName(value) {
+  const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean)
+  return { first_name: parts[0] ?? '', last_name: parts.slice(1).join(' ') }
+}
+
+/** Помилки бекенда з обох полів показуємо під єдиним інпутом. */
+const nameError = computed(() =>
+  fieldError('full_name') || fieldError('first_name') || fieldError('last_name'),
+)
 
 async function onSubmit() {
   try {
@@ -197,7 +202,8 @@ async function onSubmit() {
     const redirectQuery = `&redirect=${encodeURIComponent(redirect)}`
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
 
-    await auth.register({ ...form, verify_url })
+    const { full_name, ...rest } = form
+    await auth.register({ ...rest, ...splitFullName(full_name), verify_url })
     router.push({
       name: 'auth-check-email',
       query: { email: form.email, account_type: form.account_type },

@@ -925,7 +925,8 @@
       "studentOfferLink": "Student Agreement",
       "tutorOfferLink": "Tutor Agreement",
       "consentAnd": " and ",
-      "passwordConfirm": "Confirm password"
+      "passwordConfirm": "Confirm password",
+      "fullName": "Full name"
     },
     "checkEmail": {
       "title": "Check your email",
@@ -6971,6 +6972,11 @@
       "title": "3D Solids with Broad Parameters",
       "body": "Cubes, prisms, pyramids, solids of revolution — each shape with its own parameters. Adjust height, base, viewing angle — the solid updates instantly.",
       "pyramidCaption": "Trapezoid-base pyramid SABCD — auto-rotation"
+    },
+    "studentNote": {
+      "invited": "Invited by a tutor? Open the link from your invitation.",
+      "lost": "Lost it — ask them to send it again.",
+      "haveAccount": "Already have an account? Sign in"
     }
   },
   "winterboard": {
@@ -9987,7 +9993,8 @@
       "haveAccount": "Already have an account?",
       "login": "Log in",
       "loginRequired": "Account created. Please log in.",
-      "accountExists": "An account with this email already exists. Log in to accept the invite."
+      "accountExists": "An account with this email already exists. Log in to accept the invite.",
+      "fullName": "Full name"
     },
     "errors": {
       "unknown": "An error occurred. Please try again",
