@@ -5422,6 +5422,12 @@
         "gb": "{n} GB",
         "mb": "{n} MB"
       },
+      "monthlyAi": "{value} AI requests per month",
+      "monthlyAiUnlimited": "Unlimited AI requests",
+      "monthlyExports": "{value} board exports per month",
+      "monthlyExportsUnlimited": "Unlimited board exports",
+      "monthlyImports": "{value} material imports per month",
+      "monthlyImportsUnlimited": "Unlimited material imports",
       "materialsStorage": "{value} for materials",
       "materialsStorageUnlimited": "Unlimited materials storage",
       "boardStorage": "{value} on board",

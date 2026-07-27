@@ -45,6 +45,13 @@ interface FeatureSpec {
 export const HIDDEN_TECHNICAL_KEYS = [
   'asset_max_size_bytes', // макс. розмір одного файлу — технічне
   'board_user_storage_bytes', // сховище дошки на юзера — технічне
+  // 2026-07-27: НЕ показуємо — enforcement-точки для цієї квоти не існує,
+  // тобто це була б обіцянка в порожнечу (у всіх планах ∞).
+  'monthly_generated_lessons',
+  // Ліміт учнів: гейт існує (accept_invite), але у планах ключа НЕМАЄ →
+  // безліміт скрізь. Показувати нічого; додати сюди в DISPLAY, коли власник
+  // виставить реальні числа у Staff.
+  'max_active_students',
 ] as const
 
 /**
@@ -53,6 +60,28 @@ export const HIDDEN_TECHNICAL_KEYS = [
  * Решта (HIDDEN_TECHNICAL_KEYS) не рендериться. НЕ виводити «все з limits».
  */
 const DISPLAY_FEATURES: FeatureSpec[] = [
+  // §5З Крок 4 (2026-07-27): monthly-квоти ПЕРШИМИ — це ЄДИНЕ, чим плани
+  // реально відрізняються (FREE 20/5/10 проти ∞ у платних). Раніше картка
+  // показувала лише ключі, ОДНАКОВІ в усіх планах → три однакові стовпчики,
+  // і клієнт не бачив, за що платить (знахідка Ф1-2 з фаз власника).
+  {
+    key: 'monthly_ai_requests',
+    label: 'billing.planFeatures.monthlyAi',
+    unlimited: 'billing.planFeatures.monthlyAiUnlimited',
+    format: (v) => String(v),
+  },
+  {
+    key: 'monthly_exports',
+    label: 'billing.planFeatures.monthlyExports',
+    unlimited: 'billing.planFeatures.monthlyExportsUnlimited',
+    format: (v) => String(v),
+  },
+  {
+    key: 'monthly_imports',
+    label: 'billing.planFeatures.monthlyImports',
+    unlimited: 'billing.planFeatures.monthlyImportsUnlimited',
+    format: (v) => String(v),
+  },
   {
     key: 'materials_storage_bytes',
     label: 'billing.planFeatures.materialsStorage',

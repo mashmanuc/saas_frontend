@@ -5947,6 +5947,12 @@
         "gb": "{n} ГБ",
         "mb": "{n} МБ"
       },
+      "monthlyAi": "{value} AI-запитів на місяць",
+      "monthlyAiUnlimited": "Безлімітні AI-запити",
+      "monthlyExports": "{value} експортів дошки на місяць",
+      "monthlyExportsUnlimited": "Безлімітні експорти дошки",
+      "monthlyImports": "{value} імпортів матеріалів на місяць",
+      "monthlyImportsUnlimited": "Безлімітні імпорти матеріалів",
       "materialsStorage": "{value} для матеріалів",
       "materialsStorageUnlimited": "Безліміт сховища матеріалів",
       "boardStorage": "{value} на дошці",

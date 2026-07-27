@@ -6,6 +6,14 @@ import { DISPLAY_FEATURE_KEYS, HIDDEN_TECHNICAL_KEYS, buildPlanFeatures } from '
  * Якщо у seed з'явиться новий ключ — додай його сюди, і тест змусить
  * категоризувати його у planLimitFeatures.ts (показати або сховати).
  */
+/**
+ * УСІ ключі, що реально живуть у Plan.limits на проді (звірено ssh 2026-07-27).
+ *
+ * ⚠️ Цей список — РУЧНИЙ, і саме тому колись проґавив monthly_* (мігр. 0016
+ * додала 3 ключі у Plan.limits, сюди їх не внесли → тест лишався зеленим, а
+ * картка не показувала єдину реальну різницю між планами). Додаєш ключ у
+ * Plan.limits → ОБОВ'ЯЗКОВО додай сюди, інакше guard знову промовчить.
+ */
 const KNOWN_LIMIT_KEYS = [
   'materials_storage_bytes',
   'board_session_storage_bytes',
@@ -14,6 +22,12 @@ const KNOWN_LIMIT_KEYS = [
   'audio_object_max_bytes',
   'asset_max_size_bytes',
   'board_user_storage_bytes',
+  // 2026-07-27: реально присутні у Plan.limits, раніше не покриті guard'ом
+  'monthly_ai_requests',
+  'monthly_exports',
+  'monthly_imports',
+  'monthly_generated_lessons',
+  'max_active_students',
 ]
 
 describe('planLimitFeatures — категоризація ключів', () => {
