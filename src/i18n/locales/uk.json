@@ -377,7 +377,9 @@
     "nearLimit": "Увага! Залишилось лише {remaining} запитів",
     "limitReached": "Ліміт вичерпано. Оновлення {resetDate}",
     "types": {
-      "${limit_type}": "{limit_type}"
+      "student_request": "Запитів до тьюторів",
+      "tutor_accept": "Прийнятих запитів",
+      "generic": "Ліміт"
     }
   },
   "inquiries": {

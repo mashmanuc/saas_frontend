@@ -15,8 +15,19 @@ interface ToastOptions {
 }
 
 export function useErrorHandler() {
-  const { t } = useI18n()
-  
+  const { t, te } = useI18n()
+
+  /**
+   * Назва типу ліміту. Раніше t(`limits.types.${limit_type}`) кликався напряму —
+   * а в локалях лежав лише мертвий ключ-шаблон "${limit_type}" (скопійований у JSON),
+   * тож юзер бачив сирий `limits.types.student_request` у тексті помилки (фікс 2026-07-27).
+   * Тепер: є переклад → показуємо; нема (новий тип із BE) → нейтральне «ліміт», не техрядок.
+   */
+  function limitTypeLabel(limitType: string): string {
+    const key = `limits.types.${limitType}`
+    return te(key) ? t(key) : t('limits.types.generic')
+  }
+
   function handleError(error: any, toast?: ToastOptions) {
     let errorMessage = ''
     
@@ -28,7 +39,7 @@ export function useErrorHandler() {
       })
       
       errorMessage = t('errors.limitExceeded', {
-        type: t(`limits.types.${limit_type}`),
+        type: limitTypeLabel(limit_type),
         used,
         max,
         resetDate

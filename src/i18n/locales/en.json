@@ -227,7 +227,9 @@
     "nearLimit": "Warning! Only {remaining} requests remaining",
     "limitReached": "Limit reached. Resets {resetDate}",
     "types": {
-      "${limit_type}": "{limit_type}"
+      "student_request": "Requests to tutors",
+      "tutor_accept": "Accepted requests",
+      "generic": "Limit"
     }
   },
   "inquiries": {
