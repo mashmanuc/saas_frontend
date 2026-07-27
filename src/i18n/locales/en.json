@@ -5409,7 +5409,10 @@
     "upgradeError": "Failed to process checkout",
     "plans": {
       "title": "Choose Your Plan",
-      "subtitle": "Select the plan that fits your needs"
+      "subtitle": "Select the plan that fits your needs",
+      "subscribe": "Subscribe",
+      "freeLabel": "Free",
+      "checkoutError": "Failed to start checkout. Please try again."
     },
     "planFeatures": {
       "unit": {
