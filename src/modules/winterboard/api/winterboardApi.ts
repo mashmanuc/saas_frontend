@@ -512,7 +512,7 @@ export const winterboardApi = {
         // таких запитів, тож один поганий момент морозив усю дошку. Про реальні збої
         // юзер дізнається з підсумкового повідомлення в діалозі експорту.
         meta: { nonCriticalRequest: true },
-      } as any)
+      })
       .then((r: any) => r.data ?? r)
       .catch((err: any) => {
         // INV-EP-3: preview failure NEVER blocks export — silent null.

@@ -191,7 +191,13 @@ export const dashboardApi = {
         // Fallback: збираємо з окремих endpoints
         const [dashboard, stats] = await Promise.all([
           apiClient.get('/v1/dashboard/tutor/') as Promise<TutorDashboardData>,
-          (apiClient.get('/v1/dashboard/tutor/stats/') as Promise<TutorStats>).catch(() => null),
+          // 2026-07-28: stats — опційний віджет дашборду (fallback до нулів нижче),
+          // код сам це визнає через .catch(() => null). Без nonCriticalRequest збій
+          // цього ОДНОГО запиту рахувався у глобальний circuit breaker нарівні з
+          // критичними запитами — той самий клас бага, що вивантаження прев'ю на
+          // export (91a54eb): невинна дрібниця могла наблизити заморозку ВСЬОГО
+          // застосунку на 30с через 5 підряд "неважливих" збоїв.
+          (apiClient.get('/v1/dashboard/tutor/stats/', { meta: { nonCriticalRequest: true } }) as Promise<TutorStats>).catch(() => null),
         ])
         return {
           greeting_name: '',

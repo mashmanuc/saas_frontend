@@ -15,6 +15,11 @@ declare module 'axios' {
       skipLoader?: boolean
       fullResponse?: boolean
       bypassCircuitBreaker?: boolean
+      // 2026-07-27 (export batch fix, 91a54eb): запит, чий збій НЕ має показувати
+      // глобальний тост «Немає з'єднання» і НЕ має рахуватись у circuit breaker
+      // (5 підряд мережевих збоїв блокують ВСІ запити застосунку на 30с). Для
+      // disposable/optional запитів, де сам код уже підстраховує null/placeholder-ом.
+      nonCriticalRequest?: boolean
     }
   }
   interface InternalAxiosRequestConfig {
@@ -22,6 +27,11 @@ declare module 'axios' {
       skipLoader?: boolean
       fullResponse?: boolean
       bypassCircuitBreaker?: boolean
+      // 2026-07-27 (export batch fix, 91a54eb): запит, чий збій НЕ має показувати
+      // глобальний тост «Немає з'єднання» і НЕ має рахуватись у circuit breaker
+      // (5 підряд мережевих збоїв блокують ВСІ запити застосунку на 30с). Для
+      // disposable/optional запитів, де сам код уже підстраховує null/placeholder-ом.
+      nonCriticalRequest?: boolean
     }
     _dedupeKey?: string
     _retry?: boolean
