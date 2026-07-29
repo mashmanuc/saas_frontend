@@ -23,7 +23,9 @@ export interface CascadeMetrics {
 }
 
 export async function getCascadeMetrics(hours = 1): Promise<CascadeMetrics> {
-  return apiClient.get('/v1/operator/health/cascade-metrics/', {
+  // 2026-07-28: переїхало з /v1/operator/ у /v1/staff/ — домен operator видалено
+  // (мертва консоль для ролі, якої не існує). Логіка в'юхи не змінилась.
+  return apiClient.get('/v1/staff/health/cascade-metrics/', {
     params: { hours },
     meta: { skipLoader: true },
   })

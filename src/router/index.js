@@ -840,17 +840,11 @@ const routes = [
               requiresStaff: true
             },
           },
-          // P0 FIX: Operator Activity Console was dead code — now exposed under /staff/operator
-          {
-            path: 'operator',
-            name: 'staff-operator-console',
-            component: () => import('../modules/operator/views/ActivityConsoleView.vue'),
-            meta: {
-              requiresAuth: true,
-              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
-              requiresStaff: true
-            },
-          },
+          // 2026-07-28: /staff/operator ВИДАЛЕНО разом з доменом apps.operator.
+          // Консоль обслуговувала роль `operator`, якої на платформі не існує
+          // (0 юзерів з такою роллю), і не працювала: RBAC-middleware читав
+          // session-user, тоді як автентифікація JWT-only → 401 назавжди.
+          // Деталі: FINAL/PRODUCTION_READINESS_AUDIT_2026-07-28_VERIFIED.md §10.
           {
             path: 'subscription-plans',
             name: 'staff-subscription-plans',
