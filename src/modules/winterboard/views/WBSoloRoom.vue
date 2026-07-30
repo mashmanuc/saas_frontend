@@ -3559,7 +3559,9 @@ onMounted(async () => {
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
       if (status === 401) {
-        router.push('/auth/login')
+        // 2026-07-30: без ?redirect людина після повторного входу втрачала
+        // дошку, яку відкривала (той самий клас, що й «Увійти» з /workspace).
+        router.push({ path: '/auth/login', query: { redirect: route.fullPath } })
         return
       }
       console.error('[WBSoloRoom] Failed to create session:', err)
@@ -3676,7 +3678,9 @@ onMounted(async () => {
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
       if (status === 401) {
-        router.push('/auth/login')
+        // 2026-07-30: без ?redirect людина після повторного входу втрачала
+        // дошку, яку відкривала (той самий клас, що й «Увійти» з /workspace).
+        router.push({ path: '/auth/login', query: { redirect: route.fullPath } })
         return
       }
       if (status === 404) {

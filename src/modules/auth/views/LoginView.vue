@@ -89,6 +89,14 @@
         @success="onGoogleSuccess"
         @error="onGoogleError"
       />
+      <!-- Згода ДО кліку: новий Google-юзер створює акаунт одразу, без модалки,
+           тож умови мають бути перед очима саме тут (email-форма має чекбокс). -->
+      <p class="text-center text-xs" style="color: var(--text-secondary);">
+        {{ $t('auth.oauth.consentPrefix') }}
+        <RouterLink to="/legal/terms" target="_blank" class="hover:underline" style="color: var(--accent);">{{ $t('auth.register.termsLink') }}</RouterLink>
+        {{ $t('auth.register.consentAnd') }}
+        <RouterLink to="/legal/privacy" target="_blank" class="hover:underline" style="color: var(--accent);">{{ $t('auth.register.privacyPolicyLink') }}</RouterLink>
+      </p>
       <p
         v-if="googleErrorMessage"
         class="text-sm"
@@ -188,13 +196,6 @@
     :on-cancel="handleWebAuthnCancel"
   />
 
-  <RolePickerModal
-    v-model="showRolePicker"
-    :registration-token="pendingRegistrationToken"
-    :claims-preview="pendingClaimsPreview"
-    @success="onRolePickerSuccess"
-    @cancel="onRolePickerCancel"
-  />
 </template>
 
 <script setup>
@@ -210,7 +211,6 @@ import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 import UnlockConfirmModal from '../components/UnlockConfirmModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
-import RolePickerModal from '../components/RolePickerModal.vue'
 import { activeLocale } from '@/utils/i18nDate'
 
 const router = useRouter()
@@ -231,9 +231,6 @@ const showUnlockModal = ref(false)
 const googleErrorMessage = ref('')
 
 // Staged registration state (INV-OAUTH-9 v1.4)
-const showRolePicker = ref(false)
-const pendingRegistrationToken = ref('')
-const pendingClaimsPreview = ref({})
 
 // Google OAuth доступний лише коли VITE_GOOGLE_OAUTH_CLIENT_ID сконфігуровано
 // (Phase 2 rollout — без env var кнопку не показуємо).
@@ -358,18 +355,7 @@ async function onSubmit() {
       return
     }
 
-    const user = res
-    const redirect = route.query?.redirect
-    // v0.88.4: Redirect визначається через role (SSOT: config/routes.js)
-    let target
-    // Ignore Solo v2 redirects - always go to dashboard first
-    const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
-    if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
-      target = redirect
-    } else {
-      target = getDefaultRouteForRole(user?.role)
-    }
-    router.push(target)
+    router.push(resolvePostAuthTarget(res))
   } catch (error) {
     // v0.82.0: Помилка вже відображається через auth.error
     // auth.loading автоматично скидається в finally блоці authStore.login
@@ -386,11 +372,20 @@ async function onSubmit() {
 async function onGoogleSuccess(res) {
   googleErrorMessage.value = ''
 
-  // INV-OAUTH-9 v1.4 — new user → відкриваємо role picker
+  // 2026-07-30: НОВИЙ юзер → створюємо акаунт тьютора ОДРАЗУ, без модалки.
+  // Раніше тут відкривався RolePickerModal з вибором «учень/тьютор». Після
+  // закриття шляху учня (BYO — учень лише за запрошенням) у ньому лишився
+  // ОДИН варіант: діалог «Оберіть тип акаунта» з однією кнопкою = зайвий клік
+  // і брехливий заголовок (знахідка власника на проді).
+  // Згода: показується РЯДКОМ ПІД Google-кнопкою ДО кліку (email-форма має
+  // свій чекбокс) — людина бачить умови перед дією, а не після.
   if (res && typeof res === 'object' && res.registration_required) {
-    pendingRegistrationToken.value = res.registration_token || ''
-    pendingClaimsPreview.value = res.claims_preview || {}
-    showRolePicker.value = true
+    try {
+      const user = await auth.completeGoogleRegistration(res.registration_token, 'tutor')
+      router.push(resolvePostAuthTarget(user))
+    } catch (e) {
+      onGoogleError(e)
+    }
     return
   }
 
@@ -399,45 +394,24 @@ async function onGoogleSuccess(res) {
     otp.value = ''
     return
   }
-  const user = res
-  const redirect = route.query?.redirect
-  let target
-  const isSoloV2Redirect =
-    redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
-  if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
-    target = redirect
-  } else {
-    target = getDefaultRouteForRole(user?.role)
-  }
-  router.push(target)
+  router.push(resolvePostAuthTarget(res))
 }
 
-async function onRolePickerSuccess(user) {
-  // user — результат completeGoogleRegistration
-  showRolePicker.value = false
-  pendingRegistrationToken.value = ''
-  pendingClaimsPreview.value = {}
-  // 2026-07-30 (постмортем першого юзера): цей шлях ІГНОРУВАВ ?redirect —
-  // новий Google-юзер, що прийшов з демо-дошки (?redirect=/workspace), падав
-  // на порожній дашборд і його малюнок не імпортувався. Сусідній
-  // onGoogleSuccess redirect шанував — тепер поведінка однакова.
-  // Приймаємо лише внутрішні шляхи (захист від open-redirect).
+/**
+ * Куди вести після успішної авторизації/реєстрації.
+ * Шанує ?redirect (лише внутрішні шляхи — захист від open-redirect), інакше
+ * роль-дім. Один хелпер на всі шляхи: пароль, Google-логін, Google-реєстрація —
+ * щоб жоден із них більше не «губив» шлях назад (постмортем 2026-07-29).
+ */
+function resolvePostAuthTarget(user) {
   const redirect = route.query?.redirect
-  let target
   if (
     typeof redirect === 'string' && redirect.startsWith('/') &&
     !redirect.startsWith('//') && !redirect.includes('/solo-v2')
   ) {
-    target = redirect
-  } else {
-    target = getDefaultRouteForRole(user?.role)
+    return redirect
   }
-  router.push(target)
-}
-
-function onRolePickerCancel() {
-  pendingRegistrationToken.value = ''
-  pendingClaimsPreview.value = {}
+  return getDefaultRouteForRole(user?.role)
 }
 
 /**

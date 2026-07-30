@@ -76,6 +76,14 @@
         @success="onGoogleSuccess"
         @error="onGoogleError"
       />
+      <!-- Google-шлях створює акаунт одразу й проходить ПОВЗ чекбокс форми,
+           тож згода мусить бути видима саме тут, до кліку. -->
+      <p class="text-center text-xs" style="color: var(--text-secondary);">
+        {{ $t('auth.oauth.consentPrefix') }}
+        <RouterLink to="/legal/terms" target="_blank" class="hover:underline" style="color: var(--accent);">{{ $t('auth.register.termsLink') }}</RouterLink>
+        {{ $t('auth.register.consentAnd') }}
+        <RouterLink to="/legal/privacy" target="_blank" class="hover:underline" style="color: var(--accent);">{{ $t('auth.register.privacyPolicyLink') }}</RouterLink>
+      </p>
       <p
         v-if="googleErrorMessage"
         class="text-sm"

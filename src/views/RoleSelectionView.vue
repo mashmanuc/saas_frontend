@@ -66,7 +66,9 @@ function scrollToBenefits() {
 }
 
 function goToLogin() {
-  router.push('/auth/login')
+  // 2026-07-30 (прохід UJ-004): раніше редірект губився — гість, якого гард
+  // відправив сюди з ?redirect=<куди він ішов>, після входу потрапляв не туди.
+  router.push({ path: '/auth/login', query: registerQuery.value })
 }
 
 function toggleLanguageMenu() {
