@@ -670,6 +670,20 @@ function toggleVoice(target) {
   else { selected.value = 0; voice.toggle(query) }   // 'cmd' — диктовка у пошук команд
 }
 
+// 2026-07-30 (баг, знайдений власником): composable тримає РЕФ того поля, яке було
+// видиме на момент start(). Палітра має ДВА поля — `query` (пошук команд) і `aiInput`
+// (чат). Перемикання режиму міняє видиме поле, але не реф у composable, тож мікрофон
+// лишався червоним, плейсхолдер обіцяв «Слухаю… говоріть», а текст тихо писався у
+// СХОВАНЕ поле. Симетрично в обидва боки: commands→ai (вибір дії зі списку, Провідник)
+// і ai→commands (кнопка «← Команди»).
+// Ре-таргет через start(): він перезаписує model і сіє committed з нового поля;
+// повторний r.start() кидає InvalidStateError, який глушиться всередині composable,
+// тож виклик під час активного слухання безпечний.
+function retargetVoice() {
+  if (!voice.listening.value) return
+  voice.start(mode.value === 'ai' ? aiInput : query)
+}
+
 // «Інтегралик» — маскот AI-помічника (вигляд оновлено з DATA/integral/integral4).
 // БЕЗ РОТА (дизайнерське рішення): вираз через очі/кліпання, руку (.itg-arm), слоти
 // настрою (.itg-mood: сльоза/сон) й аксесуара (.itg-accessory) — скіни за часом доби.
@@ -753,6 +767,7 @@ function aiHistory() {
 
 async function askAi(phrase) {
   mode.value = 'ai'
+  retargetVoice()   // видиме поле змінилось → голос мусить писати в нього
   error.value = ''; notice.value = ''
   const history = aiHistory()          // історія ДО поточної репліки
   aiPush({ kind: 'user', text: phrase })
@@ -870,6 +885,7 @@ const GUIDE_STEPS = [
 let _gidx = -1
 function startGuide() {
   mode.value = 'ai'; aiThread.value = []; aiInput.value = ''
+  retargetVoice()   // той самий перехід commands→ai, той самий ре-таргет
   if (!currentBoardId.value) {
     aiPush({ kind: 'bot', text: 'Привіт! Я Інтегралик 👋 Найкраще показати все прямо на дошці. Створю нову — і проведу тебе?' })
     aiPush({ kind: 'guidecreate', label: 'Створити дошку і почати' })
@@ -1364,7 +1380,7 @@ function openPalette() {
   domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
 function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); voice.stop(); kbInset.value = 0 }
-function toCommands() { mode.value = 'commands'; error.value = ''; nextTick(() => inputEl.value?.focus()) }
+function toCommands() { mode.value = 'commands'; retargetVoice(); error.value = ''; nextTick(() => inputEl.value?.focus()) }
 function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
 function runSelected() {
   syncQueryFromDom()
