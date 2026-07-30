@@ -1132,11 +1132,24 @@ function onUpsellConnect(): void {
   goToCloudSignup()
 }
 
-// Точка 2: існуючий користувач → прямий логін (без handoff-буфера —
-// він іде у свій кабінет, а не переносить локальну дошку).
+// 2026-07-30 (постмортем першого юзера, uid 213/214): людина, що прийшла З
+// ДОШКИ, натискає саме «Увійти» — і раніше цей шлях губив усе: без ?redirect
+// вона після входу/реєстрації падала у порожній кабінет, а її малюнок лишався
+// покинутим у localStorage. «Підключити хмару» поруч усе робив правильно —
+// тепер обидві кнопки поводяться однаково щодо збереження шляху.
+//
+// Правила:
+//  - редирект назад на /workspace — ЗАВЖДИ (authed-гілка сама вирішить:
+//    є буфер → імпорт у хмару; нема → хмарна Студія);
+//  - stash handoff — ЛИШЕ якщо на дошці є щось людське (НЕторкану вітрину
+//    не переносимо, щоб не засмічувати акаунти існуючих юзерів демо-даними).
 function goToLogin(): void {
   trackLocal('login_clicked')
-  router.push('/auth/login')
+  const state = store.serializedState
+  if (!isUntouchedShowcase(state)) {
+    stashHandoff(store.workspaceName, state)
+  }
+  router.push({ path: '/auth/login', query: { redirect: '/workspace' } })
 }
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes

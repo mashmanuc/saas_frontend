@@ -417,7 +417,21 @@ async function onRolePickerSuccess(user) {
   showRolePicker.value = false
   pendingRegistrationToken.value = ''
   pendingClaimsPreview.value = {}
-  const target = getDefaultRouteForRole(user?.role)
+  // 2026-07-30 (постмортем першого юзера): цей шлях ІГНОРУВАВ ?redirect —
+  // новий Google-юзер, що прийшов з демо-дошки (?redirect=/workspace), падав
+  // на порожній дашборд і його малюнок не імпортувався. Сусідній
+  // onGoogleSuccess redirect шанував — тепер поведінка однакова.
+  // Приймаємо лише внутрішні шляхи (захист від open-redirect).
+  const redirect = route.query?.redirect
+  let target
+  if (
+    typeof redirect === 'string' && redirect.startsWith('/') &&
+    !redirect.startsWith('//') && !redirect.includes('/solo-v2')
+  ) {
+    target = redirect
+  } else {
+    target = getDefaultRouteForRole(user?.role)
+  }
   router.push(target)
 }
 
