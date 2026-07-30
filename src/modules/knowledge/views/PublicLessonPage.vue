@@ -165,15 +165,11 @@
             <p class="public-lesson-page__cta-text">{{ t('knowledge.publicLesson.ctaBanner.text') }}</p>
           </div>
           <div class="public-lesson-page__cta-actions">
-            <router-link
-              :to="`/auth/register/student?redirect=${encodeURIComponent(route.fullPath)}`"
-              class="public-lesson-page__cta-btn public-lesson-page__cta-btn--primary"
-            >
-              {{ t('knowledge.publicLesson.ctaBanner.registerStudent') }}
-            </router-link>
+            <!-- 2026-07-30: кнопку «зареєструватися як учень» прибрано —
+                 у BYO учень приходить лише за запрошенням тьютора. -->
             <router-link
               :to="`/auth/register/tutor?redirect=${encodeURIComponent(route.fullPath)}`"
-              class="public-lesson-page__cta-btn public-lesson-page__cta-btn--secondary"
+              class="public-lesson-page__cta-btn public-lesson-page__cta-btn--primary"
             >
               {{ t('knowledge.publicLesson.ctaBanner.registerTutor') }}
             </router-link>

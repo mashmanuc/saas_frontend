@@ -890,7 +890,8 @@
         "student": "I'm a student",
         "studentHint": "Looking for a tutor, want to learn",
         "tutor": "I'm a tutor",
-        "tutorHint": "I teach, looking for students"
+        "tutorHint": "I teach, looking for students",
+        "studentByInviteOnly": "Students are invited by their tutor — there is no separate student sign-up."
       }
     },
     "register": {
@@ -926,7 +927,8 @@
       "tutorOfferLink": "Tutor Agreement",
       "consentAnd": " and ",
       "passwordConfirm": "Confirm password",
-      "fullName": "Full name"
+      "fullName": "Full name",
+      "studentByInviteOnly": "Students don’t sign up on their own — their tutor sends them an invitation."
     },
     "checkEmail": {
       "title": "Check your email",

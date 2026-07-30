@@ -93,11 +93,11 @@
       </RouterLink>
     </p>
 
+    <!-- 2026-07-30: було посилання на відкриту реєстрацію учня — шлях, якого в
+         BYO-моделі не існує (створювало акаунти без зв'язку з тьютором).
+         Тепер лише підказка: учень приходить за запрошенням. -->
     <p class="text-center text-sm" style="color: var(--text-secondary);">
-      {{ $t('auth.register.wantToLearn') || 'Хочете навчатися?' }}
-      <RouterLink to="/auth/register/student" class="hover:underline font-medium" style="color: var(--accent);">
-        {{ $t('auth.register.registerAsStudent') || 'Стати студентом' }}
-      </RouterLink>
+      {{ $t('auth.register.studentByInviteOnly') }}
     </p>
   </Card>
 

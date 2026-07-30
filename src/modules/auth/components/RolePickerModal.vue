@@ -18,25 +18,12 @@
           </p>
         </header>
 
+        <!-- 2026-07-30: варіант «учень» ПРИБРАНО. У BYO-моделі учень приходить
+             лише за запрошенням тьютора; відкритий вибір тут створював
+             «сирітські» акаунти без зв'язку з тьютором — реальний випадок на
+             проді 2026-07-29 (людина обрала «учень» і потрапила в порожнечу).
+             Бекенд теж більше не приймає role='student' (INV-OAUTH-9 v1.5). -->
         <div class="role-picker-options">
-          <button
-            type="button"
-            class="role-picker-option"
-            :disabled="loading"
-            @click="onPick('student')"
-            data-testid="role-picker-student"
-          >
-            <div class="role-picker-option-icon">🎓</div>
-            <div class="role-picker-option-body">
-              <div class="role-picker-option-title">
-                {{ $t('auth.oauth.rolePicker.student') }}
-              </div>
-              <div class="role-picker-option-hint">
-                {{ $t('auth.oauth.rolePicker.studentHint') }}
-              </div>
-            </div>
-          </button>
-
           <button
             type="button"
             class="role-picker-option"
@@ -55,6 +42,10 @@
             </div>
           </button>
         </div>
+
+        <p class="role-picker-student-note">
+          {{ $t('auth.oauth.rolePicker.studentByInviteOnly') }}
+        </p>
 
         <p
           v-if="errorMessage"
@@ -192,6 +183,13 @@ function onCancel() {
 .role-picker-option-body { flex: 1; }
 .role-picker-option-title { font-weight: 600; color: var(--text-primary); }
 .role-picker-option-hint { font-size: 0.875rem; color: var(--text-secondary); margin-top: 2px; }
+.role-picker-student-note {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
 .role-picker-error { color: var(--danger, #d92d20); font-size: 0.875rem; margin: 0; }
 .role-picker-footer { display: flex; justify-content: flex-end; }
 .role-picker-cancel {

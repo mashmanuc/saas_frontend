@@ -260,12 +260,12 @@ const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verifi
 // 2026-07-23: раніше вело на лендінг (/start) — людина, що тиснула «Зареєструватися»,
 // мусила шукати форму серед маркетингових секцій. Ведемо напряму на форму і
 // зберігаємо ?redirect (інакше губиться шлях назад, напр. на /workspace).
+// 2026-07-30: ?role=student більше не веде на відкриту реєстрацію учня —
+// у BYO учень приходить лише за запрошенням тьютора. Завжди форма тьютора.
 const registerLink = computed(() => {
-  const roleParam = route.query.role
   const redirect = route.query.redirect
   const query = typeof redirect === 'string' && redirect ? { redirect } : {}
-  const path = roleParam === 'student' ? '/auth/register/student' : '/auth/register/tutor'
-  return { path, query }
+  return { path: '/auth/register/tutor', query }
 })
 
 const modalSuppressedErrors = new Set([
