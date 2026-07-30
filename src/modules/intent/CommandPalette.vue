@@ -262,6 +262,7 @@ import { parseAi, sendIntent } from './sendIntent'
 import { isLimitError } from '@/utils/apiClient'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
+import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
 import { THEMES } from '@/modules/lesson_constructor/api/lessonConstructorApi'
@@ -496,14 +497,19 @@ const cmdOpenLast = { id: 'open-last-lesson', label: 'Відкрити оста�
 const baseCommands = [cmdCreateBoard, cmdGenerateLesson, cmdMyBoards, cmdMyLessons, cmdOpenLast]
 const commands = computed(() => {
   const list = [...baseCommands]
+  // Вісь 3: для GLOBAL-профілю ховаємо generate-lesson (дублює Product Policy на FE)
+  if (currentProfile.value === 'GLOBAL') {
+    const idx = list.findIndex(c => c.id === 'generate-lesson')
+    if (idx >= 0) list.splice(idx, 1)
+  }
   if (currentBoardId.value) list.push(cmdPublishCurrent, cmdSaveDraft)
   return list
 })
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const list = q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : [...commands.value]
-  // Онбординг: провідник у списку. Новачкам (ще не проходили) — першим пунктом.
-  if (showAI.value && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
+  // Онбординг: провідник у списку. Тільки для uk локалі (Варіант A: не перекладаємо, ховаємо).
+  if (showAI.value && currentLocale.value === 'uk' && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
     const gi = { id: '__guide__', label: `${guided.value ? '🧭 Провідник Інтегралика' : '✨ Новенький? Провідник Інтегралика'}`, run: () => startGuide() }
     guided.value ? list.push(gi) : list.unshift(gi)
   }
@@ -628,7 +634,35 @@ async function hideIntegralyk() {
 // (uk-UA) → текст у поле → той самий parseAi. Тепер через СПІЛЬНИЙ composable
 // `useVoiceDictation` (той самий рушій, що в чаті) — one source of truth, без дубля.
 // Обгортки нижче зберігають старі імена (voiceListening/VOICE_ENABLED/toggleVoice) для шаблону.
-const voice = useVoiceDictation()
+// Поточна UI Locale — РЕАКТИВНО з i18n (SSOT i18n/index.js).
+// ⚠️ Читати localStorage один раз при setup НЕ можна: setI18nLocale() міняє мову
+// живцем БЕЗ перезавантаження (i18n/index.js:66-73), а перемикач стоїть на самій
+// дошці (WBLanguageSwitcher) — там, де живе палітра. Нереактивне значення застигло б,
+// і після перемикання Інтегралик слав би у BE стару локаль.
+const currentLocale = computed(() => {
+  const v = i18n.global.locale.value
+  return SUPPORTED_LOCALES.includes(v) ? v : DEFAULT_LOCALE
+})
+
+// Профіль (дублює Product Policy на FE — відомий борг, див. §3.3 плану)
+// Сьогодні Product Policy залежить лише від ui_locale → безпечно. Коли додадуться
+// тариф/feature flag — профіль доведеться віддавати з BE у відповіді parse.
+const currentProfile = computed(() => {
+  // Дзеркало resolve_runtime_context з BE: en → GLOBAL, інші → UA_EDTECH
+  return currentLocale.value === 'en' ? 'GLOBAL' : 'UA_EDTECH'
+})
+
+// Голос: lang за поточною UI Locale (en → en-US, ru → ru-RU, uk/pl/de → uk-UA).
+// Геттер, а не рядок: composable читає opts.lang усередині ensure() при ПЕРШОМУ
+// старті розпізнавання, тож зміна локалі до першого використання голосу підхоплюється.
+// Відома межа (НЕ чіпаю спільний composable — його ще використовує чат):
+// recognition кешується, тож перемикання локалі ПІСЛЯ першого використання голосу
+// не змінить мову розпізнавання до перезавантаження сторінки.
+const voice = useVoiceDictation({
+  get lang() {
+    return currentLocale.value === 'en' ? 'en-US' : currentLocale.value === 'ru' ? 'ru-RU' : 'uk-UA'
+  },
+})
 const voiceListening = voice.listening
 const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && voice.supported
 function toggleVoice(target) {
@@ -731,7 +765,7 @@ async function askAi(phrase) {
     try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
@@ -1151,7 +1185,11 @@ function tipClick() { tipVisible.value = false; openPalette() }
 function scheduleTip() {
   clearTimeout(tipShowTimer)
   tipShowTimer = setTimeout(() => {
-    if (!open.value && Math.random() < 0.7) {
+    // Варіант A: TIPS — хардкоджений укр. словник (TIPS вище), i18n нема.
+    // Не перекладаємо, а ховаємо для не-uk локалі, щоб en/ru-юзер не бачив
+    // українських бульбашок. Таймер продовжує тікати — при поверненні на uk
+    // підказки з'являться без перемонтування (locale реактивна).
+    if (!open.value && currentLocale.value === 'uk' && Math.random() < 0.7) {
       tipText.value = pickTip()
       placeTip()
       tipVisible.value = true
