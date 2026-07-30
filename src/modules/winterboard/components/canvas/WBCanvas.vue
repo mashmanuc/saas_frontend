@@ -2061,10 +2061,18 @@ const selectionIndicators = computed(() => {
   const sw = 1.5 / props.zoom
   const glow = 10 / props.zoom
 
-  // Soft selection indicator — indigo glow, barely-there border
-  const selConfig = (x: number, y: number, w: number, h: number) => ({
-    x: x - pad,
-    y: y - pad,
+  // Soft selection indicator — indigo glow, barely-there border.
+  // ROTATION (2026-07-19): рамка мусить крутитись РАЗОМ з повернутим об'єктом.
+  // Пивот повороту об'єкта = його (x,y) (верх-лівий кут — той самий, що у proxy-ноди
+  // та overlay transformOrigin:'0 0'). Тому ставимо position=(x,y), а pad виносимо
+  // назовні через offset=pad (rect малюється від (x-pad,y-pad), але крутиться навколо
+  // (x,y)). При rotation=0 — візуально ідентично старому (x-pad,y-pad,w+2pad).
+  const selConfig = (x: number, y: number, w: number, h: number, rotation = 0) => ({
+    x,
+    y,
+    offsetX: pad,
+    offsetY: pad,
+    rotation,
     width: w + pad * 2,
     height: h + pad * 2,
     cornerRadius: 3 / props.zoom,
@@ -2095,7 +2103,7 @@ const selectionIndicators = computed(() => {
     const bbox = getAssetBBox(asset)
     indicators.push({
       key: `sel-${asset.id}`,
-      config: selConfig(bbox.x, bbox.y, bbox.width, bbox.height),
+      config: selConfig(bbox.x, bbox.y, bbox.width, bbox.height, asset.rotation ?? 0),
     })
   }
 
