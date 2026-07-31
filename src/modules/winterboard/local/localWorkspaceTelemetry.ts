@@ -82,3 +82,20 @@ export function _resetLocalTelemetryDedupe(): void {
   _engagedSent = false
   _toolsSent.clear()
 }
+
+// ── Scene metric (North Ship Phase 1, блок A): `wb.scene.*` ───────────────────
+// Сцени — живі об'єкти дошки (графік/планіметрія/стерео/3D/триг-коло);
+// міряємо ЛИШЕ AI-шлях (створено/відредаговано командою Інтегралика).
+// Транспорт — той самий telemetryAgent (буфер→батч→POST /v1/telemetry/events,
+// LAW §15 Rule 2). `via:'integralyk'` захардкоджено в props у v1 — розріз
+// ui|integralyk існує з дня 1 (ROADMAP §4.4).
+export function trackScene(
+  event: 'created' | 'word_edit',
+  props: { kind: string; via?: string; op?: string },
+): void {
+  try {
+    trackEvent(`wb.scene.${event}`, { via: 'integralyk', ...props })
+  } catch {
+    // telemetry never throws
+  }
+}

@@ -296,6 +296,8 @@ import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
 import { isLimitError } from '@/utils/apiClient'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
+import { sceneMetricFromAction } from './sceneMetric'
+import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
@@ -868,9 +870,17 @@ function continueAi() {
 }
 
 // Виконати board_action (санкц. store-action) + done/reaction-бульбашки
+// Phase 1 (North Ship, блок A): `sceneMetricFromAction` імпортовано з './sceneMetric'
+function emitSceneMetric(action) {
+  const m = sceneMetricFromAction(action)
+  if (!m) return
+  trackScene(m.event, m.op ? { kind: m.kind, op: m.op } : { kind: m.kind })
+}
+
 async function execBoardAction(r) {
   try {
     await runBoardAction(r.action)
+    emitSceneMetric(r.action)   // Phase 1, блок A: wb.scene.created / word_edit
     // 0b: щойно щось з'явилось на дошці — юзеру треба туди клікати (тягнути
     // повзунок, рухати об'єкт), а пояснення в чаті лишається потрібним. Тому
     // самі закріплюємо панель. Це головний сценарій плану; відкріпити — 📌.
@@ -890,6 +900,7 @@ async function runPlan(r) {
   for (let i = 0; i < actions.length; i++) {
     try {
       await runBoardAction(actions[i])
+      emitSceneMetric(actions[i])   // Phase 1, блок A: кожен успішний крок плану
       aiPush({ kind: 'done', text: `Крок ${i + 1}/${actions.length}` })
       await new Promise((res) => setTimeout(res, 130))   // дати вставці «осісти» (add_tool — через подію)
     } catch (be) {
