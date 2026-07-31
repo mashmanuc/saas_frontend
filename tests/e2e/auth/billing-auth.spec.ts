@@ -10,14 +10,14 @@ import { test, expect } from '@playwright/test'
 test.describe('Billing endpoints auth (anti-anonymous)', () => {
   test.beforeEach(async ({ page }) => {
     // Login as tutor
-    await page.goto('/login')
+    await page.goto('/auth/login')
     
     // Use environment variables or test credentials
     const tutorEmail = process.env.TEST_TUTOR_EMAIL || 'tutor@test.com'
     const tutorPassword = process.env.TEST_TUTOR_PASSWORD || 'password'
     
-    await page.fill('input[name="email"]', tutorEmail)
-    await page.fill('input[name="password"]', tutorPassword)
+    await page.fill('[data-testid="login-email-input"]', tutorEmail)
+    await page.fill('[data-testid="login-password-input"]', tutorPassword)
     await page.click('button[type="submit"]')
     
     // Wait for redirect to dashboard

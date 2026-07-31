@@ -15,8 +15,8 @@ test.describe('Student Inquiry Flow v0.69', () => {
   test.beforeEach(async ({ page }) => {
     // Login as student
     await page.goto('/auth/login')
-    await page.fill('input[name="email"]', 'student@test.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.fill('[data-testid="login-email-input"]', 'student@test.com')
+    await page.fill('[data-testid="login-password-input"]', 'password123')
     await page.click('button[type="submit"]')
     await page.waitForURL('/dashboard')
   })

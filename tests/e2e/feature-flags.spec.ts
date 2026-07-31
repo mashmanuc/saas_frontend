@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Feature Flags', () => {
   test.beforeEach(async ({ page }) => {
     // Login
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')
@@ -87,7 +87,7 @@ test.describe('Slow Network + Reconnection', () => {
       await route.continue()
     })
     
-    await page.goto('/login')
+    await page.goto('/auth/login')
     
     // Should still load, just slower
     await expect(page.locator('[data-testid="email-input"]')).toBeVisible({ timeout: 30000 })
@@ -95,7 +95,7 @@ test.describe('Slow Network + Reconnection', () => {
 
   test('reconnects after network interruption', async ({ page, context }) => {
     // Login first
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')
@@ -121,7 +121,7 @@ test.describe('Slow Network + Reconnection', () => {
 test.describe('WS Burst Events', () => {
   test('handles burst of WS events without freezing', async ({ page }) => {
     // Login
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')
@@ -156,7 +156,7 @@ test.describe('WS Burst Events', () => {
 
   test('UI remains responsive during heavy updates', async ({ page }) => {
     // Login
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')

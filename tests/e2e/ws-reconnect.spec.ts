@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test'
 test.describe('WS Reconnection + Chat Resync', () => {
   test.beforeEach(async ({ page }) => {
     // Login as test user
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')
@@ -147,7 +147,7 @@ test.describe('WS Reconnection + Chat Resync', () => {
 test.describe('WS Error Handling', () => {
   test('handles WS connection errors gracefully', async ({ page }) => {
     // Login
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')

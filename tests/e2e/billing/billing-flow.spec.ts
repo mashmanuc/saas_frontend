@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Billing Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Mock authentication
-    await page.goto('/login')
+    await page.goto('/auth/login')
     // Assume user is logged in for these tests
   })
 

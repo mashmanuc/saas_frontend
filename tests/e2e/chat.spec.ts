@@ -19,7 +19,7 @@ const STUDENT_CREDENTIALS = {
 const TEST_LESSON_ID = process.env.E2E_LESSON_ID || '1'
 
 async function login(page: Page, credentials: { email: string; password: string }) {
-  await page.goto('/login')
+  await page.goto('/auth/login')
   await page.getByLabel(/email/i).fill(credentials.email)
   await page.getByLabel(/password/i).fill(credentials.password)
   await page.getByRole('button', { name: /sign in|login|увійти/i }).click()

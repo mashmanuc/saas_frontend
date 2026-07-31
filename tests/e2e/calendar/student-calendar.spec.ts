@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Student Calendar v0.70', () => {
   test.beforeEach(async ({ page }) => {
     // Mock authentication as student
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'student@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')

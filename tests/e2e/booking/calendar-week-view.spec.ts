@@ -3,9 +3,9 @@ import { test, expect } from '@playwright/test'
 test.describe('Calendar Week View (v0.46)', () => {
   test.beforeEach(async ({ page }) => {
     // Login as tutor
-    await page.goto('/login')
-    await page.fill('input[name="email"]', 'tutor@test.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.goto('/auth/login')
+    await page.fill('[data-testid="login-email-input"]', 'tutor@test.com')
+    await page.fill('[data-testid="login-password-input"]', 'password123')
     await page.click('button[type="submit"]')
     
     // Navigate to calendar

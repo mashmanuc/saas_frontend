@@ -11,8 +11,8 @@ test.describe('v0.47 End-to-End Booking Flow', () => {
 
     await test.step('1. Tutor creates availability', async () => {
       await tutorPage.goto('/auth/login')
-      await tutorPage.fill('input[name="email"]', 'tutor@test.com')
-      await tutorPage.fill('input[name="password"]', 'password123')
+      await tutorPage.fill('[data-testid="login-email-input"]', 'tutor@test.com')
+      await tutorPage.fill('[data-testid="login-password-input"]', 'password123')
       await tutorPage.click('button[type="submit"]')
       
       await tutorPage.waitForURL('/dashboard')
@@ -35,8 +35,8 @@ test.describe('v0.47 End-to-End Booking Flow', () => {
 
     await test.step('2. Student sees calendar', async () => {
       await studentPage.goto('/auth/login')
-      await studentPage.fill('input[name="email"]', 'student@test.com')
-      await studentPage.fill('input[name="password"]', 'password123')
+      await studentPage.fill('[data-testid="login-email-input"]', 'student@test.com')
+      await studentPage.fill('[data-testid="login-password-input"]', 'password123')
       await studentPage.click('button[type="submit"]')
       
       await studentPage.waitForURL('/dashboard')
@@ -108,8 +108,8 @@ test.describe('v0.47 End-to-End Booking Flow', () => {
 
   test('Draft workflow: add multiple patches and apply', async ({ page }) => {
     await page.goto('/auth/login')
-    await page.fill('input[name="email"]', 'tutor@test.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.fill('[data-testid="login-email-input"]', 'tutor@test.com')
+    await page.fill('[data-testid="login-password-input"]', 'password123')
     await page.click('button[type="submit"]')
     
     await page.goto('/tutor/calendar')
@@ -134,8 +134,8 @@ test.describe('v0.47 End-to-End Booking Flow', () => {
 
   test('Error handling: booking conflict', async ({ page }) => {
     await page.goto('/auth/login')
-    await page.fill('input[name="email"]', 'student@test.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.fill('[data-testid="login-email-input"]', 'student@test.com')
+    await page.fill('[data-testid="login-password-input"]', 'password123')
     await page.click('button[type="submit"]')
     
     await page.goto('/marketplace/tutors/79')
@@ -152,8 +152,8 @@ test.describe('v0.47 End-to-End Booking Flow', () => {
 
   test('Accessibility: keyboard navigation', async ({ page }) => {
     await page.goto('/auth/login')
-    await page.fill('input[name="email"]', 'tutor@test.com')
-    await page.fill('input[name="password"]', 'password123')
+    await page.fill('[data-testid="login-email-input"]', 'tutor@test.com')
+    await page.fill('[data-testid="login-password-input"]', 'password123')
     await page.click('button[type="submit"]')
     
     await page.goto('/tutor/calendar')

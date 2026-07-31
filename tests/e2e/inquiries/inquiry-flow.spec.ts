@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Inquiry Flow - Student', () => {
   test.beforeEach(async ({ page }) => {
     // Login as student
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'student@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')
@@ -63,7 +63,7 @@ test.describe('Inquiry Flow - Student', () => {
 test.describe('Inquiry Flow - Tutor', () => {
   test.beforeEach(async ({ page }) => {
     // Login as tutor
-    await page.goto('/login')
+    await page.goto('/auth/login')
     await page.fill('[data-testid="email-input"]', 'tutor@test.com')
     await page.fill('[data-testid="password-input"]', 'password123')
     await page.click('[data-testid="login-button"]')

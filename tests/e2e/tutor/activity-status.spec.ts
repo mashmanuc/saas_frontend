@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Tutor Activity Status (v0.88.2)', () => {
   test.beforeEach(async ({ page }) => {
     // Mock auth as tutor
-    await page.goto('/login')
+    await page.goto('/auth/login')
     // Note: In real tests, you would login as tutor user
     // For now, we'll mock the API response
   })
