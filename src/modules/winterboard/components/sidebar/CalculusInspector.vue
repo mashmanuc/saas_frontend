@@ -264,7 +264,10 @@ function onExprInput(e: Event): void {
 }
 
 function onExprCommit(): void {
-  b.value.commitExpr()   // persist to store on blur / Enter
+  // teardown-guard: клік повз картку одночасно обнуляє bridge (unregister) і шле
+  // blur → обробник спрацьовує вже на null. Читаємо bridge напряму (не b.value!)
+  // з optional chaining — інакше null.commitExpr() вбиває всю сторінку.
+  calculusUiState.bridge?.commitExpr()   // persist to store on blur / Enter
 }
 
 function onHInput(e: Event): void {
@@ -279,7 +282,8 @@ function onNInput(e: Event): void {
 
 function onBoundChange(which: 'a' | 'b', e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value)
-  if (Number.isFinite(v)) b.value.setBound(which, v)
+  // teardown-guard (@change стріляє на blur) — bridge напряму, не b.value.
+  if (Number.isFinite(v)) calculusUiState.bridge?.setBound(which, v)
 }
 </script>
 

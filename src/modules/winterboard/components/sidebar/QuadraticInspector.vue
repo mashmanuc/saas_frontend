@@ -240,28 +240,37 @@ const solutionText = computed(() => {
 
 // ── Event handlers ────────────────────────────────────────────────────────
 
+// teardown-guard: @change стріляє на blur; клік повз картку одночасно обнуляє
+// bridge (unregisterQuadInspector). Читаємо quadUiState.bridge НАПРЯМУ (не
+// b.value) з early-return — інакше null.setA()/null.a вбиває всю сторінку.
 function onAChange(e: Event): void {
+  const bridge = quadUiState.bridge
+  if (!bridge) return
   const input = e.target as HTMLInputElement
   const v = r2(parseFloat(input.value))
   if (Number.isFinite(v) && Math.abs(v) >= 0.01) {
-    b.value.setA(v)
+    bridge.setA(v)
     input.value = String(v)   // нормалізуємо відображення
   } else {
     // скидаємо до поточного округленого значення якщо введено 0 або нечислове
-    input.value = String(r2(b.value.a))
+    input.value = String(r2(bridge.a))
   }
 }
 
 function onBChange(e: Event): void {
+  const bridge = quadUiState.bridge
+  if (!bridge) return
   const input = e.target as HTMLInputElement
   const v = r2(parseFloat(input.value))
-  if (Number.isFinite(v)) { b.value.setB(v); input.value = String(v) }
+  if (Number.isFinite(v)) { bridge.setB(v); input.value = String(v) }
 }
 
 function onCChange(e: Event): void {
+  const bridge = quadUiState.bridge
+  if (!bridge) return
   const input = e.target as HTMLInputElement
   const v = r2(parseFloat(input.value))
-  if (Number.isFinite(v)) { b.value.setC(v); input.value = String(v) }
+  if (Number.isFinite(v)) { bridge.setC(v); input.value = String(v) }
 }
 </script>
 

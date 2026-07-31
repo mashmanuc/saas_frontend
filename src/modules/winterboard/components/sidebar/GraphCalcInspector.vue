@@ -79,7 +79,7 @@
             autofocus
             @update:model-value="(v: string) => b.onSrcInput(expr.id, v)"
             @enter="b.onEnterPress(expr.id)"
-            @blur="editingId = null; b.onInputBlur(expr.id)"
+            @blur="onInputBlur(expr.id)"
             @unavailable="mqAvailable = false"
           />
           <input
@@ -90,7 +90,7 @@
             :data-expr-id="expr.id"
             placeholder="y = ..."
             @input="b.onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
-            @blur="editingId = null; b.onInputBlur(expr.id)"
+            @blur="onInputBlur(expr.id)"
             @keydown.enter.prevent="b.onEnterPress(expr.id)"
             @keydown.down.prevent="b.onArrowNav(expr.id, 1)"
             @keydown.up.prevent="b.onArrowNav(expr.id, -1)"
@@ -195,7 +195,7 @@
               class="gc-insp__range-input"
               :value="p.min"
               step="any"
-              @change="b.onRangeMinChange(p.name, ($event.target as HTMLInputElement).value)"
+              @change="onRangeMinChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
           <label class="gc-insp__range-field">
@@ -205,7 +205,7 @@
               class="gc-insp__range-input"
               :value="p.max"
               step="any"
-              @change="b.onRangeMaxChange(p.name, ($event.target as HTMLInputElement).value)"
+              @change="onRangeMaxChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
           <label class="gc-insp__range-field">
@@ -216,7 +216,7 @@
               :value="p.step"
               step="any"
               min="0"
-              @change="b.onRangeStepChange(p.name, ($event.target as HTMLInputElement).value)"
+              @change="onRangeStepChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
         </div>
@@ -268,6 +268,25 @@ async function startEdit(id: string): Promise<void> {
     el?.focus()
     el?.select()
   })
+}
+
+// ── Teardown-guarded обробники (@blur / @change) ──────────────────────────
+// Клік повз картку одночасно (а) обнуляє bridge (unregisterGraphCalcInspector)
+// і (б) шле blur/change → обробник спрацьовує вже на null. Виклики читають
+// bridge НАПРЯМУ (не b.value) з optional chaining — інакше null.<method>()
+// падає в AppErrorBoundary і вбиває всю сторінку дошки.
+function onInputBlur(id: string): void {
+  editingId.value = null   // reset UI-стан завжди, навіть якщо bridge вже null
+  graphCalcInspectorState.bridge?.onInputBlur(id)
+}
+function onRangeMinChange(name: string, value: string): void {
+  graphCalcInspectorState.bridge?.onRangeMinChange(name, value)
+}
+function onRangeMaxChange(name: string, value: string): void {
+  graphCalcInspectorState.bridge?.onRangeMaxChange(name, value)
+}
+function onRangeStepChange(name: string, value: string): void {
+  graphCalcInspectorState.bridge?.onRangeStepChange(name, value)
 }
 
 // Mirrors QUICK_TEMPLATES in GraphCalculatorRenderer (Phase G4)
