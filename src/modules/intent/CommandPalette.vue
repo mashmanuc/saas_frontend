@@ -24,6 +24,14 @@
         @click="onFabClick"
         v-html="MASCOT_SVG"
       ></button>
+      <!-- 0a: тред живе між відкриттями → показуємо, що розмова чекає всередині.
+           Без цього persistent-історія невидима: юзер не знає, що є куди вертатись. -->
+      <span
+        v-if="aiThread.length"
+        class="cmdp-fab-badge"
+        :title="`Незавершена розмова (${aiThread.length})`"
+        aria-hidden="true"
+      ></span>
       <!-- Швидке приховування (owner: «не всім потрібен»). Увімкнути — у Налаштуваннях. -->
       <button
         class="cmdp-fab-hide"
@@ -43,7 +51,13 @@
       @click="tipClick"
     >{{ tipText }}</button>
 
-    <div v-if="enabled && open" class="cmdp-overlay" :style="overlayStyle" @click.self="close">
+    <div
+      v-if="enabled && open"
+      class="cmdp-overlay"
+      :class="{ 'cmdp-overlay--pinned': isPinned }"
+      :style="overlayStyle"
+      @click.self="onOverlayClick"
+    >
       <div
         ref="panelEl"
         class="cmdp-panel"
@@ -70,6 +84,14 @@
               <span class="cmdp-title">Інтегралик</span>
               <span class="cmdp-subtitle">AI-помічник</span>
             </div>
+            <!-- 0b: pin — щоб дошка лишалась клікабельною під час роботи з палітрою -->
+            <button
+              v-if="canPin" class="cmdp-pin cmdp-pin--brand" :class="{ on: isPinned }"
+              @click="togglePin"
+              :title="isPinned ? 'Відкріпити (клік повз панель знову закриватиме)' : 'Закріпити — дошка лишиться клікабельною'"
+              :aria-pressed="isPinned ? 'true' : 'false'"
+              aria-label="Закріпити панель"
+            >📌</button>
             <button class="cmdp-close" @click="close" aria-label="Закрити" title="Закрити (Esc)">✕</button>
           </div>
           <div class="cmdp-cmdrow">
@@ -165,6 +187,19 @@
             <button class="cmdp-back" @click="toCommands">← Команди</button>
             <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
             <span class="cmdp-title">Інтегралик</span>
+            <!-- 0a: розмова живе між відкриттями → потрібен явний спосіб почати з чистого -->
+            <button
+              v-if="aiThread.length" class="cmdp-newchat" :disabled="aiBusy"
+              @click="newDialog" title="Почати новий діалог" aria-label="Почати новий діалог"
+            >↺</button>
+            <!-- 0b: той самий pin, що й у режимі команд (авто-вмикається після малювання) -->
+            <button
+              v-if="canPin" class="cmdp-pin" :class="{ on: isPinned }"
+              @click="togglePin"
+              :title="isPinned ? 'Відкріпити (клік повз панель знову закриватиме)' : 'Закріпити — дошка лишиться клікабельною'"
+              :aria-pressed="isPinned ? 'true' : 'false'"
+              aria-label="Закріпити панель"
+            >📌</button>
           </div>
 
           <div ref="aiThreadEl" class="cmdp-ai-thread">
@@ -787,15 +822,16 @@ async function askAi(phrase) {
     } else if (r.status === 'clarify') {
       aiPush({ kind: 'candidates', resp: r, done: false })
     } else if (r.status === 'board_action') {
-      if (r.action?.kind === 'close_board') {
-        // Дзеркало кнопки «Вийти»: route-leave guard WBSoloRoom сам збереже зміни.
-        close()
-        router.push('/winterboard/boards')
-        return
-      }
-      // Phase 2.9: medium/high (напр. delete) → спершу підтвердження; low → одразу.
+      // 2026-07-31 (скарга власника «він тупо вийшов з дошки»): раніше close_board
+      // спрацьовував ТУТ, ДО перевірки ризику — тобто миттєво викидав з дошки без
+      // жодного підтвердження. Досить було моделі неточно зрозуміти фразу
+      // («відкрий останню дошку» з одруківкою), і людина втрачала робочий контекст
+      // одним кліком, без шансу скасувати. Тепер порядок зворотний: спершу ризик.
+      // Вихід із дошки — medium (BE), тож завжди питаємо.
       if (r.risk === 'medium' || r.risk === 'high') {
         aiPush({ kind: 'confirm', resp: r, done: false })
+      } else if (r.action?.kind === 'close_board') {
+        leaveBoard()
       } else {
         await execBoardAction(r)
       }
@@ -835,6 +871,10 @@ function continueAi() {
 async function execBoardAction(r) {
   try {
     await runBoardAction(r.action)
+    // 0b: щойно щось з'явилось на дошці — юзеру треба туди клікати (тягнути
+    // повзунок, рухати об'єкт), а пояснення в чаті лишається потрібним. Тому
+    // самі закріплюємо панель. Це головний сценарій плану; відкріпити — 📌.
+    if (canPin.value) pinnedPref.value = true
     aiPush({ kind: 'done', text: r.explain })
     react('happy')
   } catch (be) {
@@ -861,9 +901,19 @@ async function runPlan(r) {
   react('happy')
 }
 
+// Вихід із дошки = дзеркало кнопки «Вийти»: route-leave guard WBSoloRoom сам
+// збереже зміни. Винесено з askAi, бо тепер викликається і після підтвердження.
+function leaveBoard() {
+  close()
+  router.push('/winterboard/boards')
+}
+
 function confirmAi(item) {
   item.done = true
-  if (item.resp?.action) execBoardAction(item.resp)   // Phase 2.9: підтверджений board_action (delete)
+  // close_board — навігація, а не мутація дошки: execBoardAction її не вміє
+  // (у HANDLERS такого kind немає, буде «дія не підтримується»).
+  if (item.resp?.action?.kind === 'close_board') leaveBoard()
+  else if (item.resp?.action) execBoardAction(item.resp)   // Phase 2.9: підтверджений board_action (delete)
   else executeAi(item.resp)
 }
 function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Скасовано. Що далі?' }) }
@@ -1283,6 +1333,20 @@ function updateNarrow() { isNarrow.value = !!(narrowMq && narrowMq.matches) }
 const overlayStyle = computed(() =>
   isNarrow.value && kbInset.value ? { paddingBottom: kbInset.value + 'px' } : {},
 )
+
+// ── 0b (2026-07-31): PIN-режим — дошку можна чіпати, чат лишається ──────────
+// Проблема: підкладка ловила ВСІ кліки (`@click.self="close"`), тож клік по дошці
+// закривав панель. Тягнути повзунок графіка й читати пояснення було неможливо.
+// У pin: підкладка стає прозорою і `pointer-events:none` → кліки йдуть на дошку,
+// панель лишається (вона вже перетягувана й пам'ятає позицію — restorePanelPos).
+// Закриття у pin — ЛИШЕ явне: ✕ або Esc.
+const pinnedPref = ref(false)
+// На вузькому екрані панель фактично повноекранна — pin там безглуздий (нема куди
+// «відсунути» чат, щоб бачити дошку). Тому pin = desktop/широкий планшет.
+const canPin = computed(() => !isNarrow.value)
+const isPinned = computed(() => pinnedPref.value && canPin.value)
+function togglePin() { pinnedPref.value = !pinnedPref.value }
+function onOverlayClick() { if (!isPinned.value) close() }
 function onViewportResize() {
   const vv = window.visualViewport
   if (!vv || !isNarrow.value || !open.value) { kbInset.value = 0; return }
@@ -1369,15 +1433,39 @@ function syncQueryFromDom() {
 }
 
 function openPalette() {
-  open.value = true; mode.value = 'commands'; query.value = ''; selected.value = 0
+  open.value = true
+  // 0a (2026-07-31): тред БІЛЬШЕ НЕ стирається на відкриття. Раніше тут стояло
+  // `aiThread.value = []  // новий діалог на кожне відкриття` — і розмова гинула
+  // від будь-якого закриття панелі (а закривав її навіть клік по дошці). Тепер
+  // розмова живе, поки жива вкладка; явне скидання — кнопка «↺» (newDialog).
+  // Якщо є незавершений тред — відкриваємось ОДРАЗУ в ньому, інакше в командах:
+  // інакше «продовжити розмову» коштувало б зайвого кліку.
+  const hasThread = aiThread.value.length > 0
+  mode.value = hasThread ? 'ai' : 'commands'
+  query.value = ''; selected.value = 0
   error.value = ''; notice.value = ''
   tipVisible.value = false
-  aiThread.value = []; aiInput.value = ''; aiBusy.value = false   // новий діалог на кожне відкриття
+  aiInput.value = ''; aiBusy.value = false   // чернетка й busy — так, тред — ні
+  // 0b+ (2026-07-31, скарга «модалка просто закрилась»): якщо ВІДКРИТА ДОШКА —
+  // закріплюємо одразу, не чекаючи поки AI щось намалює. На дошці людина неминуче
+  // клікає по канві (подивитись, вибрати об'єкт), а клік повз панель її закривав —
+  // разом із розмовою на екрані. Поза дошкою (списки, кабінет) лишаємо звичайну
+  // модалку: там клік-повз-закрити очікуваний і нічого не руйнує.
+  if (canPin.value && currentBoardId.value) pinnedPref.value = true
   restorePanelPos()   // відновити місце, куди юзер відсунув панель
   applyItgSkin()      // маскот у шапці теж отримує скін часу доби
-  nextTick(() => inputEl.value?.focus())
+  nextTick(() => (hasThread ? aiInputEl.value : inputEl.value)?.focus())
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
+}
+
+// 0a: ЄДИНИЙ спосіб втратити розмову — явна дія юзера (Product Invariant #1).
+function newDialog() {
+  aiThread.value = []
+  aiInput.value = ''
+  aiBusy.value = false
+  voice.reset()   // голос диктує з чистого, не дописує до попередньої розмови
+  nextTick(() => aiInputEl.value?.focus())
 }
 function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); voice.stop(); kbInset.value = 0 }
 function toCommands() { mode.value = 'commands'; retargetVoice(); error.value = ''; nextTick(() => inputEl.value?.focus()) }
@@ -1450,6 +1538,10 @@ onBeforeUnmount(() => {
   opacity: 0; transform: scale(.7); transition: opacity .12s ease, transform .12s ease; }
 .cmdp-fab-wrap:hover .cmdp-fab-hide { opacity: 1; transform: scale(1); }
 .cmdp-fab-hide:hover { color: #ef4444; border-color: #ef4444; }
+/* 0a: бейдж «є незавершена розмова». Ліворуч-угору, щоб не збігтися з ×-кнопкою
+   приховування (вона top-right і з'являється на hover). */
+.cmdp-fab-badge { position: absolute; top: -2px; left: -2px; width: 11px; height: 11px; z-index: 1;
+  border-radius: 50%; background: #0d9488; border: 2px solid #fff; pointer-events: none; }
 
 /* Бульбашка-підказка Інтегралика — спіч-бабл із ХВОСТИКОМ до маскота (JS ставить
    left/right+top, translateY(-50%) центрує по вертикалі → хвостик дивиться йому в обличчя). */
@@ -1506,6 +1598,17 @@ onBeforeUnmount(() => {
 
 .cmdp-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.35);
   display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+/* 0b PIN: підкладка перестає перехоплювати кліки → вони йдуть на дошку (повзунок
+   графіка тягається, об'єкти рухаються), а панель лишається видимою й активною.
+   Затемнення прибираємо: дошка клікабельна, тож затемнена вона виглядала б
+   заблокованою — це збивало б з пантелику. */
+/* Селектор навмисно з ДВОХ класів: із одним (`.cmdp-overlay--pinned`) специфічність
+   дорівнює базовому `.cmdp-overlay`, і затемнення фону не перекривалось — живий
+   тест 2026-07-31 показав pointer-events:none (працює, бо в базі його нема), але
+   background лишався rgba(0,0,0,.35). Два класи знімають залежність від порядку правил. */
+.cmdp-overlay.cmdp-overlay--pinned { background: transparent; pointer-events: none; }
+.cmdp-overlay.cmdp-overlay--pinned .cmdp-panel { pointer-events: auto;
+  box-shadow: 0 10px 34px rgba(0,0,0,.28), 0 0 0 2px rgba(13,148,136,.35); }
 .cmdp-panel { width: min(600px, 94vw); background: #fff; color: #111;
   border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: hidden; }
 .cmdp-input { width: 100%; box-sizing: border-box; padding: 14px 16px; border: 0;
@@ -1526,6 +1629,21 @@ onBeforeUnmount(() => {
   border-radius: 8px; font-size: 15px; line-height: 1; display: flex; align-items: center;
   justify-content: center; cursor: pointer; transition: background .15s, color .15s; }
 .cmdp-close:hover { background: rgba(255,255,255,.28); color: #fff; }
+/* 0a: «↺ новий діалог» — світлий хедер ai-режиму (не зелений brand), тож нейтральні кольори */
+.cmdp-newchat { border: 0; background: #f3f3f3; color: #555; width: 28px; height: 28px;
+  border-radius: 8px; font-size: 15px; line-height: 1; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: background .15s, color .15s; }
+.cmdp-newchat:hover:not(:disabled) { background: #e3e3e3; color: #0d9488; }
+.cmdp-newchat:disabled { opacity: .45; cursor: default; }
+/* 0b: 📌 у світлій (ai) і зеленій (brand) шапках. `.on` — закріплено. */
+.cmdp-pin { border: 0; background: #f3f3f3; width: 28px; height: 28px; border-radius: 8px;
+  font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; filter: grayscale(1); opacity: .55; transition: opacity .15s, filter .15s, background .15s; }
+.cmdp-pin:hover { opacity: .85; }
+.cmdp-pin.on { filter: none; opacity: 1; background: #ccfbf1; }
+.cmdp-pin--brand { background: rgba(255,255,255,.14); }
+.cmdp-pin--brand:hover { background: rgba(255,255,255,.28); }
+.cmdp-pin--brand.on { background: rgba(255,255,255,.9); }
 .cmdp-dialog { padding: 14px 16px; }
 .cmdp-dlabel { display: block; margin-bottom: 6px; font-size: 14px; color: #333; }
 .cmdp-dialog .cmdp-input { border: 1px solid #ddd; border-radius: 8px; }

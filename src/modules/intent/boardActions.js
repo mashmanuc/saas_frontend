@@ -92,15 +92,62 @@ const HANDLERS = {
     }, page.id ?? '')
   },
 
+  // Дзеркало usePageManagement.addPage() → store.addPageUndoable() — та сама дія,
+  // що й кнопка «+ Додати сторінку» в сайдбарі. Стелю (50) пильнує сам стор:
+  // повертає '' при досягненні — тут просто чесно кажемо про це, а не мовчимо.
+  async add_page({ name, card }) {
+    const { store } = await _store()
+    const newId = store.addPageUndoable({ name: name || undefined })
+    if (!newId) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
+    if (card && (card.title || card.body)) {
+      const page = store.currentPage
+      const { cx, cy } = _center(page)
+      store.addAsset({
+        id: _uuid(),
+        type: 'theory_card',
+        src: '',
+        x: cx - 260,
+        y: cy - 190,
+        w: 520,
+        h: 380,
+        rotation: 0,
+        locked: false,
+        data: { version: 1, title: card.title || '', body: card.body || '', formulas: [] },
+      }, page.id ?? '')
+    }
+  },
+
   // Дзеркало useContentDrop (graph_calculator) + вираз одразу в expressions
-  async add_graph({ expression }) {
+  // Крок 4 (2026-07-31): БУЛО — один вираз, `params:{}` хардкодом. Рушій
+  // (GraphCalculatorState) від початку вміє масив кривих і слайдери; BE тепер
+  // їх присилає (`expressions[]` + `params{}`), тож просто передаємо наскрізь.
+  // Зворотна сумісність зі старим payload `{expression}` лишається — на випадок
+  // старої вкладки FE проти нового BE (і навпаки: BE теж приймає обидва).
+  async add_graph({ expressions, expression, params }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const W = 480; const H = 360
     // «y=sin(x)» → src «sin(x)» (голий вираз рендериться як y=f(x))
-    const src = String(expression).replace(/^\s*y\s*=\s*/i, '').trim()
+    const strip = (s) => String(s ?? '').replace(/^\s*y\s*=\s*/i, '').trim()
+
+    const list = Array.isArray(expressions) && expressions.length
+      ? expressions
+      : (expression ? [{ src: expression }] : [])
+    // Кольори по колу — щоб криві на одному полі візуально розрізнялись.
+    const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#9333ea', '#ea580c', '#0891b2']
+    const built = list
+      .map((e, i) => ({
+        id: `e-${_uuid().slice(0, 8)}`,
+        src: strip(typeof e === 'string' ? e : e?.src),
+        color: COLORS[i % COLORS.length],
+        hidden: false,
+      }))
+      .filter((e) => e.src)
+    if (!built.length) throw new Error('Не зрозумів вираз функції.')
+
+    const assetId = `gc-${_uuid()}`
     store.addAsset({
-      id: `gc-${_uuid()}`,
+      id: assetId,
       type: 'graph_calculator',
       src: '',
       x: cx - W / 2,
@@ -112,13 +159,20 @@ const HANDLERS = {
       data: {
         version: 1,
         state: {
-          expressions: [{ id: `e-${_uuid().slice(0, 8)}`, src, color: '#dc2626', hidden: false }],
-          params: {},
+          expressions: built,
+          // BE вже провалідував діапазони (min<max, step>0, ім'я по регексу).
+          params: (params && typeof params === 'object') ? params : {},
           viewport: { cx: 0, cy: 0, scale: 38 },
         },
         meta: { last_snapshot_seq: 0 },
       },
     }, page.id ?? '')
+
+    // Підсвітка: об'єкт з'явився не від кліку юзера, а від фрази — око його не
+    // «веде», тож виділяємо, щоб було видно, ЩО саме додалось.
+    // `selectItems` — офіційний selection-action стора (boardStore.ts:3644).
+    // try/catch — підсвітка не варта того, щоб через неї впала сама вставка.
+    try { store.selectItems?.([assetId]) } catch { /* підсвітка не критична */ }
   },
 }
 
