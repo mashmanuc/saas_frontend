@@ -63,10 +63,23 @@
       <!-- Question text -->
       <div class="nmt-task__question" v-html="renderTextWithLatex(data.question)" />
 
+      <!-- Ілюстрація умови (QUESTION_IMAGE). БЕЗ loading="lazy": картка може бути
+           поза вьюпортом дошки → браузер не вантажив би зображення взагалі. -->
+      <div v-if="questionImages.length" class="nmt-task__figures">
+        <img
+          v-for="(src, i) in questionImages"
+          :key="i"
+          :src="src"
+          class="nmt-task__figure"
+          alt=""
+          draggable="false"
+        />
+      </div>
+
       <!-- ── single_choice ────────────────────────────────── -->
       <div v-if="data.taskType === 'single_choice'" class="nmt-task__options">
         <button
-          v-for="opt in data.options"
+          v-for="(opt, oi) in data.options"
           :key="opt.id"
           type="button"
           class="nmt-task__option"
@@ -81,6 +94,14 @@
         >
           <span class="nmt-task__option-letter">{{ opt.letter }}</span>
           <span class="nmt-task__option-text" v-html="renderTextWithLatex(opt.text)" />
+          <!-- варіант-картинка (OPTION_IMAGE ↔ order) -->
+          <img
+            v-if="optionImage(oi)"
+            :src="optionImage(oi)"
+            class="nmt-task__option-img"
+            alt=""
+            draggable="false"
+          />
         </button>
       </div>
 
@@ -173,6 +194,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
+import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
 import type { NmtTaskData } from '../../../types/nmtTask'
 import {
@@ -219,6 +241,23 @@ useExportCapture(
 // ── Data access ───────────────────────────────────────────────────────────────
 
 const data = computed(() => (props.asset.data as unknown as NmtTaskData))
+
+/* ── Ілюстрації задачі (2026-07-31) ──────────────────────────────────────────
+   Задачі «На рисунку зображено куб…» приходили голим текстом: BE не проносив
+   resource_refs у nmt_task, а тут не було <img>. BE віддає лише refs з url,
+   тому додаткової перевірки на биті посилання не потрібно.                  */
+const questionImages = computed(() =>
+  (data.value.resourceRefs ?? [])
+    .filter((r) => (r.role ?? 'QUESTION_IMAGE') === 'QUESTION_IMAGE')
+    .map((r) => resolveMediaUrl(r.url)),
+)
+/** OPTION_IMAGE прив'язується до варіанта за order (0 → А, 1 → Б, …). */
+function optionImage(index: number): string {
+  const ref = (data.value.resourceRefs ?? []).find(
+    (r) => r.role === 'OPTION_IMAGE' && r.order === index,
+  )
+  return ref ? resolveMediaUrl(ref.url) : ''
+}
 
 // ── Header label ──────────────────────────────────────────────────────────────
 
@@ -454,6 +493,30 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   color: #0f172a;
   padding-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
+}
+
+/* ── ілюстрації задачі (QUESTION_IMAGE / OPTION_IMAGE) ───────────────── */
+.nmt-task__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+.nmt-task__figure {
+  max-width: 100%;
+  max-height: 320px;          /* щоб велике креслення не розпирало картку */
+  object-fit: contain;
+  border-radius: 6px;
+  background: #fff;
+}
+.nmt-task__option-img {
+  max-width: 100%;
+  max-height: 110px;
+  object-fit: contain;
+  margin-left: 8px;
+  border-radius: 4px;
+  background: #fff;
 }
 
 /* ── single_choice: options grid ─────────────────────────────────────── */

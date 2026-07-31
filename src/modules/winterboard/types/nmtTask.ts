@@ -90,6 +90,12 @@ export interface NmtTaskData {
   solution?: string
   /** NMTProblem.id for traceability back to the source problem. */
   externalId?: string
+  /**
+   * Ілюстрації задачі (2026-07-31). BE віддає лише refs, для яких знайдено файл,
+   * тому кожен елемент має `url` (INV-RES-5: медіа посиланням, не інлайном).
+   * role: 'QUESTION_IMAGE' — під умовою; 'OPTION_IMAGE' — до варіанта за order.
+   */
+  resourceRefs?: Array<{ resource_id: string; role?: string; order?: number; url: string }>
   /** Persisted toggle: whether the "correct answer" highlight is visible. */
   showAnswer: boolean
   /** Persisted toggle: whether the solution/explanation block is visible. */
