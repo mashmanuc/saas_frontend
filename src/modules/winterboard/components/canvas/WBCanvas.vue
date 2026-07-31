@@ -2062,16 +2062,18 @@ const selectionIndicators = computed(() => {
   const glow = 10 / props.zoom
 
   // Soft selection indicator — indigo glow, barely-there border.
-  // ROTATION (2026-07-19): рамка мусить крутитись РАЗОМ з повернутим об'єктом.
-  // Пивот повороту об'єкта = його (x,y) (верх-лівий кут — той самий, що у proxy-ноди
-  // та overlay transformOrigin:'0 0'). Тому ставимо position=(x,y), а pad виносимо
-  // назовні через offset=pad (rect малюється від (x-pad,y-pad), але крутиться навколо
-  // (x,y)). При rotation=0 — візуально ідентично старому (x-pad,y-pad,w+2pad).
+  // CENTER-ROTATION (2026-07-19): рамка крутиться РАЗОМ з об'єктом навколо його
+  // ЦЕНТРУ (той самий пивот, що proxy-нода offset=w/2 та overlay transformOrigin:
+  // 'center'). Ставимо position=центр боксу, pad виносимо назовні через offset.
+  // При rotation=0 — box top-left = (x-pad, y-pad), візуально як без повороту.
   const selConfig = (x: number, y: number, w: number, h: number, rotation = 0) => ({
-    x,
-    y,
-    offsetX: pad,
-    offsetY: pad,
+    // center-rotation: position=центр боксу, offset виносить pad назовні + робить
+    // пивот центром → рамка крутиться навколо того самого центру, що об'єкт.
+    // При rotation=0 — box top-left = (x-pad, y-pad), як було.
+    x: x + w / 2,
+    y: y + h / 2,
+    offsetX: w / 2 + pad,
+    offsetY: h / 2 + pad,
     rotation,
     width: w + pad * 2,
     height: h + pad * 2,
@@ -3931,10 +3933,18 @@ function handleOverlayForeignDrag(payload: { assetId: string; ev: PointerEvent }
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   const node = e.target
   liveTransform.value = null // clear drag live-sync — overlay знову читає зі store
-  const clamped = clampAssetToPage(asset, node.x(), node.y())
-  // Konva-нода лишилась за межами — повертаємо і її, інакше proxy розсинхрон з overlay
-  if (clamped.x !== node.x()) node.x(clamped.x)
-  if (clamped.y !== node.y()) node.y(clamped.y)
+  // center-rotation: node.x()/y() = ЦЕНТР. Drag НЕ змінює розмір → беремо БАЗОВУ
+  // ширину без scaleX: верх-лівий кут = центр − w/2. (scaleX під час реального drag = 1;
+  // під час drop-анімації може бути ≠1 — свідомо ігноруємо, бо розмір не міняється.)
+  const w = node.width()
+  const h = node.height()
+  const tlx = node.x() - w / 2
+  const tly = node.y() - h / 2
+  const clamped = clampAssetToPage(asset, tlx, tly)
+  // Konva-нода лишилась за межами — повертаємо і її (node = ЦЕНТР = кут + w/2),
+  // інакше proxy розсинхрон з overlay.
+  if (clamped.x !== tlx) node.x(clamped.x + w / 2)
+  if (clamped.y !== tly) node.y(clamped.y + h / 2)
   emit('asset-update', {
     ...asset,
     x: clamped.x,
@@ -3949,19 +3959,21 @@ function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): v
 function handleAssetLiveTransform(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   if (!KONVA_PROXY_TYPES.has(asset.type)) return
   const node = e.target
+  // center-rotation: node.x() = ЦЕНТР → overlay читає верх-лівий кут (nodeTopLeft).
+  const tl = nodeTopLeft(node)
   liveTransform.value = {
     id: asset.id,
-    x: node.x(),
-    y: node.y(),
-    w: Math.round(node.width() * node.scaleX()),
-    h: Math.round(node.height() * node.scaleY()),
+    x: tl.x,
+    y: tl.y,
+    w: Math.round(tl.w),
+    h: Math.round(tl.h),
     rotation: node.rotation(),
   }
 }
 
 /** Build :style for an HTML overlay div — uses live Konva transform while
  *  transformer is active, falls back to persisted asset props otherwise.
- *  transformOrigin:'0 0' = Konva's default rotation pivot (top-left of node).
+ *  transformOrigin:'center' = center-rotation pivot (matches Konva proxy offset=w/2).
  */
 function getOverlayStyle(asset: WBAsset): Record<string, string> {
   // canvasOffset = pan/scroll state of the Konva stage (same offset applied to
@@ -3981,30 +3993,36 @@ function getOverlayStyle(asset: WBAsset): Record<string, string> {
     width: `${w}px`,
     height: `${h}px`,
     transform: `rotate(${r}deg)`,
-    transformOrigin: '0 0',
+    // center-rotation: overlay (top-left у left/top) крутиться навколо ВЛАСНОГО
+    // центру — той самий пивот, що Konva-proxy (offset=w/2). Було '0 0' (кут).
+    transformOrigin: 'center',
   }
 }
 
 function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   liveTransform.value = null   // clear live state — overlay now reads from store
   const node = e.target
-  const scaleX = node.scaleX()
-  const scaleY = node.scaleY()
+  // center-rotation: рахуємо верх-лівий кут + новий розмір ДО скидання scale
+  // (nodeTopLeft бере width*scaleX/height*scaleY = розмір після resize).
+  const tl = nodeTopLeft(node)
+  const newW = Math.round(tl.w)
+  const newH = Math.round(tl.h)
 
   node.scaleX(1)
   node.scaleY(1)
 
   // Resize за верхній/лівий хендл теж може виштовхнути хедер за край — клемп як у drag
-  const newW = Math.round(node.width() * scaleX)
-  const clamped = clampAssetToPage({ ...asset, w: newW }, node.x(), node.y())
-  if (clamped.x !== node.x()) node.x(clamped.x)
-  if (clamped.y !== node.y()) node.y(clamped.y)
+  const clamped = clampAssetToPage({ ...asset, w: newW }, tl.x, tl.y)
+  // повертаємо ноду у центр нового боксу (node = ЦЕНТР = кут + newW/2), інакше
+  // proxy розсинхрон з overlay до наступного re-render.
+  node.x(clamped.x + newW / 2)
+  node.y(clamped.y + newH / 2)
   emit('asset-update', {
     ...asset,
     x: clamped.x,
     y: clamped.y,
     w: newW,
-    h: Math.round(node.height() * scaleY),
+    h: newH,
     rotation: node.rotation(),
   })
 }
@@ -4248,14 +4266,40 @@ function assetRenderMode(asset: WBAsset): AssetRenderMode {
   return getAssetRenderMode(opSrc, assetStatus.getEntry(asset.id), isBoardAuthor(), fresh)
 }
 
+// ─── Center-rotation (2026-07-19) ────────────────────────────────────────────
+// Об'єкт крутиться навколо ЦЕНТРУ (як Figma/PowerPoint), а не верх-лівого кута.
+// asset.x/y лишаються верх-лівим кутом (SSOT координат) — центр застосовуємо
+// ЛИШЕ на рівні Konva-ноди/overlay через offset. Konva: origin ноди = центр
+// (offset=w/2,h/2), тож ставимо position у центр (x+w/2,y+h/2) і крутимо навколо
+// нього. Зворотне перетворення (node→asset) — nodeTopLeft().
+
+/** Konva transform-props для center-rotation (spread у config-білдери). */
+function centerXf(asset: WBAsset): Record<string, number> {
+  const hw = asset.w / 2
+  const hh = asset.h / 2
+  return {
+    x: asset.x + hw,
+    y: asset.y + hh,
+    offsetX: hw,
+    offsetY: hh,
+    rotation: asset.rotation ?? 0,
+  }
+}
+
+/** Konva-нода (origin=центр) → верх-лівий кут + поточний розмір (з урахуванням
+ *  scaleX/Y під час resize). Центр інваріантний при повороті, тож TL = центр − w/2. */
+function nodeTopLeft(node: { x: () => number; y: () => number; width: () => number; height: () => number; scaleX: () => number; scaleY: () => number }): { x: number; y: number; w: number; h: number } {
+  const w = node.width() * node.scaleX()
+  const h = node.height() * node.scaleY()
+  return { x: node.x() - w / 2, y: node.y() - h / 2, w, h }
+}
+
 /** Konva GROUP config для ⚠ placeholder проваленого asset (тільки автор бачить). */
 function getBrokenPlaceholderGroupConfig(asset: WBAsset): Record<string, unknown> {
   return {
     id: asset.id,
     name: `asset-${asset.id}`,
-    x: asset.x,
-    y: asset.y,
-    rotation: asset.rotation,
+    ...centerXf(asset),
     draggable: currentTool.value === 'select' && !asset.locked,
     listening: currentTool.value === 'select',
   }
@@ -4414,11 +4458,9 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   const config: Record<string, unknown> = {
     id: asset.id,
     name: `asset-${asset.id}`,
-    x: asset.x,
-    y: asset.y,
+    ...centerXf(asset),
     width: asset.w,
     height: asset.h,
-    rotation: asset.rotation,
     image: loadedImages.get(src),
     // Phase 35: Image opacity from asset field
     opacity: effectiveOpacity,
@@ -4448,11 +4490,9 @@ function getSolidProxyConfig(asset: WBAsset): Record<string, unknown> {
   const isMultiSel = isInMultiSelection(asset.id)
   const isSelected = wbStore.selectedIds.includes(asset.id)
   return {
-    x: asset.x,
-    y: asset.y,
+    ...centerXf(asset),
     width: asset.w,
     height: asset.h,
-    rotation: asset.rotation,
     // Visible only коли selected — слабкий border для UX hint
     // (overlay сам має visual frame через .wb-solid-overlay border).
     fill: 'transparent',
@@ -4491,9 +4531,7 @@ function getClipGroupConfig(asset: WBAsset): Record<string, unknown> {
   return {
     id: asset.id,
     name: `asset-${asset.id}`,
-    x: asset.x,
-    y: asset.y,
-    rotation: asset.rotation,
+    ...centerXf(asset),
     draggable: selectable && !isLockedItem && !isMultiSel,
     listening: selectable,
     clipFunc: (ctx: CanvasRenderingContext2D) => roundedRect(ctx, asset.w, asset.h, r),
