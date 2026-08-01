@@ -277,7 +277,15 @@ watch(() => props.interactive, syncCanvasPointerEvents)
 // Register / unregister bridge as selection changes.
 watch(() => props.isSelected, (sel) => {
   if (sel) registerCalculusInspector(props.asset.id, _calcBridge)
-  else unregisterCalculusInspector(props.asset.id)
+  else {
+    // P1 (data-loss): flush pending expr draft ДО обнулення bridge. card.setExpression
+    // НЕ тригерить snapshot (лише drag тригерить), тож набраний вираз тримається
+    // ЛИШЕ onExprCommit на blur. Після P0-гарду blur→commitExpr стає no-op на null
+    // bridge → draft лишається в exprDraft/рушії, але не у store, і зникає на ре-рендері.
+    // onExprCommit ідемпотентний (patch лише якщо exprDraft ≠ store).
+    onExprCommit()
+    unregisterCalculusInspector(props.asset.id)
+  }
 })
 
 function destroyCard(): void {
@@ -289,7 +297,11 @@ function destroyCard(): void {
 }
 
 onMounted(() => { void mount() })
-onUnmounted(() => { unregisterCalculusInspector(props.asset.id); destroyCard() })
+onUnmounted(() => {
+  onExprCommit()   // P1: flush pending expr draft перед teardown (див. isSelected watch)
+  unregisterCalculusInspector(props.asset.id)
+  destroyCard()
+})
 
 // Mode hot-swap — rebuild card (rare).
 // mount() calls syncCanvasPointerEvents() at the end — no extra call needed.
