@@ -215,7 +215,7 @@ export async function buildToolCatalog() {
 
 // ── Phase 2.8: редагування параметра ІСНУЮЧОГО об'єкта (через updateAsset) ──
 // BE резолвить object_id (Закон C), сюди приходить готовий id + що змінити.
-HANDLERS.set_param = async function set_param({ object_id, type, value }) {
+HANDLERS.set_param = async function set_param({ object_id, type, value, name }) {
   const { store } = await _store()
   const page = store.currentPage
   const asset = (page.assets || []).find((a) => a.id === object_id)
@@ -229,6 +229,19 @@ HANDLERS.set_param = async function set_param({ object_id, type, value }) {
       data.state.expressions[0] = { ...data.state.expressions[0], src }
     } else {
       data.state.expressions = [{ id: `e-${_uuid().slice(0, 8)}`, src, color: '#dc2626', hidden: false }]
+    }
+  } else if (type === 'graph_param') {
+    // Phase 1 Block B1 (2026-08-01): «зроби a=3» — точкова зміна ОДНОГО параметра.
+    // Clamp у [min,max] — той самий інваріант, що в _clean_graph_params на BE.
+    if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
+    const paramKey = String(name)
+    const cfg = data.state.params?.[paramKey]
+    if (!cfg) throw new Error(`Параметра «${paramKey}» немає на цьому графіку — скажіть «побудуй ... з a», і я додам повзунок.`)
+    const num = Number(value)
+    if (!Number.isFinite(num)) throw new Error('Не зрозумів нове значення параметра.')
+    data.state.params = {
+      ...(data.state.params || {}),
+      [paramKey]: { ...cfg, value: Math.min(Math.max(num, cfg.min), cfg.max) },
     }
   } else if (type === 'formula') {
     data.formula = String(value)
@@ -264,6 +277,70 @@ HANDLERS.delete_object = async function delete_object({ object_id }) {
   const { store } = await _assetById(object_id)   // валідує існування
   store.deleteAsset(object_id)                    // Command-pattern → undo працює
 }
+
+// ── Phase 1 Block B2 (2026-08-01): «домалюй дотичну» — ДОДАТИ криву в існуючий графік.
+// Не замінити (це set_graph_expression): push у data.state.expressions. Стелю
+// MAX_GRAPH_EXPRESSIONS=6 пильнуємо ТУТ (BE не бачить кількість кривих — рев'ю 2026-08-01).
+const MAX_GRAPH_EXPRESSIONS = 6
+const GRAPH_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#9333ea', '#ea580c', '#0891b2']
+HANDLERS.graph_add_expression = async function graph_add_expression({ object_id, src, label }) {
+  const { store, asset } = await _assetById(object_id)
+  if (asset.type !== 'graph_calculator') throw new Error('Це не графік — додати криву можна лише в графічний калькулятор.')
+  const data = JSON.parse(JSON.stringify(asset.data || {}))
+  if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
+  const srcClean = String(src).replace(/^\s*y\s*=\s*/i, '').trim()
+  if (!srcClean) throw new Error('Не зрозумів вираз нової кривої.')
+  const exprs = data.state.expressions || []
+  if (exprs.length >= MAX_GRAPH_EXPRESSIONS) {
+    throw new Error(`Графік уже має ${MAX_GRAPH_EXPRESSIONS} кривих — більше на одному полі нечитабельно. Скажіть «заміни ... на ${srcClean}», і я оновлю одну з них.`)
+  }
+  data.state.expressions = [
+    ...exprs,
+    { id: `e-${_uuid().slice(0, 8)}`, src: srcClean, color: GRAPH_COLORS[exprs.length % GRAPH_COLORS.length], hidden: false, label: label || undefined },
+  ]
+  store.updateAsset({ ...asset, data })
+}
+
+// Phase 1 Block B3 (2026-08-01): перенос об'єкта на іншу сторінку.
+// ОДИН compound WBCommand (вимога рев'ю №002, зразок reorderPages):
+// apply() = delete з джерела + add на ціль, revert() = навпаки.
+// Ctrl+Z вертає ЦІЛИЙ перенос — не два кроки, не частковий стан.
+HANDLERS.move_object_to_page = async function move_object_to_page({ object_id, page }) {
+  const { store } = await _store()
+  const pageIndex = Number(page) - 1   // 1-based «друга сторінка» → індекс 1
+  if (pageIndex < 0 || pageIndex >= (store.pages || []).length) {
+    throw new Error('Сторінки з таким номером на дошці немає.')
+  }
+  // Знайти об'єкт по ВСІХ сторінках (джерело може бути не поточна).
+  let sourcePage = null
+  let asset = null
+  for (const p of store.pages || []) {
+    const a = (p.assets || []).find(x => x.id === object_id)
+    if (a) { sourcePage = p; asset = a; break }
+  }
+  if (!sourcePage) throw new Error('Об\'єкта не знайдено на дошці.')
+  const targetPage = store.pages[pageIndex]
+  if (sourcePage.id === targetPage.id) return   // no-op (BE вже відсіяв)
+
+  // compound WBCommand — ОДИН запис в undoStack.
+  const cmd = {
+    apply: () => {
+      store.deleteAssetFromPage(sourcePage.id, object_id, { skipHistory: true })
+      store.addAsset({ ...asset }, targetPage.id, { skipHistory: true })
+    },
+    revert: () => {
+      store.deleteAssetFromPage(targetPage.id, object_id, { skipHistory: true })
+      store.addAsset({ ...asset }, sourcePage.id, { skipHistory: true })
+    },
+  }
+  cmd.apply()
+  // trimStack за зразком інших store-дій (deleteAsset/addAsset).
+  const MAX = 100
+  const trim = (s) => s.length > MAX ? s.slice(s.length - MAX) : s
+  store.undoStack = trim([...store.undoStack, cmd])
+  store.redoStack = []
+}
+
 
 // Phase 2.11: геометричні побудови = toggles планіметрії (описане/вписане коло, медіани…)
 HANDLERS.set_geometry = async function set_geometry({ object_id, feature, on }) {

@@ -2059,10 +2059,49 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     /**
-     * Atomic batch add for strokes — single reactive mutation, single op.
-     * Used by paste/duplicate to avoid "typing" effect in replay.
-     * One undo entry rolls back ALL added strokes at once.
+     * Phase 1 Block B3 (2026-08-01): mirror deleteAsset, but with explicit pageId.
+     *
+     * deleteAsset(assetId) is hard-bound to this.currentPageIndex - an object on a
+     * NON-current page is not found (idx === -1, silent no-op). B3 move-to-another-page
+     * needs a page-parameterized delete because the source may be a non-current page.
+     * Same pattern as addAsset(pageId) next to addAssetToPage(pageIndex).
+     * Zero new write-paths: same reactive mutation and asset_delete op.
      */
+    deleteAssetFromPage(pageId: string, assetId: string, opts?: { skipHistory?: boolean }): void {
+      const pageIndex = this.pages.findIndex((p) => p.id === pageId)
+      const page = this.pages[pageIndex]
+      if (!page) return
+      const idx = page.assets.findIndex((a) => a.id === assetId)
+      if (idx === -1) return
+      if (!opts?.skipHistory) {
+        const _a = { ...page.assets[idx] }
+        const _pid = pageId
+        const cmd: WBCommand = {
+          apply: () => this.deleteAssetFromPage(_pid, _a.id, { skipHistory: true }),
+          revert: () => this.addAsset(_a, _pid, { skipHistory: true }),
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
+        this.redoStack = []
+      }
+      this.pages[pageIndex] = {
+        ...page,
+        assets: page.assets.filter((_, i) => i !== idx),
+      }
+      if (this.selectedIds.includes(assetId)) {
+        this.selectedIds = this.selectedIds.filter((id) => id !== assetId)
+        if (this.selectedIds.length === 0) this.selectionRect = null
+      }
+      this.markDirty()
+      // emit is UNCONDITIONAL (skipHistory disables only undoStack, not op log):
+      // state is rebuilt from ops log - if either half drops, after reload
+      // the object is duplicated or gone from both pages.
+      _emitOperation({
+        op_type: 'asset_delete',
+        page_id: pageId,
+        payload: { asset_id: assetId },
+      })
+    },
+
     addStrokesBatch(strokes: WBStroke[], opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
