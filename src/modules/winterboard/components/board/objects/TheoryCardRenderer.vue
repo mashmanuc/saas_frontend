@@ -22,7 +22,7 @@
 
     <header class="theory-card__header">
       <span class="theory-card__icon">📖</span>
-      <span class="theory-card__badge">Теорія</span>
+      <span class="theory-card__badge">{{ data.badge || 'Теорія' }}</span>
       <button
         v-if="!asset.locked && isSelected"
         type="button"

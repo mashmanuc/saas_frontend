@@ -454,6 +454,8 @@ export interface TheoryCardData {
   version: 1
   title: string
   body: string
+  /** Підпис у шапці картки. Порожньо → 'Теорія' (поведінка старих карток). */
+  badge?: string
   hint?: string
   /** Заголовок секції формул (якщо є формули). */
   formulaTitle?: string
