@@ -75,7 +75,7 @@ const HANDLERS = {
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
-  async add_card({ title, body }) {
+  async add_card({ title, body, badge }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     store.addAsset({
@@ -88,7 +88,9 @@ const HANDLERS = {
       h: 380,
       rotation: 0,
       locked: false,
-      data: { version: 1, title: title || '', body: body || '', formulas: [] },
+      // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
+      // шляху: модель кладе сюди переважно розв'язки, а не теорію.
+      data: { version: 1, badge: badge || '', title: title || '', body: body || '', formulas: [] },
     }, page.id ?? '')
   },
 
