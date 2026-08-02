@@ -200,6 +200,16 @@
               :aria-pressed="isPinned ? 'true' : 'false'"
               aria-label="Закріпити панель"
             >📌</button>
+            <!-- Згорнути в маскота. У pin-режимі це ЄДИНИЙ спосіб прибрати панель
+                 (клік повз неї свідомо не закриває), а в AI-режимі кнопки закриття
+                 не було взагалі — на відміну від режиму команд. Розмова переживає
+                 згортання (0a), тому «згорнути», а не «закрити»: FAB одразу покаже
+                 бейдж «розмова чекає», а openPalette() поверне саме в тред. -->
+            <button
+              class="cmdp-min" @click="close"
+              title="Згорнути в Інтегралика (розмова збережеться) · Esc"
+              aria-label="Згорнути панель"
+            >–</button>
           </div>
 
           <div ref="aiThreadEl" class="cmdp-ai-thread">
@@ -1652,6 +1662,11 @@ onBeforeUnmount(() => {
   cursor: pointer; filter: grayscale(1); opacity: .55; transition: opacity .15s, filter .15s, background .15s; }
 .cmdp-pin:hover { opacity: .85; }
 .cmdp-pin.on { filter: none; opacity: 1; background: #ccfbf1; }
+/* Згорнути — сусід pin/newchat у шапці AI-режиму, той самий розмір і ритм. */
+.cmdp-min { border: 0; background: #f3f3f3; color: #555; width: 28px; height: 28px;
+  border-radius: 8px; font-size: 18px; line-height: 1; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; opacity: .7; transition: opacity .15s, background .15s, color .15s; }
+.cmdp-min:hover { opacity: 1; background: #e3e3e3; color: #0d9488; }
 .cmdp-pin--brand { background: rgba(255,255,255,.14); }
 .cmdp-pin--brand:hover { background: rgba(255,255,255,.28); }
 .cmdp-pin--brand.on { background: rgba(255,255,255,.9); }
