@@ -198,7 +198,11 @@ import type { RiemannMode } from '../../vendor/calculus'
 
 const { t } = useI18n()
 
-// Non-null — component shown only when bridge is registered
+// ⚠️ `!` — ТІЛЬКИ для <template> та render-computed'ів: інспектор рендериться під
+// v-if bridge (GroupContentSidebar), тож там bridge гарантовано non-null.
+// ОБРОБНИКИ подій (@blur/@change/@input) НЕ мають права на b.value.МЕТОД() — при
+// teardown bridge стає null і виклик вбиває сторінку (P0). Обробники читають
+// calculusUiState.bridge?. напряму. Інваріант тримає тест InspectorTeardownGuard.
 const b = computed(() => calculusUiState.bridge!)
 
 const EXPR_PRESETS = CALCULUS_EXPR_PRESETS
@@ -244,7 +248,8 @@ async function startExprEdit(): Promise<void> {
 /** MQ-ввід: живий апдейт двигуна тим самим шляхом, що typing в input. */
 function onMqInput(v: string): void {
   localExpr.value = v
-  b.value.setExpr(v)
+  // bridge напряму (не b.value!) — єдиний дозволений шлях для обробників (P2).
+  calculusUiState.bridge?.setExpr(v)
 }
 
 watch(
@@ -260,7 +265,7 @@ watch(
 function onExprInput(e: Event): void {
   const v = (e.target as HTMLInputElement).value
   localExpr.value = v
-  b.value.setExpr(v)   // live engine update (no store commit)
+  calculusUiState.bridge?.setExpr(v)   // live engine update (no store commit); bridge напряму (P2)
 }
 
 function onExprCommit(): void {
@@ -272,12 +277,12 @@ function onExprCommit(): void {
 
 function onHInput(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value)
-  if (Number.isFinite(v)) b.value.setH(v)
+  if (Number.isFinite(v)) calculusUiState.bridge?.setH(v)
 }
 
 function onNInput(e: Event): void {
   const v = parseInt((e.target as HTMLInputElement).value, 10)
-  if (Number.isFinite(v)) b.value.setN(v)
+  if (Number.isFinite(v)) calculusUiState.bridge?.setN(v)
 }
 
 function onBoundChange(which: 'a' | 'b', e: Event): void {

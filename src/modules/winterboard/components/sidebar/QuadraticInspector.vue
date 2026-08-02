@@ -165,6 +165,10 @@ import type { QuadSign } from '../../types/quad'
 
 const { t } = useI18n()
 
+// ⚠️ `!` — ТІЛЬКИ для <template>/render-computed'ів (рендер під v-if bridge).
+// ОБРОБНИКИ (@change) НЕ мають права на b.value.МЕТОД() — teardown → null → page
+// crash (P0). Обробники читають quadUiState.bridge напряму (early-return).
+// Інваріант тримає тест InspectorTeardownGuard.
 const b = computed(() => quadUiState.bridge!)
 const PRESETS = QUAD_PRESETS
 

@@ -176,22 +176,47 @@ describe('QuadraticInspector — teardown-guard', () => {
   })
 })
 
-// ── Recurrence-гард (§7.3): жоден @blur/@change не читає bridge напряму через b.value ──
-describe('recurrence-гард проти повернення бага', () => {
-  it('Calculus: guarded, старий незахищений патерн відсутній', () => {
+// ── P2: recurrence-гард проти повернення КЛАСУ бага ──────────────────────────
+// Пастка: `const b = computed(() => <state>.bridge!)` — `!` робить b.value non-null
+// для TS, тож null-виклик на teardown КОМПІЛЮЄТЬСЯ і вбиває сторінку (P0). TS сам
+// це не зловить (через `!`), тому інваріант тримає цей текстовий гард.
+
+// Guard 2 (генерично на ВСІ інспектори): жоден @blur/@change не викликає bridge
+// через брехливий `b` inline — обробник МУСИТЬ бути обгорткою з <state>.bridge?.
+const ALL_INSPECTORS = import.meta.glob('../*Inspector.vue', {
+  query: '?raw', import: 'default', eager: true,
+}) as Record<string, string>
+
+describe('P2 recurrence-гард', () => {
+  it('знайдено всі *Inspector.vue', () => {
+    expect(Object.keys(ALL_INSPECTORS).length).toBeGreaterThanOrEqual(7)
+  })
+
+  for (const [path, src] of Object.entries(ALL_INSPECTORS)) {
+    const name = path.split('/').pop()
+    it(`${name}: 0 inline b.метод() у @blur/@change`, () => {
+      // @blur="…b.foo(" / @change="…b.foo(" — небезпечний inline на teardown
+      const hits = src.match(/@(?:blur|change)="[^"]*\bb\.[A-Za-z0-9_]+\(/g) || []
+      expect(hits).toEqual([])
+    })
+  }
+
+  // Guard 1 (3 crash-схильні інспектори з @blur/@change): жодного виклику
+  // b.value.МЕТОД() — обробники читають <state>.bridge?. напряму. (render-computed'и
+  // читають b.value.property БЕЗ дужок — вони легітимні й сюди не потрапляють.)
+  it.each([
+    ['CalculusInspector', calculusSrc],
+    ['GraphCalcInspector', graphSrc],
+    ['QuadraticInspector', quadSrc],
+  ])('%s: 0 викликів b.value.МЕТОД()', (_name, src) => {
+    const hits = src.match(/\bb\.value\.[A-Za-z0-9_]+\(/g) || []
+    expect(hits).toEqual([])
+  })
+
+  // Позитив: обробники, що падали на проді, тепер читають bridge напряму.
+  it('guarded-патерн присутній (commitExpr/onInputBlur/bridge)', () => {
     expect(calculusSrc).toContain('calculusUiState.bridge?.commitExpr()')
-    expect(calculusSrc).not.toContain('b.value.commitExpr()')
-    expect(calculusSrc).not.toContain('b.value.setBound(')
-  })
-  it('GraphCalc: @blur/@change не викликають b.on… inline', () => {
     expect(graphSrc).toContain('graphCalcInspectorState.bridge?.onInputBlur(')
-    expect(graphSrc).not.toMatch(/@blur="[^"]*b\.onInputBlur/)
-    expect(graphSrc).not.toMatch(/@change="[^"]*b\.onRange(Min|Max|Step)Change/)
-  })
-  it('Quad: onA/B/CChange не читають b.value', () => {
     expect(quadSrc).toContain('quadUiState.bridge')
-    expect(quadSrc).not.toContain('b.value.setA(')
-    expect(quadSrc).not.toContain('b.value.setB(')
-    expect(quadSrc).not.toContain('b.value.setC(')
   })
 })

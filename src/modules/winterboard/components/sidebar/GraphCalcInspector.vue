@@ -236,7 +236,10 @@ import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorSta
 
 const { t } = useI18n()
 
-// Non-null — component shown only when bridge is registered
+// ⚠️ `!` — ТІЛЬКИ для <template>/render-computed'ів (рендер під v-if bridge).
+// ОБРОБНИКИ (@blur/@change) НЕ мають права на b.value.МЕТОД() / inline b.метод() —
+// teardown → null → page crash (P0). Обробники читають graphCalcInspectorState.bridge?.
+// напряму. Інваріант тримає тест InspectorTeardownGuard.
 const b = computed(() => graphCalcInspectorState.bridge!)
 
 // ── Гібрид «рендер у спокої» ──────────────────────────────────────────────
