@@ -73,6 +73,7 @@
     apply('data-i18n-html',        (el, v) => { el.innerHTML = v; });
     apply('data-i18n-title',       (el, v) => { el.setAttribute('title', v); });
     apply('data-i18n-placeholder', (el, v) => { el.setAttribute('placeholder', v); });
+    apply('data-i18n-aria-label',  (el, v) => { el.setAttribute('aria-label', v); });
   }
 
   function setLang(lang) { localStorage.setItem('mash:lang', lang); }

@@ -181,7 +181,38 @@
       },
       "help": {
         "title": "How to use",
-        "intro": "Enter one expression per field on the left."
+        "intro": "Enter one expression per field on the left.",
+        "gotIt": "Got it",
+        "items": {
+          "func": "Function: <code>y = x^2</code>, <code>y = sin(x)</code>, <code>x = y^2</code>",
+          "customFunc": "Custom function: <code>f(x) = x^2 + 1</code>, then <code>y = f(x-2)</code>, <code>g(x) = f(f(x))</code>",
+          "piecewise": "Piecewise function: <code>y = {x &lt; 0: -x, x &gt;= 0: x^2}</code> — <b>condition: value</b> pairs separated by commas, the last one without a condition = otherwise",
+          "factorial": "Factorial <code>n!</code> (also works for fractions via Γ), remainder <code>%</code> or <code>mod(a,b)</code>",
+          "logarithms": "Logarithms: <code>ln(x)</code> — natural, <code>log(x)</code> — base 10, with a base — <code>log_2 x</code> or <code>log_2(x)</code>, <code>log_a(x)</code>",
+          "sumProduct": "Sum <b>Σ</b> and product <b>Π</b>: <code>sum(i, 1, 10, i)</code> = 55, <code>product(i, 1, 5, i)</code> = 120; with <code>x</code> in the body — a series graph, e.g. Fourier series <code>y = sum(n, 1, 20, sin(n x)/n)</code> (you can also type the symbols Σ, Π)",
+          "recurrence": "Recurrence sequence: define <b>base cases</b> with a numeric index <code>F(0) = 0</code>, <code>F(1) = 1</code> and a <b>general formula</b> <code>F(n) = F(n-1) + F(n-2)</code> — a sequence may reference itself",
+          "seqPlot": "Sequence plot: <code>plot(F(n), n, 0, 12)</code> — points <code>(0, F(0)), (1, F(1)), …</code> with bars; works with any sequence or function, e.g. <code>plot(n^2, n, 0, 8)</code>",
+          "lsystems": "L-systems: built-in <code>koch(4)</code>, <code>dragon(12)</code>, <code>sierpinski(5)</code>, <code>hilbert(5)</code>, <code>plant(5)</code>; custom form: <code>lsystem(\"F\", \"F-&gt;F+F--F+F\", 4, 60)</code> — axiom, rules, iterations, angle (°)",
+          "fractals": "Fractals: <code>mandelbrot()</code> — the Mandelbrot set; <code>julia(-0.8, 0.156)</code> — the Julia set; pan and zoom with the mouse",
+          "implicit": "Equation (implicit): <code>x^2 + y^2 = 9</code>, <code>(x-2)^2+(y-1)^2=4</code>",
+          "inequality": "Inequality (region fill): <code>y &lt; x^2</code>, <code>x^2+y^2 &lt;= 9</code>, <code>y &gt;= sin(x)</code>",
+          "domainBraces": "Domain restriction in braces: <code>y = x^2 {x &gt; 0}</code>, <code>y = sin(x) {-3 &lt; x &lt; 3}</code> — several braces in a row combine",
+          "polar": "Polar curve: <code>r = 4 cos(3θ)</code>, <code>r = 1 + 2 cos(θ)</code>, <code>r = θ</code> (angle θ or theta)",
+          "parametric": "Parametric curve: <code>(cos(t), sin(t))</code>, <code>(3 sin(3t), 3 sin(2t))</code> — a pair with a free <code>t</code>; the <code>t</code> range is set below the expression (default 0…2π)",
+          "logic": "Logic <b>and / or / not</b> in inequalities and conditions: <code>y &gt; 0 and y &lt; x^2</code>, <code>x &lt; -2 or x &gt; 2</code>, <code>{x &gt; 0 and y &gt; 0}</code>",
+          "point": "Point: <code>(2, 3)</code>",
+          "dataTable": "Data table: the <b>⊞</b> button on the panel — enter (x, y) points into cells; display as points, a line, or both",
+          "regression": "Regression: in the table pick a model (linear, quadratic, cubic, exponential, logarithmic, power) — a fit over the points, the curve and its equation with R²",
+          "ctrlDrag": "<b>Ctrl + drag</b> a curve that has a parameter on the canvas to change that parameter's value (the slider moves along)",
+          "unknownLetter": "An unknown letter (e.g. <b>a</b>) → a <b>+a</b> button appears: it creates a slider with animation <b>▶</b>",
+          "canvas": "Canvas: drag to pan, wheel to zoom, buttons on the right — +/−/home",
+          "circleLeft": "The circle on the left: click to hide, right-click for color"
+        }
+      },
+      "pageTitle": "GraphMASH — graphing calculator",
+      "a11y": {
+        "examplesDrawer": "Examples collection",
+        "docTitle": "Graph name"
       },
       "presets": {
         "parabola": "Parabola",
