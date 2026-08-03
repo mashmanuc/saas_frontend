@@ -7187,6 +7187,8 @@
       "formats": {
         "png": "PNG Image",
         "pngDesc": "Export current page as image",
+        "pptx": "PPTX Presentation",
+        "pptxDesc": "Slides for PowerPoint — answers in speaker notes",
         "pdf": "PDF Document",
         "pdfDesc": "Export all pages as PDF",
         "pdfV2": "PDF with Formulas (beta)",

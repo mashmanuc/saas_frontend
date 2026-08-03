@@ -200,6 +200,8 @@ import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import { nextTick } from 'vue'
 import { winterboardApi } from '../../api/winterboardApi'
+import { shipApi } from '@/modules/ship/shipApi'
+import type { ShipArtifactInfo } from '@/modules/ship/shipApi'
 import { isLimitError } from '@/utils/apiClient'
 import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
@@ -312,11 +314,32 @@ const formats = computed(() => {
     })
   }
 
+  // North Ship (Фаза 3): презентація доступна лише там, де за дошкою стоїть
+  // AST-урок — інакше рендерити нема з чого, і кнопка світилася б даремно.
+  if (shipArtifact.value) {
+    base.push({
+      value: 'pptx' as WBExportFormat,
+      label: t('winterboard.export.formats.pptx'),
+      desc: t('winterboard.export.formats.pptxDesc'),
+      icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#d97706" stroke-width="1.5"/><path d="M8 21h8M12 17v4" stroke="#d97706" stroke-width="1.5" stroke-linecap="round"/><path d="M7 12l3-3 2 2 5-5" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      disabled: false,
+      tooltip: '',
+    })
+  }
+
   // V2 export (semantic vector engine) is FROZEN — hidden from the UI.
   // BE engine + startExportV2()/exportV2() remain behind the flag in case
   // it's revived; this dialog no longer offers it as a format choice.
 
   return base
+})
+
+// Ship-артефакт для цієї дошки. null = немає AST-уроку або ship вимкнено —
+// для UI це одне й те саме: формату «презентація» просто не буде.
+const shipArtifact = ref<ShipArtifactInfo | null>(null)
+
+onMounted(async () => {
+  shipArtifact.value = await shipApi.getSessionArtifact(props.sessionId)
 })
 
 // Autostart (палітра/Інтегралик): формат уже відомий із фрази — стартуємо одразу,
@@ -359,7 +382,17 @@ async function startExport(): Promise<void> {
 
   // ── Phase 2: BE export request (existing behavior) ─────────────────────
   try {
-    const result = await winterboardApi.createExport(props.sessionId, selectedFormat.value)
+    // Ship іде своїм ендпоінтом (приймає лише artifact_id — знімки вже
+    // завантажені фазою 1), але статус далі политься тим самим WBExport.
+    let result: { id: string; status: string; file_url?: string | null; error?: string | null }
+    if (selectedFormat.value === 'pptx') {
+      // Формат є в списку лише коли артефакт знайдено; якщо він встиг зникнути —
+      // чесна помилка, а не тихий відкат на winterboard-експорт, який 'pptx' не приймає.
+      if (!shipArtifact.value) throw new Error('ship_artifact_missing')
+      result = await shipApi.renderPptx(shipArtifact.value.id)
+    } else {
+      result = await winterboardApi.createExport(props.sessionId, selectedFormat.value)
+    }
     exportId.value = result.id
 
     if (result.status === 'done' && result.file_url) {
