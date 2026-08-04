@@ -141,6 +141,7 @@
     { type: 'similar',        short: '△ ~ △′',     full: 'Подібні трикутники', desc: 'гомотетія · drag k' },
     { type: 'parallels',      short: 'a ∥ b · t',  full: 'Паралельні + січна', desc: '8 кутів · відповідні · різносторонні' },
     { type: 'parallelogram',  short: 'AB ∥ DC',    full: 'Паралелограм',       desc: 'сторони · кути · діагоналі · висота' },
+    { type: 'rhombus',        short: 'a=a=a=a',    full: 'Ромб',               desc: 'рівні сторони · ⊥ діагоналі · ∠60°' },
     { type: 'trapezium',      short: 'AB ∥ DC',    full: 'Трапеція',           desc: 'сер. лінія · висота · cyclic check' },
     { type: 'euler9',      short: 'G·H·O',       full: 'Ейлер + 9 точок',    desc: 'колінеарність · коло 9 точок' },
     { type: 'simson',      short: 'P → F₁F₂F₃', full: 'Симсонова пряма',    desc: 'P на колі · 3 проекції колінеарні' },

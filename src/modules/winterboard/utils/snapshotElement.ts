@@ -150,7 +150,18 @@ async function snapshotSvg(
 
   let serialized: string
   try {
-    serialized = new XMLSerializer().serializeToString(svg)
+    // Клон із ЯВНИМИ розмірами: svg із width='100%' без viewBox (geo2d)
+    // після серіалізації не має intrinsic size — Image() дає йому дефолтні
+    // 300×150, і drawImage розтягує/обрізає вміст. Живий прояв: ромб на
+    // знімку виглядав паралелограмом, частина конструкції зрізана
+    // (прогін D-2, 2026-08-04). Живий DOM не мутуємо.
+    const clone = svg.cloneNode(true) as SVGSVGElement
+    clone.setAttribute('width', String(w))
+    clone.setAttribute('height', String(h))
+    if (!clone.getAttribute('viewBox')) {
+      clone.setAttribute('viewBox', `0 0 ${w} ${h}`)
+    }
+    serialized = new XMLSerializer().serializeToString(clone)
   } catch (err) {
     console.warn('[WB:snapshot] svg_serialize_failed', err)
     return null

@@ -402,6 +402,85 @@
     },
 
     // ========================================================================
+    // rhombus: Ромб (кут A = 60°).
+    //   Мапа shape_2d раніше підміняла ромб паралелограмом — сторони РІЗНІ,
+    //   конструкція бреше про фігуру задачі (зловлено власником, 2026-08-04).
+    //   - A, B — free (сторона AB задає і довжину сторони, і нахил)
+    //   - D = A + rot60°(B − A) — derived: |AD| = |AB| ЗАВЖДИ (поворот
+    //     зберігає довжину) → фігура лишається ромбом за побудовою
+    //   - C = D + (B − A) — derived, як у паралелограма
+    //   Кут 60° — найтиповіший у задачах банку; параметр-ручка кута — далі.
+    // ========================================================================
+    rhombus: {
+      name: 'Ромб',
+      meta: '|AB|=|BC|=|CD|=|DA| · ∠A = 60° · drag A/B',
+      defaults: { showGrid: false, showAxes: false },
+      build(con) {
+        const INK = '#1e293b';
+        const COS60 = 0.5, SIN60 = Math.sqrt(3) / 2;
+
+        add(con, G.free('A', -2.4, -1.6, { label: 'A', labelOffset: { x: -14, y: 6 } }));
+        add(con, G.free('B',  1.6, -1.6, { label: 'B', labelOffset: { x: 10,  y: 6 } }));
+        // D = A + поворот вектора AB на 60°: довжина зберігається → ромб.
+        add(con, G.derived('D', ['A', 'B'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B');
+          const vx = B.x - A.x, vy = B.y - A.y;
+          return { x: A.x + vx * COS60 - vy * SIN60,
+                   y: A.y + vx * SIN60 + vy * COS60 };
+        }, { label: 'D', labelOffset: { x: -14, y: -8 } }));
+        add(con, G.derived('C', ['A', 'B', 'D'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B'), D = reg.get('D');
+          return { x: D.x + (B.x - A.x), y: D.y + (B.y - A.y) };
+        }, { label: 'C', labelOffset: { x: 10, y: -8 } }));
+
+        add(con, G.segment('AB', 'A', 'B', { color: INK, width: 2 }));
+        add(con, G.segment('BC', 'B', 'C', { color: INK, width: 2 }));
+        add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
+        add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
+
+        add(con, G.formula('hint', () => 'Drag A/B · ∠A = 60° · |AD| = |AB| авто',
+                           { anchor: 'tl' }));
+        add(con, G.formula('area', (r) => {
+          const u = window.Geo2D.util;
+          const A = r.get('A'), B = r.get('B');
+          const a = u.dist(A, B);
+          // S = a² · sin 60°
+          return 'a = ' + u.fmt(a, 2) + '  S = a²·sin60° = ' + u.fmt(a * a * SIN60, 2);
+        }, { anchor: 'bl' }));
+      },
+      toggles: [
+        { key: 'sides', label: 'Сторони', icon: '∣', default: true, apply(con, on) {
+          con.removeByTag('sides');
+          if (on) {
+            add(con, G.lengthLabel('lab_AB', 'AB', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_BC', 'BC', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_CD', 'CD', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_DA', 'DA', { prefix: 'a = ' }), 'sides');
+          }
+        }},
+        { key: 'diagonals', label: 'Діагоналі', icon: '╳', apply(con, on) {
+          // Головна властивість ромба: діагоналі ⊥ і діляться навпіл.
+          con.removeByTag('diagonals');
+          if (on) {
+            const C = '#a855f7';
+            add(con, G.segment('AC', 'A', 'C', { style: 'dashed', color: C, width: 1.5 }), 'diagonals');
+            add(con, G.segment('BD', 'B', 'D', { style: 'dashed', color: C, width: 1.5 }), 'diagonals');
+          }
+        }},
+        { key: 'angles', label: 'Кути', icon: '∠', apply(con, on) {
+          con.removeByTag('angles');
+          if (on) {
+            const BLUE = '#2563eb', ORANGE = '#ea580c';
+            add(con, G.angleArc('ang_A', 'D', 'A', 'B', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_C', 'B', 'C', 'D', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_B', 'A', 'B', 'C', { radius: 0.5, color: ORANGE }), 'angles');
+            add(con, G.angleArc('ang_D', 'C', 'D', 'A', { radius: 0.5, color: ORANGE }), 'angles');
+          }
+        }},
+      ],
+    },
+
+    // ========================================================================
     // parallelogram: Паралелограм.
     //   - A, B — free (нижня сторона AB)
     //   - D — free (верхній лівий кут)
