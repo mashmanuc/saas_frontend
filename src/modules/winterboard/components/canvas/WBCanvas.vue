@@ -904,6 +904,9 @@ import {
   RENDERER_DEFAULTS,
 } from '../../services/capabilityRegistry'
 import type { CompanionResolution } from '../../services/capabilityRegistry'
+// Хвиля 5 North Ship: подія «створено навчальний об'єкт» → scene-секція в AST
+// уроку (TASK_LIVE_OBJECTS §1). Fire-and-forget, дошку не блокує.
+import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 import { DEFAULT_GRAPH_STATE } from '../../constants/graphCalculatorDefaults'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
@@ -1127,6 +1130,19 @@ function handleSpawnCompanions(payload: {
       companionY = sourceAsset ? sourceAsset.y + sourceAsset.h + G : spawnY
     }
 
+    // Клемп у межі сторінки ПО ОБОХ осях: гілка вище штовхає об'єкт униз і
+    // ніколи не перевіряла вертикаль — графік спавнився «за стіною», тьютор
+    // його не бачив і будував ще раз (живий прогін №2, 2026-08-04; вимір
+    // LIVE_OBJECTS_GAP: 5/32 випадків за межею, до +140 px). Перекриття з
+    // задачею гірше за невидимість — тому клемп, не відмова.
+    companionX = Math.max(24, Math.min(companionX, PAGE_W - def.w - 24))
+    companionY = Math.max(24, Math.min(companionY, PAGE_HEIGHT - def.h - 24))
+
+    // null = для цього контенту немає чесного рендера (напр. зрізана
+    // піраміда без шаблона) — пустушку не створюємо і в урок не пишемо.
+    const companionData = buildCompanionData(resolution)
+    if (companionData === null) continue
+
     const companionAsset: WBAsset = {
       id:       generateId(),
       type:     resolution.rendererType as unknown as WBAsset['type'],
@@ -1137,7 +1153,7 @@ function handleSpawnCompanions(payload: {
       h:        def.h,
       rotation: 0,
       locked:   false,
-      data:     buildCompanionData(resolution) as unknown as WBAsset['data'],
+      data:     companionData as unknown as WBAsset['data'],
     }
 
     emit('asset-add', companionAsset)
@@ -1147,6 +1163,20 @@ function handleSpawnCompanions(payload: {
     const ids = companionLinks.get(sourceAssetId) ?? []
     ids.push(companionAsset.id)
     companionLinks.set(sourceAssetId, ids)
+
+    // Об'єкт створено → урок має про нього знати (AST-first, не «дошка як
+    // друге джерело правди»). Лише подія створення: гілки вище, що
+    // ВИБИРАЮТЬ існуючий об'єкт, сюди не доходять свідомо.
+    // externalId — рядковий NMTProblem.external_id; у pk його резолвить BE.
+    const externalId =
+      (sourceAsset?.data as { externalId?: string } | undefined)?.externalId
+    recordCompanionScene({
+      sessionId: wbStore.workspaceId,
+      assetId: companionAsset.id,
+      kind: resolution.rendererType,
+      data: companionAsset.data as unknown as Record<string, unknown>,
+      problemExternalId: typeof externalId === 'string' ? externalId : undefined,
+    })
 
     cursorX = companionX + def.w + G   // наступний companion праворуч від цього
   }
@@ -1168,7 +1198,15 @@ function toGraphSrc(eq: string): string {
 }
 
 /** Будує data для companion WBAsset з extracted_data fingerprint. */
-function buildCompanionData(resolution: CompanionResolution): Record<string, unknown> {
+// Реальні шаблони nmt-templates.js (TPL.*) — звірено 2026-08-04. Ключ поза
+// цим списком = порожня картка на дошці І в презентації (прогін №4).
+const NMT3D_TEMPLATE_KEYS = new Set([
+  'cone', 'cube', 'cuboid', 'cylinder', 'prism3', 'prism4', 'prism6',
+  'pyramid3', 'pyramid4', 'sphere', 'tetrahedron', 'truncCone',
+])
+
+/** null = companion чесно НЕ створюється (немає шаблона) — не пустушка. */
+function buildCompanionData(resolution: CompanionResolution): Record<string, unknown> | null {
   const d = resolution.data
 
   switch (resolution.rendererType) {
@@ -1206,20 +1244,37 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       // extracted_data comes from enrich_fingerprints (e.g. {shape:"pyramid"}).
       const solidShape = (d.shape as string | undefined) ?? 'cube'
       const baseShape  = (d.base_shape as string | undefined)
-      const SHAPE_TO_TEMPLATE: Record<string, string> = {
-        pyramid:  baseShape === 'triangle' ? 'pyramid3' : baseShape === 'hexagon' ? 'pyramid6' : 'pyramid4',
+      const SHAPE_TO_TEMPLATE: Record<string, string | null> = {
+        // hexagon-піраміди шаблона НЕМАЄ (pyramid6 не існує в nmt-templates) —
+        // чесний null: краще без 3D, ніж каркас із хибною основою.
+        pyramid:  baseShape === 'triangle' ? 'pyramid3'
+          : baseShape === 'hexagon' ? null : 'pyramid4',
         prism:    baseShape === 'hexagon' ? 'prism6' : 'prism4',
         cylinder: 'cylinder',
         cone:     'cone',
         sphere:   'sphere',
         cube:     'cube',
         cuboid:   'cuboid',
-        frustum_pyramid: 'frustumPyramid4',  // зрізана піраміда
-        frustum_cone:    'frustumCone',       // зрізаний конус
+        // Прогін №4 (2026-08-04): 52 задачі банку мають shape='parallelepiped',
+        // якого не було в мапі — фолбек «як є» створював ПОРОЖНЮ картку
+        // (Workspace не знає такого шаблона) і пустушка їхала аж у колоду.
+        parallelepiped: 'cuboid',
+        rectangular_parallelepiped: 'cuboid',
+        // Реальний ключ зрізаного конуса — truncCone ('frustumCone' не існує).
+        frustum_cone: 'truncCone',
+        // Шаблона зрізаної ПІРАМІДИ немає взагалі → чесний null (14 задач).
+        frustum_pyramid: null,
+      }
+      // Невідомий shape НЕ пропускається «як є»: templateKey поза реальним
+      // списком шаблонів = порожній об'єкт на дошці й у презентації.
+      const templateKey = SHAPE_TO_TEMPLATE[solidShape] ?? null
+      if (!templateKey || !NMT3D_TEMPLATE_KEYS.has(templateKey)) {
+        console.warn('[WB] nmt3d companion skipped — немає шаблона', { solidShape, baseShape })
+        return null
       }
       return {
         version:     1,
-        templateKey: SHAPE_TO_TEMPLATE[solidShape] ?? solidShape,
+        templateKey,
         mode:        'adapt' as const,
       }
     }
