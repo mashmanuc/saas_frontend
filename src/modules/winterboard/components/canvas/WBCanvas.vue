@@ -1242,8 +1242,18 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
     case 'nmt3d': {
       // Map extracted_data.shape → Nmt3dData.templateKey (version 1 format).
       // extracted_data comes from enrich_fingerprints (e.g. {shape:"pyramid"}).
-      const solidShape = (d.shape as string | undefined) ?? 'cube'
+      //
+      // ⛔ БЕЗ ФОЛБЕКА. Раніше тут стояло `?? 'cube'` — і 50 задач банку, де
+      // екстрактор не розпізнав тіло (shape=None), отримували КУБА-САМОЗВАНЦЯ:
+      // «об'єм правильного тетраедра» → куб, «перпендикуляр і похила» → куб.
+      // Будь-який фолбек-об'єкт бреше учневі, тому shape відсутній → companion
+      // не створюється (ТЗ D-4 крок 1, п.1.1).
+      const solidShape = d.shape as string | undefined
       const baseShape  = (d.base_shape as string | undefined)
+      if (!solidShape) {
+        console.warn('[WB] nmt3d companion skipped — екстрактор не розпізнав тіло', { d })
+        return null
+      }
       const SHAPE_TO_TEMPLATE: Record<string, string | null> = {
         // hexagon-піраміди шаблона НЕМАЄ (pyramid6 не існує в nmt-templates) —
         // чесний null: краще без 3D, ніж каркас із хибною основою.
@@ -1255,6 +1265,8 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         sphere:   'sphere',
         cube:     'cube',
         cuboid:   'cuboid',
+        // 2026-08-04 (власник): точний шаблон замість generic pyramid3.
+        tetrahedron: 'tetrahedron',
         // Прогін №4 (2026-08-04): 52 задачі банку мають shape='parallelepiped',
         // якого не було в мапі — фолбек «як є» створював ПОРОЖНЮ картку
         // (Workspace не знає такого шаблона) і пустушка їхала аж у колоду.
@@ -1329,11 +1341,15 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         isosceles_triangle:   'triangle',
         equilateral_triangle: 'triangle',
         parallelogram:        'parallelogram',
-        rhombus:              'parallelogram',
+        // Власний пресет (2026-08-04): паралелограм для ромба БРЕХАВ —
+        // сторони різні, а вся задача тримається на їх рівності.
+        rhombus:              'rhombus',
+        // Квадрат = ромб і за сторонами теж; кути 90° пресет поки не
+        // тримає (чесний найближчий, не підміна фігури іншим класом).
+        square:               'rhombus',
         trapezoid:            'trapezium',   // geo2d preset зветься 'trapezium'
         trapezium:            'trapezium',
         rectangle:            'parallelogram',
-        square:               'parallelogram',
         circle:               'circle',
         polygon:              'polygon',
       }

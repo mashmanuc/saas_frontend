@@ -293,14 +293,14 @@ const typeIcon = computed(() => {
 const hasCompanion = computed(() => {
   const fp = data.value.fingerprint
   if (!fp?.intents?.length) return false
-  return hasAvailableCompanions(fp.intents, fp.extracted_data ?? {})
+  return hasAvailableCompanions(fp.intents, fp.extracted_data ?? {}, fp.entities ?? [])
 })
 
 function handleBuild() {
   const fp = data.value.fingerprint
   if (!fp?.intents?.length) return
 
-  const companions = resolveCompanions(fp.intents, fp.extracted_data ?? {})
+  const companions = resolveCompanions(fp.intents, fp.extracted_data ?? {}, fp.entities ?? [])
   if (!companions.length) return
 
   emit('spawn-companions', {

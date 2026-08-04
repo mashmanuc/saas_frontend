@@ -149,14 +149,51 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
   trig_solver:      hasTrigSolver,
 }
 
+// ── Запобіжник «зоопарк тіл» ─────────────────────────────────────────────────
+// ⚠️ ТИМЧАСОВИЙ — ТЗ D-4 крок 1, п.1.2 (saas_docs/plans/north_ship/
+// TZ_D4_STEP1_NO_GUESSING.md). Знімається у кроці 2, коли екстрактор перестане
+// плодити зоопарк; тоді це стане мертвим кодом.
+//
+// Суть: `entities` будується у build_fingerprint_from_topics() з ТЕМ задачі, не
+// з її тексту. Задача з гуртовою розміткою (напр. теги prism+pyramid+
+// rotation-bodies одразу) отримує об'єднання ВСІХ їхніх entities — 5 різних тіл.
+// Це не задача про п'ять тіл, це ознака того, що екстрактор не знає, яке тіло
+// показати. За такої сигнатури 3D-companion не пропонуємо взагалі:
+// краще без кнопки, ніж кнопка з чужим тілом.
+const SOLID_ENTITIES = new Set([
+  'cone', 'cylinder', 'prism', 'pyramid', 'sphere', 'cube', 'parallelepiped',
+  'cuboid', 'tetrahedron', 'frustum_cone', 'frustum_pyramid',
+])
+const THREE_D_INTENTS = new Set([
+  'show_3d_solid', 'show_cross_section', 'animate_rotation',
+])
+const SOLID_ZOO_THRESHOLD = 4
+
+function isSolidZoo(entities: string[]): boolean {
+  const solids = new Set(entities.filter((e) => SOLID_ENTITIES.has(e)))
+  return solids.size >= SOLID_ZOO_THRESHOLD
+}
+
+/**
+ * INV-CAP-1: єдине місце, де вирішується який renderer spawn-ити.
+ *
+ * `entities` — обов'язковий (не опційний з дефолтом): забути його означало б
+ * тихо вимкнути запобіжник «зоопарку», а мовчазний обхід гарантії — саме те,
+ * від чого цей крок захищає.
+ */
 export function resolveCompanions(
   intents: string[],
   extractedData: Record<string, unknown>,
+  entities: string[],
 ): CompanionResolution[] {
   const seen = new Set<string>()
   const result: CompanionResolution[] = []
+  const solidZoo = isSolidZoo(entities)
 
   for (const intent of intents) {
+    // Зоопарк тіл → екстрактор не знає, яке саме тіло; 3D не пропонуємо.
+    if (solidZoo && THREE_D_INTENTS.has(intent)) continue
+
     const candidates = INTENT_TO_RENDERERS[intent] ?? []
 
     for (const renderer of candidates) {
@@ -184,6 +221,7 @@ export function resolveCompanions(
 export function hasAvailableCompanions(
   intents: string[],
   extractedData: Record<string, unknown>,
+  entities: string[],
 ): boolean {
-  return resolveCompanions(intents, extractedData).length > 0
+  return resolveCompanions(intents, extractedData, entities).length > 0
 }
