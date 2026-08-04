@@ -19,6 +19,17 @@ export interface ShipArtifactInfo {
   sections: number
 }
 
+export interface ShipTheme {
+  name: string
+  /** Підпис із бекенду. FE перекриває його своїм i18n, коли ключ є. */
+  label: string
+}
+
+export interface ShipThemeList {
+  default: string
+  themes: ShipTheme[]
+}
+
 export interface ShipRenderResponse {
   id: string
   status: string
@@ -41,11 +52,30 @@ export const shipApi = {
       .catch(() => null)
   },
 
-  renderPptx(artifactId: string, idempotencyKey?: string): Promise<ShipRenderResponse> {
-    const headers: Record<string, string> = {}
-    if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
+  /**
+   * Теми оформлення для пікера. Порожній список = ship вимкнено або мережа
+   * лягла: діалог просто не покаже вибір і відрендерить темою за умовчанням.
+   */
+  getThemes(): Promise<ShipThemeList | null> {
     return apiClient
-      .post(`${BASE}/artifacts/${artifactId}/render/pptx/`, {}, { headers })
+      .get(`${BASE}/themes/`)
+      .then((r: any) => r.data ?? r)
+      .catch(() => null)
+  },
+
+  renderPptx(
+    artifactId: string,
+    options: { theme?: string; solutions?: boolean; idempotencyKey?: string } = {},
+  ): Promise<ShipRenderResponse> {
+    const headers: Record<string, string> = {}
+    if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
+    const body: Record<string, unknown> = {}
+    if (options.theme) body.theme = options.theme
+    // «Слайди розбору після задач» (D-2): кадри-розкриття з наявного
+    // solution/answer банку — колода довшає, тож рішення за тьютором.
+    if (options.solutions) body.solutions = true
+    return apiClient
+      .post(`${BASE}/artifacts/${artifactId}/render/pptx/`, body, { headers })
       .then((r: any) => r.data ?? r)
   },
 }

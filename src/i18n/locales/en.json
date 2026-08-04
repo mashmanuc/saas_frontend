@@ -892,8 +892,7 @@
         "tutor": "I'm a tutor",
         "tutorHint": "I teach, looking for students",
         "studentByInviteOnly": "Students are invited by their tutor — there is no separate student sign-up."
-      },
-      "consentPrefix": "By continuing with Google, you accept the"
+      }
     },
     "register": {
       "title": "Register",
@@ -1159,7 +1158,7 @@
     "lessons": "Lessons",
     "calendar": "Calendar",
     "marketplace": "Marketplace",
-    "tutorCalendar": "Calendar",
+    "tutorCalendar": "Tutor calendar",
     "learningContent": "Learning Materials",
     "winterboard": "Whiteboard",
     "profile": "Profile",
@@ -7187,14 +7186,14 @@
       "formats": {
         "png": "PNG Image",
         "pngDesc": "Export current page as image",
-        "pptx": "PPTX Presentation",
-        "pptxDesc": "Slides for PowerPoint — answers in speaker notes",
         "pdf": "PDF Document",
         "pdfDesc": "Export all pages as PDF",
         "pdfV2": "PDF with Formulas (beta)",
         "pdfV2Desc": "New engine — NMT tasks with LaTeX math",
         "json": "JSON Data",
-        "jsonDesc": "Export raw board data"
+        "jsonDesc": "Export raw board data",
+        "pptx": "Presentation",
+        "pptxDesc": "PowerPoint slides from the lesson"
       },
       "startExport": "Export",
       "capturingWidgets": "Capturing widget previews… ({done}/{total})",
@@ -7205,7 +7204,17 @@
       "close": "Close",
       "exportError": "Failed to start export",
       "previewsFailed": "Could not prepare {count} widget(s) — they will be blank in the file.",
-      "pollError": "Failed to check export status"
+      "pollError": "Failed to check export status",
+      "pptxOptions": "Presentation options",
+      "theme": "Theme",
+      "themes": {
+        "deep": "Academic",
+        "mix": "M4SH brand",
+        "mono": "Monochrome",
+        "night": "Night",
+        "paper": "Paper"
+      },
+      "solutionSlides": "Solution slides after tasks"
     },
     "board": {
       "untitled": "Untitled",
@@ -7401,6 +7410,10 @@
         "right_triangle": {
           "full": "Right triangle",
           "desc": "angle A = 90°"
+        },
+        "rhombus": {
+          "full": "Rhombus",
+          "desc": "equal sides · perpendicular diagonals"
         }
       }
     },

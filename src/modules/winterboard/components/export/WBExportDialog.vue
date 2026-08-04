@@ -74,6 +74,27 @@
               </div>
             </fieldset>
 
+            <!-- Presentation options (North Ship) -->
+            <fieldset v-if="selectedFormat === 'pptx' && shipThemes.length" class="wb-export-dialog__fieldset">
+              <legend class="wb-export-dialog__legend">{{ t('winterboard.export.pptxOptions') }}</legend>
+              <div class="wb-export-dialog__option-row">
+                <label class="wb-export-option">
+                  <span>{{ t('winterboard.export.theme') }}</span>
+                  <select v-model="selectedTheme" class="wb-export-select">
+                    <option v-for="theme in shipThemes" :key="theme.name" :value="theme.name">
+                      {{ themeLabel(theme) }}
+                    </option>
+                  </select>
+                </label>
+              </div>
+              <div class="wb-export-dialog__option-row">
+                <label class="wb-export-option">
+                  <input v-model="includeSolutions" type="checkbox" />
+                  <span>{{ t('winterboard.export.solutionSlides') }}</span>
+                </label>
+              </div>
+            </fieldset>
+
             <!-- PDF options -->
             <fieldset v-if="selectedFormat === 'pdf'" class="wb-export-dialog__fieldset">
               <legend class="wb-export-dialog__legend">{{ t('winterboard.export.pdfOptions') }}</legend>
@@ -201,7 +222,7 @@ import Button from '@/ui/Button.vue'
 import { nextTick } from 'vue'
 import { winterboardApi } from '../../api/winterboardApi'
 import { shipApi } from '@/modules/ship/shipApi'
-import type { ShipArtifactInfo } from '@/modules/ship/shipApi'
+import type { ShipArtifactInfo, ShipTheme } from '@/modules/ship/shipApi'
 import { isLimitError } from '@/utils/apiClient'
 import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
@@ -338,8 +359,30 @@ const formats = computed(() => {
 // для UI це одне й те саме: формату «презентація» просто не буде.
 const shipArtifact = ref<ShipArtifactInfo | null>(null)
 
+// Теми оформлення презентації. Порожньо = ship вимкнено або запит не дійшов;
+// тоді пікера просто немає, а рендер іде темою за умовчанням бекенду.
+const shipThemes = ref<ShipTheme[]>([])
+const selectedTheme = ref('')
+// D-2: кадри розбору після задач — за явним вибором тьютора (колода довшає).
+const includeSolutions = ref(false)
+
+/**
+ * Підпис теми: свій переклад, якщо ключ є, інакше — те, що дав бекенд.
+ * Так нова тема з'являється в пікері одразу, ще до появи перекладу.
+ */
+function themeLabel(theme: ShipTheme): string {
+  const key = `winterboard.export.themes.${theme.name}`
+  const translated = t(key)
+  return translated === key ? theme.label : translated
+}
+
 onMounted(async () => {
   shipArtifact.value = await shipApi.getSessionArtifact(props.sessionId)
+  if (!shipArtifact.value) return
+  const themes = await shipApi.getThemes()
+  if (!themes) return
+  shipThemes.value = themes.themes ?? []
+  selectedTheme.value = themes.default || themes.themes?.[0]?.name || ''
 })
 
 // Autostart (палітра/Інтегралик): формат уже відомий із фрази — стартуємо одразу,
@@ -389,7 +432,10 @@ async function startExport(): Promise<void> {
       // Формат є в списку лише коли артефакт знайдено; якщо він встиг зникнути —
       // чесна помилка, а не тихий відкат на winterboard-експорт, який 'pptx' не приймає.
       if (!shipArtifact.value) throw new Error('ship_artifact_missing')
-      result = await shipApi.renderPptx(shipArtifact.value.id)
+      result = await shipApi.renderPptx(shipArtifact.value.id, {
+        theme: selectedTheme.value || undefined,
+        solutions: includeSolutions.value || undefined,
+      })
     } else {
       result = await winterboardApi.createExport(props.sessionId, selectedFormat.value)
     }
