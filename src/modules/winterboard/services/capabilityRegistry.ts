@@ -149,51 +149,36 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
   trig_solver:      hasTrigSolver,
 }
 
-// ── Запобіжник «зоопарк тіл» ─────────────────────────────────────────────────
-// ⚠️ ТИМЧАСОВИЙ — ТЗ D-4 крок 1, п.1.2 (saas_docs/plans/north_ship/
-// TZ_D4_STEP1_NO_GUESSING.md). Знімається у кроці 2, коли екстрактор перестане
-// плодити зоопарк; тоді це стане мертвим кодом.
-//
-// Суть: `entities` будується у build_fingerprint_from_topics() з ТЕМ задачі, не
-// з її тексту. Задача з гуртовою розміткою (напр. теги prism+pyramid+
-// rotation-bodies одразу) отримує об'єднання ВСІХ їхніх entities — 5 різних тіл.
-// Це не задача про п'ять тіл, це ознака того, що екстрактор не знає, яке тіло
-// показати. За такої сигнатури 3D-companion не пропонуємо взагалі:
-// краще без кнопки, ніж кнопка з чужим тілом.
-const SOLID_ENTITIES = new Set([
-  'cone', 'cylinder', 'prism', 'pyramid', 'sphere', 'cube', 'parallelepiped',
-  'cuboid', 'tetrahedron', 'frustum_cone', 'frustum_pyramid',
-])
-const THREE_D_INTENTS = new Set([
-  'show_3d_solid', 'show_cross_section', 'animate_rotation',
-])
-const SOLID_ZOO_THRESHOLD = 4
-
-function isSolidZoo(entities: string[]): boolean {
-  const solids = new Set(entities.filter((e) => SOLID_ENTITIES.has(e)))
-  return solids.size >= SOLID_ZOO_THRESHOLD
-}
-
 /**
  * INV-CAP-1: єдине місце, де вирішується який renderer spawn-ити.
  *
- * `entities` — обов'язковий (не опційний з дефолтом): забути його означало б
- * тихо вимкнути запобіжник «зоопарку», а мовчазний обхід гарантії — саме те,
- * від чого цей крок захищає.
+ * Тут БУВ тимчасовий запобіжник «зоопарку тіл» (ТЗ D-4 крок 1, п.1.2): якщо
+ * `entities` містили ≥4 різних тіл, 3D-companion не пропонувався. Причина була
+ * не в задачах, а в гуртовій розмітці — задача з тегами prism+pyramid+
+ * rotation-bodies одразу діставала об'єднання їхніх entities, тобто п'ять тіл.
+ *
+ * Після чистки `raw_topics` і перегону fingerprint (ТЗ-C) запобіжник став
+ * мертвим кодом і ВИДАЛЕНИЙ, а не лишений знешкодженим. Вимір, за яким знято:
+ * зоопарків (≥4 тіл) у банку 92 → 31, а з них із `show_3d_solid` — **0**.
+ * Ті 31, що лишились, легітимні (`pyramid+rotation-bodies` 16,
+ * `prism+rotation-bodies` 15): у їхніх умовах справді два тіла («циліндр і
+ * пряма чотирикутна призма мають рівні висоти»), а поріг спрацьовував лише
+ * тому, що тема `rotation-bodies` сама дає три entities. 3D-інтент їм знімає
+ * `_suppress_unrepresentable` раніше — саме тому кнопки вони не втрачали.
+ *
+ * `entities` лишається в сигнатурі: параметр описує fingerprint задачі, і
+ * наступний критерій вибору рендерера, найпевніше, дивитиметься саме на нього.
  */
 export function resolveCompanions(
   intents: string[],
   extractedData: Record<string, unknown>,
   entities: string[],
 ): CompanionResolution[] {
+  void entities
   const seen = new Set<string>()
   const result: CompanionResolution[] = []
-  const solidZoo = isSolidZoo(entities)
 
   for (const intent of intents) {
-    // Зоопарк тіл → екстрактор не знає, яке саме тіло; 3D не пропонуємо.
-    if (solidZoo && THREE_D_INTENTS.has(intent)) continue
-
     const candidates = INTENT_TO_RENDERERS[intent] ?? []
 
     for (const renderer of candidates) {

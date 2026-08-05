@@ -892,7 +892,8 @@
         "tutor": "I'm a tutor",
         "tutorHint": "I teach, looking for students",
         "studentByInviteOnly": "Students are invited by their tutor — there is no separate student sign-up."
-      }
+      },
+      "consentPrefix": "By continuing with Google, you accept the"
     },
     "register": {
       "title": "Register",
