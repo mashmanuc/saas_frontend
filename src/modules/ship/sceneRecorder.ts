@@ -85,6 +85,34 @@ export function recordCompanionScene(record: CompanionSceneRecord): void {
   })()
 }
 
+// ── ТЗ-H A-2: image-запис ──────────────────────────────────────────────────
+
+interface ImageRecord {
+  sessionId: string
+  assetId: string
+}
+
+/** Картинку додано на дошку → записати image-секцію в AST уроку.
+ *  Той самий fire-and-forget POST, поле `type: 'image'`.
+ *  Не прив'язана до задачі банку — вставляється в кінець AST.
+ */
+export function recordImage(record: ImageRecord): void {
+  const { sessionId, assetId } = record
+  if (!sessionId || !assetId) return
+
+  void (async () => {
+    try {
+      if (!(await hasArtifact(sessionId))) return
+      await apiClient.post(`${BASE}/sessions/${sessionId}/scenes/`, {
+        type: 'image',
+        asset_id: assetId,
+      })
+    } catch (e) {
+      console.warn('[ship] image record failed', { sessionId, assetId }, e)
+    }
+  })()
+}
+
 /** Для тестів: скинути кеш наявності артефактів. */
 export function _resetSceneRecorderCache(): void {
   artifactPresence.clear()

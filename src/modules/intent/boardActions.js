@@ -11,6 +11,8 @@
 //
 // Розширення: нова дія на дошці = +1 tool у BE tooling.py + 1 запис у HANDLERS тут.
 
+import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
+
 function _uuid() {
   return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
     ? crypto.randomUUID()
@@ -148,6 +150,19 @@ const HANDLERS = {
     if (!built.length) throw new Error('Не зрозумів вираз функції.')
 
     const assetId = `gc-${_uuid()}`
+    // ОДНА структура на дошку і на урок. Була дубльована копія — і
+    // будь-яка правка viewport/params в одному місці мовчки розводила
+    // те, що бачить учень, із тим, що поїде в колоду.
+    const assetData = {
+      version: 1,
+      state: {
+        expressions: built,
+        // BE вже провалідував діапазони (min<max, step>0, ім'я по регексу).
+        params: (params && typeof params === 'object') ? params : {},
+        viewport: { cx: 0, cy: 0, scale: 38 },
+      },
+      meta: { last_snapshot_seq: 0 },
+    }
     store.addAsset({
       id: assetId,
       type: 'graph_calculator',
@@ -158,17 +173,19 @@ const HANDLERS = {
       h: H,
       rotation: 0,
       locked: false,
-      data: {
-        version: 1,
-        state: {
-          expressions: built,
-          // BE вже провалідував діапазони (min<max, step>0, ім'я по регексу).
-          params: (params && typeof params === 'object') ? params : {},
-          viewport: { cx: 0, cy: 0, scale: 38 },
-        },
-        meta: { last_snapshot_seq: 0 },
-      },
+      data: assetData,
     }, page.id ?? '')
+
+    // ТЗ-G (D-22): графік Інтегралика пише в AST уроку — інакше на дошці
+    // він є, а в експортованій колоді зникає.
+    // `recordCompanionScene` сам fire-and-forget і сам відсіює порожній
+    // sessionId (workspaceId у сторі — `string | null`).
+    recordCompanionScene({
+      sessionId: store.workspaceId,
+      assetId,
+      kind: 'graph_calculator',
+      data: assetData,
+    })
 
     // Підсвітка: об'єкт з'явився не від кліку юзера, а від фрази — око його не
     // «веде», тож виділяємо, щоб було видно, ЩО саме додалось.

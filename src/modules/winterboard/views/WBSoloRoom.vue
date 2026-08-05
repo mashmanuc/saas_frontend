@@ -1205,6 +1205,9 @@ let _recordingDoneTimer: number | null = null
 //   paused    — recording cycle на паузі (same Replay, resume повертає)
 //   finalized — Replay created/frozen, restart починає НОВИЙ cycle
 import type { RecordingState as ApiRecordingState } from '../api/replay'
+// ТЗ-H A-2: картинка, додана ТЬЮТОРОМ, має потрапити і в урок (AST), інакше
+// на дошці вона є, а в експортованій колоді зникає.
+import { recordImage } from '@/modules/ship/sceneRecorder'
 const soloRecordingState = computed<ApiRecordingState>(() => {
   if (isManualRecording.value && isPausedRecording.value) return 'paused'
   if (isManualRecording.value) return 'recording'
@@ -2277,6 +2280,7 @@ const boardClipboard = useBoardClipboard({
   }),
   onAssetAdd: (asset: WBAsset) => {
     store.addAsset(asset, store.currentPageId)
+    recordBoardImage(asset)
   },
 })
 
@@ -2350,8 +2354,25 @@ function handleStrokeDelete(strokeId: string): void {
   }
 }
 
+/** ТЗ-H A-2: картинку тьютора — в урок, решту типів не чіпаємо.
+ *
+ * Точок створення image-asset у дошці дев'ять, і серед них сторінки PDF —
+ * це Частина B ТЗ-H, окреме рішення власника. Тому запис підключено
+ * ТОЧКОВО: завантаження/перетягування (`handleAssetAdd`) і вставка з
+ * буфера (`onAssetAdd` у clipboard) — рівно там, де картинку кладе людина.
+ *
+ * `recordImage` сам fire-and-forget, сам відсіює порожню сесію і сам
+ * мовчить на дошці без уроку (перевіряє наявність артефакта). BE-запис
+ * ідемпотентний за asset_id, тож повтор не дає другого слайда.
+ */
+function recordBoardImage(asset: WBAsset): void {
+  if (asset.type !== 'image') return
+  recordImage({ sessionId: store.workspaceId ?? '', assetId: asset.id })
+}
+
 function handleAssetAdd(asset: WBAsset): void {
   store.addAsset(asset, store.currentPageId)
+  recordBoardImage(asset)
 
   // A4.3: Record in history for undo/redo (non-critical)
   const page = store.currentPage
