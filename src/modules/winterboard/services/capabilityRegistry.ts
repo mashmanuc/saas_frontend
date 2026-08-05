@@ -147,6 +147,8 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
   calculus_card:    hasEquations,   // FIX: було 'calculus' (стара назва) → guard не діяв
   quadratic_card:   hasQuadratic,
   trig_solver:      hasTrigSolver,
+  // ТЗ-F §F-3: немає shape_2d → кнопки «Побудувати» немає (143 задачі без фігури = брехня)
+  geometry_2d_v2:   (d) => typeof d.shape_2d === 'string' && d.shape_2d.length > 0,
 }
 
 /**

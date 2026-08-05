@@ -1331,10 +1331,8 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
 
     case 'geometry_2d_v2': {
       // shape_2d (з backend extract_2d_data) → geo2d preset key.
-      // geo2d presets: triangle, right_triangle, parallelogram, trapezium, circle, polygon.
-      // rhombus/rectangle/square → parallelogram (geo2d не має окремих presets — спец-випадки).
-      // Fallback: 'triangle' якщо shape невідомий або відсутній (напр. fingerprint
-      // не пере-enrich-нутий після додавання extract_2d_data).
+      // Кожен клас фігури має ВЛАСНИЙ пресет: підміна «найближчим» брехала
+      // про умову задачі (ТЗ-F). Немає пресета → немає кнопки, не фолбек.
       const SHAPE_TO_PRESET: Record<string, string> = {
         triangle:             'triangle',
         right_triangle:       'right_triangle',
@@ -1344,16 +1342,15 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         // Власний пресет (2026-08-04): паралелограм для ромба БРЕХАВ —
         // сторони різні, а вся задача тримається на їх рівності.
         rhombus:              'rhombus',
-        // Квадрат = ромб і за сторонами теж; кути 90° пресет поки не
-        // тримає (чесний найближчий, не підміна фігури іншим класом).
-        square:               'rhombus',
+        square:               'square',      // ТЗ-F: був 'rhombus' (кут 60°)
         trapezoid:            'trapezium',   // geo2d preset зветься 'trapezium'
         trapezium:            'trapezium',
-        rectangle:            'parallelogram',
+        rectangle:            'rectangle',   // ТЗ-F: був 'parallelogram' (скошений)
         circle:               'circle',
         polygon:              'polygon',
       }
-      const preset = SHAPE_TO_PRESET[(d.shape_2d as string | undefined) ?? ''] ?? 'triangle'
+      const preset = SHAPE_TO_PRESET[(d.shape_2d as string | undefined) ?? ''] ?? null
+      if (!preset) return null  // ТЗ-F: немає shape_2d → не малюємо брехню
       return { version: 1, preset }
     }
 

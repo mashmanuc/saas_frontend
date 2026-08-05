@@ -618,6 +618,167 @@
     },
 
     // ========================================================================
+    // square: Квадрат (6.2F, TZ-F).
+    //   - A, B — free (сторона AB задає і довжину сторони, і нахил)
+    //   - D = A + rot90°(B − A) — derived: |AD| = |AB| ЗАВЖДИ, ∠A = 90° за побудовою
+    //   - C = D + (B − A) — derived
+    //   Успадковує toggles від parallelogram.
+    // ========================================================================
+    square: {
+      name: 'Квадрат',
+      meta: 'AB = BC = CD = DA · ∠A = 90° · drag A/B',
+      defaults: { showGrid: false, showAxes: false },
+      build(con) {
+        const INK = '#1e293b';
+        // rotate90: COS90 = 0, SIN90 = 1
+        // D = A + (−(B.y−A.y), B.x−A.x) = поворот на 90° проти стрілки
+
+        add(con, G.free('A', -2.4, -1.6, { label: 'A', labelOffset: { x: -14, y: 6 } }));
+        add(con, G.free('B',  1.6, -1.6, { label: 'B', labelOffset: { x: 10,  y: 6 } }));
+        // D = A + поворот AB на 90°: довжина зберігається → квадрат.
+        add(con, G.derived('D', ['A', 'B'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B');
+          const vx = B.x - A.x, vy = B.y - A.y;
+          return { x: A.x - vy, y: A.y + vx };   // rot90° CCW: (x,y) → (-y, x)
+        }, { label: 'D', labelOffset: { x: -14, y: -8 } }));
+        add(con, G.derived('C', ['A', 'B', 'D'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B'), D = reg.get('D');
+          return { x: D.x + (B.x - A.x), y: D.y + (B.y - A.y) };
+        }, { label: 'C', labelOffset: { x: 10, y: -8 } }));
+
+        add(con, G.segment('AB', 'A', 'B', { color: INK, width: 2 }));
+        add(con, G.segment('BC', 'B', 'C', { color: INK, width: 2 }));
+        add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
+        add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
+
+        add(con, G.formula('hint', () => 'Drag A/B · AB = BC = CD = DA · ∠ = 90°',
+                           { anchor: 'tl' }));
+        add(con, G.formula('area', (r) => {
+          const u = window.Geo2D.util;
+          const A = r.get('A'), B = r.get('B');
+          const a = u.dist(A, B);
+          return 'a = ' + u.fmt(a, 2) + '  S = a² = ' + u.fmt(a * a, 2);
+        }, { anchor: 'bl' }));
+      },
+      toggles: [
+        { key: 'sides', label: 'Сторони', icon: '∣', default: true, apply(con, on) {
+          con.removeByTag('sides');
+          if (on) {
+            add(con, G.lengthLabel('lab_AB', 'AB', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_BC', 'BC', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_CD', 'CD', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_DA', 'DA', { prefix: 'a = ' }), 'sides');
+          }
+        }},
+        { key: 'diagonals', label: 'Діагоналі', icon: '╳', apply(con, on) {
+          con.removeByTag('diagonals');
+          if (on) {
+            const C = '#a855f7';
+            add(con, G.segment('AC', 'A', 'C', { style: 'dashed', color: C, width: 1.5 }), 'diagonals');
+            add(con, G.segment('BD', 'B', 'D', { style: 'dashed', color: C, width: 1.5 }), 'diagonals');
+          }
+        }},
+        { key: 'angles', label: 'Кути', icon: '∠', apply(con, on) {
+          con.removeByTag('angles');
+          if (on) {
+            const BLUE = '#2563eb';
+            add(con, G.angleArc('ang_A', 'D', 'A', 'B', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_B', 'A', 'B', 'C', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_C', 'B', 'C', 'D', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_D', 'C', 'D', 'A', { radius: 0.5, color: BLUE }), 'angles');
+          }
+        }},
+      ],
+    },
+
+    // ========================================================================
+    // rectangle: Прямокутник (6.2F, TZ-F).
+    //   - A, B — free (нижня сторона AB)
+    //   - N  — derived HIDDEN: A + rot90°(B − A), кінець перпендикуляра з A
+    //   - D  — onLine(A, N): рухається ЛИШЕ вздовж перпендикуляра, тож
+    //          ∠A = 90° за побудовою, а висота лишається вільною
+    //   - C = D + (B − A) — derived
+    //   Початкові координати: 6×3 (2:1).
+    //   Успадковує toggles від parallelogram.
+    //
+    //   ⚠️ Перша редакція мала D вільною — і фігура під назвою «Прямокутник»
+    //   перетворювалась драгом на паралелограм (виміряно: перетяг D дає
+    //   ∠A = 56°, а підпис і далі обіцяє 90°). Це рівно та брехня, яку
+    //   ТЗ-F і виправляло, лише відкладена на один рух миші. Обмеження
+    //   тримає ФОРМУ, як `rot60°` тримає ромб.
+    //   `G.onLine` НЕ клемпить t, тож висота вільна в обидва боки —
+    //   прямокутник 9×12 будується.
+    // ========================================================================
+    rectangle: {
+      name: 'Прямокутник',
+      meta: '∠A = ∠B = ∠C = ∠D = 90° · drag A/B/D',
+      defaults: { showGrid: false, showAxes: false },
+      build(con) {
+        const INK = '#1e293b';
+
+        add(con, G.free('A', -3.0, -1.5, { label: 'A', labelOffset: { x: -14, y: 6 } }));
+        add(con, G.free('B',  3.0, -1.5, { label: 'B', labelOffset: { x: 10,  y: 6 } }));
+        // N — прихований якір напрямку: поворот AB на 90° проти стрілки.
+        add(con, G.derived('N', ['A', 'B'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B');
+          return { x: A.x - (B.y - A.y), y: A.y + (B.x - A.x) };
+        }, { hidden: true, label: null }));
+        // D на прямій AN → кут A прямий завжди; t = 0.5 дає висоту |AB|/2.
+        add(con, G.onLine('D', 'A', 'N', 0.5,
+          { label: 'D', labelOffset: { x: -14, y: -8 } }));
+        add(con, G.derived('C', ['A', 'B', 'D'], (reg) => {
+          const A = reg.get('A'), B = reg.get('B'), D = reg.get('D');
+          return { x: D.x + (B.x - A.x), y: D.y + (B.y - A.y) };
+        }, { label: 'C', labelOffset: { x: 10, y: -8 } }));
+
+        add(con, G.segment('AB', 'A', 'B', { color: INK, width: 2 }));
+        add(con, G.segment('BC', 'B', 'C', { color: INK, width: 2 }));
+        add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
+        add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
+
+        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { anchor: 'tl' }));
+        add(con, G.formula('area', (r) => {
+          const A = r.get('A'), B = r.get('B'), D = r.get('D');
+          const a = Math.sqrt((B.x - A.x) ** 2 + (B.y - A.y) ** 2);
+          const b = Math.sqrt((D.x - A.x) ** 2 + (D.y - A.y) ** 2);
+          const u = window.Geo2D.util;
+          return 'a = ' + u.fmt(a, 2) + '  b = ' + u.fmt(b, 2) + '  S = a·b = ' + u.fmt(a * b, 2);
+        }, { anchor: 'bl' }));
+      },
+      toggles: [
+        { key: 'sides', label: 'Сторони', icon: '∣', default: true, apply(con, on) {
+          con.removeByTag('sides');
+          if (on) {
+            add(con, G.lengthLabel('lab_AB', 'AB', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_CD', 'CD', { prefix: 'a = ' }), 'sides');
+            add(con, G.lengthLabel('lab_BC', 'BC', { prefix: 'b = ' }), 'sides');
+            add(con, G.lengthLabel('lab_DA', 'DA', { prefix: 'b = ' }), 'sides');
+          }
+        }},
+        { key: 'diagonals', label: 'Діагоналі', icon: '╳', apply(con, on) {
+          con.removeByTag('diagonals');
+          if (on) {
+            const PURPLE = '#a855f7';
+            add(con, G.segment('diag_AC', 'A', 'C', { style: 'dashed', color: PURPLE, width: 1.5 }), 'diagonals');
+            add(con, G.segment('diag_BD', 'B', 'D', { style: 'dashed', color: PURPLE, width: 1.5 }), 'diagonals');
+            add(con, G.lengthLabel('lab_d1', 'diag_AC', { prefix: 'd₁ = ' }), 'diagonals');
+            add(con, G.lengthLabel('lab_d2', 'diag_BD', { prefix: 'd₂ = ' }), 'diagonals');
+          }
+        }},
+        { key: 'angles', label: 'Кути', icon: '∠', apply(con, on) {
+          con.removeByTag('angles');
+          if (on) {
+            const BLUE = '#2563eb';
+            add(con, G.angleArc('ang_A', 'D', 'A', 'B', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_B', 'A', 'B', 'C', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_C', 'B', 'C', 'D', { radius: 0.5, color: BLUE }), 'angles');
+            add(con, G.angleArc('ang_D', 'C', 'D', 'A', { radius: 0.5, color: BLUE }), 'angles');
+          }
+        }},
+      ],
+    },
+
+    // ========================================================================
     // parallels: Паралельні прямі та січна.
     //   - Дві паралельні прямі a (через A,B) та b (через C, D=C+(B-A) — derived).
     //   - Січна t (через T, S — обидві free).
