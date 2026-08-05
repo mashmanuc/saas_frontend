@@ -56,6 +56,72 @@ const MAX_CONCURRENT_UPLOADS = 4
 // Bumps with snapshotElement.ts capture strategy changes.
 const WIDGET_SCHEMA_VERSION = 1
 
+// ── Порожній знімок: самоперевірка замість таймінг-здогаду ───────────────
+//
+// Вимір 2026-08-05 (сесія 3c01bb13, 96 прев'ю одним заходом): 7 знімків
+// вийшли ОДНОКОЛІРНИМИ — біла пляма замість об'єкта. Ключове: той самий
+// тип (`geometry_2d_v2`) в тому ж заході дав і 429 кольорів, і 1. Отже це
+// не «формат не підтримується», а ГОНКА: capture-функція зареєстрована
+// (`hasCapture` = true), але полотно ще не намальоване — vendor-бандл
+// geo2d, WebGL, canvas малюють асинхронно.
+//
+// Чекати «N кадрів» — здогад про таймінг чужого рендерера. Тому знімок
+// ПЕРЕВІРЯЄТЬСЯ і перезнімається: критерій — сам результат, а не час.
+const BLANK_RETRIES = 2
+const BLANK_RETRY_DELAY_MS = 160
+// Скільки пікселів дивимось: суцільний скан 1600×1200 — це 2 млн операцій
+// на віджет, а однорідність видно і на сітці.
+const BLANK_SAMPLE_STEP = 7
+
+/**
+ * Чи знімок порожній — тобто має ЄДИНИЙ унікальний колір.
+ *
+ * Той самий критерій, яким порожнечу міряли на боці BE, тож FE і BE
+ * говорять про одне й те саме. Помилка декодування — НЕ «порожній»:
+ * інакше збій читання тихо викинув би живий знімок.
+ */
+async function isBlankBlob(blob: Blob): Promise<boolean> {
+  try {
+    const bitmap = await createImageBitmap(blob)
+    const width = Math.max(1, bitmap.width)
+    const height = Math.max(1, bitmap.height)
+    const canvas = new OffscreenCanvas(width, height)
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return false
+    ctx.drawImage(bitmap, 0, 0)
+    const { data } = ctx.getImageData(0, 0, width, height)
+    bitmap.close?.()
+
+    const step = BLANK_SAMPLE_STEP * 4
+    let first: number | null = null
+    for (let i = 0; i < data.length; i += step) {
+      // Прозорий піксель = «нічого не намальовано», рахуємо як тло.
+      const packed = data[i + 3] === 0
+        ? -1
+        : (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]
+      if (first === null) first = packed
+      else if (packed !== first) return false
+    }
+    return true
+  } catch (err) {
+    console.warn('[WB:export-prep] blank_check_failed', err)
+    return false
+  }
+}
+
+/** Пауза + кадр відмальовки: даємо рендереру шанс домалювати. */
+function waitForRepaint(delayMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      } else {
+        resolve()
+      }
+    }, delayMs)
+  })
+}
+
 // ── Minimal concurrency limiter (≈15 LOC, no dep) ────────────────────────
 function makeLimiter(maxConcurrent: number) {
   let active = 0
@@ -111,8 +177,34 @@ class ExportPreviewService {
   /**
    * Capture одного widget з timeout + abort propagation.
    * Per-widget try/catch — НЕ кидає в caller. null = failure (BE placeholder).
+   *
+   * Порожній (одноколірний) знімок вважається НЕВДАЛИМ і перезнімається
+   * (`BLANK_RETRIES`). Якщо порожній і після спроб — повертаємо null, тобто
+   * НЕ вантажимо: у колоді буде чесний підпис-заповнювач, а не біла пляма.
+   * Принцип той самий, що всюди в North Ship: не вийшло → нічого, ніколи
+   * не імітація.
    */
   private async captureOne(
+    assetId: string,
+    signal: AbortSignal,
+    timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  ): Promise<CapturedPreview | null> {
+    for (let attempt = 0; attempt <= BLANK_RETRIES; attempt++) {
+      const shot = await this.captureAttempt(assetId, signal, timeoutMs)
+      if (!shot) return null
+      if (!(await isBlankBlob(shot.blob))) return shot
+
+      if (attempt === BLANK_RETRIES || signal.aborted) {
+        console.warn('[WB:export-prep] capture_blank_giving_up', { assetId })
+        return null
+      }
+      console.warn('[WB:export-prep] capture_blank_retry', { assetId, attempt })
+      await waitForRepaint(BLANK_RETRY_DELAY_MS)
+    }
+    return null
+  }
+
+  private async captureAttempt(
     assetId: string,
     signal: AbortSignal,
     timeoutMs: number = DEFAULT_TIMEOUT_MS,

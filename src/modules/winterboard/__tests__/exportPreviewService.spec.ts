@@ -264,3 +264,94 @@ describe('exportPreviewService — uploadAll', () => {
     expect(result).toEqual({ uploaded: 0, failed: 0, reused: 0 })
   })
 })
+
+/**
+ * ТЗ-D §2: порожній знімок перезнімається, а не їде в колоду.
+ *
+ * ⚠️ У тестовому середовищі `createImageBitmap`/`OffscreenCanvas` НЕ існують
+ * (перевірено), тож без цих заглушок перевірка порожнечі мовчки вимикається
+ * і решта тестів її не виконує взагалі. Саме тому вони тут — інакше зелений
+ * прогін нічого не доводив би про фікс.
+ */
+describe('exportPreviewService — порожній знімок (ТЗ-D)', () => {
+  const originalBitmap = (globalThis as any).createImageBitmap
+  const originalCanvas = (globalThis as any).OffscreenCanvas
+
+  /** Кожен blob несе свій колір: пікселі беруться з його розміру. */
+  function stubDecoder(uniqueColorsByBlobSize: Map<number, number>) {
+    ;(globalThis as any).createImageBitmap = async (blob: Blob) => ({
+      width: 4,
+      height: 4,
+      _colors: uniqueColorsByBlobSize.get(blob.size) ?? 1,
+      close() {},
+    })
+    ;(globalThis as any).OffscreenCanvas = class {
+      constructor(public width: number, public height: number) {}
+      private bitmap: any = null
+      getContext() {
+        const self = this
+        return {
+          drawImage: (bitmap: any) => { self.bitmap = bitmap },
+          getImageData: () => {
+            const colors = self.bitmap?._colors ?? 1
+            const data = new Uint8ClampedArray(4 * 16)
+            for (let i = 0; i < 16; i++) {
+              const shade = i < colors ? i * 10 : 0
+              data[i * 4] = shade
+              data[i * 4 + 1] = shade
+              data[i * 4 + 2] = shade
+              data[i * 4 + 3] = 255
+            }
+            return { data }
+          },
+        }
+      }
+    }
+  }
+
+  const originalRaf = (globalThis as any).requestAnimationFrame
+
+  beforeEach(() => {
+    exportPreviewService._resetForTests()
+    // rAF синхронний: пауза між спробами не має перетворювати тест на
+    // очікування. Фейкові таймери тут не годяться — вони не проганяють rAF,
+    // і перевірка зависала (спіймано першим прогоном цього тесту).
+    ;(globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) => {
+      cb(0)
+      return 0
+    }
+  })
+
+  afterEach(() => {
+    ;(globalThis as any).createImageBitmap = originalBitmap
+    ;(globalThis as any).OffscreenCanvas = originalCanvas
+    ;(globalThis as any).requestAnimationFrame = originalRaf
+  })
+
+  it('одноколірний знімок не потрапляє в результат навіть після спроб', async () => {
+    const blank = new Blob(['x'])           // size 1 → 1 колір
+    stubDecoder(new Map([[1, 1]]))
+    const capture = vi.fn(async () => ({ blob: blank, width: 10, height: 10 }))
+    exportPreviewService.register('blank-1', capture)
+
+    const result = await exportPreviewService.captureAll(
+      ['blank-1'], new AbortController().signal)
+
+    expect(result.captured.size).toBe(0)
+    expect(result.failed).toContain('blank-1')
+    expect(capture.mock.calls.length).toBeGreaterThan(1)   // перезнімав
+  })
+
+  it('живий знімок повертається з першої спроби', async () => {
+    const live = new Blob(['xxxxx'])        // size 5 → багато кольорів
+    stubDecoder(new Map([[5, 9]]))
+    const capture = vi.fn(async () => ({ blob: live, width: 10, height: 10 }))
+    exportPreviewService.register('live-1', capture)
+
+    const result = await exportPreviewService.captureAll(
+      ['live-1'], new AbortController().signal)
+
+    expect(result.captured.get('live-1')?.blob).toBe(live)
+    expect(capture).toHaveBeenCalledTimes(1)
+  })
+})
