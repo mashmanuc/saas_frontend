@@ -86,11 +86,54 @@ export function latexToSrc(lx: string): string {
       default:
         if (GREEK_R[c]) return GREEK_R[c]
         if (FN_R.has(c)) {
-          return c === 'arcsin' ? 'asin' : c === 'arccos' ? 'acos' : c === 'arctan' ? 'atan' : c
+          const base = c === 'arcsin' ? 'asin' : c === 'arccos' ? 'acos' : c === 'arctan' ? 'atan' : c
+          // K-1: `\log_{a}b` → `log(b, a)` — основа в ДРУГИЙ аргумент, бо
+          // саме цю форму рушій рахує (`graph-calculator.js`, change-of-base).
+          //
+          // ⚠️ Гілка вмикається ЛИШЕ за наявності нижнього індексу. Раніше
+          // вона ковтала аргумент і без нього — і `\log\left(x\right)`
+          // перетворювався на `log(()x)`, бо `group()` віддає ОДИН символ
+          // (тут `\left` → `(`), а не дужкову групу. Тобто найчастіший
+          // випадок `log(x)` ламався заради рідкісного з основою.
+          if ((c === 'log' || c === 'ln') && lx[i] === '_') {
+            i++
+            const sub = group()
+            const body = logArgument()
+            return body ? 'log(' + body + ',' + sub + ')' : base
+          }
+          return base
         }
         if (c === ' ' || c === ',') return c
         return c // невідома команда — як текст (двигун відхилить, якщо невалідно)
     }
+  }
+
+  /** Аргумент логарифма з основою: `27`, `x`, `{…}`, `\left(…\right)`, `(…)`.
+   *
+   * Окремо від `group()`, бо той віддає рівно один символ поза фігурними
+   * дужками: `\log_{1/3}27` давало body `2`, а `7` лишалось назовні
+   * (`log(2,…)7`). Тут число й ідентифікатор читаються ЦІЛКОМ, а дужкова
+   * група — збалансовано. Не розпізнали → порожньо, і виклична сторона
+   * чесно відступає до старої поведінки.
+   */
+  function logArgument(): string {
+    skipSp()
+    if (lx[i] === '{') { i++; const s = level('}'); i++; return s }
+    if (lx[i] === '(') { i++; const s = level(')'); i++; return '(' + s + ')' }
+    if (lx.startsWith('\\left', i)) {
+      i += 5
+      skipSp()
+      if (lx[i] === '(') i++
+      const s = level(null)
+      return '(' + s + ')'
+    }
+    if (/\d/.test(lx[i])) {
+      let s = ''
+      while (i < lx.length && /[\d.]/.test(lx[i])) s += lx[i++]
+      return s
+    }
+    if (/[a-zA-Z]/.test(lx[i])) return lx[i++]
+    return ''
   }
 
   function level(closer: string | null): string {

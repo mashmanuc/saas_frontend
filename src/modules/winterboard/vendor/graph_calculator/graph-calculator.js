@@ -276,6 +276,17 @@ const __GC = (function () {
 
   // ---------- Expression model --------------------------------------------
   // Categorize a parsed source into: param | explicitY | explicitX | implicit | point | invalid
+  function _hasInvalidCall(node) {
+    if (typeof node !== 'object' || !node) return false
+    if (node.kind === 'call') {
+      if (!FUNCS[node.name]) return true
+      return (node.args || []).some(_hasInvalidCall)
+    }
+    for (const k of ['arg','left','right','lhs','rhs','items']) {
+      if (node[k]) { if (Array.isArray(node[k])) { if (node[k].some(_hasInvalidCall)) return true } else if (_hasInvalidCall(node[k])) return true }
+    }
+    return false
+  }
   function classify(src, paramNames) {
     let ast;
     try { ast = parse(src); } catch (err) { return { kind: 'invalid', error: err.message, src }; }
@@ -323,6 +334,10 @@ const __GC = (function () {
       for (const v of fv) if (v !== 'x' && v !== 'y' && !known.has(v)) unknown.push(v);
       if (unknown.length) return { kind: 'needsParam', unknown, src, lhs: ast.lhs, rhs: ast.rhs, isEq: true };
       return { kind: 'implicit', lhs: ast.lhs, rhs: ast.rhs, src };
+    }
+    // K-3: gate on unknown functions (e.g. log_() → invalid, not silent nonsense)
+    if (_hasInvalidCall(ast)) {
+      return { kind: 'invalid', error: 'Невідома функція', src }
     }
     // Bare expression без '=' (наприклад `x^2`) → трактуємо як `y = <вираз>`
     // (Desmos-style). src користувача НЕ переписуємо — класифікація derived

@@ -73,6 +73,10 @@ function toLatex(n: GcNode): string {
     case 'call': {
       const name = n.name as string
       const args = n.args as GcNode[]
+      if (name === 'log' && args.length === 2) {
+        // K-2: log(x, a) → \log_{a}x
+        return '\\log_{' + toLatex(args[1]) + '}' + toLatex(args[0])
+      }
       if (name === 'sqrt') return '\\sqrt{' + toLatex(args[0]) + '}'
       if (name === 'cbrt') return '\\sqrt[3]{' + toLatex(args[0]) + '}'
       if (name === 'abs') return '\\left|' + toLatex(args[0]) + '\\right|'
