@@ -223,6 +223,12 @@ const __GC = (function () {
     sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs,
     ln: Math.log,
     log: function(x, a) { var num = Math.log(x); return a !== undefined ? num / Math.log(a) : (Math.log10 ? Math.log10(x) : num / Math.LN10); },
+    // Бекенд перетворює `\lg` і `\log_{10}` саме на `log10`
+    // (enrich_fingerprints.py:267,290). Без цих імен рушій мовчки не малював
+    // нічого: вираз у панелі виглядав правильним, а полотно лишалось порожнім
+    // (живий прогін 2026-08-06, `y = lg(x^2-6x+8)`).
+    log10: function(x) { return Math.log10 ? Math.log10(x) : Math.log(x) / Math.LN10; },
+    lg: function(x) { return Math.log10 ? Math.log10(x) : Math.log(x) / Math.LN10; },
     exp: Math.exp, floor: Math.floor, ceil: Math.ceil, round: Math.round,
     sign: Math.sign, max: Math.max, min: Math.min, mod: (a,b) => ((a%b)+b)%b,
   };
@@ -290,6 +296,17 @@ const __GC = (function () {
   function classify(src, paramNames) {
     let ast;
     try { ast = parse(src); } catch (err) { return { kind: 'invalid', error: err.message, src }; }
+
+    // K-3: невідома функція — помилка, а не мовчазна нісенітниця.
+    // ⚠️ Перевірка мусить стояти ДО розгалуження на рівняння: раніше вона
+    // була нижче, і гілка `eq` виходила раніше з `explicitY`. Через це гейт
+    // покривав лише голі вирази (`log10(x)`), а реальні — з `y=` — проходили
+    // повз: `y = lg(...)` давав порожнє полотно замість повідомлення
+    // (живий прогін 2026-08-06).
+    if (_hasInvalidCall(ast)) {
+      return { kind: 'invalid', error: 'Невідома функція', src }
+    }
+
     const known = new Set([...Object.keys(CONSTS), ...paramNames]);
 
     // Single tuple → point
@@ -334,10 +351,6 @@ const __GC = (function () {
       for (const v of fv) if (v !== 'x' && v !== 'y' && !known.has(v)) unknown.push(v);
       if (unknown.length) return { kind: 'needsParam', unknown, src, lhs: ast.lhs, rhs: ast.rhs, isEq: true };
       return { kind: 'implicit', lhs: ast.lhs, rhs: ast.rhs, src };
-    }
-    // K-3: gate on unknown functions (e.g. log_() → invalid, not silent nonsense)
-    if (_hasInvalidCall(ast)) {
-      return { kind: 'invalid', error: 'Невідома функція', src }
     }
     // Bare expression без '=' (наприклад `x^2`) → трактуємо як `y = <вираз>`
     // (Desmos-style). src користувача НЕ переписуємо — класифікація derived
