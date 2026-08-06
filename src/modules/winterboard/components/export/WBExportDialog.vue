@@ -37,20 +37,11 @@
               </div>
             </fieldset>
 
-            <!-- Page selection -->
-            <fieldset class="wb-export-dialog__fieldset">
-              <legend class="wb-export-dialog__legend">{{ t('winterboard.export.pageSelection') }}</legend>
-              <div class="wb-export-dialog__page-options">
-                <label class="wb-export-option">
-                  <input v-model="pageScope" type="radio" name="wb-page-scope" value="current" />
-                  <span>{{ t('winterboard.export.currentPage') }}</span>
-                </label>
-                <label class="wb-export-option">
-                  <input v-model="pageScope" type="radio" name="wb-page-scope" value="all" />
-                  <span>{{ t('winterboard.export.allPages') }}</span>
-                </label>
-              </div>
-            </fieldset>
+            <!-- Вибір «поточна / всі сторінки» ПРИБРАНО (2026-08-06).
+                 Він нічого не робив: `pageScope` ніде не читався, а обсяг
+                 задає сам формат — PNG завжди знімає поточну сторінку,
+                 PDF і презентація завжди беруть усі. Тобто перемикач
+                 обіцяв вибір, якого не існує. -->
 
             <!-- PNG options -->
             <fieldset v-if="selectedFormat === 'png'" class="wb-export-dialog__fieldset">
@@ -274,13 +265,11 @@ const errorMessage = ref<string | null>(null)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 // ── Format-specific options (B2.2) ───────────────────────────────────────
-type PageScope = 'current' | 'all'
 type PngQuality = 'high' | 'medium' | 'low'
 type PngBackground = 'white' | 'transparent'
 type PdfPageSize = 'a4' | 'letter' | 'original'
 type PdfOrientation = 'auto' | 'portrait' | 'landscape'
 
-const pageScope = ref<PageScope>('all')
 const pngQuality = ref<PngQuality>('high')
 const pngBackground = ref<PngBackground>('white')
 const pdfPageSize = ref<PdfPageSize>('a4')
@@ -974,11 +963,6 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
-}
-
-.wb-export-dialog__page-options {
-  display: flex;
-  gap: 16px;
 }
 
 .wb-export-option {
