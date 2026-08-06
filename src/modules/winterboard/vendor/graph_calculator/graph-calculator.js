@@ -221,7 +221,8 @@ const __GC = (function () {
     asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
     sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
     sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs,
-    ln: Math.log, log: (x) => Math.log10 ? Math.log10(x) : Math.log(x)/Math.LN10,
+    ln: Math.log,
+    log: function(x, a) { var num = Math.log(x); return a !== undefined ? num / Math.log(a) : (Math.log10 ? Math.log10(x) : num / Math.LN10); },
     exp: Math.exp, floor: Math.floor, ceil: Math.ceil, round: Math.round,
     sign: Math.sign, max: Math.max, min: Math.min, mod: (a,b) => ((a%b)+b)%b,
   };

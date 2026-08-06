@@ -1125,6 +1125,11 @@ function onAddExpression() {
   // matches inv-21.11 (snapshot before any param_set on new expression).
   flushSnapshot()
   calc.addExpression('', id)
+  // J-1 FIX: update lastAppliedSignature/lastAppliedSeq щоб перший snapshot
+  // round-trip не викликав calc.setState (який перебудовував DOM і втрачав фокус).
+  lastAppliedSignature = snapshotSignature(calc.getState() as GraphCalculatorState)
+  const d = props.asset.data as { meta?: { last_snapshot_seq?: number } } | undefined
+  lastAppliedSeq = (d && d.meta && d.meta.last_snapshot_seq) || lastAppliedSeq
   // calc.onChange wrapper auto-fires snapshot debounce.
 }
 
