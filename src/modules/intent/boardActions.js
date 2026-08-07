@@ -61,8 +61,9 @@ const HANDLERS = {
   async add_formula({ latex }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
+    const assetId = _uuid()
     store.addAsset({
-      id: _uuid(),
+      id: assetId,
       type: 'formula_card',
       src: '',
       x: cx - 190,
@@ -73,6 +74,19 @@ const HANDLERS = {
       locked: false,
       data: { version: 1, formula: latex, fontSize: 22, color: '#1e293b', bg: '#f8fafc' },
     }, page.id ?? '')
+    // N1 Фаза 2: запис companion-сцени для AST-експорту (2026-08-07).
+    // ⚠️ Раніше тут стояло `assetId: id` — `id` ніколи не оголошувалась у
+    // цій області видимості (лише всередині літерала `store.addAsset`),
+    // тож рядок кидав ReferenceError і асинхронна функція завершувалась
+    // відмовою: картка на дошці з'являлась, а користувач бачив помилку.
+    // ⚠️ recordCompanionScene повертає void (сама fire-and-forget, сама
+    // ловить помилки всередині) — `.catch()` тут кидав TypeError на undefined.
+    recordCompanionScene({
+      sessionId: store.workspaceId,
+      kind: 'formula_card',
+      assetId,
+      data: { formula: latex },
+    })
   },
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
@@ -80,8 +94,12 @@ const HANDLERS = {
   async add_card({ title, body, badge }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
+    const assetId = _uuid()
+    const badgeValue = badge || ''
+    const titleValue = title || ''
+    const bodyValue = body || ''
     store.addAsset({
-      id: _uuid(),
+      id: assetId,
       type: 'theory_card',
       src: '',
       x: cx - 260,
@@ -92,8 +110,18 @@ const HANDLERS = {
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
-      data: { version: 1, badge: badge || '', title: title || '', body: body || '', formulas: [] },
+      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [] },
     }, page.id ?? '')
+    // N1 Фаза 2 (2026-08-07): запис companion-сцени для AST-експорту.
+    // ⚠️ Був відсутній повністю — картка потрапляла на дошку, але НІКОЛИ
+    // в AST, тому й у PPTX. Це і була вся суть Фази 2.
+    // ⚠️ recordCompanionScene повертає void — `.catch()` тут кидав TypeError.
+    recordCompanionScene({
+      sessionId: store.workspaceId,
+      kind: 'theory_card',
+      assetId,
+      data: { badge: badgeValue, title: titleValue, body: bodyValue },
+    })
   },
 
   // Дзеркало usePageManagement.addPage() → store.addPageUndoable() — та сама дія,
@@ -127,6 +155,7 @@ const HANDLERS = {
   // їх присилає (`expressions[]` + `params{}`), тож просто передаємо наскрізь.
   // Зворотна сумісність зі старим payload `{expression}` лишається — на випадок
   // старої вкладки FE проти нового BE (і навпаки: BE теж приймає обидва).
+
   async add_graph({ expressions, expression, params }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
@@ -368,6 +397,16 @@ HANDLERS.set_geometry = async function set_geometry({ object_id, feature, on }) 
   const toggles = { ...(asset.data?.toggles || {}), [feature]: on !== false }
   store.updateAsset({ ...asset, data: { ...asset.data, toggles } })
 }
+
+HANDLERS.delete_page = async function delete_page({ pageIndex }) {
+    // N1 Фаза 1: видалення сторінки (2026-08-07). Дзеркало add_page.
+    // Стор сам охороняє від видалення останньої сторінки (return false).
+    const { store } = await _store()
+    const ok = store.deletePageUndoable(pageIndex)
+    if (!ok) {
+      throw new Error('Не можна видалити останню сторінку')
+    }
+  }
 
 HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const items = await _allInserts()

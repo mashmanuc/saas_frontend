@@ -77,16 +77,21 @@ function renderLatexToMathML(formula: string, displayMode: boolean): string {
 }
 
 // ── Render text line with embedded LaTeX → HTML string ────────
+// Markdown-lite: **bold** і pipe-таблиці (`| a | b |` + роздільник `|---|---|`)
+// — АІ (Інтегралик) генерує їх у body карток (board_add_card дозволяє
+// таблиці, tooling.py), а без цього кроку вони йшли в escapeHtml як сирий
+// текст із `|` і `**` (зловлено живим прогоном 2026-08-07).
 export function renderTextWithLatex(text: string): string {
   if (!text) return ''
   const segments = parseLatexSegments(text)
-  return segments
+  const combined = segments
     .map((seg) => {
-      if (seg.type === 'text') return escapeHtml(seg.value)
+      if (seg.type === 'text') return renderInlineMarkdown(seg.value)
       if (seg.type === 'inline') return renderLatexToMathML(seg.value, false)
       return `<div class="lc-display-math">${renderLatexToMathML(seg.value, true)}</div>`
     })
     .join('')
+  return renderMarkdownTables(combined)
 }
 
 function escapeHtml(s: string): string {
@@ -95,6 +100,65 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br/>')
+}
+
+// Екранує HTML, БЕЗ переносу \n → <br/> (рядкова структура ще потрібна
+// нижче для виявлення таблиць) і застосовує **bold**. LaTeX-сегменти сюди
+// не потрапляють — parseLatexSegments уже виніс їх окремо.
+function renderInlineMarkdown(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
+}
+
+function isTableRow(line: string): boolean {
+  return line.trim().includes('|')
+}
+
+// Роздільник заголовка `|---|:---:|---|` — лише `|`, `-`, `:`, пробіли,
+// і хоч одне тире (інакше звичайний рядок із символом `|` теж пройшов би).
+function isTableDelimiter(line: string): boolean {
+  const t = line.trim()
+  return /^\|?[\s:-]+\|[\s:|-]*\|?$/.test(t) && t.includes('-')
+}
+
+function splitTableRow(line: string): string[] {
+  let t = line.trim()
+  if (t.startsWith('|')) t = t.slice(1)
+  if (t.endsWith('|')) t = t.slice(0, -1)
+  return t.split('|').map((cell) => cell.trim())
+}
+
+// Рядкова обробка ПІСЛЯ вбудовування LaTeX/bold: групує послідовні
+// `| … |` рядки з роздільником одразу під заголовком у `<table>`, решту
+// з'єднує через `<br/>` — той самий ефект, що й старий escapeHtml(\n→<br/>).
+function renderMarkdownTables(html: string): string {
+  const lines = html.split('\n')
+  const out: string[] = []
+  let i = 0
+  while (i < lines.length) {
+    if (i + 1 < lines.length && isTableRow(lines[i]) && isTableDelimiter(lines[i + 1])) {
+      const header = splitTableRow(lines[i])
+      const rows: string[][] = []
+      let j = i + 2
+      while (j < lines.length && isTableRow(lines[j]) && !isTableDelimiter(lines[j])) {
+        rows.push(splitTableRow(lines[j]))
+        j++
+      }
+      const thead = `<tr>${header.map((c) => `<th>${c}</th>`).join('')}</tr>`
+      const tbody = rows
+        .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`)
+        .join('')
+      out.push(`<table class="lc-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`)
+      i = j
+    } else {
+      out.push(lines[i])
+      i++
+    }
+  }
+  return out.join('<br/>')
 }
 
 // ── HTML templates per content type ───────────────────────────

@@ -196,6 +196,26 @@ useExportCapture(
   line-height: 1.3; margin: 0 0 12px 0; letter-spacing: -0.01em;
 }
 .theory-card__text { font-size: 15px; line-height: 1.7; color: #374151; }
+.theory-card__text :deep(table),
+.theory-card__hint :deep(table) {
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 14px;
+}
+.theory-card__text :deep(th),
+.theory-card__text :deep(td),
+.theory-card__hint :deep(th),
+.theory-card__hint :deep(td) {
+  border: 1px solid #e0e7ff;
+  padding: 4px 10px;
+  text-align: center;
+}
+.theory-card__text :deep(th),
+.theory-card__hint :deep(th) {
+  background: #f5f3ff;
+  color: #4338ca;
+  font-weight: 600;
+}
 .theory-card__hint {
   margin-top: 14px; font-size: 13px; color: #6b7280; font-style: italic;
   padding-top: 12px; border-top: 1px solid #e5e7eb;
