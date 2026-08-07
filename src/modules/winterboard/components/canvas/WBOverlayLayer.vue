@@ -26,11 +26,37 @@ import { computed, ref } from 'vue'
 import type { WBAsset } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
+import { detectCardPreset } from '../../utils/detectCardPreset'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
   type OverlayCtx,
 } from './overlayRegistry'
+// N1 Фаза 3 (2026-08-07): preset shadow для theory-card overlay
+const PRESET_SHADOWS: Record<string, string> = {
+  definition:      'rgba(37, 99, 235, 0.35)',
+  rule:            'rgba(22, 163, 74, 0.35)',
+  proof:           'rgba(124, 58, 237, 0.35)',
+  tip:             'rgba(234, 179, 8, 0.35)',
+  'common mistake': 'rgba(220, 38, 38, 0.35)',
+  remember:        'rgba(249, 115, 22, 0.35)',
+  example:         'rgba(8, 145, 178, 0.35)',
+  'life example':  'rgba(5, 150, 105, 0.35)',
+  algorithm:       'rgba(107, 114, 128, 0.35)',
+  summary:         'rgba(30, 58, 95, 0.35)',
+}
+function getPresetShadow(preset: string): string {
+  return PRESET_SHADOWS[preset] || 'rgba(99, 102, 241, 0.35)'
+}
+
+/** Колір кільця виділення theory-card: явний data.preset, інакше render-time
+ *  fallback по ключових словах — старі картки без preset отримують колір
+ *  на льоту, дзеркало effectivePreset у TheoryCardRenderer. Стан не мутується. */
+function theoryOverlayShadow(asset: WBAsset): string {
+  const d = (asset.data ?? {}) as { preset?: string; title?: string; body?: string; badge?: string }
+  const preset = d.preset || detectCardPreset(d.title, d.body, d.badge)
+  return preset ? getPresetShadow(preset) : 'rgba(99, 102, 241, 0.35)'
+}
 
 const props = defineProps<{
   /** Overlay-assets у порядку `assets[]` (WBCanvas фільтрує до OVERLAY_ASSET_TYPES). */
@@ -180,7 +206,7 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
       :class="wrapperClasses(item)"
       v-bind="{ [item.entry.dataAttr]: item.asset.id }"
       :data-testid="`${item.entry.testidPrefix}-${item.asset.id}`"
-      :style="wrapperStyle(item)"
+      :style="[wrapperStyle(item), item.asset.type === 'theory_card' ? { '--overlay-shadow': theoryOverlayShadow(item.asset) } : {}]"
       @pointerdown.capture="onWrapperPointerDownCapture(item, $event)"
     >
       <component
@@ -359,7 +385,7 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   pointer-events: none;
 }
 .wb-theory-card-overlay--selected {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(99, 102, 241, 0.35));
 }
 
 /* MashScene (§3.7.13, A3) — MASH Live Asset картка, дзеркало theory-card правил.

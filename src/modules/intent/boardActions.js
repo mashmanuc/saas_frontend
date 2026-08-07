@@ -91,7 +91,7 @@ const HANDLERS = {
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
-  async add_card({ title, body, badge }) {
+  async add_card({ title, body, badge, preset }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const assetId = _uuid()
@@ -110,7 +110,7 @@ const HANDLERS = {
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
-      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [] },
+      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}) },
     }, page.id ?? '')
     // N1 Фаза 2 (2026-08-07): запис companion-сцени для AST-експорту.
     // ⚠️ Був відсутній повністю — картка потрапляла на дошку, але НІКОЛИ
@@ -120,7 +120,7 @@ const HANDLERS = {
       sessionId: store.workspaceId,
       kind: 'theory_card',
       assetId,
-      data: { badge: badgeValue, title: titleValue, body: bodyValue },
+      data: { badge: badgeValue, title: titleValue, body: bodyValue, ...(preset ? { preset } : {}) },
     })
   },
 

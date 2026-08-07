@@ -461,6 +461,8 @@ export interface TheoryCardData {
   formulaTitle?: string
   /** Сітка формул (latex+label). Порожній масив → секція формул не рендериться. */
   formulas?: WBFormulaEntry[]
+  /** N1 Фаза 3 (2026-08-07): візуальний пресет картки (колір/іконка) — TheoryCardRenderer.vue PRESET_STYLES. */
+  preset?: string
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }

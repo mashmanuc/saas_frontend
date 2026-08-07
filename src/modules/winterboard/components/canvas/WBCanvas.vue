@@ -603,8 +603,8 @@
         class="wb-theory-card-overlay"
         :class="{ 'wb-theory-card-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-theory-card-id="asset.id"
+        :style="[getOverlayStyle(asset), { '--overlay-shadow': theoryOverlayShadow(asset) }]"
         :data-testid="`theory-card-overlay-${asset.id}`"
-        :style="getOverlayStyle(asset)"
       >
         <TheoryCardRenderer
           :asset="(asset as any)"
@@ -847,6 +847,7 @@ import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { usePageGrid } from '../../composables/usePageGrid'
+import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
 import { useGrouping } from '../../composables/useGrouping'
@@ -5200,6 +5201,33 @@ defineExpose({
    *  для композитного знімка дошки (useBoardThumbnail, html2canvas). */
   getContainer: () => containerRef.value || null,
 })
+
+
+// N1 Фаза 3 (2026-08-07): preset shadow для theory-card overlay
+const PRESET_SHADOWS: Record<string, string> = {
+  definition:      'rgba(37, 99, 235, 0.35)',
+  rule:            'rgba(22, 163, 74, 0.35)',
+  proof:           'rgba(124, 58, 237, 0.35)',
+  tip:             'rgba(234, 179, 8, 0.35)',
+  'common mistake': 'rgba(220, 38, 38, 0.35)',
+  remember:        'rgba(249, 115, 22, 0.35)',
+  example:         'rgba(8, 145, 178, 0.35)',
+  'life example':  'rgba(5, 150, 105, 0.35)',
+  algorithm:       'rgba(107, 114, 128, 0.35)',
+  summary:         'rgba(30, 58, 95, 0.35)',
+}
+function getPresetShadow(preset: string): string {
+  return PRESET_SHADOWS[preset] || 'rgba(99, 102, 241, 0.35)'
+}
+
+/** Колір кільця виділення theory-card: явний data.preset, інакше render-time
+ *  fallback по ключових словах — старі картки без preset отримують колір
+ *  на льоту, дзеркало effectivePreset у TheoryCardRenderer. Стан не мутується. */
+function theoryOverlayShadow(asset: { data?: unknown }): string {
+  const d = (asset.data ?? {}) as { preset?: string; title?: string; body?: string; badge?: string }
+  const preset = d.preset || detectCardPreset(d.title, d.body, d.badge)
+  return preset ? getPresetShadow(preset) : 'rgba(99, 102, 241, 0.35)'
+}
 </script>
 
 <style scoped>
@@ -5699,7 +5727,7 @@ defineExpose({
   pointer-events: none;
 }
 .wb-theory-card-overlay--selected {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(99, 102, 241, 0.35));
 }
 
 /* MashScene (§3.7.13, A3) — MASH Live Asset картка, дзеркало theory-card правил. */
