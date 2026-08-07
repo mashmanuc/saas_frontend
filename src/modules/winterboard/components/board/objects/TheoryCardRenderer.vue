@@ -173,7 +173,16 @@ const MAX_W = 700
 const H_STEP = 80
 const W_STEP = 100
 
+// Останній розмір, який ПОСТАВИВ САМ tryFit — не «бажаний», а фактично
+// застосований. Порівнюємо з ним у watcher нижче: якщо asset.w/h відхилились
+// від цього значення (а не від tryFit) — розмір змінив юзер (ручка ресайзу),
+// і з ЦЬОГО моменту авто-фіт більше не чіпає картку (issue власника
+// 2026-08-07: «дозволити юзеру вручну міняти розмір, як було»).
+const lastAutoSize = ref<{ w: number; h: number } | null>(null)
+const userResized = ref(false)
+
 function tryFit() {
+  if (userResized.value) return   // юзер уже сам обрав розмір — не втручаємось
   const el = rootEl.value
   if (!el) return
   const body = el.querySelector('.theory-card__body') as HTMLElement | null
@@ -189,6 +198,7 @@ function tryFit() {
 
     if (contentH <= availH + 2) {
       // Влазить — повертаємо overflow як було
+      lastAutoSize.value = { w: props.asset.w, h: props.asset.h }
       body.style.overflowY = prevOverflow || 'hidden'
       return
     }
@@ -202,32 +212,31 @@ function tryFit() {
       newH = Math.min(newH + H_STEP, MAX_H)
     }
 
-    // Спроба 2: якщо висоти недостатньо — збільшити ширину
-    // (ширша картка → текст перерозподіляється → менша висота)
-    if (newH >= MAX_H && contentH > (MAX_H - HEADER_H - BODY_PAD)) {
+    // Спроба 2: якщо висоти недостатньо — збільшити ширину (ширша картка →
+    // текст перерозподіляється → менша висота). Уже на MAX_W — розширювати
+    // нема куди, це термінальний стан, одразу scrollbar.
+    if (newH >= MAX_H && contentH > (MAX_H - HEADER_H - BODY_PAD) && newW < MAX_W) {
       newW = Math.min(newW + W_STEP, MAX_W)
-      // Даємо браузеру перерахувати з новою шириною
-      const asset = { ...props.asset, w: newW, h: newH }
-      emit('update:asset', asset)
-      // N1 Фаза 3.5 fix: watcher на w перезапустить tryFit,
-      // а при досягненні MAX_W — встановлюємо scrollbar одразу
-      if (newW >= MAX_W) {
-        body.style.overflowY = 'auto'
-      }
+      lastAutoSize.value = { w: newW, h: newH }
+      emit('update:asset', { ...props.asset, w: newW, h: newH })
+      // watcher нижче на [asset.w, asset.h] сам перезапустить tryFit
+      // після реального рендеру на новій ширині — рекурсивний домір,
+      // не одноразова спроба (тут раніше був баг: return без домірювання).
       return
     }
 
-    // Застосовуємо новий розмір
+    // Застосовуємо новий розмір (або лишається як є — Спроба 2 вже стоїть
+    // на MAX_W і більше рости нема куди)
     if (newH !== props.asset.h || newW !== props.asset.w) {
-      const asset = { ...props.asset, w: newW, h: newH }
-      emit('update:asset', asset)
+      lastAutoSize.value = { w: newW, h: newH }
+      emit('update:asset', { ...props.asset, w: newW, h: newH })
+    } else {
+      lastAutoSize.value = { w: newW, h: newH }
     }
 
     // Якщо навіть після збільшення не влазить — дозволяємо scrollbar
-    if (newH >= MAX_H && newW >= MAX_W) {
-      body.style.overflowY = 'auto'
-    } else if (contentH > (newH - HEADER_H - BODY_PAD) + 2) {
-      // Контент все ще не влазить — scrollbar як останній засіб
+    // (останній засіб, а не мовчазне обрізання, як було до Фази 3.5)
+    if (contentH > (newH - HEADER_H - BODY_PAD) + 2) {
       body.style.overflowY = 'auto'
     } else {
       body.style.overflowY = prevOverflow || 'hidden'
@@ -249,19 +258,20 @@ watch(() => data.value.preset, () => {
   nextTick(() => tryFit())
 })
 
-// N1 Фаза 3.5 fix (2026-08-07): переміряти при зміні геометрії картки
-watch(() => props.asset.w, () => {
-  nextTick(() => tryFit())
-})
-watch(() => props.asset.h, () => {
-  nextTick(() => tryFit())
-})
-
-// N1 Фаза 3.5 fix (2026-08-07): переміряти при зміні геометрії картки
-watch(() => props.asset.w, () => {
-  nextTick(() => tryFit())
-})
-watch(() => props.asset.h, () => {
+// N1 Фаза 3.5 fix (2026-08-07): переміряти при зміні розміру картки — але
+// ЛИШЕ якщо розмір змінив сам tryFit (домір після власного розширення
+// ширини), а не юзер ручкою resize. Порівнюємо з lastAutoSize: збіг —
+// це наш власний крок, продовжуємо ланцюжок; розбіжність — юзер узяв
+// контроль над розміром, більше НІКОЛИ не втручаємось для цієї картки
+// (issue власника 2026-08-07: «дозволити юзеру вручну міняти розмір,
+// як було» — раніше цей watcher існував ПОДВІЙНО і перебивав будь-який
+// ручний resize назад, незалежно від намірів юзера).
+watch(() => [props.asset.w, props.asset.h] as const, ([w, h]) => {
+  if (userResized.value) return
+  if (lastAutoSize.value && (w !== lastAutoSize.value.w || h !== lastAutoSize.value.h)) {
+    userResized.value = true
+    return
+  }
   nextTick(() => tryFit())
 })
 
