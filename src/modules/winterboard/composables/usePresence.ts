@@ -21,6 +21,53 @@ const LOG_PREFIX = '[WB:Presence]'
 const CURSOR_FPS_CAP = 15
 const CURSOR_MIN_INTERVAL_MS = 1000 / CURSOR_FPS_CAP  // ≈66.67ms
 const VIEWPORT_THROTTLE_MS = 100     // Max 10 viewport updates/s (A5.2)
+
+// ── ops.applied → INV-24 catchUp (A-T2, 2026-08-09) ──────────────────────────
+//
+// Ціна виклику — головне обмеження тут (зауваження рев'ю). Broadcast має
+// дебаунс 50ms і шлеться на КОЖЕН apply, включно зі `stroke_add`. Наївне
+// «кожен ops.applied → catchUp()» у classroom, де учень малює, дало б потік
+// `GET /state/` (canonical state, 27KB+) з кожної вкладки — на shared-cpu це
+// відчутно. Coalescing-мьютекс у catchUp() — НЕ rate-limit: щойно один
+// завершився, наступний стартує.
+//
+// Тому два фільтри:
+//   1. ТИП: штрихи вже приходять живо окремим каналом `stroke.broadcast`,
+//      для них catchUp зайвий. Кличемо лише коли в пачці є те, чого
+//      live-канал не носить (asset_*, page_*, *_update) — саме цей клас і
+//      ламався в enrich.
+//   2. ЧАС: не частіше ніж раз на 2s, навіть якщо тип підійшов.
+const CATCHUP_MIN_INTERVAL_MS = 2000
+/**
+ * Що live-канал ДОСТАВЛЯЄ сам → catchUp зайвий, хай би який суфікс.
+ *
+ * Перевіряється ПЕРШИМ і б'є решту правил: `stroke_update` закінчується на
+ * `_update` і без цього списку проходив би як «оновлення» — тобто кожен рух
+ * пером тягнув би `GET /state/`. Спіймано власним тестом при першому прогоні.
+ */
+const LIVE_DELIVERED_PREFIXES = ['stroke_'] as const
+/** Префікси op_type, яких live-канал НЕ доставляє → потрібен catchUp. */
+const CATCHUP_OP_PREFIXES = ['asset_', 'page_'] as const
+
+/**
+ * Чи є в пачці ops те, чого live-канал НЕ доставляє.
+ *
+ * Експортована й чиста НАВМИСНО: це рішення «слати `GET /state/` чи ні», і
+ * воно мусить бути перевіряним без мока WebSocket. Порожня/невідома пачка →
+ * false: краще пропустити оновлення, ніж гатити canonical state на кожен
+ * штрих.
+ */
+export function needsCatchUp(ops: Array<{ op_type?: string }> | undefined): boolean {
+  if (!Array.isArray(ops) || ops.length === 0) return false
+  return ops.some((op) => {
+    const type = op?.op_type
+    if (typeof type !== 'string') return false
+    // Deny-list ПЕРШИЙ: те, що вже приходить живо, не тягне state.
+    if (LIVE_DELIVERED_PREFIXES.some((prefix) => type.startsWith(prefix))) return false
+    return CATCHUP_OP_PREFIXES.some((prefix) => type.startsWith(prefix))
+      || type.endsWith('_update')
+  })
+}
 // Phase RS PR-RS-B0 (2026-05-01): adjusted per PLAN.md SECTION B verification.
 // Exponential backoff: 1s → 2s → 4s → 8s → 10s (cap) → 10s × N до cap of 10 attempts.
 // Total worst-case window: ~80s (sufficient для legitimate transient network blips).
@@ -200,7 +247,26 @@ interface WBSessionLockMsg {
   ts: number
 }
 
+/**
+ * Ops застосовано СЕРВЕРНИМ писцем (enrich, AI-фічі, друга вкладка).
+ *
+ * BE шле це з `_broadcast_committed` (LAW §8, після commit) — і воно
+ * долітало у вкладку ЗАВЖДИ, але `handleMessage` не мав цього типу й не мав
+ * `default`, тож повідомлення тихо гинуло (розслідування A-T2 2026-08-09).
+ * Наслідок: картки enrich з'являлись лише після F5, а вкладка ловила 409 на
+ * власному наступному записі — бо її `localSeq` ніколи не дізнавався про
+ * чужі ops.
+ */
+interface WBOpsAppliedMsg {
+  type: 'ops.applied'
+  session_id: string
+  /** Серіалізовані ops; нас цікавлять лише `op_type` (див. _needsCatchUp). */
+  ops: Array<{ op_type?: string }>
+  last_seq: number
+}
+
 type WBServerMessage =
+  | WBOpsAppliedMsg
   | WBPresenceJoinMsg
   | WBPresenceLeaveMsg
   | WBPresenceSyncMsg
@@ -579,6 +645,41 @@ export function usePresence(options: UsePresenceOptions) {
     connect(sessionId)
   }
 
+  // ── ops.applied → catchUp (A-T2) ────────────────────────────────────────
+
+  let lastCatchUpAt = 0
+
+  async function _catchUpFromBroadcast(lastSeq: number): Promise<void> {
+    const now = Date.now()
+    if (now - lastCatchUpAt < CATCHUP_MIN_INTERVAL_MS) return
+    lastCatchUpAt = now
+
+    try {
+      const [{ useOpsSyncStore }, { useWBStore }] = await Promise.all([
+        import('../stores/opsSyncStore'),
+        import('../board/state/boardStore'),
+      ])
+      const opsSync = useOpsSyncStore()
+      // Лічильник — ЗІ СТОРУ, свій не заводимо: два джерела seq розійдуться.
+      if (lastSeq <= opsSync.localSeq) return
+
+      const store = useWBStore()
+      const result = await opsSync.catchUp(
+        (state: Record<string, unknown>) => store.applyCatchUpState(state),
+      )
+      // blocked/stale — легітимні стани (DESYNC-recovery / застарілий blob):
+      // мовчки нічого не робимо, БЕЗ retry (LAW §12). Наступний broadcast
+      // або reconnect повторить.
+      console.info(
+        LOG_PREFIX,
+        `A-T2 catch-up status=${result.status} last_seq=${result.lastSeq}`,
+      )
+    } catch (err) {
+      // Подієва модель без retry — наступний ops.applied спробує знову.
+      console.warn(LOG_PREFIX, 'A-T2 catch-up failed:', err)
+    }
+  }
+
   // ── Message handling ────────────────────────────────────────────────────
 
   function handleMessage(msg: WBServerMessage): void {
@@ -712,6 +813,17 @@ export function usePresence(options: UsePresenceOptions) {
         window.dispatchEvent(new CustomEvent('wb:session-lock', {
           detail: { locked: msg.locked, userId: msg.userId },
         }))
+        break
+      }
+
+      // A-T2 (2026-08-09): чужий писець застосував ops — звіряємось із
+      // сервером штатним INV-24 catchUp. Ops із повідомлення НЕ
+      // застосовуються напряму: другий apply-канал поруч із catchUp дав би
+      // два read-шляхи (порядок, дублі, конфлікт із власними in-flight).
+      case 'ops.applied': {
+        if (!needsCatchUp(msg.ops)) return        // самі штрихи → live-канал
+        if (msg.last_seq === undefined) return
+        void _catchUpFromBroadcast(msg.last_seq)
         break
       }
 
