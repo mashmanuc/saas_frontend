@@ -51,6 +51,14 @@ export interface EnrichPatch {
   }
   latex_valid: boolean
   latex_error: string
+  /** A-T1: картка — переказ умови (лексичне покриття ≥70%); галочка знята за замовчуванням. */
+  low_value?: boolean
+}
+
+/** A-T1: свідомий пропуск задачі («нема чого додати») — гейт «вміє мовчати». */
+export interface EnrichSkip {
+  task_ref: string
+  reason: string
 }
 
 export interface EnrichResponse {
@@ -62,6 +70,8 @@ export interface EnrichResponse {
   /** N1 Фаза 4.1.1: рефи задач із пакетів, що впали з помилкою — готово для
    *  майбутньої кнопки «Повторити необроблені» (shipApi.enrich(id, instr, refs)). */
   failed_task_refs: string[]
+  /** A-T1: свідомі пропуски моделі. UI-лічильник — зона B-T2. */
+  skipped?: EnrichSkip[]
 }
 
 export interface EnrichApplyResponse {

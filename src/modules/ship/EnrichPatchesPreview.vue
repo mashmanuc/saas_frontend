@@ -61,6 +61,11 @@
         <div class="enrich-patches-preview__latex-warn" v-if="!patch.latex_valid">
           ⚠️ {{ t('winterboard.enrich.latexInvalid', { error: patch.latex_error }) }}
         </div>
+        <!-- A-T1: картка-переказ умови — галочка знята, тьютор бачить чому
+             (вибрати все одно можна: фільтр страхує, не забороняє). -->
+        <div class="enrich-patches-preview__latex-warn" v-if="patch.low_value">
+          💤 {{ t('winterboard.enrich.lowValue') }}
+        </div>
       </div>
     </div>
 
@@ -164,7 +169,9 @@ async function runEnrich() {
     patches.value = res.patches || []
     const sel: Record<number, boolean> = {}
     patches.value.forEach((p: any, i: number) => {
-      sel[i] = p.latex_valid !== false
+      // low_value (переказ умови) — галочка знята, але вибрати можна:
+      // фільтр страхує, рішення за тьютором.
+      sel[i] = p.latex_valid !== false && p.low_value !== true
     })
     selected.value = sel
   } catch (e: any) {

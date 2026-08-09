@@ -7234,7 +7234,8 @@
       "latexInvalid": "LaTeX invalid: {error}",
       "sectionsAdded": "{count} sections added",
       "onPages": " — on pages {pages}",
-      "reloadToSee": "Cards were saved to the board, but this tab is not showing them yet — reload the page."
+      "reloadToSee": "Cards were saved to the board, but this tab is not showing them yet — reload the page.",
+      "lowValue": "Restates the task — nothing new for the student. You can still enable it."
     },
     "board": {
       "untitled": "Untitled",
