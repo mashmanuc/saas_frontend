@@ -7796,7 +7796,26 @@
         "night": "Нічна",
         "paper": "Паперова"
       },
-      "solutionSlides": "Слайди розбору після задач"
+      "solutionSlides": "Слайди розбору після задач",
+      "aiEnrich": "AI Enrich (додати формули/теорію)"
+    },
+    "enrich": {
+      "title": "AI Enrich",
+      "instructionLabel": "Інструкція (вільний текст)",
+      "instructionPlaceholder": "напр. «додай формулу до кожної задачі», «додай приклад із життя», «познач поширену помилку»",
+      "run": "Запустити",
+      "running": "Виконується…",
+      "analysing": "AI аналізує задачі…",
+      "processed": "Оброблено: {done} / {total} задач",
+      "applySelected": "Застосувати вибрані ({count})",
+      "applying": "Застосовується…",
+      "badgeFormula": "Формула",
+      "badgeCard": "Картка",
+      "task": "Задача: {ref}",
+      "latexInvalid": "Формула невалідна: {error}",
+      "sectionsAdded": "Додано секцій: {count}",
+      "onPages": " — на сторінках {pages}",
+      "reloadToSee": "Картки записано на дошку, але ця вкладка їх ще не показує — перезавантажте сторінку."
     },
     "board": {
       "untitled": "Без назви",

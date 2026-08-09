@@ -35,6 +35,20 @@
                   </div>
                 </label>
               </div>
+
+              <!-- Фаза 4: AI Enrich — одна кнопка на всю модалку, незалежно
+                   від формату (раніше була вставлена в кожну format-гілку
+                   copy-paste'ом, 5 копій; на PNG/PDF/pptx юзер бачив дві
+                   одразу — тут завжди + у форматній гілці). -->
+              <div class="wb-export-dialog__option-row" style="margin-top:12px">
+                <button
+                  type="button"
+                  class="wb-export-dialog__enrich-btn"
+                  @click="openEnrich"
+                >
+                  {{ t('winterboard.export.aiEnrich') }}
+                </button>
+              </div>
             </fieldset>
 
             <!-- Вибір «поточна / всі сторінки» ПРИБРАНО (2026-08-06).
@@ -84,6 +98,7 @@
                   <span>{{ t('winterboard.export.solutionSlides') }}</span>
                 </label>
               </div>
+
             </fieldset>
 
             <!-- PDF options -->
@@ -107,6 +122,7 @@
                   </select>
                 </label>
               </div>
+
             </fieldset>
 
 
@@ -127,6 +143,7 @@
                   <span>{{ t('winterboard.pdf.filterShapes') }}</span>
                 </label>
               </div>
+
             </fieldset>
 
             <Button
@@ -138,6 +155,15 @@
             >
               {{ t('winterboard.export.startExport') }}
             </Button>
+
+            <!-- Фаза 4: Enrich Patches Preview -->
+            <EnrichPatchesPreview
+              v-if="showEnrich && enrichArtifactId"
+              :artifact-id="enrichArtifactId"
+              :visible="showEnrich"
+              @close="showEnrich = false"
+              @applied="onEnrichApplied"
+            />
           </template>
 
           <!-- State: capturing (Stage 1 PR-2 EXPORT_PREPARATION_SSOT) -->
@@ -213,6 +239,7 @@ import Button from '@/ui/Button.vue'
 import { nextTick } from 'vue'
 import { winterboardApi } from '../../api/winterboardApi'
 import { shipApi } from '@/modules/ship/shipApi'
+import EnrichPatchesPreview from '@/modules/ship/EnrichPatchesPreview.vue'
 import type { ShipArtifactInfo, ShipTheme } from '@/modules/ship/shipApi'
 import { isLimitError } from '@/utils/apiClient'
 import { useToast } from '../../composables/useToast'
@@ -354,6 +381,20 @@ const shipThemes = ref<ShipTheme[]>([])
 const selectedTheme = ref('')
 // D-2: кадри розбору після задач — за явним вибором тьютора (колода довшає).
 const includeSolutions = ref(false)
+
+// Фаза 4: AI Enrich
+const showEnrich = ref(false)
+const enrichArtifactId = ref('')
+function openEnrich() {
+  if (shipArtifact.value?.id) {
+    enrichArtifactId.value = shipArtifact.value.id
+    showEnrich.value = true
+  }
+}
+function onEnrichApplied() {
+  // Patches applied via ops — cards now visible on board immediately (broadcast)
+  showEnrich.value = false
+}
 
 /**
  * Підпис теми: свій переклад, якщо ключ є, інакше — те, що дав бекенд.
@@ -995,6 +1036,21 @@ onUnmounted(() => {
   background: var(--card-bg);
   cursor: pointer;
   margin-left: 8px;
+}
+
+.wb-export-dialog__enrich-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.wb-export-dialog__enrich-btn:hover {
+  opacity: 0.9;
 }
 
 .wb-export-select:focus {

@@ -7215,7 +7215,26 @@
         "night": "Night",
         "paper": "Paper"
       },
-      "solutionSlides": "Solution slides after tasks"
+      "solutionSlides": "Solution slides after tasks",
+      "aiEnrich": "AI Enrich (add formulas/theory)"
+    },
+    "enrich": {
+      "title": "AI Enrich",
+      "instructionLabel": "Instruction (freetext)",
+      "instructionPlaceholder": "e.g. 'add a formula to each task', 'add a life example', 'mark a common mistake'",
+      "run": "Run",
+      "running": "Running…",
+      "analysing": "AI is analysing tasks…",
+      "processed": "Processed: {done} / {total} tasks",
+      "applySelected": "Apply Selected ({count})",
+      "applying": "Applying…",
+      "badgeFormula": "Formula",
+      "badgeCard": "Card",
+      "task": "Task: {ref}",
+      "latexInvalid": "LaTeX invalid: {error}",
+      "sectionsAdded": "{count} sections added",
+      "onPages": " — on pages {pages}",
+      "reloadToSee": "Cards were saved to the board, but this tab is not showing them yet — reload the page."
     },
     "board": {
       "untitled": "Untitled",

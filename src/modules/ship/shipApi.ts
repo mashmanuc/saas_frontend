@@ -40,6 +40,39 @@ export interface ShipRenderResponse {
   poll_url: string
 }
 
+
+export interface EnrichPatch {
+  task_ref: string
+  action: 'add_card' | 'add_formula'
+  card_data: {
+    title: string
+    body: string
+    badge: string
+  }
+  latex_valid: boolean
+  latex_error: string
+}
+
+export interface EnrichResponse {
+  patches: EnrichPatch[]
+  error: string | null
+  /** N1 Фаза 4.1: скільки задач реально пройшло LLM (пакетами) з усього уроку. */
+  processed_tasks: number
+  total_tasks: number
+  /** N1 Фаза 4.1.1: рефи задач із пакетів, що впали з помилкою — готово для
+   *  майбутньої кнопки «Повторити необроблені» (shipApi.enrich(id, instr, refs)). */
+  failed_task_refs: string[]
+}
+
+export interface EnrichApplyResponse {
+  sections_added: number
+  error: string | null
+  /** Скільки карток не вдалось прив'язати до своєї задачі (пішли на нову сторінку). */
+  unbound_count?: number
+  /** Номери сторінок (1-based), куди лягли картки — щоб сказати тьютору, де дивитись. */
+  page_numbers?: number[]
+}
+
 export const shipApi = {
   /**
    * Чи має ця дошка AST-урок. `null` = немає (404) або ship вимкнено —
@@ -76,6 +109,27 @@ export const shipApi = {
     if (options.solutions) body.solutions = true
     return apiClient
       .post(`${BASE}/artifacts/${artifactId}/render/pptx/`, body, { headers })
+      .then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * Фаза 4: mass AI enrichment — sends instruction + optional task_ids,
+   * returns array of patches for tutor preview.
+   */
+  enrich(artifactId: string, instruction: string, taskIds?: number[]): Promise<EnrichResponse> {
+    const body: Record<string, unknown> = { instruction }
+    if (taskIds && taskIds.length) body.task_ids = taskIds
+    return apiClient
+      .post(`${BASE}/artifacts/${artifactId}/enrich/`, body)
+      .then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * Фаза 4: apply selected patches to artifact AST.
+   */
+  enrichApply(artifactId: string, patches: EnrichPatch[]): Promise<EnrichApplyResponse> {
+    return apiClient
+      .post(`${BASE}/artifacts/${artifactId}/enrich/apply/`, { patches })
       .then((r: any) => r.data ?? r)
   },
 }
