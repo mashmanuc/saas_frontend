@@ -33,6 +33,19 @@ export interface SnapshotResult {
 const MAX_DIMENSION = 4096 // мірроир BE-cap у views.py:MAX_PREVIEW_DIMENSION
 
 /**
+ * Що НЕ потрапляє у знімок для експорту: службове керування віджета.
+ *
+ * `[data-export-hide]` — явна позначка для нових віджетів (додав атрибут →
+ * елемент зник зі знімка, правити цей файл не треба). Решта — класи наявних
+ * контролів, що вже жили в коді до появи цієї позначки.
+ */
+export const EXPORT_HIDE_SELECTOR = [
+  '[data-export-hide]',
+  '.gm-hint',      // GeoMASH: підказка поточного інструмента («Drag A/B/D…»)
+  '.gm-ctx',       // GeoMASH: контекстне меню (з'являється на правий клік)
+].join(',')
+
+/**
  * Знімає PNG snapshot першого canvas/svg всередині rootEl.
  *
  * @returns Blob+розмір або null при failure/abort/нечого знімати
@@ -161,6 +174,10 @@ async function snapshotSvg(
     if (!clone.getAttribute('viewBox')) {
       clone.setAttribute('viewBox', `0 0 ${w} ${h}`)
     }
+    // Службові написи всередині сцени (підказки драга) — з клону геть:
+    // у презентації віджет статичний, інструкції про перетягування там
+    // лише шумлять. Живий DOM недоторканий — ріжемо копію.
+    clone.querySelectorAll(EXPORT_HIDE_SELECTOR).forEach((el) => el.remove())
     serialized = new XMLSerializer().serializeToString(clone)
   } catch (err) {
     console.warn('[WB:snapshot] svg_serialize_failed', err)
@@ -311,8 +328,13 @@ async function snapshotDom(
       // entire `.katex` span у clone with the SVG. Live DOM stays intact —
       // editor accessibility preserved (this is pure capture-layer concern).
       onclone: (_clonedDoc, clonedEl) => {
-        // 1) Strip MathML accessibility layer from clone.
-        clonedEl.querySelectorAll('.katex-mathml').forEach((el) => el.remove())
+        // 0) Прибрати керування з КЛОНУ (жива дошка не змінюється).
+        //    У презентації віджет — статична картинка, тож підказки драга
+        //    («Drag A/B/D · C = D + (B−A)»), панелі вимірів і кнопки на
+        //    ній нічого не пояснюють, лише шумлять (issue власника
+        //    2026-08-09). Позначка одна для всіх віджетів — щоб новий
+        //    віджет не мусив правити цей файл: [data-export-hide].
+        clonedEl.querySelectorAll(EXPORT_HIDE_SELECTOR).forEach((el) => el.remove())
 
         // 2) Replace each cloned .katex span з pre-rendered MathJax SVG.
         //    Walk source + clone у parallel по індексу (cloneNode preserves

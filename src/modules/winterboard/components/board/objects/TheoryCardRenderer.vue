@@ -172,6 +172,8 @@ const MAX_H = 800
 const MAX_W = 700
 const H_STEP = 80
 const W_STEP = 100
+const MIN_H = 140  // шапка + один рядок тексту: нижче картка виглядає смужкою
+const SHRINK_EPS = 24  // мертва зона проти «дихання» картки на переміряннях
 
 // Останній розмір, який ПОСТАВИВ САМ tryFit — не «бажаний», а фактично
 // застосований. Порівнюємо з ним у watcher нижче: якщо asset.w/h відхилились
@@ -180,6 +182,32 @@ const W_STEP = 100
 // 2026-08-07: «дозволити юзеру вручну міняти розмір, як було»).
 const lastAutoSize = ref<{ w: number; h: number } | null>(null)
 const userResized = ref(false)
+
+/**
+ * Реальна висота ВМІСТУ картки (не контейнера).
+ *
+ * ⚠️ `body.scrollHeight` тут не годиться: `.theory-card__body` має
+ * `flex: 1 1 auto`, тобто розтягується на всю вільну висоту картки. Коли
+ * текст коротший за картку, scrollHeight дорівнює висоті самого блоку —
+ * тобто «контент завжди рівно заповнює картку», і стискати нема від чого
+ * (issue власника 2026-08-09: після першого фіксу розміри не змінились).
+ * Для РОЗШИРЕННЯ це працювало, бо переповнення scrollHeight таки ловить.
+ *
+ * Міряємо від верху блоку до низу останньої дитини — це висота, яку
+ * вміст справді займає, незалежно від розтягнутого контейнера.
+ */
+function measureContent(body: HTMLElement): number {
+  const kids = Array.from(body.children) as HTMLElement[]
+  if (!kids.length) return body.scrollHeight
+  const top = body.getBoundingClientRect().top
+  let bottom = top
+  for (const kid of kids) {
+    const r = kid.getBoundingClientRect()
+    if (r.height > 0) bottom = Math.max(bottom, r.bottom)
+  }
+  // Нижній padding блоку вже врахований у BODY_PAD у викликачі.
+  return Math.max(0, Math.round(bottom - top))
+}
 
 function tryFit() {
   if (userResized.value) return   // юзер уже сам обрав розмір — не втручаємось
@@ -193,11 +221,25 @@ function tryFit() {
   body.style.overflowY = 'visible'
 
   nextTick(() => {
-    const contentH = body.scrollHeight
+    const contentH = measureContent(body)
     const availH = props.asset.h - HEADER_H - BODY_PAD
 
     if (contentH <= availH + 2) {
-      // Влазить — повертаємо overflow як було
+      // Влазить. Але «влазить» ще не означає «по вмісту»: коротка картка
+      // лишалася на стартових 380px і тягла за собою півекрана порожнечі
+      // (issue власника 2026-08-09: «картки мають бути по вмісту»).
+      // Стискаємо до фактичної висоти тексту — не нижче MIN_H, щоб
+      // однорядкова картка не перетворилась на смужку.
+      const fitH = Math.max(MIN_H, Math.round(contentH + HEADER_H + BODY_PAD))
+      // SHRINK_EPS — мертва зона проти осциляції: після стискання текст
+      // перетікає, contentH трохи змінюється, і без порогу картка
+      // «дихала» б туди-сюди на кожному вимірі.
+      if (props.asset.h - fitH > SHRINK_EPS) {
+        lastAutoSize.value = { w: props.asset.w, h: fitH }
+        emit('update:asset', { ...props.asset, h: fitH })
+        body.style.overflowY = prevOverflow || 'hidden'
+        return
+      }
       lastAutoSize.value = { w: props.asset.w, h: props.asset.h }
       body.style.overflowY = prevOverflow || 'hidden'
       return
