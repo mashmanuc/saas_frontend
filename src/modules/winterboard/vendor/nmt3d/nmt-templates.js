@@ -103,11 +103,18 @@
       // i.e. front = points with Y < cy, back = Y >= cy.
       // Note: Y = cy + r sin t; so front (Y < cy) ↔ sin t < 0 ↔ t ∈ (π, 2π).
       // We'll emit two paths.
+      // Дві НЕПЕРЕРВНІ дуги: [0,π] — задня (Y ≥ cy), [π,2π] — передня.
+      // ⚠️ Було `if (sin(t) <= 1e-6) front else back`, і точка t=0 (права
+      // крайня) потрапляла у front РАЗОМ із дугою t>π. Шлях тоді починався
+      // стрибком через увесь діаметр — на екрані це пряма поперек тіла.
+      // Вимір: у sphere стрибок 172px при медіанному сегменті 5.2px, у
+      // cylinder і cone — 140/144px. Межові точки навмисно в обох дугах,
+      // щоб кінці стикувались без розриву.
       const front = [], back = [];
       for (let i = 0; i <= N; i++) {
         const t = i / N * Math.PI * 2;
-        if (Math.sin(t) <= 1e-6) front.push(E[i]);
-        else back.push(E[i]);
+        if (t >= Math.PI - 1e-9) front.push(E[i]);
+        if (t <= Math.PI + 1e-9) back.push(E[i]);
       }
       const toPath = (pts) => pts.length ? 'M' + pts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L') : '';
       const fd = toPath(front);
@@ -651,15 +658,24 @@
         // For a meridian in plane X=0 with parameter t: Y = r cos t.
         // Y > 0 (cos t > 0) → BACK → dashed.
         // Y < 0 (cos t < 0) → FRONT → solid.
-        const front = [], back = [];
+        // Той самий дефект, що був у ellipseZ: одна умова на весь оберт рвала
+        // дугу і давала пряму через кулю. Тут задня частина (cos t > 0) — це
+        // ДВІ дуги, [0,π/2) та (3π/2,2π], тож і шляхів для неї два.
+        const HALF = Math.PI / 2, TRI = 3 * Math.PI / 2;
+        const front = [], backA = [], backB = [];
         for (let i = 0; i <= N; i++) {
           const t = i / N * Math.PI * 2;
-          if (Math.cos(t) <= 0) front.push(pts[i]); else back.push(pts[i]);
+          if (t >= HALF - 1e-9 && t <= TRI + 1e-9) front.push(pts[i]);
+          else if (t < HALF) backA.push(pts[i]);
+          else backB.push(pts[i]);
         }
         const toPath = (P) => P.length ? 'M' + P.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L') : '';
-        const fd = toPath(front), bd = toPath(back);
+        const fd = toPath(front);
         if (fd) b.visible.push(fd);
-        if (bd) b.hidden.push(bd);
+        for (const arc of ([backA, backB])) {
+          const d = toPath(arc);
+          if (d) b.hidden.push(d);
+        }
         b.allPts.push(...pts);
       }
       if (opts.radius || opts.diameter) {
@@ -770,6 +786,100 @@
       b.label(B1, 'B₁',  4, -6);
       b.label(C1, 'C₁',  6, -4);
       b.label(D1, 'D₁', -22, -4);
+      return b.toSvg();
+    },
+  };
+
+  // ===== Композитні тіла (A-T3) =====
+  // «Вписано/описано» — це НЕ дві фігури поруч, а одна параметрична сцена:
+  // розмір внутрішнього тіла однозначно випливає із зовнішнього. Тому обидва
+  // тіла малюються в ОДНІЙ проєкції (cabinet), а не склеюються з двох картинок.
+  //
+  // Силует кулі малюємо колом — так само, як це робить TPL.sphere. У cabinet
+  // куля строго проєктується в еліпс, але для навчальної схеми коло є нормою
+  // і збігається з тим, як кулю малюють у підручнику.
+  function sphereSilhouette(b, center, rWorld) {
+    const R = rWorld * b.scale;
+    b.visible.push(
+      `M${(center.x - R).toFixed(2)},${center.y.toFixed(2)} ` +
+      `A${R.toFixed(2)},${R.toFixed(2)} 0 0 1 ${(center.x + R).toFixed(2)},${center.y.toFixed(2)} ` +
+      `A${R.toFixed(2)},${R.toFixed(2)} 0 0 1 ${(center.x - R).toFixed(2)},${center.y.toFixed(2)}`);
+    b.allPts.push({ x: center.x - R, y: center.y }, { x: center.x + R, y: center.y },
+                  { x: center.x, y: center.y - R }, { x: center.x, y: center.y + R });
+  }
+
+  // 13) Куля, вписана в куб — r = a/2, центр збігається з центром куба.
+  TPL.sphere_in_cube = {
+    name: 'Куля, вписана в куб',
+    full: 'ABCDA₁B₁C₁D₁ · O, r = a/2',
+    options: [
+      { key: 'radius',   label: 'радіус r = a/2' },
+      { key: 'equator',  label: 'екватор' },
+      { key: 'touch',    label: 'точка дотику до грані' },
+    ],
+    render(opts = {}) {
+      const b = new Builder({ scale: 80 });
+      const A = b.P(0,0,0), B = b.P(1,0,0), C = b.P(1,1,0), D = b.P(0,1,0);
+      const A1 = b.P(0,0,1), B1 = b.P(1,0,1), C1 = b.P(1,1,1), D1 = b.P(0,1,1);
+      [[A,B],[B,C],[A1,B1],[B1,C1],[C1,D1],[D1,A1],[A,A1],[B,B1],[C,C1]]
+        .forEach(([p,q]) => b.edge(p,q));
+      [[A,D],[D,C],[D,D1]].forEach(([p,q]) => b.edge(p,q,'hid'));
+
+      const O = b.P(0.5, 0.5, 0.5);
+      sphereSilhouette(b, O, 0.5);
+      if (opts.equator !== false) b.ellipseZ(0.5, 0.5, 0.5, 0.5, 'full');
+      if (opts.radius) {
+        const T = b.P(1, 0.5, 0.5);          // дотик до правої грані
+        b.auxLine(O, T, { color: '#c4622a', w: 1.5 });
+        b.dot(T); b.label(T, 'r', 6, -4);
+      }
+      if (opts.touch) {
+        const T2 = b.P(0.5, 0.5, 1);          // дотик до верхньої грані
+        b.dot(T2); b.label(T2, 'K', 6, -6);
+      }
+      b.dot(O); b.label(O, 'O', 5, -4);
+      b.label(A, 'A', -14, 14);
+      b.label(B, 'B', 4, 14);
+      b.label(A1, 'A₁', -18, -6);
+      b.label(C1, 'C₁', 6, -4);
+      return b.toSvg();
+    },
+  };
+
+  // 14) Куб, вписаний у кулю — діагональ куба = діаметр: a = 2R/√3.
+  TPL.cube_in_sphere = {
+    name: 'Куб, вписаний у кулю',
+    full: 'ABCDA₁B₁C₁D₁ · O, R; a = 2R/√3',
+    options: [
+      { key: 'bodyDiag', label: 'діагональ AC₁ = 2R' },
+      { key: 'radius',   label: 'радіус OC₁' },
+      { key: 'equator',  label: 'екватор' },
+    ],
+    render(opts = {}) {
+      const b = new Builder({ scale: 78 });
+      // Куля радіуса 1; півребро куба h = 1/√3, центр в початку координат.
+      const h = 1 / Math.sqrt(3);
+      const A = b.P(-h,-h,-h), B = b.P(h,-h,-h), C = b.P(h,h,-h), D = b.P(-h,h,-h);
+      const A1 = b.P(-h,-h,h), B1 = b.P(h,-h,h), C1 = b.P(h,h,h), D1 = b.P(-h,h,h);
+      [[A,B],[B,C],[A1,B1],[B1,C1],[C1,D1],[D1,A1],[A,A1],[B,B1],[C,C1]]
+        .forEach(([p,q]) => b.edge(p,q));
+      [[A,D],[D,C],[D,D1]].forEach(([p,q]) => b.edge(p,q,'hid'));
+
+      const O = b.P(0, 0, 0);
+      sphereSilhouette(b, O, 1);
+      if (opts.equator) b.ellipseZ(0, 0, 0, 1, 'full');
+      if (opts.bodyDiag) {
+        // Саме вона й дорівнює діаметру — це ключ до всієї задачі.
+        b.auxLine(A, C1, { color: '#c4622a', w: 1.6 });
+      }
+      if (opts.radius) {
+        b.auxLine(O, C1, { color: '#3b7b9b', w: 1.4, dash: '4 3' });
+      }
+      b.dot(O); b.label(O, 'O', 5, -4);
+      b.label(A, 'A', -14, 14);
+      b.label(B, 'B', 4, 14);
+      b.label(A1, 'A₁', -18, -6);
+      b.label(C1, 'C₁', 6, -4);
       return b.toSvg();
     },
   };

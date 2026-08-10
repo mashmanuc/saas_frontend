@@ -1204,6 +1204,9 @@ function toGraphSrc(eq: string): string {
 const NMT3D_TEMPLATE_KEYS = new Set([
   'cone', 'cube', 'cuboid', 'cylinder', 'prism3', 'prism4', 'prism6',
   'pyramid3', 'pyramid4', 'sphere', 'tetrahedron', 'truncCone',
+  // Композитні сцени «вписано/описано» (A-T3) — одна параметрична фігура,
+  // а не дві поруч: розмір внутрішнього тіла випливає із зовнішнього.
+  'sphere_in_cube', 'cube_in_sphere',
 ])
 
 /** null = companion чесно НЕ створюється (немає шаблона) — не пустушка. */
@@ -1268,6 +1271,10 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         cuboid:   'cuboid',
         // 2026-08-04 (власник): точний шаблон замість generic pyramid3.
         tetrahedron: 'tetrahedron',
+        // A-T3: shape для композитів приходить із BE вже як пара «X_in_Y».
+        // Без цих рядків companion мовчки не рендериться (грабля тетраедра, D-4).
+        sphere_in_cube: 'sphere_in_cube',
+        cube_in_sphere: 'cube_in_sphere',
         // Прогін №4 (2026-08-04): 52 задачі банку мають shape='parallelepiped',
         // якого не було в мапі — фолбек «як є» створював ПОРОЖНЮ картку
         // (Workspace не знає такого шаблона) і пустушка їхала аж у колоду.
