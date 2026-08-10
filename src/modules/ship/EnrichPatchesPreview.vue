@@ -66,9 +66,17 @@
           <span class="enrich-patches-preview__badge">{{ patch.action === 'add_formula' ? t('winterboard.enrich.badgeFormula') : t('winterboard.enrich.badgeCard') }}</span>
           <span class="enrich-patches-preview__task">{{ t('winterboard.enrich.task', { ref: patch.task_ref }) }}</span>
         </label>
+        <!-- Формули рендеряться так само, як потім на дошці (той самий
+             renderTextWithLatex, що в TheoryCardRenderer). Інакше тьютор
+             бачив у прев'ю сирий `$\frac{k}{x+b}$` і оцінював картку по
+             гіршому вигляду, ніж вона матиме після застосування
+             (живий прогін 2026-08-10).
+             v-html безпечний саме тут: renderTextWithLatex сам екранує
+             HTML (`&`, `<`, `>`) перед вставкою LaTeX — сирий v-html із
+             відповіддю LLM використовувати НЕ можна. -->
         <div class="enrich-patches-preview__preview">
-          <strong>{{ patch.card_data?.title || '' }}</strong>
-          <p>{{ patch.card_data?.body || '' }}</p>
+          <strong v-html="rendered[i].title" />
+          <p v-html="rendered[i].body" />
           <span class="enrich-patches-preview__badge-label">{{ patch.card_data?.badge || '' }}</span>
         </div>
         <div class="enrich-patches-preview__latex-warn" v-if="!patch.latex_valid">
@@ -139,6 +147,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { shipApi, type EnrichApplyResponse, type EnrichSkip } from './shipApi'
+import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { useOpsSyncStore } from '@/modules/winterboard/stores/opsSyncStore'
 import { useWBStore } from '@/modules/winterboard/board/state/boardStore'
 
@@ -188,6 +197,22 @@ const staleView = ref(false)
 
 const hasSelected = computed(() => Object.values(selected.value).some(v => v))
 const selectedCount = computed(() => Object.values(selected.value).filter(v => v).length)
+
+/**
+ * Заголовок і тіло кожного патча, відрендерені з $LaTeX$ — рівно тим
+ * рендерером, що потім намалює картку на дошці.
+ *
+ * Обчислюємо computed'ом, а не викликом просто в шаблоні: KaTeX не
+ * безкоштовний, а список — до 24 полів (12 патчів × 2), і виклик у
+ * шаблоні ганяв би їх на КОЖЕН ререндер (клік по галочці, зміна
+ * скролу). Тут — один прохід на зміну `patches`.
+ */
+const rendered = computed(() =>
+  patches.value.map((p: any) => ({
+    title: renderTextWithLatex(p?.card_data?.title || ''),
+    body: renderTextWithLatex(p?.card_data?.body || ''),
+  })),
+)
 
 /** «3–9» для суцільного діапазону, «3, 5, 9» для розрізненого. */
 const pagesLabel = computed(() => {
@@ -411,6 +436,14 @@ async function syncBoard() {
   margin: 4px 0;
   font-size: 14px;
 }
+/* Формули в прев'ю: та сама поведінка, що на дошці, але у вузькій
+   колонці діалогу — тож довгий вираз скролиться, а не розпирає модалку.
+   :deep, бо вміст вставляється через v-html. */
+.enrich-patches-preview__preview :deep(.katex) { font-size: 1em; }
+.enrich-patches-preview__preview :deep(.katex-display) {
+  margin: 6px 0; overflow-x: auto; overflow-y: hidden;
+}
+.enrich-patches-preview__preview :deep(.lc-display-math) { overflow-x: auto; }
 .enrich-patches-preview__badge-label {
   font-size: 12px;
   color: #aaa;

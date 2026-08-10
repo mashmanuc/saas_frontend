@@ -215,8 +215,11 @@
           <div ref="aiThreadEl" class="cmdp-ai-thread">
             <template v-for="(it, i) in aiThread" :key="i">
               <p v-if="it.kind === 'user'" class="ai-msg ai-msg--user">{{ it.text }}</p>
-              <p v-else-if="it.kind === 'bot'" class="ai-msg ai-msg--bot">{{ it.text }}</p>
-              <p v-else-if="it.kind === 'done'" class="ai-msg ai-msg--done">✓ {{ it.text }}</p>
+              <!-- v-html безпечний саме через renderTextWithLatex: він сам
+                   екранує HTML (&, <, >) ПЕРЕД вставкою формул. Сирий
+                   v-html з відповіддю LLM використовувати не можна. -->
+              <p v-else-if="it.kind === 'bot'" class="ai-msg ai-msg--bot" v-html="aiHtml[i]"></p>
+              <p v-else-if="it.kind === 'done'" class="ai-msg ai-msg--done">✓&nbsp;<span v-html="aiHtml[i]"></span></p>
 
               <!-- онбординг: крок провідника -->
               <div v-else-if="it.kind === 'guidecta'" class="cmdp-ai-actions" style="margin:2px 0 4px">
@@ -309,6 +312,7 @@ import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActi
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
+import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
@@ -799,6 +803,29 @@ function aiScroll() {
   nextTick(() => { const el = aiThreadEl.value; if (el) el.scrollTop = el.scrollHeight })
 }
 function aiPush(item) { aiThread.value.push(item); aiScroll() }
+
+/**
+ * HTML відповідей Інтегралика: $LaTeX$ → KaTeX, **жирний** → <strong>.
+ *
+ * Раніше рядок виводився через {{ }} — учень читав `\Rightarrow`,
+ * `\sqrt{...}` і `**стор.5:**` сирим текстом (знахідка власника
+ * 2026-08-10). Рендеримо ТИМ САМИМ `renderTextWithLatex`, що малює
+ * картки дошки й слайди, — одна поведінка формул усюди.
+ *
+ * Ключ — індекс у треді; мапа перераховується лише коли тред змінився,
+ * а не на кожен ререндер панелі (KaTeX недешевий, а тред росте).
+ * Повідомлення КОРИСТУВАЧА свідомо НЕ рендеримо: формул там немає, а
+ * будь-який v-html — зайва поверхня.
+ */
+const aiHtml = computed(() => {
+  const out = {}
+  aiThread.value.forEach((it, i) => {
+    if (it && (it.kind === 'bot' || it.kind === 'done')) {
+      out[i] = renderTextWithLatex(String(it.text ?? ''))
+    }
+  })
+  return out
+})
 
 function aiHistory() {
   const msgs = []
@@ -1698,6 +1725,16 @@ onBeforeUnmount(() => {
 .ai-msg--bot { background: #f3f4f6; color: #111; align-self: flex-start; border-bottom-left-radius: 3px; }
 .ai-msg--done { background: #dcfce7; color: #166534; align-self: flex-start; }
 .ai-card { max-width: 95%; }
+/* KaTeX у відповідях: формула не має рвати бульбашку й розтягувати панель.
+   :deep — вміст іде через v-html, тож scoped-класи на нього не діють. */
+.ai-msg--bot :deep(.katex), .ai-msg--done :deep(.katex) { font-size: 1.02em; }
+.ai-msg--bot :deep(.katex-display), .ai-msg--done :deep(.katex-display) {
+  margin: 6px 0; overflow-x: auto; overflow-y: hidden; }
+/* Довга формула в inline-рядку — скрол усередині бульбашки, а не розпирання. */
+.ai-msg--bot :deep(.lc-display-math) { overflow-x: auto; }
+.ai-msg--bot :deep(table) { border-collapse: collapse; margin: 6px 0; font-size: .95em; }
+.ai-msg--bot :deep(th), .ai-msg--bot :deep(td) {
+  border: 1px solid #d1d5db; padding: 3px 6px; }
 .cmdp-list--inline { max-height: 190px; padding: 4px 0 0; }
 .ai-typing { display: flex; gap: 4px; align-items: center; padding: 11px 13px; }
 .ai-typing span { width: 5px; height: 5px; border-radius: 50%; background: #9ca3af;
