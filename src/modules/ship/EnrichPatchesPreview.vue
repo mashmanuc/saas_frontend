@@ -33,6 +33,12 @@
          і скільки реально пройшло LLM, а не здогадується з тиші. -->
     <div class="enrich-patches-preview__progress" v-if="totalTasks > 0 && !loading">
       {{ t('winterboard.enrich.processed', { done: processedTasks, total: totalTasks }) }}
+      <!-- B-T2: пропуск — не «нічого не сталось», а результат роботи моделі.
+           Тому він стоїть у тому самому рядку, що й «оброблено»: тьютор
+           читає підсумок цілком, а не здогадується, куди поділась задача. -->
+      <span class="enrich-patches-preview__tally" v-if="patches.length || skipped.length">
+        {{ t('winterboard.enrich.tally', { proposed: patches.length, skipped: skipped.length }) }}
+      </span>
     </div>
 
     <!-- Error -->
@@ -74,6 +80,28 @@
       </div>
     </div>
 
+    <!-- B-T2: свідомі пропуски. Згорнуто за замовчуванням — це довідка,
+         а не робота: розгортає той, кому цікаво ЧОМУ модель промовчала.
+         Блок стоїть усередині скрольованої області діалогу, тож модалку
+         не розсуває (max-height 80vh + overflow вже є у WBExportDialog). -->
+    <div class="enrich-patches-preview__skipped" v-if="skipped.length && !loading">
+      <button
+        type="button"
+        class="enrich-patches-preview__skipped-toggle"
+        :aria-expanded="skippedOpen"
+        @click="skippedOpen = !skippedOpen"
+      >
+        {{ skippedOpen ? '▾' : '▸' }}
+        {{ t('winterboard.enrich.skippedTitle', { count: skipped.length }) }}
+      </button>
+      <ul class="enrich-patches-preview__skipped-list" v-if="skippedOpen">
+        <li v-for="(skip, i) in skipped" :key="i">
+          <span class="enrich-patches-preview__task">{{ t('winterboard.enrich.task', { ref: skip.task_ref }) }}</span>
+          <span class="enrich-patches-preview__skipped-reason">{{ skip.reason }}</span>
+        </li>
+      </ul>
+    </div>
+
     <!-- Apply button -->
     <div class="enrich-patches-preview__actions" v-if="patches.length">
       <button
@@ -103,7 +131,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { shipApi, type EnrichApplyResponse } from './shipApi'
+import { shipApi, type EnrichApplyResponse, type EnrichSkip } from './shipApi'
 import { useOpsSyncStore } from '@/modules/winterboard/stores/opsSyncStore'
 import { useWBStore } from '@/modules/winterboard/board/state/boardStore'
 
@@ -138,6 +166,11 @@ const result = ref<EnrichApplyResponse | null>(null)
 // пакетами по всіх і чесно каже, скільки встигло.
 const processedTasks = ref(0)
 const totalTasks = ref(0)
+// B-T2: задачі, над якими модель ДУМАЛА і свідомо вирішила мовчати.
+// Для методиста це сигнал не менш цінний за картку: видно, що урок
+// пройдено цілком, а не обірвано.
+const skipped = ref<EnrichSkip[]>([])
+const skippedOpen = ref(false)
 // Картки записані, але ця вкладка їх не показала (resync не пройшов) —
 // краще сказати «перезавантажте», ніж лишити тьютора з порожньою дошкою
 // і думкою, що фіча не спрацювала.
@@ -161,6 +194,8 @@ async function runEnrich() {
   error.value = ''
   patches.value = []
   selected.value = {}
+  skipped.value = []
+  skippedOpen.value = false
   result.value = null
   try {
     const res = await shipApi.enrich(props.artifactId, instruction.value)
@@ -172,6 +207,7 @@ async function runEnrich() {
     // патчі, щойно з'являлась будь-яка помилка.
     if (res.error) error.value = res.error
     patches.value = res.patches || []
+    skipped.value = res.skipped || []
     const sel: Record<number, boolean> = {}
     patches.value.forEach((p: any, i: number) => {
       // low_value (переказ умови) — галочка знята, але вибрати можна:
@@ -200,6 +236,7 @@ async function applySelected() {
     // й відкривати діалог. `result` лишається на екрані як підсумок.
     patches.value = []
     selected.value = {}
+    skipped.value = []
     instruction.value = ''
     emit('applied')
   } catch (e: any) {
@@ -365,6 +402,49 @@ async function syncBoard() {
   margin-top: 4px;
   color: #e74c3c;
   font-size: 12px;
+}
+
+/* B-T2: блок пропусків. Тон приглушений — це довідка, а не помилка й не
+   дія; червоне тут читалося б як «щось пішло не так», хоча пропуск —
+   штатний і бажаний результат. */
+.enrich-patches-preview__tally {
+  margin-left: 8px;
+  opacity: 0.85;
+}
+.enrich-patches-preview__skipped {
+  margin: 12px 0;
+}
+.enrich-patches-preview__skipped-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+}
+.enrich-patches-preview__skipped-toggle:hover {
+  color: #ddd;
+}
+.enrich-patches-preview__skipped-list {
+  margin: 4px 0 0;
+  padding: 0 0 0 24px;
+  /* Довгий список не розтягує модалку: власна межа + скрол усередині
+     блоку. Зовнішній overflow діалогу лишається недоторканим. */
+  max-height: 180px;
+  overflow-y: auto;
+  list-style: none;
+}
+.enrich-patches-preview__skipped-list li {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #aaa;
+}
+.enrich-patches-preview__skipped-reason {
+  margin-left: 6px;
+  font-style: italic;
 }
 .enrich-patches-preview__actions {
   display: flex;
