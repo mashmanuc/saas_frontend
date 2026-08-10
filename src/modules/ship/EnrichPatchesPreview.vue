@@ -14,11 +14,18 @@
     <div class="enrich-patches-preview__input" v-if="!patches.length && !loading">
       <label>{{ t('winterboard.enrich.instructionLabel') }}</label>
       <textarea
+        ref="instructionEl"
         v-model="instruction"
         :placeholder="t('winterboard.enrich.instructionPlaceholder')"
         rows="3"
       />
-      <button :disabled="!instruction.trim() || loading" @click="runEnrich">
+      <!-- Кнопка блокується ЛИШЕ під час запиту, не за станом v-model.
+           Живий прогін 2026-08-10: текст у полі є, а «Запустити» сіра —
+           бо голосове введення (AudioScribe) і подібні розширення пишуть
+           у DOM напряму, БЕЗ події `input`, тож v-model лишався порожнім.
+           Значення беремо з елемента при кліку — працює для друку,
+           диктування, вставки й автозаповнення однаково. -->
+      <button :disabled="loading" @click="runEnrich">
         {{ loading ? t('winterboard.enrich.running') : t('winterboard.enrich.run') }}
       </button>
     </div>
@@ -155,6 +162,9 @@ const emit = defineEmits<{
 }>()
 
 const instruction = ref('')
+/** Пряме посилання на поле — читаємо значення з DOM при запуску
+ *  (v-model не бачить вводу від розширень; живий прогін 2026-08-10). */
+const instructionEl = ref<HTMLTextAreaElement | null>(null)
 const patches = ref<any[]>([])
 const selected = ref<Record<number, boolean>>({})
 const loading = ref(false)
@@ -189,7 +199,15 @@ const pagesLabel = computed(() => {
 })
 
 async function runEnrich() {
-  if (!instruction.value.trim()) return
+  // Джерело правди — сам елемент, не v-model: голосове введення й
+  // розширення пишуть у DOM без події `input` (див. коментар у шаблоні).
+  // Синхронізуємо назад, щоб решта компонента бачила те саме значення.
+  const typed = (instructionEl.value?.value ?? instruction.value).trim()
+  if (!typed) {
+    error.value = t('winterboard.enrich.instructionRequired')
+    return
+  }
+  instruction.value = typed
   loading.value = true
   error.value = ''
   patches.value = []

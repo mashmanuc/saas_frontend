@@ -139,3 +139,47 @@ describe('B-T2 — блок свідомих пропусків', () => {
     expect(wrapper.text()).not.toContain('причина')
   })
 })
+
+/**
+ * Живий прогін 2026-08-10: текст у полі є, а «Запустити» сіра.
+ * Причина — голосове введення / розширення пишуть у DOM напряму, без
+ * події `input`, тож `v-model` лишається порожнім. Кнопка більше не
+ * залежить від v-model, а значення читається з елемента при кліку.
+ */
+describe('EnrichPatchesPreview — введення повз v-model', () => {
+  beforeEach(() => {
+    enrich.mockReset()
+    setActivePinia(createPinia())
+  })
+
+  it('кнопка НЕ заблокована при порожньому v-model', () => {
+    const wrapper = mountPreview()
+    const btn = wrapper.find('.enrich-patches-preview__input button')
+    expect(btn.attributes('disabled')).toBeUndefined()
+  })
+
+  it('запускає з текстом, вставленим у DOM без події input', async () => {
+    enrich.mockResolvedValue({
+      patches: [], error: null, processed_tasks: 1, total_tasks: 1,
+      failed_task_refs: [], skipped: [],
+    })
+    const wrapper = mountPreview()
+    const ta = wrapper.find('textarea').element as HTMLTextAreaElement
+    // Дзеркало поведінки розширення: пишемо значення, події НЕ шлемо.
+    ta.value = 'Додай приклад із життя'
+
+    await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+    await flushPromises()
+
+    expect(enrich).toHaveBeenCalledWith('a1', 'Додай приклад із життя')
+  })
+
+  it('порожнє поле → чесне повідомлення, не мовчазна відмова', async () => {
+    const wrapper = mountPreview()
+    await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+    await flushPromises()
+
+    expect(enrich).not.toHaveBeenCalled()
+    expect(wrapper.find('.enrich-patches-preview__error').text()).toContain('інструкцію')
+  })
+})

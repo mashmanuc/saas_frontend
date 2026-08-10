@@ -7238,7 +7238,8 @@
       "lowValue": "Restates the task — nothing new for the student. You can still enable it.",
       "duplicateOf": "The same card is already proposed for task {ref}. Enable it if both need this support.",
       "skippedTitle": "AI deliberately skipped {count} tasks",
-      "tally": "· {proposed} cards proposed · {skipped} tasks skipped"
+      "tally": "· {proposed} cards proposed · {skipped} tasks skipped",
+      "instructionRequired": "Enter an instruction — e.g. “add a formula to each task”."
     },
     "board": {
       "untitled": "Untitled",
