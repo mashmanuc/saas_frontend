@@ -66,6 +66,11 @@
         <div class="enrich-patches-preview__latex-warn" v-if="patch.low_value">
           💤 {{ t('winterboard.enrich.lowValue') }}
         </div>
+        <!-- B-T1: та сама картка вже є в іншої задачі. Позначка, не
+             заборона: інколи опора справді потрібна обом. -->
+        <div class="enrich-patches-preview__latex-warn" v-if="patch.duplicate_of">
+          🔁 {{ t('winterboard.enrich.duplicateOf', { ref: patch.duplicate_of }) }}
+        </div>
       </div>
     </div>
 
@@ -172,6 +177,7 @@ async function runEnrich() {
       // low_value (переказ умови) — галочка знята, але вибрати можна:
       // фільтр страхує, рішення за тьютором.
       sel[i] = p.latex_valid !== false && p.low_value !== true
+        && !p.duplicate_of
     })
     selected.value = sel
   } catch (e: any) {
