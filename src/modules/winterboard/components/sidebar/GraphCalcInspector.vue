@@ -82,6 +82,15 @@
             @blur="onInputBlur(expr.id)"
             @unavailable="mqAvailable = false"
           />
+          <!-- @focus ОБОВ'ЯЗКОВИЙ: нове поле («+ вираз») порожнє, тому
+               рендериться цією гілкою, але `editingId` порожній — його
+               ставить лише клік по прев'ю. Щойно юзер друкував перший
+               символ, `expr.src.trim()` ставало істинним і ПЕРША умова
+               (`editingId !== expr.id && expr.src.trim()`) підміняла
+               input кнопкою-прев'ю: поле зникало разом із фокусом, далі
+               не вводилось нічого (живий прогін 2026-08-10). Фіксуємо
+               режим редагування на фокусі — тоді перша умова хибна, поки
+               не станеться blur (він же й скидає editingId). -->
           <input
             v-else
             type="text"
@@ -89,6 +98,7 @@
             :value="expr.src"
             :data-expr-id="expr.id"
             placeholder="y = ..."
+            @focus="editingId = expr.id"
             @input="b.onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
             @blur="onInputBlur(expr.id)"
             @keydown.enter.prevent="b.onEnterPress(expr.id)"
