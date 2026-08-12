@@ -78,13 +78,22 @@ describe('B-T2 — блок свідомих пропусків', () => {
     await run(wrapper, {
       patches: [], error: null, processed_tasks: 1, total_tasks: 1,
       failed_task_refs: [],
-      skipped: [{ task_ref: 'nmt-sc-9', reason: 'тривіальне обчислення' }],
+      // 2026-08-12: підпис задачі — це УМОВА, а не ID банку. «Задача: 10719»
+      // тьютору нічого не казало (живий тест власника), тож BE тепер шле
+      // `task_title`, а ID у прев'ю не потрапляє взагалі.
+      skipped: [{
+        task_ref: 'nmt-sc-9',
+        task_title: 'Обчисліть суму кутів опуклого десятикутника',
+        reason: 'тривіальне обчислення',
+      }],
     })
 
     expect(wrapper.text()).not.toContain('тривіальне обчислення')
     await wrapper.find('.enrich-patches-preview__skipped-toggle').trigger('click')
     expect(wrapper.text()).toContain('тривіальне обчислення')
-    expect(wrapper.text()).toContain('nmt-sc-9')
+    expect(wrapper.text()).toContain('суму кутів опуклого десятикутника')
+    // ID банку тьютор бачити не мусить
+    expect(wrapper.text()).not.toContain('nmt-sc-9')
   })
 
   it('лічильники показують і запропоноване, і пропущене', async () => {

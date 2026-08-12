@@ -7235,6 +7235,7 @@
       "onPages": " — on pages {pages}",
       "reloadToSee": "Cards were saved to the board, but this tab is not showing them yet — reload the page.",
       "lowValue": "Restates the task — nothing new for the student. You can still enable it.",
+      "alreadyOnBoard": "This card is already in the lesson from an earlier run. Enable it if you want it again.",
       "duplicateOf": "The same card is already proposed for task {ref}. Enable it if both need this support.",
       "skippedTitle": "AI deliberately skipped {count} tasks",
       "tally": "· {proposed} cards proposed · {skipped} tasks skipped",

@@ -64,7 +64,12 @@
         <label class="enrich-patches-preview__checkbox">
           <input type="checkbox" v-model="selected[i]" :disabled="!patch.latex_valid" />
           <span class="enrich-patches-preview__badge">{{ patch.action === 'add_formula' ? t('winterboard.enrich.badgeFormula') : t('winterboard.enrich.badgeCard') }}</span>
-          <span class="enrich-patches-preview__task">{{ t('winterboard.enrich.task', { ref: patch.task_ref }) }}</span>
+          <!-- 2026-08-12: тут стояло «Задача: 10719» — ID банку, який тьютору
+               нічого не каже. Показуємо початок УМОВИ: свою задачу він
+               упізнає за текстом. Поля може не бути (старий BE) — тоді
+               мовчимо, бо ID гірший за порожнечу. -->
+          <span v-if="patch.task_title" class="enrich-patches-preview__task"
+                v-html="renderTextWithLatex(patch.task_title)" />
         </label>
         <!-- Формули рендеряться так само, як потім на дошці (той самий
              renderTextWithLatex, що в TheoryCardRenderer). Інакше тьютор
@@ -86,6 +91,13 @@
              (вибрати все одно можна: фільтр страхує, не забороняє). -->
         <div class="enrich-patches-preview__latex-warn" v-if="patch.low_value">
           💤 {{ t('winterboard.enrich.lowValue') }}
+        </div>
+        <!-- 2026-08-12: ця картка вже лежить в уроці з минулого запуску.
+             Промпт просить модель не повторюватись — вона не слухається,
+             тож показуємо факт і знімаємо галочку. Не забороняємо: інколи
+             ту саму опору справді хочуть поставити ще раз. -->
+        <div class="enrich-patches-preview__latex-warn" v-if="patch.already_on_board">
+          ♻️ {{ t('winterboard.enrich.alreadyOnBoard') }}
         </div>
         <!-- B-T1: та сама картка вже є в іншої задачі. Позначка, не
              заборона: інколи опора справді потрібна обом. -->
@@ -111,7 +123,8 @@
       </button>
       <ul class="enrich-patches-preview__skipped-list" v-if="skippedOpen">
         <li v-for="(skip, i) in skipped" :key="i">
-          <span class="enrich-patches-preview__task">{{ t('winterboard.enrich.task', { ref: skip.task_ref }) }}</span>
+          <span v-if="skip.task_title" class="enrich-patches-preview__task"
+                v-html="renderTextWithLatex(skip.task_title)" />
           <span class="enrich-patches-preview__skipped-reason">{{ skip.reason }}</span>
         </li>
       </ul>
@@ -207,10 +220,37 @@ const selectedCount = computed(() => Object.values(selected.value).filter(v => v
  * шаблоні ганяв би їх на КОЖЕН ререндер (клік по галочці, зміна
  * скролу). Тут — один прохід на зміну `patches`.
  */
+/**
+ * Тіло картки → HTML. Формульні картки потребують окремого поводження.
+ *
+ * 2026-08-12 (живий тест власника): у прев'ю висіло `\log_a b + \log_a c =
+ * \log_a (bc)` сирим текстом. Здавалося, що рендер відкотили — ні, він на
+ * місці. Причина в КОНТРАКТІ: для `add_formula` промпт вимагає «body = ЛИШЕ
+ * формула, чистий LaTeX БЕЗ $», а `renderTextWithLatex` рендерить лише те,
+ * що між доларами. Голий LaTeX проходив як звичайний текст — ще й із
+ * обрізаними слешами.
+ *
+ * Дошка це робила правильно весь час (`FormulaCardRenderer.vue:80` обгортає
+ * у `$$…$$`), тобто прев'ю знову показувало ГІРШЕ, ніж буде після
+ * застосування — рівно та вада, яку лагодили 2026-08-10 для `add_card`.
+ * Тоді `add_formula` не покрили, і поки жанр майже не слухався, формульних
+ * карток було мало. Ф-1 навчив модель давати «Формула» — і дефект вилетів
+ * на кожній картці.
+ *
+ * Обгортаємо ЛИШЕ коли доларів немає: якщо модель усе-таки їх поставила,
+ * зовнішні `$$` зламали б вираз.
+ */
+function renderBody(patch: any): string {
+  const body = String(patch?.card_data?.body ?? '')
+  if (!body.trim()) return ''
+  const bare = patch?.action === 'add_formula' && !body.includes('$')
+  return renderTextWithLatex(bare ? `$$${body}$$` : body)
+}
+
 const rendered = computed(() =>
   patches.value.map((p: any) => ({
     title: renderTextWithLatex(p?.card_data?.title || ''),
-    body: renderTextWithLatex(p?.card_data?.body || ''),
+    body: renderBody(p),
   })),
 )
 
@@ -256,6 +296,7 @@ async function runEnrich() {
       // low_value (переказ умови) — галочка знята, але вибрати можна:
       // фільтр страхує, рішення за тьютором.
       sel[i] = p.latex_valid !== false && p.low_value !== true
+        && p.already_on_board !== true
         && !p.duplicate_of
     })
     selected.value = sel
