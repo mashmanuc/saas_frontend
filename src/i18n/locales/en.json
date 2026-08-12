@@ -7004,6 +7004,7 @@
       "language": "Language",
       "login": "Log in",
       "connectCloud": "Connect cloud",
+      "saveWork": "Save my work",
       "handoffFailed": "Couldn't move your local board to the cloud. Nothing is lost — we'll retry next time you open the workspace.",
       "upsell": {
         "title": "Connect the cloud",

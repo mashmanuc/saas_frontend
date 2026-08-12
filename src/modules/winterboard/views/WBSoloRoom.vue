@@ -241,24 +241,21 @@
         <!-- Local Workspace (ТЗ §4): перемикач мови + [Підключити хмару] замість
              профілю/виходу. Жодних «демо»-плашок. -->
         <WBLanguageSwitcher v-if="isLocalWorkspace" />
-        <!-- Точка 2 (2026-07-16): пряма «Увійти» для існуючих юзерів — субтильна
-             (вторинна дія), primary CTA = [Підключити хмару]. Веде на логін →
-             їхній кабінет (без handoff: хто просто входить, не переносить дошку). -->
-        <button
-          v-if="isLocalWorkspace"
-          type="button"
-          class="wb-header-btn wb-header-btn--login"
-          @click="goToLogin"
-        >
-          {{ t('winterboard.localWorkspace.login') }}
-        </button>
+        <!-- 2026-08-12 (рішення власника): БУЛО ДВІ кнопки — «Підключити хмару»
+             (реєстрація) і «Увійти» (логін). Розподіл не читався: у липні новачок
+             натиснув «Увійти» і зламав собі шлях, а власник на живому тесті
+             натиснув «Підключити хмару» й отримав демо-вітрину в акаунті. Дві
+             людини, дві різні кнопки, обидва рази не те, що очікували.
+             Тепер ОДНА, і підпис обіцяє вигоду, а не механізм («хмара» — це
+             як влаштовано, а не що людина отримає). Вибір «вхід чи реєстрація»
+             робить сама auth-сторінка, де обидва шляхи поруч. -->
         <button
           v-if="isLocalWorkspace"
           type="button"
           class="wb-header-btn wb-header-btn--cloud"
           @click="onHeaderConnectCloud"
         >
-          {{ t('winterboard.localWorkspace.connectCloud') }}
+          {{ t('winterboard.localWorkspace.saveWork') }}
         </button>
         <button v-else type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
           {{ t('winterboard.room.exit') }}
@@ -1111,9 +1108,17 @@ const cloudUpsellMessage = computed(() =>
 // контент у хмарну сесію.
 function goToCloudSignup(): void {
   showCloudUpsell.value = false
-  // Буфер пишемо ЗАВЖДИ при кліку (навіть якщо на столі лише подарунок) —
-  // «те, що ти намалював — уже твоє» після реєстрації.
-  stashHandoff(store.workspaceName, store.serializedState)
+  // 2026-08-12: раніше буфер писався ЗАВЖДИ, «навіть якщо на столі лише
+  // подарунок». Живий тест власника показав ціну цього рішення: новий тьютор
+  // після реєстрації побачив НЕ свою роботу, а нашу вітрину — тригонометричне
+  // коло, 3D-поверхню й призму — під заголовком «Мій робочий стіл».
+  // Сусідня кнопка «Увійти» вже робила правильно, і в її коментарі було
+  // написано чому: «щоб не засмічувати акаунти демо-даними». Тепер, коли
+  // кнопка одна, лишається саме ця, обережна політика.
+  const state = store.serializedState
+  if (!isUntouchedShowcase(state)) {
+    stashHandoff(store.workspaceName, state)
+  }
   // 2026-07-23: раніше вело на лендінг (/start) — людина мусила шукати форму серед
   // маркетингових секцій, а ?redirect губився на наступних кроках, тож після
   // реєстрації вона не поверталась на /workspace і її дошка не імпортувалась.
@@ -1130,26 +1135,6 @@ function onHeaderConnectCloud(): void {
 function onUpsellConnect(): void {
   trackLocal('upsell_cta', { variant: cloudUpsellKind.value })
   goToCloudSignup()
-}
-
-// 2026-07-30 (постмортем першого юзера, uid 213/214): людина, що прийшла З
-// ДОШКИ, натискає саме «Увійти» — і раніше цей шлях губив усе: без ?redirect
-// вона після входу/реєстрації падала у порожній кабінет, а її малюнок лишався
-// покинутим у localStorage. «Підключити хмару» поруч усе робив правильно —
-// тепер обидві кнопки поводяться однаково щодо збереження шляху.
-//
-// Правила:
-//  - редирект назад на /workspace — ЗАВЖДИ (authed-гілка сама вирішить:
-//    є буфер → імпорт у хмару; нема → хмарна Студія);
-//  - stash handoff — ЛИШЕ якщо на дошці є щось людське (НЕторкану вітрину
-//    не переносимо, щоб не засмічувати акаунти існуючих юзерів демо-даними).
-function goToLogin(): void {
-  trackLocal('login_clicked')
-  const state = store.serializedState
-  if (!isUntouchedShowcase(state)) {
-    stashHandoff(store.workspaceName, state)
-  }
-  router.push({ path: '/auth/login', query: { redirect: '/workspace' } })
 }
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes

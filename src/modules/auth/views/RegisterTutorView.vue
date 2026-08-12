@@ -96,7 +96,7 @@
 
     <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.register.haveAccount') }}
-      <RouterLink to="/auth/login?role=tutor" class="hover:underline font-medium" style="color: var(--accent);">
+      <RouterLink :to="loginLink" class="hover:underline font-medium" style="color: var(--accent);">
         {{ $t('auth.register.loginLink') }}
       </RouterLink>
     </p>
@@ -141,6 +141,19 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const auth = useAuthStore()
+
+// 2026-08-12: посилання «вже маю акаунт» було жорстким рядком
+// `/auth/login?role=tutor` — і ГУБИЛО `?redirect`. Це той самий клас помилки,
+// що зламав першого органічного юзера 2026-07-29: людина приходила з дошки,
+// натискала «вже маю акаунт» і після входу падала в порожній кабінет, а її
+// малюнок лишався в localStorage. Сусідній LoginView свій register-лінк уже
+// беріг (`registerLink`); тепер шлях назад не губиться в жодному напрямку.
+const loginLink = computed(() => {
+  const redirect = route.query?.redirect
+  const query = { role: 'tutor' }
+  if (typeof redirect === 'string' && redirect) query.redirect = redirect
+  return { path: '/auth/login', query }
+})
 
 // 2026-07-23: після реєстрації повертаємо людину туди, звідки вона прийшла
 // (?redirect, напр. /workspace — там initLocalWorkspace() → importCloudHandoff()
