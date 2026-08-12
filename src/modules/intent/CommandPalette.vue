@@ -248,8 +248,13 @@
               <div v-else-if="it.kind === 'candidates'" class="ai-msg ai-msg--bot ai-card">
                 <p class="cmdp-ai-explain">{{ it.resp.question }}</p>
                 <ul v-if="!it.done" class="cmdp-list cmdp-list--inline">
+                  <!-- 2026-08-12 (живий тест власника): у списку кандидатів
+                       висіло `NMT-задача: Відомо, що $\displaystyle\int_{0}^{3}
+                       f(x)\,dx=6$` — сирим LaTeX. Тьютор мусить упізнати СВОЮ
+                       задачу, а читає розмітку. Той самий рендер, що в чаті й
+                       на дошці; він же й екранує HTML, тож v-html безпечний. -->
                   <li v-for="c in it.resp.candidates" :key="c.id" class="cmdp-item"
-                      @click="pickAiCandidate(it, c)">{{ c.label }}</li>
+                      @click="pickAiCandidate(it, c)" v-html="renderTextWithLatex(c.label)" />
                 </ul>
               </div>
             </template>
