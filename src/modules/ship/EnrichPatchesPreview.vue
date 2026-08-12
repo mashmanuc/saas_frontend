@@ -101,8 +101,10 @@
         </div>
         <!-- B-T1: та сама картка вже є в іншої задачі. Позначка, не
              заборона: інколи опора справді потрібна обом. -->
+        <!-- 2026-08-12: тут теж стояв ID банку («задачі 10719»). Показуємо
+             умову тієї задачі — так само, як у підписі картки. -->
         <div class="enrich-patches-preview__latex-warn" v-if="patch.duplicate_of">
-          🔁 {{ t('winterboard.enrich.duplicateOf', { ref: patch.duplicate_of }) }}
+          🔁 {{ t('winterboard.enrich.duplicateOf', { ref: taskLabel(patch.duplicate_of) }) }}
         </div>
       </div>
     </div>
@@ -245,6 +247,20 @@ function renderBody(patch: any): string {
   if (!body.trim()) return ''
   const bare = patch?.action === 'add_formula' && !body.includes('$')
   return renderTextWithLatex(bare ? `$$${body}$$` : body)
+}
+
+/**
+ * task_ref → упізнаваний підпис задачі. Потрібен для повідомлення про
+ * дубль: воно посилається на ІНШУ задачу, і показувати там ID банку —
+ * та сама вада, що й у підписі картки.
+ * Немає підпису (старий BE) → лишаємо ref: краще щось, ніж порожнеча
+ * у реченні «вже запропонована задачі ___».
+ */
+function taskLabel(ref: string): string {
+  const found = patches.value.find((p: any) => String(p?.task_ref) === String(ref))
+  const title = found?.task_title || skipped.value.find(
+    (s: any) => String(s?.task_ref) === String(ref))?.task_title
+  return title ? `«${String(title).replace(/\$/g, '')}»` : String(ref)
 }
 
 const rendered = computed(() =>
