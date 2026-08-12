@@ -1023,10 +1023,8 @@
       "consentPrefix": "Продовжуючи через Google, ви приймаєте"
     },
     "verifyEmail": {
-      "title": "Підтвердження email",
-      "description": "Зачекайте, ми перевіряємо ваш токен.",
       "loading": "Підтверджуємо...",
-      "success": "Email підтверджено. Можете увійти.",
+      "success": "Email підтверджено",
       "loginCta": "Увійти"
     },
     "webauthn": {

@@ -825,10 +825,8 @@
       "orContinueWith": "Или войти через"
     },
     "verifyEmail": {
-      "title": "Подтверждение email",
-      "description": "Подождите, мы проверяем ваш токен.",
       "loading": "Подтверждаем...",
-      "success": "Email подтвержден. Можете войти.",
+      "success": "Email подтвержден",
       "loginCta": "Войти"
     },
     "webauthn": {

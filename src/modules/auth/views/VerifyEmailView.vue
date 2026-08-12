@@ -1,23 +1,19 @@
 <template>
-  <Card class="space-y-6">
-    <header class="space-y-1">
-      <h1 class="text-xl font-semibold">{{ $t('auth.verifyEmail.title') }}</h1>
-      <p class="text-sm" style="color: var(--text-secondary);">
-        {{ $t('auth.verifyEmail.description') }}
-      </p>
-    </header>
-
-    <div v-if="loading" class="text-sm" style="color: var(--text-secondary);">
+  <Card class="space-y-5 text-center">
+    <p v-if="loading" class="text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.verifyEmail.loading') }}
-    </div>
+    </p>
 
-    <div v-else class="space-y-3">
-      <p v-if="!error" class="text-sm" style="color: var(--accent);">{{ $t('auth.verifyEmail.success') }}</p>
+    <template v-else>
+      <div v-if="!error" class="space-y-3">
+        <div class="verify-mark" aria-hidden="true">✓</div>
+        <h1 class="text-xl font-semibold">{{ $t('auth.verifyEmail.success') }}</h1>
+      </div>
 
       <RouterLink :to="loginLink" class="block text-center text-sm hover:underline" style="color: var(--accent);">
         {{ $t('auth.verifyEmail.loginCta') }}
       </RouterLink>
-    </div>
+    </template>
   </Card>
 
   <OnboardingModal
@@ -107,3 +103,19 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.verify-mark {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+</style>

@@ -941,10 +941,8 @@
       "backToLogin": "Back to login"
     },
     "verifyEmail": {
-      "title": "Verify email",
-      "description": "Please wait while we verify your token.",
       "loading": "Verifying...",
-      "success": "Email verified. You can sign in.",
+      "success": "Email verified",
       "loginCta": "Sign in"
     },
     "forgot": {
