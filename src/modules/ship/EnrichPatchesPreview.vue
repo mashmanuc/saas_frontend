@@ -53,23 +53,40 @@
       {{ error }}
     </div>
 
-    <!-- Patches list -->
+    <!-- Patches list.
+         2026-08-13 (живий гейт B-T1): на ДРУГОМУ прогоні 12 пропозицій із 13
+         виявились тим, що вже лежить в уроці, — і всі 12 висіли в загальному
+         списку з попередженням. Тьютор отримував стіну ♻️ замість роботи.
+         Тому повтори йдуть В КІНЕЦЬ і згорнуті, як пропуски: вони не зникли
+         (галочку можна поставити), просто не заступають свіже.
+         Один `v-for` навмисно: розкладка картки складна, і дві копії
+         розмітки розійшлися б при першій же правці. -->
     <div class="enrich-patches-preview__list" v-if="patches.length">
+      <template v-for="row in orderedPatches" :key="row.i">
+      <button
+        v-if="row.firstRepeat"
+        type="button"
+        class="enrich-patches-preview__skipped-toggle"
+        :aria-expanded="repeatsOpen"
+        @click="repeatsOpen = !repeatsOpen"
+      >
+        {{ repeatsOpen ? '▾' : '▸' }}
+        ♻️ {{ t('winterboard.enrich.repeatsTitle', { count: repeatCount }) }}
+      </button>
       <div
-        v-for="(patch, i) in patches"
-        :key="i"
+        v-show="!row.repeat || repeatsOpen"
         class="enrich-patches-preview__item"
-        :class="{ 'enrich-patches-preview__item--invalid': !patch.latex_valid }"
+        :class="{ 'enrich-patches-preview__item--invalid': !row.patch.latex_valid }"
       >
         <label class="enrich-patches-preview__checkbox">
-          <input type="checkbox" v-model="selected[i]" :disabled="!patch.latex_valid" />
-          <span class="enrich-patches-preview__badge">{{ patch.action === 'add_formula' ? t('winterboard.enrich.badgeFormula') : t('winterboard.enrich.badgeCard') }}</span>
+          <input type="checkbox" v-model="selected[row.i]" :disabled="!row.patch.latex_valid" />
+          <span class="enrich-patches-preview__badge">{{ row.patch.action === 'add_formula' ? t('winterboard.enrich.badgeFormula') : t('winterboard.enrich.badgeCard') }}</span>
           <!-- 2026-08-12: тут стояло «Задача: 10719» — ID банку, який тьютору
                нічого не каже. Показуємо початок УМОВИ: свою задачу він
                упізнає за текстом. Поля може не бути (старий BE) — тоді
                мовчимо, бо ID гірший за порожнечу. -->
-          <span v-if="patch.task_title" class="enrich-patches-preview__task"
-                v-html="renderTextWithLatex(patch.task_title)" />
+          <span v-if="row.patch.task_title" class="enrich-patches-preview__task"
+                v-html="renderTextWithLatex(row.patch.task_title)" />
         </label>
         <!-- Формули рендеряться так само, як потім на дошці (той самий
              renderTextWithLatex, що в TheoryCardRenderer). Інакше тьютор
@@ -80,33 +97,34 @@
              HTML (`&`, `<`, `>`) перед вставкою LaTeX — сирий v-html із
              відповіддю LLM використовувати НЕ можна. -->
         <div class="enrich-patches-preview__preview">
-          <strong v-html="rendered[i].title" />
-          <p v-html="rendered[i].body" />
-          <span class="enrich-patches-preview__badge-label">{{ patch.card_data?.badge || '' }}</span>
+          <strong v-html="rendered[row.i].title" />
+          <p v-html="rendered[row.i].body" />
+          <span class="enrich-patches-preview__badge-label">{{ row.patch.card_data?.badge || '' }}</span>
         </div>
-        <div class="enrich-patches-preview__latex-warn" v-if="!patch.latex_valid">
-          ⚠️ {{ t('winterboard.enrich.latexInvalid', { error: patch.latex_error }) }}
+        <div class="enrich-patches-preview__latex-warn" v-if="!row.patch.latex_valid">
+          ⚠️ {{ t('winterboard.enrich.latexInvalid', { error: row.patch.latex_error }) }}
         </div>
         <!-- A-T1: картка-переказ умови — галочка знята, тьютор бачить чому
              (вибрати все одно можна: фільтр страхує, не забороняє). -->
-        <div class="enrich-patches-preview__latex-warn" v-if="patch.low_value">
+        <div class="enrich-patches-preview__latex-warn" v-if="row.patch.low_value">
           💤 {{ t('winterboard.enrich.lowValue') }}
         </div>
         <!-- 2026-08-12: ця картка вже лежить в уроці з минулого запуску.
              Промпт просить модель не повторюватись — вона не слухається,
              тож показуємо факт і знімаємо галочку. Не забороняємо: інколи
              ту саму опору справді хочуть поставити ще раз. -->
-        <div class="enrich-patches-preview__latex-warn" v-if="patch.already_on_board">
+        <div class="enrich-patches-preview__latex-warn" v-if="row.patch.already_on_board">
           ♻️ {{ t('winterboard.enrich.alreadyOnBoard') }}
         </div>
         <!-- B-T1: та сама картка вже є в іншої задачі. Позначка, не
              заборона: інколи опора справді потрібна обом. -->
         <!-- 2026-08-12: тут теж стояв ID банку («задачі 10719»). Показуємо
              умову тієї задачі — так само, як у підписі картки. -->
-        <div class="enrich-patches-preview__latex-warn" v-if="patch.duplicate_of">
-          🔁 {{ t('winterboard.enrich.duplicateOf', { ref: taskLabel(patch.duplicate_of) }) }}
+        <div class="enrich-patches-preview__latex-warn" v-if="row.patch.duplicate_of">
+          🔁 {{ t('winterboard.enrich.duplicateOf', { ref: taskLabel(row.patch.duplicate_of) }) }}
         </div>
       </div>
+      </template>
     </div>
 
     <!-- B-T2: свідомі пропуски. Згорнуто за замовчуванням — це довідка,
@@ -270,6 +288,37 @@ const rendered = computed(() =>
   })),
 )
 
+/**
+ * Порядок показу: спершу свіже, повтори — в кінець і згорнуті.
+ *
+ * Живий гейт B-T1 (2026-08-13): другий прогін дав 13 пропозицій, з них 12
+ * уже лежали в уроці. Позначка ♻️ на кожній була ЧЕСНОЮ, але тьютор бачив
+ * стіну попереджень і мусив вишукувати в ній єдину нову картку. Позначка
+ * має допомагати обрати, а не ховати роботу.
+ *
+ * `i` — ОРИГІНАЛЬНИЙ індекс патча: `selected` і `rendered` індексуються за
+ * ним, і застосування бере `patches.filter((_, i) => selected[i])`.
+ * Переставляти самі `patches` було б простіше в шаблоні й неправильно по
+ * суті — зсунулись би всі галочки.
+ *
+ * Повтор = `already_on_board` (те, що вже в уроці). `duplicate_of` НЕ
+ * згортаємо: це збіг між задачами всередині ЦЬОГО прогону, тьютор мусить
+ * побачити обидві картки поруч, щоб вирішити, котру лишити.
+ */
+const repeatsOpen = ref(false)
+
+const orderedPatches = computed(() => {
+  const rows = patches.value.map((patch: any, i: number) => ({
+    i, patch, repeat: !!patch?.already_on_board, firstRepeat: false,
+  }))
+  const fresh = rows.filter(r => !r.repeat)
+  const repeats = rows.filter(r => r.repeat)
+  if (repeats.length) repeats[0].firstRepeat = true
+  return [...fresh, ...repeats]
+})
+
+const repeatCount = computed(() => orderedPatches.value.filter(r => r.repeat).length)
+
 /** «3–9» для суцільного діапазону, «3, 5, 9» для розрізненого. */
 const pagesLabel = computed(() => {
   const pages = result.value?.page_numbers ?? []
@@ -295,6 +344,7 @@ async function runEnrich() {
   selected.value = {}
   skipped.value = []
   skippedOpen.value = false
+  repeatsOpen.value = false
   result.value = null
   try {
     const res = await shipApi.enrich(props.artifactId, instruction.value)
