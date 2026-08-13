@@ -798,6 +798,24 @@ function applyItgSkin() {
 function itgRestoreFace() { itgSetMood(itgSkinMood) }
 // Phase 2 — ДІАЛОГ: тред бульбашок (user/bot/done/confirm/candidates) + історія ≤6 реплік
 // у кожен parse-запит (follow-up'и: «ні, ту що вчора», «а тепер експортуй її»).
+// Ключ РОЗМОВИ для серверної пам'яті (Фаза 2 «пам'ять чату»). Живе рівно
+// стільки, скільки тред: сервер тримає за ним згорнутий стан старших реплік,
+// тож новий ключ = чиста пам'ять. Тому скидається ТАМ ЖЕ, де тред, і ніде більше.
+function newConversationId() {
+  // randomUUID є лише в безпечному контексті (https/localhost). Фолбек мусить
+  // давати ВАЛІДНИЙ uuid: сервер розбирає ключ і на кривий рядок працює без
+  // пам'яті — тобто мовчки віддає нам ту саму ваду, яку ми лагодимо.
+  const c = globalThis.crypto
+  if (c?.randomUUID) return c.randomUUID()
+  const b = new Uint8Array(16)
+  if (c?.getRandomValues) c.getRandomValues(b)
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256)
+  b[6] = (b[6] & 0x0f) | 0x40
+  b[8] = (b[8] & 0x3f) | 0x80
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+}
+const conversationId = ref(newConversationId())
 const aiThread = ref([])
 const aiBusy = ref(false)
 const aiInput = ref('')
@@ -859,7 +877,7 @@ async function askAi(phrase) {
     try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
@@ -988,6 +1006,7 @@ const GUIDE_STEPS = [
 let _gidx = -1
 function startGuide() {
   mode.value = 'ai'; aiThread.value = []; aiInput.value = ''
+  conversationId.value = newConversationId()   // знайомство — теж нова розмова
   retargetVoice()   // той самий перехід commands→ai, той самий ре-таргет
   if (!currentBoardId.value) {
     aiPush({ kind: 'bot', text: 'Привіт! Я Інтегралик 👋 Найкраще показати все прямо на дошці. Створю нову — і проведу тебе?' })
@@ -1515,6 +1534,7 @@ function openPalette() {
 // 0a: ЄДИНИЙ спосіб втратити розмову — явна дія юзера (Product Invariant #1).
 function newDialog() {
   aiThread.value = []
+  conversationId.value = newConversationId()   // і серверна пам'ять теж з чистого
   aiInput.value = ''
   aiBusy.value = false
   voice.reset()   // голос диктує з чистого, не дописує до попередньої розмови

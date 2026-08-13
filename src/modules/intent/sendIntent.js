@@ -26,7 +26,7 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
     context: {
@@ -34,6 +34,11 @@ export async function parseAi(phrase, boardId = null, history = [], boardSummary
       board_summary: boardSummary, // Phase 2.6 «зір»: read-only стан відкритої дошки
       tools,                       // Phase 2.7: каталог доступних інструментів дошки
       locale,                      // Вісь 1 — UI Locale (BE resolve_runtime_context будує Вісь 2+3)
+      // Фаза 2 «пам'ять чату»: ключ РОЗМОВИ. Свідомо не board_id — той буває
+      // null, доки дошки ще немає, а саме в перших репліках тьютор і
+      // проговорює мету. Сервер за цим ключем тримає згорнутий стан старших
+      // реплік; хвіст `history` і далі шлемо дослівно.
+      conversation_id: conversationId,
     },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })
