@@ -12,6 +12,9 @@
 // Розширення: нова дія на дошці = +1 tool у BE tooling.py + 1 запис у HANDLERS тут.
 
 import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
+// Людські назви 3D-шаблонів для підписів у контексті (етап 0 MCL, 0.1/0.3).
+// Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
+import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 
 function _uuid() {
   return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
@@ -394,6 +397,27 @@ HANDLERS.move_object_to_page = async function move_object_to_page({ object_id, p
 HANDLERS.set_geometry = async function set_geometry({ object_id, feature, on }) {
   const { store, asset } = await _assetById(object_id)
   if (asset.type !== 'geometry_2d_v2') throw new Error('Це не геометрична фігура.')
+  // Етап 0 MCL (аудит §3.2, 2026-08-13): toggles визначені ПЕР-ПРЕСЕТ у
+  // geo2d-presets.js, а handler писав будь-який ключ без перевірки.
+  // «Покажи медіани на трапеції» → запис у стан проходив, Інтегралик
+  // звітував успіх, на екрані не змінювалось нічого, помилки не було ніде.
+  // Це той самий клас збою, що лікувався в чаті: правдоподібна відповідь
+  // без дії. Тепер — чесна відмова зі списком того, що фігура СПРАВДІ вміє.
+  try { await import('@/modules/winterboard/vendor/geo2d') } catch { /* гілка нижче fail-open */ }
+  const spec = (typeof window !== 'undefined')
+    ? window.Geo2D?.PRESETS?.[asset.data?.preset] : null
+  if (spec) {
+    const known = Array.isArray(spec.toggles) ? spec.toggles : []
+    if (!known.some((t) => t?.key === feature)) {
+      const avail = known.map((t) => t?.label || t?.key).filter(Boolean).slice(0, 8)
+      throw new Error(avail.length
+        ? `У цієї фігури немає такої побудови. Вона вміє: ${avail.join(', ')}.`
+        : 'Ця фігура не має перемикачів побудов.')
+    }
+  }
+  // spec === undefined (бандл не завантажився) → fail-open: фігура вже на
+  // дошці, тож бандл майже напевно є; блокувати легітимний виклик через
+  // збій завантаження каталогу було б новою тихою відмовою.
   const toggles = { ...(asset.data?.toggles || {}), [feature]: on !== false }
   store.updateAsset({ ...asset, data: { ...asset.data, toggles } })
 }
@@ -427,14 +451,84 @@ export async function runBoardAction(action) {
 
 // ── Phase 2.6 «зір»: read-only стан дошки → компактний summary для parse-контексту ──
 // Тільки читання store (жодних мутацій); лише власна відкрита дошка тьютора.
-const KIND_LABELS = {
+//
+// Етап 0 MCL (аудит §3.1/§3.3, 2026-08-13): раніше тут було 7 ключів на
+// 15 overlay-типів, і один із них — `nmt_3d` — НЕ збігався з реальним
+// `asset.type === 'nmt3d'` (types/nmt3d.ts:49). Наслідок: 3D-фігура їхала
+// в контекст без назви, «пересунь піраміду» не працювало й НЕ МОГЛО —
+// резолвер шукає об'єкт за токенами підпису. Без підпису об'єкт для
+// Інтегралика не існує. Повноту мапи стереже guard-тест
+// (`assetKinds.spec.js`): новий overlay-тип без підпису = падіння тесту.
+export const KIND_LABELS = {
   graph_calculator: 'графік',
   formula_card: 'формула',
   image: 'зображення',
   youtube: 'відео',
   geometry_solid: 'стереометрія',
   geometry_2d_v2: 'планіметрія',
-  nmt_3d: '3D-сцена',
+  nmt3d: 'стереометрія',
+  theory_card: 'картка',
+  nmt_task: 'NMT-задача',
+  calculus_card: 'аналіз функції',
+  quadratic_card: 'парабола',
+  trig_circle: 'тригонометричне коло',
+  helix: 'гелікс',
+  trig_solver: 'тригонометричне рівняння',
+  geomash_scene: 'геометрична сцена',
+  graphmash_3d: '3D-графік',
+  mash_scene: 'MASH-сцена',
+}
+
+/**
+ * asset → {kind, label} для контексту Інтегралика. ЕКСПОРТОВАНА, щоб
+ * guard-тест міг довести покриття всіх overlay-типів без монтування дошки.
+ *
+ * label — те, за чим тьютор упізнає СВІЙ об'єкт словами («пересунь
+ * піраміду», «покажи медіани на трикутнику»): для фігур це назва фігури,
+ * для графіка — вирази, для картки — заголовок. kind без label — об'єкт
+ * видно, але не можна адресувати, коли їх кілька.
+ */
+export function summarizeAsset(a) {
+  let label = ''
+  let kind = KIND_LABELS[a.type] || a.type
+  const d = a.data || {}
+  if (a.type === 'graph_calculator') {
+    label = (d.state?.expressions || []).map((e) => e.src).filter(Boolean).join(' ; ')
+  } else if (a.type === 'formula_card') {
+    label = d.formula || ''
+  } else if (a.type === 'theory_card') {
+    label = d.title || String(d.body || '').slice(0, 80)
+  } else if (a.type === 'geometry_2d_v2') {
+    // Назва пресета (Трикутник/Коло…) — щоб Інтегралик міг адресувати планіметрію
+    const preset = d.preset
+    const meta = (typeof window !== 'undefined' ? window.GEO_PRESETS : null) || []
+    label = (meta.find((m) => m.type === preset)?.full) || preset || 'фігура'
+  } else if (a.type === 'nmt3d') {
+    // Людська назва шаблону («Піраміда (4)», «Куб») — саме за нею тьютор
+    // називає фігуру. templateKey як фолбек: гірше, ніж назва, краще, ніж ніщо.
+    label = NMT3D_TEMPLATE_LABELS[d.templateKey] || d.templateKey || ''
+  } else if (a.type === 'calculus_card') {
+    label = `${d.mode === 'integral' ? 'первісна' : 'похідна'}: ${d.expr || ''}`
+  } else if (a.type === 'quadratic_card') {
+    label = `y = ${d.a ?? 1}x² + ${d.b ?? 0}x + ${d.c ?? 0}`
+  } else if (a.type === 'trig_solver') {
+    label = `${d.type || 'sin'}(x) ${d.rel || '='} ${d.a ?? ''}`
+  } else if (a.type === 'geomash_scene') {
+    const n = (d.scene?.objects || []).length
+    label = n ? `${n} об'єктів` : 'порожня'
+  } else if (a.type === 'graphmash_3d') {
+    label = d.starterKind || ''
+  } else if (a.type === 'mash_scene') {
+    label = d.title || ''
+  } else if (a.type === 'nmt_task') {
+    // Умова задачі (data.question, LaTeX/HTML → плоский текст) + відповідь:
+    // Інтегралик може РОЗВ'ЯЗУВАТИ задачі з дошки. Контент тьютора, не PII учнів.
+    const q = String(d.question || '').replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ').trim().slice(0, 200)
+    const ans = String(d.correctAnswer || '').trim().slice(0, 40)
+    label = q + (ans ? ` [відповідь: ${ans}]` : '')
+  }
+  return { kind, label: String(label).slice(0, 240) }
 }
 
 export async function buildBoardSummary() {
@@ -453,32 +547,10 @@ export async function buildBoardSummary() {
     }
     if (penStrokes > 0) items.push({ page: p, kind: 'малюнок', label: `${penStrokes} штрихів` })
     for (const a of page.assets || []) {
-      let label = ''
-      let kind = KIND_LABELS[a.type] || a.type
-      if (a.type === 'graph_calculator') {
-        label = (a.data?.state?.expressions || []).map((e) => e.src).filter(Boolean).join(' ; ')
-      } else if (a.type === 'formula_card') {
-        label = a.data?.formula || ''
-      } else if (a.type === 'theory_card') {
-        kind = 'картка'
-        label = a.data?.title || String(a.data?.body || '').slice(0, 80)
-      } else if (a.type === 'geometry_2d_v2') {
-        // Назва пресета (Трикутник/Коло…) — щоб Інтегралик міг адресувати планіметрію
-        kind = 'планіметрія'
-        const preset = a.data?.preset
-        const meta = (typeof window !== 'undefined' ? window.GEO_PRESETS : null) || []
-        label = (meta.find((m) => m.type === preset)?.full) || preset || 'фігура'
-      } else if (a.type === 'nmt_task') {
-        // Умова задачі (data.question, LaTeX/HTML → плоский текст) + відповідь:
-        // Інтегралик може РОЗВ'ЯЗУВАТИ задачі з дошки. Контент тьютора, не PII учнів.
-        kind = 'NMT-задача'
-        const q = String(a.data?.question || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
-        const ans = String(a.data?.correctAnswer || '').trim().slice(0, 40)
-        label = q + (ans ? ` [відповідь: ${ans}]` : '')
-      }
+      const { kind, label } = summarizeAsset(a)
       // id — для Resolution об'єкта на BE (Phase 2.8 set_param). LLM його НЕ бачить
       // (у промпт іде лише kind+label; Закон C: навігацію робить Runtime, не модель).
-      items.push({ page: p, kind, label: String(label).slice(0, 240), id: a.id })
+      items.push({ page: p, kind, label, id: a.id })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
