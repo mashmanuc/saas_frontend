@@ -488,6 +488,77 @@ export const KIND_LABELS = {
  * для графіка — вирази, для картки — заголовок. kind без label — об'єкт
  * видно, але не можна адресувати, коли їх кілька.
  */
+/**
+ * Поточні ЗНАЧЕННЯ параметрів об'єкта — половина «State» з ТЗ MCL (INV-MCL-2).
+ *
+ * Етап 2 (READ). Без цього фраза «зменш коефіцієнт a на одиницю» не має
+ * розв'язку: моделі нема від чого віднімати. Схема без значень так само
+ * марна, як значення без схеми.
+ *
+ * Три правила, які тут дотримані:
+ *   • лише те, що тьютор може НАЗВАТИ словами (коефіцієнт, кут, масштаб) —
+ *     службові id, кольори й прапорці рендера сюди не йдуть;
+ *   • жодних відповідей задач (той самий закон, що `_ANSWER_KEYS` в enrich);
+ *   • компактно: це їде в КОЖЕН запит, тож числа округлені, списки обрізані.
+ */
+export function assetParams(a) {
+  const d = a?.data || {}
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v)
+    ? Math.round(v * 1000) / 1000 : undefined)
+  const clean = (o) => Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+
+  switch (a?.type) {
+    case 'graph_calculator': {
+      const st = d.state || {}
+      const params = {}
+      for (const [k, cfg] of Object.entries(st.params || {})) {
+        if (cfg && typeof cfg === 'object') params[k] = num(cfg.value)
+      }
+      const pts = Object.entries(st.points || {}).slice(0, 8)
+        .map(([id, p]) => `${id}(${num(p?.x)}; ${num(p?.y)})`)
+      return clean({
+        expressions: (st.expressions || []).map((e) => e.src).filter(Boolean).slice(0, 6),
+        params: Object.keys(params).length ? params : undefined,
+        // Масштаб і центр — те, чим тьютор просить «покажи від −10 до 10».
+        viewport: st.viewport ? clean({
+          cx: num(st.viewport.cx), cy: num(st.viewport.cy), scale: num(st.viewport.scale),
+        }) : undefined,
+        points: pts.length ? pts : undefined,
+      })
+    }
+    case 'quadratic_card':
+      return clean({ a: num(d.a), b: num(d.b), c: num(d.c), sign: d.sign })
+    case 'calculus_card':
+      return clean({
+        mode: d.mode, expr: d.expr, x0: num(d.x0), h: num(d.h),
+        a: num(d.a), b: num(d.b), riemann: d.riemann, N: num(d.N),
+      })
+    case 'trig_circle':
+      return clean({ theta: num(d.theta), speed: num(d.speed) })
+    case 'helix':
+      return clean({ theta: num(d.theta), phi: num(d.phi), pitch: num(d.pitch) })
+    case 'trig_solver':
+      return clean({ type: d.type, rel: d.rel, a: num(d.a) })
+    case 'nmt3d':
+      return clean({ template: d.templateKey, mode: d.mode, ...(d.params || {}) })
+    case 'geometry_2d_v2': {
+      // Увімкнені побудови — саме те, про що питають «а медіани показані?»
+      const on = Object.entries(d.toggles || {}).filter(([, v]) => v).map(([k]) => k)
+      return clean({ preset: d.preset, shown: on.length ? on.slice(0, 10) : undefined })
+    }
+    case 'geomash_scene': {
+      // Імена об'єктів сцени = те, чим тьютор їх називає (A, B, α, f).
+      const ids = (d.scene?.objects || []).map((o) => o?.id).filter(Boolean).slice(0, 20)
+      return clean({ objects: ids.length ? ids : undefined })
+    }
+    case 'formula_card':
+      return clean({ formula: d.formula })
+    default:
+      return {}
+  }
+}
+
 export function summarizeAsset(a) {
   let label = ''
   let kind = KIND_LABELS[a.type] || a.type
@@ -550,7 +621,11 @@ export async function buildBoardSummary() {
       const { kind, label } = summarizeAsset(a)
       // id — для Resolution об'єкта на BE (Phase 2.8 set_param). LLM його НЕ бачить
       // (у промпт іде лише kind+label; Закон C: навігацію робить Runtime, не модель).
-      items.push({ page: p, kind, label, id: a.id })
+      // params — етап 2 READ (INV-MCL-2): поточні ЗНАЧЕННЯ, без яких «зменш a
+      // на одиницю» не має розв'язку. Бюджет контексту стереже BE.
+      const params = assetParams(a)
+      items.push({ page: p, kind, label, id: a.id,
+                   ...(Object.keys(params).length ? { params } : {}) })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик

@@ -13,7 +13,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { OVERLAY_ASSET_TYPES } from '@/modules/winterboard/components/canvas/overlayRegistry'
-import { KIND_LABELS, summarizeAsset } from '../boardActions'
+import { KIND_LABELS, assetParams, summarizeAsset } from '../boardActions'
 
 /** Media-типи живуть поза overlay-реєстром, але теж мають підписи. */
 const MEDIA_TYPES = ['image', 'youtube']
@@ -98,6 +98,61 @@ describe('етап 0.3 — нові підписи несуть упізнава
     for (const t of OVERLAY_ASSET_TYPES) {
       expect(() => summarizeAsset({ id: 'x', type: t, data: undefined }), t)
         .not.toThrow()
+    }
+  })
+})
+
+describe('етап 2 READ — поточні значення параметрів', () => {
+  it('графік віддає вирази, параметри, масштаб і точки', () => {
+    const p = assetParams({
+      id: 'g', type: 'graph_calculator',
+      data: {
+        state: {
+          expressions: [{ src: 'a*x^2 + b' }],
+          params: { a: { value: -2, min: -5, max: 5, step: 0.1 } },
+          viewport: { cx: 0, cy: 0, scale: 38 },
+          points: { P: { x: 2, y: -5, mode: 'free' } },
+        },
+      },
+    })
+    expect(p.expressions).toEqual(['a*x^2 + b'])
+    expect(p.params).toEqual({ a: -2 })     // саме ЗНАЧЕННЯ, не вся конфігурація
+    expect(p.viewport).toEqual({ cx: 0, cy: 0, scale: 38 })
+    expect(p.points).toEqual(['P(2; -5)'])
+  })
+
+  it('парабола — коефіцієнти, якими тьютор оперує словами', () => {
+    expect(assetParams({ id: 'q', type: 'quadratic_card', data: { a: 2, b: -3, c: 1 } }))
+      .toEqual({ a: 2, b: -3, c: 1 })
+  })
+
+  it('планіметрія — які побудови ЗАРАЗ увімкнені', () => {
+    const p = assetParams({
+      id: 'g2', type: 'geometry_2d_v2',
+      data: { preset: 'triangle', toggles: { medians: true, altitudes: false } },
+    })
+    expect(p.preset).toBe('triangle')
+    expect(p.shown).toEqual(['medians'])    // вимкнені не згадуємо — це шум
+  })
+
+  it('GeoMASH — імена об\'єктів, якими їх називає тьютор', () => {
+    const p = assetParams({
+      id: 's', type: 'geomash_scene',
+      data: { scene: { objects: [{ id: 'A' }, { id: 'B' }, { id: 'a' }] } },
+    })
+    expect(p.objects).toEqual(['A', 'B', 'a'])
+  })
+
+  it('порожні/відсутні значення не потрапляють у контекст', () => {
+    // Кожен зайвий ключ множиться на кількість об'єктів у кожному запиті.
+    expect(assetParams({ id: 'x', type: 'trig_solver', data: { type: 'sin' } }))
+      .toEqual({ type: 'sin' })
+    expect(assetParams({ id: 'x', type: 'theory_card', data: { title: 'T' } })).toEqual({})
+  })
+
+  it('жоден тип не валиться на порожніх data', () => {
+    for (const t of OVERLAY_ASSET_TYPES) {
+      expect(() => assetParams({ id: 'x', type: t, data: undefined }), t).not.toThrow()
     }
   })
 })
