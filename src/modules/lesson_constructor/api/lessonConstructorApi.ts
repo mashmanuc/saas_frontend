@@ -26,6 +26,7 @@ export const TOPICS = [
   { value: 'pyramid',                                  label: 'Піраміда' },
   { value: 'rational-irrational-expressions',          label: 'Раціональні та ірраціональні вирази' },
   { value: 'ratios-percents-word-problems',            label: 'Відношення, відсотки, задачі' },
+  { value: 'ratios-percents-word-problems.percent',    label: 'Відсотки' },
   { value: 'ratios-percents-word-problems.proportion', label: 'Пропорції' },
   { value: 'ratios-percents-word-problems.ratio',      label: 'Відношення' },
   { value: 'real-numbers',                             label: 'Дійсні числа' },
