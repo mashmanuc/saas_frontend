@@ -166,6 +166,17 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <!-- AI Enrich — винесено з діалогу «Експорт» у власне вікно: enrich додає
+             контент в урок, а не експортує, тож живе окремою кнопкою на дошці. -->
+        <button
+          v-if="sessionId"
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.export.aiEnrich')"
+          @click="showEnrichModal = true"
+        >
+          ✨
+        </button>
         <!-- Phase 21: Save as Lesson button — прихована в constructorMode (там є своя кнопка нижче) -->
         <button
           v-if="sessionId && isSessionOwner && !sourceLessonId && !constructorMode"
@@ -839,6 +850,14 @@
       @close="showExportDialog = false; exportAutostart = null"
     />
 
+    <!-- AI Enrich — власна широка модалка (винесена з export-діалогу) -->
+    <EnrichLauncherModal
+      v-if="showEnrichModal && sessionId"
+      :session-id="sessionId"
+      :visible="showEnrichModal"
+      @close="showEnrichModal = false"
+    />
+
     <!-- Drag ghost preview — follows cursor while dragging from sidebar -->
     <WBDragGhost />
 
@@ -996,6 +1015,7 @@ import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBFormulaInputModal from '../components/toolbar/WBFormulaInputModal.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
+import EnrichLauncherModal from '@/modules/ship/EnrichLauncherModal.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
 // PropertiesPanel removed — selection toolbar handles all object actions inline
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
@@ -1569,6 +1589,7 @@ const savedItemTitle = ref('')
 const savedItemKind = ref<'lesson' | 'template'>('lesson')
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
+const showEnrichModal = ref(false)
 // Палітра/AI-Producer: «експортуй дошку» відкриває ЦЕЙ продуктовий діалог (він робить
 // capture-фазу віджетів перед BE-експортом) — а не серверний шлях без capture, який
 // рендерить [nmt_task]-плейсхолдери. Якщо формат уже названо у фразі («у PDF») —
