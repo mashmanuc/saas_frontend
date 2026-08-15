@@ -49,6 +49,46 @@ describe('renderTextWithLatex — markdown-lite (bold + pipe-таблиці)', (
   })
 })
 
+describe('радикал √ — svg-контур не можна різати рядковою обробкою (2026-08-15)', () => {
+  // Живий гейт власника: корінь зникав з умов задач тиждень (з 2026-08-07,
+  // коли додали markdown-таблиці). DOM був бездоганний — svg, path, шрифт,
+  // геометрія; пікселів не було. Причина: KaTeX кладе `\n` УСЕРЕДИНІ
+  // атрибута d="…" svg-радикала (єдиний багаторядковий path у KaTeX), а
+  // renderMarkdownTables робить split('\n')→join('<br/>') по вже склеєному
+  // html — і <br/> опинявся посеред контуру. Невалідний d браузер малює
+  // порожньо, без жодної помилки. Тест стереже саме цей клас поломки — не
+  // «є svg», а «svg-атрибут цілий».
+  it('усередині <svg …>…</svg> немає жодного <br/>', () => {
+    const html = renderTextWithLatex('Обчислити $y=\\sqrt{4x-7}$ у точці $x=2$.')
+    const svgs = html.match(/<svg[\s\S]*?<\/svg>/g) || []
+    expect(svgs.length, 'радикал має svg-контур').toBeGreaterThan(0)
+    for (const svg of svgs) {
+      expect(svg, 'у svg-контурі радикала <br/> = невалідний path = порожній корінь')
+        .not.toContain('<br/>')
+    }
+  })
+
+  it('атрибут d контуру — валідний path без розмітки всередині', () => {
+    const html = renderTextWithLatex('$\\sqrt{2}$')
+    const d = html.match(/<path d="([^"]*)"/)?.[1] ?? ''
+    expect(d.length).toBeGreaterThan(50)
+    expect(d).not.toMatch(/<|>|\n/)
+  })
+
+  it('переноси у ТЕКСТІ навколо формул і далі стають <br/> — таблиці/абзаци не зламані', () => {
+    const html = renderTextWithLatex('рядок 1 $\\sqrt{x}$\nрядок 2')
+    expect(html).toContain('рядок 1')
+    expect(html).toContain('<br/>рядок 2')
+    // і при цьому радикал між ними цілий
+    expect(html.match(/<svg[\s\S]*?<\/svg>/)?.[0]).not.toContain('<br/>')
+  })
+
+  it('display-радикал ($$…$$) теж цілий', () => {
+    const html = renderTextWithLatex('$$\\sqrt{a+b}$$')
+    expect(html.match(/<svg[\s\S]*?<\/svg>/)?.[0]).not.toContain('<br/>')
+  })
+})
+
 describe('translate="no" — захист від браузерного перекладу сторінки (2026-08-15)', () => {
   // Живий гейт власника: Chrome «Перекласти цю сторінку» переписує текстові
   // вузли DOM і не розуміє змішаної структури KaTeX (MathML + видимий HTML в

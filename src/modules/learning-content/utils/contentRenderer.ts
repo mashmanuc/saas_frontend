@@ -80,7 +80,23 @@ function renderLatexToMathML(formula: string, displayMode: boolean): string {
       displayMode,
       throwOnError: false,
     })
-    return `<span translate="no" class="notranslate">${html}</span>`
+    // ⚠️ Знімаємо переноси рядків з KaTeX-виводу. Живий гейт власника
+    // 2026-08-15: радикал √ зникав з умов задач і карток на дошці, хоча DOM
+    // був бездоганний (msqrt, svg, path, 63×20px, шрифт завантажений).
+    // Причина: KaTeX кладе `\n` УСЕРЕДИНІ атрибута d="…" svg-контуру
+    // радикала (єдиний багаторядковий path у KaTeX — тому ламався тільки
+    // корінь; дроби — border, текст — гліфи), а `renderMarkdownTables`
+    // нижче робить split('\n') → join('<br/>') по ВЖЕ склеєному html —
+    // і <br/> опинявся посеред d="M95,702<br/>c-2.7…". Невалідний контур
+    // браузер мовчки малює порожньо: жодної помилки, елемент є, пікселів
+    // нема. Тиждень (з 2026-08-07, коли додали markdown-таблиці) корені
+    // на дошці не малювались.
+    //
+    // Для HTML/SVG-атрибутів `\n` ≡ пробіл, тож заміна вигляд не змінює,
+    // але робить KaTeX-вивід нечутливим до будь-якої порядкової обробки
+    // після нього. Це межа шарів: усе, що виходить звідси, — атомарне.
+    const flat = html.replace(/\r?\n/g, ' ')
+    return `<span translate="no" class="notranslate">${flat}</span>`
   } catch {
     return `<span class="lc-formula-error" translate="no">${escapeHtml(formula)}</span>`
   }
