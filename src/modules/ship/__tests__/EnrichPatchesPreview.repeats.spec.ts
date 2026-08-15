@@ -63,7 +63,9 @@ async function run(wrapper: ReturnType<typeof mountPreview>, patches: unknown[])
   })
   const ta = wrapper.find('textarea').element as HTMLTextAreaElement
   ta.value = 'додай формули'
-  await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+  // `__run` — явний клас кнопки запуску (рев'ю 2026-08-15: композер із чіпами
+  // й мікрофоном; старий `__input button` ловив би тепер чіп або мік).
+  await wrapper.find('.enrich-patches-preview__run').trigger('click')
   await flushPromises()
 }
 

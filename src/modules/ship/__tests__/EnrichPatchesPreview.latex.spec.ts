@@ -49,7 +49,10 @@ async function runWith(patch: Record<string, unknown>) {
   const wrapper = mountPreview()
   const ta = wrapper.find('textarea').element as HTMLTextAreaElement
   ta.value = 'додай формули'
-  await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+  // Кнопка запуску має ЯВНИЙ клас `__run` (рев'ю 2026-08-15: блок інструкції
+  // став композером із чіпами й мікрофоном, тож старий селектор
+  // `.enrich-patches-preview__input button` ловив би тепер чіп або мік).
+  await wrapper.find('.enrich-patches-preview__run').trigger('click')
   await flushPromises()
   return wrapper
 }

@@ -49,8 +49,10 @@ const PATCH = {
 async function run(wrapper: ReturnType<typeof mountPreview>, response: Record<string, unknown>) {
   enrich.mockResolvedValue(response)
   await wrapper.find('textarea').setValue('додай опори')
-  await wrapper.findAll('button').find(b => b.text().includes('Проаналізувати'))?.trigger('click')
-    ?? await wrapper.findAll('button')[1].trigger('click')
+  // Явний клас, а не пошук за ТЕКСТОМ: підпис кнопки вже мінявся
+  // («Проаналізувати» → «Запустити →», рев'ю 2026-08-15), і пошук за текстом
+  // мовчки провалювався у фолбек `buttons[1]`, який тепер ловить чіп-приклад.
+  await wrapper.find('.enrich-patches-preview__run').trigger('click')
   await flushPromises()
 }
 
@@ -163,7 +165,7 @@ describe('EnrichPatchesPreview — введення повз v-model', () => {
 
   it('кнопка НЕ заблокована при порожньому v-model', () => {
     const wrapper = mountPreview()
-    const btn = wrapper.find('.enrich-patches-preview__input button')
+    const btn = wrapper.find('.enrich-patches-preview__run')
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 
@@ -177,15 +179,20 @@ describe('EnrichPatchesPreview — введення повз v-model', () => {
     // Дзеркало поведінки розширення: пишемо значення, події НЕ шлемо.
     ta.value = 'Додай приклад із життя'
 
-    await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+    await wrapper.find('.enrich-patches-preview__run').trigger('click')
     await flushPromises()
 
-    expect(enrich).toHaveBeenCalledWith('a1', 'Додай приклад із життя')
+    // Перевіряємо ПЕРШІ ДВА аргументи, а не весь виклик: цей тест стереже
+    // рівно одне — що текст, вставлений у DOM повз v-model (розширення-
+    // диктовки так і роблять), доїжджає до API. Хвостові параметри —
+    // не його предмет, і за них він падати не має (рев'ю 2026-08-15 додало
+    // 4-м аргументом `progressId` для смуги прогресу).
+    expect(enrich.mock.calls[0].slice(0, 2)).toEqual(['a1', 'Додай приклад із життя'])
   })
 
   it('порожнє поле → чесне повідомлення, не мовчазна відмова', async () => {
     const wrapper = mountPreview()
-    await wrapper.find('.enrich-patches-preview__input button').trigger('click')
+    await wrapper.find('.enrich-patches-preview__run').trigger('click')
     await flushPromises()
 
     expect(enrich).not.toHaveBeenCalled()
