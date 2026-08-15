@@ -7220,6 +7220,8 @@
     "enrich": {
       "title": "AI Enrich",
       "noArtifact": "This board has no lesson to enrich yet.",
+      "dictateStart": "Dictate the instruction by voice",
+      "dictateStop": "Stop dictation",
       "instructionLabel": "Instruction (freetext)",
       "instructionPlaceholder": "e.g. 'add a formula to each task', 'add a life example', 'mark a common mistake'",
       "run": "Run",

@@ -76,7 +76,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-overlay);
   padding: 16px;
 }
 
@@ -114,17 +114,17 @@ watch(
   gap: 14px;
   align-items: center;
   justify-content: center;
-  background: #2a2a2a;
-  color: #ddd;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   border-radius: 8px;
   padding: 28px;
   text-align: center;
 }
 
 .enrich-launcher-empty__close {
-  background: #555;
-  color: #fff;
-  border: none;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   padding: 8px 18px;
   cursor: pointer;

@@ -13,12 +13,23 @@
          після помилки (живий прогін 2026-08-09). -->
     <div class="enrich-patches-preview__input" v-if="!patches.length && !loading">
       <label>{{ t('winterboard.enrich.instructionLabel') }}</label>
-      <textarea
-        ref="instructionEl"
-        v-model="instruction"
-        :placeholder="t('winterboard.enrich.instructionPlaceholder')"
-        rows="3"
-      />
+      <div class="enrich-patches-preview__field">
+        <textarea
+          ref="instructionEl"
+          v-model="instruction"
+          :placeholder="t('winterboard.enrich.instructionPlaceholder')"
+          rows="3"
+        />
+        <button
+          v-if="micSupported"
+          type="button"
+          class="enrich-patches-preview__mic"
+          :class="{ 'enrich-patches-preview__mic--on': micListening }"
+          :title="micListening ? t('winterboard.enrich.dictateStop') : t('winterboard.enrich.dictateStart')"
+          :aria-pressed="micListening"
+          @click="toggleDictation"
+        >🎤</button>
+      </div>
       <!-- Кнопка блокується ЛИШЕ під час запиту, не за станом v-model.
            Живий прогін 2026-08-10: текст у полі є, а «Запустити» сіра —
            бо голосове введення (AudioScribe) і подібні розширення пишуть
@@ -183,8 +194,9 @@ import { shipApi, type EnrichApplyResponse, type EnrichSkip } from './shipApi'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { useOpsSyncStore } from '@/modules/winterboard/stores/opsSyncStore'
 import { useWBStore } from '@/modules/winterboard/board/state/boardStore'
+import { useVoiceDictation } from '@/composables/useVoiceDictation'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 // Enrich пише на дошку СЕРВЕРНИМ шляхом (ops → OpsApplyService), тобто повз
 // цю вкладку: її localSeq відстає, а полотно не знає про нові картки —
 // тьютор бачив порожню дошку і думав, що нічого не сталось (живий прогін
@@ -207,6 +219,12 @@ const instruction = ref('')
 /** Пряме посилання на поле — читаємо значення з DOM при запуску
  *  (v-model не бачить вводу від розширень; живий прогін 2026-08-10). */
 const instructionEl = ref<HTMLTextAreaElement | null>(null)
+// Голосовий ввід інструкції — той самий спільний композабл, що й голос
+// Інтегралика (Web Speech, локально в браузері; нічого не летить у сервіси).
+// На Firefox supported=false → кнопка мікрофона просто не показується.
+const { supported: micSupported, listening: micListening, toggle: micToggle } =
+  useVoiceDictation({ lang: locale.value === 'en' ? 'en-US' : 'uk-UA' })
+function toggleDictation() { micToggle(instruction) }
 const patches = ref<any[]>([])
 const selected = ref<Record<number, boolean>>({})
 const loading = ref(false)
@@ -424,11 +442,11 @@ async function syncBoard() {
 
 <style scoped>
 .enrich-patches-preview {
-  border: 1px solid #555;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
   padding: 16px;
-  background: #2a2a2a;
-  color: #eee;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   max-height: 80vh;
   overflow-y: auto;
 }
@@ -441,7 +459,7 @@ async function syncBoard() {
 .enrich-patches-preview__close {
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--color-text-secondary);
   font-size: 20px;
   cursor: pointer;
 }
@@ -451,16 +469,55 @@ async function syncBoard() {
   gap: 8px;
   margin-bottom: 12px;
 }
+/* Поле інструкції + мікрофон в одному контейнері (мікрофон у куті поля). */
+.enrich-patches-preview__field {
+  position: relative;
+  display: flex;
+}
 .enrich-patches-preview__input textarea {
-  background: #3a3a3a;
-  color: #eee;
-  border: 1px solid #555;
+  flex: 1;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   padding: 8px;
+  padding-right: 42px;
+  font: inherit;
+  resize: vertical;
+}
+.enrich-patches-preview__mic {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.enrich-patches-preview__mic:hover {
+  color: var(--color-text-primary);
+}
+.enrich-patches-preview__mic--on {
+  color: #fff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  animation: enrich-mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes enrich-mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 .enrich-patches-preview__input button {
   align-self: flex-start;
-  background: #4a90d9;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -468,7 +525,7 @@ async function syncBoard() {
   cursor: pointer;
 }
 .enrich-patches-preview__input button:disabled {
-  background: #555;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 .enrich-patches-preview__loading,
@@ -480,20 +537,20 @@ async function syncBoard() {
   border-radius: 4px;
 }
 .enrich-patches-preview__loading {
-  color: #aaa;
+  color: var(--color-text-secondary);
 }
 .enrich-patches-preview__progress {
-  color: #aaa;
-  background: #333;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
   font-size: 13px;
 }
 .enrich-patches-preview__error {
   color: #e74c3c;
-  background: #3a2020;
+  background: var(--danger-bg);
 }
 .enrich-patches-preview__result {
   color: #2ecc71;
-  background: #1a3a1a;
+  background: var(--success-bg);
 }
 .enrich-patches-preview__list {
   display: flex;
@@ -502,14 +559,14 @@ async function syncBoard() {
   margin-bottom: 12px;
 }
 .enrich-patches-preview__item {
-  border: 1px solid #444;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   padding: 10px;
-  background: #333;
+  background: var(--color-bg-secondary);
 }
 .enrich-patches-preview__item--invalid {
   border-color: #e74c3c;
-  background: #3a2020;
+  background: var(--danger-bg);
 }
 .enrich-patches-preview__checkbox {
   display: flex;
@@ -519,20 +576,20 @@ async function syncBoard() {
   margin-bottom: 6px;
 }
 .enrich-patches-preview__badge {
-  background: #4a90d9;
+  background: var(--color-primary);
   color: #fff;
   padding: 2px 8px;
   border-radius: 3px;
   font-size: 12px;
 }
 .enrich-patches-preview__task {
-  color: #aaa;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 .enrich-patches-preview__preview {
   margin-left: 24px;
   padding: 8px;
-  background: #3a3a3a;
+  background: var(--color-bg-secondary);
   border-radius: 4px;
 }
 .enrich-patches-preview__preview strong {
@@ -553,7 +610,7 @@ async function syncBoard() {
 .enrich-patches-preview__preview :deep(.lc-display-math) { overflow-x: auto; }
 .enrich-patches-preview__badge-label {
   font-size: 12px;
-  color: #aaa;
+  color: var(--color-text-secondary);
 }
 .enrich-patches-preview__latex-warn {
   margin-left: 24px;
@@ -578,13 +635,13 @@ async function syncBoard() {
   padding: 8px;
   border: none;
   border-radius: 4px;
-  background: #333;
-  color: #aaa;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font-size: 13px;
   cursor: pointer;
 }
 .enrich-patches-preview__skipped-toggle:hover {
-  color: #ddd;
+  color: var(--color-text-primary);
 }
 .enrich-patches-preview__skipped-list {
   margin: 4px 0 0;
@@ -598,7 +655,7 @@ async function syncBoard() {
 .enrich-patches-preview__skipped-list li {
   margin-top: 6px;
   font-size: 12px;
-  color: #aaa;
+  color: var(--color-text-secondary);
 }
 .enrich-patches-preview__skipped-reason {
   margin-left: 6px;
@@ -609,7 +666,7 @@ async function syncBoard() {
   gap: 8px;
 }
 .enrich-patches-preview__actions button {
-  background: #2ecc71;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -617,7 +674,7 @@ async function syncBoard() {
   cursor: pointer;
 }
 .enrich-patches-preview__actions button:disabled {
-  background: #555;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 </style>
