@@ -13,32 +13,62 @@
          після помилки (живий прогін 2026-08-09). -->
     <div class="enrich-patches-preview__input" v-if="!patches.length && !loading">
       <label>{{ t('winterboard.enrich.instructionLabel') }}</label>
-      <div class="enrich-patches-preview__field">
-        <textarea
-          ref="instructionEl"
-          v-model="instruction"
-          :placeholder="t('winterboard.enrich.instructionPlaceholder')"
-          rows="3"
-        />
+
+      <!-- Чіпи-приклади: клік підставляє готову інструкцію в поле (далі можна
+           дописати). Тьютор бачить, ЩО вміє enrich, не читаючи плейсхолдер. -->
+      <div class="enrich-patches-preview__chips" role="list">
         <button
-          v-if="micSupported"
+          v-for="chip in exampleChips"
+          :key="chip.key"
           type="button"
-          class="enrich-patches-preview__mic"
-          :class="{ 'enrich-patches-preview__mic--on': micListening }"
-          :title="micListening ? t('winterboard.enrich.dictateStop') : t('winterboard.enrich.dictateStart')"
-          :aria-pressed="micListening"
-          @click="toggleDictation"
-        >🎤</button>
+          class="enrich-patches-preview__chip"
+          role="listitem"
+          @click="applyChip(chip.text)"
+        >{{ chip.text }}</button>
       </div>
-      <!-- Кнопка блокується ЛИШЕ під час запиту, не за станом v-model.
+
+      <!-- Композер — як стрічка вводу чату: поле авто-росте, дії знизу в ряд.
+           Кнопка блокується ЛИШЕ під час запиту, не за станом v-model.
            Живий прогін 2026-08-10: текст у полі є, а «Запустити» сіра —
            бо голосове введення (AudioScribe) і подібні розширення пишуть
            у DOM напряму, БЕЗ події `input`, тож v-model лишався порожнім.
            Значення беремо з елемента при кліку — працює для друку,
-           диктування, вставки й автозаповнення однаково. -->
-      <button :disabled="loading" @click="runEnrich">
-        {{ loading ? t('winterboard.enrich.running') : t('winterboard.enrich.run') }}
-      </button>
+           диктування, вставки, чіпів і автозаповнення однаково. -->
+      <div class="enrich-patches-preview__composer" :class="{ 'enrich-patches-preview__composer--listening': micListening }">
+        <textarea
+          ref="instructionEl"
+          v-model="instruction"
+          class="enrich-patches-preview__composer-input"
+          :placeholder="t('winterboard.enrich.instructionPlaceholder')"
+          rows="2"
+          @keydown.enter.exact.prevent="runEnrich"
+        />
+        <div class="enrich-patches-preview__composer-bar">
+          <span class="enrich-patches-preview__composer-hint">
+            {{ micListening ? t('winterboard.enrich.listening') : t('winterboard.enrich.enterHint') }}
+          </span>
+          <div class="enrich-patches-preview__composer-actions">
+            <button
+              v-if="micSupported"
+              type="button"
+              class="enrich-patches-preview__mic"
+              :class="{ 'enrich-patches-preview__mic--on': micListening }"
+              :title="micListening ? t('winterboard.enrich.dictateStop') : t('winterboard.enrich.dictateStart')"
+              :aria-pressed="micListening"
+              @click="toggleDictation"
+            >🎤</button>
+            <button
+              type="button"
+              class="enrich-patches-preview__run"
+              :disabled="loading"
+              @click="runEnrich"
+            >
+              <span>{{ loading ? t('winterboard.enrich.running') : t('winterboard.enrich.run') }}</span>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -225,6 +255,17 @@ const instructionEl = ref<HTMLTextAreaElement | null>(null)
 const { supported: micSupported, listening: micListening, toggle: micToggle } =
   useVoiceDictation({ lang: locale.value === 'en' ? 'en-US' : 'uk-UA' })
 function toggleDictation() { micToggle(instruction) }
+// Чіпи-приклади: три жанри, які enrich уміє надійно (формули / приклад із
+// життя / типова помилка). Клік підставляє текст у поле — далі можна дописати.
+const exampleChips = computed(() => ([
+  { key: 'formulas', text: t('winterboard.enrich.chips.formulas') },
+  { key: 'life',     text: t('winterboard.enrich.chips.lifeExample') },
+  { key: 'mistake',  text: t('winterboard.enrich.chips.commonMistake') },
+]))
+function applyChip(text: string) {
+  instruction.value = text
+  instructionEl.value?.focus()
+}
 const patches = ref<any[]>([])
 const selected = ref<Record<number, boolean>>({})
 const loading = ref(false)
@@ -469,41 +510,103 @@ async function syncBoard() {
   gap: 8px;
   margin-bottom: 12px;
 }
-/* Поле інструкції + мікрофон в одному контейнері (мікрофон у куті поля). */
-.enrich-patches-preview__field {
-  position: relative;
+/* ── Чіпи-приклади: пігулки над композером, як підказки в чаті ───────────── */
+.enrich-patches-preview__chips {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.enrich-patches-preview__input textarea {
-  flex: 1;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
+.enrich-patches-preview__chip {
+  padding: 6px 12px;
+  border-radius: 999px;
   border: 1px solid var(--color-border-subtle);
-  border-radius: 4px;
-  padding: 8px;
-  padding-right: 42px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
   font: inherit;
-  resize: vertical;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.enrich-patches-preview__chip:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-bg-primary);
+}
+.enrich-patches-preview__chip:active {
+  transform: scale(0.97);
+}
+
+/* ── Композер: округлий контейнер, поле авто-росте, дії знизу в ряд ─────── */
+.enrich-patches-preview__composer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  background: var(--color-bg-secondary);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.enrich-patches-preview__composer:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+.enrich-patches-preview__composer--listening {
+  border-color: var(--color-primary);
+}
+.enrich-patches-preview__composer-input {
+  width: 100%;
+  min-height: 56px;
+  max-height: 200px;
+  padding: 12px 14px 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  resize: none;
+  field-sizing: content; /* авто-ріст за вмістом (Chrome/Edge); інакше — скрол */
+}
+.enrich-patches-preview__composer-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+.enrich-patches-preview__composer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 8px 14px;
+}
+.enrich-patches-preview__composer-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+.enrich-patches-preview__composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .enrich-patches-preview__mic {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg-primary);
+  background: transparent;
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 6px;
-  font-size: 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 15px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 .enrich-patches-preview__mic:hover {
   color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-subtle);
 }
 .enrich-patches-preview__mic--on {
   color: #fff;
@@ -515,16 +618,24 @@ async function syncBoard() {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
-.enrich-patches-preview__input button {
-  align-self: flex-start;
+.enrich-patches-preview__run {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
   background: var(--color-primary);
   color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
 }
-.enrich-patches-preview__input button:disabled {
+.enrich-patches-preview__run:hover { opacity: 0.92; }
+.enrich-patches-preview__run:active { transform: scale(0.98); }
+.enrich-patches-preview__run:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

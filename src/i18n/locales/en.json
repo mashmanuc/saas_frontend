@@ -7215,13 +7215,20 @@
         "paper": "Paper"
       },
       "solutionSlides": "Solution slides after tasks",
-      "aiEnrich": "AI Enrich (add formulas/theory)"
+      "aiEnrich": "Enrich lesson — AI adds formulas, theory, examples"
     },
     "enrich": {
-      "title": "AI Enrich",
+      "title": "Enrich lesson",
       "noArtifact": "This board has no lesson to enrich yet.",
       "dictateStart": "Dictate the instruction by voice",
       "dictateStop": "Stop dictation",
+      "listening": "Listening… speak",
+      "enterHint": "Enter — run · Shift+Enter — new line",
+      "chips": {
+        "formulas": "add a formula to each task",
+        "lifeExample": "add a life example",
+        "commonMistake": "mark a common mistake"
+      },
       "instructionLabel": "Instruction (freetext)",
       "instructionPlaceholder": "e.g. 'add a formula to each task', 'add a life example', 'mark a common mistake'",
       "run": "Run",

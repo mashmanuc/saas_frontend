@@ -167,9 +167,11 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <!-- AI Enrich — винесено з діалогу «Експорт» у власне вікно: enrich додає
-             контент в урок, а не експортує, тож живе окремою кнопкою на дошці. -->
+             контент в урок, а не експортує. ЛИШЕ в конструкторі (/prepare/:id)
+             і лише власнику: на готовому уроці збагачувати нічого — він уже
+             зібраний, і його не змінюють під час проведення. -->
         <button
-          v-if="sessionId"
+          v-if="constructorMode && sessionId && isSessionOwner"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.export.aiEnrich')"
@@ -852,7 +854,7 @@
 
     <!-- AI Enrich — власна широка модалка (винесена з export-діалогу) -->
     <EnrichLauncherModal
-      v-if="showEnrichModal && sessionId"
+      v-if="showEnrichModal && constructorMode && sessionId"
       :session-id="sessionId"
       :visible="showEnrichModal"
       @close="showEnrichModal = false"
