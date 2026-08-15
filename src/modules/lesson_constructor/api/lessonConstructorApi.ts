@@ -33,6 +33,7 @@ export const TOPICS = [
   { value: 'real-numbers.fractions',                   label: 'Дроби' },
   { value: 'real-numbers.fractions.decimal',           label: 'Десяткові дроби' },
   { value: 'real-numbers.fractions.ordinary',          label: 'Звичайні дроби' },
+  { value: 'real-numbers.rational',                    label: 'Раціональні числа' },
   { value: 'rectangle-square',                         label: 'Прямокутник і квадрат' },
   { value: 'right-triangles',                          label: 'Прямокутні трикутники' },
   { value: 'rotation-bodies',                          label: 'Тіла обертання' },
