@@ -73,6 +73,8 @@ export { apiClient }
 export function isCircuitBreakerOpen(): boolean
 export function resetCircuitBreaker(): void
 export function _getDedupeKey(config: any): string | null
+/** Транспортний дедуп: `collapsed` — GET-и, склеєні з in-flight (мережі не торкнулись). */
+export function getDedupStats(): { collapsed: number; inFlight: number }
 // Живе в apiClient.js:168 і давно вживається (CommandPalette) — декларації
 // просто бракувало, тож vue-tsc лаявся на кожен новий імпорт.
 export function isLimitError(error: unknown): boolean

@@ -8,7 +8,7 @@
  * - A "duplicate" = same dedupe key requested >1 time within the window
  * - Does NOT use _inFlightGets.size — instead tracks actual key reuse
  */
-import _apiClient from '@/utils/apiClient'
+import _apiClient, { getDedupStats } from '@/utils/apiClient'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
 // apiClient.d.ts exposes a simplified ApiClient type without interceptors,
@@ -76,9 +76,18 @@ export function attachNetworkTracker(windowMs?: number): void {
 }
 
 export function getNetworkStats() {
+  // `_duplicateCount` рахується на ІНТЕРСЕПТОРІ — тобто ловить і ті повтори,
+  // які транспортний дедуп (apiClient, INV-2) потім склеїв, не торкнувшись
+  // мережі. Без віднімання оверлей кричав «Duplicate requests» на роботу,
+  // яку застосунок уже виконав правильно (живий скрін 2026-08-16).
+  let collapsed = 0
+  try { collapsed = getDedupStats().collapsed } catch { collapsed = 0 }
   return {
     requests: _requestCount,
-    duplicates: _duplicateCount,
+    // Справжні — ті, що реально пішли в мережу двічі.
+    duplicates: Math.max(0, _duplicateCount - collapsed),
+    duplicatesSeen: _duplicateCount,
+    duplicatesCollapsed: collapsed,
   }
 }
 

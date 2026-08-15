@@ -39,6 +39,8 @@ export function getAuditSnapshot(): AuditSnapshot {
   const snapshot: AuditSnapshot = {
     requests: network.requests,
     duplicates: network.duplicates,
+    duplicatesSeen: network.duplicatesSeen,
+    duplicatesCollapsed: network.duplicatesCollapsed,
     cacheTotal: cache.total,
     cacheFresh: cache.fresh,
     cacheStale: cache.stale,

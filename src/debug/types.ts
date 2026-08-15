@@ -8,7 +8,9 @@
 export interface AuditSnapshot {
   // Network
   requests: number           // Total requests since page load
-  duplicates: number         // Dedup reuse count (same URL+params within 5s window)
+  duplicates: number         // РЕАЛЬНІ дублі: пішли в мережу двічі (seen − collapsed)
+  duplicatesSeen?: number    // Скільки повторів помічено на інтерсепторі (у вікні)
+  duplicatesCollapsed?: number // Скільки з них транспорт склеїв (мережі не торкнулись)
 
   // Cache
   cacheTotal: number         // Total queries in cache

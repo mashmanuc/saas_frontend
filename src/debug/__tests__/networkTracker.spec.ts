@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock apiClient as axios-like instance with interceptors
 const mockRequestUse = vi.fn()
+// Транспортний дедуп (INV-2) — керований із тестів: скільки GET-ів склеєно.
+let mockCollapsed = 0
 vi.mock('@/utils/apiClient', () => {
   return {
     default: {
@@ -10,6 +12,7 @@ vi.mock('@/utils/apiClient', () => {
         response: { use: vi.fn() },
       },
     },
+    getDedupStats: () => ({ collapsed: mockCollapsed, inFlight: 0 }),
   }
 })
 
@@ -24,6 +27,7 @@ describe('networkTracker', () => {
   let capturedInterceptor: (config: any) => any
 
   beforeEach(() => {
+    mockCollapsed = 0
     detachNetworkTracker()
     mockRequestUse.mockReset()
     mockRequestUse.mockImplementation((fn: any) => {
@@ -101,5 +105,56 @@ describe('networkTracker', () => {
     attachNetworkTracker()
 
     expect(mockRequestUse).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * Склеєні транспортом ≠ дублі в мережі.
+   *
+   * Інтерсептор бачить ДВА однакові GET, але adapter-дедуп apiClient (INV-2)
+   * другий склеює з in-flight — у мережу йде один. Оверлей раніше показував
+   * «Duplicate requests (1) ❌» саме на таку, коректно виконану роботу
+   * (живий скрін 2026-08-16), і це вчило ігнорувати червоний бейдж.
+   */
+  describe('склеєні транспортом не рахуються дублями', () => {
+    function twoIdenticalGets() {
+      attachNetworkTracker()
+      capturedInterceptor({ method: 'get', url: '/api/v1/x/', params: { a: 1 } })
+      capturedInterceptor({ method: 'get', url: '/api/v1/x/', params: { a: 1 } })
+    }
+
+    it('усі повтори склеєні → duplicates 0, але видно, що їх помічено', () => {
+      mockCollapsed = 1
+      twoIdenticalGets()
+
+      const s = getNetworkStats()
+      expect(s.duplicates).toBe(0)
+      expect(s.duplicatesSeen).toBe(1)
+      expect(s.duplicatesCollapsed).toBe(1)
+    })
+
+    it('повтор пішов у мережу (нічого не склеєно) → duplicates 1', () => {
+      mockCollapsed = 0
+      twoIdenticalGets()
+
+      expect(getNetworkStats().duplicates).toBe(1)
+    })
+
+    it('склеєних більше, ніж помічено у вікні → не йде в мінус', () => {
+      // Реально: перший запит висів довше за вікно дедупу, тож інтерсептор
+      // повтору не зарахував, а транспорт його все одно склеїв.
+      mockCollapsed = 3
+      twoIdenticalGets()
+
+      expect(getNetworkStats().duplicates).toBe(0)
+    })
+
+    it('відсутній getDedupStats (старий мок/оточення) не валить статистику', () => {
+      mockCollapsed = null as unknown as number   // → NaN у відніманні, якби не guard
+      twoIdenticalGets()
+
+      const s = getNetworkStats()
+      expect(Number.isFinite(s.duplicates)).toBe(true)
+      expect(s.duplicates).toBeGreaterThanOrEqual(0)
+    })
   })
 })

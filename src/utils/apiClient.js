@@ -38,6 +38,14 @@ const api = axios.create({
 // If identical GET is already in-flight → reuse its Promise instead of making new HTTP call
 // Store TTL decides WHETHER to fetch. This decides WHETHER to make a new HTTP request.
 const _inFlightGets = new Map()
+// Скільки GET-ів транспорт СКЛЕЇВ (другий викликач переюзав in-flight проміс,
+// у мережу пішов один запит). Читає audit-оверлей — див. `getDedupStats`.
+let _collapsedGets = 0
+
+/** Статистика транспортного дедупу. `collapsed` — склеєні GET-и (мережі не торкнулись). */
+export function getDedupStats() {
+  return { collapsed: _collapsedGets, inFlight: _inFlightGets.size }
+}
 
 export function _getDedupeKey(config) {
   if (config.method?.toLowerCase() !== 'get') return null
@@ -592,6 +600,10 @@ api.defaults.adapter = function dedupAdapter(config) {
 
   const existing = _inFlightGets.get(key)
   if (existing) {
+    // Лічильник склеєних (не DEV-only): audit-оверлей лічить дублі на
+    // ІНТЕРСЕПТОРІ, тобто до цього адаптера, і без цього числа не може
+    // відрізнити «зайвий запит у мережу» від «склеїли, мережі не торкнулись».
+    _collapsedGets++
     if (import.meta.env.DEV) {
       console.debug('[FETCH:dedup]', key, 'REUSED in-flight')
     }

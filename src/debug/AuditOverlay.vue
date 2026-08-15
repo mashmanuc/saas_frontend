@@ -21,6 +21,14 @@
           <span class="audit-overlay__icon">🔄</span>
           <span class="audit-overlay__label">Duplicates:</span>
           <span class="audit-overlay__value">{{ snapshot.duplicates }}</span>
+          <!-- Склеєні транспортом — це не проблема, а робота дедупу (INV-2):
+               показуємо окремо, щоб «1» не читалась як зайвий запит у мережу. -->
+          <span
+            v-if="snapshot.duplicatesCollapsed"
+            class="audit-overlay__value audit-overlay__value--muted"
+            data-testid="audit-duplicates-collapsed"
+            title="Склеєно транспортним дедупом — у мережу не пішло"
+          >(+{{ snapshot.duplicatesCollapsed }} склеєно)</span>
           <span class="audit-overlay__badge" :class="duplicatesBadgeClass">{{ duplicatesIcon }}</span>
         </div>
 
@@ -265,6 +273,13 @@ const hiddenIssuesCount = computed(() => Math.max(0, allIssues.value.length - MA
 .audit-overlay__value {
   font-weight: 600;
   min-width: 32px;
+}
+
+.audit-overlay__value--muted {
+  font-weight: 400;
+  min-width: 0;
+  opacity: 0.65;
+  font-size: 0.9em;
 }
 
 .audit-overlay__badge {
