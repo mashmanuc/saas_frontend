@@ -41,7 +41,7 @@
           class="enrich-patches-preview__composer-input"
           :placeholder="t('winterboard.enrich.instructionPlaceholder')"
           rows="2"
-          @keydown.enter.exact.prevent="runEnrich"
+          @keydown.enter.exact.prevent="runEnrich()"
         />
         <div class="enrich-patches-preview__composer-bar">
           <span class="enrich-patches-preview__composer-hint">
@@ -61,7 +61,7 @@
               type="button"
               class="enrich-patches-preview__run"
               :disabled="loading"
-              @click="runEnrich"
+              @click="runEnrich()"
             >
               <span>{{ loading ? t('winterboard.enrich.running') : t('winterboard.enrich.run') }}</span>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -111,9 +111,18 @@
       </span>
     </div>
 
-    <!-- Error -->
+    <!-- Error. При частковому збої пакета BE віддає failed_task_refs — даємо
+         кнопку дозбору саме цих задач, а не «спробуйте ще раз увесь урок». -->
     <div class="enrich-patches-preview__error" v-if="error">
-      {{ error }}
+      <span>{{ error }}</span>
+      <button
+        v-if="failedTaskRefs.length && !loading"
+        type="button"
+        class="enrich-patches-preview__retry"
+        @click="retryFailed"
+      >
+        ↻ {{ t('winterboard.enrich.retryFailed', { n: failedTaskRefs.length }) }}
+      </button>
     </div>
 
     <!-- Patches list.
@@ -360,6 +369,12 @@ const result = ref<EnrichApplyResponse | null>(null)
 // пакетами по всіх і чесно каже, скільки встигло.
 const processedTasks = ref(0)
 const totalTasks = ref(0)
+// Рефи задач із пакетів, що впали (BE віддає їх саме для кнопки «Повторити
+// необроблені»: run_enrich(task_ids=failed_task_refs) чіпає лише їх).
+const failedTaskRefs = ref<string[]>([])
+function retryFailed() {
+  if (failedTaskRefs.value.length && !loading.value) runEnrich(failedTaskRefs.value)
+}
 // B-T2: задачі, над якими модель ДУМАЛА і свідомо вирішила мовчати.
 // Для методиста це сигнал не менш цінний за картку: видно, що урок
 // пройдено цілком, а не обірвано.
@@ -470,11 +485,30 @@ const pagesLabel = computed(() => {
   return isContiguous ? `${pages[0]}–${pages[pages.length - 1]}` : pages.join(', ')
 })
 
-async function runEnrich() {
+/** Галочка за замовчуванням: low_value (переказ умови), дубль, повтор і битий
+ *  LaTeX — зняті, але вибрати можна: фільтр страхує, рішення за тьютором. */
+function defaultSelected(p: any): boolean {
+  return p.latex_valid !== false && p.low_value !== true
+    && p.already_on_board !== true
+    && !p.duplicate_of
+}
+
+/**
+ * Запуск enrich. Без аргументу — повний прогін по уроку (стан скидається).
+ * `onlyTaskRefs` — ДОЗБІР лише названих задач (кнопка «Повторити необроблені»
+ * після часткового збою пакета): наявні патчі/пропуски лишаються, нові
+ * докидаються, галочки перераховуються лише для доданих. BE приймає ті самі
+ * рефи, що віддав у `failed_task_refs` (str(section.ref)).
+ */
+async function runEnrich(onlyTaskRefs?: string[]) {
+  // Лише справжній масив рефів = дозбір. Захист від `@click="runEnrich"` без
+  // дужок — тоді сюди прилетів би Event, і він НЕ має вмикати retry.
+  const retry = Array.isArray(onlyTaskRefs) && onlyTaskRefs.length > 0
   // Джерело правди — сам елемент, не v-model: голосове введення й
   // розширення пишуть у DOM без події `input` (див. коментар у шаблоні).
   // Синхронізуємо назад, щоб решта компонента бачила те саме значення.
-  const typed = (instructionEl.value?.value ?? instruction.value).trim()
+  // При дозборі поля вже нема на екрані — беремо збережену інструкцію.
+  const typed = (retry ? instruction.value : (instructionEl.value?.value ?? instruction.value)).trim()
   if (!typed) {
     error.value = t('winterboard.enrich.instructionRequired')
     return
@@ -482,12 +516,15 @@ async function runEnrich() {
   instruction.value = typed
   loading.value = true
   error.value = ''
-  patches.value = []
-  selected.value = {}
-  skipped.value = []
-  skippedOpen.value = false
-  repeatsOpen.value = false
-  result.value = null
+  if (!retry) {
+    patches.value = []
+    selected.value = {}
+    skipped.value = []
+    skippedOpen.value = false
+    repeatsOpen.value = false
+    result.value = null
+    failedTaskRefs.value = []
+  }
   // Справжній прогрес: BE після кожного пакета пише {processed,total} під цим
   // id, ми поллимо GET, поки триває POST. Збій поллінгу нічого не ламає —
   // просто лишається індетермінантна смуга.
@@ -495,24 +532,35 @@ async function runEnrich() {
   liveProgress.value = null
   startProgressPolling(progressId)
   try {
-    const res = await shipApi.enrich(props.artifactId, instruction.value, undefined, progressId)
-    processedTasks.value = res.processed_tasks ?? 0
-    totalTasks.value = res.total_tasks ?? 0
+    const res = await shipApi.enrich(props.artifactId, instruction.value,
+                                     retry ? onlyTaskRefs : undefined, progressId)
+    if (retry) {
+      // Дозбір: total не міняється, processed росте на те, що вдалось тепер.
+      processedTasks.value += res.processed_tasks ?? 0
+    } else {
+      processedTasks.value = res.processed_tasks ?? 0
+      totalTasks.value = res.total_tasks ?? 0
+    }
     // ⚠️ error і patches НЕ взаємовиключні: частковий збій пакета лишає
     // error (напр. «Оброблено 12/24») І успішні патчі з пакетів, що
     // спрацювали — раніше цей else-гілка мовчки викидала вже готові
     // патчі, щойно з'являлась будь-яка помилка.
     if (res.error) error.value = res.error
-    patches.value = res.patches || []
+    failedTaskRefs.value = res.failed_task_refs || []
+    const incoming: any[] = res.patches || []
+    if (retry) {
+      const base = patches.value.length
+      patches.value = [...patches.value, ...incoming]
+      skipped.value = [...skipped.value, ...(res.skipped || [])]
+      const sel: Record<number, boolean> = { ...selected.value }
+      incoming.forEach((p: any, i: number) => { sel[base + i] = defaultSelected(p) })
+      selected.value = sel
+      return   // finally нижче зупинить поллінг і зніме loading
+    }
+    patches.value = incoming
     skipped.value = res.skipped || []
     const sel: Record<number, boolean> = {}
-    patches.value.forEach((p: any, i: number) => {
-      // low_value (переказ умови) — галочка знята, але вибрати можна:
-      // фільтр страхує, рішення за тьютором.
-      sel[i] = p.latex_valid !== false && p.low_value !== true
-        && p.already_on_board !== true
-        && !p.duplicate_of
-    })
+    patches.value.forEach((p: any, i: number) => { sel[i] = defaultSelected(p) })
     selected.value = sel
   } catch (e: any) {
     error.value = e?.message || String(e)
@@ -814,6 +862,27 @@ async function syncBoard() {
 .enrich-patches-preview__error {
   color: #e74c3c;
   background: var(--danger-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.enrich-patches-preview__retry {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.enrich-patches-preview__retry:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 .enrich-patches-preview__result {
   color: #2ecc71;

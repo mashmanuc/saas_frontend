@@ -7227,6 +7227,7 @@
       "stageThinking": "AI is thinking through each task…",
       "stageLong": "Big lesson — a bit more, almost there…",
       "stageBatches": "Processed {done} of {total} tasks…",
+      "retryFailed": "Retry unprocessed ({n})",
       "enterHint": "Enter — run · Shift+Enter — new line",
       "chips": {
         "formulas": "add a formula to each task",

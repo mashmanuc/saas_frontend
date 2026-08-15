@@ -152,7 +152,9 @@ export const shipApi = {
   enrich(
     artifactId: string,
     instruction: string,
-    taskIds?: number[],
+    // Рефи задач (BE робить str()); сюди ж віддаються failed_task_refs для
+    // дозбору «Повторити необроблені».
+    taskIds?: Array<number | string>,
     progressId?: string,
   ): Promise<EnrichResponse> {
     const body: Record<string, unknown> = { instruction }
