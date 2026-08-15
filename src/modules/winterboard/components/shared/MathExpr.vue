@@ -11,10 +11,17 @@
   Патерн KaTeX — learning-content/utils/contentRenderer.ts
   (output: htmlAndMathml + katex.min.css: видимий HTML для export-capture,
   прихований MathML для screen readers).
+
+  translate="no" (2026-08-15): браузерний переклад сторінки переписує
+  текстові вузли DOM і не розуміє змішаної структури KaTeX (прихований
+  MathML + видимий HTML) — радикали й дробові риски мовчки зникали.
+  Другий call-site KaTeX у застосунку (перший — contentRenderer.ts); обидва
+  мусять бути захищені, інакше формули ламаються там, де фікс не доїхав.
+  Fallback-<code> теж: у ньому лежить сирий математичний вираз.
 -->
 <template>
-  <span v-if="html" class="wb-math-expr" v-html="html" />
-  <code v-else class="wb-math-expr wb-math-expr--fallback">{{ expr }}</code>
+  <span v-if="html" class="wb-math-expr notranslate" translate="no" v-html="html" />
+  <code v-else class="wb-math-expr wb-math-expr--fallback notranslate" translate="no">{{ expr }}</code>
 </template>
 
 <script setup lang="ts">
