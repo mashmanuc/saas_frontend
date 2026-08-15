@@ -48,3 +48,41 @@ describe('renderTextWithLatex — markdown-lite (bold + pipe-таблиці)', (
     expect(renderTextWithLatex('')).toBe('')
   })
 })
+
+describe('translate="no" — захист від браузерного перекладу сторінки (2026-08-15)', () => {
+  // Живий гейт власника: Chrome «Перекласти цю сторінку» переписує текстові
+  // вузли DOM і не розуміє змішаної структури KaTeX (MathML + видимий HTML в
+  // одному span) — радикал і дробові риски мовчки зникали. DOM-дамп показував
+  // коректний msqrt/svg — тобто рендер сам по собі був справний, ламало його
+  // САМЕ розширення перекладу. Атрибут (і legacy-клас notranslate) — це не
+  // лікування симптому регексом, а стандартний, задокументований механізм
+  // винятку піддерева з перекладу.
+  it('успішна формула обгорнута в translate="no"', () => {
+    const html = renderTextWithLatex('$\\sqrt{4x-7}$')
+    expect(html).toContain('translate="no"')
+    expect(html).toContain('class="notranslate"')
+    // Саме katex-вивід має лежати ВСЕРЕДИНІ захищеного span, а не поруч —
+    // інакше атрибут не пошириться на дітей.
+    expect(html).toMatch(/<span translate="no" class="notranslate"><span class="katex">/)
+  })
+
+  it('display-формула теж захищена', () => {
+    const html = renderTextWithLatex('$$\\frac{a}{b}$$')
+    expect(html).toContain('translate="no"')
+  })
+
+  it('помилка парсингу LaTeX теж не підлягає перекладу (сире джерело в тексті)', () => {
+    // throwOnError:false у KaTeX ловить майже все, але error-фолбек — окрема
+    // гілка коду, і без власного translate="no" сире \latex-джерело теж
+    // потрапило б під ніж перекладача.
+    const html = renderTextWithLatex('$\\notarealcommand{x}$')
+    if (html.includes('lc-formula-error')) {
+      expect(html).toMatch(/class="lc-formula-error" translate="no"/)
+    }
+  })
+
+  it('звичайний текст без формул НЕ обгортається — переклад тексту не блокуємо', () => {
+    const html = renderTextWithLatex('просто текст без математики')
+    expect(html).not.toContain('translate="no"')
+  })
+})

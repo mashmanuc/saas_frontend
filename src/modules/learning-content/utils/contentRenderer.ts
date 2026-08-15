@@ -64,15 +64,25 @@ export function parseLatexSegments(text: string): Segment[] {
 // render <math> elements at all. With pure 'mathml' mode, exported PDFs
 // missed every formula. htmlAndMathml: visible HTML is captured, MathML
 // stays for accessibility. Visual identity preserved.
+//
+// translate="no" (2026-08-15, живий гейт власника): браузерний переклад
+// сторінки (Chrome «Перекласти цю сторінку») переписує текстові вузли DOM
+// і не розуміє змішаної структури KaTeX (MathML + видимий HTML в одному
+// span) — радикал і дробові риски мовчки зникали, лишаючи «4x-7» без
+// оболонки, хоча власний DOM-дамп показував коректний msqrt/svg. Атрибут
+// (і legacy-клас notranslate для старих версій рушія перекладу) виключає
+// піддерево з переписування — стандартний, задокументований механізм,
+// не хак під конкретний браузер.
 function renderLatexToMathML(formula: string, displayMode: boolean): string {
   try {
-    return katex.renderToString(formula, {
+    const html = katex.renderToString(formula, {
       output: 'htmlAndMathml',
       displayMode,
       throwOnError: false,
     })
+    return `<span translate="no" class="notranslate">${html}</span>`
   } catch {
-    return `<span class="lc-formula-error">${escapeHtml(formula)}</span>`
+    return `<span class="lc-formula-error" translate="no">${escapeHtml(formula)}</span>`
   }
 }
 
