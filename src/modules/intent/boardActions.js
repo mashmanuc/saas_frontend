@@ -290,9 +290,28 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name }) 
     if (!cfg) throw new Error(`Параметра «${paramKey}» немає на цьому графіку — скажіть «побудуй ... з a», і я додам повзунок.`)
     const num = Number(value)
     if (!Number.isFinite(num)) throw new Error('Не зрозумів нове значення параметра.')
+    // Живий прогін власника 2026-08-15: «зроби коефіцієнт a п'ятіркою» при
+    // діапазоні повзунка [-3; 3] тихо клемпилось до 3, а Інтегралик звітував
+    // «Тепер на дошці a = 5». Класична тиха брехня: рядок «Виконано: …» бере
+    // текст, складений ДО виконання (CommandPalette: aiPush kind 'done'), тож
+    // жодна відповідь обробника до тьютора не доходить — виправляти треба не
+    // повідомлення, а факт.
+    //
+    // Межі повзунка — зручність інтерфейсу, а не математичний закон: коли
+    // тьютор називає значення поза ними, він просить ЗНАЧЕННЯ, а не «стільки,
+    // скільки влізе». Тому розсуваємо порушену межу до самого значення
+    // (округлено назовні) і ставимо, що просили — після цього «a = 5» стає
+    // правдою, і повідомлення брехати перестає само.
+    const LIMIT = 1e6
+    if (Math.abs(num) > LIMIT) {
+      throw new Error(`Значення ${num} завелике для повзунка — постав щось у межах ±${LIMIT}.`)
+    }
+    let { min, max } = cfg
+    if (num > max) max = Math.ceil(num)
+    if (num < min) min = Math.floor(num)
     data.state.params = {
       ...(data.state.params || {}),
-      [paramKey]: { ...cfg, value: Math.min(Math.max(num, cfg.min), cfg.max) },
+      [paramKey]: { ...cfg, min, max, value: num },
     }
   } else if (type === 'formula') {
     data.formula = String(value)
@@ -550,7 +569,25 @@ export function assetParams(a) {
     case 'geomash_scene': {
       // Імена об'єктів сцени = те, чим тьютор їх називає (A, B, α, f).
       const ids = (d.scene?.objects || []).map((o) => o?.id).filter(Boolean).slice(0, 20)
-      return clean({ objects: ids.length ? ids : undefined })
+      if (!ids.length) return {}
+      // ЗНАЧЕННЯ беремо з рушія, а не рахуємо тут: GeoEngine.getValue() уже
+      // друкує рівно те, що тьютор промовляє вголос («α = 47.3°», «D = (-5.00,
+      // -5.00)», «c: r = 3.5»), і те саме показує сайдбар сцени. Власна
+      // арифметика тут означала б другу реалізацію градусної міри — і першу ж
+      // ніч, коли вони розійдуться, ми не помітимо.
+      //
+      // Живий прогін 2026-08-15: на питання «яка градусна міра кута»
+      // Інтегралик чесно відповів «координати й кути у стані не вказані» —
+      // чесно, але марно: значення були на екрані, у контекст їхали лише імена.
+      const eng = typeof window !== 'undefined' ? window.GeoEngine : null
+      if (eng?.deserialize && eng?.getValue) {
+        try {
+          const { objects } = eng.deserialize(d.scene)
+          const vals = ids.slice(0, 12).map((id) => eng.getValue(objects, id)).filter(Boolean)
+          if (vals.length) return { objects: vals }
+        } catch { /* сцена з чужого формату — краще імена, ніж нічого */ }
+      }
+      return { objects: ids }
     }
     case 'formula_card':
       return clean({ formula: d.formula })

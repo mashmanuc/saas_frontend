@@ -140,7 +140,41 @@ describe('етап 2 READ — поточні значення параметрі
       id: 's', type: 'geomash_scene',
       data: { scene: { objects: [{ id: 'A' }, { id: 'B' }, { id: 'a' }] } },
     })
-    expect(p.objects).toEqual(['A', 'B', 'a'])
+    expect(p.objects).toEqual(['A', 'B', 'a'])   // без рушія — фолбек на імена
+  })
+
+  it('GeoMASH — ЗНАЧЕННЯ, коли рушій доступний (жива дошка)', () => {
+    // Прогін власника 2026-08-15: «яка градусна міра кута» → «координати й
+    // кути у стані не вказані». Чесно, але марно: значення були на екрані.
+    // Рахує їх сам рушій (getValue) — другої реалізації градусної міри тут
+    // бути не повинно, інакше вони розійдуться і ніхто не помітить.
+    const scene = { objects: [{ id: 'D' }, { id: 'α' }] }
+    ;(globalThis as any).window.GeoEngine = {
+      deserialize: (s: any) => ({ objects: s.objects }),
+      getValue: (_o: any, id: string) =>
+        (id === 'D' ? 'D = (-5.00, -5.00)' : 'α = 47.3°'),
+    }
+    try {
+      expect(assetParams({ id: 's', type: 'geomash_scene', data: { scene } }).objects)
+        .toEqual(['D = (-5.00, -5.00)', 'α = 47.3°'])
+    } finally {
+      delete (globalThis as any).window.GeoEngine
+    }
+  })
+
+  it('зламаний рушій не валить контекст — відкочується на імена', () => {
+    ;(globalThis as any).window.GeoEngine = {
+      deserialize: () => { throw new Error('чужий формат сцени') },
+      getValue: () => '',
+    }
+    try {
+      expect(assetParams({
+        id: 's', type: 'geomash_scene',
+        data: { scene: { objects: [{ id: 'A' }] } },
+      }).objects).toEqual(['A'])
+    } finally {
+      delete (globalThis as any).window.GeoEngine
+    }
   })
 
   it('порожні/відсутні значення не потрапляють у контекст', () => {
