@@ -86,6 +86,15 @@ export interface EnrichResponse {
   skipped?: EnrichSkip[]
 }
 
+/** Проміжний стан enrich (GET progress): скільки задач уже пройшло LLM. */
+export interface EnrichProgress {
+  processed: number
+  total: number
+  done: boolean
+  /** false — BE ще не записав жодного стану (запит щойно стартував) або ключ протух. */
+  known: boolean
+}
+
 export interface EnrichApplyResponse {
   sections_added: number
   error: string | null
@@ -137,13 +146,33 @@ export const shipApi = {
   /**
    * Фаза 4: mass AI enrichment — sends instruction + optional task_ids,
    * returns array of patches for tutor preview.
+   * `progressId` (uuid) — BE під час обробки пакетів пише проміжний стан,
+   * який читає `enrichProgress()`; так UI показує чесний «5 з 12».
    */
-  enrich(artifactId: string, instruction: string, taskIds?: number[]): Promise<EnrichResponse> {
+  enrich(
+    artifactId: string,
+    instruction: string,
+    taskIds?: number[],
+    progressId?: string,
+  ): Promise<EnrichResponse> {
     const body: Record<string, unknown> = { instruction }
     if (taskIds && taskIds.length) body.task_ids = taskIds
+    if (progressId) body.progress_id = progressId
     return apiClient
       .post(`${BASE}/artifacts/${artifactId}/enrich/`, body)
       .then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * Проміжний стан enrich за progressId (пишеться BE після кожного пакета).
+   * `known:false` — ще не дійшло до першого пакета або ключ протух. Мережевий
+   * збій поллінгу не має ламати сам enrich — тому catch → null.
+   */
+  enrichProgress(artifactId: string, progressId: string): Promise<EnrichProgress | null> {
+    return apiClient
+      .get(`${BASE}/artifacts/${artifactId}/enrich/progress/${progressId}/`)
+      .then((r: any) => r.data ?? r)
+      .catch(() => null)
   },
 
   /**

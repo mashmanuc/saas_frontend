@@ -71,9 +71,31 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div class="enrich-patches-preview__loading" v-if="loading">
-      {{ t('winterboard.enrich.analysing') }}
+    <!-- Loading. Enrich — один синхронний POST (10–30 с); BE після кожного пакета
+         пише {processed,total} під progress_id, ми поллимо GET → справжня смуга
+         «5 з 12». Поки перший пакет не завершився (або поллінг не долітає) —
+         індетермінантна смуга + секундомір + етап словами, щоб не виглядало
+         зависанням. Відсоток ніколи не вигадуємо: є total — детермінована, нема — рух. -->
+    <div class="enrich-patches-preview__loading" v-if="loading" role="status" aria-live="polite">
+      <div class="enrich-patches-preview__loading-row">
+        <span class="enrich-patches-preview__spinner" aria-hidden="true" />
+        <span class="enrich-patches-preview__loading-stage">{{ loadingStage }}</span>
+        <span v-if="progressPercent !== null" class="enrich-patches-preview__loading-pct">{{ progressPercent }}%</span>
+        <span class="enrich-patches-preview__loading-time">{{ elapsedSec }} с</span>
+      </div>
+      <div
+        class="enrich-patches-preview__bar"
+        :class="{ 'enrich-patches-preview__bar--determinate': progressPercent !== null }"
+        role="progressbar"
+        :aria-valuenow="progressPercent ?? undefined"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <span
+          class="enrich-patches-preview__bar-fill"
+          :style="progressPercent !== null ? { width: progressPercent + '%' } : undefined"
+        />
+      </div>
     </div>
 
     <!-- Оброблено: X/Y задач (N1 Фаза 4.1) — видно і при успіху, і при
@@ -218,9 +240,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { shipApi, type EnrichApplyResponse, type EnrichSkip } from './shipApi'
+import { shipApi, type EnrichApplyResponse, type EnrichProgress, type EnrichSkip } from './shipApi'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { useOpsSyncStore } from '@/modules/winterboard/stores/opsSyncStore'
 import { useWBStore } from '@/modules/winterboard/board/state/boardStore'
@@ -269,6 +291,67 @@ function applyChip(text: string) {
 const patches = ref<any[]>([])
 const selected = ref<Record<number, boolean>>({})
 const loading = ref(false)
+// Секундомір очікування + етап словами. Справжнього серверного прогресу під
+// час одного синхронного виклику немає — це чесна альтернатива «мертвому»
+// тексту: тьютор бачить, що процес живий і скільки триває.
+const elapsedSec = ref(0)
+let elapsedTimer: ReturnType<typeof setInterval> | null = null
+function stopElapsed() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null }
+}
+watch(loading, (on) => {
+  stopElapsed()
+  elapsedSec.value = 0
+  if (on) elapsedTimer = setInterval(() => { elapsedSec.value += 1 }, 1000)
+})
+onBeforeUnmount(stopElapsed)
+
+// Справжній прогрес по пакетах: BE пише {processed,total} у cache після кожного
+// пакета під progress_id, ми поллимо GET раз на 1.5 с, поки триває POST.
+// liveProgress=null (або known=false) → ще нічого не відомо → індетермінантна
+// смуга; коли є total → відсоткова смуга «processed з total».
+const liveProgress = ref<EnrichProgress | null>(null)
+let progressTimer: ReturnType<typeof setInterval> | null = null
+function newProgressId(): string {
+  const c: any = globalThis.crypto
+  if (c?.randomUUID) return c.randomUUID()
+  // Fallback для дуже старих WebView: uuid-подібний рядок з тим самим алфавітом.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0
+    return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
+function stopProgressPolling() {
+  if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
+}
+function startProgressPolling(progressId: string) {
+  stopProgressPolling()
+  const tick = async () => {
+    const p = await shipApi.enrichProgress(props.artifactId, progressId)
+    if (p && p.known) liveProgress.value = p
+  }
+  progressTimer = setInterval(tick, 1500)
+  // Перший запит — одразу через пів секунди: 0/N з'являється, щойно BE дійшов до пакетів.
+  setTimeout(tick, 500)
+}
+onBeforeUnmount(stopProgressPolling)
+
+const progressPercent = computed(() => {
+  const p = liveProgress.value
+  if (!p || !p.total) return null
+  return Math.min(100, Math.round((p.processed / p.total) * 100))
+})
+
+const loadingStage = computed(() => {
+  const p = liveProgress.value
+  if (p && p.total) {
+    return t('winterboard.enrich.stageBatches', { done: p.processed, total: p.total })
+  }
+  const s = elapsedSec.value
+  if (s < 3)  return t('winterboard.enrich.stageReading')
+  if (s < 20) return t('winterboard.enrich.stageThinking')
+  return t('winterboard.enrich.stageLong')
+})
 const applying = ref(false)
 const error = ref('')
 const result = ref<EnrichApplyResponse | null>(null)
@@ -405,8 +488,14 @@ async function runEnrich() {
   skippedOpen.value = false
   repeatsOpen.value = false
   result.value = null
+  // Справжній прогрес: BE після кожного пакета пише {processed,total} під цим
+  // id, ми поллимо GET, поки триває POST. Збій поллінгу нічого не ламає —
+  // просто лишається індетермінантна смуга.
+  const progressId = newProgressId()
+  liveProgress.value = null
+  startProgressPolling(progressId)
   try {
-    const res = await shipApi.enrich(props.artifactId, instruction.value)
+    const res = await shipApi.enrich(props.artifactId, instruction.value, undefined, progressId)
     processedTasks.value = res.processed_tasks ?? 0
     totalTasks.value = res.total_tasks ?? 0
     // ⚠️ error і patches НЕ взаємовиключні: частковий збій пакета лишає
@@ -428,6 +517,7 @@ async function runEnrich() {
   } catch (e: any) {
     error.value = e?.message || String(e)
   } finally {
+    stopProgressPolling()
     loading.value = false
   }
 }
@@ -648,7 +738,73 @@ async function syncBoard() {
   border-radius: 4px;
 }
 .enrich-patches-preview__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   color: var(--color-text-secondary);
+}
+.enrich-patches-preview__loading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.enrich-patches-preview__loading-stage {
+  flex: 1;
+  color: var(--color-text-primary);
+}
+.enrich-patches-preview__loading-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.enrich-patches-preview__spinner {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  animation: enrich-spin 0.8s linear infinite;
+}
+@keyframes enrich-spin { to { transform: rotate(360deg); } }
+/* Індетермінантна смуга: рух є, відсотка нема — і ми його не вигадуємо. */
+.enrich-patches-preview__bar {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+.enrich-patches-preview__bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  border-radius: 999px;
+  background: var(--color-primary);
+  animation: enrich-bar-slide 1.4s ease-in-out infinite;
+}
+@keyframes enrich-bar-slide {
+  0%   { left: -35%; }
+  100% { left: 100%; }
+}
+/* Коли BE віддав processed/total — смуга стає детермінованою: заповнення від
+   лівого краю, ширина = відсоток, плавно росте з кожним пакетом. */
+.enrich-patches-preview__bar--determinate .enrich-patches-preview__bar-fill {
+  left: 0;
+  animation: none;
+  transition: width 0.6s ease;
+}
+.enrich-patches-preview__loading-pct {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .enrich-patches-preview__spinner,
+  .enrich-patches-preview__bar-fill { animation-duration: 3s; }
 }
 .enrich-patches-preview__progress {
   color: var(--color-text-secondary);

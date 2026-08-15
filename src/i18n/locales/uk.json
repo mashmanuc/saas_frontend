@@ -7804,6 +7804,10 @@
       "dictateStart": "Диктувати інструкцію голосом",
       "dictateStop": "Зупинити диктування",
       "listening": "Слухаю… говоріть",
+      "stageReading": "Читаю урок і задачі…",
+      "stageThinking": "AI обмірковує кожну задачу…",
+      "stageLong": "Урок великий — ще трохи, майже готово…",
+      "stageBatches": "Оброблено {done} з {total} задач…",
       "enterHint": "Enter — запустити · Shift+Enter — новий рядок",
       "chips": {
         "formulas": "додай формулу до кожної задачі",

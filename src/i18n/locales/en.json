@@ -7223,6 +7223,10 @@
       "dictateStart": "Dictate the instruction by voice",
       "dictateStop": "Stop dictation",
       "listening": "Listening… speak",
+      "stageReading": "Reading the lesson and tasks…",
+      "stageThinking": "AI is thinking through each task…",
+      "stageLong": "Big lesson — a bit more, almost there…",
+      "stageBatches": "Processed {done} of {total} tasks…",
       "enterHint": "Enter — run · Shift+Enter — new line",
       "chips": {
         "formulas": "add a formula to each task",
