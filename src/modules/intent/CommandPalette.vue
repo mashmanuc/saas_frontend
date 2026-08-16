@@ -318,6 +318,7 @@ import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
+import { explainWithRenderedMath } from './explainMath'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
@@ -945,7 +946,9 @@ async function execBoardAction(r) {
     // повзунок, рухати об'єкт), а пояснення в чаті лишається потрібним. Тому
     // самі закріплюємо панель. Це головний сценарій плану; відкріпити — 📌.
     if (canPin.value) pinnedPref.value = true
-    aiPush({ kind: 'done', text: r.explain })
+    // Вирази з payload → `$latex$`, щоб у чаті стояла формула, а не
+    // `sqrt(9-(x-1)^2)` (скарга власника 2026-08-16). Див. explainMath.ts.
+    aiPush({ kind: 'done', text: explainWithRenderedMath(r.explain, r.action) })
     react('happy')
   } catch (be) {
     aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
