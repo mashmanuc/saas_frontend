@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, readonly } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import AuditOverlay from '../AuditOverlay.vue'
 import type { AuditSnapshot } from '../types'
 
@@ -51,6 +52,10 @@ function mountOverlay() {
 
 describe('AuditOverlay', () => {
   beforeEach(() => {
+    // Компонент читає layoutStore (Layout SSoT, drag-позиціювання) — без
+    // активної Pinia кожен mount падав «getActivePinia() was called but there
+    // was no active Pinia». Store додали в компонент, спеку не оновили.
+    setActivePinia(createPinia())
     mockSnapshot.value = makeSnapshot()
     mockIsVisible.value = true
     vi.clearAllMocks()

@@ -32,6 +32,7 @@ import {
   getAuditSnapshot,
   disposeAuditCollector,
 } from '../auditCollector'
+import { DEFAULT_AUDIT_CONFIG } from '../types'
 import { resetNetworkStats, detachNetworkTracker } from '../networkTracker'
 import { resetWsStats, teardownWsTracker } from '../wsEventTracker'
 
@@ -97,34 +98,38 @@ describe('auditCollector', () => {
     expect(snap.status).toBe('error')
   })
 
-  it('status = warn when requests between 15-25', () => {
+  // Кількість запитів рахується ВІД ПОРОГІВ конфігу, а не числами в тесті:
+  // пороги вже піднімали (15/25 → 20/30), і ці два тести червоніли мовчки.
+  it('status = warn just above the requests warn threshold', () => {
+    const n = DEFAULT_AUDIT_CONFIG.thresholds.requests.warn + 1
     initAuditCollector()
 
     const interceptorFn = mockRequestUse.mock.calls[0]?.[0]
     if (interceptorFn) {
-      // Simulate 18 POST requests (no duplicates)
-      for (let i = 0; i < 18; i++) {
+      // POST-и: дедуп-ключ не будується, тож дублів немає — міряємо саме кількість
+      for (let i = 0; i < n; i++) {
         interceptorFn({ method: 'post', url: `/api/action/${i}` })
       }
     }
 
     const snap = getAuditSnapshot()
-    expect(snap.requests).toBe(18)
+    expect(snap.requests).toBe(n)
     expect(snap.status).toBe('warn')
   })
 
-  it('status = error when requests > 25', () => {
+  it('status = error just above the requests error threshold', () => {
+    const n = DEFAULT_AUDIT_CONFIG.thresholds.requests.error + 1
     initAuditCollector()
 
     const interceptorFn = mockRequestUse.mock.calls[0]?.[0]
     if (interceptorFn) {
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < n; i++) {
         interceptorFn({ method: 'post', url: `/api/action/${i}` })
       }
     }
 
     const snap = getAuditSnapshot()
-    expect(snap.requests).toBe(30)
+    expect(snap.requests).toBe(n)
     expect(snap.status).toBe('error')
   })
 

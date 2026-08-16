@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { AuditSnapshot } from '../types'
+import { DEFAULT_AUDIT_CONFIG } from '../types'
 import { analyzeAudit } from '../auditAnalyzer'
 
 function createSnapshot(overrides: Partial<AuditSnapshot>): AuditSnapshot {
@@ -74,17 +75,27 @@ describe('analyzeAudit', () => {
   })
 
   // 7. High request count → warn
-  it('returns warn issue on elevated requests (15-25)', () => {
-    const snapshot = createSnapshot({ requests: 20 })
+  // Значення беруться З КОНФІГУ, а не числами в тесті: пороги вже змінювали
+  // (15/25 → 20/30), і тест мовчки червонів, поки хтось не поліз. Тепер він
+  // перевіряє ПОВЕДІНКУ порогу, а не конкретне число.
+  it('returns warn issue on elevated requests (above warn threshold)', () => {
+    const t = DEFAULT_AUDIT_CONFIG.thresholds.requests
+    const snapshot = createSnapshot({ requests: t.warn + 1 })
     const issues = analyzeAudit(snapshot)
     expect(issues).toHaveLength(1)
     expect(issues[0].level).toBe('warn')
     expect(issues[0].message).toContain('Elevated')
   })
 
+  it('does not fire exactly AT the warn threshold (поріг — строго «більше»)', () => {
+    const t = DEFAULT_AUDIT_CONFIG.thresholds.requests
+    expect(analyzeAudit(createSnapshot({ requests: t.warn }))).toEqual([])
+  })
+
   // 8. Very high request count → error
-  it('returns error issue on high requests (>25)', () => {
-    const snapshot = createSnapshot({ requests: 30 })
+  it('returns error issue on high requests (above error threshold)', () => {
+    const t = DEFAULT_AUDIT_CONFIG.thresholds.requests
+    const snapshot = createSnapshot({ requests: t.error + 1 })
     const issues = analyzeAudit(snapshot)
     expect(issues[0].level).toBe('error')
     expect(issues[0].message).toContain('High request')
