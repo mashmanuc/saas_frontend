@@ -971,27 +971,41 @@ const __GC = (function () {
      *   Re-render same scene → reuse cached roots, no recompute.
      *   Slider drag → params change → signature change → recompute (expected).
      * - **Root dedup**: epsilon=1e-3 у math units (для `x^2 = 0` boundary scan).
-     * Limitation: only `kind:'explicitY'` curves; implicit skipped.
+     *
+     * 2026-08-16: пари, де хоч одна крива НЕЯВНА, рахуються окремим 2D-шляхом
+     * (`_computeImplicitPairIntersections`) — 1D-скан по x для них не годиться
+     * (у кола дві y на кожен x). Явні пари — як і були.
      */
     _intersectionsSignature(env) {
-      const w = this.canvas.width;
+      const w = this.canvas.width, h = this.canvas.height;
       const scale = this.viewport.scale;
       const minX = (this.viewport.cx - (w / 2) / scale).toFixed(2);
       const maxX = (this.viewport.cx + (w / 2) / scale).toFixed(2);
+      // y-діапазон теж: 2D-скан неявних пар залежить від нього, і без цього
+      // вертикальний пан не інвалідував би кеш — маркери лишались би старі.
+      const minY = (this.viewport.cy - (h / 2) / scale).toFixed(2);
+      const maxY = (this.viewport.cy + (h / 2) / scale).toFixed(2);
       const exprPart = this.expressions
-        .filter((e) => !e.hidden && e.classified && e.classified.kind === 'explicitY')
+        .filter((e) => !e.hidden && e.classified
+          && (e.classified.kind === 'explicitY' || e.classified.kind === 'implicit'))
         .map((e) => `${e.id}:${e.src}`)
         .join('|');
       const paramKeys = Object.keys(env).sort();
       const paramPart = paramKeys.map((k) => `${k}=${env[k]}`).join(',');
-      return `${exprPart}#${paramPart}#${minX},${maxX}`;
+      return `${exprPart}#${paramPart}#${minX},${maxX},${minY},${maxY}`;
     }
 
     _computeIntersections(env) {
       const curves = this.expressions.filter(
         (e) => !e.hidden && e.classified && e.classified.kind === 'explicitY',
       );
-      if (curves.length < 2) return [];
+      // Менше двох ЯВНИХ — 1D-скан робити нема з чого, але пари з неявною
+      // кривою (явна+неявна, неявна+неявна) рахує 2D-шлях нижче. Ранній вихід
+      // тут раніше глушив і його — саме тому «y=x і коло» не давали перетинів
+      // (спіймано тестом, який пройшов на прямому виклику й упав через обгортку).
+      if (curves.length < 2) {
+        return this._computeImplicitPairIntersections(env, 100);
+      }
       const w = this.canvas.width;
       const scale = this.viewport.scale;
       const dpr = this._dpr || 1;
@@ -1046,7 +1060,161 @@ const __GC = (function () {
           }
         }
       }
+      // Пари з неявною кривою — окремим 2D-шляхом; результат зливаємо.
+      const implicitPts = this._computeImplicitPairIntersections(env, MAX_ROOTS - rootCount);
+      return out.concat(implicitPts);
+    }
+
+    /**
+     * Перетини пар, де хоч одна крива НЕЯВНА (2026-08-16).
+     *
+     * Живий прогін власника: після того, як Інтегралик перестав розбивати
+     * рівняння на функції (07e2c1f), коло `(x-1)^2+y^2=9` і парабола
+     * `y+(x-1)^2=a+3` стали неявними — і маркери перетину ЗНИКЛИ, хоча вся
+     * задача («система має єдиний розв'язок») — це рівно про точку дотику.
+     * 1D-скан по x для таких пар не годиться: у кола дві y на кожен x.
+     *
+     * Алгоритм — той самий принцип, що вже малює неявні криві (marching
+     * squares), лише для ДВОХ функцій одразу:
+     *   1. Кожна крива → нев'язка F(x,y): для неявної lhs−rhs, для явної
+     *      f(x)−y (тобто явна теж стає «неявною» — один код для всіх пар).
+     *   2. Сітка по видимій області; клітинка — кандидат, якщо ОБИДВІ
+     *      нев'язки міняють знак у її кутах (перетин нульових множин).
+     *   3. Із центру клітинки — Ньютон 2×2 (якобіан скінченними різницями)
+     *      до |F|,|G| < eps; розбіжність/сингулярність → клітинку пропускаємо.
+     *   4. Дедуп корені, що зійшлись до однієї точки з сусідніх клітинок.
+     *
+     * Ціна: сітка 12px → на 800×600 при dpr=1 це ~3300 клітинок × 4 виміри на
+     * пару. Крива вже малюється сіткою 8px, тож порядок той самий; кеш по
+     * підпису (`_intersectionsSignature`) не дає рахувати на кожен кадр.
+     */
+    _computeImplicitPairIntersections(env, budget) {
+      if (budget <= 0) return [];
+      const curves = this.expressions.filter(
+        (e) => !e.hidden && e.classified
+          && (e.classified.kind === 'explicitY' || e.classified.kind === 'implicit'),
+      );
+      // Лише пари, де є хоч одна неявна — явно-явні вже порахував 1D-скан.
+      const anyImplicit = curves.some((e) => e.classified.kind === 'implicit');
+      if (!anyImplicit || curves.length < 2) return [];
+
+      const residualOf = (e) => {
+        const c = e.classified;
+        if (c.kind === 'implicit') {
+          const { lhs, rhs } = c;
+          return (x, y) => evalAst(lhs, { ...env, x, y }) - evalAst(rhs, { ...env, x, y });
+        }
+        const ast = c.ast;
+        return (x, y) => evalAst(ast, { ...env, x }) - y;
+      };
+
+      const w = this.canvas.width, h = this.canvas.height;
+      const dpr = this._dpr || 1;
+      const scale = this.viewport.scale;
+      const cellPx = 12 * dpr;
+      const cols = Math.ceil(w / cellPx) + 1;
+      const rows = Math.ceil(h / cellPx) + 1;
+      const toMath = (px, py) => this._pxToMath(px, py);
+
+      const DEDUP_MATH = 2 / scale;   // ~2px у math-одиницях
+      const out = [];
+      const pushUnique = (x, y) => {
+        for (const p of out) {
+          if (Math.abs(p.x - x) < DEDUP_MATH && Math.abs(p.y - y) < DEDUP_MATH) return;
+        }
+        out.push({ x, y });
+      };
+
+      for (let i = 0; i < curves.length && out.length < budget; i++) {
+        for (let j = i + 1; j < curves.length && out.length < budget; j++) {
+          if (curves[i].classified.kind !== 'implicit'
+              && curves[j].classified.kind !== 'implicit') continue;   // явна пара — вже є
+          const F = residualOf(curves[i]);
+          const G = residualOf(curves[j]);
+
+          // Кутові значення сітки — раз на пару.
+          const fGrid = new Float64Array(cols * rows);
+          const gGrid = new Float64Array(cols * rows);
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const m = toMath(c * cellPx, r * cellPx);
+              let fv = NaN, gv = NaN;
+              try { fv = F(m.x, m.y); gv = G(m.x, m.y); } catch (_) {}
+              fGrid[r * cols + c] = fv;
+              gGrid[r * cols + c] = gv;
+            }
+          }
+          const changesSign = (grid, r, c) => {
+            const a = grid[r * cols + c], b = grid[r * cols + c + 1];
+            const d = grid[(r + 1) * cols + c], e = grid[(r + 1) * cols + c + 1];
+            if (![a, b, d, e].every(Number.isFinite)) return false;
+            const mn = Math.min(a, b, d, e), mx = Math.max(a, b, d, e);
+            return mn <= 0 && mx >= 0;
+          };
+
+          for (let r = 0; r < rows - 1 && out.length < budget; r++) {
+            for (let c = 0; c < cols - 1 && out.length < budget; c++) {
+              if (!changesSign(fGrid, r, c) || !changesSign(gGrid, r, c)) continue;
+              const m0 = toMath((c + 0.5) * cellPx, (r + 0.5) * cellPx);
+              const root = this._newton2D(F, G, m0.x, m0.y, cellPx / scale);
+              if (root) pushUnique(root.x, root.y);
+            }
+          }
+        }
+      }
       return out;
+    }
+
+    /**
+     * Ньютон для системи F(x,y)=0, G(x,y)=0 з початку (x0,y0).
+     * `cellSize` обмежує втечу: корінь, що втік далі ніж на 2 клітинки від
+     * старту, — не корінь цієї клітинки (його знайде інша або він фальшивий).
+     * Повертає {x,y} або null.
+     */
+    _newton2D(F, G, x0, y0, cellSize, iters = 12) {
+      const H = 1e-6;
+      const EPS = 1e-9;
+      let x = x0, y = y0;
+      for (let i = 0; i < iters; i++) {
+        let f, g, fx, fy, gx, gy;
+        try {
+          f = F(x, y); g = G(x, y);
+          fx = (F(x + H, y) - f) / H; fy = (F(x, y + H) - f) / H;
+          gx = (G(x + H, y) - g) / H; gy = (G(x, y + H) - g) / H;
+        } catch (_) { return null; }
+        if (![f, g, fx, fy, gx, gy].every(Number.isFinite)) return null;
+        if (Math.abs(f) < EPS && Math.abs(g) < EPS) break;
+        const det = fx * gy - fy * gx;
+        let dx, dy;
+        if (Number.isFinite(det) && Math.abs(det) >= 1e-12) {
+          dx = (f * gy - fy * g) / det;
+          dy = (fx * g - f * gx) / det;
+        } else {
+          // ДОТИК (якобіан вироджений: градієнти F і G колінеарні). Саме цей
+          // випадок — суть задачі власника: «система має єдиний розв'язок» =
+          // парабола дотикається кола при a = -6. Розв'язати систему тут не
+          // можна, але можна МІНІМІЗУВАТИ F²+G² — крок Гауса–Ньютона з
+          // регуляризацією (Левенберг–Марквардт, λ на діагоналі), якому
+          // det не потрібен. Збігається до точки дотику з боку клітинки.
+          const lam = 1e-6;
+          const a11 = fx * fx + gx * gx + lam, a12 = fx * fy + gx * gy;
+          const a22 = fy * fy + gy * gy + lam;
+          const b1 = fx * f + gx * g, b2 = fy * f + gy * g;
+          const d2 = a11 * a22 - a12 * a12;
+          if (!Number.isFinite(d2) || Math.abs(d2) < 1e-18) return null;
+          dx = (b1 * a22 - a12 * b2) / d2;
+          dy = (a11 * b2 - a12 * b1) / d2;
+        }
+        x -= dx; y -= dy;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+        if (Math.abs(x - x0) > 2 * cellSize || Math.abs(y - y0) > 2 * cellSize) return null;
+      }
+      let f, g;
+      try { f = F(x, y); g = G(x, y); } catch (_) { return null; }
+      // Приймаємо лише справжній корінь, не «десь поруч».
+      const TOL = 1e-6 * Math.max(1, cellSize * 100);
+      if (!Number.isFinite(f) || !Number.isFinite(g) || Math.abs(f) > TOL || Math.abs(g) > TOL) return null;
+      return { x, y };
     }
 
     _drawIntersections(env) {

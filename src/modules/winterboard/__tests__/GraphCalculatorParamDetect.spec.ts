@@ -1098,3 +1098,103 @@ describe('Engine drag-param: several params on the board (2026-08-16)', () => {
     calc.destroy(); container.remove()
   })
 })
+
+// ── Перетини пар із НЕЯВНОЮ кривою (2026-08-16) ───────────────────────────────
+//
+// Живий прогін власника: після 07e2c1f коло й парабола на дошці стали
+// неявними — і маркери перетину ЗНИКЛИ, хоча задача («система має єдиний
+// розв'язок») — рівно про точку дотику. 1D-скан по x для таких пар не
+// годиться (у кола дві y на кожен x) → 2D-сітка + Ньютон 2×2, а для дотику
+// (вироджений якобіан) — крок Гауса–Ньютона з регуляризацією.
+describe('Engine intersections: implicit pairs (2026-08-16)', () => {
+  const board = (a: number) => ({
+    expressions: [
+      { id: 'circle',   src: '(x-1)^2 + y^2 = 9',    color: '#e11', hidden: false },
+      { id: 'parabola', src: 'y + (x-1)^2 = a + 3',  color: '#11e', hidden: false },
+    ],
+    params: { a: { value: a, min: -10, max: 10, step: 0.1 } },
+    // scale=18: у jsdom канва 300×150 → видиме y ∈ [−4.2; 4.2] — коло радіуса 3
+    // з центром (1;0) влазить ЦІЛКОМ. При scale=38 видиме y ∈ [−1.97; 1.97], і
+    // перетини (y≈−2.37) та дотик (1;−3) були б ПОЗА екраном — рушій їх чесно
+    // не рахує (як і для явних: поза вьюпортом маркерів немає). Перший прогін
+    // цього тесту впав саме через це, а не через алгоритм.
+    viewport: { cx: 1, cy: 0, scale: 18 },
+  })
+  const pts = (calc: any) => calc._computeIntersections(calc._buildEnv()) as Array<{x:number;y:number}>
+  const onBoth = (p: {x:number;y:number}, a: number) =>
+    Math.abs((p.x-1)**2 + p.y**2 - 9) < 1e-3 && Math.abs(p.y + (p.x-1)**2 - (a+3)) < 1e-3
+
+  it('живий кейс власника, a=-2: два перетини, обидва лежать на ОБОХ кривих', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(board(-2))
+    const p = pts(calc)
+    expect(p.length, 'перетинів неявних кривих не знайдено — регресія на місці').toBe(2)
+    for (const q of p) expect(onBoth(q, -2), JSON.stringify(q)).toBe(true)
+    // симетричні відносно x=1
+    expect(Math.abs((p[0].x - 1) + (p[1].x - 1))).toBeLessThan(1e-3)
+    calc.destroy(); container.remove()
+  })
+
+  it('a=-6: ДОТИК — рівно одна точка (1; -3), суть задачі', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(board(-6))
+    const p = pts(calc)
+    expect(p.length, 'дотик не знайдено — вироджений якобіан без фолбека').toBeGreaterThanOrEqual(1)
+    // Усі знайдені — це одна й та сама точка дотику (дедуп міг лишити 1–2 сусідні).
+    for (const q of p) {
+      expect(q.x).toBeCloseTo(1, 1)
+      expect(q.y).toBeCloseTo(-3, 1)
+    }
+    calc.destroy(); container.remove()
+  })
+
+  it('a=-7: кривих не торкаються — нуль перетинів (немає фальшивих коренів)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(board(-7))
+    expect(pts(calc)).toEqual([])
+    calc.destroy(); container.remove()
+  })
+
+  it('явна + неявна: y=x і коло x^2+y^2=2 → (1;1) і (-1;-1)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [
+        { id: 'l', src: 'y = x',          color: '#e11', hidden: false },
+        { id: 'c', src: 'x^2 + y^2 = 2',  color: '#11e', hidden: false },
+      ],
+      params: {},
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    const p = pts(calc).sort((u, v) => u.x - v.x)
+    expect(p.length).toBe(2)
+    expect(p[0].x).toBeCloseTo(-1, 2); expect(p[0].y).toBeCloseTo(-1, 2)
+    expect(p[1].x).toBeCloseTo(1, 2);  expect(p[1].y).toBeCloseTo(1, 2)
+    calc.destroy(); container.remove()
+  })
+
+  it('явна+явна пара досі йде старим 1D-шляхом і не дублюється 2D-шляхом', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [
+        { id: 'a', src: 'y = x^2', color: '#e11', hidden: false },
+        { id: 'b', src: 'y = 1',   color: '#11e', hidden: false },
+      ],
+      params: {},
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    const p = pts(calc)
+    expect(p.length).toBe(2)     // (-1;1) і (1;1) — рівно два, без дублів від 2D
+    calc.destroy(); container.remove()
+  })
+
+  it('кеш-підпис бачить неявні криві і y-діапазон', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(board(-2))
+    const s1 = (calc as any)._intersectionsSignature((calc as any)._buildEnv())
+    expect(s1).toContain('circle')          // неявна крива в підписі
+    ;(calc as any).viewport.cy += 5          // вертикальний пан
+    const s2 = (calc as any)._intersectionsSignature((calc as any)._buildEnv())
+    expect(s2).not.toBe(s1)                 // інакше маркери лишались би старі
+    calc.destroy(); container.remove()
+  })
+})
