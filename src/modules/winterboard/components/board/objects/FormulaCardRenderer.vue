@@ -107,11 +107,25 @@ const renderedFormula = computed((): string => {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  /* `safe center` замість `center` — правило власника 2026-08-16 «висота не
+     дозволяє → скрол». Живий прогін: формула
+     `f(x)/g(x) ≤ 0 ⇔ f(x)·g(x) ≤ 0, g(x) ≠ 0` ширша за картку, і при
+     звичайному `center` вона обрізалась з ОБОХ боків — початок виїжджав у
+     недосяжну від'ємну зону скролу (класика flexbox: центрований
+     overflow не доскролити). `safe` переносить вирівнювання на start, щойно
+     вміст перестає вміщатись, — і тоді скрол справді доїжджає до початку. */
+  justify-content: safe center;
   padding: 12px 16px;
   width: 100%;
   text-align: center;
   line-height: 1.4;
+  /* Обрізання замінене на прокрутку. ⚠️ `pointer-events` НЕ вмикаємо:
+     корінь навмисно `none`, щоб драг/вибір ловив Konva-проксі (див.
+     POINTER-EVENTS MODEL угорі файлу). Скрол колесом тут ціною зламаного
+     перетягування картки — погана угода; головне вже зробив `safe center`
+     (початок формули видно) і повна ширина смуги з BE. */
+  overflow: auto;
+  scrollbar-width: thin;
 }
 
 .formula-card-renderer__placeholder {
