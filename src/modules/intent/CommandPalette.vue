@@ -319,6 +319,7 @@ import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { explainWithRenderedMath } from './explainMath'
+import { createPinPolicy } from './pinPolicy'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
@@ -944,8 +945,9 @@ async function execBoardAction(r) {
     emitSceneMetric(r.action)   // Phase 1, блок A: wb.scene.created / word_edit
     // 0b: щойно щось з'явилось на дошці — юзеру треба туди клікати (тягнути
     // повзунок, рухати об'єкт), а пояснення в чаті лишається потрібним. Тому
-    // самі закріплюємо панель. Це головний сценарій плану; відкріпити — 📌.
-    if (canPin.value) pinnedPref.value = true
+    // самі закріплюємо панель — але РІВНО ОДИН раз за сеанс і лише якщо людина
+    // не відкріпила її сама (2026-08-17).
+    autoPinOnce()
     // Вирази з payload → `$latex$`, щоб у чаті стояла формула, а не
     // `sqrt(9-(x-1)^2)` (скарга власника 2026-08-16). Див. explainMath.ts.
     aiPush({ kind: 'done', text: explainWithRenderedMath(r.explain, r.action) })
@@ -1415,12 +1417,24 @@ const overlayStyle = computed(() =>
 // У pin: підкладка стає прозорою і `pointer-events:none` → кліки йдуть на дошку,
 // панель лишається (вона вже перетягувана й пам'ятає позицію — restorePanelPos).
 // Закриття у pin — ЛИШЕ явне: ✕ або Esc.
-const pinnedPref = ref(false)
-// На вузькому екрані панель фактично повноекранна — pin там безглуздий (нема куди
-// «відсунути» чат, щоб бачити дошку). Тому pin = desktop/широкий планшет.
-const canPin = computed(() => !isNarrow.value)
-const isPinned = computed(() => pinnedPref.value && canPin.value)
-function togglePin() { pinnedPref.value = !pinnedPref.value }
+// pin = desktop/широкий планшет І відкрита дошка. Ширина: на вузькому екрані
+// панель фактично повноекранна, «відсунути» чат нема куди. Дошка: pin існує
+// заради того, щоб дошка лишалась клікабельною — у списках, матеріалах,
+// кабінеті під панеллю немає чого чіпати, і єдиним ефектом лишалося «клік повз
+// панель не закриває». Кнопка ні про що (скарга власника 2026-08-17).
+const canPin = computed(() => !isNarrow.value && !!currentBoardId.value)
+
+// Хто вирішує, коли панель закріплена — політика у ./pinPolicy.ts (там же
+// тести). Коротко: рішення людини старше за автоматику, авто-pin один раз за
+// діалог. `pinnedPref` лишає стару назву — на неї дивиться решта файлу.
+const {
+  pinned: pinnedPref,
+  isPinned,
+  togglePin,
+  autoPinOnce,
+  resetHabit: resetPinHabit,
+} = createPinPolicy(() => canPin.value)
+
 function onOverlayClick() { if (!isPinned.value) close() }
 function onViewportResize() {
   const vv = window.visualViewport
@@ -1526,7 +1540,9 @@ function openPalette() {
   // клікає по канві (подивитись, вибрати об'єкт), а клік повз панель її закривав —
   // разом із розмовою на екрані. Поза дошкою (списки, кабінет) лишаємо звичайну
   // модалку: там клік-повз-закрити очікуваний і нічого не руйнує.
-  if (canPin.value && currentBoardId.value) pinnedPref.value = true
+  // 2026-08-17: через autoPinOnce — щоб відкриття панелі не скасовувало ручне
+  // відкріплення (саме це робило кнопку 📌 на вигляд мертвою).
+  autoPinOnce()
   restorePanelPos()   // відновити місце, куди юзер відсунув панель
   applyItgSkin()      // маскот у шапці теж отримує скін часу доби
   nextTick(() => (hasThread ? aiInputEl.value : inputEl.value)?.focus())
@@ -1537,6 +1553,9 @@ function openPalette() {
 // 0a: ЄДИНИЙ спосіб втратити розмову — явна дія юзера (Product Invariant #1).
 function newDialog() {
   aiThread.value = []
+  // Новий діалог — чистий аркуш і для pin-звички: авто-закріплення знову
+  // дозволене, ручне відкріплення попереднього діалогу не тягнемо далі.
+  resetPinHabit()
   conversationId.value = newConversationId()   // і серверна пам'ять теж з чистого
   aiInput.value = ''
   aiBusy.value = false
