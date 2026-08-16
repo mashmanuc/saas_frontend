@@ -7238,6 +7238,10 @@
         "theory": "Add the theory."
       },
       "instructionLabel": "Instruction (freetext)",
+      "questionTitle": "This looks like a question, not an instruction",
+      "questionBody": "✨ adds cards to the lesson tasks: theory, formula, method, hint, common mistake, real-life example. Questions in plain words are better asked to Integralyk.",
+      "questionAsk": "Ask Integralyk",
+      "questionForce": "No, enrich anyway",
       "instructionPlaceholder": "describe which layer to add to the lesson tasks",
       "run": "Run",
       "running": "Running…",

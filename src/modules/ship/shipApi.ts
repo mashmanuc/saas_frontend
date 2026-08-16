@@ -84,6 +84,14 @@ export interface EnrichResponse {
   failed_task_refs: string[]
   /** A-T1: свідомі пропуски моделі. UI-лічильник — зона B-T2. */
   skipped?: EnrichSkip[]
+  /**
+   * 2026-08-16 (живий випадок власника: «що ти вмієш?» у полі ✨ → 3 списання
+   * і 4 випадкові картки): класифікатор упізнав ПИТАННЯ до асистента, а не
+   * інструкцію → BE зупинився ДО пакетів (1 списання за класифікацію),
+   * patches порожні. UI показує підтвердження «Спитати Інтегралика?» /
+   * «Ні, збагатити як є» (повторний виклик із forceFreeform=true).
+   */
+  kind?: 'question'
 }
 
 /** Проміжний стан enrich (GET progress): скільки задач уже пройшло LLM. */
@@ -156,10 +164,14 @@ export const shipApi = {
     // дозбору «Повторити необроблені».
     taskIds?: Array<number | string>,
     progressId?: string,
+    /** «Ні, збагатити як є» після kind:'question' — BE пропускає класифікацію
+     *  жанру (не платимо за неї вдруге) і йде вільною формою. */
+    forceFreeform?: boolean,
   ): Promise<EnrichResponse> {
     const body: Record<string, unknown> = { instruction }
     if (taskIds && taskIds.length) body.task_ids = taskIds
     if (progressId) body.progress_id = progressId
+    if (forceFreeform) body.force_freeform = true
     return apiClient
       .post(`${BASE}/artifacts/${artifactId}/enrich/`, body)
       .then((r: any) => r.data ?? r)

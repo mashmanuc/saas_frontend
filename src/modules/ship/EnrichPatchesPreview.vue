@@ -12,6 +12,25 @@
          інше («спершу приклади, потім формули»), ні повторити спробу
          після помилки (живий прогін 2026-08-09). -->
     <div class="enrich-patches-preview__input" v-if="!patches.length && !loading">
+      <!-- 2026-08-16, живий випадок власника: у поле ввели «що ти вмієш?» →
+           запуск пішов вільною формою → 3 списання і 4 випадкові картки замість
+           відповіді. Тепер BE впізнає ПИТАННЯ до асистента й зупиняється ДО
+           пакетів (kind:'question'); ми питаємо, а не вгадуємо. Помилка
+           класифікатора коштує один клік («Ні, збагатити як є»), не 3 виклики. -->
+      <div v-if="questionPending" class="enrich-patches-preview__question" role="status">
+        <div class="enrich-patches-preview__question-title">{{ t('winterboard.enrich.questionTitle') }}</div>
+        <div class="enrich-patches-preview__question-body">{{ t('winterboard.enrich.questionBody') }}</div>
+        <div class="enrich-patches-preview__question-actions">
+          <button type="button" class="enrich-patches-preview__run" @click="askIntegralyk">
+            <span>{{ t('winterboard.enrich.questionAsk') }}</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="enrich-patches-preview__chip" @click="runEnrich(undefined, true)">
+            {{ t('winterboard.enrich.questionForce') }}
+          </button>
+        </div>
+      </div>
+
       <label>{{ t('winterboard.enrich.instructionLabel') }}</label>
 
       <!-- Чіпи-приклади: клік підставляє готову інструкцію в поле (далі можна
@@ -520,7 +539,22 @@ function defaultSelected(p: any): boolean {
  * докидаються, галочки перераховуються лише для доданих. BE приймає ті самі
  * рефи, що віддав у `failed_task_refs` (str(section.ref)).
  */
-async function runEnrich(onlyTaskRefs?: string[]) {
+/** kind:'question' від BE — інструкція, яку класифікатор упізнав як питання
+ *  до асистента. Поки не null — над композером стоїть картка підтвердження. */
+const questionPending = ref<string | null>(null)
+
+/** «Спитати Інтегралика» — палітра слухає цю подію (CommandPalette.vue,
+ *  onIntegralykAsk): відкривається в діалозі й ставить репліку. Модалку
+ *  закриваємо: відповідь буде в палітрі, а тут лишати нічого. */
+function askIntegralyk() {
+  const text = questionPending.value
+  if (!text) return
+  questionPending.value = null
+  window.dispatchEvent(new CustomEvent('m4sh:integralyk-ask', { detail: { text } }))
+  emit('close')
+}
+
+async function runEnrich(onlyTaskRefs?: string[], forceFreeform = false) {
   // Лише справжній масив рефів = дозбір. Захист від `@click="runEnrich"` без
   // дужок — тоді сюди прилетів би Event, і він НЕ має вмикати retry.
   const retry = Array.isArray(onlyTaskRefs) && onlyTaskRefs.length > 0
@@ -536,6 +570,7 @@ async function runEnrich(onlyTaskRefs?: string[]) {
   instruction.value = typed
   loading.value = true
   error.value = ''
+  questionPending.value = null
   if (!retry) {
     patches.value = []
     selected.value = {}
@@ -553,7 +588,14 @@ async function runEnrich(onlyTaskRefs?: string[]) {
   startProgressPolling(progressId)
   try {
     const res = await shipApi.enrich(props.artifactId, instruction.value,
-                                     retry ? onlyTaskRefs : undefined, progressId)
+                                     retry ? onlyTaskRefs : undefined, progressId,
+                                     forceFreeform)
+    if (res.kind === 'question') {
+      // BE зупинився до пакетів: patches порожні, показуємо підтвердження.
+      // Поле з текстом лишається — тьютор бачить, ЩО саме визнано питанням.
+      questionPending.value = instruction.value
+      return   // finally нижче зупинить поллінг і зніме loading
+    }
     if (retry) {
       // Дозбір: total не міняється, processed росте на те, що вдалось тепер.
       processedTasks.value += res.processed_tasks ?? 0
@@ -673,6 +715,32 @@ async function syncBoard() {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.enrich-patches-preview__question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-primary, #1f8a5b);
+  border-radius: 12px;
+  background: var(--color-bg-secondary);
+}
+.enrich-patches-preview__question-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.enrich-patches-preview__question-body {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.enrich-patches-preview__question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 .enrich-patches-preview__chip {
   padding: 6px 12px;

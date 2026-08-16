@@ -1553,6 +1553,27 @@ function runSelected() {
   if (c) invoke(c)
 }
 
+/**
+ * 2026-08-16 — вхід «спитати Інтегралика ЦИМ текстом» для інших модулів.
+ * Живий випадок власника: у поле ✨ «Збагатити урок» ввели «що ти вмієш?» —
+ * enrich не має що на це відповісти, а Інтегралик — має. Модалка enrich
+ * шле CustomEvent (конвенція `m4sh:open-export-dialog`), палітра відкривається
+ * ОДРАЗУ в діалозі й ставить репліку. Якщо Інтегралик вимкнено (build-флаг
+ * або per-акаунт) — відкриваємось у командах із поясненням, а не мовчимо:
+ * кнопка в іншому модулі не має «нічого не робити».
+ */
+function onIntegralykAsk(e) {
+  const text = String(e?.detail?.text ?? '').trim()
+  if (!enabled.value || !text) return
+  if (!open.value) openPalette()
+  if (!showAI.value) {
+    mode.value = 'commands'
+    notice.value = 'Інтегралик вимкнено в налаштуваннях профілю — увімкніть, щоб ставити питання словами.'
+    return
+  }
+  askAi(text)
+}
+
 function onKeydown(e) {
   if (matchesShortcut(e)) {
     e.preventDefault(); open.value ? close() : openPalette()
@@ -1563,6 +1584,7 @@ function onKeydown(e) {
 
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
+  window.addEventListener('m4sh:integralyk-ask', onIntegralykAsk)
   restoreFabPos()
   // Мобільний layout: стежимо за шириною екрана + екранною клавіатурою (VisualViewport)
   try {
@@ -1583,6 +1605,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('m4sh:integralyk-ask', onIntegralykAsk)
   window.removeEventListener('mousemove', onEyesMove)
   try { narrowMq && (narrowMq.removeEventListener ? narrowMq.removeEventListener('change', updateNarrow) : narrowMq.removeListener(updateNarrow)) } catch { /* noop */ }
   if (window.visualViewport) {
