@@ -1186,17 +1186,35 @@ const __GC = (function () {
      *   cursorMathX, cursorMathY — cursor у math coords. Якщо undefined,
      *     fallback to "first visible" (legacy / pointerdown-без-pos behaviour).
      *
-     * Returns {paramName, exprId, ast} or null:
-     *  - null якщо params.length != 1
-     *  - null якщо жодна candidate (no expression uses param)
+     * Returns {paramName, exprId, ast, residual, yAt} or null:
+     *  - null якщо жодна крива не залежить РІВНО від одного параметра
      *  - null якщо cursor ПОЗА activation zone (для cursor-aware call)
+     *
+     * 2026-08-16 (живий прогін власника: «працює, але коли два і більше
+     * параметрів — ні»): тут стояло `if (params.length !== 1) return null` —
+     * запобіжник від двозначності «яка з двох повзунків керує кривою?». Але
+     * він гасив і всі ОДНОЗНАЧНІ випадки: на дошці a та b, а парабола
+     * залежить лише від a — тягнути нема чого сумніватись, а рушій казав
+     * «ні». Однозначність вирішує КРИВА, не лічильник повзунків: кандидат
+     * — крива, що залежить рівно від одного параметра; він і є її ім'ям.
+     * Крива з двома параметрами (y = a*x + b) кандидатом не стає — тут
+     * двозначність справжня, і повзунок лишається єдиним чесним способом.
      */
     _findParamDragCandidate(cursorMathX, cursorMathY) {
-      const paramKeys = Object.keys(this.params);
-      if (paramKeys.length !== 1) return null;
-      const paramName = paramKeys[0];
+      const paramSet = new Set(Object.keys(this.params));
+      if (paramSet.size === 0) return null;
+      /** Єдиний параметр кривої або null, якщо їх 0 чи ≥2. */
+      const soleParamOf = (freeVarSet) => {
+        let found = null;
+        for (const v of freeVarSet) {
+          if (!paramSet.has(v)) continue;
+          if (found !== null) return null;   // другий параметр → двозначно
+          found = v;
+        }
+        return found;
+      };
 
-      // Build candidate list: visible curves using this param.
+      // Build candidate list: visible curves depending on exactly one param.
       //
       // 2026-08-16: було ЛИШЕ `explicitY`. Живий прогін власника: після того,
       // як Інтегралик перестав розбивати рівняння на функції (07e2c1f),
@@ -1215,7 +1233,8 @@ const __GC = (function () {
         const c = e.classified;
         try {
           if (c.kind === 'explicitY') {
-            if (!freeVars(c.ast).has(paramName)) continue;
+            const paramName = soleParamOf(freeVars(c.ast));
+            if (!paramName) continue;
             const ast = c.ast;
             candidates.push({
               paramName, exprId: e.id, ast,
@@ -1225,7 +1244,8 @@ const __GC = (function () {
             });
           } else if (c.kind === 'implicit') {
             const fv = new Set([...freeVars(c.lhs), ...freeVars(c.rhs)]);
-            if (!fv.has(paramName)) continue;
+            const paramName = soleParamOf(fv);
+            if (!paramName) continue;
             const { lhs, rhs } = c;
             candidates.push({
               paramName, exprId: e.id, ast: null,
@@ -1259,15 +1279,19 @@ const __GC = (function () {
       const tPx = thresholdPx * dpr;
       const cursorPx = this._mathToPx(cursorMathX, cursorMathY);
 
-      // Поточне значення параметра — потрібне, щоб оцінити відстань до
-      // кривої «як вона зараз намальована».
-      const cur = this.params[paramName];
-      const aNow = (cur && typeof cur === 'object' && Number.isFinite(cur.value))
-        ? cur.value : (typeof cur === 'number' ? cur : 1);
+      // Поточне значення параметра КОНКРЕТНОЇ кривої — потрібне, щоб оцінити
+      // відстань до неї «як вона зараз намальована». У різних кандидатів
+      // параметри можуть бути різні (a у параболи, b у прямої).
+      const valueOf = (name) => {
+        const cur = this.params[name];
+        return (cur && typeof cur === 'object' && Number.isFinite(cur.value))
+          ? cur.value : (typeof cur === 'number' ? cur : 1);
+      };
 
       let best = null;
       let minDistSq = tPx * tPx;
       for (const c of candidates) {
+        const aNow = valueOf(c.paramName);
         let distSq;
         try {
           if (c.yAt) {

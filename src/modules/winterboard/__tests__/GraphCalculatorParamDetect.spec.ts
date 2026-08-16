@@ -410,7 +410,12 @@ describe('Engine drag-param v1 (Phase G3 v1)', () => {
     container.remove()
   })
 
-  it('_findParamDragCandidate: returns null коли params != 1', async () => {
+  it('_findParamDragCandidate: null коли КРИВА залежить від ≥2 параметрів (y=a*x+b)', async () => {
+    // 2026-08-16: назву уточнено. Раніше — «null коли params != 1», і тест
+    // проходив через заглушку на лічильнику повзунків. Тепер правило інше
+    // (однозначність вирішує крива), а тест проходить із ПРАВИЛЬНОЇ причини:
+    // ця крива має два параметри — яку тягнути, невідомо. Два повзунки на
+    // дошці самі по собі більше нічого не глушать (див. describe нижче).
     const { calc, container } = await makeEngine()
     calc.setState({
       expressions: [{ id: 'e1', src: 'y = a*x + b', color: '#abc', hidden: false }],
@@ -1010,6 +1015,86 @@ describe('Engine drag-param: implicit curves (2026-08-16)', () => {
     })
     const ast = (calc as any).expressions[0].classified.ast
     expect((calc as any)._solveParam(ast, 'a', 2, 4, 1)).toBeCloseTo(2, 3)
+    calc.destroy(); container.remove()
+  })
+})
+
+// ── Shift+drag при ДВОХ і більше параметрах (2026-08-16) ──────────────────────
+//
+// Живий прогін власника: «працює, але коли два і більше параметрів — ні».
+// Стояло `if (params.length !== 1) return null` — запобіжник від двозначності,
+// який гасив і всі ОДНОЗНАЧНІ випадки. Однозначність вирішує КРИВА, не
+// лічильник повзунків.
+describe('Engine drag-param: several params on the board (2026-08-16)', () => {
+  const OWNER_TWO_PARAMS = {
+    // Дослівно з дошки власника: коло без параметра, парабола лише від a,
+    // на панелі ще й b (від іншого виразу або лишився).
+    expressions: [
+      { id: 'circle',   src: '(x-1)^2 + y^2 = 9',    color: '#e11', hidden: false },
+      { id: 'parabola', src: 'y + (x-1)^2 = a + 3',  color: '#11e', hidden: false },
+    ],
+    params: {
+      a: { value: -1, min: -10, max: 10, step: 0.1 },
+      b: { value: 5.1, min: -10, max: 10, step: 0.1 },
+    },
+    viewport: { cx: 0, cy: 0, scale: 38 },
+  }
+
+  it('живий кейс: два повзунки, парабола від одного → тягнеться (раніше null)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_TWO_PARAMS)
+    // Вершина при a=-1: (1; 2). Курсор поруч.
+    const c = (calc as any)._findParamDragCandidate(1, 2)
+    expect(c, 'два повзунки на дошці глушили однозначну криву').not.toBeNull()
+    expect(c.exprId).toBe('parabola')
+    expect(c.paramName).toBe('a')          // саме той параметр, від якого залежить крива
+    calc.destroy(); container.remove()
+  })
+
+  it('дві криві з РІЗНИМИ параметрами — кожна тягне свій', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [
+        { id: 'p1', src: 'y = a*x^2', color: '#e11', hidden: false },   // від a
+        { id: 'p2', src: 'y = b*x',   color: '#11e', hidden: false },   // від b
+      ],
+      params: {
+        a: { value: 1, min: -10, max: 10, step: 0.1 },
+        b: { value: -1, min: -10, max: 10, step: 0.1 },
+      },
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    // (2; 4) — на параболі y=x^2, далеко від прямої y=-x (там y=-2)
+    const near1 = (calc as any)._findParamDragCandidate(2, 4)
+    expect(near1?.exprId).toBe('p1'); expect(near1?.paramName).toBe('a')
+    // (2; -2) — на прямій y=-x, далеко від параболи (там y=4)
+    const near2 = (calc as any)._findParamDragCandidate(2, -2)
+    expect(near2?.exprId).toBe('p2'); expect(near2?.paramName).toBe('b')
+    calc.destroy(); container.remove()
+  })
+
+  it('крива від ДВОХ параметрів (y = a*x + b) — кандидатом не стає: двозначність справжня', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'line', src: 'y = a*x + b', color: '#e11', hidden: false }],
+      params: {
+        a: { value: 1, min: -10, max: 10, step: 0.1 },
+        b: { value: 0, min: -10, max: 10, step: 0.1 },
+      },
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    expect((calc as any)._findParamDragCandidate(2, 2)).toBeNull()
+    calc.destroy(); container.remove()
+  })
+
+  it('без жодного параметра — null, як і було', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'c', src: 'x^2 + y^2 = 4', color: '#e11', hidden: false }],
+      params: {},
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    expect((calc as any)._findParamDragCandidate(2, 0)).toBeNull()
     calc.destroy(); container.remove()
   })
 })
