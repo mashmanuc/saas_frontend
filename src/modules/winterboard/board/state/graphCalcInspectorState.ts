@@ -42,6 +42,9 @@ export interface GcSlashPopup {
 export interface GraphCalcInspectorBridge {
   // ── Param sliders (existing) ──────────────────────────────────────────
   paramEntries: GcParamEntry[]
+  /** Параметри, якими можна керувати drag-ом (крива залежить рівно від
+   *  одного). Порожньо — підказка «Shift-drag» гасне. 2026-08-16. */
+  dragParamNames: string[]
   paramExpanded: Record<string, boolean>
   onSliderInput(name: string, value: number): void
   flushParam(): void

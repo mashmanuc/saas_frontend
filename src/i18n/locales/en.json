@@ -8505,7 +8505,7 @@
       "emptyHint": "Add a parameter to the formula, e.g.",
       "params": "Parameters",
       "shiftDragHint": "Shift+drag on the graph controls the parameter",
-      "shiftDragOneParam": "Drag-param is available only with 1 parameter",
+      "shiftDragOneParam": "Drag-param unavailable: no curve depends on exactly one parameter",
       "configureRange": "Configure range"
     },
     "trigSolver": {

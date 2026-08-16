@@ -8638,7 +8638,7 @@
       "emptyHint": "Додай параметр у формулу, напр.",
       "params": "Параметри",
       "shiftDragHint": "Shift+drag по графіку керує параметром",
-      "shiftDragOneParam": "Drag-param доступний тільки для 1 параметра",
+      "shiftDragOneParam": "Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра",
       "configureRange": "Налаштувати діапазон"
     },
     "trigSolver": {

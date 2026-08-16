@@ -161,7 +161,7 @@
       <div class="gc-insp__section-label">
         {{ t('winterboard.graphCalc.params') }}
         <span
-          v-if="b.paramEntries.length === 1"
+          v-if="b.dragParamNames.length"
           class="gc-insp__hint"
           :title="t('winterboard.graphCalc.shiftDragHint')"
         >Shift-drag</span>
@@ -169,7 +169,7 @@
           v-else
           class="gc-insp__hint gc-insp__hint--muted"
           :title="t('winterboard.graphCalc.shiftDragOneParam')"
-        >Shift-drag (1 param)</span>
+        >Shift-drag —</span>
       </div>
 
       <div

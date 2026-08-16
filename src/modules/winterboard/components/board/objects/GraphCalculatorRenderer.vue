@@ -65,7 +65,9 @@
         @click.stop="onTogglePresenting"
       >{{ uiState.presenting ? '◧' : '◨' }}</button>
       <!-- Phase G4 (2026-05-06): param-mode toggle button (Shift-equivalent).
-           Disabled if no drag-param candidate (paramEntries.length !== 1). -->
+           2026-08-16: доступна, коли є хоч одна крива від рівно одного параметра
+           (dragParamNames) — не «рівно 1 повзунок на дошці». Підпис — імена
+           параметрів, якими можна тягнути (a·b, якщо їх кілька), а не жорстке 'a'. -->
       <button
         v-if="interactive"
         type="button"
@@ -74,14 +76,14 @@
         :disabled="!paramModeAvailable"
         :title="paramModeAvailable
           ? (uiState.paramMode
-              ? 'Param mode ON — drag по графіку керує параметром. Click щоб вимкнути.'
-              : 'Param mode OFF. Click щоб увімкнути керування параметром drag-ом.')
-          : 'Drag-param доступний тільки коли є рівно 1 параметр'"
+              ? `Керування параметром drag-ом УВІМКНЕНО (${dragParamNames.join(', ')}). Клік — вимкнути.`
+              : `Клік — керувати параметром drag-ом по графіку (${dragParamNames.join(', ')}). Або тримайте Shift.`)
+          : 'Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра'"
         data-testid="graph-calc-param-mode-btn"
         @click.stop="onToggleParamMode"
       >
         <span class="gc-param-mode-icon">↕</span>
-        <span class="gc-param-mode-label">{{ paramEntries.length === 1 ? paramEntries[0].name : 'a' }}</span>
+        <span class="gc-param-mode-label">{{ dragParamNames.length ? dragParamNames.join('·') : '—' }}</span>
       </button>
       <button
         v-if="interactive && !asset.locked"
@@ -247,15 +249,15 @@
           <div class="gc-params-header">
             Параметри
             <span
-              v-if="paramEntries.length === 1"
+              v-if="dragParamNames.length"
               class="gc-params-hint"
-              title="Shift+drag по графіку керує параметром"
+              :title="`Shift+drag по графіку керує параметром (${dragParamNames.join(', ')})`"
             >Shift-drag</span>
             <span
               v-else
               class="gc-params-hint gc-params-hint--disabled"
-              title="Drag-param доступний тільки для 1 параметра"
-            >Shift-drag (1 param)</span>
+              title="Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра"
+            >Shift-drag —</span>
           </div>
           <div
             v-for="p in paramEntries"
@@ -348,6 +350,7 @@ import {
   GRAPH_THROTTLE_SNAPSHOT_MS,
 } from '../../../constants/graphCalculatorDefaults'
 import {
+  extractParams,
   extractParamsFromAll,
   detectAmbiguousImplicitMultiply,
   type ImplicitMultiplyHint,
@@ -493,10 +496,25 @@ const effectiveMode = computed<'normal' | 'param'>(() =>
   shiftKeyHeld.value || uiState.value.paramMode ? 'param' : 'normal',
 )
 
-/** Toggle button enabled тільки якщо є рівно 1 param (як `_findParamDragCandidate`
- *  fundamentally requires single param + explicit-Y curve). Якщо paramEntries
- *  ≠ 1 — engine все одно поверне null candidate і drag не активується. */
-const paramModeAvailable = computed(() => paramEntries.value.length === 1)
+/** Параметри, якими справді можна керувати перетягуванням: ті, від яких
+ *  якась видима крива залежить РІВНО одна. Дзеркало правила рушія
+ *  (`_findParamDragCandidate`, 2026-08-16): однозначність вирішує КРИВА, а
+ *  не лічильник повзунків. Раніше тут стояло `paramEntries.length === 1` —
+ *  і кнопка ↕ гасла, щойно на дошці два повзунки, хоча парабола від `a` і
+ *  коло від `b` тягнуться кожне за своїм (живий прогін власника). */
+const dragParamNames = computed<string[]>(() => {
+  const data = props.asset.data as
+    { state?: { expressions?: Array<{ src?: string; hidden?: boolean }> } } | undefined
+  const known = new Set(paramEntries.value.map((p) => p.name))
+  const out = new Set<string>()
+  for (const e of data?.state?.expressions ?? []) {
+    if (!e?.src || e.hidden) continue
+    const used = extractParams(e.src).filter((n) => known.has(n))
+    if (used.length === 1) out.add(used[0])
+  }
+  return [...out]
+})
+const paramModeAvailable = computed(() => dragParamNames.value.length > 0)
 
 function onToggleParamMode() {
   if (!props.interactive) return
@@ -612,6 +630,7 @@ function bridgeApplySlashTemplate(exprId: string, tpl: import('../../../board/st
 const _gcBridge = reactive<GraphCalcInspectorBridge>({
   // Params
   paramEntries: [],
+  dragParamNames: [],
   paramExpanded: {},
   onSliderInput,
   flushParam,
@@ -1193,6 +1212,7 @@ const slashFilteredTemplates = computed<readonly SlashTemplate[]>(() => {
 // створенні, розміщення вище цих const → TDZ ReferenceError на mount.
 watchEffect(() => {
   _gcBridge.paramEntries = paramEntries.value.map((p) => ({ ...p }))
+  _gcBridge.dragParamNames = [...dragParamNames.value]
   _gcBridge.paramExpanded = { ...paramExpanded.value }
   _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
     id: e.id,

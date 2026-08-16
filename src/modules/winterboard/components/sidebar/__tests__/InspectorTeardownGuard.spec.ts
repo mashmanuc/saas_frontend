@@ -62,6 +62,7 @@ function makeCalcBridge(o: Partial<CalculusBridge> = {}): CalculusBridge {
 function makeGcBridge(o: Partial<GraphCalcInspectorBridge> = {}): GraphCalcInspectorBridge {
   return {
     paramEntries: [{ name: 'a', value: 1, min: 0, max: 5, step: 0.1 }],
+    dragParamNames: ['a'],
     paramExpanded: { a: true }, // розгортає range-редактор (min/max/step)
     onSliderInput: () => {}, flushParam: () => {}, toggleParamExpand: () => {},
     onRangeMinChange: () => {}, onRangeMaxChange: () => {}, onRangeStepChange: () => {},
