@@ -544,8 +544,12 @@ const __GC = (function () {
           const cur = this.params[paramDragInfo.paramName];
           const initial = (cur && typeof cur === 'object' && Number.isFinite(cur.value))
             ? cur.value : (typeof cur === 'number' ? cur : 1);
+          // Нев'язку дає сам кандидат (явна або неявна крива) — розв'язувач
+          // про тип кривої не знає. `explicit` — щоб dp_inv_1 (x→0) діяв
+          // лише там, де він має сенс.
           const newA = this._solveParam(
-            paramDragInfo.ast, paramDragInfo.paramName, m.x, m.y, initial,
+            paramDragInfo.residual, paramDragInfo.paramName, m.x, m.y, initial,
+            5, { explicit: !!paramDragInfo.yAt },
           );
           if (Number.isFinite(newA) && this.onParamDrag) {
             // Clamp до param range (HARD INV: stay у [min, max]).
@@ -1192,14 +1196,45 @@ const __GC = (function () {
       if (paramKeys.length !== 1) return null;
       const paramName = paramKeys[0];
 
-      // Build candidate list: visible explicit-Y expressions using this param.
+      // Build candidate list: visible curves using this param.
+      //
+      // 2026-08-16: було ЛИШЕ `explicitY`. Живий прогін власника: після того,
+      // як Інтегралик перестав розбивати рівняння на функції (07e2c1f),
+      // коло й парабола на дошці стали НЕЯВНИМИ (`(x-1)^2+y^2=9`,
+      // `y+(x-1)^2=a+3`) — кандидатів нуль → Shift+drag мовчки ставав паном.
+      // Регресія була в цьому фільтрі, не в розв'язувачі: Ньютон нижче
+      // розв'язує F(·, a) = 0 за a і йому байдуже, звідки F. Тому кожен
+      // кандидат несе власну нев'язку `residual(x, y, a)`:
+      //   explicitY : f(x, a) − y
+      //   implicit  : lhs(x, y, a) − rhs(x, y, a)
+      // — і далі один код для обох.
       const candidates = [];
+      const baseEnv = this._buildEnv();
       for (const e of this.expressions) {
-        if (e.hidden || !e.classified || e.classified.kind !== 'explicitY') continue;
+        if (e.hidden || !e.classified) continue;
+        const c = e.classified;
         try {
-          const free = freeVars(e.classified.ast);
-          if (free.has(paramName)) {
-            candidates.push({ paramName, exprId: e.id, ast: e.classified.ast });
+          if (c.kind === 'explicitY') {
+            if (!freeVars(c.ast).has(paramName)) continue;
+            const ast = c.ast;
+            candidates.push({
+              paramName, exprId: e.id, ast,
+              residual: (x, y, a) => evalAst(ast, { ...baseEnv, x, [paramName]: a }) - y,
+              // Для activation-зони: y кривої при даному x (є лише в явних).
+              yAt: (x, a) => evalAst(ast, { ...baseEnv, x, [paramName]: a }),
+            });
+          } else if (c.kind === 'implicit') {
+            const fv = new Set([...freeVars(c.lhs), ...freeVars(c.rhs)]);
+            if (!fv.has(paramName)) continue;
+            const { lhs, rhs } = c;
+            candidates.push({
+              paramName, exprId: e.id, ast: null,
+              residual: (x, y, a) => {
+                const env = { ...baseEnv, x, y, [paramName]: a };
+                return evalAst(lhs, env) - evalAst(rhs, env);
+              },
+              yAt: null,
+            });
           }
         } catch (_) { /* skip invalid */ }
       }
@@ -1224,17 +1259,42 @@ const __GC = (function () {
       const tPx = thresholdPx * dpr;
       const cursorPx = this._mathToPx(cursorMathX, cursorMathY);
 
+      // Поточне значення параметра — потрібне, щоб оцінити відстань до
+      // кривої «як вона зараз намальована».
+      const cur = this.params[paramName];
+      const aNow = (cur && typeof cur === 'object' && Number.isFinite(cur.value))
+        ? cur.value : (typeof cur === 'number' ? cur : 1);
+
       let best = null;
       let minDistSq = tPx * tPx;
       for (const c of candidates) {
-        let yAtCursor;
-        try { yAtCursor = evalAst(c.ast, { ...env, x: cursorMathX }); }
-        catch (_) { continue; }
-        if (!Number.isFinite(yAtCursor)) continue;
-        const curvePx = this._mathToPx(cursorMathX, yAtCursor);
-        const dxPx = curvePx.x - cursorPx.x;
-        const dyPx = curvePx.y - cursorPx.y;
-        const distSq = dxPx * dxPx + dyPx * dyPx;
+        let distSq;
+        try {
+          if (c.yAt) {
+            // Явна крива: вертикальна відстань до y(x) у пікселях — як було.
+            const yAtCursor = c.yAt(cursorMathX, aNow);
+            if (!Number.isFinite(yAtCursor)) continue;
+            const curvePx = this._mathToPx(cursorMathX, yAtCursor);
+            const dxPx = curvePx.x - cursorPx.x;
+            const dyPx = curvePx.y - cursorPx.y;
+            distSq = dxPx * dxPx + dyPx * dyPx;
+          } else {
+            // Неявна крива F(x,y)=0: аналітичної «y при x» немає, тож
+            // відстань — нев'язка, нормована на градієнт (Sampson):
+            //   d ≈ |F(x,y)| / ‖∇F(x,y)‖
+            // — перший порядок відстані до нульової множини, у math-одиницях;
+            // переводимо в пікселі через scale. Градієнт — скінченна різниця.
+            const h = 1e-4;
+            const F0 = c.residual(cursorMathX, cursorMathY, aNow);
+            const Fx = (c.residual(cursorMathX + h, cursorMathY, aNow) - F0) / h;
+            const Fy = (c.residual(cursorMathX, cursorMathY + h, aNow) - F0) / h;
+            const gradN = Math.hypot(Fx, Fy);
+            if (!Number.isFinite(F0) || !Number.isFinite(gradN) || gradN < 1e-9) continue;
+            const distMath = Math.abs(F0) / gradN;
+            const distPx = distMath * scale * dpr;
+            distSq = distPx * distPx;
+          }
+        } catch (_) { continue; }
         if (distSq < minDistSq) {
           minDistSq = distSq;
           best = c;
@@ -1254,21 +1314,33 @@ const __GC = (function () {
      *     update був би нестабільним. Caller skips emit (preserves last value).
      *   - dp_inv_5: NaN/Infinity → return NaN (caller MUST skip).
      */
-    _solveParam(ast, paramName, mathX, mathY, initial, iters = 5) {
+    _solveParam(residualOrAst, paramName, mathX, mathY, initial, iters = 5, opts = {}) {
       const X_UNSTABLE = 1e-6;
       const EPS = 1e-3;
       const D_THRESHOLD = 1e-5;
       const MAX_STEP = 1e6; // dp_inv_6: divergence guard
-      // dp_inv_1: refuse to solve у unstable X-zone (param dominates: a = y/x → ∞)
-      if (!Number.isFinite(mathX) || Math.abs(mathX) < X_UNSTABLE) return NaN;
-      if (!Number.isFinite(mathY)) return NaN;
-      let a = Number.isFinite(initial) ? initial : 1;
+      if (!Number.isFinite(mathX) || !Number.isFinite(mathY)) return NaN;
       const baseEnv = this._buildEnv();
+      // 2026-08-16: приймає або функцію нев'язки (x, y, a) → число (так шле
+      // _findParamDragCandidate — і для явних, і для неявних кривих), або, для
+      // сумісності зі старими викликами, AST явної кривої y = f(x, a).
+      const fromAst = typeof residualOrAst !== 'function';
+      const residual = fromAst
+        ? (x, y, aa) => evalAst(residualOrAst, { ...baseEnv, x, [paramName]: aa }) - y
+        : residualOrAst;
+      // dp_inv_1: refuse to solve у unstable X-zone (param dominates: a = y/x → ∞).
+      // Стосується ЯВНИХ y = f(x, a): при x→0 параметр не визначений. Для
+      // неявних F(x,y,a)=0 точка x=0 звичайна (коло, парабола) — не відмовляємо;
+      // їхню стійкість стереже D_THRESHOLD на похідній по a нижче. Явність —
+      // властивість КРИВОЇ (opts.explicit від кандидата), не типу аргументу.
+      const explicit = fromAst || opts.explicit === true;
+      if (explicit && Math.abs(mathX) < X_UNSTABLE) return NaN;
+      let a = Number.isFinite(initial) ? initial : 1;
       for (let i = 0; i < iters; i++) {
         let f0, f1;
         try {
-          f0 = evalAst(ast, { ...baseEnv, x: mathX, [paramName]: a }) - mathY;
-          f1 = evalAst(ast, { ...baseEnv, x: mathX, [paramName]: a + EPS }) - mathY;
+          f0 = residual(mathX, mathY, a);
+          f1 = residual(mathX, mathY, a + EPS);
         } catch (_) { return NaN; }
         // dp_inv_6: non-smooth / undefined evaluation (e.g. floor, abs at
         // discontinuity) → caller MUST skip. f0/f1 not finite → NaN signal.

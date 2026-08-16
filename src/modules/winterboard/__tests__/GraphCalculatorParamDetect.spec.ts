@@ -921,3 +921,95 @@ describe('GraphCalc.classify — bare expression as y = f(x)', () => {
     expect(GraphCalc.classify('x^^2', []).kind).toBe('invalid') // парсер-помилка
   })
 })
+
+// ── Shift+drag для НЕЯВНИХ кривих (2026-08-16) ────────────────────────────────
+//
+// Регресія, і вона моя: після того, як Інтегралик перестав розбивати рівняння на
+// функції (07e2c1f), коло й парабола на дошці власника стали неявними
+// (`(x-1)^2+y^2=9`, `y+(x-1)^2=a+3`), а `_findParamDragCandidate` брав ЛИШЕ
+// `explicitY` → кандидатів нуль → Shift+drag мовчки ставав паном.
+// «Недавно працювало» — бо недавно вирази були явні.
+describe('Engine drag-param: implicit curves (2026-08-16)', () => {
+  const OWNER_BOARD = {
+    // Дослівно з дошки власника.
+    expressions: [
+      { id: 'circle',   src: '(x-1)^2 + y^2 = 9',    color: '#e11', hidden: false },
+      { id: 'parabola', src: 'y + (x-1)^2 = a + 3',  color: '#11e', hidden: false },
+    ],
+    params: { a: { value: -2, min: -10, max: 10, step: 0.1 } },
+    viewport: { cx: 0, cy: 0, scale: 38 },
+  }
+
+  it('живий кейс власника: параболу-неявну знаходить як кандидата (раніше — null)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_BOARD)
+    // Вершина параболи при a=-2: y = a+3-(x-1)^2 → (1; 1). Курсор поруч.
+    const c = (calc as any)._findParamDragCandidate(1, 1)
+    expect(c, 'кандидата немає — регресія на місці').not.toBeNull()
+    expect(c.exprId).toBe('parabola')          // коло без параметра — не кандидат
+    expect(typeof c.residual).toBe('function')
+    calc.destroy(); container.remove()
+  })
+
+  it('коло без параметра ніколи не стає кандидатом', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_BOARD)
+    // Курсор точно на колі, далеко від параболи: (4; 0) лежить на (x-1)^2+y^2=9
+    const c = (calc as any)._findParamDragCandidate(4, 0)
+    expect(c === null || c.exprId !== 'circle').toBe(true)
+    calc.destroy(); container.remove()
+  })
+
+  it('_solveParam на неявній нев\'язці: тягнемо вершину параболи вгору → a росте', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_BOARD)
+    const c = (calc as any)._findParamDragCandidate(1, 1)
+    // Хочемо, щоб крива пройшла через (1; 3): y+(x-1)^2 = a+3 → 3 = a+3 → a = 0
+    const a = (calc as any)._solveParam(c.residual, 'a', 1, 3, -2, 5, { explicit: false })
+    expect(a).toBeCloseTo(0, 3)
+    calc.destroy(); container.remove()
+  })
+
+  it('неявна крива при x=0 розв\'язується (dp_inv_1 — лише для явних)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_BOARD)
+    const c = (calc as any)._findParamDragCandidate(1, 1)
+    // (0; y): y + 1 = a + 3 → при y=2: a=0. Для явних x=0 давав би NaN.
+    const a = (calc as any)._solveParam(c.residual, 'a', 0, 2, -2, 5, { explicit: false })
+    expect(a).toBeCloseTo(0, 3)
+    calc.destroy(); container.remove()
+  })
+
+  it('явна крива через нев\'язку кандидата зберігає dp_inv_1 (x≈0 → NaN)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'e1', src: 'y = a*x', color: '#abc', hidden: false }],
+      params: { a: { value: 1, min: -10, max: 10, step: 0.1 } },
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    const c = (calc as any)._findParamDragCandidate(2, 2)
+    expect(c).not.toBeNull()
+    expect((calc as any)._solveParam(c.residual, 'a', 0, 4, 1, 5, { explicit: !!c.yAt })).toBeNaN()
+    calc.destroy(); container.remove()
+  })
+
+  it('activation-зона діє і для неявних: курсор далеко від кривої → null', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(OWNER_BOARD)
+    // (1; -8) — за 9 math-одиниць від вершини (1;1) → ~340px при scale 38
+    expect((calc as any)._findParamDragCandidate(1, -8)).toBeNull()
+    calc.destroy(); container.remove()
+  })
+
+  it('старий контракт _solveParam(ast, …) для явних досі працює', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'e1', src: 'y = a*x', color: '#abc', hidden: false }],
+      params: { a: { value: 1, min: -10, max: 10, step: 0.1 } },
+      viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    const ast = (calc as any).expressions[0].classified.ast
+    expect((calc as any)._solveParam(ast, 'a', 2, 4, 1)).toBeCloseTo(2, 3)
+    calc.destroy(); container.remove()
+  })
+})
