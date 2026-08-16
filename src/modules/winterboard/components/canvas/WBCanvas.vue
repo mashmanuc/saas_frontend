@@ -913,6 +913,7 @@ import { DEFAULT_GRAPH_STATE } from '../../constants/graphCalculatorDefaults'
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 // Unified overlay layer (Z_ORDER_UNIFIED_PLAN v4.0, PR1) — прапор VITE_UNIFIED_ZORDER
 import WBOverlayLayer from './WBOverlayLayer.vue'
+import { useExpandedAssetSelection } from '../../composables/useExpandedAssetSelection'
 import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
 import { isOverlayType } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -1413,6 +1414,11 @@ const expandedAssetId = computed<string | null>({
   get: () => wbStore.expandedAssetId,
   set: (v) => { wbStore.expandedAssetId = v },
 })
+
+// INV-EXPAND-SELECTED: розгорнутий на всю сторінку об'єкт завжди виділений,
+// поки він на цій сторінці → renderer реєструє sidebar-інспектор. Логіка й
+// причини — у composables/useExpandedAssetSelection.ts (там же тести).
+useExpandedAssetSelection(wbStore)
 
 // ── Unified overlay render flag (Z_ORDER_UNIFIED_PLAN v4.0, PR1) ─────────────
 // Evaluated ONCE при mount — build-time прапор (VITE_UNIFIED_ZORDER, default OFF).
