@@ -872,6 +872,19 @@ function computeYFromCurve(curveExprId: string, x: number): number | null {
   }
 }
 
+/** Точка onCurve на НЕЯВНІЙ кривій (2026-08-16): найближча до (x, y) точка
+ *  кривої, або null, якщо крива явна (тоді діє старий шлях «лише x») чи не
+ *  бере точку. Делегує рушію (`_projectToCurve`) — одна реалізація на рендер,
+ *  hit-test і перетягування, щоб гілка ніде не розійшлась. */
+function onCurveProjection(curveExprId: string | undefined, x: number, y: number)
+  : { x: number; y: number } | null {
+  if (!calc || !curveExprId) return null
+  const expr = (calc as any).expressions?.find((e: any) => e.id === curveExprId)
+  if (!expr || expr.classified?.kind !== 'implicit') return null
+  const proj = (calc as any)._projectToCurve?.(expr, x, y)
+  return proj && Number.isFinite(proj.x) && Number.isFinite(proj.y) ? proj : null
+}
+
 // ─── Apply external state (FE-RULE-2/6/8/12) ───────────────────────────
 
 function applyExternalState(state: GraphCalculatorState, seq: number) {
@@ -994,7 +1007,14 @@ function mountEngine() {
     const pt = (calc as any).points?.[id]
     if (!pt) return
     if (pt.mode === 'onCurve') {
-      // y omitted — derived from curveExprId at render time per review #4.
+      // Неявна крива (2026-08-16): одного x замало (у кола дві гілки) — тягнемо
+      // точку по кривій, проєктуючи КУРСОР на неї; старт з курсора = найближча
+      // гілка = «точка тримається гілки, не стрибає» (правило власника).
+      // Емітимо (x, y) — стейт несе опорну точку, рушій проєктує при рендері.
+      const proj = onCurveProjection(pt.curveExprId, mathX, mathY)
+      if (proj) { emitPointSetThrottled(id, proj.x, proj.y); return }
+      // Явна крива — як і було: y omitted, derived from curveExprId at render
+      // time per review #4.
       emitPointSetThrottled(id, mathX, undefined)
       return
     }
@@ -1051,6 +1071,8 @@ function mountEngine() {
     const pt = (calc as any).points?.[id]
     if (!pt) return
     if (pt.mode === 'onCurve') {
+      const proj = onCurveProjection(pt.curveExprId, mathX, mathY)
+      if (proj) { flushPointSet(id, proj.x, proj.y); return }
       flushPointSet(id, mathX, undefined)
       return
     }

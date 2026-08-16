@@ -1198,3 +1198,104 @@ describe('Engine intersections: implicit pairs (2026-08-16)', () => {
     calc.destroy(); container.remove()
   })
 })
+
+// ── Точки onCurve + snap на НЕЯВНИХ кривих (2026-08-16) ───────────────────────
+//
+// Правило власника: «точка тримається гілки, не стрибає». Один x не визначає
+// точку на колі (дві гілки), тому для неявних стейт несе опорну (x, y), а
+// рушій ПРОЄКТУЄ її на криву; проєкція стартує з опорної точки → найближча
+// гілка → перескочити можна лише фізично перетягнувши курсор через край.
+describe('Engine onCurve/snap: implicit curves (2026-08-16)', () => {
+  const CIRCLE = {
+    expressions: [{ id: 'c', src: '(x-1)^2 + y^2 = 9', color: '#e11', hidden: false }],
+    params: {},
+    viewport: { cx: 1, cy: 0, scale: 18 },
+  }
+  const onCircle = (p: {x:number;y:number}) => Math.abs((p.x-1)**2 + p.y**2 - 9) < 1e-4
+
+  it('_projectToCurve: точка над колом → верхня дуга; під колом → нижня (гілка за старту)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(CIRCLE)
+    const e = (calc as any).expressions[0]
+    const up = (calc as any)._projectToCurve(e, 1, 5)     // старт вище кола
+    const dn = (calc as any)._projectToCurve(e, 1, -5)    // старт нижче
+    expect(up && onCircle(up)).toBe(true); expect(up.y).toBeCloseTo(3, 4)
+    expect(dn && onCircle(dn)).toBe(true); expect(dn.y).toBeCloseTo(-3, 4)
+    calc.destroy(); container.remove()
+  })
+
+  it('«тримається гілки»: старт трохи вище центру → верх, трохи нижче → низ', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(CIRCLE)
+    const e = (calc as any).expressions[0]
+    // Обидва старти на x=1, майже в центрі — різняться лише знаком y.
+    expect((calc as any)._projectToCurve(e, 1, 0.3).y).toBeGreaterThan(0)
+    expect((calc as any)._projectToCurve(e, 1, -0.3).y).toBeLessThan(0)
+    calc.destroy(); container.remove()
+  })
+
+  it('«той самий кут» при рості кола: точка на 2 годинах лишається на 2 годинах', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'c', src: '(x-1)^2 + y^2 = r^2', color: '#e11', hidden: false }],
+      params: { r: { value: 3, min: 0.5, max: 10, step: 0.1 } },
+      viewport: { cx: 1, cy: 0, scale: 18 },
+    })
+    const e = (calc as any).expressions[0]
+    // Точка на колі r=3 під кутом 60° від центру (1;0): (1+1.5; 2.598)
+    const p0 = { x: 1 + 3 * Math.cos(Math.PI / 3), y: 3 * Math.sin(Math.PI / 3) }
+    // Коло виросло до r=5 — куди проєктується та сама опорна точка?
+    const env5 = { ...(calc as any)._buildEnv(), r: 5 }
+    const p5 = (calc as any)._projectToCurve(e, p0.x, p0.y, env5)
+    const angle = Math.atan2(p5.y, p5.x - 1)
+    expect(angle).toBeCloseTo(Math.PI / 3, 3)                       // той самий кут
+    expect(Math.hypot(p5.x - 1, p5.y)).toBeCloseTo(5, 3)             // на новому колі
+    calc.destroy(); container.remove()
+  })
+
+  it('_snapToCurve магнітить до кола (раніше — ігнорувало неявні)', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(CIRCLE)
+    // Курсор трохи ззовні верхньої дуги: (1; 3.2) — 0.2 math ≈ 3.6px при scale 18
+    const s = (calc as any)._snapToCurve(1, 3.2)
+    expect(s, 'коло не магнітить').not.toBeNull()
+    expect(s.curveId).toBe('c')
+    expect(s.y).toBeGreaterThan(2.9)          // притягнуло до ВЕРХНЬОЇ дуги
+    calc.destroy(); container.remove()
+  })
+
+  it('_pointPosition: onCurve-точка на колі рендериться на кривій, а не на опорі', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(CIRCLE)
+    const env = (calc as any)._buildEnv()
+    // Опорна точка трохи ЗЗОВНІ кола (як після округлень) — позиція мусить лягти НА коло
+    const pos = (calc as any)._pointPosition({ x: 1, y: 3.4, mode: 'onCurve', curveExprId: 'c' }, env)
+    expect(pos && onCircle(pos)).toBe(true)
+    expect(pos.y).toBeCloseTo(3, 4)
+    calc.destroy(); container.remove()
+  })
+
+  it('_pointPosition: рендер і hit-test дивляться в одне місце', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState(CIRCLE)
+    ;(calc as any).points = { P: { x: 1, y: 3.4, mode: 'onCurve', curveExprId: 'c' } }
+    const env = (calc as any)._buildEnv()
+    const pos = (calc as any)._pointPosition((calc as any).points.P, env)
+    const px = (calc as any)._mathToPx(pos.x, pos.y)
+    // Клік рівно туди, де точка НАМАЛЬОВАНА → має влучити
+    expect((calc as any)._hitTestPoint(px.x, px.y)).toBe('P')
+    calc.destroy(); container.remove()
+  })
+
+  it('явна крива onCurve — без змін: y виводиться з x, стейт y не потрібен', async () => {
+    const { calc, container } = await makeEngine()
+    calc.setState({
+      expressions: [{ id: 'p', src: 'y = x^2', color: '#e11', hidden: false }],
+      params: {}, viewport: { cx: 0, cy: 0, scale: 38 },
+    })
+    const env = (calc as any)._buildEnv()
+    const pos = (calc as any)._pointPosition({ x: 2, mode: 'onCurve', curveExprId: 'p' }, env)
+    expect(pos).toEqual({ x: 2, y: 4 })
+    calc.destroy(); container.remove()
+  })
+})

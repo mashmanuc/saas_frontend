@@ -1290,6 +1290,56 @@ const __GC = (function () {
      *   threshold lerps gently; on-curve fully snaps. Returns interpolated
      *   {x, y} based on `strength = 1 - distance/threshold`.
      */
+    /**
+     * Найближча до (x0,y0) точка кривої `expr` — спільний примітив для snap і
+     * для точок onCurve на НЕЯВНИХ кривих (2026-08-16).
+     *
+     * Явна крива y=f(x): як і досі — (x0, f(x0)); гілка одна, питання немає.
+     * Неявна F(x,y)=0: одного x недостатньо (у кола дві y), тому проєктуємо
+     * ТОЧКУ (x0,y0) на криву — Ньютон уздовж градієнта:
+     *     p ← p − F(p)·∇F(p) / ‖∇F(p)‖²
+     * Старт із поточного положення точки ⇒ збіжність до НАЙБЛИЖЧОЇ гілки —
+     * це і є правило власника «точка тримається гілки, не стрибає»: щоб
+     * перескочити з верхньої дуги на нижню, курсор має фізично перейти туди.
+     *
+     * Повертає {x, y} або null (крива не бере точку: сингулярний градієнт,
+     * розбіжність, невалідний вираз).
+     */
+    _projectToCurve(expr, x0, y0, env) {
+      if (!expr || !expr.classified) return null;
+      const c = expr.classified;
+      env = env || this._buildEnv();
+      if (c.kind === 'explicitY') {
+        let y;
+        try { y = evalAst(c.ast, { ...env, x: x0 }); } catch (_) { return null; }
+        return Number.isFinite(y) ? { x: x0, y } : null;
+      }
+      if (c.kind !== 'implicit') return null;
+      const { lhs, rhs } = c;
+      const F = (x, y) => evalAst(lhs, { ...env, x, y }) - evalAst(rhs, { ...env, x, y });
+      const H = 1e-6;
+      let x = x0, y = y0;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      for (let i = 0; i < 20; i++) {
+        let f, fx, fy;
+        try {
+          f = F(x, y);
+          fx = (F(x + H, y) - f) / H;
+          fy = (F(x, y + H) - f) / H;
+        } catch (_) { return null; }
+        if (![f, fx, fy].every(Number.isFinite)) return null;
+        const g2 = fx * fx + fy * fy;
+        if (g2 < 1e-18) return null;              // плоска зона / сингулярність
+        if (Math.abs(f) < 1e-10) break;
+        const t = f / g2;
+        x -= t * fx; y -= t * fy;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      }
+      let f;
+      try { f = F(x, y); } catch (_) { return null; }
+      return (Number.isFinite(f) && Math.abs(f) < 1e-6) ? { x, y } : null;
+    }
+
     _snapToCurve(mathX, mathY, baseThresholdPx) {
       const env = this._buildEnv();
       const dpr = this._dpr || 1;
@@ -1308,7 +1358,23 @@ const __GC = (function () {
       const sampleRangePx = 20 * dpr;
       const sampleStepPx = 1 * dpr;
       for (const e of this.expressions) {
-        if (e.hidden || !e.classified || e.classified.kind !== 'explicitY') continue;
+        if (e.hidden || !e.classified) continue;
+        // Неявна крива (2026-08-16): 1D-семплінг по x не годиться (у кола дві
+        // y на кожен x) — проєктуємо курсор на криву напряму. Найближча
+        // точка = найближча гілка, тож магніт тягне до тієї дуги, що ближче.
+        if (e.classified.kind === 'implicit') {
+          const proj = this._projectToCurve(e, mathX, mathY, env);
+          if (!proj) continue;
+          const pPx = this._mathToPx(proj.x, proj.y);
+          const dxPx = pPx.x - cursorPx.x, dyPx = pPx.y - cursorPx.y;
+          const distSq = dxPx * dxPx + dyPx * dyPx;
+          if (distSq < minDistSq) {
+            minDistSq = distSq;
+            best = { x: proj.x, y: proj.y, curveId: e.id };
+          }
+          continue;
+        }
+        if (e.classified.kind !== 'explicitY') continue;
         const ast = e.classified.ast;
         for (let dPx = -sampleRangePx; dPx <= sampleRangePx; dPx += sampleStepPx) {
           const sampleMathX = mathX + (dPx / scale);
@@ -1566,42 +1632,55 @@ const __GC = (function () {
       }
       for (let i = ids.length - 1; i >= 0; i--) {
         const id = ids[i];
-        const p = this.points[id];
-        if (!p || !Number.isFinite(p.x)) continue;
-        let y = p.y;
-        if (p.mode === 'onCurve' && p.curveExprId) {
-          const expr = this.expressions.find((e) => e.id === p.curveExprId);
-          if (expr && expr.classified && expr.classified.kind === 'explicitY') {
-            try { y = evalAst(expr.classified.ast, { ...env, x: p.x }); }
-            catch (_) { continue; }
-          } else continue;
-        }
-        if (!Number.isFinite(y)) continue;
-        const m = this._mathToPx(p.x, y);
+        // Та сама позиція, що й у рендері (_pointPosition) — інакше точку
+        // малювало б в одному місці, а клік ловило б в іншому.
+        const pos = this._pointPosition(this.points[id], env);
+        if (!pos) continue;
+        const m = this._mathToPx(pos.x, pos.y);
         const dx = m.x - px, dy = m.y - py;
         if (dx * dx + dy * dy <= r2) return id;
       }
       return null;
     }
 
+    /**
+     * Де насправді стоїть точка `p` (математичні координати) — спільно для
+     * рендера й hit-test, щоб вони ніколи не розійшлись.
+     *
+     * free      → (p.x, p.y) як є.
+     * onCurve   → явна крива: (p.x, f(p.x)) — y виводиться, у стейті його нема
+     *             (HARD review: «y NOT stored»). Неявна крива (2026-08-16):
+     *             одного x замало (у кола дві гілки), тому стейт несе (x, y)
+     *             як опорну точку, а сюди йде її ПРОЄКЦІЯ на криву — щоб при
+     *             зміні параметра (коло росте) точка лишалась на кривій і на
+     *             тій самій гілці (проєкція стартує з опорної точки).
+     * Повертає {x, y} або null (точку не намалювати).
+     */
+    _pointPosition(p, env) {
+      if (!p || !Number.isFinite(p.x)) return null;
+      if (p.mode !== 'onCurve' || !p.curveExprId) {
+        return Number.isFinite(p.y) ? { x: p.x, y: p.y } : null;
+      }
+      const expr = this.expressions.find((e) => e.id === p.curveExprId);
+      if (!expr || !expr.classified) return null;
+      if (expr.classified.kind === 'explicitY') {
+        let y;
+        try { y = evalAst(expr.classified.ast, { ...env, x: p.x }); } catch (_) { return null; }
+        return Number.isFinite(y) ? { x: p.x, y } : null;
+      }
+      if (expr.classified.kind === 'implicit') {
+        const y0 = Number.isFinite(p.y) ? p.y : 0;
+        return this._projectToCurve(expr, p.x, y0, env);
+      }
+      return null;
+    }
+
     _drawInteractivePoint(id, p, env) {
       const ctx = this.ctx;
-      if (!Number.isFinite(p.x)) return;
-      let y = p.y;
-      // mode='onCurve': Y derived from curveExprId at render time.
-      // NEVER read p.y for onCurve (per HARD review: y NOT stored).
-      if (p.mode === 'onCurve' && p.curveExprId) {
-        const expr = this.expressions.find((e) => e.id === p.curveExprId);
-        if (expr && expr.classified && expr.classified.kind === 'explicitY') {
-          try {
-            y = evalAst(expr.classified.ast, { ...env, x: p.x });
-          } catch (_) { return; }  // eval fail (param missing etc.) → skip
-        } else {
-          return;  // curve missing or not explicitY — point unrenderable
-        }
-      }
-      if (!Number.isFinite(y)) return;
-      const px = this._mathToPx(p.x, y);
+      const pos = this._pointPosition(p, env);
+      if (!pos) return;   // curve missing / eval fail — point unrenderable
+      const y = pos.y;
+      const px = this._mathToPx(pos.x, y);
       const r = 7 * (this._dpr || 1);
       ctx.save();
       ctx.beginPath();
@@ -1617,7 +1696,9 @@ const __GC = (function () {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
       const fmt = (n) => Math.abs(n) < 1e-10 ? '0' : (Math.round(n * 100) / 100).toString();
-      ctx.fillText(`(${fmt(p.x)}, ${fmt(y)})`,
+      // pos.x, не p.x: для точки на неявній кривій після проєкції x може
+      // відрізнятись від опорного — підпис має казати, де точка НАСПРАВДІ.
+      ctx.fillText(`(${fmt(pos.x)}, ${fmt(y)})`,
         px.x + r + 3 * (this._dpr || 1), px.y - r);
       ctx.restore();
     }
