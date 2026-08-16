@@ -21,7 +21,13 @@ const mockState = vi.hoisted(() => ({
   instances: [] as any[],
 }))
 
-vi.mock('../vendor/graph_calculator/graph-calculator.js', () => {
+vi.mock('../vendor/graph_calculator/graph-calculator.js', async (importOriginal) => {
+  // 2026-08-16: рендерер вирішує доступність ↕ за правилом рушія — «крива
+  // залежить рівно від одного параметра» (dragParamNames через extractParams
+  // → GraphCalc.parse). Раніше мок віддавав `GraphCalc: {}` — парсера не
+  // було, extractParams мовчки повертав [] і кнопка у тесті завжди гасла.
+  // Клас рушія лишається моком (canvas у jsdom нема), парсер — справжній.
+  const actual = await importOriginal<typeof import('../vendor/graph_calculator/graph-calculator.js')>()
   class MockGraphCalculator {
     public expressions: any[] = []
     public params: Record<string, any> = {}
@@ -87,7 +93,7 @@ vi.mock('../vendor/graph_calculator/graph-calculator.js', () => {
   return {
     GraphCalculator: MockGraphCalculator,
     default: MockGraphCalculator,
-    GraphCalc: {},
+    GraphCalc: (actual as any).GraphCalc,
   }
 })
 
@@ -117,9 +123,14 @@ function makeAsset(opts: {
     params.a = { value: 1, min: -10, max: 10, step: 0.1 }
     params.b = { value: 2, min: -10, max: 10, step: 0.1 }
   }
-  const expressions = opts.paramCount && opts.paramCount > 0
-    ? [{ id: 'e1', src: 'y=a*x', color: '#abc', hidden: false }]
-    : []
+  // paramCount 2 → крива від ОБОХ параметрів: за правилом рушія такий графік
+  // drag-ом не тягнеться (неоднозначно, який параметр міняти). Крива лише від
+  // `a` при двох повзунках — навпаки, тягнеться (див. GraphCalculatorParamDetect).
+  const expressions = opts.paramCount === 2
+    ? [{ id: 'e1', src: 'y=a*x+b', color: '#abc', hidden: false }]
+    : opts.paramCount && opts.paramCount > 0
+      ? [{ id: 'e1', src: 'y=a*x', color: '#abc', hidden: false }]
+      : []
   return {
     id,
     type: 'graph_calculator',
@@ -268,7 +279,7 @@ describe('GraphCalculatorRenderer — Phase G4 param-mode toggle', () => {
     wrapper.unmount()
   })
 
-  it('toggle disabled when 2+ params (multi-param picker not in v1)', async () => {
+  it('toggle disabled when the curve depends on 2+ params (ambiguous drag)', async () => {
     const Renderer = await loadRenderer()
     const asset = makeAsset({ paramCount: 2 })
     const wrapper = mount(Renderer, { props: { asset } })
