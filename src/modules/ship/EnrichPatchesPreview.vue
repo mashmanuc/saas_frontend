@@ -286,12 +286,32 @@ const instructionEl = ref<HTMLTextAreaElement | null>(null)
 const { supported: micSupported, listening: micListening, toggle: micToggle } =
   useVoiceDictation({ lang: locale.value === 'en' ? 'en-US' : 'uk-UA' })
 function toggleDictation() { micToggle(instruction) }
-// Чіпи-приклади: три жанри, які enrich уміє надійно (формули / приклад із
-// життя / типова помилка). Клік підставляє текст у поле — далі можна дописати.
+// Чіпи-жанри. Enrich кумулятивний: кожен чіп — окремий педагогічний шар,
+// їх можна докладати один за одним (правило власника 2026-08-16).
+//
+// Список стоїть НА ВИМІРІ, не на смаку: `tools/phrase_probe/exp_chip_genre.py`
+// прогнав 62 фрази × 3 зразки на прод-моделі й показав, які формулювання
+// класифікатор упізнає СТАБІЛЬНО (3/3). Взято переможців:
+//   Помилка 10/10 · Формула 11/13 · Метод 8/10 · Підказка 5/7 ·
+//   Приклад із життя 6/10 · Теорія 3/8
+// Порядок — за надійністю: те, що працює найкраще, ближче до ока.
+//
+// ⚠️ Сьомий жанр GENRES — «Приклад» — свідомо НЕ показуємо (рішення
+// власника 2026-08-16): вимір дав 0/4, усі фрази стабільно падають у
+// «Метод», і це не збій моделі — «розібраний приклад розв'язання» і Є
+// метод. У беку жанр лишається (він може стояти в badge наявних карток),
+// але пропонувати тьютору те, що система не розрізняє, не можна.
+//
+// ⚠️ Фрази не міняти «щоб гарніше»: сусідні формулювання того самого жанру
+// провалились («Зв'яжи із транспортом» → Метод, «Додай математичну
+// довідку» → Формула). Нова фраза = новий прогін стенда.
 const exampleChips = computed(() => ([
-  { key: 'formulas', text: t('winterboard.enrich.chips.formulas') },
-  { key: 'life',     text: t('winterboard.enrich.chips.lifeExample') },
   { key: 'mistake',  text: t('winterboard.enrich.chips.commonMistake') },
+  { key: 'formulas', text: t('winterboard.enrich.chips.formulas') },
+  { key: 'method',   text: t('winterboard.enrich.chips.method') },
+  { key: 'hint',     text: t('winterboard.enrich.chips.hint') },
+  { key: 'life',     text: t('winterboard.enrich.chips.lifeExample') },
+  { key: 'theory',   text: t('winterboard.enrich.chips.theory') },
 ]))
 function applyChip(text: string) {
   instruction.value = text

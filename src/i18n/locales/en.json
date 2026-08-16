@@ -7230,12 +7230,15 @@
       "retryFailed": "Retry unprocessed ({n})",
       "enterHint": "Enter — run · Shift+Enter — new line",
       "chips": {
-        "formulas": "add a formula to each task",
-        "lifeExample": "add a life example",
-        "commonMistake": "mark a common mistake"
+        "commonMistake": "Add a common pitfall.",
+        "formulas": "Recall the formula.",
+        "method": "Where do we start?",
+        "hint": "Add a hint.",
+        "lifeExample": "Relate it to sports.",
+        "theory": "Add the theory."
       },
       "instructionLabel": "Instruction (freetext)",
-      "instructionPlaceholder": "e.g. 'add a formula to each task', 'add a life example', 'mark a common mistake'",
+      "instructionPlaceholder": "describe which layer to add to the lesson tasks",
       "run": "Run",
       "running": "Running…",
       "analysing": "AI is analysing tasks…",
