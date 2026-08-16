@@ -332,6 +332,7 @@
       :is-tutor="classroomRole.isTeacher.value"
       :pages="store.pages"
       :current-page-index="store.currentPageIndex"
+      :expanded-asset-id="store.expandedAssetId"
       @bring-to-front="store.bringToFront(store.selectedIds[0])"
       @send-to-back="store.sendToBack(store.selectedIds[0])"
       @duplicate="store.copySelectedToClipboard(); store.pasteFromClipboard()"

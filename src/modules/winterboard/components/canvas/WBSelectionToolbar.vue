@@ -451,6 +451,15 @@ const props = defineProps<{
   pages?: { id: string; name?: string }[]
   /** Поточна сторінка — disabled у списку send-to-page */
   currentPageIndex?: number
+  /**
+   * 2026-08-16: id об'єкта, розгорнутого на всю сторінку (⛶), або null.
+   * Розгортання авто-виділяє об'єкт → без цього тулбар вставав за bbox його
+   * СТАРОГО положення, тобто посеред розгорнутого графіка. Усі дії тулбара
+   * (порядок, дублювання, «на сторінку», замок, видалення) — про місце на
+   * дошці; розгорнутий об'єкт дошки не займає, тому тулбар для нього ховаємо.
+   * Керування лишається у шапці оверлея (⛶/✕) і сайдбар-інспекторі.
+   */
+  expandedAssetId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -605,9 +614,16 @@ const audio = useObjectAudio({
 
 // ─── Visibility ─────────────────────────────────────────────────────────────
 
+// Ховаємо лише коли розгорнутий об'єкт — серед виділених: розгорнутий на
+// ІНШІЙ сторінці (перемкнулись, а стан лишився) не має глушити тулбар тут.
+const selectionIsExpanded = computed(() =>
+  !!props.expandedAssetId && props.selectedIds.includes(props.expandedAssetId),
+)
+
 const isVisible = computed(() =>
   props.selectedIds.length > 0 &&
   props.mode === 'edit' &&
+  !selectionIsExpanded.value &&
   (deviceMode.value === 'desktop' || deviceMode.value === 'display'),
 )
 

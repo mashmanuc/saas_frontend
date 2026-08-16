@@ -21,7 +21,7 @@
  * proxy під ним catch-ить drag/select; внутрішні interactive елементи renderer-а
  * самі вмикають pointer-events:auto.
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import type { WBAsset } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
@@ -78,9 +78,12 @@ const emit = defineEmits<{
 
 const wbStore = useWBStore()
 
-// Board-expand state — раніше жив у WBCanvas (expandedAssetId). Використовувався
-// ВИКЛЮЧНО overlay-блоками (verified grep), тому переноситься сюди без витоку.
-const expandedId = ref<string | null>(null)
+// Board-expand state — SSOT у wbStore.expandedAssetId (2026-08-16). До того жив
+// тут приватним ref: розгортання авто-виділяє об'єкт → WBSelectionToolbar
+// з'являвся за bbox СТАРОГО положення посеред розгорнутого графіка і не мав
+// звідки дізнатись, що об'єкт розгорнутий. Тулбар читає стор — тому власник
+// факту один. Локальний computed — щоб решта файлу читалась як раніше.
+const expandedId = computed(() => wbStore.expandedAssetId)
 
 const EXPANDED_STYLE: Record<string, string> = {
   position: 'absolute',
@@ -100,7 +103,7 @@ const ctx = computed<OverlayCtx>(() => ({
   expandedId: expandedId.value,
   toggleExpand: (id: string) => {
     const willExpand = expandedId.value !== id
-    expandedId.value = willExpand ? id : null
+    wbStore.expandedAssetId = willExpand ? id : null
     // Розгортання авто-виділяє об'єкт → реєструється sidebar-інспектор (через
     // перевірений шлях watch(isSelected)→register*). Розгорнутий оверлей покриває
     // лише полотно (EXPANDED_STYLE absolute у canvas-шарі), НЕ сайтбар → інспектор

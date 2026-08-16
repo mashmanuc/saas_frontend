@@ -1404,10 +1404,15 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
 }
 
 // Expand-to-board: одночасно може бути розгорнутий тільки один asset.
-// Зберігає id розгорнутого asset, null = нічого не розгорнуто.
-// Expanded overlay займає position:absolute;inset:0 у межах .wb-canvas
-// (не full-viewport) — toolbar/sidebar залишаються видимими.
-const expandedAssetId = ref<string | null>(null)
+// null = нічого не розгорнуто. Expanded overlay займає position:absolute;inset:0
+// у межах .wb-canvas (не full-viewport) — sidebar лишається видимим.
+// 2026-08-16: SSOT — wbStore.expandedAssetId (спільний з WBOverlayLayer і
+// WBSelectionToolbar, який ховається для розгорнутого об'єкта). Writable
+// computed, щоб legacy-шаблон нижче (`expandedAssetId = …`) лишився як є.
+const expandedAssetId = computed<string | null>({
+  get: () => wbStore.expandedAssetId,
+  set: (v) => { wbStore.expandedAssetId = v },
+})
 
 // ── Unified overlay render flag (Z_ORDER_UNIFIED_PLAN v4.0, PR1) ─────────────
 // Evaluated ONCE при mount — build-time прапор (VITE_UNIFIED_ZORDER, default OFF).

@@ -328,6 +328,13 @@ export interface WBBoardState {
   selectedIds: string[]
   selectionRect: WBSelectionRect | null
 
+  // 2026-08-16: overlay, розгорнутий на всю сторінку (⛶ у graph/nmt3d/helix/
+  // trig_circle). UI-only, НЕ синхронізується. Раніше жив приватно у
+  // WBOverlayLayer (unified) і WBCanvas (legacy) — два власники одного факту, і
+  // WBSelectionToolbar про нього не знав: розгортання авто-виділяє об'єкт →
+  // тулбар вставав за bbox СТАРОГО положення, тобто посеред графіка.
+  expandedAssetId: string | null
+
   // Responsive Phase 1 A2: Viewport container dimensions
   // INV-1: Canvas NEVER resizes — these drive stage.scale() + stage.position()
   containerWidth: number
@@ -589,6 +596,7 @@ export const useWBStore = defineStore('wb-board', {
 
     selectedIds: [],
     selectionRect: null,
+    expandedAssetId: null,
 
     containerWidth: 0,
     containerHeight: 0,
