@@ -929,6 +929,7 @@ import {
   ZOOM_MIN,
   ZOOM_MAX,
 } from '../../engine/zoomPan'
+import { notifyWarning } from '@/utils/notify'
 
 // A3.3: Performance benchmark flag — set to true in dev to see console.time markers
 const __DEV_PERF__ = import.meta.env.DEV && import.meta.env.VITE_WB_PERF === 'true'
@@ -1142,7 +1143,20 @@ function handleSpawnCompanions(payload: {
     // null = для цього контенту немає чесного рендера (напр. зрізана
     // піраміда без шаблона) — пустушку не створюємо і в урок не пишемо.
     const companionData = buildCompanionData(resolution)
-    if (companionData === null) continue
+    if (companionData === null) {
+      // 2026-08-16, живий прогін власника («кнопка "Побудувати" не працює»):
+      // задача про вектори у трикутнику → реєстр обрав nmt3d → екстрактор
+      // не знайшов тіла → null → нічого не створено — і НІЧОГО не сказано.
+      // Відмова без фолбека правильна (ТЗ D-4: куб-самозванець гірший за
+      // порожнечу), але мовчазна відмова = «кнопка зламана» в очах тьютора.
+      // Кажемо словами, що саме не вийшло, — на дошку, не в консоль.
+      notifyWarning(
+        'Не можу побудувати ілюстрацію до цієї задачі: у її умові не '
+        + 'розпізнано фігуру, яку вмію намалювати. Спробуйте попросити '
+        + 'Інтегралика конкретно — напр. «додай трикутник ABC».',
+      )
+      continue
+    }
 
     const companionAsset: WBAsset = {
       id:       generateId(),

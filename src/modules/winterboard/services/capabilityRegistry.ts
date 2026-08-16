@@ -149,6 +149,16 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
   trig_solver:      hasTrigSolver,
   // ТЗ-F §F-3: немає shape_2d → кнопки «Побудувати» немає (143 задачі без фігури = брехня)
   geometry_2d_v2:   (d) => typeof d.shape_2d === 'string' && d.shape_2d.length > 0,
+  // 2026-08-16, живий прогін власника («кнопка "Побудувати" не працює»):
+  // задача про вектори у плоскому трикутнику мала intents
+  // ['show_vectors_2d','show_vectors_3d'] і extracted_data = {}. 2D-гілку
+  // guard відсіяв чесно (нема shape_2d), а 3D-гілка guard'а НЕ МАЛА → кнопка
+  // з'явилась → клік → buildCompanionData повернув null (без shape тіла
+  // немає, ТЗ D-4) → нічого не сталось, і нічого не сказано. Асиметрія:
+  // для 2D перевірка даних була, для 3D — ні. Те саме правило й тут: немає
+  // shape → кнопки немає. Кнопка обіцяє лише те, що зробить (INV-CAP-1:
+  // рішення про renderer — ТІЛЬКИ тут, не в spawn-обробнику).
+  nmt3d:            (d) => typeof d.shape === 'string' && d.shape.length > 0,
 }
 
 /**
