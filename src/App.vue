@@ -24,6 +24,11 @@
          модалка з PageShell НІКОЛИ не рендерилась там, де ліміти реально спрацьовують
          (export/import/AI). App.vue = єдиний корінь, спільний для всіх layout'ів. -->
     <LimitPaywallModalAsync v-if="authStore.isAuthenticated" />
+    <!-- Тости. Були в PageShell — і НЕ існували на winterboard-роутах, бо в
+         дошки власний layout (той самий доказ, що вище про LimitPaywallModal).
+         Наслідок був не косметичний: команди палітри й будь-які success/error
+         на дошці «показувались» у нікуди. App.vue = єдиний спільний корінь. -->
+    <ToastContainer class="z-[1400]" />
   </PageThemeProvider>
 </template>
 
@@ -32,6 +37,7 @@ import { onMounted, onBeforeUnmount, watch, ref, computed, defineAsyncComponent 
 import { useRoute } from 'vue-router'
 import { PageThemeProvider } from './modules/ui/theme'
 import AppErrorBoundary from './components/AppErrorBoundary.vue'
+import ToastContainer from './ui/ToastContainer.vue'
 import { DiagnosticsPanel } from './modules/diagnostics'
 import { isAuditEnabled } from '@/debug/isAuditEnabled'
 import { useAuthStore } from '@/modules/auth/store/authStore'

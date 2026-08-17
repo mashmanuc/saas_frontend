@@ -312,6 +312,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
+import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { sceneMetricFromAction } from './sceneMetric'
@@ -394,7 +395,7 @@ const dialogOptionsFiltered = computed(() => {
 async function run(fn, onOk) {
   if (loading.value) return
   loading.value = true; error.value = ''; notice.value = ''
-  try { const r = await fn(); if (onOk) onOk(r) }
+  try { const r = await fn(); if (onOk) await onOk(r) }
   catch (e) {
     // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal уже показано
     // interceptor'ом; не дублюємо власним inline-повідомленням (finally скине loading).
@@ -471,7 +472,30 @@ function submitStep() {
 function pickOption(o) { advance(o.value) }
 function pickHighlighted() { const o = dialogOptionsFiltered.value[dialogOptIdx.value]; if (o) advance(o.value) }
 function moveOpt(d) { const n = dialogOptionsFiltered.value.length; if (n) dialogOptIdx.value = (dialogOptIdx.value + d + n) % n }
-function execute(cmd, values) { run(() => cmd.act(values), cmd.after) }
+/**
+ * Успіх навігаційної команди (2026-08-17, живий тест власника: «дошка
+ * створюється на фоні, але юзер нічого не отримує про це»).
+ *
+ * Було: `close(); router.push(...)`. Палітра зникала ПЕРШОЮ, а перехід із
+ * конструктора чекає `onBeforeRouteLeave → flushAll()` — виходило вікно, де
+ * не видно нічого: ні панелі, ні нової сторінки. Done-бульбашка не рятує:
+ * вона під `if (open.value)`, а ми вже закрились.
+ *
+ * Стало: спершу тост (глобальний — переживає close і не залежить від того,
+ * чи змонтована палітра), потім close, і `await router.push`, щоб `run()`
+ * тримав `loading`, поки перехід справді не стався.
+ *
+ * ⚠️ Тост тут працює лише тому, що ToastContainer переїхав у App.vue: у
+ * PageShell він на winterboard-роутах не рендерився ВЗАГАЛІ (той самий урок,
+ * що з LimitPaywallModal).
+ */
+async function announceAndGo(text, route) {
+  notifySuccess(text)
+  close()
+  await router.push(route)
+}
+
+function execute(cmd, values) { run(() => cmd.act(values), (r) => cmd.after?.(r, values)) }
 function confirmDelete(spec, ctx, name) { if (window.confirm(`Видалити «${name || 'Без назви'}»?`)) invoke(spec, ctx) }
 
 // каталог тем для select
@@ -498,7 +522,9 @@ const cmdCreateBoard = {
   params: [{ key: 'title', label: 'Назва дошки?', default: 'Нова дошка' }],
   act: (v) => sendIntent('CREATE', [{ type: 'Board', params: { title: v.title } }], 'command-palette'),
   // IPC-5: дзеркало «+ Нова дошка» → winterboard-prepare (не solo).
-  after: (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.board_id } }) },
+  after: (r, v) => announceAndGo(
+    `Дошку «${r.result?.title || v?.title || 'Нова дошка'}» створено`,
+    { name: 'winterboard-prepare', params: { id: r.result.board_id } }),
 }
 const cmdGenerateLesson = {
   id: 'generate-lesson', label: 'Згенерувати урок',
@@ -526,7 +552,9 @@ const cmdGenerateLesson = {
       include_solution_page: false,
     },
   }], 'command-palette'),
-  after: (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.session_id } }) },
+  after: (r) => announceAndGo(
+    `Урок «${r.result?.title || 'без назви'}» згенеровано`,
+    { name: 'winterboard-prepare', params: { id: r.result.session_id } }),
 }
 const cmdPublishCurrent = {
   id: 'publish-current', label: 'Опублікувати поточну дошку',
@@ -582,7 +610,9 @@ const filtered = computed(() => {
 // row-action specs
 const actDuplicate = {
   act: (v) => sendIntent('DUPLICATE', [{ type: 'Board', params: { board_id: v.board_id } }], 'command-palette'),
-  after: (r) => { close(); router.push({ name: 'winterboard-solo', params: { id: r.result.board_id } }) },
+  after: (r) => announceAndGo(
+    `Копію дошки створено${r.result?.title ? `: «${r.result.title}»` : ''}`,
+    { name: 'winterboard-solo', params: { id: r.result.board_id } }),
 }
 const actRename = {
   params: [{ key: 'name', label: 'Нова назва дошки?', required: true }],
@@ -612,7 +642,9 @@ const actDeleteBoard = {
 }
 const actOpenLesson = {
   act: (v) => sendIntent('CREATE', [{ type: 'Session', params: { lesson_id: v.lesson_id } }], 'command-palette'),
-  after: (r) => { close(); router.push({ name: 'winterboard-solo', params: { id: r.result.session_id } }) },
+  after: (r) => announceAndGo(
+    `Урок відкрито${r.result?.title ? `: «${r.result.title}»` : ''}`,
+    { name: 'winterboard-solo', params: { id: r.result.session_id } }),
 }
 const actDeleteLesson = {
   act: (v) => sendIntent('DELETE', [{ type: 'Lesson', params: { lesson_id: v.lesson_id } }], 'command-palette'),
@@ -1072,10 +1104,18 @@ function pickAiCandidate(item, c) {
 
 // Після успіху: навігація закриває палітру; списки перемикають режим;
 // решта — «✓ done»-бульбашка в треді, діалог продовжується.
+// Навігаційні capability йдуть через `announceAndGo` — тиша була системною
+// (усі 4 навігаційні команди), не в одній кнопці.
 const AI_AFTER = {
-  'workspace.create_board': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.board_id } }) },
-  'lesson.generate': (r) => { close(); router.push({ name: 'winterboard-prepare', params: { id: r.result.session_id } }) },
-  'knowledge.open_lesson': (r) => { close(); router.push({ name: 'winterboard-solo', params: { id: r.result.session_id } }) },
+  'workspace.create_board': (r) => announceAndGo(
+    `Дошку «${r.result?.title || 'Нова дошка'}» створено`,
+    { name: 'winterboard-prepare', params: { id: r.result.board_id } }),
+  'lesson.generate': (r) => announceAndGo(
+    `Урок «${r.result?.title || 'без назви'}» згенеровано`,
+    { name: 'winterboard-prepare', params: { id: r.result.session_id } }),
+  'knowledge.open_lesson': (r) => announceAndGo(
+    `Урок відкрито${r.result?.title ? `: «${r.result.title}»` : ''}`,
+    { name: 'winterboard-solo', params: { id: r.result.session_id } }),
   'knowledge.list_lessons': (r) => { lessons.value = r.result.lessons || []; mode.value = 'lessons' },
   'workspace.list_boards': (r) => { boards.value = r.result.boards || []; mode.value = 'boards' },
   'workspace.rename_board': () => notifyBoardsChanged(),

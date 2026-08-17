@@ -34,8 +34,9 @@
       <AppFooter />
     </div>
 
-    <!-- Toasts & Loader overlay -->
-    <ToastContainer class="z-50" />
+    <!-- Toasts переїхали в App.vue (2026-08-17): winterboard має ВЛАСНИЙ
+         layout і PageShell не рендерить, тож усе, що показувалось звідси,
+         на дошці не існувало. Той самий урок, що з LimitPaywallModal. -->
     <GlobalLoader />
 
     <!-- Session Revoked Banner -->
@@ -53,7 +54,6 @@ import { useRouter } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import TopNav from './TopNav.vue'
 import AppFooter from '../components/layout/AppFooter.vue'
-import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import GlobalActiveLessonBanner from '../components/GlobalActiveLessonBanner.vue'
