@@ -1,7 +1,7 @@
 <template>
   <div class="enrich-patches-preview" v-if="visible">
     <div class="enrich-patches-preview__header">
-      <h3>{{ t('winterboard.enrich.title') }}</h3>
+      <h3>{{ isReview ? t('winterboard.enrich.reviewTitle') : t('winterboard.enrich.title') }}</h3>
       <button class="enrich-patches-preview__close" @click="$emit('close')">&times;</button>
     </div>
 
@@ -1078,8 +1078,16 @@ async function syncBoard() {
   font-size: 13px;
 }
 .enrich-patches-preview__error {
-  color: #e74c3c;
-  background: var(--danger-bg);
+  /* 2026-08-17 (живий прогін власника, Фаза 5): тут стояло
+     `color:#e74c3c; background:var(--danger-bg)` — а --danger-bg = #ef4444,
+     тобто ФОН КНОПКИ, не алерту. Червоний текст на червоному: смуга є, слів
+     не видно — у всіх сценаріях enrich, просто помилки траплялись рідко.
+     М'який фон за конвенцією проєкту (BackupCodesModal, WebAuthnEnrollModal). */
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
+  border-radius: 10px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -7246,6 +7246,7 @@
       "reviewTally": "Suggestions: {shown} · rejected by validator: {rejected}",
       "reviewAgain": "Review again",
       "badgeGraph": "Graph",
+      "reviewTitle": "Review lesson",
       "instructionPlaceholder": "describe which layer to add to the lesson tasks",
       "run": "Run",
       "running": "Running…",

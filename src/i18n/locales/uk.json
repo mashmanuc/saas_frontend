@@ -7827,6 +7827,7 @@
       "reviewTally": "Пропозицій: {shown} · відсіяно валідатором: {rejected}",
       "reviewAgain": "Переглянути ще раз",
       "badgeGraph": "Графік",
+      "reviewTitle": "Переглянути урок",
       "instructionPlaceholder": "опишіть, який шар додати до задач уроку",
       "run": "Запустити",
       "running": "Виконується…",
