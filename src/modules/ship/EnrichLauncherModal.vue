@@ -30,6 +30,7 @@
           v-if="artifactId"
           :artifact-id="artifactId"
           :visible="visible"
+          :mode="mode"
           @close="$emit('close')"
           @applied="$emit('close')"
         />
@@ -66,7 +67,8 @@ import { useI18n } from 'vue-i18n'
 import EnrichPatchesPreview from '@/modules/ship/EnrichPatchesPreview.vue'
 import { shipApi } from '@/modules/ship/shipApi'
 
-const props = defineProps<{ sessionId: string; visible: boolean }>()
+// Фаза 5: та сама модалка й те саме прев'ю для review (ТЗ §5.1 — не форк).
+const props = defineProps<{ sessionId: string; visible: boolean; mode?: 'enrich' | 'review' }>()
 defineEmits<{ close: [] }>()
 
 const { t } = useI18n()

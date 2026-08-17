@@ -43,7 +43,8 @@ export interface ShipRenderResponse {
 
 export interface EnrichPatch {
   task_ref: string
-  action: 'add_card' | 'add_formula'
+  /** Фаза 5 додала add_graph (пропозиції review їдуть тим самим apply). */
+  action: 'add_card' | 'add_formula' | 'add_graph'
   card_data: {
     title: string
     body: string
@@ -92,6 +93,22 @@ export interface EnrichResponse {
    * «Ні, збагатити як є» (повторний виклик із forceFreeform=true).
    */
   kind?: 'question'
+}
+
+/** Фаза 5: пропозиція review = патч enrich + категорія (+ graph_data). */
+export interface ReviewProposal extends EnrichPatch {
+  category: string
+  description: string
+  graph_data?: { expressions: Array<{ src: string }>; params: Record<string, unknown> }
+}
+
+export interface ReviewResponse {
+  proposals: ReviewProposal[]
+  /** {причина: кількість} — скільки пропозицій моделі відсіяв серверний
+   *  валідатор/дедуп; чесність про «модель дала 9, показано 6». */
+  rejected: Record<string, number>
+  categories: string[]
+  error: string | null
 }
 
 /** Проміжний стан enrich (GET progress): скільки задач уже пройшло LLM. */
@@ -174,6 +191,21 @@ export const shipApi = {
     if (forceFreeform) body.force_freeform = true
     return apiClient
       .post(`${BASE}/artifacts/${artifactId}/enrich/`, body)
+      .then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * N1 Фаза 5 (2026-08-17): whole-lesson review — AI аналізує ВЕСЬ урок і
+   * пропонує покращення за категоріями. Один LLM-виклик; пропозиції мають
+   * форму патчів enrich (+category/description, +graph_data для add_graph),
+   * тому прев'ю і `enrichApply` перевикористовуються без форку.
+   * `progressId` — той самий прогрес-кеш, що в enrich (0/1 → 1/1).
+   */
+  reviewLesson(artifactId: string, progressId?: string): Promise<ReviewResponse> {
+    const body: Record<string, unknown> = {}
+    if (progressId) body.progress_id = progressId
+    return apiClient
+      .post(`${BASE}/artifacts/${artifactId}/review/`, body)
       .then((r: any) => r.data ?? r)
   },
 

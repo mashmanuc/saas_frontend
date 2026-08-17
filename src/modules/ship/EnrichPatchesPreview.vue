@@ -11,7 +11,7 @@
          прогону форма зникала назавжди — тьютор не міг ні попросити щось
          інше («спершу приклади, потім формули»), ні повторити спробу
          після помилки (живий прогін 2026-08-09). -->
-    <div class="enrich-patches-preview__input" v-if="!patches.length && !loading">
+    <div class="enrich-patches-preview__input" v-if="!isReview && !patches.length && !loading">
       <!-- 2026-08-16, живий випадок власника: у поле ввели «що ти вмієш?» →
            запуск пішов вільною формою → 3 списання і 4 випадкові картки замість
            відповіді. Тепер BE впізнає ПИТАННЯ до асистента й зупиняється ДО
@@ -90,6 +90,16 @@
       </div>
     </div>
 
+    <!-- Фаза 5: review — без інструкції. Підсумок чесний: скільки модель
+         дала і скільки відсіяв серверний валідатор/дедуп (архітектура гейту
+         G-P5: тьютор бачить лише те, що пройшло). -->
+    <div class="enrich-patches-preview__review-bar" v-if="isReview && !loading && reviewRan">
+      <span>{{ t('winterboard.enrich.reviewTally', { shown: patches.length, rejected: reviewRejectedCount }) }}</span>
+      <button type="button" class="enrich-patches-preview__chip" @click="runReview()">
+        ↻ {{ t('winterboard.enrich.reviewAgain') }}
+      </button>
+    </div>
+
     <!-- Loading. Enrich — один синхронний POST (10–30 с); BE після кожного пакета
          пише {processed,total} під progress_id, ми поллимо GET → справжня смуга
          «5 з 12». Поки перший пакет не завершився (або поллінг не долітає) —
@@ -154,6 +164,11 @@
          розмітки розійшлися б при першій же правці. -->
     <div class="enrich-patches-preview__list" v-if="patches.length">
       <template v-for="row in orderedPatches" :key="row.i">
+      <!-- Фаза 5: заголовок категорії — лише в review і лише перед першою
+           пропозицією групи. Порядок груп = порядок появи у відповіді. -->
+      <div v-if="isReview && row.categoryHead" class="enrich-patches-preview__category">
+        {{ row.categoryHead }}
+      </div>
       <button
         v-if="row.firstRepeat"
         type="button"
@@ -171,7 +186,7 @@
       >
         <label class="enrich-patches-preview__checkbox">
           <input type="checkbox" v-model="selected[row.i]" :disabled="!row.patch.latex_valid" />
-          <span class="enrich-patches-preview__badge">{{ row.patch.action === 'add_formula' ? t('winterboard.enrich.badgeFormula') : t('winterboard.enrich.badgeCard') }}</span>
+          <span class="enrich-patches-preview__badge">{{ actionBadge(row.patch) }}</span>
           <!-- 2026-08-12: тут стояло «Задача: 10719» — ID банку, який тьютору
                нічого не каже. Показуємо початок УМОВИ: свою задачу він
                упізнає за текстом. Поля може не бути (старий BE) — тоді
@@ -189,6 +204,9 @@
              відповіддю LLM використовувати НЕ можна. -->
         <div class="enrich-patches-preview__preview">
           <strong v-html="rendered[row.i].title" />
+          <!-- Фаза 5: «навіщо це» від моделі — коротко, під заголовком. -->
+          <em v-if="isReview && row.patch.description && row.patch.description !== row.patch.card_data?.title"
+              class="enrich-patches-preview__description">{{ row.patch.description }}</em>
           <p v-html="rendered[row.i].body" />
           <span class="enrich-patches-preview__badge-label">{{ row.patch.card_data?.badge || '' }}</span>
         </div>
@@ -288,7 +306,17 @@ const boardStore = useWBStore()
 const props = defineProps<{
   artifactId: string
   visible: boolean
+  /**
+   * N1 Фаза 5 (2026-08-17): той самий компонент, два сценарії (ТЗ §5.1 —
+   * розширити пропсом, не форкати).
+   *  - 'enrich' (default): тьютор пише інструкцію → пакети по задачах.
+   *  - 'review': AI аналізує ВЕСЬ урок сам, без інструкції; запуск одразу
+   *    при відкритті; пропозиції згруповані за категоріями; серед дій є
+   *    add_graph. Галочки/apply/рендер — спільні.
+   */
+  mode?: 'enrich' | 'review'
 }>()
+const isReview = computed(() => props.mode === 'review')
 
 const emit = defineEmits<{
   close: []
@@ -459,8 +487,16 @@ const selectedCount = computed(() => Object.values(selected.value).filter(v => v
 function renderBody(patch: any): string {
   const body = String(patch?.card_data?.body ?? '')
   if (!body.trim()) return ''
-  const bare = patch?.action === 'add_formula' && !body.includes('$')
+  // Фаза 5: графік — тіло `y = x^2 - 4` показуємо математикою (як формулу),
+  // щоб тьютор бачив вираз так, як він виглядатиме на осях, а не сирим текстом.
+  const bare = (patch?.action === 'add_formula' || patch?.action === 'add_graph') && !body.includes('$')
   return renderTextWithLatex(bare ? `$$${body}$$` : body)
+}
+
+function actionBadge(patch: any): string {
+  if (patch?.action === 'add_formula') return t('winterboard.enrich.badgeFormula')
+  if (patch?.action === 'add_graph') return t('winterboard.enrich.badgeGraph')
+  return t('winterboard.enrich.badgeCard')
 }
 
 /**
@@ -506,10 +542,28 @@ const repeatsOpen = ref(false)
 const orderedPatches = computed(() => {
   const rows = patches.value.map((patch: any, i: number) => ({
     i, patch, repeat: !!patch?.already_on_board, firstRepeat: false,
+    categoryHead: '' as string,
   }))
   const fresh = rows.filter(r => !r.repeat)
   const repeats = rows.filter(r => r.repeat)
   if (repeats.length) repeats[0].firstRepeat = true
+  // Фаза 5: у review свіжі пропозиції групуємо за категорією (стабільно —
+  // порядок груп = перша поява), заголовок несе перший рядок групи. Індекси
+  // `i` НЕ чіпаємо — галочки й рендер прив'язані до них.
+  if (isReview.value) {
+    const order: string[] = []
+    for (const r of fresh) {
+      const c = String(r.patch?.category || '').trim()
+      if (c && !order.includes(c)) order.push(c)
+    }
+    fresh.sort((a, b) =>
+      order.indexOf(String(a.patch?.category || '')) - order.indexOf(String(b.patch?.category || '')))
+    let last = ''
+    for (const r of fresh) {
+      const c = String(r.patch?.category || '').trim()
+      if (c && c !== last) { r.categoryHead = c; last = c }
+    }
+  }
   return [...fresh, ...repeats]
 })
 
@@ -531,6 +585,59 @@ function defaultSelected(p: any): boolean {
     && p.already_on_board !== true
     && !p.duplicate_of
 }
+
+// ── Фаза 5: review всього уроку ───────────────────────────────────────────
+const reviewRan = ref(false)
+const reviewRejected = ref<Record<string, number>>({})
+const reviewRejectedCount = computed(() =>
+  Object.values(reviewRejected.value).reduce((a, b) => a + (Number(b) || 0), 0))
+
+/**
+ * Один POST на весь урок (10–30 с). Пропозиції приходять у формі патчів
+ * enrich (+category), тож далі — той самий список, ті самі галочки, той самий
+ * applySelected. Стан скидаємо повністю: review не докидає, а перераховує.
+ */
+async function runReview() {
+  loading.value = true
+  error.value = ''
+  patches.value = []
+  selected.value = {}
+  skipped.value = []
+  result.value = null
+  failedTaskRefs.value = []
+  reviewRejected.value = {}
+  const progressId = newProgressId()
+  liveProgress.value = null
+  startProgressPolling(progressId)
+  try {
+    const res = await shipApi.reviewLesson(props.artifactId, progressId)
+    reviewRan.value = true
+    if (res.error) error.value = res.error
+    reviewRejected.value = res.rejected || {}
+    const incoming: any[] = res.proposals || []
+    patches.value = incoming
+    const sel: Record<number, boolean> = {}
+    incoming.forEach((p: any, i: number) => { sel[i] = defaultSelected(p) })
+    selected.value = sel
+  } catch (e: any) {
+    reviewRan.value = true
+    error.value = e?.message || String(e)
+  } finally {
+    stopProgressPolling()
+    loading.value = false
+  }
+}
+
+// Review стартує сам при відкритті: кнопку «Переглянути урок» тьютор уже
+// натиснув, друга кнопка всередині була б зайвим кроком. Enrich, навпаки,
+// чекає інструкції — там запуск без слів безглуздий.
+watch(
+  () => [props.visible, props.mode] as const,
+  ([visible, mode]) => {
+    if (visible && mode === 'review' && !reviewRan.value && !loading.value) runReview()
+  },
+  { immediate: true },
+)
 
 /**
  * Запуск enrich. Без аргументу — повний прогін по уроку (стан скидається).
@@ -715,6 +822,29 @@ async function syncBoard() {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.enrich-patches-preview__category {
+  margin: 14px 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.enrich-patches-preview__description {
+  display: block;
+  margin: 2px 0 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.enrich-patches-preview__review-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 .enrich-patches-preview__question {
   display: flex;

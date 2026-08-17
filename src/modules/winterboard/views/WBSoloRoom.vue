@@ -175,9 +175,21 @@
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.export.aiEnrich')"
-          @click="showEnrichModal = true"
+          @click="enrichMode = 'enrich'; showEnrichModal = true"
         >
           ✨
+        </button>
+        <!-- N1 Фаза 5 (2026-08-17): «Переглянути урок» — AI аналізує ВЕСЬ урок
+             і пропонує покращення за категоріями (формула/теорія/графік).
+             Та сама модалка і прев'ю, що ✨, лише режим інший (не форк). -->
+        <button
+          v-if="constructorMode && sessionId && isSessionOwner"
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.enrich.reviewButton')"
+          @click="enrichMode = 'review'; showEnrichModal = true"
+        >
+          🔎
         </button>
         <!-- Phase 21: Save as Lesson button — прихована в constructorMode (там є своя кнопка нижче) -->
         <button
@@ -857,6 +869,7 @@
       v-if="showEnrichModal && constructorMode && sessionId"
       :session-id="sessionId"
       :visible="showEnrichModal"
+      :mode="enrichMode"
       @close="showEnrichModal = false"
     />
 
@@ -1593,6 +1606,8 @@ const savedItemKind = ref<'lesson' | 'template'>('lesson')
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showEnrichModal = ref(false)
+// Фаза 5: ✨ = enrich (за інструкцією), 🔎 = review (увесь урок сам).
+const enrichMode = ref<'enrich' | 'review'>('enrich')
 // Палітра/AI-Producer: «експортуй дошку» відкриває ЦЕЙ продуктовий діалог (він робить
 // capture-фазу віджетів перед BE-експортом) — а не серверний шлях без capture, який
 // рендерить [nmt_task]-плейсхолдери. Якщо формат уже названо у фразі («у PDF») —
