@@ -94,11 +94,29 @@
          дала і скільки відсіяв серверний валідатор/дедуп (архітектура гейту
          G-P5: тьютор бачить лише те, що пройшло). -->
     <div class="enrich-patches-preview__review-bar" v-if="isReview && !loading && reviewRan">
-      <span>{{ t('winterboard.enrich.reviewTally', { shown: patches.length, rejected: reviewRejectedCount }) }}</span>
-      <button type="button" class="enrich-patches-preview__chip" @click="runReview()">
-        ↻ {{ t('winterboard.enrich.reviewAgain') }}
-      </button>
+      <!-- Порожній результат — не збій: модель має право промовчати («менше
+           пропозицій краще за натягнуті», виміряно в гейті). Але мовчати про
+           це не можна: тьютор має зрозуміти, що урок опрацьовано. -->
+      <span v-if="!patches.length && !error">{{ t('winterboard.enrich.reviewNothing') }}</span>
+      <span v-else>{{ t('winterboard.enrich.reviewTally', { shown: patches.length, rejected: reviewRejectedCount }) }}</span>
+      <div class="enrich-patches-preview__review-actions">
+        <button
+          v-if="reviewRejectedCount"
+          type="button"
+          class="enrich-patches-preview__chip"
+          :aria-expanded="rejectedOpen"
+          @click="rejectedOpen = !rejectedOpen"
+        >{{ rejectedOpen ? '▾' : '▸' }} {{ t('winterboard.enrich.reviewWhyRejected') }}</button>
+        <button type="button" class="enrich-patches-preview__chip" @click="runReview()">
+          ↻ {{ t('winterboard.enrich.reviewAgain') }}
+        </button>
+      </div>
     </div>
+    <!-- Чому саме відсіяно: тьютор має бачити, що це рішення сервера, а не
+         випадковість. Назви причин — людською мовою, не коди валідатора. -->
+    <ul class="enrich-patches-preview__rejected-list" v-if="isReview && rejectedOpen && reviewRejectedCount">
+      <li v-for="row in rejectedRows" :key="row.code">{{ row.label }} — {{ row.count }}</li>
+    </ul>
 
     <!-- Loading. Enrich — один синхронний POST (10–30 с); BE після кожного пакета
          пише {processed,total} під progress_id, ми поллимо GET → справжня смуга
@@ -130,7 +148,7 @@
     <!-- Оброблено: X/Y задач (N1 Фаза 4.1) — видно і при успіху, і при
          частковому збої: тьютор завжди знає, скільки задач урок мав
          і скільки реально пройшло LLM, а не здогадується з тиші. -->
-    <div class="enrich-patches-preview__progress" v-if="totalTasks > 0 && !loading">
+    <div class="enrich-patches-preview__progress" v-if="!isReview && totalTasks > 0 && !loading">
       {{ t('winterboard.enrich.processed', { done: processedTasks, total: totalTasks }) }}
       <!-- B-T2: пропуск — не «нічого не сталось», а результат роботи моделі.
            Тому він стоїть у тому самому рядку, що й «оброблено»: тьютор
@@ -271,11 +289,17 @@
 
     <!-- Result -->
     <div class="enrich-patches-preview__result" v-if="result">
-      {{ t('winterboard.enrich.sectionsAdded', { count: result.sections_added }) }}
+      <!-- «Нічого не додано» — теж результат: без цього рядка порожній
+           підсумок читався як збій (самоаудит 2026-08-17). -->
+      <span v-if="!result.sections_added && !result.error">{{ t('winterboard.enrich.nothingAdded') }}</span>
+      {{ result.sections_added ? t('winterboard.enrich.sectionsAdded', { count: result.sections_added }) : '' }}
       <!-- Куди саме лягли: без цього тьютор дивиться на поточну сторінку,
            не бачить змін і думає, що нічого не сталось. -->
       <span v-if="pagesLabel">{{ t('winterboard.enrich.onPages', { pages: pagesLabel }) }}</span>
       {{ result.error || '' }}
+      <button type="button" class="enrich-patches-preview__chip" @click="$emit('close')">
+        {{ t('winterboard.enrich.done') }}
+      </button>
     </div>
 
     <!-- Записано, але ця вкладка не показала — чесно просимо перезавантажити -->
@@ -420,10 +444,17 @@ const progressPercent = computed(() => {
 
 const loadingStage = computed(() => {
   const p = liveProgress.value
-  if (p && p.total) {
+  // Review — ОДИН виклик на весь урок: «Оброблено 0 з 1 задач» брехало б
+  // (самоаудит 2026-08-17). Показуємо стадії словами, як у enrich до пакетів.
+  if (!isReview.value && p && p.total) {
     return t('winterboard.enrich.stageBatches', { done: p.processed, total: p.total })
   }
   const s = elapsedSec.value
+  if (isReview.value) {
+    if (s < 3)  return t('winterboard.enrich.stageReviewReading')
+    if (s < 20) return t('winterboard.enrich.stageReviewThinking')
+    return t('winterboard.enrich.stageLong')
+  }
   if (s < 3)  return t('winterboard.enrich.stageReading')
   if (s < 20) return t('winterboard.enrich.stageThinking')
   return t('winterboard.enrich.stageLong')
@@ -588,7 +619,39 @@ function defaultSelected(p: any): boolean {
 
 // ── Фаза 5: review всього уроку ───────────────────────────────────────────
 const reviewRan = ref(false)
+const rejectedOpen = ref(false)
 const reviewRejected = ref<Record<string, number>>({})
+
+/** Коди валідатора → людські причини. Невідомий код показуємо як є:
+ *  краще технічний рядок, ніж мовчання про відкинуту пропозицію. */
+const REJECT_LABELS: Record<string, string> = {
+  INVALID_ACTION: 'winterboard.enrich.rejInvalidAction',
+  MISSING_OBJECT_DATA: 'winterboard.enrich.rejBadData',
+  INVALID_PARAMS: 'winterboard.enrich.rejBadData',
+  MISLABELED_AS_TASK: 'winterboard.enrich.rejTask',
+  NOT_A_FORMULA: 'winterboard.enrich.rejNotFormula',
+  DUPLICATE: 'winterboard.enrich.rejDuplicate',
+  BAD_JSON: 'winterboard.enrich.rejBadJson',
+  NO_EXPRESSIONS: 'winterboard.enrich.rejGraph',
+  EMPTY: 'winterboard.enrich.rejGraph',
+  TOO_LONG: 'winterboard.enrich.rejGraph',
+  PYTHON_POWER: 'winterboard.enrich.rejGraph',
+  HAS_EQUALS: 'winterboard.enrich.rejGraph',
+  BAD_CHARS: 'winterboard.enrich.rejGraph',
+}
+
+const rejectedRows = computed(() => {
+  const merged: Record<string, number> = {}
+  for (const [code, n] of Object.entries(reviewRejected.value)) {
+    // UNKNOWN_FUNC:gcd / UNKNOWN_VAR:h — беремо базу коду
+    const base = code.split(':')[0]
+    const key = REJECT_LABELS[base]
+      || (base.startsWith('UNKNOWN_') ? 'winterboard.enrich.rejGraph' : '')
+    const label = key ? t(key) : base
+    merged[label] = (merged[label] || 0) + (Number(n) || 0)
+  }
+  return Object.entries(merged).map(([label, count]) => ({ code: label, label, count }))
+})
 const reviewRejectedCount = computed(() =>
   Object.values(reviewRejected.value).reduce((a, b) => a + (Number(b) || 0), 0))
 
@@ -746,6 +809,10 @@ async function applySelected() {
     const selectedPatches = patches.value.filter((_: any, i: number) => selected.value[i])
     const res = await shipApi.enrichApply(props.artifactId, selectedPatches)
     result.value = res
+    // Підсумок читає тьютор — тому лаунчер більше не закриває вікно на
+    // `applied` (самоаудит 2026-08-17: вікно зникало, і «додано N карток на
+    // сторінки 3–10» ніхто не бачив). Тост тут неможливий: ToastContainer
+    // рендерить PageShell, а дошка його не має.
     if (res.sections_added > 0) await syncBoard()
     // Застосовані патчі більше не потрібні — звільняємо форму під наступну
     // інструкцію («приклади» → «тепер формули»), не змушуючи закривати
@@ -834,6 +901,17 @@ async function syncBoard() {
 .enrich-patches-preview__description {
   display: block;
   margin: 2px 0 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.enrich-patches-preview__review-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.enrich-patches-preview__rejected-list {
+  margin: 0 0 10px;
+  padding-left: 20px;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
@@ -999,9 +1077,18 @@ async function syncBoard() {
 .enrich-patches-preview__progress,
 .enrich-patches-preview__error,
 .enrich-patches-preview__result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 12px 0;
-  padding: 8px;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary, #1f8a5b) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary, #1f8a5b) 25%, transparent);
+}
+.enrich-patches-preview__result .enrich-patches-preview__chip {
+  margin-left: auto;
 }
 .enrich-patches-preview__loading {
   display: flex;

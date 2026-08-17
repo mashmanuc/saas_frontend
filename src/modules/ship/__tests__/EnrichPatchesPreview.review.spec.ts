@@ -29,6 +29,7 @@ vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
   useWBStore: () => ({ applyCatchUpState: vi.fn() }),
 }))
 
+
 import EnrichPatchesPreview from '../EnrichPatchesPreview.vue'
 import uk from '@/i18n/locales/uk.json'
 
@@ -135,10 +136,62 @@ describe('EnrichPatchesPreview — mode="review"', () => {
     const w = mountPreview()
     await flushPromises()
     expect(w.findAll('.enrich-patches-preview__item')).toHaveLength(4)
-    await w.find('.enrich-patches-preview__review-bar button').trigger('click')
+    // Кнопок у смузі тепер дві («Чому відсіяно» + «Переглянути ще раз») —
+    // беремо саме перезапуск, не першу-ліпшу.
+    const again = w.findAll('.enrich-patches-preview__review-bar button')
+      .find(b => b.text().includes('Переглянути ще раз'))!
+    await again.trigger('click')
     await flushPromises()
     expect(reviewLesson).toHaveBeenCalledTimes(2)
     expect(w.findAll('.enrich-patches-preview__item')).toHaveLength(0)
+  })
+
+  it('підсумок apply лишається на екрані: скільки і куди + кнопка «Готово»', async () => {
+    // Лаунчер більше не закриває вікно на @applied — інакше цей підсумок
+    // ніхто не встигав прочитати, а тост на дошці вивести нікуди
+    // (ToastContainer живе в PageShell, дошка його не рендерить).
+    reviewLesson.mockResolvedValueOnce(REVIEW)
+    enrichApply.mockResolvedValueOnce({ sections_added: 2, error: null, page_numbers: [3, 10] })
+    const w = mountPreview()
+    await flushPromises()
+    await w.find('.enrich-patches-preview__actions button').trigger('click')
+    await flushPromises()
+    const summary = w.find('.enrich-patches-preview__result')
+    expect(summary.exists()).toBe(true)
+    expect(summary.text()).toContain('2')
+    expect(summary.text()).toContain('3, 10')   // розрізнені сторінки — через кому
+    await summary.find('button').trigger('click')
+    expect(w.emitted('close')).toBeTruthy()
+  })
+
+  it('apply без жодної доданої секції — так і сказано, не порожній підсумок', async () => {
+    reviewLesson.mockResolvedValueOnce(REVIEW)
+    enrichApply.mockResolvedValueOnce({ sections_added: 0, error: null, page_numbers: [] })
+    const w = mountPreview()
+    await flushPromises()
+    await w.find('.enrich-patches-preview__actions button').trigger('click')
+    await flushPromises()
+    expect(w.find('.enrich-patches-preview__result').text()).toContain('Нічого не додано')
+  })
+
+  it('порожній результат каже про себе, а не мовчить', async () => {
+    reviewLesson.mockResolvedValueOnce({ proposals: [], rejected: {}, categories: [], error: null })
+    const w = mountPreview()
+    await flushPromises()
+    expect(w.find('.enrich-patches-preview__review-bar').text()).toContain('не знайшов, що додати')
+  })
+
+  it('«Чому відсіяно» розкриває причини людською мовою', async () => {
+    reviewLesson.mockResolvedValueOnce(REVIEW)
+    const w = mountPreview()
+    await flushPromises()
+    expect(w.find('.enrich-patches-preview__rejected-list').exists()).toBe(false)
+    const why = w.findAll('.enrich-patches-preview__review-bar button')
+      .find(b => b.text().includes('Чому відсіяно'))!
+    await why.trigger('click')
+    const rows = w.findAll('.enrich-patches-preview__rejected-list li').map(li => li.text())
+    expect(rows.join(' | ')).toContain('Графік, який рушій не намалює')
+    expect(rows.join(' | ')).toContain('Таке вже є в уроці')
   })
 
   it('помилка BE показується, не ковтається', async () => {
