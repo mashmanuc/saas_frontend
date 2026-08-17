@@ -1084,6 +1084,12 @@ async function syncBoard() {
   margin: 12px 0;
   padding: 10px 12px;
   border-radius: 8px;
+  /* Живий гейт власника Фази 5 (2026-08-17): «шрифт на зеленому не видно».
+     Нижче у файлі стояло старе правило `color:#2ecc71; background:
+     var(--success-bg)` (#10b981 — фон КНОПКИ) — воно перебивало це і давало
+     зелене на зеленому. Та сама вада, що з червоною смугою помилки. Старе
+     правило видалено; текст — основний колір теми на м'якому фоні. */
+  color: var(--color-text-primary, inherit);
   background: color-mix(in srgb, var(--color-primary, #1f8a5b) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-primary, #1f8a5b) 25%, transparent);
 }
@@ -1196,10 +1202,6 @@ async function syncBoard() {
 }
 .enrich-patches-preview__retry:hover {
   background: color-mix(in srgb, currentColor 12%, transparent);
-}
-.enrich-patches-preview__result {
-  color: #2ecc71;
-  background: var(--success-bg);
 }
 .enrich-patches-preview__list {
   display: flex;
