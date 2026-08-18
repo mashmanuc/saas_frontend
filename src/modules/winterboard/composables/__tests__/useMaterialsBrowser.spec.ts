@@ -6,9 +6,15 @@ const mockFetchFoldersTree = vi.fn()
 const mockFetchAssets = vi.fn()
 const mockFetchRecentAssets = vi.fn()
 
+// HYG-2: мок мусить віддавати ВСІ експорти модуля — `LibraryFolderTree.vue`
+// експортує чотири віртуальні id (`:245-248`), а мок знав лише два. Через це
+// падав сам імпорт, ще до тестів (той самий клас, що PROTOCOL_VERSION у
+// useReplayRecorder). Значення дзеркалять компонент — не вигадані.
 vi.mock('../../components/library/LibraryFolderTree.vue', () => ({
   FAVORITES_ID: -1,
   RECENT_ID: -2,
+  PASTED_ID: -3,
+  ARCHIVED_ID: -4,
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -190,6 +196,9 @@ describe('useMaterialsBrowser', () => {
       filename: 'photo.jpg',
       cdn_url: 'https://cdn/photo.jpg',
       thumbnail_url: 'https://cdn/thumb.jpg',
+      // HYG-2: мапер віддає ще й `content_item_id`
+      // (`useMaterialsBrowser.ts:42`) — у фікстурі його немає, тож `?? null`.
+      content_item_id: null,
     })
   })
 

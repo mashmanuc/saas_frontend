@@ -117,50 +117,59 @@ describe('useReplayRecorder — op_id', () => {
 
 // ─── Retry queue ─────────────────────────────────────────────────────────────
 
-describe('useReplayRecorder — retry queue', () => {
-  beforeEach(() => {
-    // mockGlobalCB вже false із глобального beforeEach
+describe('useReplayRecorder — делегування в opsSyncStore (HYG-2)', () => {
+  // Тут раніше жили тести власного буфера й retryQueue recorder'а. Їх
+  // видалено не тому, що «не проходять», а тому що перевіряли те, чого
+  // більше немає: `useReplayRecorder.ts:4` прямо каже — «DELETED: local
+  // buffer / retryQueue / inFlight refs (moved to opsSyncStore)». Ops-стан
+  // тепер належить store (single-writer, SYSTEM_LAW §2), а composable — це
+  // тонка обгортка з lifecycle.
+  //
+  // Тому тести нижче перевіряють НОВИЙ інваріант — recorder делегує і сам
+  // нічого не тримає, — а не відтворюють стару семантику на нових кишках.
+
+  it('record() кладе op у store, а не в локальний буфер', () => {
+    const store = useOpsSyncStore()
+    const { recorder } = makeRecorder()
+
+    recorder.record(makeOp('stroke_add'))
+
+    expect(store.pendingOps.length).toBe(1)
+    expect(store.pendingOps[0].op_type).toBe('stroke_add')
   })
 
-  it('після невдалого flush ops йдуть в retryQueue, не в buffer', async () => {
-    mockBatch
-      .mockRejectedValueOnce(new Error('server error'))
-      .mockResolvedValueOnce({ recorded: 2, total_operations: 3 })
-
+  it('recorder не має власних буферів у публічному API', () => {
     const { recorder } = makeRecorder()
-    recorder.record(makeOp('stroke_add'))   // failed op
-    await recorder.flush()  // fails
-
-    recorder.record(makeOp('grid_update'))  // новий op
-
-    await recorder.flush()  // retry + new op
-
-    // Другий виклик має містити і retry і новий op
-    const secondCall = mockBatch.mock.calls[1][2]
-    const types = secondCall.map((o: { op_type: string }) => o.op_type)
-    expect(types).toContain('stroke_add')   // retry
-    expect(types).toContain('grid_update')  // новий
+    for (const gone of ['buffer', 'retryQueue', 'inFlight', 'inFlightOps']) {
+      expect(recorder).not.toHaveProperty(gone)
+    }
   })
 
-  it('retry ops завжди йдуть перед новими ops', async () => {
-    mockBatch
-      .mockRejectedValueOnce(new Error('fail'))
-      .mockResolvedValueOnce({ recorded: 2, total_operations: 2 })
-
+  it('порядок ops зберігає store, recorder лише додає в хвіст', () => {
+    const store = useOpsSyncStore()
     const { recorder } = makeRecorder()
-    recorder.record({ ...makeOp('stroke_add'), op_id: 'retry-op' })
-    await recorder.flush()  // fails → retryQueue
 
-    recorder.record({ ...makeOp('grid_update'), op_id: 'new-op' })
+    recorder.record(makeOp('stroke_add'))
+    recorder.record(makeOp('grid_update'))
+
+    expect(store.pendingOps.map((o) => o.op_type)).toEqual(['stroke_add', 'grid_update'])
+  })
+
+  it('у DESYNC store відхиляє op — recorder не падає і не буферизує сам', () => {
+    const store = useOpsSyncStore()
+    store.mode = 'DESYNC'
+    const { recorder } = makeRecorder()
+
+    expect(() => recorder.record(makeOp('stroke_add'))).not.toThrow()
+    expect(store.pendingOps.length).toBe(0)
+  })
+
+  it('flush() без ops не звертається до мережі', async () => {
+    const { recorder } = makeRecorder()
     await recorder.flush()
-
-    const ops = mockBatch.mock.calls[1][2]
-    expect(ops[0].op_id).toBe('retry-op')   // retry першим
-    expect(ops[1].op_id).toBe('new-op')     // новий другим
+    expect(mockBatch).not.toHaveBeenCalled()
   })
 })
-
-// ─── Enabled guard ───────────────────────────────────────────────────────────
 
 describe('useReplayRecorder — enabled guard', () => {
   it('disabled recorder ігнорує record()', async () => {
@@ -192,20 +201,13 @@ describe('useReplayRecorder — circuit breaker', () => {
     vi.useRealTimers()
   })
 
-  it('після 3 невдалих спроб відкривається локальний circuit breaker', async () => {
-    mockBatch.mockRejectedValue(new Error('server down'))
-    const { recorder } = makeRecorder()
-
-    recorder.record(makeOp())
-    await recorder.flush()  // fail 1
-    await recorder.flush()  // fail 2
-    await recorder.flush()  // fail 3 → circuit OPEN
-
-    mockBatch.mockClear()
-    await recorder.flush()  // має бути заблокований
-    expect(mockBatch).not.toHaveBeenCalled()
-  })
-
+  // HYG-2: тест «локальний circuit breaker після 3 невдач» видалено.
+  // Причина не в тому, що він червоний, а в тому, що він вимагав
+  // поведінки, яку SYSTEM_LAW §12 прямо забороняє (retry loops,
+  // `MAX_LOCK_RETRIES`, `consecutive409`, `circuitOpen`) — і яку свідомо
+  // видалили з recorder'а (`useReplayRecorder.ts:5-7`). Обробка помилок
+  // сервера (SEQ_MISMATCH / PROTOCOL_VERSION_MISMATCH / SERVER_BUSY)
+  // тепер належить `opsSyncStore.flush()` і тестується там.
   it('після 30 сек circuit закривається і flush відновлюється', async () => {
     mockBatch
       .mockRejectedValue(new Error('fail'))
@@ -295,7 +297,7 @@ describe('useReplayRecorder — connectToStore', () => {
 
     await recorder.flush()
     expect(mockBatch).toHaveBeenCalledOnce()
-    const ops = mockBatch.mock.lastCall![1]  // lastCall щоб не залежати від попередніх
+    const ops = mockBatch.mock.lastCall![2]  // lastCall щоб не залежати від попередніх
     expect(ops[0].op_type).toBe('asset_add')
   })
 })

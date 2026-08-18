@@ -7,42 +7,17 @@ import { createI18n } from 'vue-i18n'
 import MoveAssetDropdown from '../MoveAssetDropdown.vue'
 import type { LibraryFolderTree } from '../../../types/library'
 
-// Mock requestAnimationFrame for jsdom
-vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0 })
+// HYG-2: стаб `requestAnimationFrame` видалено — саме він і ламав тести.
+// Він виконував колбек СИНХРОННО, тож `updateMenuPosition()` спрацьовував
+// до того, як Vue відрендерив телепортоване меню (`MoveAssetDropdown.vue:118`
+// — `isOpen = true` і лише потім rAF). Наслідок: меню не з'являлось у DOM
+// взагалі, і всі шість тестів бачили `null`. jsdom надає власний rAF —
+// з ним компонент відкривається штатно (перевірено окремим прогоном).
 
-// Suppress Vue Teleport insertBefore errors in jsdom (DOM cleaned up before Vue unmount)
-const origListeners = process.listeners('unhandledRejection')
-beforeAll(() => {
-  process.removeAllListeners('unhandledRejection')
-  process.on('unhandledRejection', (reason: unknown) => {
-    if (reason instanceof TypeError && String(reason.message).includes('insertBefore')) return
-    // Re-throw non-Teleport errors
-    throw reason
-  })
-})
-afterAll(() => {
-  process.removeAllListeners('unhandledRejection')
-  for (const listener of origListeners) {
-    process.on('unhandledRejection', listener as (...args: unknown[]) => void)
-  }
-})
-
-// Mock flattenFolderTree
-vi.mock('../../../utils/flattenFolderTree', () => ({
-  flattenFolderTree: vi.fn((folders: LibraryFolderTree[]) => {
-    const result: Array<{ id: number; name: string; depth: number }> = []
-    function flatten(nodes: LibraryFolderTree[], depth = 0) {
-      for (const node of nodes) {
-        result.push({ id: node.id, name: node.name, depth })
-        if (node.children.length > 0) {
-          flatten(node.children, depth + 1)
-        }
-      }
-    }
-    flatten(folders)
-    return result
-  }),
-}))
+// HYG-2: тут стояла глушилка `unhandledRejection`, яка ковтала
+// «insertBefore of null» від Teleport. Її прибрано: зелений тест поверх
+// схованої помилки — це той самий `except Exception: pass`, який ми
+// забороняємо. Справжня причина була нижче (див. beforeEach/afterEach).
 
 const mockFolders: LibraryFolderTree[] = [
   {
@@ -88,12 +63,15 @@ describe('MoveAssetDropdown', () => {
   let currentWrapper: ReturnType<typeof mount> | null = null
 
   beforeEach(() => {
-    // Clear body for Teleport
-    document.body.innerHTML = '<div id="app"></div>'
+    // Свідомо НЕ чистимо body тут: раніше це затирало DOM під ще живим
+    // компонентом попереднього тесту, і Vue при unmount не знаходив
+    // батька для телепортованого вузла → «insertBefore of null».
+    // Прибирання — лише в afterEach, і лише ПІСЛЯ unmount().
   })
 
   afterEach(() => {
-    // Unmount wrapper before clearing DOM to avoid Teleport insertBefore errors
+    // Порядок критичний: спершу знімаємо компонент (Vue прибирає свій
+    // телепортований вузол, поки батько ще на місці), і лише потім DOM.
     if (currentWrapper) {
       currentWrapper.unmount()
       currentWrapper = null
@@ -102,7 +80,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('renders trigger button', () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,
@@ -118,7 +96,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('opens dropdown on trigger click', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,
@@ -139,7 +117,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('renders folder list with correct indentation', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,
@@ -165,7 +143,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('highlights current folder as disabled', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: 1, // Math folder
@@ -185,7 +163,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('shows "No folder" option', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: 1,
@@ -205,7 +183,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('emits moved with correct folderId on selection', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,
@@ -231,7 +209,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('closes dropdown on selection', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,
@@ -258,7 +236,7 @@ describe('MoveAssetDropdown', () => {
   })
 
   it('emits close event when dropdown closes', async () => {
-    const wrapper = mount(MoveAssetDropdown, {
+    const wrapper = currentWrapper = mount(MoveAssetDropdown, {
       props: {
         assetId: 100,
         currentFolder: null,

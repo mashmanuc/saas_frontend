@@ -3,6 +3,13 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useTestStore, type TestPhase, type GradeResult } from '../testStore'
 import type { WBTestObject } from '../../../types/winterboard'
 
+// HYG-2: `onRemoteTestGrade` тепер звіряє результат із поточним користувачем
+// (`testStore.ts:326-331`), щоб студент побачив саме свою оцінку. Тест auth
+// не налаштовував — і функція виходила раніше, ніж ставила фазу `review`.
+vi.mock('@/modules/auth/store/authStore', () => ({
+  useAuthStore: () => ({ user: { id: 'student-1' } }),
+}))
+
 describe('testStore — Phase 38 TEST LIVE SYNC', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
