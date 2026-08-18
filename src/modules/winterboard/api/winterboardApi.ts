@@ -275,6 +275,7 @@ export interface StartClassroomResponse {
 // ── API Client ─────────────────────────────────────────────────────────
 
 const BASE = '/v1/winterboard'
+const COPILOT = '/v1/learning-engine'   // 8a-2 Tutor Copilot
 
 export const winterboardApi = {
   // ── Sessions CRUD ──────────────────────────────────────────────────
@@ -858,6 +859,31 @@ export const winterboardApi = {
 
   moveSessionToFolder(sessionId: string, folderId: number | null): Promise<any> {
     return apiClient.patch(`${BASE}/sessions/${sessionId}/`, { folder: folderId }).then((r: any) => r.data ?? r)
+  },
+
+  // ── Copilot (8a-2) ───────────────────────────────────────────────────
+  // Окремий префікс: engine — власний bounded context, не частина winterboard.
+  // Реакція тьютора йде саме REST, а не WS (SYSTEM_LAW §9: WS is NOT a writer).
+
+  copilotStatus(): Promise<{ live: boolean }> {
+    return apiClient.get(`${COPILOT}/status/`).then((r: any) => r.data ?? r)
+  },
+
+  copilotEvaluate(sessionId: string, studentId: string, trigger: 'idle' | 'manual' = 'manual'): Promise<any> {
+    return apiClient
+      .post(`${COPILOT}/sessions/${sessionId}/evaluate/`, { student_id: studentId, trigger })
+      .then((r: any) => r.data ?? r)
+  },
+
+  copilotOverride(decisionId: string, verdict: 'accept' | 'reject' | 'undo', scope = 'task', reason = ''): Promise<any> {
+    return apiClient
+      .post(`${COPILOT}/decisions/${decisionId}/override/`, { verdict, scope, reason })
+      .then((r: any) => r.data ?? r)
+  },
+
+  copilotDecisions(sessionId: string, studentId?: string): Promise<any> {
+    const params = studentId ? { student_id: studentId } : undefined
+    return apiClient.get(`${COPILOT}/sessions/${sessionId}/decisions/`, { params }).then((r: any) => r.data ?? r)
   },
 }
 

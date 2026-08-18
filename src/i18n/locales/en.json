@@ -9170,6 +9170,33 @@
       "bounds": "bounds",
       "min": "Minimum",
       "max": "Maximum"
+    },
+    "copilot": {
+      "title": "Copilot",
+      "toggle": "Enable Copilot",
+      "on": "on",
+      "off": "off",
+      "analyzing": "Copilot is following the student's work",
+      "pickStudent": "Student to analyse",
+      "empty": "Nothing worth mentioning yet",
+      "accept": "Good call",
+      "reject": "Not now",
+      "action": {
+        "HINT": "hint",
+        "REMEDIATE": "review together",
+        "REVIEW": "warm-up",
+        "WAIT": "wait"
+      },
+      "scope": {
+        "decision": "just this one",
+        "task": "on this task",
+        "session": "for this lesson"
+      },
+      "verdict": {
+        "accept": "accepted",
+        "reject": "dismissed",
+        "undo": "undone"
+      }
     }
   },
   "storage": {

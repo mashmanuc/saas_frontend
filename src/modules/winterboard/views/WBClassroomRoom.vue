@@ -391,6 +391,13 @@
     <!-- Phase 1: Recording controls moved into header -->
 
 
+    <!-- 8a-2: панель шепотів Copilot — лише тьютору; сама себе ховає при OFF -->
+    <WBCopilotPanel
+      v-if="classroomRole.isTeacher.value && resolvedSessionId"
+      :session-id="String(resolvedSessionId)"
+      :students="connectedStudents"
+    />
+
     <!-- Phase 38: Test teacher panel -->
     <WBTestTeacherPanel
       v-if="classroomRole.isTeacher.value && testStore.activeTestSessionId"
@@ -512,6 +519,7 @@ import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
+import WBCopilotPanel from '../components/copilot/WBCopilotPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'

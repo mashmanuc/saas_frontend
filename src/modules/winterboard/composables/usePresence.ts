@@ -275,7 +275,22 @@ interface WBOpsAppliedMsg {
   last_seq: number
 }
 
+/**
+ * 8a-2: шепіт Copilot тьютору. Долітає ЛИШЕ тьютору — BE шле це через
+ * `session_targeted` з `target_user_id`, тож учень цього типу не бачить.
+ */
+interface WBCopilotWhisperMsg {
+  type: 'copilot.whisper'
+  decision_id: string
+  student_id: string
+  action: string
+  whisper: string
+  task_label?: string
+  ts: number
+}
+
 type WBServerMessage =
+  | WBCopilotWhisperMsg
   | WBOpsAppliedMsg
   | WBPresenceJoinMsg
   | WBPresenceLeaveMsg
@@ -892,6 +907,13 @@ export function usePresence(options: UsePresenceOptions) {
 
       case 'test.sync': {
         window.dispatchEvent(new CustomEvent('wb:test-sync', { detail: msg }))
+        break
+      }
+
+      // 8a-2: шепіт Copilot. Прилітає ЛИШЕ тьютору (session_targeted на BE),
+      // тож тут не треба перевіряти роль — учневі це повідомлення не надсилають.
+      case 'copilot.whisper': {
+        window.dispatchEvent(new CustomEvent('wb:copilot-whisper', { detail: msg }))
         break
       }
 
