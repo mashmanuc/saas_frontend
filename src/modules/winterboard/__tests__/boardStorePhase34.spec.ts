@@ -39,7 +39,11 @@ function makeAsset(overrides: Partial<WBAsset> = {}): WBAsset {
 }
 
 function seedPage(store: ReturnType<typeof useWBStore>) {
-  if (store.pages.length === 0) {
+  // HYG-1: стор більше не стартує порожнім — він одразу створює сторінку
+  // з генерованим id (`page-<ts>-<rand>`). Стара умова `length === 0` через
+  // це не спрацьовувала ніколи, і `page-1` не існував → `addAsset` кидав
+  // «page not found». Тепер гарантуємо саме той id, який очікують тести.
+  if (!store.pages.some((p) => p.id === 'page-1')) {
     store.pages = [{ id: 'page-1', name: 'Page 1', strokes: [], assets: [] }]
     store.currentPageIndex = 0
   }
@@ -384,12 +388,15 @@ describe('A4: Performance limits', () => {
     expect(store.selectedIds).not.toContain('cap-extra')
   })
 
-  it('isNearObjectLimit: true at 280+', () => {
+  it('isNearObjectLimit: true at 480+', () => {
+    // HYG-1: поріг свідомо піднято 280 → 480 (80% від ліміту 600,
+    // `boardStore.ts:788`): на 280 (46.7%) попередження спрацьовувало
+    // надто рано й не глушилось. Тест лишався на старому числі.
     const store = useWBStore()
     seedPage(store)
     const page = store.pages[0]
     const strokes: WBStroke[] = []
-    for (let i = 0; i < 280; i++) {
+    for (let i = 0; i < 480; i++) {
       strokes.push(makeStroke({ id: `near-${i}` }))
     }
     store.pages[0] = { ...page, strokes }

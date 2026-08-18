@@ -2,6 +2,8 @@
 // Покриває: record, flush, op_id dedup, retry queue, circuit breaker, streaming
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { ref, nextTick } from 'vue'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 
@@ -10,6 +12,10 @@ import { useReplayRecorder } from '../composables/useReplayRecorder'
 vi.mock('../api/replay', () => ({
   recordOperationsBatch: vi.fn(),
   createSnapshot: vi.fn(),
+  // HYG-1: `replay.ts:25` експортує PROTOCOL_VERSION (SSOT версії протоколу),
+  // і споживачі його імпортують — мок мусить його віддавати, інакше падає
+  // сам імпорт модуля, ще до тестів.
+  PROTOCOL_VERSION: 'v3',
 }))
 
 vi.mock('@/utils/apiClient', () => ({
@@ -25,6 +31,16 @@ const mockGlobalCB = isCircuitBreakerOpen as ReturnType<typeof vi.fn>
 
 // Глобальний beforeEach — очищаємо всі моки між тестами
 beforeEach(() => {
+  // HYG-1: `useReplayRecorder` викликає `useOpsSyncStore()` —
+  // без активної Pinia composable падає ще до першого assert.
+  setActivePinia(createPinia())
+  // Ops тепер маршрутизуються через store (single-writer), і `record()`
+  // мовчки відхиляє все, поки mode='BOOTSTRAP' (`useReplayRecorder.ts:253`).
+  // Справжній `bootstrap()` ходить у мережу, тож у тестах ставимо режим
+  // напряму — перевіряємо recorder, а не завантаження стану.
+  const _store = useOpsSyncStore()
+  _store.sessionId = 'test-session'
+  _store.mode = 'SYNC'
   vi.clearAllMocks()
   mockGlobalCB.mockReturnValue(false)
   mockSnapshot.mockResolvedValue(undefined)
@@ -47,6 +63,9 @@ function makeRecorder(enabled = true) {
 
 // ─── op_id деduplication ─────────────────────────────────────────────────────
 
+// HYG-1: `recordOperationsBatch(sessionId, seq, ops)` — ops стали третім
+// аргументом (`api/replay.ts:99`), коли зʼявився seq. Тести читали `[1]`,
+// тобто число seq, і падали на `.op_id` / `.map`.
 describe('useReplayRecorder — op_id', () => {
   beforeEach(() => {
     mockBatch.mockResolvedValue({ recorded: 1, total_operations: 1 })
@@ -56,7 +75,7 @@ describe('useReplayRecorder — op_id', () => {
     const { recorder } = makeRecorder()
     recorder.record(makeOp())
     await recorder.flush()
-    const ops = mockBatch.mock.calls[0][1]
+    const ops = mockBatch.mock.calls[0][2]
     expect(ops[0].op_id).toBeTruthy()
     expect(ops[0].op_id).toMatch(/^[0-9a-f-]{36}$/)  // UUID format
   })
@@ -65,7 +84,7 @@ describe('useReplayRecorder — op_id', () => {
     const { recorder } = makeRecorder()
     recorder.record({ ...makeOp(), op_id: 'my-custom-uuid' })
     await recorder.flush()
-    const ops = mockBatch.mock.calls[0][1]
+    const ops = mockBatch.mock.calls[0][2]
     expect(ops[0].op_id).toBe('my-custom-uuid')
   })
 
@@ -78,11 +97,11 @@ describe('useReplayRecorder — op_id', () => {
     recorder.record(makeOp())
     await recorder.flush()  // fails → goes to retryQueue
 
-    const firstOps = mockBatch.mock.calls[0][1]
+    const firstOps = mockBatch.mock.calls[0][2]
     const firstOpId = firstOps[0].op_id
 
     await recorder.flush()  // retries
-    const secondOps = mockBatch.mock.calls[1][1]
+    const secondOps = mockBatch.mock.calls[1][2]
     expect(secondOps[0].op_id).toBe(firstOpId)  // незмінний!
   })
 
@@ -91,7 +110,7 @@ describe('useReplayRecorder — op_id', () => {
     recorder.record(makeOp('stroke_add'))
     recorder.record(makeOp('stroke_delete'))
     await recorder.flush()
-    const ops = mockBatch.mock.calls[0][1]
+    const ops = mockBatch.mock.calls[0][2]
     expect(ops[0].op_id).not.toBe(ops[1].op_id)
   })
 })
@@ -117,7 +136,7 @@ describe('useReplayRecorder — retry queue', () => {
     await recorder.flush()  // retry + new op
 
     // Другий виклик має містити і retry і новий op
-    const secondCall = mockBatch.mock.calls[1][1]
+    const secondCall = mockBatch.mock.calls[1][2]
     const types = secondCall.map((o: { op_type: string }) => o.op_type)
     expect(types).toContain('stroke_add')   // retry
     expect(types).toContain('grid_update')  // новий
@@ -135,7 +154,7 @@ describe('useReplayRecorder — retry queue', () => {
     recorder.record({ ...makeOp('grid_update'), op_id: 'new-op' })
     await recorder.flush()
 
-    const ops = mockBatch.mock.calls[1][1]
+    const ops = mockBatch.mock.calls[1][2]
     expect(ops[0].op_id).toBe('retry-op')   // retry першим
     expect(ops[1].op_id).toBe('new-op')     // новий другим
   })

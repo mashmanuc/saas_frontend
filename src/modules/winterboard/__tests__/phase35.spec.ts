@@ -46,7 +46,11 @@ function makeAsset(overrides: Partial<WBAsset> = {}): WBAsset {
 }
 
 function seedPage(store: ReturnType<typeof useWBStore>) {
-  if (store.pages.length === 0) {
+  // HYG-1: стор більше не стартує порожнім — він одразу створює сторінку
+  // з генерованим id (`page-<ts>-<rand>`). Стара умова `length === 0` через
+  // це не спрацьовувала ніколи, і `page-1` не існував → `addAsset` кидав
+  // «page not found». Тепер гарантуємо саме той id, який очікують тести.
+  if (!store.pages.some((p) => p.id === 'page-1')) {
     store.pages = [{ id: 'page-1', name: 'Page 1', strokes: [], assets: [] }]
     store.currentPageIndex = 0
   }

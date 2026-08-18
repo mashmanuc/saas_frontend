@@ -15,6 +15,7 @@
  * `replay_stress_simulator.js` для інструкцій.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import type { RecordOperationRequest } from '../types/replay'
@@ -26,6 +27,8 @@ const createSnapshotMock = vi.fn()
 vi.mock('../api/replay', () => ({
   recordOperationsBatch: (...args: unknown[]) => recordOperationsBatchMock(...args),
   createSnapshot: (...args: unknown[]) => createSnapshotMock(...args),
+  // HYG-1: `replay.ts:25` — SSOT версії протоколу; без нього падає імпорт.
+  PROTOCOL_VERSION: 'v3',
 }))
 
 vi.mock('@/utils/apiClient', () => ({
@@ -83,6 +86,9 @@ function makeGeneric500Error() {
 
 // ── Setup ───────────────────────────────────────────────────────────────
 beforeEach(() => {
+  // HYG-1: `useReplayRecorder` викликає `useOpsSyncStore()` —
+  // без активної Pinia composable падає ще до першого assert.
+  setActivePinia(createPinia())
   localStorage.clear()
   recordOperationsBatchMock.mockReset()
   createSnapshotMock.mockReset()
