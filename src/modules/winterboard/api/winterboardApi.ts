@@ -881,6 +881,20 @@ export const winterboardApi = {
       .then((r: any) => r.data ?? r)
   },
 
+  // 8a-3 — кроки розв'язку. Відповідь НЕ містить вердикту: учень бачить
+  // лише «записано», розбір іде тьютору шепотом.
+  copilotSubmitStep(sessionId: string, taskId: string, src: string): Promise<any> {
+    return apiClient
+      .post(`${COPILOT}/sessions/${sessionId}/steps/`, { task_id: taskId, src })
+      .then((r: any) => r.data ?? r)
+  },
+
+  copilotSteps(sessionId: string, taskId: string): Promise<any> {
+    return apiClient
+      .get(`${COPILOT}/sessions/${sessionId}/steps/`, { params: { task_id: taskId } })
+      .then((r: any) => r.data ?? r)
+  },
+
   copilotDecisions(sessionId: string, studentId?: string): Promise<any> {
     const params = studentId ? { student_id: studentId } : undefined
     return apiClient.get(`${COPILOT}/sessions/${sessionId}/decisions/`, { params }).then((r: any) => r.data ?? r)

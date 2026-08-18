@@ -9196,6 +9196,13 @@
         "accept": "accepted",
         "reject": "dismissed",
         "undo": "undone"
+      },
+      "step": {
+        "label": "Solution step",
+        "placeholder": "e.g. 2*x=8",
+        "submit": "Save step",
+        "saved": "saved ✓",
+        "failed": "could not save — try again"
       }
     }
   },

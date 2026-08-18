@@ -189,6 +189,10 @@
     </div><!-- /.nmt-task__body -->
     </div><!-- /.nmt-task__inner -->
   </div><!-- /.nmt-task -->
+
+    <!-- 8a-3: крок розв'язку. Компонент сам перевіряє прапорець і роль —
+         показується лише учню при увімкненому Copilot. -->
+    <WBStepInput v-if="interactive && data.externalId" :task-id="String(data.externalId)" />
 </template>
 
 <script setup lang="ts">
@@ -206,6 +210,7 @@ import type { CompanionResolution } from '../../../services/capabilityRegistry'
 // nmt_task is a DOM widget (HTML + KaTeX) — snapshotElement falls through
 // to foreignObject SVG rasterize path. INV-EP-8: thin adapter only.
 import { useExportCapture } from '../../../composables/useExportCapture'
+import WBStepInput from '../../copilot/WBStepInput.vue'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
