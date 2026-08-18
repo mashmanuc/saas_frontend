@@ -36,6 +36,14 @@
         </svg>
         {{ t('winterboard.boards.modeConstructor') }}
       </button>
+      <button
+        v-if="lessonConstructorEnabled"
+        type="button"
+        class="wb-studio-mode-bar__btn"
+        :class="{ 'wb-studio-mode-bar__btn--active': studioMode === 'courses' }"
+        :aria-pressed="studioMode === 'courses'"
+        @click="studioMode = 'courses'"
+      >{{ t('lessonConstructor.courses.listTitle') }}</button>
     </div>
 
     <!-- ── Constructor mode (Lesson Constructor wizard, dev-only via isLessonConstructorEnabled) ── -->
@@ -43,6 +51,8 @@
       v-if="studioMode === 'constructor' && lessonConstructorEnabled"
       class="wb-studio-constructor-embedded"
     />
+
+    <CoursesStudioPanel v-if="studioMode === 'courses' && lessonConstructorEnabled" />
 
     <!-- ── Library mode (existing board list) ─────────────────────────── -->
     <template v-if="studioMode === 'library'">
@@ -492,6 +502,8 @@ import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
 const WBShareDialog = defineAsyncComponent(() => import('../components/sharing/WBShareDialog.vue'))
 const WBExportDialog = defineAsyncComponent(() => import('../components/export/WBExportDialog.vue'))
 // Lesson Constructor — dev-only wizard (gated by isLessonConstructorEnabled())
+const CoursesStudioPanel = defineAsyncComponent(
+  () => import('@/modules/lesson_constructor/views/CoursesStudioPanel.vue'))
 const LessonConstructorPage = defineAsyncComponent(
   () => import('../../lesson_constructor/views/LessonConstructorPage.vue'),
 )
@@ -515,7 +527,7 @@ const router = useRouter()
 // Ref: LESSON_CONSTRUCTOR_ARCHITECTURE_2026-05-21.md §0 — один простір, дві вкладки.
 // Constructor — placeholder; реальна панель будується паралельним агентом.
 
-type StudioMode = 'library' | 'constructor'
+type StudioMode = 'library' | 'constructor' | 'courses'
 
 function _loadStudioMode(): StudioMode {
   // Якщо конструктор вимкнено (prod) — завжди 'library',
@@ -523,7 +535,7 @@ function _loadStudioMode(): StudioMode {
   if (!isLessonConstructorEnabled()) return 'library'
   try {
     const saved = localStorage.getItem(STUDIO_MODE_KEY)
-    if (saved === 'library' || saved === 'constructor') return saved
+    if (saved === 'library' || saved === 'constructor' || saved === 'courses') return saved
   } catch {
     // localStorage unavailable
   }
