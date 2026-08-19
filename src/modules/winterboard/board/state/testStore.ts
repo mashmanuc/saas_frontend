@@ -39,6 +39,9 @@ export interface StudentProgress {
   answeredCount: number
   totalCount: number
   answers: Map<string, unknown> // objectId → answer
+  /** Підсумок перевірки цього учня. Приходить із `test.grade` разом із
+   *  переходом у фазу розбору; доти `undefined`. */
+  result?: GradeResult
 }
 
 export const useTestStore = defineStore('wb-test', () => {
@@ -321,27 +324,37 @@ export const useTestStore = defineStore('wb-test', () => {
   function onRemoteTestGrade(data: {
     results: Record<string, GradeResult>
   }) {
-    // Store my result (student side)
+    // Своя оцінка (учнівський бік).
+    // ⚠️ Тут стояв `return` при неготовому auth — і виходив з УСІЄЇ функції:
+    // якщо `test.grade` прилітав раніше, ніж піднявся authStore (перезавантаження
+    // сторінки, повільний refresh), урок лишався у фазі 'live' з оцінками на
+    // руках, а вчительська гілка не виконувалась узагалі. Той самий клас, що
+    // ранній вихід у `router.beforeEach` (d3cd239): пропустити СВОЮ гілку —
+    // не привід глушити все нижче.
     if (remotePageId.value && data.results) {
       const authStore = useAuthStore()
       if (!authStore.user?.id) {
         console.warn('[testStore] User not ready — cannot match grade result')
-        return
-      }
-      const myUserId = String(authStore.user.id)
-      const myResult = data.results[myUserId]
-      if (myResult) {
-        gradeResultPerPage.value.set(remotePageId.value, myResult)
+      } else {
+        const myUserId = String(authStore.user.id)
+        const myResult = data.results[myUserId]
+        if (myResult) {
+          gradeResultPerPage.value.set(remotePageId.value, myResult)
+        }
       }
     }
 
-    // Update student progress with results (teacher side)
+    // Підсумки учнів (вчительський бік). Раніше тіло циклу було самим лише
+    // коментарем-обіцянкою — код виглядав робочим і не робив нічого.
+    let touched = false
     for (const [studentId, result] of Object.entries(data.results)) {
       const progress = studentProgress.value.get(studentId)
       if (progress) {
-        // Store result in progress (можна додати поле result: GradeResult)
+        progress.result = result
+        touched = true
       }
     }
+    if (touched) triggerRef(studentProgress)
 
     testPhase.value = 'review'
   }
