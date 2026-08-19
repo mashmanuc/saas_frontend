@@ -21,22 +21,14 @@
     </label>
 
     <!--
-      ⚠️ BE-ендпоінт `/lesson-constructor/generate/` НЕ приймає
-      `source_policy` / `source_material_ids` — `GenerateLessonRequestSerializer`
-      їх не оголошує, а DRF невідомі поля мовчки відкидає. Тобто натиснувши
-      «лише з мого матеріалу», тьютор отримав би БАНКОВИЙ урок і не дізнався
-      про це. Тому кнопка чесно заблокована, а не «працює».
-      Знахідку передано у звіт 6-4; BE у цьому пакеті не чіпаємо.
+      Заглушку знято в 6-5: серіалізатор тепер оголошує `source_policy` і
+      `source_material_ids` І передає їх у `to_lesson_spec()` — оголошення без
+      мапінгу було б тією самою дірою, тільки на рядок нижче.
     -->
-    <p v-if="blocked" class="material-lesson__blocked" role="status">
-      {{ t('winterboard.materials.generateBlocked') }}
-    </p>
-
     <div class="material-lesson__actions">
       <button
         type="button"
-        :disabled="busy || blocked"
-        :title="blocked ? t('winterboard.materials.generateBlocked') : ''"
+        :disabled="busy"
         @click="$emit('generate', { policy, taskCount })"
       >
         {{ t('winterboard.materials.generate') }}
@@ -111,8 +103,6 @@ const props = defineProps<{
   busy?: boolean
   error?: string | null
   result?: LessonResult | null
-  /** BE ще не приймає джерело — див. коментар у шаблоні. */
-  blocked?: boolean
 }>()
 defineEmits<{
   (e: 'generate', payload: { policy: string; taskCount: number }): void
@@ -152,7 +142,5 @@ defineExpose({ policy, taskCount })
 .material-lesson__shortfall-detail { display: block; font-size: 0.86em; opacity: 0.85; }
 .material-lesson__rejected { margin-top: 0.8em; font-size: 0.9em; }
 .material-lesson__numbers { opacity: 0.7; }
-.material-lesson__blocked { border-left: 4px solid #d97706;
-  background: rgba(217,119,6,0.07); padding: 0.5em 0.8em; font-size: 0.9em; }
 .material-lesson__error { color: #dc3545; }
 </style>

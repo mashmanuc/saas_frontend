@@ -8126,7 +8126,6 @@
       "taskCount": "How many tasks",
       "generate": "Build the lesson",
       "generating": "Building the lesson…",
-      "generateBlocked": "Building a lesson from material is not available from the UI yet: the server does not accept the source choice. The button is deliberately disabled so you do not get a bank lesson instead of your own material.",
       "lessonReady": "Lesson built: {n} tasks.",
       "shortfall": "You asked for {requested}, the material gave {got}.",
       "rejectedTitle": "Not taken from the material: {n}",

@@ -324,7 +324,10 @@
       />
       <MaterialLessonDialog
         v-if="materialAsset && lessonOpen"
-        blocked
+        :busy="lessonBusy"
+        :error="lessonError"
+        :result="lessonResult"
+        @generate="onGenerateLesson"
         @close="lessonOpen = false"
       />
 
@@ -497,9 +500,11 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
+import apiClient from '@/utils/apiClient'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
 import MaterialExtractPanel from '../components/library/MaterialExtractPanel.vue'
-import MaterialLessonDialog from '../components/library/MaterialLessonDialog.vue'
+import MaterialLessonDialog, { type LessonResult }
+  from '../components/library/MaterialLessonDialog.vue'
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
 import LibraryBreadcrumb from '../components/library/LibraryBreadcrumb.vue'
 import MoveAssetDropdown from '../components/library/MoveAssetDropdown.vue'
@@ -544,9 +549,30 @@ const assets = ref<LibraryAsset[]>([])
 // Ф6-4: який асет читаємо зараз і чи відкрито діалог уроку.
 const materialAsset = ref<LibraryAsset | null>(null)
 const lessonOpen = ref(false)
+const lessonBusy = ref(false)
+const lessonError = ref<string | null>(null)
+const lessonResult = ref<LessonResult | null>(null)
 function openMaterial(asset: LibraryAsset): void {
   materialAsset.value = asset
   lessonOpen.value = false
+  lessonResult.value = null
+}
+// Ф6-5: ланцюг замкнено — серіалізатор приймає джерело, тож шлемо обидва поля.
+async function onGenerateLesson(p: { policy: string; taskCount: number }): Promise<void> {
+  if (!materialAsset.value) return
+  lessonBusy.value = true
+  lessonError.value = null
+  try {
+    lessonResult.value = await apiClient.post(
+      '/v1/lesson-constructor/generate/', {
+        topics: ['real-numbers'], task_count: p.taskCount, theme: 'visual',
+        source_policy: p.policy, source_material_ids: [materialAsset.value.id],
+      }) as LessonResult
+  } catch (e) {
+    lessonError.value = String((e as { message?: string })?.message || e)
+  } finally {
+    lessonBusy.value = false
+  }
 }
 const total = ref(0)
 const loading = ref(false)

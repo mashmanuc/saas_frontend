@@ -226,18 +226,37 @@ describe('MaterialLessonDialog', () => {
     expect(box.text()).toContain('6')
   })
 
-  it('blocked чесно вимикає кнопку й пояснює чому', () => {
-    // BE не приймає source_policy — мовчазна генерація з банку була б
-    // брехнею, тож кнопка заблокована, а причина написана.
-    const w = mountDialog({ blocked: true })
-    expect(w.find('.material-lesson__blocked').exists()).toBe(true)
+  it('кнопка активна — ланцюг замкнено в 6-5', () => {
+    // Тест не видалено, а РОЗВЕРНУТО. У 6-4 він тримав заглушку: BE не
+    // приймав source_policy, і мовчазна генерація з банку була б брехнею.
+    // 6-5 оголосив поля в серіалізаторі І передав їх у to_lesson_spec(),
+    // тож тепер той самий тест тримає протилежне — що заглушки більше немає.
+    const w = mountDialog()
+    expect(w.find('.material-lesson__blocked').exists()).toBe(false)
+    expect(w.findAll('.material-lesson__actions button')[0].attributes('disabled'))
+      .toBeUndefined()
+  })
+
+  it('busy вимикає кнопку, поки урок збирається', () => {
+    const w = mountDialog({ busy: true })
     expect(w.findAll('.material-lesson__actions button')[0].attributes('disabled'))
       .toBeDefined()
   })
 
-  it('без blocked кнопка працює', () => {
+  it('емітить ОБРАНИЙ режим, а не завжди дефолтний', async () => {
     const w = mountDialog()
-    expect(w.findAll('.material-lesson__actions button')[0].attributes('disabled'))
-      .toBeUndefined()
+    const radios = w.findAll('input[type="radio"]')
+    await radios[1].setValue()          // «мій матеріал, решту з банку»
+    await w.findAll('.material-lesson__actions button')[0].trigger('click')
+
+    expect(w.emitted('generate')?.[0]).toEqual([{ policy: 'mixed', taskCount: 6 }])
+  })
+
+  it('емітить змінену кількість задач', async () => {
+    const w = mountDialog()
+    await w.find('input[type="number"]').setValue(12)
+    await w.findAll('.material-lesson__actions button')[0].trigger('click')
+
+    expect((w.emitted('generate')?.[0] as never[])[0]).toMatchObject({ taskCount: 12 })
   })
 })
