@@ -12,6 +12,23 @@
  *   5. range change persisted
  */
 import { describe, it, expect, beforeEach } from 'vitest'
+
+// happy-dom не реалізує 2D-контекст канви: `getContext('2d')` віддає null,
+// і vendor-рендерер падає на `ctx.fillStyle` ВЖЕ ПІСЛЯ завершення тесту —
+// 49 unhandled-помилок на прогін winterboard, усі з цього файлу.
+//
+// Це НЕ глушилка: ми не ловимо й не ховаємо виняток, а даємо коду те
+// оточення, яке в браузері є завжди. Саме такий шум ховав справжній баг
+// `MoveAssetDropdown` — зелений і зламаний.
+const CANVAS_2D_STUB = new Proxy({ measureText: () => ({ width: 0 }) } as Record<string, unknown>, {
+  get: (target, prop) => (prop in target ? target[prop as string] : () => undefined),
+  set: () => true,
+})
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = function getContext(kind: string) {
+    return kind === '2d' ? (CANVAS_2D_STUB as unknown as CanvasRenderingContext2D) : null
+  } as typeof HTMLCanvasElement.prototype.getContext
+}
 import { setActivePinia, createPinia } from 'pinia'
 import {
   extractParams,
