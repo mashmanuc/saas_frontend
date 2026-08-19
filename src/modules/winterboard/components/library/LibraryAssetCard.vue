@@ -98,6 +98,13 @@
       <button
         type="button"
         class="library-asset-card__action-btn"
+        :aria-label="t('winterboard.materials.readAsset')"
+        :title="t('winterboard.materials.readAsset')"
+        @click.stop="emit('read-material', asset)"
+      >📖</button>
+      <button
+        type="button"
+        class="library-asset-card__action-btn"
         :class="{ 'library-asset-card__action-btn--active': asset.is_favorite }"
         :aria-label="t('winterboard.library.favorite')"
         :aria-pressed="asset.is_favorite"
@@ -174,6 +181,7 @@ const emit = defineEmits<{
   move: [asset: LibraryAsset, anchorRect: DOMRect]
   delete: [asset: LibraryAsset]
   rename: [asset: LibraryAsset, newName: string]
+  'read-material': [asset: LibraryAsset]
 }>()
 
 function emitMove(e: MouseEvent): void {

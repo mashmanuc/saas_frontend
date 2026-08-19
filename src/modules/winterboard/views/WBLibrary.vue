@@ -310,8 +310,23 @@
           @move="showMoveDropdown"
           @delete="onDeleteAsset"
           @rename="onRenameAsset"
+          @read-material="openMaterial"
         />
       </div>
+
+      <!-- Ф6-4: панель сама питає BE і сама показує 403, якщо читання вимкнено -->
+      <MaterialExtractPanel
+        v-if="materialAsset"
+        :asset-id="materialAsset.id"
+        :asset-name="materialAsset.name"
+        @close="materialAsset = null"
+        @make-lesson="lessonOpen = true"
+      />
+      <MaterialLessonDialog
+        v-if="materialAsset && lessonOpen"
+        blocked
+        @close="lessonOpen = false"
+      />
 
       <!-- Asset list view -->
       <div
@@ -483,6 +498,8 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
+import MaterialExtractPanel from '../components/library/MaterialExtractPanel.vue'
+import MaterialLessonDialog from '../components/library/MaterialLessonDialog.vue'
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
 import LibraryBreadcrumb from '../components/library/LibraryBreadcrumb.vue'
 import MoveAssetDropdown from '../components/library/MoveAssetDropdown.vue'
@@ -523,6 +540,14 @@ const { showToast } = useToast()
 const foldersTree = ref<FolderTree[]>([])
 const loadingFolders = ref(false)
 const assets = ref<LibraryAsset[]>([])
+
+// Ф6-4: який асет читаємо зараз і чи відкрито діалог уроку.
+const materialAsset = ref<LibraryAsset | null>(null)
+const lessonOpen = ref(false)
+function openMaterial(asset: LibraryAsset): void {
+  materialAsset.value = asset
+  lessonOpen.value = false
+}
 const total = ref(0)
 const loading = ref(false)
 const selectedFolderId = ref<number | null>(null)
