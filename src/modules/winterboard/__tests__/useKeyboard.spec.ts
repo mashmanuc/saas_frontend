@@ -180,9 +180,17 @@ describe('useKeyboard', () => {
       expect(callbacks.onCopy).toHaveBeenCalledOnce()
     })
 
-    it('Ctrl+V → onPaste', () => {
-      handler(ctrlKey('KeyV', { key: 'v' }))
-      expect(callbacks.onPaste).toHaveBeenCalledOnce()
+    // Ctrl+V СВІДОМО не обробляється тут (`useKeyboard.ts:135`): вставку
+    // маршрутизує нативна подія `paste` в `useBoardClipboard.handlePaste()`
+    // за ВМІСТОМ буфера (MARKER → внутрішня, картинка → ассет, текст →
+    // стікер). Перехопити Ctrl+V у keydown означало б зламати вставку
+    // картинок і тексту. Тест стереже саме це — щоб обробник не повернули.
+    it('Ctrl+V не перехоплюється: вставку веде нативна подія paste', () => {
+      const event = ctrlKey('KeyV', { key: 'v' })
+      handler(event)
+
+      expect(callbacks.onPaste).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     })
 
     it('Ctrl+X → onCut', () => {

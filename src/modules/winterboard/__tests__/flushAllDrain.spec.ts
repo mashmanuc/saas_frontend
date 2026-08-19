@@ -28,7 +28,7 @@ vi.mock('../api/replay', async (importOriginal) => {
 })
 
 import { recordOperationsBatch } from '../api/replay'
-import { useOpsSyncStore, DesyncError } from '../stores/opsSyncStore'
+import { useOpsSyncStore, DesyncError, SeqResyncError } from '../stores/opsSyncStore'
 
 const mockBatch = recordOperationsBatch as unknown as ReturnType<typeof vi.fn>
 const FAKE_SID = '00000000-0000-0000-0000-000000000001'
@@ -100,7 +100,13 @@ describe('flushAll() — drain helper (2026-05-08 hotfix)', () => {
     expect(mockBatch).not.toHaveBeenCalled()
   })
 
-  it('throws on DESYNC (propagates DesyncError from underlying flush())', async () => {
+  // ⚠️ Контракт 409 SEQ_MISMATCH СВІДОМО змінено: це більше не жорсткий
+  // DESYNC, а self-healing resync (`SeqResyncError`, док у opsSyncStore:1026:
+  // «MUST NOT be confused with DesyncError — this is self-healing, not a hard
+  // lock»). Тест перевіряє НОВИЙ задокументований контракт, а не те, що
+  // випадково робить код: помилка ПРОПАГУЄ (не ковтається), операції
+  // ЗБЕРІГАЮТЬСЯ під наступний flush, серверний seq виправляється з відповіді.
+  it('propagates SeqResyncError on 409 and keeps ops for the next flush', async () => {
     const store = useOpsSyncStore()
     store.sessionId = FAKE_SID
     store.mode = 'SYNC'
@@ -114,12 +120,14 @@ describe('flushAll() — drain helper (2026-05-08 hotfix)', () => {
     })
     mockBatch.mockRejectedValueOnce(err409)
 
-    await expect(store.flushAll()).rejects.toBeInstanceOf(DesyncError)
+    await expect(store.flushAll()).rejects.toBeInstanceOf(SeqResyncError)
 
-    // Per existing flush() contract: 409 SEQ_MISMATCH drops pending+inFlight.
-    expect(store.pendingCount).toBe(0)
+    // Self-healing, не блокування: режим лишається робочим, невідправлені
+    // операції чекають наступного flush, seq підтягнуто з `expected_seq`.
+    expect(store.mode).toBe('SYNC')
+    expect(store.pendingCount).toBeGreaterThan(0)
     expect(store.inFlightCount).toBe(0)
-    expect(store.mode).toBe('DESYNC')
+    expect(store.serverSeq).toBe(12)
   })
 
   it('throws on PROTOCOL_VERSION_MISMATCH (propagates DesyncError)', async () => {
