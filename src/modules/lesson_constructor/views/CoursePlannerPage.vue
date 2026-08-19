@@ -85,6 +85,19 @@
         @select-all="setAllSelected"
       />
 
+      <!--
+        Сигнал успіху навмисно ЖИВЕ у формі, а не тост: тост зникне через 5 с,
+        і тьютор, який відвернувся, не дізнається, що курс створено. Раніше тут
+        був `router.push` на неоголошений маршрут — реджект ковтав порожній
+        catch, і збереження виглядало як «нічого не сталось».
+      -->
+      <p v-if="savedCourse" class="course-planner__saved" role="status">
+        {{ t('lessonConstructor.courses.savedDraft', { title: savedCourse.title }) }}
+        <button type="button" class="course-planner__to-list" @click="$emit('go-to-list')">
+          {{ t('lessonConstructor.courses.goToList') }}
+        </button>
+      </p>
+
       <div class="course-planner__save">
         <button type="button" :disabled="saving" @click="onSave">
           {{ t('lessonConstructor.courses.saveDraft') }}
@@ -104,13 +117,20 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import { notifyError } from '@/utils/notify'
+import { type Course } from '../api/courseApi'
 import { TOPICS } from '../api/lessonConstructorApi'
 import CoursePlanPreview from '../components/CoursePlanPreview.vue'
 import MaterializeReportView from '../components/MaterializeReport.vue'
 import useCoursePlanner from '../composables/useCoursePlanner'
 
+defineEmits<{ (e: 'go-to-list'): void }>()
+
 const { t } = useI18n()
 const router = useRouter()
+
+/** Створений курс. Тримається у стані, тож повідомлення не зникає само. */
+const savedCourse = ref<Course | null>(null)
 
 const {
   spec, plan, warnings, density, selectedOrders, loading, saving, error, report,
@@ -139,8 +159,10 @@ function removeTopic(value: string): void {
 async function onBuild(): Promise<void> { await buildPlan() }
 
 async function onSave(): Promise<void> {
-  const course = await saveCourse()
-  if (course) router.push({ name: 'lesson-constructor-courses' }).catch(() => {})
+  // ⛔ Ніякого `router.push` сюди: вхід у курси — це `studioMode='courses'`
+  // всередині WBBoardList, маршруту `lesson-constructor-courses` не існує і не
+  // мало існувати. Перехід робить панель за подією `go-to-list`.
+  savedCourse.value = (await saveCourse()) || null
 }
 
 async function onSaveAndBuild(): Promise<void> {
@@ -149,7 +171,10 @@ async function onSaveAndBuild(): Promise<void> {
 }
 
 function openSession(sessionId: string): void {
-  router.push({ name: 'winterboard-prepare', params: { id: sessionId } }).catch(() => {})
+  // Маршрут існує (`winterboard/router.ts:209`), але глушити збій усе одно не
+  // можна: якщо перехід не відбувся, тьютор має побачити чому.
+  router.push({ name: 'winterboard-prepare', params: { id: sessionId } })
+    .catch((e) => notifyError(t('lessonConstructor.courses.openFailed'), { detail: String(e) }))
 }
 </script>
 
@@ -162,4 +187,7 @@ function openSession(sessionId: string): void {
 .course-planner__picked li { display: flex; gap: 0.5em; align-items: center; }
 .course-planner__actions, .course-planner__save { display: flex; gap: 0.6em; margin: 1em 0; }
 .course-planner__error { color: #dc3545; }
+.course-planner__saved { display: flex; gap: 0.6em; align-items: center;
+  padding: 0.5em 0.8em; border-left: 3px solid #197c4b; background: rgba(25,124,75,0.07); }
+.course-planner__to-list { background: none; border: 0; text-decoration: underline; cursor: pointer; }
 </style>

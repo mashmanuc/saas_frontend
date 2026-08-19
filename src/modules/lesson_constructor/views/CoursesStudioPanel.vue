@@ -1,6 +1,6 @@
 <template>
   <div class="courses-studio">
-    <CoursePlannerPage v-if="view === 'planner'" />
+    <CoursePlannerPage v-if="view === 'planner'" @go-to-list="view = 'list'" />
     <CourseListPage v-else @new-course="view = 'planner'" />
 
     <div class="courses-studio__switch">

@@ -10447,7 +10447,10 @@
         "generalize": "generalize",
         "control": "checkpoint",
         "repeat": "review"
-      }
+      },
+      "savedDraft": "Course “{title}” saved as a draft.",
+      "goToList": "Go to course list",
+      "openFailed": "Could not open the lesson board."
     }
   }
 }
