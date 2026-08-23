@@ -24,10 +24,15 @@ describe('WBRecordingBanner', () => {
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 
-  it('emits start when button clicked in finalized state', async () => {
+  it('emits restart when button clicked in finalized state', async () => {
+    // DIR-хвости-2 §3 (2026-08-24): у finalized кнопка тепер емить 'restart'
+    // (btn--restart, WBRecordingBanner.vue:101-110) — це і Є re-record-флоу,
+    // який стеріг цей файл; 'start' лишився лише для idle. Тест приведено до
+    // чинного контракту, а не видалено: властивість «з finalized можна
+    // перезаписати» жива.
     const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
-    await w.find('button').trigger('click')
-    expect(w.emitted('start')).toHaveLength(1)
+    await w.find('.wb-recording-banner__btn--restart').trigger('click')
+    expect(w.emitted('restart')).toHaveLength(1)
   })
 
   it('shows frozen indicator alongside start button in finalized state', () => {
@@ -37,20 +42,29 @@ describe('WBRecordingBanner', () => {
   })
 
   it('does NOT show start button in recording state', () => {
+    // Контракт recording-стану: pause + finalize (класу --stop більше немає).
     const w = mount(WBRecordingBanner, {
       props: { recordingState: 'recording', recordingStartedAt: null },
     })
-    const stopBtn = w.find('.wb-recording-banner__btn--stop')
-    expect(stopBtn.exists()).toBe(true)
+    expect(w.find('.wb-recording-banner__btn--pause').exists()).toBe(true)
+    expect(w.find('.wb-recording-banner__btn--finalize').exists()).toBe(true)
     expect(w.find('.wb-recording-banner__btn--start').exists()).toBe(false)
   })
 
-  it('emits pause when stop button clicked in recording state', async () => {
+  it('emits pause when pause button clicked in recording state', async () => {
     const w = mount(WBRecordingBanner, {
       props: { recordingState: 'recording', recordingStartedAt: null },
     })
-    await w.find('.wb-recording-banner__btn--stop').trigger('click')
+    await w.find('.wb-recording-banner__btn--pause').trigger('click')
     expect(w.emitted('pause')).toHaveLength(1)
+  })
+
+  it('emits finalize when finalize button clicked in recording state', async () => {
+    const w = mount(WBRecordingBanner, {
+      props: { recordingState: 'recording', recordingStartedAt: null },
+    })
+    await w.find('.wb-recording-banner__btn--finalize').trigger('click')
+    expect(w.emitted('finalize')).toHaveLength(1)
   })
 
   it('disables button when isLoading=true', () => {

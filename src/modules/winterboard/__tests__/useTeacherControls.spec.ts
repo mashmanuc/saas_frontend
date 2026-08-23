@@ -32,9 +32,13 @@ describe('useTeacherControls', () => {
 
   describe('lockDrawing', () => {
     it('locks session and broadcasts WS message', async () => {
+      // DIR-хвости-2 §3 (2026-08-24): контракт lockSession змінився —
+      // відповідь {is_locked, locked_by_id}, не {locked, locked_by}
+      // (winterboardApi.ts:6 фіксує зміну; composable читає result.is_locked,
+      // useTeacherControls.ts:77). Мок тестів відстав від форми відповіді.
       mockLockSession.mockResolvedValue({
-        locked: true,
-        locked_by: 'teacher-1',
+        is_locked: true,
+        locked_by_id: 'teacher-1',
         locked_at: '2026-02-18T10:00:00Z',
       })
 
@@ -49,14 +53,14 @@ describe('useTeacherControls', () => {
       expect(mockLockSession).toHaveBeenCalledWith('sess-1', true)
       expect(wsSend).toHaveBeenCalledWith({
         type: 'session.lock',
-        payload: { locked: true, locked_by: 'teacher-1' },
+        payload: { locked: true, locked_by_id: 'teacher-1' },
       })
     })
 
     it('unlocks session and broadcasts', async () => {
       mockLockSession.mockResolvedValue({
-        locked: false,
-        locked_by: null,
+        is_locked: false,
+        locked_by_id: null,
         locked_at: null,
       })
 
@@ -70,11 +74,13 @@ describe('useTeacherControls', () => {
       expect(controls.isLocked.value).toBe(false)
       expect(wsSend).toHaveBeenCalledWith({
         type: 'session.lock',
-        payload: { locked: false, locked_by: null },
+        payload: { locked: false, locked_by_id: null },
       })
     })
 
     it('handles API error gracefully', async () => {
+      // Лог збою — контракт навмисної відмови: асертиться, не смітить (§2).
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockLockSession.mockRejectedValue(new Error('Network error'))
 
       const sessionId = ref<string | null>('sess-3')
@@ -84,6 +90,8 @@ describe('useTeacherControls', () => {
 
       expect(result).toBe(false)
       expect(controls.lastError.value).toContain('lock')
+      expect(errorSpy).toHaveBeenCalled()
+      errorSpy.mockRestore()
     })
 
     it('returns false when no sessionId', async () => {
@@ -145,6 +153,7 @@ describe('useTeacherControls', () => {
     })
 
     it('handles kick API error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockKickStudent.mockRejectedValue(new Error('Forbidden'))
 
       const sessionId = ref<string | null>('sess-7')
@@ -154,6 +163,8 @@ describe('useTeacherControls', () => {
 
       expect(result).toBe(false)
       expect(controls.lastError.value).toContain('kick')
+      expect(errorSpy).toHaveBeenCalled()
+      errorSpy.mockRestore()
     })
   })
 
@@ -178,6 +189,7 @@ describe('useTeacherControls', () => {
     })
 
     it('handles end session API error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockEndSession.mockRejectedValue(new Error('Server error'))
 
       const sessionId = ref<string | null>('sess-9')
@@ -187,6 +199,8 @@ describe('useTeacherControls', () => {
 
       expect(result).toBe(false)
       expect(controls.lastError.value).toContain('end')
+      expect(errorSpy).toHaveBeenCalled()
+      errorSpy.mockRestore()
     })
   })
 

@@ -30,11 +30,21 @@ const mockListSessions = vi.fn()
 const mockDeleteSession = vi.fn()
 const mockDuplicateSession = vi.fn()
 
+// DIR-хвости-2 §2 (2026-08-24): мок відстав від API — view давно кличе ще
+// й теки (listBoardFolders і далі), а мок їх не мав → 5 × «is not a
+// function» у catch, гілка тек мовчки деградувала в кожному тесті.
+const mockListBoardFolders = vi.fn().mockResolvedValue([])
+
 vi.mock('../api/winterboardApi', () => ({
   winterboardApi: {
     listSessions: mockListSessions,
     deleteSession: mockDeleteSession,
     duplicateSession: mockDuplicateSession,
+    listBoardFolders: mockListBoardFolders,
+    createBoardFolder: vi.fn().mockResolvedValue({ id: 1, name: 'f' }),
+    updateBoardFolder: vi.fn().mockResolvedValue({}),
+    deleteBoardFolder: vi.fn().mockResolvedValue({}),
+    moveSessionToFolder: vi.fn().mockResolvedValue({}),
   },
 }))
 
@@ -262,11 +272,17 @@ describe('WBBoardList.vue (B13)', () => {
 
   // Test 15: error state
   it('shows error state when API fails', async () => {
+    // Лог збою тут — КОНТРАКТ (навмисна відмова API), тож він асертиться,
+    // а не смітить у stderr зеленого прогону (хвости-2 §2).
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockListSessions.mockRejectedValueOnce(new Error('Network error'))
     const wrapper = await mountBoardList()
     await vi.waitFor(() =>
       expect(wrapper.find('.wb-board-list__empty').exists()).toBe(true)
     )
     expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    expect(errorSpy.mock.calls.some((c) =>
+      String(c[0]).includes('Failed to load boards'))).toBe(true)
+    errorSpy.mockRestore()
   })
 })

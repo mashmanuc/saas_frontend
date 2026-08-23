@@ -68,10 +68,34 @@ function makePointerEvent(
   })
 }
 
+// DIR-хвости-2 §3 (2026-08-24): «expected 200 to be 400» — це ПІКСЕЛІ
+// resize, а не HTTP-коди: підозра ТЗ про «послаблення 400 на BE» знята
+// виміром (boardStore.resizeSelectedObject, жодного запиту). Корінь п'яти
+// падінь один: updateAsset став асинхронним (Layer B RAF-coalesce,
+// assetUpdateBatcher.ts:75 — flush на наступному кадрі), а тести асертили
+// синхронно. Жест-математика жива; тестам потрібен синхронний rAF.
+// Батчер тримає module-scoped _rafHandles: «хвіст» rAF із СУСІДНЬОГО тесту
+// блокує новий schedule (has(id) → лише buffer.set, без flush) і застосовує
+// оновлення в чужий store. Тому перед кожним boardStore-тестом скасовуємо
+// хвости явно.
+import { cancelPendingUpdates } from '../board/state/assetUpdateBatcher'
+
+const _origRaf = globalThis.requestAnimationFrame
+function syncRaf() {
+  ;(globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) => {
+    cb(0)
+    return 0
+  }
+}
+function restoreRaf() {
+  ;(globalThis as any).requestAnimationFrame = _origRaf
+}
+
 // ─── boardStore A10 actions ──────────────────────────────────────────────────
 
 describe('boardStore — resizeSelectedObject', () => {
-  beforeEach(() => { setActivePinia(createPinia()) })
+  beforeEach(() => { setActivePinia(createPinia()); cancelPendingUpdates(); syncRaf() })
+  afterEach(restoreRaf)
 
   it('scales asset w and h by factor', () => {
     const store = makeStore()
@@ -104,7 +128,8 @@ describe('boardStore — resizeSelectedObject', () => {
 })
 
 describe('boardStore — rotateSelectedObject', () => {
-  beforeEach(() => { setActivePinia(createPinia()) })
+  beforeEach(() => { setActivePinia(createPinia()); cancelPendingUpdates(); syncRaf() })
+  afterEach(restoreRaf)
 
   it('converts radians to degrees and applies rotation', () => {
     const store = makeStore()

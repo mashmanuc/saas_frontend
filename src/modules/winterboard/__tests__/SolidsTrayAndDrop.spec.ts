@@ -54,8 +54,11 @@ vi.mock('@/modules/learning-content/api/learningContentApi', () => ({
 vi.mock('@/modules/learning-content/components/StorageQuotaBar.vue', () => ({
   default: { name: 'StorageQuotaBarStub', template: '<div data-testid="quota-stub" />' },
 }))
+// DIR-хвости-2 §3 (2026-08-24): «te is not a function» ×11 — ОДИН корінь:
+// компонент почав користуватись te() (translation exists, SolidsTray.vue:69),
+// а мок мав лише t. te→false = детермінований fallback на item.label.
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (k: string) => k }),
+  useI18n: () => ({ t: (k: string) => k, te: (_k: string) => false }),
 }))
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -225,15 +228,24 @@ describe('useContentDrop — geometry_solid drop', () => {
   })
 
   it('3. Drop з invalid JSON у solid MIME → silent no-op', async () => {
+    // warn = контракт «no-op не мовчки»: асертиться, не смітить (хвости-2 §2)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ev = makeDropEvent(SOLID_DRAG_MIME, 'not-json{', 100, 100)
     await drop.handleCanvasDrop(ev)
     expect(received).toHaveLength(0)
+    expect(warnSpy.mock.calls.some((c) =>
+      String(c[0]).includes('Invalid solid drag payload'))).toBe(true)
+    warnSpy.mockRestore()
   })
 
   it('4. Drop з unknown solid src → silent no-op', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ev = makeDropEvent(SOLID_DRAG_MIME, JSON.stringify({ src: 'banana' }), 100, 100)
     await drop.handleCanvasDrop(ev)
     expect(received).toHaveLength(0)
+    expect(warnSpy.mock.calls.some((c) =>
+      String(c[0]).includes('Unknown solid src'))).toBe(true)
+    warnSpy.mockRestore()
   })
 
   it('5. Drop без data — canDraw=false → no emit (regression: edit-mode guard)', async () => {
@@ -277,223 +289,25 @@ describe('useContentDrop — geometry_solid drop', () => {
 // ─────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────
-//  PR-O4.1 P0 — ContentSidebar mounts SolidsTray у всіх sub-states
-//
-//  Bug: SolidsTray був унизу sidebar — після всіх materials groups + button.
-//  Користувач не міг побачити tray після 15+ матеріалів (off-screen).
-//  Fix: tray ABOVE groups → завжди видимий у lesson mode у будь-якому стані
-//  (loading / error / empty / groups). Hidden ONLY у library mode.
+//  DIR-хвости-2 §3 (2026-08-24): ВИДАЛЕНО три describe-блоки (9 тестів) —
+//  «ContentSidebar visibility invariant (PR-O4.1)», «mounted у
+//  GroupContentSidebar (PR-O4.2)», «collapsible solids section (Phase O
+//  Task 1)». Причина виміряна: SolidsTray у сайдбарах ЗАМІНЕНО на Nmt3dTray
+//  за каталогом сімейств (ContentSidebar.vue:180 «replaces Phase O
+//  SolidsTray»; GroupContentSidebar.vue: catalogFamily==='stereo' →
+//  <Nmt3dTray/>). Інваріант «трей завжди видимий над групами» скасовано
+//  продуктом (тепер drilldown-каталог) — чесного рерайту «на ту саму
+//  властивість» не існує. Компонент SolidsTray.vue лишився БЕЗ живого
+//  монтування (знахідка → звіт/черга; видалення продукту — не обсяг цього
+//  пакета). Drag-source і drop-тести вище живі: MIME-контракт
+//  (solidDefaults.ts:41) досі обслуговує drop-хендлер полотна.
 // ─────────────────────────────────────────────────────────────────────────
 
-describe('ContentSidebar — SolidsTray visibility invariant (PR-O4.1)', () => {
-  // Тут ми НЕ мокуємо useContentSidebar композабл (vi.mock працює тільки top-level).
-  // Натомість покладаємось на контракт компонента: SolidsTray розташований ABOVE
-  // sub-state branches (loading/error/empty/groups) → рендериться у lesson mode
-  // у будь-якому стані. Hidden ONLY у library mode (через v-if на template-блоці).
-  // learningContentApi мокнута глобально (returns empty array → empty state).
-
-  async function mountSidebar(props: { lessonId: string | null; isTutor: boolean }) {
-    const ContentSidebar = (
-      await import('../components/sidebar/ContentSidebar.vue')
-    ).default
-    return mount(ContentSidebar, { props })
-  }
-
-  it('empty state — SolidsTray rendered (totalCount=0)', async () => {
-    const wrapper = await mountSidebar({ lessonId: '42', isTutor: true })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('loading state — SolidsTray rendered (isLoading=true)', async () => {
-    const wrapper = await mountSidebar({ lessonId: null, isTutor: true })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('library mode — SolidsTray HIDDEN (toggle via empty-state CTA button)', async () => {
-    // Empty state — для tutor показує "addFromLibrary" CTA. Click → mode='library'.
-    const wrapper = await mountSidebar({ lessonId: '42', isTutor: true })
-    await flushPromises()
-
-    // Lesson mode default — SolidsTray rendered.
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-
-    // Switch to library mode (empty-state primary CTA).
-    const emptyAddBtn = wrapper.find('.content-sidebar__add-btn--primary')
-    if (emptyAddBtn.exists()) {
-      await emptyAddBtn.trigger('click')
-      await flushPromises()
-      // Library mode active → SolidsTray hidden (not in DOM).
-      expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(false)
-    }
-    wrapper.unmount()
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────
-//  PR-O4.2 P0 — GroupContentSidebar (production sidebar) mounts SolidsTray
-//
-//  Bug: PR-O4 mounted SolidsTray у ContentSidebar.vue, але прод використовує
-//  GroupContentSidebar.vue (Solo + Classroom rooms). SolidsTray був недосяжний
-//  у production. Fix: mount <SolidsTray /> at top of content sections, NO v-if,
-//  always visible — single mount → Solo + Classroom inherit.
 // ─────────────────────────────────────────────────────────────────────────
 
-vi.mock('../composables/useGroupSidebar', () => ({
-  useGroupSidebar: () => ({
-    items: ref([]),
-    isLoading: ref(false),
-    error: ref(null),
-    grouped: ref({}),
-    totalCount: ref(0),
-    showPasteOnly: ref(false),
-    pasteCount: ref(0),
-    reload: vi.fn(),
-    uploadFiles: vi.fn(() => Promise.resolve()),
-    SIDEBAR_DRAG_MIME: 'application/x-sidebar-asset',
-  }),
-}))
-vi.mock('../board/state/boardStore', () => ({
-  useWBStore: () => ({}),
-}))
-vi.mock('../api/library', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    fetchFoldersTree: vi.fn(() => Promise.resolve([])),
-  }
-})
-
-describe('SolidsTray — mounted у GroupContentSidebar (production sidebar) PR-O4.2', () => {
-  it('renders SolidsTray у GroupContentSidebar (always visible, no v-if)', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: 'group-1', isTutor: true },
-    })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'SolidsTray' }).exists()).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('SolidsTray rendered коли groupId=null (library mode also covered)', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: null, isTutor: false },
-    })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────
-//  Phase O Task 1 UX — Collapsible solids section у GroupContentSidebar
-//
-//  Goal: header → button з chevron, click toggles SolidsTray visibility.
-//  State: local ref (NO store). Default: expanded.
 // ─────────────────────────────────────────────────────────────────────────
 
-describe('GroupContentSidebar — collapsible solids section (Phase O Task 1)', () => {
-  it('default state — solids body expanded, SolidsTray visible', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: 'group-1', isTutor: true },
-    })
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-    const header = wrapper.find('.content-sidebar__group-header--collapsible')
-    expect(header.exists()).toBe(true)
-    expect(header.attributes('aria-expanded')).toBe('true')
-
-    wrapper.unmount()
-  })
-
-  it('click header → collapses (SolidsTray hidden)', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: 'group-1', isTutor: true },
-    })
-    await flushPromises()
-
-    // Default: expanded.
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-
-    const header = wrapper.find('.content-sidebar__group-header--collapsible')
-    await header.trigger('click')
-    await nextTick()
-    await flushPromises()
-    // Force <Transition> drain — leave state pending може залишити DOM до наступного tick.
-    await new Promise((r) => setTimeout(r, 0))
-    await flushPromises()
-
-    expect(header.attributes('aria-expanded')).toBe('false')
-    // SolidsTray прибрано з DOM (v-if на solids-body).
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(false)
-
-    wrapper.unmount()
-  })
-
-  it('click header twice → toggles back to expanded', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: 'group-1', isTutor: true },
-    })
-    await flushPromises()
-
-    const header = wrapper.find('.content-sidebar__group-header--collapsible')
-
-    // Collapse.
-    await header.trigger('click')
-    await nextTick()
-    await flushPromises()
-    expect(header.attributes('aria-expanded')).toBe('false')
-
-    // Expand back.
-    await header.trigger('click')
-    await nextTick()
-    await flushPromises()
-    expect(header.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
-
-    wrapper.unmount()
-  })
-
-  it('chevron has "open" class коли expanded, без неї коли collapsed', async () => {
-    const GroupContentSidebar = (
-      await import('../components/sidebar/GroupContentSidebar.vue')
-    ).default
-    const wrapper = mount(GroupContentSidebar, {
-      props: { groupId: 'group-1', isTutor: true },
-    })
-    await flushPromises()
-
-    const chevron = wrapper.find('.content-sidebar__group-header-chevron')
-    expect(chevron.exists()).toBe(true)
-    expect(chevron.classes()).toContain('open')
-
-    const header = wrapper.find('.content-sidebar__group-header--collapsible')
-    await header.trigger('click')
-    await nextTick()
-    expect(chevron.classes()).not.toContain('open')
-
-    wrapper.unmount()
-  })
-})
+// ─────────────────────────────────────────────────────────────────────────
 
 describe('SolidCardRenderer — delete button (PR-O4)', () => {
   // Spyable mock SolidCard (mirror SolidCardRenderer.spec setup)

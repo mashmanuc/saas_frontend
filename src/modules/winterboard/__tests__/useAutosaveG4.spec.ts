@@ -1,157 +1,140 @@
-// G4 (2026-04-21): Tests for useAutosave — isDirty-watcher no longer triggers
-// /save-stream/ under the 3s debounce cycle; beacon suffices on tab-hide.
+// G4 (2026-04-21, переписано 2026-08-24 — DIR-хвости-2 §1):
+// властивість G4 «isDirty НЕ тригерить мережу» жива, але сторожі змінились.
 //
-// Background:
-// Prior to G4 fix, useAutosave watched `store.isDirty` and auto-triggered
-// `performStreamSave()` → POST /save-stream/ every 3s. This competed with
-// /replay/batch/ (ops-log writer) for the WBSession row lock → 409 session_locked
-// cascade (G3 in saas_docs/domains/winterboard/REPLAY_PIPELINE_SSOT.md §6).
+// Що сталося з архітектурою (виміряно по коду, не по пам'яті):
+//   - власний write-шлях useAutosave ВИДАЛЕНО (Phase 2 cleanup): немає
+//     streamSave-callsite, немає beaconSave×3, немає слухачів
+//     visibilitychange/beforeunload — composable став тонким proxy над
+//     opsSyncStore.flush() (single-writer, LAW §9). Джерело:
+//     useAutosave.ts:1-24 (шапка) + тіло без жодного з цих викликів.
+//   - beacon скасовано НАЗАВЖДИ (Variant A locked 2026-04-27):
+//     navigator.sendBeacon не може нести X-Protocol-Version (LAW §10) →
+//     opsSyncStore.sendBeacon() ЗАВЖДИ кидає BeaconUnsupportedError
+//     (useReplayRecorder.ts:394-406).
 //
-// After G4:
-//   - isDirty changes are ignored (no streamSave auto-trigger)
-//   - handleVisibilityChange sends beacon only (no performSave race)
-//   - Manual saveNow() still calls streamSave (for record-start, template save,
-//     nav-away use cases — see WBSoloRoom.vue:1041, 2598, 2631)
-//   - beforeunload still sends beacon
+// Тому зі старої п'ятірки:
+//   - 3 beacon-тести ВИДАЛЕНО — стерегли властивість, якої в новій
+//     архітектурі немає ЗА ПОБУДОВОЮ (не «зламалась», а скасована рішенням);
+//   - «saveNow → streamSave once» ПЕРЕПИСАНО: saveNow → рівно один
+//     POST /replay/batch/ через store;
+//   - «isDirty не тригерить» ПЕРЕПИСАНО під новий контракт + kill-тест
+//     джерела, який не дасть G4-класу повернутись тихо.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { setActivePinia, createPinia } from 'pinia'
 
-// ─── Mocks ───────────────────────────────────────────────────────────────
+// ─── Mocks (до імпорту store) ────────────────────────────────────────────
+const recordOperationsBatchMock = vi.fn()
 
-const mockStreamSave = vi.fn()
-const mockBeaconSave = vi.fn()
-
-vi.mock('../api/winterboardApi', () => ({
-  winterboardApi: {
-    streamSave: (...args: unknown[]) => mockStreamSave(...args),
-    beaconSave: (...args: unknown[]) => mockBeaconSave(...args),
-  },
+vi.mock('../api/replay', () => ({
+  recordOperationsBatch: (...args: unknown[]) => recordOperationsBatchMock(...args),
+  createSnapshot: vi.fn(),
+  PROTOCOL_VERSION: 'v3',
 }))
 
 vi.mock('@/utils/apiClient', () => ({
-  default: {},
+  default: { get: vi.fn(), post: vi.fn() },
   isCircuitBreakerOpen: () => false,
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-}))
-
-vi.mock('../composables/useToast', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
-}))
-
-// Minimal store mock — not using real pinia store to avoid full setup.
-const makeStoreMock = () => ({
-  isDirty: false,
-  rev: 1,
-  mode: 'edit' as const,
-  serializedState: { pages: [{ id: 'page-1', strokes: [], assets: [] }] },
-  serializedStateForSave: { pages: [{ id: 'page-1', strokes: [], assets: [] }] },
-  setSyncStatus: vi.fn(),
-  setSyncError: vi.fn(),
-  setLastSaved: vi.fn(),
-})
-
-let storeMock = makeStoreMock()
-vi.mock('../board/state/boardStore', () => ({
-  useWBStore: () => storeMock,
-}))
-
-// ─── Import AFTER mocks defined ──────────────────────────────────────────
-
+import { ref } from 'vue'
 import { useAutosave } from '../composables/useAutosave'
+import { useOpsSyncStore } from '../stores/opsSyncStore'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────
-
-function mountAutosave(sessionId = 'test-session-uuid') {
-  const sid = ref<string | null>(sessionId)
-  const autosave = useAutosave(sid)
-  return { autosave, sid }
+function _op(n = 0) {
+  return {
+    op_id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
+    op_type: 'stroke_add',
+    page_id: 'p1',
+    payload: {},
+  }
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────
+/** Канонічний прелюд (як у invariants/opsSync.spec.ts): стан напряму. */
+function syncedStore(sid = 'sess-g4') {
+  const store = useOpsSyncStore()
+  store.sessionId = sid
+  store.mode = 'SYNC'
+  store.serverSeq = 0
+  store.localSeq = 0
+  return store
+}
 
-describe('G4: useAutosave does not auto-stream on isDirty', () => {
+describe('G4: useAutosave — proxy над opsSyncStore, без власної мережі', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    mockStreamSave.mockReset()
-    mockBeaconSave.mockReset()
-    mockStreamSave.mockResolvedValue({ rev: 2 })
-    storeMock = makeStoreMock()
-    vi.useFakeTimers()
+    recordOperationsBatchMock.mockReset()
+    recordOperationsBatchMock.mockImplementation(
+      async (_sid: string, seq: number, ops: unknown[]) => ({
+        last_seq: (seq as number) + (ops as unknown[]).length,
+      }),
+    )
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
-  it('isDirty=true does NOT trigger streamSave within 10s', async () => {
-    const { autosave } = mountAutosave()
+  it('монтування + 20с простою → НУЛЬ мережевих викликів (спадок G4)', async () => {
+    vi.useFakeTimers()
+    syncedStore()
+    const autosave = useAutosave(ref<string | null>('sess-g4'))
 
-    storeMock.isDirty = true
-    await nextTick()
-
-    // Advance well past the old 3s DEBOUNCE_MS and 15s MAX_WAIT_MS:
     vi.advanceTimersByTime(20_000)
-    await nextTick()
 
-    expect(mockStreamSave).not.toHaveBeenCalled()
-
+    expect(recordOperationsBatchMock).not.toHaveBeenCalled()
     autosave.destroy()
   })
 
-  it('saveNow() still triggers streamSave exactly once', async () => {
-    const { autosave } = mountAutosave()
+  it('saveNow() з 1 pending op → рівно один POST /replay/batch/', async () => {
+    const store = syncedStore()
+    const autosave = useAutosave(ref<string | null>('sess-g4'))
 
-    storeMock.isDirty = true
+    store.record(_op(1))
     await autosave.saveNow()
 
-    expect(mockStreamSave).toHaveBeenCalledTimes(1)
-
+    expect(recordOperationsBatchMock).toHaveBeenCalledTimes(1)
+    const [sid, seq, ops] = recordOperationsBatchMock.mock.calls[0]
+    expect(sid).toBe('sess-g4')
+    expect(seq).toBe(0)
+    expect((ops as unknown[]).length).toBe(1)
+    expect(autosave.saveCount.value).toBe(1)
+    expect(autosave.status.value).toBe('saved')
     autosave.destroy()
   })
 
-  it('visibilitychange→hidden sends beacon only, not streamSave', async () => {
-    const { autosave } = mountAutosave()
+  it('saveNow() при DESYNC не кидає — статус error, UI живе', async () => {
+    const store = syncedStore()
+    store.mode = 'DESYNC'
+    store.desyncReason = 'protocol-version-mismatch'
+    const autosave = useAutosave(ref<string | null>('sess-g4'))
 
-    storeMock.isDirty = true
-    // Simulate tab hidden
-    Object.defineProperty(document, 'visibilityState', {
-      value: 'hidden',
-      configurable: true,
-    })
-    document.dispatchEvent(new Event('visibilitychange'))
-    await nextTick()
+    await expect(autosave.saveNow()).resolves.toBeUndefined()
 
-    expect(mockBeaconSave).toHaveBeenCalledTimes(1)
-    expect(mockStreamSave).not.toHaveBeenCalled()
-
+    expect(autosave.status.value).toBe('error')
+    expect(autosave.lastError.value).toBeTruthy()
+    expect(recordOperationsBatchMock).not.toHaveBeenCalled()
     autosave.destroy()
   })
 
-  it('beforeunload sends beacon', async () => {
-    const { autosave } = mountAutosave()
-
-    storeMock.isDirty = true
-    window.dispatchEvent(new Event('beforeunload'))
-    await nextTick()
-
-    expect(mockBeaconSave).toHaveBeenCalledTimes(1)
-
-    autosave.destroy()
-  })
-
-  it('destroy() with isDirty=true sends final beacon', async () => {
-    const { autosave } = mountAutosave()
-
-    storeMock.isDirty = true
-    autosave.destroy()
-
-    expect(mockBeaconSave).toHaveBeenCalledTimes(1)
-    expect(mockStreamSave).not.toHaveBeenCalled()
+  it('kill-тест джерела: G4-клас не повертається (dual-writer видалено)', () => {
+    // Прибрали proxy і повернули власний write-шлях — цей тест падає.
+    const raw = readFileSync(
+      resolve(__dirname, '../composables/useAutosave.ts'),
+      'utf8',
+    )
+    // Шапка-коментар чесно перелічує «чого більше немає» тими самими
+    // словами — тому коментарі зрізаємо і міряємо лише КОД.
+    const code = raw
+      .split('\n')
+      .filter((l) => !l.trimStart().startsWith('//'))
+      .join('\n')
+    expect(code).not.toMatch(/winterboardApi\s*\.\s*(streamSave|beaconSave)/)
+    expect(code).not.toMatch(/addEventListener\(\s*['"](visibilitychange|beforeunload)/)
+    expect(code).not.toMatch(/watch\([^)]*isDirty/s)
+    // І позитивний бік: єдиний write-шлях — flush store.
+    expect(code).toMatch(/opsSync\.flush\(\)/)
   })
 })

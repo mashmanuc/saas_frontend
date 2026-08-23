@@ -21,6 +21,44 @@ vi.mock('../api/winterboardApi', () => ({
 import { exportPreviewService } from '../services/exportPreviewService'
 import { winterboardApi } from '../api/winterboardApi'
 
+// ── Файловий стаб декодера (DIR-хвости-2 §2, 2026-08-24) ────────────────
+// happy-dom не має createImageBitmap/OffscreenCanvas, тож isBlankBlob падав
+// у власний catch («decode-збій ≠ порожній») 21 раз за прогін: blank-гілка
+// мовчки обходилась, лог був червоний. Блок ТЗ-D нижче вже мав ПРАВИЛЬНИЙ
+// стаб (і урок про rAF) — але ставив його лише собі. Тут той самий підхід
+// файлово, з дефолтом «живого» (різнокольорового) знімка: решта тестів
+// тепер іде справжньою гілкою і не смітить. ТЗ-D далі override-ить своїм.
+beforeEach(() => {
+  ;(globalThis as any).createImageBitmap = async (_blob: Blob) => ({
+    width: 4,
+    height: 4,
+    _colors: 16,               // 16 відтінків → свідомо НЕ порожній
+    close() {},
+  })
+  ;(globalThis as any).OffscreenCanvas = class {
+    constructor(public width: number, public height: number) {}
+    private bitmap: any = null
+    getContext() {
+      const self = this
+      return {
+        drawImage: (bitmap: any) => { self.bitmap = bitmap },
+        getImageData: () => {
+          const colors = self.bitmap?._colors ?? 1
+          const data = new Uint8ClampedArray(4 * 16)
+          for (let i = 0; i < 16; i++) {
+            const shade = i < colors ? i * 10 : 0
+            data[i * 4] = shade
+            data[i * 4 + 1] = shade
+            data[i * 4 + 2] = shade
+            data[i * 4 + 3] = 255
+          }
+          return { data }
+        },
+      }
+    }
+  }
+})
+
 describe('exportPreviewService — registry lifecycle', () => {
   beforeEach(() => {
     exportPreviewService._resetForTests()
