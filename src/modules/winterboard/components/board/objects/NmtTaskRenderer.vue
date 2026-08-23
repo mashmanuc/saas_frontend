@@ -142,7 +142,7 @@
       <!-- ── Action buttons ────────────────────────────────── -->
       <div class="nmt-task__actions">
         <button
-          v-if="hasAnswerToShow"
+          v-if="hasAnswerToShow && revealAllowed"
           type="button"
           class="nmt-task__btn"
           :class="{ 'is-active': data.showAnswer }"
@@ -153,7 +153,7 @@
           {{ data.showAnswer ? 'Сховати відповідь' : 'Показати відповідь' }}
         </button>
         <button
-          v-if="data.solution"
+          v-if="data.solution && revealAllowed"
           type="button"
           class="nmt-task__btn nmt-task__btn--solution"
           :class="{ 'is-active': data.showSolution }"
@@ -211,6 +211,9 @@ import type { CompanionResolution } from '../../../services/capabilityRegistry'
 // to foreignObject SVG rasterize path. INV-EP-8: thin adapter only.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import WBStepInput from '../../copilot/WBStepInput.vue'
+// 8b-2: reveal gate — «Показати відповідь/розбір» замкнені до стадії 3,
+// але ЛИШЕ коли активний канал AI-репетитора (учень); тьютора не чіпає.
+import { useTutorRevealGate } from '../../../composables/useStudentTutor'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
@@ -338,6 +341,8 @@ const hasAnswerToShow = computed(() => {
   if (d.taskType === 'matching')      return (d.pairs?.length ?? 0) > 0
   return false
 })
+
+const revealAllowed = useTutorRevealGate(() => String(data.value.externalId ?? ''))
 
 function toggleShowAnswer() {
   emitDataUpdate({ showAnswer: !data.value.showAnswer })

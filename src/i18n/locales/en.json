@@ -9252,6 +9252,19 @@
         "submit": "Save step",
         "saved": "saved ✓",
         "failed": "could not save — try again"
+      },
+      "tutor": {
+        "title": "AI tutor",
+        "empty": "Ask about the task — let's figure it out together.",
+        "placeholder": "Tell me what's not working…",
+        "send": "Send",
+        "thinking": "thinking…",
+        "unclear": "I don't get it — explain again",
+        "unclearPhrase": "I did not understand, please explain again",
+        "clear": "Delete my history",
+        "mic": "Dictate by voice",
+        "throttled": "Too fast — wait a second.",
+        "failed": "Could not send. Try again."
       }
     }
   },

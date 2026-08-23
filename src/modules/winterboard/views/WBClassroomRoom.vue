@@ -398,6 +398,9 @@
       :students="connectedStudents"
     />
 
+    <!-- 8b-2: канал AI-репетитора — лише учню; сам себе ховає при OFF -->
+    <WBStudentTutor v-if="!classroomRole.isTeacher.value && resolvedSessionId" />
+
     <!-- Phase 38: Test teacher panel -->
     <WBTestTeacherPanel
       v-if="classroomRole.isTeacher.value && testStore.activeTestSessionId"
@@ -520,6 +523,7 @@ import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vu
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBCopilotPanel from '../components/copilot/WBCopilotPanel.vue'
+import WBStudentTutor from '../components/copilot/WBStudentTutor.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'

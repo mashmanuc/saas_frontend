@@ -865,7 +865,7 @@ export const winterboardApi = {
   // Окремий префікс: engine — власний bounded context, не частина winterboard.
   // Реакція тьютора йде саме REST, а не WS (SYSTEM_LAW §9: WS is NOT a writer).
 
-  copilotStatus(): Promise<{ live: boolean }> {
+  copilotStatus(): Promise<{ live: boolean; tutor: boolean }> {
     return apiClient.get(`${COPILOT}/status/`).then((r: any) => r.data ?? r)
   },
 
@@ -892,6 +892,14 @@ export const winterboardApi = {
   copilotSteps(sessionId: string, taskId: string): Promise<any> {
     return apiClient
       .get(`${COPILOT}/sessions/${sessionId}/steps/`, { params: { task_id: taskId } })
+      .then((r: any) => r.data ?? r)
+  },
+
+  // 8b-2 — репліка AI-репетитора учню. Відповідь бідна навмисно:
+  // {reply, stage, action} і нічого більше (ТЗ 8b-1 §3.5).
+  copilotReply(sessionId: string, text: string): Promise<{ reply: string; stage: number | null; action: string }> {
+    return apiClient
+      .post(`${COPILOT}/sessions/${sessionId}/reply/`, { text })
       .then((r: any) => r.data ?? r)
   },
 
