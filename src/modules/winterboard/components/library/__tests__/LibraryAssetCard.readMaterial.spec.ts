@@ -5,6 +5,9 @@
 //
 // Прапорець один — серверний (`MATERIAL_EXTRACT_ENABLED` → `materialsApi
 // .status()`). FE-дубліката тут немає навмисно: два вимикачі розійшлися б.
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -66,5 +69,31 @@ describe('LibraryAssetCard · «прочитати матеріал» за ст�
     const on = mountCard({ canReadMaterial: true })
       .findAll('.library-asset-card__action-btn').length
     expect(on - off).toBe(1)
+  })
+})
+
+// Межа з рев'ю Феї (2026-08-24, §2.2): поле `ocr` у статусі є, але FE НЕ
+// має починати ним щось показувати чи ховати, доки немає рішення власника
+// про гроші — інакше ми винесемо в інтерфейс цінове рішення раніше за нього.
+// (6-1b: раніше відхилені сторінки були безкоштовні, тепер коштують виклик.)
+// Правильний стан поля сьогодні — невживане. Цей тест валиться, щойно воно
+// почне керувати виглядом.
+describe('межа: `ocr` зі статусу не керує інтерфейсом', () => {
+  it('жоден FE-файл бібліотеки не читає status().ocr', () => {
+    const NL = String.fromCharCode(10)
+    const files = [
+      '../../../views/WBLibrary.vue',
+      '../LibraryAssetCard.vue',
+      '../MaterialExtractPanel.vue',
+    ]
+    for (const rel of files) {
+      const src = readFileSync(resolve(__dirname, rel), 'utf8')
+      const code = src
+        .split(NL)
+        .filter(l => !l.trimStart().startsWith('//') && !l.trimStart().startsWith('*'))
+        .join(NL)
+      expect(code).not.toMatch(/\.ocr/)
+      expect(code).not.toMatch(/materialsOcr|ocrEnabled/)
+    }
   })
 })
