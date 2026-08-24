@@ -726,6 +726,14 @@ const __GC = (function () {
         cur.value = value;
       } else {
         this.params[name] = { value, min: -10, max: 10, step: 0.1 };
+        // FIX 2026-08-19: НОВЕ ім'я параметра мусить перекласифікувати вирази.
+        // Живий шлях «дописав a у вираз → param-sync → fast-path рендерера →
+        // setParamValue» ішов саме сюди, але без reclassify вираз назавжди
+        // лишався kind='needsParam' і крива не будувалась — до F5, який
+        // проходив через повний setState (тому після оновлення сторінки
+        // графік «раптом» з'являвся). Зміна лише .value класифікацію не
+        // міняє (імена ті самі), тож гаряча гілка вище лишається дешевою.
+        this._reclassifyAll();
       }
       this._scheduleRender();
     }
@@ -745,7 +753,10 @@ const __GC = (function () {
       const idx = this.expressions.findIndex((x) => x.id === beforeId);
       if (idx < 0) this.expressions.push(expr);
       else this.expressions.splice(idx, 0, expr);
-      this.params[name] = value;
+      // FIX 2026-08-19: тут писалось ГОЛЕ число всупереч власному HARD SPEC
+      // (`{value, min, max, step}`). env-збірка (_reclassifyAll) голі числа
+      // пропускає → параметр був би undefined у виразах, крива — NaN.
+      this.params[name] = { value, min: -10, max: 10, step: 0.1 };
       this._reclassifyAll();
       this._scheduleRender();
       return expr;
