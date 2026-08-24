@@ -305,6 +305,7 @@
           v-for="asset in filteredAssets"
           :key="asset.id"
           :asset="asset"
+          :can-read-material="materialsEnabled"
           role="listitem"
           @toggle-favorite="onToggleFavorite"
           @move="showMoveDropdown"
@@ -503,6 +504,7 @@ import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } fr
 import apiClient from '@/utils/apiClient'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
 import MaterialExtractPanel from '../components/library/MaterialExtractPanel.vue'
+import materialsApi from '../api/materials'
 import MaterialLessonDialog, { type LessonResult }
   from '../components/library/MaterialLessonDialog.vue'
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
@@ -1091,8 +1093,18 @@ watch(selectedFolderId, () => {
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
+// Ф6-4: сервер вирішує, чи показувати «прочитати матеріал». Один запит на
+// відкриття бібліотеки; збій = вимкнено (fail-closed — краще не показати
+// кнопку, ніж показати ту, що відмовить).
+const materialsEnabled = ref(false)
+
 onMounted(async () => {
   await Promise.all([loadFolders(), loadAssets(), loadStorageStats()])
+  try {
+    materialsEnabled.value = !!(await materialsApi.status()).enabled
+  } catch {
+    materialsEnabled.value = false
+  }
 })
 </script>
 

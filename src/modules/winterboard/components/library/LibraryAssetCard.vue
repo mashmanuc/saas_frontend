@@ -95,7 +95,11 @@
 
     <!-- Actions -->
     <div class="library-asset-card__actions">
+      <!-- Ф6-4: кнопки НЕМАЄ, поки сервер не сказав, що читання ввімкнене.
+           Раніше вона показувалась завжди і на клік чесно відповідала
+           «вимкнено» — тобто існувала, щоб відмовити. -->
       <button
+        v-if="canReadMaterial"
         type="button"
         class="library-asset-card__action-btn"
         :aria-label="t('winterboard.materials.readAsset')"
@@ -172,6 +176,8 @@ import type { LibraryAsset } from '../../types/library'
 
 interface Props {
   asset: LibraryAsset
+  /** Читання матеріалів увімкнене на сервері (`materialsApi.status()`). */
+  canReadMaterial?: boolean
 }
 
 const props = defineProps<Props>()

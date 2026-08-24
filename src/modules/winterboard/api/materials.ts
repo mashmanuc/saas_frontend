@@ -115,6 +115,16 @@ export interface ConfirmResult {
 // ── Методи ────────────────────────────────────────────────────────────────
 
 export default {
+  /**
+   * Чи ввімкнено читання матеріалів на цьому сервері.
+   *
+   * Джерело правди — ОДНЕ, серверне (`MATERIAL_EXTRACT_ENABLED`). FE своїх
+   * прапорців тут не заводить: два вимикачі рано чи пізно розійдуться.
+   */
+  status(): Promise<{ enabled: boolean; ocr: boolean }> {
+    return apiClient.get(`${BASE}/status/`)
+  },
+
   /** Сторінки витягу + ціна наперед. 403 — прапорець вимкнено на сервері. */
   read(assetId: number): Promise<ExtractResponse> {
     return apiClient.get(`${BASE}/${assetId}/extract/`)
