@@ -765,6 +765,13 @@ watch(
      syncCanvasPointerEvents() sets 'auto' via inline style when interactive+selected. */
   pointer-events: none;
   touch-action: none;
+  /* Фікс 2026-08-19: підписи вершин — це SVG <text> (`nmt-3d.js:3184`), і при
+     перетягуванні фігури браузер починав виділяти їх як звичайний текст —
+     вершини підсвічувались синім. `touch-action` це не покриває: він про
+     жести, не про виділення. Сусідні віджети (Graphmash3d, Geomash) малюють
+     підписи на canvas (`fillText`), тож там виділяти нічого — їх не чіпаємо. */
+  user-select: none;
+  -webkit-user-select: none;
   position: relative;
 }
 
