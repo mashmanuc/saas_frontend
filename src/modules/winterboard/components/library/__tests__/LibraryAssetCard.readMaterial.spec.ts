@@ -92,7 +92,13 @@ describe('межа: `ocr` зі статусу не керує інтерфейс
         .split(NL)
         .filter(l => !l.trimStart().startsWith('//') && !l.trimStart().startsWith('*'))
         .join(NL)
-      expect(code).not.toMatch(/\.ocr/)
+      // Межа слова навмисно НЕ через регекс-мітку "межа слова": попередня
+      // редакція мала замість двох символів (backslash + b) один керуючий
+      // байт 0x08 (BACKSPACE) — heredoc-запис файлу з'їв екранування. Тест
+      // був зелений і не міг впасти НІКОЛИ (byte-level знахідка рев'ю Феї,
+      // 2026-08-24: `od -c` на цьому рядку). Негативний lookahead — той
+      // самий намір без ризику невидимого байта.
+      expect(code).not.toMatch(/\.ocr(?![_A-Za-z0-9])/)
       expect(code).not.toMatch(/materialsOcr|ocrEnabled/)
     }
   })
