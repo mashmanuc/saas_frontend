@@ -50,7 +50,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="nmt-task__delete-btn"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -111,7 +111,7 @@
           class="nmt-task__input"
           :type="data.inputType ?? 'text'"
           v-model="openAnswerValue"
-          placeholder="Введіть відповідь…"
+          :placeholder="t('winterboard.widget.nmtTask.answerPlaceholder')"
           @mousedown.stop
           @pointerdown.stop
         />
@@ -197,6 +197,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
@@ -215,6 +216,8 @@ import WBStepInput from '../../copilot/WBStepInput.vue'
 // але ЛИШЕ коли активний канал AI-репетитора (учень); тьютора не чіпає.
 import { useTutorRevealGate } from '../../../composables/useStudentTutor'
 import { snapshotElement } from '../../../utils/snapshotElement'
+
+const { t } = useI18n()
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
 

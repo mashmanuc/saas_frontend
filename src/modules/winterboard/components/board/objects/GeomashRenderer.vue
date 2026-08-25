@@ -24,7 +24,7 @@
       <button
         type="button"
         class="gm-expand"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         @click.stop="emit('expand')"
         @mousedown.stop
         @pointerdown.stop
@@ -33,7 +33,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="gm-delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -63,7 +63,7 @@
         <label class="gm-ctx__row">Колір
           <input type="color" :value="ctxMenuColor" @input="ctxSetColor" />
         </label>
-        <button type="button" class="gm-ctx__del" @click="ctxDelete">Видалити</button>
+        <button type="button" class="gm-ctx__del" @click="ctxDelete">{{ t('winterboard.widget.delete') }}</button>
       </div>
     </div>
   </div>
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { WBAsset } from '../../../types/winterboard'
 import type { GeoObject, GeoRendererInstance, GeoView, GeoCmd, GeoStylePatch, GeoToolSpecEntry } from '../../../vendor/geomash'
 import { geomashInspectorState, registerGeomashInspector, unregisterGeomashInspector } from '../../../board/state/geomashInspectorState'
@@ -79,6 +80,8 @@ import { geomashToolState, clearGeomashPicks, resetGeomashTool, enterSelectMode 
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; isExpanded?: boolean }>(),

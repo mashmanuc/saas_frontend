@@ -47,7 +47,7 @@
       <button
         type="button"
         class="gc-expand-btn"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         data-testid="graph-calc-expand-btn"
         @click.stop="$emit('expand')"
       >{{ isExpanded ? '⊠' : '⛶' }}</button>
@@ -111,7 +111,7 @@
             <span
               class="gc-swatch"
               :style="{ background: expr.color, opacity: expr.hidden ? 0.3 : 1 }"
-              title="Приховати / показати"
+              :title="t('winterboard.widget.graphCalc.toggleVisibility')"
               @click.left.stop="onToggleHidden(expr.id)"
               @contextmenu.prevent
             />
@@ -119,7 +119,7 @@
               type="text"
               class="gc-input"
               :value="expr.src"
-              :placeholder="idx === 0 ? 'y = x^2  (натисни / для шаблонів)' : ''"
+              :placeholder="idx === 0 ? t('winterboard.widget.graphCalc.exprPlaceholder') : ''"
               @input="onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
               @blur="onInputBlur(expr.id)"
               @keydown.enter.prevent="onEnterPress(expr.id)"
@@ -165,7 +165,7 @@
             <button
               type="button"
               class="gc-row-del"
-              title="Видалити"
+              :title="t('winterboard.widget.delete')"
               @click="onRemoveExpression(expr.id)"
             >−</button>
             <!-- Phase G2 review #3: hint для ambiguous multi-letter tokens.
@@ -211,12 +211,17 @@
         <!-- Phase G4: help hint під параметрами (видно тільки коли є params). -->
         <div v-if="paramEntries.length > 0" class="gc-help-hint">
           <span class="gc-help-hint__icon">💡</span>
-          <span><kbd>Shift</kbd>+drag або <kbd>↕</kbd> — керує параметром</span>
+          <!-- i18n: рядок цілісний, з kbd-слотами — інакше переклад
+               довелось би різати на шматки навколо клавіш. -->
+          <i18n-t keypath="winterboard.widget.graphCalc.paramHelp" tag="span" scope="global">
+            <template #shift><kbd>Shift</kbd></template>
+            <template #icon><kbd>↕</kbd></template>
+          </i18n-t>
         </div>
 
         <!-- Phase G2: interactive points. List + add button. Drag mechanism — engine canvas. -->
         <div v-if="pointEntries.length > 0 || canAddPoints" class="gc-points">
-          <div class="gc-points-header">Точки</div>
+          <div class="gc-points-header">{{ t('winterboard.widget.graphCalc.points') }}</div>
           <div
             v-for="p in pointEntries"
             :key="p.id"
@@ -227,7 +232,7 @@
             <button
               type="button"
               class="gc-point-del"
-              title="Видалити точку"
+              :title="t('winterboard.widget.graphCalc.deletePoint')"
               @click.stop="onDeletePoint(p.id)"
             >−</button>
           </div>
@@ -251,7 +256,7 @@
             <span
               v-if="dragParamNames.length"
               class="gc-params-hint"
-              :title="`Shift+drag по графіку керує параметром (${dragParamNames.join(', ')})`"
+              :title="t('winterboard.widget.graphCalc.paramDragTitle', { names: dragParamNames.join(', ') })"
             >Shift-drag</span>
             <span
               v-else
@@ -268,7 +273,7 @@
             <button
               type="button"
               class="gc-param-name"
-              :title="paramExpanded[p.name] ? 'Згорнути' : 'Налаштувати діапазон'"
+              :title="paramExpanded[p.name] ? t('winterboard.widget.graphCalc.rangeCollapse') : t('winterboard.widget.graphCalc.rangeExpand')"
               @click.stop="toggleParamExpand(p.name)"
             >{{ p.name }} =</button>
             <input
@@ -339,6 +344,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { GraphCalculator, GraphCalc } from '../../../vendor/graph_calculator/graph-calculator.js'
 import type { WBAsset } from '../../../types/winterboard'
 import type {
@@ -364,6 +370,8 @@ import type { GraphCalcInspectorBridge } from '../../../board/state/graphCalcIns
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+
+const { t } = useI18n()
 
 interface Props {
   asset: WBAsset

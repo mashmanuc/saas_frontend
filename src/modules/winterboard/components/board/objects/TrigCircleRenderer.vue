@@ -40,7 +40,7 @@
         type="button"
         class="trig-circle-hud-toggle"
         :class="{ 'is-active': local.showHud }"
-        :title="local.showHud ? 'Приховати значення' : 'Показати значення'"
+        :title="local.showHud ? t('winterboard.widget.trigCircle.hideValues') : t('winterboard.widget.trigCircle.showValues')"
         @click.stop="toggle('showHud')"
         @mousedown.stop
         @pointerdown.stop
@@ -49,7 +49,7 @@
       <button
         type="button"
         class="trig-circle-expand"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         @click.stop="$emit('expand')"
         @mousedown.stop
         @pointerdown.stop
@@ -76,7 +76,7 @@
     <div v-if="false" class="trig-toolbar">
       <!-- Рядок 1: функції + підписи + сітка -->
       <div class="trig-toolbar__row">
-        <span class="trig-group-label">функції:</span>
+        <span class="trig-group-label">{{ t('winterboard.widget.trigCircle.functions') }}</span>
         <button
           v-for="fn in FUNC_TOGGLES"
           :key="fn.key"
@@ -90,7 +90,7 @@
 
         <span class="trig-sep" />
 
-        <span class="trig-group-label">підписи:</span>
+        <span class="trig-group-label">{{ t('winterboard.widget.trigCircle.labels') }}</span>
         <button
           v-for="lb in LABEL_TOGGLES"
           :key="lb.key"
@@ -104,7 +104,7 @@
 
         <span class="trig-sep" />
 
-        <span class="trig-group-label">сітка:</span>
+        <span class="trig-group-label">{{ t('winterboard.widget.trigCircle.grid') }}</span>
         <button
           v-for="gr in GRID_TOGGLES"
           :key="gr.key"
@@ -119,7 +119,7 @@
 
       <!-- Рядок 2: рух + швидкість + пресети кутів -->
       <div class="trig-toolbar__row">
-        <span class="trig-group-label">рух:</span>
+        <span class="trig-group-label">{{ t('winterboard.widget.trigCircle.motion') }}</span>
 
         <button
           type="button"
@@ -128,7 +128,7 @@
           @click.stop="toggleDraw"
           @mousedown.stop
           @pointerdown.stop
-        >✎ Синусоїда</button>
+        >{{ t('winterboard.widget.trigCircle.sineWave') }}</button>
 
         <button
           type="button"
@@ -137,7 +137,7 @@
           @click.stop="toggleAnimate"
           @mousedown.stop
           @pointerdown.stop
-        >▶ Обертання</button>
+        >{{ t('winterboard.widget.trigCircle.rotation') }}</button>
 
         <button
           type="button"
@@ -151,7 +151,7 @@
         <span class="trig-sep" />
 
         <label class="trig-slider">
-          <span>швидкість</span>
+          <span>{{ t('winterboard.widget.trigCircle.speed') }}</span>
           <input
             type="range"
             min="0.1"

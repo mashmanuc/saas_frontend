@@ -23,7 +23,7 @@
       <button
         type="button"
         class="gm3d-expand-btn"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         @click.stop="emit('expand')"
         @mousedown.stop
         @pointerdown.stop
@@ -32,7 +32,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="gm3d-delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -48,12 +48,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { WBAsset, MashSceneData } from '../../../types/winterboard'
 import { registerGraphmash3dInspector, unregisterGraphmash3dInspector } from '../../../board/state/graphmash3dInspectorState'
 import type { Gm3dExprEntry, Gm3dParamEntry, Graphmash3dInspectorBridge } from '../../../board/state/graphmash3dInspectorState'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
+
+const { t } = useI18n()
 
 interface Gm3dEngine {
   setState(state: { expressions: unknown[]; params?: Record<string, number> }): void

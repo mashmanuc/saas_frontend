@@ -7418,7 +7418,13 @@
         "second": "Second point",
         "grid": "Grid",
         "axes": "Axes",
-        "reset": "Reset"
+        "reset": "Reset",
+        "diameter": "Diameter",
+        "chord": "Chord",
+        "tangent": "Tangent",
+        "inscribed": "Inscribed angle",
+        "squares": "Squares",
+        "measures": "Measures"
       },
       "preset": {
         "similar": {
@@ -7481,6 +7487,16 @@
           "full": "Rhombus",
           "desc": "equal sides · perpendicular diagonals"
         }
+      },
+      "hint": {
+        "euler9": "G, H, O are collinear · 9 points on one circle",
+        "inversion": "Drag P · P′ moves along the same ray from O",
+        "parallelogram": "Drag A/B/D · C = D + (B−A) automatically",
+        "parallels": "a ∥ b · drag the points · angles stay live",
+        "rectangle": "Drag A/B/D · C = D + (B−A) automatically",
+        "rhombus": "Drag A/B · ∠A = 60° · |AD| = |AB| automatically",
+        "simson": "Drag P along the circle · F₁, F₂, F₃ always collinear",
+        "trapezium": "Drag A/B/D freely · C stays on the top line (‖ AB)"
       }
     },
     "contentSidebar": {
@@ -9265,6 +9281,65 @@
         "mic": "Dictate by voice",
         "throttled": "Too fast — wait a second.",
         "failed": "Could not send. Try again."
+      }
+    },
+    "widget": {
+      "delete": "Delete",
+      "collapse": "Collapse",
+      "expand": "Expand to full board",
+      "formula": {
+        "edit": "Edit formula"
+      },
+      "graphCalc": {
+        "points": "Points",
+        "toggleVisibility": "Hide / show",
+        "exprPlaceholder": "y = x^2  (press / for templates)",
+        "deletePoint": "Delete point",
+        "rangeCollapse": "Collapse",
+        "rangeExpand": "Set range",
+        "paramHelp": "{shift}+drag or {icon} — controls the parameter",
+        "paramDragTitle": "Shift+drag on the graph controls the parameter ({names})"
+      },
+      "helix": {
+        "view": "view:",
+        "shadows": "shadows:",
+        "style": "style:",
+        "motion": "motion:",
+        "spinTheta": "▶ spin θ",
+        "spinCamera": "↻ camera",
+        "waveFromPoint": "⤴ wave from point",
+        "speed": "speed"
+      },
+      "mash": {
+        "openInMash": "Open in MASH ↗"
+      },
+      "nmt3d": {
+        "adaptMode": "⚙ adapt",
+        "drawMode": "✎ draw",
+        "adaptHint": "Adapt: rotate the 3D shape, drag the handles",
+        "drawHint": "Draw: sketch on the shape like on a board"
+      },
+      "nmtTask": {
+        "answerPlaceholder": "Type your answer…"
+      },
+      "trigCircle": {
+        "functions": "functions:",
+        "labels": "labels:",
+        "grid": "grid:",
+        "motion": "motion:",
+        "sineWave": "✎ Sine wave",
+        "rotation": "▶ Rotation",
+        "speed": "speed",
+        "hideValues": "Hide values",
+        "showValues": "Show values"
+      },
+      "trigSolver": {
+        "sign": "sign:",
+        "graph": "~ graph",
+        "allSolutions": "∞ all",
+        "snapToTable": "Snap to table values",
+        "showGraph": "Show the graph",
+        "showAllSolutions": "Show all solutions"
       }
     }
   },

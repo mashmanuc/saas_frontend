@@ -33,7 +33,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="trig-slv-delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -65,7 +65,7 @@
 
       <!-- Relation -->
       <div class="trig-slv-group">
-        <span class="trig-slv-label">знак:</span>
+        <span class="trig-slv-label">{{ t('winterboard.widget.trigSolver.sign') }}</span>
         <button
           v-for="r in REL_OPTS"
           :key="r.v"
@@ -118,7 +118,7 @@
         type="button"
         class="trig-slv-btn"
         :class="{ 'is-active': local.snapSpecial }"
-        title="Snap до табличних значень"
+        :title="t('winterboard.widget.trigSolver.snapToTable')"
         @click.stop="toggleOpt('snapSpecial')"
         @mousedown.stop
         @pointerdown.stop
@@ -128,27 +128,28 @@
         type="button"
         class="trig-slv-btn"
         :class="{ 'is-active': local.showGraph }"
-        title="Показати графік"
+        :title="t('winterboard.widget.trigSolver.showGraph')"
         @click.stop="toggleOpt('showGraph')"
         @mousedown.stop
         @pointerdown.stop
-      >~ графік</button>
+      >{{ t('winterboard.widget.trigSolver.graph') }}</button>
 
       <button
         type="button"
         class="trig-slv-btn"
         :class="{ 'is-active': local.showAllSolutions }"
-        title="Показати всі розв'язки"
+        :title="t('winterboard.widget.trigSolver.showAllSolutions')"
         @click.stop="toggleOpt('showAllSolutions')"
         @mousedown.stop
         @pointerdown.stop
-      >∞ всі</button>
+      >{{ t('winterboard.widget.trigSolver.allSolutions') }}</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TrigSolverAsset, TrigFuncType, TrigRelation } from '../../../types/trigSolver'
 import type { TrigEquationInstance } from '../../../vendor/trig/index'
 import { registerTrigSolver, unregisterTrigSolver } from '../../../board/state/trigSolverUiState'
@@ -156,6 +157,8 @@ import type { TrigSolverBridge } from '../../../board/state/trigSolverUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   asset: TrigSolverAsset

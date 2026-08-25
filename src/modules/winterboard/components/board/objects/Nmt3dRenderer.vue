@@ -32,7 +32,7 @@
       <button
         type="button"
         class="nmt3d-expand-btn"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         @click.stop="$emit('expand')"
         @mousedown.stop
         @pointerdown.stop
@@ -44,21 +44,21 @@
           type="button"
           class="nmt3d-mode-btn"
           :class="{ 'is-active': localMode === 'adapt' }"
-          title="Адаптація: обертай 3D, тягни ручки"
+          :title="t('winterboard.widget.nmt3d.adaptHint')"
           @click.stop="setMode('adapt')"
-        >⚙ адаптація</button>
+        >{{ t('winterboard.widget.nmt3d.adaptMode') }}</button>
         <button
           type="button"
           class="nmt3d-mode-btn"
           :class="{ 'is-active': localMode === 'draw' }"
-          title="Малювання: малюй по фігурі як на дошці"
+          :title="t('winterboard.widget.nmt3d.drawHint')"
           @click.stop="setMode('draw')"
-        >✎ малювання</button>
+        >{{ t('winterboard.widget.nmt3d.drawMode') }}</button>
       </div>
 
       <!-- Mode badge (read-only) -->
       <span v-else class="nmt3d-mode-badge">
-        {{ localMode === 'draw' ? '✎ малювання' : '⚙ адаптація' }}
+        {{ localMode === 'draw' ? t('winterboard.widget.nmt3d.drawMode') : t('winterboard.widget.nmt3d.adaptMode') }}
       </span>
 
       <!-- Delete (selected + not locked + not expanded) -->
@@ -66,7 +66,7 @@
         v-if="!asset.locked && isSelected && !isExpanded"
         type="button"
         class="nmt3d-delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="$emit('delete')"
         @mousedown.stop
         @pointerdown.stop

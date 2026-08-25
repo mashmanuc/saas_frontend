@@ -36,14 +36,14 @@
       <button
         type="button"
         class="formula-card-renderer__btn formula-card-renderer__btn--edit"
-        title="Редагувати формулу"
+        :title="t('winterboard.widget.formula.edit')"
         @click.stop="emit('request-edit')"
       >✎</button>
       <button
         v-if="!asset.locked"
         type="button"
         class="formula-card-renderer__btn formula-card-renderer__btn--delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
       >×</button>
     </div>
@@ -52,8 +52,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { FormulaCardAsset } from '../../../types/formulaCard'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

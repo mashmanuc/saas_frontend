@@ -8244,7 +8244,13 @@
         "second": "Друга точка",
         "grid": "Сітка",
         "axes": "Осі",
-        "reset": "Скинути"
+        "reset": "Скинути",
+        "diameter": "Діаметр",
+        "chord": "Хорда",
+        "tangent": "Дотична",
+        "inscribed": "Вписаний кут",
+        "squares": "Квадрати",
+        "measures": "Виміри"
       },
       "preset": {
         "similar": {
@@ -8307,6 +8313,16 @@
           "full": "Ромб",
           "desc": "рівні сторони · перпендикулярні діагоналі"
         }
+      },
+      "hint": {
+        "euler9": "G, H, O — колінеарні · 9 точок — на колі",
+        "inversion": "Тягни P · P′ повзе по тому ж променю від O",
+        "parallelogram": "Тягни A/B/D · C = D + (B−A) авто",
+        "parallels": "a ∥ b · тягни точки · кути живі",
+        "rectangle": "Тягни A/B/D · C = D + (B−A) авто",
+        "rhombus": "Тягни A/B · ∠A = 60° · |AD| = |AB| авто",
+        "simson": "Тягни P уздовж кола · F₁, F₂, F₃ завжди на прямій",
+        "trapezium": "Тягни A/B/D вільно · C по верхній прямій (‖ AB)"
       }
     },
     "contentSidebar": {
@@ -9353,6 +9369,65 @@
         "mic": "Диктувати голосом",
         "throttled": "Занадто часто — зачекай секунду.",
         "failed": "Не вдалося надіслати. Спробуй ще раз."
+      }
+    },
+    "widget": {
+      "delete": "Видалити",
+      "collapse": "Згорнути",
+      "expand": "Розгорнути на цілу дошку",
+      "formula": {
+        "edit": "Редагувати формулу"
+      },
+      "graphCalc": {
+        "points": "Точки",
+        "toggleVisibility": "Приховати / показати",
+        "exprPlaceholder": "y = x^2  (натисни / для шаблонів)",
+        "deletePoint": "Видалити точку",
+        "rangeCollapse": "Згорнути",
+        "rangeExpand": "Налаштувати діапазон",
+        "paramHelp": "{shift}+drag або {icon} — керує параметром",
+        "paramDragTitle": "Shift+drag по графіку керує параметром ({names})"
+      },
+      "helix": {
+        "view": "огляд:",
+        "shadows": "тіні:",
+        "style": "вигляд:",
+        "motion": "рух:",
+        "spinTheta": "▶ обертати θ",
+        "spinCamera": "↻ камеру",
+        "waveFromPoint": "⤴ хвиля з точки",
+        "speed": "швидкість"
+      },
+      "mash": {
+        "openInMash": "Відкрити у MASH ↗"
+      },
+      "nmt3d": {
+        "adaptMode": "⚙ адаптація",
+        "drawMode": "✎ малювання",
+        "adaptHint": "Адаптація: обертай 3D, тягни ручки",
+        "drawHint": "Малювання: малюй по фігурі як на дошці"
+      },
+      "nmtTask": {
+        "answerPlaceholder": "Введіть відповідь…"
+      },
+      "trigCircle": {
+        "functions": "функції:",
+        "labels": "підписи:",
+        "grid": "сітка:",
+        "motion": "рух:",
+        "sineWave": "✎ Синусоїда",
+        "rotation": "▶ Обертання",
+        "speed": "швидкість",
+        "hideValues": "Приховати значення",
+        "showValues": "Показати значення"
+      },
+      "trigSolver": {
+        "sign": "знак:",
+        "graph": "~ графік",
+        "allSolutions": "∞ всі",
+        "snapToTable": "Snap до табличних значень",
+        "showGraph": "Показати графік",
+        "showAllSolutions": "Показати всі розв'язки"
       }
     }
   },

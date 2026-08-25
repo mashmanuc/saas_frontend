@@ -66,7 +66,7 @@
         add(con, G.midpoint('N9', 'O', 'H', { label: 'N₉', labelOffset: { x: 10, y: -4 }, color: ORANGE, size: 5 }));
 
         // Підказка
-        add(con, G.formula('hint', () => 'G, H, O — колінеарні · 9 точок — на колі', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'G, H, O — колінеарні · 9 точок — на колі', { i18nKey: 'hint.euler9', anchor: 'tl' }));
         add(con, G.formula('proportion', () => 'GH = 2 · GO', { anchor: 'bl' }));
       },
       toggles: [
@@ -163,7 +163,7 @@
         // Симсонова пряма (через 2 з 3 проекцій — третя на ній автоматично)
         add(con, G.line('simson', 'F_AB', 'F_BC', { color: PURPLE, width: 2.5 }));
 
-        add(con, G.formula('hint', () => 'Drag P уздовж кола · F₁, F₂, F₃ завжди на прямій', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag P уздовж кола · F₁, F₂, F₃ завжди на прямій', { i18nKey: 'hint.simson', anchor: 'tl' }));
       },
       toggles: [
         { key: 'perpendiculars', label: 'Перпендикуляри', icon: '⊥', default: true, apply(con, on) {
@@ -229,7 +229,7 @@
         add(con, G.ray('ray_OPP', 'O', 'P', { style: 'dashed', color: GRAY, width: 1 }));
 
         // Live підказка та формули
-        add(con, G.formula('hint', () => 'Drag P · P′ повзе по тому ж променю від O', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag P · P′ повзе по тому ж променю від O', { i18nKey: 'hint.inversion', anchor: 'tl' }));
         add(con, G.formula('product', (reg) => {
           const O = reg.get('O'), R = reg.get('R'), P = reg.get('P');
           const r = Math.hypot(R.x - O.x, R.y - O.y);
@@ -310,7 +310,7 @@
         add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
         add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
 
-        add(con, G.formula('hint', () => 'Drag A/B/D вільно · C по верхній прямій (‖ AB)', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag A/B/D вільно · C по верхній прямій (‖ AB)', { i18nKey: 'hint.trapezium', anchor: 'tl' }));
         add(con, G.formula('areas', (r) => {
           const A = r.get('A'), B = r.get('B'), Cp = r.get('C'), Dp = r.get('D');
           const u = window.Geo2D.util;
@@ -438,8 +438,7 @@
         add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
         add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
 
-        add(con, G.formula('hint', () => 'Drag A/B · ∠A = 60° · |AD| = |AB| авто',
-                           { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag A/B · ∠A = 60° · |AD| = |AB| авто', { i18nKey: 'hint.rhombus', anchor: 'tl' }));
         add(con, G.formula('area', (r) => {
           const u = window.Geo2D.util;
           const A = r.get('A'), B = r.get('B');
@@ -515,7 +514,7 @@
         add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
         add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
 
-        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { i18nKey: 'hint.parallelogram', anchor: 'tl' }));
         add(con, G.formula('area', (r) => {
           const A = r.get('A'), B = r.get('B'), D = r.get('D');
           const u = window.Geo2D.util;
@@ -736,7 +735,7 @@
         add(con, G.segment('CD', 'C', 'D', { color: INK, width: 2 }));
         add(con, G.segment('DA', 'D', 'A', { color: INK, width: 2 }));
 
-        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'Drag A/B/D · C = D + (B−A) авто', { i18nKey: 'hint.rectangle', anchor: 'tl' }));
         add(con, G.formula('area', (r) => {
           const A = r.get('A'), B = r.get('B'), D = r.get('D');
           const a = Math.sqrt((B.x - A.x) ** 2 + (B.y - A.y) ** 2);
@@ -822,7 +821,7 @@
         add(con, G.intersectLL('N', 'b', 't', { label: 'N', labelOffset: { x: 10, y: 10 }, color: '#1e293b' }));
 
         // Підказка
-        add(con, G.formula('hint', () => 'a ∥ b · тягни точки · кути живі', { anchor: 'tl' }));
+        add(con, G.formula('hint', () => 'a ∥ b · тягни точки · кути живі', { i18nKey: 'hint.parallels', anchor: 'tl' }));
       },
       toggles: [
         // Відповідні кути — пара ∠1 (M, top-left) та ∠5 (N, bottom-left).

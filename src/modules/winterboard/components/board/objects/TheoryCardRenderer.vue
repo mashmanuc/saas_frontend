@@ -31,7 +31,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="theory-card__delete-btn"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -86,11 +86,14 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { detectCardPreset } from '../../../utils/detectCardPreset'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

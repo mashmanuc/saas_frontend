@@ -369,6 +369,10 @@
   G.formula = (id, fn, opts = {}) => ({
     ...curve(id, 'formula', opts),
     deps: opts.deps || [], fn, ax: opts.ax || 0, ay: opts.ay || 0, anchor: opts.anchor || 'tl',
+    // i18n (2026-08-19): підказки всередині полотна писались літералом
+    // українською і лишались українськими при ENG. Ключ опційний — без нього
+    // поведінка та сама, що й була (fn() як єдине джерело тексту).
+    i18nKey: opts.i18nKey || null,
   });
   G.distanceLine = (id, a, b, opts = {}) => ({
     ...curve(id, 'distance_line', { style: 'distance', ...opts }),
@@ -778,7 +782,12 @@
         const t = mk(this.gLabels, 'text', { x: cs.x, y: cs.y + 4, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono, monospace', 'font-size': 12, fill: P.ink2 });
         t.textContent = o.prefix + fmt(Math.abs(polygonArea(pts)), 2) + o.suffix;
       } else if (o.kind === 'formula') {
-        const txt = o.fn(this.con);
+        // Переклад має пріоритет над літералом, але лише якщо він СПРАВДІ є:
+        // порожній результат означає «ключа немає в локалі» → лишаємо
+        // авторський текст, а не порожню плашку.
+        const translated = (o.i18nKey && typeof this.opts.i18n === 'function')
+          ? this.opts.i18n(o.i18nKey) : null;
+        const txt = translated || o.fn(this.con);
         const lines = ('' + txt).split('\n');
         let x, y, anchor;
         if (o.anchor === 'tl') { x = 12; y = 18; anchor = 'start'; }

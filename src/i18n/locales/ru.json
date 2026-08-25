@@ -7490,7 +7490,13 @@
         "second": "Вторая точка",
         "grid": "Сетка",
         "axes": "Оси",
-        "reset": "Сбросить"
+        "reset": "Сбросить",
+        "diameter": "Диаметр",
+        "chord": "Хорда",
+        "tangent": "Касательная",
+        "inscribed": "Вписанный угол",
+        "squares": "Квадраты",
+        "measures": "Измерения"
       },
       "preset": {
         "similar": {
@@ -7553,6 +7559,16 @@
           "full": "Ромб",
           "desc": "равные стороны · перпендикулярные диагонали"
         }
+      },
+      "hint": {
+        "euler9": "G, H, O — коллинеарны · 9 точек — на окружности",
+        "inversion": "Тяни P · P′ движется по тому же лучу из O",
+        "parallelogram": "Тяни A/B/D · C = D + (B−A) авто",
+        "parallels": "a ∥ b · тяни точки · углы живые",
+        "rectangle": "Тяни A/B/D · C = D + (B−A) авто",
+        "rhombus": "Тяни A/B · ∠A = 60° · |AD| = |AB| авто",
+        "simson": "Тяни P вдоль окружности · F₁, F₂, F₃ всегда на прямой",
+        "trapezium": "Тяни A/B/D свободно · C на верхней прямой (‖ AB)"
       }
     },
     "contentSidebar": {
@@ -8856,6 +8872,65 @@
       "bounds": "границы",
       "min": "Минимум",
       "max": "Максимум"
+    },
+    "widget": {
+      "delete": "Удалить",
+      "collapse": "Свернуть",
+      "expand": "Развернуть на всю доску",
+      "formula": {
+        "edit": "Редактировать формулу"
+      },
+      "graphCalc": {
+        "points": "Точки",
+        "toggleVisibility": "Скрыть / показать",
+        "exprPlaceholder": "y = x^2  (нажми / для шаблонов)",
+        "deletePoint": "Удалить точку",
+        "rangeCollapse": "Свернуть",
+        "rangeExpand": "Настроить диапазон",
+        "paramHelp": "{shift}+drag или {icon} — управляет параметром",
+        "paramDragTitle": "Shift+drag по графику управляет параметром ({names})"
+      },
+      "helix": {
+        "view": "обзор:",
+        "shadows": "тени:",
+        "style": "вид:",
+        "motion": "движение:",
+        "spinTheta": "▶ вращать θ",
+        "spinCamera": "↻ камеру",
+        "waveFromPoint": "⤴ волна из точки",
+        "speed": "скорость"
+      },
+      "mash": {
+        "openInMash": "Открыть в MASH ↗"
+      },
+      "nmt3d": {
+        "adaptMode": "⚙ адаптация",
+        "drawMode": "✎ рисование",
+        "adaptHint": "Адаптация: вращай 3D, тяни ручки",
+        "drawHint": "Рисование: рисуй по фигуре как на доске"
+      },
+      "nmtTask": {
+        "answerPlaceholder": "Введите ответ…"
+      },
+      "trigCircle": {
+        "functions": "функции:",
+        "labels": "подписи:",
+        "grid": "сетка:",
+        "motion": "движение:",
+        "sineWave": "✎ Синусоида",
+        "rotation": "▶ Вращение",
+        "speed": "скорость",
+        "hideValues": "Скрыть значения",
+        "showValues": "Показать значения"
+      },
+      "trigSolver": {
+        "sign": "знак:",
+        "graph": "~ график",
+        "allSolutions": "∞ все",
+        "snapToTable": "Snap к табличным значениям",
+        "showGraph": "Показать график",
+        "showAllSolutions": "Показать все решения"
+      }
     }
   },
   "knowledge": {

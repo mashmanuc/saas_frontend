@@ -88,7 +88,16 @@ declare global {
       Renderer: new (container: HTMLElement, con: unknown, defaults: unknown) => unknown
       PRESETS: Record<string, unknown>
     }
-    GeoCard: new (container: HTMLElement, opts: { type: string }) => GeoCardInstance
+    GeoCard: new (
+      container: HTMLElement,
+      opts: {
+        type: string
+        /** i18n (8-19): перекладач для підказок, які малює сам vendor.
+         *  Повертає `null`, якщо ключа в локалі немає — тоді лишається
+         *  авторський текст пресету. */
+        i18n?: (key: string) => string | null
+      },
+    ) => GeoCardInstance
     /**
      * Creates the preset's toggle toolbar and appends it to `host`.
      * Returns the root `<div class="toolbar">` element for further DOM queries

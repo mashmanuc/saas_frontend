@@ -42,7 +42,7 @@
         class="geo2dv2-delete"
         data-testid="geometry-2d-v2-delete"
         aria-label="Delete geometry"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="onDelete"
       >×</button>
     </header>
@@ -160,7 +160,7 @@ async function mount(): Promise<void> {
   await ensureBundle()
   if (!stageRef.value) return
   const W = window as unknown as {
-    GeoCard: new (el: HTMLElement, o: { type: string }) => GeoCardInstance
+    GeoCard: new (el: HTMLElement, o: { type: string; i18n?: (key: string) => string | null }) => GeoCardInstance
     makeGeoToolbar: (c: GeoCardInstance, h: HTMLElement) => HTMLDivElement
   }
   const rawPreset = props.asset.data.preset
@@ -175,7 +175,16 @@ async function mount(): Promise<void> {
     presetKey = 'triangle'
     if (rawPreset) console.warn('[Geometry2DRenderer] Unknown preset:', rawPreset, '-> triangle')
   }
-  card = new W.GeoCard(stageRef.value, { type: presetKey })
+  card = new W.GeoCard(stageRef.value, {
+    type: presetKey,
+    // i18n (2026-08-19): підказки всередині полотна («G, H, O — колінеарні…»)
+    // малює vendor, тож перекладач передаємо туди. Немає ключа в локалі →
+    // повертаємо null, і vendor лишає авторський текст.
+    i18n: (key: string) => {
+      const full = `winterboard.geo2dV2.${key}`
+      return te(full) ? t(full) : null
+    },
+  })
   applyPersistedToggles()
   applyPersistedPoints()
   wirePointMovePersistence()

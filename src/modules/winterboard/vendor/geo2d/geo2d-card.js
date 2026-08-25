@@ -8,6 +8,8 @@
       this.type = opts.type;
       this.preset = PRESETS[opts.type];
       if (!this.preset) throw new Error('Unknown preset: ' + opts.type);
+      // Опційний перекладач `(key) => string | null` від Vue-обгортки.
+      this.i18n = typeof opts.i18n === 'function' ? opts.i18n : null;
       this.toggleState = {};
       this._build();
     }
@@ -15,7 +17,10 @@
     _build() {
       this.con = new Construction();
       this.preset.build(this.con);
-      this.renderer = new Renderer(this.container, this.con, this.preset.defaults || {});
+      this.renderer = new Renderer(this.container, this.con,
+        // i18n прокидається до рендерера — саме він малює formula-плашки.
+        Object.assign({}, this.preset.defaults || {},
+                      this.i18n ? { i18n: this.i18n } : {}));
       // apply toggles with defaults
       (this.preset.toggles || []).forEach((t) => {
         const on = !!t.default;

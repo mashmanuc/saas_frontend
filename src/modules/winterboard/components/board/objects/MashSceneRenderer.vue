@@ -26,7 +26,7 @@
         v-if="!asset.locked && isSelected"
         type="button"
         class="msc-delete"
-        title="Видалити"
+        :title="t('winterboard.widget.delete')"
         @click.stop="emit('delete')"
         @mousedown.stop
         @pointerdown.stop
@@ -51,16 +51,19 @@
         @mousedown.stop
         @pointerdown.stop
         @click.stop
-      >Відкрити у MASH ↗</a>
+      >{{ t('winterboard.widget.mash.openInMash') }}</a>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { WBAsset, MashSceneData } from '../../../types/winterboard'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

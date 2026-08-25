@@ -27,7 +27,7 @@
       <button
         type="button"
         class="helix-expand"
-        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
         @click.stop="$emit('expand')"
         @mousedown.stop
         @pointerdown.stop
@@ -48,7 +48,7 @@
     <div v-if="false" class="helix-toolbar">
       <!-- Рядок 1: огляд + тіні + допоміжне -->
       <div class="helix-toolbar__row">
-        <span class="helix-glabel">огляд:</span>
+        <span class="helix-glabel">{{ t('winterboard.widget.helix.view') }}</span>
         <button
           v-for="v in VIEW_PRESETS"
           :key="v.name"
@@ -61,7 +61,7 @@
 
         <span class="helix-sep" />
 
-        <span class="helix-glabel">тіні:</span>
+        <span class="helix-glabel">{{ t('winterboard.widget.helix.shadows') }}</span>
         <button
           v-for="s in SHADOW_TOGGLES"
           :key="s.key"
@@ -75,7 +75,7 @@
 
         <span class="helix-sep" />
 
-        <span class="helix-glabel">вигляд:</span>
+        <span class="helix-glabel">{{ t('winterboard.widget.helix.style') }}</span>
         <button
           v-for="d in DISPLAY_TOGGLES"
           :key="d.key"
@@ -90,7 +90,7 @@
 
       <!-- Рядок 2: рух + швидкість + пресети θ -->
       <div class="helix-toolbar__row">
-        <span class="helix-glabel">рух:</span>
+        <span class="helix-glabel">{{ t('winterboard.widget.helix.motion') }}</span>
 
         <button
           type="button"
@@ -99,7 +99,7 @@
           @click.stop="toggleAnimate"
           @mousedown.stop
           @pointerdown.stop
-        >▶ обертати θ</button>
+        >{{ t('winterboard.widget.helix.spinTheta') }}</button>
 
         <button
           type="button"
@@ -108,7 +108,7 @@
           @click.stop="toggleAnimateCam"
           @mousedown.stop
           @pointerdown.stop
-        >↻ камеру</button>
+        >{{ t('winterboard.widget.helix.spinCamera') }}</button>
 
         <button
           type="button"
@@ -117,12 +117,12 @@
           @click.stop="toggle('emitMode')"
           @mousedown.stop
           @pointerdown.stop
-        >⤴ хвиля з точки</button>
+        >{{ t('winterboard.widget.helix.waveFromPoint') }}</button>
 
         <span class="helix-sep" />
 
         <label class="helix-slider">
-          <span>швидкість</span>
+          <span>{{ t('winterboard.widget.helix.speed') }}</span>
           <input
             type="range"
             min="0.1"
