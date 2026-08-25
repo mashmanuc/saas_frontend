@@ -5,6 +5,7 @@ import apiClient from '@/utils/apiClient'
 //    SSOT: saas_docs/domains/LESSON_CONSTRUCTOR/TOPIC_TAXONOMY_DECISION.md
 export const TOPICS = [
   { value: 'basic-geometry-figures',                   label: 'Базові геометричні фігури' },
+  { value: 'basic-geometry-figures.angles',            label: 'Кути' },
   { value: 'circle-polygon',                           label: 'Коло і многокутник' },
   { value: 'combinatorics',                            label: 'Комбінаторика' },
   { value: 'derivative',                               label: 'Похідна' },
@@ -13,6 +14,8 @@ export const TOPICS = [
   { value: 'exponential-log-expressions',              label: 'Показникові та логарифмічні вирази' },
   { value: 'exponential-log-trig-expressions',         label: 'Показникові, логарифмічні, тригонометричні вирази' },
   { value: 'function-basics',                          label: 'Функції — основи' },
+  { value: 'geometric-constructions',                  label: 'Геометричні побудови' },
+  { value: 'geometric-transformations',                label: 'Геометричні переміщення (рухи)' },
   { value: 'inequalities-systems',                     label: 'Нерівності та системи' },
   { value: 'integral',                                 label: 'Інтеграл' },
   { value: 'irrational-trig-equations',                label: 'Ірраціональні та тригонометричні рівняння' },
@@ -34,6 +37,7 @@ export const TOPICS = [
   { value: 'real-numbers.fractions',                   label: 'Дроби' },
   { value: 'real-numbers.fractions.decimal',           label: 'Десяткові дроби' },
   { value: 'real-numbers.fractions.ordinary',          label: 'Звичайні дроби' },
+  { value: 'real-numbers.natural',                     label: 'Натуральні числа' },
   { value: 'real-numbers.rational',                    label: 'Раціональні числа' },
   { value: 'rectangle-square',                         label: 'Прямокутник і квадрат' },
   { value: 'right-triangles',                          label: 'Прямокутні трикутники' },
@@ -41,6 +45,8 @@ export const TOPICS = [
   { value: 'sequences',                                label: 'Послідовності' },
   { value: 'space-vectors-coordinates',                label: 'Вектори та координати у просторі' },
   { value: 'triangles',                                label: 'Трикутники' },
+  { value: 'triangles.congruence',                     label: 'Ознаки рівності трикутників' },
+  { value: 'triangles.similarity',                     label: 'Подібність трикутників' },
   { value: 'word-problem-equations',                   label: 'Задачі на складання рівнянь' },
 ] as const
 
