@@ -1019,7 +1019,7 @@ import { parseFolderQuery, isFolderUnavailableError } from '../utils/folderRoute
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
-import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
+import type { WBStroke, WBAsset, WBToolType, WBWorkspaceState } from '../types/winterboard'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -1089,7 +1089,7 @@ import {
 } from '../local/localWorkspaceSeed'
 import { buildHandoffOps } from '../local/localWorkspaceHandoff'
 // Телеметрія воронки гостя (wb.local.*, анонімний ID без PII) — LAW §15 виняток
-import { trackLocal, trackEngagement } from '../local/localWorkspaceTelemetry'
+import { trackLocal, trackEngagement, elapsedSincePageLoad } from '../local/localWorkspaceTelemetry'
 import { flush as flushTelemetry } from '@/utils/telemetryAgent'
 // Local Workspace Phase 2 (ТЗ §4): хмарний upsell + перемикач мови для гостя
 import CloudUpsellModal from '../components/dialogs/CloudUpsellModal.vue'
@@ -3387,10 +3387,14 @@ async function initLocalWorkspace(): Promise<void> {
   }
 
   // Воронка: вхід на робочий стіл (перший візит vs повторний).
+  // `ready_ms` — скільки дошка вантажилась до придатного до малювання стану.
+  // Це половина TTFS, за яку відповідає продукт (друга — вагання людини,
+  // її несе `ttfs_ms` у події engaged). Ціль Ф2: p50 TTFS < 10 000 мс.
+  const readyMs = elapsedSincePageLoad()
   trackLocal('workspace_opened', {
     first_visit: !snapshot && !wasSeededBefore,
     returning: !!snapshot,
-  })
+  }, readyMs === undefined ? undefined : { ready_ms: readyMs })
 
   store.workspaceId = 'local-workspace'
   store.hydrateFromSession({

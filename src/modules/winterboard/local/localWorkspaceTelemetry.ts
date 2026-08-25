@@ -15,10 +15,19 @@ import { trackEvent } from '@/utils/telemetryAgent'
 
 const ANON_ID_KEY = 'm4sh:anon-id'
 
+// ⚠️ ІМЕНА ПОДІЙ — КОНТРАКТ ІЗ БЕКЕНДОМ. Їх читає
+// `backend/apps/telemetry/management/commands/funnel.py` (константи
+// EVENT_WORKSPACE_OPENED / EVENT_FIRST_STROKE / EVENT_HANDOFF). Репозиторії
+// різні, тож CI-гейта, який зловив би розсинхрон, не існує: перейменування
+// тут не зламає нічого видимого — воронка просто почне показувати нулі.
+// Міняєш ім'я → міняй константу там же, у тому ж заході.
+
 /** Воронка гостя — повний перелік подій (дока = код). */
 export type LocalTelemetryEvent =
   | 'workspace_opened'      // {first_visit, returning, has_content}
   | 'seed_shown'            // подарунок згенеровано (лише перший візит)
+  | 'seed_refreshed'        // вітрину не чіпали → підмінено актуальною
+  | 'seed_relocalized'      // вітрину перезібрано іншою мовою {locale}
   | 'engaged'               // перша змістовна дія (штрих/об'єкт) — раз за сесію
   | 'tool_used'             // {kind} — раз на kind за сесію
   | 'upsell_shown'          // {variant: share|invite|export|media|generic}
@@ -48,15 +57,37 @@ export function getAnonId(): string {
 export function trackLocal(
   event: LocalTelemetryEvent,
   context: Record<string, unknown> = {},
+  metrics?: Record<string, number>,
 ): void {
   try {
     trackEvent(`wb.local.${event}`, {
       anon_id: getAnonId(),
       ...context,
-    })
+    }, metrics)
   } catch {
     // telemetry never throws
   }
+}
+
+// ── TTFS: час до першого штриха (Ф2 плану рекомендацій 2026-08-25) ───────────
+// Нуль відліку — початок завантаження сторінки, тому `performance.now()` у
+// момент події ВЖЕ і є шуканим числом; окремий таймер не потрібен і був би
+// гіршим (він стартував би після монтування, тобто ховав би саме ту частину,
+// яку міряємо — скільки дошка вантажилась).
+//
+// Міряємо ДВА числа, бо вони відповідають на різні питання:
+//   ready_ms — дошка стала придатною для малювання (провина продукту);
+//   ttfs_ms  — юзер справді провів перший штрих (продукт + вагання людини).
+// Одне число замість двох не дало б відповіді, чия саме затримка.
+function nowMs(): number | undefined {
+  try {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return Math.round(performance.now())
+    }
+  } catch {
+    // no-op
+  }
+  return undefined
 }
 
 // ── Session-scoped dedupe (per page load) ────────────────────────────────────
@@ -69,12 +100,18 @@ const _toolsSent = new Set<string>()
 export function trackEngagement(kind: string): void {
   if (!_engagedSent) {
     _engagedSent = true
-    trackLocal('engaged', { first_kind: kind })
+    const ttfs = nowMs()
+    trackLocal('engaged', { first_kind: kind }, ttfs === undefined ? undefined : { ttfs_ms: ttfs })
   }
   if (!_toolsSent.has(kind)) {
     _toolsSent.add(kind)
     trackLocal('tool_used', { kind })
   }
+}
+
+/** Скільки минуло від початку завантаження сторінки, мс (для `ready_ms`). */
+export function elapsedSincePageLoad(): number | undefined {
+  return nowMs()
 }
 
 /** Test-only: скинути session-dedupe. */
