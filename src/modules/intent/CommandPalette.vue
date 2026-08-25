@@ -321,6 +321,7 @@ import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
+import { humanErrorMessage, errorCodeOf } from './errorMessage'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
@@ -348,6 +349,15 @@ const ERR_MSG = {
   NOT_FOUND: 'Не знайдено або не належить вам.',
   BAD_REQUEST: 'Бракує даних для команди.',
   INTENT_INVALID: 'Невідома команда.',
+  // Коди глобального DRF-обробника (вкладена форма, apps/core/errors.py).
+  // Вони приходять, коли падає не capability, а самі права/throttle —
+  // саме їх читач раніше не бачив і показував сирий текст axios.
+  AUTH_FORBIDDEN: 'Немає доступу (потрібна роль тьютора).',
+  AUTH_REQUIRED: 'Потрібно увійти в акаунт.',
+  VALIDATION_ERROR: 'Бракує даних для команди.',
+  INTENT_VERSION_UNSUPPORTED: 'Застаріла версія команди — оновіть сторінку.',
+  SESSION_TOO_LARGE: 'Дошка завелика для експорту.',
+  CREATE_FAILED: 'Не вдалося створити. Спробуйте ще раз.',
 }
 
 const auth = useAuthStore()
@@ -401,7 +411,7 @@ async function run(fn, onOk) {
     // interceptor'ом; не дублюємо власним inline-повідомленням (finally скине loading).
     if (isLimitError(e)) return
     const d = e?.response?.data
-    error.value = ERR_MSG[d?.error] || d?.detail || e?.message || 'Помилка'
+    error.value = humanErrorMessage(e, ERR_MSG)
   } finally { loading.value = false }
 }
 
@@ -943,9 +953,9 @@ async function askAi(phrase) {
     const d = e?.response?.data
     aiPush({
       kind: 'bot',
-      text: d?.error === 'AI_UNAVAILABLE'
+      text: errorCodeOf(d) === 'AI_UNAVAILABLE'
         ? 'AI зараз недоступний — спробуйте пізніше.'
-        : (ERR_MSG[d?.error] || d?.detail || 'Помилка AI'),
+        : humanErrorMessage(e, ERR_MSG, 'Помилка AI'),
     })
     react('sad')
   } finally {
