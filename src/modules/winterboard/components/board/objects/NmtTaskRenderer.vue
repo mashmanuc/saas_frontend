@@ -148,6 +148,59 @@
         </div>
       </div>
 
+      <!-- ── Тема задачі: виправлення в потоці роботи ─────────
+           Показуємо ЛИШЕ тьютору: це зміна спільного банку, не своєї
+           копії. Бекенд теж віддає 403 — сховати кнопку це зручність,
+           403 це межа, і одне не заміняє інше. -->
+      <div v-if="topicFix.canFix.value" class="nmt-task__topic">
+        <button
+          type="button"
+          class="nmt-task__topic-btn"
+          :disabled="topicFix.saving.value"
+          @click.stop="topicFix.toggle()"
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ topicFix.done.value ? `✓ ${topicFix.done.value}` : '✎ тема' }}</button>
+
+        <div v-if="topicFix.open.value" class="nmt-task__topic-menu" @click.stop>
+          <div v-if="topicFix.loading.value" class="nmt-task__topic-note">
+            завантаження…
+          </div>
+          <template v-else>
+            <div v-if="topicFix.current.value" class="nmt-task__topic-note">
+              зараз: {{ topicFix.current.value.label }}
+            </div>
+            <button
+              v-for="opt in (topicFix.showAll.value
+                ? topicFix.allTopics.value : topicFix.suggestions.value)"
+              :key="opt.id"
+              type="button"
+              class="nmt-task__topic-item"
+              :disabled="topicFix.saving.value"
+              @click.stop="topicFix.apply(opt.id)"
+            >{{ opt.label }}</button>
+
+            <button
+              v-if="!topicFix.showAll.value"
+              type="button"
+              class="nmt-task__topic-item nmt-task__topic-item--muted"
+              @click.stop="topicFix.showAll.value = true"
+            >інша…</button>
+
+            <button
+              type="button"
+              class="nmt-task__topic-item nmt-task__topic-item--danger"
+              :disabled="topicFix.saving.value"
+              @click.stop="topicFix.reject()"
+            >задача погана — прибрати</button>
+
+            <div v-if="topicFix.error.value" class="nmt-task__topic-error">
+              {{ topicFix.error.value }}
+            </div>
+          </template>
+        </div>
+      </div>
+
       <!-- ── Action buttons ────────────────────────────────── -->
       <div class="nmt-task__actions">
         <button
@@ -224,6 +277,7 @@ import WBStepInput from '../../copilot/WBStepInput.vue'
 // 8b-2: reveal gate — «Показати відповідь/розбір» замкнені до стадії 3,
 // але ЛИШЕ коли активний канал AI-репетитора (учень); тьютора не чіпає.
 import { useTutorRevealGate } from '../../../composables/useStudentTutor'
+import { useTaskTopicFix } from '../../../composables/useTaskTopicFix'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
@@ -386,6 +440,9 @@ const hasAnswerToShow = computed(() => {
 })
 
 const revealAllowed = useTutorRevealGate(() => String(data.value.externalId ?? ''))
+
+/** Виправлення теми на місці — уся логіка в композаблі, тут лише вигляд. */
+const topicFix = useTaskTopicFix(() => String(data.value.externalId ?? ''))
 
 function toggleShowAnswer() {
   emitDataUpdate({ showAnswer: !data.value.showAnswer })
@@ -570,6 +627,68 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   margin-left: 8px;
   border-radius: 4px;
   background: #fff;
+}
+
+.nmt-task__topic {
+  position: relative;
+  margin-top: 6px;
+}
+
+.nmt-task__topic-btn {
+  pointer-events: auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.nmt-task__topic-btn:hover { color: #2563eb; }
+
+.nmt-task__topic-menu {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  min-width: 208px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14);
+  /* Довгий список «інша…» не мусить розтягувати картку. */
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.nmt-task__topic-note {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.nmt-task__topic-item {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.nmt-task__topic-item:hover { background: #f1f5f9; }
+.nmt-task__topic-item--muted { color: #64748b; }
+.nmt-task__topic-item--danger { color: #b91c1c; }
+
+.nmt-task__topic-error {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #b91c1c;
 }
 
 .nmt-task__hint {

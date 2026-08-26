@@ -33,6 +33,17 @@ vi.mock('../../../composables/useStudentTutor', () => ({
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({
   renderTextWithLatex: (t: string) => t,
 }))
+// Контрол «✎ тема» бачить лише тьютор — у цих тестах роль не під перевіркою,
+// тож ставимо учня, щоб контрол не заважав рахувати варіанти.
+vi.mock('../composables/useTaskTopicFix', () => ({
+  useTaskTopicFix: () => ({
+    canFix: { value: false }, open: { value: false }, loading: { value: false },
+    saving: { value: false }, error: { value: '' }, current: { value: null },
+    suggestions: { value: [] }, allTopics: { value: [] },
+    showAll: { value: false }, done: { value: '' },
+    toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
+  }),
+}))
 
 const t = (key: string, params?: Record<string, unknown>) =>
   params ? `${key}:${JSON.stringify(params)}` : key
@@ -47,7 +58,11 @@ function makeAsset(data: Record<string, unknown>) {
 
 function mountTask(data: Record<string, unknown>) {
   return mount(Renderer, {
-    props: { asset: makeAsset(data) as never },
+    props: {
+      asset: makeAsset(data) as never,
+      isSelected: false,
+      interactive: true,
+    },
     global: { mocks: { t }, stubs: { teleport: true } },
   })
 }
