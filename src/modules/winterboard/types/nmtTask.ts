@@ -2,7 +2,8 @@
  * nmt_task asset type — interactive NMT task card for Lesson Constructor.
  *
  * Three task types:
- *   'single_choice' — question + A/B/C/D options grid + "Show answer" button
+ *   'single_choice'   — question + A/B/C/D options grid + "Show answer" button
+ *   'multiple_select' — те саме, але правильних відповідей кілька (selectCount)
  *   'matching'      — question + left/right pairs + "Show answer" button
  *   'open_answer'   — question + text/number input + "Show answer" button
  *
@@ -19,7 +20,14 @@
  */
 import type { WBAsset } from './winterboard'
 
-export type NmtTaskType = 'single_choice' | 'matching' | 'open_answer'
+// ⚠️ `multiple_select` додано 2026-08-26. До того типу тут не було, а BE
+// такі задачі віддавав — 2 045 карток приїжджали на дошку БЕЗ ЖОДНОГО
+// варіанта відповіді, і мовчки: помилки не було, просто нічого не рендерилось.
+export type NmtTaskType =
+  | 'single_choice'
+  | 'multiple_select'
+  | 'matching'
+  | 'open_answer'
 
 /** One selectable option in a single_choice task. */
 export interface NmtTaskOption {
@@ -78,8 +86,13 @@ export interface NmtTaskData {
   taskType: NmtTaskType
   /** Question / task statement text — LaTeX-compatible. */
   question: string
-  /** Populated for taskType === 'single_choice'. */
+  /** Populated for taskType === 'single_choice' | 'multiple_select'. */
   options?: NmtTaskOption[]
+  /**
+   * Скільки варіантів треба вибрати (лише 'multiple_select').
+   * Без цього числа учень не бачить, що правильна відповідь не одна.
+   */
+  selectCount?: number
   /** Populated for taskType === 'matching'. */
   pairs?: NmtTaskPair[]
   /** Populated for taskType === 'open_answer'. */

@@ -9331,7 +9331,8 @@
         "drawHint": "Draw: sketch on the shape like on a board"
       },
       "nmtTask": {
-        "answerPlaceholder": "Type your answer…"
+        "answerPlaceholder": "Type your answer…",
+        "selectN": "Select {n} correct answers"
       },
       "trigCircle": {
         "functions": "functions:",

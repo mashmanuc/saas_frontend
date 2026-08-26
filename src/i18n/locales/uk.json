@@ -9419,7 +9419,8 @@
         "drawHint": "Малювання: малюй по фігурі як на дошці"
       },
       "nmtTask": {
-        "answerPlaceholder": "Введіть відповідь…"
+        "answerPlaceholder": "Введіть відповідь…",
+        "selectN": "Виберіть {n} правильні відповіді"
       },
       "trigCircle": {
         "functions": "функції:",

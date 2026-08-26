@@ -18,7 +18,8 @@
 
   State:
     showAnswer / showSolution — persisted via update:asset emit
-    selectedOptionId          — local only (student's current selection)
+    selectedIds               — local only (обрані варіанти; для
+                                single_choice у наборі щонайбільше один)
     openAnswerValue           — local only (student's typed answer)
 
   Follows: TrigSolverRenderer (§3.7.7), Nmt3dRenderer (§3.7.8).
@@ -76,17 +77,25 @@
         />
       </div>
 
-      <!-- ── single_choice ────────────────────────────────── -->
-      <div v-if="data.taskType === 'single_choice'" class="nmt-task__options">
+      <!-- ── single_choice / multiple_select ──────────────────
+           Сітка варіантів спільна; різниця лише в тому, скільки їх можна
+           вибрати. Окрема гілка для multiple_select дала б дубль розмітки. -->
+      <!-- Скільки саме вибрати. Без цього рядка картка виглядає як звичайний
+           вибір однієї відповіді, і учень зупиняється на першій правильній. -->
+      <div v-if="selectCount > 1" class="nmt-task__hint">
+        {{ t('winterboard.widget.nmtTask.selectN', { n: selectCount }) }}
+      </div>
+
+      <div v-if="isChoiceType" class="nmt-task__options">
         <button
           v-for="(opt, oi) in data.options"
           :key="opt.id"
           type="button"
           class="nmt-task__option"
           :class="{
-            'is-selected': selectedOptionId === opt.id,
+            'is-selected': isSelected(opt.id),
             'is-correct':  data.showAnswer && opt.isCorrect,
-            'is-wrong':    data.showAnswer && !opt.isCorrect && selectedOptionId === opt.id,
+            'is-wrong':    data.showAnswer && !opt.isCorrect && isSelected(opt.id),
           }"
           @click.stop="selectOption(opt.id)"
           @mousedown.stop
@@ -275,6 +284,7 @@ function optionImage(index: number): string {
 const typeBadge = computed(() => {
   switch (data.value.taskType) {
     case 'single_choice': return 'Вибір відповіді'
+    case 'multiple_select': return 'Кілька відповідей'
     case 'matching':      return 'Відповідність'
     case 'open_answer':   return 'Відкрита відповідь'
     default:              return 'Завдання'
@@ -325,13 +335,41 @@ function handleBuild() {
 // ── Local interaction state ───────────────────────────────────────────────────
 
 /** single_choice — id вибраного варіанту (local, не персистується) */
-const selectedOptionId = ref<string | null>(null)
 
 /** open_answer — поточний введений текст (local) */
 const openAnswerValue = ref<string>('')
 
+/** Чи тип задачі має сітку варіантів (обидва — з одним рендером). */
+const isChoiceType = computed(
+  () => data.value.taskType === 'single_choice'
+     || data.value.taskType === 'multiple_select',
+)
+
+/** Скільки варіантів треба вибрати; для single_choice завжди один. */
+const selectCount = computed(() =>
+  data.value.taskType === 'multiple_select'
+    ? Math.max(1, data.value.selectCount ?? 1)
+    : 1,
+)
+
+/** Вибрані варіанти. Для single_choice у наборі щонайбільше один. */
+const selectedIds = ref<Set<string>>(new Set())
+
+function isSelected(id: string): boolean {
+  return selectedIds.value.has(id)
+}
+
 function selectOption(id: string) {
-  selectedOptionId.value = selectedOptionId.value === id ? null : id
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    // ⚠️ У single_choice попередній вибір знімається — інакше картка тихо
+    // перетворилась би на множинний вибір там, де правильна відповідь одна.
+    if (selectCount.value === 1) next.clear()
+    next.add(id)
+  }
+  selectedIds.value = next
 }
 
 // ── Persisted toggles ─────────────────────────────────────────────────────────
@@ -339,7 +377,9 @@ function selectOption(id: string) {
 /** Чи є що показувати кнопкою "Показати відповідь" */
 const hasAnswerToShow = computed(() => {
   const d = data.value
-  if (d.taskType === 'single_choice') return (d.options?.some(o => o.isCorrect)) ?? false
+  if (d.taskType === 'single_choice' || d.taskType === 'multiple_select') {
+    return (d.options?.some(o => o.isCorrect)) ?? false
+  }
   if (d.taskType === 'open_answer')   return !!d.correctAnswer
   if (d.taskType === 'matching')      return (d.pairs?.length ?? 0) > 0
   return false
@@ -530,6 +570,13 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   margin-left: 8px;
   border-radius: 4px;
   background: #fff;
+}
+
+.nmt-task__hint {
+  margin: 2px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
 }
 
 /* ── single_choice: options grid ─────────────────────────────────────── */
