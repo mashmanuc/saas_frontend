@@ -289,7 +289,24 @@ interface WBCopilotWhisperMsg {
   ts: number
 }
 
+/**
+ * C3: ініційована репліка AI-репетитора САМОМУ учневі. Долітає лише учневі
+ * (`session_targeted` з його `target_user_id`), і це окремий тип від
+ * `copilot.whisper` свідомо: у шепоті тьютору лежить розбір ПРО дитину, і
+ * один тип на двох адресатів означав би, що помилка фільтрації віддає цей
+ * розбір їй самій.
+ */
+interface WBTutorMessageMsg {
+  type: 'tutor.message'
+  text: string
+  action?: string
+  stage?: number | null
+  initiated?: boolean
+  ts: number
+}
+
 type WBServerMessage =
+  | WBTutorMessageMsg
   | WBCopilotWhisperMsg
   | WBOpsAppliedMsg
   | WBPresenceJoinMsg
@@ -914,6 +931,13 @@ export function usePresence(options: UsePresenceOptions) {
       // тож тут не треба перевіряти роль — учневі це повідомлення не надсилають.
       case 'copilot.whisper': {
         window.dispatchEvent(new CustomEvent('wb:copilot-whisper', { detail: msg }))
+        break
+      }
+
+      // C3: репліка двигуна учневі, коли той нічого не питав. Прилітає ЛИШЕ
+      // учневі (адресація на BE), тож ролі тут теж не перевіряємо.
+      case 'tutor.message': {
+        window.dispatchEvent(new CustomEvent('wb:tutor-message', { detail: msg }))
         break
       }
 

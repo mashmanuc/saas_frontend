@@ -9,7 +9,7 @@
 // щоб `NmtTaskRenderer` міг спитати без пробросу через пів-дерева props.
 // Гейт вмикається ТІЛЬКИ коли канал активний (учень + прапорець ON) — у
 // тьютора на його дошці кнопки працюють як працювали.
-import { computed, reactive, ref } from 'vue'
+import { computed, getCurrentInstance, onUnmounted, reactive, ref } from 'vue'
 
 import winterboardApi from '../api/winterboardApi'
 
@@ -108,6 +108,46 @@ export function useStudentTutor(sessionId: string) {
     messages.value = []
   }
 
+  /**
+   * C3 — двигун заговорив сам.
+   *
+   * Приходить із WS (`wb:tutor-message`, розкладає `usePresence`), а не з
+   * відповіді на запит: учень нічого не питав. Кладемо в ту саму історію й
+   * тією самою формою, що відповідь — для дитини це одна розмова, а не два
+   * різні канали.
+   *
+   * `disabled` шануємо: якщо канал вимкнули посеред уроку (403), пізнє
+   * повідомлення не має раптом його оживити.
+   */
+  function onInitiated(detail: unknown): void {
+    const m = detail as { text?: unknown; stage?: number | null; action?: string }
+    const text = String(m?.text ?? '').trim()
+    if (!text || disabled.value) return
+    messages.value = [...messages.value, {
+      role: 'ai',
+      text,
+      stage: m?.stage ?? null,
+      action: m?.action,
+      ts: Date.now(),
+    }]
+    if ((m?.stage ?? 0) >= 3) {
+      for (const k of Object.keys(gate.stageByTask)) gate.stageByTask[k] = 3
+      gate.stageByTask['*'] = 3
+    }
+  }
+
+  // Підписка НЕ в `onMounted` свідомо: композабл викликають і поза
+  // компонентом (так роблять його ж наявні тести), а `onMounted` без
+  // інстансу мовчки не спрацьовує — слухач би не зареєструвався, і жоден
+  // тест цього не побачив би. Знімаємо підписку через `onUnmounted`, коли
+  // інстанс є, і віддаємо `stopListening()` для решти випадків.
+  const _onTutorMessage = (e: Event) => onInitiated((e as CustomEvent).detail)
+  window.addEventListener('wb:tutor-message', _onTutorMessage)
+  function stopListening(): void {
+    window.removeEventListener('wb:tutor-message', _onTutorMessage)
+  }
+  if (getCurrentInstance()) onUnmounted(stopListening)
+
   /** Задача потрапила в поле зору гейта (рендерер повідомляє про себе). */
   function watchTask(taskId: string): void {
     if (!(taskId in gate.stageByTask)) {
@@ -118,6 +158,7 @@ export function useStudentTutor(sessionId: string) {
   return {
     messages, draft, busy, failed, throttled, disabled, canSend,
     send, markUnclear, clearHistory, activateGate, watchTask,
+    onInitiated, stopListening,
   }
 }
 
