@@ -4,6 +4,12 @@ import apiClient from '@/utils/apiClient'
 //    Не редагувати руками: `python manage.py export_topics --write`.
 //    SSOT: saas_docs/domains/LESSON_CONSTRUCTOR/TOPIC_TAXONOMY_DECISION.md
 export const TOPICS = [
+  { value: 'areas',                                        label: 'Площі фігур' },
+  { value: 'areas.circle',                                 label: 'Площа круга і його частин' },
+  { value: 'areas.parallelogram',                          label: 'Площа паралелограма, ромба, трапеції' },
+  { value: 'areas.polygon',                                label: 'Площа многокутника' },
+  { value: 'areas.rectangle-square',                       label: 'Площа прямокутника і квадрата' },
+  { value: 'areas.triangle',                               label: 'Площа трикутника' },
   { value: 'basic-geometry-figures',                       label: 'Базові геометричні фігури' },
   { value: 'basic-geometry-figures.angles',                label: 'Кути' },
   { value: 'charts-dependencies',                          label: 'Діаграми та графіки залежностей' },
@@ -25,6 +31,7 @@ export const TOPICS = [
   { value: 'lines-planes-space',                           label: 'Прямі та площини у просторі' },
   { value: 'measurement-units',                            label: 'Величини та одиниці вимірювання' },
   { value: 'parallelogram-rhombus-trapezoid',              label: 'Паралелограм, ромб, трапеція' },
+  { value: 'perimeter',                                    label: 'Периметр' },
   { value: 'plane-vectors-coordinates',                    label: 'Вектори та координати на площині' },
   { value: 'polynomials',                                  label: 'Многочлени та розкладання на множники' },
   { value: 'polynomials.abbreviated-multiplication',       label: 'Формули скороченого множення' },
@@ -49,6 +56,9 @@ export const TOPICS = [
   { value: 'right-triangles',                              label: 'Прямокутні трикутники' },
   { value: 'rotation-bodies',                              label: 'Тіла обертання' },
   { value: 'sequences',                                    label: 'Послідовності' },
+  { value: 'solids-measurement',                           label: "Площі поверхонь і об'єми тіл" },
+  { value: 'solids-measurement.surface',                   label: 'Площі поверхонь тіл' },
+  { value: 'solids-measurement.volume',                    label: "Об'єми тіл" },
   { value: 'space-vectors-coordinates',                    label: 'Вектори та координати у просторі' },
   { value: 'triangles',                                    label: 'Трикутники' },
   { value: 'triangles.congruence',                         label: 'Ознаки рівності трикутників' },
