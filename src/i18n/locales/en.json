@@ -8684,7 +8684,10 @@
         "saving": "Saving…",
         "help": "Learn more",
         "error": "Could not save your consent. Please try again."
-      }
+      },
+      "studentActive": "Recording",
+      "studentPaused": "Recording paused",
+      "studentStarted": "The tutor started recording the lesson"
     },
     "onboarding": {
       "toolbar": "Drawing tools. Pick a pen and start!",

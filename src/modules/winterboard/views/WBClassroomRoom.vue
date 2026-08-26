@@ -50,6 +50,28 @@
         <span class="wb-role-badge" :class="`wb-role-badge--${classroomRole.role.value}`">
           {{ roleBadgeText }}
         </span>
+        <!--
+          Індикатор запису ДЛЯ УЧНЯ. Викладач має власну панель керування з
+          таймером (WBClassroomRecordingControls нижче), тож тут — лише
+          `isStudent`.
+
+          Не косметика: Політика конфіденційності §4 і Оферта учня VI
+          обіцяють учневі «інформаційне повідомлення протягом заняття».
+          До цього значка обіцянка не мала чим справдитись — стан запису
+          доходив до учня лише гідрацією при вході, тобто якщо викладач
+          вмикав запис уже після його приходу, учень не дізнавався нічого.
+        -->
+        <span
+          v-if="classroomRole.isStudent.value && isRecordingVisibleToStudent"
+          class="wb-rec-indicator"
+          :class="{ 'wb-rec-indicator--paused': recordingState === 'paused' }"
+          role="status"
+        >
+          <span class="wb-rec-indicator__dot" aria-hidden="true" />
+          {{ recordingState === 'paused'
+            ? t('winterboard.recording.studentPaused')
+            : t('winterboard.recording.studentActive') }}
+        </span>
         <span
           v-if="lessonStatus"
           class="wb-lesson-status"
@@ -563,6 +585,7 @@ const route = useRoute()
 const store = useWBStore()
 const testStore = useTestStore()
 const { t } = useI18n()
+import { notifyInfo } from '@/utils/notify'
 const { announce } = useAnnouncer()
 const { showToast } = useToast()
 
@@ -2239,7 +2262,38 @@ window.addEventListener('wb:test-sync', onRemoteTestSync)
 window.addEventListener('wb:test-end', onRemoteTestEnd)
 window.addEventListener('wb:session-lock', onRemoteSessionLock)
 
+// ─── Індикатор запису для учня ───────────────────────────────────────────
+// BE розсилає recording.state на кожному переході (start/pause/resume/
+// finalize); usePresence кладе його у вікно тим самим шляхом, що
+// `wb:session-lock`. Нового каналу немає.
+const isRecordingVisibleToStudent = computed(
+  () => recordingState.value === 'recording' || recordingState.value === 'paused',
+)
+
+function onRemoteRecordingState(e: Event) {
+  const detail = (e as CustomEvent).detail
+  const next = detail?.state
+  if (next !== 'idle' && next !== 'recording' && next !== 'paused'
+      && next !== 'finalized') return
+
+  const was = recordingState.value
+  recordingState.value = next
+  if (next === 'recording' && detail?.startedAt) {
+    recordingStartedAt.value = detail.startedAt
+  }
+
+  // Учневі — одне помітне повідомлення В МОМЕНТ старту, і лише коли запису
+  // ще не було. Повторно на resume не показуємо: він уже бачив і бачить
+  // значок; зайве спливання на кожну паузу дратувало б і знецінило б перше.
+  if (classroomRole.isStudent.value && next === 'recording' && was !== 'paused') {
+    notifyInfo(t('winterboard.recording.studentStarted'))
+    announce(t('winterboard.recording.studentStarted'))
+  }
+}
+window.addEventListener('wb:recording-state', onRemoteRecordingState)
+
 onUnmounted(() => {
+  window.removeEventListener('wb:recording-state', onRemoteRecordingState)
   window.removeEventListener('wb:remote-state-update', onRemoteStateUpdate)
   window.removeEventListener('wb:remote-stroke', onRemoteStroke)
   window.removeEventListener('wb:test-start', onRemoteTestStart)
@@ -2516,6 +2570,46 @@ onBeforeUnmount(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Індикатор запису для учня. Форма й розмір — як у бейджа ролі поруч,
+   щоб шапка не «стрибала»: той самий padding, той самий кегль. */
+.wb-rec-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(185, 28, 28);
+}
+.wb-rec-indicator__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(220, 38, 38);
+  animation: wb-rec-pulse 2s ease-in-out infinite;
+}
+/* На паузі — той самий значок, але без пульсу й без червоного: запис не
+   йде, проте сесія ще записується, і зникнення значка збрехало б. */
+.wb-rec-indicator--paused {
+  background: rgba(100, 116, 139, 0.14);
+  color: rgb(71, 85, 105);
+}
+.wb-rec-indicator--paused .wb-rec-indicator__dot {
+  background: rgb(100, 116, 139);
+  animation: none;
+}
+@keyframes wb-rec-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-rec-indicator__dot { animation: none; }
 }
 
 .wb-role-badge {

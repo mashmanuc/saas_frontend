@@ -249,6 +249,20 @@ interface WBLaserPointerMsg {
   page_id: string
 }
 
+/**
+ * Стан запису уроку змінився — BE `_broadcast_recording_state`.
+ *
+ * Адресат насамперед УЧЕНЬ: викладач бачить панель керування з таймером, а
+ * учень до цієї події не знав про запис нічого, якщо зайшов ДО його початку
+ * (стан приходив лише гідрацією сесії при вході).
+ */
+interface WBRecordingStateMsg {
+  type: 'recording.state'
+  state: 'idle' | 'recording' | 'paused' | 'finalized'
+  startedAt: string | null
+  ts: number
+}
+
 /** Teacher locked/unlocked student drawing — BE _broadcast_session_event (session.lock). */
 interface WBSessionLockMsg {
   type: 'session.lock'
@@ -319,6 +333,7 @@ type WBServerMessage =
   | WBStrokeBroadcastMsg
   | WBLaserPointerMsg
   | WBSessionLockMsg
+  | WBRecordingStateMsg
   | WBTestStartMsg
   | WBTestAnswerMsg
   | WBTestPhaseMsg
@@ -854,6 +869,16 @@ export function usePresence(options: UsePresenceOptions) {
       case 'session.lock': {
         window.dispatchEvent(new CustomEvent('wb:session-lock', {
           detail: { locked: msg.locked, userId: msg.userId },
+        }))
+        break
+      }
+
+      // Запис уроку почався/спинився → кімната покаже учневі індикатор.
+      // Політика §4 і Оферта учня VI обіцяють учневі повідомлення про
+      // активний Replay; до цієї гілки обіцянка не мала чим справдитись.
+      case 'recording.state': {
+        window.dispatchEvent(new CustomEvent('wb:recording-state', {
+          detail: { state: msg.state, startedAt: msg.startedAt },
         }))
         break
       }
