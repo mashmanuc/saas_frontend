@@ -55,7 +55,6 @@ import {
   DEFAULT_GEOMETRY_2D_V2_H,
 } from '../../constants/geometry2dV2Defaults'
 import {
-  SOLID_DRAG_MIME,
   DEFAULT_SOLID_W,
   DEFAULT_SOLID_H,
 } from '../../constants/solidDefaults'
@@ -261,58 +260,6 @@ describe('useContentDrop.addAtPosition', () => {
   })
 
   // ── geometry_solid (§3.7.1) ───────────────────────────────────────────────
-  describe('geometry_solid — §3.7.1', () => {
-    it('creates a geometry_solid asset for a valid solid type', () => {
-      const { addAtPosition, onAssetAdd } = makeComposable()
-      addAtPosition(SOLID_DRAG_MIME, JSON.stringify({ src: 'cube' }), DROP_POS)
-
-      expect(onAssetAdd).toHaveBeenCalledOnce()
-      const asset = onAssetAdd.mock.calls[0][0]
-
-      expect(asset.type).toBe('geometry_solid')
-      expect(asset.id).toMatch(/^solid-/)
-      expect(asset.src).toBe('cube')
-      expect(asset.w).toBe(DEFAULT_SOLID_W)
-      expect(asset.h).toBe(DEFAULT_SOLID_H)
-      expect(asset.x).toBe(DROP_POS.x - DEFAULT_SOLID_W / 2)
-      expect(asset.y).toBe(DROP_POS.y - DEFAULT_SOLID_H / 2)
-      expect(asset.rotation).toBe(0)
-      expect(asset.locked).toBe(false)
-      expect(asset.data.version).toBe(1)
-      expect(asset.data.state).toBeDefined()
-    })
-
-    it('creates a geometry_solid asset for each valid solid type', () => {
-      const validTypes = ['cube', 'cuboid', 'sphere', 'cylinder', 'cone',
-        'tetrahedron', 'pyramid3', 'pyramid4', 'prism3', 'prism6']
-
-      for (const solidType of validTypes) {
-        const { addAtPosition, onAssetAdd } = makeComposable()
-        addAtPosition(SOLID_DRAG_MIME, JSON.stringify({ src: solidType }), DROP_POS)
-        expect(onAssetAdd).toHaveBeenCalledOnce(), `expected onAssetAdd for type '${solidType}'`
-        expect(onAssetAdd.mock.calls[0][0].src).toBe(solidType)
-      }
-    })
-
-    it('does NOT call onAssetAdd for unknown solid type', () => {
-      const { addAtPosition, onAssetAdd } = makeComposable()
-      addAtPosition(SOLID_DRAG_MIME, JSON.stringify({ src: 'flying_saucer' }), DROP_POS)
-      expect(onAssetAdd).not.toHaveBeenCalled()
-    })
-
-    it('does NOT call onAssetAdd for missing src', () => {
-      const { addAtPosition, onAssetAdd } = makeComposable()
-      addAtPosition(SOLID_DRAG_MIME, JSON.stringify({}), DROP_POS)
-      expect(onAssetAdd).not.toHaveBeenCalled()
-    })
-
-    it('does NOT call onAssetAdd for malformed JSON', () => {
-      const { addAtPosition, onAssetAdd } = makeComposable()
-      addAtPosition(SOLID_DRAG_MIME, 'broken', DROP_POS)
-      expect(onAssetAdd).not.toHaveBeenCalled()
-    })
-  })
-
   // ── unknown MIME ──────────────────────────────────────────────────────────
   describe('unknown MIME type', () => {
     it('does NOT call onAssetAdd for an unrecognised MIME', () => {
@@ -331,7 +278,6 @@ describe('useContentDrop.addAtPosition', () => {
         [HELIX_DRAG_MIME, ''],
         [CALCULUS_DRAG_MIME, JSON.stringify({ mode: 'derivative' })],
         [GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: 'triangle' })],
-        [SOLID_DRAG_MIME, JSON.stringify({ src: 'cube' })],
       ]
 
       for (const [mime, payload] of cases) {

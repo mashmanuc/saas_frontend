@@ -38,8 +38,6 @@ export const DEFAULT_SOLID_STATE: Readonly<SolidAssetState> = Object.freeze({
 export const DEFAULT_SOLID_W = 280
 export const DEFAULT_SOLID_H = 280
 
-/** Custom MIME type для drag з SolidsTray → WBCanvas drop handler. */
-export const SOLID_DRAG_MIME = 'application/x-solid'
 
 /**
  * 10 fixed solid types per SSOT §3.7.1 — UI label mapping для tray buttons.
@@ -63,6 +61,3 @@ export const SOLID_TYPES: ReadonlyArray<{ type: SolidType; label: string }> = Ob
  * State не передається — drop handler сам інфлейтить DEFAULT_SOLID_STATE
  * (single source of truth invariant).
  */
-export interface SolidDragPayload {
-  src: SolidType
-}

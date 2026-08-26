@@ -10,13 +10,6 @@ import {
   type ResolveDropResponse,
 } from '../types/boardDrop'
 import {
-  DEFAULT_SOLID_STATE,
-  DEFAULT_SOLID_W,
-  DEFAULT_SOLID_H,
-  SOLID_DRAG_MIME,
-  type SolidDragPayload,
-} from '../constants/solidDefaults'
-import {
   DEFAULT_GRAPH_STATE,
   DEFAULT_GRAPH_WIDTH,
   DEFAULT_GRAPH_HEIGHT,
@@ -371,52 +364,6 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
-    // Phase O PR-O4: Geometry solid drag (highest priority — own MIME).
-    // Tray sets 'application/x-solid' з payload {src}. Drop handler сам
-    // hydrates default state — payload містить ТІЛЬКИ src per CHECKPOINT 4.
-    const solidRaw = event.dataTransfer?.getData(SOLID_DRAG_MIME)
-    if (solidRaw) {
-      let parsed: SolidDragPayload
-      try {
-        parsed = JSON.parse(solidRaw) as SolidDragPayload
-      } catch {
-        console.warn('[useContentDrop] Invalid solid drag payload')
-        return
-      }
-      if (!parsed?.src || !SOLID_TYPE_SET.has(parsed.src)) {
-        console.warn('[useContentDrop] Unknown solid src:', parsed?.src)
-        return
-      }
-      const canvasPos = screenToCanvas(event.clientX, event.clientY)
-      // PR4 (2026-05-04) — INV-13 ATOMIC-APPLY invariant verified:
-      //   1 drop = 1 asset_add op = 1 broadcast.
-      //   `data.state` тут заповнюється повністю через DEFAULT_SOLID_STATE spread
-      //   (single source of truth — constants/solidDefaults.ts CHECKPOINT 4).
-      //   SolidCardRenderer.vue:456 watch не має `immediate: true` → жодного
-      //   redundant emit('update:asset') на mount. Тобто chain
-      //   addAsset → updateAsset×N (3 broadcasts на drop, як було підозрюється
-      //   у користувацьких логах) не існує — multiple updateAsset broadcasts
-      //   приходять від user actions ПІСЛЯ drop (drag/resize).
-      const asset: SolidAsset = {
-        id: `solid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'geometry_solid',
-        src: parsed.src,
-        x: canvasPos.x - DEFAULT_SOLID_W / 2,
-        y: canvasPos.y - DEFAULT_SOLID_H / 2,
-        w: DEFAULT_SOLID_W,
-        h: DEFAULT_SOLID_H,
-        rotation: 0,
-        locked: false,
-        data: {
-          version: 1,
-          // Spread DEFAULT_SOLID_STATE — produces NEW mutable object so що
-          // Vue reactivity може tracking field changes у store/asset_update ops.
-          state: { ...DEFAULT_SOLID_STATE },
-        },
-      }
-      onAssetAdd(asset)
-      return
-    }
 
     // Phase 3A: Check sidebar MIME first
     const sidebarRaw = event.dataTransfer?.getData(SIDEBAR_DRAG_MIME)
@@ -1154,21 +1101,6 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
-    if (mime === SOLID_DRAG_MIME) {
-      let parsed: SolidDragPayload
-      try { parsed = JSON.parse(payloadStr) as SolidDragPayload } catch { return }
-      if (!parsed?.src || !SOLID_TYPE_SET.has(parsed.src)) return
-      const asset: SolidAsset = {
-        id: `solid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'geometry_solid', src: parsed.src,
-        x: pos.x - DEFAULT_SOLID_W / 2, y: pos.y - DEFAULT_SOLID_H / 2,
-        w: DEFAULT_SOLID_W, h: DEFAULT_SOLID_H,
-        rotation: 0, locked: false,
-        data: { version: 1, state: { ...DEFAULT_SOLID_STATE } },
-      }
-      onAssetAdd(asset)
-      return
-    }
 
     // BoardMASH Ф3.1 — graphmash_3d із сайдбару (раніше лише funnel-import).
     // Дефолт через buildDefaultGraphmash3dAsset (той самий build<Type>Asset, INV-BM-7).

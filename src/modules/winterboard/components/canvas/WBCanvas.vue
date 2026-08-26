@@ -873,7 +873,6 @@ import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMo
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
-import { SOLID_DRAG_MIME } from '../../constants/solidDefaults'
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 HTML overlay renderer (skeleton)
 import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
@@ -3455,7 +3454,6 @@ async function handleDrop(e: DragEvent): Promise<void> {
   if (
     dragTypes.includes(SIDEBAR_DRAG_MIME)
     || dragTypes.includes(CONTENT_DRAG_MIME)
-    || dragTypes.includes(SOLID_DRAG_MIME)
   ) return
 
   // Calculate drop position in canvas coordinates
