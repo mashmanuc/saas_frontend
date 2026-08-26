@@ -82,7 +82,7 @@ describe('useTaskTopicFix', () => {
     const ok = await fix.apply('areas.triangle')
     expect(ok).toBe(true)
     expect(post).toHaveBeenCalledWith(
-      '/lesson-constructor/problems/legacy-a-1/retag/',
+      '/v1/lesson-constructor/problems/legacy-a-1/retag/',
       { topic: 'areas.triangle' })
     expect(fix.open.value).toBe(false)
     expect(fix.done.value).toBe('Площа трикутника')
@@ -92,7 +92,7 @@ describe('useTaskTopicFix', () => {
     const fix = useTaskTopicFix(() => 'legacy-a-1')
     await fix.reject()
     expect(post).toHaveBeenCalledWith(
-      '/lesson-constructor/problems/legacy-a-1/retag/',
+      '/v1/lesson-constructor/problems/legacy-a-1/retag/',
       { action: 'reject' })
   })
 
@@ -105,10 +105,20 @@ describe('useTaskTopicFix', () => {
     expect(fix.saving.value).toBe(false)
   })
 
+  it('шлях має префікс /v1 — без нього apiClient влучає в 404', async () => {
+    // Спіймано живим кліком на дошці: `baseURL` закінчується на `/api`,
+    // а маршрути живуть під `/api/v1/…`. Мок apiClient цього не показував —
+    // він приймає будь-який рядок.
+    const fix = useTaskTopicFix(() => 'legacy-a-1')
+    await fix.toggle()
+    expect(get.mock.calls[0][0]).toBe(
+      '/v1/lesson-constructor/problems/legacy-a-1/topic-options/')
+  })
+
   it('external_id екранується — у нього трапляється двокрапка', async () => {
     const fix = useTaskTopicFix(() => 'legacy-a/b 1')
     await fix.reject()
     expect(post.mock.calls[0][0]).toBe(
-      '/lesson-constructor/problems/legacy-a%2Fb%201/retag/')
+      '/v1/lesson-constructor/problems/legacy-a%2Fb%201/retag/')
   })
 })

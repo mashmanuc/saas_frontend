@@ -51,8 +51,12 @@ export function useTaskTopicFix(externalId: () => string) {
   /** Локальна мітка: задачу вже виправлено в цій сесії. */
   const done = ref('')
 
+  // ⚠️ Префікс `/v1/` обов'язковий: `apiClient.baseURL` закінчується на
+  // `/api`, а маршрути живуть під `/api/v1/…`. Без нього запит іде на
+  // `/api/lesson-constructor/…` і повертає 404 — спіймано живим кліком на
+  // дошці, тестами з мокнутим apiClient це не ловиться в принципі.
   const base = () =>
-    `/lesson-constructor/problems/${encodeURIComponent(externalId())}`
+    `/v1/lesson-constructor/problems/${encodeURIComponent(externalId())}`
 
   async function load(): Promise<void> {
     loading.value = true
