@@ -9335,7 +9335,10 @@
       },
       "nmtTask": {
         "answerPlaceholder": "Type your answer…",
-        "selectN": "Select {n} correct answers"
+        "selectN": "Select {n} correct answers",
+        "solutionZoomIn": "Enlarge the solution text",
+        "solutionZoomOut": "Shrink the solution text",
+        "solutionZoomReset": "Default size"
       },
       "trigCircle": {
         "functions": "functions:",

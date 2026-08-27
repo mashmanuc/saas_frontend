@@ -9423,7 +9423,10 @@
       },
       "nmtTask": {
         "answerPlaceholder": "Введіть відповідь…",
-        "selectN": "Виберіть {n} правильні відповіді"
+        "selectN": "Виберіть {n} правильні відповіді",
+        "solutionZoomIn": "Збільшити текст розбору",
+        "solutionZoomOut": "Зменшити текст розбору",
+        "solutionZoomReset": "Звичайний розмір"
       },
       "trigCircle": {
         "functions": "функції:",

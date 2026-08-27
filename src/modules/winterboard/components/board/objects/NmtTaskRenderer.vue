@@ -244,8 +244,38 @@
         <span class="nmt-task__solution-icon">📖</span>
         <div
           class="nmt-task__solution-text"
+          :style="{ fontSize: solutionZoom.fontPx.value + 'px' }"
           v-html="renderTextWithLatex(data.solution)"
         />
+        <!-- Масштаб розбору. Розмір особистий (localStorage), у дошку не
+             пишеться — див. useSolutionZoom. Кнопки поза текстом, щоб самі
+             не збільшувались разом із ним. -->
+        <div class="nmt-task__solution-zoom" @pointerdown.stop @mousedown.stop>
+          <button
+            type="button"
+            class="nmt-task__zoom-btn"
+            :disabled="!solutionZoom.canZoomOut.value"
+            :title="t('winterboard.widget.nmtTask.solutionZoomOut')"
+            :aria-label="t('winterboard.widget.nmtTask.solutionZoomOut')"
+            @click.stop="solutionZoom.zoomOut()"
+          >А−</button>
+          <button
+            type="button"
+            class="nmt-task__zoom-btn"
+            :disabled="solutionZoom.isDefault.value"
+            :title="t('winterboard.widget.nmtTask.solutionZoomReset')"
+            :aria-label="t('winterboard.widget.nmtTask.solutionZoomReset')"
+            @click.stop="solutionZoom.reset()"
+          >⟲</button>
+          <button
+            type="button"
+            class="nmt-task__zoom-btn"
+            :disabled="!solutionZoom.canZoomIn.value"
+            :title="t('winterboard.widget.nmtTask.solutionZoomIn')"
+            :aria-label="t('winterboard.widget.nmtTask.solutionZoomIn')"
+            @click.stop="solutionZoom.zoomIn()"
+          >А+</button>
+        </div>
       </div>
 
     </div><!-- /.nmt-task__body -->
@@ -260,6 +290,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSolutionZoom } from '../../../composables/useSolutionZoom'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
@@ -281,6 +312,10 @@ import { useTaskTopicFix } from '../../../composables/useTaskTopicFix'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
+
+// Масштаб розбору. Singleton на рівні модуля: збільшив на одній картці —
+// більший на всіх (див. useSolutionZoom). У стан дошки НЕ пишеться.
+const solutionZoom = useSolutionZoom()
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
 
@@ -963,5 +998,43 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 .nmt-task__solution-text {
   flex: 1;
   min-width: 0;
+  /* Розмір задає інлайн-стиль із useSolutionZoom. KaTeX усередині рахує все
+     в `em`, тож формули масштабуються разом із текстом самі. */
+}
+
+/* Кнопки масштабу — поза текстом, інакше зростали б разом із ним. */
+.nmt-task__solution-zoom {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  /* Власний розмір, не успадкований: блок розбору лишається 13px, а текст
+     усередині може бути 28px. */
+  font-size: 11px;
+}
+
+.nmt-task__zoom-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #bbf7d0;
+  border-radius: 5px;
+  background: #fff;
+  color: #166534;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.nmt-task__zoom-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.nmt-task__zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 </style>

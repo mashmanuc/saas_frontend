@@ -8925,7 +8925,10 @@
       },
       "nmtTask": {
         "answerPlaceholder": "Введите ответ…",
-        "selectN": "Выберите {n} правильных ответа"
+        "selectN": "Выберите {n} правильных ответа",
+        "solutionZoomIn": "Увеличить текст разбора",
+        "solutionZoomOut": "Уменьшить текст разбора",
+        "solutionZoomReset": "Обычный размер"
       },
       "trigCircle": {
         "functions": "функции:",
