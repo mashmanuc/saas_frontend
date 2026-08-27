@@ -629,14 +629,67 @@ export function summarizeAsset(a) {
   } else if (a.type === 'mash_scene') {
     label = d.title || ''
   } else if (a.type === 'nmt_task') {
-    // Умова задачі (data.question, LaTeX/HTML → плоский текст) + відповідь:
+    // Умова задачі (data.question, LaTeX/HTML → плоский текст):
     // Інтегралик може РОЗВ'ЯЗУВАТИ задачі з дошки. Контент тьютора, не PII учнів.
-    const q = String(d.question || '').replace(/<[^>]+>/g, ' ')
+    // Відповідь і розбір ідуть окремими полями (nmtTaskExtras) — вони мають
+    // власний бюджет на бекенді, а `label` обрізається на 240 символах і
+    // витіснив би саму умову.
+    label = String(d.question || '').replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ').trim().slice(0, 200)
-    const ans = String(d.correctAnswer || '').trim().slice(0, 40)
-    label = q + (ans ? ` [відповідь: ${ans}]` : '')
   }
   return { kind, label: String(label).slice(0, 240) }
+}
+
+/** LaTeX/HTML → плоский текст для контексту моделі. */
+function flatten(v, cap) {
+  return String(v ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, cap)
+}
+
+/**
+ * Відповідь і розбір картки задачі — окремо від `label`.
+ *
+ * ⚠️ Живий випадок власника 2026-08-27. Він спитав Інтегралика «а що в
+ * розв'язках цього завдання не так», і той чесно відповів, що бачить лише
+ * умову. Так і було: у контекст ішли тільки `question` і `correctAnswer`,
+ * причому `correctAnswer` заповнений ЛИШЕ для відкритої відповіді. Для
+ * «відповідності» (той самий скріншот) і для вибору варіанта модель не
+ * отримувала ані відповіді, ані розбору — і не могла нічого перевірити.
+ *
+ * 🔴 Розбір — тільки за ВІДКРИТИМ. Рішення власника: модель бачить розбір
+ * лише коли тьютор сам натиснув «Показати розбір» на картці. Причина не
+ * технічна: розбір — готова відповідь, і коли доступ до Інтегралика матиме
+ * учень, «завжди видно» стало б каналом для списування. Прапорець `showSolution`
+ * уже є в даних картки й уже керує показом на екрані — беремо його, а не
+ * заводимо новий.
+ */
+export function nmtTaskExtras(d) {
+  const out = {}
+
+  // Відповідь — для ВСІХ типів. Досі була лише в open_answer, тому на
+  // «відповідності» модель мовчала.
+  let answer = ''
+  if (Array.isArray(d.pairs) && d.pairs.length) {
+    answer = d.pairs
+      .map((p) => `${flatten(p.left, 60)} — ${flatten(p.right, 60)}`)
+      .join('; ')
+  } else if (Array.isArray(d.options) && d.options.some((o) => o?.isCorrect)) {
+    answer = d.options
+      .filter((o) => o?.isCorrect)
+      .map((o) => `${o.letter ?? ''}) ${flatten(o.text, 60)}`.trim())
+      .join(', ')
+  } else if (d.correctAnswer != null && String(d.correctAnswer).trim()) {
+    answer = flatten(d.correctAnswer, 80)
+  }
+  if (answer) out.answer = answer.slice(0, 240)
+
+  // Розбір — лише коли тьютор його відкрив.
+  // 400 символів: за виміром 13 000 розборів банку медіана 114, 90-й
+  // перцентиль 317 — тобто межа ріже хвіст, а не типовий випадок.
+  if (d.showSolution && d.solution) {
+    const s = flatten(d.solution, 400)
+    if (s) out.solution = s
+  }
+  return out
 }
 
 export async function buildBoardSummary() {
@@ -661,8 +714,12 @@ export async function buildBoardSummary() {
       // params — етап 2 READ (INV-MCL-2): поточні ЗНАЧЕННЯ, без яких «зменш a
       // на одиницю» не має розв'язку. Бюджет контексту стереже BE.
       const params = assetParams(a)
+      // Відповідь і розбір картки задачі — окремими полями, з власним
+      // бюджетом на BE (див. nmtTaskExtras).
+      const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : {}
       items.push({ page: p, kind, label, id: a.id,
-                   ...(Object.keys(params).length ? { params } : {}) })
+                   ...(Object.keys(params).length ? { params } : {}),
+                   ...extras })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
