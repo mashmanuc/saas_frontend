@@ -156,6 +156,46 @@ export function isLessonConstructorEnabled(): boolean {
   return false
 }
 
+// ─── Courses Studio Flag ────────────────────────────────────────
+// Заведено 2026-08-27 на вимогу власника: «курси на прод влізли, а вони
+// не робочі — треба прибрати».
+//
+// НАВІЩО ОКРЕМИЙ ПРАПОРЕЦЬ, А НЕ ВИМКНЕННЯ isLessonConstructorEnabled().
+// До 08-27 вкладки «Конструктор» і «Мої курси» сиділи на ОДНОМУ прапорці,
+// тож вимкнути курси можна було лише разом із конструктором уроку, який працює
+// і потрібен. Одна ручка на дві різні зрілості — це й був дефект.
+//
+// ⚠️ Урок цього дня: default false НЕ гарантує, що на проді вимкнено.
+// Я стверджувала власникові, що курси на проді недосяжні, бо бачила default
+// false і .env.local у .gitignore. Але змінна живе ще й у панелі Cloudflare Pages,
+// звідки її в репозиторії не видно — і там вона була увімкнена. Власник
+// показав скріншот з m4sh.org із живою вкладкою «Мої курси».
+// Висновок: про стан прапорця на проді судити можна лише з прода, не з коду.
+
+const LS_KEY_COURSES = 'courses_studio_enabled'
+
+/**
+ * Чи показувати вкладку «Мої курси».
+ *
+ * Priority (перша умова перемагає):
+ * 1. localStorage: courses_studio_enabled=true/false  (QA / dev override)
+ * 2. Env variable: VITE_COURSES_STUDIO_ENABLED=true/false
+ * 3. Default: false
+ */
+export function isCoursesStudioEnabled(): boolean {
+  const lsValue = getLocalStorage(LS_KEY_COURSES)
+  if (lsValue !== null) {
+    return lsValue === 'true'
+  }
+
+  const envValue = getEnvVar('VITE_COURSES_STUDIO_ENABLED')
+  if (envValue !== undefined) {
+    return envValue === 'true'
+  }
+
+  return false
+}
+
 // ─── Unified Overlay Render Flag (Z_ORDER_UNIFIED_PLAN v4.0, PR1) ─────────────
 // Перемикає WBCanvas overlay-рендер з 13 per-type блоків (групує за типом →
 // cross-type z-order баг) на один ordered WBOverlayLayer (render order = assets[]

@@ -37,7 +37,7 @@
         {{ t('winterboard.boards.modeConstructor') }}
       </button>
       <button
-        v-if="lessonConstructorEnabled"
+        v-if="lessonConstructorEnabled && coursesStudioEnabled"
         type="button"
         class="wb-studio-mode-bar__btn"
         :class="{ 'wb-studio-mode-bar__btn--active': studioMode === 'courses' }"
@@ -52,7 +52,8 @@
       class="wb-studio-constructor-embedded"
     />
 
-    <CoursesStudioPanel v-if="studioMode === 'courses' && lessonConstructorEnabled" />
+    <CoursesStudioPanel
+      v-if="studioMode === 'courses' && lessonConstructorEnabled && coursesStudioEnabled" />
 
     <!-- ── Library mode (existing board list) ─────────────────────────── -->
     <template v-if="studioMode === 'library'">
@@ -493,7 +494,7 @@ import { winterboardApi, type WBSessionListItem, type ListSessionsQuery, type Bo
 // `useToast` з composables — не mounted (legacy), повідомлення туди "в нікуди".
 // Міграція стандартна: showToast(msg,'success') → notifySuccess(msg).
 import { notifyError, notifySuccess } from '@/utils/notify'
-import { isLessonConstructorEnabled } from '../config/featureFlags'
+import { isLessonConstructorEnabled, isCoursesStudioEnabled } from '../config/featureFlags'
 import { useCreateFromPdf } from '../composables/useCreateFromPdf'
 import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
@@ -517,6 +518,7 @@ const LIMIT = 24
 // ─── Feature flags ────────────────────────────────────────────────────────────
 // Оцінюється один раз при монтуванні (env + localStorage статичні).
 const lessonConstructorEnabled = isLessonConstructorEnabled()
+const coursesStudioEnabled = isCoursesStudioEnabled()
 
 // ─── Composables ──────────────────────────────────────────────────────────────
 
@@ -535,6 +537,9 @@ function _loadStudioMode(): StudioMode {
   if (!isLessonConstructorEnabled()) return 'library'
   try {
     const saved = localStorage.getItem(STUDIO_MODE_KEY)
+    // Курси вимкнено, а в localStorage лишилось 'courses' — інакше тьютор
+    // побачив би порожню сторінку без жодної вкладки, на якій він стоїть.
+    if (saved === 'courses' && !isCoursesStudioEnabled()) return 'library'
     if (saved === 'library' || saved === 'constructor' || saved === 'courses') return saved
   } catch {
     // localStorage unavailable
