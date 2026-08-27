@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import katex from 'katex'
+import { toKatexCompatible } from '@/utils/katexCompat'
 import 'katex/dist/katex.min.css'
 import { asciiMathToLatex } from '../../utils/asciiMathToLatex'
 
@@ -45,7 +46,7 @@ const html = computed<string | null>(() => {
   const src = (props.expr ?? '').trim()
   if (!src) return null
   try {
-    const latex = asciiMathToLatex(src)
+    const latex = toKatexCompatible(asciiMathToLatex(src))
     return katex.renderToString(latex, {
       output: 'htmlAndMathml',
       displayMode: props.display === true,

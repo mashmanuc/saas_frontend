@@ -1,0 +1,74 @@
+[
+  {
+    "pk": 13111,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 12864,
+    "field": "solution",
+    "red": true,
+    "black": true
+  },
+  {
+    "pk": 5169,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 13051,
+    "field": "solution",
+    "red": true,
+    "black": true
+  },
+  {
+    "pk": 13854,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 34851,
+    "field": "text",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 13248,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 7112,
+    "field": "solution",
+    "red": false,
+    "black": true
+  },
+  {
+    "pk": 12635,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 13733,
+    "field": "solution",
+    "red": false,
+    "black": true
+  },
+  {
+    "pk": 13065,
+    "field": "solution",
+    "red": true,
+    "black": false
+  },
+  {
+    "pk": 34848,
+    "field": "text",
+    "red": false,
+    "black": true
+  }
+]

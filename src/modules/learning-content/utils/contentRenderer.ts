@@ -1,4 +1,10 @@
 import katex from 'katex'
+import {
+  toKatexCompatible,
+  normalizeSourceText,
+  cleanTextSegment,
+  splitBareMathEnvironments,
+} from '@/utils/katexCompat'
 // KaTeX CSS (KaTeX_Math + KaTeX_Main fonts, positioning rules) — required
 // for `output: 'htmlAndMathml'` mode. Was unimported у `output: 'mathml'` only
 // mode (native browser MathML rendering didn't need it). Switched 2026-05-25
@@ -30,9 +36,18 @@ interface DisplayLatex {
 }
 type Segment = TextSegment | InlineLatex | DisplayLatex
 
-export function parseLatexSegments(text: string): Segment[] {
+export function parseLatexSegments(rawText: string): Segment[] {
+  // Шар 1: те, що створює межі формул — літеральний `\n`, роздільники
+  // `\(…\)` і `\[…\]`, непарний `$`. Мусить відпрацювати ДО сегментації,
+  // інакше сегментер просто не побачить формулу.
+  const text = normalizeSourceText(rawText)
   const segments: Segment[] = []
-  const regex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g
+  // ⚠️ `[^$]` замість `[^$\n]`: клас F виміру — 10 входжень, де модель
+  // ставить `$` на ВЛАСНОМУ рядку навколо формули (у справжньому LaTeX
+  // так пишуть постійно). Стара межа по `\n` таких блоків не бачила, і
+  // формула йшла в текст сирою. Верхня межа довжини — щоб самотній `$`
+  // у тексті не проковтнув документ до наступного долара.
+  const regex = /(\$\$[\s\S]+?\$\$|\$[^$]{1,800}?\$)/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
@@ -75,7 +90,11 @@ export function parseLatexSegments(text: string): Segment[] {
 // не хак під конкретний браузер.
 function renderLatexToMathML(formula: string, displayMode: boolean): string {
   try {
-    const html = katex.renderToString(formula, {
+    // ⚠️ `throwOnError: false` означає, що KaTeX на помилці НЕ кине виняток,
+    // а намалює джерело червоним просто в потоці — саме так власник побачив
+    // сирий egin{array} у розборі 2026-08-27. Тому несумісності треба
+    // знімати ДО виклику: catch нижче на них не спрацьовує.
+    const html = katex.renderToString(toKatexCompatible(formula), {
       output: 'htmlAndMathml',
       displayMode,
       throwOnError: false,
@@ -112,7 +131,18 @@ export function renderTextWithLatex(text: string): string {
   const segments = parseLatexSegments(text)
   const combined = segments
     .map((seg) => {
-      if (seg.type === 'text') return renderInlineMarkdown(seg.value)
+      if (seg.type === 'text') {
+        // Шар 2. Голі математичні середовища (`\begin{tabular}` зі стовпчиком,
+        // `\begin{array}` без доларів) у справжньому LaTeX САМІ є display-
+        // режимом, тож модель не ставить навколо них `$`. KaTeX так не вміє —
+        // піднімаємо їх у формулу, решту шматка чистимо від документної
+        // розмітки (`\par`, `\textbf`, `\item`…).
+        return splitBareMathEnvironments(seg.value)
+          .map((part) => (part.math
+            ? `<div class="lc-display-math">${renderLatexToMathML(part.value, true)}</div>`
+            : renderInlineMarkdown(cleanTextSegment(part.value))))
+          .join('')
+      }
       if (seg.type === 'inline') return renderLatexToMathML(seg.value, false)
       return `<div class="lc-display-math">${renderLatexToMathML(seg.value, true)}</div>`
     })
