@@ -1373,6 +1373,30 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       }
       const preset = SHAPE_TO_PRESET[(d.shape_2d as string | undefined) ?? ''] ?? null
       if (!preset) return null  // ТЗ-F: немає shape_2d → не малюємо брехню
+
+      // Фігура В МАСШТАБІ умови. `tri` — [x1,y1,x2,y2,x3,y3] у сантиметрах від
+      // backend (extract_2d_dims), побудовані ЛИШЕ з названих в умові розмірів.
+      // Координати кладемо як є: geo2d сам підганяє viewport (_fitToContent
+      // у render()), тож масштаб не треба нормувати руками.
+      //
+      // ⚠️ Знімок ставимо тільки трикутникам: у решти пресетів вершини звуться
+      // інакше, і чужі ключі мовчки нічого б не зробили (setFreePoints шукає
+      // об'єкт за id і пропускає невідомий) — фігура лишилась би типовою, але
+      // ми б думали, що вона в масштабі.
+      const tri = d.tri as number[] | undefined
+      const scalable = preset === 'triangle' || preset === 'right_triangle'
+      if (scalable && Array.isArray(tri) && tri.length === 6
+          && tri.every(n => typeof n === 'number' && Number.isFinite(n))) {
+        return {
+          version: 1,
+          preset,
+          pointsSnapshot: {
+            A: { x: tri[0], y: tri[1] },
+            B: { x: tri[2], y: tri[3] },
+            C: { x: tri[4], y: tri[5] },
+          },
+        }
+      }
       return { version: 1, preset }
     }
 
