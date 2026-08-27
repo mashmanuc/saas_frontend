@@ -28,6 +28,13 @@ describe('прод-конфігурація: конструктор увімкн
       localStorage.removeItem(LS_COURSES)
     } catch { /* середовище без localStorage — теж валідний випадок */ }
     vi.stubEnv('VITE_LESSON_CONSTRUCTOR_ENABLED', 'true')
+    // ⚠️ Явно ПРИБИРАЄМО змінну курсів, а не покладаємось на її відсутність.
+    // Перша редакція покладалась — і впала того ж дня, щойно я дописала
+    // VITE_COURSES_STUDIO_ENABLED=true у `.env.local` (курси треба робити
+    // локально). Vitest читає `.env.local`, тож «прод-конфігурація» в тесті
+    // мовчки ставала локальною. Тест мусить САМ будувати оточення, яке
+    // перевіряє, інакше він описує машину розробника, а не прод.
+    vi.stubEnv('VITE_COURSES_STUDIO_ENABLED', undefined as unknown as string)
   })
 
   afterEach(() => { vi.unstubAllEnvs() })
@@ -44,6 +51,8 @@ describe('прод-конфігурація: конструктор увімкн
     const m = await import('../config/featureFlags')
     expect(import.meta.env.VITE_COURSES_STUDIO_ENABLED).toBeUndefined()
     expect(m.isCoursesStudioEnabled()).toBe(false)
+    // Конструктор при цьому лишається — саме та пара, що має бути на проді.
+    expect(m.isLessonConstructorEnabled()).toBe(true)
   })
 
   it('увімкнути курси можна явно — гейт не глухий', async () => {
