@@ -40,6 +40,22 @@ async function _store() {
   return { store, page }
 }
 
+/**
+ * E2: остання картка, яку створив САМЕ Інтегралик (не тьютор руками).
+ *
+ * Живий випадок власника: «прибери з умови своєї задачі саму відповідь».
+ * Це прохання ВИПРАВИТИ наявний об'єкт, а таких дій у Інтегралика не було
+ * взагалі — лише `add_*`. Він зробив найближче можливе: дописав на дошку
+ * новий текст, лишивши стару картку. Відповідь «✓ Пишу на дошці…» була
+ * буквально правдива й читалась як виконання прохання.
+ *
+ * Адресу тримаємо ТУТ, а не в моделі: id картки народжується в цьому ж
+ * обробнику, і гнати його через промпт означало б просити модель не
+ * помилитись у 36-символьному рядку. Пам'ять живе стільки, скільки вкладка;
+ * після перезавантаження ціль чесно зникає — і про це кажемо, а не мовчимо.
+ */
+let _lastAiCard = null
+
 const HANDLERS = {
   // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke
   async add_text({ text }) {
@@ -115,6 +131,8 @@ const HANDLERS = {
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
       data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}) },
     }, page.id ?? '')
+    // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
+    _lastAiCard = { assetId, pageId: page.id ?? '' }
     // N1 Фаза 2 (2026-08-07): запис companion-сцени для AST-експорту.
     // ⚠️ Був відсутній повністю — картка потрапляла на дошку, але НІКОЛИ
     // в AST, тому й у PPTX. Це і була вся суть Фази 2.
@@ -125,6 +143,36 @@ const HANDLERS = {
       assetId,
       data: { badge: badgeValue, title: titleValue, body: bodyValue, ...(preset ? { preset } : {}) },
     })
+  },
+
+  /**
+   * E2: виправити ВЛАСНУ останню картку. Свідомо вузько.
+   *
+   * Ops уміли це завжди (`object_update` у boardStore) — бракувало лише
+   * доступу. Тут не новий тип операції, а звичайний updateAsset.
+   *
+   * ⚠️ Наявність цілі перевіряємо САМІ, до виклику: store.updateAsset при
+   * ненайденому id просто виходить (`if (idx === -1) return`), тобто тихо
+   * нічого не робить. Тиха невдача тут була б гіршою за початковий дефект:
+   * тьютор почув би «виправив» і побачив стару картку.
+   */
+  async update_card({ title, body, badge }) {
+    const { store, page } = await _store()
+    if (!_lastAiCard) {
+      throw new Error('Я ще не створював тут картки — виправляти нема чого. Скажіть, що додати.')
+    }
+    const asset = (page.assets || []).find((a) => a.id === _lastAiCard.assetId)
+    if (!asset) {
+      throw new Error(
+        'Своєї останньої картки на цій сторінці не бачу — можливо, її видалили або ви '
+        + 'на іншій сторінці. Чужі й старі картки я виправляти не вмію.'
+      )
+    }
+    const data = { ...(asset.data || {}) }
+    if (typeof title === 'string' && title) data.title = title
+    if (typeof body === 'string' && body) data.body = body
+    if (typeof badge === 'string' && badge) data.badge = badge
+    store.updateAsset({ ...asset, data })
   },
 
   // Дзеркало usePageManagement.addPage() → store.addPageUndoable() — та сама дія,
