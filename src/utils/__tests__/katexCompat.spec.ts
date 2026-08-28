@@ -21,6 +21,7 @@ import {
   cleanTextSegment,
   splitBareMathEnvironments,
   stripArrayColumnSeparators,
+  looksLikeProse,
 } from '../katexCompat'
 
 /** Чи бере KaTeX вираз без поблажок. */
@@ -187,6 +188,54 @@ describe('🔴 знайдено ОЧИМА, не виміром — стовпч
     // бекслеш розриву й робив із нього невідому команду `\-`.
     expect(toKatexCompatible('10{,}4 \\\\ -6{,}2')).toContain('\\\\ -6')
     expect(renders('\\begin{array}{r} 10{,}4 \\\\ -6{,}2 \\end{array}')).toBe(true)
+  })
+})
+
+describe('I (66) — українська проза, загорнута в долари', () => {
+  it('🔴 слово в доларах — це текст, не добуток змінних', () => {
+    // KaTeX малює «перевищувала» як тринадцять множників курсивом. Помилки
+    // немає ніде, тому дефект і жив довго — той самий клас, що градуси.
+    for (const w of ['перевищувала', 'модуль', 'березень', 'відсотків']) {
+      expect(looksLikeProse(w)).toBe(true)
+    }
+    expect(looksLikeProse('Отже, значення невідомого члена пропорції дорівнює'))
+      .toBe(true)
+  })
+
+  it('🔴 справжні формули прозою НЕ вважаються', () => {
+    // Небезпека асиметрична: пропустити прозу — лишити як було; назвати
+    // прозою формулу — показати її сирим текстом, тобто внести регрес.
+    // На корпусі: 66 знайдено, 0 хибних (verify_prose.mjs).
+    for (const f of ['x^2 + 1', '\\frac{1}{2}', 'S = \\pi R^2', '2 + 2 = 4']) {
+      expect(looksLikeProse(f)).toBe(false)
+    }
+  })
+
+  it('законна кирилиця у формулі лишається формулою', () => {
+    // Її втричі більше за прозу, і плутати не можна.
+    expect(looksLikeProse('S_{бік}=\\pi R l')).toBe(false)
+    expect(looksLikeProse('\\operatorname{НСД}(a;b)')).toBe(false)
+    expect(looksLikeProse('\\text{Маса солі} = 800')).toBe(false)
+  })
+
+  it('короткі позначення — не проза', () => {
+    // `$АВС$` — трикутник, дві-три великі літери законні.
+    expect(looksLikeProse('АВС')).toBe(false)
+    expect(looksLikeProse('АВ')).toBe(false)
+  })
+})
+
+describe('J — готові символи замість команд', () => {
+  it('`√{3}` стає коренем', () => {
+    // В одному виразі банку поруч стояли `√{3}` і правильний `\sqrt{3}` —
+    // два різні на вигляд корені в одній формулі.
+    expect(toKatexCompatible('(√{3}+1)^2')).toContain('\\sqrt{3}')
+    expect(renders('(√{3}+1)^2', false)).toBe(true)
+  })
+
+  it('тире в математиці стає мінусом', () => {
+    expect(toKatexCompatible('5 – 3')).toBe('5 - 3')
+    expect(toKatexCompatible('5 — 3')).toBe('5 - 3')
   })
 })
 

@@ -4,6 +4,7 @@ import {
   normalizeSourceText,
   cleanTextSegment,
   splitBareMathEnvironments,
+  looksLikeProse,
 } from '@/utils/katexCompat'
 // KaTeX CSS (KaTeX_Math + KaTeX_Main fonts, positioning rules) — required
 // for `output: 'htmlAndMathml'` mode. Was unimported у `output: 'mathml'` only
@@ -56,10 +57,20 @@ export function parseLatexSegments(rawText: string): Segment[] {
       segments.push({ type: 'text', value: text.slice(lastIndex, match.index) })
     }
     const raw = match[0]
-    if (raw.startsWith('$$')) {
-      segments.push({ type: 'display', value: raw.slice(2, -2).trim() })
+    const isDisplay = raw.startsWith('$$')
+    const inner = (isDisplay ? raw.slice(2, -2) : raw.slice(1, -1)).trim()
+
+    // 🔴 Проза, випадково загорнута в долари, — це ТЕКСТ, а не формула.
+    // KaTeX інакше малює кожну літеру як окрему змінну: слово
+    // «перевищувала» стає добутком тринадцяти множників, курсивом і з
+    // інтервалами. Помилки при цьому немає ніде — саме тому дефект і живе
+    // довго. 66 таких сегментів із 98 381 у банку.
+    if (looksLikeProse(inner)) {
+      segments.push({ type: 'text', value: inner })
+    } else if (isDisplay) {
+      segments.push({ type: 'display', value: inner })
     } else {
-      segments.push({ type: 'inline', value: raw.slice(1, -1).trim() })
+      segments.push({ type: 'inline', value: inner })
     }
     lastIndex = match.index + raw.length
   }
