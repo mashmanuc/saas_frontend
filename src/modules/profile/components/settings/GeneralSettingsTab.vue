@@ -38,8 +38,13 @@
           class="input mt-1"
           @change="handleChange"
         >
+          <!-- ⚠️ `Europe/Kyiv`, не `Kiev`. Бекенд зберігає саме так
+               (`UserSettings.DEFAULT_TIMEZONE`), а тут стояло старе
+               написання — значення не збігалося з жодною опцією, і селект
+               показувався ПОРОЖНІМ. Дані при цьому були цілі: браузер
+               просто не мав що підсвітити. -->
           <option value="UTC">UTC</option>
-          <option value="Europe/Kiev">Europe/Kiev</option>
+          <option value="Europe/Kyiv">Europe/Kyiv</option>
           <option value="Europe/London">Europe/London</option>
           <option value="America/New_York">America/New_York</option>
           <option value="America/Los_Angeles">America/Los_Angeles</option>
@@ -57,8 +62,12 @@
           @change="handleChange"
         />
         <label for="integralyk" class="text-sm">
-          <span class="block font-medium text-foreground">Помічник Інтегралик</span>
-          <span class="block text-muted-foreground">Показувати AI-помічника (маскот + командна палітра). Вимкніть, якщо не потрібен.</span>
+          <span class="block font-medium text-foreground">
+            {{ $t('users.settings.general.integralyk') }}
+          </span>
+          <span class="block text-muted-foreground">
+            {{ $t('users.settings.general.integralykHint') }}
+          </span>
         </label>
       </div>
     </div>
@@ -94,9 +103,37 @@ import Button from '@/ui/Button.vue'
 import { useProfileStore } from '../../store/profileStore'
 import { getUserSettings, updateUserSettings } from '@/api/users'
 import { notifySuccess, notifyError } from '@/utils/notify'
-import { i18n } from '@/i18n'
+// ⚠️ У проєкті ДВА різні входи в i18n, і вони розходяться:
+//   src/i18n/index.js  — setI18nLocale(), пише localStorage['lang']
+//   src/i18n/index.ts  — setLocale(),     пише localStorage['locale']
+// Vite резолвить `.js` раніше за `.ts` (типовий порядок розширень), тож у
+// РАНТАЙМІ працює перший, а TypeScript перевіряє другий — і на `@/i18n`
+// падає на будь-якому імені, якого немає в `.ts`.
+//
+// Беремо `setLocale` — єдине ім'я, що є в ОБОХ файлах: у `.js` це псевдонім
+// `setI18nLocale` (рядок 76, заведений саме «для сумісності з TypeScript-
+// версією»), у `.ts` — власна функція. Тому імпорт і типізується, і в
+// рантаймі викликає потрібну реалізацію з ключем `lang`.
+//
+// Уточнювати шлях як `@/i18n/index.js` марно: TypeScript зводить його назад
+// до `.ts` і падає з тією ж помилкою.
+//
+// Сам розкол — окремий дефект, ширший за цю форму: два ключі сховища
+// означають, що мова, збережена одним шляхом, невидима для іншого.
+import { i18n, setLocale } from '@/i18n'
 
 const profileStore = useProfileStore()
+
+/**
+ * Старе написання київського поясу → нове.
+ *
+ * `Europe/Kiev` — історична назва зони IANA; бекенд зберігає `Europe/Kyiv`.
+ * На акаунтах, де встигло записатись старе, без цієї нормалізації селект
+ * знову був би порожнім — тобто той самий баг, тільки з іншого боку.
+ */
+function normalizeTz(tz: string | null | undefined): string {
+  return tz === 'Europe/Kiev' ? 'Europe/Kyiv' : (tz || '')
+}
 
 const formData = ref({
   ui_language: 'uk',
@@ -126,8 +163,22 @@ onMounted(async () => {
   }
   if (settings) {
     formData.value = {
-      ui_language: settings.ui_language || settings.language || 'uk',
-      timezone: settings.timezone || 'UTC',
+      // 🔴 Селект показує МОВУ, ЯКА ЗАРАЗ ДІЄ, а не збережену на сервері.
+      //
+      // Живий баг власника 2026-08-28: інтерфейс український, а в селекті
+      // стояло English; натиснув «Зберегти» — і мова перемкнулась. Причина —
+      // два незалежні джерела: застосунок бере мову з localStorage['lang']
+      // (i18n/index.js), а форма брала `ui_language` з сервера. Вони не
+      // синхронізувались ніколи, тож форма показувала те, чого користувач
+      // не бачив, і кнопка «Зберегти» тихо ставала кнопкою «Змінити мову».
+      //
+      // Серверне значення нижче лишається запасним — для акаунта, який
+      // відкрили в чистому браузері, де localStorage порожній.
+      ui_language: (i18n.global.locale.value as string)
+        || settings.ui_language || settings.language || 'uk',
+      // Старе написання нормалізуємо, щоб селект не спорожнів на акаунтах,
+      // де встигло зберегтись `Europe/Kiev`.
+      timezone: normalizeTz(settings.timezone) || 'UTC',
       integralyk_enabled: settings.integralyk_enabled !== false
     }
     initialData.value = { ...formData.value }
@@ -156,9 +207,13 @@ async function handleSubmit() {
       profileStore.settings = { ...profileStore.settings, ...updated }
     }
     initialData.value = { ...formData.value }
-    // Apply locale change
-    if (formData.value.ui_language && i18n.global.locale) {
-      i18n.global.locale.value = formData.value.ui_language as any
+    // 🔴 Через setI18nLocale, а НЕ прямим присвоєнням у locale.value.
+    // Пряме присвоєння міняло мову лише до перезавантаження: воно не пише
+    // localStorage['lang'] і не ставить <html lang>. Тобто користувач бачив,
+    // що мова змінилась, а після F5 вона поверталась — і зміна виглядала
+    // як така, що не зберігається.
+    if (formData.value.ui_language) {
+      setLocale(formData.value.ui_language)
     }
     notifySuccess(i18n.global.t('users.settings.saveSuccess'))
   } catch (error: any) {

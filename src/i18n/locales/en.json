@@ -6616,7 +6616,9 @@
         "language": "Language",
         "timezone": "Timezone",
         "darkMode": "Dark Mode",
-        "darkModeDescription": "Use dark theme for interface"
+        "darkModeDescription": "Use dark theme for interface",
+        "integralyk": "Integralyk assistant",
+        "integralykHint": "Show the AI assistant (mascot + command palette). Turn it off if you do not need it."
       },
       "notifications": {
         "title": "Notification Settings",
