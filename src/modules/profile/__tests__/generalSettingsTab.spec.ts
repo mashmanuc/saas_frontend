@@ -74,11 +74,13 @@ describe('2 · мова не стрибає', () => {
     expect(src).not.toContain('i18n.global.locale.value = formData.value.ui_language')
   })
 
-  it('🔴 `setLocale` у рантаймі — це псевдонім, який пише КЛЮЧ `lang`', async () => {
-    // У проєкті два входи в i18n: `.js` (ключ `lang`) і `.ts` (ключ `locale`).
-    // Vite резолвить `.js` раніше, тож виконується він. Якщо псевдонім
-    // приберуть — імпорт перестане типізуватись, а якщо зміниться ключ,
-    // збережена мова стане невидимою для getInitialLocale().
+  it('🔴 `setLocale` пише саме той КЛЮЧ, який читають при старті', async () => {
+    // Ключ має лишатись `lang`: його читає getInitialLocale(). Якщо він
+    // зміниться, збережена мова стане невидимою при наступному завантаженні —
+    // і повернеться баг «мова не зберігається».
+    //
+    // 📌 До 2026-08-28 поруч жив `src/i18n/index.ts` із ключем `locale`;
+    // дубль видалено, лишився один вхід.
     const src = await readSrc(I18N)
     expect(src).toContain("export const STORAGE_KEY = 'lang'")
     expect(src).toContain('export const setLocale = setI18nLocale')

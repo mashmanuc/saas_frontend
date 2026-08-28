@@ -103,23 +103,14 @@ import Button from '@/ui/Button.vue'
 import { useProfileStore } from '../../store/profileStore'
 import { getUserSettings, updateUserSettings } from '@/api/users'
 import { notifySuccess, notifyError } from '@/utils/notify'
-// ⚠️ У проєкті ДВА різні входи в i18n, і вони розходяться:
-//   src/i18n/index.js  — setI18nLocale(), пише localStorage['lang']
-//   src/i18n/index.ts  — setLocale(),     пише localStorage['locale']
-// Vite резолвить `.js` раніше за `.ts` (типовий порядок розширень), тож у
-// РАНТАЙМІ працює перший, а TypeScript перевіряє другий — і на `@/i18n`
-// падає на будь-якому імені, якого немає в `.ts`.
+// `setLocale` — саме той шлях, що пише localStorage['lang'] (i18n/index.js),
+// тобто ключ, який читає getInitialLocale() при старті застосунку. Пряме
+// присвоєння в locale.value міняло б мову лише до перезавантаження.
 //
-// Беремо `setLocale` — єдине ім'я, що є в ОБОХ файлах: у `.js` це псевдонім
-// `setI18nLocale` (рядок 76, заведений саме «для сумісності з TypeScript-
-// версією»), у `.ts` — власна функція. Тому імпорт і типізується, і в
-// рантаймі викликає потрібну реалізацію з ключем `lang`.
-//
-// Уточнювати шлях як `@/i18n/index.js` марно: TypeScript зводить його назад
-// до `.ts` і падає з тією ж помилкою.
-//
-// Сам розкол — окремий дефект, ширший за цю форму: два ключі сховища
-// означають, що мова, збережена одним шляхом, невидима для іншого.
+// 📌 Тут стояв абзац про два різні входи в i18n (`.js` і `.ts` з різними
+// ключами сховища). Дубль `index.ts` видалено 2026-08-28 — він був мертвий:
+// `main.js` бере з нього `getInitialLocale`, якого в `.ts` не існувало
+// взагалі, тож застосунок ніколи його й не вантажив.
 import { i18n, setLocale } from '@/i18n'
 
 const profileStore = useProfileStore()
