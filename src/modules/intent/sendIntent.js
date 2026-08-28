@@ -26,7 +26,7 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
     context: {
@@ -39,6 +39,12 @@ export async function parseAi(phrase, boardId = null, history = [], boardSummary
       // проговорює мету. Сервер за цим ключем тримає згорнутий стан старших
       // реплік; хвіст `history` і далі шлемо дослівно.
       conversation_id: conversationId,
+      // E3 (2026-08-28, живий випадок власника на /tutor/schedule): без цього
+      // поля Інтегралик поза дошкою не знає НІЧОГО про місце розмови, тож на
+      // «яка вкладка відкрита» відповідав єдиним, що мав, — «не бачу дошки».
+      // Питання було не про дошку. Маршрут у палітри був завжди (useRoute),
+      // просто не доїжджав до моделі.
+      page,
     },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })

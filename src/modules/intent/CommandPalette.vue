@@ -363,6 +363,22 @@ const ERR_MSG = {
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+/**
+ * E3: де саме зараз тьютор. Палітра живе в App.vue, тож бачить будь-яку
+ * сторінку — але досі не казала про це моделі, і поза дошкою та мала лише
+ * `board_id: null`. Звідси відповідь «не бачу відкритої дошки» на питання
+ * про вкладку: єдине, що вона знала, стосувалось дошки.
+ *
+ * `name` може бути Symbol або undefined — зводимо до рядка або null, щоб на
+ * бекенд не поїхало щось несеріалізовне.
+ */
+function currentPage() {
+  const name = route?.name
+  return {
+    path: route?.path || null,
+    name: typeof name === 'string' ? name : (name ? String(name) : null),
+  }
+}
 const currentBoardId = computed(() =>
   ['winterboard-solo', 'winterboard-prepare'].includes(route.name) ? route.params.id : null,
 )
@@ -921,7 +937,7 @@ async function askAi(phrase) {
     try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage())
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
