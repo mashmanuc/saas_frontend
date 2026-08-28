@@ -230,3 +230,34 @@ describe('обидва рендерери лікуються разом', () => 
     expect(src).toContain('toKatexCompatible(asciiMathToLatex(src))')
   })
 })
+
+describe('H (114) — градуси, записані як `^{o}`', () => {
+  it('🔴 у тексті стає символом градуса', () => {
+    // Знахідка власника: варіант відповіді показувався як «90^{o}».
+    expect(normalizeSourceText('90^{o}')).toBe('90°')
+    expect(normalizeSourceText('нахилена під кутом 45^{o}'))
+      .toBe('нахилена під кутом 45°')
+  })
+
+  it('🔴 у формулі стає `\\circ`, а не символом', () => {
+    // `°` усередині математики KaTeX не приймає — одна заміна на обидва
+    // випадки зробила б із чорного дефекту червоний.
+    const out = normalizeSourceText('$\\angle A = 90^{o}$')
+    expect(out).toBe('$\\angle A = 90^\\circ$')
+    expect(renders('\\angle A = 90^\\circ', false)).toBe(true)
+  })
+
+  it('правильні форми не чіпаємо', () => {
+    for (const tex of ['$45^\\circ$', '$45^{\\circ}$', 'кут 45°']) {
+      expect(normalizeSourceText(tex)).toBe(tex)
+    }
+  })
+
+  it('змішаний рядок: у тексті символ, у формулі команда', () => {
+    // ⚠️ Цей файл я дописувала через heredoc — і він з'їв по одному бекслешу
+    // в кожному рядку, через що `\\angle` став `angle`, а `\\circ` — `circ`.
+    // Тести падали на СПРАВНОМУ коді. Дописувати сюди — лише редактором.
+    const out = normalizeSourceText('Кут 30^{o}, тобто $x = 60^{o}$ і ще 90^{o}')
+    expect(out).toBe('Кут 30°, тобто $x = 60^\\circ$ і ще 90°')
+  })
+})
