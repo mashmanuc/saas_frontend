@@ -93,6 +93,46 @@ export function clearDiagnosticRun(): void {
   }
 }
 
+// ─── Профіль діагностики: щоб фінал мав із чим порівняти ─────────────────
+
+const PROFILE_KEY = 'm4sh:diagnostic-profile:'
+
+/**
+ * Зберігається саме ПРОФІЛЬ, а не лише корені.
+ *
+ * Стан учня несе корені — вони перетинають межу між заняттями. Але
+ * питання «чи стало краще» вимагає станів ПО ПІДЦІЛЯХ до і після, а їх
+ * у коренях немає. Це вимір, а не властивість учня, тому лежить тут,
+ * поруч із проходженнями, а не в стані учня.
+ */
+export function saveDiagnosticProfile(topicId: string, profile: unknown): void {
+  write(PROFILE_KEY + topicId, profile)
+}
+
+export function loadDiagnosticProfile<T>(topicId: string): T | null {
+  return read<T>(PROFILE_KEY + topicId)
+}
+
+// ─── Підсумкова робота ───────────────────────────────────────────────────
+
+const FINAL_KEY = 'm4sh:final-run:'
+
+export function saveFinalRun(topicId: string, run: unknown): void {
+  write(FINAL_KEY + topicId, run)
+}
+
+export function loadFinalRun<T>(topicId: string): T | null {
+  return read<T>(FINAL_KEY + topicId)
+}
+
+export function clearFinalRun(topicId: string): void {
+  try {
+    localStorage.removeItem(FINAL_KEY + topicId)
+  } catch {
+    /* нічого */
+  }
+}
+
 // ─── Що показати на вітрині курсу ────────────────────────────────────────
 
 export type LessonProgressState = 'new' | 'in-progress' | 'done'

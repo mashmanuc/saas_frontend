@@ -76,6 +76,18 @@ const resumeTarget = computed(() => {
 
 const done = computed(() => lessons.value.filter((l) => l.progress.state === 'done').length)
 
+/**
+ * Підсумкова робота — РАДИМО після всіх занять, але не замикаємо.
+ *
+ * Замок тут був би тим самим, чого ми не робимо у графі передумов:
+ * рекомендація не має права ставати забороною. Людина, яка хоче спершу
+ * перевірити себе, має на це право — вона й побачить, чого бракує.
+ */
+const finalReady = computed(() => lessons.value.length > 0 && done.value === lessons.value.length)
+const finalDone = computed(() =>
+  (learner.value.completed ?? []).some((id) => id.startsWith('final:')),
+)
+
 /** Що курс уже знає про учня — назви коренів, а не лічилка. */
 const weak = computed(() => persistentRoots(learner.value))
 
@@ -163,6 +175,28 @@ const LABEL = {
           </a>
         </li>
       </ul>
+
+      <!-- Підсумкова робота. Стоїть ПІСЛЯ списку, бо це не заняття, а
+           перевірка того, що заняття дали. -->
+      <a
+        href="/final"
+        class="mt-4 flex items-center justify-between rounded-xl border px-5 py-4 transition"
+        :class="finalReady
+          ? 'border-indigo-300 bg-indigo-50/60 hover:border-indigo-500'
+          : 'border-gray-200 bg-white hover:border-indigo-300'"
+      >
+        <span>
+          <span class="block font-medium text-gray-900">
+            {{ finalDone ? 'Пройти підсумкову ще раз' : 'Підсумкова робота' }}
+          </span>
+          <span class="block text-sm text-gray-500">
+            {{ finalReady
+              ? 'усі заняття пройдено — перевіримо, що лишилось'
+              : 'краще після всіх занять, але відкрито завжди' }}
+          </span>
+        </span>
+        <span class="text-gray-400">→</span>
+      </a>
 
       <!-- Те, що курс уже знає. Показуємо лише стійке: один випадок міг
            бути неуважністю, і лякати ним не варто. -->

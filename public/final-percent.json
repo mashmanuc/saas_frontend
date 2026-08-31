@@ -1,0 +1,288 @@
+{
+ "version": "1.0",
+ "topicId": "ratios-percents-word-problems.percent",
+ "topic": "Відсотки",
+ "arc": [
+  "percent.concept",
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
+ ],
+ "subgoalLabels": {
+  "percent.concept": "поняття відсотка",
+  "percent.of_number": "відсоток від числа",
+  "percent.from_percent": "число за його відсотком",
+  "percent.ratio": "відсоткове відношення"
+ },
+ "roots": {
+  "percent/hundredth-not-tenth": "Сота, а не десята",
+  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/part-not-remainder": "Частина, а не решта",
+  "fraction/must-be-reduced": "Дріб треба скоротити",
+  "percent/what-is-the-whole": "Що тут ціле",
+  "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
+  "percent/which-direction": "У який бік рахуємо",
+  "percent/can-exceed-100": "Відсотків може бути більше ста",
+  "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
+  "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
+ },
+ "tasks": [
+  {
+   "id": "93351",
+   "subgoal": "percent.concept",
+   "text": "Запишіть число 0,35 у відсотках.",
+   "solution": "Ціле — це 100%. Щоб записати число у відсотках, множимо його на 100%: $0{,}35 \\cdot 100\\% = 35\\%$. Відповідь: 35.",
+   "choices": [
+    {
+     "text": "3,5",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "35",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,35%",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    },
+    {
+     "text": "350",
+     "correct": false,
+     "mistakeId": "percent_mul_by_1000",
+     "rootId": "percent/hundredth-not-tenth"
+    }
+   ]
+  },
+  {
+   "id": "93400",
+   "subgoal": "percent.concept",
+   "text": "Знайдіть 1% від 60 хв.",
+   "solution": "1% — це одна сота частина величини. Щоб знайти 1%, ділимо величину на 100: $60 : 100 = 0{,}6$ (хв). Відповідь: 0,6.",
+   "choices": [
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "0,6",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,06",
+     "correct": false,
+     "mistakeId": "percent_div_by_1000",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "60",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    }
+   ]
+  },
+  {
+   "id": "63433",
+   "subgoal": "percent.of_number",
+   "text": "Обчисліть значення, яке становить 10% від 100.",
+   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 1000. Відповідь: 10",
+   "choices": [
+    {
+     "text": "1000",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "90",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "10",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "100",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    }
+   ]
+  },
+  {
+   "id": "22629",
+   "subgoal": "percent.of_number",
+   "text": "Знайти 3% від числа 600",
+   "solution": "",
+   "choices": [
+    {
+     "text": "200",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "18",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "180",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "20",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "63364",
+   "subgoal": "percent.from_percent",
+   "text": "Число 23 становить 25% від деякого числа. Знайдіть це число.",
+   "solution": "$\\dfrac{\\text{part} \\cdot 100}{x}$. part·100 = 2300.0. Відповідь: 92",
+   "choices": [
+    {
+     "text": "2300",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "0,92",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "5,75",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    },
+    {
+     "text": "92",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "63555",
+   "subgoal": "percent.from_percent",
+   "text": "Число 235 становить 50% від деякого числа. Знайдіть це число.",
+   "solution": "$\\dfrac{\\text{part} \\cdot 100}{x}$. part·100 = 23500.0. Відповідь: 470",
+   "choices": [
+    {
+     "text": "470",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "23500",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "4,7",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "117,5",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    }
+   ]
+  },
+  {
+   "id": "63650",
+   "subgoal": "percent.ratio",
+   "text": "Знайдіть, скільки відсотків складає 179 від 716.",
+   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 17900. Відповідь: 25",
+   "choices": [
+    {
+     "text": "400",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "percent/what-is-the-whole"
+    },
+    {
+     "text": "75",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "25",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,25",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "63681",
+   "subgoal": "percent.ratio",
+   "text": "Скільки відсотків становить число 33 від числа 660?",
+   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 3300. Відповідь: 5",
+   "choices": [
+    {
+     "text": "0,5",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "0,05",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "95",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    }
+   ]
+  }
+ ],
+ "note": "підсумкова робота: набір ФІКСОВАНИЙ (щоб результати були порівнюваними), розборів під час роботи немає, жодної задачі з занять чи діагностики"
+}

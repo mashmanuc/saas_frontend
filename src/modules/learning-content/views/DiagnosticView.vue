@@ -29,6 +29,7 @@ import { applyReport, emptyLearnerState } from '../learnerState'
 import {
   clearDiagnosticRun,
   loadDiagnosticRun,
+  saveDiagnosticProfile,
   saveDiagnosticRun,
 } from '../progressStore'
 
@@ -113,6 +114,8 @@ function pick(index) {
 function finish() {
   clearDiagnosticRun()
   profile.value = buildProfile(pool.value, run.value, (pool.value.lessons ?? []).length)
+  // Профіль знадобиться підсумковій роботі, щоб показати рух «було → стало».
+  saveDiagnosticProfile(pool.value.topicId, profile.value)
 
   // Корені діагностики йдуть у той самий стан учня, що й корені занять —
   // ключ той самий (`rootId`), тож повторення впізнається наскрізно.
