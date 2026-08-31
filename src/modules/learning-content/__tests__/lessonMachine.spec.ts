@@ -406,7 +406,7 @@ import { fileURLToPath } from 'node:url'
 import { completeSolve, findDeadEnds, isActive } from '../lessonMachine'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REAL_PLAN = resolve(HERE, '../../../../public/demo-lesson-percent.json')
+const REAL_PLAN = resolve(HERE, '../../../../public/lesson-percent.concept.json')
 
 describe('INV-M1 як властивість плану, не як приклад', () => {
   it('навчальні плани не мають станів без виходу', () => {

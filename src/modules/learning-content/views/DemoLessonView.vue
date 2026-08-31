@@ -7,10 +7,12 @@
  * кроку і які події віддати машині. Якщо тягне дописати сюди «а якщо
  * учень двічі помилився…» — це ознака, що правило має бути в машині.
  *
- * Свідомі межі: план статичний (`/demo-lesson-percent.json`, зібраний
- * `build_demo_lesson.py`), бекенд не чіпано, прогрес не зберігається,
- * діагностики й фіналу немає. `?step=N` — пряме посилання на крок
- * основної лінії (зручно перевіряти конкретний блок).
+ * Свідомі межі: план статичний (`/lesson-<підціль>.json`, зібраний
+ * `build_lesson.py`), бекенд не чіпано, прогрес не зберігається,
+ * діагностики й фіналу немає.
+ *
+ * Адреса: `?lesson=percent.of_number` обирає заняття,
+ * `?step=N` — крок основної лінії (зручно перевіряти конкретний блок).
  *
  * Дошки тут НЕМА — свідомо (рішення власника 2026-08-31). Курс і дошка
  * розділені архітектурно: курс веде навчальний потік, а дошка буде
@@ -51,6 +53,9 @@ import {
  */
 const RENDERABLE = ['hook', 'explain', 'emphasis', 'example', 'check', 'remediate', 'summary']
 
+/** Заняття за замовчуванням, якщо в адресі нічого не сказано. */
+const DEFAULT_LESSON = 'percent.concept'
+
 const route = useRoute()
 
 const plan = ref(null)
@@ -60,8 +65,14 @@ const nav = ref(null) // низ блоку — щоб «Далі» не тіка
 
 onMounted(async () => {
   try {
-    const res = await fetch('/demo-lesson-percent.json')
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    // Яке заняття показати: /demo-lesson?lesson=percent.of_number
+    // Дозволені лише «літери, крапки, дефіси» — значення йде в URL, і
+    // приймати звідти довільний шлях означало б дати `../` у запит.
+    const asked = String(route.query.lesson ?? DEFAULT_LESSON)
+    const which = /^[a-z0-9._-]+$/i.test(asked) ? asked : DEFAULT_LESSON
+
+    const res = await fetch(`/lesson-${which}.json`)
+    if (!res.ok) throw new Error(`заняття «${which}» не знайдено (HTTP ${res.status})`)
     const loaded = await res.json()
 
     // План перевіряємо ДО показу: краще сказати, що він битий, ніж

@@ -1,0 +1,250 @@
+{
+ "id": "percent.of_number",
+ "course": "Відсотки",
+ "session": 2,
+ "subgoal": "П2 Відсоток від числа",
+ "objective": "знаходити відсотки від даного числа",
+ "roots": {
+  "percent/hundredth-not-tenth": "Сота, а не десята",
+  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/part-not-remainder": "Частина, а не решта",
+  "fraction/must-be-reduced": "Дріб треба скоротити",
+  "percent/what-is-the-whole": "Що тут ціле",
+  "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
+  "percent/which-direction": "У який бік рахуємо"
+ },
+ "sourceLessons": [
+  "mat_5/urok_115.doc",
+  "mat_5/urok_116.doc",
+  "mat_5/urok_117.doc",
+  "mat_6/urok_28.doc",
+  "mat_6/urok_29.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Одна й та сама задача, двічі:\n\n«Знайди $0{,}06$ від 200» і «Знайди $6\\%$ від 200».\n\nЦе не дві різні дії. Це **одна дія, записана двома способами** — бо $6\\% = 0{,}06$.",
+   "source": "та сама задача двічі: частка як 0.06 і як 6% — різниця лише у формі запису"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Відсоток від числа",
+   "body": "Щоб знайти відсоток від числа, є два однакові шляхи.\n\n**Через дріб:** переводимо відсотки в дріб і множимо.\n$6\\%$ від $200 = 200 \\cdot 0{,}06 = 12$\n\n**Через один відсоток:** спершу знаходимо $1\\%$, потім беремо стільки, скільки треба.\n$1\\%$ від $200 = 200 : 100 = 2$, тоді $6\\%$ — це $2 \\cdot 6 = 12$\n\nОбидва дають те саме. Другий зручніший, коли рахуєш подумки.",
+   "mustState": [
+    "N% від A = A · N · 0.01",
+    "шлях через 1%: A/100, потім × N"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Відсоток від числа завжди менший за саме число** — якщо відсотків менше ста. Це швидка перевірка: вийшло більше — щось пішло не так."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "Знайти $10\\%$ від 350",
+     "a": "$350 : 100 \\cdot 10 = 35$"
+    },
+    {
+     "q": "Знайти $25\\%$ від 80",
+     "a": "$80 \\cdot 0{,}25 = 20$"
+    },
+    {
+     "q": "Знайти $150\\%$ від 40",
+     "a": "$40 \\cdot 1{,}5 = 60$ — більше за 40"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Обчисліть значення, яке становить 10% від 70.",
+   "choices": [
+    {
+     "text": "700",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "7",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "70",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "63",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    }
+   ],
+   "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 70. Щоб їх знайти, множимо 70 на 10 і ділимо на 100: $70 \\cdot 10 : 100 = 700 : 100 = 7$. Відповідь: 7.",
+   "taskId": 63326,
+   "family": "of_number",
+   "onMistake": {
+    "percent_div_by_10": "fix_hundredth",
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Знайдіть значення 5% від числа 200.",
+   "choices": [
+    {
+     "text": "10",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "190",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "40",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1000",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "Один відсоток — це сота частина числа, тому 5% — це 5 сотих частин числа 200. Щоб їх знайти, множимо 200 на 5 і ділимо на 100: $200 \\cdot 5 : 100 = 1000 : 100 = 10$. Відповідь: 10.",
+   "taskId": 63474,
+   "family": "of_number",
+   "onMistake": {
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Знайдіть значення 40% від числа 300.",
+   "choices": [
+    {
+     "text": "180",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "120",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "7,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "12000",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "Один відсоток — це сота частина числа, тому 40% — це 40 сотих частин числа 300. Щоб їх знайти, множимо 300 на 40 і ділимо на 100: $300 \\cdot 40 : 100 = 12000 : 100 = 120$. Відповідь: 120.",
+   "taskId": 63520,
+   "family": "of_number",
+   "onMistake": {
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Обчисліть значення, яке становить 75% від 140.",
+   "choices": [
+    {
+     "text": "35",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "105",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1,87",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "10500",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "Один відсоток — це сота частина числа, тому 75% — це 75 сотих частин числа 140. Щоб їх знайти, множимо 140 на 75 і ділимо на 100: $140 \\cdot 75 : 100 = 10500 : 100 = 105$. Відповідь: 105.",
+   "taskId": 63528,
+   "family": "of_number",
+   "onMistake": {
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні навчились знаходити відсоток від числа — через дріб і через один відсоток.\n\nНаступного разу — зворотна задача: **знайти число, якщо відомий його відсоток**."
+  },
+  {
+   "id": "fix_hundredth",
+   "type": "remediate",
+   "rootId": "percent/hundredth-not-tenth",
+   "title": "Сота, а не десята",
+   "body": "Схоже, поділили не на те число.\n\n**Відсоток — це СОТА частина**, тому переходимо через 100, а не через 10 чи 1000. Порівняй:\n\n$40\\% = 40 \\cdot 0{,}01 = 0{,}4$ — правильно\n$40 : 10 = 4$ — це десята частина, а не сота\n\nПідказка для перевірки: 100% має давати ціле число назад. $100 \\cdot 0{,}01 = 1$ — сходиться.",
+   "covers": [
+    "percent_div_by_10",
+    "percent_div_by_1000",
+    "percent_mul_by_10",
+    "percent_mul_by_1000"
+   ]
+  },
+  {
+   "id": "fix_complement",
+   "type": "remediate",
+   "rootId": "percent/part-not-remainder",
+   "title": "Частина, а не решта",
+   "body": "Схоже, знайшли те, що ЛИШИЛОСЬ, замість того, що просили.\n\nЯкщо взяли $25\\%$, то решта — $75\\%$. Обидва числа правильні, але питання було про **взяту** частину.\n\nПеречитуй, що саме шукають: узяту частину чи залишок.",
+   "covers": [
+    "complement_confusion"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; поріг послаблено до 1 названої помилки на задачу — із двома не було розкиду за величиною відсотка; діагностики й фіналу немає, дошка (solve) не під'єднана"
+}
