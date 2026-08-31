@@ -42,6 +42,12 @@ import {
   findDeadEnds,
   validatePlan,
 } from '../lessonMachine'
+import {
+  adviseNext,
+  applyReport,
+  emptyLearnerState,
+  persistentRoots,
+} from '../learnerState'
 
 /**
  * Типи кроків, які ця в'юшка вміє показати.
@@ -56,12 +62,41 @@ const RENDERABLE = ['hook', 'explain', 'emphasis', 'example', 'check', 'remediat
 /** Заняття за замовчуванням, якщо в адресі нічого не сказано. */
 const DEFAULT_LESSON = 'percent.concept'
 
+/**
+ * Де лежить стан учня. localStorage — свідома тимчасова межа: без
+ * бекенду це єдине чесне сховище, і воно не вдає, ніби прогрес
+ * переживе інший пристрій. Модуль `learnerState` про сховище не
+ * знає, тож заміна на бекенд не зачепить контракт.
+ */
+const LEARNER_KEY = 'm4sh:learner-state:v1'
+
+function loadLearner() {
+  try {
+    const raw = localStorage.getItem(LEARNER_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return parsed?.version === 1 ? parsed : emptyLearnerState()
+  } catch {
+    // приватне вікно чи биті дані — заняття має грати однаково
+    return emptyLearnerState()
+  }
+}
+
+function saveLearner(state) {
+  try {
+    localStorage.setItem(LEARNER_KEY, JSON.stringify(state))
+  } catch {
+    // не зберіглось — це не привід ламати проходження
+  }
+}
+
 const route = useRoute()
 
 const plan = ref(null)
 const run = ref(null)
 const error = ref('')
 const nav = ref(null) // низ блоку — щоб «Далі» не тікав за екран
+const learner = ref(emptyLearnerState())
+const advice = ref(null)
 
 onMounted(async () => {
   try {
@@ -103,6 +138,7 @@ onMounted(async () => {
 
     plan.value = loaded
     run.value = createRun(loaded)
+    learner.value = loadLearner()
 
     // Пряме посилання на крок ОСНОВНОЇ лінії: /demo-lesson?step=5.
     const want = Number(route.query.step)
@@ -125,6 +161,16 @@ const backward = computed(() => ready.value && canGoBack(run.value))
 const answered = computed(() => !!step.value && isAnswered(run.value, step.value.id))
 const given = computed(() => (answered.value ? run.value.answers[step.value.id] : null))
 const learned = computed(() => (run.value ? report(run.value) : null))
+
+/**
+ * Наступне заняття за порядком КУРСУ. Порахувати його можна завжди —
+ * навіть коли порада каже «повтори»: рада не приховує шлях далі.
+ */
+const nextLesson = computed(() => {
+  const order = plan.value?.courseOrder ?? []
+  const i = order.indexOf(plan.value?.id)
+  return i >= 0 ? order[i + 1] : undefined
+})
 
 /**
  * Абзаци + формули. `**жирний**` тут НЕ чіпаємо: renderTextWithLatex
@@ -162,6 +208,21 @@ function choose(index) {
 function goNext() {
   run.value = advance(plan.value, run.value)
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (isFinished(plan.value, run.value)) finish()
+}
+
+/**
+ * Заняття скінчилось: підсумок вливається у стан учня.
+ *
+ * `applyReport` не подвоює лічильники для того самого заняття, тож
+ * повторний виклик (перезавантаження, крок назад і знову вперед)
+ * безпечний — перевіряти «чи вже писали» тут не треба.
+ */
+function finish() {
+  const next = applyReport(learner.value, plan.value.id, report(run.value))
+  learner.value = next
+  saveLearner(next)
+  advice.value = adviseNext(next, plan.value.courseOrder ?? [], plan.value.id)
 }
 
 function goBack() {
@@ -268,6 +329,31 @@ function goBack() {
             Над чим варто попрацювати:
             <span class="font-medium">{{ learned.roots.map(rootLabel).join(', ') }}</span>.
           </p>
+        </div>
+
+        <!-- що далі: РАДА зі стану учня, а не заборона.
+             Наступне заняття лишається доступним у будь-якому разі. -->
+        <div
+          v-if="step.type === 'summary' && advice"
+          class="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-3 text-sm"
+        >
+          <p v-if="advice.kind === 'repeat'" class="text-gray-800">
+            <span class="font-medium">Це вже не вперше:</span>
+            {{ advice.roots.map(rootLabel).join(', ') }} —
+            траплялось не в одному занятті. Варто закріпити.
+          </p>
+          <p v-else-if="advice.kind === 'done'" class="text-gray-800">
+            Це останнє заняття курсу. Далі — повторення того, що хочеш.
+          </p>
+          <p v-else class="text-gray-800">Можна рухатись далі.</p>
+
+          <a
+            v-if="nextLesson"
+            :href="`/demo-lesson?lesson=${nextLesson}`"
+            class="mt-2 inline-block font-medium text-indigo-700 hover:text-indigo-900"
+          >
+            Наступне заняття →
+          </a>
         </div>
 
         <!-- навігація -->

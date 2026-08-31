@@ -13,6 +13,10 @@
   "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
   "percent/which-direction": "У який бік рахуємо"
  },
+ "courseOrder": [
+  "percent.concept",
+  "percent.of_number"
+ ],
  "sourceLessons": [
   "mat_5/urok_114.doc"
  ],
