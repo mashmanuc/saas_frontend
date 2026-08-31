@@ -41,6 +41,11 @@ import {
   report,
   findDeadEnds,
   validatePlan,
+  answerPractice,
+  practiceAttempts,
+  practiceDone,
+  practiceStreak,
+  practiceTask,
 } from '../lessonMachine'
 import {
   adviseNext,
@@ -58,7 +63,10 @@ import { clearRun, loadRun, saveRun } from '../progressStore'
  * `solve` тут відхиляється НАЗВАНОЮ причиною, а не зависає порожнім
  * екраном. Межа має бути видною, а не з'ясовуватись кліком.
  */
-const RENDERABLE = ['hook', 'explain', 'emphasis', 'example', 'check', 'remediate', 'summary']
+const RENDERABLE = [
+  'hook', 'explain', 'emphasis', 'example',
+  'check', 'practice', 'remediate', 'summary',
+]
 
 /** Заняття за замовчуванням, якщо в адресі нічого не сказано. */
 const DEFAULT_LESSON = 'percent.concept'
@@ -174,6 +182,32 @@ const answered = computed(() => !!step.value && isAnswered(run.value, step.value
 const given = computed(() => (answered.value ? run.value.answers[step.value.id] : null))
 const learned = computed(() => (run.value ? report(run.value) : null))
 
+// ── Тренування ───────────────────────────────────────────────────────────
+const drill = computed(() =>
+  step.value?.type === 'practice' && run.value ? practiceTask(step.value, run.value) : null,
+)
+const drillDone = computed(() =>
+  step.value?.type === 'practice' && run.value ? practiceDone(step.value, run.value) : false,
+)
+const streak = computed(() =>
+  step.value?.type === 'practice' && run.value ? practiceStreak(run.value, step.value.id) : 0,
+)
+const drillGoal = computed(() => step.value?.streakGoal ?? 3)
+/** Остання відповідь тренування — щоб показати розбір саме на неї. */
+const lastDrill = computed(() => {
+  if (step.value?.type !== 'practice' || !run.value) return null
+  const done = practiceAttempts(run.value, step.value.id)
+  const last = done[done.length - 1]
+  if (!last) return null
+  const task = (step.value.tasks ?? []).find((t) => t.id === last.taskId)
+  return task ? { ...last, task } : null
+})
+/** Скільки задач набору лишилось — чесна межа, а не «нескінченно». */
+const drillLeft = computed(() => {
+  if (step.value?.type !== 'practice' || !run.value) return 0
+  return (step.value.tasks ?? []).length - practiceAttempts(run.value, step.value.id).length
+})
+
 /**
  * Наступне заняття за порядком КУРСУ. Порахувати його можна завжди —
  * навіть коли порада каже «повтори»: рада не приховує шлях далі.
@@ -208,6 +242,12 @@ function inline(text) {
  */
 function rootLabel(id) {
   return plan.value?.roots?.[id] ?? id
+}
+
+function trainAnswer(index) {
+  run.value = answerPractice(plan.value, run.value, index)
+  saveRun(plan.value.id, run.value)
+  nextTick(() => nav.value?.scrollIntoView({ block: 'end', behavior: 'smooth' }))
 }
 
 function choose(index) {
@@ -338,6 +378,55 @@ function goBack() {
             </p>
             <p class="text-sm text-gray-800" v-html="inline(step.solution)" />
           </div>
+        </div>
+
+        <!-- тренування: зупиняє не кількість, а серія правильних -->
+        <div v-if="step.type === 'practice'">
+          <p class="mb-4 text-sm text-gray-600">
+            Мета — <strong>{{ drillGoal }} правильні поспіль</strong>. Зараз
+            поспіль: <strong>{{ streak }}</strong>.
+            <span v-if="drillLeft > 0" class="text-gray-400">
+              · у наборі ще {{ drillLeft }}
+            </span>
+          </p>
+
+          <template v-if="drill">
+            <p class="mb-4 text-gray-900" v-html="inline(drill.text)" />
+            <div class="space-y-2">
+              <button
+                v-for="(c, ci) in drill.choices"
+                :key="ci"
+                type="button"
+                class="flex w-full rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50"
+                @click="trainAnswer(ci)"
+              >
+                <span class="text-gray-900" v-html="inline(c.text)" />
+              </button>
+            </div>
+          </template>
+
+          <!-- розбір ПОПЕРЕДНЬОЇ задачі: тренування вчить, а не міряє,
+               тож помилку показуємо одразу — але не ведемо в лікування,
+               воно вже було на перевірках вище -->
+          <div
+            v-if="lastDrill"
+            class="mt-4 rounded-lg px-4 py-3"
+            :class="lastDrill.correct ? 'bg-green-50' : 'bg-amber-50'"
+          >
+            <p
+              class="mb-1 text-sm font-medium"
+              :class="lastDrill.correct ? 'text-green-800' : 'text-amber-800'"
+            >
+              {{ lastDrill.correct ? 'Правильно' : 'Не вийшло — ось як це працює' }}
+            </p>
+            <p class="text-sm text-gray-800" v-html="inline(lastDrill.task.solution)" />
+          </div>
+
+          <p v-if="drillDone" class="mt-4 text-sm font-medium text-green-700">
+            {{ streak >= drillGoal
+              ? 'Вийшло поспіль — прийом ліг. Ідемо далі.'
+              : 'Задачі набору скінчились. Це не провал — просто тема ще свіжа.' }}
+          </p>
         </div>
 
         <!-- підсумок: що заняття дізналось про учня -->

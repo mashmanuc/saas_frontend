@@ -129,6 +129,7 @@ function finish() {
       roots,
       mistakes: [],
       treated: [],
+      practice: { attempts: 0, correct: 0 },
     })
     localStorage.setItem(LEARNER_KEY, JSON.stringify(next))
   } catch {

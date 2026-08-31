@@ -403,7 +403,16 @@ describe('INV-M3 · те саме ЛІКУВАННЯ не показуємо д�
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { completeSolve, findDeadEnds, isActive } from '../lessonMachine'
+import {
+  DEFAULT_STREAK_GOAL,
+  answerPractice,
+  completeSolve,
+  findDeadEnds,
+  isActive,
+  practiceDone,
+  practiceStreak,
+  practiceTask,
+} from '../lessonMachine'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REAL_PLAN = resolve(HERE, '../../../../public/lesson-percent.concept.json')
@@ -529,5 +538,115 @@ describe('корінь — стабільний ключ діагностики,
 
     expect(report(r2).roots).toEqual(before)
     expect(validatePlan(renamed)).toEqual([])
+  })
+})
+
+// ── Тренування: зупинка за СЕРІЄЮ, не за числом ──────────────────────────
+
+describe('INV-M7 · тренування триває, доки не вийде поспіль', () => {
+  /** Набір із `n` задач, у кожній два варіанти: [0] правильний. */
+  const trainingPlan = (n: number, goal?: number): LessonPlan => ({
+    id: 'training',
+    course: 'c',
+    session: 1,
+    subgoal: 's',
+    steps: [
+      {
+        id: 'drill',
+        type: 'practice',
+        title: 'Потренуйся',
+        streakGoal: goal,
+        tasks: Array.from({ length: n }, (_, i) => ({
+          id: `t${i}`,
+          text: `задача ${i}`,
+          solution: `розбір ${i}`,
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm', rootId: 'r/x' },
+          ],
+        })),
+      },
+      { id: 'end', type: 'summary', title: 'end' },
+    ],
+  })
+
+  const rightAway = (plan: LessonPlan) => {
+    let run = createRun(plan)
+    for (let i = 0; i < 50 && practiceTask(plan.steps[0], run); i++) {
+      run = answerPractice(plan, run, 0)
+    }
+    return run
+  }
+
+  it('три правильні поспіль — і досить, решта задач не питається', () => {
+    const plan = trainingPlan(10)
+    const run = rightAway(plan)
+    expect(practiceStreak(run, 'drill')).toBe(DEFAULT_STREAK_GOAL)
+    expect(run.practice.drill).toHaveLength(DEFAULT_STREAK_GOAL)
+    expect(practiceDone(plan.steps[0], run)).toBe(true)
+    expect(canAdvance(plan, run)).toBe(true)
+  })
+
+  it('поки серії немає — уперед не можна', () => {
+    const plan = trainingPlan(10)
+    let run = createRun(plan)
+    run = answerPractice(plan, run, 0)
+    run = answerPractice(plan, run, 0)
+    expect(practiceStreak(run, 'drill')).toBe(2)
+    expect(canAdvance(plan, run)).toBe(false)
+    expect(isFinished(plan, run)).toBe(false)
+  })
+
+  it('помилка ОБНУЛЯЄ серію — саме тому це «поспіль»', () => {
+    const plan = trainingPlan(10)
+    let run = createRun(plan)
+    run = answerPractice(plan, run, 0) // +1
+    run = answerPractice(plan, run, 1) // помилка
+    expect(practiceStreak(run, 'drill')).toBe(0)
+    run = answerPractice(plan, run, 0)
+    expect(practiceStreak(run, 'drill')).toBe(1)
+  })
+
+  it('INV-M1 живий: хто помиляється завжди — виходить по стелі набору', () => {
+    const plan = trainingPlan(5)
+    let run = createRun(plan)
+    for (let i = 0; i < 50 && practiceTask(plan.steps[0], run); i++) {
+      run = answerPractice(plan, run, 1) // завжди хибно
+    }
+    expect(run.practice.drill).toHaveLength(5) // набір вичерпано
+    expect(practiceDone(plan.steps[0], run)).toBe(true)
+    run = advance(plan, run)
+    expect(run.stepId).toBe('end')
+  })
+
+  it('задачі не повторюються і йдуть по порядку', () => {
+    const plan = trainingPlan(4)
+    let run = createRun(plan)
+    const seen: string[] = []
+    for (let i = 0; i < 10 && practiceTask(plan.steps[0], run); i++) {
+      seen.push(practiceTask(plan.steps[0], run)!.id)
+      run = answerPractice(plan, run, 1)
+    }
+    expect(seen).toEqual(['t0', 't1', 't2', 't3'])
+  })
+
+  it('план із тренуванням не має станів без виходу', () => {
+    expect(findDeadEnds(trainingPlan(6))).toEqual([])
+  })
+
+  it('корені з тренування потрапляють у звіт', () => {
+    const plan = trainingPlan(6)
+    let run = answerPractice(plan, createRun(plan), 1)
+    const r = report(run)
+    expect(r.roots).toEqual(['r/x'])
+    expect(r.practice).toEqual({ attempts: 1, correct: 0 })
+  })
+
+  it('валідатор: тренування без задач і недосяжна серія', () => {
+    const empty = trainingPlan(0)
+    expect(validatePlan(empty).map((p) => p.problem).join()).toContain('без задач')
+
+    const tooShort = trainingPlan(2, 5)
+    expect(validatePlan(tooShort).map((p) => p.problem).join()).toContain('недосяжна')
   })
 })

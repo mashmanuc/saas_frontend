@@ -226,6 +226,262 @@
    }
   },
   {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "63498",
+     "text": "Знайдіть, скільки відсотків складає 32 від 320.",
+     "solution": "Ціле — це число 320, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 320 вміщується в 32. Одна сота частина 320 — це $320 : 100$, тому шукаємо, скільки таких часток у 32: $32 \\cdot 100 : 320 = 3200 : 320 = 10$. Відповідь: 10.",
+     "choices": [
+      {
+       "text": "0,1",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "90",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "10",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1000",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
+    },
+    {
+     "id": "63533",
+     "text": "Скільки відсотків становить число 44 від числа 55?",
+     "solution": "Ціле — це число 55, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 55 вміщується в 44. Одна сота частина 55 — це $55 : 100$, тому шукаємо, скільки таких часток у 44: $44 \\cdot 100 : 55 = 4400 : 55 = 80$. Відповідь: 80.",
+     "choices": [
+      {
+       "text": "0,8",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "20",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "80",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "125",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
+    },
+    {
+     "id": "63591",
+     "text": "Знайдіть, скільки відсотків складає 188 від 470.",
+     "solution": "Ціле — це число 470, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 470 вміщується в 188. Одна сота частина 470 — це $470 : 100$, тому шукаємо, скільки таких часток у 188: $188 \\cdot 100 : 470 = 18800 : 470 = 40$. Відповідь: 40.",
+     "choices": [
+      {
+       "text": "0,4",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "60",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "40",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "250",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
+    },
+    {
+     "id": "63406",
+     "text": "Скільки відсотків становить число 32 від числа 128?",
+     "solution": "Ціле — це число 128, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 128 вміщується в 32. Одна сота частина 128 — це $128 : 100$, тому шукаємо, скільки таких часток у 32: $32 \\cdot 100 : 128 = 3200 : 128 = 25$. Відповідь: 25.",
+     "choices": [
+      {
+       "text": "75",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,25",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "400",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
+    },
+    {
+     "id": "63415",
+     "text": "Скільки відсотків становить число 19 від числа 95?",
+     "solution": "Ціле — це число 95, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 95 вміщується в 19. Одна сота частина 95 — це $95 : 100$, тому шукаємо, скільки таких часток у 19: $19 \\cdot 100 : 95 = 1900 : 95 = 20$. Відповідь: 20.",
+     "choices": [
+      {
+       "text": "80",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,2",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "500",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      },
+      {
+       "text": "20",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63447",
+     "text": "Скільки відсотків становить число 43 від числа 172?",
+     "solution": "Ціле — це число 172, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 172 вміщується в 43. Одна сота частина 172 — це $172 : 100$, тому шукаємо, скільки таких часток у 43: $43 \\cdot 100 : 172 = 4300 : 172 = 25$. Відповідь: 25.",
+     "choices": [
+      {
+       "text": "75",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,25",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "400",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      },
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63464",
+     "text": "Скільки відсотків становить число 31 від числа 124?",
+     "solution": "Ціле — це число 124, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 124 вміщується в 31. Одна сота частина 124 — це $124 : 100$, тому шукаємо, скільки таких часток у 31: $31 \\cdot 100 : 124 = 3100 : 124 = 25$. Відповідь: 25.",
+     "choices": [
+      {
+       "text": "0,25",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "75",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "400",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      },
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63611",
+     "text": "Знайдіть, скільки відсотків складає 247 від 988.",
+     "solution": "Ціле — це число 988, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 988 вміщується в 247. Одна сота частина 988 — це $988 : 100$, тому шукаємо, скільки таких часток у 247: $247 \\cdot 100 : 988 = 24700 : 988 = 25$. Відповідь: 25.",
+     "choices": [
+      {
+       "text": "0,25",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "75",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "400",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "summary",
    "type": "summary",
    "title": "Підсумок заняття",

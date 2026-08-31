@@ -31,11 +31,12 @@ export type StepType =
   | 'emphasis' // ключова думка, яку треба запам'ятати
   | 'example' // показовий приклад, без дії учня
   | 'check' // задача з вибором — дає сигнал
+  | 'practice' // тренування: задачі доти, доки не вийде поспіль
   | 'solve' // розв'язування на дошці (оголошено, не під'єднано)
   | 'remediate' // лікування КОНКРЕТНОГО непорозуміння
   | 'summary' // підсумок
 
-export const ACTIVE_STEPS: readonly StepType[] = ['check', 'solve']
+export const ACTIVE_STEPS: readonly StepType[] = ['check', 'solve', 'practice']
 
 export interface Choice {
   text: string
@@ -57,6 +58,13 @@ export interface Choice {
    * ті сигнали, яких ще не вміємо лікувати.
    */
   rootId?: string | null
+}
+
+export interface PracticeTask {
+  id: string
+  text: string
+  solution: string
+  choices: Choice[]
 }
 
 export interface Step {
@@ -81,6 +89,17 @@ export interface Step {
    * «вже показували», тож два різні кроки одного кореня не повторяться.
    */
   rootId?: string
+  /** `practice`: набір, із якого беремо задачі одна за одною */
+  tasks?: PracticeTask[]
+  /**
+   * `practice`: скільки правильних ПОСПІЛЬ вважаємо засвоєнням.
+   *
+   * Саме поспіль, а не «скільки всього»: «розв'яжи 10» міряє
+   * витривалість, а три правильні підряд — що прийом справді ліг.
+   * Учень, який упорався одразу, витратить три задачі; той, кому
+   * важко, — стільки, скільки треба, але не більше набору.
+   */
+  streakGoal?: number
   /**
    * `check`: непорозуміння, для яких гілки НЕМА СВІДОМО.
    * Існує, щоб «немає гілки» не можна було отримати мовчки: валідатор
@@ -105,6 +124,13 @@ export interface LessonPlan {
 
 // ─── Виконання: що робить учень ──────────────────────────────────────────
 
+export interface PracticeAttempt {
+  taskId: string
+  choice: number
+  correct: boolean
+  rootId: string | null
+}
+
 export interface AnswerRecord {
   /** індекс обраного варіанта; `null` — крок закрито не вибором (`solve`) */
   choice: number | null
@@ -125,6 +151,8 @@ export interface Run {
   /** пройдені кроки в порядку відвідування — для «Назад» і для звіту */
   path: string[]
   answers: Record<string, AnswerRecord>
+  /** стан тренувань: id кроку → що вже відповіли */
+  practice: Record<string, PracticeAttempt[]>
   /**
    * Скільки разів учень уже бачив КОЖНЕ лікування (ключ — id кроку
    * `remediate`, не `mistakeId`).
@@ -182,6 +210,27 @@ export function validatePlan(plan: LessonPlan): PlanProblem[] {
       exists(target, `onMistake[${mistake}]`, step.id)
     }
 
+    if (step.type === 'practice') {
+      const pool = step.tasks ?? []
+      if (!pool.length) {
+        problems.push({ stepId: step.id, problem: 'тренування без задач' })
+      }
+      const goal = step.streakGoal ?? DEFAULT_STREAK_GOAL
+      if (goal > pool.length) {
+        // інакше серію набрати неможливо, і вихід лишиться лише через
+        // стелю — тобто тренування завжди «не вдалось»
+        problems.push({
+          stepId: step.id,
+          problem: `серія ${goal} недосяжна: у наборі ${pool.length} задач`,
+        })
+      }
+      for (const t of pool) {
+        if (t.choices.filter((c) => c.correct).length !== 1) {
+          problems.push({ stepId: step.id, problem: `задача «${t.id}»: не один правильний` })
+        }
+      }
+    }
+
     if (step.type === 'check') {
       const choices = step.choices ?? []
       if (choices.filter((c) => c.correct).length !== 1) {
@@ -226,7 +275,7 @@ export function validatePlan(plan: LessonPlan): PlanProblem[] {
 export function createRun(plan: LessonPlan): Run {
   const first = plan.steps[0]
   if (!first) throw new Error('порожній план заняття')
-  return { stepId: first.id, path: [first.id], answers: {}, treated: {} }
+  return { stepId: first.id, path: [first.id], answers: {}, practice: {}, treated: {} }
 }
 
 export function stepById(plan: LessonPlan, id: string): Step | null {
@@ -253,6 +302,69 @@ function linearNext(plan: LessonPlan, id: string): string | null {
     if (plan.steps[j].type !== 'remediate') return plan.steps[j].id
   }
   return null
+}
+
+/** Скільки правильних поспіль за замовчуванням. */
+export const DEFAULT_STREAK_GOAL = 3
+
+export function practiceAttempts(run: Run, stepId: string): PracticeAttempt[] {
+  return run.practice?.[stepId] ?? []
+}
+
+/** Правильних поспіль на кінець — рахуємо з хвоста. */
+export function practiceStreak(run: Run, stepId: string): number {
+  let n = 0
+  for (const a of [...practiceAttempts(run, stepId)].reverse()) {
+    if (!a.correct) break
+    n += 1
+  }
+  return n
+}
+
+/**
+ * Чи тренування скінчилось.
+ *
+ * Два виходи, і другий обов'язковий: серія набрана АБО набір вичерпано.
+ * Без стелі впертий учень крутився б вічно — те саме порушення INV-M1,
+ * що й глухий кут, лише з іншого боку. Вичерпаний набір без серії — це
+ * не поразка, а сигнал: він піде у звіт, і заняття рушить далі.
+ */
+export function practiceDone(step: Step, run: Run): boolean {
+  const pool = step.tasks ?? []
+  if (!pool.length) return true
+  const done = practiceAttempts(run, step.id)
+  if (done.length >= pool.length) return true
+  return practiceStreak(run, step.id) >= (step.streakGoal ?? DEFAULT_STREAK_GOAL)
+}
+
+/** Поточна задача тренування або `null`, якщо воно скінчилось. */
+export function practiceTask(step: Step, run: Run): PracticeTask | null {
+  if (step.type !== 'practice' || practiceDone(step, run)) return null
+  return (step.tasks ?? [])[practiceAttempts(run, step.id).length] ?? null
+}
+
+/** Відповідь на задачу тренування. Розбір показуємо — це навчання. */
+export function answerPractice(plan: LessonPlan, run: Run, choiceIndex: number): Run {
+  const step = currentStep(plan, run)
+  if (!step || step.type !== 'practice') return run
+  const task = practiceTask(step, run)
+  if (!task) return run
+  const choice = task.choices[choiceIndex]
+  if (!choice) return run
+
+  const attempt: PracticeAttempt = {
+    taskId: task.id,
+    choice: choiceIndex,
+    correct: !!choice.correct,
+    rootId: choice.correct ? null : (choice.rootId ?? null),
+  }
+  return {
+    ...run,
+    practice: {
+      ...run.practice,
+      [step.id]: [...practiceAttempts(run, step.id), attempt],
+    },
+  }
 }
 
 /** Чи крок вимагає дії учня перед «Далі». */
@@ -322,6 +434,12 @@ export function nextStepId(plan: LessonPlan, run: Run): string | null {
   const step = currentStep(plan, run)
   if (!step) return null
 
+  if (step.type === 'practice') {
+    // тримаємо на кроці, доки триває тренування; вихід гарантований
+    // стелею набору (див. practiceDone)
+    return practiceDone(step, run) ? (step.next ?? linearNext(plan, step.id)) : null
+  }
+
   if (isActive(step)) {
     const given = run.answers[step.id]
     if (!given) return null // INV-M4: перевірку не перестрибнути
@@ -365,7 +483,8 @@ export function canAdvance(plan: LessonPlan, run: Run): boolean {
 export function isFinished(plan: LessonPlan, run: Run): boolean {
   const step = currentStep(plan, run)
   if (!step) return true
-  if (isActive(step) && !isAnswered(run, step.id)) return false
+  if (step.type === 'practice' && !practiceDone(step, run)) return false
+  if (isActive(step) && step.type !== 'practice' && !isAnswered(run, step.id)) return false
   return nextStepId(plan, run) === null
 }
 
@@ -447,13 +566,19 @@ export interface RunReport {
   mistakes: string[]
   /** корені, які учневі вже показали */
   treated: string[]
+  /** тренування: скільки задач зроблено і скільки з них правильно */
+  practice: { attempts: number; correct: number }
 }
 
 export function report(run: Run): RunReport {
   const all = Object.values(run.answers)
   const given = all.filter((a) => a.correct !== null)   // кроки з вердиктом
   const mistakes = given.map((a) => a.mistakeId).filter((m): m is string => !!m)
-  const roots = given.map((a) => a.rootId).filter((r): r is string => !!r)
+  const practiced = Object.values(run.practice ?? {}).flat()
+  const roots = [
+    ...given.map((a) => a.rootId),
+    ...practiced.map((a) => a.rootId),
+  ].filter((r): r is string => !!r)
   return {
     answered: given.length,
     solved: all.length - given.length,
@@ -461,6 +586,10 @@ export function report(run: Run): RunReport {
     roots: [...new Set(roots)],
     mistakes: [...new Set(mistakes)],
     treated: Object.keys(run.treated),
+    practice: {
+      attempts: practiced.length,
+      correct: practiced.filter((a) => a.correct).length,
+    },
   }
 }
 
@@ -523,7 +652,14 @@ export function findDeadEnds(plan: LessonPlan): string[] {
     }
 
     const successors: Run[] = []
-    if (isActive(step) && !isAnswered(run, step.id)) {
+    if (step.type === 'practice') {
+      // Тренування моделюємо як прохідний крок, і це не послаблення:
+      // `practiceDone` виходить не пізніше, ніж вичерпається набір, тож
+      // застрягти в ньому неможливо за конструкцією. Розгортати ж усі
+      // послідовності відповідей означало б простір станів розміром
+      // 2^(кількість задач) заради властивості, яка й так доведена.
+      successors.push(advance(plan, { ...run, practice: { ...run.practice, [step.id]: (step.tasks ?? []).map((t) => ({ taskId: t.id, choice: 0, correct: false, rootId: null })) } }))
+    } else if (isActive(step) && !isAnswered(run, step.id)) {
       node.all = true
       const options =
         step.type === 'check'

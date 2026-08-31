@@ -154,6 +154,46 @@
    "id": "check3",
    "type": "check",
    "title": "Спробуй сам",
+   "text": "Знайдіть 1% від 4500 кг.",
+   "choices": [
+    {
+     "text": "45",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "4,5",
+     "correct": false,
+     "mistakeId": "percent_div_by_1000",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "450",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "4500",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    }
+   ],
+   "solution": "1% — це одна сота частина величини. Щоб знайти 1%, ділимо величину на 100: $4500 : 100 = 45$ (кг). Відповідь: 45.",
+   "taskId": 93404,
+   "family": "one_percent_of",
+   "onMistake": {
+    "percent_div_by_1000": "fix_hundredth",
+    "percent_div_by_10": "fix_hundredth",
+    "percent_ignore_conversion": "fix_conversion"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
    "text": "Запишіть 25% звичайним дробом (у нескоротному вигляді).",
    "choices": [
     {
@@ -191,44 +231,260 @@
    }
   },
   {
-   "id": "check4",
-   "type": "check",
-   "title": "Спробуй сам",
-   "text": "Запишіть дріб $\\dfrac{1}{10}$ у відсотках.",
-   "choices": [
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
     {
-     "text": "1",
-     "correct": false,
-     "mistakeId": "took_numerator",
-     "rootId": "percent/what-is-the-whole"
+     "id": "93384",
+     "text": "Запишіть дріб $\\dfrac{1}{10}$ у відсотках.",
+     "solution": "Ціле приймаємо за 100 відсотків, тому дріб записуємо у відсотках множенням на 100%: $\\dfrac{1}{10} \\cdot 100\\% = \\dfrac{1 \\cdot 100}{10}\\% = 10\\%$. Знаменник 10 ділить число 100 націло, тому відповідь вийшла цілою. Відповідь: 10.",
+     "choices": [
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "took_numerator",
+       "rootId": "percent/what-is-the-whole"
+      },
+      {
+       "text": "10",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "100",
+       "correct": false,
+       "mistakeId": "percent_mul_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "1000",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "percent/what-is-the-whole"
+      }
+     ]
     },
     {
-     "text": "10",
-     "correct": true,
-     "mistakeId": null,
-     "rootId": null
+     "id": "93406",
+     "text": "Скільки відсотків величини становить сама ця величина?",
+     "solution": "Уся величина — це її 100%: ціле завжди становить 100% самого себе. Відповідь: 100.",
+     "choices": [
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "50",
+       "correct": false,
+       "mistakeId": "half_whole_confusion",
+       "rootId": "percent/whole-is-100-not-50"
+      },
+      {
+       "text": "100",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
     },
     {
-     "text": "100",
-     "correct": false,
-     "mistakeId": "percent_mul_by_10",
-     "rootId": "percent/hundredth-not-tenth"
+     "id": "93416",
+     "text": "Запишіть 125% десятковим дробом.",
+     "solution": "Відсотків може бути і більше за 100: це означає більше за ціле. Множимо на $0{,}01$: $125 \\cdot 0{,}01 = 1{,}25$ — число, більше за одиницю. Відповідь: 1,25.",
+     "choices": [
+      {
+       "text": "12,5",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "1,25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "cap_at_100",
+       "rootId": "percent/can-exceed-100"
+      },
+      {
+       "text": "125",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
     },
     {
-     "text": "1000",
-     "correct": false,
-     "mistakeId": "fraction_inverted",
-     "rootId": "percent/what-is-the-whole"
+     "id": "93426",
+     "text": "Що більше: 1% від 2 гривень чи 20% від 5 копійок?",
+     "solution": "Зведемо обидві величини до однієї одиниці — до коп — і порахуємо кожну частку. 1% від 2 гривень: $200 \\cdot 0{,}01 = 2$ (коп). 20% від 5 копійок: $5 \\cdot 0{,}20 = 1$ (коп). Порівнюємо: $2 > 1$, отже більше — 1% від 2 гривень. Відповідь: 1% від 2 гривень.",
+     "choices": [
+      {
+       "text": "1% від 2 гривень",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "неможливо порівняти",
+       "correct": false,
+       "mistakeId": "refused_conversion",
+       "rootId": "percent/percent-without-its-whole"
+      },
+      {
+       "text": "20% від 5 копійок",
+       "correct": false,
+       "mistakeId": "bigger_percent_bigger_value",
+       "rootId": "percent/percent-without-its-whole"
+      },
+      {
+       "text": "порівну",
+       "correct": false,
+       "mistakeId": "assumed_equal",
+       "rootId": "percent/percent-without-its-whole"
+      }
+     ]
+    },
+    {
+     "id": "93339",
+     "text": "Запишіть 18% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 18% десятковим дробом, множимо кількість відсотків на $0{,}01$: $18 \\cdot 0{,}01 = 0{,}18$. Відповідь: 0,18.",
+     "choices": [
+      {
+       "text": "1,8",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "18",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,18",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,018",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "93344",
+     "text": "Запишіть 9% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 9% десятковим дробом, множимо кількість відсотків на $0{,}01$: $9 \\cdot 0{,}01 = 0{,}09$. Відповідь: 0,09.",
+     "choices": [
+      {
+       "text": "0,009",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,09",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,9",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "9",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
+    },
+    {
+     "id": "93335",
+     "text": "Запишіть 24% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 24% десятковим дробом, множимо кількість відсотків на $0{,}01$: $24 \\cdot 0{,}01 = 0{,}24$. Відповідь: 0,24.",
+     "choices": [
+      {
+       "text": "0,024",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "2,4",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,24",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "24",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
+    },
+    {
+     "id": "93340",
+     "text": "Запишіть 35% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 35% десятковим дробом, множимо кількість відсотків на $0{,}01$: $35 \\cdot 0{,}01 = 0{,}35$. Відповідь: 0,35.",
+     "choices": [
+      {
+       "text": "3,5",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "35",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,035",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,35",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
     }
-   ],
-   "solution": "Ціле приймаємо за 100 відсотків, тому дріб записуємо у відсотках множенням на 100%: $\\dfrac{1}{10} \\cdot 100\\% = \\dfrac{1 \\cdot 100}{10}\\% = 10\\%$. Знаменник 10 ділить число 100 націло, тому відповідь вийшла цілою. Відповідь: 10.",
-   "taskId": 93384,
-   "family": "fraction_to_pct",
-   "onMistake": {
-    "took_numerator": "fix_which_is_whole",
-    "percent_mul_by_10": "fix_hundredth",
-    "fraction_inverted": "fix_which_is_whole"
-   }
+   ]
   },
   {
    "id": "summary",
@@ -279,18 +535,6 @@
    "body": "Дріб знайдено правильно, але його ще не довели до кінця.\n\n$25\\% = \\dfrac{25}{100}$ — це вірно. Але і чисельник, і знаменник діляться на 25, тому $\\dfrac{25}{100} = \\dfrac{1}{4}$.\n\n«У нескоротному вигляді» означає: спільних дільників, крім одиниці, більше не лишилось.",
    "covers": [
     "fraction_not_reduced"
-   ]
-  },
-  {
-   "id": "fix_which_is_whole",
-   "type": "remediate",
-   "rootId": "percent/what-is-the-whole",
-   "title": "Що тут ціле",
-   "body": "Схоже, переплутали, яке число тут ціле.\n\n**Ціле — це те, що приймають за 100%.** У дробі $\\dfrac{3}{20}$ ціле — це $20$, а $3$ — узята частина.\n\nТому $\\dfrac{3}{20} = 3 \\cdot 100 : 20 = 15\\%$. Якщо переставити числа, вийде $20 \\cdot 100 : 3$ — відповідь більша за 100%, і це вже сигнал, що ціле обрано не те.",
-   "covers": [
-    "fraction_inverted",
-    "took_numerator",
-    "took_denominator"
    ]
   }
  ],

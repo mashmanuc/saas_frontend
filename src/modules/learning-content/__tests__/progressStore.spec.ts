@@ -64,13 +64,13 @@ describe('збереження й відновлення проходження'
   it('крок, якого В ПЛАНІ ВЖЕ НЕМА → не відновлюємо', () => {
     // саме те, що станеться після перезбирання банку
     const p = plan()
-    saveRun('p', { stepId: 'q-old', path: ['a', 'q-old'], answers: {}, treated: {} })
+    saveRun('p', { stepId: 'q-old', path: ['a', 'q-old'], answers: {}, practice: {}, treated: {} })
     expect(loadRun(p, 'p')).toBeNull()
   })
 
   it('шлях із чужим кроком → теж не відновлюємо', () => {
     const p = plan()
-    saveRun('p', { stepId: 'q', path: ['a', 'зниклий', 'q'], answers: {}, treated: {} })
+    saveRun('p', { stepId: 'q', path: ['a', 'зниклий', 'q'], answers: {}, practice: {}, treated: {} })
     expect(loadRun(p, 'p')).toBeNull()
   })
 })

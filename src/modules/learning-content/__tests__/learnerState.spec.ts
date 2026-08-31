@@ -27,6 +27,7 @@ function rep(roots: string[], extra: Partial<RunReport> = {}): RunReport {
     roots,
     mistakes: [],
     treated: [],
+    practice: { attempts: 0, correct: 0 },
     ...extra,
   }
 }

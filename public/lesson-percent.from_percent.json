@@ -234,6 +234,262 @@
    }
   },
   {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "63367",
+     "text": "Число 10 становить 20% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 20% від $N$ дорівнює 10, тобто $N \\cdot 20 : 100 = 10$. Щоб знайти $N$, множимо 10 на 100 і ділимо на 20: $10 \\cdot 100 : 20 = 1000 : 20 = 50$. Відповідь: 50.",
+     "choices": [
+      {
+       "text": "0,5",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "1000",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "50",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "2",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      }
+     ]
+    },
+    {
+     "id": "63487",
+     "text": "40% числа дорівнює 16. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 40% від $N$ дорівнює 16, тобто $N \\cdot 40 : 100 = 16$. Щоб знайти $N$, множимо 16 на 100 і ділимо на 40: $16 \\cdot 100 : 40 = 1600 : 40 = 40$. Відповідь: 40.",
+     "choices": [
+      {
+       "text": "6,4",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "40",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,4",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "1600",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63518",
+     "text": "80% числа дорівнює 164. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 80% від $N$ дорівнює 164, тобто $N \\cdot 80 : 100 = 164$. Щоб знайти $N$, множимо 164 на 100 і ділимо на 80: $164 \\cdot 100 : 80 = 16400 : 80 = 205$. Відповідь: 205.",
+     "choices": [
+      {
+       "text": "131,2",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "2,05",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "16400",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "205",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63585",
+     "text": "60% числа дорівнює 423. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 60% від $N$ дорівнює 423, тобто $N \\cdot 60 : 100 = 423$. Щоб знайти $N$, множимо 423 на 100 і ділимо на 60: $423 \\cdot 100 : 60 = 42300 : 60 = 705$. Відповідь: 705.",
+     "choices": [
+      {
+       "text": "705",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "253,8",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "7,05",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "42300",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63662",
+     "text": "Число 1395 становить 90% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 90% від $N$ дорівнює 1395, тобто $N \\cdot 90 : 100 = 1395$. Щоб знайти $N$, множимо 1395 на 100 і ділимо на 90: $1395 \\cdot 100 : 90 = 139500 : 90 = 1550$. Відповідь: 1550.",
+     "choices": [
+      {
+       "text": "15,5",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "1255,5",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "1550",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "139500",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63685",
+     "text": "30% числа дорівнює 441. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 30% від $N$ дорівнює 441, тобто $N \\cdot 30 : 100 = 441$. Щоб знайти $N$, множимо 441 на 100 і ділимо на 30: $441 \\cdot 100 : 30 = 44100 : 30 = 1470$. Відповідь: 1470.",
+     "choices": [
+      {
+       "text": "1470",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "132,3",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "44100",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "14,7",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63705",
+     "text": "Число 450 становить 45% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 45% від $N$ дорівнює 450, тобто $N \\cdot 45 : 100 = 450$. Щоб знайти $N$, множимо 450 на 100 і ділимо на 45: $450 \\cdot 100 : 45 = 45000 : 45 = 1000$. Відповідь: 1000.",
+     "choices": [
+      {
+       "text": "202,5",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "1000",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "45000",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63418",
+     "text": "Число 6 становить 5% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 5% від $N$ дорівнює 6, тобто $N \\cdot 5 : 100 = 6$. Щоб знайти $N$, множимо 6 на 100 і ділимо на 5: $6 \\cdot 100 : 5 = 600 : 5 = 120$. Відповідь: 120.",
+     "choices": [
+      {
+       "text": "600",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "120",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,2",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "101",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "summary",
    "type": "summary",
    "title": "Підсумок заняття",

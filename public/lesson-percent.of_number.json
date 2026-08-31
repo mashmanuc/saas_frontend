@@ -226,6 +226,262 @@
    }
   },
   {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "63436",
+     "text": "Знайдіть значення 25% від числа 100.",
+     "solution": "Один відсоток — це сота частина числа, тому 25% — це 25 сотих частин числа 100. Щоб їх знайти, множимо 100 на 25 і ділимо на 100: $100 \\cdot 25 : 100 = 2500 : 100 = 25$. Відповідь: 25.",
+     "choices": [
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "2500",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "4",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "75",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      }
+     ]
+    },
+    {
+     "id": "63520",
+     "text": "Знайдіть значення 40% від числа 300.",
+     "solution": "Один відсоток — це сота частина числа, тому 40% — це 40 сотих частин числа 300. Щоб їх знайти, множимо 300 на 40 і ділимо на 100: $300 \\cdot 40 : 100 = 12000 : 100 = 120$. Відповідь: 120.",
+     "choices": [
+      {
+       "text": "180",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "120",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "7,5",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "12000",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63528",
+     "text": "Обчисліть значення, яке становить 75% від 140.",
+     "solution": "Один відсоток — це сота частина числа, тому 75% — це 75 сотих частин числа 140. Щоб їх знайти, множимо 140 на 75 і ділимо на 100: $140 \\cdot 75 : 100 = 10500 : 100 = 105$. Відповідь: 105.",
+     "choices": [
+      {
+       "text": "35",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "105",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,87",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "10500",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63550",
+     "text": "Обчисліть значення, яке становить 15% від 380.",
+     "solution": "Один відсоток — це сота частина числа, тому 15% — це 15 сотих частин числа 380. Щоб їх знайти, множимо 380 на 15 і ділимо на 100: $380 \\cdot 15 : 100 = 5700 : 100 = 57$. Відповідь: 57.",
+     "choices": [
+      {
+       "text": "323",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "57",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "25,33",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "5700",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63568",
+     "text": "Знайдіть значення 60% від числа 305.",
+     "solution": "Один відсоток — це сота частина числа, тому 60% — це 60 сотих частин числа 305. Щоб їх знайти, множимо 305 на 60 і ділимо на 100: $305 \\cdot 60 : 100 = 18300 : 100 = 183$. Відповідь: 183.",
+     "choices": [
+      {
+       "text": "5,08",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "122",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "183",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "18300",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63643",
+     "text": "Обчисліть значення, яке становить 30% від 500.",
+     "solution": "Один відсоток — це сота частина числа, тому 30% — це 30 сотих частин числа 500. Щоб їх знайти, множимо 500 на 30 і ділимо на 100: $500 \\cdot 30 : 100 = 15000 : 100 = 150$. Відповідь: 150.",
+     "choices": [
+      {
+       "text": "16,67",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "150",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "350",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "15000",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63695",
+     "text": "Обчисліть значення, яке становить 65% від 120.",
+     "solution": "Один відсоток — це сота частина числа, тому 65% — це 65 сотих частин числа 120. Щоб їх знайти, множимо 120 на 65 і ділимо на 100: $120 \\cdot 65 : 100 = 7800 : 100 = 78$. Відповідь: 78.",
+     "choices": [
+      {
+       "text": "7800",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "78",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "42",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "1,85",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63707",
+     "text": "Знайдіть значення 90% від числа 430.",
+     "solution": "Один відсоток — це сота частина числа, тому 90% — це 90 сотих частин числа 430. Щоб їх знайти, множимо 430 на 90 і ділимо на 100: $430 \\cdot 90 : 100 = 38700 : 100 = 387$. Відповідь: 387.",
+     "choices": [
+      {
+       "text": "387",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "43",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "4,78",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "38700",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "summary",
    "type": "summary",
    "title": "Підсумок заняття",
