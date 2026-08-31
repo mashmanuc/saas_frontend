@@ -483,6 +483,254 @@
        "rootId": null
       }
      ]
+    },
+    {
+     "id": "93345",
+     "text": "Запишіть 2% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 2% десятковим дробом, множимо кількість відсотків на $0{,}01$: $2 \\cdot 0{,}01 = 0{,}02$. Відповідь: 0,02.",
+     "choices": [
+      {
+       "text": "0,2",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,002",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "2",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,02",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "93336",
+     "text": "Запишіть 12% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 12% десятковим дробом, множимо кількість відсотків на $0{,}01$: $12 \\cdot 0{,}01 = 0{,}12$. Відповідь: 0,12.",
+     "choices": [
+      {
+       "text": "1,2",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "12",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,012",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,12",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "93341",
+     "text": "Запишіть 7% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 7% десятковим дробом, множимо кількість відсотків на $0{,}01$: $7 \\cdot 0{,}01 = 0{,}07$. Відповідь: 0,07.",
+     "choices": [
+      {
+       "text": "7",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,007",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,07",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,7",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "93346",
+     "text": "Запишіть 6% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 6% десятковим дробом, множимо кількість відсотків на $0{,}01$: $6 \\cdot 0{,}01 = 0{,}06$. Відповідь: 0,06.",
+     "choices": [
+      {
+       "text": "6",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,6",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,06",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,006",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "93337",
+     "text": "Запишіть 8% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 8% десятковим дробом, множимо кількість відсотків на $0{,}01$: $8 \\cdot 0{,}01 = 0{,}08$. Відповідь: 0,08.",
+     "choices": [
+      {
+       "text": "8",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,08",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,8",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,008",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "93342",
+     "text": "Запишіть 15% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 15% десятковим дробом, множимо кількість відсотків на $0{,}01$: $15 \\cdot 0{,}01 = 0{,}15$. Відповідь: 0,15.",
+     "choices": [
+      {
+       "text": "1,5",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,015",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "0,15",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "15",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
+    },
+    {
+     "id": "93347",
+     "text": "Запишіть 65% десятковим дробом.",
+     "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 65% десятковим дробом, множимо кількість відсотків на $0{,}01$: $65 \\cdot 0{,}01 = 0{,}65$. Відповідь: 0,65.",
+     "choices": [
+      {
+       "text": "6,5",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "65",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "0,65",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,065",
+       "correct": false,
+       "mistakeId": "percent_div_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "93359",
+     "text": "Запишіть число 0,12 у відсотках.",
+     "solution": "Ціле — це 100%. Щоб записати число у відсотках, множимо його на 100%: $0{,}12 \\cdot 100\\% = 12\\%$. Відповідь: 12.",
+     "choices": [
+      {
+       "text": "120",
+       "correct": false,
+       "mistakeId": "percent_mul_by_1000",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "12",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,12%",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "1,2",
+       "correct": false,
+       "mistakeId": "percent_mul_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
     }
    ]
   },

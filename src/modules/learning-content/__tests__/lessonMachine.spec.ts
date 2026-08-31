@@ -415,7 +415,11 @@ import {
 } from '../lessonMachine'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REAL_PLAN = resolve(HERE, '../../../../public/lesson-percent.concept.json')
+const PUBLIC = resolve(HERE, '../../../../public')
+/** Порядок курсу читаємо з самого плану — список тут відстав би на першому новому занятті. */
+const COURSE = JSON.parse(
+  readFileSync(resolve(PUBLIC, 'lesson-percent.concept.json'), 'utf-8'),
+).courseOrder as string[]
 
 describe('INV-M1 як властивість плану, не як приклад', () => {
   it('навчальні плани не мають станів без виходу', () => {
@@ -423,10 +427,27 @@ describe('INV-M1 як властивість плану, не як прикла�
     expect(findDeadEnds(branchingPlan())).toEqual([])
   })
 
-  it('СПРАВЖНІЙ план заняття проходиться за будь-яких відповідей', () => {
-    const plan = JSON.parse(readFileSync(REAL_PLAN, 'utf-8'))
-    expect(validatePlan(plan)).toEqual([])
-    expect(findDeadEnds(plan)).toEqual([])
+  it('КОЖЕН справжній план курсу проходиться за будь-яких відповідей', () => {
+    // саме «кожен», а не «перший»: банк перезбирається, і зламатись може
+    // будь-яке заняття — а перевірялось досі лише одне
+    expect(COURSE.length).toBeGreaterThan(1)
+    for (const id of COURSE) {
+      const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
+      expect(validatePlan(plan), `план ${id}`).toEqual([])
+      expect(findDeadEnds(plan), `план ${id}`).toEqual([])
+    }
+  })
+
+  it('тренування має пул, який витримує серію за середньої влучності', () => {
+    // вихід із тренування — три ПОСПІЛЬ; при влучності 0,5 це в середньому
+    // ~14 спроб, тож вісім задач упирались у порожній пул саме в того, кому
+    // тренування й потрібне
+    for (const id of COURSE) {
+      const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
+      const practice = plan.steps.find((s: { type: string }) => s.type === 'practice')
+      expect(practice, `у ${id} немає тренування`).toBeTruthy()
+      expect(practice.tasks.length, `пул ${id}`).toBeGreaterThanOrEqual(14)
+    }
   })
 
   it('цикл через next ловиться, хоч усі цілі існують', () => {

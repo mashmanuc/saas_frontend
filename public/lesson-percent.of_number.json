@@ -478,6 +478,254 @@
        "rootId": null
       }
      ]
+    },
+    {
+     "id": "63481",
+     "text": "Знайдіть значення 80% від числа 40.",
+     "solution": "Один відсоток — це сота частина числа, тому 80% — це 80 сотих частин числа 40. Щоб їх знайти, множимо 40 на 80 і ділимо на 100: $40 \\cdot 80 : 100 = 3200 : 100 = 32$. Відповідь: 32.",
+     "choices": [
+      {
+       "text": "0,5",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "8",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "3200",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "32",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63658",
+     "text": "Знайдіть значення 45% від числа 680.",
+     "solution": "Один відсоток — це сота частина числа, тому 45% — це 45 сотих частин числа 680. Щоб їх знайти, множимо 680 на 45 і ділимо на 100: $680 \\cdot 45 : 100 = 30600 : 100 = 306$. Відповідь: 306.",
+     "choices": [
+      {
+       "text": "306",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "30600",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "15,11",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "374",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      }
+     ]
+    },
+    {
+     "id": "63667",
+     "text": "Обчисліть значення, яке становить 12% від 550.",
+     "solution": "Один відсоток — це сота частина числа, тому 12% — це 12 сотих частин числа 550. Щоб їх знайти, множимо 550 на 12 і ділимо на 100: $550 \\cdot 12 : 100 = 6600 : 100 = 66$. Відповідь: 66.",
+     "choices": [
+      {
+       "text": "484",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "45,83",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "66",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "6600",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "22629",
+     "text": "Знайти 3% від числа 600",
+     "solution": "",
+     "choices": [
+      {
+       "text": "200",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "18",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "180",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "20",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63433",
+     "text": "Обчисліть значення, яке становить 10% від 100.",
+     "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 100. Щоб їх знайти, множимо 100 на 10 і ділимо на 100: $100 \\cdot 10 : 100 = 1000 : 100 = 10$. Відповідь: 10.",
+     "choices": [
+      {
+       "text": "1000",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "90",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "10",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "100",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "63326",
+     "text": "Обчисліть значення, яке становить 10% від 70.",
+     "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 70. Щоб їх знайти, множимо 70 на 10 і ділимо на 100: $70 \\cdot 10 : 100 = 700 : 100 = 7$. Відповідь: 7.",
+     "choices": [
+      {
+       "text": "700",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "7",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "70",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "63",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      }
+     ]
+    },
+    {
+     "id": "63450",
+     "text": "Обчисліть значення, яке становить 10% від 180.",
+     "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 180. Щоб їх знайти, множимо 180 на 10 і ділимо на 100: $180 \\cdot 10 : 100 = 1800 : 100 = 18$. Відповідь: 18.",
+     "choices": [
+      {
+       "text": "18",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "162",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "180",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "1800",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63501",
+     "text": "Обчисліть значення, яке становить 10% від 440.",
+     "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 440. Щоб їх знайти, множимо 440 на 10 і ділимо на 100: $440 \\cdot 10 : 100 = 4400 : 100 = 44$. Відповідь: 44.",
+     "choices": [
+      {
+       "text": "4400",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "44",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "396",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "440",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
     }
    ]
   },

@@ -486,6 +486,254 @@
        "rootId": null
       }
      ]
+    },
+    {
+     "id": "63364",
+     "text": "Число 23 становить 25% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 23, тобто $N \\cdot 25 : 100 = 23$. Щоб знайти $N$, множимо 23 на 100 і ділимо на 25: $23 \\cdot 100 : 25 = 2300 : 25 = 92$. Відповідь: 92.",
+     "choices": [
+      {
+       "text": "2300",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "0,92",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "5,75",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "92",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63385",
+     "text": "25% числа дорівнює 9. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 9, тобто $N \\cdot 25 : 100 = 9$. Щоб знайти $N$, множимо 9 на 100 і ділимо на 25: $9 \\cdot 100 : 25 = 900 : 25 = 36$. Відповідь: 36.",
+     "choices": [
+      {
+       "text": "2,25",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "900",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "36",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,36",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63555",
+     "text": "Число 235 становить 50% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 235, тобто $N \\cdot 50 : 100 = 235$. Щоб знайти $N$, множимо 235 на 100 і ділимо на 50: $235 \\cdot 100 : 50 = 23500 : 50 = 470$. Відповідь: 470.",
+     "choices": [
+      {
+       "text": "470",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "23500",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "4,7",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "117,5",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      }
+     ]
+    },
+    {
+     "id": "63634",
+     "text": "25% числа дорівнює 71. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 71, тобто $N \\cdot 25 : 100 = 71$. Щоб знайти $N$, множимо 71 на 100 і ділимо на 25: $71 \\cdot 100 : 25 = 7100 : 25 = 284$. Відповідь: 284.",
+     "choices": [
+      {
+       "text": "2,84",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "7100",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "284",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "17,75",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      }
+     ]
+    },
+    {
+     "id": "63656",
+     "text": "Число 125 становить 50% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 125, тобто $N \\cdot 50 : 100 = 125$. Щоб знайти $N$, множимо 125 на 100 і ділимо на 50: $125 \\cdot 100 : 50 = 12500 : 50 = 250$. Відповідь: 250.",
+     "choices": [
+      {
+       "text": "250",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "62,5",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "12500",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "2,5",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      }
+     ]
+    },
+    {
+     "id": "63665",
+     "text": "50% числа дорівнює 536. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 536, тобто $N \\cdot 50 : 100 = 536$. Щоб знайти $N$, множимо 536 на 100 і ділимо на 50: $536 \\cdot 100 : 50 = 53600 : 50 = 1072$. Відповідь: 1072.",
+     "choices": [
+      {
+       "text": "53600",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "10,72",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "268",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      },
+      {
+       "text": "1072",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63340",
+     "text": "Число 1 становить 25% від деякого числа. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 1, тобто $N \\cdot 25 : 100 = 1$. Щоб знайти $N$, множимо 1 на 100 і ділимо на 25: $1 \\cdot 100 : 25 = 100 : 25 = 4$. Відповідь: 4.",
+     "choices": [
+      {
+       "text": "0,04",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "4",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "100",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "0,25",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      }
+     ]
+    },
+    {
+     "id": "63360",
+     "text": "50% числа дорівнює 11. Знайдіть це число.",
+     "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 11, тобто $N \\cdot 50 : 100 = 11$. Щоб знайти $N$, множимо 11 на 100 і ділимо на 50: $11 \\cdot 100 : 50 = 1100 : 50 = 22$. Відповідь: 22.",
+     "choices": [
+      {
+       "text": "0,22",
+       "correct": false,
+       "mistakeId": "inverse_missing_multiply",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "1100",
+       "correct": false,
+       "mistakeId": "inverse_missing_divide",
+       "rootId": "percent/whole-needs-both-steps"
+      },
+      {
+       "text": "22",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "5,5",
+       "correct": false,
+       "mistakeId": "direction_confused",
+       "rootId": "percent/which-direction"
+      }
+     ]
     }
    ]
   },
