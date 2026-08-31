@@ -188,6 +188,15 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    // Демо-доріжка одного заняття очима учня. Публічна свідомо: щоб
+    // побачити потік, акаунт не потрібен (як і для демо-дошки).
+    // Дані статичні (public/demo-lesson-percent.json), бекенд не чіпано.
+    path: '/demo-lesson',
+    name: 'demo-lesson',
+    component: () => import('../modules/learning-content/views/DemoLessonView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/',
     component: PageShell,
     meta: { requiresAuth: true },

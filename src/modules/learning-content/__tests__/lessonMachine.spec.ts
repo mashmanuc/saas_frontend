@@ -1,0 +1,505 @@
+// Машина станів заняття — інваріанти маршруту.
+//
+// Тести названі за інваріантами, а не за функціями: якщо колись зміниться
+// реалізація, має лишитись видно, ЯКА обіцянка перевіряється.
+
+import { describe, it, expect } from 'vitest'
+import {
+  type LessonPlan,
+  type Run,
+  MAX_TREATMENTS_PER_MISTAKE,
+  advance,
+  answer,
+  back,
+  canAdvance,
+  canGoBack,
+  createRun,
+  currentStep,
+  isAnswered,
+  isFinished,
+  nextStepId,
+  position,
+  progress,
+  report,
+  validatePlan,
+} from '../lessonMachine'
+
+// ── Плани для перевірок ───────────────────────────────────────────────────
+
+/** Пласка доріжка — те, чим заняття було до машини станів. */
+function linearPlan(): LessonPlan {
+  return {
+    id: 'linear',
+    course: 'Відсотки',
+    session: 1,
+    subgoal: 'П1',
+    steps: [
+      { id: 'a', type: 'explain', title: 'Пояснення' },
+      { id: 'b', type: 'example', title: 'Приклад' },
+      { id: 'c', type: 'summary', title: 'Підсумок' },
+    ],
+  }
+}
+
+/** Перевірка з гілкою лікування на одне непорозуміння. */
+function branchingPlan(): LessonPlan {
+  return {
+    id: 'branching',
+    course: 'Відсотки',
+    session: 1,
+    subgoal: 'П1',
+    steps: [
+      { id: 'explain', type: 'explain', title: 'Пояснення' },
+      {
+        id: 'check1',
+        type: 'check',
+        title: 'Спробуй сам',
+        text: 'Запишіть 40% десятковим дробом.',
+        choices: [
+          { text: '0,4', correct: true },
+          { text: '4', correct: false, mistakeId: 'percent_div_by_10' },
+          { text: '40', correct: false, mistakeId: 'percent_ignore_conversion' },
+        ],
+        onMistake: { percent_div_by_10: 'fix_div10' },
+        noBranch: ['percent_ignore_conversion'],
+      },
+      { id: 'check2', type: 'check', title: 'Ще одна', text: '?', choices: [{ text: 'так', correct: true }] },
+      { id: 'summary', type: 'summary', title: 'Підсумок' },
+      // лікування живе ПІСЛЯ підсумку в масиві — саме тому машина не може
+      // покладатись на порядок і мусить вести за `returnTo`
+      { id: 'fix_div10', type: 'remediate', title: 'Ділили на 10', returnTo: 'check2' },
+    ],
+  }
+}
+
+/** Пройти план до кінця, обираючи варіант за правилом. Захищено від петель. */
+function playThrough(plan: LessonPlan, pick: (run: Run) => number): { run: Run; steps: string[] } {
+  let run = createRun(plan)
+  const steps = [run.stepId]
+  for (let guard = 0; guard < 100; guard++) {
+    const step = currentStep(plan, run)
+    if (step?.type === 'check' && !isAnswered(run, step.id)) {
+      run = answer(plan, run, pick(run))
+      continue
+    }
+    if (!canAdvance(plan, run)) break
+    run = advance(plan, run)
+    steps.push(run.stepId)
+  }
+  return { run, steps }
+}
+
+// ── INV-M2: план без гілок грає точно як плаский список ───────────────────
+
+describe('INV-M2 · лінійний план не змінює поведінку', () => {
+  it('проходиться по порядку і завершується', () => {
+    const plan = linearPlan()
+    const { run, steps } = playThrough(plan, () => 0)
+    expect(steps).toEqual(['a', 'b', 'c'])
+    expect(isFinished(plan, run)).toBe(true)
+  })
+
+  it('«крок N з M» рахує весь план', () => {
+    const plan = linearPlan()
+    let run = createRun(plan)
+    expect(position(plan, run)).toEqual({ index: 1, total: 3 })
+    run = advance(plan, run)
+    expect(position(plan, run)).toEqual({ index: 2, total: 3 })
+    expect(progress(plan, run)).toBe(50)
+  })
+})
+
+// ── INV-M4: активний крок не перестрибнути ────────────────────────────────
+
+describe('INV-M4 · перевірку не можна проминути без відповіді', () => {
+  it('поки не обрано варіант — уперед не можна', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan)) // → check1
+    expect(currentStep(plan, run)?.id).toBe('check1')
+    expect(canAdvance(plan, run)).toBe(false)
+    expect(nextStepId(plan, run)).toBeNull()
+
+    run = answer(plan, run, 0)
+    expect(canAdvance(plan, run)).toBe(true)
+  })
+
+  it('перший вибір остаточний — повторний ігнорується', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = answer(plan, run, 1) // помилився
+    run = answer(plan, run, 0) // «передумав»
+    expect(run.answers.check1.correct).toBe(false)
+    expect(run.answers.check1.mistakeId).toBe('percent_div_by_10')
+  })
+})
+
+// ── Гілкування за КОНКРЕТНИМ непорозумінням ───────────────────────────────
+
+describe('маршрут залежить від того, ЩО саме учень зрозумів не так', () => {
+  it('правильна відповідь веде далі по основній лінії', () => {
+    const plan = branchingPlan()
+    const { steps } = playThrough(plan, () => 0)
+    expect(steps).toEqual(['explain', 'check1', 'check2', 'summary'])
+  })
+
+  it('помилка з гілкою веде в лікування САМЕ цього непорозуміння', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = answer(plan, run, 1) // percent_div_by_10
+    run = advance(plan, run)
+    expect(run.stepId).toBe('fix_div10')
+    // і повертає туди, куди сказано, а не «наступним у масиві»
+    run = advance(plan, run)
+    expect(run.stepId).toBe('check2')
+  })
+
+  it('помилка без гілки (noBranch) веде далі, а не в глухий кут', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = answer(plan, run, 2) // percent_ignore_conversion — гілки нема свідомо
+    run = advance(plan, run)
+    expect(run.stepId).toBe('check2')
+  })
+
+  it('звіт віддає НЕПОРОЗУМІННЯ, а не лише кількість правильних', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = answer(plan, run, 1)
+    run = advance(plan, run) // у лікування
+    const r = report(run)
+    expect(r.mistakes).toEqual(['percent_div_by_10'])
+    expect(r.correct).toBe(0)
+    // `treated` — це ПОКАЗАНІ лікування (id кроків), а не непорозуміння:
+    // одне лікування покриває кілька id одного кореня
+    expect(r.treated).toEqual(['fix_div10'])
+  })
+})
+
+// ── INV-M3 / INV-M1: ніяких петель і глухих кутів ─────────────────────────
+
+describe('INV-M3 · те саме непорозуміння не крутить учня по колу', () => {
+  it('друга поява того самого непорозуміння веде ДАЛІ, не в лікування', () => {
+    // план, де обидві перевірки ловлять одне й те саме непорозуміння
+    const plan: LessonPlan = {
+      id: 'loop',
+      course: 'c',
+      session: 1,
+      subgoal: 's',
+      steps: [
+        {
+          id: 'q1',
+          type: 'check',
+          title: 'q1',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm' },
+          ],
+          onMistake: { m: 'fix' },
+        },
+        {
+          id: 'q2',
+          type: 'check',
+          title: 'q2',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm' },
+          ],
+          onMistake: { m: 'fix' },
+        },
+        { id: 'end', type: 'summary', title: 'end' },
+        { id: 'fix', type: 'remediate', title: 'fix', returnTo: 'q2' },
+      ],
+    }
+
+    const { run, steps } = playThrough(plan, () => 1) // завжди помиляється
+    expect(isFinished(plan, run)).toBe(true)
+    expect(steps.filter((s) => s === 'fix')).toHaveLength(MAX_TREATMENTS_PER_MISTAKE)
+    expect(steps[steps.length - 1]).toBe('end')
+  })
+})
+
+describe('INV-M1 · граф радить, але не блокує', () => {
+  it('учень, який помиляється скрізь, усе одно доходить до кінця', () => {
+    const plan = branchingPlan()
+    const { run } = playThrough(plan, (r) => {
+      const s = currentStep(plan, r)
+      return (s?.choices?.length ?? 1) - 1 // завжди останній варіант
+    })
+    expect(isFinished(plan, run)).toBe(true)
+  })
+
+  it('поступ не відкочується назад під час лікування', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    const before = progress(plan, run)
+    run = advance(plan, answer(plan, run, 1)) // у лікування
+    expect(currentStep(plan, run)?.type).toBe('remediate')
+    expect(progress(plan, run)).toBe(before)
+  })
+})
+
+// ── «Назад» іде фактичним шляхом ─────────────────────────────────────────
+
+describe('«Назад» веде туди, де учень справді був', () => {
+  it('після лікування назад вертає в лікування, а не в сусіда по масиву', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = advance(plan, answer(plan, run, 1)) // fix_div10
+    run = advance(plan, run) // check2
+    expect(canGoBack(run)).toBe(true)
+    run = back(run)
+    expect(run.stepId).toBe('fix_div10')
+  })
+
+  it('з першого кроку назад нікуди', () => {
+    const plan = linearPlan()
+    const run = createRun(plan)
+    expect(canGoBack(run)).toBe(false)
+    expect(back(run)).toEqual(run)
+  })
+})
+
+// ── INV-M5 / INV-M6: валідатор плану ─────────────────────────────────────
+
+describe('валідатор ловить биті плани ДО показу учневі', () => {
+  it('справний план не має зауваг', () => {
+    expect(validatePlan(branchingPlan())).toEqual([])
+    expect(validatePlan(linearPlan())).toEqual([])
+  })
+
+  it('INV-M5 · перехід у неіснуючий крок', () => {
+    const plan = branchingPlan()
+    plan.steps[1].onMistake = { percent_div_by_10: 'нема-такого' }
+    expect(validatePlan(plan).map((p) => p.problem).join()).toContain('неіснуючий крок')
+  })
+
+  it('INV-M6 · непорозуміння без гілки і без позначки — заборонено', () => {
+    const plan = branchingPlan()
+    plan.steps[1].noBranch = [] // прибрали свідому позначку
+    const problems = validatePlan(plan)
+    expect(problems.map((p) => p.problem).join()).toContain('percent_ignore_conversion')
+  })
+
+  it('перевірка без рівно одного правильного варіанта', () => {
+    const plan = branchingPlan()
+    plan.steps[1].choices = [
+      { text: 'a', correct: true },
+      { text: 'b', correct: true },
+    ]
+    expect(validatePlan(plan).map((p) => p.problem).join()).toContain('рівно один правильний')
+  })
+
+  it('недосяжне лікування — тихо мертвий крок', () => {
+    const plan = branchingPlan()
+    plan.steps[1].onMistake = {}
+    plan.steps[1].noBranch = ['percent_div_by_10', 'percent_ignore_conversion']
+    expect(validatePlan(plan).map((p) => p.problem).join()).toContain('не веде жодна гілка')
+  })
+
+  it('дубль id кроку', () => {
+    const plan = linearPlan()
+    plan.steps.push({ id: 'a', type: 'summary', title: 'дубль' })
+    expect(validatePlan(plan).map((p) => p.problem).join()).toContain('дубль id')
+  })
+})
+
+describe('лікування без явного returnTo вертає туди, звідки звернули', () => {
+  it('після лікування з ДРУГОЇ перевірки заняття йде далі, а не назад', () => {
+    const plan: LessonPlan = {
+      id: 'shared-fix',
+      course: 'c',
+      session: 1,
+      subgoal: 's',
+      steps: [
+        {
+          id: 'q1',
+          type: 'check',
+          title: 'q1',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm' },
+          ],
+          onMistake: { m: 'fix' },
+        },
+        {
+          id: 'q2',
+          type: 'check',
+          title: 'q2',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm2' },
+          ],
+          onMistake: { m2: 'fix' },
+        },
+        { id: 'end', type: 'summary', title: 'end' },
+        // одне лікування на дві перевірки, БЕЗ returnTo
+        { id: 'fix', type: 'remediate', title: 'fix' },
+      ],
+    }
+    // помиляємось на ДРУГІЙ перевірці
+    let run = createRun(plan)
+    run = advance(plan, answer(plan, run, 0)) // q1 правильно → q2
+    expect(run.stepId).toBe('q2')
+    run = advance(plan, answer(plan, run, 1)) // q2 помилка → лікування
+    expect(run.stepId).toBe('fix')
+    run = advance(plan, run)
+    // саме 'end', а не 'q1': вертаємось у місце звороту, не в початок
+    expect(run.stepId).toBe('end')
+  })
+})
+
+describe('INV-M3 · те саме ЛІКУВАННЯ не показуємо двічі', () => {
+  it('різні mistakeId з одним коренем дають одне лікування, не два', () => {
+    // Знайдено ЖИВИМ КЛІКОМ, не тестом: percent_div_by_10 і
+    // percent_mul_by_10 — різні id одного кореня «сота, не десята», обидва
+    // ведуть у fix_hundredth. Лічильник за mistakeId вважав їх різними, і
+    // учень читав однаковий текст двічі.
+    const plan: LessonPlan = {
+      id: 'shared-root',
+      course: 'c',
+      session: 1,
+      subgoal: 's',
+      steps: [
+        {
+          id: 'q1',
+          type: 'check',
+          title: 'q1',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'div_by_10' },
+          ],
+          onMistake: { div_by_10: 'fix_root' },
+        },
+        {
+          id: 'q2',
+          type: 'check',
+          title: 'q2',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'mul_by_10' },
+          ],
+          onMistake: { mul_by_10: 'fix_root' },
+        },
+        { id: 'end', type: 'summary', title: 'end' },
+        { id: 'fix_root', type: 'remediate', title: 'сота, не десята' },
+      ],
+    }
+
+    const { run, steps } = playThrough(plan, () => 1) // помиляється всюди
+    expect(steps.filter((id) => id === 'fix_root')).toHaveLength(1)
+    expect(isFinished(plan, run)).toBe(true)
+    // сигнал діагностики при цьому НЕ втрачено: обидва непорозуміння в звіті
+    expect(report(run).mistakes).toEqual(['div_by_10', 'mul_by_10'])
+  })
+})
+
+// ── Завершуваність як ВЛАСТИВІСТЬ, а не як приклад ───────────────────────
+// Заувага рев'ю: попередні тести доводять конкретний маршрут. Тут
+// перевіряється, що З БУДЬ-ЯКОГО стану при БУДЬ-ЯКИХ відповідях учень
+// доходить до кінця.
+
+import { readFileSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { completeSolve, findDeadEnds, isActive } from '../lessonMachine'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const REAL_PLAN = resolve(HERE, '../../../../public/demo-lesson-percent.json')
+
+describe('INV-M1 як властивість плану, не як приклад', () => {
+  it('навчальні плани не мають станів без виходу', () => {
+    expect(findDeadEnds(linearPlan())).toEqual([])
+    expect(findDeadEnds(branchingPlan())).toEqual([])
+  })
+
+  it('СПРАВЖНІЙ план заняття проходиться за будь-яких відповідей', () => {
+    const plan = JSON.parse(readFileSync(REAL_PLAN, 'utf-8'))
+    expect(validatePlan(plan)).toEqual([])
+    expect(findDeadEnds(plan)).toEqual([])
+  })
+
+  it('цикл через next ловиться, хоч усі цілі існують', () => {
+    const plan: LessonPlan = {
+      id: 'cycle',
+      course: 'c',
+      session: 1,
+      subgoal: 's',
+      steps: [
+        { id: 'a', type: 'explain', title: 'a', next: 'b' },
+        { id: 'b', type: 'explain', title: 'b', next: 'a' }, // ← петля
+        { id: 'end', type: 'summary', title: 'end' },
+      ],
+    }
+    // валідатор посилань мовчить: обидві цілі існують
+    expect(validatePlan(plan)).toEqual([])
+    // а перевірка завершуваності — ні
+    expect(findDeadEnds(plan).sort()).toEqual(['a', 'b'])
+  })
+
+  it('одна лиха гілка ламає крок цілком — учень обирає сам', () => {
+    const plan: LessonPlan = {
+      id: 'one-bad-branch',
+      course: 'c',
+      session: 1,
+      subgoal: 's',
+      steps: [
+        {
+          id: 'q',
+          type: 'check',
+          title: 'q',
+          choices: [
+            { text: 'ok', correct: true },
+            { text: 'no', correct: false, mistakeId: 'm' },
+          ],
+          onMistake: { m: 'trap' },
+        },
+        { id: 'end', type: 'summary', title: 'end' },
+        // лікування, що вертає САМЕ В СЕБЕ
+        { id: 'trap', type: 'remediate', title: 'trap', returnTo: 'trap' },
+      ],
+    }
+    expect(findDeadEnds(plan)).toContain('q')
+    expect(findDeadEnds(plan)).toContain('trap')
+  })
+})
+
+describe('крок `solve` має вихід, а не намальовані двері', () => {
+  const withSolve = (): LessonPlan => ({
+    id: 'with-solve',
+    course: 'c',
+    session: 1,
+    subgoal: 's',
+    steps: [
+      { id: 'board', type: 'solve', title: 'Розв’яжи на дошці' },
+      { id: 'end', type: 'summary', title: 'end' },
+    ],
+  })
+
+  it('без завершення solve — глухий кут (те, що було до правки)', () => {
+    const plan = withSolve()
+    let run = createRun(plan)
+    expect(isActive(currentStep(plan, run))).toBe(true)
+    expect(canAdvance(plan, run)).toBe(false)
+    // `answer()` тут не працює: вона приймає лише `check`
+    run = answer(plan, run, 0)
+    expect(canAdvance(plan, run)).toBe(false)
+  })
+
+  it('completeSolve відкриває вихід і НЕ вигадує вердикту', () => {
+    const plan = withSolve()
+    let run = completeSolve(plan, createRun(plan))
+    expect(run.answers.board.correct).toBeNull()
+    expect(canAdvance(plan, run)).toBe(true)
+    run = advance(plan, run)
+    expect(run.stepId).toBe('end')
+    // «розв'язав» не зараховується як «відповів правильно»
+    const r = report(run)
+    expect(r.answered).toBe(0)
+    expect(r.solved).toBe(1)
+    expect(r.correct).toBe(0)
+  })
+
+  it('план із solve завершуваний', () => {
+    expect(findDeadEnds(withSolve())).toEqual([])
+  })
+})
