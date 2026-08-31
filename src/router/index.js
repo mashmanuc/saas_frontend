@@ -187,32 +187,31 @@ const routes = [
     component: () => import('../views/ContactsView.vue'),
     meta: { requiresAuth: false }
   },
-  {
-    // Вітрина курсу: звідки видно прогрес і куди повертатись.
-    // Публічна, як заняття й діагностика.
-    path: '/course',
-    name: 'course-hub',
-    component: () => import('../modules/learning-content/views/CourseHubView.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    // Вступна діагностика теми. Публічна, як і заняття: щоб побачити
-    // потік, акаунт не потрібен. Дані статичні
-    // (public/diagnostic-percent.json), бекенд не чіпано.
-    path: '/diagnostic',
-    name: 'diagnostic',
-    component: () => import('../modules/learning-content/views/DiagnosticView.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    // Демо-доріжка одного заняття очима учня. Публічна свідомо: щоб
-    // побачити потік, акаунт не потрібен (як і для демо-дошки).
-    // Дані статичні (public/demo-lesson-percent.json), бекенд не чіпано.
-    path: '/demo-lesson',
-    name: 'demo-lesson',
-    component: () => import('../modules/learning-content/views/DemoLessonView.vue'),
-    meta: { requiresAuth: false }
-  },
+  // 2026-08-31: /course, /diagnostic, /demo-lesson (learning-content) зняті з
+  // маршрутизації. Компоненти й код лишаються в дереві — знято лише публічний
+  // вхід. Причина не технічна: код безпечний (без бекенду, без авторизації),
+  // але власник не давав слова на публічний запуск саме цих сторінок на
+  // m4sh.org, а вони туди виїхали автодеплоєм разом з іншим пушем. Знімати чи
+  // повертати — рішення власника, не інструмент безпеки.
+  //
+  // {
+  //   path: '/course',
+  //   name: 'course-hub',
+  //   component: () => import('../modules/learning-content/views/CourseHubView.vue'),
+  //   meta: { requiresAuth: false }
+  // },
+  // {
+  //   path: '/diagnostic',
+  //   name: 'diagnostic',
+  //   component: () => import('../modules/learning-content/views/DiagnosticView.vue'),
+  //   meta: { requiresAuth: false }
+  // },
+  // {
+  //   path: '/demo-lesson',
+  //   name: 'demo-lesson',
+  //   component: () => import('../modules/learning-content/views/DemoLessonView.vue'),
+  //   meta: { requiresAuth: false }
+  // },
   {
     path: '/',
     component: PageShell,
