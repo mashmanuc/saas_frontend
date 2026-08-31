@@ -188,6 +188,15 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    // Вступна діагностика теми. Публічна, як і заняття: щоб побачити
+    // потік, акаунт не потрібен. Дані статичні
+    // (public/diagnostic-percent.json), бекенд не чіпано.
+    path: '/diagnostic',
+    name: 'diagnostic',
+    component: () => import('../modules/learning-content/views/DiagnosticView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     // Демо-доріжка одного заняття очима учня. Публічна свідомо: щоб
     // побачити потік, акаунт не потрібен (як і для демо-дошки).
     // Дані статичні (public/demo-lesson-percent.json), бекенд не чіпано.

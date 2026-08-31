@@ -1,0 +1,1280 @@
+{
+ "poolVersion": "1.0",
+ "topicId": "ratios-percents-word-problems.percent",
+ "topic": "Відсотки",
+ "arc": [
+  "percent.concept",
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
+ ],
+ "subgoalLabels": {
+  "percent.concept": "поняття відсотка",
+  "percent.of_number": "відсоток від числа",
+  "percent.from_percent": "число за його відсотком",
+  "percent.ratio": "відсоткове відношення"
+ },
+ "roots": {
+  "percent/hundredth-not-tenth": "Сота, а не десята",
+  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/part-not-remainder": "Частина, а не решта",
+  "fraction/must-be-reduced": "Дріб треба скоротити",
+  "percent/what-is-the-whole": "Що тут ціле",
+  "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
+  "percent/which-direction": "У який бік рахуємо",
+  "percent/can-exceed-100": "Відсотків може бути більше ста",
+  "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
+  "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
+ },
+ "tasks": [
+  {
+   "id": "lonap1-percent-concept-pct_to_decimal-001",
+   "subgoal": "percent.concept",
+   "level": "easy",
+   "diffScore": 0.9,
+   "text": "Запишіть 40% десятковим дробом.",
+   "solution": "1% — це одна сота, тобто $0{,}01$. Щоб записати 40% десятковим дробом, множимо кількість відсотків на $0{,}01$: $40 \\cdot 0{,}01 = 0{,}4$. Відповідь: 0,4.",
+   "choices": [
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "40",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "0,4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "0,04",
+     "correct": false,
+     "mistakeId": "percent_div_by_1000",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-decimal_to_pct-001",
+   "subgoal": "percent.concept",
+   "level": "easy",
+   "diffScore": 0.95,
+   "text": "Запишіть число 0,4 у відсотках.",
+   "solution": "Ціле — це 100%. Щоб записати число у відсотках, множимо його на 100%: $0{,}4 \\cdot 100\\% = 40\\%$. Відповідь: 40.",
+   "choices": [
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "400",
+     "correct": false,
+     "mistakeId": "percent_mul_by_1000",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "0,4%",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "40",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-one_percent_of-001",
+   "subgoal": "percent.concept",
+   "level": "easy",
+   "diffScore": 1.0,
+   "text": "Знайдіть 1% від 1200 м.",
+   "solution": "1% — це одна сота частина величини. Щоб знайти 1%, ділимо величину на 100: $1200 : 100 = 12$ (м). Відповідь: 12.",
+   "choices": [
+    {
+     "text": "120",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "1200",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "1,2",
+     "correct": false,
+     "mistakeId": "percent_div_by_1000",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "12",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-pct_to_fraction-001",
+   "subgoal": "percent.concept",
+   "level": "mid",
+   "diffScore": 1.2,
+   "text": "Запишіть 25% звичайним дробом (у нескоротному вигляді).",
+   "solution": "Відсоток означає соту частину, тому 25% — це 25 сотих, тобто дріб $\\dfrac{25}{100}$. Цей дріб скоротний: ділимо чисельник і знаменник на їхній спільний дільник 25 і отримуємо $\\dfrac{1}{4}$. Відповідь: $\\dfrac{1}{4}$.",
+   "choices": [
+    {
+     "text": "$\\dfrac{3}{4}$",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "$\\dfrac{1}{4}$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "$\\dfrac{5}{2}$",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "$\\dfrac{25}{100}$",
+     "correct": false,
+     "mistakeId": "fraction_not_reduced",
+     "rootId": "fraction/must-be-reduced",
+     "errorKind": "slip"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-fraction_to_pct-001",
+   "subgoal": "percent.concept",
+   "level": "mid",
+   "diffScore": 1.3,
+   "text": "Запишіть дріб $\\dfrac{3}{20}$ у відсотках.",
+   "solution": "Ціле приймаємо за 100 відсотків, тому дріб записуємо у відсотках множенням на 100%: $\\dfrac{3}{20} \\cdot 100\\% = \\dfrac{3 \\cdot 100}{20}\\% = 15\\%$. Знаменник 20 ділить число 100 націло, тому відповідь вийшла цілою. Відповідь: 15.",
+   "choices": [
+    {
+     "text": "150",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "20",
+     "correct": false,
+     "mistakeId": "took_denominator",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "15",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "3",
+     "correct": false,
+     "mistakeId": "took_numerator",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-whole_half-001",
+   "subgoal": "percent.concept",
+   "level": "mid",
+   "diffScore": 1.4,
+   "text": "Скільки відсотків величини становить сама ця величина?",
+   "solution": "Уся величина — це її 100%: ціле завжди становить 100% самого себе. Відповідь: 100.",
+   "choices": [
+    {
+     "text": "10",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "50",
+     "correct": false,
+     "mistakeId": "half_whole_confusion",
+     "rootId": "percent/whole-is-100-not-50",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "100",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "1",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-over_100-001",
+   "subgoal": "percent.concept",
+   "level": "hard",
+   "diffScore": 1.61,
+   "text": "Запишіть 125% десятковим дробом.",
+   "solution": "Відсотків може бути і більше за 100: це означає більше за ціле. Множимо на $0{,}01$: $125 \\cdot 0{,}01 = 1{,}25$ — число, більше за одиницю. Відповідь: 1,25.",
+   "choices": [
+    {
+     "text": "12,5",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "1,25",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "1",
+     "correct": false,
+     "mistakeId": "cap_at_100",
+     "rootId": "percent/can-exceed-100",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "125",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "lonap1-percent-concept-compare_shares-001",
+   "subgoal": "percent.concept",
+   "level": "hard",
+   "diffScore": 1.76,
+   "text": "Що більше: 1% від 2 гривень чи 20% від 5 копійок?",
+   "solution": "Зведемо обидві величини до однієї одиниці — до коп — і порахуємо кожну частку. 1% від 2 гривень: $200 \\cdot 0{,}01 = 2$ (коп). 20% від 5 копійок: $5 \\cdot 0{,}20 = 1$ (коп). Порівнюємо: $2 > 1$, отже більше — 1% від 2 гривень. Відповідь: 1% від 2 гривень.",
+   "choices": [
+    {
+     "text": "1% від 2 гривень",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "неможливо порівняти",
+     "correct": false,
+     "mistakeId": "refused_conversion",
+     "rootId": "percent/percent-without-its-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "20% від 5 копійок",
+     "correct": false,
+     "mistakeId": "bigger_percent_bigger_value",
+     "rootId": "percent/percent-without-its-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "порівну",
+     "correct": false,
+     "mistakeId": "assumed_equal",
+     "rootId": "percent/percent-without-its-whole",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "lona-p1"
+  },
+  {
+   "id": "krokork2-of_number-001",
+   "subgoal": "percent.of_number",
+   "level": "easy",
+   "diffScore": 0.85,
+   "text": "Обчисліть, чому дорівнює 20% від 300.",
+   "solution": "Один відсоток — це сота частина числа, тому 20% — це 20 сотих частин числа 300. Щоб їх знайти, множимо 300 на 20 і ділимо на 100: $300 \\cdot 20 : 100 = 6000 : 100 = 60$. Відповідь: 60.",
+   "choices": [
+    {
+     "text": "6000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "20",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "60",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "600",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-002",
+   "subgoal": "percent.of_number",
+   "level": "easy",
+   "diffScore": 0.93,
+   "text": "Обчисліть, чому дорівнює 25% від 400.",
+   "solution": "Один відсоток — це сота частина числа, тому 25% — це 25 сотих частин числа 400. Щоб їх знайти, множимо 400 на 25 і ділимо на 100: $400 \\cdot 25 : 100 = 10000 : 100 = 100$. Відповідь: 100.",
+   "choices": [
+    {
+     "text": "100",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "10000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "25",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "1000",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-003",
+   "subgoal": "percent.of_number",
+   "level": "easy",
+   "diffScore": 1.0,
+   "text": "Обчисліть, чому дорівнює 40% від 250.",
+   "solution": "Один відсоток — це сота частина числа, тому 40% — це 40 сотих частин числа 250. Щоб їх знайти, множимо 250 на 40 і ділимо на 100: $250 \\cdot 40 : 100 = 10000 : 100 = 100$. Відповідь: 100.",
+   "choices": [
+    {
+     "text": "10000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "1000",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "40",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "100",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-004",
+   "subgoal": "percent.of_number",
+   "level": "mid",
+   "diffScore": 1.05,
+   "text": "Обчисліть, чому дорівнює 12% від 350.",
+   "solution": "Один відсоток — це сота частина числа, тому 12% — це 12 сотих частин числа 350. Щоб їх знайти, множимо 350 на 12 і ділимо на 100: $350 \\cdot 12 : 100 = 4200 : 100 = 42$. Відповідь: 42.",
+   "choices": [
+    {
+     "text": "420",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "12",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "42",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "4200",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-005",
+   "subgoal": "percent.of_number",
+   "level": "mid",
+   "diffScore": 1.2,
+   "text": "Знайдіть 15% від числа 480.",
+   "solution": "Один відсоток — це сота частина числа, тому 15% — це 15 сотих частин числа 480. Щоб їх знайти, множимо 480 на 15 і ділимо на 100: $480 \\cdot 15 : 100 = 7200 : 100 = 72$. Відповідь: 72.",
+   "choices": [
+    {
+     "text": "7200",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "72",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "15",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "720",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-006",
+   "subgoal": "percent.of_number",
+   "level": "mid",
+   "diffScore": 1.35,
+   "text": "Знайдіть 35% від числа 620.",
+   "solution": "Один відсоток — це сота частина числа, тому 35% — це 35 сотих частин числа 620. Щоб їх знайти, множимо 620 на 35 і ділимо на 100: $620 \\cdot 35 : 100 = 21700 : 100 = 217$. Відповідь: 217.",
+   "choices": [
+    {
+     "text": "35",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "2170",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "21700",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "217",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-007",
+   "subgoal": "percent.of_number",
+   "level": "hard",
+   "diffScore": 1.45,
+   "text": "Знайдіть 65% від числа 840.",
+   "solution": "Один відсоток — це сота частина числа, тому 65% — це 65 сотих частин числа 840. Щоб їх знайти, множимо 840 на 65 і ділимо на 100: $840 \\cdot 65 : 100 = 54600 : 100 = 546$. Відповідь: 546.",
+   "choices": [
+    {
+     "text": "65",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "54600",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "5460",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "546",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-of_number-008",
+   "subgoal": "percent.of_number",
+   "level": "hard",
+   "diffScore": 1.75,
+   "text": "Обчисліть, чому дорівнює 45% від 940.",
+   "solution": "Один відсоток — це сота частина числа, тому 45% — це 45 сотих частин числа 940. Щоб їх знайти, множимо 940 на 45 і ділимо на 100: $940 \\cdot 45 : 100 = 42300 : 100 = 423$. Відповідь: 423.",
+   "choices": [
+    {
+     "text": "45",
+     "correct": false,
+     "mistakeId": "percent_answered_percent_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "423",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "4230",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "42300",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-001",
+   "subgoal": "percent.from_percent",
+   "level": "easy",
+   "diffScore": 1.0,
+   "text": "Число 20 становить 10% від деякого числа. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 10% від $N$ дорівнює 20, тобто $N \\cdot 10 : 100 = 20$. Щоб знайти $N$, множимо 20 на 100 і ділимо на 10: $20 \\cdot 100 : 10 = 2000 : 10 = 200$. Відповідь: 200.",
+   "choices": [
+    {
+     "text": "2000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "20",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "200",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-002",
+   "subgoal": "percent.from_percent",
+   "level": "easy",
+   "diffScore": 1.1,
+   "text": "Число 30 становить 20% від деякого числа. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 20% від $N$ дорівнює 30, тобто $N \\cdot 20 : 100 = 30$. Щоб знайти $N$, множимо 30 на 100 і ділимо на 20: $30 \\cdot 100 : 20 = 3000 : 20 = 150$. Відповідь: 150.",
+   "choices": [
+    {
+     "text": "30",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "150",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "3000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-003",
+   "subgoal": "percent.from_percent",
+   "level": "easy",
+   "diffScore": 1.2,
+   "text": "Число 40 становить 25% від деякого числа. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 40, тобто $N \\cdot 25 : 100 = 40$. Щоб знайти $N$, множимо 40 на 100 і ділимо на 25: $40 \\cdot 100 : 25 = 4000 : 25 = 160$. Відповідь: 160.",
+   "choices": [
+    {
+     "text": "10",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "160",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "40",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "4000",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-004",
+   "subgoal": "percent.from_percent",
+   "level": "mid",
+   "diffScore": 1.25,
+   "text": "20% числа дорівнює 35. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 20% від $N$ дорівнює 35, тобто $N \\cdot 20 : 100 = 35$. Щоб знайти $N$, множимо 35 на 100 і ділимо на 20: $35 \\cdot 100 : 20 = 3500 : 20 = 175$. Відповідь: 175.",
+   "choices": [
+    {
+     "text": "3500",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "7",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "175",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "35",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-005",
+   "subgoal": "percent.from_percent",
+   "level": "mid",
+   "diffScore": 1.36,
+   "text": "Число 44 становить 50% від деякого числа. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 44, тобто $N \\cdot 50 : 100 = 44$. Щоб знайти $N$, множимо 44 на 100 і ділимо на 50: $44 \\cdot 100 : 50 = 4400 : 50 = 88$. Відповідь: 88.",
+   "choices": [
+    {
+     "text": "22",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "4400",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "88",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "44",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-006",
+   "subgoal": "percent.from_percent",
+   "level": "mid",
+   "diffScore": 1.48,
+   "text": "20% числа дорівнює 15. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 20% від $N$ дорівнює 15, тобто $N \\cdot 20 : 100 = 15$. Щоб знайти $N$, множимо 15 на 100 і ділимо на 20: $15 \\cdot 100 : 20 = 1500 : 20 = 75$. Відповідь: 75.",
+   "choices": [
+    {
+     "text": "15",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "3",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "75",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "1500",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-007",
+   "subgoal": "percent.from_percent",
+   "level": "hard",
+   "diffScore": 1.55,
+   "text": "Число 36 становить 25% від деякого числа. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 36, тобто $N \\cdot 25 : 100 = 36$. Щоб знайти $N$, множимо 36 на 100 і ділимо на 25: $36 \\cdot 100 : 25 = 3600 : 25 = 144$. Відповідь: 144.",
+   "choices": [
+    {
+     "text": "36",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "9",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "3600",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "144",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-from_percent-008",
+   "subgoal": "percent.from_percent",
+   "level": "hard",
+   "diffScore": 1.85,
+   "text": "20% числа дорівнює 25. Знайдіть це число.",
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 20% від $N$ дорівнює 25, тобто $N \\cdot 20 : 100 = 25$. Щоб знайти $N$, множимо 25 на 100 і ділимо на 20: $25 \\cdot 100 : 20 = 2500 : 20 = 125$. Відповідь: 125.",
+   "choices": [
+    {
+     "text": "2500",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_by_percent",
+     "rootId": "percent/whole-needs-both-steps",
+     "errorKind": "computational"
+    },
+    {
+     "text": "125",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "25",
+     "correct": false,
+     "mistakeId": "percent_answered_part_itself",
+     "rootId": "percent/sign-is-not-decoration",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "percent_of_part_not_whole",
+     "rootId": "percent/which-direction",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-001",
+   "subgoal": "percent.ratio",
+   "level": "easy",
+   "diffScore": 0.85,
+   "text": "Скільки відсотків становить число 100 від числа 500?",
+   "solution": "Ціле — це число 500, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 500 вміщується в 100. Одна сота частина 500 — це $500 : 100$, тому шукаємо, скільки таких часток у 100: $100 \\cdot 100 : 500 = 10000 : 500 = 20$. Відповідь: 20.",
+   "choices": [
+    {
+     "text": "100",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "20",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "500",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-002",
+   "subgoal": "percent.ratio",
+   "level": "easy",
+   "diffScore": 0.94,
+   "text": "Скільки відсотків становить число 200 від числа 800?",
+   "solution": "Ціле — це число 800, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 800 вміщується в 200. Одна сота частина 800 — це $800 : 100$, тому шукаємо, скільки таких часток у 200: $200 \\cdot 100 : 800 = 20000 : 800 = 25$. Відповідь: 25.",
+   "choices": [
+    {
+     "text": "400",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "2,5",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "200",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "25",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-003",
+   "subgoal": "percent.ratio",
+   "level": "easy",
+   "diffScore": 1.03,
+   "text": "Скільки відсотків становить число 150 від числа 300?",
+   "solution": "Ціле — це число 300, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 300 вміщується в 150. Одна сота частина 300 — це $300 : 100$, тому шукаємо, скільки таких часток у 150: $150 \\cdot 100 : 300 = 15000 : 300 = 50$. Відповідь: 50.",
+   "choices": [
+    {
+     "text": "150",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "50",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "200",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-004",
+   "subgoal": "percent.ratio",
+   "level": "mid",
+   "diffScore": 1.08,
+   "text": "Знайдіть, скільки відсотків складає 48 від 600.",
+   "solution": "Ціле — це число 600, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 600 вміщується в 48. Одна сота частина 600 — це $600 : 100$, тому шукаємо, скільки таких часток у 48: $48 \\cdot 100 : 600 = 4800 : 600 = 8$. Відповідь: 8.",
+   "choices": [
+    {
+     "text": "1250",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "48",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "0,8",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-005",
+   "subgoal": "percent.ratio",
+   "level": "mid",
+   "diffScore": 1.25,
+   "text": "Знайдіть, скільки відсотків складає 80 від 500.",
+   "solution": "Ціле — це число 500, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 500 вміщується в 80. Одна сота частина 500 — це $500 : 100$, тому шукаємо, скільки таких часток у 80: $80 \\cdot 100 : 500 = 8000 : 500 = 16$. Відповідь: 16.",
+   "choices": [
+    {
+     "text": "16",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "625",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "1,6",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "80",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-006",
+   "subgoal": "percent.ratio",
+   "level": "mid",
+   "diffScore": 1.42,
+   "text": "Знайдіть, скільки відсотків складає 120 від 300.",
+   "solution": "Ціле — це число 300, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 300 вміщується в 120. Одна сота частина 300 — це $300 : 100$, тому шукаємо, скільки таких часток у 120: $120 \\cdot 100 : 300 = 12000 : 300 = 40$. Відповідь: 40.",
+   "choices": [
+    {
+     "text": "120",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "250",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "40",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-007",
+   "subgoal": "percent.ratio",
+   "level": "hard",
+   "diffScore": 1.5,
+   "text": "Скільки відсотків становить число 28 від числа 700?",
+   "solution": "Ціле — це число 700, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 700 вміщується в 28. Одна сота частина 700 — це $700 : 100$, тому шукаємо, скільки таких часток у 28: $28 \\cdot 100 : 700 = 2800 : 700 = 4$. Відповідь: 4.",
+   "choices": [
+    {
+     "text": "4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "28",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "0,4",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    },
+    {
+     "text": "2500",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    }
+   ],
+   "source": "krokor-k2"
+  },
+  {
+   "id": "krokork2-ratio-008",
+   "subgoal": "percent.ratio",
+   "level": "hard",
+   "diffScore": 1.8,
+   "text": "Знайдіть, скільки відсотків складає 480 від 600.",
+   "solution": "Ціле — це число 600, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 600 вміщується в 480. Одна сота частина 600 — це $600 : 100$, тому шукаємо, скільки таких часток у 480: $480 \\cdot 100 : 600 = 48000 : 600 = 80$. Відповідь: 80.",
+   "choices": [
+    {
+     "text": "80",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null,
+     "errorKind": null
+    },
+    {
+     "text": "480",
+     "correct": false,
+     "mistakeId": "percent_answered_raw_number",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "125",
+     "correct": false,
+     "mistakeId": "percent_swapped_numbers",
+     "rootId": "percent/what-is-the-whole",
+     "errorKind": "conceptual"
+    },
+    {
+     "text": "8",
+     "correct": false,
+     "mistakeId": "percent_mul_by_10_not_100",
+     "rootId": "percent/hundredth-not-tenth",
+     "errorKind": "computational"
+    }
+   ],
+   "source": "krokor-k2"
+  }
+ ],
+ "note": "пул для адаптивного добору, НЕ послідовність: стеля прогону ~12 задач за DIAGNOSTIC_PROFILE_SSOT §3"
+}
