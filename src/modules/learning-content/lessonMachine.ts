@@ -42,6 +42,21 @@ export interface Choice {
   correct: boolean
   /** ідентифікатор непорозуміння з банку задач; у правильного — null */
   mistakeId?: string | null
+  /**
+   * СТАБІЛЬНИЙ ідентифікатор кореня непорозуміння — те, чим курс
+   * розмовляє сам із собою.
+   *
+   * Чому не `mistakeId`: він симптом і належить конкретній родині задач
+   * (`percent_div_by_10` і `percent_mul_by_10` — один корінь «сота, не
+   * десята»). Чому не id кроку лікування: крок — це СПОСІБ ПОКАЗУ,
+   * його перейменування чи заміна не повинні міняти діагноз.
+   *
+   * Живе на ВАРІАНТІ, а не лише на лікуванні, бо непорозуміння без
+   * лікування (`noBranch`) — саме те, що наступному заняттю знати
+   * найважливіше. Прив'язавши корінь до лікування, ми б губили рівно
+   * ті сигнали, яких ще не вміємо лікувати.
+   */
+  rootId?: string | null
 }
 
 export interface Step {
@@ -62,6 +77,11 @@ export interface Step {
   /** `remediate`: куди повернутись після лікування */
   returnTo?: string
   /**
+   * `remediate`: корінь, який цей крок лікує. За ним машина рахує
+   * «вже показували», тож два різні кроки одного кореня не повторяться.
+   */
+  rootId?: string
+  /**
    * `check`: непорозуміння, для яких гілки НЕМА СВІДОМО.
    * Існує, щоб «немає гілки» не можна було отримати мовчки: валідатор
    * вимагає, аби кожен `mistakeId` із варіантів був або в `onMistake`,
@@ -73,6 +93,8 @@ export interface Step {
 
 export interface LessonPlan {
   id: string
+  /** словник діагнозів заняття: стабільний корінь → людська назва */
+  roots?: Record<string, string>
   course: string
   session: number
   subgoal: string
@@ -94,6 +116,8 @@ export interface AnswerRecord {
    */
   correct: boolean | null
   mistakeId: string | null
+  /** стабільний корінь непорозуміння — вхід для наступного заняття */
+  rootId: string | null
 }
 
 export interface Run {
@@ -166,6 +190,14 @@ export function validatePlan(plan: LessonPlan): PlanProblem[] {
       // INV-M6: жодного непорозуміння без явного рішення
       const covered = new Set([...Object.keys(step.onMistake ?? {}), ...(step.noBranch ?? [])])
       for (const c of choices) {
+        // симптом без кореня = сигнал, який заняття зафіксує, а курс
+        // прочитати не зможе; така діра має бути видною одразу
+        if (!c.correct && c.mistakeId && !c.rootId) {
+          problems.push({
+            stepId: step.id,
+            problem: `непорозуміння «${c.mistakeId}» без стабільного rootId`,
+          })
+        }
         if (!c.correct && c.mistakeId && !covered.has(c.mistakeId)) {
           problems.push({
             stepId: step.id,
@@ -253,6 +285,7 @@ export function answer(plan: LessonPlan, run: Run, choiceIndex: number): Run {
         choice: choiceIndex,
         correct: !!choice.correct,
         mistakeId: choice.correct ? null : (choice.mistakeId ?? null),
+        rootId: choice.correct ? null : (choice.rootId ?? null),
       },
     },
   }
@@ -276,7 +309,7 @@ export function completeSolve(plan: LessonPlan, run: Run): Run {
     ...run,
     answers: {
       ...run.answers,
-      [step.id]: { choice: null, correct: null, mistakeId: null },
+      [step.id]: { choice: null, correct: null, mistakeId: null, rootId: null },
     },
   }
 }
@@ -298,7 +331,9 @@ export function nextStepId(plan: LessonPlan, run: Run): string | null {
     if (given.correct !== false) return step.onCorrect ?? step.next ?? linearNext(plan, step.id)
 
     const treatment = given.mistakeId ? step.onMistake?.[given.mistakeId] : undefined
-    const already = treatment ? (run.treated[treatment] ?? 0) : 0
+    const treatStep = treatment ? stepById(plan, treatment) : null
+    const treatKey = treatStep ? (treatStep.rootId ?? treatment) : undefined
+    const already = treatKey ? (run.treated[treatKey] ?? 0) : 0
     // INV-M3: те саме непорозуміння лікуємо обмежену кількість разів,
     // інакше впертий учень не вийде з петлі.
     if (treatment && already < MAX_TREATMENTS_PER_MISTAKE) return treatment
@@ -341,8 +376,13 @@ export function advance(plan: LessonPlan, run: Run): Run {
 
   const treated = { ...run.treated }
   // лічильник росте на ВХОДІ в лікування — рівно тоді, коли воно сталось
-  if (stepById(plan, target)?.type === 'remediate') {
-    treated[target] = (treated[target] ?? 0) + 1
+  const entering = stepById(plan, target)
+  if (entering?.type === 'remediate') {
+    // ключ — КОРІНЬ, не крок: два різні способи показу одного кореня не
+    // мають повторитись перед учнем. id кроку лишається запасним ключем
+    // для планів, що кореня ще не оголосили.
+    const k = entering.rootId ?? target
+    treated[k] = (treated[k] ?? 0) + 1
   }
 
   return { ...run, stepId: target, path: [...run.path, target], treated }
@@ -396,9 +436,16 @@ export interface RunReport {
   /** кроків, закритих роботою на дошці — без вердикту */
   solved: number
   correct: number
-  /** які саме непорозуміння спрацювали — вхід для наступного заняття */
+  /**
+   * СТАБІЛЬНІ корені непорозумінь, що спрацювали. Це і є вихід заняття
+   * назовні: те, чим має живитись добір наступного. Сюди потрапляють і
+   * ті корені, для яких лікування ще нема (`noBranch`) — незнання того,
+   * як лікувати, не привід ховати діагноз.
+   */
+  roots: string[]
+  /** симптоми (id помилок банку) — довідково, для звірки з банком */
   mistakes: string[]
-  /** які лікування учень бачив (id кроків `remediate`) */
+  /** корені, які учневі вже показали */
   treated: string[]
 }
 
@@ -406,10 +453,12 @@ export function report(run: Run): RunReport {
   const all = Object.values(run.answers)
   const given = all.filter((a) => a.correct !== null)   // кроки з вердиктом
   const mistakes = given.map((a) => a.mistakeId).filter((m): m is string => !!m)
+  const roots = given.map((a) => a.rootId).filter((r): r is string => !!r)
   return {
     answered: given.length,
     solved: all.length - given.length,
     correct: given.filter((a) => a.correct === true).length,
+    roots: [...new Set(roots)],
     mistakes: [...new Set(mistakes)],
     treated: Object.keys(run.treated),
   }

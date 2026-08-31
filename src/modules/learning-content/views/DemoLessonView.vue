@@ -132,6 +132,15 @@ function inline(text) {
   return renderTextWithLatex(String(text ?? ''))
 }
 
+/**
+ * Людська назва кореня. Якщо назви нема — показуємо сам ключ, а не
+ * ховаємо рядок: непорозуміння, якого ми ще не назвали, лишається
+ * видним, а не зникає зі звіту.
+ */
+function rootLabel(id) {
+  return plan.value?.roots?.[id] ?? id
+}
+
 function choose(index) {
   run.value = answer(plan.value, run.value, index)
   // Розбір розгортається і виштовхує «Далі» за екран — знайдено
@@ -244,8 +253,9 @@ function goBack() {
           class="mt-4 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700"
         >
           <p>Відповів правильно: {{ learned.correct }} з {{ learned.answered }}.</p>
-          <p v-if="learned.treated.length" class="mt-1">
-            Окремо розібрали непорозумінь: {{ learned.treated.length }}.
+          <p v-if="learned.roots.length" class="mt-1">
+            Над чим варто попрацювати:
+            <span class="font-medium">{{ learned.roots.map(rootLabel).join(', ') }}</span>.
           </p>
         </div>
 

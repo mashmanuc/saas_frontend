@@ -57,8 +57,8 @@ function branchingPlan(): LessonPlan {
         text: 'Запишіть 40% десятковим дробом.',
         choices: [
           { text: '0,4', correct: true },
-          { text: '4', correct: false, mistakeId: 'percent_div_by_10' },
-          { text: '40', correct: false, mistakeId: 'percent_ignore_conversion' },
+          { text: '4', correct: false, mistakeId: 'percent_div_by_10', rootId: 'percent/hundredth' },
+          { text: '40', correct: false, mistakeId: 'percent_ignore_conversion', rootId: 'percent/sign' },
         ],
         onMistake: { percent_div_by_10: 'fix_div10' },
         noBranch: ['percent_ignore_conversion'],
@@ -168,9 +168,9 @@ describe('маршрут залежить від того, ЩО саме уче�
     run = advance(plan, run) // у лікування
     const r = report(run)
     expect(r.mistakes).toEqual(['percent_div_by_10'])
+    expect(r.roots).toEqual(['percent/hundredth'])
     expect(r.correct).toBe(0)
-    // `treated` — це ПОКАЗАНІ лікування (id кроків), а не непорозуміння:
-    // одне лікування покриває кілька id одного кореня
+    // `treated` — ПОКАЗАНІ корені; крок лікування лишається способом показу
     expect(r.treated).toEqual(['fix_div10'])
   })
 })
@@ -192,7 +192,7 @@ describe('INV-M3 · те саме непорозуміння не крутить
           title: 'q1',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'm' },
+            { text: 'no', correct: false, mistakeId: 'm', rootId: 'root/one' },
           ],
           onMistake: { m: 'fix' },
         },
@@ -202,7 +202,7 @@ describe('INV-M3 · те саме непорозуміння не крутить
           title: 'q2',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'm' },
+            { text: 'no', correct: false, mistakeId: 'm', rootId: 'root/one' },
           ],
           onMistake: { m: 'fix' },
         },
@@ -317,7 +317,7 @@ describe('лікування без явного returnTo вертає туди,
           title: 'q1',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'm' },
+            { text: 'no', correct: false, mistakeId: 'm', rootId: 'root/one' },
           ],
           onMistake: { m: 'fix' },
         },
@@ -327,7 +327,7 @@ describe('лікування без явного returnTo вертає туди,
           title: 'q2',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'm2' },
+            { text: 'no', correct: false, mistakeId: 'm2', rootId: 'root/two' },
           ],
           onMistake: { m2: 'fix' },
         },
@@ -366,7 +366,7 @@ describe('INV-M3 · те саме ЛІКУВАННЯ не показуємо д�
           title: 'q1',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'div_by_10' },
+            { text: 'no', correct: false, mistakeId: 'div_by_10', rootId: 'root/hundredth' },
           ],
           onMistake: { div_by_10: 'fix_root' },
         },
@@ -376,12 +376,12 @@ describe('INV-M3 · те саме ЛІКУВАННЯ не показуємо д�
           title: 'q2',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'mul_by_10' },
+            { text: 'no', correct: false, mistakeId: 'mul_by_10', rootId: 'root/hundredth' },
           ],
           onMistake: { mul_by_10: 'fix_root' },
         },
         { id: 'end', type: 'summary', title: 'end' },
-        { id: 'fix_root', type: 'remediate', title: 'сота, не десята' },
+        { id: 'fix_root', type: 'remediate', title: 'сота, не десята', rootId: 'root/hundredth' },
       ],
     }
 
@@ -390,6 +390,8 @@ describe('INV-M3 · те саме ЛІКУВАННЯ не показуємо д�
     expect(isFinished(plan, run)).toBe(true)
     // сигнал діагностики при цьому НЕ втрачено: обидва непорозуміння в звіті
     expect(report(run).mistakes).toEqual(['div_by_10', 'mul_by_10'])
+    // симптоми різні, ДІАГНОЗ один — саме він піде в наступне заняття
+    expect(report(run).roots).toEqual(['root/hundredth'])
   })
 })
 
@@ -449,7 +451,7 @@ describe('INV-M1 як властивість плану, не як прикла�
           title: 'q',
           choices: [
             { text: 'ok', correct: true },
-            { text: 'no', correct: false, mistakeId: 'm' },
+            { text: 'no', correct: false, mistakeId: 'm', rootId: 'root/one' },
           ],
           onMistake: { m: 'trap' },
         },
@@ -501,5 +503,31 @@ describe('крок `solve` має вихід, а не намальовані д�
 
   it('план із solve завершуваний', () => {
     expect(findDeadEnds(withSolve())).toEqual([])
+  })
+})
+
+describe('корінь — стабільний ключ діагностики, крок лікування — лише показ', () => {
+  it('симптом без rootId — мовчазна діра, валідатор її називає', () => {
+    const plan = branchingPlan()
+    delete plan.steps[1].choices[1].rootId
+    expect(validatePlan(plan).map((p) => p.problem).join()).toContain('без стабільного rootId')
+  })
+
+  it('перейменування кроку лікування НЕ міняє діагноз', () => {
+    const plan = branchingPlan()
+    let run = advance(plan, createRun(plan))
+    run = advance(plan, answer(plan, run, 1))
+    const before = report(run).roots
+
+    // той самий корінь, інший спосіб показу
+    const renamed = branchingPlan()
+    renamed.steps[4].id = 'fix_div10_v2'
+    renamed.steps[4].title = 'Інакше про те саме'
+    renamed.steps[1].onMistake = { percent_div_by_10: 'fix_div10_v2' }
+    let r2 = advance(renamed, createRun(renamed))
+    r2 = advance(renamed, answer(renamed, r2, 1))
+
+    expect(report(r2).roots).toEqual(before)
+    expect(validatePlan(renamed)).toEqual([])
   })
 })
