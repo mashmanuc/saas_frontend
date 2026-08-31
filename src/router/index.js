@@ -188,6 +188,14 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    // Вітрина курсу: звідки видно прогрес і куди повертатись.
+    // Публічна, як заняття й діагностика.
+    path: '/course',
+    name: 'course-hub',
+    component: () => import('../modules/learning-content/views/CourseHubView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     // Вступна діагностика теми. Публічна, як і заняття: щоб побачити
     // потік, акаунт не потрібен. Дані статичні
     // (public/diagnostic-percent.json), бекенд не чіпано.

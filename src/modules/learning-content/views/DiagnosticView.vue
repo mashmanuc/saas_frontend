@@ -26,6 +26,11 @@ import {
   rootsFromRun,
 } from '../diagnostic'
 import { applyReport, emptyLearnerState } from '../learnerState'
+import {
+  clearDiagnosticRun,
+  loadDiagnosticRun,
+  saveDiagnosticRun,
+} from '../progressStore'
 
 const LEARNER_KEY = 'm4sh:learner-state:v1'
 
@@ -34,12 +39,24 @@ const run = ref(null)
 const profile = ref(null)
 const error = ref('')
 const started = ref(false)
+const resumed = ref(false)
 
 onMounted(async () => {
   try {
     const res = await fetch('/diagnostic-percent.json')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     pool.value = await res.json()
+
+    // Незавершена діагностика: §3 прямо каже «можна перервати — стан
+    // зберігається, як у звичайному занятті». Придатність перевіряємо
+    // тим самим правилом, що й у заняття: задача має існувати в пулі.
+    const saved = loadDiagnosticRun()
+    const known = new Set(pool.value.tasks.map((t) => t.id))
+    if (saved?.currentId && known.has(saved.currentId)) {
+      run.value = saved
+      started.value = true
+      resumed.value = true
+    }
   } catch (e) {
     error.value = `Не вдалось завантажити діагностику: ${e.message}`
   }
@@ -87,11 +104,14 @@ function start() {
 
 function pick(index) {
   run.value = answerDiagnostic(pool.value, run.value, index)
+  resumed.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  saveDiagnosticRun(run.value)
   if (isDiagnosticDone(run.value)) finish()
 }
 
 function finish() {
+  clearDiagnosticRun()
   profile.value = buildProfile(pool.value, run.value, (pool.value.lessons ?? []).length)
 
   // Корені діагностики йдуть у той самий стан учня, що й корені занять —
@@ -157,6 +177,9 @@ function finish() {
           <h1 class="text-xl font-semibold text-gray-900">{{ pool.topic }}</h1>
           <span class="text-sm text-gray-500">{{ subgoalNow }}</span>
         </div>
+        <p v-if="resumed" class="mt-1 text-xs text-indigo-500">
+          продовжуємо з місця, де зупинились
+        </p>
         <div class="mt-3 h-1.5 w-full rounded-full bg-gray-200">
           <div
             class="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"

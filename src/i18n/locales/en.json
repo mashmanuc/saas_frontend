@@ -10607,7 +10607,11 @@
       },
       "savedDraft": "Course “{title}” saved as a draft.",
       "goToList": "Go to course list",
-      "openFailed": "Could not open the lesson board."
+      "openFailed": "Could not open the lesson board.",
+      "readyTitle": "Ready course",
+      "readyPercent": "Percentages",
+      "readyPercentHint": "Diagnostic + 4 lessons. Progress is kept in this browser.",
+      "readyOpen": "Open"
     }
   }
 }

@@ -7,6 +7,25 @@
       </button>
     </div>
 
+    <!-- Готовий курс — НЕ `TutorCourse`, а зібраний контент теми.
+         Окремою секцією, а не рядком у списку: список показує курси,
+         створені тьютором у планувальнику, і підмішати туди чуже за
+         природою означало б збрехати про те, що це таке. -->
+    <section class="course-list__ready">
+      <h3>{{ t('lessonConstructor.courses.readyTitle') }}</h3>
+      <a class="course-list__ready-card" href="/course">
+        <span>
+          <strong>{{ t('lessonConstructor.courses.readyPercent') }}</strong>
+          <span class="course-list__meta">
+            {{ t('lessonConstructor.courses.readyPercentHint') }}
+          </span>
+        </span>
+        <span class="course-list__ready-go">
+          {{ t('lessonConstructor.courses.readyOpen') }} →
+        </span>
+      </a>
+    </section>
+
     <p v-if="loading">{{ t('lessonConstructor.courses.loading') }}</p>
 
     <p v-else-if="error" class="course-list__error" role="alert">
@@ -197,6 +216,16 @@ defineExpose({ load, open, builtOf })
 </script>
 
 <style scoped>
+.course-list__ready { margin: 0 0 1.5em; }
+.course-list__ready h3 { margin: 0 0 .5em; font-size: .95em; opacity: .7; }
+.course-list__ready-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 1em;
+  padding: .9em 1.1em; border: 1px solid var(--wb-border, #e5e7eb);
+  border-radius: .75em; text-decoration: none; color: inherit;
+}
+.course-list__ready-card:hover { border-color: #818cf8; }
+.course-list__ready-card strong { display: block; }
+.course-list__ready-go { flex: none; color: #4f46e5; font-weight: 500; }
 .course-list__head { display: flex; justify-content: space-between; align-items: center; }
 .course-list__items { list-style: none; padding: 0; }
 .course-list__item { border-bottom: 1px solid rgba(0,0,0,0.08); }

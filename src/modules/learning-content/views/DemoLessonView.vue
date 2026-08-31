@@ -48,6 +48,7 @@ import {
   emptyLearnerState,
   persistentRoots,
 } from '../learnerState'
+import { clearRun, loadRun, saveRun } from '../progressStore'
 
 /**
  * Типи кроків, які ця в'юшка вміє показати.
@@ -97,6 +98,8 @@ const error = ref('')
 const nav = ref(null) // низ блоку — щоб «Далі» не тікав за екран
 const learner = ref(emptyLearnerState())
 const advice = ref(null)
+/** чи повернулись у збережене місце — щоб сказати про це вголос */
+const resumed = ref(false)
 
 onMounted(async () => {
   try {
@@ -137,14 +140,23 @@ onMounted(async () => {
     }
 
     plan.value = loaded
-    run.value = createRun(loaded)
     learner.value = loadLearner()
 
-    // Пряме посилання на крок ОСНОВНОЇ лінії: /demo-lesson?step=5.
+    // Незавершене проходження, якщо воно ПРИДАТНЕ до цього плану.
+    // `loadRun` сам відкидає стан із кроком, якого в плані вже немає:
+    // банк перезбирається, і мовчки відновлений стан дав би порожній
+    // екран людині, яка ні в чому не винна.
+    const saved = loadRun(loaded, loaded.id)
+    resumed.value = !!saved
+    run.value = saved ?? createRun(loaded)
+
+    // Пряме посилання на крок переважає збережене: якщо в адресі назвали
+    // крок, людина просила саме його.
     const want = Number(route.query.step)
     const main = loaded.steps.filter((s) => s.type !== 'remediate')
     if (Number.isInteger(want) && want > 0 && want <= main.length) {
       run.value = { ...run.value, stepId: main[want - 1].id, path: [main[want - 1].id] }
+      resumed.value = false
     }
   } catch (e) {
     error.value = `Не вдалось завантажити заняття: ${e.message}`
@@ -200,6 +212,7 @@ function rootLabel(id) {
 
 function choose(index) {
   run.value = answer(plan.value, run.value, index)
+  saveRun(plan.value.id, run.value)
   // Розбір розгортається і виштовхує «Далі» за екран — знайдено
   // проходженням. Підтягуємо кінець блоку до видимої області.
   nextTick(() => nav.value?.scrollIntoView({ block: 'end', behavior: 'smooth' }))
@@ -207,7 +220,9 @@ function choose(index) {
 
 function goNext() {
   run.value = advance(plan.value, run.value)
+  resumed.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  saveRun(plan.value.id, run.value)
   if (isFinished(plan.value, run.value)) finish()
 }
 
@@ -223,11 +238,16 @@ function finish() {
   learner.value = next
   saveLearner(next)
   advice.value = adviseNext(next, plan.value.courseOrder ?? [], plan.value.id)
+  // Заняття зараховане у стан учня — чернетка проходження відпрацювала.
+  // Лишити її означало б, що «пройдено» і «на кроці 9» співіснують.
+  clearRun(plan.value.id)
 }
 
 function goBack() {
   run.value = back(run.value)
+  resumed.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  saveRun(plan.value.id, run.value)
 }
 </script>
 
@@ -252,6 +272,7 @@ function goBack() {
         </div>
         <p class="mt-1 text-xs text-gray-400">
           крок {{ place.index }} з {{ place.total }}
+          <span v-if="resumed" class="text-indigo-500"> · продовжуємо з місця, де зупинились</span>
           <span v-if="step.type === 'remediate'"> · розбираємось окремо</span>
         </p>
       </header>
