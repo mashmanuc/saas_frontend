@@ -26,6 +26,12 @@
   "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
   "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
  },
+ "lessons": [
+  "percent.concept",
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
+ ],
  "tasks": [
   {
    "id": "lonap1-percent-concept-pct_to_decimal-001",

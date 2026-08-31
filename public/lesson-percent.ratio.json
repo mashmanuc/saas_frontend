@@ -1,0 +1,272 @@
+{
+ "id": "percent.ratio",
+ "course": "Відсотки",
+ "session": 4,
+ "subgoal": "П4 Відсоткове відношення",
+ "objective": "знаходити, скільки відсотків одне число становить від іншого",
+ "roots": {
+  "percent/hundredth-not-tenth": "Сота, а не десята",
+  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/part-not-remainder": "Частина, а не решта",
+  "fraction/must-be-reduced": "Дріб треба скоротити",
+  "percent/what-is-the-whole": "Що тут ціле",
+  "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
+  "percent/which-direction": "У який бік рахуємо",
+  "percent/can-exceed-100": "Відсотків може бути більше ста",
+  "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
+  "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
+ },
+ "courseOrder": [
+  "percent.concept",
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
+ ],
+ "sourceLessons": [
+  "mat_6/urok_47.doc",
+  "mat_6/urok_48.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Полічи усно, не записуючи:\n\n10 від 20 — скільки це відсотків?\n3 від 5?\n25 від 50?\n\nПоловина — це $50\\%$, і ти впорався без формул. Тепер зробимо те саме там, де усно вже не вийде.",
+   "source": "усно: 10 від 20; 3 від 5; 0.004 від 0.16; 1/12 від 1/3"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Відсоткове відношення",
+   "body": "Питання «скільки відсотків **a** становить від **b**» означає: скільки сотих часток числа $b$ вміщується в $a$.\n\n**Друге число — це ціле, воно і є $100\\%$.** Одна сота частина цілого — це $b : 100$, тому шукаємо, скільки таких часток у $a$:\n\n$a \\cdot 100 : b$\n\nДля 72 і 90: $72 \\cdot 100 : 90 = 7200 : 90 = 80$, тобто $80\\%$.",
+   "mustState": [
+    "(a : b) · 100%",
+    "порядок має значення: «a від b» ≠ «b від a»"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Порядок має значення.** «72 від 90» і «90 від 72» — різні питання з різними відповідями.\n\nЦіле — те, ПІСЛЯ слова «від». Якщо переставити числа, вийде більше за $100\\%$, і це вже сигнал: ціле обрано не те."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "Скільки відсотків 39 становить від 65?",
+     "a": "$39 \\cdot 100 : 65 = 60$, тобто $60\\%$"
+    },
+    {
+     "q": "А 65 від 39?",
+     "a": "$65 \\cdot 100 : 39 \\approx 167\\%$ — інше питання, інша відповідь"
+    },
+    {
+     "q": "Скільки відсотків 3 становить від 12?",
+     "a": "$3 \\cdot 100 : 12 = 25$, тобто $25\\%$"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Знайдіть, скільки відсотків складає 12 від 48.",
+   "choices": [
+    {
+     "text": "0,25",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "400",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "percent/what-is-the-whole"
+    },
+    {
+     "text": "25",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "75",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    }
+   ],
+   "solution": "Ціле — це число 48, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 48 вміщується в 12. Одна сота частина 48 — це $48 : 100$, тому шукаємо, скільки таких часток у 12: $12 \\cdot 100 : 48 = 1200 : 48 = 25$. Відповідь: 25.",
+   "taskId": 63354,
+   "family": "ratio",
+   "onMistake": {
+    "fraction_inverted": "fix_which_is_whole",
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Знайдіть, скільки відсотків складає 6 від 30.",
+   "choices": [
+    {
+     "text": "0,2",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "500",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "percent/what-is-the-whole"
+    },
+    {
+     "text": "20",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "80",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    }
+   ],
+   "solution": "Ціле — це число 30, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 30 вміщується в 6. Одна сота частина 30 — це $30 : 100$, тому шукаємо, скільки таких часток у 6: $6 \\cdot 100 : 30 = 600 : 30 = 20$. Відповідь: 20.",
+   "taskId": 63377,
+   "family": "ratio",
+   "onMistake": {
+    "fraction_inverted": "fix_which_is_whole",
+    "complement_confusion": "fix_complement"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Скільки відсотків становить число 2 від числа 40?",
+   "choices": [
+    {
+     "text": "95",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "0,05",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,5",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    }
+   ],
+   "solution": "Ціле — це число 40, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 40 вміщується в 2. Одна сота частина 40 — це $40 : 100$, тому шукаємо, скільки таких часток у 2: $2 \\cdot 100 : 40 = 200 : 40 = 5$. Відповідь: 5.",
+   "taskId": 63429,
+   "family": "ratio",
+   "onMistake": {
+    "complement_confusion": "fix_complement",
+    "percent_div_by_10": "fix_hundredth"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Скільки відсотків становить число 55 від числа 110?",
+   "choices": [
+    {
+     "text": "50",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "200",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "percent/what-is-the-whole"
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "0,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "Ціле — це число 110, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 110 вміщується в 55. Одна сота частина 110 — це $110 : 100$, тому шукаємо, скільки таких часток у 55: $55 \\cdot 100 : 110 = 5500 : 110 = 50$. Відповідь: 50.",
+   "taskId": 63452,
+   "family": "ratio",
+   "onMistake": {
+    "fraction_inverted": "fix_which_is_whole",
+    "percent_div_by_10": "fix_hundredth"
+   }
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні навчились відповідати на питання «скільки це відсотків»: ціле — те, що після слова «від», і воно приймається за $100\\%$.\n\nТепер ти вмієш рухатись у всі боки: від відсотка до дробу, від числа до частини, від частини до цілого і назад до відсотків."
+  },
+  {
+   "id": "fix_hundredth",
+   "type": "remediate",
+   "rootId": "percent/hundredth-not-tenth",
+   "title": "Сота, а не десята",
+   "body": "Схоже, поділили не на те число.\n\n**Відсоток — це СОТА частина**, тому переходимо через 100, а не через 10 чи 1000. Порівняй:\n\n$40\\% = 40 \\cdot 0{,}01 = 0{,}4$ — правильно\n$40 : 10 = 4$ — це десята частина, а не сота\n\nПідказка для перевірки: 100% має давати ціле число назад. $100 \\cdot 0{,}01 = 1$ — сходиться.",
+   "covers": [
+    "percent_div_by_10",
+    "percent_div_by_1000",
+    "percent_mul_by_10",
+    "percent_mul_by_1000",
+    "percent_forgot_divide_100"
+   ]
+  },
+  {
+   "id": "fix_complement",
+   "type": "remediate",
+   "rootId": "percent/part-not-remainder",
+   "title": "Частина, а не решта",
+   "body": "Схоже, знайшли те, що ЛИШИЛОСЬ, замість того, що просили.\n\nЯкщо взяли $25\\%$, то решта — $75\\%$. Обидва числа правильні, але питання було про **взяту** частину.\n\nПеречитуй, що саме шукають: узяту частину чи залишок.",
+   "covers": [
+    "complement_confusion"
+   ]
+  },
+  {
+   "id": "fix_which_is_whole",
+   "type": "remediate",
+   "rootId": "percent/what-is-the-whole",
+   "title": "Що тут ціле",
+   "body": "Схоже, переплутали, яке число тут ціле.\n\n**Ціле — це те, що приймають за 100%.** У дробі $\\dfrac{3}{20}$ ціле — це $20$, а $3$ — узята частина.\n\nТому $\\dfrac{3}{20} = 3 \\cdot 100 : 20 = 15\\%$. Якщо переставити числа, вийде $20 \\cdot 100 : 3$ — відповідь більша за 100%, і це вже сигнал, що ціле обрано не те.",
+   "covers": [
+    "fraction_inverted",
+    "took_numerator",
+    "took_denominator"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; діагностики й фіналу немає, дошка (solve) не під'єднана"
+}

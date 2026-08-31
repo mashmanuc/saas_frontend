@@ -28,8 +28,6 @@ import {
 import { applyReport, emptyLearnerState } from '../learnerState'
 
 const LEARNER_KEY = 'm4sh:learner-state:v1'
-/** Курс, у який веде діагностика. Поки один — тема «Відсотки». */
-const LESSON_ORDER = ['percent.concept', 'percent.of_number']
 
 const pool = ref(null)
 const run = ref(null)
@@ -65,7 +63,9 @@ const plan = computed(() => {
     .map((s) => ({
       label: s.label,
       state: s.state,
-      lesson: LESSON_ORDER.includes(s.subgoal) ? s.subgoal : null,
+      // які заняття існують — каже сам пул (`lessons`), а не список тут:
+      // друга копія порядку курсу відстала б на першій новій підцілі
+      lesson: (pool.value?.lessons ?? []).includes(s.subgoal) ? s.subgoal : null,
     }))
 })
 
@@ -92,7 +92,7 @@ function pick(index) {
 }
 
 function finish() {
-  profile.value = buildProfile(pool.value, run.value, LESSON_ORDER.length)
+  profile.value = buildProfile(pool.value, run.value, (pool.value.lessons ?? []).length)
 
   // Корені діагностики йдуть у той самий стан учня, що й корені занять —
   // ключ той самий (`rootId`), тож повторення впізнається наскрізно.

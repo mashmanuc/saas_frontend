@@ -1,0 +1,265 @@
+{
+ "id": "percent.from_percent",
+ "course": "Відсотки",
+ "session": 3,
+ "subgoal": "П3 Число за його відсотком",
+ "objective": "знаходити число за значенням його відсотка",
+ "roots": {
+  "percent/hundredth-not-tenth": "Сота, а не десята",
+  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/part-not-remainder": "Частина, а не решта",
+  "fraction/must-be-reduced": "Дріб треба скоротити",
+  "percent/what-is-the-whole": "Що тут ціле",
+  "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
+  "percent/which-direction": "У який бік рахуємо",
+  "percent/can-exceed-100": "Відсотків може бути більше ста",
+  "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
+  "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
+ },
+ "courseOrder": [
+  "percent.concept",
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
+ ],
+ "sourceLessons": [
+  "mat_5/urok_118.doc",
+  "mat_5/urok_119.doc",
+  "mat_5/urok_120.doc",
+  "mat_5/urok_121.doc",
+  "mat_6/urok_34.doc",
+  "mat_6/urok_35.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Дві задачі про ту саму руду. Прочитай обидві, перш ніж рахувати:\n\n**(1)** Руда містить $60\\%$ заліза. Скільки заліза у 72 тоннах руди?\n**(2)** Руда містить $60\\%$ заліза. Скільки руди потрібно, щоб дістати 72 тонни заліза?\n\nЧисла однакові, слова майже однакові — а дії різні, і відповіді теж. У першій шукаємо частину, у другій — ціле.",
+   "source": "руда містить 60% заліза: (1) скільки заліза із 72 т руди? (2) скільки руди на 72 т заліза? — коротка умова поруч"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Число за його відсотком",
+   "body": "Тут відомо не саме число, а лише **його частина** — і сказано, скільки відсотків ця частина становить.\n\nЩоб знайти ціле, потрібні **дві** дії: помножити на 100 і поділити на відсоток.\n\nЯкщо $72$ — це $60\\%$, то ціле $= 72 \\cdot 100 : 60 = 7200 : 60 = 120$.\n\nМожна й інакше, через один відсоток: $1\\%$ — це $72 : 60 = 1{,}2$, а ціле — це сто таких часток, тобто $1{,}2 \\cdot 100 = 120$. Шлях інший, відповідь та сама.",
+   "mustState": [
+    "якщо відома частина і її відсоток — ділимо частину на (N · 0.01)",
+    "ціле завжди більше за відому частину"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Ціле завжди більше за свою частину.** Це найшвидша перевірка: якщо у відповіді вийшло менше, ніж було дано, — рахували не в той бік.\n\n$72$ — це частина, $120$ — ціле. Якби вийшло $43$, варто зупинитись і перечитати умову."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "Число 30 — це $25\\%$ від якого числа?",
+     "a": "$30 \\cdot 100 : 25 = 120$ — більше за 30 ✓"
+    },
+    {
+     "q": "$10\\%$ числа дорівнює 7. Знайти число",
+     "a": "$7 \\cdot 100 : 10 = 70$"
+    },
+    {
+     "q": "Перевірка навпаки: чи справді $25\\%$ від 120 = 30?",
+     "a": "$120 \\cdot 25 : 100 = 30$ ✓ зійшлось"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Число 41 становить 50% від деякого числа. Знайдіть це число.",
+   "choices": [
+    {
+     "text": "0,82",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "4100",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "82",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "20,5",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    }
+   ],
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 50% від $N$ дорівнює 41, тобто $N \\cdot 50 : 100 = 41$. Щоб знайти $N$, множимо 41 на 100 і ділимо на 50: $41 \\cdot 100 : 50 = 4100 : 50 = 82$. Відповідь: 82.",
+   "taskId": 63315,
+   "family": "from_percent_part_first",
+   "onMistake": {
+    "inverse_missing_multiply": "fix_two_steps",
+    "inverse_missing_divide": "fix_two_steps",
+    "direction_confused": "fix_direction"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "25% числа дорівнює 6. Знайдіть це число.",
+   "choices": [
+    {
+     "text": "0,24",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "600",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "24",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1,5",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    }
+   ],
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 25% від $N$ дорівнює 6, тобто $N \\cdot 25 : 100 = 6$. Щоб знайти $N$, множимо 6 на 100 і ділимо на 25: $6 \\cdot 100 : 25 = 600 : 25 = 24$. Відповідь: 24.",
+   "taskId": 63323,
+   "family": "from_percent_pct_first",
+   "onMistake": {
+    "inverse_missing_multiply": "fix_two_steps",
+    "inverse_missing_divide": "fix_two_steps",
+    "direction_confused": "fix_direction"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Число 6 становить 15% від деякого числа. Знайдіть це число.",
+   "choices": [
+    {
+     "text": "0,9",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    },
+    {
+     "text": "0,4",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "40",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "600",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    }
+   ],
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 15% від $N$ дорівнює 6, тобто $N \\cdot 15 : 100 = 6$. Щоб знайти $N$, множимо 6 на 100 і ділимо на 15: $6 \\cdot 100 : 15 = 600 : 15 = 40$. Відповідь: 40.",
+   "taskId": 63594,
+   "family": "from_percent_part_first",
+   "onMistake": {
+    "direction_confused": "fix_direction",
+    "inverse_missing_multiply": "fix_two_steps",
+    "inverse_missing_divide": "fix_two_steps"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "75% числа дорівнює 84. Знайдіть це число.",
+   "choices": [
+    {
+     "text": "63",
+     "correct": false,
+     "mistakeId": "direction_confused",
+     "rootId": "percent/which-direction"
+    },
+    {
+     "text": "1,12",
+     "correct": false,
+     "mistakeId": "inverse_missing_multiply",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "8400",
+     "correct": false,
+     "mistakeId": "inverse_missing_divide",
+     "rootId": "percent/whole-needs-both-steps"
+    },
+    {
+     "text": "112",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "Тут відомо не саме число, а лише його частина у відсотках. Нехай шукане число дорівнює $N$. За умовою 75% від $N$ дорівнює 84, тобто $N \\cdot 75 : 100 = 84$. Щоб знайти $N$, множимо 84 на 100 і ділимо на 75: $84 \\cdot 100 : 75 = 8400 : 75 = 112$. Відповідь: 112.",
+   "taskId": 63626,
+   "family": "from_percent_pct_first",
+   "onMistake": {
+    "direction_confused": "fix_direction",
+    "inverse_missing_multiply": "fix_two_steps",
+    "inverse_missing_divide": "fix_two_steps"
+   }
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні вчились іти у зворотний бік: від частини до цілого. Дві дії — множення на 100 і ділення на відсоток, — і одна перевірка: ціле має вийти **більшим**.\n\nНаступного разу — питання «скільки це відсотків»."
+  },
+  {
+   "id": "fix_two_steps",
+   "type": "remediate",
+   "rootId": "percent/whole-needs-both-steps",
+   "title": "Тут дві дії, а не одна",
+   "body": "Половину дороги пройдено, друга половина загубилась.\n\nЩоб знайти ціле за його частиною, потрібні **дві** дії: помножити на 100 І поділити на відсоток.\n\nЯкщо $30$ — це $25\\%$, то ціле $= 30 \\cdot 100 : 25 = 120$.\n$30 \\cdot 100 = 3000$ — зупинились на пів дороги\n$30 : 25 = 1{,}2$ — теж лише одна дія\n\nПеревірка проста: візьми $25\\%$ від знайденого цілого й подивись, чи вийде задана частина.",
+   "covers": [
+    "inverse_missing_multiply",
+    "inverse_missing_divide"
+   ]
+  },
+  {
+   "id": "fix_direction",
+   "type": "remediate",
+   "rootId": "percent/which-direction",
+   "title": "У який бік рахуємо",
+   "body": "Схоже, полічили відсоток ВІД частини, а просили — навпаки.\n\nПорівняй два питання, вони протилежні:\n\n«знайти $25\\%$ від $120$» → відповідь **менша** за 120\n«знайти число, якщо $25\\%$ його $= 30$» → відповідь **більша** за 30\n\nПитай себе перед лічбою: дане число — це вже ціле чи лише його частина? Якщо частина, відповідь буде більшою.",
+   "covers": [
+    "direction_confused"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; діагностики й фіналу немає, дошка (solve) не під'єднана"
+}

@@ -11,11 +11,16 @@
   "fraction/must-be-reduced": "Дріб треба скоротити",
   "percent/what-is-the-whole": "Що тут ціле",
   "percent/whole-needs-both-steps": "Тут дві дії, а не одна",
-  "percent/which-direction": "У який бік рахуємо"
+  "percent/which-direction": "У який бік рахуємо",
+  "percent/can-exceed-100": "Відсотків може бути більше ста",
+  "percent/percent-without-its-whole": "Відсоток без свого цілого нічого не каже",
+  "percent/whole-is-100-not-50": "Ціле — це 100%, не половина"
  },
  "courseOrder": [
   "percent.concept",
-  "percent.of_number"
+  "percent.of_number",
+  "percent.from_percent",
+  "percent.ratio"
  ],
  "sourceLessons": [
   "mat_5/urok_114.doc"
@@ -241,7 +246,8 @@
     "percent_div_by_10",
     "percent_div_by_1000",
     "percent_mul_by_10",
-    "percent_mul_by_1000"
+    "percent_mul_by_1000",
+    "percent_forgot_divide_100"
    ]
   },
   {
@@ -251,7 +257,8 @@
    "title": "Знак % не можна просто прибрати",
    "body": "Тут число лишилось те саме, зник лише значок.\n\n$40\\%$ і $40$ — **різні величини**. $40\\%$ означає «сорок сотих», тобто $0{,}4$. А $40$ — це саме сорок.\n\nПерехід завжди щось міняє: у дріб — множимо на $0{,}01$, назад у відсотки — множимо на $100\\%$.",
    "covers": [
-    "percent_ignore_conversion"
+    "percent_ignore_conversion",
+    "percent_answered_part_itself"
    ]
   },
   {
