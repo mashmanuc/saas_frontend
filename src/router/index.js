@@ -44,6 +44,12 @@ const ASSESSMENT_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ASSESSMEN
 // Домашні завдання (ДЗ) — приховано з прода (ламається). Роути лишаються зареєстровані
 // (щоб не зламати router.push з інших в'юх), але beforeEnter редіректить на home у проді.
 const ASSIGNMENTS_ENABLED = import.meta.env.DEV || import.meta.env.VITE_ASSIGNMENTS_ENABLED === 'true'
+// Курс (learning-content: діагностика → заняття → підсумкова робота) — runtime-gate.
+// 2026-08-31: сторінки виїхали на m4sh.org автодеплоєм без слова власника на
+// публічний запуск, тому вхід прибрали. Прибрати з ПРОДА, але лишити локально —
+// це те саме, що вже зроблено для practice/exam, тож той самий флаг, а не
+// закоментований блок: закоментоване гниє, флаг компілюється.
+const COURSE_ENABLED = import.meta.env.DEV || import.meta.env.VITE_COURSE_ENABLED === 'true'
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -187,31 +193,36 @@ const routes = [
     component: () => import('../views/ContactsView.vue'),
     meta: { requiresAuth: false }
   },
-  // 2026-08-31: /course, /diagnostic, /demo-lesson (learning-content) зняті з
-  // маршрутизації. Компоненти й код лишаються в дереві — знято лише публічний
-  // вхід. Причина не технічна: код безпечний (без бекенду, без авторизації),
-  // але власник не давав слова на публічний запуск саме цих сторінок на
-  // m4sh.org, а вони туди виїхали автодеплоєм разом з іншим пушем. Знімати чи
-  // повертати — рішення власника, не інструмент безпеки.
-  //
-  // {
-  //   path: '/course',
-  //   name: 'course-hub',
-  //   component: () => import('../modules/learning-content/views/CourseHubView.vue'),
-  //   meta: { requiresAuth: false }
-  // },
-  // {
-  //   path: '/diagnostic',
-  //   name: 'diagnostic',
-  //   component: () => import('../modules/learning-content/views/DiagnosticView.vue'),
-  //   meta: { requiresAuth: false }
-  // },
-  // {
-  //   path: '/demo-lesson',
-  //   name: 'demo-lesson',
-  //   component: () => import('../modules/learning-content/views/DemoLessonView.vue'),
-  //   meta: { requiresAuth: false }
-  // },
+  // Курс (learning-content) — ЛИШЕ в dev (див. COURSE_ENABLED вище). У проді
+  // маршрутів не існує взагалі: не редірект, не заглушка, а відсутній запис.
+  ...(COURSE_ENABLED
+    ? [
+        {
+          path: '/course',
+          name: 'course-hub',
+          component: () => import('../modules/learning-content/views/CourseHubView.vue'),
+          meta: { requiresAuth: false },
+        },
+        {
+          path: '/diagnostic',
+          name: 'diagnostic',
+          component: () => import('../modules/learning-content/views/DiagnosticView.vue'),
+          meta: { requiresAuth: false },
+        },
+        {
+          path: '/demo-lesson',
+          name: 'demo-lesson',
+          component: () => import('../modules/learning-content/views/DemoLessonView.vue'),
+          meta: { requiresAuth: false },
+        },
+        {
+          path: '/final',
+          name: 'course-final',
+          component: () => import('../modules/learning-content/views/FinalView.vue'),
+          meta: { requiresAuth: false },
+        },
+      ]
+    : []),
   {
     path: '/',
     component: PageShell,
