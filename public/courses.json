@@ -10,6 +10,14 @@
    "hasFinal": true
   },
   {
+   "topic": "linear",
+   "title": "Лінійні рівняння",
+   "entry": "linear.positive_side",
+   "lessons": 2,
+   "hasDiagnostic": true,
+   "hasFinal": true
+  },
+  {
    "topic": "percent",
    "title": "Відсотки",
    "entry": "percent.concept",

@@ -1,0 +1,585 @@
+{
+ "poolVersion": "1.0",
+ "topicId": "linear-quadratic-rational-equations",
+ "topic": "Лінійні рівняння",
+ "arc": [
+  "linear.positive_side",
+  "linear.negative_side"
+ ],
+ "subgoalLabels": {
+  "linear.positive_side": "перенести й поділити",
+  "linear.negative_side": "коли корінь від'ємний"
+ },
+ "roots": {
+  "linear/not-divided-by-coefficient": "Забули поділити на коефіцієнт",
+  "linear/lost-free-term": "Вільний член загубився",
+  "linear/sign-not-changed": "При переносі знак міняється"
+ },
+ "lessons": [
+  "linear.positive_side",
+  "linear.negative_side"
+ ],
+ "tasks": [
+  {
+   "id": "70259",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.048,
+   "text": "Розв'яжіть рівняння $2x − 2 = 4$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 3. Відповідь: 3",
+   "choices": [
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "1",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "70415",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.198,
+   "text": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 8. Відповідь: 8",
+   "choices": [
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "16",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "70329",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.201,
+   "text": "Розв'яжіть рівняння $2x + 9 = 3$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -3. Відповідь: -3",
+   "choices": [
+    {
+     "text": "1,5",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "-6",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "70473",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.348,
+   "text": "Розв'яжіть рівняння $4x + 3 = 35$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 8. Відповідь: 8",
+   "choices": [
+    {
+     "text": "32",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "9,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "8,75",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "70609",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.351,
+   "text": "Розв'яжіть рівняння $3x − 6 = 33$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 13. Відповідь: 13",
+   "choices": [
+    {
+     "text": "11",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "39",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "13",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "9",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "70761",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.501,
+   "text": "Розв'яжіть рівняння $6x + 1 = 133$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 22. Відповідь: 22",
+   "choices": [
+    {
+     "text": "22,33",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "22,17",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "132",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "22",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "70703",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.501,
+   "text": "Розв'яжіть рівняння $6x + 20 = 2$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -3. Відповідь: -3",
+   "choices": [
+    {
+     "text": "3,67",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-18",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "0,33",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "70841",
+   "subgoal": "linear.positive_side",
+   "diffScore": 1.576,
+   "text": "Розв'яжіть рівняння $8x − 20 = 268$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 36. Відповідь: 36",
+   "choices": [
+    {
+     "text": "31",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "36",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "288",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "33,5",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "70236",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.048,
+   "text": "Розв'яжіть рівняння $2x − 4 = -2$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 1. Відповідь: 1",
+   "choices": [
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-1",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-3",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "70363",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.201,
+   "text": "Розв'яжіть рівняння $3x − 2 = -29$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -9. Відповідь: -9",
+   "choices": [
+    {
+     "text": "-27",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-9,67",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-10,33",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-9",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "70497",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.348,
+   "text": "Розв'яжіть рівняння $4x − 11 = -7$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 1. Відповідь: 1",
+   "choices": [
+    {
+     "text": "-4,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-1,75",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "70533",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.351,
+   "text": "Розв'яжіть рівняння $4x − 1 = -9$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -2. Відповідь: -2",
+   "choices": [
+    {
+     "text": "-2",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-2,25",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "-8",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-2,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "70568",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.353,
+   "text": "Розв'яжіть рівняння $3x + 5 = -40$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -15. Відповідь: -15",
+   "choices": [
+    {
+     "text": "-13,33",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-45",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-11,67",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-15",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "70637",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.503,
+   "text": "Розв'яжіть рівняння $3x − 17 = -50$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -11. Відповідь: -11",
+   "choices": [
+    {
+     "text": "-16,67",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-33",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-11",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-22,33",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "70859",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.578,
+   "text": "Розв'яжіть рівняння $11x − 9 = -218$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -19. Відповідь: -19",
+   "choices": [
+    {
+     "text": "-19",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-20,64",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-209",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-19,82",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "70811",
+   "subgoal": "linear.negative_side",
+   "diffScore": 1.578,
+   "text": "Розв'яжіть рівняння $11x − 32 = -175$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -13. Відповідь: -13",
+   "choices": [
+    {
+     "text": "-15,91",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-143",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-13",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-18,82",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  }
+ ],
+ "note": "пул для адаптивного добору, НЕ послідовність: стеля прогону ~12 задач за DIAGNOSTIC_PROFILE_SSOT §3"
+}

@@ -1,0 +1,149 @@
+{
+ "version": "1.0",
+ "topicId": "linear-quadratic-rational-equations",
+ "topic": "Лінійні рівняння",
+ "arc": [
+  "linear.positive_side",
+  "linear.negative_side"
+ ],
+ "subgoalLabels": {
+  "linear.positive_side": "перенести й поділити",
+  "linear.negative_side": "коли корінь від'ємний"
+ },
+ "roots": {
+  "linear/not-divided-by-coefficient": "Забули поділити на коефіцієнт",
+  "linear/lost-free-term": "Вільний член загубився",
+  "linear/sign-not-changed": "При переносі знак міняється"
+ },
+ "tasks": [
+  {
+   "id": "70347",
+   "subgoal": "linear.positive_side",
+   "text": "Розв'яжіть рівняння $2x − 10 = 8$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 9. Відповідь: 9",
+   "choices": [
+    {
+     "text": "-1",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "18",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "9",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    }
+   ]
+  },
+  {
+   "id": "70467",
+   "subgoal": "linear.positive_side",
+   "text": "Розв'яжіть рівняння $5x + 7 = 2$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -1. Відповідь: -1",
+   "choices": [
+    {
+     "text": "-5",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1,8",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,4",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    }
+   ]
+  },
+  {
+   "id": "70865",
+   "subgoal": "linear.negative_side",
+   "text": "Розв'яжіть рівняння $4x − 24 = -88$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -16. Відповідь: -16",
+   "choices": [
+    {
+     "text": "-64",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-16",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-22",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "-28",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "70287",
+   "subgoal": "linear.negative_side",
+   "text": "Розв'яжіть рівняння $2x − 3 = -5$. Знайдіть корінь цього рівняння.",
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -1. Відповідь: -1",
+   "choices": [
+    {
+     "text": "-4",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-2",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "-2,5",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    }
+   ]
+  }
+ ],
+ "note": "підсумкова робота: набір ФІКСОВАНИЙ (щоб результати були порівнюваними), розборів під час роботи немає, жодної задачі з занять чи діагностики"
+}

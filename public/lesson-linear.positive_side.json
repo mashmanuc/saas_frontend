@@ -1,0 +1,764 @@
+{
+ "id": "linear.positive_side",
+ "course": "Лінійні рівняння",
+ "session": 1,
+ "subgoal": "Л1 Перенести й поділити",
+ "objective": "розв'язувати рівняння виду ax + b = c: переносити вільний член зі зміною знака й ділити на коефіцієнт",
+ "roots": {
+  "linear/not-divided-by-coefficient": "Забули поділити на коефіцієнт",
+  "linear/lost-free-term": "Вільний член загубився",
+  "linear/sign-not-changed": "При переносі знак міняється"
+ },
+ "courseOrder": [
+  "linear.positive_side",
+  "linear.negative_side"
+ ],
+ "sourceLessons": [
+  "alg_7/urok_05.doc",
+  "alg_7/urok_06.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Рівняння — це терези.\n\nЛіворуч $3x + 4$, праворуч 16, і вони врівноважені. Прибрав щось з однієї шальки — прибери те саме з другої, інакше рівновага зникне.\n\nУся техніка розв'язування виростає з цього одного правила.",
+   "source": "рівняння як терези: що зробив з однією частиною — зроби з другою"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Перенести й поділити",
+   "body": "Щоб знайти $x$, треба лишити його наодинці. Для цього завжди дві дії, і саме в такому порядку.\n\n**Перша: перенести вільний член.** Відняти четвірку з обох частин — те саме, що перенести її праворуч зі зміною знака:\n\n$3x + 4 = 16$\n$3x = 16 - 4 = 12$\n\n**Друга: поділити на коефіцієнт.** Тепер ліворуч сам $3x$, і обидві частини можна поділити на 3:\n\n$x = 12 : 3 = 4$\n\nЯкщо в рівнянні мінус — $5x - 3 = 12$, — то при перенесенні він стає плюсом: $5x = 12 + 3 = 15$.",
+   "mustState": [
+    "перенести доданок через знак рівності означає відняти його з обох частин — тому знак міняється",
+    "поділити обидві частини на коефіцієнт при x можна лише тоді, коли ліворуч лишився сам ax",
+    "дій завжди дві: спершу перенести, потім поділити",
+    "корінь перевіряється підстановкою в початкове рівняння"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Дій дві, і зупинятись після першої не можна.** $3x = 12$ — це ще не відповідь, це середина розв'язання.\n\nПеревірка займає секунду: підстав знайдене число в початкове рівняння. $3 \\cdot 4 + 4 = 16$ — сходиться. А $3 \\cdot 12 + 4 = 40$ — ні."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "$3x + 4 = 16$",
+     "a": "$3x = 16 - 4 = 12$, далі $x = 4$"
+    },
+    {
+     "q": "$5x - 3 = 12$",
+     "a": "мінус при перенесенні стає плюсом: $5x = 15$, $x = 3$"
+    },
+    {
+     "q": "$2x + 7 = 7$",
+     "a": "$2x = 0$, тому $x = 0$ — нуль теж корінь"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Розв'яжіть рівняння $2x − 3 = 3$. Знайдіть корінь цього рівняння.",
+   "choices": [
+    {
+     "text": "1,5",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "-3",
+     "correct": false,
+     "mistakeId": "sign_flipped",
+     "rootId": "linear/sign-not-changed"
+    }
+   ],
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 3. Відповідь: 3",
+   "taskId": 70293,
+   "family": "linear_minus_pos",
+   "onMistake": {
+    "lost_free_term": "fix_lost_free_term",
+    "not_divided": "fix_not_divided",
+    "sign_flipped": "fix_sign_on_transfer"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Розв'яжіть рівняння $5x − 7 = 68$. Знайдіть корінь цього рівняння.",
+   "choices": [
+    {
+     "text": "75",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "12,2",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "13,6",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "15",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 15. Відповідь: 15",
+   "taskId": 70461,
+   "family": "linear_minus_pos",
+   "onMistake": {
+    "not_divided": "fix_not_divided",
+    "lost_free_term": "fix_lost_free_term"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Розв'яжіть рівняння $3x + 6 = 21$. Знайдіть корінь цього рівняння.",
+   "choices": [
+    {
+     "text": "15",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    },
+    {
+     "text": "9",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "7",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 5. Відповідь: 5",
+   "taskId": 70503,
+   "family": "linear_plus_pos",
+   "onMistake": {
+    "not_divided": "fix_not_divided",
+    "lost_free_term": "fix_lost_free_term"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Розв'яжіть рівняння $4x + 5 = 61$. Знайдіть корінь цього рівняння.",
+   "choices": [
+    {
+     "text": "14",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "15,25",
+     "correct": false,
+     "mistakeId": "lost_free_term",
+     "rootId": "linear/lost-free-term"
+    },
+    {
+     "text": "16,5",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "56",
+     "correct": false,
+     "mistakeId": "not_divided",
+     "rootId": "linear/not-divided-by-coefficient"
+    }
+   ],
+   "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 14. Відповідь: 14",
+   "taskId": 70527,
+   "family": "linear_plus_pos",
+   "onMistake": {
+    "lost_free_term": "fix_lost_free_term",
+    "not_divided": "fix_not_divided"
+   }
+  },
+  {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "70643",
+     "text": "Розв'яжіть рівняння $6x − 3 = 147$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 25. Відповідь: 25",
+     "choices": [
+      {
+       "text": "24,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "24",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "150",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    },
+    {
+     "id": "70763",
+     "text": "Розв'яжіть рівняння $10x − 31 = 49$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 8. Відповідь: 8",
+     "choices": [
+      {
+       "text": "4,9",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "80",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "8",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,8",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70769",
+     "text": "Розв'яжіть рівняння $8x − 14 = 10$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 3. Відповідь: 3",
+     "choices": [
+      {
+       "text": "3",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-0,5",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "24",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "1,25",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      }
+     ]
+    },
+    {
+     "id": "70392",
+     "text": "Розв'яжіть рівняння $2x + 3 = 9$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 3. Відповідь: 3",
+     "choices": [
+      {
+       "text": "3",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-3",
+       "correct": false,
+       "mistakeId": "sign_flipped",
+       "rootId": "linear/sign-not-changed"
+      },
+      {
+       "text": "4,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "6",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    },
+    {
+     "id": "70224",
+     "text": "Розв'яжіть рівняння $2x + 1 = 3$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 1. Відповідь: 1",
+     "choices": [
+      {
+       "text": "2",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "1",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "-1",
+       "correct": false,
+       "mistakeId": "sign_flipped",
+       "rootId": "linear/sign-not-changed"
+      }
+     ]
+    },
+    {
+     "id": "70230",
+     "text": "Розв'яжіть рівняння $2x − 6 = 6$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 6. Відповідь: 6",
+     "choices": [
+      {
+       "text": "12",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "3",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "-6",
+       "correct": false,
+       "mistakeId": "sign_flipped",
+       "rootId": "linear/sign-not-changed"
+      },
+      {
+       "text": "6",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70315",
+     "text": "Розв'яжіть рівняння $2x − 1 = 1$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 1. Відповідь: 1",
+     "choices": [
+      {
+       "text": "0,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "1",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-1",
+       "correct": false,
+       "mistakeId": "sign_flipped",
+       "rootId": "linear/sign-not-changed"
+      },
+      {
+       "text": "2",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    },
+    {
+     "id": "70398",
+     "text": "Розв'яжіть рівняння $2x − 7 = 7$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 7. Відповідь: 7",
+     "choices": [
+      {
+       "text": "3,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "7",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-7",
+       "correct": false,
+       "mistakeId": "sign_flipped",
+       "rootId": "linear/sign-not-changed"
+      },
+      {
+       "text": "14",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    },
+    {
+     "id": "70247",
+     "text": "Розв'яжіть рівняння $2x + 5 = 1$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -2. Відповідь: -2",
+     "choices": [
+      {
+       "text": "0,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "3",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-4",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "-2",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70667",
+     "text": "Розв'яжіть рівняння $2x − 9 = 21$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 15. Відповідь: 15",
+     "choices": [
+      {
+       "text": "30",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "10,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "6",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "15",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70212",
+     "text": "Розв'яжіть рівняння $2x + 3 = 7$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 2. Відповідь: 2",
+     "choices": [
+      {
+       "text": "3,5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "4",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "5",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "2",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70200",
+     "text": "Розв'яжіть рівняння $2x + 4 = 14$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 5. Відповідь: 5",
+     "choices": [
+      {
+       "text": "9",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "5",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "7",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    },
+    {
+     "id": "70206",
+     "text": "Розв'яжіть рівняння $2x − 2 = 10$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 6. Відповідь: 6",
+     "choices": [
+      {
+       "text": "12",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "5",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "6",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "4",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70270",
+     "text": "Розв'яжіть рівняння $2x + 6 = 2$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = -2. Відповідь: -2",
+     "choices": [
+      {
+       "text": "-2",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-4",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "4",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70281",
+     "text": "Розв'яжіть рівняння $2x + 2 = 12$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 5. Відповідь: 5",
+     "choices": [
+      {
+       "text": "5",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      },
+      {
+       "text": "6",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "7",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "70321",
+     "text": "Розв'яжіть рівняння $2x − 4 = 2$. Знайдіть корінь цього рівняння.",
+     "solution": "$ax+b=c \\iff x=\\dfrac{c-b}{a}$. x0 = 3. Відповідь: 3",
+     "choices": [
+      {
+       "text": "3",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "-1",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "lost_free_term",
+       "rootId": "linear/lost-free-term"
+      },
+      {
+       "text": "6",
+       "correct": false,
+       "mistakeId": "not_divided",
+       "rootId": "linear/not-divided-by-coefficient"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні розібрали головний прийом теми: перенести вільний член зі зміною знака, потім поділити на коефіцієнт при $x$.\n\nОбидві дії — це однакові дії над обома частинами, тому рівновага не порушується, а корінь не змінюється."
+  },
+  {
+   "id": "fix_not_divided",
+   "type": "remediate",
+   "rootId": "linear/not-divided-by-coefficient",
+   "title": "Забули поділити на коефіцієнт",
+   "body": "Доданок перенесли правильно, а другу дію не зробили.\n\nРозв'язання лінійного рівняння — це ЗАВЖДИ дві дії:\n\n1. перенести вільний член у праву частину (зі зміною знака);\n2. поділити обидві частини на коефіцієнт при $x$.\n\nДля $3x + 4 = 16$: спершу $3x = 16 - 4 = 12$, і це ще **не відповідь** — далі $x = 12 : 3 = 4$.\n\nПеревірка: підстав знайдене в рівняння. Якщо взяти $x = 12$, вийде $3 \\cdot 12 + 4 = 40$, а не 16.",
+   "covers": [
+    "not_divided"
+   ]
+  },
+  {
+   "id": "fix_lost_free_term",
+   "type": "remediate",
+   "rootId": "linear/lost-free-term",
+   "title": "Вільний член загубився",
+   "body": "Поділили на коефіцієнт, але доданок не перенесли — він просто зник.\n\nУ $3x + 4 = 16$ ліворуч не $3x$, а $3x + 4$. Поділити на 3 можна лише тоді, коли ліворуч лишиться сам $3x$ — тобто СПЕРШУ прибираємо четвірку:\n\n$3x + 4 = 16$\n$3x = 16 - 4$\n$x = 4$\n\nЯкщо поділити одразу, вийде $16 : 3$ — відповідь на інше рівняння, $3x = 16$.",
+   "covers": [
+    "lost_free_term"
+   ]
+  },
+  {
+   "id": "fix_sign_on_transfer",
+   "type": "remediate",
+   "rootId": "linear/sign-not-changed",
+   "title": "При переносі знак міняється",
+   "body": "Величина та сама, знак протилежний — доданок перенесли, а знак лишили.\n\nПеренести через знак рівності означає **відняти те саме з обох частин**, тому доданок і змінює знак:\n\n$3x + 4 = 16 \\;\\Rightarrow\\; 3x = 16 - 4$\n$3x - 4 = 16 \\;\\Rightarrow\\; 3x = 16 + 4$\n\nПеревірка тут найшвидша: підстав корінь назад. Правильний дасть рівність, той самий із іншим знаком — ні.",
+   "covers": [
+    "sign_flipped"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; дошка (solve) не під'єднана"
+}
