@@ -123,6 +123,38 @@ describe('INV-D2 · крок залежить від відповіді', () => 
     expect(second.diffScore).toBeLessThan(first.diffScore)
   })
 
+  it('«хитко» справді означає «не взяв ВАЖЧУ» — вердикт і драбина узгоджені', () => {
+    // Два модулі перевірені кожен окремо: добір знає «помилився → легша»,
+    // а `stateFor` дивиться на ev[0]. Їхній ЗВ'ЯЗОК не перевіряв ніхто —
+    // а саме на ньому тримається сенс слова «хитко». Переверни правило
+    // добору разом з його тестами, і діагноз мовчки стане протилежним.
+    const pool = realPool()
+    let run = createDiagnosticRun(pool)
+    const first = currentTask(pool, run)!
+    run = answerDiagnostic(pool, run, wrongIndex(first))
+    const second = currentTask(pool, run)!
+    run = answerDiagnostic(pool, run, correctIndex(second))
+
+    const ev = run.evidence[first.subgoal]
+    expect(ev).toHaveLength(2)
+    expect(stateFor(ev)).toBe('fragile')
+    // і це «хитко» лежить саме на важчій задачі, а не на порядку заради порядку
+    expect(ev[0].diffScore).toBeGreaterThan(ev[1].diffScore)
+  })
+
+  it('«у роботі» означає «взяв базу, не взяв важчу» — дзеркально', () => {
+    const pool = realPool()
+    let run = createDiagnosticRun(pool)
+    const first = currentTask(pool, run)!
+    run = answerDiagnostic(pool, run, correctIndex(first))
+    const second = currentTask(pool, run)!
+    run = answerDiagnostic(pool, run, wrongIndex(second))
+
+    const ev = run.evidence[first.subgoal]
+    expect(stateFor(ev)).toBe('working')
+    expect(ev[0].diffScore).toBeLessThan(ev[1].diffScore)
+  })
+
   it('перша задача підцілі — середньо-легка, не найлегша й не найважча', () => {
     const pool = realPool()
     const run = createDiagnosticRun(pool)

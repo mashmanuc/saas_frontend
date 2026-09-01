@@ -16,7 +16,7 @@
  },
  "roots": {
   "percent/hundredth-not-tenth": "Сота, а не десята",
-  "percent/sign-is-not-decoration": "Знак % не можна просто прибрати",
+  "percent/sign-is-not-decoration": "Знак % — не прикраса",
   "percent/part-not-remainder": "Частина, а не решта",
   "fraction/must-be-reduced": "Дріб треба скоротити",
   "percent/what-is-the-whole": "Що тут ціле",
@@ -124,31 +124,31 @@
    ]
   },
   {
-   "id": "14379",
+   "id": "63359",
    "subgoal": "percent.of_number",
-   "text": "Обчисли $45\\%$ від числа $800$.",
-   "solution": "Для знаходження $45\\%$ від числа $800$ спочатку запишемо $45\\%$ у вигляді дробу: $$45\\% = \\frac{45}{100}.$$ Тепер помножимо це число на $800$: $$\\frac{45}{100} \\times 800 = \\frac{45 \\times 800}{100}.$$ Спростимо чисельник: $$45 \\times 800 = 36\\!000.$$ Отже, маємо: $$\\frac{36\\!000}{100} = 360.$$ Відповідь: $360$.",
+   "text": "Обчисліть значення, яке становить 20% від 15.",
+   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 300. Відповідь: 3",
    "choices": [
     {
-     "text": "$17$",
+     "text": "12",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
+    },
+    {
+     "text": "0,75",
      "correct": false,
      "mistakeId": null,
      "rootId": null
     },
     {
-     "text": "$360$",
+     "text": "3",
      "correct": true,
      "mistakeId": null,
      "rootId": null
     },
     {
-     "text": "$45$",
-     "correct": false,
-     "mistakeId": "percent_ignore_conversion",
-     "rootId": "percent/sign-is-not-decoration"
-    },
-    {
-     "text": "$36000$",
+     "text": "300",
      "correct": false,
      "mistakeId": null,
      "rootId": null

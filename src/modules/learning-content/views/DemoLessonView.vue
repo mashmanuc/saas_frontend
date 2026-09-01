@@ -183,9 +183,27 @@ const given = computed(() => (answered.value ? run.value.answers[step.value.id] 
 const learned = computed(() => (run.value ? report(run.value) : null))
 
 // ── Тренування ───────────────────────────────────────────────────────────
-const drill = computed(() =>
-  step.value?.type === 'practice' && run.value ? practiceTask(step.value, run.value) : null,
-)
+/**
+ * Задача, розбір якої зараз читають. Поки вона тут — питання на екрані
+ * НЕ міняється.
+ *
+ * Без цього виходило так: відповідь зараховувалась, `practiceTask`
+ * одразу віддавав наступну задачу, і зелене «Правильно» з розбором
+ * опинялось під питанням, до якого не мало стосунку. Читається це
+ * однозначно — як вердикт на те, що бачиш перед собою. На перевірках
+ * такого немає: там розбір і задача живуть разом до натискання «Далі».
+ * Тренування має поводитись так само.
+ */
+const reviewing = ref(null)
+
+const drill = computed(() => {
+  if (step.value?.type !== 'practice' || !run.value) return null
+  if (reviewing.value) {
+    const held = (step.value.tasks ?? []).find((t) => t.id === reviewing.value)
+    if (held) return held
+  }
+  return practiceTask(step.value, run.value)
+})
 const drillDone = computed(() =>
   step.value?.type === 'practice' && run.value ? practiceDone(step.value, run.value) : false,
 )
@@ -245,9 +263,17 @@ function rootLabel(id) {
 }
 
 function trainAnswer(index) {
+  if (reviewing.value) return // під час розбору варіанти не клікаються
+  const asked = drill.value?.id ?? null
   run.value = answerPractice(plan.value, run.value, index)
   saveRun(plan.value.id, run.value)
+  reviewing.value = asked
   nextTick(() => nav.value?.scrollIntoView({ block: 'end', behavior: 'smooth' }))
+}
+
+/** Прочитав розбір — далі. Наступну задачу віддає вже сама машина. */
+function nextDrill() {
+  reviewing.value = null
 }
 
 function choose(index) {
@@ -397,7 +423,13 @@ function goBack() {
                 v-for="(c, ci) in drill.choices"
                 :key="ci"
                 type="button"
-                class="flex w-full rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50"
+                :disabled="!!reviewing"
+                class="flex w-full rounded-lg border px-4 py-3 text-left transition"
+                :class="reviewing
+                  ? (ci === lastDrill?.choice
+                      ? (c.correct ? 'border-green-400 bg-green-50' : 'border-amber-400 bg-amber-50')
+                      : (c.correct ? 'border-green-300 bg-green-50/40' : 'border-gray-200 opacity-60'))
+                  : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'"
                 @click="trainAnswer(ci)"
               >
                 <span class="text-gray-900" v-html="inline(c.text)" />
@@ -405,11 +437,11 @@ function goBack() {
             </div>
           </template>
 
-          <!-- розбір ПОПЕРЕДНЬОЇ задачі: тренування вчить, а не міряє,
-               тож помилку показуємо одразу — але не ведемо в лікування,
-               воно вже було на перевірках вище -->
+          <!-- розбір ЦІЄЇ САМОЇ задачі: тренування вчить, а не міряє, тож
+               помилку показуємо одразу — але не ведемо в лікування, воно
+               вже було на перевірках вище -->
           <div
-            v-if="lastDrill"
+            v-if="lastDrill && reviewing"
             class="mt-4 rounded-lg px-4 py-3"
             :class="lastDrill.correct ? 'bg-green-50' : 'bg-amber-50'"
           >
@@ -421,6 +453,15 @@ function goBack() {
             </p>
             <p class="text-sm text-gray-800" v-html="inline(lastDrill.task.solution)" />
           </div>
+
+          <button
+            v-if="reviewing && !drillDone"
+            type="button"
+            class="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            @click="nextDrill"
+          >
+            Наступна задача →
+          </button>
 
           <p v-if="drillDone" class="mt-4 text-sm font-medium text-green-700">
             {{ streak >= drillGoal

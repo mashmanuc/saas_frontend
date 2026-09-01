@@ -137,9 +137,28 @@ function renderLatexToMathML(formula: string, displayMode: boolean): string {
 // — АІ (Інтегралик) генерує їх у body карток (board_add_card дозволяє
 // таблиці, tooling.py), а без цього кроку вони йшли в escapeHtml як сирий
 // текст із `|` і `**` (зловлено живим прогоном 2026-08-07).
+// Позначки жирного, поставлені ДО розрізання на LaTeX-сегменти.
+//
+// Жирний застосовувався окремо в кожному текстовому шматку, а `**` пара,
+// що охоплює формулу, потрапляла у два різні шматки — і не сходилась
+// у жодному. Учень бачив голі зірочки: «**Друге число — це ціле, воно і
+// є 100%.**» (П4, крок «Відсоткове відношення»). Зловлено живим
+// прогоном; жоден із 15 тестів рендерера цього не бачив, бо всі
+// перевіряли жирний і формулу ОКРЕМО.
+//
+// Символи керування U+0001/U+0002: у тексті занять їх не буває, вони не
+// значущі ні для HTML-екранування, ні для KaTeX, тож доживають до
+// складання і замінюються на теги в самому кінці.
+const B_OPEN = '\u0001'
+const B_CLOSE = '\u0002'
+
+function markBold(text: string): string {
+  return text.replace(/\*\*([\s\S]+?)\*\*/g, (_m, inner) => B_OPEN + inner + B_CLOSE)
+}
+
 export function renderTextWithLatex(text: string): string {
   if (!text) return ''
-  const segments = parseLatexSegments(text)
+  const segments = parseLatexSegments(markBold(text))
   const combined = segments
     .map((seg) => {
       if (seg.type === 'text') {
@@ -159,6 +178,10 @@ export function renderTextWithLatex(text: string): string {
     })
     .join('')
   return renderMarkdownTables(combined)
+    .split(B_OPEN)
+    .join('<strong>')
+    .split(B_CLOSE)
+    .join('</strong>')
 }
 
 function escapeHtml(s: string): string {
@@ -170,14 +193,17 @@ function escapeHtml(s: string): string {
 }
 
 // Екранує HTML, БЕЗ переносу \n → <br/> (рядкова структура ще потрібна
-// нижче для виявлення таблиць) і застосовує **bold**. LaTeX-сегменти сюди
-// не потрапляють — parseLatexSegments уже виніс їх окремо.
+// нижче для виявлення таблиць).
+//
+// Жирний тут більше НЕ обробляється: його позначки поставлені раніше,
+// до розрізання на сегменти (див. `markBold`). Лишити тут і другий
+// прохід означало б, що поведінка залежить від того, чи трапилась
+// формула всередині — саме та різниця, через яку баг і виник.
 function renderInlineMarkdown(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
 }
 
 function isTableRow(line: string): boolean {

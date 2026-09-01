@@ -126,3 +126,23 @@ describe('translate="no" — захист від браузерного пере
     expect(html).not.toContain('translate="no"')
   })
 })
+
+describe('жирний, що охоплює формулу', () => {
+  it('пара ** навколо $...$ збирається у <strong>, а не лишає зірочки', () => {
+    // саме те, що бачив учень у П4: «**Друге число — це ціле, воно і є $100\%$.**»
+    const html = renderTextWithLatex('**Ціле — це $100\%$ величини.** Далі текст.')
+    expect(html).not.toContain('**')
+    expect(html).toContain('<strong>')
+    expect(html).toContain('</strong>')
+  })
+
+  it('жирний усередині одного шматка теж працює — старий випадок не зламано', () => {
+    const html = renderTextWithLatex('це **важливо** знати')
+    expect(html).toContain('<strong>важливо</strong>')
+  })
+
+  it('позначки не витікають у вивід, якщо пари немає', () => {
+    const html = renderTextWithLatex('одна ** зірочка і $x$')
+    expect(html).not.toMatch(/[]/)
+  })
+})
