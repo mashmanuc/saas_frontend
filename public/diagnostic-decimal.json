@@ -1,0 +1,1152 @@
+{
+ "poolVersion": "1.0",
+ "topicId": "real-numbers.fractions.decimal",
+ "topic": "Десяткові дроби",
+ "arc": [
+  "decimal.concept",
+  "decimal.add_sub",
+  "decimal.multiply",
+  "decimal.divide"
+ ],
+ "subgoalLabels": {
+  "decimal.concept": "поняття десяткового дробу",
+  "decimal.add_sub": "додавання і віднімання",
+  "decimal.multiply": "множення",
+  "decimal.divide": "ділення"
+ },
+ "roots": {
+  "decimal/comma-place": "Кома на розряд не там",
+  "decimal/wrong-operation": "Не та дія",
+  "decimal/answered-with-operand": "Це число з умови, а не відповідь",
+  "decimal/fraction-inverted": "Дріб перевернули"
+ },
+ "lessons": [
+  "decimal.concept",
+  "decimal.add_sub",
+  "decimal.multiply",
+  "decimal.divide"
+ ],
+ "tasks": [
+  {
+   "id": "62880",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.048,
+   "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{3}{5}$.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 3, d = 5. Відповідь: 0,6",
+   "choices": [
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "8",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "1,666666666666666666666666667",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,6",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63060",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.349,
+   "text": "Подайте дріб $\\dfrac{2}{10}$ у вигляді десяткового дробу.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 2, d = 10. Відповідь: 0,2",
+   "choices": [
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "0,2",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "12",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63113",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.353,
+   "text": "Подайте дріб $\\dfrac{10}{16}$ у вигляді десяткового дробу.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 10, d = 16. Відповідь: 0,625",
+   "choices": [
+    {
+     "text": "0,625",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "6,25",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "1,6",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "26",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63223",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.501,
+   "text": "Подайте дріб $\\dfrac{7}{20}$ у вигляді десяткового дробу.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 7, d = 20. Відповідь: 0,35",
+   "choices": [
+    {
+     "text": "2,857142857142857142857142857",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,35",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "3,5",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "27",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "63233",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.502,
+   "text": "Подайте дріб $\\dfrac{13}{20}$ у вигляді десяткового дробу.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 13, d = 20. Відповідь: 0,65",
+   "choices": [
+    {
+     "text": "33",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "1,538461538461538461538461538",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,65",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "6,5",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "63263",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.576,
+   "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{6}{25}$.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 6, d = 25. Відповідь: 0,24",
+   "choices": [
+    {
+     "text": "0,24",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,34",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "2,4",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "4,166666666666666666666666667",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12676",
+   "subgoal": "decimal.concept",
+   "diffScore": 1.666,
+   "text": "Запишіть звичайний дріб $\\frac{5}{16}$ у вигляді десяткового.",
+   "solution": "Для перетворення звичайного дробу $\\frac{5}{16}$ в десятковий поділимо чисельник на знаменник у стовпчик. Одержимо: $5 \\div 16 = 0{,}3125$. Отже, $\\frac{5}{16} = 0{,}3125$.",
+   "choices": [
+    {
+     "text": "$3{,}125$",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$0{,}6875$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$0{,}03125$",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$0{,}3125$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12631",
+   "subgoal": "decimal.concept",
+   "diffScore": 2.152,
+   "text": "Запишіть звичайний дріб $\\frac{4}{16}$ у вигляді десяткового дробу, виконавши ділення чисельника на знаменник у стовпчик.",
+   "solution": "Виконаємо ділення чисельника на знаменник у стовпчик. Поділимо 4 на 16:\n\n1. 16 не вміщається у 4, тому пишемо $0,$ і дописуємо нуль, щоб отримати 40 десятих.\n2. 16 уміщається у 40 двічі ($16 \\times 2 = 32$), тому в частці записуємо 2, а від 40 віднімаємо 32, отримуємо 8.\n3. Дописуємо до 8 нуль, отримуємо 80 сотих.\n4. 16 уміщається у 80 п’ять разів ($16 \\times 5 = 80$), тому в частці записуємо 5, а від 80 віднімаємо 80, отримуємо 0.\n\nТаким чином, ділення завершилося, і ми отримали шуканий десятковий дріб $0{,}25$.",
+   "choices": [
+    {
+     "text": "$0{,}25$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$0{,}75$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$2{,}5$",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$0{,}025$",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "62846",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 0.83,
+   "text": "Обчисліть значення виразу 4 + 3,7.",
+   "solution": "$a + b$. a = 4, b = 3,7. Відповідь: 7,7",
+   "choices": [
+    {
+     "text": "14,8",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "41",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "7,7",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,3",
+     "correct": false,
+     "mistakeId": "op_subtracted_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "62871",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 0.834,
+   "text": "Обчисліть значення виразу 6,7 + 3,4.",
+   "solution": "$a + b$. a = 6,7, b = 3,4. Відповідь: 10,1",
+   "choices": [
+    {
+     "text": "22,78",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "40,7",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "10,1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "3,3",
+     "correct": false,
+     "mistakeId": "op_subtracted_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "62998",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 0.985,
+   "text": "Знайдіть значення виразу 15,6 − 5,4.",
+   "solution": "$a - b$. a = 15,6, b = 5,4. Відповідь: 10,2",
+   "choices": [
+    {
+     "text": "21",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "15,6",
+     "correct": false,
+     "mistakeId": "answered_first_operand",
+     "rootId": "decimal/answered-with-operand"
+    },
+    {
+     "text": "84,24",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "10,2",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63027",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 1.139,
+   "text": "Обчисліть значення виразу 21,54 − 18,76.",
+   "solution": "$a - b$. a = 21,54, b = 18,76. Відповідь: 2,78",
+   "choices": [
+    {
+     "text": "21,54",
+     "correct": false,
+     "mistakeId": "answered_first_operand",
+     "rootId": "decimal/answered-with-operand"
+    },
+    {
+     "text": "40,3",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "27,8",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "2,78",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63087",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 1.141,
+   "text": "Знайдіть значення виразу 25,97 − 13,25.",
+   "solution": "$a - b$. a = 25,97, b = 13,25. Відповідь: 12,72",
+   "choices": [
+    {
+     "text": "12,72",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "25,97",
+     "correct": false,
+     "mistakeId": "answered_first_operand",
+     "rootId": "decimal/answered-with-operand"
+    },
+    {
+     "text": "344,1025",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "39,22",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63209",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 1.291,
+   "text": "Обчисліть значення виразу 42,3 + 72,73.",
+   "solution": "$a + b$. a = 42,3, b = 72,73. Відповідь: 115,03",
+   "choices": [
+    {
+     "text": "30,43",
+     "correct": false,
+     "mistakeId": "op_subtracted_reversed",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "3076,479",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "769,6",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "115,03",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "63289",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 1.371,
+   "text": "Знайдіть значення виразу 129,436 + 2,679.",
+   "solution": "$a + b$. a = 129,436, b = 2,679. Відповідь: 132,115",
+   "choices": [
+    {
+     "text": "126,757",
+     "correct": false,
+     "mistakeId": "op_subtracted_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "132,115",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "156,226",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "346,759044",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12554",
+   "subgoal": "decimal.add_sub",
+   "diffScore": 1.787,
+   "text": "Обчисли значення виразу, записавши обидва числа у стовпчик і виконавши віднімання:\n$16{,}888 - 11{,}949$",
+   "solution": "Запишемо числа у стовпчик, розмістивши коми строго одна під одною:\n\n$$\\begin{array}{r@{\\,}l@{\\,}l@{\\,}l@{\\,}l}\n& 1 & 6{,} & 8 & 8 & 8 \\\\ - & 1 & 1{,} & 9 & 4 & 9 \\\\ \\hline\n\\end{array}$$ Виконаємо віднімання починаючи з найправішого розряду (тисячних):\n\n1. $8 - 9$ неможливо, тому позичаємо 1 одиницю з розряду сотень. Після позичання отримаємо:\n   $(18) - 9 = 9$, а в розряді сотень замість 8 стане 7.\n\n2. У розряді сотень: $7 - 4 = 3$.\n\n3. У розряді десятих: $8 - 9$ неможливо, тому позичаємо 1 одиницю з розряду одиниць. Після позичання отримаємо:\n   $(18) - 9 = 9$, а в розряді одиниць замість 6 стане 5.\n\n4. У розряді одиниць: $5 - 1 = 4$.\n\n5. У розряді десятків: $1 - 1 = 0$.\n\nОтже, отримали результат $4{,}939$.",
+   "choices": [
+    {
+     "text": "$4{,}939$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$5{,}039$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$28{,}837$",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "$49{,}39$",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "62878",
+   "subgoal": "decimal.multiply",
+   "diffScore": 0.835,
+   "text": "Знайдіть значення виразу 1,1 · 9.",
+   "solution": "$a \\cdot b$. a = 1,1, b = 9. Відповідь: 9,9",
+   "choices": [
+    {
+     "text": "0,99",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "9,9",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "99",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "10,1",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "62970",
+   "subgoal": "decimal.multiply",
+   "diffScore": 0.991,
+   "text": "Обчисліть значення виразу 6,3 · 3,5.",
+   "solution": "$a \\cdot b$. a = 6,3, b = 3,5. Відповідь: 22,05",
+   "choices": [
+    {
+     "text": "2,205",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "22,05",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "220,5",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "9,8",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "21182",
+   "subgoal": "decimal.multiply",
+   "diffScore": 1.0,
+   "text": "16,02 * 0,5",
+   "solution": "",
+   "choices": [
+    {
+     "text": "8,01",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "801",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "80,1",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "0,081",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63088",
+   "subgoal": "decimal.multiply",
+   "diffScore": 1.146,
+   "text": "Обчисліть значення виразу 7,86 · 16,8.",
+   "solution": "$a \\cdot b$. a = 7,86, b = 16,8. Відповідь: 132,048",
+   "choices": [
+    {
+     "text": "132,048",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "13,2048",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "24,66",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "1320,48",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "12699",
+   "subgoal": "decimal.multiply",
+   "diffScore": 1.206,
+   "text": "Обчисли добуток $10{,}7 \\times 9$.",
+   "solution": "Спочатку розглянемо числа без коми: $107 \\times 9 = 963$. У дробу $10{,}7$ після коми міститься один знак, тому в результаті кома має стояти після першого знаку зліва. Отже, $10{,}7 \\times 9 = 96{,}3$.",
+   "choices": [
+    {
+     "text": "$19{,}7$",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "$963$",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$96{,}4$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$96{,}3$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63196",
+   "subgoal": "decimal.multiply",
+   "diffScore": 1.301,
+   "text": "Знайдіть значення виразу 22,45 · 19,83.",
+   "solution": "$a \\cdot b$. a = 22,45, b = 19,83. Відповідь: 445,1835",
+   "choices": [
+    {
+     "text": "42,28",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "4451,835",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "445,1835",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "44,51835",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12627",
+   "subgoal": "decimal.multiply",
+   "diffScore": 1.393,
+   "text": "Обчисли добуток $5{,}33 \\times 9$ та округли результат до сотих.",
+   "solution": "Спочатку виконаємо множення, не звертаючи уваги на кому: $533 \\times 9 = 4797$. У числі $5{,}33$ після коми два знаки, тому у результаті множення також має бути два знаки після коми. Отже, отримаємо $5{,}33 \\times 9 = 47{,}97$.",
+   "choices": [
+    {
+     "text": "$47{,}87$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$14{,}33$",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "$4{,}797$",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$47{,}97$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12597",
+   "subgoal": "decimal.multiply",
+   "diffScore": 2.2,
+   "text": "Обчисліть значення виразу $6{,}92 \\times 6{,}58$.",
+   "solution": "Запишемо десяткові дроби як цілі числа, помноживши кожен на 100: $6{,}92 = \\frac{692}{100}$, $6{,}58 = \\frac{658}{100}$. Перемножимо їх як цілі числа: $692 \\times 658$.\n\nОбчислимо:\n$692 \\times 600 = 415200$, $692 \\times 50 = 34600$, $692 \\times 8 = 5536$.\nСума: $415200 + 34600 = 449800$, $449800 + 5536 = 455336$.\n\nОскільки кожен множник мав по дві цифри після коми, то у результаті маємо $455336$, а кому слід поставити за сумою цих цифр, тобто після чотирьох знаків: $4553{,}36$.\n\nОтже, $6{,}92 \\times 6{,}58 = 45{,}5336$.",
+   "choices": [
+    {
+     "text": "$45{,}5336$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$13{,}5$",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "$4{,}55336$",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$45{,}6336$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "62905",
+   "subgoal": "decimal.divide",
+   "diffScore": 0.83,
+   "text": "Знайдіть значення виразу 6,5 : 6,5.",
+   "solution": "$a : b$. a = 6,5, b = 6,5. Відповідь: 1",
+   "choices": [
+    {
+     "text": "1",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,1",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "42,25",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "10",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "62869",
+   "subgoal": "decimal.divide",
+   "diffScore": 0.835,
+   "text": "Знайдіть значення виразу 42,92 : 5,8.",
+   "solution": "$a : b$. a = 42,92, b = 5,8. Відповідь: 7,4",
+   "choices": [
+    {
+     "text": "0,74",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "74",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "7,4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "248,936",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63008",
+   "subgoal": "decimal.divide",
+   "diffScore": 0.988,
+   "text": "Знайдіть значення виразу 133,44 : 9,6.",
+   "solution": "$a : b$. a = 133,44, b = 9,6. Відповідь: 13,9",
+   "choices": [
+    {
+     "text": "1,39",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "13,9",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1281,024",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "139",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "21307",
+   "subgoal": "decimal.divide",
+   "diffScore": 1.0,
+   "text": "0,36 : 18 =",
+   "solution": "",
+   "choices": [
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,02",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "0,2",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "20",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63094",
+   "subgoal": "decimal.divide",
+   "diffScore": 1.144,
+   "text": "Знайдіть значення виразу 110,1672 : 5,72.",
+   "solution": "$a : b$. a = 110,1672, b = 5,72. Відповідь: 19,26",
+   "choices": [
+    {
+     "text": "19,26",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1,926",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "192,6",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "630,156384",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "easy"
+  },
+  {
+   "id": "63187",
+   "subgoal": "decimal.divide",
+   "diffScore": 1.294,
+   "text": "Знайдіть значення виразу 116,6309 : 6,73.",
+   "solution": "$a : b$. a = 116,6309, b = 6,73. Відповідь: 17,33",
+   "choices": [
+    {
+     "text": "1,733",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "173,3",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "17,33",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "784,925957",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "mid"
+  },
+  {
+   "id": "12565",
+   "subgoal": "decimal.divide",
+   "diffScore": 1.556,
+   "text": "Обчисли значення виразу $120{,}8 \\div 8$ та запиши результат у вигляді десяткового дробу.",
+   "solution": "Виконаємо ділення числа $120{,}8$ на $8$ за правилом ділення десяткового дробу на ціле число.\n\n1. Ділимо цілу частину числа $120{,}8$ на $8$:\n   $120 \\div 8 = 15$, оскільки $8 \\times 15 = 120$.\n\n2. Далі ділимо дробову частину, додавши кому у частці:\n   Ділене: $8{.} 0$ (виконуємо ділення $0{,}8 \\div 8$).\n   $0{,}8 \\div 8 = 0{,}1$, оскільки $8 \\times 0{,}1 = 0{,}8$.\n\n3. Об'єднуємо результати: $15 + 0{,}1 = 15{,}1$.\n\nОтже, $120{,}8 \\div 8 = 15{,}1$.",
+   "choices": [
+    {
+     "text": "$151$",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "$15{,}2$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$15{,}1$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$15$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  },
+  {
+   "id": "12583",
+   "subgoal": "decimal.divide",
+   "diffScore": 1.806,
+   "text": "Обчисли значення виразу $169{,}74 \\div 9$ у стовпчик, дотримуючись відомого алгоритму ділення десяткового дробу на ціле число.",
+   "solution": "1. Запишемо ділене $169{,}74$ та дільник $9$. Поділимо цілу частину $169$ на $9$. Відомо, що $9 \\times 18 = 162$, тому у частку записуємо цифру $18$.\n\n2. Віднімаємо від $169$ добуток $9 \\times 18 = 162$, отримуємо остачу $7$. Оскільки остача менша за дільник, зносимо наступну цифру діленого, а саме $7$, утворюючи число $77$.\n\n3. Поділимо $77$ на $9$. Відомо, що $9 \\times 8 = 72$, тому у частку записуємо цифру $8$ після коми.\n\n4. Віднімаємо від $77$ добуток $9 \\times 8 = 72$, отримуємо остачу $5$. Зносимо наступну цифру діленого, а саме $4$, утворюючи число $54$.\n\n5. Поділимо $54$ на $9$. Відомо, що $9 \\times 6 = 54$, тому у частку записуємо цифру $6$.\n\n6. Остача дорівнює нулю, отже, ділення виконано повністю.\n\nВ результаті отримали частку $18{,}86$. Відповідь: $18{,}86$.",
+   "choices": [
+    {
+     "text": "$18{,}86$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$178{,}74$",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "$18{,}96$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$1{,}886$",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "source": "labelled-bank",
+   "level": "hard"
+  }
+ ],
+ "note": "пул для адаптивного добору, НЕ послідовність: стеля прогону ~12 задач за DIAGNOSTIC_PROFILE_SSOT §3"
+}

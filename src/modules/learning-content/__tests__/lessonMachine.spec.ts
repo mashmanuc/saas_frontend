@@ -416,10 +416,25 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PUBLIC = resolve(HERE, '../../../../public')
-/** Порядок курсу читаємо з самого плану — список тут відстав би на першому новому занятті. */
-const COURSE = JSON.parse(
-  readFileSync(resolve(PUBLIC, 'lesson-percent.concept.json'), 'utf-8'),
-).courseOrder as string[]
+
+/**
+ * УСІ зібрані курси, а не один вшитий.
+ *
+ * Тут стояв `lesson-percent.concept.json` — і поки курс був один, гейт
+ * покривав усе. Друга тема зробила з нього перевірку однієї четвертої:
+ * заняття десяткових могли зламатись, і жоден тест не помітив би.
+ * Тепер список береться з покажчика, який збирає бекенд із того, що
+ * реально лежить у теці, тож новий курс потрапляє під гейт сам.
+ */
+const CATALOGUE = JSON.parse(
+  readFileSync(resolve(PUBLIC, 'courses.json'), 'utf-8'),
+).courses as Array<{ topic: string; entry: string }>
+
+const COURSES = CATALOGUE.map((c) => ({
+  topic: c.topic,
+  order: JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${c.entry}.json`), 'utf-8'))
+    .courseOrder as string[],
+}))
 
 describe('INV-M1 як властивість плану, не як приклад', () => {
   it('навчальні плани не мають станів без виходу', () => {
@@ -427,14 +442,17 @@ describe('INV-M1 як властивість плану, не як прикла�
     expect(findDeadEnds(branchingPlan())).toEqual([])
   })
 
-  it('КОЖЕН справжній план курсу проходиться за будь-яких відповідей', () => {
+  it('КОЖЕН план КОЖНОГО курсу проходиться за будь-яких відповідей', () => {
     // саме «кожен», а не «перший»: банк перезбирається, і зламатись може
-    // будь-яке заняття — а перевірялось досі лише одне
-    expect(COURSE.length).toBeGreaterThan(1)
-    for (const id of COURSE) {
-      const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
-      expect(validatePlan(plan), `план ${id}`).toEqual([])
-      expect(findDeadEnds(plan), `план ${id}`).toEqual([])
+    // будь-яке заняття будь-якої теми
+    expect(COURSES.length).toBeGreaterThan(0)
+    for (const course of COURSES) {
+      expect(course.order.length, `курс ${course.topic}`).toBeGreaterThan(1)
+      for (const id of course.order) {
+        const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
+        expect(validatePlan(plan), `план ${id}`).toEqual([])
+        expect(findDeadEnds(plan), `план ${id}`).toEqual([])
+      }
     }
   })
 
@@ -442,11 +460,25 @@ describe('INV-M1 як властивість плану, не як прикла�
     // вихід із тренування — три ПОСПІЛЬ; при влучності 0,5 це в середньому
     // ~14 спроб, тож вісім задач упирались у порожній пул саме в того, кому
     // тренування й потрібне
-    for (const id of COURSE) {
-      const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
-      const practice = plan.steps.find((s: { type: string }) => s.type === 'practice')
-      expect(practice, `у ${id} немає тренування`).toBeTruthy()
-      expect(practice.tasks.length, `пул ${id}`).toBeGreaterThanOrEqual(14)
+    for (const course of COURSES) {
+      for (const id of course.order) {
+        const plan = JSON.parse(readFileSync(resolve(PUBLIC, `lesson-${id}.json`), 'utf-8'))
+        const practice = plan.steps.find((s: { type: string }) => s.type === 'practice')
+        expect(practice, `у ${id} немає тренування`).toBeTruthy()
+        expect(practice.tasks.length, `пул ${id}`).toBeGreaterThanOrEqual(14)
+      }
+    }
+  })
+
+  it('покажчик курсів не бреше: усе, що обіцяне, справді лежить', () => {
+    // покажчик збирається бекендом; якщо він розійдеться з текою,
+    // вітрина покаже курс, який не відкриється
+    for (const c of CATALOGUE) {
+      const entry = JSON.parse(
+        readFileSync(resolve(PUBLIC, `lesson-${c.entry}.json`), 'utf-8'),
+      )
+      expect(entry.id, `вхід курсу ${c.topic}`).toBe(c.entry)
+      expect(entry.course).toBeTruthy()
     }
   })
 

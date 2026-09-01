@@ -1,0 +1,754 @@
+{
+ "id": "decimal.multiply",
+ "course": "Десяткові дроби",
+ "session": 3,
+ "subgoal": "Д3 Множення",
+ "objective": "множити десяткові дроби, визначаючи місце коми за кількістю цифр після коми в множниках",
+ "roots": {
+  "decimal/comma-place": "Кома на розряд не там",
+  "decimal/wrong-operation": "Не та дія",
+  "decimal/answered-with-operand": "Це число з умови, а не відповідь",
+  "decimal/fraction-inverted": "Дріб перевернули"
+ },
+ "courseOrder": [
+  "decimal.concept",
+  "decimal.add_sub",
+  "decimal.multiply",
+  "decimal.divide"
+ ],
+ "sourceLessons": [
+  "mat_5/urok_95.doc",
+  "mat_5/urok_96.doc",
+  "mat_5/urok_99.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Подивись, що робить множення на 10:\n\n$0{,}2 \\cdot 10 = 2$\n$0{,}27 \\cdot 10 = 2{,}7$\n$5{,}2 \\cdot 10 = 52$\n\nЦифри лишились ті самі — рухалась кома. Із цього спостереження й виростає все правило множення.",
+   "source": "0,2 · 10; 5,2 · 10; 0,27 · 10 — що сталося з комою?"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Множення",
+   "body": "Множення на 10 переносить кому на один розряд **вправо**, на 100 — на два, на 1000 — на три.\n\nУ загальному випадку коми взагалі не заважають: множимо як натуральні числа, а потім ставимо кому.\n\n1. перемнож числа, не дивлячись на коми;\n2. полічи, скільки цифр після коми в обох множниках **разом**;\n3. відділи стільки ж цифр справа в добутку.\n\n$0{,}2 \\cdot 0{,}3$: множимо $2 \\cdot 3 = 6$; після коми одна цифра й одна цифра, разом дві; відділяємо дві — $0{,}06$.",
+   "mustState": [
+    "множення на 10 переносить кому на один розряд вправо",
+    "множ як натуральні числа, не дивлячись на коми",
+    "у добутку відділи справа стільки цифр, скільки їх після коми в обох множниках разом",
+    "добуток двох чисел, менших за одиницю, менший за кожне з них"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Добуток двох чисел, менших за одиницю, менший за кожне з них.** $0{,}2 \\cdot 0{,}3 = 0{,}06$ — менше і за $0{,}2$, і за $0{,}3$.\n\nЦе найшвидша перевірка на зсув коми: вийшло $0{,}6$ — цифр після коми відділено замало."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "$0{,}27 \\cdot 10$",
+     "a": "кома на розряд вправо: $2{,}7$"
+    },
+    {
+     "q": "$0{,}2 \\cdot 0{,}3$",
+     "a": "$2 \\cdot 3 = 6$, після коми разом дві цифри: $0{,}06$"
+    },
+    {
+     "q": "$2{,}69 \\cdot 3{,}64$",
+     "a": "разом чотири цифри після коми: $9{,}7916$"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "16 * 0,1",
+   "choices": [
+    {
+     "text": "0,16",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "1,6",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "16",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "160",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "solution": "",
+   "taskId": 21179,
+   "family": "decimal_mul",
+   "onMistake": {
+    "comma_shift_left": "fix_comma_place",
+    "comma_shift_right": "fix_comma_place",
+    "comma_shift_right_100": "fix_comma_place"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "3,6 * 0,12",
+   "choices": [
+    {
+     "text": "0,432",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "4,32",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "0,00432",
+     "correct": false,
+     "mistakeId": "comma_shift_left_100",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "43,2",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "solution": "",
+   "taskId": 21305,
+   "family": "decimal_mul",
+   "onMistake": {
+    "comma_shift_right": "fix_comma_place",
+    "comma_shift_left_100": "fix_comma_place",
+    "comma_shift_right_100": "fix_comma_place"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Виконайте множення 8,57 * 1000",
+   "choices": [
+    {
+     "text": "85,7",
+     "correct": false,
+     "mistakeId": "comma_shift_left_100",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "857",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "8570",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "85700",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "solution": "",
+   "taskId": 21186,
+   "family": "decimal_mul",
+   "onMistake": {
+    "comma_shift_left_100": "fix_comma_place",
+    "comma_shift_left": "fix_comma_place",
+    "comma_shift_right": "fix_comma_place"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "14,16 * 2,5",
+   "choices": [
+    {
+     "text": "35,4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "354",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "3,54",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "3540",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "solution": "",
+   "taskId": 21313,
+   "family": "decimal_mul",
+   "onMistake": {
+    "comma_shift_right": "fix_comma_place",
+    "comma_shift_left": "fix_comma_place",
+    "comma_shift_right_100": "fix_comma_place"
+   }
+  },
+  {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "18912",
+     "text": "Обчисліть добуток: 2,5×4=",
+     "solution": "",
+     "choices": [
+      {
+       "text": "100",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "10",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,1",
+       "correct": false,
+       "mistakeId": "comma_shift_left_100",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "21184",
+     "text": "Виконайте множення 5,7 * 10",
+     "solution": "",
+     "choices": [
+      {
+       "text": "5,7",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,57",
+       "correct": false,
+       "mistakeId": "comma_shift_left_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "57",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "570",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "21607",
+     "text": "Виконайте множення: 8,423· 10",
+     "solution": "",
+     "choices": [
+      {
+       "text": "8423",
+       "correct": false,
+       "mistakeId": "comma_shift_right_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,8423",
+       "correct": false,
+       "mistakeId": "comma_shift_left_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "84,23",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "842,3",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "21606",
+     "text": "Виконайте множення: 7,643· 100",
+     "solution": "",
+     "choices": [
+      {
+       "text": "7,64300",
+       "correct": false,
+       "mistakeId": "comma_shift_left_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "7643",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "76,43",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "764,3",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "18908",
+     "text": "Обчисліть добуток: 0,7×0,5=",
+     "solution": "",
+     "choices": [
+      {
+       "text": "35",
+       "correct": false,
+       "mistakeId": "comma_shift_right_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "3,5",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,035",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,35",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "18909",
+     "text": "Обчисліть добуток: 0,4×1,2=",
+     "solution": "",
+     "choices": [
+      {
+       "text": "48",
+       "correct": false,
+       "mistakeId": "comma_shift_right_100",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "4,8",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,48",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,6",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "21602",
+     "text": "Обчисліть 0,28· 100",
+     "solution": "",
+     "choices": [
+      {
+       "text": "28",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "2,8",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "280",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "2800",
+       "correct": false,
+       "mistakeId": "comma_shift_right_100",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "12537",
+     "text": "Обчисли добуток $11{,}15 \\times 5$ у стовпчик.",
+     "solution": "Запишемо числа у вигляді дробів, щоб краще зрозуміти розташування коми:\n$11{,}15 = \\frac{1115}{100}$. Тому:\n$$11{,}15 \\times 5 = \\frac{1115}{100} \\times 5 = \\frac{1115 \\times 5}{100} = \\frac{5575}{100}.$$Під час множення $1115 \\times 5$ не звертаємо увагу на кому, а отримуємо результат $5575$ як для цілих чисел. Оскільки в числі $11{,}15$ після коми два знаки, то у результаті після коми також має бути два знаки. Отже, $11{,}15 \\times 5 = 55{,}75$.",
+     "choices": [
+      {
+       "text": "$557{,}5$",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "$55{,}75$",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$16{,}15$",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "$5{,}575$",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "21177",
+     "text": "0,6 * 2",
+     "solution": "",
+     "choices": [
+      {
+       "text": "12",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,12",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "1,2",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "120",
+       "correct": false,
+       "mistakeId": "comma_shift_right_100",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "62873",
+     "text": "Обчисліть значення виразу 7,5 · 1,5.",
+     "solution": "$a \\cdot b$. a = 7,5, b = 1,5. Відповідь: 11,25",
+     "choices": [
+      {
+       "text": "11,25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,125",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "9",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "112,5",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "62892",
+     "text": "Обчисліть значення виразу 2 · 4,8.",
+     "solution": "$a \\cdot b$. a = 2, b = 4,8. Відповідь: 9,6",
+     "choices": [
+      {
+       "text": "6,8",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "0,96",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "96",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "9,6",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "62904",
+     "text": "Обчисліть значення виразу 6,9 · 5,3.",
+     "solution": "$a \\cdot b$. a = 6,9, b = 5,3. Відповідь: 36,57",
+     "choices": [
+      {
+       "text": "3,657",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "36,57",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "365,7",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "12,2",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "62916",
+     "text": "Обчисліть значення виразу 7,1 · 1.",
+     "solution": "$a \\cdot b$. a = 7,1, b = 1. Відповідь: 7,1",
+     "choices": [
+      {
+       "text": "7,1",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "8,1",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "0,71",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "71",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "62928",
+     "text": "Знайдіть значення виразу 1,3 · 2,4.",
+     "solution": "$a \\cdot b$. a = 1,3, b = 2,4. Відповідь: 3,12",
+     "choices": [
+      {
+       "text": "3,7",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "31,2",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "3,12",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,312",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "62932",
+     "text": "Обчисліть значення виразу 3,9 · 1,3.",
+     "solution": "$a \\cdot b$. a = 3,9, b = 1,3. Відповідь: 5,07",
+     "choices": [
+      {
+       "text": "0,507",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "50,7",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "5,07",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "5,2",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "63007",
+     "text": "Знайдіть значення виразу 7,2 · 12,3.",
+     "solution": "$a \\cdot b$. a = 7,2, b = 12,3. Відповідь: 88,56",
+     "choices": [
+      {
+       "text": "885,6",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "88,56",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "8,856",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "19,5",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні навчились множити десяткові дроби.\n\nМножимо як натуральні числа, а кому ставимо за лічбою: скільки цифр після коми в обох множниках разом — стільки відділяємо в добутку."
+  },
+  {
+   "id": "fix_comma_place",
+   "type": "remediate",
+   "rootId": "decimal/comma-place",
+   "title": "Кома на розряд не там",
+   "body": "Дію обрано правильно — кома стала не на своє місце.\n\nПеревіряй **прикидкою**, ще до точного рахунку: $2{,}7 \\cdot 3$ — це трохи менше за $3 \\cdot 3 = 9$, тобто відповідь коло восьми, а не коло вісімдесяти чи нуля цілих восьми.\n\nМноження на 10 переносить кому на розряд ВПРАВО, ділення на 10 — ВЛІВО:\n\n$0{,}27 \\cdot 10 = 2{,}7$\n$0{,}27 : 10 = 0{,}027$\n\nЯкщо цифр не вистачає — дописуємо нуль: $\\dfrac{7}{100} = 0{,}07$, а не $0{,}7$.",
+   "covers": [
+    "comma_shift_right",
+    "comma_shift_left",
+    "comma_shift_right_100",
+    "comma_shift_left_100"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; дошка (solve) не під'єднана"
+}

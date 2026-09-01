@@ -1,0 +1,21 @@
+{
+ "version": "1.0",
+ "courses": [
+  {
+   "topic": "decimal",
+   "title": "Десяткові дроби",
+   "entry": "decimal.concept",
+   "lessons": 4,
+   "hasDiagnostic": true,
+   "hasFinal": true
+  },
+  {
+   "topic": "percent",
+   "title": "Відсотки",
+   "entry": "percent.concept",
+   "lessons": 4,
+   "hasDiagnostic": true,
+   "hasFinal": true
+  }
+ ]
+}

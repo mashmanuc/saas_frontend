@@ -15,6 +15,7 @@
  * підказує наступну задачу, і далі ми міряємо вже підказане.
  */
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { renderTextWithLatex } from '../utils/contentRenderer'
 import {
   answerDiagnostic,
@@ -35,6 +36,9 @@ import {
 
 const LEARNER_KEY = 'm4sh:learner-state:v1'
 
+const route = useRoute()
+const topic = computed(() => String(route.query.topic || 'percent'))
+
 const pool = ref(null)
 const run = ref(null)
 const profile = ref(null)
@@ -44,14 +48,14 @@ const resumed = ref(false)
 
 onMounted(async () => {
   try {
-    const res = await fetch('/diagnostic-percent.json')
+    const res = await fetch(`/diagnostic-${topic.value}.json`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     pool.value = await res.json()
 
     // Незавершена діагностика: §3 прямо каже «можна перервати — стан
     // зберігається, як у звичайному занятті». Придатність перевіряємо
     // тим самим правилом, що й у заняття: задача має існувати в пулі.
-    const saved = loadDiagnosticRun()
+    const saved = loadDiagnosticRun(topic.value)
     const known = new Set(pool.value.tasks.map((t) => t.id))
     if (saved?.currentId && known.has(saved.currentId)) {
       run.value = saved
@@ -107,12 +111,12 @@ function pick(index) {
   run.value = answerDiagnostic(pool.value, run.value, index)
   resumed.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
-  saveDiagnosticRun(run.value)
+  saveDiagnosticRun(run.value, topic.value)
   if (isDiagnosticDone(run.value)) finish()
 }
 
 function finish() {
-  clearDiagnosticRun()
+  clearDiagnosticRun(topic.value)
   profile.value = buildProfile(pool.value, run.value, (pool.value.lessons ?? []).length)
   // Профіль знадобиться підсумковій роботі, щоб показати рух «було → стало».
   saveDiagnosticProfile(pool.value.topicId, profile.value)

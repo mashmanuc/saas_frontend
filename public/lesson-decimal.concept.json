@@ -1,0 +1,777 @@
+{
+ "id": "decimal.concept",
+ "course": "Десяткові дроби",
+ "session": 1,
+ "subgoal": "Д1 Поняття десяткового дробу",
+ "objective": "розуміти десятковий дріб як інший запис дробу зі знаменником 10, 100, 1000; переходити від звичайного дробу до десяткового",
+ "roots": {
+  "decimal/comma-place": "Кома на розряд не там",
+  "decimal/wrong-operation": "Не та дія",
+  "decimal/answered-with-operand": "Це число з умови, а не відповідь",
+  "decimal/fraction-inverted": "Дріб перевернули"
+ },
+ "courseOrder": [
+  "decimal.concept",
+  "decimal.add_sub",
+  "decimal.multiply",
+  "decimal.divide"
+ ],
+ "sourceLessons": [
+  "mat_5/urok_80.doc",
+  "mat_5/urok_81.doc",
+  "mat_6/urok_36.doc"
+ ],
+ "steps": [
+  {
+   "id": "hook",
+   "type": "hook",
+   "title": "З чого починаємо",
+   "body": "Ці числа ти читаєш щодня, навіть не думаючи про дроби:\n\n36,6 на градуснику\n2,5 години\n1,75 кг\n\nКожне з них — звичайний дріб, просто записаний без риски. Розберемось, як одне переходить в інше.",
+   "source": "1 см = 1/100 м; 36,6 на термометрі; 2,5 год — усе це дроби, записані без риски"
+  },
+  {
+   "id": "explain",
+   "type": "explain",
+   "title": "Поняття десяткового дробу",
+   "body": "Риска дробу — це знак ділення. $\\dfrac{a}{b}$ означає $a : b$, **верхнє на нижнє**, і порядок тут не міняється ніколи.\n\nЯкщо знаменник — 10, 100 або 1000, ділити не доводиться: цифри стають після коми, і їх стільки, скільки нулів у знаменнику.\n\n$\\dfrac{3}{10} = 0{,}3$ — один нуль, одна цифра\n$\\dfrac{7}{100} = 0{,}07$ — два нулі, дві цифри\n\nУ другому прикладі цифра одна, а місць два, тому перше заповнюємо нулем. Не $0{,}7$, а $0{,}07$.\n\nЗнаменник інший — просто ділимо: $\\dfrac{7}{8} = 7 : 8 = 0{,}875$.",
+   "mustState": [
+    "риска дробу — це знак ділення: a/b означає a : b",
+    "3/10 = 0,3; 7/100 = 0,07 — кількість цифр після коми дорівнює кількості нулів знаменника",
+    "якщо цифр у чисельнику менше, ніж нулів у знаменнику, дописуємо нулі одразу після коми",
+    "правильний дріб завжди дає число, менше за одиницю"
+   ]
+  },
+  {
+   "id": "emphasis",
+   "type": "emphasis",
+   "title": "Запам'ятай",
+   "body": "**Скільки нулів у знаменнику — стільки цифр після коми.** Не вистачає цифр — дописуємо нулі одразу після коми, а не в кінці.\n\nПеревірка одним поглядом: правильний дріб (чисельник менший за знаменник) завжди дає число, менше за одиницю. Вийшло більше — щось перевернули."
+  },
+  {
+   "id": "examples",
+   "type": "example",
+   "title": "Подивись, як це працює",
+   "items": [
+    {
+     "q": "Записати $\\dfrac{3}{10}$ десятковим дробом",
+     "a": "один нуль → одна цифра після коми: $0{,}3$"
+    },
+    {
+     "q": "Записати $\\dfrac{7}{100}$",
+     "a": "два нулі → дві цифри: $0{,}07$, а не $0{,}7$"
+    },
+    {
+     "q": "Записати $\\dfrac{7}{8}$",
+     "a": "знаменник не круглий, ділимо: $7 : 8 = 0{,}875$"
+    }
+   ]
+  },
+  {
+   "id": "check1",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Подайте дріб $\\dfrac{1}{2}$ у вигляді десяткового дробу.",
+   "choices": [
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "0,5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "3",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ],
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 1, d = 2. Відповідь: 0,5",
+   "taskId": 62850,
+   "family": "fraction_to_decimal",
+   "onMistake": {
+    "comma_shift_right": "fix_comma_place",
+    "fraction_inverted": "fix_fraction_inverted",
+    "op_added_instead": "fix_wrong_operation"
+   }
+  },
+  {
+   "id": "check2",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{4}{5}$.",
+   "choices": [
+    {
+     "text": "0,8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "1,25",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "9",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "8",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ],
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 4, d = 5. Відповідь: 0,8",
+   "taskId": 62870,
+   "family": "fraction_to_decimal",
+   "onMistake": {
+    "fraction_inverted": "fix_fraction_inverted",
+    "op_added_instead": "fix_wrong_operation",
+    "comma_shift_right": "fix_comma_place"
+   }
+  },
+  {
+   "id": "check3",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Подайте дріб $\\dfrac{1}{5}$ у вигляді десяткового дробу.",
+   "choices": [
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "6",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "0,2",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ],
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 1, d = 5. Відповідь: 0,2",
+   "taskId": 62875,
+   "family": "fraction_to_decimal",
+   "onMistake": {
+    "comma_shift_right": "fix_comma_place",
+    "fraction_inverted": "fix_fraction_inverted",
+    "op_added_instead": "fix_wrong_operation"
+   }
+  },
+  {
+   "id": "check4",
+   "type": "check",
+   "title": "Спробуй сам",
+   "text": "Подайте дріб $\\dfrac{2}{5}$ у вигляді десяткового дробу.",
+   "choices": [
+    {
+     "text": "7",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "4",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "0,4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "2,5",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    }
+   ],
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 2, d = 5. Відповідь: 0,4",
+   "taskId": 62885,
+   "family": "fraction_to_decimal",
+   "onMistake": {
+    "op_added_instead": "fix_wrong_operation",
+    "comma_shift_right": "fix_comma_place",
+    "fraction_inverted": "fix_fraction_inverted"
+   }
+  },
+  {
+   "id": "practice",
+   "type": "practice",
+   "title": "Потренуйся",
+   "streakGoal": 3,
+   "tasks": [
+    {
+     "id": "62943",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{5}{8}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 5, d = 8. Відповідь: 0,625",
+     "choices": [
+      {
+       "text": "1,6",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "decimal/fraction-inverted"
+      },
+      {
+       "text": "6,25",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,625",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "13",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "62948",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{2}{8}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 2, d = 8. Відповідь: 0,25",
+     "choices": [
+      {
+       "text": "4",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "decimal/fraction-inverted"
+      },
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "2,5",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,25",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "62967",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{1}{8}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 1, d = 8. Відповідь: 0,125",
+     "choices": [
+      {
+       "text": "1,25",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "8",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "decimal/fraction-inverted"
+      },
+      {
+       "text": "9",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "0,125",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63085",
+     "text": "Подайте дріб $\\dfrac{5}{16}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 5, d = 16. Відповідь: 0,3125",
+     "choices": [
+      {
+       "text": "3,125",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,3125",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "3,2",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "decimal/fraction-inverted"
+      },
+      {
+       "text": "21",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "12568",
+     "text": "Подайте звичайний дріб $\\frac{7}{25}$ у вигляді десяткового дробу.",
+     "solution": "1. Запишемо дріб $\\frac{7}{25}$ у вигляді частки числа 7, поділеного на число 25. \n2. Виконаємо ділення 7 на 25 у стовпчик: \n   - 25 не вміщається у 7 жодного разу, тому записуємо 0 у цілу частину та ставимо кому після неї.\n   - Додамо до остачі 7 нуль, отримавши 70. 25 уміщається у 70 два рази (25 \\times 2 = 50). Записуємо 2 у дробову частину, а від 70 віднімаємо 50, отримуючи остачу 20.\n   - Додамо ще один нуль, отримавши 200. 25 уміщається у 200 вісім разів (25 \\times 8 = 200). Записуємо 8 у дробову частину, а від 200 віднімаємо 200, отримуючи остачу 0.\n3. Отже, дріб $\\frac{7}{25}$ у вигляді десяткового дробу дорівнює $0{,}28$.",
+     "choices": [
+      {
+       "text": "$0{,}72$",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$2{,}8$",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "$0{,}028$",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "$0{,}28$",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "12694",
+     "text": "Подайте звичайний дріб $\\frac{12}{16}$ у вигляді десяткового дробу.",
+     "solution": "Для перетворення звичайного дробу $\\frac{12}{16}$ у десятковий слід поділити чисельник на знаменник у стовпчик.\n\n1. Спростимо дріб:\n   $$\\frac{12}{16} = \\frac{12 \\div 4}{16 \\div 4} = \\frac{3}{4}$$.\n\n2. Виконаємо ділення чисельника на знаменник:\n   - Ділимо 3 на 4: у результаті отримуємо 0 цілих.\n   - Множимо 4 на 0 та віднімаємо від 3, отримуємо остачу 3.\n   - Додаємо десятковий знак та нуль: 30.\n   - Ділимо 30 на 4: отримуємо 7 десятих.\n   - Множимо 4 на 7 та віднімаємо від 30, отримуємо остачу 2.\n   - Додаємо ще один нуль: 20.\n   - Ділимо 20 на 4: отримуємо 5 сотних.\n   - Множимо 4 на 5 та віднімаємо від 20, остача дорівнює нулю.\n\nОтже, $\\frac{3}{4} = 0{,}75$.",
+     "choices": [
+      {
+       "text": "$0{,}075$",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "$0{,}75$",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$0{,}25$",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$7{,}5$",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "12640",
+     "text": "Подайте звичайний дріб $\\frac{3}{5}$ у вигляді десяткового дробу, виконавши ділення чисельника на знаменник у стовпчик.",
+     "solution": "Виконаємо ділення 3 на 5 у стовпчик:\n\n1. Оскільки 3 менше за 5, додаємо справа нуль: 3,0.\n2. Розділимо 30 на 5: отримаємо 6 у частці та запишемо її після коми.\n3. 5 помножити на 6 дорівнює 30, остача — 0.\n\nОтже, $\\frac{3}{5} = 0{,}6$.",
+     "choices": [
+      {
+       "text": "$0{,}4$",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$0{,}6$",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "$6$",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "$0{,}06$",
+       "correct": false,
+       "mistakeId": "comma_shift_left",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "62976",
+     "text": "Подайте дріб $\\dfrac{7}{8}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 7, d = 8. Відповідь: 0,875",
+     "choices": [
+      {
+       "text": "1,142857142857142857142857143",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,875",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "15",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "8,75",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "63080",
+     "text": "Подайте дріб $\\dfrac{9}{16}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 9, d = 16. Відповідь: 0,5625",
+     "choices": [
+      {
+       "text": "25",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "5,625",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,5625",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "1,777777777777777777777777778",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63208",
+     "text": "Подайте дріб $\\dfrac{18}{25}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 18, d = 25. Відповідь: 0,72",
+     "choices": [
+      {
+       "text": "7,2",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,72",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "43",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "1,388888888888888888888888889",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63273",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{28}{40}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 28, d = 40. Відповідь: 0,7",
+     "choices": [
+      {
+       "text": "1,428571428571428571428571429",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "68",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "7",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "0,7",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63025",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{1}{10}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 1, d = 10. Відповідь: 0,1",
+     "choices": [
+      {
+       "text": "1",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "10",
+       "correct": false,
+       "mistakeId": "fraction_inverted",
+       "rootId": "decimal/fraction-inverted"
+      },
+      {
+       "text": "0,2",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,1",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63090",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{11}{16}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 11, d = 16. Відповідь: 0,6875",
+     "choices": [
+      {
+       "text": "0,6875",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "27",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "6,875",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "1,454545454545454545454545455",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63118",
+     "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{6}{16}$.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 6, d = 16. Відповідь: 0,375",
+     "choices": [
+      {
+       "text": "2,666666666666666666666666667",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,375",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "22",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "3,75",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    },
+    {
+     "id": "63132",
+     "text": "Подайте дріб $\\dfrac{13}{16}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 13, d = 16. Відповідь: 0,8125",
+     "choices": [
+      {
+       "text": "0,8125",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "8,125",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      },
+      {
+       "text": "1,230769230769230769230769231",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "29",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      }
+     ]
+    },
+    {
+     "id": "63159",
+     "text": "Подайте дріб $\\dfrac{18}{20}$ у вигляді десяткового дробу.",
+     "solution": "$\\dfrac{n}{d} = n : d$. n = 18, d = 20. Відповідь: 0,9",
+     "choices": [
+      {
+       "text": "1,111111111111111111111111111",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "38",
+       "correct": false,
+       "mistakeId": "op_added_instead",
+       "rootId": "decimal/wrong-operation"
+      },
+      {
+       "text": "0,9",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "9",
+       "correct": false,
+       "mistakeId": "comma_shift_right",
+       "rootId": "decimal/comma-place"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "summary",
+   "type": "summary",
+   "title": "Підсумок заняття",
+   "body": "Сьогодні розібрались, що десятковий дріб — це не новий вид числа, а інший запис звичайного дробу.\n\nГоловне: риска — це ділення, верхнє на нижнє; а кількість цифр після коми задає знаменник."
+  },
+  {
+   "id": "fix_comma_place",
+   "type": "remediate",
+   "rootId": "decimal/comma-place",
+   "title": "Кома на розряд не там",
+   "body": "Дію обрано правильно — кома стала не на своє місце.\n\nПеревіряй **прикидкою**, ще до точного рахунку: $2{,}7 \\cdot 3$ — це трохи менше за $3 \\cdot 3 = 9$, тобто відповідь коло восьми, а не коло вісімдесяти чи нуля цілих восьми.\n\nМноження на 10 переносить кому на розряд ВПРАВО, ділення на 10 — ВЛІВО:\n\n$0{,}27 \\cdot 10 = 2{,}7$\n$0{,}27 : 10 = 0{,}027$\n\nЯкщо цифр не вистачає — дописуємо нуль: $\\dfrac{7}{100} = 0{,}07$, а не $0{,}7$.",
+   "covers": [
+    "comma_shift_right",
+    "comma_shift_left",
+    "comma_shift_right_100",
+    "comma_shift_left_100"
+   ]
+  },
+  {
+   "id": "fix_wrong_operation",
+   "type": "remediate",
+   "rootId": "decimal/wrong-operation",
+   "title": "Не та дія",
+   "body": "Порахували правильно, але не те, що просили.\n\nЧисла в умові однакові для будь-якої дії — яку саме робити, каже **знак**: або той, що між числами ($3{,}2 + 1{,}5$), або сама риска дробу ($\\dfrac{2}{5}$ — це $2 : 5$). Перечитай його перед рахунком.\n\nШвидка перевірка величиною:\n\nсума двох дробів більша за кожен із них\nрізниця — менша за перший\nдобуток дробів, менших за одиницю, менший за обидва\nчастка, коли ділимо на число менше за одиницю, більша за ділене",
+   "covers": [
+    "op_added_instead",
+    "op_subtracted_instead",
+    "op_subtracted_reversed",
+    "op_multiplied_instead"
+   ]
+  },
+  {
+   "id": "fix_fraction_inverted",
+   "type": "remediate",
+   "rootId": "decimal/fraction-inverted",
+   "title": "Дріб перевернули",
+   "body": "Поділили знаменник на чисельник замість навпаки.\n\nРиска дробу — це знак ділення, і порядок у ній зафіксований: $\\dfrac{a}{b}$ означає $a : b$, верхнє на нижнє.\n\n$\\dfrac{7}{8} = 7 : 8 = 0{,}875$\n$8 : 7 = 1{,}142\\ldots$ — це вже інший дріб\n\nПеревірка: правильний дріб (чисельник менший за знаменник) завжди дає число, менше за одиницю.",
+   "covers": [
+    "fraction_inverted"
+   ]
+  }
+ ],
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; дошка (solve) не під'єднана"
+}

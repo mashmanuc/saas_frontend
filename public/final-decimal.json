@@ -1,0 +1,282 @@
+{
+ "version": "1.0",
+ "topicId": "real-numbers.fractions.decimal",
+ "topic": "Десяткові дроби",
+ "arc": [
+  "decimal.concept",
+  "decimal.add_sub",
+  "decimal.multiply",
+  "decimal.divide"
+ ],
+ "subgoalLabels": {
+  "decimal.concept": "поняття десяткового дробу",
+  "decimal.add_sub": "додавання і віднімання",
+  "decimal.multiply": "множення",
+  "decimal.divide": "ділення"
+ },
+ "roots": {
+  "decimal/comma-place": "Кома на розряд не там",
+  "decimal/wrong-operation": "Не та дія",
+  "decimal/answered-with-operand": "Це число з умови, а не відповідь",
+  "decimal/fraction-inverted": "Дріб перевернули"
+ },
+ "tasks": [
+  {
+   "id": "63045",
+   "subgoal": "decimal.concept",
+   "text": "Знайдіть десятковий дріб, що відповідає звичайному дробу $\\dfrac{5}{10}$.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 5, d = 10. Відповідь: 0,5",
+   "choices": [
+    {
+     "text": "15",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "5",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "2",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "0,5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "63050",
+   "subgoal": "decimal.concept",
+   "text": "Подайте дріб $\\dfrac{8}{10}$ у вигляді десяткового дробу.",
+   "solution": "$\\dfrac{n}{d} = n : d$. n = 8, d = 10. Відповідь: 0,8",
+   "choices": [
+    {
+     "text": "18",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "1,25",
+     "correct": false,
+     "mistakeId": "fraction_inverted",
+     "rootId": "decimal/fraction-inverted"
+    },
+    {
+     "text": "0,8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "8",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ]
+  },
+  {
+   "id": "63010",
+   "subgoal": "decimal.add_sub",
+   "text": "Знайдіть значення виразу 11,2 − 8,2.",
+   "solution": "$a - b$. a = 11,2, b = 8,2. Відповідь: 3",
+   "choices": [
+    {
+     "text": "11,2",
+     "correct": false,
+     "mistakeId": "answered_first_operand",
+     "rootId": "decimal/answered-with-operand"
+    },
+    {
+     "text": "3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "19,4",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "91,84",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    }
+   ]
+  },
+  {
+   "id": "62882",
+   "subgoal": "decimal.add_sub",
+   "text": "Обчисліть значення виразу 7,7 − 5,4.",
+   "solution": "$a - b$. a = 7,7, b = 5,4. Відповідь: 2,3",
+   "choices": [
+    {
+     "text": "41,58",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "7,7",
+     "correct": false,
+     "mistakeId": "answered_first_operand",
+     "rootId": "decimal/answered-with-operand"
+    },
+    {
+     "text": "13,1",
+     "correct": false,
+     "mistakeId": "op_added_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "2,3",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    }
+   ]
+  },
+  {
+   "id": "21311",
+   "subgoal": "decimal.multiply",
+   "text": "16 * 0,1",
+   "solution": "",
+   "choices": [
+    {
+     "text": "0,16",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "1,6",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "16",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "160",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    }
+   ]
+  },
+  {
+   "id": "21181",
+   "subgoal": "decimal.multiply",
+   "text": "14,16 * 2,5",
+   "solution": "",
+   "choices": [
+    {
+     "text": "35,4",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "354",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "3,54",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "3540",
+     "correct": false,
+     "mistakeId": "comma_shift_right_100",
+     "rootId": "decimal/comma-place"
+    }
+   ]
+  },
+  {
+   "id": "62849",
+   "subgoal": "decimal.divide",
+   "text": "Обчисліть значення виразу 59,2 : 7,4.",
+   "solution": "$a : b$. a = 59,2, b = 7,4. Відповідь: 8",
+   "choices": [
+    {
+     "text": "8",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "80",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "438,08",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "0,8",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    }
+   ]
+  },
+  {
+   "id": "62859",
+   "subgoal": "decimal.divide",
+   "text": "Обчисліть значення виразу 19,8 : 9.",
+   "solution": "$a : b$. a = 19,8, b = 9. Відповідь: 2,2",
+   "choices": [
+    {
+     "text": "178,2",
+     "correct": false,
+     "mistakeId": "op_multiplied_instead",
+     "rootId": "decimal/wrong-operation"
+    },
+    {
+     "text": "0,22",
+     "correct": false,
+     "mistakeId": "comma_shift_left",
+     "rootId": "decimal/comma-place"
+    },
+    {
+     "text": "2,2",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "22",
+     "correct": false,
+     "mistakeId": "comma_shift_right",
+     "rootId": "decimal/comma-place"
+    }
+   ]
+  }
+ ],
+ "note": "підсумкова робота: набір ФІКСОВАНИЙ (щоб результати були порівнюваними), розборів під час роботи немає, жодної задачі з занять чи діагностики"
+}

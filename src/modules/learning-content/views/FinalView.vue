@@ -16,6 +16,7 @@
  *     провал це заняття, а не друга спроба того самого набору.
  */
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { renderTextWithLatex } from '../utils/contentRenderer'
 import {
   answerFinal,
@@ -35,6 +36,9 @@ import {
 
 const LEARNER_KEY = 'm4sh:learner-state:v1'
 
+const route = useRoute()
+const topic = computed(() => String(route.query.topic || 'percent'))
+
 const work = ref(null)
 const run = ref(null)
 const result = ref(null)
@@ -44,7 +48,7 @@ const resumed = ref(false)
 
 onMounted(async () => {
   try {
-    const res = await fetch('/final-percent.json')
+    const res = await fetch(`/final-${topic.value}.json`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     work.value = await res.json()
 
@@ -165,7 +169,7 @@ const backTo = computed(() =>
       >
         Почати
       </button>
-      <a href="/course" class="ml-4 text-sm text-gray-500 hover:text-gray-700">← до курсу</a>
+      <a :href="`/course?topic=${topic}`" class="ml-4 text-sm text-gray-500 hover:text-gray-700">← до курсу</a>
     </section>
 
     <!-- 2. Задачі. Жодної реакції — це вимір. -->
@@ -261,7 +265,10 @@ const backTo = computed(() =>
       <p class="mt-5 text-xs text-gray-400">
         Це не оцінка й не бали: робота показує, де вміння тримається, а де ще ні.
       </p>
-      <a href="/course" class="mt-4 inline-block text-sm text-indigo-700 hover:text-indigo-900">
+      <a
+        :href="`/course?topic=${topic}`"
+        class="mt-4 inline-block text-sm text-indigo-700 hover:text-indigo-900"
+      >
         ← до курсу
       </a>
     </section>

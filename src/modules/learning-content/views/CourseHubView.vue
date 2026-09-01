@@ -12,16 +12,27 @@
  * показує те, що вже вирішили машина заняття й стан учня.
  */
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { emptyLearnerState, persistentRoots } from '../learnerState'
 import { lessonProgress } from '../progressStore'
 
-/** З якої підцілі починається курс — решту дає її ж `courseOrder`. */
-const ENTRY = 'percent.concept'
+/**
+ * Яку тему показуємо — з адреси, а не з коду.
+ *
+ * Тут стояв рядок `ENTRY = 'percent.concept'`, і поки тема була одна,
+ * це нікому не заважало. Друга тема зробила з нього брехню одразу:
+ * вітрина показувала б відсотки на будь-якому посиланні. Список курсів
+ * теж не тут — його збирає `build_courses_index` із того, що реально
+ * зібрано, тож вітрина не може відстати від дійсності.
+ */
 const LEARNER_KEY = 'm4sh:learner-state:v1'
+const route = useRoute()
+const topic = computed(() => String(route.query.topic || 'percent'))
 
 const lessons = ref([])
 const learner = ref(emptyLearnerState())
 const course = ref('')
+const catalogue = ref([])
 const error = ref('')
 
 function loadLearner() {
@@ -38,9 +49,14 @@ onMounted(async () => {
   try {
     learner.value = loadLearner()
 
-    const first = await (await fetch(`/lesson-${ENTRY}.json`)).json()
+    const index = await (await fetch('/courses.json')).json()
+    catalogue.value = index.courses ?? []
+    const mine = catalogue.value.find((c) => c.topic === topic.value)
+    if (!mine) throw new Error(`курс «${topic.value}» не зібрано`)
+
+    const first = await (await fetch(`/lesson-${mine.entry}.json`)).json()
     course.value = first.course
-    const order = first.courseOrder ?? [ENTRY]
+    const order = first.courseOrder ?? [mine.entry]
 
     const plans = await Promise.all(
       order.map(async (id) => {
@@ -125,7 +141,7 @@ const LABEL = {
 
       <!-- Діагностика: вхід у тему, не заняття. -->
       <a
-        href="/diagnostic"
+        :href="`/diagnostic?topic=${topic}`"
         class="mb-6 flex items-center justify-between rounded-xl border px-5 py-4 transition"
         :class="diagnosticDone
           ? 'border-gray-200 bg-white hover:border-indigo-300'
@@ -179,7 +195,7 @@ const LABEL = {
       <!-- Підсумкова робота. Стоїть ПІСЛЯ списку, бо це не заняття, а
            перевірка того, що заняття дали. -->
       <a
-        href="/final"
+        :href="`/final?topic=${topic}`"
         class="mt-4 flex items-center justify-between rounded-xl border px-5 py-4 transition"
         :class="finalReady
           ? 'border-indigo-300 bg-indigo-50/60 hover:border-indigo-500'
@@ -205,6 +221,25 @@ const LABEL = {
         <span class="font-medium">{{ weak.length }}</span>
         {{ weak.length === 1 ? 'непорозуміння' : 'непорозуміння' }} — варто закріпити.
       </p>
+
+      <!-- Інші зібрані курси. Не «меню», а чесний перелік того, що є. -->
+      <nav v-if="catalogue.length > 1" class="mt-8 border-t border-gray-200 pt-4">
+        <p class="mb-2 text-xs uppercase tracking-wide text-gray-400">Інші теми</p>
+        <ul class="flex flex-wrap gap-2">
+          <li v-for="c in catalogue" :key="c.topic">
+            <a
+              :href="`/course?topic=${c.topic}`"
+              class="inline-block rounded-lg border px-3 py-1.5 text-sm transition"
+              :class="c.topic === topic
+                ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                : 'border-gray-200 text-gray-700 hover:border-indigo-300'"
+            >
+              {{ c.title }}
+              <span class="text-gray-400">· {{ c.lessons }}</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
 
       <p class="mt-6 text-xs text-gray-400">
         Прогрес зберігається лише в цьому браузері: без облікового запису він

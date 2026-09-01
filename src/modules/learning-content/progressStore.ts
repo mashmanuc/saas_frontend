@@ -77,17 +77,32 @@ export function clearRun(lessonId: string): void {
 
 // ─── Проходження діагностики ─────────────────────────────────────────────
 
-export function saveDiagnosticRun(run: unknown): void {
-  write(DIAGNOSTIC_KEY, run)
+/**
+ * Ключ несе ТЕМУ.
+ *
+ * Був один на всіх (`m4sh:diagnostic-run`), і поки тема була одна, це
+ * працювало. З двома курсами перервана діагностика однієї теми
+ * відновлювалась би в іншій — а перевірка придатності там своя, тож
+ * учень побачив би або чужу задачу, або порожній екран.
+ *
+ * Стара форма ключа читається далі як «відсотки»: у людей, що вже
+ * починали, прогрес не має зникнути через нашу зміну схеми.
+ */
+function diagKey(topic: string): string {
+  return topic === 'percent' ? DIAGNOSTIC_KEY : `${DIAGNOSTIC_KEY}:${topic}`
 }
 
-export function loadDiagnosticRun<T>(): T | null {
-  return read<T>(DIAGNOSTIC_KEY)
+export function saveDiagnosticRun(run: unknown, topic = 'percent'): void {
+  write(diagKey(topic), run)
 }
 
-export function clearDiagnosticRun(): void {
+export function loadDiagnosticRun<T>(topic = 'percent'): T | null {
+  return read<T>(diagKey(topic))
+}
+
+export function clearDiagnosticRun(topic = 'percent'): void {
   try {
-    localStorage.removeItem(DIAGNOSTIC_KEY)
+    localStorage.removeItem(diagKey(topic))
   } catch {
     /* нічого */
   }
