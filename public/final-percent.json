@@ -92,38 +92,6 @@
    ]
   },
   {
-   "id": "63652",
-   "subgoal": "percent.of_number",
-   "text": "Знайдіть значення 10% від числа 410.",
-   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 4100. Відповідь: 41",
-   "choices": [
-    {
-     "text": "41",
-     "correct": true,
-     "mistakeId": null,
-     "rootId": null
-    },
-    {
-     "text": "369",
-     "correct": false,
-     "mistakeId": "complement_confusion",
-     "rootId": "percent/part-not-remainder"
-    },
-    {
-     "text": "4100",
-     "correct": false,
-     "mistakeId": null,
-     "rootId": null
-    },
-    {
-     "text": "410",
-     "correct": false,
-     "mistakeId": "percent_div_by_10",
-     "rootId": "percent/hundredth-not-tenth"
-    }
-   ]
-  },
-  {
    "id": "63359",
    "subgoal": "percent.of_number",
    "text": "Обчисліть значення, яке становить 20% від 15.",
@@ -150,8 +118,40 @@
     {
      "text": "300",
      "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
+    }
+   ]
+  },
+  {
+   "id": "63375",
+   "subgoal": "percent.of_number",
+   "text": "Обчисліть значення, яке становить 10% від 10.",
+   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 100. Відповідь: 1",
+   "choices": [
+    {
+     "text": "1",
+     "correct": true,
      "mistakeId": null,
      "rootId": null
+    },
+    {
+     "text": "10",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "100",
+     "correct": false,
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "9",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
     }
    ]
   },
@@ -220,49 +220,11 @@
    ]
   },
   {
-   "id": "63333",
+   "id": "63650",
    "subgoal": "percent.ratio",
-   "text": "Знайдіть, скільки відсотків складає 4 від 40.",
-   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 400. Відповідь: 10",
+   "text": "Знайдіть, скільки відсотків складає 179 від 716.",
+   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 17900. Відповідь: 25",
    "choices": [
-    {
-     "text": "90",
-     "correct": false,
-     "mistakeId": "complement_confusion",
-     "rootId": "percent/part-not-remainder"
-    },
-    {
-     "text": "1000",
-     "correct": false,
-     "mistakeId": "fraction_inverted",
-     "rootId": "percent/what-is-the-whole"
-    },
-    {
-     "text": "10",
-     "correct": true,
-     "mistakeId": null,
-     "rootId": null
-    },
-    {
-     "text": "0,1",
-     "correct": false,
-     "mistakeId": null,
-     "rootId": null
-    }
-   ]
-  },
-  {
-   "id": "63350",
-   "subgoal": "percent.ratio",
-   "text": "Знайдіть, скільки відсотків складає 7 від 28.",
-   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 700. Відповідь: 25",
-   "choices": [
-    {
-     "text": "25",
-     "correct": true,
-     "mistakeId": null,
-     "rootId": null
-    },
     {
      "text": "400",
      "correct": false,
@@ -276,10 +238,48 @@
      "rootId": "percent/part-not-remainder"
     },
     {
-     "text": "0,25",
-     "correct": false,
+     "text": "25",
+     "correct": true,
      "mistakeId": null,
      "rootId": null
+    },
+    {
+     "text": "0,25",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    }
+   ]
+  },
+  {
+   "id": "63681",
+   "subgoal": "percent.ratio",
+   "text": "Скільки відсотків становить число 33 від числа 660?",
+   "solution": "$\\dfrac{a \\cdot 100}{b}$. a·100 = 3300. Відповідь: 5",
+   "choices": [
+    {
+     "text": "0,5",
+     "correct": false,
+     "mistakeId": "percent_div_by_10",
+     "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "0,05",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    },
+    {
+     "text": "5",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "95",
+     "correct": false,
+     "mistakeId": "complement_confusion",
+     "rootId": "percent/part-not-remainder"
     }
    ]
   }

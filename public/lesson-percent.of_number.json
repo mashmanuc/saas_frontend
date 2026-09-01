@@ -81,8 +81,8 @@
     {
      "text": "900",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
     },
     {
      "text": "90",
@@ -107,6 +107,7 @@
    "taskId": 63331,
    "family": "of_number",
    "onMistake": {
+    "percent_forgot_divide_100": "fix_hundredth",
     "percent_div_by_10": "fix_hundredth",
     "complement_confusion": "fix_complement"
    }
@@ -132,8 +133,8 @@
     {
      "text": "600",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
     },
     {
      "text": "1,5",
@@ -146,7 +147,8 @@
    "taskId": 63348,
    "family": "of_number",
    "onMistake": {
-    "complement_confusion": "fix_complement"
+    "complement_confusion": "fix_complement",
+    "percent_forgot_divide_100": "fix_hundredth"
    }
   },
   {
@@ -164,8 +166,8 @@
     {
      "text": "1600",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
     },
     {
      "text": "160",
@@ -184,6 +186,7 @@
    "taskId": 63356,
    "family": "of_number",
    "onMistake": {
+    "percent_forgot_divide_100": "fix_hundredth",
     "percent_div_by_10": "fix_hundredth"
    }
   },
@@ -208,8 +211,8 @@
     {
      "text": "900",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_forgot_divide_100",
+     "rootId": "percent/hundredth-not-tenth"
     },
     {
      "text": "171",
@@ -222,6 +225,7 @@
    "taskId": 63400,
    "family": "of_number",
    "onMistake": {
+    "percent_forgot_divide_100": "fix_hundredth",
     "complement_confusion": "fix_complement"
    }
   },
@@ -245,8 +249,8 @@
       {
        "text": "2500",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "4",
@@ -288,8 +292,8 @@
       {
        "text": "12000",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -319,8 +323,8 @@
       {
        "text": "10500",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -350,8 +354,8 @@
       {
        "text": "5700",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -381,8 +385,8 @@
       {
        "text": "18300",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -412,8 +416,8 @@
       {
        "text": "15000",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -425,8 +429,8 @@
       {
        "text": "7800",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "78",
@@ -474,8 +478,8 @@
       {
        "text": "38700",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -499,8 +503,8 @@
       {
        "text": "3200",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "32",
@@ -524,8 +528,8 @@
       {
        "text": "30600",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "15,11",
@@ -567,39 +571,8 @@
       {
        "text": "6600",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      }
-     ]
-    },
-    {
-     "id": "22629",
-     "text": "Знайти 3% від числа 600",
-     "solution": "",
-     "choices": [
-      {
-       "text": "200",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "18",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "180",
-       "correct": false,
-       "mistakeId": "percent_div_by_10",
+       "mistakeId": "percent_forgot_divide_100",
        "rootId": "percent/hundredth-not-tenth"
-      },
-      {
-       "text": "20",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
       }
      ]
     },
@@ -611,8 +584,8 @@
       {
        "text": "1000",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "90",
@@ -642,8 +615,8 @@
       {
        "text": "700",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "7",
@@ -691,8 +664,8 @@
       {
        "text": "1800",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       }
      ]
     },
@@ -704,8 +677,8 @@
       {
        "text": "4400",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
       },
       {
        "text": "44",
@@ -721,6 +694,37 @@
       },
       {
        "text": "440",
+       "correct": false,
+       "mistakeId": "percent_div_by_10",
+       "rootId": "percent/hundredth-not-tenth"
+      }
+     ]
+    },
+    {
+     "id": "63652",
+     "text": "Знайдіть значення 10% від числа 410.",
+     "solution": "Один відсоток — це сота частина числа, тому 10% — це 10 сотих частин числа 410. Щоб їх знайти, множимо 410 на 10 і ділимо на 100: $410 \\cdot 10 : 100 = 4100 : 100 = 41$. Відповідь: 41.",
+     "choices": [
+      {
+       "text": "41",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "369",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "4100",
+       "correct": false,
+       "mistakeId": "percent_forgot_divide_100",
+       "rootId": "percent/hundredth-not-tenth"
+      },
+      {
+       "text": "410",
        "correct": false,
        "mistakeId": "percent_div_by_10",
        "rootId": "percent/hundredth-not-tenth"
@@ -760,5 +764,5 @@
    ]
   }
  ],
- "note": "заняття зібрано з методики + розмічений наявний банк; поріг послаблено до 1 названої помилки на задачу — із двома не було розкиду за величиною відсотка; дошка (solve) не під'єднана"
+ "note": "заняття зібрано з методики + розмічений наявний банк; щонайменше 2 названі помилки на задачу; дошка (solve) не під'єднана"
 }

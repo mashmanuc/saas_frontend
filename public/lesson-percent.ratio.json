@@ -78,8 +78,8 @@
     {
      "text": "0,25",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
     },
     {
      "text": "400",
@@ -104,6 +104,7 @@
    "taskId": 63354,
    "family": "ratio",
    "onMistake": {
+    "percent_ignore_conversion": "fix_conversion",
     "fraction_inverted": "fix_which_is_whole",
     "complement_confusion": "fix_complement"
    }
@@ -117,8 +118,8 @@
     {
      "text": "0,2",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
     },
     {
      "text": "500",
@@ -143,6 +144,7 @@
    "taskId": 63377,
    "family": "ratio",
    "onMistake": {
+    "percent_ignore_conversion": "fix_conversion",
     "fraction_inverted": "fix_which_is_whole",
     "complement_confusion": "fix_complement"
    }
@@ -162,8 +164,8 @@
     {
      "text": "0,05",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
     },
     {
      "text": "5",
@@ -183,6 +185,7 @@
    "family": "ratio",
    "onMistake": {
     "complement_confusion": "fix_complement",
+    "percent_ignore_conversion": "fix_conversion",
     "percent_div_by_10": "fix_hundredth"
    }
   },
@@ -213,8 +216,8 @@
     {
      "text": "0,5",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
     }
    ],
    "solution": "Ціле — це число 110, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 110 вміщується в 55. Одна сота частина 110 — це $110 : 100$, тому шукаємо, скільки таких часток у 55: $55 \\cdot 100 : 110 = 5500 : 110 = 50$. Відповідь: 50.",
@@ -222,7 +225,8 @@
    "family": "ratio",
    "onMistake": {
     "fraction_inverted": "fix_which_is_whole",
-    "percent_div_by_10": "fix_hundredth"
+    "percent_div_by_10": "fix_hundredth",
+    "percent_ignore_conversion": "fix_conversion"
    }
   },
   {
@@ -239,8 +243,8 @@
       {
        "text": "0,1",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "90",
@@ -270,8 +274,8 @@
       {
        "text": "0,8",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "20",
@@ -301,8 +305,8 @@
       {
        "text": "0,4",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "60",
@@ -325,6 +329,254 @@
      ]
     },
     {
+     "id": "63442",
+     "text": "Знайдіть, скільки відсотків складає 132 від 176.",
+     "solution": "Ціле — це число 176, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 176 вміщується в 132. Одна сота частина 176 — це $176 : 100$, тому шукаємо, скільки таких часток у 132: $132 \\cdot 100 : 176 = 13200 : 176 = 75$. Відповідь: 75.",
+     "choices": [
+      {
+       "text": "75",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "25",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,75",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "133,33",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63660",
+     "text": "Знайдіть, скільки відсотків складає 228 від 760.",
+     "solution": "Ціле — це число 760, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 760 вміщується в 228. Одна сота частина 760 — це $760 : 100$, тому шукаємо, скільки таких часток у 228: $228 \\cdot 100 : 760 = 22800 : 760 = 30$. Відповідь: 30.",
+     "choices": [
+      {
+       "text": "333,33",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "30",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "70",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,3",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
+    },
+    {
+     "id": "63480",
+     "text": "Скільки відсотків становить число 51 від числа 340?",
+     "solution": "Ціле — це число 340, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 340 вміщується в 51. Одна сота частина 340 — це $340 : 100$, тому шукаємо, скільки таких часток у 51: $51 \\cdot 100 : 340 = 5100 : 340 = 15$. Відповідь: 15.",
+     "choices": [
+      {
+       "text": "15",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "666,67",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,15",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "85",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      }
+     ]
+    },
+    {
+     "id": "63519",
+     "text": "Знайдіть, скільки відсотків складає 162 від 270.",
+     "solution": "Ціле — це число 270, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 270 вміщується в 162. Одна сота частина 270 — це $270 : 100$, тому шукаємо, скільки таких часток у 162: $162 \\cdot 100 : 270 = 16200 : 270 = 60$. Відповідь: 60.",
+     "choices": [
+      {
+       "text": "0,6",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "60",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "40",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "166,67",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63663",
+     "text": "Знайдіть, скільки відсотків складає 297 від 660.",
+     "solution": "Ціле — це число 660, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 660 вміщується в 297. Одна сота частина 660 — це $660 : 100$, тому шукаємо, скільки таких часток у 297: $297 \\cdot 100 : 660 = 29700 : 660 = 45$. Відповідь: 45.",
+     "choices": [
+      {
+       "text": "0,45",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "45",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "55",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "222,22",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63669",
+     "text": "Скільки відсотків становить число 192 від числа 1600?",
+     "solution": "Ціле — це число 1600, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 1600 вміщується в 192. Одна сота частина 1600 — це $1600 : 100$, тому шукаємо, скільки таких часток у 192: $192 \\cdot 100 : 1600 = 19200 : 1600 = 12$. Відповідь: 12.",
+     "choices": [
+      {
+       "text": "833,33",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "88",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "0,12",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "12",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      }
+     ]
+    },
+    {
+     "id": "63673",
+     "text": "Скільки відсотків становить число 1292 від числа 1520?",
+     "solution": "Ціле — це число 1520, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 1520 вміщується в 1292. Одна сота частина 1520 — це $1520 : 100$, тому шукаємо, скільки таких часток у 1292: $1292 \\cdot 100 : 1520 = 129200 : 1520 = 85$. Відповідь: 85.",
+     "choices": [
+      {
+       "text": "117,65",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "85",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,85",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      },
+      {
+       "text": "15",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      }
+     ]
+    },
+    {
+     "id": "63706",
+     "text": "Знайдіть, скільки відсотків складає 1209 від 1860.",
+     "solution": "Ціле — це число 1860, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 1860 вміщується в 1209. Одна сота частина 1860 — це $1860 : 100$, тому шукаємо, скільки таких часток у 1209: $1209 \\cdot 100 : 1860 = 120900 : 1860 = 65$. Відповідь: 65.",
+     "choices": [
+      {
+       "text": "35",
+       "correct": false,
+       "mistakeId": "complement_confusion",
+       "rootId": "percent/part-not-remainder"
+      },
+      {
+       "text": "153,85",
+       "correct": false,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "65",
+       "correct": true,
+       "mistakeId": null,
+       "rootId": null
+      },
+      {
+       "text": "0,65",
+       "correct": false,
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
+      }
+     ]
+    },
+    {
      "id": "63406",
      "text": "Скільки відсотків становить число 32 від числа 128?",
      "solution": "Ціле — це число 128, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 128 вміщується в 32. Одна сота частина 128 — це $128 : 100$, тому шукаємо, скільки таких часток у 32: $32 \\cdot 100 : 128 = 3200 : 128 = 25$. Відповідь: 25.",
@@ -338,8 +590,8 @@
       {
        "text": "0,25",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "25",
@@ -369,8 +621,8 @@
       {
        "text": "0,2",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "500",
@@ -400,8 +652,8 @@
       {
        "text": "0,25",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "400",
@@ -425,8 +677,8 @@
       {
        "text": "0,25",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "75",
@@ -456,8 +708,8 @@
       {
        "text": "0,25",
        "correct": false,
-       "mistakeId": null,
-       "rootId": null
+       "mistakeId": "percent_ignore_conversion",
+       "rootId": "percent/sign-is-not-decoration"
       },
       {
        "text": "25",
@@ -473,254 +725,6 @@
       },
       {
        "text": "400",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      }
-     ]
-    },
-    {
-     "id": "63650",
-     "text": "Знайдіть, скільки відсотків складає 179 від 716.",
-     "solution": "Ціле — це число 716, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 716 вміщується в 179. Одна сота частина 716 — це $716 : 100$, тому шукаємо, скільки таких часток у 179: $179 \\cdot 100 : 716 = 17900 : 716 = 25$. Відповідь: 25.",
-     "choices": [
-      {
-       "text": "400",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      },
-      {
-       "text": "75",
-       "correct": false,
-       "mistakeId": "complement_confusion",
-       "rootId": "percent/part-not-remainder"
-      },
-      {
-       "text": "25",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "0,25",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      }
-     ]
-    },
-    {
-     "id": "63681",
-     "text": "Скільки відсотків становить число 33 від числа 660?",
-     "solution": "Ціле — це число 660, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 660 вміщується в 33. Одна сота частина 660 — це $660 : 100$, тому шукаємо, скільки таких часток у 33: $33 \\cdot 100 : 660 = 3300 : 660 = 5$. Відповідь: 5.",
-     "choices": [
-      {
-       "text": "0,5",
-       "correct": false,
-       "mistakeId": "percent_div_by_10",
-       "rootId": "percent/hundredth-not-tenth"
-      },
-      {
-       "text": "0,05",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "5",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "95",
-       "correct": false,
-       "mistakeId": "complement_confusion",
-       "rootId": "percent/part-not-remainder"
-      }
-     ]
-    },
-    {
-     "id": "63435",
-     "text": "Скільки відсотків становить число 45 від числа 180?",
-     "solution": "Ціле — це число 180, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 180 вміщується в 45. Одна сота частина 180 — це $180 : 100$, тому шукаємо, скільки таких часток у 45: $45 \\cdot 100 : 180 = 4500 : 180 = 25$. Відповідь: 25.",
-     "choices": [
-      {
-       "text": "75",
-       "correct": false,
-       "mistakeId": "complement_confusion",
-       "rootId": "percent/part-not-remainder"
-      },
-      {
-       "text": "400",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      },
-      {
-       "text": "25",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "0,25",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      }
-     ]
-    },
-    {
-     "id": "63556",
-     "text": "Скільки відсотків становить число 25 від числа 125?",
-     "solution": "Ціле — це число 125, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 125 вміщується в 25. Одна сота частина 125 — це $125 : 100$, тому шукаємо, скільки таких часток у 25: $25 \\cdot 100 : 125 = 2500 : 125 = 20$. Відповідь: 20.",
-     "choices": [
-      {
-       "text": "20",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "500",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      },
-      {
-       "text": "0,2",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "80",
-       "correct": false,
-       "mistakeId": "complement_confusion",
-       "rootId": "percent/part-not-remainder"
-      }
-     ]
-    },
-    {
-     "id": "63316",
-     "text": "Знайдіть, скільки відсотків складає 20 від 40.",
-     "solution": "Ціле — це число 40, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 40 вміщується в 20. Одна сота частина 40 — це $40 : 100$, тому шукаємо, скільки таких часток у 20: $20 \\cdot 100 : 40 = 2000 : 40 = 50$. Відповідь: 50.",
-     "choices": [
-      {
-       "text": "5",
-       "correct": false,
-       "mistakeId": "percent_div_by_10",
-       "rootId": "percent/hundredth-not-tenth"
-      },
-      {
-       "text": "0,5",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "50",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "200",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      }
-     ]
-    },
-    {
-     "id": "63320",
-     "text": "Знайдіть, скільки відсотків складає 10 від 100.",
-     "solution": "Ціле — це число 100, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 100 вміщується в 10. Одна сота частина 100 — це $100 : 100$, тому шукаємо, скільки таких часток у 10: $10 \\cdot 100 : 100 = 1000 : 100 = 10$. Відповідь: 10.",
-     "choices": [
-      {
-       "text": "1000",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      },
-      {
-       "text": "90",
-       "correct": false,
-       "mistakeId": "complement_confusion",
-       "rootId": "percent/part-not-remainder"
-      },
-      {
-       "text": "10",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "0,1",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      }
-     ]
-    },
-    {
-     "id": "63324",
-     "text": "Скільки відсотків становить число 36 від числа 72?",
-     "solution": "Ціле — це число 72, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 72 вміщується в 36. Одна сота частина 72 — це $72 : 100$, тому шукаємо, скільки таких часток у 36: $36 \\cdot 100 : 72 = 3600 : 72 = 50$. Відповідь: 50.",
-     "choices": [
-      {
-       "text": "0,5",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "50",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "5",
-       "correct": false,
-       "mistakeId": "percent_div_by_10",
-       "rootId": "percent/hundredth-not-tenth"
-      },
-      {
-       "text": "200",
-       "correct": false,
-       "mistakeId": "fraction_inverted",
-       "rootId": "percent/what-is-the-whole"
-      }
-     ]
-    },
-    {
-     "id": "63328",
-     "text": "Знайдіть, скільки відсотків складає 4 від 8.",
-     "solution": "Ціле — це число 8, його приймаємо за 100%. Питання «скільки відсотків» означає: скільки сотих часток числа 8 вміщується в 4. Одна сота частина 8 — це $8 : 100$, тому шукаємо, скільки таких часток у 4: $4 \\cdot 100 : 8 = 400 : 8 = 50$. Відповідь: 50.",
-     "choices": [
-      {
-       "text": "50",
-       "correct": true,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "5",
-       "correct": false,
-       "mistakeId": "percent_div_by_10",
-       "rootId": "percent/hundredth-not-tenth"
-      },
-      {
-       "text": "0,5",
-       "correct": false,
-       "mistakeId": null,
-       "rootId": null
-      },
-      {
-       "text": "200",
        "correct": false,
        "mistakeId": "fraction_inverted",
        "rootId": "percent/what-is-the-whole"
@@ -747,6 +751,17 @@
     "percent_mul_by_10",
     "percent_mul_by_1000",
     "percent_forgot_divide_100"
+   ]
+  },
+  {
+   "id": "fix_conversion",
+   "type": "remediate",
+   "rootId": "percent/sign-is-not-decoration",
+   "title": "Знак % — не прикраса",
+   "body": "Тут число лишилось те саме — змінився лише значок.\n\n$40\\%$ і $40$ — **різні величини**. $40\\%$ означає «сорок сотих», тобто $0{,}4$. А $40$ — це саме сорок.\n\nПерехід завжди щось міняє: у дріб — множимо на $0{,}01$, назад у відсотки — множимо на $100\\%$.",
+   "covers": [
+    "percent_ignore_conversion",
+    "percent_answered_part_itself"
    ]
   },
   {
