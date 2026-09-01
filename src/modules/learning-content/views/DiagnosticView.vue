@@ -42,6 +42,7 @@ const topic = computed(() => String(route.query.topic || 'percent'))
 const pool = ref(null)
 const run = ref(null)
 const profile = ref(null)
+const catalogue = ref([])
 const error = ref('')
 const started = ref(false)
 const resumed = ref(false)
@@ -51,6 +52,16 @@ onMounted(async () => {
     const res = await fetch(`/diagnostic-${topic.value}.json`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     pool.value = await res.json()
+
+    // Перелік курсів потрібен наприкінці: людині, якій ця тема вже
+    // нічого не додасть, треба запропонувати щось РЕАЛЬНЕ, а не
+    // співчуття. Список беремо з покажчика, не з коду.
+    try {
+      const index = await (await fetch('/courses.json')).json()
+      catalogue.value = index.courses ?? []
+    } catch {
+      catalogue.value = [] // без переліку сторінка однаково працює
+    }
 
     // Незавершена діагностика: §3 прямо каже «можна перервати — стан
     // зберігається, як у звичайному занятті». Придатність перевіряємо
@@ -90,6 +101,20 @@ const plan = computed(() => {
       lesson: (pool.value?.lessons ?? []).includes(s.subgoal) ? s.subgoal : null,
     }))
 })
+
+/**
+ * Перше заняття, з якого варто починати саме цій людині.
+ *
+ * Профіль уже впорядкований аркою курсу, тож «перше слабке» — це і є
+ * найраніша прогалина. Якщо прогалин немає, лишається `null`, і сторінка
+ * пропонує інше: підсумкову роботу або сусідню тему.
+ */
+const startAt = computed(() => plan.value.find((p) => p.lesson) ?? null)
+
+/** Інші зібрані курси — без поточного. */
+const others = computed(() =>
+  catalogue.value.filter((c) => c.topic !== topic.value),
+)
 
 const STATE_WORD = {
   absent: 'починаємо з нуля',
@@ -246,7 +271,8 @@ function finish() {
         </li>
       </ul>
       <p v-else class="mt-4 text-sm text-gray-600">
-        Провалів немає — курс тут тобі мало що додасть.
+        Провалів немає. Це не привід закривати вкладку — можна перевірити
+        себе підсумковою роботою або взяти сусідню тему.
       </p>
 
       <p
@@ -256,6 +282,54 @@ function finish() {
         Це більше, ніж уміщується в поточний курс. Варто або додати занять, або
         звузити тему — вирішувати тобі.
       </p>
+
+      <!--
+        Вихід є ЗАВЖДИ, і це не оздоблення.
+        Досі сторінка закінчувалась текстом: у гілці з прогалинами були
+        посилання на заняття, а в гілці «усе тримається» — жодної дії
+        взагалі. Людина, яка добре впоралась, упиралась у стіну рівно за
+        те, що впоралась. Знайдено живим прогоном власника, не тестами:
+        всі 142 тести перевіряли ЧИСЛА профілю, а не те, чи можна з
+        екрана піти далі.
+      -->
+      <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-5">
+        <a
+          v-if="startAt"
+          :href="`/demo-lesson?lesson=${startAt.lesson}`"
+          class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Почати з «{{ startAt.label }}» →
+        </a>
+        <a
+          v-else
+          :href="`/final?topic=${topic}`"
+          class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Перевірити себе підсумковою роботою →
+        </a>
+
+        <a
+          :href="`/course?topic=${topic}`"
+          class="text-sm text-gray-600 hover:text-gray-900"
+        >
+          усі заняття курсу
+        </a>
+      </div>
+
+      <nav v-if="others.length" class="mt-4">
+        <p class="mb-2 text-xs uppercase tracking-wide text-gray-400">Інші теми</p>
+        <ul class="flex flex-wrap gap-2">
+          <li v-for="c in others" :key="c.topic">
+            <a
+              :href="`/course?topic=${c.topic}`"
+              class="inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 transition hover:border-indigo-300"
+            >
+              {{ c.title }}
+              <span class="text-gray-400">· {{ c.lessons }}</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
 
       <p class="mt-5 text-xs text-gray-400">
         Діагностика дає стартову картину, а не остаточну: заняття уточнюють її
