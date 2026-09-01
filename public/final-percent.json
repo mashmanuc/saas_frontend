@@ -92,66 +92,66 @@
    ]
   },
   {
-   "id": "63359",
+   "id": "14371",
    "subgoal": "percent.of_number",
-   "text": "Обчисліть значення, яке становить 20% від 15.",
-   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 300. Відповідь: 3",
+   "text": "Знайдіть $15\\%$ від числа $200$.",
+   "solution": "Для знаходження $15\\%$ від числа $200$ спочатку запишемо $15\\%$ у вигляді частки: $$15\\% = \\frac{15}{100}.$$ Тепер помножимо це число на $200$: $$200 \\times \\frac{15}{100} = 200 \\times \\frac{3}{20} = 10 \\times 3 = 30.$$ Отже, $15\\%$ від числа $200$ дорівнює $30$.",
    "choices": [
     {
-     "text": "12",
-     "correct": false,
-     "mistakeId": "complement_confusion",
-     "rootId": "percent/part-not-remainder"
-    },
-    {
-     "text": "0,75",
+     "text": "$13$",
      "correct": false,
      "mistakeId": null,
      "rootId": null
     },
     {
-     "text": "3",
-     "correct": true,
-     "mistakeId": null,
-     "rootId": null
-    },
-    {
-     "text": "300",
+     "text": "$3000$",
      "correct": false,
      "mistakeId": "percent_forgot_divide_100",
      "rootId": "percent/hundredth-not-tenth"
+    },
+    {
+     "text": "$15$",
+     "correct": false,
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
+    },
+    {
+     "text": "$30$",
+     "correct": true,
+     "mistakeId": null,
+     "rootId": null
     }
    ]
   },
   {
-   "id": "63375",
+   "id": "14307",
    "subgoal": "percent.of_number",
-   "text": "Обчисліть значення, яке становить 10% від 10.",
-   "solution": "$\\dfrac{a \\cdot x}{100}$. a·x = 100. Відповідь: 1",
+   "text": "Знайдіть $45\\%$ від числа $1200$.",
+   "solution": "Щоб знайти $45\\%$ від числа $1200$, потрібно цю величину виразити дробом і помножити на задане число. \n\n$45\\% = \\frac{45}{100}$. \n\nОтже, $1200 \\cdot \\frac{45}{100} = 1200 \\cdot 0{,}45 = 540$. \n\nВідповідь: $540$.",
    "choices": [
     {
-     "text": "1",
+     "text": "$26$",
+     "correct": false,
+     "mistakeId": null,
+     "rootId": null
+    },
+    {
+     "text": "$540$",
      "correct": true,
      "mistakeId": null,
      "rootId": null
     },
     {
-     "text": "10",
+     "text": "$45$",
      "correct": false,
-     "mistakeId": null,
-     "rootId": null
+     "mistakeId": "percent_ignore_conversion",
+     "rootId": "percent/sign-is-not-decoration"
     },
     {
-     "text": "100",
+     "text": "$54000$",
      "correct": false,
      "mistakeId": "percent_forgot_divide_100",
      "rootId": "percent/hundredth-not-tenth"
-    },
-    {
-     "text": "9",
-     "correct": false,
-     "mistakeId": "complement_confusion",
-     "rootId": "percent/part-not-remainder"
     }
    ]
   },
