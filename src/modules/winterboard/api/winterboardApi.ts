@@ -289,6 +289,14 @@ export const winterboardApi = {
   },
 
   /**
+   * Remote control v1.1: яку дошку цей юзер зараз тримає відкритою на ноутбуці.
+   * 404 → `no_active_board` (ноутбук не на дошці / індекс протух / дошка не власна).
+   */
+  getActiveRemoteSession(): Promise<{ session_id: string; name: string; ts: number | null }> {
+    return apiClient.get(`${BASE}/remote/active/`).then((r: any) => r.data ?? r)
+  },
+
+  /**
    * Asset upload statuses для render cross-reference
    * (ASSET_LIFECYCLE_SSOT INV-ASSET-3). FE резолвить op.src → cdn_url → placeholder.
    */

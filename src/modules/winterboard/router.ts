@@ -212,14 +212,23 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { title: 'Конструктор', roles: ['tutor'], constructorMode: true },
   },
   {
-    // Пульт на телефоні (LAW §9 Remote control, CLASSROOM_REMOTE_VISION крок 5).
-    // Той самий тьютор, інший пристрій. Без opsSync/presence.join — лише
-    // remote.command/remote.state. ?pair=<код з QR> перевіряє ноутбук.
-    path: '/winterboard/:id/remote',
+    // Пульт на телефоні, УНІВЕРСАЛЬНИЙ вхід (v1.1, 2026-09-02): без id і без
+    // коду — сам знаходить дошку, відкриту на ноутбуці (GET /remote/active/).
+    // Один пульт на всі уроки; можна додати на головний екран телефона.
+    // Той самий тьютор, інший пристрій. Без opsSync/presence.join.
+    path: '/remote',
     name: 'winterboard-remote',
     component: () => import('./views/WBRemoteView.vue'),
+    // loginDirect: неавторизований → одразу /auth/login?redirect=/remote, не лендінг
+    meta: { title: 'Пульт', roles: ['tutor'], loginDirect: true },
+  },
+  {
+    // Прямий вхід на пульт конкретної дошки (QR старого зразка / посилання).
+    // Код зв'язки виводиться з id дошки (remotePair), ?pair ігнорується.
+    path: '/winterboard/:id/remote',
+    name: 'winterboard-remote-board',
+    component: () => import('./views/WBRemoteView.vue'),
     props: true,
-    // loginDirect: неавторизований з QR → одразу /auth/login?redirect=…, не лендінг
     meta: { title: 'Пульт', roles: ['tutor'], loginDirect: true },
   },
   {

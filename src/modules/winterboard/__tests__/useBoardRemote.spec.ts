@@ -1,11 +1,19 @@
 // useBoardRemote — ноутбук виконує ЛОКАЛЬНІ дії з команд пульта; pair звіряється тут.
+// v1.1: pair стабільний (derivePair з id дошки), remoteUrl універсальний (/remote).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, reactive, nextTick, defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useBoardRemote, REMOTE_STATE_THROTTLE_MS } from '../composables/useBoardRemote'
+import { derivePair } from '../remote/remotePair'
 
-function setup(enabled = true) {
+const SID = '4ba7fff3-9452-4c42-9ff9-04415ff25d90'
+
+// pair тепер детермінований (той самий для SID у кожному тесті), тож НЕзнятий
+// інстанс із попереднього тесту теж відповість на подію. Прибираємо всі.
+const mounted: Array<{ unmount: () => void }> = []
+
+function setup(enabled = true, sid: string | null = SID) {
   const store = reactive({
     currentPageIndex: 2,
     pageCount: 5,
@@ -15,14 +23,16 @@ function setup(enabled = true) {
   const undo = vi.fn()
   const sendMessage = vi.fn()
   const enabledRef = ref(enabled)
+  const sessionId = ref<string | null>(sid)
   let api!: ReturnType<typeof useBoardRemote>
   const wrapper = mount(defineComponent({
     setup() {
-      api = useBoardRemote({ sessionId: ref('sess-1'), store, undo, sendMessage, enabled: enabledRef })
+      api = useBoardRemote({ sessionId, store, undo, sendMessage, enabled: enabledRef })
       return () => h('div')
     },
   }))
-  return { wrapper, api, store, undo, sendMessage, enabledRef }
+  mounted.push(wrapper)
+  return { wrapper, api, store, undo, sendMessage, enabledRef, sessionId }
 }
 
 function fire(detail: Record<string, unknown>) {
@@ -31,12 +41,33 @@ function fire(detail: Record<string, unknown>) {
 
 describe('useBoardRemote', () => {
   beforeEach(() => { vi.useFakeTimers() })
-  afterEach(() => { vi.useRealTimers() })
+  afterEach(() => {
+    while (mounted.length) { try { mounted.pop()!.unmount() } catch { /* already unmounted */ } }
+    vi.useRealTimers()
+  })
 
-  it('pairCode — 6 цифр; remoteUrl містить сесію і pair', () => {
+  it('pairCode СТАБІЛЬНИЙ: виводиться з id дошки, однаковий після повторного mount', () => {
+    const a = setup()
+    const b = setup()
+    expect(a.api.pairCode.value).toBe(derivePair(SID))
+    expect(b.api.pairCode.value).toBe(a.api.pairCode.value)
+    a.wrapper.unmount(); b.wrapper.unmount()
+  })
+
+  it('pairCode міняється разом із дошкою', async () => {
+    const { api, sessionId } = setup()
+    const before = api.pairCode.value
+    sessionId.value = 'e16e5e94-8a17-4867-a016-34d321604245'
+    await nextTick()
+    expect(api.pairCode.value).not.toBe(before)
+    expect(api.pairCode.value).toBe(derivePair(sessionId.value))
+  })
+
+  it('remoteUrl — універсальний /remote без id і без коду', () => {
     const { api } = setup()
-    expect(api.pairCode.value).toMatch(/^\d{6}$/)
-    expect(api.remoteUrl.value).toContain('/winterboard/sess-1/remote?pair=' + api.pairCode.value)
+    expect(api.remoteUrl.value).toBe(`${window.location.origin}/remote`)
+    expect(api.remoteUrl.value).not.toContain(SID)
+    expect(api.remoteUrl.value).not.toContain('pair=')
   })
 
   it('hello з правильним pair → remote.state з поточною сторінкою; пульт вважається підключеним', () => {
@@ -50,7 +81,7 @@ describe('useBoardRemote', () => {
     })
   })
 
-  it('чужий pair → ігнорується повністю (ні дії, ні стану)', () => {
+  it('чужий pair (інша дошка / стара вкладка) → ігнорується повністю', () => {
     const { api, store, sendMessage } = setup()
     fire({ userId: 'u', pair: '000000', clientId: 'phone', cmd: 'page.goto', args: { index: 4 } })
     expect(store.goToPage).not.toHaveBeenCalled()
@@ -98,7 +129,6 @@ describe('useBoardRemote', () => {
     await nextTick()
     store.currentPageIndex = 4
     await nextTick()
-    // перше — одразу (минув throttle від hello? ні: hello щойно) → усе в таймер
     vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS + 5)
     const states = sendMessage.mock.calls.map(c => c[0]).filter(m => m.type === 'remote.state')
     expect(states.length).toBeGreaterThanOrEqual(1)

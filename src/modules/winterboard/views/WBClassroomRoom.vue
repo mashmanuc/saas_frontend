@@ -267,7 +267,6 @@
     <WBRemoteQrModal
       :visible="showRemoteModal"
       :url="boardRemote.remoteUrl.value"
-      :pair-code="boardRemote.pairCode.value"
       :remote-connected="boardRemote.remoteConnected.value"
       @close="showRemoteModal = false"
     />

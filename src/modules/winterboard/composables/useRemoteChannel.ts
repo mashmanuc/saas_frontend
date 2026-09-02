@@ -6,6 +6,12 @@
 // opsSync. Лише: підключитись тим самим URL/токеном, слати remote.command,
 // слухати remote.state. Обмежений reconnect (як у presence), без нескінченних
 // петель: після MAX_RECONNECT — кнопка «Підключити ще раз» у UI.
+//
+// v1.1: канал НЕ ковтає помилки. `lastError` — код останньої серверної
+// відповіді type=error (forbidden / invalid_message / rate_limit) або
+// закриття (ws_4008 / ws_rejected …); UI пульта показує людині причину.
+// v1 цього не показував — власник дивився на «Зв'язок є» + «Чекаю дошку…»
+// і не міг зрозуміти, що саме не так.
 
 import { ref, onUnmounted, type Ref } from 'vue'
 import { getWsBaseUrl, isPresenceAvailable, _getFreshTokenAsync } from './usePresence'
@@ -31,20 +37,28 @@ function jitter(ms: number): number {
 export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void; onError?: (code: string) => void }) {
   const state: Ref<RemoteChannelState> = ref('idle')
   const lastError = ref<string | null>(null)
+  /** Сесія, до якої канал підключений зараз (для UI і для перепідключення) */
+  const sessionId = ref<string | null>(null)
 
   let ws: WebSocket | null = null
-  let sessionId: string | null = null
   let manualClose = false
   let attempts = 0
+  let everOpened = false
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
   function clearTimer() {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
   }
 
+  function setError(code: string) {
+    lastError.value = code
+    opts.onError?.(code)
+  }
+
   async function connect(sid: string): Promise<void> {
-    sessionId = sid
+    sessionId.value = sid
     manualClose = false
+    everOpened = false
     clearTimer()
 
     if (!isPresenceAvailable()) {
@@ -54,7 +68,7 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
     const token = await _getFreshTokenAsync()
     if (!token) {
       state.value = 'disconnected'
-      lastError.value = 'no_token'
+      setError('no_token')
       return
     }
     if (ws) { try { ws.close() } catch { /* noop */ } ws = null }
@@ -67,6 +81,7 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
     } catch (err) {
       console.error(LOG_PREFIX, 'WebSocket create failed', err)
       state.value = 'disconnected'
+      setError('ws_create_failed')
       return
     }
     ws = socket
@@ -74,6 +89,7 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
     socket.onopen = () => {
       if (ws !== socket) return
       attempts = 0
+      everOpened = true
       state.value = 'connected'
       lastError.value = null
     }
@@ -89,8 +105,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
           pageCount: Number(msg.page_count),
         })
       } else if (msg?.type === 'error') {
-        lastError.value = String(msg.code ?? 'error')
-        opts.onError?.(String(msg.code ?? 'error'))
+        // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати
+        setError(String(msg.code ?? 'error'))
       }
       // решта типів (presence.*, ops.applied, stroke.broadcast…) пульту не потрібні
     }
@@ -98,10 +114,17 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
       if (ws !== socket) return   // late close від попереднього сокета (INV-WS-1)
       ws = null
       if (manualClose) { state.value = 'disconnected'; return }
-      // 4401/4403/4008 — не мережа, а відмова: не крутити reconnect
+      // 4401/4403/4008 — відмова сервера ПІСЛЯ accept: не крутити reconnect
       if (ev.code === 4401 || ev.code === 4403 || ev.code === 4008) {
         state.value = 'disconnected'
-        lastError.value = `ws_${ev.code}`
+        setError(`ws_${ev.code}`)
+        return
+      }
+      // Закрився, так і не відкрившись (1006 на handshake) = сервер відхилив
+      // до accept: ліміт з'єднань на акаунт (2) або auth. Reconnect не допоможе.
+      if (!everOpened && ev.code === 1006) {
+        state.value = 'disconnected'
+        setError('ws_rejected')
         return
       }
       scheduleReconnect()
@@ -110,23 +133,23 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
   }
 
   function scheduleReconnect() {
-    if (!sessionId || manualClose) return
+    if (!sessionId.value || manualClose) return
     if (attempts >= MAX_RECONNECT) {
       state.value = 'disconnected'
-      lastError.value = 'reconnect_exhausted'
+      setError('reconnect_exhausted')
       return
     }
     attempts += 1
     state.value = 'reconnecting'
     const delay = jitter(RECONNECT_BASE_MS * Math.pow(2, attempts - 1))
     clearTimer()
-    reconnectTimer = setTimeout(() => { if (sessionId) void connect(sessionId) }, delay)
+    reconnectTimer = setTimeout(() => { if (sessionId.value) void connect(sessionId.value) }, delay)
   }
 
   /** Явна повторна спроба з UI після вичерпаних reconnect. */
   function retry(): void {
     attempts = 0
-    if (sessionId) void connect(sessionId)
+    if (sessionId.value) void connect(sessionId.value)
   }
 
   function disconnect(): void {
@@ -144,5 +167,5 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
 
   onUnmounted(disconnect)
 
-  return { state, lastError, connect, disconnect, retry, send }
+  return { state, lastError, sessionId, connect, disconnect, retry, send }
 }

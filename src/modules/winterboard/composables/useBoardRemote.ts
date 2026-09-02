@@ -6,10 +6,13 @@
 // через REST, як від кліку). undo — локальний стек. phrase → штатний конвеєр
 // Інтегралика (CustomEvent m4sh:integralyk-ask), як від голосу з ноутбука.
 //
-// Код зв'язки `pair` перевіряється ТУТ: сервер лише ретранслює. Команди з чужим
-// pair (стара вкладка, інший пристрій того ж юзера) ігноруються.
+// v1.1 (2026-09-02): код зв'язки СТАБІЛЬНИЙ — виводиться з id дошки
+// (remotePair.derivePair), не випадковий на кожен mount. Пульт відкривається
+// універсальною адресою /remote і сам знаходить активну дошку; QR — лише
+// зручний спосіб відкрити ту адресу на телефоні.
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
+import { derivePair } from '../remote/remotePair'
 
 export interface BoardRemoteStore {
   currentPageIndex: number
@@ -39,12 +42,6 @@ export interface RemoteCommandDetail {
 /** Мінімальна пауза між remote.state при швидкому гортанні (сервер: 10/с). */
 export const REMOTE_STATE_THROTTLE_MS = 150
 
-function randomPairCode(): string {
-  // 6 цифр: легко продиктувати, якщо QR не зчитався
-  const n = Math.floor(Math.random() * 1_000_000)
-  return String(n).padStart(6, '0')
-}
-
 function randomClientId(): string {
   try {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
@@ -53,17 +50,18 @@ function randomClientId(): string {
 }
 
 export function useBoardRemote(opts: UseBoardRemoteOptions) {
-  const pairCode = ref(randomPairCode())
+  /** Стабільний код дошки — той самий після перезавантаження ноутбука */
+  const pairCode = computed(() => derivePair(opts.sessionId.value ?? ''))
   const clientId = randomClientId()
   /** Останній hello від пульта (ms) — null = пульт ще не підключався */
   const lastRemoteSeenAt = ref<number | null>(null)
   const remoteConnected = computed(() => lastRemoteSeenAt.value !== null)
   const ignoredCount = ref(0)
 
+  /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
   const remoteUrl = computed(() => {
-    const sid = opts.sessionId.value
-    if (!sid || typeof window === 'undefined') return ''
-    return `${window.location.origin}/winterboard/${sid}/remote?pair=${pairCode.value}`
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/remote`
   })
 
   // ── remote.state → пульт ─────────────────────────────────────────────

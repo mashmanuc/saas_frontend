@@ -90,6 +90,10 @@ export const SECTIONED_MENU_BY_ROLE = {
         { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
         { label: 'sidebar.item.myReplays', icon: 'film', to: '/winterboard/replays', hint: 'sidebar.hint.myReplays' },
         { label: 'sidebar.item.materials', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
+        // Пульт на телефон (LAW §9 Remote control v1.1, 2026-09-02): універсальний
+        // вхід /remote — сам знаходить дошку, відкриту на ноутбуці. Власник:
+        // «додай окремо в меню кнопку пульта, щоб можна було легко повернутись».
+        { label: 'sidebar.item.remote', icon: 'smartphone', to: '/remote', hint: 'sidebar.hint.remote' },
       ],
     },
     {

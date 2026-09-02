@@ -46,6 +46,7 @@ import {
   Gamepad2,
   LifeBuoy,
   ClipboardList,
+  Smartphone,
 } from 'lucide-vue-next'
 
 import type { Component } from 'vue'
@@ -74,6 +75,7 @@ const ICON_MAP: Record<string, Component> = {
   'gamepad-2': Gamepad2,
   'life-buoy': LifeBuoy,
   'clipboard-list': ClipboardList,
+  'smartphone': Smartphone,
 }
 
 const props = defineProps<{
