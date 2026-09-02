@@ -23,7 +23,15 @@
     </div>
   </div>
 
-  <div v-else class="wb-classroom-room" :class="{ 'wb-classroom-room--locked': isLocked }">
+  <div
+    v-else
+    class="wb-classroom-room"
+    :class="{
+      'wb-classroom-room--locked': isLocked,
+      'wb-classroom-room--projector': projector.enabled.value,
+      'wb-classroom-room--ui-hidden': projector.enabled.value && !projector.uiVisible.value,
+    }"
+  >
     <!-- Phase 2 (2026-04-27) per SSOT INV-16/INV-20:
          DesyncRecoveryBanner — sticky top, non-blocking (board still readable).
          ProtocolMismatchModal — full-screen blocking, single Reload button.
@@ -168,6 +176,21 @@
           @finalize="handleFinalizeRecording"
           @restart="handleRestartRecordingRequest"
         />
+        <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
+             самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
+             wake lock + автоховання шапки. Лише вигляд цього пристрою —
+             ops/presence не чіпає. -->
+        <button
+          v-if="classroomRole.isTeacher.value"
+          type="button"
+          class="wb-header-btn wb-header-btn--fullscreen"
+          :title="projector.enabled.value ? t('winterboard.room.exitFullscreen') : t('winterboard.room.fullscreen')"
+          :aria-pressed="projector.enabled.value"
+          @click="projector.toggle()"
+        >
+          <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
@@ -553,6 +576,7 @@ import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 // Phase 2 G-fix (2026-04-28): opsSyncStore bootstrap wiring (single write path)
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import { useProjectorMode } from '../composables/useProjectorMode'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
@@ -592,6 +616,8 @@ const { showToast } = useToast()
 const history = useHistory({ maxSize: 100 })
 const locking = useLocking(store)
 const deviceModeState = useDeviceMode()
+// Режим проєктора — явний перемикач учителя (див. WBSoloRoom, той самий composable).
+const projector = useProjectorMode(deviceModeState.deviceMode)
 
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
 /** group_id з lesson — для GroupContentSidebar у classroom */
@@ -2522,6 +2548,11 @@ onBeforeUnmount(async () => {
 }
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
+
+/* Режим проєктора: шапка зникає після бездіяльності, повертається від дотику. */
+.wb-classroom-room--ui-hidden .wb-classroom-room__header {
+  display: none;
+}
 
 .wb-classroom-room__header {
   display: flex;

@@ -1,6 +1,10 @@
 <template>
   <div
     class="wb-solo-room"
+    :class="{
+      'wb-solo-room--projector': projector.enabled.value,
+      'wb-solo-room--ui-hidden': projector.enabled.value && !projector.uiVisible.value,
+    }"
     :data-device-mode="deviceModeState.deviceMode.value"
     :data-input-mode="deviceModeState.inputMode.value"
     :data-orientation="deviceModeState.orientation.value"
@@ -238,13 +242,19 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
+        <!-- Повний екран = режим проєктора (CLASSROOM_REMOTE_VISION крок 2):
+             та сама кнопка, що й раніше, але тепер разом із fullscreen тримає
+             екран від засинання (wake lock) і ховає шапку після 5 с
+             бездіяльності; будь-який дотик повертає її. Лише вигляд на цьому
+             пристрої — контрактів дошки не чіпає. -->
         <button
           type="button"
           class="wb-header-btn wb-header-btn--fullscreen"
-          :title="isFullscreen ? t('winterboard.room.exitFullscreen') : t('winterboard.room.fullscreen')"
-          @click="toggleFullscreen"
+          :title="projector.enabled.value ? t('winterboard.room.exitFullscreen') : t('winterboard.room.fullscreen')"
+          :aria-pressed="projector.enabled.value"
+          @click="projector.toggle()"
         >
-          <svg v-if="!isFullscreen" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <!-- Mobile: toggle materials/shapes sidebar as drawer -->
@@ -1063,6 +1073,7 @@ import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import { useProjectorMode } from '../composables/useProjectorMode'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
 // Стан живе у localStorage; opsSync/recorder/presence НЕ під'єднуються.
@@ -1175,6 +1186,10 @@ function onUpsellConnect(): void {
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
+// Повний екран = режим проєктора (крок 2 CLASSROOM_REMOTE_VISION): кнопка
+// повного екрана в шапці тепер іде через цей composable. Не підміняє
+// deviceModeState для решти layout: панелі як були, ховається лише шапка.
+const projector = useProjectorMode(deviceModeState.deviceMode)
 const { t, locale } = useI18n()
 const { announce } = useAnnouncer()
 
@@ -1660,26 +1675,9 @@ const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tabl
 
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
-const isFullscreen = ref(false)
-
-async function toggleFullscreen() {
-  try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen()
-      isFullscreen.value = true
-    } else {
-      await document.exitFullscreen()
-      isFullscreen.value = false
-    }
-  } catch { /* Fullscreen not supported or denied */ }
-}
-
-// Listen for fullscreen changes (Esc key exits fullscreen)
-onMounted(() => {
-  document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
-  })
-})
+// Повний екран: локальні isFullscreen/toggleFullscreen замінено на `projector`
+// (useProjectorMode, оголошено вище): той самий requestFullscreen + слухач
+// fullscreenchange (Esc), плюс wake lock і автоховання шапки.
 
 // ── Responsive canvas resize: auto-fit zoom when container changes size ──
 const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate: recalculateCanvas } = useCanvasResize({
@@ -3898,6 +3896,12 @@ watch(() => store.workspaceName, (name) => {
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
+
+/* Режим проєктора: шапка зникає після бездіяльності, полотно займає її місце.
+   Будь-який дотик/рух повертає шапку (useDisplayMode.resetAutoHide). */
+.wb-solo-room--ui-hidden .wb-solo-room__header {
+  display: none;
+}
 
 .wb-solo-room__header {
   display: flex;
