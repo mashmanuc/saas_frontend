@@ -1154,6 +1154,15 @@ router.beforeEach(async (to, from, next) => {
     if (to.path === '/' && isLocalWorkspaceEnabled()) {
       return next('/workspace')
     }
+    // Deep-link з QR/посилання на власний інструмент (пульт на телефон,
+    // 2026-09-02): людина вже клієнт, їй потрібен ЛОГІН, а не лендінг.
+    // Власник зі свого телефона: «нахуя на лендінг, а не на логін?» — на
+    // мобільному лендінгу кнопки «Увійти» не видно, і QR веде в глухий кут.
+    // Маршрут позначає це `meta.loginDirect: true`; LoginView шанує ?redirect
+    // (лише внутрішні шляхи), тож після входу людина опиняється там, куди йшла.
+    if (to.matched.some((record) => record.meta?.loginDirect)) {
+      return next({ path: '/auth/login', query: { redirect: to.fullPath } })
+    }
     return next({ path: '/start', query: { redirect: to.fullPath } })
   }
 

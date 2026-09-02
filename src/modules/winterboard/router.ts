@@ -219,7 +219,8 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     name: 'winterboard-remote',
     component: () => import('./views/WBRemoteView.vue'),
     props: true,
-    meta: { title: 'Пульт', roles: ['tutor'] },
+    // loginDirect: неавторизований з QR → одразу /auth/login?redirect=…, не лендінг
+    meta: { title: 'Пульт', roles: ['tutor'], loginDirect: true },
   },
   {
     // Solo session editor — tutor-only
