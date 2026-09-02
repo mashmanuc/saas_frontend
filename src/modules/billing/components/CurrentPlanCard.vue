@@ -119,12 +119,28 @@
         </ul>
       </div>
 
-      <!-- 2026-07-28: кнопку «Скасувати підписку» ПРИБРАНО (рішення власника).
-           Вона ставила cancel_at_period_end=true — «не поновлювати наступного
-           періоду». Але Plata/mono НЕ має recurring: кожен платіж — разовий
-           інвойс, автосписання не буде в будь-якому разі. Тобто кнопка
-           «скасовувала» те, чого не станеться, і плодила питання в юзера.
-           Повернути — лише якщо зʼявиться реальне автопродовження. -->
+      <!-- 2026-07-28: кнопку «Скасувати підписку» прибирали (рішення власника),
+           бо Plata/mono НЕ має recurring — кожен платіж разовий інвойс,
+           автосписання не буде в будь-якому разі, і кнопка «скасовувала» те,
+           чого не станеться. 2026-09-01 (launch-план A7): Stripe-підписка —
+           СПРАВЖНІЙ recurring (`mode='subscription'` у stripe_provider.py),
+           тому та сама причина видалення сюди НЕ поширюється; повертаємо
+           кнопку, але ЛИШЕ для provider='stripe'. Plata/LiqPay й далі без
+           кнопки — стара логіка коментаря вище лишається правдивою для них. -->
+      <div
+        v-if="cancelScheduled"
+        class="rounded-lg border border-warning/40 bg-warning-light/20 p-3 text-sm text-warning-dark"
+      >
+        {{ $t('billing.cancelScheduled') }}
+      </div>
+      <div v-else-if="canCancel" class="space-y-2 border-t border-border pt-4">
+        <p class="text-xs text-muted-foreground">
+          {{ $t('billing.cancelDescription') }}
+        </p>
+        <Button variant="outline" :loading="loading" @click="$emit('cancel')">
+          {{ $t('billing.cancelSubscription') }}
+        </Button>
+      </div>
     </div>
   </Card>
 </template>
@@ -136,6 +152,8 @@ import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import UpgradeHint from './UpgradeHint.vue'
 import { buildPlanFeatures } from '@/modules/payments/planLimitFeatures'
+
+defineEmits(['cancel'])
 
 /**
  * 2026-07-27 (скрін власника): невідомі коди фіч рендерились СИРИМИ ключами
@@ -183,6 +201,27 @@ const { d, t, te } = useI18n()
  * що й на картках тарифів, тож формулювання «до / необмежено» ідентичні.
  */
 const planLimitFeatures = computed(() => buildPlanFeatures(props.entitlement?.limits, t))
+
+/**
+ * A7 (launch-план, 2026-09-01): кнопка скасування — ЛИШЕ для справжніх
+ * recurring-провайдерів. Plata/LiqPay не мають recurring (кожен платіж
+ * разовий), тож "скасувати" для них не має об'єкта дії. Stripe і Paddle —
+ * mode='subscription'/справжня recurring-підписка з реальним автосписанням.
+ * 2026-09-01 (Phase 2): додано 'paddle' — активний провайдер міжнародного
+ * ринку (Stripe не підтримує Україну як країну акаунта, лишається dormant).
+ */
+const RECURRING_PROVIDERS = ['stripe', 'paddle']
+const isRecurringProviderSubscription = computed(() => RECURRING_PROVIDERS.includes(props.subscription?.provider))
+
+const canCancel = computed(() => {
+  return isRecurringProviderSubscription.value
+    && ['active', 'past_due'].includes(props.subscription?.status)
+    && !props.subscription?.cancel_at_period_end
+})
+
+const cancelScheduled = computed(() => {
+  return isRecurringProviderSubscription.value && props.subscription?.cancel_at_period_end === true
+})
 
 function formatDate(dateString) {
   if (!dateString) return ''

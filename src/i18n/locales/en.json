@@ -5532,6 +5532,16 @@
       "pendingActivation": "Plan is activating. This can take a couple of minutes.",
       "pendingMessage": "We’re confirming the payment. As soon as Plata finishes verification, your subscription will activate automatically."
     },
+    "pay": {
+      "title": "Subscription payment",
+      "opening": "Opening the secure payment window…",
+      "ready": "If the payment window didn't open automatically, use the button below.",
+      "reopen": "Open payment",
+      "missingTxn": "This payment link is invalid or expired. Go back to plans and try again.",
+      "notConfigured": "Payment is temporarily unavailable. Please try again later.",
+      "loadFailed": "Couldn't load the payment module. Check your connection and refresh the page.",
+      "backToBilling": "Back to plans"
+    },
     "pendingPlan": {
       "title": "Plan {plan} is activating",
       "description": "Your new plan is waiting for payment confirmation. Access will update right after finalization.",
@@ -5624,7 +5634,8 @@
     "planDescriptions": {
       "BUSINESS": "Full feature set for teams and schools",
       "FREE": "Basic features to get started",
-      "PRO": "Advanced features for professional tutors"
+      "PRO": "Advanced features for professional tutors",
+      "PRO-USD": "Advanced features for professional tutors — billed in USD"
     },
     "subscriptionRequired": {
       "defaultMessage": "Upgrade your plan to access advanced features",

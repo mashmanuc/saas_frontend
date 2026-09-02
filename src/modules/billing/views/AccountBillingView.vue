@@ -48,6 +48,7 @@
         :subscription="billingStore.subscription"
         :entitlement="billingStore.entitlement"
         :loading="billingStore.isLoadingAction"
+        @cancel="handleCancelSubscription"
       />
 
       <PlansList
@@ -69,6 +70,7 @@
 
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useBillingStore } from '../stores/billingStore'
 import Button from '@/ui/Button.vue'
 import PaymentHistorySection from '../components/PaymentHistorySection.vue'
@@ -78,6 +80,7 @@ import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
 
 const billingStore = useBillingStore()
+const { t } = useI18n()
 
 const plansError = computed(() => {
   if (billingStore.lastError && billingStore.plans.length === 0) {
@@ -115,13 +118,31 @@ async function handleSelectPlan(planCode) {
     notifyError('Неможливо оплатити: plan code відсутній')
     return
   }
-  
+
   try {
     await billingStore.startCheckout(planCode)
   } catch (error) {
     console.error('Checkout failed:', error)
     const { notifyError } = await import('@/utils/notify')
     notifyError(error?.message || 'Помилка при створенні checkout сесії')
+  }
+}
+
+// A7 (launch-план, 2026-09-01): скасування — лише для Stripe-підписок
+// (CurrentPlanCard емітить 'cancel' тільки коли provider='stripe', canCancel).
+// cancel_at_period_end=true — доступ триває до кінця оплаченого періоду,
+// той самий вибір, що мала стара кнопка до видалення 2026-07-28.
+async function handleCancelSubscription() {
+  const { notifySuccess, notifyError } = await import('@/utils/notify')
+  if (!window.confirm(t('billing.cancelConfirm'))) {
+    return
+  }
+  try {
+    await billingStore.cancel(true)
+    notifySuccess(t('billing.cancelSuccess'))
+  } catch (error) {
+    console.error('Cancel subscription failed:', error)
+    notifyError(error?.message || t('billing.cancelError'))
   }
 }
 

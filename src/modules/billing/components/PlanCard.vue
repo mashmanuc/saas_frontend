@@ -172,7 +172,9 @@ const isFree = computed(() => {
 })
 
 const isPro = computed(() => {
-  return props.plan.code?.toUpperCase() === 'PRO'
+  // 2026-09-01: startsWith, не === — 'PRO-USD' (міжнародний Stripe-варіант,
+  // той самий тариф/фічі, інша валюта/провайдер) теж отримує бейдж «Рекомендований».
+  return (props.plan.code?.toUpperCase() || '').startsWith('PRO')
 })
 
 const isBusiness = computed(() => {

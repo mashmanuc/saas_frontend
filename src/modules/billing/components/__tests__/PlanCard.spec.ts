@@ -214,6 +214,20 @@ describe('PlanCard', () => {
       expect(wrapper.text()).toContain('billing.plan.recommended')
     })
 
+    it('2026-09-01: shows "Recommended" badge for PRO-USD (international Stripe variant, same tier as PRO)', () => {
+      const wrapper = mountPlanCard({
+        plan: {
+          ...mockPlan,
+          code: 'PRO-USD',
+          title: 'Pro (International)',
+          price: { amount: 1999, currency: 'USD' }
+        }
+      })
+
+      expect(wrapper.text()).toContain('billing.plan.recommended')
+      expect(wrapper.text()).not.toContain('billing.plan.bestForTeams')
+    })
+
     it('shows "Best for Teams" badge for BUSINESS plan', () => {
       const wrapper = mountPlanCard({
         plan: {

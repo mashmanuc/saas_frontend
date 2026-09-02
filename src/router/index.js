@@ -1074,6 +1074,14 @@ const routes = [
     component: () => import('../modules/knowledge/views/LessonViewPage.vue'),
     meta: { requiresAuth: false, layout: 'blank' }
   },
+  // Paddle: хост overlay-чекауту (Paddle.js). Публічний — сюди веде
+  // checkout.url з ?_ptxn=, а auth-guard redirect загубив би query.
+  {
+    path: '/billing/pay',
+    name: 'billing-pay',
+    component: () => import('../modules/billing/views/BillingPayView.vue'),
+    meta: { requiresAuth: false },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 

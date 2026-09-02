@@ -141,8 +141,11 @@ export const useBillingStore = defineStore('billing-v074', () => {
         // LiqPay: POST form submission
         validateCheckoutResponse(response.provider, response.session_id, response.checkout)
         submitCheckoutForm(response.checkout)
-      } else if ((response.provider === 'stripe' || response.provider === 'plata') && response.checkout_url) {
-        // Stripe / Plata: redirect на сторінку провайдера (new tab — зберігає auth-сесію)
+      } else if (
+        (response.provider === 'stripe' || response.provider === 'plata' || response.provider === 'paddle')
+        && response.checkout_url
+      ) {
+        // Stripe / Plata / Paddle: redirect на сторінку провайдера (new tab — зберігає auth-сесію)
         window.open(response.checkout_url, '_blank')
       } else {
         throw new Error(`Unsupported provider: ${response.provider}`)

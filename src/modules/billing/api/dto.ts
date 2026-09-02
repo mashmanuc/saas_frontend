@@ -8,7 +8,7 @@
 /**
  * Payment provider type
  */
-export type PaymentProvider = 'liqpay' | 'stripe' | 'plata' | 'none'
+export type PaymentProvider = 'liqpay' | 'stripe' | 'plata' | 'paddle' | 'none'
 
 /**
  * Subscription status enum
