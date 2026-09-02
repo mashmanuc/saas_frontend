@@ -1224,7 +1224,7 @@ function onEyesMove(e) {
     if (!host) return
     const r = host.getBoundingClientRect()
     const ang = Math.atan2(pupilY - (r.top + r.height / 2), pupilX - (r.left + r.width / 2))
-    const m = r.width > 40 ? 2 : 1.3   // fab 46px / маскот у шапці 28px
+    const m = r.width > 40 ? 2.6 : 1.3   // fab 64px / маскот у шапці 28px (зіниці рухаються пропорційно)
     const t = `translate(${(Math.cos(ang) * m).toFixed(2)}px, ${(Math.sin(ang) * m).toFixed(2)}px)`
     host.querySelectorAll('.itg-pupil').forEach((p) => { p.style.transform = t })
   })
@@ -1414,7 +1414,9 @@ function scheduleTip() {
 // Pointer-події: працює мишею, ПЕРОМ планшета і пальцем. Клік vs drag розрізняємо
 // порогом 5px; після перетягування click-подію гасимо, щоб палітра не відкривалась.
 const FAB_POS_KEY = 'm4sh_integralyk_pos'
-const FAB_SIZE = 46
+// 46 → 64 (2026-09-02): вчителі й діти на живих уроках просять більшого Інтегралика —
+// на проєкторі 46px губиться. Тримати в синхроні з .cmdp-fab-wrap/.cmdp-fab у <style>.
+const FAB_SIZE = 64
 const fabPos = ref(null)               // {x,y} | null → дефолтна позиція з CSS (top-right)
 let fabDrag = null                     // {startX,startY,origX,origY,moved}
 let fabDragJustMoved = false
@@ -1706,8 +1708,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Плаваючий «Інтегралик»: напівпрозорий, під зоною дзвіночка; z нижче за оверлей (60). */
-.cmdp-fab-wrap { position: fixed; top: 74px; right: 18px; z-index: 55; width: 46px; height: 46px; }
-.cmdp-fab { position: absolute; inset: 0; width: 46px; height: 46px; border: 0; border-radius: 50%;
+.cmdp-fab-wrap { position: fixed; top: 74px; right: 18px; z-index: 55; width: 64px; height: 64px; } /* = FAB_SIZE */
+.cmdp-fab { position: absolute; inset: 0; width: 64px; height: 64px; border: 0; border-radius: 50%;
   cursor: grab; background: transparent; padding: 0;
   touch-action: none; /* drag пером/пальцем, а не скрол сторінки */
   opacity: .6; transition: opacity .15s ease;
