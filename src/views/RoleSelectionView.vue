@@ -96,8 +96,10 @@ async function changeLanguage(langCode: string) {
     <nav class="nav-header">
       <div class="nav-logo">M4SH <span class="beta-badge">{{ t('roleSelection.betaBadge') }}</span></div>
       <div class="nav-links">
-        <button @click="scrollToHowItWorks" class="nav-link">{{ t('roleSelection.nav.howItWorks') }}</button>
-        <button @click="scrollToBenefits" class="nav-link">{{ t('roleSelection.nav.benefits') }}</button>
+        <!-- nav-link-section: секційні якорі (скрол по сторінці) — на мобільному
+             ховаються (див. @media нижче), щоб «Увійти» не виїжджала за край. -->
+        <button @click="scrollToHowItWorks" class="nav-link nav-link-section">{{ t('roleSelection.nav.howItWorks') }}</button>
+        <button @click="scrollToBenefits" class="nav-link nav-link-section">{{ t('roleSelection.nav.benefits') }}</button>
         
         <!-- Language Switcher -->
         <div class="language-switcher">
@@ -1464,7 +1466,23 @@ async function changeLanguage(langCode: string) {
     font-size: 0.875rem;
   }
 
+  /* P0 воронки (2026-09-02, власник з Android): ряд логотип + 2 секційні
+     лінки + мова + «Увійти» не влазив у 360–412px, .nav-links без flex-wrap,
+     а overflow-x:hidden контейнера ОБРІЗАВ «Увійти» — вхід був недосяжний.
+     Секційні лінки = просто скрол по сторінці, на мобільному ховаємо;
+     лишається логотип + мова + «Увійти». Тач-цілі ≥44px. */
+  .nav-link-section {
+    display: none;
+  }
+
+  .nav-link-login {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+    white-space: nowrap;
+  }
+
   .language-btn {
+    min-height: 44px;
     padding: 0.5rem 0.75rem !important;
   }
 
