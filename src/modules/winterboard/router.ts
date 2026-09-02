@@ -212,6 +212,16 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { title: 'Конструктор', roles: ['tutor'], constructorMode: true },
   },
   {
+    // Пульт на телефоні (LAW §9 Remote control, CLASSROOM_REMOTE_VISION крок 5).
+    // Той самий тьютор, інший пристрій. Без opsSync/presence.join — лише
+    // remote.command/remote.state. ?pair=<код з QR> перевіряє ноутбук.
+    path: '/winterboard/:id/remote',
+    name: 'winterboard-remote',
+    component: () => import('./views/WBRemoteView.vue'),
+    props: true,
+    meta: { title: 'Пульт', roles: ['tutor'] },
+  },
+  {
     // Solo session editor — tutor-only
     path: '/winterboard/:id',
     name: 'winterboard-solo',

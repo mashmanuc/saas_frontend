@@ -250,6 +250,31 @@ interface WBLaserPointerMsg {
 }
 
 /**
+ * LAW §9 Remote control (2026-09-02): телефон-пульт → ноутбук. Ефемерно, без БД.
+ * `pair` звіряє ноутбук (useBoardRemote), сервер лише ретранслює.
+ */
+interface WBRemoteCommandMsg {
+  type: 'remote.command'
+  user_id: string
+  pair: string
+  client_id: string
+  cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase'
+  args: { index?: number; text?: string }
+  ts: number
+}
+
+/** Ноутбук → телефон: де зараз дошка (щоб пульт показував «3 / 7» і слав абсолютні індекси). */
+interface WBRemoteStateMsg {
+  type: 'remote.state'
+  user_id: string
+  pair: string
+  client_id: string
+  page_index: number
+  page_count: number
+  ts: number
+}
+
+/**
  * Стан запису уроку змінився — BE `_broadcast_recording_state`.
  *
  * Адресат насамперед УЧЕНЬ: викладач бачить панель керування з таймером, а
@@ -332,6 +357,8 @@ type WBServerMessage =
   | WBStateUpdateMsg
   | WBStrokeBroadcastMsg
   | WBLaserPointerMsg
+  | WBRemoteCommandMsg
+  | WBRemoteStateMsg
   | WBSessionLockMsg
   | WBRecordingStateMsg
   | WBTestStartMsg
@@ -360,7 +387,9 @@ export interface UsePresenceOptions {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getWsBaseUrl(): string {
+// Експортовано 2026-09-02 для useRemoteChannel (телефон-пульт): той самий URL,
+// та сама перевірка доступності WS, той самий свіжий токен — без дубля логіки.
+export function getWsBaseUrl(): string {
   if (typeof window === 'undefined') return 'ws://localhost:8000'
   // In production, use dedicated WS backend if configured
   // Priority 1: explicit base URL
@@ -378,7 +407,7 @@ function getWsBaseUrl(): string {
  * On Cloudflare Pages (static hosting), WS is not available.
  * Returns false if no dedicated WS backend is configured in production.
  */
-function isPresenceAvailable(): boolean {
+export function isPresenceAvailable(): boolean {
   // Always available in dev (Vite proxy or local backend)
   if (import.meta.env.DEV) return true
   // Available if explicit WS URL is configured (either base or winterboard-specific)
@@ -419,7 +448,7 @@ function _isTokenExpiringSoon(jwt: string): boolean {
   }
 }
 
-async function _getFreshTokenAsync(): Promise<string | null> {
+export async function _getFreshTokenAsync(): Promise<string | null> {
   try {
     const { useAuthStore } = await import('@/modules/auth/store/authStore')
     const authStore = useAuthStore()
@@ -904,6 +933,34 @@ export function usePresence(options: UsePresenceOptions) {
             pageIndex: msg.pageIndex,
             action: msg.action,
             userId: msg.userId,
+          },
+        }))
+        break
+      }
+
+      // LAW §9 Remote control: БЕЗ user_id-фільтра — телефон і ноутбук це ОДИН
+      // юзер; сервер уже виключив відправника по channel. Звірка `pair` — у
+      // useBoardRemote (ноутбук) / WBRemoteView (телефон).
+      case 'remote.command': {
+        window.dispatchEvent(new CustomEvent('wb:remote-command', {
+          detail: {
+            userId: msg.user_id,
+            pair: msg.pair,
+            clientId: msg.client_id,
+            cmd: msg.cmd,
+            args: msg.args ?? {},
+          },
+        }))
+        break
+      }
+      case 'remote.state': {
+        window.dispatchEvent(new CustomEvent('wb:remote-state', {
+          detail: {
+            userId: msg.user_id,
+            pair: msg.pair,
+            clientId: msg.client_id,
+            pageIndex: msg.page_index,
+            pageCount: msg.page_count,
           },
         }))
         break

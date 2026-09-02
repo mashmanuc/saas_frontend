@@ -151,6 +151,20 @@
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
+        <!-- Пульт на телефон (LAW §9 Remote control): QR → телефон керує сторінками,
+             новою сторінкою, undo і голосом. Потрібен WS (presence), тому лише
+             хмарна сесія власника; у Local Workspace і конструкторі — нема. -->
+        <button
+          v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
+          type="button"
+          class="wb-header-btn"
+          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value }"
+          :title="t('winterboard.remote.button')"
+          :aria-label="t('winterboard.remote.button')"
+          @click="showRemoteModal = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
         <!-- Phase B: Share replay — прихована в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
         <button
@@ -966,6 +980,15 @@
       @close="showInviteStudentModal = false"
     />
 
+    <!-- Пульт на телефон: QR з URL пульта + код зв'язки -->
+    <WBRemoteQrModal
+      :visible="showRemoteModal"
+      :url="boardRemote.remoteUrl.value"
+      :pair-code="boardRemote.pairCode.value"
+      :remote-connected="boardRemote.remoteConnected.value"
+      @close="showRemoteModal = false"
+    />
+
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="wb-confirm-overlay" @click.self="showDeleteConfirm = false">
@@ -1074,6 +1097,8 @@ import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
+import { useBoardRemote } from '../composables/useBoardRemote'
+import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
 // Стан живе у localStorage; opsSync/recorder/presence НЕ під'єднуються.
@@ -1559,6 +1584,23 @@ const presence = usePresence({
   displayName: authStore.user?.first_name || authStore.user?.email || 'Anonymous',
   color: '#2563eb',
   token: authStore.access && authStore.access !== '__cookie__' ? authStore.access : undefined,
+})
+
+// Пульт на телефон (LAW §9 Remote control): ноутбук виконує ЛОКАЛЬНІ дії з
+// команд телефона через той самий presence-сокет; запис у стан — штатний REST
+// від goToPage/addPage/undo, як від кліку. pair перевіряється тут, не на сервері.
+const showRemoteModal = ref(false)
+const boardRemote = useBoardRemote({
+  sessionId,
+  store: {
+    get currentPageIndex() { return store.currentPageIndex },
+    get pageCount() { return store.pageCount },
+    goToPage: (i: number) => store.goToPage(i),
+    addPage: () => store.addPage(),
+  },
+  undo: () => handleUndo(),
+  sendMessage: (data) => presence.sendMessage(data),
+  enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace),
 })
 
 // A5.1: Follow mode composable

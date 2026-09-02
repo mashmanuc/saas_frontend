@@ -191,6 +191,18 @@
           <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <!-- Пульт на телефон (teacher only; LAW §9 Remote control) -->
+        <button
+          v-if="classroomRole.isTeacher.value"
+          type="button"
+          class="wb-header-btn"
+          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value }"
+          :title="t('winterboard.remote.button')"
+          :aria-label="t('winterboard.remote.button')"
+          @click="showRemoteModal = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
@@ -250,6 +262,15 @@
         </button>
       </div>
     </header>
+
+    <!-- Пульт на телефон: QR (Teleport → body, тож місце в шаблоні не важливе) -->
+    <WBRemoteQrModal
+      :visible="showRemoteModal"
+      :url="boardRemote.remoteUrl.value"
+      :pair-code="boardRemote.pairCode.value"
+      :remote-connected="boardRemote.remoteConnected.value"
+      @close="showRemoteModal = false"
+    />
 
     <!-- ── Main: Toolbar + Canvas + Sidebar (teacher) ──────────────────── -->
     <!-- Order mirrors WBSoloRoom: toolbar/thumbnails ліворуч, canvas центр,
@@ -577,6 +598,8 @@ import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
+import { useBoardRemote } from '../composables/useBoardRemote'
+import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
@@ -1064,6 +1087,23 @@ const presence = usePresence({
   displayName: authStore.user?.first_name || authStore.user?.email || 'Anonymous',
   color: '#2563eb',
   token: authStore.access && authStore.access !== '__cookie__' ? authStore.access : undefined,
+})
+
+// Пульт на телефон (LAW §9 Remote control) — лише вчитель (owner/host): він і
+// є єдиний writer класу, тож локальні дії з команд телефона персистяться
+// штатно. Учень пульта не має (enabled=false → команди ігноруються).
+const showRemoteModal = ref(false)
+const boardRemote = useBoardRemote({
+  sessionId: resolvedSessionId,
+  store: {
+    get currentPageIndex() { return store.currentPageIndex },
+    get pageCount() { return store.pageCount },
+    goToPage: (i: number) => store.goToPage(i),
+    addPage: () => store.addPage(),
+  },
+  undo: () => handleUndo(),
+  sendMessage: (data) => presence.sendMessage(data),
+  enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
 })
 
 const followMode = useFollowMode({
