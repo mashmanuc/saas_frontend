@@ -825,7 +825,15 @@
   },
   "auth": {
     "layout": {
-      "ariaLabel": "Authentication layout"
+      "ariaLabel": "Authentication layout",
+      "formLabel": "Authentication form",
+      "workspaceDescription": "Sign in to return to the board and keep your work in one place.",
+      "bannerKicker": "Learning platform",
+      "bannerTitle": "A lesson that does not disappear",
+      "bannerDescription": "Teacher and student share one board: the lesson is saved so you can revisit it step by step.",
+      "bannerPointOne": "Write together — the student sees the board in real time",
+      "bannerPointTwo": "Save everything as a separate record",
+      "bannerPointThree": "Replay the lesson after it ends"
     },
     "login": {
       "title": "Login",
