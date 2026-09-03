@@ -6074,7 +6074,7 @@
       },
       "s3": {
         "title": "3. Payment Methods",
-        "body": "<p>We accept payment through the following payment system:</p><ul><li><strong>Plata by mono</strong> — for card payments</li></ul><p>By making a payment, you agree to the terms of the selected payment system.</p>"
+        "body": "<p>We accept payment through the following payment systems:</p><ul><li><strong>Plata by mono</strong> — for card payments in Ukrainian hryvnia</li><li><strong>Paddle.com Market Ltd</strong> — for payments in US dollars. Paddle acts as the Merchant of Record for those transactions and handles order-related enquiries, taxes and refunds.</li></ul><p>By making a payment, you agree to the terms of the selected payment system.</p>"
       },
       "s4": {
         "title": "4. Automatic Subscription Renewal",
