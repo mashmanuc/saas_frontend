@@ -60,6 +60,9 @@ const MSG = {
   boardNotAnswering: 'Дошка відкрита, але не відповідає.', boardNotAnsweringHint: 'Ctrl+Shift+R',
   noToken: 'протухла', serverRejected: 'Сервер відхилив ({code})',
   prev: 'Назад', next: 'Далі', newPage: 'Нова сторінка', undo: 'Відмінити',
+  fitTask: 'Задача на екран', fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
+  showAnswer: 'Відповідь', hideAnswer: 'Сховати відповідь', showSolution: 'Розбір', hideSolution: 'Сховати розбір',
+  noCards: 'На цій сторінці нема карток задач',
   holdToTalk: 'Говорю', listening: 'Слухаю…', voiceUnsupported: 'x',
 }
 
@@ -194,6 +197,55 @@ describe('WBRemoteView v1.1', () => {
     expect(lastCmd()).toMatchObject({ cmd: 'page.goto', args: { index: 2 } })
     onFinalCb?.('додай завдання по числовій нерівності')
     expect(lastCmd()).toMatchObject({ cmd: 'phrase', args: { text: 'додай завдання по числовій нерівності' } })
+  })
+
+  it('v1.2: кнопки вигляду/карток вимкнені без стану; зі станом шлють view.fit / view.zoom / view.scroll / card.reveal', async () => {
+    const w = mountView()
+    await flushPromises()
+    const minis = () => w.findAll('.wb-remote__mini')
+    expect(minis().every(b => (b.element as HTMLButtonElement).disabled)).toBe(true)
+
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true } })
+    await nextTick()
+    send.mockClear()
+    await minis()[0].trigger('click')   // Задача на екран
+    expect(lastCmd()).toMatchObject({ cmd: 'view.fit' })
+    await minis()[1].trigger('click')   // A−
+    expect(lastCmd()).toMatchObject({ cmd: 'view.zoom', args: { delta: -1 } })
+    await minis()[2].trigger('click')   // A+
+    expect(lastCmd()).toMatchObject({ cmd: 'view.zoom', args: { delta: 1 } })
+    await minis()[3].trigger('click')   // ▲
+    expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: -1 } })
+    await minis()[4].trigger('click')   // ▼
+    expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: 1 } })
+    await minis()[5].trigger('click')   // Відповідь
+    expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
+    expect(minis()[5].text()).toBe(MSG.showAnswer)
+    expect(minis()[6].text()).toBe(MSG.hideSolution)   // solution=true → «Сховати розбір»
+  })
+
+  it('v1.2: без карток на сторінці — «Задача на екран» і «Відповідь/Розбір» вимкнені, підказка показана', async () => {
+    const w = mountView()
+    await flushPromises()
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, cards: { count: 0, answer: null, solution: null } })
+    await nextTick()
+    const minis = w.findAll('.wb-remote__mini')
+    expect((minis[0].element as HTMLButtonElement).disabled).toBe(true)
+    expect((minis[1].element as HTMLButtonElement).disabled).toBe(false)   // A− працює і без карток
+    expect((minis[5].element as HTMLButtonElement).disabled).toBe(true)
+    expect(w.text()).toContain(MSG.noCards)
+  })
+
+  it('v1.2: голос «покажи відповідь» → card.reveal; «вниз» → view.scroll', async () => {
+    mountView()
+    await flushPromises()
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, cards: { count: 1, answer: false, solution: false } })
+    await nextTick()
+    send.mockClear()
+    onFinalCb?.('покажи відповідь')
+    expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
+    onFinalCb?.('вниз')
+    expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: 1 } })
   })
 
   it('«Відключити» лишає сторінку на місці й показує «Підключити»; «Підключити» знову шукає дошку', async () => {

@@ -23,6 +23,10 @@ export interface RemoteStateDetail {
   clientId: string
   pageIndex: number
   pageCount: number
+  /** v1.2 — масштаб полотна на ноутбуці (для інформації) */
+  zoom?: number
+  /** v1.2 — картки задач поточної сторінки: скільки, чи показано відповідь/розбір усім */
+  cards?: { count: number; answer: boolean | null; solution: boolean | null }
 }
 
 const LOG_PREFIX = '[WB:remote]'
@@ -98,12 +102,21 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
       let msg: any
       try { msg = JSON.parse(ev.data) } catch { return }
       if (msg?.type === 'remote.state') {
-        opts.onState({
+        const detail: RemoteStateDetail = {
           pair: String(msg.pair ?? ''),
           clientId: String(msg.client_id ?? ''),
           pageIndex: Number(msg.page_index),
           pageCount: Number(msg.page_count),
-        })
+        }
+        if (typeof msg.zoom === 'number') detail.zoom = msg.zoom
+        if (msg.cards && typeof msg.cards === 'object') {
+          detail.cards = {
+            count: Number(msg.cards.count) || 0,
+            answer: typeof msg.cards.answer === 'boolean' ? msg.cards.answer : null,
+            solution: typeof msg.cards.solution === 'boolean' ? msg.cards.solution : null,
+          }
+        }
+        opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати
         setError(String(msg.code ?? 'error'))

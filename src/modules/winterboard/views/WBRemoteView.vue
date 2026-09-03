@@ -61,6 +61,26 @@
       </button>
     </div>
 
+    <!-- v1.2 — вигляд для учнів і картки задач (з уроку власника 2026-09-03) -->
+    <div class="wb-remote__row">
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!isReady || !hasCards" @click="sendCmd('view.fit')">
+        {{ t('winterboard.remote.fitTask') }}
+      </button>
+      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="sendCmd('view.zoom', { delta: -1 })">A−</button>
+      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
+    </div>
+    <div class="wb-remote__row">
+      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
+      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.answer }" :disabled="!isReady || !hasCards" @click="sendCmd('card.reveal', { what: 'answer' })">
+        {{ cards?.answer ? t('winterboard.remote.hideAnswer') : t('winterboard.remote.showAnswer') }}
+      </button>
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.solution }" :disabled="!isReady || !hasCards" @click="sendCmd('card.reveal', { what: 'solution' })">
+        {{ cards?.solution ? t('winterboard.remote.hideSolution') : t('winterboard.remote.showSolution') }}
+      </button>
+    </div>
+    <p v-if="isReady && cards && cards.count === 0" class="wb-remote__note">{{ t('winterboard.remote.noCards') }}</p>
+
     <!-- Говорю (тримати) -->
     <button
       v-if="ptt.supported"
@@ -126,6 +146,9 @@ const pair = computed(() => (boardId.value ? derivePair(boardId.value) : ''))
 const pageIndex = ref<number | null>(null)
 const pageCount = ref<number | null>(null)
 const lastPhrase = ref('')
+/** v1.2 — картки задач на поточній сторінці (з remote.state ноутбука) */
+const cards = ref<{ count: number; answer: boolean | null; solution: boolean | null } | null>(null)
+const hasCards = computed(() => !!cards.value && cards.value.count > 0)
 
 /** Причина, чому пульт не керує (null = усе гаразд або ще шукаємо) */
 type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable'
@@ -144,8 +167,9 @@ const channel = useRemoteChannel({
     if (s.pair !== pair.value) { tel('state_foreign'); return }   // стан для іншої дошки / старої вкладки
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
+    cards.value = s.cards ?? null
     reasonKey.value = null
-    if (!firstStateSeen) { firstStateSeen = true; tel('state_first', { pages: s.pageCount }) }
+    if (!firstStateSeen) { firstStateSeen = true; tel('state_first', { pages: s.pageCount, cards: s.cards?.count ?? null }) }
     vibrate(15)
   },
   onError(code) {
@@ -201,7 +225,8 @@ function vibrate(ms: number) {
   try { navigator.vibrate?.(ms) } catch { /* noop */ }
 }
 
-function sendCmd(cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase', args: Record<string, unknown> = {}) {
+type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
   if (cmd !== 'hello') tel('cmd', { cmd, sent: ok, len: cmd === 'phrase' ? String(args.text ?? '').length : undefined })
@@ -227,6 +252,13 @@ const ptt = usePushToTalk({
     if (cmd === 'page.prev') return goRel(-1)
     if (cmd === 'page.new') return void sendCmd('page.new')
     if (cmd === 'undo') return void sendCmd('undo')
+    if (cmd === 'view.fit') return void sendCmd('view.fit')
+    if (cmd === 'view.zoom.in') return void sendCmd('view.zoom', { delta: 1 })
+    if (cmd === 'view.zoom.out') return void sendCmd('view.zoom', { delta: -1 })
+    if (cmd === 'view.scroll.up') return void sendCmd('view.scroll', { dir: -1 })
+    if (cmd === 'view.scroll.down') return void sendCmd('view.scroll', { dir: 1 })
+    if (cmd === 'card.answer') return void sendCmd('card.reveal', { what: 'answer' })
+    if (cmd === 'card.solution') return void sendCmd('card.reveal', { what: 'solution' })
     sendCmd('phrase', { text })
   },
 })
@@ -377,6 +409,17 @@ onBeforeUnmount(() => {
 .wb-remote__btn:disabled { opacity: .35; }
 .wb-remote__btn-icon { font-size: 34px; line-height: 1; }
 .wb-remote__btn-label { font-size: 14px; color: #cbd5e1; }
+
+/* v1.2 — другий ряд: вигляд і картки */
+.wb-remote__row { display: flex; gap: 10px; }
+.wb-remote__mini {
+  flex: 1; min-height: 56px; border: 0; border-radius: 14px; background: #1e293b; color: #f8fafc;
+  font-size: 16px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__mini--wide { flex: 2; font-size: 14px; }
+.wb-remote__mini.is-on { background: #0f766e; }
+.wb-remote__mini:active { background: #334155; }
+.wb-remote__mini:disabled { opacity: .35; }
 
 .wb-remote__talk {
   margin-top: auto; min-height: 96px; border: 0; border-radius: 22px;

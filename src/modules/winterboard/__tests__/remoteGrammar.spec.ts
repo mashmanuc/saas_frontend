@@ -49,4 +49,32 @@ describe('remoteGrammar — голосові команди пульта', () =>
   it('слово-частина не спрацьовує як команда («далійська»)', () => {
     expect(matchRemotePhrase('далійська')).toBeNull()
   })
+
+  // v1.2 — з уроку власника 2026-09-03
+  it.each([
+    ['покажи задачу', 'view.fit'],
+    ['задача на екран', 'view.fit'],
+    ['збільш завдання', 'view.fit'],
+    ['задача', 'view.fit'],
+    ['більше', 'view.zoom.in'],
+    ['збільш', 'view.zoom.in'],
+    ['менше', 'view.zoom.out'],
+    ['зменши', 'view.zoom.out'],
+    ['вгору', 'view.scroll.up'],
+    ['вниз', 'view.scroll.down'],
+    ['покажи відповідь', 'card.answer'],
+    ['сховай відповідь', 'card.answer'],
+    ['відповідь', 'card.answer'],
+    ['покажи розбір', 'card.solution'],
+    ['сховай розбір', 'card.solution'],
+    ['покажи розв\'язання', 'card.solution'],
+  ])('«%s» → %s (v1.2)', (phrase, cmd) => {
+    expect(matchRemotePhrase(phrase)).toBe(cmd)
+  })
+
+  it('«відповідь» перемагає «покажи задачу»; «наступна сторінка» не стає скролом', () => {
+    expect(matchRemotePhrase('покажи відповідь до задачі')).toBe('card.answer')
+    expect(matchRemotePhrase('наступна сторінка')).toBe('page.next')
+    expect(matchRemotePhrase('додай завдання на нерівності')).toBeNull()   // Інтегралику
+  })
 })

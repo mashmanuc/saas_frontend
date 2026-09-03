@@ -598,6 +598,7 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 
 // Learning Content integration
@@ -1103,6 +1104,7 @@ const boardRemote = useBoardRemote({
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
+  view: createRemoteViewAdapter(store as any),
 })
 
 const followMode = useFollowMode({

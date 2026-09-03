@@ -1097,6 +1097,7 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
@@ -1600,6 +1601,8 @@ const boardRemote = useBoardRemote({
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace),
+  // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
+  view: createRemoteViewAdapter(store as any),
 })
 
 // A5.1: Follow mode composable

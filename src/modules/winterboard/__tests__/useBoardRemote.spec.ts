@@ -149,6 +149,74 @@ describe('useBoardRemote', () => {
     expect(store.goToPage).not.toHaveBeenCalled()
   })
 
+  // v1.2 — вигляд і картки через адаптер
+  function setupWithView() {
+    const view = {
+      fitTask: vi.fn(() => 0), zoomBy: vi.fn(() => 1.5), scrollBy: vi.fn(() => -240),
+      reveal: vi.fn(() => 1), resetFocus: vi.fn(), taskCards: vi.fn(() => []),
+      summary: vi.fn(() => ({ count: 2, answer: false, solution: true, zoom: 1.5 })),
+    }
+    const store = reactive({
+      currentPageIndex: 0, pageCount: 3,
+      goToPage: vi.fn((i: number) => { store.currentPageIndex = i }),
+      addPage: vi.fn(),
+    })
+    const sendMessage = vi.fn()
+    let api!: ReturnType<typeof useBoardRemote>
+    const wrapper = mount(defineComponent({
+      setup() {
+        api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), view: view as any })
+        return () => h('div')
+      },
+    }))
+    mounted.push(wrapper)
+    return { api, view, store, sendMessage }
+  }
+
+  it('v1.2: hello → remote.state містить cards і zoom з адаптера', () => {
+    const { api, sendMessage } = setupWithView()
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'hello', args: {} })
+    expect(sendMessage.mock.calls[0][0]).toMatchObject({
+      type: 'remote.state', zoom: 1.5, cards: { count: 2, answer: false, solution: true },
+    })
+  })
+
+  it('v1.2: view.fit / view.zoom / view.scroll / card.reveal → адаптер; стан підтверджується', () => {
+    const { api, view, sendMessage } = setupWithView()
+    const pair = api.pairCode.value
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.fit', args: {} })
+    expect(view.fitTask).toHaveBeenCalledTimes(1)
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 1 } })
+    expect(view.zoomBy).toHaveBeenCalledWith(1)
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 0 } })
+    expect(view.zoomBy).toHaveBeenCalledTimes(1)          // 0 — не команда
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.scroll', args: { dir: 1 } })
+    expect(view.scrollBy).toHaveBeenCalledWith(1)
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'solution' } })
+    expect(view.reveal).toHaveBeenCalledWith('solution')
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'both' } })
+    expect(view.reveal).toHaveBeenCalledTimes(1)
+    // fit/zoom/reveal шлють стан (3), scroll — ні
+    vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS * 4)
+    const states = sendMessage.mock.calls.filter(c => c[0].type === 'remote.state').length
+    expect(states).toBeGreaterThanOrEqual(1)
+  })
+
+  it('v1.2: зміна сторінки скидає фокус картки в адаптері', async () => {
+    const { view, store } = setupWithView()
+    store.currentPageIndex = 2
+    await nextTick()
+    expect(view.resetFocus).toHaveBeenCalled()
+  })
+
+  it('v1.2: без адаптера v1.2-команди ігноруються, старі працюють', () => {
+    const { api, store } = setup()
+    const pair = api.pairCode.value
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.fit', args: {} })
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'page.goto', args: { index: 1 } })
+    expect(store.goToPage).toHaveBeenCalledWith(1)
+  })
+
   it('unmount знімає слухача', () => {
     const { wrapper, api, store } = setup()
     const pair = api.pairCode.value

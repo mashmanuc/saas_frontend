@@ -10,9 +10,14 @@
 // (remotePair.derivePair), не випадковий на кожен mount. Пульт відкривається
 // універсальною адресою /remote і сам знаходить активну дошку; QR — лише
 // зручний спосіб відкрити ту адресу на телефоні.
+//
+// v1.2 (2026-09-03, з уроку): view.fit / view.zoom / view.scroll / card.reveal
+// через RemoteViewAdapter (масштаб і скрол полотна, «відповідь/розбір» на
+// картках задач). Стан для пульта доповнено `cards` і `zoom`.
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
+import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 
 export interface BoardRemoteStore {
   currentPageIndex: number
@@ -29,14 +34,16 @@ export interface UseBoardRemoteOptions {
   sendMessage: (data: Record<string, unknown>) => void
   /** Ноутбук виконує команди лише коли він власник/учитель */
   enabled: Ref<boolean> | ComputedRef<boolean>
+  /** v1.2: масштаб/скрол/картки. Необов'язково — без нього v1.2-команди ігноруються. */
+  view?: RemoteViewAdapter
 }
 
 export interface RemoteCommandDetail {
   userId: string
   pair: string
   clientId: string
-  cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase'
-  args: { index?: number; text?: string }
+  cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+  args: { index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' }
 }
 
 /** Мінімальна пауза між remote.state при швидкому гортанні (сервер: 10/с). */
@@ -70,13 +77,19 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
 
   function sendStateNow(): void {
     lastStateSentAt = Date.now()
-    opts.sendMessage({
+    const msg: Record<string, unknown> = {
       type: 'remote.state',
       pair: pairCode.value,
       client_id: clientId,
       page_index: opts.store.currentPageIndex,
       page_count: opts.store.pageCount,
-    })
+    }
+    if (opts.view) {
+      const s = opts.view.summary()
+      msg.zoom = s.zoom
+      msg.cards = { count: s.count, answer: s.answer, solution: s.solution }
+    }
+    opts.sendMessage(msg)
   }
 
   function sendState(): void {
@@ -93,7 +106,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   // Пульт підключений → тримати його в курсі, де дошка
   watch(
     () => [opts.store.currentPageIndex, opts.store.pageCount] as const,
-    () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    ([idx], [prevIdx]) => {
+      if (idx !== prevIdx) opts.view?.resetFocus()
+      if (remoteConnected.value && opts.enabled.value) sendState()
+    },
   )
 
   // ── remote.command ← пульт ───────────────────────────────────────────
@@ -104,6 +120,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
 
     lastRemoteSeenAt.value = Date.now()
     const store = opts.store
+    const view = opts.view
 
     switch (d.cmd) {
       case 'hello':
@@ -128,6 +145,36 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const text = String(d.args?.text ?? '').trim()
         if (!text) return
         window.dispatchEvent(new CustomEvent('m4sh:integralyk-ask', { detail: { text } }))
+        return
+      }
+      // v1.2 — вигляд полотна і картки задач; стан підтверджуємо явно, бо
+      // watch стежить лише за сторінками
+      case 'view.fit':
+        if (!view) return
+        view.fitTask()
+        sendState()
+        return
+      case 'view.zoom': {
+        if (!view) return
+        const delta = Number(d.args?.delta)
+        if (!Number.isInteger(delta) || delta === 0) return
+        view.zoomBy(delta)
+        sendState()
+        return
+      }
+      case 'view.scroll': {
+        if (!view) return
+        const dir = Number(d.args?.dir)
+        if (dir !== 1 && dir !== -1) return
+        view.scrollBy(dir)
+        return
+      }
+      case 'card.reveal': {
+        if (!view) return
+        const what = d.args?.what
+        if (what !== 'answer' && what !== 'solution') return
+        view.reveal(what)
+        sendState()
         return
       }
       default:
