@@ -6077,8 +6077,8 @@
         "body": "<p>We accept payment through the following payment systems:</p><ul><li><strong>Plata by mono</strong> — for card payments in Ukrainian hryvnia</li><li><strong>Paddle.com Market Ltd</strong> — for payments in US dollars. Paddle acts as the Merchant of Record for those transactions and handles order-related enquiries, taxes and refunds.</li></ul><p>By making a payment, you agree to the terms of the selected payment system.</p>"
       },
       "s4": {
-        "title": "4. Automatic Subscription Renewal",
-        "body": "<p>Subscriptions automatically renew at the end of each billing period (monthly or annually). Payment is automatically charged to your card.</p><p>You may cancel automatic renewal at any time in your subscription settings. Cancellation takes effect at the end of the current paid period.</p>"
+        "title": "4. Subscription Renewal",
+        "body": "<p>How renewal works depends on the payment method.</p><ul><li><strong>Ukrainian hryvnia (Plata by mono)</strong> — there is no automatic charge. Your subscription runs until the end of the paid period; to continue, you pay for the next period yourself in the &laquo;My plan&raquo; section. Nothing is charged without your action — access to paid features simply ends. If you pay before the current period ends, the paid days are added to the remaining ones (up to 12 months ahead).</li><li><strong>US dollars (Paddle)</strong> — your subscription renews automatically: at the end of each billing period Paddle charges your saved card. You can cancel automatic renewal at any time in the &laquo;My plan&raquo; section; cancellation stops the next charge, and access continues until the end of the period you have already paid for.</li></ul>"
       },
       "s5": {
         "title": "5. Changing Your Pricing Plan",
