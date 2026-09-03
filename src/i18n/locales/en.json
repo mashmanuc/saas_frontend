@@ -888,7 +888,6 @@
         "title": "Choose account type",
         "subtitle": "You're not registered yet. How will you use M4SH? ({email})",
         "student": "I'm a student",
-        "studentHint": "Looking for a tutor, want to learn",
         "tutor": "I'm a teacher or tutor",
         "tutorHint": "I run lessons and invite my own students",
         "studentByInviteOnly": "Students are invited by their teacher — there is no separate student sign-up."
@@ -981,7 +980,6 @@
         "statusLabel": "Status:",
         "invalidStatusHint": "Contact the tutor to request a new invite.",
         "emailLabel": "Email",
-        "tutorLabel": "Tutor",
         "expiresLabel": "Expires at",
         "noteLabel": "Note",
         "extraTitle": "Additional data",
@@ -2580,9 +2578,6 @@
     },
     "activeTutors": {
       "title": "My teachers"
-    },
-    "findTutor": {
-      "title": "Find Tutor"
     }
   },
   "chat": {
@@ -3453,7 +3448,6 @@
       },
       "profile": {
         "headline": "Professional headline",
-        "headlinePlaceholder": "e.g., Experienced Math Tutor",
         "bio": "About you",
         "bioPlaceholder": "Tell students about your teaching experience...",
         "photo": "Profile photo"
@@ -6908,8 +6902,6 @@
     },
     "student": {
       "title": "Student",
-      "description": "Learn with the tutor who invited you in a live interactive class.",
-      "feature1": "Live lessons with your tutor on an interactive board",
       "feature2": "Flexible scheduling",
       "feature3": "Interactive learning tools",
       "cta": "Start Learning"
@@ -9946,7 +9938,6 @@
     "demo": {
       "title": "Demo lessons",
       "subtitle": "See how lessons go with this teacher",
-      "empty": "This tutor hasn't published demo lessons yet",
       "duration": "{minutes} min",
       "durationHours": "{hours} h {minutes} min"
     },
@@ -10336,9 +10327,7 @@
       "title": "Great! You're connected",
       "subtitle": "You can now communicate with {tutorName}",
       "goToDashboard": "Go to My Dashboard",
-      "viewProfile": "View Tutor Profile",
-      "bookLesson": "Book Your First Lesson",
-      "exploreMore": "Find More Tutors"
+      "bookLesson": "Book Your First Lesson"
     },
     "register": {
       "subtitle": "Create an account to join the lessons",
