@@ -40,6 +40,9 @@ vi.mock('@/modules/auth/store/authStore', () => ({
   useAuthStore: () => ({ user: { email: 'teacher@m4sh.local' } }),
 }))
 
+const trackEvent = vi.fn()
+vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: (...a: any[]) => trackEvent(...a) }))
+
 const getActiveRemoteSession = vi.fn()
 vi.mock('../api/winterboardApi', () => ({
   winterboardApi: { getActiveRemoteSession: (...a: any[]) => getActiveRemoteSession(...a) },

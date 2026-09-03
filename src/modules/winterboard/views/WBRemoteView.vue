@@ -103,6 +103,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { trackEvent } from '@/utils/telemetryAgent'
 import { winterboardApi } from '../api/winterboardApi'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
@@ -131,12 +132,20 @@ type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boar
 const reasonKey = ref<ReasonKey | null>(null)
 const reasonCode = ref('')
 
+// 2026-09-03, власник: «постав телеметрію, щоб ти бачив, як я підключаюсь
+// або намагаюсь». Без тексту фраз — лише події, причини, коди, довжини.
+let firstStateSeen = false
+function tel(event: string, ctx: Record<string, unknown> = {}) {
+  try { trackEvent(`wb.remote.${event}`, { board: boardId.value ?? null, ...ctx }) } catch { /* noop */ }
+}
+
 const channel = useRemoteChannel({
   onState(s) {
-    if (s.pair !== pair.value) return   // стан для іншої дошки / старої вкладки
+    if (s.pair !== pair.value) { tel('state_foreign'); return }   // стан для іншої дошки / старої вкладки
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
     reasonKey.value = null
+    if (!firstStateSeen) { firstStateSeen = true; tel('state_first', { pages: s.pageCount }) }
     vibrate(15)
   },
   onError(code) {
@@ -145,6 +154,7 @@ const channel = useRemoteChannel({
     else if (code === 'ws_4008' || code === 'ws_rejected') reasonKey.value = 'tooManyConnections'
     else if (code === 'no_token' || code === 'ws_4401' || code === 'ws_4403') reasonKey.value = 'noToken'
     else reasonKey.value = 'serverRejected'
+    tel('reason', { reason: reasonKey.value, code })
   },
 })
 
@@ -194,6 +204,7 @@ function vibrate(ms: number) {
 function sendCmd(cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase', args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
+  if (cmd !== 'hello') tel('cmd', { cmd, sent: ok, len: cmd === 'phrase' ? String(args.text ?? '').length : undefined })
   if (ok) vibrate(8)
   return ok
 }
@@ -211,6 +222,7 @@ const ptt = usePushToTalk({
   onFinal(text) {
     lastPhrase.value = `«${text}»`
     const cmd = matchRemotePhrase(text)
+    tel('ptt', { route: cmd ? 'grammar' : 'ai', grammar: cmd ?? null, len: text.length })
     if (cmd === 'page.next') return goRel(1)
     if (cmd === 'page.prev') return goRel(-1)
     if (cmd === 'page.new') return void sendCmd('page.new')
@@ -229,6 +241,7 @@ async function resolveBoard(): Promise<string | null> {
     const r = await winterboardApi.getActiveRemoteSession()
     boardId.value = r.session_id
     boardName.value = r.name || ''
+    tel('resolve', { found: true, via: 'api' })
     return r.session_id
   } catch (err: any) {
     const status = err?.response?.status ?? err?.status
@@ -236,6 +249,7 @@ async function resolveBoard(): Promise<string | null> {
     boardName.value = ''
     reasonKey.value = status === 404 ? 'noActiveBoard' : 'serverRejected'
     reasonCode.value = status ? `http_${status}` : 'network'
+    tel('resolve', { found: false, via: 'api', status: status ?? 'network' })
     return null
   }
 }
@@ -245,6 +259,7 @@ async function resolveAndConnect() {
   pageCount.value = null
   reasonKey.value = null
   reasonCode.value = ''
+  firstStateSeen = false
   const sid = await resolveBoard()
   if (!sid) return
   await channel.connect(sid)
@@ -272,6 +287,7 @@ function helloUntilState() {
       // 6 hello за ~5 с без жодного remote.state і без error від сервера:
       // ноутбук у кімнаті, але не слухає (стара збірка) або не власник
       reasonKey.value = 'boardNotAnswering'
+      tel('reason', { reason: 'boardNotAnswering', code: 'no_state_after_hello' })
       return
     }
     sendCmd('hello')
@@ -279,6 +295,7 @@ function helloUntilState() {
 }
 
 const stopStateWatch = watch(channel.state, (s) => {
+  tel('channel', { state: s })
   if (s === 'connected') {
     pageIndex.value = null
     pageCount.value = null
