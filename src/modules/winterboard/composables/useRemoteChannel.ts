@@ -80,7 +80,11 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
     if (ws) { try { ws.close() } catch { /* noop */ } ws = null }
 
     state.value = attempts > 0 ? 'reconnecting' : 'connecting'
-    const url = `${getWsBaseUrl()}/ws/winterboard/${sid}/?token=${encodeURIComponent(token)}`
+    // `client=remote` — мітка для телеметрії: дошка й пульт ходять в один
+    // endpoint з роллю `owner`, і в розборі уроку 2026-09-03 їх неможливо було
+    // розрізнити. Сервер бере мітку лише в лог (білий список board|remote),
+    // на поведінку вона не впливає.
+    const url = `${getWsBaseUrl()}/ws/winterboard/${sid}/?token=${encodeURIComponent(token)}&client=remote`
     let socket: WebSocket
     try {
       socket = new WebSocket(url)
