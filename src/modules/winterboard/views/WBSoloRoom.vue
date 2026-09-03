@@ -15,6 +15,15 @@
          Mutually exclusive by canonical reason taxonomy у opsSyncStore. -->
     <DesyncRecoveryBanner />
     <ProtocolMismatchModal />
+    <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
+         відхиляє всі операції. Постійний банер + read-only полотно замість
+         мовчазного тосту (борг із живого уроку 2026-09-03). -->
+    <WBFrozenBanner
+      :visible="isBoardFrozen && !constructorMode"
+      :can-restart="isSessionOwner && !!sessionId"
+      :busy="isRecordingLoading || isRestartingRecording"
+      @restart="handleRestartRecordingRequest"
+    />
 
     <!-- B5.1: Skip to canvas link for keyboard/screen reader users -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
@@ -452,7 +461,7 @@
           ref="canvasRef"
           class="wb-page-fade"
           :class="{ 'wb-page-fade--out': isPageFading }"
-          :tool="store.currentTool"
+          :tool="soloEffectiveTool"
           :color="store.currentColor"
           :size="store.currentSize"
           :strokes="displayStrokes"
@@ -1099,6 +1108,8 @@ import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
+import WBFrozenBanner from '../components/replay/WBFrozenBanner.vue'
+import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
 // Стан живе у localStorage; opsSync/recorder/presence НЕ під'єднуються.
@@ -1603,7 +1614,23 @@ const boardRemote = useBoardRemote({
   enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: createRemoteViewAdapter(store as any),
+  frozen: computed(() => isBoardFrozen.value),
 })
+
+// Дошка з фіналізованим записом — сервер відхиляє всі операції (INV-23).
+// Джерела істини: detail.is_replay_frozen при завантаженні, «replay created»
+// після шарингу, і подія від recorder-а, якщо запис фіналізував watchdog
+// поки дошка відкрита. Полотно read-only + банер (див. template).
+const isBoardFrozen = computed(() => soloRecordingState.value === 'finalized')
+// WBCanvas не має пропа read-only: як і в класній кімнаті, блокуємо малювання,
+// примусово віддаючи полотну інструмент «виділення», поки дошка заморожена.
+const soloEffectiveTool = computed(() => (isBoardFrozen.value ? 'select' : store.currentTool))
+function onLifecycleBlocked(e: Event) {
+  const d = (e as CustomEvent<LifecycleBlockDetail>).detail
+  if (d?.code === 'REPLAY_FROZEN_NO_WRITE') isReplayFrozen.value = true
+}
+window.addEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked)
+onBeforeUnmount(() => window.removeEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked))
 
 // A5.1: Follow mode composable
 const followMode = useFollowMode({

@@ -38,6 +38,13 @@
          Mutually exclusive by canonical reason taxonomy у opsSyncStore. -->
     <DesyncRecoveryBanner />
     <ProtocolMismatchModal />
+    <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис» -->
+    <WBFrozenBanner
+      :visible="isBoardFrozen"
+      :can-restart="classroomRole.isTeacher.value"
+      :busy="isRecordingLoading"
+      @restart="handleRestartRecordingRequest"
+    />
 
     <!-- Skip link for a11y -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
@@ -600,6 +607,8 @@ import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
+import WBFrozenBanner from '../components/replay/WBFrozenBanner.vue'
+import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
@@ -1105,6 +1114,7 @@ const boardRemote = useBoardRemote({
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
   view: createRemoteViewAdapter(store as any),
+  frozen: computed(() => recordingState.value === 'finalized'),
 })
 
 const followMode = useFollowMode({
@@ -1173,7 +1183,19 @@ const showYouTubeModal = ref(false)
 
 const isLocked = computed(() => classroomSession.isLocked.value)
 
+// Дошка з фіналізованим записом — сервер відхиляє ВСІ операції (INV-23),
+// включно з учнівськими (їх персистить учитель echo-record'ом). Read-only всім.
+const isBoardFrozen = computed(() => recordingState.value === 'finalized')
+function onLifecycleBlocked(e: Event) {
+  const d = (e as CustomEvent<LifecycleBlockDetail>).detail
+  if (d?.code === 'REPLAY_FROZEN_NO_WRITE') recordingState.value = 'finalized'
+}
+window.addEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked)
+onBeforeUnmount(() => window.removeEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked))
+
 const isDrawingDisabled = computed(() => {
+  // Запис фіналізовано → нічого не збережеться → не даємо писати в порожнечу
+  if (isBoardFrozen.value) return true
   // Locked by teacher → students can't draw
   if (isLocked.value && !classroomRole.isTeacher.value) return true
   // No draw permission (viewer)

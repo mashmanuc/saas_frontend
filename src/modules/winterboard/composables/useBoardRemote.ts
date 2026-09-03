@@ -36,6 +36,8 @@ export interface UseBoardRemoteOptions {
   enabled: Ref<boolean> | ComputedRef<boolean>
   /** v1.2: масштаб/скрол/картки. Необов'язково — без нього v1.2-команди ігноруються. */
   view?: RemoteViewAdapter
+  /** Дошка з фіналізованим записом (writes відхиляються) — пульт має сказати це вчителю */
+  frozen?: Ref<boolean> | ComputedRef<boolean>
 }
 
 export interface RemoteCommandDetail {
@@ -89,7 +91,13 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       msg.zoom = s.zoom
       msg.cards = { count: s.count, answer: s.answer, solution: s.solution }
     }
+    if (opts.frozen) msg.frozen = !!opts.frozen.value
     opts.sendMessage(msg)
+  }
+
+  // Заморозка змінилась (фіналізували / «Новий запис») → пульт має знати одразу
+  if (opts.frozen) {
+    watch(opts.frozen, () => { if (remoteConnected.value && opts.enabled.value) sendState() })
   }
 
   function sendState(): void {

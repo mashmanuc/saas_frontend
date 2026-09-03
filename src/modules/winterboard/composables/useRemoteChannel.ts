@@ -27,6 +27,8 @@ export interface RemoteStateDetail {
   zoom?: number
   /** v1.2 — картки задач поточної сторінки: скільки, чи показано відповідь/розбір усім */
   cards?: { count: number; answer: boolean | null; solution: boolean | null }
+  /** Дошка з фіналізованим записом: команди дійдуть, але нічого не збережеться */
+  frozen?: boolean
 }
 
 const LOG_PREFIX = '[WB:remote]'
@@ -109,6 +111,7 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
           pageCount: Number(msg.page_count),
         }
         if (typeof msg.zoom === 'number') detail.zoom = msg.zoom
+        if (typeof msg.frozen === 'boolean') detail.frozen = msg.frozen
         if (msg.cards && typeof msg.cards === 'object') {
           detail.cards = {
             count: Number(msg.cards.count) || 0,

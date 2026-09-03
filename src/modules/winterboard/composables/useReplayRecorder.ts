@@ -25,6 +25,7 @@ import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
 import { trackEvent } from '@/utils/telemetryAgent'
 import { notifyWarning, notifyError } from '@/utils/notify'
+import { announceLifecycleBlock } from '../remote/lifecycleBlock'
 import {
   useOpsSyncStore,
   DesyncError,
@@ -359,13 +360,10 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
             is_archived: err.isArchived ?? null,
           })
         } catch { /* telemetry never throws */ }
-        if (err.code === 'SESSION_ARCHIVED') {
-          notifyError('Сесію архівовано — створіть нову дошку')
-        } else if (err.code === 'REPLAY_FROZEN_NO_WRITE') {
-          notifyWarning('Запис закінчено — щоб продовжити, перейдіть у нову дошку')
-        } else if (err.code === 'PAUSED_RECORDING_READ_ONLY') {
-          notifyWarning('Запис на паузі — продовжте запис перед малюванням')
-        }
+        // 2026-09-03 (борг з уроку): тост + подія `wb:lifecycle-blocked` → кімната
+        // показує постійний банер «Новий запис» і робить полотно read-only.
+        // Раніше тост казав «перейдіть у нову дошку» — хибно, re-record є з 05-04.
+        announceLifecycleBlock({ code: err.code, recordingState: err.recordingState ?? null, sessionId: sid })
         clearBackup(sid)
         return
       }

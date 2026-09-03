@@ -8322,6 +8322,8 @@
       "showSolution": "Solution",
       "hideSolution": "Hide solution",
       "noCards": "No task cards on this page",
+      "boardFrozen": "Recording on this board is finished — nothing is being saved.",
+      "boardFrozenHint": "On the laptop tap “New recording” in the banner at the top, then the remote works again.",
       "holdToTalk": "Talk (hold)",
       "listening": "Listening…",
       "voiceUnsupported": "Voice is not available in this browser — buttons still work."
@@ -8725,6 +8727,13 @@
       "frozenHint": "Previous replay saved and archived",
       "restart": "New recording",
       "restartTitle": "Start a new recording — the previous one will be archived",
+      "frozenBanner": {
+        "title": "Recording finished — the board is read-only",
+        "hint": "Nothing you write now will be saved or appear in the replay. Tap “New recording” to keep writing: the previous replay stays archived.",
+        "action": "New recording",
+        "busy": "Starting…",
+        "readOnlyOnly": "The teacher can start a new recording."
+      },
       "resumed": "Recording is still active — resuming from where you left",
       "restartConfirm": {
         "title": "Start a new recording?",

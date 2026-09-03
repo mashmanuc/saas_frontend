@@ -60,6 +60,7 @@ const MSG = {
   boardNotAnswering: 'Дошка відкрита, але не відповідає.', boardNotAnsweringHint: 'Ctrl+Shift+R',
   noToken: 'протухла', serverRejected: 'Сервер відхилив ({code})',
   prev: 'Назад', next: 'Далі', newPage: 'Нова сторінка', undo: 'Відмінити',
+  boardFrozen: 'Запис на цій дошці завершено — нічого не зберігається.', boardFrozenHint: 'Натисни «Новий запис»',
   fitTask: 'Задача на екран', fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
   showAnswer: 'Відповідь', hideAnswer: 'Сховати відповідь', showSolution: 'Розбір', hideSolution: 'Сховати розбір',
   noCards: 'На цій сторінці нема карток задач',
@@ -246,6 +247,20 @@ describe('WBRemoteView v1.1', () => {
     expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
     onFinalCb?.('вниз')
     expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: 1 } })
+  })
+
+  it('заморожена дошка (frozen у state) → причина словами, лічильник і кнопки лишаються', async () => {
+    const w = mountView()
+    await flushPromises()
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 4, frozen: true, cards: { count: 0, answer: null, solution: null } })
+    await nextTick()
+    expect(w.text()).toContain(MSG.boardFrozen)
+    expect(w.find('.wb-remote__page-cur').text()).toBe('2')
+    expect((w.findAll('.wb-remote__btn')[1].element as HTMLButtonElement).disabled).toBe(false)
+    // «Новий запис» на ноутбуці → стан без frozen → причина зникає
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 4, frozen: false })
+    await nextTick()
+    expect(w.text()).not.toContain(MSG.boardFrozen)
   })
 
   it('«Відключити» лишає сторінку на місці й показує «Підключити»; «Підключити» знову шукає дошку', async () => {

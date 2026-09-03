@@ -151,7 +151,7 @@ const cards = ref<{ count: number; answer: boolean | null; solution: boolean | n
 const hasCards = computed(() => !!cards.value && cards.value.count > 0)
 
 /** Причина, чому пульт не керує (null = усе гаразд або ще шукаємо) */
-type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable'
+type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable' | 'boardFrozen'
 const reasonKey = ref<ReasonKey | null>(null)
 const reasonCode = ref('')
 
@@ -168,7 +168,9 @@ const channel = useRemoteChannel({
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
     cards.value = s.cards ?? null
-    reasonKey.value = null
+    // заморожена дошка — не помилка зв'язку, а стан: показуємо як причину, кнопки лишаємо
+    reasonKey.value = s.frozen ? 'boardFrozen' : null
+    if (s.frozen) reasonCode.value = 'REPLAY_FROZEN_NO_WRITE'
     if (!firstStateSeen) { firstStateSeen = true; tel('state_first', { pages: s.pageCount, cards: s.cards?.count ?? null }) }
     vibrate(15)
   },
@@ -185,8 +187,10 @@ const channel = useRemoteChannel({
 const reason = computed(() => {
   const k = reasonKey.value
   if (!k) return null
-  const tone = k === 'boardNotAnswering' || k === 'noActiveBoard' ? 'warn' : 'error'
+  const tone = k === 'boardNotAnswering' || k === 'noActiveBoard' || k === 'boardFrozen' ? 'warn' : 'error'
   switch (k) {
+    case 'boardFrozen':
+      return { tone, text: t('winterboard.remote.boardFrozen'), hint: t('winterboard.remote.boardFrozenHint') }
     case 'noActiveBoard':
       return { tone, text: t('winterboard.remote.noActiveBoard'), hint: t('winterboard.remote.noActiveBoardHint') }
     case 'wrongAccount':
