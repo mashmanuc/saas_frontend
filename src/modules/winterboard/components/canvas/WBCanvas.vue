@@ -1551,7 +1551,12 @@ function handleAudioBadgeClick(item: WBStroke | WBAsset) {
 const itemsWithText = computed(() => {
   const result: (WBStroke | WBAsset)[] = []
   for (const s of allStrokes.value) {
-    if (s.text) result.push(s)
+    // Exclude text elements — той самий виняток, що для стікерів нижче, просто
+    // пропущений. Значок «Т» означає «до об'єкта ПРИКРІПЛЕНА нотатка», а в
+    // текстового елемента (`tool: 'text'`) текст і Є сам об'єкт: поле `text`
+    // заповнене завжди, тож бейдж висів над КОЖНИМ написом і пропонував
+    // «додати текст до тексту». Помітив власник на демо-дошці 2026-09-03.
+    if (s.text && s.tool !== 'text') result.push(s)
   }
   for (const a of assets.value) {
     // Exclude stickies — they have their own text rendering
