@@ -36,13 +36,26 @@ const { t } = useI18n()
 
 <style scoped>
 .wb-canvas-loader {
+  /* 2026-09-03: overlay, а не рядок у flex-контейнері полотна. Раніше
+     `<Transition name="wb-fade"><WBCanvasLoader v-if="isLoading"/></Transition>`
+     стояв поруч із `<WBCanvas v-show="!isLoading"/>` у `.wb-solo-room__canvas`
+     (display:flex), тож на час показу лоадер ДІЛИВ рядок з полотном і
+     стискав його контейнер приблизно вдвічі. Саме в цю мить спрацьовує
+     ResizeObserver в useCanvasResize → авто-фіт рахує zoom від стиснутої
+     ширини (напр. 188px замість 375px) і залишає його там: auto-fit у
+     WBSoloRoom.vue лише ЗМЕНШУЄ zoom, ніколи не повертає назад, коли
+     контейнер знову стає повним. Наслідок на мобільному — дошка гостя
+     відкривається на ~10% назавжди, хоч сам лоадер уже давно зник.
+     Той самий контейнер (`.wb-solo-room__canvas`) уже `position:relative`
+     заради сусіднього `.wb-empty-canvas-hint` — той самий прийом тут. */
+  position: absolute;
+  inset: 0;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  width: 100%;
-  height: 100%;
   min-height: 200px;
   background: var(--wb-bg-tertiary, #f8fafc);
 }
