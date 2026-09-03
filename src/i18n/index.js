@@ -75,6 +75,37 @@ export function setI18nLocale(locale) {
 // Alias for compatibility with TypeScript version
 export const setLocale = setI18nLocale
 
+/**
+ * Тимчасовий перемикач мови з URL (`?lang=en`) — БЕЗ запису в localStorage.
+ *
+ * Навіщо (Phase 3, 2026-09-03): англомовна продажна сторінка `/pro` веде на
+ * `/legal/terms|privacy|refund`, а ті рендеряться мовою відвідувача. Рев'ювер
+ * Paddle (MoR перевіряє сайт продавця перед live-активацією) міг би клікнути
+ * «Terms of Service» і отримати українську сторінку — типова причина відмови.
+ *
+ * Свідомо НЕ персистимо: інакше українець, який відкрив легалку з англійського
+ * посилання, лишився б з англійським інтерфейсом назавжди. Перекриття живе
+ * рівно доти, доки в URL є `?lang`.
+ */
+export function applyLocaleOverride(locale) {
+  if (!locale || !SUPPORTED_LOCALES.includes(locale)) return false
+  if (i18n.global.locale.value !== locale) {
+    i18n.global.locale.value = locale
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', locale)
+  }
+  return true
+}
+
+/** Повернути мову, збережену користувачем, коли `?lang` у URL більше немає. */
+export function restoreStoredLocale() {
+  const stored = getInitialLocale()
+  if (i18n.global.locale.value !== stored) {
+    applyLocaleOverride(stored)
+  }
+}
+
 setI18nLocale(initialLocale)
 
 export async function setupI18n(locale = DEFAULT_LOCALE) {

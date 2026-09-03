@@ -74,6 +74,7 @@ import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
 import { requiresAdminOrOperator } from './guards/adminGuard'
 import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
+import { applyLocaleOverride, restoreStoredLocale } from '../i18n'
 
 // P0.3: Lighthouse route без auth для стабільного audit
 const LighthouseCalendarView = () => import('../views/__lighthouse__/LighthouseCalendarView.vue')
@@ -1074,6 +1075,15 @@ const routes = [
     component: () => import('../modules/knowledge/views/LessonViewPage.vue'),
     meta: { requiresAuth: false, layout: 'blank' }
   },
+  // Phase 3: міжнародна продажна сторінка (англійською). Публічна й без
+  // auth — на неї ведуть реклама й посилання, і саме її перевіряє Paddle
+  // перед вмиканням live-платежів (MoR верифікує сайт продавця).
+  {
+    path: '/pro',
+    name: 'pro-landing',
+    component: () => import('../views/ProLandingView.vue'),
+    meta: { requiresAuth: false },
+  },
   // Paddle: хост overlay-чекауту (Paddle.js). Публічний — сюди веде
   // checkout.url з ?_ptxn=, а auth-guard redirect загубив би query.
   {
@@ -1091,6 +1101,15 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+  // ⚠️ НА САМОМУ ВЕРХУ гарда, ДО будь-якого early-return: нижче є гілки, що
+  // виходять через next() (публічні роути тощо), і мовне перекриття туди б не
+  // дійшло. Phase 3: `?lang=en` робить легалку англійською для рев'ю Paddle,
+  // не переписуючи збережену мову користувача (див. applyLocaleOverride).
+  const wantedLang = typeof to.query.lang === 'string' ? to.query.lang : null
+  if (!wantedLang || !applyLocaleOverride(wantedLang)) {
+    restoreStoredLocale()
+  }
+
   const auth = useAuthStore()
   const profileStore = useProfileStore()
 
