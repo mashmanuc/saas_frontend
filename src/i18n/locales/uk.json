@@ -6250,7 +6250,7 @@
       },
       "s12": {
         "title": "12. Контактна інформація",
-        "body": "<p>З питань щодо цієї Угоди:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Сайт: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
+        "body": "<p>З питань щодо цієї Угоди:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Телефон: <a href=\"tel:+380950838191\">+380 95 083 8191</a><br>Сайт: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
       }
     },
     "privacy": {
@@ -6344,7 +6344,7 @@
       },
       "s9": {
         "title": "9. Контакти",
-        "body": "<p>З питань оплати звертайтесь:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
+        "body": "<p>З питань оплати звертайтесь:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Телефон: <a href=\"tel:+380950838191\">+380 95 083 8191</a></p>"
       }
     },
     "refund": {
@@ -6385,7 +6385,7 @@
       },
       "s9": {
         "title": "9. Контакти",
-        "body": "<p>З питань повернення коштів звертайтесь:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Час відповіді: до 5 робочих днів</p>"
+        "body": "<p>З питань повернення коштів звертайтесь:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Телефон: <a href=\"tel:+380950838191\">+380 95 083 8191</a><br>Час відповіді: до 5 робочих днів</p>"
       }
     },
     "tutorOffer": {

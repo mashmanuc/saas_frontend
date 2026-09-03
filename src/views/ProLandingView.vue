@@ -90,8 +90,11 @@
         <a href="/legal/refund?lang=en">Refund Policy</a>
         <a href="/legal/payment?lang=en">Payment Terms</a>
       </nav>
+      <!-- Email + телефон разом: Paddle вимагає від продавця «buyer support
+           details (email and phone number) clearly on their website». -->
       <p class="pro-fine">
         Support: <a href="mailto:support@m4sh.org">support@m4sh.org</a>
+        &middot; <a href="tel:+380950838191">+380 95 083 8191</a>
       </p>
     </footer>
   </div>

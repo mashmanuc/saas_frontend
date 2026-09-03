@@ -6004,7 +6004,7 @@
       },
       "s12": {
         "title": "12. Contact Information",
-        "body": "<p>For questions regarding this Agreement:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Website: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
+        "body": "<p>For questions regarding this Agreement:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Phone: <a href=\"tel:+380950838191\">+380 95 083 8191</a><br>Website: <a href=\"https://m4sh.org\">m4sh.org</a></p>"
       }
     },
     "privacy": {
@@ -6098,7 +6098,7 @@
       },
       "s9": {
         "title": "9. Contact",
-        "body": "<p>For payment questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a></p>"
+        "body": "<p>For payment questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Phone: <a href=\"tel:+380950838191\">+380 95 083 8191</a></p>"
       }
     },
     "refund": {
@@ -6139,7 +6139,7 @@
       },
       "s9": {
         "title": "9. Contact",
-        "body": "<p>For refund questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Response time: up to 5 business days</p>"
+        "body": "<p>For refund questions, please contact:</p><p>Email: <a href=\"mailto:support@m4sh.org\">support@m4sh.org</a><br>Phone: <a href=\"tel:+380950838191\">+380 95 083 8191</a><br>Response time: up to 5 business days</p>"
       }
     },
     "tutorOffer": {
