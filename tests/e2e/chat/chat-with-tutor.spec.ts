@@ -40,7 +40,7 @@ test.describe('Chat with Tutor E2E', () => {
 
     // Step 2: Find and click "Message Tutor" button
     // The button should be in StudentActiveTutorsSection
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await expect(messageTutorButton).toBeVisible()
     await messageTutorButton.click()
 
@@ -49,7 +49,7 @@ test.describe('Chat with Tutor E2E', () => {
     expect(page.url()).toMatch(/\/chat\/tutor\/\d+/)
 
     // Step 4: Verify chat interface is loaded
-    await expect(page.getByRole('heading', { name: /чат з тьютором|chat/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /чат з (учителем|тьютором)|chat/i })).toBeVisible()
 
     // Step 5: Verify messages are loaded (or empty state)
     const messagesContainer = page.locator('[ref="messagesContainer"]').first()
@@ -64,7 +64,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
     await page.waitForURL(/\/chat\/tutor\/\d+/)
 
@@ -92,7 +92,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
     await page.waitForURL(/\/chat\/tutor\/\d+/)
 
@@ -116,7 +116,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
 
     // Verify loading state appears (briefly)
@@ -135,7 +135,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
     await page.waitForURL(/\/chat\/tutor\/\d+/)
 
@@ -164,7 +164,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
     await page.waitForURL(/\/chat\/tutor\/\d+/)
 
@@ -185,7 +185,7 @@ test.describe('Chat with Tutor E2E', () => {
     await page.waitForURL('/dashboard')
 
     // Navigate to chat
-    const messageTutorButton = page.getByRole('button', { name: /написати тьютору|message tutor/i })
+    const messageTutorButton = page.getByRole('button', { name: /написати (вчителю|тьютору)|message (teacher|tutor)/i })
     await messageTutorButton.click()
     await page.waitForURL(/\/chat\/tutor\/\d+/)
 

@@ -200,9 +200,9 @@
       "lessonsCount": "Lessons"
     },
     "calendar": {
-      "allTutors": "All tutors",
+      "allTutors": "All teachers",
       "eventDetails": "Lesson Details",
-      "messageTutor": "Message Tutor",
+      "messageTutor": "Message teacher",
       "joinLesson": "Join Lesson",
       "joinError": "Failed to join the lesson",
       "tooEarly": "Too early to join. Try again 15 minutes before the start",
@@ -889,9 +889,9 @@
         "subtitle": "You're not registered yet. How will you use M4SH? ({email})",
         "student": "I'm a student",
         "studentHint": "Looking for a tutor, want to learn",
-        "tutor": "I'm a tutor",
-        "tutorHint": "I teach, looking for students",
-        "studentByInviteOnly": "Students are invited by their tutor — there is no separate student sign-up."
+        "tutor": "I'm a teacher or tutor",
+        "tutorHint": "I run lessons and invite my own students",
+        "studentByInviteOnly": "Students are invited by their teacher — there is no separate student sign-up."
       },
       "consentPrefix": "By continuing with Google, you accept the"
     },
@@ -902,8 +902,8 @@
       "descriptionStudent": "Create a student account for learning",
       "wantToTeach": "Want to teach?",
       "registerAsTutor": "Register as Tutor",
-      "titleTutor": "Tutor Registration",
-      "descriptionTutor": "Create a tutor account for teaching",
+      "titleTutor": "Teacher or tutor registration",
+      "descriptionTutor": "An account for running lessons: your own board, recordings, student invites",
       "wantToLearn": "Want to learn?",
       "registerAsStudent": "Register as Student",
       "accountType": "Account type",
@@ -929,7 +929,7 @@
       "consentAnd": " and ",
       "passwordConfirm": "Confirm password",
       "fullName": "Full name",
-      "studentByInviteOnly": "Students don’t sign up on their own — their tutor sends them an invitation."
+      "studentByInviteOnly": "Students do not sign up themselves — the teacher sends them an invite."
     },
     "checkEmail": {
       "title": "Check your email",
@@ -1157,7 +1157,7 @@
     "lessons": "Lessons",
     "calendar": "Calendar",
     "marketplace": "Marketplace",
-    "tutorCalendar": "Tutor calendar",
+    "tutorCalendar": "My calendar",
     "learningContent": "Learning Materials",
     "winterboard": "Whiteboard",
     "profile": "Profile",
@@ -1176,7 +1176,7 @@
       "learning": "Learning",
       "winterboard": "Whiteboard",
       "students": "Students",
-      "tutors": "Tutors",
+      "tutors": "Teachers",
       "business": "Business",
       "system": "System",
       "subscription": "Subscription",
@@ -2213,7 +2213,7 @@
     "tutor": {
       "title": "Tutor dashboard",
       "description": "Track your students, lessons and invites.",
-      "empty": "No tutors available right now.",
+      "empty": "No teachers available right now.",
       "nextLessonFallback": "No upcoming lessons",
       "studentsTitle": "Students",
       "studentsDescription": "Latest linked students and their status.",
@@ -2292,7 +2292,7 @@
     },
     "student": {
       "cta": {
-        "chatWithTutor": "Message tutor"
+        "chatWithTutor": "Message teacher"
       },
       "emptyState": {
         "title": "Welcome!",
@@ -2318,7 +2318,7 @@
       "balance": "Balance",
       "contactBalance": "Contacts",
       "upcomingLessons": "Upcoming lessons",
-      "activeTutors": "Active tutors",
+      "activeTutors": "Active teachers",
       "unreadMessages": "Unread",
       "totalLessons": "Total lessons",
       "totalHours": "Learning hours",
@@ -2554,8 +2554,8 @@
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor.",
     "noTutor": {
-      "description": "Browse tutors in the marketplace and send collaboration requests.",
-      "title": "No Tutor"
+      "description": "Ask your teacher to send you an invite",
+      "title": "No teacher yet"
     },
     "actions": {
       "chooseTutor": "Choose a tutor",
@@ -2579,7 +2579,7 @@
       "bookLesson": "Book Lesson"
     },
     "activeTutors": {
-      "title": "Active Tutors"
+      "title": "My teachers"
     },
     "findTutor": {
       "title": "Find Tutor"
@@ -2640,7 +2640,7 @@
       "failedToSend": "Message failed to send. Please retry.",
       "threadCreationFailed": "Couldn't create chat. Please try again.",
       "relationNotFound": "Relationship not found.",
-      "tutorRelationNotFound": "Tutor relationship not found.",
+      "tutorRelationNotFound": "Teacher connection not found.",
       "studentRelationNotFound": "Student relationship not found.",
       "contactAccessRequired": "You need to unlock the student's contacts to open the chat."
     },
@@ -2658,7 +2658,7 @@
     "sendError": "Couldn't send message",
     "sending": "Sending...",
     "threadInfo": "Chat type: {kind}",
-    "title": "Chat with tutor",
+    "title": "Chat with teacher",
     "notifications": {
       "title": "Messages",
       "empty": "No new messages"
@@ -3014,7 +3014,7 @@
         }
       },
       "roles": {
-        "tutor": "Tutor view",
+        "tutor": "Teacher mode",
         "student": "Student view"
       },
       "buttons": {
@@ -3112,7 +3112,7 @@
       },
       "participants": "Participants",
       "roles": {
-        "tutor": "Tutor",
+        "tutor": "Teacher",
         "student": "Student",
         "assistant": "Assistant",
         "host": "Host",
@@ -3202,7 +3202,7 @@
     },
     "marketplace": {
       "title": "Template Marketplace",
-      "subtitle": "Find ready-made lesson templates from tutors",
+      "subtitle": "Find ready-made lesson templates from teachers",
       "searchPlaceholder": "Search templates...",
       "filterSubject": "Subject",
       "filterType": "Lesson type",
@@ -3221,7 +3221,7 @@
       "usedCount": "Used: {count} times",
       "useTemplate": "Use template",
       "usedSuccess": "Lesson created from template",
-      "tutorsOnly": "Tutors only",
+      "tutorsOnly": "Teachers only",
       "noResults": "No templates found. Try changing filters.",
       "loading": "Loading templates...",
       "error": "Loading error. Please try again.",
@@ -3578,9 +3578,9 @@
       "selectedSlot": "Selected slot",
       "noteLabel": "Note",
       "notePlaceholder": "Add a note to your request...",
-      "tutorResponseTime": "Tutor typically responds within 24 hours",
+      "tutorResponseTime": "The teacher usually replies within 24 hours",
       "successTitle": "Request sent!",
-      "successMessage": "The tutor has received your booking request",
+      "successMessage": "The teacher has received your booking request",
       "confirming": "Confirming...",
       "confirm": "Confirm booking",
       "date": "Date",
@@ -3589,7 +3589,7 @@
       "subject": "Subject",
       "subjectRequired": "Subject is required",
       "time": "Time",
-      "tutor": "Tutor"
+      "tutor": "Teacher"
     },
     "timeline": {
       "title": "Booking History",
@@ -3617,7 +3617,7 @@
         "title": "Request form"
       },
       "duration": "Duration",
-      "message": "Message to tutor",
+      "message": "Message to teacher",
       "messagePlaceholder": "Tell the tutor what you want to learn...",
       "send": "Send request"
     },
@@ -3654,7 +3654,7 @@
     },
     "errors": {
       "generic": "Could not book the lesson. Please try again.",
-      "matchNotAccepted": "Accept the tutor invitation first",
+      "matchNotAccepted": "Accept the invitation from your teacher first",
       "slotUnavailable": "Slot already booked. Please pick another one.",
       "validationFailed": "Validation Failed"
     },
@@ -4370,7 +4370,7 @@
     },
     "time": "Time",
     "today": "Today",
-    "tutor": "Tutor",
+    "tutor": "Teacher",
     "statusLabels": {
       "active": "Active",
       "canceled": "Canceled",
@@ -5636,8 +5636,8 @@
     "planDescriptions": {
       "BUSINESS": "Full feature set for teams and schools",
       "FREE": "Basic features to get started",
-      "PRO": "Advanced features for professional tutors",
-      "PRO-USD": "Advanced features for professional tutors — billed in USD"
+      "PRO": "Advanced features for teachers and tutors",
+      "PRO-USD": "Advanced features for teachers and tutors — billed in USD"
     },
     "subscriptionRequired": {
       "defaultMessage": "Upgrade your plan to access advanced features",
@@ -5954,7 +5954,7 @@
       "secure": "Secure payments",
       "title": "Payment methods"
     },
-    "tagline": "Platform for tutors and students",
+    "tagline": "The board for lessons that do not disappear",
     "support": "☕ Support M4SH"
   },
   "legal": {
@@ -6564,9 +6564,9 @@
       "budgetMin": "Minimum (UAH/hr)",
       "budgetMax": "Maximum (UAH/hr)",
       "budgetHint": "Specify your learning budget",
-      "contactTutor": "Contact Tutor",
+      "contactTutor": "Contact teacher",
       "share": "Share",
-      "about": "About Tutor",
+      "about": "About the teacher",
       "subjects": "Subjects",
       "certifications": "Certifications",
       "completeness": {
@@ -6660,7 +6660,7 @@
       },
       "contacts": {
         "title": "Contact information",
-        "description": "Manage your contact details for reaching tutors and students",
+        "description": "Manage your contact details for reaching teachers and students",
         "phone": "Phone number",
         "phonePlaceholder": "+380501234567",
         "phoneHint": "International format: +[country code][number]",
@@ -6824,7 +6824,7 @@
     "verified": "Verified",
     "verifiedReviews": "verified",
     "anonymous": "Anonymous",
-    "tutorResponse": "Tutor's response",
+    "tutorResponse": "Teacher's response",
     "helpful": "Helpful",
     "report": "Report",
     "edit": "Edit",
@@ -6852,7 +6852,7 @@
     "tooSoon": "Too soon",
     "reviewBlocked": "Review blocked",
     "allReviewsFor": "All reviews about",
-    "tutor": "tutor",
+    "tutor": "teacher",
     "viewAllReviews": "View all",
     "strengths": "Strengths",
     "filters": {
@@ -6900,7 +6900,7 @@
     "title": "Choose Your Role",
     "subtitle": "Select how you want to use M4SH platform",
     "betaBadge": "Beta",
-    "betaNotice": "Currently in closed beta — welcoming first schools and tutors",
+    "betaNotice": "Currently in closed beta — welcoming our first schools, teachers and tutors",
     "nav": {
       "howItWorks": "How It Works",
       "benefits": "Benefits",
@@ -6916,17 +6916,17 @@
     },
     "tutor": {
       "title": "Tutor",
-      "description": "Share your knowledge, teaching students online",
+      "description": "Run lessons in your own space — at school or privately",
       "feature1": "Invite your own students",
       "feature2": "Manage your schedule",
       "feature3": "Built-in teaching tools",
-      "cta": "Start Teaching"
+      "cta": "Create your space"
     },
     "howItWorks": {
       "title": "How It Works",
       "subtitle": "Get started in three simple steps",
       "step1": {
-        "title": "Create Account",
+        "title": "Create your space",
         "description": "Sign up as a student or tutor in minutes"
       },
       "step2": {
@@ -6946,7 +6946,7 @@
         "description": "The whole lesson is saved — and you can rewatch it anytime, just the way it happened in class. Didn't quite get something? Open the recording, find the moment you need and go over it at your own pace, as many times as you like."
       },
       "affordablePrices": {
-        "title": "For Tutors — The Whole Lesson in One Window",
+        "title": "For teachers — the whole lesson in one window",
         "description": "Whiteboard, PDF, slides, video, audio, tests — not five tabs, but six modules of a single space. Drag material from your library onto the board — the student sees the same thing instantly."
       },
       "directConnection": {
@@ -6962,7 +6962,7 @@
     },
     "boardDemo": {
       "title": "A Board Where Material Is a First-Class Object",
-      "description": "The tutor doesn't share a screen — they drag material onto the board:",
+      "description": "The teacher doesn't share a screen — they drag material onto the board:",
       "videoLabel": "Interactive whiteboard demo",
       "features": {
         "pdfPptx": {
@@ -6995,7 +6995,7 @@
       "eyebrow": "Interactive whiteboard for online lessons",
       "title": "Math you can\nactually touch",
       "subtitle": "Live formulas, 3D objects, graphs and interactive tasks — all in one board",
-      "ctaTutor": "Become a tutor",
+      "ctaTutor": "Start teaching on M4SH",
       "ctaMore": "Learn more",
       "trigCaption": "Trigonometry — drag the point with your mouse"
     },
@@ -7006,7 +7006,7 @@
       "pyramidCaption": "Trapezoid-base pyramid SABCD — auto-rotation"
     },
     "studentNote": {
-      "invited": "Invited by a tutor? Open the link from your invitation.",
+      "invited": "Invited by a teacher? Open the link from your invitation.",
       "lost": "Lost it — ask them to send it again.",
       "haveAccount": "Already have an account? Sign in"
     }
@@ -9354,7 +9354,7 @@
         "failed": "could not save — try again"
       },
       "tutor": {
-        "title": "AI tutor",
+        "title": "AI helper",
         "empty": "Ask about the task — let's figure it out together.",
         "placeholder": "Tell me what's not working…",
         "send": "Send",
@@ -9515,7 +9515,7 @@
       "all": "All",
       "myItems": "My Materials",
       "PLATFORM": "Platform",
-      "TUTOR": "Tutor",
+      "TUTOR": "Teacher",
       "CO_OWNED": "Co-owned",
       "LICENSED": "Licensed",
       "THIRD_PARTY": "Third Party",
@@ -9614,7 +9614,7 @@
       "step2Title": "Publish to catalog",
       "step2Desc": "Your lesson will be available for students in the M4SH catalog",
       "exploreCatalog": "Browse lesson catalog",
-      "exploreCatalogDesc": "See what other tutors create",
+      "exploreCatalogDesc": "See what other teachers are creating",
       "createLesson": "Create lesson",
       "noTitle": "Untitled",
       "statusPublic": "Published",
@@ -9639,7 +9639,7 @@
     "terms": {
       "title": "Tips",
       "lesson": "Lesson — a recording of a conducted class. Contains board replay, materials, markers.",
-      "template": "Template — a lesson that can be reused. Other tutors can fork it.",
+      "template": "A template is a lesson that can be reused. Other teachers can fork it.",
       "pack": "Series (Pack) — a sequence of lessons on a topic.",
       "fork": "Fork — a copy of a template with your changes. The author sees forks in analytics.",
       "hide": "Hide"
@@ -9651,12 +9651,12 @@
       "collections": "Collections"
     },
     "publicLesson": {
-      "moreLessons": "More lessons by this tutor",
+      "moreLessons": "More lessons by this teacher",
       "partOfPack": "This lesson is part of series:",
       "viewPack": "View series",
       "views": "views",
       "forks": "forks",
-      "viewAllLessons": "All lessons by this tutor",
+      "viewAllLessons": "All lessons by this teacher",
       "forkLesson": "Fork lesson",
       "saveToMyLessons": "Save to my lessons",
       "loginToFork": "Log in to fork",
@@ -9673,9 +9673,9 @@
       "lessonsCount": "{count} lessons",
       "ctaBanner": {
         "title": "Learn on M4SH!",
-        "text": "Sign up for free — find a tutor or create your own lessons",
+        "text": "Sign up for free — create your own lessons",
         "registerStudent": "I'm a student",
-        "registerTutor": "I'm a tutor"
+        "registerTutor": "I'm a teacher or tutor"
       }
     },
     "replay": {
@@ -9788,7 +9788,7 @@
       "restrictedMaterial": "Available after booking a lesson"
     },
     "lesson": {
-      "tutor": "Tutor",
+      "tutor": "Teacher",
       "public": "Public",
       "startReplay": "Watch Lesson",
       "exitReplay": "Back",
@@ -9805,9 +9805,9 @@
       },
       "cta": {
         "title": "Enjoyed this lesson?",
-        "subtitle": "Book a lesson with this tutor",
+        "subtitle": "Book a lesson with this teacher",
         "bookLesson": "Book a lesson",
-        "askTutor": "Message tutor"
+        "askTutor": "Message teacher"
       },
       "share": {
         "generateLink": "Generate link",
@@ -9945,7 +9945,7 @@
     },
     "demo": {
       "title": "Demo lessons",
-      "subtitle": "See how lessons go with this tutor",
+      "subtitle": "See how lessons go with this teacher",
       "empty": "This tutor hasn't published demo lessons yet",
       "duration": "{minutes} min",
       "durationHours": "{hours} h {minutes} min"
@@ -9988,13 +9988,13 @@
       "difficultyLabel": "Difficulty level",
       "subjectLabel": "Subject",
       "saveTitle": "Save as template",
-      "saveSubtitle": "Other tutors will be able to use your lesson as a starting point",
+      "saveSubtitle": "Other teachers will be able to use your lesson as a starting point",
       "titleLabel": "Template title",
       "saveButton": "Save template",
       "saving": "Saving...",
       "saveFromRoom": "Save as template",
       "communityToggle": "Make available to everyone",
-      "communityHint": "Template will be available in the library for other tutors",
+      "communityHint": "Template will be available in the library for other teachers",
       "saveSuccess": "Template saved!",
       "saveFailed": "Failed to save template"
     },
@@ -10030,7 +10030,7 @@
       "emptyTitle": "Nothing found",
       "emptySubtitle": "Try changing the filters or search query",
       "resetFilters": "Reset filters",
-      "filteredByTutor": "Lessons by tutor",
+      "filteredByTutor": "Teacher lessons",
       "globalEmptyTitle": "Catalog is empty for now",
       "globalEmptyText": "Be the first! Create a lesson on the board and publish it to the catalog.",
       "createLesson": "Create lesson",
@@ -10040,7 +10040,7 @@
       "recentlyAdded": "Recently added",
       "categoryEmptyTitle": "No lessons in \"{category}\" yet",
       "categoryEmptyTextTutor": "Be the first! Create a lesson and publish it in this category.",
-      "categoryEmptyTextStudent": "No tutors have added lessons in this category yet.",
+      "categoryEmptyTextStudent": "Teachers have not added lessons to this category yet.",
       "categoryEmptyPublish": "Publish a lesson",
       "categoryEmptyBack": "Back to catalog",
       "filter": {
@@ -10140,7 +10140,7 @@
     },
     "grants": {
       "headerBtn": "Hand over lessons",
-      "title": "Hand over lessons to another tutor",
+      "title": "Transfer lessons to another teacher",
       "tabCreate": "Hand over lessons",
       "tabMyCodes": "My codes",
       "step1": "Select the lessons you want to hand over",
@@ -10152,7 +10152,7 @@
       "draftsHint": "Drafts: {n}. To transfer a draft, close this window and press \"Publish\" on the lesson card.",
       "advanced": "Advanced settings",
       "maxUses": "How many people can receive:",
-      "maxUsesHint": "One use of the code = one tutor receives copies. You can revoke the code anytime.",
+      "maxUsesHint": "One use of the code = one teacher receives copies. The code can be revoked at any time.",
       "expires": "Code valid for:",
       "noExpiry": "No limit",
       "days": "days",
@@ -10166,12 +10166,12 @@
       "createAnother": "Hand over more",
       "noCodes": "You have not handed over any lessons yet.",
       "usedOf": "received: {used} of {max}",
-      "usesTitle": "How many tutors already received lessons with this code",
+      "usesTitle": "How many teachers have received lessons with this code",
       "revoke": "Revoke",
       "revoked": "Revoked",
       "createError": "Failed to create the code. Please try again.",
       "pageTitle": "Lesson transfer",
-      "tutorsOnly": "Only tutors can receive lessons. Sign in as a tutor.",
+      "tutorsOnly": "Only a teacher can receive lessons. Sign in as a teacher.",
       "unavailableTitle": "Code unavailable",
       "unavailableHint": "The code does not exist, was revoked, expired, or reached its usage limit. Contact the sender.",
       "previewTitle": "Lessons are being handed to you",
@@ -10273,8 +10273,8 @@
       "priceFrom": "From {price} UAH/hour",
       "book": "Book a lesson",
       "viewProfile": "View profile",
-      "hint": "Watch this lesson and book your first session with this tutor",
-      "ariaLabel": "Tutor card"
+      "hint": "This lesson was taught on M4SH. Try the board",
+      "ariaLabel": "Teacher card"
     }
   },
   "subject": {
@@ -10319,7 +10319,7 @@
       "description": "{tutorName} invites you to join as a student",
       "acceptButton": "Accept Invite",
       "notStudentTitle": "This invite is for students",
-      "notStudentHint": "You're signed in as {email}. To join this tutor, sign out and use a student account (or open the link in an incognito window).",
+      "notStudentHint": "You're signed in as {email}. To join this teacher, sign out and use a student account (or open the link in an incognito window).",
       "switchAccount": "Sign out and join as a student",
       "viewProfile": "View Profile",
       "bookLesson": "Book a Lesson",
@@ -10328,7 +10328,7 @@
       "used": "This invite has already been used",
       "cancelled": "This invite was cancelled by the tutor",
       "inactive": "This invite is no longer active",
-      "askNewHint": "Ask your tutor to send a new link — it takes them one click.",
+      "askNewHint": "Ask your teacher for a new link — it takes them one click.",
       "usedHint": "Looks like an account was already created with this invitation.",
       "goToLogin": "Sign in"
     },
@@ -10363,17 +10363,17 @@
       "role_not_student": "Only a student can accept this invite",
       "login_required": "Account created. Log in to continue",
       "invite_account_exists": "An account with this email already exists. Log in",
-      "not_tutor": "Only tutors can create invites",
+      "not_tutor": "Only teachers can create invites",
       "rate_limit_exceeded": "You've reached the invite creation limit. Try again later",
       "max_active_invites": "You've reached the maximum number of active invites (20)",
       "invite_not_found": "Invite not found",
       "invite_expired": "Invite has expired",
       "invite_already_used": "This invite has already been used",
-      "invite_cancelled": "Invite was cancelled by the tutor",
+      "invite_cancelled": "Invite was cancelled by the teacher",
       "invite_not_active": "Invite is no longer active",
       "self_invite_forbidden": "You cannot accept your own invite",
       "student_limit_exceeded": "This tutor has no open spots for new students right now. Please contact the tutor directly.",
-      "insufficient_contacts": "Tutor has insufficient contacts",
+      "insufficient_contacts": "Teacher has insufficient contacts",
       "not_owner": "Only the owner can cancel an invite"
     }
   },
@@ -10570,7 +10570,7 @@
     "working": "Moving your object to the board…",
     "empty": "Nothing to import. Build a figure in MASH and press “Use on board”.",
     "invalid": "Could not read the scene. Please try again from the MASH calculator.",
-    "studentOnly": "Creating boards is available to tutors. Ask your tutor to add the object to a lesson.",
+    "studentOnly": "Only teachers can create boards. Ask your teacher to add the object to the lesson.",
     "error": "Failed to create the board. Please try again.",
     "backToMash": "← Back to MASH"
   },
