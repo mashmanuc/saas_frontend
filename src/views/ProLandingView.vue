@@ -32,8 +32,19 @@
           <button type="button" class="pro-cta" data-testid="pro-cta-top" @click="goToCheckout">
             {{ ctaLabel }}
           </button>
-          <span class="pro-cta-note">$19.99 / month &middot; cancel anytime</span>
+          <!-- Демо-дошка `/workspace` — публічна, без реєстрації. `?lang=en`
+               перекриває мову на час перегляду (applyLocaleOverride, без
+               запису в localStorage). Звичайний <a>, а не router-push:
+               повне перезавантаження дає демо чистий стан, і працює
+               «відкрити в новій вкладці» середнім кліком. -->
+          <a class="pro-cta-secondary" href="/workspace?lang=en" data-testid="pro-try-board">
+            Try the board
+          </a>
         </div>
+        <p class="pro-cta-note">
+          $19.99 / month &middot; cancel anytime. The demo board opens right away &mdash;
+          no sign-up, nothing to install.
+        </p>
       </section>
 
       <section class="pro-block">
@@ -239,7 +250,28 @@ main {
 
 .pro-cta:hover { background: var(--accent-hover, #0c6a52); }
 
+.pro-cta-secondary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-primary, #14231c);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pro-cta-secondary:hover {
+  border-color: var(--accent, #0f7b5f);
+  color: var(--accent, #0f7b5f);
+}
+
 .pro-cta-note {
+  margin: 0.75rem 0 0;
   font-size: 0.9375rem;
   color: var(--text-secondary, #4b5b53);
 }
