@@ -6111,11 +6111,11 @@
       },
       "s2": {
         "title": "2. Refund Period",
-        "body": "<p>You have the right to a refund within <strong>14 days</strong> of the first subscription payment, if:</p><ul><li>You have not used paid Platform features</li><li>You have not violated the User Agreement</li><li>The refund request was submitted within the specified period</li></ul>"
+        "body": "<p>You have the right to a refund within <strong>30 days</strong> of the first subscription payment, if:</p><ul><li>You have not used paid Platform features</li><li>You have not violated the User Agreement</li><li>The refund request was submitted within the specified period</li></ul>"
       },
       "s3": {
         "title": "3. Refund Conditions",
-        "body": "<p>Refunds are <strong>not issued</strong> in the following cases:</p><ul><li>More than 14 days have passed since the payment</li><li>You actively used paid features</li><li>The subscription was cancelled after automatic renewal</li><li>You violated the User Agreement</li><li>The request was submitted for a subscription renewal (not the first payment)</li></ul>"
+        "body": "<p>Refunds are <strong>not issued</strong> in the following cases:</p><ul><li>More than 30 days have passed since the payment</li><li>You actively used paid features</li><li>The subscription was cancelled after automatic renewal</li><li>You violated the User Agreement</li><li>The request was submitted for a subscription renewal (not the first payment)</li></ul>"
       },
       "s4": {
         "title": "4. How to Submit a Refund Request",

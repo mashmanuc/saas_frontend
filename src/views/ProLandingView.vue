@@ -74,7 +74,7 @@
           You can cancel your subscription yourself at any time from
           <em>Billing</em> in your account &mdash; no email required. Cancellation stops the
           next payment; your access stays until the end of the paid period.
-          Refunds are available within 14 days of your first payment under the terms of
+          Refunds are available within 30 days of your first payment under the terms of
           our <a href="/legal/refund?lang=en">Refund Policy</a>.
         </p>
       </section>

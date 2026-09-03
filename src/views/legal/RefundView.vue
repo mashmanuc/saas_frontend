@@ -29,7 +29,10 @@
 import { computed } from 'vue'
 import Button from '@/ui/Button.vue'
 
-const lastUpdated = computed(() => '13.06.2026')
+// 2026-09-03: гарантію повернення подовжено 14 → 30 днів (§2, §3) — вимога
+// Paddle до продавців: «Have at least a 30-day money-back guarantee as part
+// of their refund policy». Зміна умов → дата редакції оновлена.
+const lastUpdated = computed(() => '03.09.2026')
 const sections = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9']
 </script>
 
