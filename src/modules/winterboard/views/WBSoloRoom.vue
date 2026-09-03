@@ -1601,6 +1601,19 @@ const presence = usePresence({
 // команд телефона через той самий presence-сокет; запис у стан — штатний REST
 // від goToPage/addPage/undo, як від кліку. pair перевіряється тут, не на сервері.
 const showRemoteModal = ref(false)
+
+// Дошка з фіналізованим записом — сервер відхиляє всі операції (INV-23).
+// Джерела істини: detail.is_replay_frozen при завантаженні, «replay created»
+// після шарингу, і подія від recorder-а, якщо запис фіналізував watchdog
+// поки дошка відкрита. Полотно read-only + банер (див. template).
+// ⚠️ ОГОЛОШЕННЯ МАЄ СТОЯТИ ВИЩЕ useBoardRemote: watch(opts.frozen) у
+// useBoardRemote читає джерело одразу при створенні (Vue seed-ить oldValue),
+// тому computed нижче за виклик = ReferenceError у setup і біла сторінка.
+const isBoardFrozen = computed(() => soloRecordingState.value === 'finalized')
+// WBCanvas не має пропа read-only: як і в класній кімнаті, блокуємо малювання,
+// примусово віддаючи полотну інструмент «виділення», поки дошка заморожена.
+const soloEffectiveTool = computed(() => (isBoardFrozen.value ? 'select' : store.currentTool))
+
 const boardRemote = useBoardRemote({
   sessionId,
   store: {
@@ -1617,14 +1630,6 @@ const boardRemote = useBoardRemote({
   frozen: computed(() => isBoardFrozen.value),
 })
 
-// Дошка з фіналізованим записом — сервер відхиляє всі операції (INV-23).
-// Джерела істини: detail.is_replay_frozen при завантаженні, «replay created»
-// після шарингу, і подія від recorder-а, якщо запис фіналізував watchdog
-// поки дошка відкрита. Полотно read-only + банер (див. template).
-const isBoardFrozen = computed(() => soloRecordingState.value === 'finalized')
-// WBCanvas не має пропа read-only: як і в класній кімнаті, блокуємо малювання,
-// примусово віддаючи полотну інструмент «виділення», поки дошка заморожена.
-const soloEffectiveTool = computed(() => (isBoardFrozen.value ? 'select' : store.currentTool))
 function onLifecycleBlocked(e: Event) {
   const d = (e as CustomEvent<LifecycleBlockDetail>).detail
   if (d?.code === 'REPLAY_FROZEN_NO_WRITE') isReplayFrozen.value = true
