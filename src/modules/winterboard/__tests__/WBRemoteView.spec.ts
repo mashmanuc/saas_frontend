@@ -36,9 +36,13 @@ vi.mock('../composables/usePushToTalk', () => ({
   },
 }))
 
+const forceLogout = vi.fn()
 vi.mock('@/modules/auth/store/authStore', () => ({
-  useAuthStore: () => ({ user: { email: 'teacher@m4sh.local' } }),
+  useAuthStore: () => ({ user: { email: 'teacher@m4sh.local' }, forceLogout }),
 }))
+
+const apiLogout = vi.fn()
+vi.mock('@/modules/auth/api/authApi', () => ({ default: { logout: (...a: any[]) => apiLogout(...a) } }))
 
 const trackEvent = vi.fn()
 vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: (...a: any[]) => trackEvent(...a) }))
@@ -53,7 +57,7 @@ import WBRemoteView from '../views/WBRemoteView.vue'
 const MSG = {
   disconnect: 'Відключити', connect: 'Підключити', refresh: 'Оновити',
   connected: 'Зв\'язок є', connecting: '…', disconnected: 'нема', unavailable: 'недоступно',
-  waitingBoard: 'Чекаю дошку…', board: 'Дошка', loggedInAs: 'Ти зайшов як',
+  waitingBoard: 'Чекаю дошку…', board: 'Дошка', loggedInAs: 'Ти зайшов як', switchAccount: 'Змінити акаунт',
   noActiveBoard: 'На ноутбуці не відкрита жодна дошка.', noActiveBoardHint: 'Відкрий дошку',
   wrongAccount: 'Дошка належить іншому акаунту.', wrongAccountHint: 'На телефоні ти {email}',
   tooManyConnections: 'забагато з\'єднань', tooManyConnectionsHint: 'закрий вкладку',
@@ -277,5 +281,39 @@ describe('WBRemoteView v1.1', () => {
     await flushPromises()
     expect(getActiveRemoteSession).toHaveBeenCalledTimes(2)
     expect(connect).toHaveBeenCalledTimes(2)
+  })
+})
+
+// Мультимедійна дошка в класі часто під ШКІЛЬНИМ акаунтом, а телефон — під
+// особистим; активна дошка шукається по акаунту, тож пульт каже «дошок нема».
+// Власник на уроці 2026-09-04: «треба мати можливість пультові швидко
+// змінювати акаунт».
+describe('WBRemoteView — швидка зміна акаунта', () => {
+  it('кнопка чистить сесію і веде на ВХІД, а не на лендінг', async () => {
+    const href = vi.fn()
+    const original = window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { get href() { return '' }, set href(v: string) { href(v) } },
+    })
+    try {
+      getActiveRemoteSession.mockResolvedValue({ session_id: 'b1', name: 'Урок' })
+      const w = mount(WBRemoteView, { global: { mocks: { $t: (k: string) => k } } })
+      await flushPromises()
+
+      const btn = w.findAll('button').find((b) => b.text() === 'Змінити акаунт')
+      expect(btn, 'кнопки «Змінити акаунт» немає').toBeTruthy()
+      await btn!.trigger('click')
+      await flushPromises()
+
+      expect(apiLogout).toHaveBeenCalled()          // сесія на сервері закрита
+      expect(forceLogout).toHaveBeenCalled()        // токен не лишився в пам'яті
+      // саме /auth/login, бо authStore.logout() веде на /start — зайвий екран
+      // з телефона (та сама причина, що meta.loginDirect у маршруті пульта)
+      expect(href).toHaveBeenCalledWith('/auth/login?redirect=%2Fremote')
+      w.unmount()
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: original })
+    }
   })
 })

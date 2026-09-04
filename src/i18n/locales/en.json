@@ -8298,6 +8298,7 @@
       "waitingBoard": "Waiting for the board…",
       "board": "Board",
       "loggedInAs": "Signed in as",
+      "switchAccount": "Switch account",
       "noActiveBoard": "No board is open on the laptop.",
       "noActiveBoardHint": "Open a board on the laptop and tap “Refresh”.",
       "wrongAccount": "This board belongs to another account.",

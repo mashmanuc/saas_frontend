@@ -20,6 +20,19 @@
     <p class="wb-remote__who">
       <span v-if="accountEmail">{{ t('winterboard.remote.loggedInAs') }} <strong>{{ accountEmail }}</strong></span>
       <span v-if="boardName"> · {{ t('winterboard.remote.board') }}: <strong>{{ boardName }}</strong></span>
+      <!-- Мультимедійна дошка в класі часто під ШКІЛЬНИМ акаунтом, а телефон —
+           під особистим. Активна дошка шукається по акаунту, тож пульт чесно
+           каже «дошок нема». Власник на уроці 2026-09-04: «треба мати
+           можливість пультові швидко змінювати акаунт». -->
+      <button
+        v-if="accountEmail"
+        type="button"
+        class="wb-remote__switch"
+        :disabled="switching"
+        @click="switchAccount"
+      >
+        {{ t('winterboard.remote.switchAccount') }}
+      </button>
     </p>
 
     <!-- Причина, чому пульт не керує — ЗАВЖДИ словами, ніколи мовчки -->
@@ -123,6 +136,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import authApi from '@/modules/auth/api/authApi'
 import { trackEvent } from '@/utils/telemetryAgent'
 import { winterboardApi } from '../api/winterboardApi'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
@@ -135,6 +149,29 @@ const { t, locale } = useI18n()
 const authStore = useAuthStore()
 
 const accountEmail = computed(() => authStore.user?.email ?? '')
+
+// Швидка зміна акаунта прямо з пульта (власник на уроці 2026-09-04).
+// Чому окремо, а не `authStore.logout()`: той жорстко веде на ЛЕНДІНГ
+// (`/start`), а з телефона це зайвий екран — та сама причина, через яку
+// маршрут пульта позначено `meta.loginDirect`. Тут ведемо одразу на вхід і
+// повертаємось на пульт.
+const switching = ref(false)
+async function switchAccount(): Promise<void> {
+  if (switching.value) return
+  switching.value = true
+  trackEvent('wb.remote.switch_account', {})
+  try {
+    await authApi.logout()
+  } catch {
+    // Мережа могла впасти — локальний стан однаково чистимо нижче,
+    // інакше пульт лишиться з чужим токеном в пам'яті.
+  }
+  try {
+    await authStore.forceLogout('manual_logout')
+  } finally {
+    window.location.href = `/auth/login?redirect=${encodeURIComponent('/remote')}`
+  }
+}
 const clientId = (() => {
   try { return crypto.randomUUID() } catch { return `p-${Date.now().toString(36)}` }
 })()
@@ -389,6 +426,10 @@ onBeforeUnmount(() => {
 
 .wb-remote__who { margin: 0; font-size: 12px; color: #94a3b8; word-break: break-all; }
 .wb-remote__who strong { color: #cbd5e1; font-weight: 600; }
+/* Зміна акаунта — поруч із поштою, але окремою кнопкою: палець має влучати
+   (44px за гайдлайном тач-цілі, як у решти пульта), а не в текстовий рядок. */
+.wb-remote__switch { display: inline-block; margin-left: 8px; background: #334155; color: #f8fafc; border: 0; border-radius: 10px; padding: 8px 14px; font-size: 13px; min-height: 44px; }
+.wb-remote__switch:disabled { opacity: 0.6; }
 
 .wb-remote__block { padding: 14px 16px; border-radius: 12px; background: #1e293b; font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px; }
 .wb-remote__block--warn { border: 1px solid #f59e0b; }
