@@ -9,6 +9,20 @@ export const DEFAULT_LOCALE = 'uk'
 export const STORAGE_KEY = 'lang'
 export const SUPPORTED_LOCALES = ['uk', 'en', 'ru', 'pl', 'de']
 
+/**
+ * Мова для відвідувача, у якому НЕ впізнали українця.
+ *
+ * Це НЕ те саме, що DEFAULT_LOCALE. `uk` лишається довідковою локаллю проєкту
+ * і fallbackLocale для vue-i18n: якщо десь бракує ключа, підставляється саме
+ * вона, бо вона повна (i18n:check міряє все відносно неї).
+ *
+ * А от гість, у якого ні мова браузера, ні часовий пояс не вказують на
+ * Україну, раніше все одно отримував український інтерфейс — просто тому,
+ * що запасним варіантом стояла довідкова локаль. Для німця з `de-DE` і
+ * берлінським часом це означало українську дошку й українські матеріали.
+ */
+export const VISITOR_FALLBACK_LOCALE = 'en'
+
 export function getInitialLocale() {
   if (typeof window === 'undefined') {
     return DEFAULT_LOCALE
@@ -43,8 +57,11 @@ export function getInitialLocale() {
   } catch (e) {
     // Timezone detection failed, continue
   }
-  
-  return DEFAULT_LOCALE
+
+  // Українських ознак не знайшли — це не українець, і показувати йому
+  // українську немає підстав. Обидві перевірки вище лишились недоторкані,
+  // тож автовизначення для UA (LiqPay #8) працює як працювало.
+  return VISITOR_FALLBACK_LOCALE
 }
 
 const initialLocale = getInitialLocale()
