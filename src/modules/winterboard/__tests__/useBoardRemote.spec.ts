@@ -151,10 +151,13 @@ describe('useBoardRemote', () => {
 
   // v1.2 — вигляд і картки через адаптер
   function setupWithView() {
+    const cardsCount = ref(2)
     const view = {
       fitTask: vi.fn(() => 0), zoomBy: vi.fn(() => 1.5), scrollBy: vi.fn(() => -240),
       reveal: vi.fn(() => 1), resetFocus: vi.fn(), taskCards: vi.fn(() => []),
-      summary: vi.fn(() => ({ count: 2, answer: false, solution: true, zoom: 1.5 })),
+      // Це Ref навмисно: ним моделюємо реальний випадок, коли індекс нової
+      // сторінки вже прийшов, а картка задачі догружається пізніше.
+      summary: vi.fn(() => ({ count: cardsCount.value, answer: false, solution: true, zoom: 1.5 })),
     }
     const store = reactive({
       currentPageIndex: 0, pageCount: 3,
@@ -170,7 +173,7 @@ describe('useBoardRemote', () => {
       },
     }))
     mounted.push(wrapper)
-    return { api, view, store, sendMessage }
+    return { api, view, store, sendMessage, cardsCount }
   }
 
   it('v1.2: hello → remote.state містить cards і zoom з адаптера', () => {
@@ -179,6 +182,22 @@ describe('useBoardRemote', () => {
     expect(sendMessage.mock.calls[0][0]).toMatchObject({
       type: 'remote.state', zoom: 1.5, cards: { count: 2, answer: false, solution: true },
     })
+  })
+
+  it('v1.2 regression: картка, що догрузилась після переходу, розблоковує пульт новим remote.state', async () => {
+    const { api, sendMessage, cardsCount } = setupWithView()
+    cardsCount.value = 0 // номер сторінки вже змінився, картки ще немає
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'hello', args: {} })
+    expect(sendMessage.mock.calls[0][0]).toMatchObject({ cards: { count: 0 } })
+    sendMessage.mockClear()
+
+    cardsCount.value = 1 // конструктор догрузив картку на вже активну сторінку
+    await nextTick()
+    vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS + 5)
+
+    const states = sendMessage.mock.calls.map(c => c[0]).filter(m => m.type === 'remote.state')
+    expect(states).toHaveLength(1)
+    expect(states[0]).toMatchObject({ cards: { count: 1, answer: false, solution: true } })
   })
 
   it('v1.2: view.fit / view.zoom / view.scroll / card.reveal → адаптер; стан підтверджується', () => {

@@ -120,6 +120,19 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     },
   )
 
+  // Сторінка може перемкнутися РАНІШЕ, ніж конструктор уроку догрузить її
+  // картки. Якщо стежити лише за індексом сторінки, пульт чесно отримує
+  // `cards: { count: 0 }` і назавжди вимикає «Задача на екран» / «Відповідь» /
+  // «Розбір», хоча картка вже з'явилась на полотні. summary() читає саме
+  // реактивні дані поточної сторінки; тому цей watcher посилає свіжий стан
+  // щойно картка з'явилась, зникла або змінила answer/solution.
+  watch(
+    () => opts.view?.summary(),
+    () => {
+      if (remoteConnected.value && opts.enabled.value) sendState()
+    },
+  )
+
   // ── remote.command ← пульт ───────────────────────────────────────────
   function onRemoteCommand(e: Event): void {
     const d = (e as CustomEvent<RemoteCommandDetail>).detail
