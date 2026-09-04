@@ -94,8 +94,11 @@ describe('buildHandoffOps', () => {
   })
 
   it('гігієна asset-ів: document_viewer.pages стріпається; data:/blob: src → "" + _localOnly', () => {
+    // Переглядач із записом у бекенді: їде, але БЕЗ pages[] — у хмарі вони
+    // довантажаться за content_id.
     const docViewer = makeAsset('dv1', {
       type: 'document_viewer',
+      content_ref: { content_id: 7, content_type: 'pdf' },
       pages: { '0': { thumbnail_url: 'x' } },
     } as unknown as Partial<WBAsset>)
     const dataUrlImage = makeAsset('img1', { type: 'image', src: 'data:image/png;base64,AAAA' } as Partial<WBAsset>)
@@ -119,6 +122,39 @@ describe('buildHandoffOps', () => {
     // нормальний asset не мутований
     expect(byId.a1.src).toBe('')
     expect('_localOnly' in byId.a1).toBe(false)
+  })
+
+  // Демо-вітрина: аркуш і слайди — статичні файли, вказані в самому об'єкті.
+  // `pages[]` в ops не їдуть, а `content_id` нема — тобто в хмарі показати
+  // було б нічим. Краще не везти зовсім, ніж привезти порожню рамку.
+  it('переглядач без content_id не їде в хмару (там він був би порожньою рамкою)', () => {
+    const demoSheet = makeAsset('sheet', {
+      type: 'document_viewer',
+      src: '/demo/sheet-uk-1.svg',
+      content_ref: { content_type: 'pdf' },
+      pages: [{ index: 0, url: '/demo/sheet-uk-1.svg' }],
+    } as unknown as Partial<WBAsset>)
+    const demoDeck = makeAsset('deck', {
+      type: 'document_viewer',
+      src: '/demo/slides-uk-1.svg',
+      content_ref: { content_type: 'presentation' },
+      pages: [{ index: 0, url: '/demo/slides-uk-1.svg' }],
+    } as unknown as Partial<WBAsset>)
+    const liveObject = makeAsset('trig', { type: 'trig_circle' } as Partial<WBAsset>)
+
+    const state: WBWorkspaceState = {
+      pages: [makePage('p1', [makeStroke('s1')], [demoSheet, demoDeck, liveObject])],
+      currentPageIndex: 0,
+    }
+    const ops = buildHandoffOps(state)
+    const assetIds = ops.filter(o => o.op_type === 'asset_add')
+      .map(o => (o.payload.asset as Record<string, unknown>).id)
+
+    // Живий об'єкт їде, обидва демо-переглядачі — ні.
+    expect(assetIds).toEqual(['trig'])
+    // Робота людини (штрихи) і сама сторінка не постраждали.
+    expect(ops.filter(o => o.op_type === 'stroke_add')).toHaveLength(1)
+    expect(ops.filter(o => o.op_type === 'page_add')).toHaveLength(1)
   })
 
   it('порожня сторінка → лише page_add (валідний мінімум)', () => {
