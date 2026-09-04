@@ -114,11 +114,32 @@ export interface NmtTaskData {
   /** Persisted toggle: whether the solution/explanation block is visible. */
   showSolution: boolean
   /**
+   * Масштаб тексту саме цієї картки для показу класу.
+   *
+   * Це НЕ масштаб полотна: A−/A+ на пульті змінюють символи, формули та
+   * текст у картці, а не її рамку і не всю дошку. Відсутнє значення = 1.
+   */
+  presentationScale?: number
+  /**
    * Semantic fingerprint — optional. Присутній якщо NMTProblem вже збагачений.
    * Якщо `fingerprint.intents[]` непорожній — NmtTaskRenderer показує "🔗 Побудувати".
    * null / undefined → кнопка не показується.
    */
   fingerprint?: NmtTaskFingerprint
+}
+
+export const NMT_PRESENTATION_SCALE = {
+  DEFAULT: 1,
+  MIN: 0.8,
+  MAX: 2,
+  STEP: 1.25,
+} as const
+
+/** Безпечний масштаб для старих карток і пошкоджених значень у даних. */
+export function normalizeNmtPresentationScale(value: unknown): number {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return NMT_PRESENTATION_SCALE.DEFAULT
+  return Math.min(NMT_PRESENTATION_SCALE.MAX, Math.max(NMT_PRESENTATION_SCALE.MIN, numeric))
 }
 
 /** Typed alias — nmt_task assets always carry NmtTaskData. */

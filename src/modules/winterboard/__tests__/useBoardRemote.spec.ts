@@ -153,7 +153,7 @@ describe('useBoardRemote', () => {
   function setupWithView() {
     const cardsCount = ref(2)
     const view = {
-      fitTask: vi.fn(() => 0), zoomBy: vi.fn(() => 1.5), scrollBy: vi.fn(() => -240),
+      fitTask: vi.fn(() => 0), changeTextScale: vi.fn(() => 1.25), scrollBy: vi.fn(() => -240),
       reveal: vi.fn(() => 1), resetFocus: vi.fn(), taskCards: vi.fn(() => []),
       // Це Ref навмисно: ним моделюємо реальний випадок, коли індекс нової
       // сторінки вже прийшов, а картка задачі догружається пізніше.
@@ -206,9 +206,9 @@ describe('useBoardRemote', () => {
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.fit', args: {} })
     expect(view.fitTask).toHaveBeenCalledTimes(1)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 1 } })
-    expect(view.zoomBy).toHaveBeenCalledWith(1)
+    expect(view.changeTextScale).toHaveBeenCalledWith(1)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 0 } })
-    expect(view.zoomBy).toHaveBeenCalledTimes(1)          // 0 — не команда
+    expect(view.changeTextScale).toHaveBeenCalledTimes(1)  // 0 — не команда
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.scroll', args: { dir: 1 } })
     expect(view.scrollBy).toHaveBeenCalledWith(1)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'solution' } })

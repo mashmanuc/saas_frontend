@@ -179,7 +179,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         if (!view) return
         const delta = Number(d.args?.delta)
         if (!Number.isInteger(delta) || delta === 0) return
-        view.zoomBy(delta)
+        view.changeTextScale(delta)
         sendState()
         return
       }

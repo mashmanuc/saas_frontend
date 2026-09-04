@@ -15,6 +15,7 @@
 //   scroll = m - base(zoom) - a*zoom.
 
 import { useTutorRevealGate } from './useStudentTutor'
+import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 
 export interface RemoteViewStore {
   containerWidth: number
@@ -106,31 +107,24 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   }
 
   /**
-   * A−/A+: масштаб кроком, але НЕ більше за fit-масштаб картки у фокусі
-   * (щоб картка ніколи не виходила за ширину → без горизонтального скролу).
-   * Картка лишається притиснутою до верху-ліва.
+   * A−/A+: змінюють РОЗМІР СИМВОЛІВ у поточній картці, а не масштаб дошки.
+   *
+   * Власник з уроку 2026-09-04: збільшення рамки не робить текст читабельним.
+   * Кадрування картки лишається окремою дією «Задача на екран» (fitTask).
    */
-  function zoomBy(delta: number): number {
+  function changeTextScale(delta: number): number {
     const cards = taskCards()
     const asset = cards[focusIndex] ?? cards[0]
     const steps = Math.max(-3, Math.min(3, Math.trunc(delta)))
-    const cur = store.zoom
-    let next = cur * Math.pow(ZOOM_STEP, steps)
-    if (asset) {
-      const fit = fitZoomFor(asset)
-      // Стеля проти горизонтального виїзду картки застосовується ЛИШЕ вгору і
-      // лише коли ширину екрана виміряно (fit > 0). Раніше `Math.min(next, fit)`
-      // стояв беззастережно, тому A+ ЗМЕНШУВАВ масштаб, щойно вчитель був
-      // крупніше за fit, а при невиміряному екрані кидав дошку в 10%.
-      if (fit) next = Math.min(next, Math.max(fit, cur))
-      if (focusIndex < 0) focusIndex = 0
-    }
-    // Напрямок кнопки — святий: A+ ніколи не зменшує, A− ніколи не збільшує.
-    if (steps > 0) next = Math.max(next, cur)
-    if (steps < 0) next = Math.min(next, cur)
-    if (asset) placeAssetTopLeft(asset, next)
-    else store.setZoom(next)
-    return store.zoom
+    if (!asset || steps === 0) return normalizeNmtPresentationScale(asset?.data?.presentationScale)
+    const current = normalizeNmtPresentationScale(asset.data?.presentationScale)
+    const rawNext = current * Math.pow(NMT_PRESENTATION_SCALE.STEP, steps)
+    const next = Math.round(
+      Math.min(NMT_PRESENTATION_SCALE.MAX, Math.max(NMT_PRESENTATION_SCALE.MIN, rawNext)) * 100,
+    ) / 100
+    store.updateAsset({ ...asset, data: { ...(asset.data || {}), presentationScale: next } })
+    if (focusIndex < 0) focusIndex = 0
+    return next
   }
 
   /** ▲/▼: вертикальний скрол на частку висоти екрана; горизонталь не чіпаємо. */
@@ -178,7 +172,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   /** Сторінка змінилась — фокус скидається (інша сторінка, інші картки) */
   function resetFocus(): void { focusIndex = -1 }
 
-  return { fitTask, zoomBy, scrollBy, reveal, summary, resetFocus, taskCards }
+  return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards }
 }
 
 export type RemoteViewAdapter = ReturnType<typeof createRemoteViewAdapter>

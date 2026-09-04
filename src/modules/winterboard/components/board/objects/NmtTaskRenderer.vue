@@ -32,6 +32,7 @@
       `nmt-task--${data.taskType}`,
       { 'is-selected': isSelected, 'is-readonly': !interactive },
     ]"
+    :style="{ '--nmt-presentation-scale': String(presentationScale) }"
     :data-testid="`nmt-task-${asset.id}`"
   >
     <!-- Кольорова смуга зліва за типом задачі -->
@@ -244,7 +245,7 @@
         <span class="nmt-task__solution-icon">📖</span>
         <div
           class="nmt-task__solution-text"
-          :style="{ fontSize: solutionZoom.fontPx.value + 'px' }"
+          :style="{ fontSize: (solutionZoom.fontPx.value * presentationScale) + 'px' }"
           v-html="renderTextWithLatex(data.solution)"
         />
         <!-- Масштаб розбору. Розмір особистий (localStorage), у дошку не
@@ -294,7 +295,7 @@ import { useSolutionZoom } from '../../../composables/useSolutionZoom'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
-import type { NmtTaskData } from '../../../types/nmtTask'
+import { normalizeNmtPresentationScale, type NmtTaskData } from '../../../types/nmtTask'
 import {
   resolveCompanions,
   hasAvailableCompanions,
@@ -350,6 +351,9 @@ useExportCapture(
 // ── Data access ───────────────────────────────────────────────────────────────
 
 const data = computed(() => (props.asset.data as unknown as NmtTaskData))
+
+/** Масштаб символів картки; рамка та масштаб полотна від нього не залежать. */
+const presentationScale = computed(() => normalizeNmtPresentationScale(data.value.presentationScale))
 
 /* ── Ілюстрації задачі (2026-07-31) ──────────────────────────────────────────
    Задачі «На рисунку зображено куб…» приходили голим текстом: BE не проносив
@@ -529,6 +533,14 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: border-color 0.15s, box-shadow 0.15s;
+  /* Єдина вісь показу для пульта A−/A+: усі текстові розміри нижче беруть
+     значення з цих змінних. KaTeX рахує формули в em і масштабується разом. */
+  --nmt-font-11: calc(11px * var(--nmt-presentation-scale, 1));
+  --nmt-font-12: calc(12px * var(--nmt-presentation-scale, 1));
+  --nmt-font-13: calc(13px * var(--nmt-presentation-scale, 1));
+  --nmt-font-14: calc(14px * var(--nmt-presentation-scale, 1));
+  --nmt-font-15: calc(15px * var(--nmt-presentation-scale, 1));
+  --nmt-font-16: calc(16px * var(--nmt-presentation-scale, 1));
 }
 
 .nmt-task.is-selected {
@@ -576,13 +588,13 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 }
 
 .nmt-task__type-icon {
-  font-size: 13px;
+  font-size: var(--nmt-font-13);
   color: var(--accent);
   flex-shrink: 0;
 }
 
 .nmt-task__type-badge {
-  font-size: 11px;
+  font-size: var(--nmt-font-11);
   font-weight: 700;
   color: var(--accent);
   background: var(--accent-light);
@@ -599,7 +611,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border: none;
   background: transparent;
   color: #9ca3af;
-  font-size: 16px;
+  font-size: var(--nmt-font-16);
   line-height: 1;
   cursor: pointer;
   border-radius: 5px;
@@ -632,7 +644,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 
 /* ── Question ────────────────────────────────────────────────────────── */
 .nmt-task__question {
-  font-size: 15px;
+  font-size: var(--nmt-font-15);
   font-weight: 500;
   line-height: 1.55;
   color: #0f172a;
@@ -674,7 +686,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border: none;
   background: transparent;
   padding: 0;
-  font-size: 11px;
+  font-size: var(--nmt-font-11);
   color: #64748b;
   cursor: pointer;
 }
@@ -699,7 +711,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 
 .nmt-task__topic-note {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--nmt-font-11);
   color: #94a3b8;
 }
 
@@ -710,7 +722,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border: none;
   border-radius: 6px;
   background: transparent;
-  font-size: 12px;
+  font-size: var(--nmt-font-12);
   text-align: left;
   color: #0f172a;
   cursor: pointer;
@@ -722,13 +734,13 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 
 .nmt-task__topic-error {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--nmt-font-11);
   color: #b91c1c;
 }
 
 .nmt-task__hint {
   margin: 2px 0 6px;
-  font-size: 12px;
+  font-size: var(--nmt-font-12);
   font-weight: 600;
   color: #b45309;
 }
@@ -750,7 +762,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   background: #fafafa;
   cursor: pointer;
   text-align: left;
-  font-size: 13px;
+  font-size: var(--nmt-font-13);
   color: #374151;
   transition: border-color 0.13s, background 0.13s, transform 0.1s;
 }
@@ -783,7 +795,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border-radius: 7px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--nmt-font-12);
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -826,7 +838,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   padding: 0 13px;
   border: 1.5px solid #d1d5db;
   border-radius: 9px;
-  font-size: 14px;
+  font-size: var(--nmt-font-14);
   background: #fafafa;
   color: #111827;
   outline: none;
@@ -843,7 +855,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
+  font-size: var(--nmt-font-13);
   font-weight: 600;
   color: #166534;
   background: #f0fdf4;
@@ -853,7 +865,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 }
 
 .nmt-task__hint-icon {
-  font-size: 14px;
+  font-size: var(--nmt-font-14);
   flex-shrink: 0;
 }
 
@@ -872,7 +884,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fafafa;
-  font-size: 13px;
+  font-size: var(--nmt-font-13);
   color: #374151;
   transition: background 0.13s, border-color 0.13s;
 }
@@ -889,7 +901,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border-radius: 6px;
   background: var(--accent-light);
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--nmt-font-11);
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -905,7 +917,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 .nmt-task__pair-sep {
   flex-shrink: 0;
   color: #cbd5e1;
-  font-size: 16px;
+  font-size: var(--nmt-font-16);
   font-weight: 300;
 }
 
@@ -930,7 +942,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border-radius: 8px;
   background: #f8fafc;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--nmt-font-12);
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.13s, background 0.13s, color 0.13s, transform 0.1s;
@@ -967,7 +979,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   border-color: #bae6fd;
   background: #f0f9ff;
   color: #0369a1;
-  font-size: 12px;
+  font-size: var(--nmt-font-12);
 }
 
 .nmt-task__btn--build:hover {
@@ -985,14 +997,14 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
   border: 1px solid #bbf7d0;
   border-radius: 9px;
-  font-size: 13px;
+  font-size: var(--nmt-font-13);
   color: #166534;
   line-height: 1.55;
 }
 
 .nmt-task__solution-icon {
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: var(--nmt-font-16);
 }
 
 .nmt-task__solution-text {

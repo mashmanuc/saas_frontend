@@ -74,6 +74,15 @@ const OPTIONS = [
 ]
 
 describe('NmtTaskRenderer — multiple_select', () => {
+  it('presentationScale змінює типографіку картки, а не її розміри', () => {
+    const w = mountTask({
+      taskType: 'single_choice', question: 'Знайдіть $x$', options: OPTIONS,
+      presentationScale: 1.25,
+    })
+    expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1.25')
+    expect(w.find('.nmt-task__question').text()).toContain('Знайдіть')
+  })
+
   it('INV-NMT-MS-1: рендерить сітку варіантів', () => {
     const w = mountTask({
       taskType: 'multiple_select', question: 'Оберіть правильні твердження',

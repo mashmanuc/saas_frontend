@@ -2,7 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  createRemoteViewAdapter, FIT_MARGIN_PX, ZOOM_STEP, SCROLL_FRACTION, TASK_ASSET_TYPE,
+  createRemoteViewAdapter, FIT_MARGIN_PX, SCROLL_FRACTION, TASK_ASSET_TYPE,
 } from '../composables/useRemoteViewAdapter'
 import { resetTutorGate } from '../composables/useStudentTutor'
 
@@ -66,25 +66,25 @@ describe('useRemoteViewAdapter', () => {
     expect(v.fitTask()).toBe(0)
   })
 
-  it('zoomBy(+1) множить на крок, але НЕ вище fit-масштабу картки (без горизонтального скролу)', () => {
-    const store = makeStore([card('a', 0, 0, 800)])   // fit = 968/800 = 1.21
+  it('A+ збільшує символи картки, але НЕ масштаб полотна і НЕ рамку', () => {
+    const store = makeStore([card('a', 0, 0, 800)])
     const v = createRemoteViewAdapter(store)
     store.zoom = 1
-    v.zoomBy(1)
-    expect(store.zoom).toBeCloseTo(Math.min(1 * ZOOM_STEP, 968 / 800), 5)
-    v.zoomBy(3)
-    expect(store.zoom).toBeCloseTo(968 / 800, 5)     // стеля = fit
-    v.zoomBy(-1)
-    expect(store.zoom).toBeCloseTo((968 / 800) / ZOOM_STEP, 5)
-    // картка лишається притиснутою: ліва грань на margin
-    expect(store.scrollX + 0 * store.zoom).toBeCloseTo(FIT_MARGIN_PX, 5)
+    const initialWidth = store.pages[0].assets[0].w
+    expect(v.changeTextScale(1)).toBe(1.25)
+    expect(store.pages[0].assets[0].data.presentationScale).toBe(1.25)
+    expect(store.zoom).toBe(1)
+    expect(store.pages[0].assets[0].w).toBe(initialWidth)
+    expect(v.changeTextScale(3)).toBe(2) // стеля саме для шрифту
+    expect(v.changeTextScale(-1)).toBe(1.6)
   })
 
-  it('zoomBy без карток — просто масштаб сторінки, дельта обрізана до ±3', () => {
+  it('A+ без карток не чіпає сторінку', () => {
     const store = makeStore([])
     const v = createRemoteViewAdapter(store)
-    v.zoomBy(10)
-    expect(store.zoom).toBeCloseTo(Math.pow(ZOOM_STEP, 3), 5)
+    expect(v.changeTextScale(1)).toBe(1)
+    expect(store.zoom).toBe(1)
+    expect(store.updateAsset).not.toHaveBeenCalled()
   })
 
   it('scrollBy(+1) = контент угору на SCROLL_FRACTION висоти; горизонталь не міняється', () => {
@@ -126,35 +126,15 @@ describe('useRemoteViewAdapter', () => {
 })
 
 // ──────────────────────────────────────────────────────────────────────────
-// Борг 2026-09-04, спіймано власником ЖИВЦЕМ на уроці: натиснув A+ на пульті,
-// а дошка ЗМЕНШИЛАСЬ до 10%. Причина — стеля `Math.min(next, fitZoomFor())`
-// стояла беззастережно: (а) при невиміряному екрані fit падав до ZOOM_MIN,
-// (б) якщо вчитель уже крупніше за fit, «стеля» тягнула його вниз.
-describe('useRemoteViewAdapter — напрямок кнопки A+/A− святий', () => {
+describe('useRemoteViewAdapter — A+/A− змінюють типографіку, не дошку', () => {
   beforeEach(() => resetTutorGate())
 
-  it('A+ НЕ зменшує масштаб, коли поточний уже крупніший за fit', () => {
-    // картка широка → fit = (1000−32)/2000 = 0.484, а вчитель на 1.0
-    const store = makeStore([card('wide', 0, 0, 2000)], { zoom: 1 })
+  it('A+ не зменшує текст, A− не збільшує текст', () => {
+    const store = makeStore([card('a', 0, 0, 400, { presentationScale: 1.5 })], { zoom: 1 })
     const v = createRemoteViewAdapter(store)
-    v.zoomBy(1)
-    expect(store.zoom).toBeGreaterThanOrEqual(1)
-  })
-
-  it('A+ при НЕвиміряному екрані не кидає дошку в 10%', () => {
-    // containerWidth = 0 (полотно ще не зміряне) — раніше fit = 0.1 і зум падав
-    const store = makeStore([card('a', 0, 0, 400)], { containerWidth: 0, zoom: 1 })
-    const v = createRemoteViewAdapter(store)
-    v.zoomBy(1)
-    expect(store.zoom).toBeCloseTo(1 * ZOOM_STEP, 5)
-    expect(store.zoom).not.toBeCloseTo(0.1, 5)
-  })
-
-  it('A− НЕ збільшує масштаб', () => {
-    const store = makeStore([card('a', 0, 0, 100)], { zoom: 1 })   // fit великий
-    const v = createRemoteViewAdapter(store)
-    v.zoomBy(-1)
-    expect(store.zoom).toBeLessThanOrEqual(1)
+    expect(v.changeTextScale(1)).toBeGreaterThanOrEqual(1.5)
+    expect(v.changeTextScale(-1)).toBe(1.5)
+    expect(store.zoom).toBe(1)
   })
 
   it('fitTask при НЕвиміряному екрані нічого не рухає і не зсуває фокус', () => {
