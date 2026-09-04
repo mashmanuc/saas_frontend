@@ -217,6 +217,12 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
+/* На сторінці входу це декоративна ілюстрація, а не робочий графік.
+   Порожній HUD зі значеннями лише перекриває її. */
+.auth-banner-animation :deep(.calc-hud) {
+  display: none;
+}
+
 .auth-banner-static {
   position: relative;
   height: 210px;
