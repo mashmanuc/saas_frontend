@@ -8,6 +8,7 @@ import {
   computeSeedDigest,
   computeLegacySeedDigest,
   sealMatchesState,
+  isSealOutdated,
   matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../localWorkspaceSeed'
@@ -290,6 +291,59 @@ describe('sealMatchesState — сумісність зі старими печа
     const s = buildLocalWelcomeState(TEXTS)
     expect(sealMatchesState(s, null)).toBe(false)
     expect(sealMatchesState(s, '')).toBe(false)
+  })
+})
+
+// Сумісність зі старим правилом мала бути ТИМЧАСОВОЮ, а лишалась вічною:
+// людина зі свіжою вітриною й старою печаткою не потрапляє в гілку
+// перемальовування (перемальовувати нема чого) — отже печатку їй ніхто й не
+// оновить. Вона назавжди на старому правилі, яке не бачить джерела вмісту.
+describe('isSealOutdated — печатку треба довести до поточного правила', () => {
+  it('стара печатка при АКТУАЛЬНІЙ вітрині — застаріла, хоч і збігається', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const oldSeal = computeLegacySeedDigest(s)
+    // Саме та комбінація, що застрягала: звірка проходить…
+    expect(sealMatchesState(s, oldSeal)).toBe(true)
+    // …але печатку однаково треба переписати.
+    expect(isSealOutdated(s, oldSeal)).toBe(true)
+  })
+
+  it('печатки нема — треба поставити', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    expect(isSealOutdated(s, null)).toBe(true)
+    expect(isSealOutdated(s, '')).toBe(true)
+  })
+
+  it('печатка поточного покоління — нічого не робимо', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    expect(isSealOutdated(s, computeSeedDigest(s))).toBe(false)
+  })
+
+  it('після переписування legacy-гілка більше не потрібна', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    let seal: string = computeLegacySeedDigest(s)
+    // Перший вхід: печатка стара → переписуємо (це й робить WBSoloRoom).
+    if (isSealOutdated(s, seal)) seal = computeSeedDigest(s)
+    expect(seal.startsWith('2|')).toBe(true)
+    // Другий вхід: уже нічого не переписуємо, звірка йде новим правилом.
+    expect(isSealOutdated(s, seal)).toBe(false)
+    expect(sealMatchesState(s, seal)).toBe(true)
+  })
+
+  it('після переписування ЗМІНА ДЖЕРЕЛА вмісту нарешті помітна', () => {
+    // Сенс усієї витівки: доки печатка стара, підміна файлів аркуша минає
+    // непоміченою, бо старе правило дивиться лише на геометрію.
+    const uk = buildLocalWelcomeState(TEXTS)
+    const en = buildLocalWelcomeState({
+      ...TEXTS,
+      sheetUrls: ['/demo/sheet-en-1.svg', '/demo/sheet-en-2.svg',
+                  '/demo/sheet-en-3.svg', '/demo/sheet-en-4.svg'],
+    })
+    const oldSeal = computeLegacySeedDigest(uk)
+    // Старе правило нової вітрини не відрізняє — людина застрягла б.
+    expect(sealMatchesState(en, oldSeal)).toBe(true)
+    // Нове — відрізняє.
+    expect(sealMatchesState(en, computeSeedDigest(uk))).toBe(false)
   })
 })
 

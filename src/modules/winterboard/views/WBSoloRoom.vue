@@ -1187,6 +1187,7 @@ import {
   buildLocalWelcomeState,
   computeSeedDigest,
   sealMatchesState,
+  isSealOutdated,
   matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../local/localWorkspaceSeed'
@@ -3558,8 +3559,11 @@ async function initLocalWorkspace(): Promise<void> {
       markLocalWorkspaceSeeded(computeSeedDigest(state))
       trackLocal('seed_refreshed')
       seedWasUpgraded = true
-    } else if (!getLocalWorkspaceSeedDigest()) {
-      // Legacy-браузер із тією самою вітриною — просто ставимо пломбу.
+    } else if (isSealOutdated(state, getLocalWorkspaceSeedDigest())) {
+      // Вітрина вже актуальна, перемальовувати нічого — але печатку все одно
+      // доводимо до поточного правила. Її може не бути (legacy-браузер) або
+      // вона попереднього покоління; у другому випадку цю людину більше ніхто
+      // б не оновив, бо в гілку перемальовування вона не потрапляє.
       markLocalWorkspaceSeeded(computeSeedDigest(state))
     }
   }
