@@ -26,7 +26,7 @@ export interface RemoteStateDetail {
   /** v1.2 — масштаб полотна на ноутбуці (для інформації) */
   zoom?: number
   /** v1.2 — картки задач поточної сторінки: скільки, чи показано відповідь/розбір усім */
-  cards?: { count: number; answer: boolean | null; solution: boolean | null }
+  cards?: { count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean }
   /** Дошка з фіналізованим записом: команди дійдуть, але нічого не збережеться */
   frozen?: boolean
 }

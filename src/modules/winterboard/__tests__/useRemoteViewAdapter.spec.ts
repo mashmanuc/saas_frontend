@@ -2,7 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  createRemoteViewAdapter, FIT_MARGIN_PX, SCROLL_FRACTION, TASK_ASSET_TYPE,
+  createRemoteViewAdapter, TASK_ASSET_TYPE,
 } from '../composables/useRemoteViewAdapter'
 import { resetTutorGate } from '../composables/useStudentTutor'
 import { getNmtPresentationScale, resetNmtPresentationScales } from '../composables/useNmtPresentationScale'
@@ -16,6 +16,7 @@ function makeStore(assets: any[] = [], over: Partial<any> = {}) {
     containerWidth: 1000, containerHeight: 600,
     pageWidth: 2000, pageHeight: 1500,
     zoom: 1, scrollX: 0, scrollY: 0,
+    expandedAssetId: null,
     currentPageIndex: 0,
     pages: [{ assets }],
     setZoom: vi.fn(function (this: any, z: number) { store.zoom = Math.max(0.1, Math.min(5, z)) }),
@@ -32,27 +33,21 @@ function makeStore(assets: any[] = [], over: Partial<any> = {}) {
 describe('useRemoteViewAdapter', () => {
   beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
 
-  it('fitTask: масштаб = (containerW − 2·margin) / w, картка притиснута до верху-ліва', () => {
+  it('fitTask: локально розгортає картку на весь простір, не змінюючи її геометрію', () => {
     const store = makeStore([card('a', 100, 300, 400)])
     const v = createRemoteViewAdapter(store)
     expect(v.fitTask()).toBe(0)
-    const expectedZoom = (1000 - 2 * FIT_MARGIN_PX) / 400   // 2.42
-    expect(store.zoom).toBeCloseTo(expectedZoom, 5)
-    // сторінка 2000·2.42 > контейнер → base=0 → scroll = margin − a·zoom
-    expect(store.scrollX).toBeCloseTo(FIT_MARGIN_PX - 100 * expectedZoom, 5)
-    expect(store.scrollY).toBeCloseTo(FIT_MARGIN_PX - 300 * expectedZoom, 5)
-    // ліва грань картки на екрані = base + scroll + x·zoom = margin
-    const screenLeft = 0 + store.scrollX + 100 * store.zoom
-    expect(screenLeft).toBeCloseTo(FIT_MARGIN_PX, 5)
-    // права грань = margin + w·zoom = containerW − margin → без горизонтального виходу
-    expect(screenLeft + 400 * store.zoom).toBeCloseTo(1000 - FIT_MARGIN_PX, 5)
+    expect(store.expandedAssetId).toBe('a')
+    expect(v.summary().presenting).toBe(true)
+    expect(store.zoom).toBe(1)
+    expect(store.setScroll).not.toHaveBeenCalled()
   })
 
   it('fitTask на сторінці без карток → −1, стор не чіпається', () => {
     const store = makeStore([{ id: 'img', type: 'image', x: 0, y: 0, w: 100, h: 100 }])
     const v = createRemoteViewAdapter(store)
     expect(v.fitTask()).toBe(-1)
-    expect(store.setZoom).not.toHaveBeenCalled()
+    expect(store.expandedAssetId).toBeNull()
   })
 
   it('повторний fitTask циклює по картках зверху вниз; resetFocus повертає на першу', () => {
@@ -64,6 +59,7 @@ describe('useRemoteViewAdapter', () => {
     expect(v.fitTask()).toBe(2)
     expect(v.fitTask()).toBe(0)
     v.resetFocus()
+    expect(store.expandedAssetId).toBeNull()
     expect(v.fitTask()).toBe(0)
   })
 
@@ -89,14 +85,27 @@ describe('useRemoteViewAdapter', () => {
     expect(store.updateAsset).not.toHaveBeenCalled()
   })
 
-  it('scrollBy(+1) = контент угору на SCROLL_FRACTION висоти; горизонталь не міняється', () => {
+  it('scrollBy без відкритої на екран картки не рухає полотно', () => {
     const store = makeStore([], { scrollX: -123, scrollY: 0 })
     const v = createRemoteViewAdapter(store)
     v.scrollBy(1)
-    expect(store.scrollY).toBeCloseTo(-600 * SCROLL_FRACTION, 5)
+    expect(store.scrollY).toBe(0)
     expect(store.scrollX).toBe(-123)
-    v.scrollBy(-1)
-    expect(store.scrollY).toBeCloseTo(0, 5)
+  })
+
+  it('scrollBy гортає тіло саме розгорнутої картки, а не полотно', () => {
+    document.body.innerHTML = '<div data-testid="nmt-task-a"><div class="nmt-task__body"></div></div>'
+    const body = document.querySelector('.nmt-task__body') as HTMLElement
+    Object.defineProperty(body, 'clientHeight', { value: 200 })
+    Object.defineProperty(body, 'scrollHeight', { value: 1000 })
+    const store = makeStore([card('a', 0, 0)], { scrollX: -123, scrollY: 77 })
+    const v = createRemoteViewAdapter(store)
+    v.fitTask()
+    expect(v.scrollBy(1)).toBe(80)
+    expect(body.scrollTop).toBe(80)
+    expect(store.scrollX).toBe(-123)
+    expect(store.scrollY).toBe(77)
+    expect(v.scrollBy(-1)).toBe(0)
   })
 
   it('reveal(answer): перемикає ВСІ картки сторінки через updateAsset; повторно — ховає', () => {
@@ -140,12 +149,13 @@ describe('useRemoteViewAdapter — A+/A− змінюють типографік
     expect(store.updateAsset).not.toHaveBeenCalled()
   })
 
-  it('fitTask при НЕвиміряному екрані нічого не рухає і не зсуває фокус', () => {
+  it('fitTask не залежить від виміру полотна: режим показу локальний', () => {
     const store = makeStore([card('a', 0, 0, 400), card('b', 0, 500, 400)],
                             { containerWidth: 0, zoom: 1 })
     const v = createRemoteViewAdapter(store)
-    expect(v.fitTask()).toBe(-1)
+    expect(v.fitTask()).toBe(0)
     expect(store.zoom).toBe(1)
     expect(store.setScroll).not.toHaveBeenCalled()
+    expect(store.expandedAssetId).toBe('a')
   })
 })

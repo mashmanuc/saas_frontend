@@ -315,10 +315,12 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-nmt-task-overlay',
     dataAttr: 'data-nmt-task-id',
     testidPrefix: 'nmt-task-overlay',
-    expandable: false,
-    buildProps: stdProps,
+    // «Задача на екран» з пульта використовує штатний локальний board-expand:
+    // картка займає весь доступний простір, але її asset-геометрія не змінюється.
+    expandable: true,
+    buildProps: expProps,
     buildEvents: (a, ctx) => ({
-      ...stdEvents(a, ctx),
+      ...expEvents(a, ctx),
       'spawn-companions': (payload: unknown) => ctx.onSpawnCompanions(payload),
     }),
   },

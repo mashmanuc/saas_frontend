@@ -89,7 +89,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (opts.view) {
       const s = opts.view.summary()
       msg.zoom = s.zoom
-      msg.cards = { count: s.count, answer: s.answer, solution: s.solution }
+      msg.cards = { count: s.count, answer: s.answer, solution: s.solution, presenting: s.presenting }
     }
     if (opts.frozen) msg.frozen = !!opts.frozen.value
     opts.sendMessage(msg)

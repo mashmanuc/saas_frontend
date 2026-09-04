@@ -83,8 +83,8 @@
       <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
     </div>
     <div class="wb-remote__row">
-      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
-      <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
+      <button type="button" class="wb-remote__mini" :disabled="!isReady || !isPresentingTask" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
+      <button type="button" class="wb-remote__mini" :disabled="!isReady || !isPresentingTask" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
       <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.answer }" :disabled="!isReady || !hasCards" @click="sendCmd('card.reveal', { what: 'answer' })">
         {{ cards?.answer ? t('winterboard.remote.hideAnswer') : t('winterboard.remote.showAnswer') }}
       </button>
@@ -184,8 +184,10 @@ const pageIndex = ref<number | null>(null)
 const pageCount = ref<number | null>(null)
 const lastPhrase = ref('')
 /** v1.2 — картки задач на поточній сторінці (з remote.state ноутбука) */
-const cards = ref<{ count: number; answer: boolean | null; solution: boolean | null } | null>(null)
+const cards = ref<{ count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean } | null>(null)
 const hasCards = computed(() => !!cards.value && cards.value.count > 0)
+/** ▲/▼ мають сенс лише коли «Задача на екран» відкрила довгу картку. */
+const isPresentingTask = computed(() => !!cards.value?.presenting)
 
 /** Причина, чому пульт не керує (null = усе гаразд або ще шукаємо) */
 type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable' | 'boardFrozen'

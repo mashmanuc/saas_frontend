@@ -580,17 +580,22 @@
         class="wb-nmt-task-overlay"
         :class="{
           'wb-nmt-task-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
         }"
         :data-nmt-task-id="asset.id"
         :data-testid="`nmt-task-overlay-${asset.id}`"
-        :style="getOverlayStyle(asset)"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : getOverlayStyle(asset)"
       >
         <NmtTaskRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
           @spawn-companions="handleSpawnCompanions"
         />
       </div>

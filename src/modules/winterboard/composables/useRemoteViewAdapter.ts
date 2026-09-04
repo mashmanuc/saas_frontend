@@ -4,12 +4,11 @@
 // Власник з уроку 2026-09-03: «тексти задач учням не видно на дошці; я мушу
 // бігти до ноута збільшувати сторінку; завдання має бути повністю видно,
 // підганятись на ширину, без горизонтального скролу; відповідь/розбір —
-// з пульта». Рішення: НЕ чіпати рендерер картки, а керувати масштабом і
-// скролом полотна так, щоб картка задачі заповнила ширину екрана (це і є
-// «збільшити умову»), і перемикати showAnswer/showSolution через штатний
-// updateAsset (персистується як звичайна дія на ноутбуці).
-//
-// Геометрія (boardStore getters): екранна позиція точки сторінки =
+// з пульта». Рішення: «Задача на екран» локально розгортає картку на весь
+// доступний простір полотна; A+/A− змінюють лише її типографіку, а стрілки
+// гортають тіло розгорнутої картки. Геометрія уроку та реплей не змінюються.
+// Відповідь і розбір перемикаються штатним updateAsset як звичайна дія
+// на ноутбуці.
 //   base(zoom) + scroll + p*zoom, де base = max(0, (container - page*zoom)/2).
 // Звідси scroll для «ліва/верхня грань картки на відступі m»:
 //   scroll = m - base(zoom) - a*zoom.
@@ -27,6 +26,8 @@ export interface RemoteViewStore {
   scrollX: number
   scrollY: number
   currentPageIndex: number
+  /** Локальний режим показу оверлею на весь робочий простір. Не пишеться в ops/replay. */
+  expandedAssetId: string | null
   pages: Array<{ assets: Array<any> }>
   setZoom: (z: number) => void
   setScroll: (x: number, y: number) => void
@@ -37,18 +38,12 @@ export interface RemoteCardsSummary {
   count: number
   answer: boolean | null
   solution: boolean | null
+  /** Пульт відкрив одну з карток на весь доступний простір. */
+  presenting: boolean
 }
 
 export const TASK_ASSET_TYPE = 'nmt_task'
-export const FIT_MARGIN_PX = 16
-export const ZOOM_STEP = 1.15
 export const SCROLL_FRACTION = 0.4
-const ZOOM_MIN = 0.1
-const ZOOM_MAX = 5
-
-function base(container: number, page: number, zoom: number): number {
-  return Math.max(0, (container - page * zoom) / 2)
-}
 
 export function createRemoteViewAdapter(store: RemoteViewStore) {
   /** Індекс картки, на яку востаннє «наводили» (для циклу по картках і для A−/A+) */
@@ -64,33 +59,8 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   }
 
   /**
-   * Масштаб, за якого картка займає ширину контейнера мінус відступи.
-   *
-   * Повертає **0 = «не знаю»**, якщо ширину екрана ще не виміряно. Це не
-   * педантизм: до 2026-09-04 тут при `containerWidth = 0` виходило
-   * `(0 − 32) / w < 0` → `Math.max(ZOOM_MIN, …)` = **0.1**, і ця «стеля»
-   * кидала дошку в 10%. Власник спіймав живцем на уроці: натиснув A+, а
-   * дошка зменшилась. Той самий guard уже є у `WBAssetItem.vue:83`.
-   */
-  function fitZoomFor(asset: any): number {
-    const w = Math.max(1, Number(asset?.w) || 1)
-    const cw = Number(store.containerWidth) || 0
-    if (!(cw > 2 * FIT_MARGIN_PX)) return 0
-    const target = (cw - 2 * FIT_MARGIN_PX) / w
-    if (!Number.isFinite(target) || target <= 0) return 0
-    return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, target))
-  }
-
-  function placeAssetTopLeft(asset: any, zoom: number): void {
-    store.setZoom(zoom)
-    const z = store.zoom   // після clamp у сторі
-    const sx = FIT_MARGIN_PX - base(store.containerWidth, store.pageWidth, z) - asset.x * z
-    const sy = FIT_MARGIN_PX - base(store.containerHeight, store.pageHeight, z) - asset.y * z
-    store.setScroll(sx, sy)
-  }
-
-  /**
-   * «Задача на екран»: картка заповнює ширину, її верх — угорі екрана.
+   * «Задача на екран»: локально розгортає картку на весь доступний простір
+   * полотна. Це не змінює її геометрію в уроці й не потрапляє в реплей.
    * Повторний виклик циклює по картках сторінки. Повертає індекс або -1.
    */
   function fitTask(): number {
@@ -98,12 +68,9 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
     if (!cards.length) { focusIndex = -1; return -1 }
     const nextIndex = (focusIndex + 1) % cards.length
     const asset = cards[nextIndex]
-    const fit = fitZoomFor(asset)
-    // Ширину екрана ще не виміряно — краще НЕ рухати дошку взагалі, ніж
-    // «підігнати» її в 10% (борг 2026-09-04). Фокус теж не зсуваємо.
-    if (!fit) return -1
     focusIndex = nextIndex
-    placeAssetTopLeft(asset, fit)
+    store.expandedAssetId = asset.id
+    scrollTaskBody(asset.id, -1)
     return focusIndex
   }
 
@@ -130,12 +97,25 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
     return next
   }
 
-  /** ▲/▼: вертикальний скрол на частку висоти екрана; горизонталь не чіпаємо. */
+  /** ▲/▼: гортання довгої картки, відкритої через «Задача на екран». */
   function scrollBy(dir: number): number {
-    const d = dir < 0 ? -1 : 1
-    const dy = -d * store.containerHeight * SCROLL_FRACTION   // ▼ (dir=+1) = контент угору
-    store.setScroll(store.scrollX, store.scrollY + dy)
-    return store.scrollY
+    const asset = taskCards()[focusIndex]
+    if (!asset || store.expandedAssetId !== asset.id) return 0
+    return scrollTaskBody(asset.id, dir)
+  }
+
+  function scrollTaskBody(assetId: string, dir: number): number {
+    if (typeof document === 'undefined') return 0
+    const body = document.querySelector(
+      `[data-testid="nmt-task-${assetId}"] .nmt-task__body`,
+    ) as HTMLElement | null
+    if (!body) return 0
+    if (dir < 0) {
+      body.scrollTop = 0
+    } else {
+      body.scrollTop = Math.min(body.scrollHeight, body.scrollTop + body.clientHeight * SCROLL_FRACTION)
+    }
+    return body.scrollTop
   }
 
   /**
@@ -163,17 +143,21 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
 
   function summary(): RemoteCardsSummary & { zoom: number } {
     const cards = taskCards()
-    if (!cards.length) return { count: 0, answer: null, solution: null, zoom: store.zoom }
+    if (!cards.length) return { count: 0, answer: null, solution: null, presenting: false, zoom: store.zoom }
     return {
       count: cards.length,
       answer: cards.every((a) => !!a.data?.showAnswer),
       solution: cards.every((a) => !!a.data?.showSolution),
+      presenting: focusIndex >= 0 && store.expandedAssetId === cards[focusIndex]?.id,
       zoom: store.zoom,
     }
   }
 
-  /** Сторінка змінилась — фокус скидається (інша сторінка, інші картки) */
-  function resetFocus(): void { focusIndex = -1 }
+  /** Сторінка змінилась — повертаємо звичайний вигляд, фокус скидається. */
+  function resetFocus(): void {
+    focusIndex = -1
+    store.expandedAssetId = null
+  }
 
   return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards }
 }

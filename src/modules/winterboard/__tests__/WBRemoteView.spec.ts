@@ -210,7 +210,7 @@ describe('WBRemoteView v1.1', () => {
     const minis = () => w.findAll('.wb-remote__mini')
     expect(minis().every(b => (b.element as HTMLButtonElement).disabled)).toBe(true)
 
-    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true } })
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true, presenting: true } })
     await nextTick()
     send.mockClear()
     await minis()[0].trigger('click')   // Задача на екран

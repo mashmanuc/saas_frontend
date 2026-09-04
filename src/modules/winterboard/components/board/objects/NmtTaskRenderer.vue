@@ -30,7 +30,7 @@
     class="nmt-task"
     :class="[
       `nmt-task--${data.taskType}`,
-      { 'is-selected': isSelected, 'is-readonly': !interactive },
+      { 'is-selected': isSelected, 'is-readonly': !interactive, 'is-expanded': isExpanded },
     ]"
     :style="{ '--nmt-presentation-scale': String(presentationScale) }"
     :data-testid="`nmt-task-${asset.id}`"
@@ -325,6 +325,8 @@ const props = defineProps<{
   asset: WBAsset
   isSelected: boolean
   interactive: boolean
+  /** Картка локально показана на весь доступний простір полотна. */
+  isExpanded?: boolean
 }>()
 
 const emit = defineEmits<{
