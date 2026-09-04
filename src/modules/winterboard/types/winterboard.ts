@@ -119,7 +119,15 @@ export type WBTextElement = WBStroke & {
 
 /** Content reference for document_viewer assets — links to backend ContentItem */
 export interface WBContentRef {
-  content_id: number
+  /**
+   * Id запису ContentItem у бекенді. Саме його НАЯВНІСТЬ означає «сторінки
+   * можна довантажити наново» — тому за ним і вирішується, чи вирізати
+   * `pages[]` при збереженні (boardStore._stripRefetchablePages).
+   *
+   * Необов'язковий: локальний об'єкт (демо-дошка `/workspace` без API) має
+   * вид документа, але не має запису в бекенді — і не повинен його вдавати.
+   */
+  content_id?: number
   content_type: 'pdf' | 'document' | 'presentation' | string
 }
 

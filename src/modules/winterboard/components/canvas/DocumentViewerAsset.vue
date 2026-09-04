@@ -103,15 +103,33 @@ watch(
   () => loadCurrentPage(),
 )
 
-async function loadCurrentPage() {
+/**
+ * Адреса сторінки: або з бекенду (хмарний документ), або з самого об'єкта.
+ *
+ * Статичний режим (`pages[]` без `content_ref`) потрібен там, де API нема
+ * взагалі — демо-дошка `/workspace` живе повністю в браузері. Хмарні
+ * переглядачі завжди мають `content_ref` (див. useContentDrop), тож для них
+ * гілка нижче не спрацьовує і поведінка не змінюється.
+ */
+async function resolvePageUrl(pageIndex: number): Promise<string | null> {
   const contentId = props.asset.content_ref?.content_id
+  if (!contentId) return props.asset.pages?.[pageIndex]?.url ?? null
   const contentType = props.asset.content_ref?.content_type ?? 'pdf'
-  if (!contentId) { currentPageImage.value = null; return }
+  return await getDocumentPageUrl(contentId, contentType, pageIndex)
+}
+
+/** Чи має об'єкт хоч якесь джерело сторінок (інакше малювати нічого). */
+const hasPageSource = computed(() =>
+  Boolean(props.asset.content_ref?.content_id) || Boolean(props.asset.pages?.length),
+)
+
+async function loadCurrentPage() {
+  if (!hasPageSource.value) { currentPageImage.value = null; return }
 
   const pageIndex = props.asset.currentPage ?? 0
   isFetchingPage.value = true
 
-  const url = await getDocumentPageUrl(contentId, contentType, pageIndex)
+  const url = await resolvePageUrl(pageIndex)
   isFetchingPage.value = false
 
   if (!url) {
@@ -136,14 +154,12 @@ async function loadCurrentPage() {
 
 /** P2: Preload ±1 neighbor (browser image cache only, NOT rendered) */
 async function preloadNeighbors(current: number) {
-  const contentId = props.asset.content_ref?.content_id
-  const contentType = props.asset.content_ref?.content_type ?? 'pdf'
-  if (!contentId) return
+  if (!hasPageSource.value) return
   const total = props.asset.totalPages ?? 0
   for (const offset of [1, -1]) {
     const idx = current + offset
     if (idx >= 0 && idx < total) {
-      const url = await getDocumentPageUrl(contentId, contentType, idx)
+      const url = await resolvePageUrl(idx)
       if (url) {
         const img = new Image()
         img.src = url // browser caches it

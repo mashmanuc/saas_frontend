@@ -452,21 +452,37 @@ function _emitOperation(op: RecordOperationRequest): void {
  * restore strokes/assets). Other page_add callsites emit metadata only and не
  * проходять через цей helper.
  */
+/**
+ * Викидає `pages[]` з document_viewer — але ЛИШЕ коли їх є звідки повернути.
+ *
+ * `pages[]` не персистяться, бо для хмарного документа це важкий дубль: сторінки
+ * довантажуються на вимогу за `content_ref` (див. DocumentViewerAsset). Якщо ж
+ * `content_ref` нема — сторінки нізвідки взяти, і вирізання знищує об'єкт
+ * назавжди. Такий випадок реальний: демо-дошка `/workspace` працює без API,
+ * її аркуш тримає адреси статичних файлів прямо в собі.
+ *
+ * Хмарні переглядачі завжди мають `content_ref` (useContentDrop), тож для них
+ * поведінка не змінюється — інваріант «pages[] не йдуть у WS/бекенд» цілий.
+ */
+function _stripRefetchablePages<
+  T extends { type?: string; pages?: unknown; content_ref?: { content_id?: number } },
+>(asset: T): T {
+  if (asset.type !== 'document_viewer' || !asset.pages) return asset
+  // Ключ — саме `content_id`: він, а не наявність `content_ref`, означає, що
+  // сторінки є звідки взяти. Локальний об'єкт може оголосити свій ВИД
+  // (презентація/PDF) без запису в бекенді — і сторінки в нього єдині.
+  if (!asset.content_ref?.content_id) return asset
+  const { pages: _pages, ...rest } = asset
+  return rest as T
+}
+
 function _emitPageAddDecomposed(
   page: WBPage,
   options?: { insertAt?: number; timestamp?: number },
 ): void {
   const ts = options?.timestamp ?? Date.now()
   const insertAt = options?.insertAt
-  // Strip document_viewer pages[] from assets (not persisted) — same logic
-  // as inline у duplicatePage перед refactor.
-  const cleanAssets = page.assets.map(a => {
-    if (a.type === 'document_viewer' && a.pages) {
-      const { pages: _p, ...rest } = a
-      return rest
-    }
-    return a
-  })
+  const cleanAssets = page.assets.map(_stripRefetchablePages)
 
   // 1. page_add (metadata only) — small, always fits per-op payload cap.
   _emitOperation({
@@ -517,13 +533,7 @@ function _sanitizeStatePages(pages: WBPage[]): WBPage[] {
   return pages.map(page => ({
     ...page,
     background: page.background ?? 'white',
-    assets: page.assets.map(asset => {
-      if (asset.type === 'document_viewer' && asset.pages) {
-        const { pages: _p, ...rest } = asset
-        return rest
-      }
-      return asset
-    }),
+    assets: page.assets.map(_stripRefetchablePages),
   }))
 }
 
@@ -711,12 +721,7 @@ export const useWBStore = defineStore('wb-board', {
           if (typeof asset.src === 'string' && asset.src.startsWith('data:')) {
             return { ...asset, src: '', _localOnly: true }
           }
-          // document_viewer: strip pages[] — NOT persisted, fetched on demand
-          if (asset.type === 'document_viewer') {
-            const { pages: _pages, ...rest } = asset
-            return rest
-          }
-          return asset
+          return _stripRefetchablePages(asset)
         }),
       }))
       return { pages, currentPageIndex: state.currentPageIndex }
