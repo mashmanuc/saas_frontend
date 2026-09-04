@@ -15,8 +15,8 @@
         ref="fabEl"
         class="cmdp-fab"
         :class="fabMood && 'mood-' + fabMood"
-        title="Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно"
-        aria-label="Відкрити Інтегралика — AI-помічника"
+        :title="uiText.fabTitle"
+        :aria-label="uiText.openAssistant"
         @pointerdown="fabPointerDown"
         @pointermove="fabPointerMove"
         @pointerup="fabPointerUp"
@@ -29,14 +29,14 @@
       <span
         v-if="aiThread.length"
         class="cmdp-fab-badge"
-        :title="`Незавершена розмова (${aiThread.length})`"
+        :title="uiText.threadWaiting(aiThread.length)"
         aria-hidden="true"
       ></span>
       <!-- Швидке приховування (owner: «не всім потрібен»). Увімкнути — у Налаштуваннях. -->
       <button
         class="cmdp-fab-hide"
-        title="Приховати помічника (увімкнути назад — у Налаштуваннях)"
-        aria-label="Приховати Інтегралика"
+        :title="uiText.hideAssistant"
+        :aria-label="uiText.hideAssistant"
         @pointerdown.stop
         @click.stop="hideIntegralyk"
       >×</button>
@@ -63,7 +63,7 @@
         class="cmdp-panel"
         :style="panelStyle"
         role="dialog"
-        aria-label="Командна палітра"
+        :aria-label="uiText.paletteAria"
         @pointerdown="panelPointerDown"
         @pointermove="panelPointerMove"
         @pointerup="panelPointerUp"
@@ -81,31 +81,31 @@
               v-html="MASCOT_SVG"
             ></span>
             <div class="cmdp-brandtitle">
-              <span class="cmdp-title">Інтегралик</span>
-              <span class="cmdp-subtitle">AI-помічник</span>
+              <span class="cmdp-title">{{ uiText.assistantName }}</span>
+              <span class="cmdp-subtitle">{{ uiText.assistantRole }}</span>
             </div>
             <!-- 0b: pin — щоб дошка лишалась клікабельною під час роботи з палітрою -->
             <button
               v-if="canPin" class="cmdp-pin cmdp-pin--brand" :class="{ on: isPinned }"
               @click="togglePin"
-              :title="isPinned ? 'Відкріпити (клік повз панель знову закриватиме)' : 'Закріпити — дошка лишиться клікабельною'"
+              :title="isPinned ? uiText.unpinTitle : uiText.pinTitle"
               :aria-pressed="isPinned ? 'true' : 'false'"
-              aria-label="Закріпити панель"
+              :aria-label="uiText.pinLabel"
             >📌</button>
-            <button class="cmdp-close" @click="close" aria-label="Закрити" title="Закрити (Esc)">✕</button>
+            <button class="cmdp-close" @click="close" :aria-label="uiText.closeLabel" :title="uiText.closeTitle">✕</button>
           </div>
           <div class="cmdp-cmdrow">
             <input
               ref="inputEl" v-model="query" class="cmdp-input"
-              :placeholder="voiceListening ? 'Слухаю… говоріть' : 'Що зробити? (напр. «урок», «дошку», «мої уроки»)'"
+              :placeholder="voiceListening ? uiText.listening : uiText.commandPlaceholder"
               @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)"
               @keydown.enter.prevent="runSelected"
             />
             <button
               v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
               @click="toggleVoice('cmd')"
-              :title="voiceListening ? 'Зупинити' : 'Голосовий ввід'"
-              aria-label="Голосовий ввід"
+              :title="voiceListening ? uiText.stopListening : uiText.voiceInput"
+              :aria-label="uiText.voiceInput"
             >🎤</button>
           </div>
           <ul class="cmdp-list">
@@ -114,7 +114,7 @@
               :class="['cmdp-item', { active: i === selected }]"
               @mouseenter="selected = i" @click="invoke(c)"
             >{{ c.label }}</li>
-            <li v-if="!filtered.length" class="cmdp-empty">Нічого не знайдено</li>
+            <li v-if="!filtered.length" class="cmdp-empty">{{ uiText.noResults }}</li>
           </ul>
         </template>
 
@@ -163,7 +163,7 @@
         <!-- MODE: мої дошки -->
         <template v-else-if="mode === 'boards'">
           <div class="cmdp-head">
-            <button class="cmdp-back" @click="toCommands">← Команди</button>
+            <button class="cmdp-back" @click="toCommands">{{ uiText.backToCommands }}</button>
             <span class="cmdp-title">Мої дошки</span>
           </div>
           <ul class="cmdp-list">
@@ -184,21 +184,21 @@
         <!-- MODE: Інтегралик — ДІАЛОГ (Phase 2). parse ≠ execute: кожна дія — через Policy -->
         <template v-else-if="mode === 'ai'">
           <div class="cmdp-head">
-            <button class="cmdp-back" @click="toCommands">← Команди</button>
+            <button class="cmdp-back" @click="toCommands">{{ uiText.backToCommands }}</button>
             <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
-            <span class="cmdp-title">Інтегралик</span>
+            <span class="cmdp-title">{{ uiText.assistantName }}</span>
             <!-- 0a: розмова живе між відкриттями → потрібен явний спосіб почати з чистого -->
             <button
               v-if="aiThread.length" class="cmdp-newchat" :disabled="aiBusy"
-              @click="newDialog" title="Почати новий діалог" aria-label="Почати новий діалог"
+              @click="newDialog" :title="uiText.newChat" :aria-label="uiText.newChat"
             >↺</button>
             <!-- 0b: той самий pin, що й у режимі команд (авто-вмикається після малювання) -->
             <button
               v-if="canPin" class="cmdp-pin" :class="{ on: isPinned }"
               @click="togglePin"
-              :title="isPinned ? 'Відкріпити (клік повз панель знову закриватиме)' : 'Закріпити — дошка лишиться клікабельною'"
+              :title="isPinned ? uiText.unpinTitle : uiText.pinTitle"
               :aria-pressed="isPinned ? 'true' : 'false'"
-              aria-label="Закріпити панель"
+              :aria-label="uiText.pinLabel"
             >📌</button>
             <!-- Згорнути в маскота. У pin-режимі це ЄДИНИЙ спосіб прибрати панель
                  (клік повз неї свідомо не закриває), а в AI-режимі кнопки закриття
@@ -207,8 +207,8 @@
                  бейдж «розмова чекає», а openPalette() поверне саме в тред. -->
             <button
               class="cmdp-min" @click="close"
-              title="Згорнути в Інтегралика (розмова збережеться) · Esc"
-              aria-label="Згорнути панель"
+              :title="uiText.minimizeTitle"
+              :aria-label="uiText.minimizeLabel"
             >–</button>
           </div>
 
@@ -264,14 +264,14 @@
           <div class="cmdp-ai-inputrow">
             <input
               ref="aiInputEl" v-model="aiInput" class="cmdp-input cmdp-input--ai"
-              :placeholder="voiceListening ? 'Слухаю… говоріть' : 'Продовжте діалог або спитайте про математику…'"
+              :placeholder="voiceListening ? uiText.listening : uiText.aiPlaceholder"
               :disabled="aiBusy" @keydown.enter.prevent="continueAi"
             />
             <button
               v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
               :disabled="aiBusy" @click="toggleVoice('ai')"
-              :title="voiceListening ? 'Зупинити' : 'Говоріть — Інтегралик слухає'"
-              aria-label="Голосовий ввід"
+              :title="voiceListening ? uiText.stopListening : uiText.voiceInput"
+              :aria-label="uiText.voiceInput"
             >🎤</button>
             <button class="cmdp-btn" :disabled="aiBusy || !aiInput.trim()" @click="continueAi">➤</button>
           </div>
@@ -300,7 +300,7 @@
         <div v-if="loading" class="cmdp-status">Виконую…</div>
         <div v-if="notice" class="cmdp-status">✓ {{ notice }}</div>
         <div v-if="error" class="cmdp-error">{{ error }}</div>
-        <div class="cmdp-hint">Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити<span v-if="showAI"> · ∫ Інтегралик: просто опишіть дію словами</span></div>
+        <div class="cmdp-hint">{{ uiText.keyboardHint }}<span v-if="showAI">{{ uiText.aiHint }}</span></div>
       </div>
     </div>
   </Teleport>
@@ -322,6 +322,11 @@ import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRen
 import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
+import {
+  EN_GUIDE_NAVIGATION,
+  describeEnGuideRoute,
+  explainEnGuideCapabilities,
+} from './enGuideCatalog'
 import { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/i18n'
 // SSOT «Стилю карток» — той самий список, що показує конструктор (Класичний/Наочний).
 // Reuse, щоб палітра й конструктор ніколи не розходились.
@@ -607,7 +612,42 @@ const cmdMyLessons = { id: 'my-lessons', label: 'Мої уроки…', run: myL
 const cmdOpenLast = { id: 'open-last-lesson', label: 'Відкрити останній урок', run: openLast }
 
 const baseCommands = [cmdCreateBoard, cmdGenerateLesson, cmdMyBoards, cmdMyLessons, cmdOpenLast]
+
+// EN_GUIDE: навігація не проходить через LLM і не викликає /intents/.
+// Маршрути тут фіксовані (див. enGuideCatalog), тому «Where am I?» не може
+// вигадати батьківський розділ, а жодна кнопка не створить чи змінить контент.
+function enGuideNavigate(routeName) {
+  close()
+  return router.push({ name: routeName })
+}
+
+function enGuideReply(label, text) {
+  mode.value = 'ai'
+  aiInput.value = ''
+  aiPush({ kind: 'user', text: label })
+  aiPush({ kind: 'bot', text })
+}
+
+const enGuideCommands = computed(() => [
+  ...EN_GUIDE_NAVIGATION.map((item) => ({
+    id: item.id,
+    label: item.label,
+    run: () => enGuideNavigate(item.routeName),
+  })),
+  {
+    id: 'en-guide-where-am-i',
+    label: 'Where am I?',
+    run: () => enGuideReply('Where am I?', describeEnGuideRoute(currentPage())),
+  },
+  {
+    id: 'en-guide-what-can-i-do',
+    label: 'What can I do here?',
+    run: () => enGuideReply('What can I do here?', explainEnGuideCapabilities(currentPage())),
+  },
+])
+
 const commands = computed(() => {
+  if (currentProfile.value === 'EN_GUIDE') return enGuideCommands.value
   const list = [...baseCommands]
   // Вісь 3: для GLOBAL-профілю ховаємо generate-lesson (дублює Product Policy на FE)
   if (currentProfile.value === 'GLOBAL') {
@@ -628,7 +668,10 @@ const filtered = computed(() => {
   // AI-Producer: будь-яку фразу можна віддати AI — останній пункт списку (і єдиний, якщо збігів нема)
   if (showAI.value && query.value.trim().length >= 3) {
     const phrase = query.value.trim()
-    list.push({ id: '__ai__', label: `∫ Спитати Інтегралика: «${phrase}»`, run: () => askAi(phrase) })
+    const label = isEnglishGuide.value
+      ? `∫ Ask Integralyk: “${phrase}”`
+      : `∫ Спитати Інтегралика: «${phrase}»`
+    list.push({ id: '__ai__', label, run: () => askAi(phrase) })
   }
   return list
 })
@@ -760,12 +803,76 @@ const currentLocale = computed(() => {
   return SUPPORTED_LOCALES.includes(v) ? v : DEFAULT_LOCALE
 })
 
-// Профіль (дублює Product Policy на FE — відомий борг, див. §3.3 плану)
-// Сьогодні Product Policy залежить лише від ui_locale → безпечно. Коли додадуться
-// тариф/feature flag — профіль доведеться віддавати з BE у відповіді parse.
+// English Guide — окремий, вимкнений за замовчуванням режим. Він має бути
+// увімкнений одночасно з EN_GUIDE_ENABLED на BE: FE прибирає дії з екрана,
+// сервер забороняє прямий POST. Прапор не вмикається автоматично в dev, щоб
+// локальне перемикання мови не змінювало поведінку випадково.
+const EN_GUIDE_ENABLED = import.meta.env.VITE_FEATURE_EN_GUIDE === 'true'
+const isEnglishGuide = computed(() => EN_GUIDE_ENABLED && currentLocale.value === 'en')
+
+// Профіль дзеркалить Product Policy лише для UX. Сервер є остаточною межею
+// для будь-якого submit; ці значення не є авторизацією.
 const currentProfile = computed(() => {
-  // Дзеркало resolve_runtime_context з BE: en → GLOBAL, інші → UA_EDTECH
+  if (isEnglishGuide.value) return 'EN_GUIDE'
+  // Дзеркало resolve_runtime_context з BE, коли EN_GUIDE_ENABLED вимкнено.
   return currentLocale.value === 'en' ? 'GLOBAL' : 'UA_EDTECH'
+})
+
+const uiText = computed(() => {
+  if (isEnglishGuide.value) {
+    return {
+      assistantName: 'Integralyk',
+      assistantRole: 'English Guide',
+      fabTitle: 'Integralyk — English Guide (Ctrl+Shift+K). Drag to move.',
+      openAssistant: 'Open Integralyk — English Guide',
+      hideAssistant: 'Hide Integralyk',
+      paletteAria: 'English Guide',
+      listening: 'Listening… speak now',
+      commandPlaceholder: 'Find a section or ask about M4SH…',
+      aiPlaceholder: 'Ask about using M4SH…',
+      noResults: 'No matching commands',
+      threadWaiting: (count) => `Conversation waiting (${count})`,
+      pinTitle: 'Pin the panel — keep the page clickable',
+      unpinTitle: 'Unpin the panel',
+      pinLabel: 'Pin panel',
+      closeLabel: 'Close',
+      closeTitle: 'Close (Esc)',
+      backToCommands: '← Commands',
+      newChat: 'Start a new conversation',
+      minimizeTitle: 'Minimise to Integralyk (conversation is kept) · Esc',
+      minimizeLabel: 'Minimise panel',
+      stopListening: 'Stop listening',
+      voiceInput: 'Voice input',
+      keyboardHint: 'Ctrl+Shift+K (or Ctrl/⌘+K) — open · ↑↓/Enter — commands · Esc — back/close',
+      aiHint: ' · ∫ Integralyk: ask about M4SH',
+    }
+  }
+  return {
+    assistantName: 'Інтегралик',
+    assistantRole: 'AI-помічник',
+    fabTitle: 'Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно',
+    openAssistant: 'Відкрити Інтегралика — AI-помічника',
+    hideAssistant: 'Приховати помічника (увімкнути назад — у Налаштуваннях)',
+    paletteAria: 'Командна палітра',
+    listening: 'Слухаю… говоріть',
+    commandPlaceholder: 'Що зробити? (напр. «урок», «дошку», «мої уроки»)',
+    aiPlaceholder: 'Продовжте діалог або спитайте про математику…',
+    noResults: 'Нічого не знайдено',
+    threadWaiting: (count) => `Незавершена розмова (${count})`,
+    pinTitle: 'Закріпити — дошка лишиться клікабельною',
+    unpinTitle: 'Відкріпити (клік повз панель знову закриватиме)',
+    pinLabel: 'Закріпити панель',
+    closeLabel: 'Закрити',
+    closeTitle: 'Закрити (Esc)',
+    backToCommands: '← Команди',
+    newChat: 'Почати новий діалог',
+    minimizeTitle: 'Згорнути в Інтегралика (розмова збережеться) · Esc',
+    minimizeLabel: 'Згорнути панель',
+    stopListening: 'Зупинити',
+    voiceInput: 'Голосовий ввід',
+    keyboardHint: 'Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити',
+    aiHint: ' · ∫ Інтегралик: просто опишіть дію словами',
+  }
 })
 
 // Голос: lang за поточною UI Locale (en → en-US, ru → ru-RU, uk/pl/de → uk-UA).

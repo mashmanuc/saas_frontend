@@ -3,6 +3,7 @@
 // Producer організовує захоплення вводу та формує Intent; sendIntent лише доставляє його
 // в єдиний ingress. НЕ знає підсистем, НЕ виконує. Видаляється разом з модулем intent.
 import apiClient from '../../utils/apiClient'
+import { i18n } from '@/i18n'
 
 export const INTENT_VERSION = 1 // F6 — версія контракту (адитивна еволюція)
 
@@ -12,11 +13,15 @@ export const INTENT_VERSION = 1 // F6 — версія контракту (ад�
  * @param {string} clientId  — провенанс джерела: 'ui.button' | 'text' | 'ui.hotkey' | …
  */
 export async function sendIntent(verb, objects, clientId) {
+  // Вісь UI Locale потрібна і виконавчому шляху. EN_GUIDE має нуль дій;
+  // сервер відріже будь-який submit, якщо UI випадково покаже заборонену
+  // команду. Це defense-in-depth, не заміна серверної авторизації.
+  const locale = i18n.global.locale.value || 'uk'
   const res = await apiClient.post('/v1/intents/', {
     v: INTENT_VERSION,
     verb,
     objects,
-    provenance: { client_id: clientId },
+    provenance: { client_id: clientId, locale },
   })
   return res?.data ?? res
 }
