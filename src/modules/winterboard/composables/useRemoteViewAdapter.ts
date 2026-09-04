@@ -61,10 +61,21 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
       .sort((a, b) => (a.y - b.y) || (a.x - b.x))
   }
 
-  /** Масштаб, за якого картка займає ширину контейнера мінус відступи */
+  /**
+   * Масштаб, за якого картка займає ширину контейнера мінус відступи.
+   *
+   * Повертає **0 = «не знаю»**, якщо ширину екрана ще не виміряно. Це не
+   * педантизм: до 2026-09-04 тут при `containerWidth = 0` виходило
+   * `(0 − 32) / w < 0` → `Math.max(ZOOM_MIN, …)` = **0.1**, і ця «стеля»
+   * кидала дошку в 10%. Власник спіймав живцем на уроці: натиснув A+, а
+   * дошка зменшилась. Той самий guard уже є у `WBAssetItem.vue:83`.
+   */
   function fitZoomFor(asset: any): number {
-    const w = Math.max(1, Number(asset.w) || 1)
-    const target = (store.containerWidth - 2 * FIT_MARGIN_PX) / w
+    const w = Math.max(1, Number(asset?.w) || 1)
+    const cw = Number(store.containerWidth) || 0
+    if (!(cw > 2 * FIT_MARGIN_PX)) return 0
+    const target = (cw - 2 * FIT_MARGIN_PX) / w
+    if (!Number.isFinite(target) || target <= 0) return 0
     return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, target))
   }
 
@@ -83,9 +94,14 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   function fitTask(): number {
     const cards = taskCards()
     if (!cards.length) { focusIndex = -1; return -1 }
-    focusIndex = (focusIndex + 1) % cards.length
-    const asset = cards[focusIndex]
-    placeAssetTopLeft(asset, fitZoomFor(asset))
+    const nextIndex = (focusIndex + 1) % cards.length
+    const asset = cards[nextIndex]
+    const fit = fitZoomFor(asset)
+    // Ширину екрана ще не виміряно — краще НЕ рухати дошку взагалі, ніж
+    // «підігнати» її в 10% (борг 2026-09-04). Фокус теж не зсуваємо.
+    if (!fit) return -1
+    focusIndex = nextIndex
+    placeAssetTopLeft(asset, fit)
     return focusIndex
   }
 
@@ -98,14 +114,22 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
     const cards = taskCards()
     const asset = cards[focusIndex] ?? cards[0]
     const steps = Math.max(-3, Math.min(3, Math.trunc(delta)))
-    let next = store.zoom * Math.pow(ZOOM_STEP, steps)
+    const cur = store.zoom
+    let next = cur * Math.pow(ZOOM_STEP, steps)
     if (asset) {
-      next = Math.min(next, fitZoomFor(asset))
+      const fit = fitZoomFor(asset)
+      // Стеля проти горизонтального виїзду картки застосовується ЛИШЕ вгору і
+      // лише коли ширину екрана виміряно (fit > 0). Раніше `Math.min(next, fit)`
+      // стояв беззастережно, тому A+ ЗМЕНШУВАВ масштаб, щойно вчитель був
+      // крупніше за fit, а при невиміряному екрані кидав дошку в 10%.
+      if (fit) next = Math.min(next, Math.max(fit, cur))
       if (focusIndex < 0) focusIndex = 0
-      placeAssetTopLeft(asset, next)
-    } else {
-      store.setZoom(next)
     }
+    // Напрямок кнопки — святий: A+ ніколи не зменшує, A− ніколи не збільшує.
+    if (steps > 0) next = Math.max(next, cur)
+    if (steps < 0) next = Math.min(next, cur)
+    if (asset) placeAssetTopLeft(asset, next)
+    else store.setZoom(next)
     return store.zoom
   }
 

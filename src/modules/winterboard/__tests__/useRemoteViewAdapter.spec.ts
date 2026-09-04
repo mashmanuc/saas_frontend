@@ -124,3 +124,45 @@ describe('useRemoteViewAdapter', () => {
     expect(v.summary().count).toBe(0)
   })
 })
+
+// ──────────────────────────────────────────────────────────────────────────
+// Борг 2026-09-04, спіймано власником ЖИВЦЕМ на уроці: натиснув A+ на пульті,
+// а дошка ЗМЕНШИЛАСЬ до 10%. Причина — стеля `Math.min(next, fitZoomFor())`
+// стояла беззастережно: (а) при невиміряному екрані fit падав до ZOOM_MIN,
+// (б) якщо вчитель уже крупніше за fit, «стеля» тягнула його вниз.
+describe('useRemoteViewAdapter — напрямок кнопки A+/A− святий', () => {
+  beforeEach(() => resetTutorGate())
+
+  it('A+ НЕ зменшує масштаб, коли поточний уже крупніший за fit', () => {
+    // картка широка → fit = (1000−32)/2000 = 0.484, а вчитель на 1.0
+    const store = makeStore([card('wide', 0, 0, 2000)], { zoom: 1 })
+    const v = createRemoteViewAdapter(store)
+    v.zoomBy(1)
+    expect(store.zoom).toBeGreaterThanOrEqual(1)
+  })
+
+  it('A+ при НЕвиміряному екрані не кидає дошку в 10%', () => {
+    // containerWidth = 0 (полотно ще не зміряне) — раніше fit = 0.1 і зум падав
+    const store = makeStore([card('a', 0, 0, 400)], { containerWidth: 0, zoom: 1 })
+    const v = createRemoteViewAdapter(store)
+    v.zoomBy(1)
+    expect(store.zoom).toBeCloseTo(1 * ZOOM_STEP, 5)
+    expect(store.zoom).not.toBeCloseTo(0.1, 5)
+  })
+
+  it('A− НЕ збільшує масштаб', () => {
+    const store = makeStore([card('a', 0, 0, 100)], { zoom: 1 })   // fit великий
+    const v = createRemoteViewAdapter(store)
+    v.zoomBy(-1)
+    expect(store.zoom).toBeLessThanOrEqual(1)
+  })
+
+  it('fitTask при НЕвиміряному екрані нічого не рухає і не зсуває фокус', () => {
+    const store = makeStore([card('a', 0, 0, 400), card('b', 0, 500, 400)],
+                            { containerWidth: 0, zoom: 1 })
+    const v = createRemoteViewAdapter(store)
+    expect(v.fitTask()).toBe(-1)
+    expect(store.zoom).toBe(1)
+    expect(store.setScroll).not.toHaveBeenCalled()
+  })
+})
