@@ -1186,6 +1186,7 @@ import {
 import {
   buildLocalWelcomeState,
   computeSeedDigest,
+  sealMatchesState,
   matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../local/localWorkspaceSeed'
@@ -3497,7 +3498,9 @@ function seedTexts(): LocalSeedTexts {
  */
 function isUntouchedShowcase(state: WBWorkspaceState): boolean {
   const sealed = getLocalWorkspaceSeedDigest()
-  if (sealed) return sealed === computeSeedDigest(state)
+  // Звірка за правилом ТІЄЇ печатки, що лежить, а не за поточним кодом:
+  // інакше зміна правила знецінює всі старі печатки разом.
+  if (sealed) return sealMatchesState(state, sealed)
   return matchesLegacySeedLayout(state)
 }
 

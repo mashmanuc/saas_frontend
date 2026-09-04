@@ -6,6 +6,8 @@ import type { WBWorkspaceState } from '../../types/winterboard'
 import {
   buildLocalWelcomeState,
   computeSeedDigest,
+  computeLegacySeedDigest,
+  sealMatchesState,
   matchesLegacySeedLayout,
   type LocalSeedTexts,
 } from '../localWorkspaceSeed'
@@ -245,6 +247,49 @@ describe('computeSeedDigest — пломба вітрини', () => {
   it('стійкий до порожнього / некоректного стану', () => {
     expect(computeSeedDigest(null)).toBe('')
     expect(computeSeedDigest(undefined)).toBe('')
+  })
+})
+
+// РЕГРЕСІЯ, яку я відправила на прод 2026-09-04 і зняла того ж дня.
+//
+// Я змінила правило відбитка (додала джерело вмісту), але звірка робилась
+// поточним правилом проти печатки, поставленої ПОПЕРЕДНІМ. Вони не збігались
+// ні в кого, хто бував тут раніше: його вітрина ставала «його роботою» і не
+// оновлювалась уже ніколи. Тому правило звірки має обирати сама печатка.
+describe('sealMatchesState — сумісність зі старими печатками', () => {
+  it('нову печатку звіряє новим правилом', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    expect(sealMatchesState(s, computeSeedDigest(s))).toBe(true)
+  })
+
+  it('СТАРУ печатку (без мітки покоління) впізнає, а не відкидає', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const oldSeal = computeLegacySeedDigest(s)
+    expect(oldSeal.startsWith('2|')).toBe(false)
+    expect(sealMatchesState(s, oldSeal)).toBe(true)
+  })
+
+  it('нова й стара печатки — різні рядки (інакше нема що розрізняти)', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    expect(computeSeedDigest(s)).not.toBe(computeLegacySeedDigest(s))
+  })
+
+  it('чужа робота не проходить під жодним правилом', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    const newSeal = computeSeedDigest(s)
+    const oldSeal = computeLegacySeedDigest(s)
+    s.pages[0].strokes.push({
+      id: 'user', tool: 'pen', color: '#f00', size: 4, opacity: 1,
+      points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
+    } as unknown as (typeof s.pages)[0]['strokes'][0])
+    expect(sealMatchesState(s, newSeal)).toBe(false)
+    expect(sealMatchesState(s, oldSeal)).toBe(false)
+  })
+
+  it('порожня печатка — не збіг', () => {
+    const s = buildLocalWelcomeState(TEXTS)
+    expect(sealMatchesState(s, null)).toBe(false)
+    expect(sealMatchesState(s, '')).toBe(false)
   })
 })
 

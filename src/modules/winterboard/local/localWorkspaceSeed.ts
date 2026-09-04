@@ -442,8 +442,7 @@ function fnv1a(input: string): string {
  * людини (домалювала штрих, додала/пересунула/видалила об'єкт, змінила текст)
  * → інший.
  */
-export function computeSeedDigest(state: WBWorkspaceState | null | undefined): string {
-  if (!state || !Array.isArray(state.pages)) return ''
+function digestParts(state: WBWorkspaceState, withSource: boolean): string {
   const parts: string[] = []
   for (const p of state.pages) {
     parts.push(`P|${p.name ?? ''}|${p.backgroundColor ?? ''}`)
@@ -461,14 +460,59 @@ export function computeSeedDigest(state: WBWorkspaceState | null | undefined): s
       // Саме так сталось із демо-аркушем: рамка на місці, сторінки зникли,
       // відбиток збігся, перемальовування не спрацювало.
       // `src` обрізаємо: у користувацьких картинок це буває data:-URL на мегабайти.
-      const source = `${String(a.src ?? '').slice(0, 120)}|${a.pages?.length ?? 0}`
+      const source = withSource
+        ? `|${String(a.src ?? '').slice(0, 120)}|${a.pages?.length ?? 0}`
+        : ''
       parts.push(
         `A|${a.type}|${Math.round(a.x ?? 0)},${Math.round(a.y ?? 0)}` +
-        `|${Math.round(a.w ?? 0)}x${Math.round(a.h ?? 0)}|${source}`,
+        `|${Math.round(a.w ?? 0)}x${Math.round(a.h ?? 0)}${source}`,
       )
     }
   }
-  return fnv1a(parts.join('\n'))
+  return parts.join('\n')
+}
+
+/** Мітка покоління відбитка. Без неї стару печатку не відрізнити від нової. */
+const DIGEST_V2_PREFIX = '2|'
+
+/**
+ * Відбиток вмісту дошки. Однаковий вміст → однаковий відбиток; будь-яка дія
+ * людини (домалювала штрих, додала/пересунула/видалила об'єкт, змінила текст)
+ * → інший.
+ */
+export function computeSeedDigest(state: WBWorkspaceState | null | undefined): string {
+  if (!state || !Array.isArray(state.pages)) return ''
+  return DIGEST_V2_PREFIX + fnv1a(digestParts(state, true))
+}
+
+/**
+ * Відбиток за ПОПЕРЕДНІМ правилом — лише геометрія, без джерела вмісту.
+ *
+ * Потрібен рівно для одного: упізнати печатку, поставлену до 2026-09-04.
+ * Якщо цього не робити, зміна правила знецінює всі старі печатки: вони
+ * перестають збігатися, вітрина кожного давнього відвідувача вважається
+ * «його роботою» і не оновлюється вже НІКОЛИ. Саме так і сталось — на проді.
+ */
+export function computeLegacySeedDigest(state: WBWorkspaceState | null | undefined): string {
+  if (!state || !Array.isArray(state.pages)) return ''
+  return fnv1a(digestParts(state, false))
+}
+
+/**
+ * Чи описує ця печатка саме той стан, що на дошці.
+ *
+ * Правило звірки обирається за самою печаткою, а не за поточним кодом: нову
+ * (з міткою покоління) звіряємо новим правилом, стару — старим. Щойно вітрину
+ * перемалюють, на її місце ляже нова печатка, і старий шлях більше не потрібен.
+ */
+export function sealMatchesState(
+  state: WBWorkspaceState | null | undefined,
+  sealed: string | null | undefined,
+): boolean {
+  if (!sealed) return false
+  return sealed.startsWith(DIGEST_V2_PREFIX)
+    ? sealed === computeSeedDigest(state)
+    : sealed === computeLegacySeedDigest(state)
 }
 
 /**
