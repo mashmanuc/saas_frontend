@@ -295,7 +295,8 @@ import { useSolutionZoom } from '../../../composables/useSolutionZoom'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
-import { normalizeNmtPresentationScale, type NmtTaskData } from '../../../types/nmtTask'
+import { type NmtTaskData } from '../../../types/nmtTask'
+import { useNmtPresentationScale } from '../../../composables/useNmtPresentationScale'
 import {
   resolveCompanions,
   hasAvailableCompanions,
@@ -352,8 +353,8 @@ useExportCapture(
 
 const data = computed(() => (props.asset.data as unknown as NmtTaskData))
 
-/** Масштаб символів картки; рамка та масштаб полотна від нього не залежать. */
-const presentationScale = computed(() => normalizeNmtPresentationScale(data.value.presentationScale))
+/** Масштаб символів лише для цього екрана; рамка, реплей і сервер незалежні. */
+const presentationScale = useNmtPresentationScale(() => props.asset.id)
 
 /* ── Ілюстрації задачі (2026-07-31) ──────────────────────────────────────────
    Задачі «На рисунку зображено куб…» приходили голим текстом: BE не проносив

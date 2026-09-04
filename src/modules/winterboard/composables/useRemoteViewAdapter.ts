@@ -16,6 +16,7 @@
 
 import { useTutorRevealGate } from './useStudentTutor'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
+import { getNmtPresentationScale, setNmtPresentationScale } from './useNmtPresentationScale'
 
 export interface RemoteViewStore {
   containerWidth: number
@@ -116,13 +117,15 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
     const cards = taskCards()
     const asset = cards[focusIndex] ?? cards[0]
     const steps = Math.max(-3, Math.min(3, Math.trunc(delta)))
-    if (!asset || steps === 0) return normalizeNmtPresentationScale(asset?.data?.presentationScale)
-    const current = normalizeNmtPresentationScale(asset.data?.presentationScale)
+    if (!asset || steps === 0) return 1
+    // A+ — лише локальний вигляд проєктора. Не створює asset_update, не
+    // торкається сервера та не потрапляє в реплей уроку.
+    const current = getNmtPresentationScale(asset.id)
     const rawNext = current * Math.pow(NMT_PRESENTATION_SCALE.STEP, steps)
     const next = Math.round(
       Math.min(NMT_PRESENTATION_SCALE.MAX, Math.max(NMT_PRESENTATION_SCALE.MIN, rawNext)) * 100,
     ) / 100
-    store.updateAsset({ ...asset, data: { ...(asset.data || {}), presentationScale: next } })
+    setNmtPresentationScale(asset.id, next)
     if (focusIndex < 0) focusIndex = 0
     return next
   }

@@ -114,13 +114,6 @@ export interface NmtTaskData {
   /** Persisted toggle: whether the solution/explanation block is visible. */
   showSolution: boolean
   /**
-   * Масштаб тексту саме цієї картки для показу класу.
-   *
-   * Це НЕ масштаб полотна: A−/A+ на пульті змінюють символи, формули та
-   * текст у картці, а не її рамку і не всю дошку. Відсутнє значення = 1.
-   */
-  presentationScale?: number
-  /**
    * Semantic fingerprint — optional. Присутній якщо NMTProblem вже збагачений.
    * Якщо `fingerprint.intents[]` непорожній — NmtTaskRenderer показує "🔗 Побудувати".
    * null / undefined → кнопка не показується.

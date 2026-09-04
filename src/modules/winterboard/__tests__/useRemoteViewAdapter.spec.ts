@@ -5,6 +5,7 @@ import {
   createRemoteViewAdapter, FIT_MARGIN_PX, SCROLL_FRACTION, TASK_ASSET_TYPE,
 } from '../composables/useRemoteViewAdapter'
 import { resetTutorGate } from '../composables/useStudentTutor'
+import { getNmtPresentationScale, resetNmtPresentationScales } from '../composables/useNmtPresentationScale'
 
 function card(id: string, x: number, y: number, w = 400, data: Record<string, unknown> = {}) {
   return { id, type: TASK_ASSET_TYPE, x, y, w, h: 200, data: { externalId: id, ...data } }
@@ -29,7 +30,7 @@ function makeStore(assets: any[] = [], over: Partial<any> = {}) {
 }
 
 describe('useRemoteViewAdapter', () => {
-  beforeEach(() => resetTutorGate())
+  beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
 
   it('fitTask: масштаб = (containerW − 2·margin) / w, картка притиснута до верху-ліва', () => {
     const store = makeStore([card('a', 100, 300, 400)])
@@ -72,9 +73,10 @@ describe('useRemoteViewAdapter', () => {
     store.zoom = 1
     const initialWidth = store.pages[0].assets[0].w
     expect(v.changeTextScale(1)).toBe(1.25)
-    expect(store.pages[0].assets[0].data.presentationScale).toBe(1.25)
+    expect(getNmtPresentationScale('a')).toBe(1.25)
     expect(store.zoom).toBe(1)
     expect(store.pages[0].assets[0].w).toBe(initialWidth)
+    expect(store.updateAsset).not.toHaveBeenCalled()
     expect(v.changeTextScale(3)).toBe(2) // стеля саме для шрифту
     expect(v.changeTextScale(-1)).toBe(1.6)
   })
@@ -127,14 +129,15 @@ describe('useRemoteViewAdapter', () => {
 
 // ──────────────────────────────────────────────────────────────────────────
 describe('useRemoteViewAdapter — A+/A− змінюють типографіку, не дошку', () => {
-  beforeEach(() => resetTutorGate())
+  beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
 
   it('A+ не зменшує текст, A− не збільшує текст', () => {
-    const store = makeStore([card('a', 0, 0, 400, { presentationScale: 1.5 })], { zoom: 1 })
+    const store = makeStore([card('a', 0, 0, 400)], { zoom: 1 })
     const v = createRemoteViewAdapter(store)
-    expect(v.changeTextScale(1)).toBeGreaterThanOrEqual(1.5)
-    expect(v.changeTextScale(-1)).toBe(1.5)
+    expect(v.changeTextScale(2)).toBe(1.56)
+    expect(v.changeTextScale(-1)).toBe(1.25)
     expect(store.zoom).toBe(1)
+    expect(store.updateAsset).not.toHaveBeenCalled()
   })
 
   it('fitTask при НЕвиміряному екрані нічого не рухає і не зсуває фокус', () => {

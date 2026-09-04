@@ -20,9 +20,11 @@
  *   INV-NMT-SC-1  у single_choice попередній вибір знімається (регресія)
  *   INV-NMT-IMG-1 OPTION_IMAGE лягає до варіанта зі своїм `order`
  */
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import Renderer from '../components/board/objects/NmtTaskRenderer.vue'
+import { resetNmtPresentationScales, setNmtPresentationScale } from '../composables/useNmtPresentationScale'
 
 vi.mock('@/utils/media', () => ({
   resolveMediaUrl: (u: string) => u,
@@ -74,11 +76,15 @@ const OPTIONS = [
 ]
 
 describe('NmtTaskRenderer — multiple_select', () => {
-  it('presentationScale змінює типографіку картки, а не її розміри', () => {
+  beforeEach(() => resetNmtPresentationScales())
+
+  it('A+ реактивно змінює лише типографіку картки на цьому екрані', async () => {
     const w = mountTask({
       taskType: 'single_choice', question: 'Знайдіть $x$', options: OPTIONS,
-      presentationScale: 1.25,
     })
+    expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1')
+    setNmtPresentationScale('a1', 1.25)
+    await nextTick()
     expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1.25')
     expect(w.find('.nmt-task__question').text()).toContain('Знайдіть')
   })
