@@ -3466,6 +3466,22 @@ function seedTexts(): LocalSeedTexts {
     descCylInCone: t('winterboard.localWorkspace.seedDescCylInCone'),
     descSurface: t('winterboard.localWorkspace.seedDescSurface'),
     descCurve: t('winterboard.localWorkspace.seedDescCurve'),
+    pageMaterials: t('winterboard.localWorkspace.seedPageMaterials'),
+    captionMaterials: t('winterboard.localWorkspace.seedCaptionMaterials'),
+    descWorksheet: t('winterboard.localWorkspace.seedDescWorksheet'),
+    descPairTrig: t('winterboard.localWorkspace.seedDescPairTrig'),
+    descPairSphere: t('winterboard.localWorkspace.seedDescPairSphere'),
+    // Аркуш існує двома мовами; решта локалей → англійський (нейтральніший
+    // для гостя, ніж українська, якої він не читає). Зміна мови змінює URL →
+    // змінює «пломбу» → вітрина перемальовується сама, тим самим механізмом,
+    // що вже працює для написів.
+    sheetUrls: [1, 2, 3, 4].map(
+      n => `/demo/sheet-${String(locale.value).startsWith('uk') ? 'uk' : 'en'}-${n}.svg`,
+    ),
+    descDeck: t('winterboard.localWorkspace.seedDescDeck'),
+    deckUrls: [1, 2, 3].map(
+      n => `/demo/slides-${String(locale.value).startsWith('uk') ? 'uk' : 'en'}-${n}.svg`,
+    ),
   }
 }
 

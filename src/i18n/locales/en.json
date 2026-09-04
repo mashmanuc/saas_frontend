@@ -7047,7 +7047,13 @@
       "seedDescSphereInCube": "Sphere inscribed in a cube — tangent points visible",
       "seedDescCylInCone": "Cylinder inscribed in a cone",
       "seedDescSurface": "Surface z = sin(x)·cos(y) — drag to rotate",
-      "seedDescCurve": "Space curve (cos t, sin t, t/3) — a helix"
+      "seedDescCurve": "Space curve (cos t, sin t, t/3) — a helix",
+      "seedPageMaterials": "Materials",
+      "seedCaptionMaterials": "The sheet and its live twin, side by side",
+      "seedDescWorksheet": "Flip through the problem set right on the board — like a normal PDF.",
+      "seedDescPairTrig": "Task 1 from the sheet: spin the circle to 165°.",
+      "seedDescPairSphere": "Task 4 from the sheet: that same sphere in a cube — rotate it.",
+      "seedDescDeck": "The slides work through task 1 of the set — the method next to the problem itself."
     },
     "constructor": {
       "badge": "CONSTRUCTOR",

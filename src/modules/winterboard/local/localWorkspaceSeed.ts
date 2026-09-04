@@ -93,6 +93,24 @@ export interface LocalSeedTexts {
   descCylInCone: string
   descSurface: string
   descCurve: string
+  /** Стор. 7 «Матеріали» — аркуш, що гортається, поруч із живими парами. */
+  pageMaterials: string
+  captionMaterials: string
+  descWorksheet: string
+  descPairTrig: string
+  descPairSphere: string
+  /**
+   * URL сторінок демо-збірника, ПО ПОРЯДКУ. Не текст, але приходить звідти ж:
+   * аркуш існує двома мовами (`/demo/sheet-uk-*.svg`, `-en-*`), і мову знає
+   * лише caller. Завдяки цьому «пломба» (computeSeedDigest) при перемиканні
+   * мови стає іншою — і вітрина сама перемальовується англійським аркушем,
+   * тим самим механізмом, що вже працює для написів.
+   */
+  sheetUrls: string[]
+  /** Підпис під презентацією — вона розбирає задачу 1 того самого збірника. */
+  descDeck: string
+  /** URL слайдів демо-презентації, ПО ПОРЯДКУ (так само двома мовами). */
+  deckUrls: string[]
 }
 
 function seedId(prefix: string): string {
@@ -170,6 +188,46 @@ function graphAsset(expr: string, color: string, x: number, y: number, cy = 0): 
     },
     meta: { last_snapshot_seq: 0 },
   })
+}
+
+/**
+ * Демо-збірник як `document_viewer` — переглядач із гортанням сторінок.
+ *
+ * Сторінки — СТАТИЧНІ SVG з `public/demo/` (кожна = одна задача з банку НМТ,
+ * підібрана в пару до живого об'єкта поруч). Тому тут немає ні `content_ref`,
+ * ні звернень до бекенду: у local-режимі їх і не було б куди слати.
+ * Це і є суть демо — показати, що аркуш гортається просто на дошці, а свої
+ * файли завантажуються вже після входу (там працює справжній імпорт).
+ */
+function viewerAsset(
+  idPrefix: string,
+  urls: string[],
+  kind: 'pdf' | 'presentation',
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): WBAsset {
+  return {
+    id: seedId(idPrefix),
+    type: 'document_viewer',
+    src: urls[0] ?? '',
+    x,
+    y,
+    w,
+    h,
+    rotation: 0,
+    locked: false,
+    currentPage: 0,
+    // totalPages — межа гортання (updateDocViewerPage затискає по ній).
+    totalPages: urls.length,
+    pages: urls.map((url, index) => ({ index, url })),
+    // Вид документа — БЕЗ `content_id`: підпис у шапці («PDF» / «Презентація»)
+    // і пропорції беруться звідси, а запису в бекенді за цим об'єктом нема
+    // і вдавати його не треба. Саме тому `pages[]` тут і не вирізаються.
+    content_ref: { content_type: kind },
+    viewerMode: 'compact',
+  } as WBAsset
 }
 
 function page(idPrefix: string, name: string, strokes: WBStroke[], assets: WBAsset[]): WBPage {
@@ -304,8 +362,54 @@ export function buildLocalWelcomeState(texts: LocalSeedTexts): WBWorkspaceState 
     [g3dSurface, g3dCurve],
   )
 
+  // ── Стор. 7 «Матеріали» — аркуш + його живі пари ──────────────────────────
+  // Сенс сторінки — не «ще один тип об'єкта», а ПАРА: задача з аркуша і той
+  // самий об'єкт живий поруч. Тому тут рівно ті два об'єкти, до яких є задачі
+  // на сторінках збірника (1 — тригонометрія, 4 — куля в кубі), а не набір
+  // усього підряд.
+  // Розкладка під сторінку 1920×1080, і вона тут ТІСНА: аркуш + презентація +
+  // два живі об'єкти. Тому колонки рахуємо, а не ставимо «на око» — попередня
+  // версія цієї сторінки ставила nmt3d на x=1300 при ширині 680, і правий край
+  // (1980) вилазив за сторінку.
+  //
+  // Ліва колонка — аркуш на всю висоту; права — три його супутники в два ряди.
+  const SHEET_X = 100
+  const SHEET_W = 430
+  const SHEET_H = 760
+  const COL_X = 570          // початок правої колонки
+  const COL2_X = 1200        // друга колонка правої частини
+  const ROW1_Y = 170
+  const ROW2_Y = 560
+  const SMALL_W = 560        // 16:9 для трикутника «коло / слайди»
+  const SMALL_H = 315
+  const SOLID_W = 612        // nmt3d 680×500 у тій самій пропорції, але нижчий:
+  const SOLID_H = 450        // інакше підпис під ним падав би за край сторінки
+  const DESC_GAP = 24
+
+  const pageMaterials = page(
+    'page-materials',
+    texts.pageMaterials,
+    [
+      captionStroke(texts.captionMaterials),
+      descStroke(texts.descWorksheet, SHEET_X, ROW1_Y + SHEET_H + DESC_GAP),
+      descStroke(texts.descPairTrig, COL_X, ROW1_Y + SMALL_H + DESC_GAP),
+      descStroke(texts.descDeck, COL2_X, ROW1_Y + SMALL_H + DESC_GAP),
+      descStroke(texts.descPairSphere, COL_X, ROW2_Y + SOLID_H + DESC_GAP),
+    ],
+    [
+      viewerAsset('doc', texts.sheetUrls, 'pdf', SHEET_X, ROW1_Y, SHEET_W, SHEET_H),
+      makeAsset('trig-pair', 'trig_circle', COL_X, ROW1_Y,
+        SMALL_W, SMALL_H, buildDefaultTrigCircleData()),
+      // Презентація стоїть поруч із колом навмисно: слайди розбирають задачу 1
+      // збірника (sin165°·cos165°), а на колі це видно живцем.
+      viewerAsset('deck', texts.deckUrls, 'presentation', COL2_X, ROW1_Y, SMALL_W, SMALL_H),
+      makeAsset('nmt3d-pair', 'nmt3d', COL_X, ROW2_Y,
+        SOLID_W, SOLID_H, buildDefaultNmt3dData('cubeInscribedSphere')),
+    ],
+  )
+
   return {
-    pages: [pageTry, pageTrig, pageCalculus, pageGeometry, pageStereo, page3d],
+    pages: [pageTry, pageTrig, pageCalculus, pageGeometry, pageStereo, page3d, pageMaterials],
     currentPageIndex: 0,
   }
 }
@@ -351,9 +455,16 @@ export function computeSeedDigest(state: WBWorkspaceState | null | undefined): s
       )
     }
     for (const a of p.assets ?? []) {
+      // Не лише геометрія, а й ДЖЕРЕЛО вмісту: інакше вітрина, де об'єкт
+      // лишився на місці, але показує інше (чи вже нічого), вважається
+      // тотожною свіжій — і людина назавжди застрягає на старому вмісті.
+      // Саме так сталось із демо-аркушем: рамка на місці, сторінки зникли,
+      // відбиток збігся, перемальовування не спрацювало.
+      // `src` обрізаємо: у користувацьких картинок це буває data:-URL на мегабайти.
+      const source = `${String(a.src ?? '').slice(0, 120)}|${a.pages?.length ?? 0}`
       parts.push(
         `A|${a.type}|${Math.round(a.x ?? 0)},${Math.round(a.y ?? 0)}` +
-        `|${Math.round(a.w ?? 0)}x${Math.round(a.h ?? 0)}`,
+        `|${Math.round(a.w ?? 0)}x${Math.round(a.h ?? 0)}|${source}`,
       )
     }
   }

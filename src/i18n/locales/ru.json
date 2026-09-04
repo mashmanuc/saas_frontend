@@ -6899,7 +6899,13 @@
       "seedDescSphereInCube": "Шар, вписанный в куб — видны точки касания",
       "seedDescCylInCone": "Цилиндр, вписанный в конус",
       "seedDescSurface": "Поверхность z = sin(x)·cos(y) — вращай мышью",
-      "seedDescCurve": "Пространственная кривая (cos t, sin t, t/3) — винтовая линия"
+      "seedDescCurve": "Пространственная кривая (cos t, sin t, t/3) — винтовая линия",
+      "seedPageMaterials": "Материалы",
+      "seedCaptionMaterials": "Лист и тот же объект — рядом",
+      "seedDescWorksheet": "Листай страницы сборника прямо на доске — как обычный PDF.",
+      "seedDescPairTrig": "Задача 1 с листа: покрути круг на 165°.",
+      "seedDescPairSphere": "Задача 4 с листа: тот же шар в кубе, его можно вращать.",
+      "seedDescDeck": "Слайды разбирают задачу 1 из сборника — метод рядом с самой задачей."
     },
     "toolbar": {
       "title": "Инструменты рисования",

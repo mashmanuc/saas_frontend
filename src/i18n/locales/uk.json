@@ -7135,7 +7135,13 @@
       "seedDescSphereInCube": "Куля, вписана в куб — видно точки дотику",
       "seedDescCylInCone": "Циліндр, вписаний у конус",
       "seedDescSurface": "Поверхня z = sin(x)·cos(y) — обертай мишею",
-      "seedDescCurve": "Просторова крива (cos t, sin t, t/3) — гвинтова лінія"
+      "seedDescCurve": "Просторова крива (cos t, sin t, t/3) — гвинтова лінія",
+      "seedPageMaterials": "Матеріали",
+      "seedCaptionMaterials": "Аркуш і той самий об’єкт — поруч",
+      "seedDescWorksheet": "Гортай сторінки збірника просто на дошці — як звичайний PDF.",
+      "seedDescPairTrig": "Задача 1 з аркуша: покрути коло на 165°.",
+      "seedDescPairSphere": "Задача 4 з аркуша: та сама куля в кубі, її можна обертати.",
+      "seedDescDeck": "Слайди розбирають задачу 1 зі збірника — метод поруч із самою задачею."
     },
     "constructor": {
       "badge": "КОНСТРУКТОР",
