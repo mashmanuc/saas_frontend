@@ -24,9 +24,7 @@
     <header class="quad-header">
       <span class="quad-title">ax² + bx + c {{ asset.data.sign ?? '=' }} 0</span>
       <span v-if="!isSelected" class="quad-expr-readonly">
-        {{ fmt(asset.data.a) }}x² {{ asset.data.b >= 0 ? '+' : '−' }}
-        {{ fmt(Math.abs(asset.data.b)) }}x {{ asset.data.c >= 0 ? '+' : '−' }}
-        {{ fmt(Math.abs(asset.data.c)) }} {{ asset.data.sign ?? '=' }} 0
+        {{ exprText }} {{ asset.data.sign ?? '=' }} 0
       </span>
       <button
         v-if="!asset.locked && isSelected"
@@ -42,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { QuadraticAsset, QuadSign } from '../../../types/quad'
 import type { QuadraticCardInstance } from '../../../vendor/quad'
@@ -50,6 +48,7 @@ import { registerQuadInspector, unregisterQuadInspector } from '../../../board/s
 import type { QuadBridge } from '../../../board/state/quadUiState'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { renderPoly } from '../../../utils/polyText'
 
 const { t } = useI18n()
 
@@ -79,11 +78,22 @@ let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null
 const SNAPSHOT_DEBOUNCE_MS = 150
 
-/** Short formatter for header expression (no trailing zeros). */
-function fmt(n: number): string {
-  const r = Math.round(n * 100) / 100
-  return r.toString().replace('.', ',')
-}
+// ⚠️ Локальний `fmt` прибрано: вираз у шапці тепер збирає спільний
+// `renderPoly` (`utils/polyText.ts`). Було `1x² − 1x − 6 = 0` — у
+// математиці не пишуть ні коефіцієнт 1, ні доданок з нулем. Видно на
+// демо-дошці лендингу; той самий клас дефекту за 09-04 знайшовся у
+// восьми темах банку задач, і причина скрізь одна — кожне місце
+// винаходило запис многочлена заново.
+//
+// ⚠️ `computed`, а не функція в шаблоні: вираз перечитується на кожен
+// рендер картки, а коефіцієнти тягне повзунок інспектора.
+const exprText = computed(() =>
+  renderPoly([
+    [props.asset.data.a, 'x²'],
+    [props.asset.data.b, 'x'],
+    [props.asset.data.c, ''],
+  ]),
+)
 
 // ── Bridge ────────────────────────────────────────────────────────────────
 const _bridge = reactive<QuadBridge>({

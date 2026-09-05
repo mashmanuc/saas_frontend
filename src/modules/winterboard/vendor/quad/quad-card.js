@@ -31,6 +31,35 @@
     return (Math.abs(r) < 1e-9 ? 0 : r).toString().replace('.', ',');
   };
 
+  // ── Запис многочлена ──────────────────────────────────────────────────────
+  // ⚠️ У математиці не пишуть ні коефіцієнт 1, ні доданок з нулем: треба
+  // `x² − x − 6 = 0`, а не `1x² − 1x − 6 = 0`. Друге саме й показувала
+  // демо-дошка лендингу. Той самий клас дефекту за 2026-09-04 знайшовся
+  // у восьми темах банку задач — щоразу тому, що кожне місце винаходило
+  // запис многочлена заново.
+  //
+  // ⚠️ ЦЕ ДУБЛЬ `src/modules/winterboard/utils/polyText.ts` — свідомий.
+  // Файл є самодостатнім IIFE без жодного імпорту (так він і задуманий),
+  // тому взяти спільний помічник не може. Правиш тут — виправ і там.
+  const term = (coef, varPart, first) => {
+    if (Math.abs(coef) < 1e-9) return '';
+    const abs = Math.abs(coef);
+    // Одиницю перед ЗМІННОЮ не пишуть, перед вільним членом — пишуть.
+    const body = varPart
+      ? (Math.abs(abs - 1) < 1e-9 ? varPart : fmt(abs, 2) + varPart)
+      : fmt(abs, 2);
+    if (first) return coef < 0 ? '−' + body : body;
+    return coef < 0 ? ' − ' + body : ' + ' + body;
+  };
+
+  const poly = (terms) => {
+    let out = '';
+    for (const [coef, varPart] of terms) {
+      out += term(coef, varPart, out === '');
+    }
+    return out || '0';
+  };
+
   const ARM_DX = 1.5;
 
   class QuadraticCard {
@@ -615,12 +644,8 @@
       const D   = sol ? sol.D : this._disc();
       const xv  = this._xv(), yv = this._yv();
 
-      // Build equation string
-      const bSign = b >= 0 ? '+' : '−';
-      const cSign = c >= 0 ? '+' : '−';
-      let eq = `${fmt(a,2)}x²`;
-      if (Math.abs(b) > 1e-9) eq += ` ${bSign} ${fmt(Math.abs(b),2)}x`;
-      if (Math.abs(c) > 1e-9) eq += ` ${cSign} ${fmt(Math.abs(c),2)}`;
+      // Build equation string (див. `poly` вище: без коефіцієнта 1 і нулів)
+      const eq = poly([[a, 'x²'], [b, 'x'], [c, '']]);
       const signStr = { '=':'= 0', '<':'< 0', '<=':'≤ 0', '>':'> 0', '>=':'≥ 0' }[sign] || '= 0';
 
       const out = [];
