@@ -8244,6 +8244,8 @@
       "saveError": "Save error",
       "offline": "Offline",
       "unsavedChanges": "Unsaved changes",
+      "writerOffline": "Teacher is offline — strokes will not be saved",
+      "syncedViaTeacher": "Saved by the teacher",
       "ready": "Ready",
       "prevPage": "Previous page (PageUp)",
       "nextPage": "Next page (PageDown)",

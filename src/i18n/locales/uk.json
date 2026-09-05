@@ -7987,6 +7987,8 @@
       "saveError": "Помилка збереження",
       "offline": "Офлайн",
       "unsavedChanges": "Незбережені зміни",
+      "writerOffline": "Учитель офлайн — штрихи не збережуться",
+      "syncedViaTeacher": "Зберігає учитель",
       "ready": "Готово",
       "prevPage": "Попередня сторінка (PageUp)",
       "nextPage": "Наступна сторінка (PageDown)",

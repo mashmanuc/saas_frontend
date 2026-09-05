@@ -553,6 +553,8 @@
 // Feature flag: VITE_WB_FEATURE_CLASSROOM
 
 import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch, nextTick, provide } from 'vue'
+// P0 classroom student ops (2026-09-05): чистий гейт малювання — тестується без mount в'юхи.
+import { isStudentDrawingBlocked, drawingBlockReason } from '../composables/classroomDrawingGate'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -1193,20 +1195,9 @@ function onLifecycleBlocked(e: Event) {
 window.addEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked)
 onBeforeUnmount(() => window.removeEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked))
 
-const isDrawingDisabled = computed(() => {
-  // Запис фіналізовано → нічого не збережеться → не даємо писати в порожнечу
-  if (isBoardFrozen.value) return true
-  // Locked by teacher → students can't draw
-  if (isLocked.value && !classroomRole.isTeacher.value) return true
-  // No draw permission (viewer)
-  if (!classroomRole.canDraw.value) return true
-  return false
-})
-
-const effectiveTool = computed<WBToolType>(() => {
-  if (isDrawingDisabled.value) return 'select'
-  return store.currentTool
-})
+// isDrawingDisabled / effectiveTool — нижче, після connectedTeacher: гейт тепер
+// залежить від присутності writer-а (P0 classroom student ops, 2026-09-05), а
+// порядок оголошень const у <script setup> значущий (TDZ — див. isBoardFrozen).
 
 const connectedStudents = computed(() =>
   classroomSession.connectedUsers.value.filter((u) => u.role !== 'owner'),
@@ -1218,6 +1209,33 @@ const connectedStudents = computed(() =>
 const connectedTeacher = computed(() =>
   classroomSession.connectedUsers.value.find((u) => u.role === 'owner') ?? null,
 )
+
+// P0 classroom student ops (2026-09-05). За INV-SINGLE-WRITER учень не пише в
+// REST: його штрихи персистить writer echo-записом із WS `stroke.broadcast`.
+// Отже штрих учня має кому зберегтись ЛИШЕ коли (а) власний WS підключений —
+// інакше wsBroadcast() мовчки пропускає, і (б) writer онлайн (participants
+// is_online, той самий polling, що й бейдж у шапці). Живий прогін у двох
+// сесіях: учитель вийшов → учень малює → БД без змін → після F5 штрих зник.
+// Для writer-а значення не має (isWriter коротко замикає в гейті).
+const writerOnline = computed(
+  () => presence.isConnected.value && !!connectedTeacher.value?.is_online,
+)
+
+const drawingGateInput = computed(() => ({
+  isWriter: classroomRole.isWriter.value,
+  frozen: isBoardFrozen.value,
+  locked: isLocked.value,
+  canDraw: classroomRole.canDraw.value,
+  writerOnline: writerOnline.value,
+}))
+
+// Чистий предикат — composables/classroomDrawingGate.ts (тести: invariants/classroomStudentOps.spec.ts)
+const isDrawingDisabled = computed(() => isStudentDrawingBlocked(drawingGateInput.value))
+
+const effectiveTool = computed<WBToolType>(() => {
+  if (isDrawingDisabled.value) return 'select'
+  return store.currentTool
+})
 
 const lessonIdNum = computed(() => {
   const id = props.lessonId
@@ -1349,6 +1367,15 @@ const roleBadgeText = computed(() => {
 })
 
 const saveStatusText = computed(() => {
+  // Не-writer (учень/viewer) сам нічого не зберігає — його штрихи персистить
+  // учитель. Показувати йому store.isDirty («Незбережені зміни») було брехнею
+  // в обидва боки: і коли штрих уже echo-записаний учителем, і коли зберігати
+  // його нікому. Тепер індикатор каже саме про це (P0 classroom student ops).
+  if (!classroomRole.isWriter.value) {
+    return drawingBlockReason(drawingGateInput.value) === 'writer_offline'
+      ? t('winterboard.room.writerOffline')
+      : t('winterboard.room.syncedViaTeacher')
+  }
   if (autosave.isSaving.value) return t('winterboard.room.saving')
   switch (autosave.status.value) {
     case 'saved': return t('winterboard.room.saved')
