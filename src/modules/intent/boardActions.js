@@ -15,6 +15,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 // Людські назви 3D-шаблонів для підписів у контексті (етап 0 MCL, 0.1/0.3).
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
+import { renderPoly } from '@/modules/winterboard/utils/polyText'
 
 function _uuid() {
   return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
@@ -666,7 +667,17 @@ export function summarizeAsset(a) {
   } else if (a.type === 'calculus_card') {
     label = `${d.mode === 'integral' ? 'первісна' : 'похідна'}: ${d.expr || ''}`
   } else if (a.type === 'quadratic_card') {
-    label = `y = ${d.a ?? 1}x² + ${d.b ?? 0}x + ${d.c ?? 0}`
+    // ⚠️ Назвою картки Інтегралик не лише адресує об'єкт — він її ВИМОВЛЯЄ.
+    // Було `y = ${d.a}x² + ${d.b}x + ${d.c}` з типовими 1/0/0, тобто вголос
+    // звучало «ігрек дорівнює один ікс квадрат плюс нуль ікс плюс нуль», а
+    // при від'ємних — «плюс мінус три ікс». Спільний `renderPoly` пише так,
+    // як пишуть у математиці. Той самий клас дефекту 09-05 виправлено у
+    // самому віджеті (`QuadraticRenderer.vue` + `vendor/quad`).
+    label = `y = ${renderPoly([
+      [Number(d.a ?? 1), 'x²'],
+      [Number(d.b ?? 0), 'x'],
+      [Number(d.c ?? 0), ''],
+    ])}`
   } else if (a.type === 'trig_solver') {
     label = `${d.type || 'sin'}(x) ${d.rel || '='} ${d.a ?? ''}`
   } else if (a.type === 'geomash_scene') {
