@@ -28,10 +28,14 @@ export const useBillingStore = defineStore('billing-v074', () => {
   // State
   const me = ref<BillingMeDto | null>(null)
   const plans = ref<PlanDto[]>([])
-  // PR-1 (2026-09-04): BILLING_SALES_ENABLED з /billing/plans/. Поки планів
-  // не завантажено — вважаємо, що продаж увімкнено (нейтральний стан для
-  // скелетона), а рішення «ховати вітрину» приймаємо лише з відповіді BE.
-  const salesEnabled = ref(true)
+  // PR-1 (2026-09-04) + fail-closed (2026-09-05, рішення власника: продаж
+  // зараз не вмикаємо). Вітрина і ціна показуються ЛИШЕ коли бекенд явно
+  // відповів `sales_enabled: true`. Дефолт, відсутнє поле (старий BE) і
+  // помилка запиту — усе означає «продаж вимкнено». Раніше було навпаки
+  // (`!== false`), і живий FE проти старого BE показував вітрину, тоді як
+  // `597bd2d` на origin/main при першому ж деплої її вимкнув би — сайт міг
+  // казати різне залежно від того, який бік задеплоїли першим.
+  const salesEnabled = ref(false)
   const isLoading = ref(false)
   const isLoadingPlans = ref(false)
   const isLoadingAction = ref(false)
@@ -92,8 +96,9 @@ export const useBillingStore = defineStore('billing-v074', () => {
     try {
       const response = await billingApi.getPlans()
 
-      // Відсутнє поле (старий BE) = продаж увімкнено; явне false — вимкнено.
-      salesEnabled.value = response?.sales_enabled !== false
+      // Fail-closed: лише явне true вмикає вітрину. Відсутнє поле (старий BE)
+      // або будь-що інше — продаж вимкнено.
+      salesEnabled.value = response?.sales_enabled === true
 
       if (import.meta.env.DEV) {
         console.debug('[billingStore] Raw API response:', response)
@@ -231,7 +236,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
   function $reset() {
     me.value = null
     plans.value = []
-    salesEnabled.value = true
+    salesEnabled.value = false // fail-closed: до нової відповіді BE продаж вимкнено
     isLoading.value = false
     isLoadingPlans.value = false
     isLoadingAction.value = false

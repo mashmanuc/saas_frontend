@@ -98,6 +98,7 @@ describe('AccountBillingView', () => {
   it('renders error state when billing data fails to load', async () => {
     const billingStore = useBillingStore()
     billingStore.isLoading = false
+    billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
     billingStore.me = null
     billingStore.lastError = {
       code: 'network_error',
@@ -166,6 +167,7 @@ describe('AccountBillingView', () => {
     billingStore.me = mockMe
     billingStore.plans = mockPlans
     billingStore.isLoading = false
+    billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
 
     await wrapper.vm.$nextTick()
 
@@ -212,6 +214,7 @@ describe('AccountBillingView', () => {
     billingStore.me = mockMe
     billingStore.plans = []
     billingStore.isLoading = false
+    billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
 
     await wrapper.vm.$nextTick()
 
@@ -277,6 +280,7 @@ describe('AccountBillingView', () => {
       }
     ]
     billingStore.isLoading = false
+    billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
 
     await wrapper.vm.$nextTick()
 
@@ -318,6 +322,7 @@ describe('AccountBillingView', () => {
       billingStore.me = pendingProMe()
       billingStore.plans = []
       billingStore.isLoading = false
+      billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await wrapper.vm.$nextTick()
 
       const card = wrapper.findComponent({ name: 'CurrentPlanCard' })
@@ -334,6 +339,7 @@ describe('AccountBillingView', () => {
       billingStore.me = pendingProMe()
       billingStore.plans = []
       billingStore.isLoading = false
+      billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await wrapper.vm.$nextTick()
 
       await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro')
@@ -356,6 +362,7 @@ describe('AccountBillingView', () => {
       })
       billingStore.plans = []
       billingStore.isLoading = false
+      billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await wrapper.vm.$nextTick()
 
       await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'free')
@@ -370,6 +377,7 @@ describe('AccountBillingView', () => {
       billingStore.me = makeBillingMeDto() // entitlement PRO, active
       billingStore.plans = []
       billingStore.isLoading = false
+      billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await wrapper.vm.$nextTick()
 
       await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro-usd')
@@ -423,6 +431,7 @@ describe('AccountBillingView', () => {
       })
       billingStore.plans = []
       billingStore.isLoading = false
+      billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await wrapper.vm.$nextTick()
 
       await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro')
@@ -441,6 +450,8 @@ describe('AccountBillingView', () => {
     const fetchPlansSpy = vi.spyOn(billingStore, 'fetchPlans').mockResolvedValue()
 
     billingStore.isLoading = false
+
+    billingStore.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
     billingStore.me = null
     billingStore.lastError = {
       code: 'network_error',

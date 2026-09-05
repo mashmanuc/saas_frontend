@@ -177,6 +177,7 @@ describe('billingStore', () => {
       vi.mocked(billingApi.startCheckout).mockResolvedValue(mockResponse)
 
       const store = useBillingStore()
+      store.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       const result = await store.startCheckout('PRO')
 
       expect(result).toEqual(mockResponse)
@@ -194,6 +195,7 @@ describe('billingStore', () => {
       const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       const store = useBillingStore()
+      store.salesEnabled = true // світ «продаж увімкнено»; дефолт стору fail-closed (false)
       await store.startCheckout('PRO')
 
       expect(windowOpenSpy).toHaveBeenCalledWith(mockResponse.checkout_url, '_blank')
@@ -299,11 +301,30 @@ describe('billingStore', () => {
       expect(store.plans).toEqual([])
     })
 
-    it('поле відсутнє (старий BE) → продаж вважається увімкненим', async () => {
+    // Fail-closed (2026-09-05): вітрина лише від явного true.
+    it('дефолт стору до будь-якої відповіді — продаж вимкнено (fail-closed)', () => {
+      expect(useBillingStore().salesEnabled).toBe(false)
+    })
+
+    it('поле відсутнє (старий BE) → продаж вважається ВИМКНЕНИМ (fail-closed, не як раніше)', async () => {
       vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [] })
       const store = useBillingStore()
       await store.fetchPlans()
+      expect(store.salesEnabled).toBe(false)
+    })
+
+    it('sales_enabled:true → salesEnabled=true (єдиний шлях увімкнути вітрину)', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], sales_enabled: true })
+      const store = useBillingStore()
+      await store.fetchPlans()
       expect(store.salesEnabled).toBe(true)
+    })
+
+    it('помилка запиту не вмикає продаж: лишається false', async () => {
+      vi.mocked(billingApi.getPlans).mockRejectedValue(new Error('offline (mocked)'))
+      const store = useBillingStore()
+      await expect(store.fetchPlans()).rejects.toThrow('offline')
+      expect(store.salesEnabled).toBe(false)
     })
 
     it('при вимкненому продажі startCheckout НЕ кличе API і кидає sales_disabled', async () => {
@@ -316,13 +337,13 @@ describe('billingStore', () => {
       expect(store.isLoadingAction).toBe(false)
     })
 
-    it('$reset повертає salesEnabled у нейтральний true', async () => {
-      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], sales_enabled: false })
+    it('$reset повертає salesEnabled у fail-closed false', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], sales_enabled: true })
       const store = useBillingStore()
       await store.fetchPlans()
-      expect(store.salesEnabled).toBe(false)
-      store.$reset()
       expect(store.salesEnabled).toBe(true)
+      store.$reset()
+      expect(store.salesEnabled).toBe(false)
     })
   })
 

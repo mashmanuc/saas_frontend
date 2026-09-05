@@ -29,7 +29,17 @@
           stroke by stroke. Your students reopen the exact lesson later, not a video of it.
         </p>
         <div class="pro-cta-row">
-          <button type="button" class="pro-cta" data-testid="pro-cta-top" @click="goToCheckout">
+          <!-- Продаж вимкнено (BILLING_SALES_ENABLED=false на сервері або старий
+               BE без поля) → ні кнопки оплати, ні ціни: сторінка не обіцяє того,
+               чого кабінет не продасть. Paddle-рев'ювер побачить ціну тоді, коли
+               продаж справді увімкнено. -->
+          <button
+            v-if="billingStore.salesEnabled"
+            type="button"
+            class="pro-cta"
+            data-testid="pro-cta-top"
+            @click="goToCheckout"
+          >
             {{ ctaLabel }}
           </button>
           <!-- Демо-дошка `/workspace` — публічна, без реєстрації. `?lang=en`
@@ -41,9 +51,12 @@
             Try the board
           </a>
         </div>
-        <p class="pro-cta-note">
+        <p v-if="billingStore.salesEnabled" class="pro-cta-note" data-testid="pro-price-note">
           $19.99 / month &middot; cancel anytime. The demo board opens right away &mdash;
           no sign-up, nothing to install.
+        </p>
+        <p v-else class="pro-cta-note">
+          The demo board opens right away &mdash; no sign-up, nothing to install.
         </p>
       </section>
 
@@ -63,7 +76,7 @@
         </ul>
       </section>
 
-      <section class="pro-price" aria-labelledby="pro-price-title">
+      <section v-if="billingStore.salesEnabled" class="pro-price" aria-labelledby="pro-price-title" data-testid="pro-price-block">
         <h2 id="pro-price-title" class="pro-h2">Pro</h2>
         <p class="pro-amount"><strong>$19.99</strong> <span>/ month</span></p>
         <p class="pro-text">
@@ -115,9 +128,14 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useBillingStore } from '@/modules/billing/stores/billingStore'
 
 const router = useRouter()
 const auth = useAuthStore()
+// Fail-closed: `salesEnabled` у сторі стає true лише від явної відповіді
+// /billing/plans/ (публічний ендпоінт). До відповіді, без поля або при помилці —
+// ціни й кнопки оплати на сторінці немає.
+const billingStore = useBillingStore()
 
 /**
  * `index.html` тримає український <title> — на англійській продажній сторінці
@@ -130,6 +148,8 @@ let previousTitle = ''
 onMounted(() => {
   previousTitle = document.title
   document.title = PAGE_TITLE
+  // Помилка запиту лишає fail-closed стан (false); стор уже залогував її.
+  billingStore.fetchPlans().catch(() => {})
 })
 
 onBeforeUnmount(() => {

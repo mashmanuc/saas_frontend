@@ -67,7 +67,8 @@ export interface PlansResponse {
   /**
    * PR-1 білінгу (2026-09-04): BILLING_SALES_ENABLED на сервері. false →
    * вітрина схована, checkout заблокований сервером (403 SALES_DISABLED).
-   * Відсутнє поле (старий BE) = продаж увімкнено.
+   * Fail-closed з 2026-09-05: лише явне true вмикає вітрину на FE; відсутнє
+   * поле (старий BE) трактується як «продаж вимкнено».
    */
   sales_enabled?: boolean
 }
