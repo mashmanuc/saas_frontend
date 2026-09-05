@@ -38,6 +38,7 @@ describe('PlanCard', () => {
   const defaultProps = {
     plan: mockPlan,
     currentPlanCode: 'FREE',
+    pendingPlanCode: null as string | null,
     loading: false
   }
 
@@ -185,6 +186,87 @@ describe('PlanCard', () => {
       await button.trigger('click')
 
       expect(wrapper.emitted('select')).toBeFalsy()
+    })
+  })
+
+  // PR-1 (2026-09-04): каталог `free` проти entitlement `FREE` — один план;
+  // pending-план не викликає повторний select.
+  describe('PR-1: канонічні коди і pending', () => {
+    it('public `free` + entitlement `FREE`: позначено поточним, select не емітиться', async () => {
+      const wrapper = mountPlanCard({
+        plan: { ...mockPlan, code: 'free', title: 'Free', price: { amount: 0, currency: 'UAH' } },
+        currentPlanCode: 'FREE'
+      })
+
+      expect(wrapper.text()).toContain('billing.plan.current')
+      expect(wrapper.text()).toContain('billing.planCard.current')
+      const button = wrapper.find('button')
+      expect(button.attributes('disabled')).toBeDefined()
+      await button.trigger('click')
+      expect(wrapper.emitted('select')).toBeFalsy()
+    })
+
+    it('public `pro` + pending `PRO`: кнопка «очікуємо оплату», select не емітиться, бейдж pending', async () => {
+      const wrapper = mountPlanCard({
+        plan: { ...mockPlan, code: 'pro' },
+        currentPlanCode: 'FREE',
+        pendingPlanCode: 'PRO'
+      })
+
+      expect(wrapper.find('[data-testid="plan-cta-pending"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('billing.planCard.pending')
+      expect(wrapper.find('[data-testid="plan-badge-pending"]').exists()).toBe(true)
+      // pending НЕ називається поточним
+      expect(wrapper.text()).not.toContain('billing.plan.current')
+      const button = wrapper.find('button')
+      expect(button.attributes('disabled')).toBeDefined()
+      await button.trigger('click')
+      expect(wrapper.emitted('select')).toBeFalsy()
+      // юридичні лінки під кнопкою «Оплатити» — без кнопки їх нема
+      expect(wrapper.text()).not.toContain('billing.checkout.agreement')
+    })
+
+    it('pending за ІНШИЙ план не блокує цю картку', async () => {
+      const wrapper = mountPlanCard({
+        currentPlanCode: 'FREE',
+        pendingPlanCode: 'BUSINESS'
+      })
+
+      expect(wrapper.find('[data-testid="plan-cta-pending"]').exists()).toBe(false)
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.emitted('select')?.[0]).toEqual(['PRO'])
+    })
+
+    it('PRO-USD при entitlement PRO — «Поточний», select не емітиться (один tier)', async () => {
+      const wrapper = mountPlanCard({
+        plan: { ...mockPlan, code: 'pro-usd', title: 'Pro (International)', price: { amount: 1999, currency: 'USD' } },
+        currentPlanCode: 'PRO'
+      })
+
+      expect(wrapper.text()).toContain('billing.planCard.current')
+      expect(wrapper.text()).not.toContain('billing.planCard.pay')
+      const button = wrapper.find('button')
+      expect(button.attributes('disabled')).toBeDefined()
+      await button.trigger('click')
+      expect(wrapper.emitted('select')).toBeFalsy()
+    })
+
+    it('BUSINESS при entitlement PRO — інший tier, «Оплатити» доступне', () => {
+      const wrapper = mountPlanCard({
+        plan: { ...mockPlan, code: 'BUSINESS', title: 'Business' },
+        currentPlanCode: 'PRO'
+      })
+      expect(wrapper.text()).toContain('billing.planCard.pay')
+    })
+
+    it('чинний план має пріоритет над pending (pending за той самий план не показуємо)', () => {
+      const wrapper = mountPlanCard({
+        currentPlanCode: 'pro',
+        pendingPlanCode: 'PRO'
+      })
+
+      expect(wrapper.text()).toContain('billing.planCard.current')
+      expect(wrapper.find('[data-testid="plan-cta-pending"]').exists()).toBe(false)
     })
   })
 

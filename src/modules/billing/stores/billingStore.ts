@@ -22,11 +22,16 @@ import type {
 import * as billingApi from '../api/billingApi'
 import { submitCheckoutForm, validateCheckoutResponse } from '../utils/checkoutHelper'
 import { minorToMajor } from '../utils/priceFormatter'
+import { isFreePlanCode, isProFamilyPlanCode, isBusinessPlanCode } from '../utils/planCode'
 
 export const useBillingStore = defineStore('billing-v074', () => {
   // State
   const me = ref<BillingMeDto | null>(null)
   const plans = ref<PlanDto[]>([])
+  // PR-1 (2026-09-04): BILLING_SALES_ENABLED з /billing/plans/. Поки планів
+  // не завантажено — вважаємо, що продаж увімкнено (нейтральний стан для
+  // скелетона), а рішення «ховати вітрину» приймаємо лише з відповіді BE.
+  const salesEnabled = ref(true)
   const isLoading = ref(false)
   const isLoadingPlans = ref(false)
   const isLoadingAction = ref(false)
@@ -41,13 +46,19 @@ export const useBillingStore = defineStore('billing-v074', () => {
   const hasFeature = computed(() => (feature: string) => {
     return entitlement.value?.features?.includes(feature) || false
   })
-  const isPro = computed(() => currentPlan.value === 'PRO')
-  const isBusiness = computed(() => currentPlan.value === 'BUSINESS')
-  const isFree = computed(() => currentPlan.value === 'FREE')
-  
+  // PR-1 (2026-09-04, інваріант 4): канонічне порівняння через один helper;
+  // `pro`/`PRO`/` Pro ` — один план. Родина Pro включає PRO-USD.
+  const isPro = computed(() => isProFamilyPlanCode(currentPlan.value))
+  const isBusiness = computed(() => isBusinessPlanCode(currentPlan.value))
+  const isFree = computed(() => isFreePlanCode(currentPlan.value))
+
   // v0.76.3: Pending plan support
   const pendingPlanCode = computed(() => me.value?.pending_plan_code || null)
   const pendingSince = computed(() => me.value?.pending_since || null)
+  // ⚠️ PR-1 (2026-09-04): `displayPlanCode` = pending-план, якщо він є. Це НЕ
+  // «поточний план» і НЕ джерело лімітів — чинне право доступу лише в
+  // `currentPlanCode` (entitlement). Екран тарифу його більше не використовує;
+  // лишається для BillingSuccessView, де контекст саме «що оплачували».
   const displayPlanCode = computed(() => me.value?.display_plan_code || currentPlan.value)
   const subscriptionStatus = computed(() => me.value?.subscription_status || 'none')
   const hasPendingPlan = computed(() => !!pendingPlanCode.value)
@@ -80,7 +91,10 @@ export const useBillingStore = defineStore('billing-v074', () => {
 
     try {
       const response = await billingApi.getPlans()
-      
+
+      // Відсутнє поле (старий BE) = продаж увімкнено; явне false — вимкнено.
+      salesEnabled.value = response?.sales_enabled !== false
+
       if (import.meta.env.DEV) {
         console.debug('[billingStore] Raw API response:', response)
         console.debug('[billingStore] Plans array:', response?.plans)
@@ -134,6 +148,14 @@ export const useBillingStore = defineStore('billing-v074', () => {
     lastError.value = null
 
     try {
+      // PR-1 (2026-09-04): продаж вимкнено — не ходимо на сервер узагалі.
+      // Сервер і так відповість 403 SALES_DISABLED; тут — щоб жодна точка
+      // виклику (обидві вітрини) не могла ініціювати оплату повз прапорець.
+      if (!salesEnabled.value) {
+        const err: any = new Error('Sales are not enabled')
+        err.code = 'sales_disabled'
+        throw err
+      }
       const response = await billingApi.startCheckout(planCode)
       
       // Handle different providers
@@ -209,6 +231,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
   function $reset() {
     me.value = null
     plans.value = []
+    salesEnabled.value = true
     isLoading.value = false
     isLoadingPlans.value = false
     isLoadingAction.value = false
@@ -219,6 +242,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
     // State
     me,
     plans,
+    salesEnabled,
     isLoading,
     isLoadingPlans,
     isLoadingAction,

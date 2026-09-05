@@ -18,42 +18,23 @@
       </div>
     </div>
 
-    <div v-if="!subscription || subscription.status === 'none'" class="py-8 text-center">
-      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-        <svg class="h-8 w-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </div>
-      <h3 class="mb-2 text-lg font-semibold text-foreground">
-        {{ $t('billing.noPlanState.title') }}
-      </h3>
-      <p class="text-sm text-muted-foreground">
-        {{ $t('billing.noPlanState.subtitle') }}
-      </p>
-      <!-- Sprint 2 §4.3: inline soft upgrade hint (presentation-only, не блокує). -->
-      <div class="mt-3">
-        <UpgradeHint context="feature" variant="standalone" />
-      </div>
-    </div>
-
-    <div v-else class="space-y-4">
+    <!-- PR-1 (2026-09-04, інваріанти 1, 2, 5): блок плану рендериться ЗАВЖДИ
+         й лише з entitlement — це право доступу, яке діє прямо зараз. Його не
+         ховаємо ні за «немає підписки», ні за pending-оплатою. Раніше сюди
+         приходив display_plan_code, і людина бачила «поточний Pro» при чинних
+         лімітах Free — два стани в одному рядку, жоден із них не правда. -->
+    <div class="space-y-4">
       <div class="rounded-lg border border-border bg-muted/30 p-4">
-        <div class="mb-2 flex items-center justify-between">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <span class="text-sm font-medium text-muted-foreground">
             {{ $t('billing.currentPlanCard.planName') }}
           </span>
-          <span class="text-lg font-bold text-foreground">
+          <span class="text-lg font-bold text-foreground" data-testid="current-plan-code">
             {{ planCode }}
           </span>
         </div>
-        <p
-          v-if="hasPending"
-          class="text-xs text-muted-foreground"
-        >
-          {{ $t('billing.currentlyActive') }}: {{ activePlanCode }}
-        </p>
-        
-        <div v-if="subscription.current_period_end" class="flex items-center justify-between text-sm">
+
+        <div v-if="subscription && subscription.current_period_end" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
           <span class="text-muted-foreground">
             <!-- 2026-07-28: завжди «Діє до». «Продовжується» БРЕХАЛО: Plata/mono
                  не має автопродовження — кожен платіж це разовий інвойс, гроші
@@ -67,13 +48,50 @@
 
         <!-- Ф1-1 (2026-07-27): BE віддає РЯДОК 'none' коли підписки нема —
            truthy-рядок проходив v-if і юзер бачив технічне «None». -->
-        <div v-if="subscription.provider && subscription.provider !== 'none'" class="mt-2 flex items-center justify-between text-sm">
+        <div v-if="subscription && subscription.provider && subscription.provider !== 'none'" class="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
           <span class="text-muted-foreground">
             {{ $t('billing.currentPlanCard.providerLabel') }}
           </span>
           <span class="font-medium capitalize text-foreground">
             {{ subscription.provider }}
           </span>
+        </div>
+      </div>
+
+      <!-- PR-1 інваріант 2: pending-план — ОКРЕМА плашка, не «поточний».
+           Кажемо дві речі, які людина інакше не могла розрізнити: за що саме
+           чекаємо оплату, і які ліміти діють, поки чекаємо. -->
+      <div
+        v-if="pendingNoticePlan"
+        data-testid="pending-plan-notice"
+        class="space-y-1 rounded-lg border border-warning/40 bg-warning-light/20 p-3 text-sm text-warning-dark"
+      >
+        <p class="font-semibold">
+          {{ $t('billing.currentPlanCard.pendingAwaiting', { plan: pendingNoticePlan }) }}
+        </p>
+        <p class="text-xs">
+          {{ $t('billing.currentPlanCard.pendingLimitsNote', { plan: planCode }) }}
+        </p>
+      </div>
+
+      <!-- «Без підписки» — лише коли справді нічого не очікується. Не замінює
+           блок плану вище: Free — теж чинне право доступу зі своїми лімітами. -->
+      <div
+        v-if="hasNoSubscription && !pendingNoticePlan"
+        data-testid="no-subscription-state"
+        class="rounded-lg border border-dashed border-border p-4 text-center"
+      >
+        <h3 class="mb-1 text-base font-semibold text-foreground">
+          {{ $t('billing.noPlanState.title') }}
+        </h3>
+        <p class="text-sm text-muted-foreground">
+          {{ $t('billing.noPlanState.subtitle') }}
+        </p>
+        <!-- Sprint 2 §4.3: inline soft upgrade hint (presentation-only, не блокує).
+             PR-1 (2026-09-04): при BILLING_SALES_ENABLED=False апсел веде на
+             закриту вітрину — не показуємо. -->
+        <div v-if="salesEnabled" class="mt-3" data-testid="upgrade-hint-slot">
+          <UpgradeHint context="feature" variant="standalone" />
         </div>
       </div>
 
@@ -152,6 +170,7 @@ import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import UpgradeHint from './UpgradeHint.vue'
 import { buildPlanFeatures } from '@/modules/payments/planLimitFeatures'
+import { isSamePlan, normalizePlanCode } from '../utils/planCode'
 
 defineEmits(['cancel'])
 
@@ -167,17 +186,23 @@ function featureLabel(code) {
 }
 
 const props = defineProps({
+  /**
+   * PR-1 (2026-09-04): ЧИННИЙ план = `entitlement.plan_code` і тільки він.
+   * Не display_plan_code, не pending — це право доступу, що діє зараз.
+   */
   planCode: {
     type: String,
     required: true
   },
-  activePlanCode: {
+  /** План із живим pending-checkout (`/billing/me`.pending_plan_code) або null. */
+  pendingPlanCode: {
     type: String,
-    default: 'FREE'
+    default: null
   },
-  hasPending: {
+  /** PR-1: BILLING_SALES_ENABLED з /billing/plans/. false → апсел схований. */
+  salesEnabled: {
     type: Boolean,
-    default: false
+    default: true
   },
   subscription: {
     type: Object,
@@ -201,6 +226,19 @@ const { d, t, te } = useI18n()
  * що й на картках тарифів, тож формулювання «до / необмежено» ідентичні.
  */
 const planLimitFeatures = computed(() => buildPlanFeatures(props.entitlement?.limits, t))
+
+/**
+ * Pending показуємо лише коли він відрізняється від чинного плану: pending за
+ * той самий план, що вже діє, — стан, якого BE не має віддавати, і плашка
+ * «очікуємо Pro» під чинним Pro лише плутала б.
+ */
+const pendingNoticePlan = computed(() => {
+  const code = normalizePlanCode(props.pendingPlanCode)
+  if (!code || isSamePlan(code, props.planCode)) return null
+  return code
+})
+
+const hasNoSubscription = computed(() => !props.subscription || props.subscription.status === 'none')
 
 /**
  * A7 (launch-план, 2026-09-01): кнопка скасування — ЛИШЕ для справжніх

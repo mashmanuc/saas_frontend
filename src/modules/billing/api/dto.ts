@@ -62,6 +62,14 @@ export interface PlanDto {
  */
 export interface PlansResponse {
   plans: PlanDto[]
+  /** Ринок покупця (UA/INTL), 2026-09-03. */
+  market?: string
+  /**
+   * PR-1 білінгу (2026-09-04): BILLING_SALES_ENABLED на сервері. false →
+   * вітрина схована, checkout заблокований сервером (403 SALES_DISABLED).
+   * Відсутнє поле (старий BE) = продаж увімкнено.
+   */
+  sales_enabled?: boolean
 }
 
 /**
@@ -185,6 +193,10 @@ export const BillingErrorCodes = {
   CHECKOUT_NOT_ALLOWED: 'checkout_not_allowed',
   INVALID_PLAN: 'invalid_plan',
   ALREADY_SUBSCRIBED: 'already_subscribed',
+  /** PR-1 (2026-09-04): продаж вимкнено (BILLING_SALES_ENABLED=False). */
+  SALES_DISABLED: 'sales_disabled',
+  /** PR-1 (2026-09-04): PRO-USD при чинному PRO — той самий tier, 409 з BE. */
+  ALREADY_SUBSCRIBED_SAME_TIER: 'already_subscribed_same_tier',
 } as const
 
 export type BillingErrorCode = typeof BillingErrorCodes[keyof typeof BillingErrorCodes]

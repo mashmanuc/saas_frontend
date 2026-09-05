@@ -37,6 +37,7 @@
         :key="plan.code"
         :plan="plan"
         :current-plan-code="currentPlanCode"
+        :pending-plan-code="pendingPlanCode"
         :loading="loading"
         @select="$emit('select', $event)"
       />
@@ -58,6 +59,14 @@ const props = defineProps({
   currentPlanCode: {
     type: String,
     required: true
+  },
+  /**
+   * PR-1 (2026-09-04): план, за який уже є живий pending-checkout. Картка
+   * такого плану блокує повторний «Оплатити» — другого інвойсу не буде.
+   */
+  pendingPlanCode: {
+    type: String,
+    default: null
   },
   loading: {
     type: Boolean,

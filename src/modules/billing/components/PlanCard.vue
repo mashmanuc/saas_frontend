@@ -8,7 +8,15 @@
         {{ $t('billing.plan.current') }}
       </div>
     </div>
-    
+
+    <!-- PR-1 (2026-09-04): pending-план НЕ називається поточним — це окремий
+         бейдж «очікує оплати». Поточний і далі лише з entitlement. -->
+    <div v-else-if="isPendingPlan" class="absolute right-4 top-4">
+      <div class="rounded-full bg-warning px-3 py-1 text-xs font-medium text-warning-dark" data-testid="plan-badge-pending">
+        {{ $t('billing.plan.pending') }}
+      </div>
+    </div>
+
     <div v-else-if="isPro" class="absolute right-4 top-4">
       <div class="rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
         {{ $t('billing.plan.recommended') }}
@@ -63,6 +71,18 @@
         >
           {{ $t('billing.planCard.current') }}
         </Button>
+        <!-- PR-1 інваріант 3: поки pending-checkout за цей план живий, повторний
+             вибір заблоковано — кнопка не емітить `select`, другого інвойсу
+             не створюється. Людина бачить, що саме очікується. -->
+        <Button
+          v-else-if="isPendingPlan"
+          variant="outline"
+          class="w-full"
+          disabled
+          data-testid="plan-cta-pending"
+        >
+          {{ $t('billing.planCard.pending') }}
+        </Button>
         <Button
           v-else-if="isInactive"
           variant="outline"
@@ -93,7 +113,7 @@
         </Button>
 
         <!-- Legal links for paid plans (LiqPay compliance #3) -->
-        <div v-if="!isFree && !isCurrentPlan && !isInactive" class="space-y-2 text-center">
+        <div v-if="!isFree && !isCurrentPlan && !isPendingPlan && !isInactive" class="space-y-2 text-center">
           <p class="text-xs text-muted-foreground">
             {{ $t('billing.checkout.agreement') }}
           </p>
@@ -139,6 +159,16 @@ import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import { formatMoney } from '../utils/priceFormatter'
 import { getFeatureName } from '../utils/featureMapper'
+// PR-1 (2026-09-04, інваріант 4): усі порівняння кодів — через один helper.
+// Каталог віддає `free`/`pro`, entitlement — `FREE`/`PRO`; строге `===` між
+// ними не позначало активний Free активним і пропонувало «обрати» те, що вже є.
+import {
+  normalizePlanCode,
+  isSameTier,
+  isFreePlanCode,
+  isProFamilyPlanCode,
+  isBusinessPlanCode,
+} from '../utils/planCode'
 
 const { t } = useI18n()
 
@@ -151,6 +181,11 @@ const props = defineProps({
     type: String,
     required: true
   },
+  /** План із живим pending-checkout (з `/billing/me`), або null. */
+  pendingPlanCode: {
+    type: String,
+    default: null
+  },
   loading: {
     type: Boolean,
     default: false
@@ -159,8 +194,18 @@ const props = defineProps({
 
 defineEmits(['select'])
 
+// Порівнюємо TIER, не slug: PRO-USD у людини з чинним PRO — той самий доступ
+// (одні фічі й ліміти, інша валюта/рейки), тож картка «Поточний», а не
+// «Оплатити». Другий платіж за той самий доступ створювати не можна; сервер
+// дублює це правило 409 ALREADY_SUBSCRIBED_SAME_TIER.
 const isCurrentPlan = computed(() => {
-  return props.plan.code === props.currentPlanCode
+  return isSameTier(props.plan.code, props.currentPlanCode)
+})
+
+// Pending має сенс лише коли це НЕ вже чинний план: чинний і так заблокований
+// як «Поточний», і pending за нього — стан, який BE не має віддавати.
+const isPendingPlan = computed(() => {
+  return !isCurrentPlan.value && isSameTier(props.plan.code, props.pendingPlanCode)
 })
 
 const isInactive = computed(() => {
@@ -168,22 +213,21 @@ const isInactive = computed(() => {
 })
 
 const isFree = computed(() => {
-  return props.plan.code?.toUpperCase() === 'FREE' || props.plan.price?.amount === 0
+  return isFreePlanCode(props.plan.code) || props.plan.price?.amount === 0
 })
 
 const isPro = computed(() => {
-  // 2026-09-01: startsWith, не === — 'PRO-USD' (міжнародний Stripe-варіант,
-  // той самий тариф/фічі, інша валюта/провайдер) теж отримує бейдж «Рекомендований».
-  return (props.plan.code?.toUpperCase() || '').startsWith('PRO')
+  // 2026-09-01: родина, не ===: 'PRO-USD' (міжнародний варіант, той самий
+  // тариф/фічі, інша валюта/провайдер) теж отримує бейдж «Рекомендований».
+  return isProFamilyPlanCode(props.plan.code)
 })
 
 const isBusiness = computed(() => {
-  return props.plan.code?.toUpperCase() === 'BUSINESS'
+  return isBusinessPlanCode(props.plan.code)
 })
 
 function getDescription(planCode) {
-  const code = planCode?.toUpperCase()
-  return t(`billing.planDescriptions.${code}`)
+  return t(`billing.planDescriptions.${normalizePlanCode(planCode)}`)
 }
 
 function getFeatureLabel(featureCode) {

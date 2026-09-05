@@ -36,6 +36,18 @@ const makeBillingMeDto = (overrides: Partial<BillingMeDto> = {}): BillingMeDto =
   ...overrides
 })
 
+// PR-1 (2026-09-04): ІЗОЛЯЦІЯ ВІД ЖИВОГО API. Раніше onMounted → loadData()
+// → справжній axios → localhost:8000 (401, circuit-breaker у логах тестів).
+// Модуль API підміняємо цілком: getMe/getPlans відхиляються як «офлайн», щоб
+// жоден тест не залежав від того, чи піднято бекенд.
+vi.mock('../../api/billingApi', () => ({
+  getMe: vi.fn().mockRejectedValue(new Error('offline (mocked)')),
+  getPlans: vi.fn().mockRejectedValue(new Error('offline (mocked)')),
+  startCheckout: vi.fn(),
+  cancelSubscription: vi.fn(),
+  getPaymentHistory: vi.fn().mockRejectedValue(new Error('offline (mocked)')),
+}))
+
 // Mock router
 const mockPush = vi.fn()
 vi.mock('vue-router', () => ({
@@ -71,7 +83,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })
@@ -99,7 +112,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })
@@ -118,7 +132,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })
@@ -166,7 +181,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })
@@ -210,7 +226,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })
@@ -269,6 +286,150 @@ describe('AccountBillingView', () => {
     expect(startCheckoutSpy).toHaveBeenCalledWith('PRO')
   })
 
+  // PR-1 (2026-09-04): екран тарифу говорить правду.
+  describe('PR-1: entitlement як поточний, pending окремо, без повторного checkout', () => {
+    const pendingProMe = () => makeBillingMeDto({
+      subscription: {
+        status: 'none',
+        provider: null,
+        current_period_end: null,
+        cancel_at_period_end: false,
+        canceled_at: null
+      },
+      entitlement: { plan_code: 'FREE', features: [], expires_at: null },
+      pending_plan_code: 'PRO',
+      pending_since: '2026-09-04T10:00:00Z',
+      display_plan_code: 'PRO',
+      subscription_status: 'none',
+      plan: 'FREE',
+      expires_at: null,
+      is_active: false
+    })
+
+    const mountView = () => mount(AccountBillingView, {
+      global: {
+        stubs: { Card: true, Button: true, Heading: true, CurrentPlanCard: true, PlansList: true, PaymentHistorySection: true }
+      }
+    })
+
+    it('у CurrentPlanCard іде entitlement (FREE), а не display_plan_code (PRO); pending — окремим пропом', async () => {
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      billingStore.me = pendingProMe()
+      billingStore.plans = []
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      const card = wrapper.findComponent({ name: 'CurrentPlanCard' })
+      expect(card.props('planCode')).toBe('FREE')
+      expect(card.props('pendingPlanCode')).toBe('PRO')
+      // список планів теж знає про pending
+      expect(wrapper.findComponent({ name: 'PlansList' }).props('pendingPlanCode')).toBe('PRO')
+    })
+
+    it('select pending-плану НЕ створює другий checkout', async () => {
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      const startCheckoutSpy = vi.spyOn(billingStore, 'startCheckout').mockResolvedValue({} as any)
+      billingStore.me = pendingProMe()
+      billingStore.plans = []
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro')
+      await wrapper.vm.$nextTick()
+      expect(startCheckoutSpy).not.toHaveBeenCalled()
+    })
+
+    it('select чинного плану (`free` при entitlement FREE) НЕ створює checkout', async () => {
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      const startCheckoutSpy = vi.spyOn(billingStore, 'startCheckout').mockResolvedValue({} as any)
+      billingStore.me = makeBillingMeDto({
+        subscription: { status: 'none', provider: null, current_period_end: null, cancel_at_period_end: false, canceled_at: null },
+        entitlement: { plan_code: 'FREE', features: [], expires_at: null },
+        display_plan_code: 'FREE',
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
+      billingStore.plans = []
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'free')
+      await wrapper.vm.$nextTick()
+      expect(startCheckoutSpy).not.toHaveBeenCalled()
+    })
+
+    it('PRO-USD при entitlement PRO — той самий tier, checkout НЕ викликається', async () => {
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      const startCheckoutSpy = vi.spyOn(billingStore, 'startCheckout').mockResolvedValue({} as any)
+      billingStore.me = makeBillingMeDto() // entitlement PRO, active
+      billingStore.plans = []
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro-usd')
+      await wrapper.vm.$nextTick()
+      expect(startCheckoutSpy).not.toHaveBeenCalled()
+    })
+
+    it('BILLING_SALES_ENABLED=false: вітрини немає, є повідомлення, select не викликає checkout', async () => {
+      const wrapper = mount(AccountBillingView, {
+        global: {
+          stubs: {
+            Button: true, Heading: true, CurrentPlanCard: true, PlansList: true, PaymentHistorySection: true,
+            Card: { template: '<section v-bind="$attrs"><slot /></section>' },
+          }
+        }
+      })
+      const billingStore = useBillingStore()
+      const startCheckoutSpy = vi.spyOn(billingStore, 'startCheckout').mockResolvedValue({} as any)
+      billingStore.me = makeBillingMeDto({
+        subscription: { status: 'none', provider: null, current_period_end: null, cancel_at_period_end: false, canceled_at: null },
+        entitlement: { plan_code: 'FREE', features: [], expires_at: null },
+        display_plan_code: 'FREE', subscription_status: 'none', plan: 'FREE', expires_at: null, is_active: false
+      })
+      billingStore.plans = []
+      billingStore.salesEnabled = false
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.find('[data-testid="sales-disabled-notice"]').exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'PlansList' }).exists()).toBe(false)
+      // картка чинного плану лишається — право доступу не залежить від продажу
+      expect(wrapper.findComponent({ name: 'CurrentPlanCard' }).exists()).toBe(true)
+
+      // прямий виклик обробника (вітрини немає, але хтось міг би емітити подію)
+      await (wrapper.vm as any).handleSelectPlan('pro')
+      expect(startCheckoutSpy).not.toHaveBeenCalled()
+    })
+
+    it('select іншого платного плану без pending — checkout викликається', async () => {
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      const startCheckoutSpy = vi.spyOn(billingStore, 'startCheckout').mockResolvedValue({} as any)
+      billingStore.me = makeBillingMeDto({
+        subscription: { status: 'none', provider: null, current_period_end: null, cancel_at_period_end: false, canceled_at: null },
+        entitlement: { plan_code: 'FREE', features: [], expires_at: null },
+        display_plan_code: 'FREE',
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
+      billingStore.plans = []
+      billingStore.isLoading = false
+      await wrapper.vm.$nextTick()
+
+      await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro')
+      expect(startCheckoutSpy).toHaveBeenCalledWith('pro')
+    })
+  })
+
   it('НЕ має cancel-флоу (2026-07-28): кнопку прибрано — Plata без recurring', () => {
     // Регресія-guard: handleCancel + window.confirm видалені свідомо.
     // Не повертати, доки не зʼявиться реальне автопродовження у провайдера.
@@ -294,7 +455,8 @@ describe('AccountBillingView', () => {
           Button: true,
           Heading: true,
           CurrentPlanCard: true,
-          PlansList: true
+          PlansList: true,
+          PaymentHistorySection: true
         }
       }
     })

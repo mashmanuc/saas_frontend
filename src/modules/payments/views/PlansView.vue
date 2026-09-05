@@ -16,6 +16,7 @@ import { onMounted, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sparkles, Check, Star } from 'lucide-vue-next'
 import { useBillingStore } from '@/modules/billing/stores/billingStore'
+import { isSameTier } from '@/modules/billing/utils/planCode'
 import { buildPlanFeatures, type TranslateFn } from '@/modules/payments/planLimitFeatures'
 import type { PlanDto } from '@/modules/billing/api/dto'
 import Card from '@/ui/Card.vue'
@@ -33,10 +34,12 @@ onMounted(async () => {
   }
 })
 
-const currentPlanCode = computed(() => (billingStore.currentPlanCode || '').toUpperCase())
-
+// PR-1 білінгу (2026-09-04): tier, не slug — PRO-USD у людини з чинним PRO
+// це той самий доступ, кнопка «Оплатити» тут не має з'являтись (сервер
+// дублює правило 409 ALREADY_SUBSCRIBED_SAME_TIER). Порівняння — лише через
+// спільний helper, як і в billing/PlanCard.
 function isCurrentPlan(plan: PlanDto): boolean {
-  return (plan.code || '').toUpperCase() === currentPlanCode.value
+  return isSameTier(plan.code, billingStore.currentPlanCode)
 }
 
 /** Опис тарифу (прозою). uk-локаль → description_uk, інакше description. */
@@ -73,13 +76,22 @@ const checkoutError = ref<string | null>(null)
 
 async function buyPlan(plan: PlanDto): Promise<void> {
   if (checkoutLoading.value) return
+  // PR-1: продаж вимкнено — не ходимо на сервер; вітрина нижче й так схована,
+  // це бар'єр на випадок прямого виклику.
+  if (!billingStore.salesEnabled) {
+    checkoutError.value = t('billing.errors.salesDisabled')
+    return
+  }
   checkoutLoading.value = plan.code
   checkoutError.value = null
   try {
     await billingStore.startCheckout(plan.code)
   } catch (err: any) {
+    const code = String(err?.code || '').toLowerCase()
     checkoutError.value =
-      err?.response?.data?.error?.detail || err?.message || t('billing.plans.checkoutError')
+      code === 'sales_disabled' ? t('billing.errors.salesDisabled')
+      : code === 'already_subscribed_same_tier' ? t('billing.errors.sameTierAlready')
+      : err?.response?.data?.error?.detail || err?.message || t('billing.plans.checkoutError')
   } finally {
     checkoutLoading.value = null
   }
@@ -114,8 +126,16 @@ async function buyPlan(plan: PlanDto): Promise<void> {
       </Button>
     </Card>
 
+    <!-- PR-1 (2026-09-04): BILLING_SALES_ENABLED=False → вітрини немає; той
+         самий прапорець на сервері блокує POST /checkout/. -->
+    <Card v-else-if="!billingStore.salesEnabled" class="p-6 text-center" data-testid="sales-disabled-notice">
+      <p class="text-muted">{{ $t('billing.plansList.salesDisabled') }}</p>
+      <!-- Помилка прямого виклику buyPlan (вітрини немає, але обробник лишається) -->
+      <p v-if="checkoutError" class="mt-2 text-sm text-danger">{{ checkoutError }}</p>
+    </Card>
+
     <!-- Plans grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" data-testid="plans-grid">
       <Card
         v-for="plan in billingStore.plans"
         :key="plan.code"

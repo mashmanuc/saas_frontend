@@ -289,6 +289,66 @@ describe('billingStore', () => {
     })
   })
 
+  // PR-1 (2026-09-04): BILLING_SALES_ENABLED з /billing/plans/.
+  describe('PR-1: sales gate (BILLING_SALES_ENABLED)', () => {
+    it('sales_enabled:false → salesEnabled=false і порожній список', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], market: 'UA', sales_enabled: false })
+      const store = useBillingStore()
+      await store.fetchPlans()
+      expect(store.salesEnabled).toBe(false)
+      expect(store.plans).toEqual([])
+    })
+
+    it('поле відсутнє (старий BE) → продаж вважається увімкненим', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [] })
+      const store = useBillingStore()
+      await store.fetchPlans()
+      expect(store.salesEnabled).toBe(true)
+    })
+
+    it('при вимкненому продажі startCheckout НЕ кличе API і кидає sales_disabled', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], sales_enabled: false })
+      const store = useBillingStore()
+      await store.fetchPlans()
+
+      await expect(store.startCheckout('PRO')).rejects.toMatchObject({ code: 'sales_disabled' })
+      expect(billingApi.startCheckout).not.toHaveBeenCalled()
+      expect(store.isLoadingAction).toBe(false)
+    })
+
+    it('$reset повертає salesEnabled у нейтральний true', async () => {
+      vi.mocked(billingApi.getPlans).mockResolvedValue({ plans: [], sales_enabled: false })
+      const store = useBillingStore()
+      await store.fetchPlans()
+      expect(store.salesEnabled).toBe(false)
+      store.$reset()
+      expect(store.salesEnabled).toBe(true)
+    })
+  })
+
+  // PR-1 (2026-09-04, інваріант 4): предикати плану — канонічні.
+  describe('PR-1: канонічні коди планів', () => {
+    it('entitlement `free` (нижній регістр) → isFree, а не «невідомий план»', async () => {
+      vi.mocked(billingApi.getMe).mockResolvedValue(makeBillingMeDto({
+        entitlement: { plan_code: 'free', features: [], expires_at: null }
+      }))
+      const store = useBillingStore()
+      await store.fetchMe()
+      expect(store.isFree).toBe(true)
+      expect(store.isPro).toBe(false)
+    })
+
+    it('entitlement `PRO-USD` належить до родини Pro', async () => {
+      vi.mocked(billingApi.getMe).mockResolvedValue(makeBillingMeDto({
+        entitlement: { plan_code: 'PRO-USD', features: [], expires_at: null }
+      }))
+      const store = useBillingStore()
+      await store.fetchMe()
+      expect(store.isPro).toBe(true)
+      expect(store.isFree).toBe(false)
+    })
+  })
+
   describe('$reset', () => {
     it('should reset store state', async () => {
       const mockData = makeBillingMeDto({

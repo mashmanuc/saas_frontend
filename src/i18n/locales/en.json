@@ -5561,6 +5561,8 @@
       "subtitle": "View your current plan and manage subscription"
     },
     "currentPlanCard": {
+      "pendingAwaiting": "Awaiting payment confirmation for {plan}",
+      "pendingLimitsNote": "Until it is confirmed, the {plan} plan limits apply.",
       "title": "Current Plan",
       "subtitle": "Your subscription information",
       "planName": "Plan",
@@ -5578,16 +5580,19 @@
       "subtitle": "Choose a plan to access additional features"
     },
     "plansList": {
+      "salesDisabled": "Plan sales are currently disabled. Your current plan and its limits remain in effect.",
       "title": "Available Plans",
       "subtitle": "Choose the plan that fits your needs",
       "empty": "No plans available"
     },
     "plan": {
+      "pending": "Pending payment",
       "current": "Current",
       "recommended": "Recommended",
       "bestForTeams": "Best for Teams"
     },
     "planCard": {
+      "pending": "Awaiting payment",
       "current": "Current",
       "select": "Select",
       "pay": "Pay",
@@ -5597,6 +5602,9 @@
     },
     "errors": {
       "loadFailed": "Failed to load billing data",
+      "pendingAlready": "Payment for this plan is already awaiting confirmation — no second invoice is needed.",
+      "salesDisabled": "Plan sales are currently disabled — a payment cannot be created.",
+      "sameTierAlready": "You already have this access tier in another currency — no second payment is needed.",
       "plansLoadFailed": "Failed to load plans"
     },
     "retryButton": "Try Again",

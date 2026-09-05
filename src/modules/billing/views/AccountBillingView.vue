@@ -41,19 +41,30 @@
     </div>
 
     <div v-else class="space-y-6">
+      <!-- PR-1 (2026-09-04, інваріант 1): у картку йде ЛИШЕ entitlement —
+           displayPlanCode підставляв pending-план як «поточний». Pending
+           передаємо окремо, і картка сама показує його окремою плашкою. -->
       <CurrentPlanCard
-        :plan-code="billingStore.displayPlanCode"
-        :active-plan-code="billingStore.currentPlanCode"
-        :has-pending="billingStore.hasPendingPlan"
+        :plan-code="billingStore.currentPlanCode"
+        :pending-plan-code="billingStore.pendingPlanCode"
+        :sales-enabled="billingStore.salesEnabled"
         :subscription="billingStore.subscription"
         :entitlement="billingStore.entitlement"
         :loading="billingStore.isLoadingAction"
         @cancel="handleCancelSubscription"
       />
 
+      <!-- PR-1 (2026-09-04): BILLING_SALES_ENABLED=False на сервері → вітрини
+           немає взагалі, а не «планів не знайдено». Сервер той самий прапорець
+           тримає на POST /checkout/, тож це не лише видимість. -->
+      <Card v-if="!billingStore.salesEnabled" data-testid="sales-disabled-notice">
+        <p class="text-sm text-muted-foreground">{{ $t('billing.plansList.salesDisabled') }}</p>
+      </Card>
       <PlansList
+        v-else
         :plans="billingStore.plans"
         :current-plan-code="billingStore.currentPlanCode"
+        :pending-plan-code="billingStore.pendingPlanCode"
         :loading="billingStore.isLoadingPlans || billingStore.isLoadingAction"
         :error="plansError"
         @select="handleSelectPlan"
@@ -78,6 +89,7 @@ import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
+import { isSameTier } from '../utils/planCode'
 
 const billingStore = useBillingStore()
 const { t } = useI18n()
@@ -119,12 +131,39 @@ async function handleSelectPlan(planCode) {
     return
   }
 
+  // PR-1 (2026-09-04): другий бар'єр до інваріантів 1 і 3, незалежний від того,
+  // яка картка емітила подію. Чинний план не потребує checkout (`free` з
+  // каталогу проти `FREE` з entitlement — один план), а за pending-план інвойс
+  // уже є — другого не створюємо.
+  if (!billingStore.salesEnabled) {
+    const { notifyError } = await import('@/utils/notify')
+    notifyError(t('billing.errors.salesDisabled'))
+    return
+  }
+  // Tier, не slug: PRO-USD при чинному PRO — той самий доступ (дзеркало
+  // серверного 409 ALREADY_SUBSCRIBED_SAME_TIER).
+  if (isSameTier(planCode, billingStore.currentPlanCode)) {
+    return
+  }
+  if (isSameTier(planCode, billingStore.pendingPlanCode)) {
+    const { notifyError } = await import('@/utils/notify')
+    notifyError(t('billing.errors.pendingAlready'))
+    return
+  }
+
   try {
     await billingStore.startCheckout(planCode)
   } catch (error) {
     console.error('Checkout failed:', error)
     const { notifyError } = await import('@/utils/notify')
-    notifyError(error?.message || 'Помилка при створенні checkout сесії')
+    const code = String(error?.code || '').toLowerCase()
+    if (code === 'sales_disabled') {
+      notifyError(t('billing.errors.salesDisabled'))
+    } else if (code === 'already_subscribed_same_tier') {
+      notifyError(t('billing.errors.sameTierAlready'))
+    } else {
+      notifyError(error?.message || 'Помилка при створенні checkout сесії')
+    }
   }
 }
 
