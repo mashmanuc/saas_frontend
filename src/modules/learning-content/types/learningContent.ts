@@ -16,6 +16,7 @@ export type OwnershipType =
   | 'USER_GENERATED'
 
 export type AccessType =
+  | 'PRIVATE'
   | 'PUBLIC'
   | 'PREVIEW'
   | 'PAID'

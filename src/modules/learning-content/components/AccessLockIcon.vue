@@ -27,6 +27,7 @@ const props = withDefaults(
 const { t } = useI18n()
 
 const ICON_MAP: Record<AccessType, string> = {
+  PRIVATE: '\uD83D\uDD12',
   PUBLIC: '\uD83C\uDF0D',
   PREVIEW: '\uD83D\uDC41',
   PAID: '\uD83D\uDD12',

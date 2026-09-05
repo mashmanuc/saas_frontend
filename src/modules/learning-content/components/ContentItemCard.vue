@@ -67,7 +67,7 @@ import OwnershipBadge from './OwnershipBadge.vue'
 import AccessLockIcon from './AccessLockIcon.vue'
 import { useContentAccess } from '../composables/useContentAccess'
 
-const LOCKED_ACCESS_TYPES = new Set(['PAID', 'SUBSCRIPTION', 'RESTRICTED', 'ARCHIVED'])
+const LOCKED_ACCESS_TYPES = new Set(['PRIVATE', 'PAID', 'SUBSCRIPTION', 'RESTRICTED', 'ARCHIVED'])
 
 const props = defineProps<{ item: ContentItemSummary }>()
 const emit = defineEmits<{
