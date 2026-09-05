@@ -1210,16 +1210,37 @@ const connectedTeacher = computed(() =>
   classroomSession.connectedUsers.value.find((u) => u.role === 'owner') ?? null,
 )
 
-// P0 classroom student ops (2026-09-05). За INV-SINGLE-WRITER учень не пише в
-// REST: його штрихи персистить writer echo-записом із WS `stroke.broadcast`.
-// Отже штрих учня має кому зберегтись ЛИШЕ коли (а) власний WS підключений —
-// інакше wsBroadcast() мовчки пропускає, і (б) writer онлайн (participants
-// is_online, той самий polling, що й бейдж у шапці). Живий прогін у двох
-// сесіях: учитель вийшов → учень малює → БД без змін → після F5 штрих зник.
-// Для writer-а значення не має (isWriter коротко замикає в гейті).
-const writerOnline = computed(
-  () => presence.isConnected.value && !!connectedTeacher.value?.is_online,
-)
+// P0 classroom student ops (2026-09-05, v2). За INV-SINGLE-WRITER учень не
+// пише в REST: його штрихи персистить writer echo-записом із WS
+// `stroke.broadcast`. Отже штрих учня має кому зберегтись ЛИШЕ коли (а)
+// власний WS підключений і (б) writer онлайн — ПРЯМО ЗАРАЗ, не за
+// останньою відомою міткою.
+//
+// v1 брав is_online з `connectedTeacher` — HTTP /participants/, за яким
+// стоїть Redis TTL 120с, і сам запит — 10с polling. Живий прогін підтвердив:
+// раптовий обрив вкладки вчителя (не штатний вихід) лишав учня малювати в
+// порожнечу до ~2 хв — власник прямо назвав це неготовим до деплою
+// (ГАВНЯНІ_КОМІТИ.md, коміт a3f50e45).
+//
+// v2 бере ту саму відповідь, що вже штовхає бейдж у шапці «Онлайн/Очікує»
+// (presence.onlineUsers) — reactive Map, яку usePresence оновлює НАЖИВО з
+// WS-подій presence.join/leave/sync, а не з поллінга. Consumer.disconnect()
+// шле presence.leave ОДРАЗУ, щойно ASGI-сервер бачить закриття сокета —
+// для штатного виходу, навігації, закриття вкладки чи логауту це секунди,
+// не хвилини. `connectedTeacher` лишається — лише як ІДЕНТИЧНІСТЬ (хто
+// саме owner), не як сигнал живості: цю пару не міняти місцями.
+//
+// Чесно про залишок: мовчазна смерть без закриття сокета (обрив кабелю,
+// присипляння без коректного TCP-FIN) детектиться нижче, на рівні
+// транспорту/ASGI, і в цьому файлі явного bound на такий випадок немає —
+// але то вже секунди-десятки секунд транспортного таймауту, не 120с Redis
+// TTL. Для writer-а значення writerOnline не має (isWriter коротко замикає
+// в гейті раніше).
+const teacherUserId = computed(() => connectedTeacher.value?.user_id ?? null)
+const writerOnline = computed(() => {
+  if (!presence.isConnected.value || teacherUserId.value === null) return false
+  return presence.onlineUsers.value.some((u) => u.userId === teacherUserId.value)
+})
 
 const drawingGateInput = computed(() => ({
   isWriter: classroomRole.isWriter.value,
