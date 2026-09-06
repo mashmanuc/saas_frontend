@@ -88,6 +88,29 @@ const RECONNECT_MAX_MS = 10_000      // Max backoff delay (was 8000 — align з
 const STALE_CHECK_INTERVAL_MS = 2_000 // Check for stale cursors
 const STALE_THRESHOLD_MS = 5_000     // Remove cursors inactive >5s
 
+/**
+ * Keepalive присутності (2026-09-06, живий урок).
+ *
+ * BE тримає два ключі з TTL, і продовжує їх ЛИШЕ `presence.heartbeat`
+ * (consumers.py `_handle_heartbeat` → `_redis_presence_refresh` +
+ * `_active_session_touch`). Ні штрих, ні курсор TTL не чіпають:
+ *   - `wb_presence:{session}`      TTL 120с → бейдж «Онлайн/Очікує»
+ *                                   (/participants/, polling 10с)
+ *   - `wb_active_session:{user}`   TTL 180с → пульт /remote «яка дошка
+ *                                   відкрита на ноутбуці»
+ *
+ * Клієнт heartbeat не слав узагалі, тож на живому уроці обидва згасали:
+ * на 2-й хвилині вчитель і учень бачили одне одного як «Очікує» (хоча
+ * малювали), на 3-й — пульт казав «на ноутбуці не відкрита жодна дошка».
+ * Дошка при цьому працювала: штрихи йдуть `stroke.broadcast`, він від
+ * Redis-присутності не залежить — тому баг і не було видно раніше.
+ *
+ * 45с обрано так, щоб навіть один пропущений тік не діставав меншого з
+ * TTL (120с): 45 · 2 = 90 < 120. Тип у `_EPHEMERAL_TYPES` на BE, тобто
+ * повз загальний rate-limit і без запису в ops-log.
+ */
+const HEARTBEAT_INTERVAL_MS = 45_000
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type WBPresenceConnectionState =
@@ -494,6 +517,7 @@ export function usePresence(options: UsePresenceOptions) {
   let lastCursorSentAt = 0
   let lastViewportSentAt = 0
   let staleCleanupTimer: ReturnType<typeof setInterval> | null = null
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null
   // 2026-05-13: після 4429 rate-limit disconnect — suppress cursor updates на 5s.
   // Без cooldown: reconnect → presence.join → cursor spam → сервер rate-limit знову.
   // Спостерігалось в real session: 15+ 4429 cycles через immediate reconnect.
@@ -589,6 +613,9 @@ export function usePresence(options: UsePresenceOptions) {
 
       // Start stale cursor cleanup
       startStaleCleanup()
+      // Keepalive: без нього TTL присутності й індексу «активна дошка» згасають
+      // посеред уроку (див. HEARTBEAT_INTERVAL_MS).
+      startHeartbeat()
     }
 
     ws.onmessage = (event: MessageEvent) => {
@@ -603,6 +630,7 @@ export function usePresence(options: UsePresenceOptions) {
     ws.onclose = (event: CloseEvent) => {
       connectionState.value = 'disconnected'
       stopStaleCleanup()
+      stopHeartbeat()
 
       const code = event.code
       console.info(LOG_PREFIX, 'Disconnected, code:', code)
@@ -674,6 +702,7 @@ export function usePresence(options: UsePresenceOptions) {
   function disconnect(): void {
     reconnectAborted = true
     stopStaleCleanup()
+    stopHeartbeat()
 
     // Phase RS PR-RS-C3: cancel pending rAF щоб не fire після disconnect
     // (ws closed → sendMessage no-op, але cursorRAF leak без cancelAnimationFrame).
@@ -1147,6 +1176,25 @@ export function usePresence(options: UsePresenceOptions) {
         }
       }
     }, STALE_CHECK_INTERVAL_MS)
+  }
+
+  /**
+   * Keepalive-тік. `userId` у тілі обов'язковий: BE звіряє його з юзером
+   * сокета і при розбіжності рве з'єднання (code 4400), тож шлемо рівно
+   * свій. `sendMessage` сам мовчки виходить, поки сокет не OPEN.
+   */
+  function startHeartbeat(): void {
+    stopHeartbeat()
+    heartbeatTimer = setInterval(() => {
+      sendMessage({ type: 'presence.heartbeat', userId })
+    }, HEARTBEAT_INTERVAL_MS)
+  }
+
+  function stopHeartbeat(): void {
+    if (heartbeatTimer !== null) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
   }
 
   function stopStaleCleanup(): void {
