@@ -44,8 +44,19 @@ export function resolveBoardId({ routeName, params, classroomBoardId }) {
  *   кнопкою поруч зі справжнім мікрофоном (рішення власника 2026-09-06).
  * ⛔ Класна кімната сюди НЕ входить — див. шапку файла, помилка №2.
  */
-export function isPaletteHiddenRoute({ name, path }) {
+export function isPaletteHiddenRoute({ name, path, meta }) {
   if (typeof path === 'string' && path.startsWith('/staff')) return true
   if (name === 'winterboard-remote') return true
+  // 2026-09-06, знахідка власника на живому уроці: маскот Інтегралика висів
+  // поверх ПУБЛІЧНОГО РЕПЛЕЮ (`/winterboard/public/:token`) — сторінки, яку
+  // вчитель кидає учням. Там людина ДИВИТЬСЯ чужий завершений запис, а не
+  // редагує свою дошку: усі інструменти палітри там безпредметні.
+  //
+  // Гейт свідомо fail-closed за `meta.public`, а НЕ за переліком імен: новий
+  // публічний маршрут ховатиме палітру сам. Урок ранку 09-06 — мапа розділів,
+  // де перелік із 4 імен мовчки деградував на 13 пунктах меню.
+  // Виняток один і названий: /workspace — це РЕДАГОВАНА демо-дошка (гість
+  // малює у своїй), а не перегляд чужого; палітра там доречна.
+  if (meta && meta.public === true && name !== 'local-workspace') return true
   return false
 }

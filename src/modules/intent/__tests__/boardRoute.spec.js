@@ -67,6 +67,29 @@ describe('isPaletteHiddenRoute', () => {
     }
   })
 
+  it('⚠️ публічний реплей — прихована: там ДИВЛЯТЬСЯ чужий запис, не редагують', () => {
+    // Живий випадок власника 2026-09-06: маскот висів поверх сторінки,
+    // яку вчитель кидає учням (`/winterboard/public/:token`).
+    expect(isPaletteHiddenRoute({
+      name: 'winterboard-public',
+      path: '/winterboard/public/zHVYHz_ilux',
+      meta: { public: true, requiresAuth: false },
+    })).toBe(true)
+  })
+
+  it('будь-який НОВИЙ публічний маршрут прихований сам, без правки списку', () => {
+    expect(isPaletteHiddenRoute({ name: 'щось-нове-публічне', path: '/x', meta: { public: true } })).toBe(true)
+    expect(isPaletteHiddenRoute({ name: 'winterboard-replay-gone', path: '/winterboard/replay-gone', meta: { public: true } })).toBe(true)
+  })
+
+  it('виняток названий: /workspace — редагована демо-дошка, палітра доречна', () => {
+    expect(isPaletteHiddenRoute({ name: 'local-workspace', path: '/workspace', meta: { public: true } })).toBe(false)
+  })
+
+  it('приватна сторінка (без meta.public) лишається видимою', () => {
+    expect(isPaletteHiddenRoute({ name: 'winterboard-solo', path: '/winterboard/x', meta: { requiresAuth: true } })).toBe(false)
+  })
+
   it('дірявий route (без path/name) не кидає', () => {
     expect(isPaletteHiddenRoute({})).toBe(false)
     expect(isPaletteHiddenRoute({ name: null, path: undefined })).toBe(false)
