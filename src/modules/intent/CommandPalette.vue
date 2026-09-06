@@ -323,6 +323,8 @@ import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
 import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardRoute'
+// ⏳ Гейт Г1 «Співведучий уроку» — тимчасово, до Г2 (див. lessonPlan.js).
+import { loadPlan, savePlan, looksLikePlan } from './lessonPlan'
 import {
   EN_GUIDE_NAVIGATION,
   describeEnGuideRoute,
@@ -1077,7 +1079,10 @@ async function askAi(phrase) {
     try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage())
+    // Г1: план уроку їде разом із фразою. `loadPlan` сам чистить сміття у
+    // сховищі й віддає null, тож без плану запит дослівно такий, як був.
+    const lessonPlan = loadPlan(currentBoardId.value)
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage(), lessonPlan)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
@@ -1096,6 +1101,17 @@ async function askAi(phrase) {
         leaveBoard()
       } else {
         await execBoardAction(r)
+      }
+    } else if (r.status === 'plan_action') {
+      // Г1: модель склала план уроку. `parse ≠ execute` — сервер лише
+      // ЗАПРОПОНУВАВ структуру, кладемо її ми. Підтвердження не питаємо:
+      // план видимий, редагований і нічого на дошці не міняє.
+      if (looksLikePlan(r.plan) && savePlan(currentBoardId.value, r.plan)) {
+        aiPush({ kind: 'bot', text: r.explain || 'План уроку складено.' })
+      } else {
+        // Мовчазний провал тут — найгірший: учитель думав би, що план є,
+        // а Інтегралик вів би урок без нього (LAW §12).
+        aiPush({ kind: 'bot', text: 'План не вдалося зберегти — урок піде без нього.' })
       }
     } else if (r.status === 'board_action_plan') {
       await runPlan(r)   // Phase 2.10: сценарій з кількох дій
