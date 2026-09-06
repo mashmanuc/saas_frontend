@@ -23,13 +23,40 @@ function _uuid() {
     : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-// Каскад, щоб послідовні вставки не лягали одна на одну.
+// Розкладка послідовних вставок по сітці.
+//
+// ⚠️ БУВ КАСКАД НА 28 px — і він НЕ виконував того, що обіцяв коментар
+// («щоб не лягали одна на одну»). Картка теорії — 520×380, тож зсув 28 px
+// накривав попередню на 95%. Живий тест власника 2026-09-06 (Хмельницький
+// і двоє синів: 3 картки + 3 портрети) перетворив сторінку на купу, де
+// нижні картки не прочитати. Число 28 просто ніхто не звірив з розміром
+// того, що кладеться.
+//
+// Тепер крок — реальний слід картки з проміжком, а слоти рахуються від
+// РОЗМІРУ СТОРІНКИ, а не з припущення про 1920×1080: на вужчій сторінці
+// колонок буде менше, і сітка лишиться в межах полотна.
+const SLOT_W = 560          // 520 картка + 40 проміжок
+const SLOT_H = 420          // 380 картка + 40 проміжок
 let _cascade = 0
+
 function _center(page) {
-  const n = (_cascade++ % 8)
+  const pw = page.width ?? 1920
+  const ph = page.height ?? 1080
+  const cols = Math.max(1, Math.floor(pw / SLOT_W))
+  const rows = Math.max(1, Math.floor(ph / SLOT_H))
+  const n = _cascade++
+  const slot = n % (cols * rows)
+  const col = slot % cols
+  const row = Math.floor(slot / cols)
+  // сітку центруємо на сторінці, щоб поля були однакові з обох боків
+  const marginX = (pw - cols * SLOT_W) / 2
+  const marginY = (ph - rows * SLOT_H) / 2
+  // після повного кола — зсув на пів-проміжку, щоб новий шар було видно,
+  // а не сплутати з попереднім
+  const wrap = Math.floor(n / (cols * rows)) * 20
   return {
-    cx: Math.round((page.width ?? 1920) / 2 + n * 28),
-    cy: Math.round((page.height ?? 1080) / 2 + n * 28),
+    cx: Math.round(marginX + col * SLOT_W + SLOT_W / 2 + wrap),
+    cy: Math.round(marginY + row * SLOT_H + SLOT_H / 2 + wrap),
   }
 }
 
@@ -75,6 +102,69 @@ const HANDLERS = {
       fontStyle: 'normal',
       textAlign: 'left',
     })
+  },
+
+  // 2026-09-06 (Вікіпедія, слово власника): картинка за URL з провенансом.
+  // Дзеркало useContentDrop.ts (той самий WBAsset type:'image' + src/x/y/w/h),
+  // плюс `data` з джерелом і ліцензією — це йде в реплей, який живе роками, і
+  // на дошку школи; без рядка джерела картинку не кладемо (ТЗ, тиждень 2).
+  // Розмір: вписати в 480 по ширині, зберігши пропорції; якщо BE не дав w/h —
+  // квадрат 360, канва сама підтягне після завантаження.
+  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at }) {
+    if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
+    if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
+    const { store, page } = await _store()
+    const { cx, cy } = _center(page)
+    const MAX_W = 480
+    let width = Number(w) || 0
+    let height = Number(h) || 0
+    if (width > 0 && height > 0) {
+      const k = Math.min(1, MAX_W / width)
+      width = Math.round(width * k); height = Math.round(height * k)
+    } else {
+      width = 360; height = 360
+    }
+    const assetId = _uuid()
+    store.addAsset({
+      id: assetId,
+      type: 'image',
+      src,
+      // Власний слот сітки (див. _center) — центруємо в ньому, як картку.
+      // Було `cx + 40` від часів, коли всі об'єкти лягали в одну точку.
+      x: cx - Math.round(width / 2),
+      y: cy - Math.round(height / 2),
+      w: width,
+      h: height,
+      rotation: 0,
+      locked: false,
+      data: {
+        version: 1,
+        caption: caption || '',
+        source: source || 'external',
+        source_url,
+        license: license || '',
+        author: author || '',
+        retrieved_at: retrieved_at || '',
+      },
+    }, page.id ?? '')
+    // Підпис джерела під картинкою — окремий текстовий штрих (нуль нових
+    // рендерерів): «Джерело: Вікіпедія · Public domain».
+    const srcLabel = source === 'wikimedia_commons' ? 'Вікіпедія' : 'зовнішнє джерело'
+    const lic = license ? ` · ${license}` : ''
+    store.addStroke({
+      id: _uuid(),
+      tool: 'text',
+      color: '#64748b',
+      size: 13,
+      opacity: 1,
+      text: `Джерело: ${srcLabel}${lic}`,
+      points: [{ x: cx + 40, y: cy + Math.round(height / 2) + 6 }],
+      width: Math.max(220, width),
+      fontWeight: 400,
+      fontStyle: 'normal',
+      textAlign: 'left',
+    })
+    return assetId
   },
 
   // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру)
@@ -775,7 +865,21 @@ export async function buildBoardSummary() {
       const params = assetParams(a)
       // Відповідь і розбір картки задачі — окремими полями, з власним
       // бюджетом на BE (див. nmtTaskExtras).
-      const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : {}
+      // 2026-09-06, живий тест власника (Вікіпедія): на «в якому році був
+      // написаний» модель відповіла «поточних значень на дошці я не бачу» —
+      // хоча картка з відповіддю лежала перед нею. Причина: у стан дошки
+      // йшов лише ЗАГОЛОВОК картки (`label = d.title`), а текст — ні.
+      // Наслідок був подвійний: модель не могла відповісти з дошки Й на
+      // кожне уточнення ходила у Вікіпедію по ту саму статтю, кладучи
+      // другу картку з тим самим текстом.
+      // ⚠️ Окремим полем, а НЕ довшим `label`: за label модель АДРЕСУЄ
+      // об'єкти (_resolve_any_object на BE), і роздути його означало б
+      // мовчки змінити пошук об'єкта. Той самий взірець, що `answer`/
+      // `solution` у nmt_task — BE ріже їх власним бюджетом.
+      const cardText = a.type === 'theory_card'
+        ? { text: String((a.data || {}).body || '').replace(/\s+/g, ' ').trim().slice(0, 400) }
+        : {}
+      const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : cardText
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
                    ...extras })
