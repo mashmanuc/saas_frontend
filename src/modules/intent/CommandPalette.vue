@@ -307,7 +307,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../auth/store/authStore'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
@@ -322,6 +322,7 @@ import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRen
 import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
+import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardRoute'
 import {
   EN_GUIDE_NAVIGATION,
   describeEnGuideRoute,
@@ -384,31 +385,44 @@ function currentPage() {
     name: typeof name === 'string' ? name : (name ? String(name) : null),
   }
 }
-const currentBoardId = computed(() =>
-  ['winterboard-solo', 'winterboard-prepare'].includes(route.name) ? route.params.id : null,
-)
+// ТЗ_LIVE_LESSON_2026-09-07 (2026-09-06). Дошка кімнати: `:lessonId` в URL — це
+// урок, а id дошки кімната пише в `store.workspaceId` при ініціалізації
+// (WBClassroomRoom.initBoardWithSession). Стор беремо ЛЕДАЧО — так само, як
+// boardActions._store(): статичний імпорт потягнув би winterboard у чанк
+// палітри, яка живе на кожній сторінці. Поки кімната не записала — null.
+const classroomBoardId = ref(null)
+let _stopClassroomWatch = null
+watch(() => route.name, async (name) => {
+  if (_stopClassroomWatch) { _stopClassroomWatch(); _stopClassroomWatch = null }
+  if (name !== 'winterboard-classroom') { classroomBoardId.value = null; return }
+  const { useWBStore } = await import('@/modules/winterboard/board/state/boardStore')
+  if (route.name !== 'winterboard-classroom') return   // встигли піти, поки вантажився стор
+  const store = useWBStore()
+  _stopClassroomWatch = watch(
+    () => store.workspaceId,
+    (v) => { classroomBoardId.value = v ?? null },
+    { immediate: true },
+  )
+}, { immediate: true })
+onBeforeUnmount(() => { if (_stopClassroomWatch) _stopClassroomWatch() })
+
+const currentBoardId = computed(() => resolveBoardId({
+  routeName: route.name,
+  params: route.params,
+  classroomBoardId: classroomBoardId.value,
+}))
 const enabled = computed(() => {
   if (import.meta.env.VITE_FEATURE_UIA !== 'true' || !auth.user) return false
   // 2026-07-27 (зауваження власника): в staff-АДМІНЦІ Інтегралик недоречний —
   // його інструменти (дошка/уроки/навігація тьютора) там не мають сенсу,
   // а FAB висів поверх адмін-таблиць. Staff-РОЛІ на звичайних сторінках — ок.
-  if (route.path.startsWith('/staff')) return false
-  // 2026-09-06, РІШЕННЯ ВЛАСНИКА (не борг — див. INTEGRALYK_SSOT.md §9-bis):
-  // у ЖИВОМУ уроці Інтегралика приховано. Він там був присутній, але сліпий:
-  // `currentBoardId` нижче знає лише solo/prepare, а кімната адресується
-  // `:lessonId`, і справжня дошка — `resolvedSessionId` ВСЕРЕДИНІ
-  // WBClassroomRoom.vue. Тож на «впиши коло в трикутник» він відповідав
-  // «відкрийте дошку з фігурою», коли дошка була відкрита. Присутній-але-
-  // сліпий помічник гірший за відсутнього.
-  // ⚠️ НЕ «полагодити, дописавши рядок у currentBoardId»: щоб він БАЧИВ
-  // кімнату, треба винести session зі в'юхи; щоб він у ній МАЛЮВАВ — це
-  // другий writer проти INV-SINGLE-WRITER, тобто окреме рішення. Обидва
-  // свідомо відкладені: «зараз це не на часі».
-  if (route.name === 'winterboard-classroom') return false
-  // 2026-09-06 (власник, тим же заходом): пульт (/remote) — керує
-  // дошкою на ІНШОМУ пристрої (телефон -> ноутбук). Палітра там не
-  // на своєму пристрої, тож ховаємо так само, без винятків.
-  if (route.name === 'winterboard-remote') return false
+  // 2026-09-06: /remote — телефон-пульт, у нього власний push-to-talk
+  // (→ `phrase` → ноутбук → m4sh:integralyk-ask); палітра там була б сліпою
+  // кнопкою поруч зі справжнім мікрофоном. Обидва випадки — у boardRoute.js.
+  // ⛔ Класної кімнати тут НЕМАЄ і не має бути: 09-05 я її «сховала», а
+  // onIntegralykAsk починається з `if (!enabled.value) return` — і фраза з
+  // пульта на живому уроці мовчки викидалась. Спек boardRoute.spec.js стереже.
+  if (isPaletteHiddenRoute(route)) return false
   return ALLOWED_ROLES.includes(auth.user.role) || auth.user.is_staff === true
 })
 
@@ -670,7 +684,10 @@ const commands = computed(() => {
     const idx = list.findIndex(c => c.id === 'generate-lesson')
     if (idx >= 0) list.splice(idx, 1)
   }
-  if (currentBoardId.value) list.push(cmdPublishCurrent, cmdSaveDraft)
+  // «опублікувати / зберегти як урок» — лише там, де дошку ГОТУЮТЬ. У живому
+  // уроці (classroom) currentBoardId тепер теж є, але публікувати урок як
+  // шаблон посеред уроку недоречно (ТЗ_LIVE_LESSON_2026-09-07, крок 3).
+  if (isAuthoringRoute(route.name) && currentBoardId.value) list.push(cmdPublishCurrent, cmdSaveDraft)
   return list
 })
 const filtered = computed(() => {
