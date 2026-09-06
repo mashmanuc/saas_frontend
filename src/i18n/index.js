@@ -5,6 +5,16 @@ import ru from './locales/ru.json'
 import pl from './locales/pl.json'
 import de from './locales/de.json'
 
+import dayjs from 'dayjs'
+// Локалі dayjs для всіх SUPPORTED_LOCALES. Статичні імпорти, не динамічні:
+// відносний час («щойно», «5 хвилин тому») малюється в першому ж кадрі
+// сповіщень, і ліниве підвантаження встигало б показати англійську.
+import 'dayjs/locale/uk'
+import 'dayjs/locale/en'
+import 'dayjs/locale/ru'
+import 'dayjs/locale/pl'
+import 'dayjs/locale/de'
+
 export const DEFAULT_LOCALE = 'uk'
 export const STORAGE_KEY = 'lang'
 export const SUPPORTED_LOCALES = ['uk', 'en', 'ru', 'pl', 'de']
@@ -80,9 +90,28 @@ export const i18n = createI18n({
   },
 })
 
+/**
+ * Мова застосунку живе у трьох місцях, і всі три мусять збігатися:
+ * vue-i18n, атрибут `<html lang>` і локаль dayjs.
+ *
+ * dayjs додано 2026-09-06: `dayjs.locale()` не викликався ніде, тож
+ * бібліотека лишалась на англійському дефолті. У сповіщеннях
+ * (`ui/NotificationDropdown.vue`, `components/Notifications/NotificationBell.vue`
+ * — обидва через `.fromNow()`) українець бачив «a few seconds ago» посеред
+ * українського інтерфейсу. Помічено на живому екрані перед уроком.
+ */
+function applyDayjsLocale(locale) {
+  try {
+    dayjs.locale(locale)
+  } catch {
+    // Невідома для dayjs мова не має валити застосунок: лишиться попередня.
+  }
+}
+
 export function setI18nLocale(locale) {
   if (!locale || !SUPPORTED_LOCALES.includes(locale)) return
   i18n.global.locale.value = locale
+  applyDayjsLocale(locale)
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('lang', locale)
   }
@@ -109,6 +138,7 @@ export function applyLocaleOverride(locale) {
   if (i18n.global.locale.value !== locale) {
     i18n.global.locale.value = locale
   }
+  applyDayjsLocale(locale)
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('lang', locale)
   }
