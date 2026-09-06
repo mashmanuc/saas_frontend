@@ -39,7 +39,7 @@
     <div v-if="reason" class="wb-remote__block" :class="`wb-remote__block--${reason.tone}`" role="status">
       <p class="wb-remote__reason">{{ reason.text }}</p>
       <p v-if="reason.hint" class="wb-remote__hint">{{ reason.hint }}</p>
-      <button type="button" class="wb-remote__refresh" @click="resolveAndConnect">
+      <button type="button" class="wb-remote__refresh" @click="refreshBoard">
         {{ t('winterboard.remote.refresh') }}
       </button>
     </div>
@@ -201,6 +201,12 @@ function tel(event: string, ctx: Record<string, unknown> = {}) {
   try { trackEvent(`wb.remote.${event}`, { board: boardId.value ?? null, ...ctx }) } catch { /* noop */ }
 }
 
+/**
+ * id з URL (/winterboard/:id/remote) відхилено сервером як чужий — далі
+ * шукаємо дошку ноутбука по акаунту, як універсальний /remote.
+ */
+let routeIdRejected = false
+
 const channel = useRemoteChannel({
   onState(s) {
     if (s.pair !== pair.value) { tel('state_foreign'); return }   // стан для іншої дошки / старої вкладки
@@ -214,6 +220,17 @@ const channel = useRemoteChannel({
     vibrate(15)
   },
   onError(code) {
+    // Стара адреса з id чужої дошки (живий урок 2026-09-06: телефон тримав
+    // /winterboard/<id>/remote від дошки іншого акаунта, а «Оновити» брав той
+    // самий id знову і знову). Один раз — без петлі (LAW §12) — перепитуємо,
+    // яка дошка відкрита на ноутбуці ПІД ЦИМ акаунтом, і йдемо туди.
+    if (code === 'forbidden' && props.id && !routeIdRejected) {
+      routeIdRejected = true
+      tel('fallback', { from: 'route_id', code })
+      channel.disconnect()
+      void resolveAndConnect()
+      return
+    }
     reasonCode.value = code
     if (code === 'forbidden') reasonKey.value = 'wrongAccount'
     else if (code === 'ws_4008' || code === 'ws_rejected') reasonKey.value = 'tooManyConnections'
@@ -308,7 +325,7 @@ const ptt = usePushToTalk({
 
 // ── Знайти дошку і підключитись ─────────────────────────────────────────
 async function resolveBoard(): Promise<string | null> {
-  if (props.id) {
+  if (props.id && !routeIdRejected) {
     boardId.value = props.id
     return props.id
   }
@@ -316,7 +333,12 @@ async function resolveBoard(): Promise<string | null> {
     const r = await winterboardApi.getActiveRemoteSession()
     boardId.value = r.session_id
     boardName.value = r.name || ''
-    tel('resolve', { found: true, via: 'api' })
+    tel('resolve', { found: true, via: 'api', after_route_id: routeIdRejected })
+    if (routeIdRejected && r.session_id !== props.id) {
+      // Старий id не має пережити перезавантаження сторінки: адреса стає
+      // універсальною. Без роутера — сторінка та сама, лише URL.
+      try { window.history.replaceState(null, '', '/remote') } catch { /* noop */ }
+    }
     return r.session_id
   } catch (err: any) {
     const status = err?.response?.status ?? err?.status
@@ -327,6 +349,12 @@ async function resolveBoard(): Promise<string | null> {
     tel('resolve', { found: false, via: 'api', status: status ?? 'network' })
     return null
   }
+}
+
+/** «Оновити» у блоці причини: на id-адресі це означає «знайди дошку ноутбука». */
+function refreshBoard(): void {
+  if (props.id) routeIdRejected = true
+  void resolveAndConnect()
 }
 
 async function resolveAndConnect() {

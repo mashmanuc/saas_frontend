@@ -122,6 +122,56 @@ describe('WBRemoteView v1.1', () => {
     expect(connect).toHaveBeenCalledWith(SID)
   })
 
+  // Живий урок 2026-09-06: телефон тримав /winterboard/<id>/remote від дошки
+  // ІНШОГО акаунта (стара вкладка), сервер відповідав forbidden, а «Оновити»
+  // брав той самий id знову. Підказка радила «зайди тим самим акаунтом», хоча
+  // акаунт був той самий — чужою була адреса.
+  describe('стара id-адреса чужої дошки', () => {
+    const STALE = 'e16e5e94-8a17-4867-a016-34d321604245'
+
+    it('forbidden на id-адресі → ОДИН раз перепитує активну дошку по API, підключається до неї, без «іншого акаунта»', async () => {
+      const w = mountView({ id: STALE })
+      await flushPromises()
+      expect(connect).toHaveBeenLastCalledWith(STALE)
+      expect(getActiveRemoteSession).not.toHaveBeenCalled()
+
+      onErrorCb?.('forbidden')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(disconnect).toHaveBeenCalledTimes(1)
+      expect(connect).toHaveBeenLastCalledWith(SID)
+      expect(w.text()).not.toContain(MSG.wrongAccount)
+      expect(w.text()).toContain('Алгебра 8-А')
+    })
+
+    it('forbidden, а активної дошки нема (404) → «не відкрита жодна дошка»; повторний forbidden НЕ крутить петлю', async () => {
+      getActiveRemoteSession.mockRejectedValue({ response: { status: 404 } })
+      const w = mountView({ id: STALE })
+      await flushPromises()
+      onErrorCb?.('forbidden')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(w.text()).toContain(MSG.noActiveBoard)
+      expect(w.text()).not.toContain(MSG.wrongAccount)
+
+      onErrorCb?.('forbidden')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)   // без другого кола
+      expect(w.text()).toContain(MSG.wrongAccount)              // тепер чесно: і id чужий, і своєї немає
+    })
+
+    it('«Оновити» на id-адресі шукає дошку ноутбука по API, а не тримається за id', async () => {
+      const w = mountView({ id: STALE })
+      await flushPromises()
+      onErrorCb?.('ws_rejected')          // будь-яка причина, щоб з'явився блок з «Оновити»
+      await nextTick()
+      await w.find('.wb-remote__refresh').trigger('click')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(connect).toHaveBeenLastCalledWith(SID)
+    })
+  })
+
   it('дошка не відкрита (404) → словами «не відкрита жодна дошка», без connect, є «Оновити»', async () => {
     getActiveRemoteSession.mockRejectedValueOnce({ response: { status: 404 } })
     const w = mountView()
