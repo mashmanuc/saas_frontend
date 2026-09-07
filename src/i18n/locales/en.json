@@ -7358,6 +7358,7 @@
       "student": "Student",
       "students": "Students",
       "noStudents": "No students connected",
+      "stage": "Stage: {title}",
       "online": "Online",
       "offline": "Waiting",
       "kick": "Remove student",

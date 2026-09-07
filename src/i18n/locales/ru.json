@@ -7306,6 +7306,7 @@
       "studentList": "Подключённые ученики",
       "students": "Ученики",
       "noStudents": "Нет подключённых учеников",
+      "stage": "Этап: {title}",
       "kick": "Удалить ученика",
       "roleTeacher": "Учитель",
       "roleStudent": "Ученик",

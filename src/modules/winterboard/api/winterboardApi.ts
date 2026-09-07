@@ -198,6 +198,31 @@ export interface WBConnectedUser {
   role: WBClassroomRole
   cursor_color: string
   is_online: boolean
+  /** Г2 «Співведучий уроку»: назва поточного етапу плану — ЛИШЕ в рядку
+   *  власника (учителя) і лише коли прапорець власника увімкнений і план є.
+   *  Учневі потрібен один рядок, без другого polling-у (рішення власника §0 п.6). */
+  active_stage_title?: string
+}
+
+/** Г2: план уроку на сесії — контракт TZ_G2_LESSON_PLAN_PERSISTED §1.2. */
+export interface WBLessonPlanStage {
+  id: string
+  kind: 'motivation' | 'explanation' | 'example' | 'practice' | 'check' | 'summary'
+  title: string
+  goal?: string
+  status: 'pending' | 'active' | 'done' | 'skipped'
+}
+export interface WBLessonPlan {
+  version: 1
+  objective: string
+  subject: string
+  stages: WBLessonPlanStage[]
+}
+export interface WBLessonPlanResponse {
+  enabled: boolean
+  plan: WBLessonPlan | null
+  active_stage_id: string | null
+  next_stage_id: string | null
 }
 
 /**
@@ -333,6 +358,22 @@ export const winterboardApi = {
 
   deleteSession(id: string): Promise<void> {
     return apiClient.delete(`${BASE}/sessions/${id}/`)
+  },
+
+  // ── Г2 «Співведучий уроку»: план уроку на сесії ──────────────────────
+  // Права — на сервері: читає учасник, пише лише власник (учень → 403);
+  // власник поза прапорцем → 404 на все (клієнт трактує як enabled:false, мовчки).
+  getLessonPlan(id: string): Promise<WBLessonPlanResponse> {
+    return apiClient.get(`${BASE}/sessions/${id}/lesson-plan/`).then((r: any) => r.data ?? r)
+  },
+  putLessonPlan(id: string, plan: unknown): Promise<WBLessonPlanResponse> {
+    return apiClient.put(`${BASE}/sessions/${id}/lesson-plan/`, plan).then((r: any) => r.data ?? r)
+  },
+  postLessonPlanStage(id: string, action: 'next' | 'prev' | 'skip'): Promise<WBLessonPlanResponse> {
+    return apiClient.post(`${BASE}/sessions/${id}/lesson-plan/stage/`, { action }).then((r: any) => r.data ?? r)
+  },
+  deleteLessonPlan(id: string): Promise<void> {
+    return apiClient.delete(`${BASE}/sessions/${id}/lesson-plan/`).then(() => undefined)
   },
 
   duplicateSession(id: string): Promise<WBSessionDetailResponse> {

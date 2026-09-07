@@ -211,6 +211,9 @@
               :aria-label="uiText.minimizeLabel"
             >–</button>
           </div>
+          <!-- Г2-г: план уроку — лише коли сервер сказав «увімкнено» і дошка відкрита.
+               Без прапорця блоку немає і запитів немає (ТЗ §3.1). -->
+          <LessonPlanPanel v-if="lessonPlan.enabled && currentBoardId" :lp="lessonPlan" />
 
           <div ref="aiThreadEl" class="cmdp-ai-thread">
             <template v-for="(it, i) in aiThread" :key="i">
@@ -323,8 +326,13 @@ import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
 import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardRoute'
-// ⏳ Гейт Г1 «Співведучий уроку» — тимчасово, до Г2 (див. lessonPlan.js).
-import { loadPlan, savePlan, looksLikePlan } from './lessonPlan'
+// ⏳ Гейт Г1: клієнтська копія плану (sessionStorage) — перехідний запасний шлях
+// для parse-контексту, доки серверний план не став єдиним (рішення власника §0 п.4).
+import { loadPlan } from './lessonPlan'
+// Г2-г: план уроку на сесії — стан лише з сервера; панель над чатом.
+import { reactive } from 'vue'
+import { useLessonPlan } from './lessonPlanApi'
+import LessonPlanPanel from './LessonPlanPanel.vue'
 import {
   EN_GUIDE_NAVIGATION,
   describeEnGuideRoute,
@@ -413,6 +421,12 @@ const currentBoardId = computed(() => resolveBoardId({
   params: route.params,
   classroomBoardId: classroomBoardId.value,
 }))
+// Г2-г: серверний план поточної дошки. reactive() розгортає ref-и, щоб у шаблоні
+// й у пропі жити без .value. Завантаження — при кожній зміні дошки; 404 (прапорець
+// вимкнений) → enabled=false МОВЧКИ, блок не монтується, запитів більше немає.
+const lessonPlan = reactive(useLessonPlan())
+watch(currentBoardId, (id) => { lessonPlan.load(id) }, { immediate: true })
+
 const enabled = computed(() => {
   if (import.meta.env.VITE_FEATURE_UIA !== 'true' || !auth.user) return false
   // 2026-07-27 (зауваження власника): в staff-АДМІНЦІ Інтегралик недоречний —
@@ -1106,12 +1120,16 @@ async function askAi(phrase) {
       // Г1: модель склала план уроку. `parse ≠ execute` — сервер лише
       // ЗАПРОПОНУВАВ структуру, кладемо її ми. Підтвердження не питаємо:
       // план видимий, редагований і нічого на дошці не міняє.
-      if (looksLikePlan(r.plan) && savePlan(currentBoardId.value, r.plan)) {
-        aiPush({ kind: 'bot', text: r.explain || 'План уроку складено.' })
+      // Г2-г: Інтегралик лише ПРОПОНУЄ. Чернетка з'являється в панелі над чатом,
+      // на сервер іде тільки кнопкою «Зберегти план» (рішення власника: план
+      // створює і змінює вчитель явно; Інтегралик етапи не перемикає).
+      if (lessonPlan.enabled && lessonPlan.proposeDraft(r.plan)) {
+        aiPush({ kind: 'bot', text: (r.explain || 'Склав план уроку.') + ' Перегляньте його в панелі вище і натисніть «Зберегти план».' })
+      } else if (!lessonPlan.enabled) {
+        aiPush({ kind: 'bot', text: 'План уроку для цієї дошки недоступний.' })
       } else {
-        // Мовчазний провал тут — найгірший: учитель думав би, що план є,
-        // а Інтегралик вів би урок без нього (LAW §12).
-        aiPush({ kind: 'bot', text: 'План не вдалося зберегти — урок піде без нього.' })
+        // Мовчазний провал тут — найгірший: учитель думав би, що план є (LAW §12).
+        aiPush({ kind: 'bot', text: 'План не вдалося прочитати — спробуйте сформулювати ще раз.' })
       }
     } else if (r.status === 'board_action_plan') {
       await runPlan(r)   // Phase 2.10: сценарій з кількох дій

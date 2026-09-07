@@ -163,6 +163,13 @@
         <span class="wb-student-badge__status">
           {{ connectedTeacher.is_online ? t('winterboard.classroom.online') : t('winterboard.classroom.offline') }}
         </span>
+        <!-- Г2-г: назва поточного етапу — ОДИН рядок, без кнопок і без другого
+             polling-у: поле active_stage_title їде в рядку власника тієї самої
+             відповіді /participants/, яку учень і так опитує раз на 10 с. Немає
+             плану або прапорець власника вимкнений — поля немає, рядка немає. -->
+        <span v-if="connectedTeacher.active_stage_title" class="wb-student-badge__stage">
+          {{ t('winterboard.classroom.stage', { title: connectedTeacher.active_stage_title }) }}
+        </span>
       </div>
 
       <!-- Right: Actions -->
