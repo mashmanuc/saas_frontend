@@ -326,9 +326,6 @@ import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
 import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardRoute'
-// ⏳ Гейт Г1: клієнтська копія плану (sessionStorage) — перехідний запасний шлях
-// для parse-контексту, доки серверний план не став єдиним (рішення власника §0 п.4).
-import { loadPlan } from './lessonPlan'
 // Г2-г: план уроку на сесії — стан лише з сервера; панель над чатом.
 import { reactive } from 'vue'
 import { useLessonPlan } from './lessonPlanApi'
@@ -1093,10 +1090,8 @@ async function askAi(phrase) {
     try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
   }
   try {
-    // Г1: план уроку їде разом із фразою. `loadPlan` сам чистить сміття у
-    // сховищі й віддає null, тож без плану запит дослівно такий, як був.
-    const lessonPlan = loadPlan(currentBoardId.value)
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage(), lessonPlan)
+    // Г2-д: план уроку живе на сервері — parse читає його з сесії сам.
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage())
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })

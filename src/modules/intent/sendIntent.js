@@ -31,7 +31,7 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null, lessonPlan = null) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
     context: {
@@ -50,12 +50,8 @@ export async function parseAi(phrase, boardId = null, history = [], boardSummary
       // Питання було не про дошку. Маршрут у палітри був завжди (useRoute),
       // просто не доїжджав до моделі.
       page,
-      // Гейт Г1 «Співведучий уроку» (ТЗ 2026-09-06). Шлемо САМУ СТРУКТУРУ
-      // плану, а не готовий текст блоку: текст із клієнта потрапляв би просто
-      // в СИСТЕМНИЙ промпт, тобто ним можна було б дописувати системі
-      // інструкції. Сервер валідує структуру й збирає текст сам.
-      // ⏳ Поле тимчасове: на Г2 план читається з сесії, і воно зникне.
-      lesson_plan: lessonPlan,
+      // Г2-д: план уроку клієнт більше НЕ шле — сервер читає його зі збереженої
+      // сесії за board_id (TZ_G2 §4). Зайвий ключ тут ігнорується сервером.
     },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })

@@ -150,11 +150,12 @@ describe('кнопки етапів', () => {
 })
 
 describe('чернетка Інтегралика', () => {
+  // Чернетка від Інтегралика — формат Г2 (резолвер lesson_plan_create, Г2-д).
   const g1 = {
-    v: 1, rev: 0, subject: 'math', topic: 'Дроби', goal: 'Додавати дроби', current_stage: 'explanation',
+    version: 1, subject: 'math', objective: 'Дроби: додавати дроби',
     stages: [
-      { id: 'explanation', role: 'explanation', goal: 'пояснити', status: 'active' },
-      { id: 'practice', role: 'practice', goal: 'три задачі', status: 'planned' },
+      { id: 'explanation', kind: 'explanation', title: 'Пояснення', goal: 'пояснити', status: 'active' },
+      { id: 'practice', kind: 'practice', title: 'Практика', goal: 'три задачі', status: 'pending' },
     ],
   }
 
@@ -173,7 +174,7 @@ describe('чернетка Інтегралика', () => {
     await lp.load('b1')
     lp.proposeDraft(g1)
     expect(await lp.saveDraft()).toBe(true)
-    expect(api.putLessonPlan).toHaveBeenCalledWith('b1', g1)   // формат Г1 як є — адаптер на сервері
+    expect(api.putLessonPlan).toHaveBeenCalledWith('b1', g1)
     expect(lp.draft.value).toBeNull()
   })
 
@@ -185,9 +186,9 @@ describe('чернетка Інтегралика', () => {
     expect(api.putLessonPlan).not.toHaveBeenCalled()
   })
 
-  it('draftView читає обидва формати', () => {
+  it('draftView читає формат Г2 (і толерантний до старих полів)', () => {
     const v = draftView(g1)
-    expect(v.objective).toContain('Додавати')
+    expect(v.objective).toContain('додавати')
     expect(v.stages[0]).toMatchObject({ kind: 'explanation', title: 'Пояснення', status: 'active' })
     expect(v.stages[1].status).toBe('pending')
     expect(draftView(resp().plan).stages[0].title).toBe('Пояснення')
