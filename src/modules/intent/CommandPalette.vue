@@ -1118,7 +1118,12 @@ async function askAi(phrase) {
       // Г2-г: Інтегралик лише ПРОПОНУЄ. Чернетка з'являється в панелі над чатом,
       // на сервер іде тільки кнопкою «Зберегти план» (рішення власника: план
       // створює і змінює вчитель явно; Інтегралик етапи не перемикає).
-      if (lessonPlan.enabled && lessonPlan.proposeDraft(r.plan)) {
+      if (lessonPlan.enabled && r.compose) {
+        // Теми у фразі не було: сервер нічого не вигадував і моделі не питав.
+        // Панель відкриє порожню форму з курсором у полі мети.
+        lessonPlan.requestCompose()
+        aiPush({ kind: 'bot', text: r.explain })
+      } else if (lessonPlan.enabled && lessonPlan.proposeDraft(r.plan)) {
         aiPush({ kind: 'bot', text: (r.explain || 'Склав план уроку.') + ' Перегляньте його в панелі вище і натисніть «Зберегти план».' })
       } else if (!lessonPlan.enabled) {
         aiPush({ kind: 'bot', text: 'План уроку для цієї дошки недоступний.' })

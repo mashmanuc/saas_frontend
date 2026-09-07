@@ -11,7 +11,7 @@
  *   • 409 показуємо повідомленням (`lp.notice`), не ховаємо;
  *   • без прапорця батько цей блок не монтує взагалі (`lp.enabled`).
  */
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { defaultPlan, draftView, KIND_LABELS } from './lessonPlanApi'
 
 const props = defineProps({
@@ -48,6 +48,17 @@ async function submitCompose() {
   if (ok) cancelCompose()
 }
 
+const objectiveEl = ref(null)
+
+// Сигнал від Інтегралика: «намір без теми» — відкрити порожню форму й
+// поставити курсор у мету. Фокус тут не косметика: у формі п'ять полів,
+// і без нього вчитель мусив би шукати, куди писати те єдине, чого бракує.
+watch(() => props.lp.composeTick, (tick) => {
+  if (!tick) return
+  startCompose()
+  nextTick(() => objectiveEl.value?.focus())
+})
+
 const draft = computed(() => draftView(props.lp.draft))
 
 // «Наступний» на останньому етапі — завершити урок: підпис чесний, дія та сама.
@@ -80,6 +91,7 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
     <div v-else-if="composing" class="lpp-compose">
       <div class="lpp-title">Новий план уроку</div>
       <input
+        ref="objectiveEl"
         v-model="form.objective" class="lpp-input" type="text" maxlength="200"
         placeholder="Мета уроку: чого учні мають навчитись"
         aria-label="Мета уроку"

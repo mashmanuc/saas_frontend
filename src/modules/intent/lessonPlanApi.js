@@ -78,6 +78,7 @@ export function useLessonPlan(api = winterboardApi) {
   const activeStageId = ref(null)
   const nextStageId = ref(null)
   const draft = ref(null)          // пропозиція Інтегралика, ще НЕ збережена
+  const composeTick = ref(0)       // сигнал панелі: відкрий порожню форму
   const busy = ref(false)
   const notice = ref('')           // коротке нейтральне повідомлення (409)
   const error = ref('')            // справжня помилка (5xx, мережа)
@@ -159,6 +160,13 @@ export function useLessonPlan(api = winterboardApi) {
     finally { busy.value = false }
   }
 
+  /**
+   * Наміру без теми сервер НЕ вигадує тему і навіть не питає модель: віддає
+   * `compose`. Панель відкриває порожню форму й ставить курсор у мету.
+   * Лічильник, а не булеве: друге таке саме прохання теж має спрацювати.
+   */
+  function requestCompose() { draft.value = null; composeTick.value += 1; return true }
+
   /** Інтегралик запропонував план: показати, НЕ зберігати (рішення власника). */
   function proposeDraft(raw) { draft.value = draftView(raw) ? raw : null; return !!draft.value }
   function discardDraft() { draft.value = null }
@@ -171,7 +179,9 @@ export function useLessonPlan(api = winterboardApi) {
 
   return {
     boardId, enabled, plan, activeStageId, nextStageId, draft, busy, notice, error,
+    composeTick,
     activeStage, isCompleted, canPrev, canNext,
     load, save, stage, remove, proposeDraft, discardDraft, saveDraft, reset,
+    requestCompose,
   }
 }

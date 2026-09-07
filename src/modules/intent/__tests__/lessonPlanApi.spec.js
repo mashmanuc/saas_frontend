@@ -195,6 +195,19 @@ describe('чернетка Інтегралика', () => {
     expect(draftView(null)).toBeNull()
   })
 
+  it('requestCompose — сигнал «порожня форма», без запитів і без чернетки', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    lp.proposeDraft(g1)
+    expect(lp.requestCompose()).toBe(true)
+    expect(lp.draft.value).toBeNull()        // чернетка поступається формі
+    expect(lp.composeTick.value).toBe(1)
+    lp.requestCompose()
+    expect(lp.composeTick.value).toBe(2)     // друге прохання теж має спрацювати
+    expect(api.putLessonPlan).not.toHaveBeenCalled()
+  })
+
   it('сміття — не чернетка', () => {
     const lp = useLessonPlan(fakeApi())
     expect(lp.proposeDraft({ nope: true })).toBe(false)
