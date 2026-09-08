@@ -91,6 +91,13 @@ export const PACING_MODES = [
 
 export interface GenerateLessonRequest {
   topics:               string[]
+  /**
+   * Тип уроку — заява вчителя. Від нього залежить каркас плану і скільки тем
+   * можна взяти. Шлемо ЗАВЖДИ: сервер не має домислювати `intro` замість
+   * вибору, якого не було (саме так виникала відмова «оберіть одну тему»
+   * у вчителя, який тем ще не обирав).
+   */
+  lesson_type:          'intro' | 'practice' | 'control' | 'generalize' | 'repeat'
   task_count:           number
   theme:                string
   diff_profile?:        string

@@ -15,13 +15,39 @@
 
       <form class="lc-form" @submit.prevent="handleGenerate">
 
+        <!-- ── Тип уроку ────────────────────────────────────────────────────── -->
+        <!-- Стоїть ПЕРЕД темами свідомо: від типу залежить, скільки тем можна
+             взяти, тож питати його після вибору тем означало б стирати вже
+             зроблену роботу вчителя. -->
+        <section class="lc-section">
+          <h2 class="lc-section__title">1. Тип уроку</h2>
+          <p class="lc-section__hint">Від типу залежить каркас плану і скільки тем брати.</p>
+
+          <div class="lc-types">
+            <button
+              v-for="opt in LESSON_TYPE_OPTIONS"
+              :key="opt.value"
+              type="button"
+              class="lc-type-chip"
+              :class="{ 'lc-type-chip--active': lessonType === opt.value }"
+              :aria-pressed="lessonType === opt.value ? 'true' : 'false'"
+              @click="pickType(opt.value)"
+            >
+              <span class="lc-type-chip__label">{{ opt.label }}</span>
+              <span class="lc-type-chip__hint">{{ opt.hint }}</span>
+            </button>
+          </div>
+          <p v-if="typeNotice" class="lc-notice">{{ typeNotice }}</p>
+          <p v-if="errors.lesson_type" class="lc-error">{{ errors.lesson_type }}</p>
+        </section>
+
         <!-- ── Тема / теми ──────────────────────────────────────────────────── -->
         <section class="lc-section">
           <h2 class="lc-section__title">
-            1. Оберіть теми
-            <span class="lc-badge">{{ selectedTopics.length }} / {{ MAX_TOPICS }}</span>
+            2. Оберіть теми
+            <span class="lc-badge">{{ selectedTopics.length }} / {{ topicsNeeded || '—' }}</span>
           </h2>
-          <p class="lc-section__hint">Оберіть від 1 до {{ MAX_TOPICS }} тем. Задачі беруться з усіх вибраних тем.</p>
+          <p class="lc-section__hint">{{ topicsHint }}</p>
 
           <div class="lc-topics">
             <button
@@ -31,7 +57,7 @@
               class="lc-topic-chip"
               :class="{
                 'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                'lc-topic-chip--disabled': !selectedTopics.includes(topic.value) && selectedTopics.length >= MAX_TOPICS,
+                'lc-topic-chip--disabled': !canPick(topic.value),
               }"
               @click="toggleTopic(topic.value)"
             >
@@ -43,7 +69,7 @@
 
         <!-- ── Кількість задач ──────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">2. Кількість задач</h2>
+          <h2 class="lc-section__title">3. Кількість задач</h2>
           <div class="lc-task-count">
             <input
               v-model.number="taskCount"
@@ -70,7 +96,7 @@
 
         <!-- ── Тема оформлення ──────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">3. Стиль карток</h2>
+          <h2 class="lc-section__title">4. Стиль карток</h2>
           <div class="lc-themes">
             <button
               v-for="t in THEMES"
@@ -88,7 +114,7 @@
 
         <!-- ── Фон дошки ────────────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">4. Фон дошки</h2>
+          <h2 class="lc-section__title">5. Фон дошки</h2>
           <p class="lc-section__hint">Застосовується до всіх сторінок уроку, включно з теорією.</p>
 
           <!-- Режим: один колір / різнокольорові -->
@@ -222,12 +248,15 @@
           <button
             type="submit"
             class="lc-btn-generate"
-            :disabled="isLoading || selectedTopics.length === 0"
+            :disabled="isLoading || !!focusProblem"
           >
             <span v-if="isLoading" class="lc-spinner" />
             <span v-else>✨</span>
             {{ isLoading ? 'Генерую урок…' : 'Згенерувати урок' }}
           </button>
+
+          <!-- Заблокована кнопка без причини — та сама глуха стіна, лише мовчазна. -->
+          <p v-if="focusProblem" class="lc-hint-blocked">{{ focusProblem }}</p>
 
           <p v-if="errors.general" class="lc-error lc-error--center">
             {{ errors.general }}
@@ -249,11 +278,19 @@ import {
   PACING_MODES,
   lessonConstructorApi,
 } from '../api/lessonConstructorApi'
+import {
+  LESSON_TYPE_OPTIONS,
+  canPickTopic,
+  focusIssue,
+  isBlockType,
+  reconcileTopics,
+  topicsRequiredFor,
+  type LessonType,
+} from '../lessonTypeRules'
 
 const router = useRouter()
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const MAX_TOPICS = 5
 
 const BG_PRESETS = [
   { value: '#ffffff', label: 'Білий (чистий)' },
@@ -287,6 +324,10 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 // ── Form state ─────────────────────────────────────────────────────────────
+// Порожній рядок = тип ще не обрано. Замовчування тут було б брехнею: сервер
+// саме через мовчазний `intro` і відмовляв учителю, який нічого не обирав.
+const lessonType      = ref<LessonType | ''>('')
+const typeNotice      = ref<string | null>(null)
 const selectedTopics  = ref<string[]>([])
 const taskCount       = ref(4)
 const theme           = ref('nmt_exam')   // default = перший стиль у THEMES (visual прибрано)
@@ -346,21 +387,59 @@ const activeBgLabel = computed(
   () => BG_PRESETS.find(b => b.value === boardBg.value)?.label ?? boardBg.value
 )
 
-// ── Topic toggle ───────────────────────────────────────────────────────────
+// ── Тип уроку і теми ───────────────────────────────────────────────────────
+const topicsNeeded = computed(() => topicsRequiredFor(lessonType.value))
+
+const topicsHint = computed(() => {
+  if (!lessonType.value) return 'Спершу оберіть тип уроку — від нього залежить, скільки тем брати.'
+  return isBlockType(lessonType.value)
+    ? 'Оберіть дві споріднені теми одного розділу — між ними буде що узагальнювати.'
+    : 'Оберіть одну тему: урок про неї.'
+})
+
+/** Що заважає натиснути «Згенерувати». `null` = нічого. */
+const focusProblem = computed(() => focusIssue(lessonType.value, selectedTopics.value))
+
+function canPick(topic: string): boolean {
+  return canPickTopic(lessonType.value, selectedTopics.value, topic)
+}
+
+/**
+ * Зміна типу може зробити вже обрані теми несумісними. Чистимо — але ЗАВЖДИ
+ * з поясненням: вибір, що зник без слів, читається як поламаний інтерфейс.
+ */
+function pickType(value: LessonType) {
+  lessonType.value = value
+  const { topics, notice } = reconcileTopics(value, selectedTopics.value)
+  selectedTopics.value = topics
+  typeNotice.value = notice
+  delete errors.value.lesson_type
+}
+
 function toggleTopic(value: string) {
   const idx = selectedTopics.value.indexOf(value)
   if (idx >= 0) {
     selectedTopics.value.splice(idx, 1)
-  } else if (selectedTopics.value.length < MAX_TOPICS) {
-    selectedTopics.value.push(value)
+    typeNotice.value = null
+    return
   }
+  if (!canPick(value)) return
+  selectedTopics.value.push(value)
+  typeNotice.value = null
 }
 
 // ── Validation ─────────────────────────────────────────────────────────────
 function validate(): boolean {
   errors.value = {}
-  if (selectedTopics.value.length === 0) {
-    errors.value.topics = 'Оберіть хоча б одну тему'
+  if (!lessonType.value) {
+    errors.value.lesson_type = 'Оберіть тип уроку'
+    return false
+  }
+  // Те саме правило, що на сервері, але ДО запиту: інакше вчитель дізнається
+  // про помилку з 400-ки (так і сталося 2026-09-08).
+  const problem = focusIssue(lessonType.value, selectedTopics.value)
+  if (problem) {
+    errors.value.topics = problem
     return false
   }
   if (taskCount.value < 1 || taskCount.value > 30) {
@@ -380,6 +459,7 @@ async function handleGenerate() {
   try {
     const result = await lessonConstructorApi.generate({
       topics:                selectedTopics.value,
+      lesson_type:           lessonType.value as LessonType,
       task_count:            taskCount.value,
       theme:                 theme.value,
       board_bg:              !multicolorBg.value && boardBg.value !== '#ffffff' ? boardBg.value : undefined,
@@ -470,6 +550,22 @@ async function handleGenerate() {
   border-radius: 12px;
   padding: 1.5rem;
 }
+
+.lc-types { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.lc-type-chip {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 8px 14px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--lc-border, #d7dde5); background: #fff; font: inherit;
+}
+.lc-type-chip:hover { border-color: #0f766e; }
+.lc-type-chip--active { border-color: #0f766e; background: #0f766e; color: #fff; }
+.lc-type-chip__label { font-weight: 600; }
+.lc-type-chip__hint { font-size: 12px; opacity: .75; }
+.lc-notice {
+  margin: 8px 0 0; padding: 6px 10px; border-radius: 8px;
+  background: #fff6db; font-size: 13px;
+}
+.lc-hint-blocked { margin: 8px 0 0; text-align: center; font-size: 13px; opacity: .8; }
 
 .lc-section__title {
   font-size: 1rem;
