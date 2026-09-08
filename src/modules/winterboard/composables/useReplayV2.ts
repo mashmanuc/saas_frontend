@@ -16,6 +16,7 @@ import { PublicSnapshotProvider } from '../engine/snapshot/PublicSnapshotProvide
 import { NullSnapshotProvider, type ReplaySnapshotProvider } from '../engine/snapshot/SnapshotProvider'
 import {
   fetchPublicReplayByToken,
+  fetchOwnerReplayPlayback,
   fetchReplayTimeline,
   fetchLessonMarkers,
   reportReplayView,
@@ -50,6 +51,8 @@ export interface UseReplayV2Options {
    * Rollout: активується через ?replay=v2-public feature flag.
    */
   usePublicSnapshots?: boolean
+  /** Власник дивиться private replay за id, без public token. */
+  ownerReplayId?: string
 }
 
 export function useReplayV2(sessionId: string, publicToken?: string, options: UseReplayV2Options = {}) {
@@ -135,7 +138,9 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       const timeout = setTimeout(() => controller.abort(), 15_000)
       let timeline: Awaited<ReturnType<typeof fetchReplayTimeline>>
       try {
-        timeline = publicToken
+        timeline = options.ownerReplayId
+          ? await fetchOwnerReplayPlayback(options.ownerReplayId, controller.signal)
+          : publicToken
           ? await fetchPublicReplayByToken(publicToken)
           : await fetchReplayTimeline(sessionId, { limit: 2000 }, controller.signal)
       } finally {

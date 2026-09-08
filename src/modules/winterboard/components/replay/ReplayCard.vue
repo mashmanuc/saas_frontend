@@ -84,7 +84,7 @@
           ▶ {{ t('winterboard.replayList.actions.watch') }}
         </button>
         <button
-          v-if="replay.public_token && replay.status !== 'trashed'"
+          v-if="replay.visibility !== 'private' && replay.public_token && replay.status !== 'trashed'"
           type="button"
           class="replay-card__btn"
           :class="{ 'replay-card__btn--copied': copied }"

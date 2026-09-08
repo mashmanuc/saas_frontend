@@ -257,6 +257,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
+import { getReplay } from '../api/replayLifecycleApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { useReplayV2 } from '../composables/useReplayV2'
@@ -496,14 +497,15 @@ async function enterReplayMode(): Promise<void> {
   //   ?replay=v2      → V2 + AuthSnapshotProvider / NullProvider (explicit: no public snap)
   //   ?replay=v2-public → V2 + PublicSnapshotProvider (explicit Phase B — same as default now)
   //   ?replay=v1      → V1 legacy engine [ROLLBACK ESCAPE HATCH — remove after Phase C soak]
-  const token = route.params.token as string
+  const token = route.params.token as string | undefined
+  const ownerReplayId = route.params.replayId as string | undefined
   const replayFlag = route.query['replay']
   const useV1 = replayFlag === 'v1'  // explicit rollback only
   // Public snapshots = on by default; off only for explicit ?replay=v2 (auth owner view)
-  const usePublicSnapshots = !useV1 && replayFlag !== 'v2'
-  replay = useV1
+  const usePublicSnapshots = !ownerReplayId && !useV1 && replayFlag !== 'v2'
+  replay = useV1 && !ownerReplayId
     ? useReplay(replaySessionId.value, token)
-    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots })
+    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots, ownerReplayId })
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
@@ -826,8 +828,9 @@ function handleDownload(): void {
 // ── Lifecycle ──
 
 onMounted(async () => {
-  const token = route.params.token as string
-  if (!token) {
+  const token = route.params.token as string | undefined
+  const ownerReplayId = route.params.replayId as string | undefined
+  if (!token && !ownerReplayId) {
     loadError.value = {
       title: t('winterboard.public.notFound'),
       message: t('winterboard.public.invalidLink'),
@@ -837,8 +840,12 @@ onMounted(async () => {
   }
 
   try {
-    // Fetch public session data from API
-    const data = await winterboardApi.getPublicSession(token) as unknown as WBSession
+    // Private replay іде тільки авторизованим owner route. Публічний token
+    // як і раніше не несе cookie/Authorization і лишається CDN-cacheable.
+    const replayMeta = ownerReplayId ? await getReplay(ownerReplayId) : null
+    const data = ownerReplayId
+      ? await winterboardApi.getSession(replayMeta!.source_session!) as unknown as WBSession
+      : await winterboardApi.getPublicSession(token!) as unknown as WBSession
 
     // Hydrate store — store is SSOT, no shadow state
     store.hydrateFromSession(data)
@@ -846,7 +853,9 @@ onMounted(async () => {
 
     // allow_download is API-only field, not part of store state
     allowDownload.value = (data as unknown as Record<string, unknown>).allow_download === true
-    ownerName.value = (data as unknown as Record<string, string>).owner ?? ''
+    ownerName.value = ownerReplayId
+      ? ''
+      : (data as unknown as Record<string, string>).owner ?? ''
     sessionCreatedAt.value = (data as unknown as { created_at?: string }).created_at ?? null
 
     const sessionId = data.id

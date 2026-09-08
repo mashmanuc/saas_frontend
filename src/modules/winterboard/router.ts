@@ -159,6 +159,13 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard', public: true, requiresAuth: false },
   },
   {
+    path: '/winterboard/replay/:replayId',
+    name: 'winterboard-replay-owner',
+    component: () => import('./views/WBPublicView.vue'),
+    props: true,
+    meta: { title: 'Мій запис уроку', roles: ['tutor'] },
+  },
+  {
     // Replay Lifecycle v4.1: 🪦 landing для trashed replays (HTTP 410 Gone)
     path: '/winterboard/replay-gone',
     name: 'winterboard-replay-gone',

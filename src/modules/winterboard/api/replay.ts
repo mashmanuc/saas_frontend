@@ -43,6 +43,17 @@ export async function fetchReplayTimeline(
   )
 }
 
+/** Авторизований playback конкретного запису його власника. */
+export async function fetchOwnerReplayPlayback(
+  replayId: string,
+  signal?: AbortSignal,
+): Promise<ReplayTimeline> {
+  return apiClient.get<ReplayTimeline>(
+    `${BASE}/replays/${replayId}/playback/`,
+    signal ? { signal } : undefined,
+  )
+}
+
 // ─── Record single operation ───────────────────────────────────────────────
 
 /**

@@ -435,16 +435,13 @@ function toggleMenu(id: string) {
 
 function handleOpen(replay: Replay) {
   openMenuId.value = null
-  if (!replay.public_token) {
-    notifyError(t('winterboard.replayList.errors.cannotOpen'))
-    return
-  }
-  const url = `${window.location.origin}/winterboard/public/${replay.public_token}`
+  const url = `${window.location.origin}/winterboard/replay/${replay.id}`
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function handleShare(replay: Replay) {
   openMenuId.value = null
+  if (replay.visibility === 'private') return
   const token = replay.public_token
   if (!token) return
   const url = `${window.location.origin}/winterboard/public/${token}`
