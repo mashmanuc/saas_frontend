@@ -329,6 +329,8 @@ import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardR
 // Г2-г: план уроку на сесії — стан лише з сервера; панель над чатом.
 import { reactive } from 'vue'
 import { useLessonPlan } from './lessonPlanApi'
+// Той самий словник, що в Конструкторі: два списки типів розійшлися б за тиждень.
+import { LESSON_TYPE_OPTIONS } from '@/modules/lesson_constructor/lessonTypeRules'
 import LessonPlanPanel from './LessonPlanPanel.vue'
 import {
   EN_GUIDE_NAVIGATION,
@@ -603,6 +605,13 @@ const cmdCreateBoard = {
 const cmdGenerateLesson = {
   id: 'generate-lesson', label: 'Згенерувати урок',
   params: [
+    // Тип — ПЕРШЕ питання, як і в Конструкторі: від нього залежить каркас
+    // плану. Без нього бекенд свідомо відмовляє (ТЗ 2026-09-08), бо мовчазний
+    // «intro» робив контрольну уроком нової теми.
+    {
+      key: 'lesson_type', label: 'Який це урок?', type: 'select', required: true,
+      options: LESSON_TYPE_OPTIONS.map(o => ({ value: o.value, label: o.label })),
+    },
     { key: 'topics', label: 'Тема уроку?', type: 'select', required: true, optionsFrom: fetchTopics },
     { key: 'task_count', label: 'Скільки задач? (1–30)', type: 'number', default: 4 },
     {
@@ -618,6 +627,7 @@ const cmdGenerateLesson = {
     type: 'Lesson',
     params: {
       topics: Array.isArray(v.topics) ? v.topics : [v.topics],
+      lesson_type: v.lesson_type,
       task_count: v.task_count,
       theme: v.theme,
       diff_profile: 'balanced',
