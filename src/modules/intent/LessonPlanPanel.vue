@@ -1,18 +1,23 @@
 <script setup>
 /**
- * Панель плану уроку для вчителя — Г2-г (ТЗ §3.1).
+ * Панель плану уроку для вчителя — Г2-г (ТЗ §3.1) + вибір типу уроку (Г3-2).
  *
  * Компактний блок над чатом Інтегралика. Стан — лише з сервера через
  * `useLessonPlan` (пропом `lp`, reactive): панель нічого не тримає сама.
  *
  * Правила, які тут не можна порушити:
  *   • етапи перемикає ЛИШЕ кнопка — Інтегралик цю панель не смикає;
- *   • чернетка від Інтегралика (`lp.draft`) стає планом лише після «Зберегти»;
+ *   • чернетка (від Інтегралика чи від типу уроку) стає планом лише після
+ *     «Зберегти»; до того не змінюється ні дошка, ні активний план, ні шаблон;
+ *   • тип уроку обирає ВЧИТЕЛЬ — ні модель, ні евристика з форми плану;
  *   • 409 показуємо повідомленням (`lp.notice`), не ховаємо;
  *   • без прапорця батько цей блок не монтує взагалі (`lp.enabled`).
+ *
+ * Учня це не стосується: у класній кімнаті палітри немає (`boardRoute.js`), і
+ * він бачить лише «Етап: …» у рядку вчителя.
  */
 import { ref, computed, nextTick, watch } from 'vue'
-import { defaultPlan, draftView, KIND_LABELS } from './lessonPlanApi'
+import { draftView, KIND_LABELS, LESSON_KINDS, LESSON_KIND_LABELS } from './lessonPlanApi'
 
 const props = defineProps({
   lp: { type: Object, required: true },
@@ -20,39 +25,102 @@ const props = defineProps({
 
 const MARK = { done: '✓', active: '●', pending: '○', skipped: '⊘' }
 
-// ── «Новий план»: мінімальна форма — мета + п'ять етапів, назви редагуються ──
+// ── Форма плану: два кроки ───────────────────────────────────────────────
+// 'start' — мета + тип уроку (без них не буде каркасу);
+// 'edit'  — каркас від сервера, ще редагований і ще НЕ збережений.
 const composing = ref(false)
+const step = ref('start')
 const form = ref(null)
+const kind = ref('')
+const objective = ref('')
+// Оголошено тут, а не в своїй секції нижче: `cancelCompose` його скидає, і
+// порядок оголошень у <script setup> значущий (TDZ уже клав прод 2026-09-03).
+const changing = ref(false)
+
+/** Каркас із сервера → редагована форма. Статуси лишаємо як прийшли. */
+function toForm(raw) {
+  const v = draftView(raw)
+  if (!v) return null
+  return {
+    version: 1,
+    objective: v.objective,
+    subject: raw?.subject || 'math',
+    stages: v.stages.map(s => ({ ...s, goal: s.goal || '' })),
+  }
+}
 
 function startCompose() {
-  form.value = defaultPlan('')
   composing.value = true
+  step.value = 'start'
+  kind.value = ''
+  objective.value = ''
+  form.value = null
 }
-function cancelCompose() { composing.value = false; form.value = null }
+function cancelCompose() {
+  composing.value = false
+  form.value = null
+  step.value = 'start'
+  changing.value = false
+}
 function removeFormStage(i) {
   if (!form.value || form.value.stages.length <= 1) return
   const wasActive = form.value.stages[i].status === 'active'
   form.value.stages.splice(i, 1)
   if (wasActive) form.value.stages[0].status = 'active'
 }
+
+const canBuild = computed(() => !!kind.value && objective.value.trim().length > 0)
+
+/**
+ * Каркас складає СЕРВЕР із (тип, мета): п'ять педагогічних каркасів живуть
+ * там одним SSOT. Дублювати їх тут означало б, що вони розійдуться.
+ * Нуль викликів моделі — це детермінована функція.
+ */
+async function buildSkeleton() {
+  if (!canBuild.value || props.lp.busy) return
+  const ok = await props.lp.requestKindDraft(kind.value, objective.value)
+  if (!ok) return
+  form.value = toForm(props.lp.draft)
+  props.lp.discardDraft()      // чернетка переїхала у форму — транспорт вільний
+  step.value = 'edit'
+}
+
 const canSubmit = computed(() =>
   !!form.value && form.value.objective.trim().length > 0
   && form.value.stages.every(s => s.title.trim().length > 0))
+
+/** Зберегти. Конверт `{plan, lesson_kind}` — тип і план одним записом. */
 async function submitCompose() {
   if (!canSubmit.value) return
   const ok = await props.lp.save({
     ...form.value,
     objective: form.value.objective.trim(),
     stages: form.value.stages.map(s => ({ ...s, title: s.title.trim(), goal: (s.goal || '').trim() })),
-  })
+  }, kind.value || null)
   if (ok) cancelCompose()
+}
+
+// ── «Змінити тип уроку» для наявного плану ───────────────────────────────
+// Ручна дія вчителя. Дошку не чіпає, матеріали не перегенеровує; у шаблон не
+// пише взагалі — туди веде лише окрема дія «Оновити шаблон» у кімнаті.
+async function pickKind(k) {
+  if (props.lp.busy) return
+  const ok = await props.lp.requestKindDraft(k)   // мета вже є на сервері
+  if (!ok) return
+  form.value = toForm(props.lp.draft)
+  props.lp.discardDraft()
+  kind.value = k
+  objective.value = form.value?.objective || ''
+  composing.value = true
+  step.value = 'edit'
+  changing.value = false
 }
 
 const objectiveEl = ref(null)
 
 // Сигнал від Інтегралика: «намір без теми» — відкрити порожню форму й
-// поставити курсор у мету. Фокус тут не косметика: у формі п'ять полів,
-// і без нього вчитель мусив би шукати, куди писати те єдине, чого бракує.
+// поставити курсор у мету. Фокус тут не косметика: без нього вчитель мусив би
+// шукати, куди писати те єдине, чого бракує.
 watch(() => props.lp.composeTick, (tick) => {
   if (!tick) return
   startCompose()
@@ -60,6 +128,9 @@ watch(() => props.lp.composeTick, (tick) => {
 })
 
 const draft = computed(() => draftView(props.lp.draft))
+
+const kindLabel = computed(() => LESSON_KIND_LABELS[props.lp.lessonKind] || '')
+const formKindLabel = computed(() => LESSON_KIND_LABELS[kind.value] || '')
 
 // «Наступний» на останньому етапі — завершити урок: підпис чесний, дія та сама.
 const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →' : 'Завершити урок')
@@ -87,14 +158,38 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
       </div>
     </div>
 
-    <!-- Форма «Новий план» -->
-    <div v-else-if="composing" class="lpp-compose">
+    <!-- Форма, крок 1: мета + тип уроку -->
+    <div v-else-if="composing && step === 'start'" class="lpp-compose">
       <div class="lpp-title">Новий план уроку</div>
       <input
         ref="objectiveEl"
+        v-model="objective" class="lpp-input" type="text" maxlength="200"
+        placeholder="Тема уроку: чого учні мають навчитись"
+        aria-label="Тема уроку"
+      >
+      <div class="lpp-kinds" role="radiogroup" aria-label="Тип уроку">
+        <button
+          v-for="k in LESSON_KINDS" :key="k"
+          class="lpp-kind" :class="{ 'lpp-kind--on': kind === k }"
+          type="button" role="radio" :aria-checked="kind === k"
+          @click="kind = k"
+        >{{ LESSON_KIND_LABELS[k] }}</button>
+      </div>
+      <div class="lpp-actions">
+        <button class="lpp-btn lpp-btn--primary" :disabled="!canBuild || lp.busy" @click="buildSkeleton">Скласти план</button>
+        <button class="lpp-btn" :disabled="lp.busy" @click="cancelCompose">Скасувати</button>
+      </div>
+    </div>
+
+    <!-- Форма, крок 2: каркас від сервера, ще не збережений -->
+    <div v-else-if="composing && step === 'edit'" class="lpp-compose">
+      <div class="lpp-title">
+        Новий план<span v-if="formKindLabel">: {{ formKindLabel }}</span>
+      </div>
+      <input
         v-model="form.objective" class="lpp-input" type="text" maxlength="200"
-        placeholder="Мета уроку: чого учні мають навчитись"
-        aria-label="Мета уроку"
+        placeholder="Тема уроку: чого учні мають навчитись"
+        aria-label="Тема уроку"
       >
       <ol class="lpp-stages">
         <li v-for="(s, i) in form.stages" :key="s.id" class="lpp-form-stage">
@@ -105,7 +200,7 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
         </li>
       </ol>
       <div class="lpp-actions">
-        <button class="lpp-btn lpp-btn--primary" :disabled="!canSubmit || lp.busy" @click="submitCompose">Зберегти</button>
+        <button class="lpp-btn lpp-btn--primary" :disabled="!canSubmit || lp.busy" @click="submitCompose">Зберегти план</button>
         <button class="lpp-btn" :disabled="lp.busy" @click="cancelCompose">Скасувати</button>
       </div>
     </div>
@@ -120,6 +215,7 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
     <div v-else class="lpp-plan">
       <div class="lpp-row">
         <span class="lpp-title">План уроку</span>
+        <span v-if="kindLabel" class="lpp-kind-badge">{{ kindLabel }}</span>
         <span class="lpp-objective">· {{ lp.plan.objective }}</span>
         <button class="lpp-more" title="Видалити план" aria-label="Видалити план" :disabled="lp.busy" @click="lp.remove()">⋯</button>
       </div>
@@ -134,10 +230,23 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
         </li>
       </ol>
       <p v-if="lp.isCompleted" class="lpp-done">Урок завершено</p>
+
+      <!-- Вибір типу: показуємо лише коли натиснули «Змінити тип» -->
+      <div v-if="changing" class="lpp-kinds" role="radiogroup" aria-label="Тип уроку">
+        <button
+          v-for="k in LESSON_KINDS" :key="k"
+          class="lpp-kind" :class="{ 'lpp-kind--on': lp.lessonKind === k }"
+          type="button" role="radio" :aria-checked="lp.lessonKind === k"
+          :disabled="lp.busy" @click="pickKind(k)"
+        >{{ LESSON_KIND_LABELS[k] }}</button>
+        <button class="lpp-btn" :disabled="lp.busy" @click="changing = false">Скасувати</button>
+      </div>
+
       <div class="lpp-actions">
         <button class="lpp-btn" :disabled="!lp.canPrev || lp.busy" @click="lp.stage('prev')">← Попередній</button>
         <button class="lpp-btn" :disabled="!lp.canNext || lp.busy" @click="lp.stage('skip')">Пропустити</button>
         <button class="lpp-btn lpp-btn--primary" :disabled="!lp.canNext || lp.busy" @click="lp.stage('next')">{{ nextLabel }}</button>
+        <button v-if="!changing" class="lpp-btn" :disabled="lp.busy" @click="changing = true">Змінити тип</button>
       </div>
     </div>
   </section>
@@ -170,4 +279,9 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
 .lpp-x { border: 0; background: transparent; cursor: pointer; opacity: .6; }
 .lpp-x:disabled { opacity: .2; cursor: default; }
 .lpp-stages--draft li { margin: 1px 0; }
+.lpp-kinds { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+.lpp-kind { font: inherit; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--cmdp-border, #cfd4da); background: var(--cmdp-btn-bg, #fff); cursor: pointer; }
+.lpp-kind--on { font-weight: 600; border-color: currentColor; }
+.lpp-kind:disabled { opacity: .45; cursor: default; }
+.lpp-kind-badge { padding: 0 6px; border-radius: 999px; border: 1px solid var(--cmdp-border, #cfd4da); opacity: .85; white-space: nowrap; }
 </style>

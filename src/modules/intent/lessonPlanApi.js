@@ -25,6 +25,7 @@ import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 
 export const CONFLICT_MESSAGE = 'План змінено в іншому вікні; показано актуальну версію.'
 
+/** Підписи ЕТАПІВ плану (не плутати з типом уроку нижче). */
 export const KIND_LABELS = {
   motivation: 'Зацікавлення',
   explanation: 'Пояснення',
@@ -32,6 +33,25 @@ export const KIND_LABELS = {
   practice: 'Практика',
   check: 'Перевірка',
   summary: 'Підсумок',
+}
+
+/**
+ * Типи УРОКУ — словник проєкту (`lesson_constructor.course_constraints`).
+ * Порядок тут і є порядком у селекторі: від «нова тема» до «повторення».
+ *
+ * `custom` у виборі НЕМАЄ свідомо: це не педагогічний намір, а позначка
+ * «типу ніхто не заявляв» для ручних і старих дошок. Показати його як
+ * варіант — запросити вчителя обрати «нічого конкретного».
+ */
+export const LESSON_KINDS = ['intro', 'practice', 'generalize', 'control', 'repeat']
+
+export const LESSON_KIND_LABELS = {
+  intro: 'Вивчення нової теми',
+  practice: 'Закріплення',
+  generalize: 'Узагальнення',
+  control: 'Контроль',
+  repeat: 'Повторення',
+  custom: 'Свій',
 }
 
 /** Шаблон для кнопки «Новий план»: п'ять етапів, перший активний. */
@@ -77,7 +97,9 @@ export function useLessonPlan(api = winterboardApi) {
   const plan = ref(null)
   const activeStageId = ref(null)
   const nextStageId = ref(null)
+  const lessonKind = ref(null)     // заява вчителя; null = ручна дошка
   const draft = ref(null)          // пропозиція Інтегралика, ще НЕ збережена
+  const draftKind = ref(null)      // тип, ЗАПИТАНИЙ для цієї чернетки
   const composeTick = ref(0)       // сигнал панелі: відкрий порожню форму
   const busy = ref(false)
   const notice = ref('')           // коротке нейтральне повідомлення (409)
@@ -97,6 +119,10 @@ export function useLessonPlan(api = winterboardApi) {
   function apply(resp) {
     enabled.value = !!resp?.enabled
     plan.value = resp?.plan ?? null
+    // Ключа немає — тип НЕ ЗМІНЮЄМО. Так відповідає старий бекенд (FE може
+    // приїхати раніше за BE) і так виглядає локальний apply після DELETE:
+    // план зник, а заявлений тип уроку на сервері лишився, як був.
+    if (resp && 'lesson_kind' in resp) lessonKind.value = resp.lesson_kind ?? null
     activeStageId.value = resp?.active_stage_id ?? null
     nextStageId.value = resp?.next_stage_id ?? null
   }
@@ -104,6 +130,7 @@ export function useLessonPlan(api = winterboardApi) {
   function reset() {
     enabled.value = false; plan.value = null
     activeStageId.value = null; nextStageId.value = null
+    lessonKind.value = null; draftKind.value = null
     draft.value = null; notice.value = ''; error.value = ''
   }
 
@@ -137,7 +164,9 @@ export function useLessonPlan(api = winterboardApi) {
       } else if (st === 404) {
         reset()
       } else if (st === 400) {
-        error.value = 'План не відповідає контракту.'
+        // Сервер уже пояснив людською мовою («Мета уроку задовга — до 200
+        // символів»), і це точніше за наше загальне «не відповідає контракту».
+        error.value = e?.response?.data?.detail || 'План не відповідає контракту.'
       } else if (st === 403) {
         error.value = 'План уроку змінює лише вчитель.'
       } else {
@@ -149,8 +178,18 @@ export function useLessonPlan(api = winterboardApi) {
     }
   }
 
-  /** Явне збереження — з форми «Новий план» або чернетки Інтегралика. */
-  function save(newPlan) { return run(id => api.putLessonPlan(id, newPlan)) }
+  /**
+   * Явне збереження — з форми «Новий план» або чернетки.
+   *
+   * З типом іде КОНВЕРТ `{plan, lesson_kind}`: план і тип мусять оновитись
+   * одним записом, інакше «Оновити шаблон» збереже шаблон, де тип `intro`, а
+   * каркас `control` (знахідка рев'ю 2026-09-08). Без типу — голий план, як
+   * було: старий виклик не змінює заяву вчителя.
+   */
+  function save(newPlan, kind = null) {
+    const body = kind ? { plan: newPlan, lesson_kind: kind } : newPlan
+    return run(id => api.putLessonPlan(id, body))
+  }
   function stage(action) { return run(id => api.postLessonPlanStage(id, action)) }
   async function remove() {
     if (!boardId.value || busy.value) return false
@@ -168,20 +207,58 @@ export function useLessonPlan(api = winterboardApi) {
   function requestCompose() { draft.value = null; composeTick.value += 1; return true }
 
   /** Інтегралик запропонував план: показати, НЕ зберігати (рішення власника). */
-  function proposeDraft(raw) { draft.value = draftView(raw) ? raw : null; return !!draft.value }
-  function discardDraft() { draft.value = null }
+  function proposeDraft(raw) {
+    draft.value = draftView(raw) ? raw : null
+    draftKind.value = null          // Інтегралик типу уроку не заявляє
+    return !!draft.value
+  }
+  function discardDraft() { draft.value = null; draftKind.value = null }
   async function saveDraft() {
     if (!draft.value) return false
-    const ok = await save(draft.value)
-    if (ok) draft.value = null
+    const ok = await save(draft.value, draftKind.value)
+    if (ok) { draft.value = null; draftKind.value = null }
     return ok
+  }
+
+  /**
+   * Каркас для обраного типу уроку. Нуль моделі: сервер складає його
+   * детерміновано з (тип, мета, кількість підготовлених задач).
+   *
+   * Нічого не зберігає — ні тут, ні на сервері. Тому поточний стан
+   * (`plan`, `lessonKind`) свідомо НЕ чіпаємо: у відповіді `lesson_kind` —
+   * тип чернетки, і застосувати його до стану означало б збрехати, що вчитель
+   * уже змінив тип уроку. Змінює його лише «Зберегти план».
+   *
+   * `objective` потрібен формі «новий план»: там плану ще немає, і мету, яку
+   * вчитель щойно вписав, сервер більше нізвідки не візьме.
+   */
+  async function requestKindDraft(kind, objective = '') {
+    if (!boardId.value || busy.value) return false
+    if (!LESSON_KINDS.includes(kind)) return false
+    busy.value = true; notice.value = ''; error.value = ''
+    try {
+      const resp = await api.postLessonPlanKind(
+        boardId.value, kind, (objective || '').trim() || undefined)
+      draft.value = resp?.draft ?? null
+      draftKind.value = resp?.lesson_kind ?? kind
+      return !!draft.value
+    } catch (e) {
+      const st = statusOf(e)
+      if (st === 404) reset()
+      else if (st === 403) error.value = 'План уроку змінює лише вчитель.'
+      else if (st === 400) error.value = e?.response?.data?.detail || 'Не вдалося скласти каркас.'
+      else error.value = 'Не вдалося скласти каркас плану.'
+      return false
+    } finally {
+      busy.value = false
+    }
   }
 
   return {
     boardId, enabled, plan, activeStageId, nextStageId, draft, busy, notice, error,
-    composeTick,
+    composeTick, lessonKind, draftKind,
     activeStage, isCompleted, canPrev, canNext,
     load, save, stage, remove, proposeDraft, discardDraft, saveDraft, reset,
-    requestCompose,
+    requestCompose, requestKindDraft,
   }
 }

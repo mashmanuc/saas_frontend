@@ -39,6 +39,19 @@ function fakeApi(over = {}) {
         { id: 'practice', kind: 'practice', title: 'Практика', goal: '', status: 'active' },
       ] } })),
     deleteLessonPlan: vi.fn(async () => undefined),
+    // Каркас від типу уроку. Сервер НІЧОГО не зберігає — тому у відповіді
+    // `plan` лишається поточним, а `lesson_kind` — це тип ЧЕРНЕТКИ.
+    postLessonPlanKind: vi.fn(async (_id, kind) => ({
+      ...resp(),
+      lesson_kind: kind,
+      draft: {
+        version: 1, objective: 'Мета', subject: 'math',
+        stages: [
+          { id: 'brief', kind: 'explanation', title: 'Інструктаж', goal: '', status: 'active' },
+          { id: 'work', kind: 'practice', title: 'Самостійна робота', goal: '', status: 'pending' },
+        ],
+      },
+    })),
     ...over,
   }
 }
@@ -221,6 +234,162 @@ describe('defaultPlan', () => {
     expect(p.stages.map(s => s.kind)).toEqual(['explanation', 'example', 'practice', 'check', 'summary'])
     expect(p.stages.filter(s => s.status === 'active')).toHaveLength(1)
     expect(p.stages[0].status).toBe('active')
+  })
+})
+
+describe('тип уроку (Г3, крок 2)', () => {
+  it('GET віддає тип — після F5 він на місці', async () => {
+    const api = fakeApi({ getLessonPlan: vi.fn(async () => resp({ lesson_kind: 'control' })) })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    expect(lp.lessonKind.value).toBe('control')
+  })
+
+  it('старий бекенд без поля — тип просто порожній, план читається', async () => {
+    const api = fakeApi()                    // resp() ключа lesson_kind не має
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    expect(lp.lessonKind.value).toBeNull()
+    expect(lp.plan.value.objective).toBe('Мета')
+  })
+
+  it('DELETE не вигадує, ніби тип теж скинувся', async () => {
+    // Локальний apply після DELETE ключа не несе — заявлений тип на сервері
+    // лишився. Скидати його тут означало б показати вчителю неправду.
+    const api = fakeApi({ getLessonPlan: vi.fn(async () => resp({ lesson_kind: 'intro' })) })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    await lp.remove()
+    expect(lp.lessonKind.value).toBe('intro')
+  })
+
+  it('requestKindDraft: чернетка є, СЕРВЕРНИЙ СТАН не змінився', async () => {
+    const api = fakeApi({ getLessonPlan: vi.fn(async () => resp({ lesson_kind: 'intro' })) })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+
+    expect(await lp.requestKindDraft('control', 'Площі фігур')).toBe(true)
+
+    expect(api.postLessonPlanKind).toHaveBeenCalledWith('b1', 'control', 'Площі фігур')
+    expect(lp.draft.value.stages[0].title).toBe('Інструктаж')
+    expect(lp.draftKind.value).toBe('control')
+    // Головне: тип і план ще СТАРІ — нічого не збережено.
+    expect(lp.lessonKind.value).toBe('intro')
+    expect(lp.plan.value.stages[0].title).toBe('Пояснення')
+    expect(api.putLessonPlan).not.toHaveBeenCalled()
+  })
+
+  it('відхилив чернетку — жодного запису, стан як був', async () => {
+    const api = fakeApi({ getLessonPlan: vi.fn(async () => resp({ lesson_kind: 'intro' })) })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    await lp.requestKindDraft('control')
+    lp.discardDraft()
+
+    expect(lp.draft.value).toBeNull()
+    expect(lp.draftKind.value).toBeNull()
+    expect(lp.lessonKind.value).toBe('intro')
+    expect(api.putLessonPlan).not.toHaveBeenCalled()
+  })
+
+  it('порожня мета не їде на сервер окремим полем', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    await lp.requestKindDraft('repeat', '   ')
+    expect(api.postLessonPlanKind).toHaveBeenCalledWith('b1', 'repeat', undefined)
+  })
+
+  it('вигаданий тип — навіть не запит', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    expect(await lp.requestKindDraft('вигадка')).toBe(false)
+    expect(api.postLessonPlanKind).not.toHaveBeenCalled()
+  })
+
+  it('400 показує пояснення сервера, а не наше загальне', async () => {
+    const api = fakeApi({
+      postLessonPlanKind: vi.fn(async () => {
+        throw httpError(400, { error: 'VALIDATION', detail: 'Мета уроку задовга — до 200 символів.' })
+      }),
+    })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    expect(await lp.requestKindDraft('intro', 'x')).toBe(false)
+    expect(lp.error.value).toContain('задовга')
+    expect(lp.draft.value).toBeNull()
+  })
+
+  it('403 (учень прямим викликом) — чернетки не з’являється', async () => {
+    const api = fakeApi({
+      postLessonPlanKind: vi.fn(async () => { throw httpError(403) }),
+    })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    expect(await lp.requestKindDraft('control')).toBe(false)
+    expect(lp.draft.value).toBeNull()
+    expect(lp.error.value).toContain('вчитель')
+  })
+
+  it('save з типом → КОНВЕРТ {plan, lesson_kind}', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    const plan = resp().plan
+
+    await lp.save(plan, 'generalize')
+
+    expect(api.putLessonPlan).toHaveBeenCalledWith('b1', { plan, lesson_kind: 'generalize' })
+  })
+
+  it('save без типу — голий план, як було: заяву вчителя не чіпаємо', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    const plan = resp().plan
+
+    await lp.save(plan)
+
+    expect(api.putLessonPlan).toHaveBeenCalledWith('b1', plan)
+  })
+
+  it('saveDraft після зміни типу шле конверт; після Інтегралика — ні', async () => {
+    const api = fakeApi()
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+
+    await lp.requestKindDraft('control', 'Площі')
+    const draft = lp.draft.value
+    await lp.saveDraft()
+    expect(api.putLessonPlan).toHaveBeenLastCalledWith('b1', { plan: draft, lesson_kind: 'control' })
+
+    // Інтегралик типу не заявляє — його чернетка їде голим планом.
+    const fromAi = { version: 1, objective: 'Дроби', subject: 'math',
+      stages: [{ id: 'p', kind: 'practice', title: 'Практика', goal: '', status: 'active' }] }
+    lp.proposeDraft(fromAi)
+    await lp.saveDraft()
+    expect(api.putLessonPlan).toHaveBeenLastCalledWith('b1', fromAi)
+  })
+
+  it('після збереження типу перечитування показує його (шлях F5)', async () => {
+    let stored = null
+    const api = fakeApi({
+      putLessonPlan: vi.fn(async (_id, body) => {
+        stored = body.lesson_kind ?? null
+        return resp({ plan: body.plan ?? body, lesson_kind: stored })
+      }),
+      getLessonPlan: vi.fn(async () => resp({ lesson_kind: stored })),
+    })
+    const lp = useLessonPlan(api)
+    await lp.load('b1')
+    await lp.requestKindDraft('control', 'Площі')
+    await lp.saveDraft()
+    expect(lp.lessonKind.value).toBe('control')
+
+    const fresh = useLessonPlan(api)         // нова вкладка / F5
+    await fresh.load('b1')
+    expect(fresh.lessonKind.value).toBe('control')
   })
 })
 

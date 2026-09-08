@@ -218,11 +218,25 @@ export interface WBLessonPlan {
   subject: string
   stages: WBLessonPlanStage[]
 }
+/**
+ * Тип уроку зі словника проєкту (`lesson_constructor.course_constraints`).
+ * `custom` — для ручних і старих дошок: тип там ніхто не заявляв.
+ */
+export type WBLessonKind = 'intro' | 'practice' | 'generalize' | 'control' | 'repeat' | 'custom'
+
 export interface WBLessonPlanResponse {
   enabled: boolean
   plan: WBLessonPlan | null
+  /** Заява вчителя, а не здогад із форми плану. `null` — ручна дошка. */
+  lesson_kind?: WBLessonKind | null
   active_stage_id: string | null
   next_stage_id: string | null
+}
+
+/** Відповідь `lesson-plan/kind/`: `lesson_kind` тут — тип ЧЕРНЕТКИ. */
+export interface WBLessonPlanKindResponse extends WBLessonPlanResponse {
+  draft: WBLessonPlan
+  lesson_kind: WBLessonKind
 }
 
 /**
@@ -368,6 +382,18 @@ export const winterboardApi = {
   },
   putLessonPlan(id: string, plan: unknown): Promise<WBLessonPlanResponse> {
     return apiClient.put(`${BASE}/sessions/${id}/lesson-plan/`, plan).then((r: any) => r.data ?? r)
+  },
+  /**
+   * Чернетка плану для іншого типу уроку. Нуль моделі, нуль правок дошки:
+   * сервер повертає каркас і НІЧОГО не зберігає. Застосовує вчитель —
+   * `putLessonPlan(id, { plan, lesson_kind })`.
+   *
+   * `objective` потрібен формі «новий план»: там мети на сервері ще немає.
+   */
+  postLessonPlanKind(id: string, lessonKind: WBLessonKind, objective?: string): Promise<WBLessonPlanKindResponse> {
+    const body: Record<string, unknown> = { lesson_kind: lessonKind }
+    if (objective) body.objective = objective
+    return apiClient.post(`${BASE}/sessions/${id}/lesson-plan/kind/`, body).then((r: any) => r.data ?? r)
   },
   postLessonPlanStage(id: string, action: 'next' | 'prev' | 'skip'): Promise<WBLessonPlanResponse> {
     return apiClient.post(`${BASE}/sessions/${id}/lesson-plan/stage/`, { action }).then((r: any) => r.data ?? r)
