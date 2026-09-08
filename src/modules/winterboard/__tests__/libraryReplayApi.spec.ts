@@ -36,6 +36,7 @@ import {
 } from '../api/library'
 import {
   fetchReplayTimeline,
+  fetchOwnerReplayPlayback,
 } from '../api/replay'
 import type { LibraryTag, LibraryAsset, LibraryFolder, LibraryFolderTree, LibraryAssetListResponse } from '../types/library'
 import type { ReplayTimeline } from '../types/replay'
@@ -281,6 +282,19 @@ describe('replay API', () => {
       `/v1/winterboard/sessions/${SESSION_UUID}/replay/`,
       { params: { page_id: 'p1', limit: 50 } },
     )
+  })
+
+  it('fetchOwnerReplayPlayback: uses protected replay route, not public token', async () => {
+    const replayId = '770e8400-e29b-41d4-a716-446655440000'
+    mockGet.mockResolvedValueOnce(mockTimeline)
+
+    const result = await fetchOwnerReplayPlayback(replayId)
+
+    expect(mockGet).toHaveBeenCalledWith(
+      `/v1/winterboard/replays/${replayId}/playback/`,
+      undefined,
+    )
+    expect(result).toEqual(mockTimeline)
   })
 
   // recordOperation/recordOperationsBatch tests DELETED у Phase 4 follow-up —
