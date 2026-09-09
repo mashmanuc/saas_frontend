@@ -846,6 +846,11 @@ export async function buildBoardSummary() {
   const store = useWBStore()
   const pages = store.pages || []
   const currentPage = (store.currentPageIndex ?? 0) + 1   // 1-based: сторінка, яку бачить юзер
+  // Стабільний id тієї ж сторінки. Номер зсувається, щойно вчитель вставить
+  // сторінку посеред уроку, тому прив'язка «сторінка → етап» тримається на id.
+  // ⚠️ Read-only спостереження: сервер за ним лише ЧИТАЄ свою мапу прив'язок.
+  // Невідомий або порожній id → сторінка нейтральна. Нічого не пишемо.
+  const currentPageId = pages[store.currentPageIndex ?? 0]?.id ?? null
   const items = []
   pages.forEach((page, idx) => {
     const p = idx + 1
@@ -892,5 +897,5 @@ export async function buildBoardSummary() {
       items.push({ page: p, kind: 'NMT-задача', label: (cond + (ans ? ` [відповідь: ${ans}]` : '')).slice(0, 240) })
     }
   })
-  return { pages: pages.length, currentPage, items: items.slice(0, 60) }
+  return { pages: pages.length, currentPage, currentPageId, items: items.slice(0, 60) }
 }
