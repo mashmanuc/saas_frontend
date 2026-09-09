@@ -52,6 +52,11 @@
               >
                 <span class="wb-share-modal__visibility-label">{{ opt.label }}</span>
                 <span class="wb-share-modal__visibility-hint">{{ opt.hint }}</span>
+                <!-- Клік по вже обраному режиму нічого не робить, тож без
+                     підпису кнопка читається як зламана. -->
+                <span v-if="replay.visibility === opt.value" class="wb-share-modal__visibility-current">
+                  {{ t('winterboard.replay.share.currentMode') }}
+                </span>
               </button>
             </div>
           </div>
@@ -75,6 +80,21 @@
           <!-- Private hint -->
           <p v-if="replay.visibility === 'private'" class="wb-share-modal__hint">
             {{ t('winterboard.replay.share.privateHint') }}
+          </p>
+
+          <!-- Приватний режим НЕ вбиває вже роздане посилання: токен той
+               самий. Поки його не відкликано, запис відкривається в усіх,
+               хто посилання має. -->
+          <div v-if="showRevoke" class="wb-share-modal__revoke">
+            <p class="wb-share-modal__revoke-hint">
+              {{ t('winterboard.replay.share.revokeOldLinkHint') }}
+            </p>
+            <button type="button" class="wb-share-modal__revoke-btn" @click="onRotate">
+              🚫 {{ t('winterboard.replay.share.revokeOldLink') }}
+            </button>
+          </div>
+          <p v-else-if="justRevoked" class="wb-share-modal__revoked">
+            ✓ {{ t('winterboard.replay.share.revokeOldLink') }}
           </p>
         </template>
 
@@ -130,6 +150,22 @@ const isBusy = ref(false)
 const noOpsError = ref(false)
 const showCreateCta = ref(false)
 const statusMessage = ref<string | null>(null)
+/** Відкликали посилання в цьому сеансі роботи з модалкою. */
+const justRevoked = ref(false)
+
+/**
+ * Показувати дію відкликання, поки старе посилання ще живе.
+ *
+ * Умова саме така: режим приватний (тобто вчитель уже вирішив закрити доступ),
+ * токен існує (посилання роздавали), і його ще не відкликали. Без цього
+ * «приватний» виглядав би як закритий доступ, хоча в того, хто має URL, запис
+ * далі відкривається.
+ */
+const showRevoke = computed(() =>
+  replay.value?.visibility === 'private'
+  && !!replay.value?.public_token
+  && !justRevoked.value,
+)
 
 const shareUrl = computed(() => {
   if (!replay.value?.public_token) return ''
@@ -216,6 +252,9 @@ async function createAndShare() {
 
 async function changeVis(value: ReplayVisibility) {
   if (!replay.value || replay.value.visibility === value) return
+  // Нова зміна режиму — нове рішення про посилання: підтвердження
+  // попереднього відкликання більше не описує поточний стан.
+  justRevoked.value = false
   try {
     const updated = await changeReplayVisibility(replay.value.id, value)
     replay.value = updated
@@ -251,6 +290,7 @@ async function onRotate() {
     replay.value = updated
     emit('replay-updated', updated)
     copied.value = false
+    justRevoked.value = true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to rotate token'
   }
@@ -346,6 +386,25 @@ async function onRotate() {
 .wb-share-modal__visibility-btn--active .wb-share-modal__visibility-label::before {
   content: '✓ '; color: var(--accent);
 }
+.wb-share-modal__visibility-current {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: .75;
+}
+.wb-share-modal__revoke {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--wb-border, #e3e6ea);
+  border-radius: 8px;
+}
+.wb-share-modal__revoke-hint { margin: 0 0 6px; font-size: 12px; opacity: .8; }
+.wb-share-modal__revoke-btn {
+  font: inherit; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--wb-border, #cfd4da); background: #fff;
+}
+.wb-share-modal__revoked { margin-top: 8px; font-size: 12px; opacity: .8; }
+
 .wb-share-modal__visibility-hint {
   font-size: 12px; color: var(--text-secondary);
 }

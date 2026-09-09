@@ -28,6 +28,11 @@
       >
         <span class="wb-rec-done__vis-icon">{{ opt.icon }}</span>
         <span class="wb-rec-done__vis-label">{{ opt.label }}</span>
+        <!-- Клік по вже обраному режиму нічого не змінює — без підпису
+             кнопка читається як зламана (ТЗ «З» п.3). -->
+        <span v-if="currentReplay.visibility === opt.value" class="wb-rec-done__vis-current">
+          {{ t('winterboard.replay.share.currentMode') }}
+        </span>
       </button>
     </div>
 
@@ -249,6 +254,7 @@ async function copyLink() {
 
 .wb-rec-done__vis-icon { font-size: 1rem; }
 .wb-rec-done__vis-label { font-size: 0.75rem; font-weight: 600; }
+.wb-rec-done__vis-current { font-size: 0.65rem; font-weight: 600; opacity: .75; }
 
 .wb-rec-done__link {
   display: flex;

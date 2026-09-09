@@ -7134,7 +7134,7 @@
       },
       "visibility": {
         "private": "🔒 Private",
-        "unlisted": "🔗 Share with students only",
+        "unlisted": "🔗 Anyone with the link",
         "link": "🔗 Share with students only",
         "public": "🌍 Make open for everyone"
       },
@@ -8597,6 +8597,9 @@
         "copied": "Copied ✓",
         "rotate": "Rotate link",
         "rotateConfirm": "The previous link will become inactive. Continue?",
+        "currentMode": "Current mode",
+        "revokeOldLink": "Revoke the old link",
+        "revokeOldLinkHint": "Until the link is revoked, it keeps opening the recording for anyone who already has it.",
         "creating": "Creating link…",
         "creatingReplay": "Creating replay from all operations…",
         "createFailed": "Failed to create recording",
@@ -8606,9 +8609,9 @@
         "createHint": "Recording will be created from what is already on the board",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
-          "private": "No one can see this recording",
-          "unlisted": "Only those you share the link with can view it",
-          "public": "Other platform users can find this recording"
+          "private": "The link does not work for anyone else",
+          "unlisted": "Anyone who has the link can watch the recording without signing in",
+          "public": "The recording is open to everyone and can be found and shared"
         }
       }
     },
@@ -9723,6 +9726,9 @@
         "copied": "Copied ✓",
         "rotate": "Rotate link",
         "rotateConfirm": "The previous link will become inactive. Continue?",
+        "currentMode": "Current mode",
+        "revokeOldLink": "Revoke the old link",
+        "revokeOldLinkHint": "Until the link is revoked, it keeps opening the recording for anyone who already has it.",
         "creating": "Creating link…",
         "creatingReplay": "Creating replay from all operations…",
         "createFailed": "Failed to create recording",
@@ -9731,9 +9737,9 @@
         "createAndShare": "Create lesson recording",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
-          "private": "No one can see this recording",
-          "unlisted": "Only those you share the link with can view it",
-          "public": "Other platform users can find this recording"
+          "private": "The link does not work for anyone else",
+          "unlisted": "Anyone who has the link can watch the recording without signing in",
+          "public": "The recording is open to everyone and can be found and shared"
         },
         "createHint": "Recording will be created from what is already on the board"
       }
