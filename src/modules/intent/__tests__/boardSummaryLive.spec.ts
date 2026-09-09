@@ -67,3 +67,51 @@ describe('READ бачить дошку ЗАРАЗ, а не на момент с�
     expect((await buildBoardSummary()).currentPage).toBe(2)
   })
 })
+
+/**
+ * `currentPageId` — стабільна адреса тієї ж сторінки (ТЗ 2026-09-09).
+ *
+ * Чому не досить номера: номер зсувається, щойно вчитель вставить сторінку
+ * посеред уроку, а прив'язка «сторінка → етап» на сервері живе на id. Якби
+ * поле мовчки зникло чи стало номером, сервер і далі відповідав би — просто
+ * КОЖНА сторінка стала б нейтральною, і жоден тест цього не побачив би.
+ *
+ * ⚠️ Це read-only спостереження: сервер за цим id лише ЧИТАЄ свою мапу
+ * прив'язок. Фронт нічого не пише і нового каналу не заводить.
+ */
+describe('currentPageId у board_summary', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('вказує на активну сторінку', async () => {
+    const store = useWBStore()
+    store.pages = [page('p1', []), page('p2', [])]
+    store.currentPageIndex = 1
+    ;(store as any).mode = 'edit'
+
+    expect((await buildBoardSummary()).currentPageId).toBe('p2')
+  })
+
+  it('після переходу назад вказує на попередню', async () => {
+    const store = useWBStore()
+    store.pages = [page('p1', []), page('p2', [])]
+    store.currentPageIndex = 1
+    ;(store as any).mode = 'edit'
+    expect((await buildBoardSummary()).currentPageId).toBe('p2')
+
+    store.currentPageIndex = 0
+
+    expect((await buildBoardSummary()).currentPageId).toBe('p1')
+  })
+
+  it('порожня дошка дає null, а не падіння', async () => {
+    const store = useWBStore()
+    store.pages = []
+    store.currentPageIndex = 0
+    ;(store as any).mode = 'edit'
+
+    const summary = await buildBoardSummary()
+
+    expect(summary.currentPageId).toBeNull()
+    expect(summary.pages).toBe(0)
+  })
+})
