@@ -12,6 +12,8 @@ import {
   ancestorsOf,
   canPickTopic,
   focusIssue,
+  focusIssueOf,
+  isAncestorPair,
   isBlockType,
   reconcileTopics,
   shareAnAncestor,
@@ -162,5 +164,73 @@ describe('які теми взагалі можна клікнути', () => {
 
   it('generalize: третьої не буває', () => {
     expect(canPickTopic('generalize', [CIRCLE, PARALLELOGRAM], TRIANGLE)).toBe(false)
+  })
+})
+
+/**
+ * Тест 8 ТЗ у переробленому вигляді (рішення власника 2026-09-09):
+ * перевіряємо СТАБІЛЬНИЙ КОД помилки і наявність людського пояснення тут, на
+ * фронті. Динамічної «рекомендованої пари» немає свідомо — підказка, зібрана
+ * з даних на льоту, обіцяла б учителю конкретні теми, яких у його розділі
+ * може й не бути.
+ */
+describe('пара «розділ + його підтема» — код і пояснення', () => {
+  const BLOCK_TYPES = ['generalize', 'repeat'] as const
+
+  it.each(BLOCK_TYPES)('%s: предок+нащадок дає focus_ancestor_pair', (type) => {
+    const issue = focusIssueOf(type, ['areas', 'areas.circle'])
+
+    expect(issue?.code).toBe('focus_ancestor_pair')
+  })
+
+  it.each(BLOCK_TYPES)('%s: дві різні підтеми проходять', (type) => {
+    expect(focusIssueOf(type, ['areas.circle', 'areas.triangle'])).toBeNull()
+  })
+
+  it('глибокий предок ловиться так само', () => {
+    const issue = focusIssueOf('generalize',
+      ['real-numbers', 'real-numbers.fractions.ordinary'])
+
+    expect(issue?.code).toBe('focus_ancestor_pair')
+  })
+
+  it('порядок тем не змінює вердикту', () => {
+    expect(focusIssueOf('generalize', ['areas.circle', 'areas'])?.code)
+      .toBe('focus_ancestor_pair')
+  })
+
+  it('кожен код має людське пояснення, а не сам себе', () => {
+    const cases: Array<[string, string[]]> = [
+      ['generalize', []],
+      ['generalize', ['areas.circle']],
+      ['generalize', ['areas', 'areas.circle']],
+      ['generalize', ['derivative', 'areas.circle']],
+      ['intro', ['areas', 'areas.circle']],
+      ['', ['areas.circle']],
+    ]
+    for (const [type, topics] of cases) {
+      const issue = focusIssueOf(type as any, topics)
+      expect(issue).not.toBeNull()
+      expect(issue!.message.length).toBeGreaterThan(20)
+      // Пояснення для людини, а не код у полі тексту.
+      expect(issue!.message).not.toContain('focus_')
+    }
+  })
+
+  it('однотемний урок дістає СВОЮ помилку, не про узагальнення', () => {
+    expect(focusIssueOf('intro', ['areas', 'areas.circle'])?.code)
+      .toBe('focus_single_topic')
+  })
+
+  it('другою темою не можна клікнути власну підтему', () => {
+    expect(canPickTopic('generalize', ['areas'], 'areas.circle')).toBe(false)
+    expect(canPickTopic('generalize', ['areas.circle'], 'areas.triangle')).toBe(true)
+  })
+
+  it('зміна типу прибирає фальшиву пару й каже, чому', () => {
+    const out = reconcileTopics('generalize', ['areas', 'areas.circle'])
+
+    expect(out.topics).toEqual(['areas'])
+    expect(out.notice).toContain('частиною іншої')
   })
 })
