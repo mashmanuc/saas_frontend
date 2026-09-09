@@ -61,6 +61,10 @@
 
     <!-- Body — pointer-events:auto for interactions -->
     <div ref="bodyEl" class="nmt-task__body">
+      <!-- Потік вмісту окремим вузлом: його висота природна й НЕ залежить від
+           висоти картки. Саме тому автопідгонка вміє не лише рости, а й
+           стискатись — див. neededHeightPx(). -->
+      <div ref="flowEl" class="nmt-task__flow">
 
       <!-- Question text -->
       <div class="nmt-task__question" v-html="renderTextWithLatex(data.question)" />
@@ -281,6 +285,7 @@
         </div>
       </div>
 
+      </div><!-- /.nmt-task__flow -->
     </div><!-- /.nmt-task__body -->
     </div><!-- /.nmt-task__inner -->
   </div><!-- /.nmt-task -->
@@ -378,17 +383,33 @@ const presentationScale = useNmtPresentationScale(() => props.asset.id)
    геометрії оверлея (`getOverlayStyle`) і там же живе Konva-proxy, який має
    лишитись того самого розміру, що й картка.                                */
 const bodyEl = ref<HTMLElement | null>(null)
+const flowEl = ref<HTMLElement | null>(null)
 
-/** Скільки пікселів висоти треба вмісту разом із шапкою й рамкою картки. */
+/**
+ * Скільки пікселів висоти треба вмісту разом із шапкою й рамкою картки.
+ *
+ * 🔴 ЧОМУ НЕ `body.scrollHeight`. Перша редакція міряла саме так — і картка
+ * вміла лише рости. `scrollHeight` за визначенням НЕ буває меншим за
+ * `clientHeight`, тож у високій картці з дрібним текстом він дорівнював
+ * висоті самої картки: «потрібно» завжди збігалося з «є», і стиснення не
+ * наставало ніколи. Помилку видно лише живцем — зменшенням шрифту.
+ *
+ * Тому міряємо ОКРЕМИЙ вузол потоку (`.nmt-task__flow`): його висота
+ * природна й від висоти картки не залежить ні вгору, ні вниз.
+ */
 function neededHeightPx(): number {
   const root = rootEl.value
   const body = bodyEl.value
-  if (!root || !body) return 0
-  // body — єдиний скрол-контейнер картки: його scrollHeight дає повну висоту
-  // вмісту незалежно від того, чи він зараз обрізаний. Різниця offsetHeight
-  // кореня і clientHeight тіла — це «хром» (шапка, паддинги, рамка).
-  const chrome = root.offsetHeight - body.clientHeight
-  return Math.ceil(chrome + body.scrollHeight)
+  const flow = flowEl.value
+  if (!root || !body || !flow) return 0
+  // Поза тілом: шапка й рамка. `clientHeight` уже містить паддинги тіла,
+  // тому їх додаємо окремо — інакше при стисненні вміст притисло б до країв.
+  const outside = root.offsetHeight - body.clientHeight
+  const style = typeof getComputedStyle === 'function' ? getComputedStyle(body) : null
+  const padY = style
+    ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
+    : 0
+  return Math.ceil(outside + padY + flow.getBoundingClientRect().height)
 }
 
 function requestAutoFit(): void {
@@ -689,12 +710,18 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 /* ── Body ────────────────────────────────────────────────────────────── */
 .nmt-task__body {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  min-height: 0;
   padding: 12px 14px 14px;
   overflow-y: auto;
   pointer-events: auto;
+}
+
+/* Колонка й проміжки переїхали з тіла сюди: тіло тепер лише вікно з прокруткою,
+   а потік має природну висоту, яку можна виміряти й у бік зменшення. */
+.nmt-task__flow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .nmt-task.is-readonly .nmt-task__body {
