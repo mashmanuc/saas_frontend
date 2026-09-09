@@ -94,6 +94,7 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
       onDelete: () => {},
       onFormulaEdit: () => {},
       onSpawnCompanions: () => {},
+      onRequestHeight: () => {},
       graph: {
         paramSet: () => {},
         syncParams: () => {},
@@ -133,6 +134,7 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
       onDelete: () => {},
       onFormulaEdit: () => {},
       onSpawnCompanions: () => {},
+      onRequestHeight: () => {},
       graph: {} as any,
     } as any
 
@@ -157,6 +159,7 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
       onDelete: () => {},
       onFormulaEdit: () => {},
       onSpawnCompanions: () => {},
+      onRequestHeight: () => {},
       graph: {} as any,
     } as any
 

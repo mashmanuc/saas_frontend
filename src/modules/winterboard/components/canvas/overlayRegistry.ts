@@ -84,6 +84,11 @@ export interface OverlayCtx {
   onFormulaEdit: (id: string) => void
   /** emit('spawn-companions', payload) */
   onSpawnCompanions: (payload: unknown) => void
+  /**
+   * Картка повідомила, скільки екранних пікселів висоти треба її вмісту.
+   * Рішення (координати дошки, межа полотна, збереження) — у WBCanvas.
+   */
+  onRequestHeight: (assetId: string, neededPx: number) => void
   /** WYSIWYG перекриття (overlayTopHit): renderer віддає клік картці, намальованій
       вище у точці кліку → host перемикає виділення (selectItems). Раніше
       @select-other жив ЛИШЕ у legacy-блоках WBCanvas — у unified губився. */
@@ -322,6 +327,7 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     buildEvents: (a, ctx) => ({
       ...expEvents(a, ctx),
       'spawn-companions': (payload: unknown) => ctx.onSpawnCompanions(payload),
+      'request-height': (neededPx: number) => ctx.onRequestHeight(a.id, neededPx),
     }),
   },
 

@@ -319,6 +319,7 @@
       @asset-delete="id => emit('asset-delete', id)"
       @formula-card-edit="id => emit('formula-card-edit', id)"
       @spawn-companions="handleSpawnCompanions"
+      @request-height="p => handleOverlayHeightRequest(p.assetId, p.neededPx)"
       @foreign-drag="handleOverlayForeignDrag"
     />
 
@@ -597,6 +598,7 @@
           @delete="emit('asset-delete', asset.id)"
           @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
           @spawn-companions="handleSpawnCompanions"
+          @request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"
         />
       </div>
     </template>
@@ -854,6 +856,7 @@ import { useWBStore } from '../../board/state/boardStore'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
+import { nextAutoFitHeight } from '../../composables/autoFitHeight'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
 import { useGrouping } from '../../composables/useGrouping'
 import { useLocking } from '../../composables/useLocking'
@@ -4130,6 +4133,40 @@ function getOverlayStyle(asset: WBAsset): Record<string, string> {
     // центру — той самий пивот, що Konva-proxy (offset=w/2). Було '0 0' (кут).
     transformOrigin: 'center',
   }
+}
+
+/**
+ * Автопідгонка висоти картки під її вміст (запит власника 2026-09-09).
+ *
+ * Картка (`NmtTaskRenderer`) лише ВИМІРЮЄ, скільки екранних пікселів треба її
+ * вмісту. Рішення — у чистій `nextAutoFitHeight` (там і правила, і тести).
+ * Тут лишається рівно те, що не буває чистим: доступ до сторінки, зуму й
+ * штатний запис операцією.
+ *
+ * Запис іде тим самим `asset-update`, що й ручний resize, тому інші учасники
+ * та реплей бачать ту саму геометрію — не локальний CSS.
+ */
+function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
+  if (wbStore.mode !== 'edit') return
+  const asset = assets.value.find(a => a.id === assetId)
+  if (!asset || asset.locked) return
+
+  const data = asset.data as unknown as Record<string, unknown> | undefined
+  const nextH = nextAutoFitHeight({
+    neededPx,
+    zoom: props.zoom,
+    y: asset.y,
+    h: asset.h,
+    pageH: wbStore.currentPage?.height ?? PAGE_HEIGHT,
+    lastAutoH: typeof data?.autoFitH === 'number' ? data.autoFitH : undefined,
+  })
+  if (nextH === null) return
+
+  emit('asset-update', {
+    ...asset,
+    h: nextH,
+    data: { ...(data ?? {}), autoFitH: nextH } as unknown as WBAsset['data'],
+  })
 }
 
 function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {

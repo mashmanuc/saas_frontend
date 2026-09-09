@@ -72,6 +72,8 @@ const emit = defineEmits<{
   'asset-delete': [assetId: string]
   'formula-card-edit': [assetId: string]
   'spawn-companions': [payload: unknown]
+  /** Картці треба стільки екранних пікселів висоти — рішення ухвалює WBCanvas. */
+  'request-height': [payload: { assetId: string; neededPx: number }]
   /** Клік належить картці, намальованій ЗВЕРХУ — WBCanvas стартує її Konva-drag. */
   'foreign-drag': [payload: { assetId: string; ev: PointerEvent }]
 }>()
@@ -119,6 +121,8 @@ const ctx = computed<OverlayCtx>(() => ({
   onSelectOther: (id: string) => wbStore.selectItems([id]),
   onFormulaEdit: (id: string) => emit('formula-card-edit', id),
   onSpawnCompanions: (payload: unknown) => emit('spawn-companions', payload),
+  onRequestHeight: (assetId: string, neededPx: number) =>
+    emit('request-height', { assetId, neededPx }),
   graph: {
     paramSet: (assetId, name, value) => wbStore.graphParamSet(assetId, name, value),
     syncParams: (assetId, names) => wbStore.graphSyncParams(assetId, names),

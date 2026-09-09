@@ -60,7 +60,7 @@
     </header>
 
     <!-- Body — pointer-events:auto for interactions -->
-    <div class="nmt-task__body">
+    <div ref="bodyEl" class="nmt-task__body">
 
       <!-- Question text -->
       <div class="nmt-task__question" v-html="renderTextWithLatex(data.question)" />
@@ -75,6 +75,7 @@
           class="nmt-task__figure"
           alt=""
           draggable="false"
+          @load="requestAutoFit"
         />
       </div>
 
@@ -111,6 +112,7 @@
             class="nmt-task__option-img"
             alt=""
             draggable="false"
+            @load="requestAutoFit"
           />
         </button>
       </div>
@@ -289,7 +291,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSolutionZoom } from '../../../composables/useSolutionZoom'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
@@ -339,6 +341,13 @@ const emit = defineEmits<{
     spawnX: number
     spawnY: number
   }]
+  /**
+   * Вмісту треба стільки екранних пікселів висоти. Картка НЕ змінює свою
+   * геометрію сама: вона лише повідомляє потребу, а рішення (перевести в
+   * координати дошки, обмежити низом полотна, зберегти операцією) ухвалює
+   * WBCanvas — єдиний власник геометрії оверлеїв.
+   */
+  'request-height': [neededPx: number]
 }>()
 
 // ── Template root for export capture ─────────────────────────────────────────
@@ -357,6 +366,53 @@ const data = computed(() => (props.asset.data as unknown as NmtTaskData))
 
 /** Масштаб символів лише для цього екрана; рамка, реплей і сервер незалежні. */
 const presentationScale = useNmtPresentationScale(() => props.asset.id)
+
+/* ── Автопідгонка висоти під вміст ────────────────────────────────────────────
+   Запит власника 2026-09-09: «збільшую шрифт розбору — з'являється скрол, хоча
+   під карткою вільна область». Правильна поведінка: спершу картка росте вниз,
+   верхній лівий кут не рухається, і лише коли місця під нею більше немає —
+   вмикається внутрішній скрол.
+
+   Картка лише ВИМІРЮЄ і повідомляє потребу. Переведення в координати дошки,
+   обмеження низом полотна і збереження — у WBCanvas: там єдине джерело
+   геометрії оверлея (`getOverlayStyle`) і там же живе Konva-proxy, який має
+   лишитись того самого розміру, що й картка.                                */
+const bodyEl = ref<HTMLElement | null>(null)
+
+/** Скільки пікселів висоти треба вмісту разом із шапкою й рамкою картки. */
+function neededHeightPx(): number {
+  const root = rootEl.value
+  const body = bodyEl.value
+  if (!root || !body) return 0
+  // body — єдиний скрол-контейнер картки: його scrollHeight дає повну висоту
+  // вмісту незалежно від того, чи він зараз обрізаний. Різниця offsetHeight
+  // кореня і clientHeight тіла — це «хром» (шапка, паддинги, рамка).
+  const chrome = root.offsetHeight - body.clientHeight
+  return Math.ceil(chrome + body.scrollHeight)
+}
+
+function requestAutoFit(): void {
+  // Розгорнута картка займає весь простір полотна — там підганяти нічого.
+  // Неінтерактивний режим (перо, реплей, учень без права запису) не має
+  // породжувати операцій: масштаб шрифту особистий, а геометрія спільна.
+  if (props.isExpanded || !props.interactive) return
+  const px = neededHeightPx()
+  if (px > 0) emit('request-height', px)
+}
+
+onMounted(() => { void nextTick(requestAutoFit) })
+
+// Тригери — рівно ті, після яких вміст справді змінює висоту.
+watch(
+  () => [
+    data.value.showSolution,
+    data.value.showAnswer,
+    solutionZoom.fontPx.value,
+    presentationScale.value,
+    props.asset.w,
+  ],
+  () => { void nextTick(requestAutoFit) },
+)
 
 /* ── Ілюстрації задачі (2026-07-31) ──────────────────────────────────────────
    Задачі «На рисунку зображено куб…» приходили голим текстом: BE не проносив
