@@ -10702,5 +10702,18 @@
       "readyPercentHint": "Diagnostic + 4 lessons. Progress is kept in this browser.",
       "readyOpen": "Open"
     }
+  },
+  "teacherLessonV2": {
+    "title": "Teacher Lesson V2",
+    "checking": "Checking access…",
+    "shellNote": "The lesson is prepared on the real Winterboard. You decide how to run it.",
+    "error": "Could not check access to Teacher Lesson V2. Reload the page later.",
+    "pilot": {
+      "title": "Corresponding elements of congruent triangles",
+      "pages": "Five pages: explanation, example, guided practice, independent practice, consolidation.",
+      "prepare": "Prepare the lesson on the board",
+      "preparing": "Preparing the board…",
+      "prepareError": "Could not prepare the lesson. Try again later."
+    }
   }
 }

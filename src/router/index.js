@@ -84,6 +84,9 @@ const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
 
 // Winterboard v3 (lazy-loaded module routes)
 import winterboardRoutes, { winterboardSessionListRoute, winterboardPageRoutes } from '../modules/winterboard/router'
+// >>> TLV2-01: Teacher Lesson V2 — ізольований модуль; доступ вирішує бекенд (404 → V1)
+import { teacherLessonV2Routes } from '../modules/teacher-lesson-v2/routes'
+// <<< TLV2-01
 // Local Workspace (ТЗ Точка 3): неавторизований корінь / → одразу робочий стіл
 import { isLocalWorkspaceEnabled } from '../modules/winterboard/config/featureFlags'
 
@@ -1033,6 +1036,9 @@ const routes = [
   },
   // Winterboard v3 routes (top-level, own layout)
   ...winterboardRoutes,
+  // >>> TLV2-01: Teacher Lesson V2 (top-level, власний модуль)
+  ...teacherLessonV2Routes,
+  // <<< TLV2-01
   // Phase 15: Knowledge catalog (public fallback for anonymous users)
   {
     path: '/knowledge/catalog',
