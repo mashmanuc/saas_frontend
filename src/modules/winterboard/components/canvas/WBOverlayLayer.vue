@@ -63,6 +63,8 @@ const props = defineProps<{
   assets: WBAsset[]
   /** Активний інструмент (WBCanvas: currentTool = props.tool). */
   tool: string
+  /** Роль глядача задає host; студент не отримує tutor-only контроли карток. */
+  isTutor: boolean
   /** Positioning helper з WBCanvas (canvasOffset + liveTransform + zoom). Single-source. */
   getOverlayStyle: (asset: WBAsset) => Record<string, string>
 }>()
@@ -100,6 +102,7 @@ const EXPANDED_STYLE: Record<string, string> = {
 const ctx = computed<OverlayCtx>(() => ({
   isSelected: (id: string) => wbStore.selectedIds.includes(id),
   interactive: props.tool === 'select' && wbStore.mode === 'edit',
+  isTutor: props.isTutor,
   boardMode: wbStore.mode,
   disableAnimation: wbStore.mode === 'replay',
   expandedId: expandedId.value,

@@ -58,12 +58,13 @@ function makeAsset(data: Record<string, unknown>) {
   }
 }
 
-function mountTask(data: Record<string, unknown>) {
+function mountTask(data: Record<string, unknown>, isTutor = true, isSelected = false) {
   return mount(Renderer, {
     props: {
       asset: makeAsset(data) as never,
-      isSelected: false,
+      isSelected,
       interactive: true,
+      isTutor,
     },
     global: { mocks: { t }, stubs: { teleport: true } },
   })
@@ -164,5 +165,53 @@ describe('NmtTaskRenderer — картинки варіантів', () => {
       ],
     })
     expect(w.findAll('.nmt-task__option-img')).toHaveLength(0)
+  })
+})
+
+describe('NmtTaskRenderer — межа ролі для ключа відповіді', () => {
+  // TLV2-03S: зворотний бік межі — учитель кнопок не втрачає і вони відкривають ключ.
+  it('учитель бачить «Показати відповідь / розбір», і кнопки відкривають ключ', async () => {
+    const w = mountTask({
+      taskType: 'single_choice', question: 'Оберіть', options: OPTIONS,
+      solution: 'Розбір із відповіддю',
+    }, true, true)
+
+    const buttons = w.findAll('.nmt-task__btn')
+    const answer = buttons.find(b => b.text() === 'Показати відповідь')
+    const solution = buttons.find(b => b.text() === 'Показати розбір')
+    expect(answer).toBeDefined()
+    expect(solution).toBeDefined()
+    expect(w.find('.nmt-task__delete-btn').exists()).toBe(true)
+
+    await answer!.trigger('click')
+    await solution!.trigger('click')
+    const updates = w.emitted('update:asset') as Array<[{ data: Record<string, unknown> }]>
+    expect(updates).toHaveLength(2)
+    expect(updates[0][0].data.showAnswer).toBe(true)
+    expect(updates[1][0].data.showSolution).toBe(true)
+  })
+
+  it('учень не отримує кнопок, що змінюють showAnswer/showSolution', () => {
+    const w = mountTask({
+      taskType: 'single_choice', question: 'Оберіть', options: OPTIONS,
+      solution: 'Розбір із відповіддю',
+    }, false, true)
+
+    expect(w.text()).not.toContain('Показати відповідь')
+    expect(w.text()).not.toContain('Показати розбір')
+    expect(w.find('.nmt-task__delete-btn').exists()).toBe(false)
+    expect(w.emitted('update:asset')).toBeUndefined()
+  })
+
+  it('учень бачить розкриття, яке вже зробив учитель, але не керує ним', () => {
+    const w = mountTask({
+      taskType: 'single_choice', question: 'Оберіть', options: OPTIONS,
+      solution: 'Розбір із відповіддю', showAnswer: true, showSolution: true,
+    }, false)
+
+    expect(w.find('.nmt-task__solution').text()).toContain('Розбір із відповіддю')
+    expect(w.findAll('.nmt-task__option.is-correct')).toHaveLength(2)
+    expect(w.text()).not.toContain('Сховати відповідь')
+    expect(w.text()).not.toContain('Сховати розбір')
   })
 })

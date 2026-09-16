@@ -130,13 +130,15 @@ describe('reveal gate (ескіз §6)', () => {
   })
 
   it('kill-тест wiring: рендерер справді питає гейт', () => {
-    // Прибрали `revealAllowed` із NmtTaskRenderer — цей тест падає.
+    // Прибрали гейт із NmtTaskRenderer — цей тест падає.
+    // T-03 (перенос TLV2-03S): кнопки ключа — під `revealControlsAllowed` = роль учителя І гейт.
     const src = readFileSync(
       resolve(__dirname, '../components/board/objects/NmtTaskRenderer.vue'),
       'utf8',
     )
     expect(src).toContain('useTutorRevealGate')
-    expect(src).toMatch(/hasAnswerToShow && revealAllowed/)
-    expect(src).toMatch(/data\.solution && revealAllowed/)
+    expect(src).toMatch(/hasAnswerToShow && revealControlsAllowed/)
+    expect(src).toMatch(/data\.solution && revealControlsAllowed/)
+    expect(src).toMatch(/props\.isTutor !== false && tutorRevealAllowed\.value/)
   })
 })

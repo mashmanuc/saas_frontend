@@ -49,7 +49,7 @@
            для traceability/provenance, але це технічний ідентифікатор, не для очей.
            Delete-кнопка має власний margin-left:auto, тож притискається праворуч. -->
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="isTutor !== false && !asset.locked && isSelected"
         type="button"
         class="nmt-task__delete-btn"
         :title="t('winterboard.widget.delete')"
@@ -211,7 +211,7 @@
       <!-- ── Action buttons ────────────────────────────────── -->
       <div class="nmt-task__actions">
         <button
-          v-if="hasAnswerToShow && revealAllowed"
+          v-if="hasAnswerToShow && revealControlsAllowed"
           type="button"
           class="nmt-task__btn"
           :class="{ 'is-active': data.showAnswer }"
@@ -222,7 +222,7 @@
           {{ data.showAnswer ? 'Сховати відповідь' : 'Показати відповідь' }}
         </button>
         <button
-          v-if="data.solution && revealAllowed"
+          v-if="data.solution && revealControlsAllowed"
           type="button"
           class="nmt-task__btn nmt-task__btn--solution"
           :class="{ 'is-active': data.showSolution }"
@@ -332,6 +332,8 @@ const props = defineProps<{
   asset: WBAsset
   isSelected: boolean
   interactive: boolean
+  /** Лише вчитель керує спільним ключем, розбором і самою карткою. */
+  isTutor?: boolean
   /** Картка локально показана на весь доступний простір полотна. */
   isExpanded?: boolean
 }>()
@@ -558,7 +560,10 @@ const hasAnswerToShow = computed(() => {
   return false
 })
 
-const revealAllowed = useTutorRevealGate(() => String(data.value.externalId ?? ''))
+const tutorRevealAllowed = useTutorRevealGate(() => String(data.value.externalId ?? ''))
+const revealControlsAllowed = computed(
+  () => props.isTutor !== false && tutorRevealAllowed.value,
+)
 
 /** Виправлення теми на місці — уся логіка в композаблі, тут лише вигляд. */
 const topicFix = useTaskTopicFix(() => String(data.value.externalId ?? ''))

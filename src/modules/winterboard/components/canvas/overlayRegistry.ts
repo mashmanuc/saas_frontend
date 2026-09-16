@@ -68,6 +68,8 @@ export interface OverlayCtx {
   isSelected: (id: string) => boolean
   /** currentTool === 'select' && wbStore.mode === 'edit' */
   interactive: boolean
+  /** Явна роль від classroom host; solo/replay передають tutor-mode. */
+  isTutor: boolean
   /** wbStore.mode — passed to nmt3d :board-mode */
   boardMode: string
   /** wbStore.mode === 'replay' — passed to graph_calculator :disable-animation */
@@ -323,7 +325,7 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     // «Задача на екран» з пульта використовує штатний локальний board-expand:
     // картка займає весь доступний простір, але її asset-геометрія не змінюється.
     expandable: true,
-    buildProps: expProps,
+    buildProps: (a, ctx) => ({ ...expProps(a, ctx), isTutor: ctx.isTutor }),
     buildEvents: (a, ctx) => ({
       ...expEvents(a, ctx),
       'spawn-companions': (payload: unknown) => ctx.onSpawnCompanions(payload),

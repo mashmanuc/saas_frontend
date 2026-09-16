@@ -49,12 +49,13 @@ import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
 
 // Phase S PR-3 (2026-04-28): PAUSED added between SYNC та DESYNC.
 //
-// PAUSED semantics (per REFACTOR_PLAN.md v2 §3 task #3):
+// PAUSED semantics (TLV2-G1b, SYSTEM_LAW §5 / SSOT INV-12):
 //   - record() ACCEPTS new ops (does NOT block UI input)
-//   - flush() THROWS BackpressureError (caller catches gracefully)
-//   - inFlightOps PRESERVED (NO drop)
-//   - UI shows non-blocking banner "Сервер тимчасово зайнятий..."
-//   - Resume on user click "Retry now" (resumeFromPause()) OR auto every 30s
+//   - flush() THROWS BackpressureError, крім одного дозволеного flush на спробу
+//   - inFlightOps + pendingOps PRESERVED з тими самими op_id (NO drop)
+//   - UI: OpsPausedBanner — видимий стан + «Повторити зараз» (retryNow())
+//   - спроба відновлення: один HTTP раз на 30 с (єдиний таймер) або за кнопкою;
+//     503 / без відповіді → лишаємось у PAUSED; інша відповідь → SYNC
 //
 // DESYNC reserved тільки для protocol/seq mismatch (INV-16 unchanged).
 export type OpsSyncMode = 'BOOTSTRAP' | 'SYNC' | 'PAUSED' | 'DESYNC'
@@ -113,7 +114,7 @@ const MAX_RETRY_ATTEMPTS = 2
 const RETRY_BASE_DELAY_MS = 200
 /** Jitter ceiling for backoff calc. */
 const RETRY_JITTER_MAX_MS = 150
-/** Auto-retry interval у PAUSED mode (per REFACTOR_PLAN §3 task #3). */
+/** TLV2-G1b: у PAUSED — одна спроба відновлення раз на цей інтервал (SYSTEM_LAW §5, §12). */
 const PAUSE_AUTO_RETRY_MS = 30_000
 
 function _genTabId(): string {
@@ -151,8 +152,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   let _retryAttempt = 0
   /** Unix ms timestamp when next flush is allowed (after exp backoff). null = no delay. */
   const _retryUntil = ref<number | null>(null)
-  /** Auto-retry timer для PAUSED mode (resume after PAUSE_AUTO_RETRY_MS). */
+  /** TLV2-G1b: єдиний таймер PAUSED — через PAUSE_AUTO_RETRY_MS дозволяє одну спробу. */
   let _pauseTimer: ReturnType<typeof setTimeout> | null = null
+  /** TLV2-G1b: дозвіл рівно на один flush() у PAUSED (таймер або «Повторити зараз»). */
+  let _probeArmed = false
+  /** TLV2-G1b: лічильник запитаних спроб — виконавець (рекордер кімнати) слухає його. */
+  const pauseProbeSeq = ref(0)
+  /** TLV2-G1b: спроба з PAUSED зараз у мережі (кнопка банера неактивна). */
+  const probeInFlight = ref(false)
   /** Last flush() duration (ms) — exposed для queue visibility UI. */
   const _lastFlushDuration = ref(0)
 
@@ -169,6 +176,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         if (msg.type === 'mode_change' && msg.mode === 'DESYNC') {
           // INV-19: інший tab перейшов у DESYNC → ми теж входимо (не writes у broken стан).
           if (mode.value !== 'DESYNC') {
+            _resetRetryState()
             mode.value = 'DESYNC'
             desyncReason.value = msg.reason ?? 'cross-tab DESYNC propagation'
           }
@@ -201,6 +209,52 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const retryUntil = computed(() => _retryUntil.value)
 
   // ── Internal helpers ──
+
+  // TLV2-G1b: retry-стан і таймер PAUSED живуть тут і скидаються в одному місці.
+  function _clearPauseTimer(): void {
+    if (_pauseTimer) {
+      clearTimeout(_pauseTimer)
+      _pauseTimer = null
+    }
+  }
+
+  /** Знімає таймер, дозвіл спроби і лічильник 503; буфери не чіпає. */
+  function _resetRetryState(): void {
+    _clearPauseTimer()
+    _probeArmed = false
+    _retryAttempt = 0
+    _retryUntil.value = null
+  }
+
+  /** Єдиний таймер: попередній завжди знімається перед новим. */
+  function _armPauseTimer(): void {
+    _clearPauseTimer()
+    _pauseTimer = setTimeout(() => {
+      _pauseTimer = null
+      _requestProbe()
+    }, PAUSE_AUTO_RETRY_MS)
+  }
+
+  /** Дозволити одну спробу з PAUSED і повідомити виконавця. Порожня черга → просто SYNC. */
+  function _requestProbe(): void {
+    if (mode.value !== 'PAUSED') return
+    if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) {
+      _exitPause()
+      return
+    }
+    _probeArmed = true
+    pauseProbeSeq.value += 1
+  }
+
+  function _exitPause(): void {
+    _resetRetryState()
+    desyncReason.value = null
+    mode.value = 'SYNC'
+  }
+
+  function _hasHttpResponse(err: unknown): boolean {
+    return typeof (err as { response?: { status?: number } })?.response?.status === 'number'
+  }
 
   /**
    * Read GET /sessions/{pk}/state/ per SSOT §5.
@@ -297,6 +351,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       pendingOps.value = []
       inFlightOps.value = []
       _flushPromise = null
+      // TLV2-G1b: таймер і лічильник 503 попередньої дошки не переходять на нову.
+      _resetRetryState()
     }
     sessionId.value = sid
     _initChannel()
@@ -304,6 +360,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       const response = await _fetchState(sid)
       serverSeq.value = response.last_seq | 0
       localSeq.value = response.last_seq | 0
+      _resetRetryState()
       mode.value = 'SYNC'
       desyncReason.value = null
     } catch (err) {
@@ -351,9 +408,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    *   - inFlightOps + pendingOps dropped (stale; resync re-bootstraps)
    *   - throw DesyncError
    *
-   * On 503 SERVER_BUSY:
-   *   - keep inFlightOps (next flush() retries; B4 додасть INV-12 max-2 jitter orchestration)
-   *   - throw error (caller може decide drop after retries exhausted)
+   * On 503 SERVER_BUSY (INV-12, TLV2-G1b):
+   *   - keep inFlightOps + pendingOps (same op_id) — ніколи не викидаються
+   *   - SYNC: до 2 повторів з backoff; третя 503 поспіль → PAUSED
+   *   - PAUSED: flush() дозволений лише один раз на спробу (таймер 30 с або retryNow())
    *
    * Other errors:
    *   - keep inFlightOps (transient)
@@ -366,8 +424,13 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     }
     // Phase S PR-3 (2026-04-28): PAUSED — flush throws BackpressureError.
     // Caller (useReplayRecorder) catches gracefully. inFlightOps preserved.
+    // TLV2-G1b: виняток — рівно один дозволений flush на спробу відновлення.
     if (mode.value === 'PAUSED') {
-      throw new BackpressureError('flush() blocked: PAUSED (server backpressure)')
+      if (!_probeArmed) {
+        throw new BackpressureError('flush() blocked: PAUSED (server backpressure)')
+      }
+      _probeArmed = false
+      return _runExclusive(true)
     }
     if (mode.value === 'BOOTSTRAP') {
       throw new Error('flush() called before bootstrap() — call bootstrap(sid) first')
@@ -385,9 +448,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     //   - 0 double-send (один POST per pending batch)
     //   - 0 in-flight loss (concurrent callers receive resolution/rejection of same op)
     //   - Race scenario (timer + record + unload) → 1 network request
+    return _runExclusive(false)
+  }
+
+  function _runExclusive(probe: boolean): Promise<void> {
     if (_flushPromise) {
       return _flushPromise
     }
+    probeInFlight.value = probe
     _flushPromise = (async () => {
       const _start = Date.now()
       try {
@@ -395,6 +463,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       } finally {
         _lastFlushDuration.value = Date.now() - _start
         _flushPromise = null
+        probeInFlight.value = false
       }
     })()
     return _flushPromise
@@ -483,6 +552,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         : Date.now()
     const _seqSent = serverSeq.value
     const _opsCount = batch.length
+    const fromPause = mode.value === 'PAUSED'
     const _t0 = _now()
     /** Emit telemetry без throw. NEVER blocks recorder (LAW §12 justified exception:
      *  failure surfaces у writePathTelemetry's одноразовому console.warn).
@@ -518,14 +588,31 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       inFlightOps.value = []
       serverSeq.value = response.last_seq
       localSeq.value = Math.max(localSeq.value, response.last_seq)
-      // Phase S PR-3: reset retry state on success.
-      _retryAttempt = 0
-      _retryUntil.value = null
+      // Phase S PR-3: reset retry state on success. TLV2-G1b: успішна спроба з PAUSED → SYNC.
+      if (mode.value === 'PAUSED') {
+        _exitPause()
+      } else {
+        _retryAttempt = 0
+        _retryUntil.value = null
+      }
     } catch (err) {
       // Read HTTP status (0 для network-level failure без response).
       const _status =
         ((err as { response?: { status?: number } })?.response?.status as number | undefined) ?? 0
       _emit(_status)
+      // TLV2-G1b: спроба з PAUSED. 503 або відсутня HTTP-відповідь → лишаємось у PAUSED,
+      // черга ціла, наступна спроба через 30 с. Інша відповідь сервера → вихід із PAUSED
+      // і звичайна обробка нижче.
+      if (fromPause && mode.value === 'PAUSED') {
+        if (_isServerBusy(err) || !_hasHttpResponse(err)) {
+          _armPauseTimer()
+          if (_isServerBusy(err)) {
+            throw new BackpressureError('flush() recovery attempt: server still busy (503)')
+          }
+          throw err
+        }
+        _exitPause()
+      }
       if (_isProtocolMismatch(err)) {
         // INV-20: client/server version mismatch. UI ProtocolMismatchModal,
         // user must reload. inFlightOps lost (acceptable — version drift means
@@ -588,9 +675,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
 
         if (_retryAttempt > MAX_RETRY_ATTEMPTS) {
           // 3rd 503 → PAUSED. Buffers preserved. Caller catches BackpressureError
-          // (next flush() call). Auto-retry timer starts; user can also click "Retry now".
+          // (next flush() call). Таймер 30 с; учитель може натиснути «Повторити зараз».
           enterPaused('server-busy-exhausted-retries')
-          // Keep _retryAttempt at MAX+1 — resumeFromPause() resets it to 0.
           throw err
         }
 
@@ -696,6 +782,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    */
   function enterDesync(reason: string): void {
     if (mode.value === 'DESYNC') return  // already there
+    _resetRetryState()  // TLV2-G1b: DESYNC не лишає таймер PAUSED
     mode.value = 'DESYNC'
     desyncReason.value = reason
     _broadcast({ type: 'mode_change', mode: 'DESYNC', reason })
@@ -710,8 +797,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * Side effects:
    *   - Mode → PAUSED (record() still accepts; flush() throws BackpressureError)
    *   - inFlightOps + pendingOps PRESERVED (no data loss)
-   *   - Auto-retry timer scheduled (PAUSE_AUTO_RETRY_MS)
-   *   - UI responsibility: show non-blocking banner з "Retry now" button
+   *   - TLV2-G1b: єдиний таймер PAUSE_AUTO_RETRY_MS → одна спроба відновлення
+   *   - UI: OpsPausedBanner (видимий стан + «Повторити зараз» → retryNow())
    *
    * NOT broadcast cross-tab — PAUSED — local backpressure signal, кожен tab decides
    * самостійно (DESYNC broadcasts because contract drift affects all tabs equally).
@@ -721,42 +808,47 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (mode.value === 'DESYNC') return  // DESYNC takes precedence (INV-16)
     mode.value = 'PAUSED'
     desyncReason.value = reason  // re-use field для UI banner messaging
-    // Schedule auto-retry. User can also click "Retry now" → resumeFromPause().
-    if (_pauseTimer) clearTimeout(_pauseTimer)
-    _pauseTimer = setTimeout(() => {
-      _pauseTimer = null
-      // Auto-resume only якщо ще у PAUSED (user не натиснув Retry й не з'явився DESYNC).
-      if (mode.value === 'PAUSED') {
-        resumeFromPause()
-      }
-    }, PAUSE_AUTO_RETRY_MS)
+    _retryUntil.value = null
+    _probeArmed = false
+    _armPauseTimer()
   }
 
   /**
-   * Phase S PR-3 (2026-04-28): resume from PAUSED mode.
+   * TLV2-G1b: «Повторити зараз» з банера PAUSED.
    *
-   * Triggers:
-   *   - User click "Retry now" button (UI banner)
-   *   - PAUSE_AUTO_RETRY_MS timer fires
+   * Знімає таймер і дозволяє одну спробу відновлення прямо зараз. Якщо спроба вже
+   * дозволена або batch у мережі — нічого (без паралельних запитів). Результат:
+   * успіх → SYNC; 503 / без відповіді → PAUSED і новий таймер 30 с.
+   */
+  function retryNow(): void {
+    if (mode.value !== 'PAUSED') return
+    if (_probeArmed || _flushPromise) return
+    _clearPauseTimer()
+    _requestProbe()
+  }
+
+  /**
+   * TLV2-G1b: вихід із кімнати. Знімає таймер PAUSED, дозвіл спроби і лічильник 503.
+   * Черги (ті самі op_id) і режим не чіпає: наступний bootstrap цієї дошки поверне SYNC
+   * і відправить їх, а backup рекордера зберігає їх при зміні дошки.
+   */
+  function stopPauseRecovery(): void {
+    _resetRetryState()
+  }
+
+  /**
+   * Phase S PR-3 (2026-04-28): службовий вихід із PAUSED без запиту.
+   *
+   * TLV2-G1b: UI цим не користується — кнопка банера викликає retryNow(), а таймер
+   * дозволяє одну спробу. Лишено для явного скидання (тести, майбутні виклики).
    *
    * Side effects:
-   *   - Mode → SYNC (з PAUSED)
-   *   - Reset _retryAttempt = 0, _retryUntil = null
+   *   - Mode → SYNC (з PAUSED); таймер, дозвіл спроби, лічильник 503 скинуто
    *   - inFlightOps preserved (next flush() retries SAME batch — INV-14 dedup safe)
-   *
-   * Caller (useReplayRecorder) typically triggers flush() shortly after resume —
-   * either via safety interval or explicit call.
    */
   function resumeFromPause(): void {
     if (mode.value !== 'PAUSED') return
-    if (_pauseTimer) {
-      clearTimeout(_pauseTimer)
-      _pauseTimer = null
-    }
-    _retryAttempt = 0
-    _retryUntil.value = null
-    desyncReason.value = null
-    mode.value = 'SYNC'
+    _exitPause()
   }
 
   /**
@@ -775,6 +867,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     }
     // Same session — fetch fresh state
     const response = await _fetchState(sid)
+    _resetRetryState()  // TLV2-G1b: після resync знову первинна спроба + 2 повтори
     pendingOps.value = []
     inFlightOps.value = []
     serverSeq.value = response.last_seq | 0
@@ -877,14 +970,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     desyncReason.value = null
     pendingOps.value = []
     inFlightOps.value = []
-    // Phase S PR-3: reset retry state + cancel auto-retry timer
-    _retryAttempt = 0
-    _retryUntil.value = null
+    // Phase S PR-3: reset retry state + cancel auto-retry timer (TLV2-G1b: + дозвіл спроби)
+    _resetRetryState()
+    probeInFlight.value = false
     _lastFlushDuration.value = 0
-    if (_pauseTimer) {
-      clearTimeout(_pauseTimer)
-      _pauseTimer = null
-    }
     if (_channel) {
       try { _channel.close() } catch { /* noop */ }
       _channel = null
@@ -912,6 +1001,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     inFlightCount,
     lastFlushDuration,
     retryUntil,
+    // TLV2-G1b: спроби відновлення з PAUSED
+    pauseProbeSeq,
+    probeInFlight,
 
     // Actions
     bootstrap,
@@ -924,6 +1016,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // Phase S PR-3: PAUSED mode actions
     enterPaused,
     resumeFromPause,
+    retryNow,
+    stopPauseRecovery,
     resync,
     // INV-24 WS-CATCHUP (2026-06-13): read-side reconciliation після (re)connect
     catchUp,
@@ -933,6 +1027,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     PROTOCOL_VERSION,
     FLUSH_BATCH_SIZE,
     MAX_RETRY_ATTEMPTS,
+    PAUSE_AUTO_RETRY_MS,
   }
 })
 
@@ -1005,7 +1100,8 @@ export class BeaconUnsupportedError extends Error {
  *   - PAUSED ≠ DESYNC: transient backpressure, NOT contract drift
  *   - inFlightOps + pendingOps PRESERVED (no data loss)
  *   - Caller (useReplayRecorder) catches gracefully (NO retry storm — wait for resume)
- *   - User clicks "Retry now" OR auto-retry (30s) → resumeFromPause() → flush retried
+ *   - TLV2-G1b: «Повторити зараз» (retryNow()) або таймер 30 с дозволяють один flush;
+ *     також кидається, коли ця спроба знову отримала 503
  */
 export class BackpressureError extends Error {
   constructor(message: string) {

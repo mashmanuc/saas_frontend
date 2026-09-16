@@ -56,6 +56,8 @@ const MAX_BATCH_OPS = 100
 const MAX_BATCH_BYTES = 128 * 1024
 /** Coalescer trigger: коли pendingCount > N AND incoming op = stroke_append → merge. */
 const COALESCE_THRESHOLD = 50
+/** TLV2-G1b: після успішної спроби з PAUSED — скільки batch-ів черги дозлити одразу. */
+const RECOVERY_DRAIN_MAX_BATCHES = 20
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -141,7 +143,8 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
   function _persistBackup(): void {
     const sid = options.sessionId.value
-    if (!sid) return
+    // TLV2-G1b: черга store належить дошці store; під час зміни дошки не писати її чужій.
+    if (!sid || opsSync.sessionId !== sid) return
     saveBackup(sid, [...opsSync.pendingOps], [...opsSync.inFlightOps])
   }
 
@@ -163,6 +166,48 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       clearTimeout(_persistBackupTimer)
       _persistBackupTimer = null
       _persistBackup()  // ensure pending state hits localStorage on stop/destroy
+    }
+  }
+
+  /**
+   * TLV2-G1b: повернути в store ops із localStorage backup поточної дошки.
+   *
+   * Викликається і з start(), і з connectToStore() — у Solo start() не викликається,
+   * тож без другого виклику backup там ніколи не відновлювався. op_id, які вже є в
+   * черзі store, не дублюються. Якщо store ще не в SYNC/PAUSED, record() відмовить —
+   * backup лишається до наступного виклику.
+   */
+  function _restoreBackup(): void {
+    const sid = options.sessionId.value
+    if (!sid || opsSync.sessionId !== sid) return
+    const backup = readBackup<RecordOperationRequest>(sid)
+    if (!backup || (backup.pending.length === 0 && backup.inFlight.length === 0)) return
+    const known = new Set([...opsSync.inFlightOps, ...opsSync.pendingOps].map(o => o.op_id))
+    let restored = 0
+    for (const op of [...backup.inFlight, ...backup.pending]) {
+      if (!op.op_id || known.has(op.op_id)) continue
+      if (!opsSync.record(op as unknown as OpsSyncOp)) return
+      known.add(op.op_id)
+      restored++
+    }
+    if (restored > 0) {
+      console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
+    }
+  }
+
+  /**
+   * TLV2-G1b: одна спроба відновлення з PAUSED, дозволена store (таймер 30 с або
+   * «Повторити зараз»). Після успіху — дозлив решти черги окремими batch-ами, поки є
+   * прогрес; будь-яка невдача зупиняє дозлив (без повторів тут).
+   */
+  async function _runRecoveryAttempt(): Promise<void> {
+    if (_destroyed) return
+    await flush()
+    for (let i = 0; i < RECOVERY_DRAIN_MAX_BATCHES && !_destroyed && opsSync.isSync; i++) {
+      const before = opsSync.pendingOps.length + opsSync.inFlightOps.length
+      if (before === 0) return
+      await flush()
+      if (opsSync.pendingOps.length + opsSync.inFlightOps.length >= before) return
     }
   }
 
@@ -449,20 +494,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
     // Restore backup (якщо є) перед стартом safety-interval.
     // Note: opsSyncStore.bootstrap() має бути вже викликано caller'ом.
-    const sid = options.sessionId.value
-    if (sid) {
-      const backup = readBackup<RecordOperationRequest>(sid)
-      if (backup && (backup.pending.length > 0 || backup.inFlight.length > 0)) {
-        const restored = [...backup.inFlight, ...backup.pending]
-        // Push до opsSyncStore.pendingOps (через record()) щоб state machine побачила.
-        // Mode має бути SYNC після bootstrap; якщо BOOTSTRAP — store.record() поверне
-        // false і backup лишиться у localStorage до наступної спроби.
-        for (const op of restored) {
-          opsSync.record(op as unknown as OpsSyncOp)
-        }
-        console.info(`[WB:Recorder] Restored ${restored.length} ops from localStorage backup`)
-      }
-    }
+    _restoreBackup()
 
     // Safety interval — ловить ops які debounce не скинув (idle-період, long burst).
     //
@@ -470,7 +502,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     // Якщо PAUSED → flush() throws BackpressureError → no-op. Якщо retryUntil active
     // → skip tick (don't burn cycles + don't trigger nested error path).
     flushTimer = setInterval(() => {
-      if (opsSync.isPaused) return  // PAUSED — wait for resumeFromPause()
+      if (opsSync.isPaused) return  // PAUSED — спроби дозволяє лише store (30 с / кнопка)
       const ru = opsSync.retryUntil
       if (typeof ru === 'number' && ru > 0 && Date.now() < ru) return  // backoff active
       void flush()
@@ -518,12 +550,22 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
   /**
    * Full cleanup — stop timer, deregister auth-death, reset composable counters.
-   * Does NOT reset opsSyncStore (інша composable instance може ще use).
+   * Does NOT reset opsSyncStore черги (інша composable instance може ще use).
+   *
+   * TLV2-G1b: вихід із кімнати — черга дошки йде в backup, таймер PAUSED і лічильник
+   * 503 знімаються (лише якщо store досі на дошці цього рекордера).
    */
   function destroy(): void {
     if (_destroyed) return
     console.info('[WB:Recorder] destroy() — recorder terminated')
+    const sid = options.sessionId.value
+    if (sid && opsSync.sessionId === sid) {
+      _persistBackup()
+      opsSync.stopPauseRecovery()
+    }
     _destroyed = true
+    _stopProbeWatch()
+    _stopSessionWatch()
     stop()
     opCount.value = 0
     _totalFlushedOps = 0
@@ -539,8 +581,38 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void },
   ): () => void {
     console.info('[WB:Recorder] connectToStore — listener registered')
+    // TLV2-G1b: connectToStore іде після bootstrap і в Solo, і в Classroom.
+    _restoreBackup()
+    if (opsSync.isSync && opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) void flush()
     return store.onOperation((op) => { record(op) })
   }
+
+  // TLV2-G1b: виконавець спроб відновлення з PAUSED. Синхронно, щоб дозволений store
+  // flush був зайнятий одразу (жодного вікна для другого запиту).
+  const _stopProbeWatch = watch(
+    () => opsSync.pauseProbeSeq,
+    () => { void _runRecoveryAttempt() },
+    { flush: 'sync' },
+  )
+
+  // TLV2-G1b: зміна дошки в тій самій кімнаті — черга попередньої дошки йде в її backup
+  // до того, як bootstrap нової її скине з пам'яті (INV-CROSS-SESSION).
+  const _stopSessionWatch = watch(
+    options.sessionId,
+    (next, prev) => {
+      if (!prev || prev === next || opsSync.sessionId !== prev) return
+      if (_persistBackupTimer !== null) {
+        clearTimeout(_persistBackupTimer)
+        _persistBackupTimer = null
+      }
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+      }
+      saveBackup(prev, [...opsSync.pendingOps], [...opsSync.inFlightOps])
+    },
+    { flush: 'sync' },
+  )
 
   // Phase 1: Watch enabled ref — auto start/stop recorder
   if (options.enabled) {

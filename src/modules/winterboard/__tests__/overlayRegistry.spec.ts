@@ -151,6 +151,7 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
     const mockCtx = {
       isSelected: () => false,
       interactive: false,
+      isTutor: false,
       boardMode: 'edit',
       disableAnimation: false,
       expandedId: null,
@@ -165,9 +166,11 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
 
     const mockAsset = { id: 'task-id', type: 'nmt_task' } as any
     const events = entry.buildEvents(mockAsset, mockCtx)
+    const props = entry.buildProps(mockAsset, mockCtx)
 
     expect(events).toHaveProperty('spawn-companions')
     expect(events).toHaveProperty('update:asset')
     expect(events).toHaveProperty('delete')
+    expect(props.isTutor).toBe(false)
   })
 })

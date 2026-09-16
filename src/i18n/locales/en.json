@@ -7093,6 +7093,13 @@
         "reasonCrossTab": "Another tab lost sync",
         "reasonGeneric": "Couldn't sync changes — click Retry"
       },
+      "paused": {
+        "bannerLabel": "Server temporarily busy — changes are waiting to be sent",
+        "title": "Server temporarily busy — your changes are queued",
+        "hint": "Changes in queue: {count}. Sending is retried automatically every {seconds} s.",
+        "retry": "Retry now",
+        "retrying": "Sending…"
+      },
       "serverBusy": "Server temporarily busy. Try again in a minute.",
       "seqMismatch": "Whiteboard state out of sync — click Retry in the recovery banner.",
       "beaconUnsupported": "Couldn't save changes before page closed."

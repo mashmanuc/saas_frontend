@@ -56,6 +56,11 @@ describe('isPaletteHiddenRoute', () => {
     expect(isPaletteHiddenRoute({ name: 'winterboard-remote', path: '/remote' })).toBe(true)
   })
 
+  it('обидва маршрути пульта приховані, а не лише /remote (ad9d64ea, 2026-09-07)', () => {
+    expect(isPaletteHiddenRoute({ name: 'winterboard-remote-board', path: '/winterboard/abc/remote' })).toBe(true)
+    expect(isPaletteHiddenRoute({ name: 'winterboard-solo', path: '/winterboard/abc' })).toBe(false)
+  })
+
   it('staff-адмінка прихована (2026-07-27), і за шляхом, не за іменем', () => {
     expect(isPaletteHiddenRoute({ name: 'staff-anything', path: '/staff/billing/pending' })).toBe(true)
     expect(isPaletteHiddenRoute({ name: 'staff-anything', path: '/tutor' })).toBe(false)

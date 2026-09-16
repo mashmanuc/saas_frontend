@@ -46,7 +46,11 @@ export function resolveBoardId({ routeName, params, classroomBoardId }) {
  */
 export function isPaletteHiddenRoute({ name, path, meta }) {
   if (typeof path === 'string' && path.startsWith('/staff')) return true
-  if (name === 'winterboard-remote') return true
+  // 2026-09-07 (ad9d64ea, перенесено при інтеграції TLV2-05C): у пульта ДВА маршрути —
+  // `winterboard-remote` (/remote) і `winterboard-remote-board` (/winterboard/:id/remote);
+  // точна рівність ловила лише перший, і на телефоні власника значок лишався.
+  // Префікс закриває й майбутній третій маршрут пульта за побудовою.
+  if (typeof name === 'string' && name.startsWith('winterboard-remote')) return true
   // 2026-09-06, знахідка власника на живому уроці: маскот Інтегралика висів
   // поверх ПУБЛІЧНОГО РЕПЛЕЮ (`/winterboard/public/:token`) — сторінки, яку
   // вчитель кидає учням. Там людина ДИВИТЬСЯ чужий завершений запис, а не

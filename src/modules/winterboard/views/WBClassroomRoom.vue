@@ -37,6 +37,8 @@
          ProtocolMismatchModal — full-screen blocking, single Reload button.
          Mutually exclusive by canonical reason taxonomy у opsSyncStore. -->
     <DesyncRecoveryBanner />
+    <!-- TLV2-G1b: видимий PAUSED (503) + «Повторити зараз»; черга не губиться. -->
+    <OpsPausedBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис» -->
     <WBFrozenBanner
@@ -360,6 +362,7 @@
           :height="store.pageHeight"
           :zoom="store.zoom"
           :read-only="isDrawingDisabled"
+          :is-tutor="classroomRole.isTeacher.value"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
           @stroke-delete="handleStrokeDelete"
@@ -574,6 +577,7 @@ import { useAutosave } from '../composables/useAutosave'
 // Phase 2 SSOT INV-16/INV-20 UI gates (mutually exclusive by reason taxonomy)
 import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
+import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
