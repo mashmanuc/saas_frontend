@@ -16,7 +16,7 @@
       @close="chatOverlay.close"
     />
     <!-- UIA Command Palette (Ctrl+Shift+K) — глобальна продуктова точка входу (вкл. редактор дошки).
-         Gated VITE_FEATURE_UIA + tutor/staff усередині. Removable: видалити modules/intent + цей рядок. -->
+         Доступ tutor/staff за роллю й маршрутом усередині (TLV2-RC1: без клієнтських build-прапорців). Removable: видалити modules/intent + цей рядок. -->
     <CommandPalette v-if="authStore.isAuthenticated" />
     <!-- Ф3: глобальний paywall SaaS-лімітів (403 LIMIT_EXCEEDED). Live-верифіковано
          2026-07-22: винесено з PageShell — winterboard-роути мають ВЛАСНИЙ layout

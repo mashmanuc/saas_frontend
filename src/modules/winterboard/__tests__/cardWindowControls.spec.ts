@@ -54,25 +54,24 @@ describe('INV-WIN-1/2 · які дії показати', () => {
     ['image', { scale: false, minimize: true, expand: false, delete: true }],
     ['video_player', { scale: false, minimize: false, expand: false, delete: true }],
   ])('вчитель · %s', (type, expected) => {
-    expect(cardWindowActions(card(type), TEACHER, true)).toEqual(expected)
+    expect(cardWindowActions(card(type), TEACHER)).toEqual(expected)
   })
 
   it('учень, невідомий тип і порожній вибір — жодної дії', () => {
-    expect(cardWindowActions(card('visual_capsule'), STUDENT, true)).toEqual(NO_WINDOW_ACTIONS)
-    expect(cardWindowActions(card('wat'), TEACHER, true)).toEqual(NO_WINDOW_ACTIONS)
-    expect(cardWindowActions(null, TEACHER, true)).toEqual(NO_WINDOW_ACTIONS)
+    expect(cardWindowActions(card('visual_capsule'), STUDENT)).toEqual(NO_WINDOW_ACTIONS)
+    expect(cardWindowActions(card('wat'), TEACHER)).toEqual(NO_WINDOW_ACTIONS)
+    expect(cardWindowActions(null, TEACHER)).toEqual(NO_WINDOW_ACTIONS)
   })
 
   it('заблокована картка: без видалення; розгорнути можна (це лише подання)', () => {
-    const actions = cardWindowActions(card('visual_capsule', { locked: true }), TEACHER, true)
+    const actions = cardWindowActions(card('visual_capsule', { locked: true }), TEACHER)
     expect(actions.delete).toBe(false)
     expect(actions.expand).toBe(true)
   })
 
-  it('replay: лише розгортання; без прапорця трею — без згортання', () => {
-    expect(cardWindowActions(card('nmt_task'), { isTutor: true, mode: 'replay' }, true))
+  it('replay: лише розгортання', () => {
+    expect(cardWindowActions(card('nmt_task'), { isTutor: true, mode: 'replay' }))
       .toEqual({ scale: false, minimize: false, expand: true, delete: false })
-    expect(cardWindowActions(card('nmt_task'), TEACHER, false).minimize).toBe(false)
   })
 })
 
@@ -220,8 +219,8 @@ describe('INV-WIN-6 · полотно: одна група, правий вер�
     expect(canvas).toMatch(/function handleWindowDelete\(assetId: string\): void \{[\s\S]*?emit\('asset-delete', assetId\)/)
   })
 
-  it('V1: без прапорця ні групи, ні приховування власних кнопок карток', () => {
-    expect(canvas).toContain('provideHostWindowControls(() => boardTrayEnabled)')
-    expect(canvas).toMatch(/const windowControlsTarget = computed<WBAsset \| null>\(\(\) => \{\n\s+if \(!boardTrayEnabled\) return null/)
+  it('TLV2-RC1: група віконних дій — звичайна поведінка полотна, без build-прапорця', () => {
+    expect(canvas).toContain('provideHostWindowControls(() => true)')
+    expect(canvas).not.toContain('boardTrayEnabled')
   })
 })

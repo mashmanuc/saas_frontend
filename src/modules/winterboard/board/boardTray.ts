@@ -47,15 +47,13 @@ export function canShowTray(viewer: TrayViewer, itemCount: number): boolean {
 
 /**
  * Чи доступна дія «Згорнути» для картки.
- * `enabled` — прапорець `isBoardTrayEnabled()`: у V1 дія вимкнена за замовчуванням.
+ * TLV2-RC1: трей — звичайна поведінка дошки (прийнято власником), build-прапорця немає.
  */
 export function canMinimize(
   asset: WBAsset | null | undefined,
   viewer: TrayViewer,
-  enabled: boolean,
 ): boolean {
-  return enabled
-    && viewer.isTutor
+  return viewer.isTutor
     && viewer.mode === 'edit'
     && !!asset
     && isMinimizableAsset(asset.type)

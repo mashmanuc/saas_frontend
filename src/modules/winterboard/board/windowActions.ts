@@ -4,7 +4,7 @@
  * Одне правило для всіх карток — за можливостями типу (`objectStandard`):
  *   • `scale`    — TLV2-05C: вчитель, режим редагування, `textScale: 'teacher-shared'`;
  *                  блокування не заважає (це подання, як і ⛶);
- *   • `minimize` — `canMinimize` (вчитель, режим редагування, прапорець трею, `minimizable`);
+ *   • `minimize` — `canMinimize` (вчитель, режим редагування, `minimizable`);
  *   • `expand`   — вчитель і `fullscreen`; розгортання — лише подання, тож блокування не заважає;
  *   • `delete`   — вчитель, режим редагування, `deletable`, картка НЕ заблокована.
  * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту).
@@ -31,13 +31,12 @@ export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
 export function cardWindowActions(
   asset: WBAsset | null | undefined,
   viewer: TrayViewer,
-  trayEnabled: boolean,
 ): CardWindowActions {
   if (!asset || !viewer.isTutor || !isCardAsset(asset.type)) return NO_WINDOW_ACTIONS
   const caps = assetCapabilities(asset.type)
   return {
-    scale: trayEnabled && viewer.mode === 'edit' && caps.textScale === 'teacher-shared',
-    minimize: canMinimize(asset, viewer, trayEnabled),
+    scale: viewer.mode === 'edit' && caps.textScale === 'teacher-shared',
+    minimize: canMinimize(asset, viewer),
     expand: caps.fullscreen,
     delete: caps.deletable && viewer.mode === 'edit' && asset.locked !== true,
   }

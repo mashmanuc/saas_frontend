@@ -37,7 +37,6 @@ import {
   trayItems,
   trayTitle,
 } from '../board/boardTray'
-import { isBoardTrayEnabled } from '../config/featureFlags'
 import { useRectSelect } from '../composables/useRectSelect'
 import { createSuspendableFrameScheduler } from '../composables/suspendableFrameScheduler'
 import { applyReplayOperation, type ReplayStoreApi } from '../engine/applyReplayOperation'
@@ -127,12 +126,12 @@ describe('INV-TRAY-6/7 · хто бачить трей і дію «Згорну�
 
   it('учень не бачить трею й не може згорнути', () => {
     expect(canShowTray(STUDENT, 3)).toBe(false)
-    expect(canMinimize(theory, STUDENT, true)).toBe(false)
+    expect(canMinimize(theory, STUDENT)).toBe(false)
   })
 
   it('у replay й readonly трею немає', () => {
     expect(canShowTray({ isTutor: true, mode: 'replay' }, 3)).toBe(false)
-    expect(canMinimize(theory, { isTutor: true, mode: 'readonly' }, true)).toBe(false)
+    expect(canMinimize(theory, { isTutor: true, mode: 'readonly' })).toBe(false)
   })
 
   it('вчитель бачить трей, лише коли в ньому є картки', () => {
@@ -140,30 +139,21 @@ describe('INV-TRAY-6/7 · хто бачить трей і дію «Згорну�
     expect(canShowTray(TEACHER, 1)).toBe(true)
   })
 
-  it('V1: без прапорця дії «Згорнути» немає', () => {
-    expect(canMinimize(theory, TEACHER, false)).toBe(false)
-    expect(canMinimize(theory, TEACHER, true)).toBe(true)
-  })
-
-  it('TLV2-05C: прапорець — dev увімкнено без env; production і явний false — вимкнено', () => {
-    try { localStorage.removeItem('wb_board_tray') } catch { /* немає localStorage */ }
+  it('TLV2-RC1: «Згорнути» — звичайна дія вчителя, однакова в dev і production', () => {
     try {
-      vi.stubEnv('VITE_WB_BOARD_TRAY', '')
       vi.stubEnv('DEV', true)
-      expect(isBoardTrayEnabled()).toBe(true)
+      expect(canMinimize(theory, TEACHER)).toBe(true)
       vi.stubEnv('DEV', false)
-      expect(isBoardTrayEnabled()).toBe(false)
-      vi.stubEnv('DEV', true)
-      vi.stubEnv('VITE_WB_BOARD_TRAY', 'false')
-      expect(isBoardTrayEnabled()).toBe(false)
+      vi.stubEnv('PROD', true)
+      expect(canMinimize(theory, TEACHER)).toBe(true)
     } finally {
       vi.unstubAllEnvs()
     }
   })
 
   it('медіа й уже згорнуту картку згорнути не можна', () => {
-    expect(canMinimize(card('v', 'video_player'), TEACHER, true)).toBe(false)
-    expect(canMinimize(minimizedAsset(theory), TEACHER, true)).toBe(false)
+    expect(canMinimize(card('v', 'video_player'), TEACHER)).toBe(false)
+    expect(canMinimize(minimizedAsset(theory), TEACHER)).toBe(false)
   })
 })
 
@@ -407,11 +397,10 @@ describe('INV-TRAY-10 · WBCanvas: одна оболонка, запис лиш�
     expect(canvas).toMatch(/function handleTrayDelete\(assetId: string\): void \{[\s\S]*?emit\('asset-delete', assetId\)/)
   })
 
-  it('роль і прапорець вирішують спільні правила, а не шаблон', () => {
+  it('роль вирішує спільне правило, а не шаблон і не build-прапорець', () => {
     expect(canvas).toContain("const trayViewer = computed(() => ({ isTutor: props.isTutor !== false, mode: wbStore.mode }))")
     // TLV2-05B.2: «Згорнути» — у спільній групі віконних дій; правило те саме (canMinimize).
-    expect(canvas).toContain('cardWindowActions(asset, trayViewer.value, boardTrayEnabled)')
-    expect(canvas).toContain('const boardTrayEnabled = isBoardTrayEnabled()')
+    expect(canvas).toContain('cardWindowActions(asset, trayViewer.value)')
     expect(canvas).toMatch(/<WBBoardTray\s+v-if="showTray"/)
   })
 

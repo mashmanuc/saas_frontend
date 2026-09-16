@@ -4,7 +4,9 @@
   Sprint 4 — COMMAND DIALOG ENGINE: команди декларують `params`; invoke() добирає відсутні
   діалогом. Типи параметрів: text | number | list | SELECT (показує людські label, надсилає value).
   Це «отвір», у який AI-Producer вставиться (усі params → запуск; бракує → спитати) без зміни capabilities.
-  Помилки — людською мовою (ERR_MSG). Gated VITE_FEATURE_UIA + tutor/staff. Removable.
+  Помилки — людською мовою (ERR_MSG). Доступ — tutor/staff за роллю й маршрутом
+  (`integralykAccess.js`), персональний вимикач `integralyk_enabled`, серверний kill-switch
+  `FEATURE_UIA*` (TLV2-RC1: без клієнтських build-прапорців). Removable.
 -->
 <template>
   <Teleport to="body">
@@ -102,7 +104,7 @@
               @keydown.enter.prevent="runSelected"
             />
             <button
-              v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
+              v-if="VOICE_ENABLED && showAI" class="cmdp-mic" :class="{ listening: voiceListening }"
               @click="toggleVoice('cmd')"
               :title="voiceListening ? uiText.stopListening : uiText.voiceInput"
               :aria-label="uiText.voiceInput"
@@ -271,7 +273,7 @@
               :disabled="aiBusy" @keydown.enter.prevent="continueAi"
             />
             <button
-              v-if="VOICE_ENABLED && integralykOn" class="cmdp-mic" :class="{ listening: voiceListening }"
+              v-if="VOICE_ENABLED && showAI" class="cmdp-mic" :class="{ listening: voiceListening }"
               :disabled="aiBusy" @click="toggleVoice('ai')"
               :title="voiceListening ? uiText.stopListening : uiText.voiceInput"
               :aria-label="uiText.voiceInput"
@@ -325,7 +327,13 @@ import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRen
 import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
 import { humanErrorMessage, errorCodeOf } from './errorMessage'
-import { resolveBoardId, isPaletteHiddenRoute, isAuthoringRoute } from './boardRoute'
+import { resolveBoardId, isAuthoringRoute } from './boardRoute'
+import {
+  canUseIntegralyk,
+  INTEGRALYK_SERVER_DISABLED_MESSAGE,
+  isIntegralykOn,
+  isIntegralykServerDisabled,
+} from './integralykAccess'
 // Г2-г: план уроку на сесії — стан лише з сервера; панель над чатом.
 import { reactive } from 'vue'
 import { useLessonPlan } from './lessonPlanApi'
@@ -351,7 +359,6 @@ function matchesShortcut(e) {
   const k = (e.key || '').toLowerCase()
   return SHORTCUTS.some(s => k === s.key && !!s.ctrl === e.ctrlKey && !!s.meta === e.metaKey && !!s.shift === e.shiftKey)
 }
-const ALLOWED_ROLES = ['tutor', 'admin', 'staff', 'superadmin']
 
 // Людські повідомлення для кодів помилок (замість сирого технічного detail).
 const ERR_MSG = {
@@ -427,7 +434,8 @@ const lessonPlan = reactive(useLessonPlan())
 watch(currentBoardId, (id) => { lessonPlan.load(id) }, { immediate: true })
 
 const enabled = computed(() => {
-  if (import.meta.env.VITE_FEATURE_UIA !== 'true' || !auth.user) return false
+  // TLV2-RC1: без клієнтського build-прапорця — роль і маршрут (`integralykAccess.js`);
+  // вимкнений на сервері Інтегралик FE показує чесно (404 kill-switch), а не ховає через env.
   // 2026-07-27 (зауваження власника): в staff-АДМІНЦІ Інтегралик недоречний —
   // його інструменти (дошка/уроки/навігація тьютора) там не мають сенсу,
   // а FAB висів поверх адмін-таблиць. Staff-РОЛІ на звичайних сторінках — ок.
@@ -437,8 +445,7 @@ const enabled = computed(() => {
   // ⛔ Класної кімнати тут НЕМАЄ і не має бути: 09-05 я її «сховала», а
   // onIntegralykAsk починається з `if (!enabled.value) return` — і фраза з
   // пульта на живому уроці мовчки викидалась. Спек boardRoute.spec.js стереже.
-  if (isPaletteHiddenRoute(route)) return false
-  return ALLOWED_ROLES.includes(auth.user.role) || auth.user.is_staff === true
+  return canUseIntegralyk(auth.user, route)
 })
 
 const open = ref(false)
@@ -476,8 +483,9 @@ async function run(fn, onOk) {
     // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal уже показано
     // interceptor'ом; не дублюємо власним inline-повідомленням (finally скине loading).
     if (isLimitError(e)) return
-    const d = e?.response?.data
-    error.value = humanErrorMessage(e, ERR_MSG)
+    error.value = isIntegralykServerDisabled(e)
+      ? INTEGRALYK_SERVER_DISABLED_MESSAGE
+      : humanErrorMessage(e, ERR_MSG)
   } finally { loading.value = false }
 }
 
@@ -814,16 +822,18 @@ async function openLast() {
 //   high/destructive  → ЗАВЖДИ confirm (навіть після explicit-вибору кандидата)
 //   2+ кандидатів     → вибір списком (explicit pick = підтвердження для low/medium)
 //   none              → чесне пояснення
-const AI_ENABLED = import.meta.env.VITE_FEATURE_UIA_AI === 'true'   // build-флаг (усе розгортання)
+// TLV2-RC1: клієнтський build-прапорець AI прибрано. AI-режим вимикають лише персональний
+// тумблер і серверний kill-switch: перша 404-відповідь `/intents/ai/parse/` ховає AI до reload.
+const serverAiOff = ref(false)
 
 // ── Per-акаунт вимкнення (owner: «не всім потрібен»). Джерело — profileStore.settings
 // (спільне реактивне: і тумблер у Налаштуваннях, і quick-hide пишуть туди → палітра
 // реагує миттєво). Дефолт — показувати. showAI гейтить маскот/AI/підказки/провідник/голос.
 const profileStore = useProfileStore()
-const integralykOn = computed(() => profileStore.settings?.integralyk_enabled !== false)
-const showAI = computed(() => AI_ENABLED && integralykOn.value)
+const integralykOn = computed(() => isIntegralykOn(profileStore.settings))
+const showAI = computed(() => integralykOn.value && !serverAiOff.value)
 async function loadIntegralykPref() {
-  if (!AI_ENABLED || profileStore.settings) return
+  if (profileStore.settings) return
   try {
     const { getUserSettings } = await import('@/api/users')
     profileStore.settings = await getUserSettings()
@@ -943,7 +953,8 @@ const voice = useVoiceDictation({
   },
 })
 const voiceListening = voice.listening
-const VOICE_ENABLED = AI_ENABLED && import.meta.env.VITE_FEATURE_UIA_VOICE === 'true' && voice.supported
+// TLV2-RC1: голос — лише коли браузер його підтримує; у шаблоні додатково `showAI`.
+const VOICE_ENABLED = voice.supported
 function toggleVoice(target) {
   if (target === 'ai') voice.toggle(aiInput)
   else { selected.value = 0; voice.toggle(query) }   // 'cmd' — диктовка у пошук команд
@@ -1150,6 +1161,11 @@ async function askAi(phrase) {
     // Ф3: SaaS-ліміт (403 LIMIT_EXCEEDED) — глобальний LimitPaywallModal («Оформи PRO»)
     // уже показано interceptor'ом; не пхаємо в тред ще й «Помилка AI» (finally скине aiBusy).
     if (isLimitError(e)) return
+    if (isIntegralykServerDisabled(e)) {
+      serverAiOff.value = true
+      aiPush({ kind: 'bot', text: INTEGRALYK_SERVER_DISABLED_MESSAGE })
+      return
+    }
     const d = e?.response?.data
     aiPush({
       kind: 'bot',
@@ -1867,7 +1883,7 @@ onMounted(() => {
     window.visualViewport.addEventListener('resize', onViewportResize)
     window.visualViewport.addEventListener('scroll', onViewportResize)
   }
-  if (enabled.value && AI_ENABLED) {
+  if (enabled.value) {
     loadIntegralykPref()   // per-акаунт вимкнення (може сховати маскот)
     scheduleTip()
     applyItgSkin()   // скін маскота за часом доби (кава/ковпак/зірки/party/капелюх)

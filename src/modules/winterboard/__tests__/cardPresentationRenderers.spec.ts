@@ -277,7 +277,7 @@ describe('учень бачить учительський масштаб без
     expect(task.findComponent(NmtTaskRenderer).emitted('request-height')).toBeUndefined()
     expect(task.find('.nmt-task__solution-zoom').exists()).toBe(false)
     for (const type of ['theory_card', 'nmt_task']) {
-      expect(cardWindowActions({ id: 'x', type } as never, { isTutor: false, mode: 'edit' }, true)).toEqual(NO_WINDOW_ACTIONS)
+      expect(cardWindowActions({ id: 'x', type } as never, { isTutor: false, mode: 'edit' })).toEqual(NO_WINDOW_ACTIONS)
     }
     theory.unmount()
     task.unmount()

@@ -986,7 +986,7 @@ import WBOverlayLayer from './WBOverlayLayer.vue'
 import WBBoardTray from './WBBoardTray.vue'
 import WBCardWindowControls from './WBCardWindowControls.vue'
 import { useExpandedAssetSelection } from '../../composables/useExpandedAssetSelection'
-import { isBoardTrayEnabled, isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
+import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
 import { isOverlayType } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
@@ -1510,10 +1510,9 @@ const unifiedRenderEnabled = isUnifiedOverlayRenderEnabled()
 
 // ── TLV2-05B · згортання карток у нижній трей ────────────────────────────────
 // Ховати/показувати — ЗА ДАНИМИ (`asset.minimized`, `isMinimizedOnBoard`): учень,
-// reload, replay і клон бачать те саме. Прапорець керує лише ДІЄЮ «Згорнути»
-// (V1 — вимкнено за замовчуванням). Запис — штатний `asset-update` → кімната →
-// `store.updateAsset`; другого шляху немає.
-const boardTrayEnabled = isBoardTrayEnabled()
+// reload, replay і клон бачать те саме. TLV2-RC1: трей і стандарт карток — звичайна
+// поведінка в dev і production, без build-прапорця. Запис — штатний `asset-update` →
+// кімната → `store.updateAsset`; другого шляху немає.
 const { t } = useI18n({ useScope: 'global' })
 
 /** Konva-шар: згорнуті картки знімаються з полотна (проксі не ловить drag/select). */
@@ -1525,23 +1524,22 @@ const trayViewer = computed(() => ({ isTutor: props.isTutor !== false, mode: wbS
 const trayList = computed(() => trayItems(assets.value))
 const showTray = computed(() => canShowTray(trayViewer.value, trayList.value.length))
 
-// TLV2-05B.2: у режимі стандарту карток віконні дії (⛶ / ×) малює полотно, а не кожна
-// картка — інакше кнопок було б дві. Без прапорця (V1) картки малюють свої, як раніше.
-provideHostWindowControls(() => boardTrayEnabled)
+// TLV2-05B.2: віконні дії (⛶ / ×) малює полотно, а не кожна картка — інакше кнопок було б
+// дві. Власні кнопки лишаються лише в карток, змонтованих поза полотном (без провайдера).
+provideHostWindowControls(() => true)
 
 /** Картка з віконними діями: розгорнута на всю дошку або єдина виділена. */
 const windowControlsTarget = computed<WBAsset | null>(() => {
-  if (!boardTrayEnabled) return null
   const id = expandedAssetId.value
     ?? (wbStore.selectedIds.length === 1 ? wbStore.selectedIds[0] : null)
   if (!id) return null
   const asset = assets.value.find(a => a.id === id) ?? null
   if (!asset || isMinimizedOnBoard(asset)) return null
-  return hasWindowActions(cardWindowActions(asset, trayViewer.value, boardTrayEnabled)) ? asset : null
+  return hasWindowActions(cardWindowActions(asset, trayViewer.value)) ? asset : null
 })
 
 const windowControlsActions = computed(() =>
-  cardWindowActions(windowControlsTarget.value, trayViewer.value, boardTrayEnabled))
+  cardWindowActions(windowControlsTarget.value, trayViewer.value))
 
 const WINDOW_CONTROLS_INSET_PX = 6
 
@@ -1571,7 +1569,7 @@ function handleWindowExpand(assetId: string): void {
  * Повторний вимір висоти робить сама картка: масштаб — джерело її `useCardContentFit`.
  */
 function handleWindowScale(asset: WBAsset, direction: -1 | 0 | 1): void {
-  if (!cardWindowActions(asset, trayViewer.value, boardTrayEnabled).scale) return
+  if (!cardWindowActions(asset, trayViewer.value).scale) return
   const next = nextPresentationScale(presentationScaleOf(asset), direction)
   if (next === null) return
   emit('asset-update', withPresentationScale(asset, next))

@@ -246,10 +246,9 @@ describe('INV-PRES-5 · верхня панель', () => {
 
   it('дії: текстові картки мають масштаб; заблокована — масштаб і ⛶ без ×; учень — нічого', () => {
     const task = { id: 'q', type: 'nmt_task', locked: true } as unknown as WBAsset
-    expect(cardWindowActions(task, TEACHER, true)).toEqual({ scale: true, minimize: true, expand: true, delete: false })
-    expect(cardWindowActions({ id: 'c', type: 'visual_capsule' } as never, TEACHER, true).scale).toBe(false)
-    expect(cardWindowActions(task, { isTutor: false, mode: 'edit' }, true).scale).toBe(false)
-    expect(cardWindowActions(task, TEACHER, false).scale).toBe(false)
+    expect(cardWindowActions(task, TEACHER)).toEqual({ scale: true, minimize: true, expand: true, delete: false })
+    expect(cardWindowActions({ id: 'c', type: 'visual_capsule' } as never, TEACHER).scale).toBe(false)
+    expect(cardWindowActions(task, { isTutor: false, mode: 'edit' }).scale).toBe(false)
   })
 })
 
