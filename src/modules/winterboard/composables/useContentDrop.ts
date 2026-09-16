@@ -10,20 +10,18 @@ import {
   type ResolveDropResponse,
 } from '../types/boardDrop'
 import {
-  DEFAULT_GRAPH_STATE,
-  DEFAULT_GRAPH_WIDTH,
-  DEFAULT_GRAPH_HEIGHT,
+  buildGraphCalculatorAsset,
   GRAPH_CALCULATOR_MIME,
 } from '../constants/graphCalculatorDefaults'
 // Phase G v2 — Geometry 2D v2 drop wiring (bundle-backed).
 import {
   GEOMETRY_2D_V2_DRAG_MIME,
-  DEFAULT_GEOMETRY_2D_V2_W,
-  DEFAULT_GEOMETRY_2D_V2_H,
-  buildDefaultGeometry2DV2Data,
+  buildGeometry2DV2Asset,
   type Geometry2DV2DragPayload,
 } from '../constants/geometry2dV2Defaults'
-import type { Geometry2DV2Asset } from '../types/geometry2dV2'
+import { BOARD_RECIPE_MIME, BoardRecipeError, buildBoardRecipeAsset } from '../board/preparedBoardRecipes'
+import { notifyError } from '@/utils/notify'
+import { i18n } from '@/i18n'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
 import {
   CALCULUS_DRAG_MIME,
@@ -142,33 +140,8 @@ export function useContentDrop(options: UseContentDropOptions) {
     //   - meta.last_snapshot_seq=0 placeholder; BE materialization stamps at apply.
     const graphRaw = event.dataTransfer?.getData(GRAPH_CALCULATOR_MIME)
     if (graphRaw !== undefined && graphRaw !== '' && graphRaw !== null) {
-      const canvasPos = screenToCanvas(event.clientX, event.clientY)
-      const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-        ? `gc-${crypto.randomUUID()}`
-        : `gc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const asset: WBAsset = {
-        id,
-        type: 'graph_calculator',
-        // src field — kept for WBAsset shape compat; graph_calculator не використовує src.
-        src: '',
-        x: canvasPos.x - DEFAULT_GRAPH_WIDTH / 2,
-        y: canvasPos.y - DEFAULT_GRAPH_HEIGHT / 2,
-        w: DEFAULT_GRAPH_WIDTH,
-        h: DEFAULT_GRAPH_HEIGHT,
-        rotation: 0,
-        locked: false,
-        // UX-RULE-1: full snapshot — version + state (deep-clone DEFAULT) + meta.
-        data: {
-          version: 1,
-          state: {
-            expressions: [...DEFAULT_GRAPH_STATE.expressions],
-            params: { ...DEFAULT_GRAPH_STATE.params },
-            viewport: { ...DEFAULT_GRAPH_STATE.viewport },
-          },
-          meta: { last_snapshot_seq: 0 },
-        } as unknown as WBAsset['data'],
-      }
-      onAssetAdd(asset)
+      // TLV2-06R.1: канонічна factory типу (та сама, що в addAtPosition і рецептах).
+      onAssetAdd(buildGraphCalculatorAsset(screenToCanvas(event.clientX, event.clientY)))
       return
     }
 
@@ -312,7 +285,7 @@ export function useContentDrop(options: UseContentDropOptions) {
     // Phase G v2 — Geometry 2D v2 drag (MIME 'application/x-geo2d').
     // Payload {preset, name?} — preset валідуємо проти runtime registry
     // (window.Geo2D.PRESETS), щоб додавання нової картки у bundle не потребувало
-    // зміни drop handler. Default data hydrate-ється у buildDefaultGeometry2DV2Data.
+    // зміни drop handler. Асет будує канонічна factory buildGeometry2DV2Asset.
     // 1 drop = 1 asset_add op = 1 broadcast (INV-13 ATOMIC-APPLY).
     const geo2dV2Raw = event.dataTransfer?.getData(GEOMETRY_2D_V2_DRAG_MIME)
     if (geo2dV2Raw) {
@@ -334,19 +307,8 @@ export function useContentDrop(options: UseContentDropOptions) {
         console.warn('[useContentDrop] Unknown geometry_2d_v2 preset:', parsed.preset)
         return
       }
-      const canvasPos = screenToCanvas(event.clientX, event.clientY)
-      const asset: Geometry2DV2Asset = {
-        id: `geo2dv2-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'geometry_2d_v2',
-        src: '',
-        x: canvasPos.x - DEFAULT_GEOMETRY_2D_V2_W / 2,
-        y: canvasPos.y - DEFAULT_GEOMETRY_2D_V2_H / 2,
-        w: DEFAULT_GEOMETRY_2D_V2_W,
-        h: DEFAULT_GEOMETRY_2D_V2_H,
-        rotation: 0,
-        locked: false,
-        data: buildDefaultGeometry2DV2Data(parsed.preset),
-      }
+      // TLV2-06R.1: канонічна factory типу (та сама, що в addAtPosition і рецептах).
+      const asset = buildGeometry2DV2Asset(screenToCanvas(event.clientX, event.clientY), parsed.preset)
       onAssetAdd(asset as unknown as WBAsset)
       return
     }
@@ -969,30 +931,7 @@ export function useContentDrop(options: UseContentDropOptions) {
     if (!canDraw.value) return
 
     if (mime === GRAPH_CALCULATOR_MIME) {
-      const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-        ? `gc-${crypto.randomUUID()}`
-        : `gc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const asset: WBAsset = {
-        id,
-        type: 'graph_calculator',
-        src: '',
-        x: pos.x - DEFAULT_GRAPH_WIDTH / 2,
-        y: pos.y - DEFAULT_GRAPH_HEIGHT / 2,
-        w: DEFAULT_GRAPH_WIDTH,
-        h: DEFAULT_GRAPH_HEIGHT,
-        rotation: 0,
-        locked: false,
-        data: {
-          version: 1,
-          state: {
-            expressions: [...DEFAULT_GRAPH_STATE.expressions],
-            params: { ...DEFAULT_GRAPH_STATE.params },
-            viewport: { ...DEFAULT_GRAPH_STATE.viewport },
-          },
-          meta: { last_snapshot_seq: 0 },
-        } as unknown as WBAsset['data'],
-      }
-      onAssetAdd(asset)
+      onAssetAdd(buildGraphCalculatorAsset(pos))
       return
     }
 
@@ -1085,19 +1024,31 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
+    // TLV2-06R · готовий рецепт уроку (не інструмент Tools): чинний об'єкт із даними рецепта.
+    // Один builder (`buildBoardRecipeAsset`) → рівно один onAssetAdd → штатний asset_add.
+    // `gap`, невідомий чи битий рецепт — видима причина й жодної картки (fail-closed).
+    if (mime === BOARD_RECIPE_MIME) {
+      let recipeId: unknown
+      try { recipeId = (JSON.parse(payloadStr) as { recipeId?: unknown })?.recipeId } catch { recipeId = undefined }
+      let asset: WBAsset
+      try {
+        asset = buildBoardRecipeAsset(recipeId, pos)
+      } catch (err) {
+        if (!(err instanceof BoardRecipeError)) throw err
+        console.error('[useContentDrop] board recipe rejected:', err.message)
+        const key = `winterboard.boardRecipe.${err.code}`
+        notifyError(i18n.global?.t?.(key, { id: err.recipeId, reason: err.reason }) ?? key)
+        return
+      }
+      onAssetAdd(asset)
+      return
+    }
+
     if (mime === GEOMETRY_2D_V2_DRAG_MIME) {
       let parsed: Geometry2DV2DragPayload
       try { parsed = JSON.parse(payloadStr) as Geometry2DV2DragPayload } catch { return }
       if (!parsed?.preset || typeof parsed.preset !== 'string') return
-      const asset: Geometry2DV2Asset = {
-        id: `geo2dv2-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'geometry_2d_v2', src: '',
-        x: pos.x - DEFAULT_GEOMETRY_2D_V2_W / 2, y: pos.y - DEFAULT_GEOMETRY_2D_V2_H / 2,
-        w: DEFAULT_GEOMETRY_2D_V2_W, h: DEFAULT_GEOMETRY_2D_V2_H,
-        rotation: 0, locked: false,
-        data: buildDefaultGeometry2DV2Data(parsed.preset),
-      }
-      onAssetAdd(asset as unknown as WBAsset)
+      onAssetAdd(buildGeometry2DV2Asset(pos, parsed.preset) as unknown as WBAsset)
       return
     }
 

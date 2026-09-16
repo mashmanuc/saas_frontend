@@ -9,6 +9,7 @@
  * Невідомий `visual_id` чи версія — явна помилка, а не порожня сцена.
  */
 import type { ControlPolicy } from './capsuleControls'
+import type { VisualCapsuleAsset, VisualCapsuleAssetData } from '../../../../types/winterboard'
 import * as geometry from './trianglesOverlayGeometry'
 import { highlightLevel, VERSION, VISUAL_ID, type SceneEnvelope } from './trianglesOverlayMachine'
 
@@ -65,4 +66,44 @@ export function resolveCapsule(visualId: string, version: number): CapsuleProtot
 export function presetFor(capsule: CapsulePrototype, envelope: SceneEnvelope): string {
   const level = highlightLevel(envelope)
   return level === 0 ? capsule.preset : `${capsule.preset}_pairs_${level}`
+}
+
+/** Розмір картки капсули — як у маніфесті уроку TLV2-03 (`p1-capsule`, 800×700). */
+export const VISUAL_CAPSULE_CARD_W = 800
+export const VISUAL_CAPSULE_CARD_H = 700
+
+/**
+ * TLV2-06R.1 · ЄДИНИЙ FE-конструктор картки `visual_capsule`.
+ * Адреса капсули валідується цим реєстром: невідома капсула — `UnknownVisualCapsuleError`,
+ * режим поза `capsule.modes` — помилка. Жодної картки з неіснуючою адресою.
+ * `center` — центр картки в координатах сторінки.
+ */
+export function buildVisualCapsuleAsset(
+  center: { x: number; y: number },
+  address: Pick<VisualCapsuleAssetData, 'visual_id' | 'capsule_version' | 'mode'>,
+): VisualCapsuleAsset {
+  const capsule = resolveCapsule(address.visual_id, address.capsule_version)
+  if (!capsule.modes.includes(address.mode)) {
+    throw new Error(`капсула ${address.visual_id} v${address.capsule_version} не має режиму ${address.mode}`)
+  }
+  const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+    ? `vcap-${crypto.randomUUID()}`
+    : `vcap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return {
+    id,
+    type: 'visual_capsule',
+    src: '',
+    x: center.x - VISUAL_CAPSULE_CARD_W / 2,
+    y: center.y - VISUAL_CAPSULE_CARD_H / 2,
+    w: VISUAL_CAPSULE_CARD_W,
+    h: VISUAL_CAPSULE_CARD_H,
+    rotation: 0,
+    locked: false,
+    data: {
+      version: 1,
+      visual_id: address.visual_id,
+      capsule_version: address.capsule_version,
+      mode: address.mode,
+    },
+  } as VisualCapsuleAsset
 }

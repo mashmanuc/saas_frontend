@@ -9556,6 +9556,11 @@
         "document_viewer": "Document"
       }
     },
+    "boardRecipe": {
+      "unknown_recipe": "Prepared object “{id}” was not found — no card was created",
+      "gap": "Prepared object “{id}” is not supported yet: {reason}",
+      "invalid_target_data": "Data of prepared object “{id}” failed validation — no card was created"
+    },
     "card": {
       "scaleDown": "Smaller text",
       "scaleUp": "Larger text",

@@ -389,10 +389,22 @@ async function _allInserts() {
   return typeof mod.allInserts === 'function' ? mod.allInserts() : []
 }
 
-/** Компактний каталог доступних інструментів дошки для parse-контексту (id+label+desc). */
+/** Ліміт каталогу в parse-контексті — дзеркало BE `MAX_TOOLS` (apps/intent/ai/parser.py). */
+const MAX_TOOL_CATALOG = 80
+
+/**
+ * Компактний каталог доступних інструментів дошки для parse-контексту (id+label+desc).
+ *
+ * TLV2-06R.1: + прихований AI-каталог supported готових рецептів (`preparedRecipesForAI`).
+ * Видимий UI їх не показує (sidebar читає лише insertRegistry); `gap` моделі не передається.
+ * Місце під рецепти зарезервоване в ліміті: BE ріже каталог до MAX_TOOLS і валідує
+ * insert_id проти надісланого списку, тож обрізаний рецепт став би недосяжним.
+ */
 export async function buildToolCatalog() {
   const items = await _allInserts()
-  return items.map((e) => {
+  const { preparedRecipesForAI } = await import('@/modules/winterboard/board/preparedBoardRecipes')
+  const recipes = preparedRecipesForAI()
+  const tools = items.map((e) => {
     const kind = FAMILY_KIND[e.family] || ''
     const tail = [e.sublabel, ...(e.keywords || [])].filter(Boolean).join(' · ')
     return {
@@ -400,7 +412,8 @@ export async function buildToolCatalog() {
       label: e.labelFallback || e.id,
       desc: (kind ? `[${kind}] ` : '') + tail.slice(0, 90),
     }
-  }).slice(0, 80)
+  })
+  return [...tools.slice(0, MAX_TOOL_CATALOG - recipes.length), ...recipes]
 }
 
 // ── Phase 2.8: редагування параметра ІСНУЮЧОГО об'єкта (через updateAsset) ──
@@ -593,10 +606,21 @@ HANDLERS.delete_page = async function delete_page({ pageIndex }) {
 HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const items = await _allInserts()
   const e = items.find((x) => x.id === insert_id)
-  if (!e) throw new Error('Такого інструмента поки немає на дошці.')  // fail-closed
-  // WBSoloRoom слухає й вставляє через addAtPosition (той самий шлях, що click-insert)
+  if (e) {
+    // WBSoloRoom слухає й вставляє через addAtPosition (той самий шлях, що click-insert)
+    window.dispatchEvent(new CustomEvent('m4sh:wb-insert', {
+      detail: { mime: e.dragMime, payload: e.payload },
+    }))
+    return
+  }
+  // TLV2-06R: готовий рецепт уроку (`tpl.*`) — не інструмент і не окремий список Інтегралика.
+  // Резолвиться спільним реєстром рецептів і йде тим самим m4sh:wb-insert → addAtPosition.
+  const { findBoardRecipe, BOARD_RECIPE_MIME } = await import('@/modules/winterboard/board/preparedBoardRecipes')
+  const recipe = findBoardRecipe(insert_id)
+  if (!recipe) throw new Error('Такого інструмента поки немає на дошці.')  // fail-closed
+  if (recipe.status === 'gap') throw new Error(`Цей готовий об'єкт поки не підтримується: ${recipe.gapReason}`)
   window.dispatchEvent(new CustomEvent('m4sh:wb-insert', {
-    detail: { mime: e.dragMime, payload: e.payload },
+    detail: { mime: BOARD_RECIPE_MIME, payload: JSON.stringify({ recipeId: recipe.id }) },
   }))
 }
 
