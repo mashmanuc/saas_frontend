@@ -31,6 +31,8 @@ import { scheduleBufferedUpdate, flushPendingUpdates } from './assetUpdateBatche
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const MAX_UNDO_STACK = 100 // LAW-19: 50 per spec, we keep 100 for safety
+/** TLV2-05A.1: скільки асетів іде в одну `objects_move`; решта — наступною партією. */
+const MOVE_OPS_BATCH = 50
 const DEFAULT_PAGE_WIDTH = 1920 // LAW-20: A4 landscape
 const DEFAULT_PAGE_HEIGHT = 1080
 
@@ -3689,6 +3691,10 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+      // TLV2-05A.1: вирівнювання — така сама зміна позицій, як груповий drag,
+      // тому йде тим самим штатним виходом. Без цього рядка воно жило лише в
+      // пам'яті вкладки й зникало після reload.
+      this.emitPositionOpsForIds(effectiveMoves.map(m => m.id))
     },
 
     // ── v5 A1: Selection Actions ──────────────────────────────────────────
@@ -3783,19 +3789,26 @@ export const useWBStore = defineStore('wb-board', {
       // NO ops here — called per-frame during drag. Ops emitted at drag END.
     },
 
-    /** Emit move ops for selected objects — call at drag END only (not per-frame).
-     *  Strokes: one stroke_update per stroke (full points). Huge strokes (>64KB) will
-     *  be dropped at recorder level with warning — acceptable tradeoff for rare case.
-     *  Assets: one objects_move op with absolute x/y (cheap, atomic). */
-    emitMoveOpsForSelected(): void {
+    /**
+     * TLV2-05A.1 · ЄДИНИЙ вихід «нові позиції → журнал» для групових дій.
+     *
+     * Кличеться в КІНЦІ дії (не покадрово): груповий drag обома шляхами
+     * (HTML-оверлей і Konva) та вирівнювання. Другого шляху запису немає —
+     * усе через штатний `_emitOperation`.
+     *
+     * Штрихи: `stroke_update` з повними точками (replay уже це вміє).
+     * Асети: `objects_move` з абсолютними x/y, партіями по 50 — щоб велике
+     * виділення не лишалось без операції мовчки.
+     * Заблоковані не рухаються, тому й операції не отримують.
+     */
+    emitPositionOpsForIds(ids: string[]): void {
       const page = this.currentPage
-      if (!page || this.selectedIds.length === 0) return
-      const ids = new Set<string>(this.selectedIds)
+      if (!page || ids.length === 0) return
+      const wanted = new Set<string>(ids)
       const pageId = page.id ?? ''
 
-      // Strokes: reuse existing stroke_update op (replay engine already handles)
       for (const s of page.strokes) {
-        if (!ids.has(s.id)) continue
+        if (!wanted.has(s.id) || s.locked) continue
         _emitOperation({
           op_type: 'stroke_update',
           page_id: pageId,
@@ -3803,15 +3816,20 @@ export const useWBStore = defineStore('wb-board', {
         })
       }
 
-      // Assets: batch in one objects_move op
-      const movedAssets = page.assets.filter(a => ids.has(a.id))
-      if (movedAssets.length > 0 && movedAssets.length <= 50) {
+      const movedAssets = page.assets.filter(a => wanted.has(a.id) && !a.locked)
+      for (let i = 0; i < movedAssets.length; i += MOVE_OPS_BATCH) {
+        const chunk = movedAssets.slice(i, i + MOVE_OPS_BATCH)
         _emitOperation({
           op_type: 'objects_move',
           page_id: pageId,
-          payload: { items: movedAssets.map(a => ({ id: a.id, x: a.x, y: a.y })) },
+          payload: { items: chunk.map(a => ({ id: a.id, x: a.x, y: a.y })) },
         })
       }
+    },
+
+    /** Груповий drag: позиції виділених об'єктів у журнал. Кличеться в кінці drag. */
+    emitMoveOpsForSelected(): void {
+      this.emitPositionOpsForIds(this.selectedIds)
     },
 
     // Phase 34 A1.2: Object type resolver

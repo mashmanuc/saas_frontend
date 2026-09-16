@@ -234,6 +234,9 @@ export interface WBAsset {
     /** Graphmash3d (2026-07-07, B4) — ЖИВА GraphMASH 3D-поверхня (vendor/graphmash3d, WebGL).
      *  data = MashSceneData (app:'g3d', scene). Рендер нативний three.js-движком + інспектор. §3.7.15 */
     | 'graphmash_3d'
+    /** VisualCapsule (TLV2-03) — анімована капсула V-D3.1 як об'єкт дошки.
+     *  data = { version, visual_id, capsule_version, mode }. Хід програвання — локальний. */
+    | 'visual_capsule'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -329,6 +332,7 @@ export interface WBAsset {
     | TheoryCardData
     | MashSceneData
     | GeomashSceneData
+    | VisualCapsuleAssetData
 }
 
 /**
@@ -474,6 +478,17 @@ export interface TheoryCardData {
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }
+
+// ─── VisualCapsule (TLV2-03) — капсула V-D3.1 як WBAsset ──────────────────────
+// Дошка зберігає лише адресу капсули й режим; анімація й керування — у V-D3.1.
+export interface VisualCapsuleAssetData {
+  version: 1
+  visual_id: string
+  capsule_version: number
+  mode: 'full' | 'recall'
+}
+
+export type VisualCapsuleAsset = WBAsset & { type: 'visual_capsule'; data: VisualCapsuleAssetData }
 
 /**
  * MashScene (§3.7.13, A3 2026-07-07) — MASH Live Asset envelope (Proposal §8).

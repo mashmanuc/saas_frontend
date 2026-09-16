@@ -398,6 +398,18 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(99, 102, 241, 0.35));
 }
 
+/* TLV2-03 — капсула V-D3.1 як об'єкт дошки (дзеркало в WBCanvas.vue, legacy). */
+.wb-visual-capsule-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-visual-capsule-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
 /* MashScene (§3.7.13, A3) — MASH Live Asset картка, дзеркало theory-card правил.
    УВАГА-КОНВЕНЦІЯ: wrapperClass з overlayRegistry потребує CSS і ТУТ (unified),
    і у WBCanvas.vue (legacy) — обидва scoped. */

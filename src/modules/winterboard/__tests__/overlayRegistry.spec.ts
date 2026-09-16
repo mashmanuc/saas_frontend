@@ -29,6 +29,7 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   'mash_scene', // §3.7.13 (A3) — MASH Live Asset з воронки
   'geomash_scene', // §3.7.14 (B3) — жива GeoMASH-геометрія
   'graphmash_3d', // §3.7.15 (B4) — жива GraphMASH 3D-поверхня
+  'visual_capsule', // TLV2-03 — капсула V-D3.1 як об'єкт дошки
 ])
 
 describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {

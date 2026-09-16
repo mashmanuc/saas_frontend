@@ -16,9 +16,15 @@ const read = (rel: string) => readFileSync(resolve(SRC, rel), 'utf-8').replace(/
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex')
 const TLV2_BLOCK = /^[ \t]*\/\/ >>> TLV2-01[\s\S]*?^[ \t]*\/\/ <<< TLV2-01[^\n]*\n/gm
 
-/** sha256 файлів на продовому коміті `cd6bdde7` (`git show cd6bdde7:<файл> | sha256sum`). */
+/**
+ * sha256 файлів V1 поза блоками TLV2-01 (`git show <коміт>:<файл> | sha256sum`).
+ *
+ * `router/index.js` — на `0312b841` (V-D3.1): прод `cd6bdde7` + лише DEV-маршрут лабораторії
+ * капсули `...devOnlyRoutes(import.meta.env.DEV)`, перенесений у TLV2-03 за словом власника.
+ * У production-збірці цей масив порожній. Було `6ea9478c…` (чистий `cd6bdde7`).
+ */
 const V1_BASELINE = {
-  'router/index.js': '6ea9478ca3dd730b247a2c1f95b21291082bbdde3442b5473103d395b4bb8ee3',
+  'router/index.js': '75ab57010e0118403e95be4e4e89d70d3c28fdb6603a5ebe0d2de589cfa7b07d',
   'modules/winterboard/router.ts': 'c7d76cc77cf08df8d50244920480e742e7fdeebdf368e0b3be45424884de7b62',
 }
 

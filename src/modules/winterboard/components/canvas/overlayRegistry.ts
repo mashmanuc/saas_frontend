@@ -11,7 +11,8 @@
 //   WBOverlayLayer ітерує overlay-assets у порядку `assets[]` (один v-for) →
 //   render order = array order → лікує render-grouping bug (INV-RENDER-1).
 //
-// SSOT overlay-типів = `KONVA_PROXY_TYPES` у WBCanvas.vue (коментар :903).
+// SSOT overlay-типів = `board/objectStandard.ts` (TLV2-05A): звідти й `KONVA_PROXY_TYPES`
+// у WBCanvas.vue, і `expandable` нижче — списку в двох місцях більше немає.
 //   Coverage-тест `overlayRegistry.spec.ts` гарантує: KONVA_PROXY_TYPES ⊆ keys.
 //   Новий overlay-тип без entry тут → тест падає (fail-on-missing, не silently).
 //
@@ -21,6 +22,8 @@
 
 import type { Component } from 'vue'
 import type { WBAsset } from '../../types/winterboard'
+
+import { isFullscreenAsset } from '../../board/objectStandard'
 
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
@@ -34,6 +37,7 @@ import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
+import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
 import GeomashRenderer from '../board/objects/GeomashRenderer.vue'
 import Graphmash3dRenderer from '../board/objects/Graphmash3dRenderer.vue'
@@ -158,13 +162,12 @@ const expEvents = (
 // (props + events + wrapper class/data-attr/testid). Verbatim — щоб flag OFF/ON
 // рендерили ідентично.
 
-export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
+const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> = {
   geometry_solid: {
     component: SolidCardRenderer,
     wrapperClass: 'wb-solid-overlay',
     dataAttr: 'data-solid-id',
     testidPrefix: 'solid-overlay',
-    expandable: false,
     // ⚠️ SolidCardRenderer НЕ приймає :interactive (старий блок його не передає).
     buildProps: (a, ctx) => ({ asset: a, isSelected: sel(a, ctx) }),
     buildEvents: stdEvents,
@@ -175,7 +178,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-graph-calculator-overlay',
     dataAttr: 'data-graph-calculator-id',
     testidPrefix: 'graph-calculator-overlay',
-    expandable: true,
     buildProps: (a, ctx) => ({ ...expProps(a, ctx), disableAnimation: ctx.disableAnimation }),
     buildEvents: (a, ctx) => ({
       ...expEvents(a, ctx),
@@ -203,7 +205,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-geo2dv2-overlay',
     dataAttr: 'data-geo2dv2-id',
     testidPrefix: 'geometry-2d-v2-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
@@ -213,7 +214,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-calculus-overlay',
     dataAttr: 'data-calculus-id',
     testidPrefix: 'calculus-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
@@ -223,7 +223,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-quad-overlay',
     dataAttr: 'data-quad-id',
     testidPrefix: 'quad-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
@@ -233,7 +232,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-formula-card-overlay',
     dataAttr: 'data-formula-id',
     testidPrefix: 'formula-card-overlay',
-    expandable: false,
     buildProps: stdProps,
     // ⚠️ formula_card НЕ має update:asset — лише request-edit (→ модалка) + delete.
     buildEvents: (a, ctx) => ({
@@ -247,7 +245,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-trig-circle-overlay',
     dataAttr: 'data-trig-id',
     testidPrefix: 'trig-circle-overlay',
-    expandable: true,
     buildProps: expProps,
     buildEvents: expEvents,
   },
@@ -257,7 +254,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-helix-overlay',
     dataAttr: 'data-helix-id',
     testidPrefix: 'helix-overlay',
-    expandable: true,
     buildProps: expProps,
     buildEvents: expEvents,
   },
@@ -267,7 +263,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-trig-solver-overlay',
     dataAttr: 'data-tslv-id',
     testidPrefix: 'trig-solver-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
@@ -277,7 +272,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-nmt3d-overlay',
     dataAttr: 'data-nmt3d-id',
     testidPrefix: 'nmt3d-overlay',
-    expandable: true,
     buildProps: (a, ctx) => ({ ...expProps(a, ctx), boardMode: ctx.boardMode }),
     buildEvents: expEvents,
   },
@@ -288,7 +282,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-mash-scene-overlay',
     dataAttr: 'data-mash-scene-id',
     testidPrefix: 'mash-scene-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
@@ -301,7 +294,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-geomash-overlay',
     dataAttr: 'data-geomash-id',
     testidPrefix: 'geomash-overlay',
-    expandable: true,
     buildProps: expProps,
     buildEvents: expEvents,
   },
@@ -312,7 +304,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-graphmash3d-overlay',
     dataAttr: 'data-graphmash3d-id',
     testidPrefix: 'graphmash3d-overlay',
-    expandable: true,
     buildProps: expProps,
     buildEvents: expEvents,
   },
@@ -324,7 +315,6 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     testidPrefix: 'nmt-task-overlay',
     // «Задача на екран» з пульта використовує штатний локальний board-expand:
     // картка займає весь доступний простір, але її asset-геометрія не змінюється.
-    expandable: true,
     buildProps: (a, ctx) => ({ ...expProps(a, ctx), isTutor: ctx.isTutor }),
     buildEvents: (a, ctx) => ({
       ...expEvents(a, ctx),
@@ -338,11 +328,33 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = {
     wrapperClass: 'wb-theory-card-overlay',
     dataAttr: 'data-theory-card-id',
     testidPrefix: 'theory-card-overlay',
-    expandable: false,
     buildProps: stdProps,
     buildEvents: stdEvents,
   },
+
+  // TLV2-03 — капсула V-D3.1 як об'єкт дошки.
+  // TLV2-05A: стандартна картка — ті самі props/events, що в решти expandable-типів.
+  visual_capsule: {
+    component: VisualCapsuleAssetRenderer,
+    wrapperClass: 'wb-visual-capsule-overlay',
+    dataAttr: 'data-visual-capsule-id',
+    testidPrefix: 'visual-capsule-overlay',
+    // isTutor — як у nmt_task: учень не отримує вчительських дій картки (TLV2-05A §5.8).
+    buildProps: (a, ctx) => ({ ...expProps(a, ctx), isTutor: ctx.isTutor }),
+    buildEvents: expEvents,
+  },
 }
+
+/**
+ * `expandable` береться ЛИШЕ зі стандарту об'єктів (TLV2-05A): можливість
+ * оголошує тип, а не entry. Розбіжність неможлива за побудовою.
+ */
+export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = Object.fromEntries(
+  Object.entries(RENDERER_ENTRIES).map(([type, entry]) => [
+    type,
+    { ...entry, expandable: isFullscreenAsset(type) },
+  ]),
+)
 
 /** Усі overlay-типи з registry (= ключі OVERLAY_RENDERERS). */
 export const OVERLAY_ASSET_TYPES: ReadonlyArray<string> = Object.keys(OVERLAY_RENDERERS)

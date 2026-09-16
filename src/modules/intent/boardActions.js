@@ -635,6 +635,7 @@ export const KIND_LABELS = {
   geomash_scene: 'геометрична сцена',
   graphmash_3d: '3D-графік',
   mash_scene: 'MASH-сцена',
+  visual_capsule: 'анімація',   // TLV2-03 — капсула V-D3.1 як об'єкт дошки
 }
 
 /**

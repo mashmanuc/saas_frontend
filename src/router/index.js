@@ -89,6 +89,8 @@ import { teacherLessonV2Routes } from '../modules/teacher-lesson-v2/routes'
 // <<< TLV2-01
 // Local Workspace (ТЗ Точка 3): неавторизований корінь / → одразу робочий стіл
 import { isLocalWorkspaceEnabled } from '../modules/winterboard/config/featureFlags'
+// DEV-only лабораторії (V-D3): у production-збірці масив порожній, маршруту не існує
+import { devOnlyRoutes } from '../modules/dev/devRoutes'
 
 const routes = [
   // Role selection landing page (root redirect)
@@ -1098,6 +1100,7 @@ const routes = [
     component: () => import('../modules/billing/views/BillingPayView.vue'),
     meta: { requiresAuth: false },
   },
+  ...devOnlyRoutes(import.meta.env.DEV),
   { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 

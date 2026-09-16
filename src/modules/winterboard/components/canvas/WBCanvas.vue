@@ -625,6 +625,32 @@
       </div>
     </template>
 
+    <!-- TLV2-03: капсула V-D3.1 як об'єкт дошки — дзеркало theory_card блоку (шлях без unified z-order). -->
+    <template v-for="asset in visualCapsuleAssets" :key="`visual-capsule-${asset.id}`">
+      <div
+        class="wb-visual-capsule-overlay"
+        :class="{
+          'wb-visual-capsule-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
+        :data-visual-capsule-id="asset.id"
+        :data-testid="`visual-capsule-overlay-${asset.id}`"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : getOverlayStyle(asset)"
+      >
+        <VisualCapsuleAssetRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
+          :is-tutor="props.isTutor !== false"
+          @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
+        />
+      </div>
+    </template>
+
     <!-- §3.7.13 MASH Live Asset (A3) — дзеркало theory_card блоку -->
     <template v-for="asset in mashSceneAssets" :key="`mash-scene-${asset.id}`">
       <div
@@ -855,6 +881,8 @@ import Konva from 'konva'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
+// TLV2-05A: стандарт об'єктів — одне джерело правди про можливості типу.
+import { OVERLAY_PROXY_TYPES, isResizableMediaAsset } from '../../board/objectStandard'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
@@ -906,6 +934,8 @@ import type { FormulaCardAsset } from '../../types/formulaCard'
 import WBTheoryOverlay from '../theory/WBTheoryOverlay.vue'
 // TheoryCard (2026-06-03) — рухома картка теорії як WBAsset (§3.7.12)
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
+// TLV2-03 — капсула V-D3.1 як об'єкт дошки
+import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
 import GeomashRenderer from '../board/objects/GeomashRenderer.vue'
 import Graphmash3dRenderer from '../board/objects/Graphmash3dRenderer.vue'
@@ -1023,31 +1053,16 @@ const mediaAssets = computed(() =>
 )
 
 // ── Overlay asset types (HTML overlay + invisible Konva Rect proxy) ─────────
-// SSOT canonical list — referenced by:
-//   template: v-else-if="KONVA_PROXY_TYPES.has(asset.type)"  (Konva proxy v-rect)
-//   assetEquality.ts: FLAT_DATA_ASSET_TYPES  (ops-relevant data comparison)
+// TLV2-05A: списку тут більше немає — джерело правди одне,
+// `board/objectStandard.ts` (типи з `render: 'overlay'`, які рухаються й
+// масштабуються). Раніше той самий перелік жив і тут, і в реєстрі overlay,
+// і тип можна було додати в одне місце та забути про друге.
 //
-// ⚠️ Adding a new overlay type:
-//   1. Add entry here (Konva proxy side auto-picks up via template loop)
-//   2. Add matching computed + template block below with its specific Vue component
-//   3. If type has versioned `data` → add to FLAT_DATA_ASSET_TYPES in assetEquality.ts
-const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
-  'geometry_solid',    // §3.7.1 — Three.js solid geometry      → SolidCardRenderer
-  'graph_calculator',  // §3.7.2 — Desmos-like graph calculator  → GraphCalculatorRenderer
-  'geometry_2d_v2',    // §3.7.3 — JSXGraph 2D geometry          → Geometry2DRenderer
-  'calculus_card',     // §3.7.4 — Calculus visualizer           → CalculusRenderer
-  'trig_circle',       // §3.7.5 — Trig unit circle              → TrigCircleRenderer
-  'helix',             // §3.7.6 — 3D helix                      → HelixRenderer
-  'trig_solver',       // §3.7.7 — Unified trig eq+ineq solver   → TrigSolverRenderer
-  'nmt3d',            // §3.7.8 — Parametric 3D stereometry     → Nmt3dRenderer
-  'nmt_task',         // §3.7.9 — Interactive NMT task card     → NmtTaskRenderer
-  'quadratic_card',   // §3.7.10 — Quadratic eq visualizer       → QuadraticRenderer
-  'formula_card',     // §3.7.11 — KaTeX formula card             → FormulaCardRenderer
-  'theory_card',      // §3.7.12 — Рухома картка теорії+формул    → TheoryCardRenderer
-  'mash_scene',       // §3.7.13 — MASH Live Asset (воронка)       → MashSceneRenderer
-  'geomash_scene',    // §3.7.14 — жива GeoMASH-геометрія           → GeomashRenderer
-  'graphmash_3d',     // §3.7.15 — жива GraphMASH 3D-поверхня       → Graphmash3dRenderer
-])
+// ⚠️ Новий overlay-тип:
+//   1. Запис у `BOARD_ASSET_STANDARD` (проксі підхопиться сам)
+//   2. Entry в `overlayRegistry` + блок нижче для legacy-шляху
+//   3. Якщо тип має версійні `data` → додати у FLAT_DATA_ASSET_TYPES (assetEquality.ts)
+const KONVA_PROXY_TYPES = OVERLAY_PROXY_TYPES
 
 // Per-type filters for the HTML overlay template blocks below.
 // Each renders a distinct Vue component with its own props/events.
@@ -1066,6 +1081,7 @@ const theoryCardAssets     = computed(() => assets.value.filter(a => a.type === 
 const mashSceneAssets      = computed(() => assets.value.filter(a => a.type === 'mash_scene'))
 const geomashAssets        = computed(() => assets.value.filter(a => a.type === 'geomash_scene'))
 const graphmash3dAssets    = computed(() => assets.value.filter(a => a.type === 'graphmash_3d'))
+const visualCapsuleAssets  = computed(() => assets.value.filter(a => a.type === 'visual_capsule'))
 
 // Theory/formula blocks (Lesson Constructor) — page-level, LEGACY (старі уроки).
 // Нові уроки генерують 'theory_card' WBAsset (рухома картка). Цей overlay лишається
@@ -3527,7 +3543,8 @@ const RESIZE_CORNERS = [
 ] as const
 
 function isResizableMedia(asset: WBAsset): boolean {
-  return asset.type === 'video_player' || asset.type === 'youtube_player'
+  // TLV2-05A: можливість оголошує тип у `board/objectStandard.ts`, не ця функція.
+  return isResizableMediaAsset(asset.type)
 }
 
 const MIN_MEDIA_SIZE = 160 // мінімальний розмір (px) для відео/YouTube
@@ -5818,6 +5835,18 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
   pointer-events: none;
 }
 .wb-nmt-task-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+}
+
+/* TLV2-03 — капсула V-D3.1 як об'єкт дошки. */
+.wb-visual-capsule-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-visual-capsule-overlay--selected {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
 }
 

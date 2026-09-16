@@ -5,6 +5,66 @@
   // helper: tag-aware add. each toggle's objects are tagged so we can remove them.
   const add = (con, o, tag) => con.add(o, tag ? [tag] : []);
 
+  // ========================================================================
+  // triangles_overlay (V-D3): будівник однієї сцени з рівнем підсвітки пар.
+  //   Рівень 0 — `triangles_overlay`; 1…4 — `triangles_overlay_pairs_<k>` для стану
+  //   correspondence: 1 — A↔E, 2 — +B↔D, 3 — +C↔F, 4 — +BC↔DF.
+  //   Чому окремі ключі, а не toggles: ТЗ V-D3 §3.2 забороняє класти підсвітку відповідностей
+  //   у data.toggles, а §3.1 дозволяє preset як відкритий рядок. Рівень обирає обгортка суто
+  //   з SceneEnvelope. Пари дзеркалять CORRESPONDENCE / SIDE_PAIR (trianglesOverlayMachine.ts);
+  //   тест звіряє кожен рівень. Жоден рівень не внесено в трей вставки.
+  // ========================================================================
+  const TRIANGLES_OVERLAY_PAIRS = [['A', 'E'], ['B', 'D'], ['C', 'F']];
+  const TRIANGLES_OVERLAY_SIDE = ['D', 'F'];
+  const TRIANGLES_OVERLAY_LEVELS = TRIANGLES_OVERLAY_PAIRS.length + 1;
+
+  function trianglesOverlayPreset(level) {
+    return {
+      name: 'Накладання рівних трикутників',
+      meta: 'ΔABC = ΔEDF',
+      defaults: { showGrid: false, showAxes: false },
+      build(con) {
+        const BLUE = '#2563eb';
+        const ORANGE = '#ea580c';
+        const fixed = { movable: false };
+
+        add(con, G.free('VIEW_SW', -1.9758, -3.8142, { ...fixed, hidden: true }));
+        add(con, G.free('VIEW_NE', 17.2805, 7.1735, { ...fixed, hidden: true }));
+
+        // Нерухомий ΔEDF — з довжинами сторін.
+        add(con, G.free('E', 10, 0, { ...fixed, label: 'E', labelOffset: { x: -16, y: 20 }, color: ORANGE }));
+        add(con, G.free('D', 15, 0, { ...fixed, label: 'D', labelOffset: { x: 10, y: 20 }, color: ORANGE }));
+        add(con, G.free('F', 11.2, 5.8788, { ...fixed, label: 'F', labelOffset: { x: 12, y: -6 }, color: ORANGE }));
+        // Підсвітка малюється ДО сторін: кільце довкола вершини-цілі, смуга під DF.
+        const PAIR = '#16a34a';
+        TRIANGLES_OVERLAY_PAIRS.slice(0, level).forEach(([, target]) => {
+          add(con, G.circleR(`hl_${target}`, target, () => 0.5, { color: PAIR, width: 3 }));
+        });
+        if (level >= TRIANGLES_OVERLAY_LEVELS) {
+          const [a, b] = TRIANGLES_OVERLAY_SIDE;
+          add(con, G.segment(`hl_${a}${b}`, a, b, { color: PAIR, width: 10 }));
+        }
+        add(con, G.segment('ED', 'E', 'D', { color: ORANGE, width: 2.5 }));
+        add(con, G.segment('DF', 'D', 'F', { color: ORANGE, width: 2.5 }));
+        add(con, G.segment('FE', 'F', 'E', { color: ORANGE, width: 2.5 }));
+        add(con, G.lengthLabel('lab_ED', 'ED', { suffix: ' см' }));
+        add(con, G.lengthLabel('lab_DF', 'DF', { suffix: ' см' }));
+        add(con, G.lengthLabel('lab_FE', 'FE', { suffix: ' см' }));
+        add(con, G.angleArc('ang_D', 'F', 'D', 'E', { rPx: 30, label: false, color: ORANGE }));
+
+        // Рухомий ΔABC — без довжин: BC саме й шукаємо.
+        add(con, G.free('A', 2.7143, 4.1991, { ...fixed, label: 'A', labelOffset: { x: -16, y: -8 }, color: BLUE }));
+        add(con, G.free('B', 0, 0, { ...fixed, label: 'B', labelOffset: { x: 6, y: -12 }, color: BLUE }));
+        add(con, G.free('C', 7, 0, { ...fixed, label: 'C', labelOffset: { x: -20, y: -8 }, color: BLUE }));
+        add(con, G.segment('AB', 'A', 'B', { color: BLUE, width: 2.5 }));
+        add(con, G.segment('BC', 'B', 'C', { color: BLUE, width: 2.5 }));
+        add(con, G.segment('CA', 'C', 'A', { color: BLUE, width: 2.5 }));
+        add(con, G.angleArc('ang_B', 'C', 'B', 'A', { rPx: 20, label: false, color: BLUE }));
+      },
+      toggles: [],
+    };
+  }
+
   const PRESETS = {
     // ========================================================================
     // blank: Порожня координатна площина (graph paper).
@@ -1527,7 +1587,26 @@
       ],
     },
 
+    // ========================================================================
+    // triangles_overlay: V-D3 · DEV-прототип капсули visual.triangles.congruence.overlay v1.
+    //   ΔABC (синій, рухомий) = ΔEDF (помаранчевий, нерухомий); EDF — поворот ABC без
+    //   віддзеркалення. DE = 5, DF = 7, EF = 6 см (dossier K-C01 §8.1).
+    //   Координати — дзеркало components/board/objects/visualCapsules/
+    //   trianglesOverlayGeometry.ts; тест звіряє їх. Рух задає контролер капсули через
+    //   pointsSnapshot, сам пресет статичний і вершин тягати не дає.
+    //   ⚠️ НЕ в window.GEO_PRESETS (трей вставки): до живого приймання власником капсула
+    //   не production-ready (ТЗ V-D3 §6).
+    //   VIEW_SW / VIEW_NE — приховані нерухомі якорі: _fitToContent рахує межі видимої
+    //   області за точками, і без них камера наближалася б, поки ABC підходить до EDF, —
+    //   тобто фігура на екрані «змінювала б розмір» саме тоді, коли доводимо, що не змінюється.
+    // ========================================================================
+    triangles_overlay: trianglesOverlayPreset(0),
+
   };
+
+  for (let level = 1; level <= TRIANGLES_OVERLAY_LEVELS; level += 1) {
+    PRESETS[`triangles_overlay_pairs_${level}`] = trianglesOverlayPreset(level);
+  }
 
   window.Geo2D.PRESETS = PRESETS;
 })();

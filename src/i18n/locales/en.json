@@ -7523,6 +7523,9 @@
         "rhombus": {
           "full": "Rhombus",
           "desc": "equal sides · perpendicular diagonals"
+        },
+        "triangles_overlay": {
+          "full": "Overlaying congruent triangles"
         }
       },
       "hint": {
@@ -9396,8 +9399,8 @@
       }
     },
     "widget": {
-      "delete": "Delete",
       "collapse": "Collapse",
+      "delete": "Delete",
       "expand": "Expand to full board",
       "formula": {
         "edit": "Edit formula"
@@ -9456,6 +9459,73 @@
         "snapToTable": "Snap to table values",
         "showGraph": "Show the graph",
         "showAllSolutions": "Show all solutions"
+      },
+      "visualCapsule": "Animation"
+    },
+    "visualCapsule": {
+      "unknown": "Unknown visual capsule {id} v{version}: the scene is not shown.",
+      "predictionLabel": "Prediction: which vertex will B land on",
+      "cm": "cm",
+      "mode": {
+        "full": "Full explanation",
+        "recall": "Recall"
+      },
+      "status": {
+        "idle": "Ready",
+        "playing": "Playing",
+        "paused": "Paused",
+        "awaiting_prediction": "Waiting for a prediction",
+        "finished": "Finished"
+      },
+      "state": {
+        "separated": "Triangles apart",
+        "predicting": "Prediction",
+        "overlaying": "Overlaying",
+        "matched": "Matched",
+        "correspondence": "Correspondence"
+      },
+      "control": {
+        "play": "Play",
+        "continue": "Continue",
+        "pause": "Pause",
+        "step": "Next step",
+        "restart": "Restart"
+      },
+      "action": {
+        "check": "Check by overlaying",
+        "pause": "Pause",
+        "resume": "Continue",
+        "repeat": "Repeat"
+      },
+      "diagnostics": "Diagnostics",
+      "trianglesOverlay": {
+        "prompt": {
+          "separated": {
+            "full": "Two congruent triangles: ΔABC = ΔEDF. The order of letters is the record of the overlay.",
+            "recall": "Recall: ΔABC = ΔEDF."
+          },
+          "predicting": {
+            "full": "Predict: which vertex will B land on — D or E?",
+            "recall": "Which vertex will B land on — D or E?"
+          },
+          "overlaying": {
+            "full": "ΔABC slides and turns without changing shape…",
+            "recall": "Overlaying, the shape does not change…"
+          },
+          "matched": {
+            "full": "The overlay is complete: see where B landed.",
+            "recall": "Matched: where did B land?"
+          },
+          "correspondence": {
+            "full": "Pairs come from the position of letters in the record, not from the picture or the alphabet. DF = 7 cm, so BC = 7 cm.",
+            "recall": "Letters in the same position form a pair. BC = DF = 7 cm."
+          }
+        },
+        "verdict": {
+          "refuted": "Prediction “{prediction}” refuted: B landed on {landed}.",
+          "confirmed": "Prediction “{prediction}” confirmed: B landed on {landed}.",
+          "none": "B landed on {landed}."
+        }
       }
     }
   },
@@ -10709,6 +10779,14 @@
       "readyPercentHint": "Diagnostic + 4 lessons. Progress is kept in this browser.",
       "readyOpen": "Open"
     }
+  },
+  "devVisualCapsules": {
+    "eyebrow": "DEV lab · V-D3.1",
+    "title": "Capsule: overlaying congruent triangles",
+    "note": "Prototype for review. Scene state lives in memory only: it is not restored after reload or in replay.",
+    "previewLabel": "Preview parameters (outside the scene):",
+    "mode": "Lesson mode",
+    "diagnostics": "Diagnostics"
   },
   "teacherLessonV2": {
     "title": "Teacher Lesson V2",

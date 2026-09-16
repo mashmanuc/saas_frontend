@@ -71,6 +71,8 @@ export function useRectSelect(store: WBStore) {
   const dragStart = ref<{ x: number; y: number } | null>(null)
   const isMoving = ref(false)
   const moveStart = ref<{ x: number; y: number } | null>(null)
+  /** TLV2-05A.1: чи були реальні кадри руху — щоб клік без руху не породжував операцій. */
+  let movedSinceStart = false
 
   const selectionRect = computed(() => store.selectionRect)
   const selectedIds = computed(() => store.selectedIds)
@@ -160,6 +162,7 @@ export function useRectSelect(store: WBStore) {
 
     isMoving.value = true
     moveStart.value = { x: pos.x, y: pos.y }
+    movedSinceStart = false
   }
 
   function updateMoveSelected(pos: WBPoint): void {
@@ -173,11 +176,22 @@ export function useRectSelect(store: WBStore) {
     // Phase 34 FIX-1: move only unlocked items
     store.moveSelectedUnlocked(dx, dy)
     moveStart.value = { x: pos.x, y: pos.y }
+    movedSinceStart = true
   }
 
+  /**
+   * TLV2-05A.1: у кінці групового руху позиції йдуть у журнал тим самим
+   * штатним виходом, що й у HTML-шляху групового drag (`emitMoveOpsForSelected`).
+   * Раніше цей шлях лишав нові координати лише в пам'яті вкладки: після reload
+   * об'єкти поверталися на старі місця, бо жодної операції не було.
+   * Покадрово тут нічого не емітується — лише один раз у кінці.
+   */
   function finishMoveSelected(): void {
+    const moved = isMoving.value && movedSinceStart
     isMoving.value = false
     moveStart.value = null
+    movedSinceStart = false
+    if (moved) store.emitMoveOpsForSelected()
   }
 
   function deleteSelected(): void {
