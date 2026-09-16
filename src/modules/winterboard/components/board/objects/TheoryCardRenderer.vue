@@ -10,6 +10,12 @@
     .theory-card__body         pointer-events:auto → скрол/виділення тексту
     .theory-card__body[readonly] pointer-events:none → у draw/pen режимі ink проходить крізь
     .theory-card__delete-btn   pointer-events:auto + stop → видалення коли selected
+
+  TLV2-05C · СТАНДАРТ ПОДАННЯ (SYSTEM_LAW §9.C, SSOT INV-25). Власної підгонки розміру в картці більше немає:
+    • висота — спільний шлях `request-height → nextAutoFitHeight → asset_update`
+      (`useCardContentFit`), той самий, що в картки задачі;
+    • тіло скролиться (`overflow-y: auto`) — текст ніколи не обрізається мовчки;
+    • масштаб — `data.presentationScale` через `--wb-card-text-scale` на всю типографіку.
 -->
 <template>
   <div
@@ -19,7 +25,12 @@
         { 'is-selected': isSelected, 'is-readonly': !interactive },
         `preset-${effectivePreset || 'default'}`,
       ]"
-    :style="{ '--accent': presetStyle.accent, '--preset-border': presetStyle.border, '--preset-shadow': presetStyle.accent + '14' }"
+    :style="{
+      '--accent': presetStyle.accent,
+      '--preset-border': presetStyle.border,
+      '--preset-shadow': presetStyle.accent + '14',
+      ...textScaleStyle,
+    }"
     :data-testid="`theory-card-${asset.id}`"
   >
     <div class="theory-card__accent-bar" :style="{ background: presetStyle.accent }" />
@@ -28,7 +39,7 @@
       <span class="theory-card__icon">{{ presetStyle.icon }}</span>
       <span class="theory-card__badge" :style="{ color: presetStyle.badge }">{{ data.badge || 'Теорія' }}</span>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="theory-card__delete-btn"
         :title="t('winterboard.widget.delete')"
@@ -38,7 +49,9 @@
       >×</button>
     </header>
 
-    <div class="theory-card__body">
+    <div ref="bodyEl" class="theory-card__body">
+      <!-- TLV2-05C: природний потік вмісту — його висоту міряє спільна авто-висота. -->
+      <div ref="flowEl" class="theory-card__flow">
       <!-- Theory: title + body + hint -->
       <div v-if="data.title || data.body" class="theory-card__section">
         <h2
@@ -80,18 +93,23 @@
           </div>
         </div>
       </div>
+      </div><!-- /.theory-card__flow -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, nextTick, watch } from 'vue'
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { detectCardPreset } from '../../../utils/detectCardPreset'
+import { cardTextScaleStyle, presentationScaleOf } from '../../../board/cardPresentation'
+import { isMinimizedOnBoard } from '../../../board/objectStandard'
+import { useCardContentFit } from '../../../composables/useCardContentFit'
 
 const { t } = useI18n()
 
@@ -107,6 +125,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:asset': [asset: WBAsset]
   delete: []
+  /** TLV2-05C: скільки пікселів висоти треба вмісту (спільна авто-висота). */
+  'request-height': [neededPx: number]
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -128,21 +148,6 @@ const PRESET_STYLES: Record<string, { icon: string; accent: string; border: stri
   summary:         { icon: '✅', accent: '#1e3a5f', border: '#93c5fd', badge: '#0f172a' },
 }
 
-/** N1 Фаза 3.5: рекомендовані стартові розміри за пресетом (2026-08-07).
- *  Картка починається з цього розміру, потім автоадаптується під контент. */
-const PRESET_SIZES: Record<string, { w: number; h: number }> = {
-  definition:      { w: 520, h: 340 },
-  rule:            { w: 520, h: 340 },
-  proof:           { w: 520, h: 420 },
-  tip:             { w: 440, h: 280 },
-  'common mistake': { w: 480, h: 300 },
-  remember:        { w: 440, h: 260 },
-  example:         { w: 520, h: 340 },
-  'life example':  { w: 520, h: 360 },
-  algorithm:       { w: 540, h: 460 },
-  summary:         { w: 480, h: 240 },
-}
-
 const data = computed<TheoryCardData>(() => (props.asset.data as TheoryCardData) ?? {
   version: 1, title: '', body: '',
 })
@@ -162,162 +167,34 @@ const presetStyle = computed(() => {
   return (p && PRESET_STYLES[p]) ? PRESET_STYLES[p] : PRESET_STYLES.definition
 })
 
-const presetSize = computed(() => {
-  const p = data.value.preset
-  return (p && PRESET_SIZES[p]) ? PRESET_SIZES[p] : { w: 520, h: 380 }
-})
+// ── TLV2-05C · подання картки ────────────────────────────────────────────────
+// Масштаб усієї типографіки — спільний учительський (`data.presentationScale`).
+const textScaleStyle = computed(() => cardTextScaleStyle(props.asset))
 
-// N1 Фаза 3.5: автоадаптація розміру картки під контент (2026-08-07).
-// Алгоритм: h↑ → w↑ → scrollbar (лише як останній засіб).
-const HEADER_H = 42   // theory-card__header висота + padding
-const BODY_PAD = 40   // theory-card__body padding (18+22)
-const MAX_H = 800
-const MAX_W = 700
-const H_STEP = 80
-const W_STEP = 100
-const MIN_H = 140  // шапка + один рядок тексту: нижче картка виглядає смужкою
-const SHRINK_EPS = 24  // мертва зона проти «дихання» картки на переміряннях
+// Висота під вміст — спільний шлях (SSOT INV-25). Попередня власна підгонка після
+// будь-якої зовнішньої зміни розміру назавжди вимикалась, а тіло лишалось без
+// прокрутки — текст обрізався мовчки.
+const bodyEl = ref<HTMLElement | null>(null)
+const flowEl = ref<HTMLElement | null>(null)
 
-// Останній розмір, який ПОСТАВИВ САМ tryFit — не «бажаний», а фактично
-// застосований. Порівнюємо з ним у watcher нижче: якщо asset.w/h відхилились
-// від цього значення (а не від tryFit) — розмір змінив юзер (ручка ресайзу),
-// і з ЦЬОГО моменту авто-фіт більше не чіпає картку (issue власника
-// 2026-08-07: «дозволити юзеру вручну міняти розмір, як було»).
-const lastAutoSize = ref<{ w: number; h: number } | null>(null)
-const userResized = ref(false)
-
-/**
- * Реальна висота ВМІСТУ картки (не контейнера).
- *
- * ⚠️ `body.scrollHeight` тут не годиться: `.theory-card__body` має
- * `flex: 1 1 auto`, тобто розтягується на всю вільну висоту картки. Коли
- * текст коротший за картку, scrollHeight дорівнює висоті самого блоку —
- * тобто «контент завжди рівно заповнює картку», і стискати нема від чого
- * (issue власника 2026-08-09: після першого фіксу розміри не змінились).
- * Для РОЗШИРЕННЯ це працювало, бо переповнення scrollHeight таки ловить.
- *
- * Міряємо від верху блоку до низу останньої дитини — це висота, яку
- * вміст справді займає, незалежно від розтягнутого контейнера.
- */
-function measureContent(body: HTMLElement): number {
-  const kids = Array.from(body.children) as HTMLElement[]
-  if (!kids.length) return body.scrollHeight
-  const top = body.getBoundingClientRect().top
-  let bottom = top
-  for (const kid of kids) {
-    const r = kid.getBoundingClientRect()
-    if (r.height > 0) bottom = Math.max(bottom, r.bottom)
-  }
-  // Нижній padding блоку вже врахований у BODY_PAD у викликачі.
-  return Math.max(0, Math.round(bottom - top))
-}
-
-function tryFit() {
-  if (userResized.value) return   // юзер уже сам обрав розмір — не втручаємось
-  const el = rootEl.value
-  if (!el) return
-  const body = el.querySelector('.theory-card__body') as HTMLElement | null
-  if (!body) return
-
-  // Тимчасово прибрати overflow щоб виміряти реальну висоту
-  const prevOverflow = body.style.overflowY
-  body.style.overflowY = 'visible'
-
-  nextTick(() => {
-    const contentH = measureContent(body)
-    const availH = props.asset.h - HEADER_H - BODY_PAD
-
-    if (contentH <= availH + 2) {
-      // Влазить. Але «влазить» ще не означає «по вмісту»: коротка картка
-      // лишалася на стартових 380px і тягла за собою півекрана порожнечі
-      // (issue власника 2026-08-09: «картки мають бути по вмісту»).
-      // Стискаємо до фактичної висоти тексту — не нижче MIN_H, щоб
-      // однорядкова картка не перетворилась на смужку.
-      const fitH = Math.max(MIN_H, Math.round(contentH + HEADER_H + BODY_PAD))
-      // SHRINK_EPS — мертва зона проти осциляції: після стискання текст
-      // перетікає, contentH трохи змінюється, і без порогу картка
-      // «дихала» б туди-сюди на кожному вимірі.
-      if (props.asset.h - fitH > SHRINK_EPS) {
-        lastAutoSize.value = { w: props.asset.w, h: fitH }
-        emit('update:asset', { ...props.asset, h: fitH })
-        body.style.overflowY = prevOverflow || 'hidden'
-        return
-      }
-      lastAutoSize.value = { w: props.asset.w, h: props.asset.h }
-      body.style.overflowY = prevOverflow || 'hidden'
-      return
-    }
-
-    // Не влазить — пробуємо збільшити h
-    let newH = props.asset.h
-    let newW = props.asset.w
-
-    // Спроба 1: збільшити висоту
-    while (newH < MAX_H && contentH > (newH - HEADER_H - BODY_PAD)) {
-      newH = Math.min(newH + H_STEP, MAX_H)
-    }
-
-    // Спроба 2: якщо висоти недостатньо — збільшити ширину (ширша картка →
-    // текст перерозподіляється → менша висота). Уже на MAX_W — розширювати
-    // нема куди, це термінальний стан, одразу scrollbar.
-    if (newH >= MAX_H && contentH > (MAX_H - HEADER_H - BODY_PAD) && newW < MAX_W) {
-      newW = Math.min(newW + W_STEP, MAX_W)
-      lastAutoSize.value = { w: newW, h: newH }
-      emit('update:asset', { ...props.asset, w: newW, h: newH })
-      // watcher нижче на [asset.w, asset.h] сам перезапустить tryFit
-      // після реального рендеру на новій ширині — рекурсивний домір,
-      // не одноразова спроба (тут раніше був баг: return без домірювання).
-      return
-    }
-
-    // Застосовуємо новий розмір (або лишається як є — Спроба 2 вже стоїть
-    // на MAX_W і більше рости нема куди)
-    if (newH !== props.asset.h || newW !== props.asset.w) {
-      lastAutoSize.value = { w: newW, h: newH }
-      emit('update:asset', { ...props.asset, w: newW, h: newH })
-    } else {
-      lastAutoSize.value = { w: newW, h: newH }
-    }
-
-    // Якщо навіть після збільшення не влазить — дозволяємо scrollbar
-    // (останній засіб, а не мовчазне обрізання, як було до Фази 3.5)
-    if (contentH > (newH - HEADER_H - BODY_PAD) + 2) {
-      body.style.overflowY = 'auto'
-    } else {
-      body.style.overflowY = prevOverflow || 'hidden'
-    }
-  })
-}
-
-// Запускаємо після монтування і при зміні body
-onMounted(() => {
-  nextTick(() => tryFit())
-})
-
-watch(() => data.value.body, () => {
-  nextTick(() => tryFit())
-})
-
-// Також перевіряємо при зміні preset (бо розмір може відрізнятись)
-watch(() => data.value.preset, () => {
-  nextTick(() => tryFit())
-})
-
-// N1 Фаза 3.5 fix (2026-08-07): переміряти при зміні розміру картки — але
-// ЛИШЕ якщо розмір змінив сам tryFit (домір після власного розширення
-// ширини), а не юзер ручкою resize. Порівнюємо з lastAutoSize: збіг —
-// це наш власний крок, продовжуємо ланцюжок; розбіжність — юзер узяв
-// контроль над розміром, більше НІКОЛИ не втручаємось для цієї картки
-// (issue власника 2026-08-07: «дозволити юзеру вручну міняти розмір,
-// як було» — раніше цей watcher існував ПОДВІЙНО і перебивав будь-який
-// ручний resize назад, незалежно від намірів юзера).
-watch(() => [props.asset.w, props.asset.h] as const, ([w, h]) => {
-  if (userResized.value) return
-  if (lastAutoSize.value && (w !== lastAutoSize.value.w || h !== lastAutoSize.value.h)) {
-    userResized.value = true
-    return
-  }
-  nextTick(() => tryFit())
+useCardContentFit({
+  root: rootEl,
+  body: bodyEl,
+  flow: flowEl,
+  // Перо, replay, учень і згорнута в трей картка операцій не породжують.
+  canMeasure: () => props.interactive && !isMinimizedOnBoard(props.asset),
+  sources: [
+    () => data.value.title,
+    () => data.value.body,
+    () => data.value.hint,
+    () => data.value.badge,
+    () => data.value.preset,
+    () => data.value.formulaTitle,
+    () => JSON.stringify(data.value.formulas ?? []),
+    () => presentationScaleOf(props.asset),
+    () => props.asset.w,
+  ],
+  emitHeight: (neededPx) => emit('request-height', neededPx),
 })
 
 // Export capture: theory_card is a draggable WBAsset, so it snapshots by its
@@ -328,6 +205,9 @@ useExportCapture(
   () => props.asset?.id,
   (signal) => snapshotElement(rootEl.value, signal),
 )
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>
@@ -371,9 +251,9 @@ useExportCapture(
   transition: background 0.2s;            /* drag-handle через Konva proxy */
   user-select: none;
 }
-.theory-card__icon { font-size: 15px; }
+.theory-card__icon { font-size: calc(15px * var(--wb-card-text-scale, 1)); }
 .theory-card__badge {
-  font-size: 12px;
+  font-size: calc(12px * var(--wb-card-text-scale, 1));
   font-weight: 600;
   color: #4338ca;
   text-transform: uppercase;
@@ -399,22 +279,27 @@ useExportCapture(
 .theory-card__body {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: hidden;  /* N1 Фаза 3.5: auto-size керує, scrollbar — лише при переповненні */
+  /* TLV2-05C: спершу картка росте вниз (спільна авто-висота), на межі сторінки — скрол.
+     `hidden` тут мовчки різав текст, коли підгонка вимикалась. */
+  overflow-y: auto;
   padding: 18px 24px 22px;
   pointer-events: auto;            /* скрол/виділення тексту */
 }
 
+/* flow-root: поля останнього блоку входять у виміряну висоту потоку. */
+.theory-card__flow { display: flow-root; }
+
 .theory-card__section { margin-bottom: 18px; }
 .theory-card__title {
-  font-size: 20px; font-weight: 700; color: #1e1b4b;
+  font-size: calc(20px * var(--wb-card-text-scale, 1)); font-weight: 700; color: #1e1b4b;
   line-height: 1.3; margin: 0 0 12px 0; letter-spacing: -0.01em;
 }
-.theory-card__text { font-size: 15px; line-height: 1.7; color: #374151; }
+.theory-card__text { font-size: calc(15px * var(--wb-card-text-scale, 1)); line-height: 1.7; color: #374151; }
 .theory-card__text :deep(table),
 .theory-card__hint :deep(table) {
   border-collapse: collapse;
   margin: 10px 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--wb-card-text-scale, 1));
 }
 .theory-card__text :deep(th),
 .theory-card__text :deep(td),
@@ -431,12 +316,12 @@ useExportCapture(
   font-weight: 600;
 }
 .theory-card__hint {
-  margin-top: 14px; font-size: 13px; color: #6b7280; font-style: italic;
+  margin-top: 14px; font-size: calc(13px * var(--wb-card-text-scale, 1)); color: #6b7280; font-style: italic;
   padding-top: 12px; border-top: 1px solid #e5e7eb;
 }
 
 .theory-card__formula-title {
-  font-size: 15px; font-weight: 600; color: #4338ca; margin: 0 0 14px 0;
+  font-size: calc(15px * var(--wb-card-text-scale, 1)); font-weight: 600; color: #4338ca; margin: 0 0 14px 0;
 }
 .theory-card__formula-grid {
   display: grid;
@@ -448,9 +333,9 @@ useExportCapture(
   padding: 14px 10px 10px; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
-.theory-card__formula-latex { font-size: 15px; color: #1e1b4b; line-height: 1.4; }
+.theory-card__formula-latex { font-size: calc(15px * var(--wb-card-text-scale, 1)); color: #1e1b4b; line-height: 1.4; }
 .theory-card__formula-label {
-  font-size: 11px; color: #7c3aed; font-weight: 500;
+  font-size: calc(11px * var(--wb-card-text-scale, 1)); color: #7c3aed; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.04em;
 }
 :deep(math) { font-size: 1em; }

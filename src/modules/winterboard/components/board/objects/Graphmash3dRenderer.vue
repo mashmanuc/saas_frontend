@@ -21,6 +21,7 @@
       <span class="gm3d-badge">GraphMASH 3D</span>
       <!-- Розгорнути на цілу дошку (НЕ виносить із дошки; дзеркало nmt3d) -->
       <button
+        v-if="!hostWindowControls"
         type="button"
         class="gm3d-expand-btn"
         :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
@@ -29,7 +30,7 @@
         @pointerdown.stop
       >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="gm3d-delete"
         :title="t('winterboard.widget.delete')"
@@ -47,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAsset, MashSceneData } from '../../../types/winterboard'
@@ -481,6 +483,9 @@ onBeforeUnmount(() => {
 })
 
 useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value, signal))
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

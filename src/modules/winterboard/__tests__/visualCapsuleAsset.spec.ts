@@ -82,7 +82,8 @@ describe('visual_capsule · стандарт картки (TLV2-05A)', () => {
   it('тип оголошує повний набір карткових можливостей', () => {
     expect(assetCapabilities('visual_capsule')).toEqual({
       movable: true, resizable: true, fullscreen: true, duplicable: true,
-      deletable: true, lockable: true, layerable: true, minimizable: false,
+      deletable: true, lockable: true, layerable: true, minimizable: true,
+      contentFit: 'none', textScale: 'none', windowChrome: true,
     })
   })
 

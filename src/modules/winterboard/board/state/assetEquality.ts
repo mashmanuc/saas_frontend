@@ -53,6 +53,9 @@ const TOP_LEVEL_FIELDS: readonly (keyof WBAsset)[] = [
   'rotation',
   'locked',
   'lockedBy',
+  // TLV2-05B: згортання в трей — зміна для ops (інакше updateAsset її пропустить
+  // як «нічого не змінилось», і після reload картка повернеться на полотно).
+  'minimized',
   // Sticky / text formatting
   'text',
   'bgColor',

@@ -23,7 +23,7 @@
 import type { Component } from 'vue'
 import type { WBAsset } from '../../types/winterboard'
 
-import { isFullscreenAsset } from '../../board/objectStandard'
+import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
 
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
@@ -319,7 +319,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     buildEvents: (a, ctx) => ({
       ...expEvents(a, ctx),
       'spawn-companions': (payload: unknown) => ctx.onSpawnCompanions(payload),
-      'request-height': (neededPx: number) => ctx.onRequestHeight(a.id, neededPx),
+      // TLV2-05C: 'request-height' додає збірка реєстру нижче — за `contentFit` стандарту.
     }),
   },
 
@@ -352,7 +352,18 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
 export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = Object.fromEntries(
   Object.entries(RENDERER_ENTRIES).map(([type, entry]) => [
     type,
-    { ...entry, expandable: isFullscreenAsset(type) },
+    {
+      ...entry,
+      expandable: isFullscreenAsset(type),
+      // TLV2-05C: спільна авто-висота — кожному типу з `contentFit: 'height'` (SSOT INV-25),
+      // а не вручну окремим entry.
+      buildEvents: assetCapabilities(type).contentFit === 'height'
+        ? (a: WBAsset, ctx: OverlayCtx) => ({
+            ...entry.buildEvents(a, ctx),
+            'request-height': (neededPx: number) => ctx.onRequestHeight(a.id, neededPx),
+          })
+        : entry.buildEvents,
+    },
   ]),
 )
 

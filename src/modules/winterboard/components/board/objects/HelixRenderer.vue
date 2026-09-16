@@ -25,6 +25,7 @@
       <span class="helix-title">{{ t('winterboard.helix.cardTitle') }}</span>
       <!-- Expand / collapse button — always visible -->
       <button
+        v-if="!hostWindowControls"
         type="button"
         class="helix-expand"
         :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
@@ -33,7 +34,7 @@
         @pointerdown.stop
       >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-if="!asset.locked && isSelected && !isExpanded"
+        v-if="!hostWindowControls && (!asset.locked && isSelected && !isExpanded)"
         type="button"
         class="helix-delete"
         :title="t('common.delete')"
@@ -154,6 +155,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { HelixAsset, HelixData } from '../../../types/helix'
@@ -489,6 +491,9 @@ function scheduleSnapshot(): void {
 }
 
 function onDelete(): void { emit('delete') }
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

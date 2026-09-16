@@ -30,6 +30,7 @@
 
       <!-- Expand / collapse — always visible, pointer-events:auto overrides header none -->
       <button
+        v-if="!hostWindowControls"
         type="button"
         class="nmt3d-expand-btn"
         :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
@@ -63,7 +64,7 @@
 
       <!-- Delete (selected + not locked + not expanded) -->
       <button
-        v-if="!asset.locked && isSelected && !isExpanded"
+        v-if="!hostWindowControls && (!asset.locked && isSelected && !isExpanded)"
         type="button"
         class="nmt3d-delete"
         :title="t('winterboard.widget.delete')"
@@ -83,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
@@ -612,6 +614,9 @@ watch(
     await mount()
   },
 )
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

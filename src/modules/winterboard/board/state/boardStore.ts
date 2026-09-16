@@ -25,6 +25,7 @@ import type { RecordOperationRequest } from '../../types/replay'
 // Phase 1A (Plan v1.1): Layer A whitelist filter — пропустити no-op updateAsset.
 // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
 import { assetsEqualByOpsFields } from './assetEquality'
+import { isAssetSelectable } from '../selectableObjects'
 // Phase 1B (Plan v1.1): Layer B per-asset_id RAF coalesce — батчинг async updates.
 import { scheduleBufferedUpdate, flushPendingUpdates } from './assetUpdateBatcher'
 
@@ -3750,9 +3751,9 @@ export const useWBStore = defineStore('wb-board', {
         }
       })
 
-      // Move assets
+      // Move assets. TLV2-05B.1: згорнута в трей картка разом із групою не рухається.
       const newAssets = page.assets.map((a) => {
-        if (!ids.has(a.id)) return a
+        if (!ids.has(a.id) || !isAssetSelectable(a)) return a
         return { ...a, x: a.x + dx, y: a.y + dy }
       })
 
@@ -3780,7 +3781,8 @@ export const useWBStore = defineStore('wb-board', {
       })
 
       const newAssets = page.assets.map((a) => {
-        if (!ids.has(a.id)) return a
+        // TLV2-05B.1: згорнута в трей картка разом із групою не рухається.
+        if (!ids.has(a.id) || !isAssetSelectable(a)) return a
         return { ...a, x: a.x + dx, y: a.y + dy }
       })
 
@@ -3816,7 +3818,7 @@ export const useWBStore = defineStore('wb-board', {
         })
       }
 
-      const movedAssets = page.assets.filter(a => wanted.has(a.id) && !a.locked)
+      const movedAssets = page.assets.filter(a => wanted.has(a.id) && !a.locked && isAssetSelectable(a))
       for (let i = 0; i < movedAssets.length; i += MOVE_OPS_BATCH) {
         const chunk = movedAssets.slice(i, i + MOVE_OPS_BATCH)
         _emitOperation({

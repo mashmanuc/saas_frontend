@@ -21,6 +21,12 @@
     режим малювання      кнопки капсули інертні (як `.theory-card.is-readonly`).
 
   Можливості типу оголошено в `board/objectStandard.ts` — тут лише вигляд.
+
+  TLV2-05B · ЗГОРТАННЯ В ТРЕЙ. Згорнута картка лишається змонтованою (host ховає її
+  `display: none`), тож стан V-D3.1 не скидається. Щоб анімація не «доїхала» до кінця
+  у схованому стані, програвач отримує призупинюваний планувальник кадрів: на час
+  згортання годинник зупиняється, після відновлення рух іде далі без стрибка.
+  Сам V-D3.1 не змінено — він і раніше приймав підмінний `scheduler`.
 -->
 <template>
   <div
@@ -36,7 +42,7 @@
     <header class="vcap-card__header">
       <span class="vcap-card__badge">{{ t('winterboard.widget.visualCapsule') }}</span>
       <button
-        v-if="capabilities.fullscreen"
+        v-if="!hostWindowControls && (capabilities.fullscreen)"
         type="button"
         class="vcap-card__btn vcap-card__expand"
         :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
@@ -45,7 +51,7 @@
         @pointerdown.stop
       >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-if="canDelete"
+        v-if="!hostWindowControls && (canDelete)"
         type="button"
         class="vcap-card__btn vcap-card__delete"
         :title="t('winterboard.widget.delete')"
@@ -60,15 +66,19 @@
         :visual-id="data.visual_id"
         :version="data.capsule_version"
         :mode="data.mode"
+        :scheduler="frameScheduler"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { assetCapabilities } from '../../../board/objectStandard'
+import { assetCapabilities, isMinimizedOnBoard } from '../../../board/objectStandard'
+import { createSuspendableFrameScheduler } from '../../../composables/suspendableFrameScheduler'
+import { browserScheduler, type FrameScheduler } from './visualCapsules/overlayPlayer'
 import type { VisualCapsuleAssetData, WBAsset } from '../../../types/winterboard'
 import VisualCapsuleTrianglesOverlay from './VisualCapsuleTrianglesOverlay.vue'
 
@@ -82,13 +92,23 @@ const props = withDefaults(
     isExpanded?: boolean
     /** Лише вчитель видаляє картку зі спільної дошки (T-03, TLV2-03S). */
     isTutor?: boolean
+    /** Базовий планувальник кадрів; у браузері — rAF, у тестах — ручний годинник. */
+    scheduler?: FrameScheduler
   }>(),
-  { isSelected: false, interactive: true, isExpanded: false, isTutor: true },
+  { isSelected: false, interactive: true, isExpanded: false, isTutor: true, scheduler: undefined },
 )
 
 const emit = defineEmits<{ delete: []; expand: [] }>()
 
 const data = computed(() => props.asset.data as VisualCapsuleAssetData)
+
+// TLV2-05B: один планувальник на весь час життя картки (програвач бере його один раз).
+const frameScheduler = createSuspendableFrameScheduler(props.scheduler ?? browserScheduler)
+watch(
+  () => isMinimizedOnBoard(props.asset),
+  (minimized) => (minimized ? frameScheduler.suspend() : frameScheduler.resume()),
+  { immediate: true },
+)
 const capabilities = computed(() => assetCapabilities(props.asset.type))
 const canDelete = computed(
   () => capabilities.value.deletable
@@ -96,6 +116,9 @@ const canDelete = computed(
     && !props.asset.locked
     && props.isSelected,
 )
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

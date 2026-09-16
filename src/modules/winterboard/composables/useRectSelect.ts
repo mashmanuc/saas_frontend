@@ -4,6 +4,7 @@
 import { ref, computed } from 'vue'
 import type { WBSelectionRect, WBStroke, WBAsset, WBPoint } from '../types/winterboard'
 import type { useWBStore } from '../board/state/boardStore'
+import { isAssetSelectable } from '../board/selectableObjects'
 
 type WBStore = ReturnType<typeof useWBStore>
 
@@ -124,6 +125,8 @@ export function useRectSelect(store: WBStore) {
     }
 
     for (const asset of page.assets) {
+      // TLV2-05B/05B.1: згорнута в трей картка на полотні не малюється — і рамкою не виділяється.
+      if (!isAssetSelectable(asset)) continue
       const bbox = getAssetBBox(asset)
       if (rectsIntersect(rect, bbox)) {
         ids.push(asset.id)

@@ -40,7 +40,7 @@
         @click.stop="emit('request-edit')"
       >✎</button>
       <button
-        v-if="!asset.locked"
+        v-if="!hostWindowControls && (!asset.locked)"
         type="button"
         class="formula-card-renderer__btn formula-card-renderer__btn--delete"
         :title="t('winterboard.widget.delete')"
@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
@@ -82,6 +83,9 @@ const renderedFormula = computed((): string => {
   // Використовуємо display mode ($$) для великого центрованого відображення
   return renderTextWithLatex(`$$${formula}$$`)
 })
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

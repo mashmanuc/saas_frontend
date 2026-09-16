@@ -50,8 +50,20 @@ export interface BoardObjectCapabilities {
   lockable: boolean
   /** Зміна шару (на передній/задній план, порядок у `page.assets[]`). */
   layerable: boolean
-  /** Згортання в нижній трей — вмикається у TLV2-05B; поки в жодного типу немає. */
+  /** Згортання в нижній трей поточної сторінки (TLV2-05B). */
   minimizable: boolean
+  /**
+   * TLV2-05C · підгонка висоти під вміст: `height` — картка міряє вміст і просить висоту
+   * спільним шляхом `request-height → nextAutoFitHeight → asset_update` (SSOT INV-25).
+   */
+  contentFit: 'none' | 'height'
+  /**
+   * TLV2-05C · масштаб типографіки: `teacher-shared` — `A− / 100% / A+` на верхній панелі,
+   * значення в `data.presentationScale`, учень бачить те саме (SYSTEM_LAW §9.C).
+   */
+  textScale: 'none' | 'teacher-shared'
+  /** TLV2-05C · спільна верхня панель картки (віконні дії та, де є, масштаб). */
+  windowChrome: boolean
 }
 
 export interface BoardObjectStandardEntry {
@@ -70,6 +82,9 @@ export const NO_CAPABILITIES: BoardObjectCapabilities = Object.freeze({
   lockable: false,
   layerable: false,
   minimizable: false,
+  contentFit: 'none',
+  textScale: 'none',
+  windowChrome: false,
 })
 
 function caps(patch: Partial<BoardObjectCapabilities>): BoardObjectCapabilities {
@@ -87,10 +102,34 @@ const CARD_BASE: Partial<BoardObjectCapabilities> = {
   deletable: true,
   lockable: true,
   layerable: true,
+  // TLV2-05C: верхня панель — у кожної картки (у 05B.2 спільні `— ⛶ ×` уже діяли для всіх);
+  // авто-висота й масштаб тексту — лише там, де тип їх оголошує.
+  windowChrome: true,
+  contentFit: 'none',
+  textScale: 'none',
+}
+
+/** TLV2-05C · текстова картка уроку: росте під вміст і має спільний учительський масштаб. */
+const TEXT_CARD: Partial<BoardObjectCapabilities> = {
+  contentFit: 'height',
+  textScale: 'teacher-shared',
 }
 
 function card(render: BoardRenderPath, patch: Partial<BoardObjectCapabilities> = {}): BoardObjectStandardEntry {
-  return Object.freeze({ kind: 'card', render, capabilities: caps({ ...CARD_BASE, ...patch }) })
+  return Object.freeze({
+    kind: 'card',
+    render,
+    capabilities: caps({
+      ...CARD_BASE,
+      // TLV2-05B: згортаються картки, які спільний механізм уміє сховати без втрати стану:
+      //   • overlay — HTML лишається змонтованим (display:none), зникає лише Konva-проксі;
+      //   • konva   — вузол знімається з полотна; його стан (сторінка документа тощо) живе в асеті.
+      // Медіа НЕ згортаються: сховане відео/YouTube грає далі звук, а перемонтування
+      // скинуло б відтворення. Це потребує окремої паузи для кожного плеєра.
+      minimizable: render !== 'media',
+      ...patch,
+    }),
+  })
 }
 
 /**
@@ -111,8 +150,8 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   helix: card('overlay', { fullscreen: true }),
   trig_solver: card('overlay'),
   nmt3d: card('overlay', { fullscreen: true }),
-  nmt_task: card('overlay', { fullscreen: true }),
-  theory_card: card('overlay'),
+  nmt_task: card('overlay', { fullscreen: true, ...TEXT_CARD }),
+  theory_card: card('overlay', TEXT_CARD),
   mash_scene: card('overlay'),
   geomash_scene: card('overlay', { fullscreen: true }),
   graphmash_3d: card('overlay', { fullscreen: true }),
@@ -187,6 +226,22 @@ export function isCardAsset(type: string | undefined | null): boolean {
 /** Чи має тип board-expand. Джерело для `overlayRegistry.expandable`. */
 export function isFullscreenAsset(type: string | undefined | null): boolean {
   return assetCapabilities(type).fullscreen
+}
+
+/** Чи можна згорнути картку цього типу в трей. Невідомий тип — ні. */
+export function isMinimizableAsset(type: string | undefined | null): boolean {
+  return assetStandard(type)?.kind === 'card' && assetCapabilities(type).minimizable
+}
+
+/**
+ * Чи згорнута картка на дошці (TLV2-05B) — ЄДИНЕ правило «не малювати на полотні».
+ *
+ * Fail-closed в обидва боки: невідомий тип або тип без `minimizable` НЕ ховається,
+ * навіть якщо в даних стоїть `minimized: true` — інакше об'єкт міг би зникнути з
+ * дошки без вкладки, з якої його можна повернути.
+ */
+export function isMinimizedOnBoard(asset: { type?: string; minimized?: boolean } | null | undefined): boolean {
+  return !!asset && asset.minimized === true && isMinimizableAsset(asset.type)
 }
 
 /** Чи має тип ручки зміни розміру медіа (`WBCanvas.isResizableMedia`). */

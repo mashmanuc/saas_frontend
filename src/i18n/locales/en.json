@@ -9527,6 +9527,39 @@
           "none": "B landed on {landed}."
         }
       }
+    },
+    "tray": {
+      "label": "Minimized cards",
+      "restore": "Restore to board",
+      "menu": "Actions",
+      "delete": "Delete from board",
+      "minimize": "Minimize",
+      "kind": {
+        "geometry_solid": "Solid",
+        "graph_calculator": "Graph",
+        "geometry_2d_v2": "Geometry",
+        "calculus_card": "Calculus",
+        "quadratic_card": "Quadratic",
+        "formula_card": "Formula",
+        "trig_circle": "Unit circle",
+        "helix": "Helix",
+        "trig_solver": "Trigonometry",
+        "nmt3d": "3D figure",
+        "nmt_task": "Task",
+        "theory_card": "Theory",
+        "mash_scene": "MASH",
+        "geomash_scene": "Figure",
+        "graphmash_3d": "3D graph",
+        "visual_capsule": "Animation",
+        "image": "Image",
+        "sticky": "Note",
+        "document_viewer": "Document"
+      }
+    },
+    "card": {
+      "scaleDown": "Smaller text",
+      "scaleUp": "Larger text",
+      "scaleReset": "Default text size (100%)"
     }
   },
   "storage": {

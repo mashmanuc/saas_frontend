@@ -27,7 +27,7 @@
         {{ exprText }} {{ asset.data.sign ?? '=' }} 0
       </span>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="quad-delete"
         :title="t('common.delete')"
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { QuadraticAsset, QuadSign } from '../../../types/quad'
@@ -242,6 +243,9 @@ function patch(updates: Partial<QuadraticAsset['data']>): void {
 }
 
 function onDelete(): void { emit('delete') }
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

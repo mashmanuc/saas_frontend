@@ -251,6 +251,12 @@ export interface WBAsset {
   /** v5 A3: Lock state — locked items cannot be moved/deleted/erased */
   locked?: boolean
   lockedBy?: string
+  /**
+   * TLV2-05B: картку згорнуто в нижній трей поточної сторінки. Об'єкт лишається
+   * на дошці з тим самим id, геометрією, шаром і даними — лише не малюється.
+   * Змінюється тільки штатним `asset_update` (поле ops-relevant, `assetEquality`).
+   */
+  minimized?: boolean
   /** v5 A9: Sticky note fields (present when type='sticky') */
   text?: string
   bgColor?: string

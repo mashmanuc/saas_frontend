@@ -30,7 +30,7 @@
     <header class="trig-slv-head">
       <span class="trig-slv-title">{{ typeLabel }}(x) {{ relLabel }} a</span>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="trig-slv-delete"
         :title="t('winterboard.widget.delete')"
@@ -148,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TrigSolverAsset, TrigFuncType, TrigRelation } from '../../../types/trigSolver'
@@ -428,6 +429,9 @@ watch(
     }
   },
 )
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

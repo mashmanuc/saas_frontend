@@ -49,7 +49,7 @@
            для traceability/provenance, але це технічний ідентифікатор, не для очей.
            Delete-кнопка має власний margin-left:auto, тож притискається праворуч. -->
       <button
-        v-if="isTutor !== false && !asset.locked && isSelected"
+        v-if="!hostWindowControls && (isTutor !== false && !asset.locked && isSelected)"
         type="button"
         class="nmt-task__delete-btn"
         :title="t('winterboard.widget.delete')"
@@ -251,13 +251,20 @@
         <span class="nmt-task__solution-icon">📖</span>
         <div
           class="nmt-task__solution-text"
-          :style="{ fontSize: (solutionZoom.fontPx.value * presentationScale) + 'px' }"
+          :style="{ fontSize: (solutionBasePx * presentationScale) + 'px' }"
           v-html="renderTextWithLatex(data.solution)"
         />
         <!-- Масштаб розбору. Розмір особистий (localStorage), у дошку не
              пишеться — див. useSolutionZoom. Кнопки поза текстом, щоб самі
              не збільшувались разом із ним. -->
-        <div class="nmt-task__solution-zoom" @pointerdown.stop @mousedown.stop>
+        <!-- TLV2-05C: у режимі стандарту карток масштаб один — A−/100%/A+ верхньої панелі
+             (спільний, SYSTEM_LAW §9.C). Особистий масштаб розбору тут дав би другий. -->
+        <div
+          v-if="!hostWindowControls"
+          class="nmt-task__solution-zoom"
+          @pointerdown.stop
+          @mousedown.stop
+        >
           <button
             type="button"
             class="nmt-task__zoom-btn"
@@ -296,9 +303,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSolutionZoom } from '../../../composables/useSolutionZoom'
+import { DEFAULT_SOLUTION_FONT_PX, useSolutionZoom } from '../../../composables/useSolutionZoom'
+import { presentationScaleOf } from '../../../board/cardPresentation'
+import { isMinimizedOnBoard } from '../../../board/objectStandard'
+import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { resolveMediaUrl } from '@/utils/media'
 import type { WBAsset } from '../../../types/winterboard'
@@ -321,6 +332,10 @@ import { useTaskTopicFix } from '../../../composables/useTaskTopicFix'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
+
+// TLV2-05B.2 / 05C: режим стандарту карток — ⛶/× і масштаб дає спільна панель полотна.
+// Оголошено ДО всього, що від нього залежить (спільна авто-висота читає джерела одразу).
+const hostWindowControls = useHostWindowControls()
 
 // Масштаб розбору. Singleton на рівні модуля: збільшив на одній картці —
 // більший на всіх (див. useSolutionZoom). У стан дошки НЕ пишеться.
@@ -371,8 +386,17 @@ useExportCapture(
 
 const data = computed(() => (props.asset.data as unknown as NmtTaskData))
 
-/** Масштаб символів лише для цього екрана; рамка, реплей і сервер незалежні. */
-const presentationScale = useNmtPresentationScale(() => props.asset.id)
+/**
+ * TLV2-05C · масштаб типографіки задачі = спільний учительський (`data.presentationScale`,
+ * SYSTEM_LAW §9.C) × локальний множник пульта `view.zoom` (v1.3, лише цей екран).
+ * Діє на ВСЮ картку через `--nmt-presentation-scale`, а не лише на розбір.
+ */
+const remoteScale = useNmtPresentationScale(() => props.asset.id)
+const presentationScale = computed(() => presentationScaleOf(props.asset) * remoteScale.value)
+
+/** Базовий розмір розбору: у режимі стандарту — фіксований (масштабує картка), у V1 — особистий. */
+const solutionBasePx = computed(() =>
+  hostWindowControls.value ? DEFAULT_SOLUTION_FONT_PX : solutionZoom.fontPx.value)
 
 /* ── Автопідгонка висоти під вміст ────────────────────────────────────────────
    Запит власника 2026-09-09: «збільшую шрифт розбору — з'являється скрол, хоча
@@ -387,55 +411,26 @@ const presentationScale = useNmtPresentationScale(() => props.asset.id)
 const bodyEl = ref<HTMLElement | null>(null)
 const flowEl = ref<HTMLElement | null>(null)
 
-/**
- * Скільки пікселів висоти треба вмісту разом із шапкою й рамкою картки.
- *
- * 🔴 ЧОМУ НЕ `body.scrollHeight`. Перша редакція міряла саме так — і картка
- * вміла лише рости. `scrollHeight` за визначенням НЕ буває меншим за
- * `clientHeight`, тож у високій картці з дрібним текстом він дорівнював
- * висоті самої картки: «потрібно» завжди збігалося з «є», і стиснення не
- * наставало ніколи. Помилку видно лише живцем — зменшенням шрифту.
- *
- * Тому міряємо ОКРЕМИЙ вузол потоку (`.nmt-task__flow`): його висота
- * природна й від висоти картки не залежить ні вгору, ні вниз.
+/*
+ * TLV2-05C: вимір і тригери — спільні (`useCardContentFit`, SSOT INV-25), той самий
+ * шлях `request-height → nextAutoFitHeight → asset_update`, що й у картки теорії.
+ * Розгорнута, згорнута чи неінтерактивна картка операцій не породжує.
  */
-function neededHeightPx(): number {
-  const root = rootEl.value
-  const body = bodyEl.value
-  const flow = flowEl.value
-  if (!root || !body || !flow) return 0
-  // Поза тілом: шапка й рамка. `clientHeight` уже містить паддинги тіла,
-  // тому їх додаємо окремо — інакше при стисненні вміст притисло б до країв.
-  const outside = root.offsetHeight - body.clientHeight
-  const style = typeof getComputedStyle === 'function' ? getComputedStyle(body) : null
-  const padY = style
-    ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
-    : 0
-  return Math.ceil(outside + padY + flow.getBoundingClientRect().height)
-}
-
-function requestAutoFit(): void {
-  // Розгорнута картка займає весь простір полотна — там підганяти нічого.
-  // Неінтерактивний режим (перо, реплей, учень без права запису) не має
-  // породжувати операцій: масштаб шрифту особистий, а геометрія спільна.
-  if (props.isExpanded || !props.interactive) return
-  const px = neededHeightPx()
-  if (px > 0) emit('request-height', px)
-}
-
-onMounted(() => { void nextTick(requestAutoFit) })
-
-// Тригери — рівно ті, після яких вміст справді змінює висоту.
-watch(
-  () => [
-    data.value.showSolution,
-    data.value.showAnswer,
-    solutionZoom.fontPx.value,
-    presentationScale.value,
-    props.asset.w,
+const { requestFit: requestAutoFit } = useCardContentFit({
+  root: rootEl,
+  body: bodyEl,
+  flow: flowEl,
+  canMeasure: () => !props.isExpanded && props.interactive && !isMinimizedOnBoard(props.asset),
+  // Тригери — рівно ті, після яких вміст справді змінює висоту.
+  sources: [
+    () => data.value.showSolution,
+    () => data.value.showAnswer,
+    () => solutionBasePx.value,
+    () => presentationScale.value,
+    () => props.asset.w,
   ],
-  () => { void nextTick(requestAutoFit) },
-)
+  emitHeight: (neededPx) => emit('request-height', neededPx),
+})
 
 /* ── Ілюстрації задачі (2026-07-31) ──────────────────────────────────────────
    Задачі «На рисунку зображено куб…» приходили голим текстом: BE не проносив
@@ -582,6 +577,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
     data: { ...data.value, ...patch } as unknown as WBAsset['data'],
   })
 }
+
 </script>
 
 <style scoped>

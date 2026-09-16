@@ -32,7 +32,7 @@
       <!-- Expression shown readonly in card; editing moved to sidebar CalculusInspector. -->
       <span v-if="!isSelected" class="calculus-expr-readonly">y = {{ asset.data.expr }}</span>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="calculus-delete"
         :title="t('common.delete')"
@@ -124,6 +124,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CalculusAsset } from '../../../types/calculus'
@@ -428,6 +429,9 @@ function onExprPreset(expr: string): void {
 }
 
 function onDelete(): void { emit('delete') }
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

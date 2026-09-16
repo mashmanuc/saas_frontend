@@ -37,7 +37,7 @@
     <header class="geo2dv2-header">
       <span class="geo2dv2-title">{{ presetLabel }}</span>
       <button
-        v-if="!asset.locked && isSelected"
+        v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
         class="geo2dv2-delete"
         data-testid="geometry-2d-v2-delete"
@@ -71,6 +71,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Geometry2DV2Asset } from '../../../types/geometry2dV2'
@@ -371,6 +372,9 @@ function emitDataPatch(patch: Partial<Geometry2DV2Asset['data']>): void {
 }
 
 function onDelete(): void { emit('delete') }
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

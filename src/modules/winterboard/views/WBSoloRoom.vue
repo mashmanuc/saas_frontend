@@ -1090,6 +1090,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } f
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
+import { selectAllOnCurrentPage } from '../board/selectableObjects'
 import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
@@ -2494,14 +2495,8 @@ useKeyboard({
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
 
 function handleSelectAll() {
-  const page = store.currentPage
-  if (!page) return
-  const allIds = [
-    ...page.strokes.map(s => s.id),
-    ...page.assets.map(a => a.id),
-  ]
-  store.selectedIds = allIds
-  store.setTool('select' as WBToolType)
+  // TLV2-05B.1: спільне правило solo й класної кімнати — згорнуті картки не виділяються.
+  selectAllOnCurrentPage(store)
 }
 
 // ─── Handlers: Drawing ──────────────────────────────────────────────────────

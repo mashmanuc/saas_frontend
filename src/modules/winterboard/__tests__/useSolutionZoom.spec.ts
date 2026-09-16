@@ -100,7 +100,9 @@ describe('🔴 розмір НЕ їде в дошку', () => {
     const path = await import('node:path')
     const src = await fs.readFile(path.resolve(process.cwd(),
       'src/modules/winterboard/components/board/objects/NmtTaskRenderer.vue'), 'utf-8')
-    expect(src).toContain("fontSize: solutionZoom.fontPx.value + 'px'")
+    // TLV2-05C: розмір розбору = база × масштаб картки; база у V1 — особиста (цей композабл).
+    expect(src).toContain("fontSize: (solutionBasePx * presentationScale) + 'px'")
+    expect(src).toContain('hostWindowControls.value ? DEFAULT_SOLUTION_FONT_PX : solutionZoom.fontPx.value')
     // Кнопки не повинні тягнути за собою емітів у стан.
     const block = src.slice(src.indexOf('nmt-task__solution-zoom'),
       src.indexOf('nmt-task__solution-zoom') + 1400)

@@ -45,6 +45,7 @@
       <!-- Expand to fill board canvas (mirrors nmt3d/trig_circle/helix pattern).
            Незалежна від presenting mode — expand завжди доступний. -->
       <button
+        v-if="!hostWindowControls"
         type="button"
         class="gc-expand-btn"
         :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
@@ -86,7 +87,7 @@
         <span class="gc-param-mode-label">{{ dragParamNames.length ? dragParamNames.join('·') : '—' }}</span>
       </button>
       <button
-        v-if="interactive && !asset.locked"
+        v-if="!hostWindowControls && (interactive && !asset.locked)"
         type="button"
         class="gc-delete"
         title="Delete"
@@ -343,6 +344,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GraphCalculator, GraphCalc } from '../../../vendor/graph_calculator/graph-calculator.js'
@@ -1555,6 +1557,9 @@ defineExpose({
   flushParam,
   flushSyncParams,
 })
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

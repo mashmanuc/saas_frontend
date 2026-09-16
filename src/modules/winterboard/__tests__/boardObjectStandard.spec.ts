@@ -131,8 +131,10 @@ describe('INV-STD-4 · похідні списки не змінили пове�
     expect(assetCapabilities('audio_player').resizable).toBe(false)
   })
 
-  it('згортання в трей у TLV2-05A ще не має жодного типу (це TLV2-05B)', () => {
-    expect(STANDARD_ASSET_TYPES.filter(t => assetCapabilities(t).minimizable)).toEqual([])
+  it('TLV2-05B: згортаються всі картки, крім медіа (сховане відео грало б звук)', () => {
+    const minimizable = STANDARD_ASSET_TYPES.filter(t => assetCapabilities(t).minimizable).sort()
+    const media = ['audio_player', 'video_player', 'youtube_player']
+    expect(minimizable).toEqual(STANDARD_ASSET_TYPES.filter(t => !media.includes(t)).sort())
   })
 
   it('кожна картка рухається, видаляється, блокується й міняє шар', () => {

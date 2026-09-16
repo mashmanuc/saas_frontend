@@ -9615,6 +9615,39 @@
           "none": "B лягла на {landed}."
         }
       }
+    },
+    "tray": {
+      "label": "Згорнуті картки",
+      "restore": "Повернути на дошку",
+      "menu": "Дії",
+      "delete": "Видалити з дошки",
+      "minimize": "Згорнути",
+      "kind": {
+        "geometry_solid": "Стереометрія",
+        "graph_calculator": "Графік",
+        "geometry_2d_v2": "Геометрія",
+        "calculus_card": "Аналіз",
+        "quadratic_card": "Квадратна функція",
+        "formula_card": "Формула",
+        "trig_circle": "Тригонометричне коло",
+        "helix": "Спіраль",
+        "trig_solver": "Тригонометрія",
+        "nmt3d": "3D-фігура",
+        "nmt_task": "Задача",
+        "theory_card": "Теорія",
+        "mash_scene": "MASH",
+        "geomash_scene": "Рисунок",
+        "graphmash_3d": "3D-графік",
+        "visual_capsule": "Анімація",
+        "image": "Зображення",
+        "sticky": "Нотатка",
+        "document_viewer": "Документ"
+      }
+    },
+    "card": {
+      "scaleDown": "Зменшити текст",
+      "scaleUp": "Збільшити текст",
+      "scaleReset": "Звичайний розмір тексту (100%)"
     }
   },
   "storage": {

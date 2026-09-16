@@ -30,7 +30,9 @@ const LS_KEY = 'wb_solution_font_px'
  */
 export const SOLUTION_FONT_STEPS = [11, 13, 15, 17, 20, 24, 28] as const
 
-const DEFAULT_PX = 13
+/** TLV2-05C: базовий розмір розбору, від якого масштабує картка в режимі стандарту. */
+export const DEFAULT_SOLUTION_FONT_PX = 13
+const DEFAULT_PX = DEFAULT_SOLUTION_FONT_PX
 
 function loadInitial(): number {
   try {

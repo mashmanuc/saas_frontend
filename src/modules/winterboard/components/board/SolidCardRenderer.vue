@@ -57,7 +57,7 @@
     <!-- Phase O PR-O4: delete button — emits 'delete', parent dispatches asset_delete op.
          Phase O PR-O4.3: visible only when selected OR hovered. -->
     <button
-      v-if="!asset.locked && toolbarVisible"
+      v-if="!hostWindowControls && (!asset.locked && toolbarVisible)"
       type="button"
       class="solid-delete"
       data-testid="solid-delete"
@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHostWindowControls } from '../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
@@ -515,6 +516,9 @@ onUnmounted(() => {
   // own onUnmounted hook (full pipeline: scene traverse → vendor destroy →
   // forceContextLoss → counter unregister). NO manual destroy here.
 })
+
+// TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
+const hostWindowControls = useHostWindowControls()
 </script>
 
 <style scoped>

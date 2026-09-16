@@ -44,8 +44,9 @@
       </v-layer>
 
       <!-- Assets layer (images + sticky notes) — BELOW strokes -->
+      <!-- TLV2-05B: konvaAssets = assets без згорнутих карток (проксі й нативні вузли знімаються). -->
       <v-layer ref="assetsLayerRef">
-        <template v-for="asset in assets" :key="asset.id">
+        <template v-for="asset in konvaAssets" :key="asset.id">
           <!-- Phase 3C: audio/video rendered as HTML overlays — skip in Konva -->
           <template v-if="asset.type === 'audio_player' || asset.type === 'video_player'" />
           <!-- HTML-overlay asset types (see KONVA_PROXY_TYPES) — all share the
@@ -621,6 +622,7 @@
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"
         />
       </div>
     </template>
@@ -726,6 +728,29 @@
     </template>
 
     </template><!-- /v-if="!unifiedRenderEnabled" (legacy per-type blocks end) -->
+
+    <!-- TLV2-05B.2: віконні дії картки «— ⛶ ×» — ОДНА група на полотно, у правому верхньому
+         куті виділеної (або розгорнутої) картки. Які дії доступні — board/windowActions.ts. -->
+    <WBCardWindowControls
+      v-if="windowControlsTarget"
+      :data-asset-id="windowControlsTarget.id"
+      :style="windowControlsStyle"
+      :actions="windowControlsActions"
+      :is-expanded="expandedAssetId === windowControlsTarget.id"
+      :scale="presentationScaleOf(windowControlsTarget)"
+      @scale="(direction: -1 | 0 | 1) => handleWindowScale(windowControlsTarget, direction)"
+      @minimize="handleMinimize(windowControlsTarget)"
+      @expand="handleWindowExpand(windowControlsTarget.id)"
+      @delete="handleWindowDelete(windowControlsTarget.id)"
+    />
+
+    <!-- TLV2-05B: нижній трей згорнутих карток ПОТОЧНОЇ сторінки (лише вчителю). -->
+    <WBBoardTray
+      v-if="showTray"
+      :items="trayList"
+      @restore="handleTrayRestore"
+      @delete="handleTrayDelete"
+    />
 
 
     <!-- Lesson Constructor: Theory overlay — page-level (theoryBlock/formulaBlock).
@@ -878,11 +903,17 @@
 
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
+import { useI18n } from 'vue-i18n'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 // TLV2-05A: стандарт об'єктів — одне джерело правди про можливості типу.
-import { OVERLAY_PROXY_TYPES, isResizableMediaAsset } from '../../board/objectStandard'
+import { OVERLAY_PROXY_TYPES, assetCapabilities, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
+import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
+import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
+import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
+import { provideHostWindowControls } from '../../composables/boardWindowControls'
+import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
@@ -952,8 +983,10 @@ import { DEFAULT_GRAPH_STATE } from '../../constants/graphCalculatorDefaults'
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 // Unified overlay layer (Z_ORDER_UNIFIED_PLAN v4.0, PR1) — прапор VITE_UNIFIED_ZORDER
 import WBOverlayLayer from './WBOverlayLayer.vue'
+import WBBoardTray from './WBBoardTray.vue'
+import WBCardWindowControls from './WBCardWindowControls.vue'
 import { useExpandedAssetSelection } from '../../composables/useExpandedAssetSelection'
-import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
+import { isBoardTrayEnabled, isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
 import { isOverlayType } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
@@ -1474,6 +1507,111 @@ useExpandedAssetSelection(wbStore)
 // v-if → WBOverlayLayer (один ordered v-for, INV-RENDER-1).
 // v-else → старі 12 per-type блоки (bit-identical до PR1, rollback = флаг OFF).
 const unifiedRenderEnabled = isUnifiedOverlayRenderEnabled()
+
+// ── TLV2-05B · згортання карток у нижній трей ────────────────────────────────
+// Ховати/показувати — ЗА ДАНИМИ (`asset.minimized`, `isMinimizedOnBoard`): учень,
+// reload, replay і клон бачать те саме. Прапорець керує лише ДІЄЮ «Згорнути»
+// (V1 — вимкнено за замовчуванням). Запис — штатний `asset-update` → кімната →
+// `store.updateAsset`; другого шляху немає.
+const boardTrayEnabled = isBoardTrayEnabled()
+const { t } = useI18n({ useScope: 'global' })
+
+/** Konva-шар: згорнуті картки знімаються з полотна (проксі не ловить drag/select). */
+const konvaAssets = computed(() => assets.value.filter(a => !isMinimizedOnBoard(a)))
+
+const trayViewer = computed(() => ({ isTutor: props.isTutor !== false, mode: wbStore.mode }))
+
+/** Вкладки трею: лише поточна сторінка (`props.assets`), у порядку шарів. */
+const trayList = computed(() => trayItems(assets.value))
+const showTray = computed(() => canShowTray(trayViewer.value, trayList.value.length))
+
+// TLV2-05B.2: у режимі стандарту карток віконні дії (⛶ / ×) малює полотно, а не кожна
+// картка — інакше кнопок було б дві. Без прапорця (V1) картки малюють свої, як раніше.
+provideHostWindowControls(() => boardTrayEnabled)
+
+/** Картка з віконними діями: розгорнута на всю дошку або єдина виділена. */
+const windowControlsTarget = computed<WBAsset | null>(() => {
+  if (!boardTrayEnabled) return null
+  const id = expandedAssetId.value
+    ?? (wbStore.selectedIds.length === 1 ? wbStore.selectedIds[0] : null)
+  if (!id) return null
+  const asset = assets.value.find(a => a.id === id) ?? null
+  if (!asset || isMinimizedOnBoard(asset)) return null
+  return hasWindowActions(cardWindowActions(asset, trayViewer.value, boardTrayEnabled)) ? asset : null
+})
+
+const windowControlsActions = computed(() =>
+  cardWindowActions(windowControlsTarget.value, trayViewer.value, boardTrayEnabled))
+
+const WINDOW_CONTROLS_INSET_PX = 6
+
+/** Правий верхній кут картки; для розгорнутої — правий верхній кут полотна. */
+const windowControlsStyle = computed<Record<string, string>>(() => {
+  const asset = windowControlsTarget.value
+  if (!asset) return {}
+  if (expandedAssetId.value === asset.id) {
+    return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px` }
+  }
+  const frame = getOverlayStyle(asset)
+  const right = parseFloat(frame.left) + parseFloat(frame.width) - WINDOW_CONTROLS_INSET_PX
+  const top = parseFloat(frame.top) + WINDOW_CONTROLS_INSET_PX
+  return { left: `${right}px`, top: `${top}px`, transform: 'translateX(-100%)' }
+})
+
+function handleWindowExpand(assetId: string): void {
+  // Та сама поведінка, що й ⛶ у картці: перемикач, розгорнута картка виділена.
+  const next = expandedAssetId.value === assetId ? null : assetId
+  expandedAssetId.value = next
+  if (next) wbStore.selectItems([next])
+}
+
+/**
+ * TLV2-05C · `A− / 100% / A+`: спільний учительський масштаб (SYSTEM_LAW §9.C).
+ * Один клік — рівно один штатний `asset-update`; на межі кроків — жодного.
+ * Повторний вимір висоти робить сама картка: масштаб — джерело її `useCardContentFit`.
+ */
+function handleWindowScale(asset: WBAsset, direction: -1 | 0 | 1): void {
+  if (!cardWindowActions(asset, trayViewer.value, boardTrayEnabled).scale) return
+  const next = nextPresentationScale(presentationScaleOf(asset), direction)
+  if (next === null) return
+  emit('asset-update', withPresentationScale(asset, next))
+}
+
+function handleWindowDelete(assetId: string): void {
+  // Видалення — чинною операцією, тим самим шляхом, що × у картці.
+  emit('asset-delete', assetId)
+}
+
+function handleMinimize(asset: WBAsset): void {
+  // Згорнута картка не буває fullscreen: спершу звичайний frame, потім трей.
+  if (expandedAssetId.value === asset.id) expandedAssetId.value = null
+  wbStore.selectItems(wbStore.selectedIds.filter(id => id !== asset.id))
+  emit('asset-update', minimizedAsset(asset))
+}
+
+function handleTrayRestore(assetId: string): void {
+  const asset = assets.value.find(a => a.id === assetId)
+  if (!asset) return
+  // Той самий об'єкт на тому самому місці; звичайний frame, не fullscreen.
+  emit('asset-update', restoredAsset(asset))
+}
+
+function handleTrayDelete(assetId: string): void {
+  // Видалення вкладки = видалення самого об'єкта чинною операцією.
+  emit('asset-delete', assetId)
+}
+
+// Картку згорнули (тут або в іншої вкладки / у replay): не лишаємо її виділеною
+// чи розгорнутою — інакше невидимий об'єкт рухався б груповими діями.
+watch(konvaAssets, () => {
+  if (expandedAssetId.value && isMinimizedOnBoard(assets.value.find(a => a.id === expandedAssetId.value))) {
+    expandedAssetId.value = null
+  }
+  const hidden = new Set(assets.value.filter(a => !isAssetSelectable(a)).map(a => a.id))
+  if (wbStore.selectedIds.some(id => hidden.has(id))) {
+    wbStore.selectItems(wbStore.selectedIds.filter(id => !hidden.has(id)))
+  }
+})
 
 // overlayAssets: assets[] filtered до OVERLAY_ASSET_TYPES, ORDER ЗБЕРЕЖЕНО.
 // Передається у WBOverlayLayer як єдине джерело рендеру.
@@ -4151,6 +4289,9 @@ function getOverlayStyle(asset: WBAsset): Record<string, string> {
     // center-rotation: overlay (top-left у left/top) крутиться навколо ВЛАСНОГО
     // центру — той самий пивот, що Konva-proxy (offset=w/2). Було '0 0' (кут).
     transformOrigin: 'center',
+    // TLV2-05B: згорнута картка лишається ЗМОНТОВАНОЮ (display:none, не v-if) —
+    // стан компонента, зокрема хід анімації капсули, не скидається.
+    ...(isMinimizedOnBoard(asset) ? { display: 'none' } : {}),
   }
 }
 
@@ -4169,6 +4310,9 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
   if (wbStore.mode !== 'edit') return
   const asset = assets.value.find(a => a.id === assetId)
   if (!asset || asset.locked) return
+  // TLV2-05C: лише типи з `contentFit: 'height'` (невідомий — ні); згорнута картка
+  // схована display:none і міряє нулі — такий вимір не має права стиснути рамку.
+  if (assetCapabilities(asset.type).contentFit !== 'height' || isMinimizedOnBoard(asset)) return
 
   const data = asset.data as unknown as Record<string, unknown> | undefined
   const nextH = nextAutoFitHeight({
