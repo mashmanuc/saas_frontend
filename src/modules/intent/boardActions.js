@@ -88,9 +88,11 @@ let _lastAiCard = null
 // джерела — у ДАНИХ об'єкта, тож переживають reload, replay, clone і export.
 // Лише коли сервер прислав `corridor` (rollout-гейт); без нього дані об'єкта
 // байт-у-байт такі, як були. Список ключів закритий: сторонні поля не пишемо.
+// Норматив: SYSTEM_LAW §9.D, OPS_SYNC_SSOT INV-26 (там той самий перелік).
 const CORRIDOR_PROVENANCE_KEYS = [
-  'subject', 'requested_content_language', 'source_language', 'source_provider',
-  'source_url', 'license', 'author', 'retrieved_at', 'translation_used',
+  'subject', 'content_language_source', 'requested_content_language', 'source_language',
+  'source_provider', 'source_title', 'source_url', 'license', 'license_url', 'author',
+  'share_alike', 'retrieved_at', 'translation_used',
 ]
 export function corridorData(corridor) {
   if (!corridor || typeof corridor !== 'object') return {}
@@ -105,11 +107,22 @@ export function corridorData(corridor) {
   return { content_language: lang, provenance }
 }
 
+// Мова вже створеного матеріалу для підсумку дошки (серверний резолвер мови, §3.7 п. 4).
+// Лише зчитування; порожньо для об'єктів без коридору — summary як був.
+function materialLang(data) {
+  const lang = data && data.content_language
+  if (lang !== 'uk' && lang !== 'en') return {}
+  const source = data.provenance && data.provenance.content_language_source
+  return typeof source === 'string' && source ? { lang, lang_source: source } : { lang }
+}
+
 const HANDLERS = {
-  // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke
-  async add_text({ text }) {
+  // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke.
+  // Коридор (LAW §9.D): мова й провенанс — у `stroke.data`, як у картки в `asset.data`.
+  async add_text({ text, corridor }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
+    const material = corridorData(corridor)
     store.addStroke({
       id: _uuid(),
       tool: 'text',
@@ -122,6 +135,7 @@ const HANDLERS = {
       fontWeight: 400,
       fontStyle: 'normal',
       textAlign: 'left',
+      ...(material.content_language ? { data: material } : {}),
     })
   },
 
@@ -131,7 +145,7 @@ const HANDLERS = {
   // на дошку школи; без рядка джерела картинку не кладемо (ТЗ, тиждень 2).
   // Розмір: вписати в 480 по ширині, зберігши пропорції; якщо BE не дав w/h —
   // квадрат 360, канва сама підтягне після завантаження.
-  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at, corridor }) {
+  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at, attribution_text, corridor }) {
     if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
     if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
     const { store, page } = await _store()
@@ -171,20 +185,27 @@ const HANDLERS = {
     }, page.id ?? '')
     // Підпис джерела під картинкою — окремий текстовий штрих (нуль нових
     // рендерерів): «Джерело: Вікіпедія · Public domain».
+    // Коридор: рядок атрибуції (автор, ліцензія) формує сервер мовою матеріалу —
+    // англійська картинка не отримує українського підпису; штрих несе ту саму мову.
     const srcLabel = source === 'wikimedia_commons' ? 'Вікіпедія' : 'зовнішнє джерело'
     const lic = license ? ` · ${license}` : ''
+    const material = corridorData(corridor)
+    const captionText = material.content_language && typeof attribution_text === 'string' && attribution_text
+      ? attribution_text.slice(0, 300)
+      : `Джерело: ${srcLabel}${lic}`
     store.addStroke({
       id: _uuid(),
       tool: 'text',
       color: '#64748b',
       size: 13,
       opacity: 1,
-      text: `Джерело: ${srcLabel}${lic}`,
+      text: captionText,
       points: [{ x: cx + 40, y: cy + Math.round(height / 2) + 6 }],
       width: Math.max(220, width),
       fontWeight: 400,
       fontStyle: 'normal',
       textAlign: 'left',
+      ...(material.content_language ? { data: material } : {}),
     })
     return assetId
   },
@@ -904,7 +925,7 @@ export async function buildBoardSummary() {
     let penStrokes = 0
     for (const s of page.strokes || []) {
       if (s.tool === 'text' && (s.text || '').trim()) {
-        items.push({ page: p, kind: 'текст', label: s.text.trim().slice(0, 120) })
+        items.push({ page: p, kind: 'текст', label: s.text.trim().slice(0, 120), ...materialLang(s.data) })
       } else if (s.tool !== 'text') penStrokes++
     }
     if (penStrokes > 0) items.push({ page: p, kind: 'малюнок', label: `${penStrokes} штрихів` })
@@ -934,7 +955,7 @@ export async function buildBoardSummary() {
       const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : cardText
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
-                   ...extras })
+                   ...extras, ...materialLang(a.data) })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик

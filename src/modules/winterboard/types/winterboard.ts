@@ -75,6 +75,14 @@ export interface WBStroke {
   // Validation: http: / https: only (utils/urlSafety.ts).
   linkUrl?: string        // http(s):// URL
   linkTitle?: string      // user-friendly label (optional)
+  // Коридори Інтегралика (SYSTEM_LAW §9.D, OPS_SYNC_SSOT INV-26): лише текстовий
+  // штрих, створений Інтеграликом; пишеться один раз у stroke_add, не рендериться.
+  data?: WBMaterialData
+}
+
+export interface WBMaterialData {
+  content_language: 'uk' | 'en'
+  provenance: Record<string, string | boolean>
 }
 
 // ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────

@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let assets = []
+let strokes = []
 let pages = []
 
 vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
@@ -15,7 +16,7 @@ vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
     workspaceId: 'ws-1',
     get currentPage() { return pages[pages.length - 1] },
     addAsset: (asset) => { assets.push(asset) },
-    addStroke: vi.fn(),
+    addStroke: (stroke) => { strokes.push(stroke) },
     updateAsset: vi.fn(),
     addPageUndoable: () => { const id = `p${pages.length + 1}`; pages.push({ id, width: 1920, height: 1080, assets: [] }); return id },
   }),
@@ -31,7 +32,7 @@ const PROVENANCE = {
   retrieved_at: '2026-09-17T10:00:00+00:00', translation_used: false,
 }
 
-beforeEach(() => { assets = []; pages = [{ id: 'p1', width: 1920, height: 1080, assets: [] }] })
+beforeEach(() => { assets = []; strokes = []; pages = [{ id: 'p1', width: 1920, height: 1080, assets: [] }] })
 
 describe('corridorData', () => {
   it('без коридору — нічого', () => {
@@ -48,6 +49,17 @@ describe('corridorData', () => {
     })
     expect(out.provenance).not.toHaveProperty('evil')
     expect(out.provenance).not.toHaveProperty('capability_profile')
+  })
+
+  it("рев'ю C0–C4: атрибуція CC BY-SA переживає allowlist — автор, share_alike, URL ліцензії, джерело мови", () => {
+    const out = corridorData({
+      ...PROVENANCE, author: 'Wikipedia contributors', share_alike: true, source_title: 'Ivan Mazepa',
+      license_url: 'https://creativecommons.org/licenses/by-sa/4.0/', content_language_source: 'explicit_command',
+    })
+    expect(out.provenance).toMatchObject({
+      author: 'Wikipedia contributors', share_alike: true, source_title: 'Ivan Mazepa',
+      license_url: 'https://creativecommons.org/licenses/by-sa/4.0/', content_language_source: 'explicit_command',
+    })
   })
 })
 
@@ -71,6 +83,45 @@ describe('створення матеріалу з мовою', () => {
     } })
     expect(assets[0].data).toMatchObject({ content_language: 'uk', license: 'CC BY-SA 4.0' })
     expect(assets[0].data.provenance).toMatchObject({ author: 'Painter', source_provider: 'wikimedia_commons' })
+  })
+
+  it("рев'ю C0–C4: add_text з коридором несе мову й провенанс у stroke.data (LAW §9.D)", async () => {
+    await runBoardAction({ kind: 'add_text', payload: { text: '1648 — the beginning', corridor: {
+      content_language: 'en', content_language_source: 'lesson', subject: 'history', translation_used: false,
+    } } })
+    expect(strokes).toHaveLength(1)
+    expect(strokes[0].text).toBe('1648 — the beginning')
+    expect(strokes[0].data).toEqual({ content_language: 'en', provenance: {
+      content_language_source: 'lesson', subject: 'history', translation_used: false } })
+  })
+
+  it('add_text без коридору — штрих без data (поза гейтом нічого не змінюється)', async () => {
+    await runBoardAction({ kind: 'add_text', payload: { text: 'Привіт' } })
+    expect(strokes[0]).not.toHaveProperty('data')
+  })
+
+  it("рев'ю C0–C4: підпис англійської картинки — серверний рядок атрибуції мовою матеріалу", async () => {
+    await runBoardAction({ kind: 'add_image', payload: {
+      src: 'https://upload/x.jpg', w: 400, h: 500, caption: 'Ivan Mazepa', source: 'wikimedia_commons',
+      source_url: 'https://commons/File:x.jpg', license: 'CC BY-SA 4.0', author: 'Painter',
+      attribution_text: 'Source: Wikimedia Commons, Painter · CC BY-SA 4.0',
+      corridor: { ...PROVENANCE, content_language: 'en', source_provider: 'wikimedia_commons', author: 'Painter', share_alike: true },
+    } })
+    expect(strokes).toHaveLength(1)
+    expect(strokes[0].text).toBe('Source: Wikimedia Commons, Painter · CC BY-SA 4.0')
+    expect(strokes[0].text).not.toMatch(/Джерело|Вікіпед/)
+    expect(strokes[0].data.content_language).toBe('en')
+    expect(assets[0].data.provenance).toMatchObject({ author: 'Painter', share_alike: true })
+  })
+
+  it('add_image без коридору — підпис як був', async () => {
+    await runBoardAction({ kind: 'add_image', payload: {
+      src: 'https://upload/x.jpg', w: 400, h: 500, caption: 'Мазепа', source: 'wikimedia_commons',
+      source_url: 'https://commons/File:x.jpg', license: 'CC BY-SA 4.0', author: 'Painter',
+      attribution_text: 'Source: ignored without corridor',
+    } })
+    expect(strokes[0].text).toBe('Джерело: Вікіпедія · CC BY-SA 4.0')
+    expect(strokes[0]).not.toHaveProperty('data')
   })
 
   it('add_page з карткою — мова в даних картки', async () => {
