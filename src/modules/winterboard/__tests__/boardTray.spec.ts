@@ -261,33 +261,41 @@ describe('WBBoardTray · вкладки теорії, задачі, Geometry2D �
   ]
 
   function mountTray() {
-    return mount(WBBoardTray, { props: { items }, global: { plugins: [i18n()] } })
+    return mount(WBBoardTray, { props: { items }, attachTo: document.body, global: { plugins: [i18n()] } })
   }
+
+  // TLV2-RC1.1: меню мінікартки телепортоване в body (поза скролом трею).
+  const popupDelete = () => document.body.querySelector<HTMLButtonElement>('[data-testid="wb-board-tray-delete"]')
 
   it('кожна вкладка — тип і назва', () => {
     const w = mountTray()
     const tabs = w.findAll('[data-testid="wb-board-tray-tab"]')
     expect(tabs.map(t => t.attributes('data-asset-type')))
       .toEqual(['theory_card', 'nmt_task', 'geometry_2d_v2', 'visual_capsule'])
-    expect(tabs.map(t => t.get('.wb-board-tray__kind').text()))
-      .toEqual(['Теорія', 'Задача', 'Геометрія', 'Анімація'])
-    expect(tabs[1].text()).toContain('Знайдіть кут')
+    // TLV2-RC1.1: назва — головний рядок; тип — другорядний підпис, а без назви він сам стає назвою.
+    expect(tabs.map(t => t.get('[data-testid="wb-board-tray-title"]').text()))
+      .toEqual(['Картка t', 'Знайдіть кут', 'Геометрія', 'Анімація'])
+    expect(tabs.map(t => t.find('[data-testid="wb-board-tray-kind"]').exists() ? t.get('[data-testid="wb-board-tray-kind"]').text() : null))
+      .toEqual(['Теорія', 'Задача', null, null])
+    w.unmount()
   })
 
   it('клік по вкладці відновлює саме цю картку', async () => {
     const w = mountTray()
     await w.findAll('[data-testid="wb-board-tray-restore"]')[2].trigger('click')
     expect(w.emitted('restore')).toEqual([['g']])
+    w.unmount()
   })
 
   it('видалення — через меню вкладки; заблоковану видалити не можна', async () => {
     const w = mountTray()
     await w.findAll('[data-testid="wb-board-tray-menu"]')[0].trigger('click')
-    await w.get('[data-testid="wb-board-tray-delete"]').trigger('click')
+    popupDelete()!.click()
     expect(w.emitted('delete')).toEqual([['t']])
 
     await w.findAll('[data-testid="wb-board-tray-menu"]')[3].trigger('click')
-    expect(w.get('[data-testid="wb-board-tray-delete"]').attributes('disabled')).toBeDefined()
+    expect(popupDelete()!.disabled).toBe(true)
+    w.unmount()
   })
 })
 

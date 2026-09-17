@@ -9534,6 +9534,10 @@
       "menu": "Actions",
       "delete": "Delete from board",
       "minimize": "Minimize",
+      "restoreNamed": "Restore to board: {name}",
+      "menuFor": "Actions for “{name}”",
+      "deleteLocked": "Unlock the card to delete it",
+      "kindFallback": "Card",
       "kind": {
         "geometry_solid": "Solid",
         "graph_calculator": "Graph",

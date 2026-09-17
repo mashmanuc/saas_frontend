@@ -9622,6 +9622,10 @@
       "menu": "Дії",
       "delete": "Видалити з дошки",
       "minimize": "Згорнути",
+      "restoreNamed": "Повернути на дошку: {name}",
+      "menuFor": "Дії з карткою «{name}»",
+      "deleteLocked": "Розблокуйте картку, щоб видалити",
+      "kindFallback": "Картка",
       "kind": {
         "geometry_solid": "Стереометрія",
         "graph_calculator": "Графік",
