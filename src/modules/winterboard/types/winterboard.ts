@@ -476,6 +476,29 @@ export interface WBFormulaBlock {
 // ─── TheoryCard (2026-06-03) — рухома картка теорії як WBAsset ───────────────
 // Об'єднує theory (title/body/hint) + опційну сітку формул в ОДНІЙ draggable картці.
 // data зберігається у asset.data (flat-data asset). Рендериться TheoryCardRenderer.
+/** Доказове джерело ЗМІСТУ матеріалу (ТЗ H0 §4.1).
+ *
+ * НЕ плутати з `WBMaterialData.provenance` (LAW §9.D, INV-26): той — конверт
+ * походження самого матеріалу й рішення коридору, цей — на чому стоїть зміст.
+ * Обидва живуть поряд; одне не замінює й не стирає інше. */
+export interface WBSourceRef {
+  provider: string
+  source_id: string
+  title: string
+  url: string
+  language: string
+  author: string
+  license: string
+  retrieved_at: string
+  evidence: string
+  evidence_key: string
+  modified: boolean
+}
+
+/** `verified` — усі джерела підтверджені; `mixed` — є суперечність;
+ *  `teacher_provided` — матеріал учителя. */
+export type WBSourceStatus = 'verified' | 'mixed' | 'teacher_provided'
+
 export interface TheoryCardData {
   version: 1
   title: string
@@ -489,6 +512,10 @@ export interface TheoryCardData {
   formulas?: WBFormulaEntry[]
   /** N1 Фаза 3 (2026-08-07): візуальний пресет картки (колір/іконка) — TheoryCardRenderer.vue PRESET_STYLES. */
   preset?: string
+  /** H0 (2026-09-18): доказові джерела змісту. Немає в старих картках — вони
+   *  рендеряться як раніше, без рядка «Джерела». */
+  sources?: WBSourceRef[]
+  source_status?: WBSourceStatus
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }

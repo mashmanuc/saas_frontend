@@ -93,6 +93,35 @@
           </div>
         </div>
       </div>
+      <!-- H0: доказові джерела змісту. Службові підписи — мовою МАТЕРІАЛУ
+           (data.content_language), а не UI-локалі: англомовна картка не має
+           раптом підписуватись українською (ТЗ §2.3, паритет uk/en). -->
+      <div v-if="sources.length" class="theory-card__sources">
+        <button
+          type="button"
+          class="theory-card__sources-toggle"
+          :aria-expanded="sourcesOpen"
+          @click.stop="sourcesOpen = !sourcesOpen"
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ sourceLabels.sources }}: {{ sources.length }}</button>
+        <ol v-if="sourcesOpen" class="theory-card__sources-list">
+          <li v-for="(ref, i) in sources" :key="i" class="theory-card__source">
+            <a
+              class="theory-card__source-title"
+              :href="ref.url"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              @click.stop
+              @mousedown.stop
+              @pointerdown.stop
+            >{{ ref.title }}</a>
+            <span v-if="ref.author" class="theory-card__source-meta">{{ sourceLabels.author }}: {{ ref.author }}</span>
+            <span v-if="ref.license" class="theory-card__source-meta">{{ sourceLabels.license }}: {{ ref.license }}</span>
+            <span v-if="ref.retrieved_at" class="theory-card__source-meta">{{ sourceLabels.retrieved }}: {{ ref.retrieved_at.slice(0, 10) }}</span>
+          </li>
+        </ol>
+      </div>
       </div><!-- /.theory-card__flow -->
     </div>
   </div>
@@ -161,6 +190,24 @@ const effectivePreset = computed(() =>
   || detectCardPreset(data.value.title, data.value.body, data.value.badge)
   || undefined,
 )
+
+// ── H0 · доказові джерела ────────────────────────────────────────────────────
+// Підписи мовою матеріалу, не UI-локалі: дзеркало `material_labels.py` на BE.
+// Через vue-i18n це зробити не можна — він дає локаль ІНТЕРФЕЙСУ, а ТЗ вимагає
+// мову самого матеріалу (англійська картка → `Sources`, навіть коли UI український).
+const SOURCE_LABELS: Record<string, { sources: string; author: string; license: string; retrieved: string }> = {
+  uk: { sources: 'Джерела', author: 'Автор', license: 'Ліцензія', retrieved: 'Отримано' },
+  en: { sources: 'Sources', author: 'Author', license: 'License', retrieved: 'Retrieved' },
+}
+const sources = computed(() => {
+  const list = (data.value as TheoryCardData).sources
+  return Array.isArray(list) ? list : []
+})
+const sourceLabels = computed(() => {
+  const lang = (props.asset.data as { content_language?: string } | undefined)?.content_language
+  return SOURCE_LABELS[lang === 'en' ? 'en' : 'uk']
+})
+const sourcesOpen = ref(false)
 
 const presetStyle = computed(() => {
   const p = effectivePreset.value
@@ -290,6 +337,16 @@ const hostWindowControls = useHostWindowControls()
 .theory-card__flow { display: flow-root; }
 
 .theory-card__section { margin-bottom: 18px; }
+/* H0 · джерела. pointer-events:auto — інакше клік з'їдає Konva-проксі над карткою. */
+.theory-card__sources { margin-top: 10px; padding-top: 8px; border-top: 1px solid #e5e7eb; pointer-events: auto; }
+.theory-card__sources-toggle {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: calc(12px * var(--wb-card-text-scale, 1)); color: #64748b; text-decoration: underline dotted;
+}
+.theory-card__sources-list { margin: 6px 0 0; padding-left: 18px; }
+.theory-card__source { margin-bottom: 4px; font-size: calc(11px * var(--wb-card-text-scale, 1)); color: #64748b; }
+.theory-card__source-title { color: #2563eb; }
+.theory-card__source-meta { display: block; }
 .theory-card__title {
   font-size: calc(20px * var(--wb-card-text-scale, 1)); font-weight: 700; color: #1e1b4b;
   line-height: 1.3; margin: 0 0 12px 0; letter-spacing: -0.01em;

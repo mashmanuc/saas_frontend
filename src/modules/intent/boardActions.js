@@ -107,6 +107,39 @@ export function corridorData(corridor) {
   return { content_language: lang, provenance }
 }
 
+// Доказові джерела ЗМІСТУ картки (ТЗ H0 §4.1). Свідомо ОКРЕМЕ поле від
+// `provenance`: той — незмінний конверт походження матеріалу (LAW §9.D,
+// INV-26), а це список джерел, на яких стоїть зміст. Одне не підміняє інше.
+const SOURCE_REF_KEYS = [
+  'provider', 'source_id', 'title', 'url', 'language', 'author',
+  'license', 'retrieved_at', 'evidence', 'evidence_key', 'modified',
+]
+// Обов'язкові — дзеркало REQUIRED_KEYS у `apps/intent/corridors/source_ref.py`.
+// Джерело без них нікуди не веде, тому на дошку не лягає.
+const SOURCE_REF_REQUIRED = ['provider', 'title', 'url', 'retrieved_at', 'evidence']
+const SOURCE_STATUSES = ['verified', 'mixed', 'teacher_provided']
+
+export function sourcesData(sources, status) {
+  if (!Array.isArray(sources)) return {}
+  const out = []
+  for (const raw of sources.slice(0, 12)) {
+    if (!raw || typeof raw !== 'object') continue
+    const ref = {}
+    for (const key of SOURCE_REF_KEYS) {
+      const value = raw[key]
+      if (key === 'modified') ref[key] = value === true
+      else if (typeof value === 'string' && value) ref[key] = value.slice(0, key === 'evidence' ? 500 : 300)
+      else ref[key] = key === 'modified' ? false : ''
+    }
+    if (SOURCE_REF_REQUIRED.every(key => ref[key])) out.push(ref)
+  }
+  if (!out.length) return {}
+  return {
+    sources: out,
+    source_status: SOURCE_STATUSES.includes(status) ? status : 'verified',
+  }
+}
+
 // Мова вже створеного матеріалу для підсумку дошки (серверний резолвер мови, §3.7 п. 4).
 // Лише зчитування; порожньо для об'єктів без коридору — summary як був.
 function materialLang(data) {
@@ -244,7 +277,7 @@ const HANDLERS = {
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
-  async add_card({ title, body, badge, preset, corridor }) {
+  async add_card({ title, body, badge, preset, corridor, sources, source_status }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const assetId = _uuid()
@@ -263,7 +296,7 @@ const HANDLERS = {
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
-      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}), ...corridorData(corridor) },
+      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}), ...corridorData(corridor), ...sourcesData(sources, source_status) },
     }, page.id ?? '')
     // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
     _lastAiCard = { assetId, pageId: page.id ?? '' }
