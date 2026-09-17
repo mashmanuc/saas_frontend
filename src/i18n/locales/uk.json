@@ -8046,6 +8046,30 @@
       "unlock": "Розблокувати",
       "delete": "Видалити"
     },
+    "corridor": {
+      "subject": "Предмет",
+      "materialLanguage": "Мова матеріалу",
+      "auto": "Авто",
+      "general": "Загальний",
+      "source": {
+        "explicit_remote": "обрано на пульті",
+        "explicit_palette": "обрано на ноутбуці",
+        "explicit_command": "з команди",
+        "lesson": "з уроку",
+        "board": "з дошки",
+        "conversation": "з попередніх команд",
+        "phrase": "з питання",
+        "fallback": "предмет не визначено",
+        "ui_fallback": "за мовою інтерфейсу"
+      },
+      "errors": {
+        "corridorUnavailable": "Не вдалося прочитати предмет і мову дошки.",
+        "corridorReadonly": "Предмет і мову дошки змінює лише вчитель.",
+        "corridorSyncBlocked": "Дошка зараз не синхронізована — вибір не збережено. Спробуйте, щойно зв'язок відновиться.",
+        "corridorInvalid": "Такий предмет чи мову зараз обрати не можна.",
+        "corridorFailed": "Не вдалося змінити вибір."
+      }
+    },
     "remote": {
       "button": "Пульт на телефон",
       "qrTitle": "Пульт на телефон",

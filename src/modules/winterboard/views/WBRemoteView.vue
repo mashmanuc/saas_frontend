@@ -94,6 +94,20 @@
     </div>
     <p v-if="isReady && cards && cards.count === 0" class="wb-remote__note">{{ t('winterboard.remote.noCards') }}</p>
 
+    <!-- v1.6 (LAW §9): предмет і мова матеріалу Інтегралика — той самий селектор і той
+         самий реєстр, що в палітрі на ноутбуці. Пульт шле лише намір; пише ноутбук. -->
+    <CorridorSelector
+      v-if="corridorRegistry && assistantView"
+      class="wb-remote__corridor"
+      compact
+      :registry="corridorRegistry"
+      :subject="assistantView.subject"
+      :language="assistantView.language"
+      :disabled="!isReady"
+      @select-subject="onRemoteSubject"
+      @select-language="onRemoteLanguage"
+    />
+
     <!-- Говорю (тримати) -->
     <button
       v-if="ptt.supported"
@@ -143,6 +157,9 @@ import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
+import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
+import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
+import type { RemoteStateDetail } from '../composables/useRemoteChannel'
 
 const props = defineProps<{ id?: string }>()
 const { t, locale } = useI18n()
@@ -189,6 +206,32 @@ const hasCards = computed(() => !!cards.value && cards.value.count > 0)
 /** ▲/▼ мають сенс лише коли «Задача на екран» відкрила довгу картку. */
 const isPresentingTask = computed(() => !!cards.value?.presenting)
 
+/** v1.6 — предмет і мова матеріалу з ноутбука; реєстр — той самий, що в палітрі. */
+const assistant = ref<RemoteStateDetail['assistant'] | null>(null)
+const corridorRegistry = ref<any>(null)
+const assistantView = computed(() => {
+  const a = assistant.value
+  if (!a) return null
+  return {
+    subject: { mode: a.subjectMode, resolved: a.subject, locked: a.subjectMode === 'locked' ? a.subject : null, source: a.subjectSource },
+    language: { mode: a.languageMode, content: a.contentLanguage, locked: a.languageMode === 'locked' ? a.contentLanguage : null, source: '' },
+  }
+})
+function onRemoteSubject(value: string) {
+  if (value === 'auto') sendCmd('subject.auto')
+  else sendCmd('subject.set', { subject: value })
+}
+function onRemoteLanguage(value: string) {
+  if (value === 'auto') sendCmd('language.auto')
+  else sendCmd('language.set', { language: value })
+}
+onMounted(() => {
+  // 404 — коридори цьому акаунту не ввімкнено: селектора на пульті немає.
+  fetchCorridorRegistry(locale.value === 'en' ? 'en' : 'uk')
+    .then((reg: any) => { corridorRegistry.value = reg?.enabled ? reg : null })
+    .catch(() => { corridorRegistry.value = null })
+})
+
 /** Причина, чому пульт не керує (null = усе гаразд або ще шукаємо) */
 type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable' | 'boardFrozen'
 const reasonKey = ref<ReasonKey | null>(null)
@@ -213,6 +256,7 @@ const channel = useRemoteChannel({
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
     cards.value = s.cards ?? null
+    assistant.value = s.assistant ?? null
     // заморожена дошка — не помилка зв'язку, а стан: показуємо як причину, кнопки лишаємо
     reasonKey.value = s.frozen ? 'boardFrozen' : null
     if (s.frozen) reasonCode.value = 'REPLAY_FROZEN_NO_WRITE'
@@ -286,6 +330,7 @@ function vibrate(ms: number) {
 }
 
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+  | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })

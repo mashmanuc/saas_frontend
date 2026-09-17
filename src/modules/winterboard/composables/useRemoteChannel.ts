@@ -29,6 +29,31 @@ export interface RemoteStateDetail {
   cards?: { count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean }
   /** Дошка з фіналізованим записом: команди дійдуть, але нічого не збережеться */
   frozen?: boolean
+  /** v1.6 — предмет і мова матеріалу Інтегралика на ноутбуці (LAW §9) */
+  assistant?: {
+    subjectMode: 'auto' | 'locked'
+    subject: string
+    subjectSource: string
+    languageMode: 'auto' | 'locked'
+    contentLanguage: 'uk' | 'en'
+  }
+}
+
+/** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
+export function parseRemoteAssistant(raw: any): RemoteStateDetail['assistant'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const modes = ['auto', 'locked']
+  if (!modes.includes(raw.subject_mode) || !modes.includes(raw.language_mode)) return undefined
+  if (typeof raw.subject !== 'string' || !raw.subject || raw.subject.length > 32) return undefined
+  if (typeof raw.subject_source !== 'string' || raw.subject_source.length > 24) return undefined
+  if (raw.content_language !== 'uk' && raw.content_language !== 'en') return undefined
+  return {
+    subjectMode: raw.subject_mode,
+    subject: raw.subject,
+    subjectSource: raw.subject_source,
+    languageMode: raw.language_mode,
+    contentLanguage: raw.content_language,
+  }
 }
 
 const LOG_PREFIX = '[WB:remote]'
@@ -116,6 +141,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         }
         if (typeof msg.zoom === 'number') detail.zoom = msg.zoom
         if (typeof msg.frozen === 'boolean') detail.frozen = msg.frozen
+        const assistant = parseRemoteAssistant(msg.assistant)
+        if (assistant) detail.assistant = assistant
         if (msg.cards && typeof msg.cards === 'object') {
           detail.cards = {
             count: Number(msg.cards.count) || 0,

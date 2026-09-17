@@ -213,6 +213,21 @@
               :aria-label="uiText.minimizeLabel"
             >–</button>
           </div>
+          <!-- Коридори Інтегралика (ТЗ 2026-09-17 §4.1): «Предмет: Авто · Історія» і
+               «Мова матеріалу: Авто · English». Лише коли сервер увімкнув коридори цьому
+               акаунту (404 → нічого) і дошка відкрита. Англійський провідник (EN_GUIDE)
+               інструментів не має — селектора там немає; мова матеріалу в нього НЕ перемикає. -->
+          <CorridorSelector
+            v-if="corridor.state.enabled && currentBoardId && !isEnglishGuide"
+            :registry="corridor.state.registry"
+            :subject="corridor.state.subject"
+            :language="corridor.state.language"
+            :readonly="corridor.state.readonly"
+            :disabled="corridor.state.busy"
+            :error-key="corridor.state.error"
+            @select-subject="onCorridorSubject"
+            @select-language="onCorridorLanguage"
+          />
           <!-- Г2-г: план уроку — лише коли сервер сказав «увімкнено» і дошка відкрита.
                Без прапорця блоку немає і запитів немає (ТЗ §3.1). -->
           <LessonPlanPanel v-if="lessonPlan.enabled && currentBoardId" :lp="lessonPlan" />
@@ -340,6 +355,8 @@ import { useLessonPlan } from './lessonPlanApi'
 // Той самий словник, що в Конструкторі: два списки типів розійшлися б за тиждень.
 import { LESSON_TYPE_OPTIONS } from '@/modules/lesson_constructor/lessonTypeRules'
 import LessonPlanPanel from './LessonPlanPanel.vue'
+import CorridorSelector from './corridors/CorridorSelector.vue'
+import { EVENT_COMMAND, EVENT_STATE, EVENT_STATE_REQUEST, useAssistantCorridor } from './corridors/assistantCorridor'
 import {
   EN_GUIDE_NAVIGATION,
   describeEnGuideRoute,
@@ -1113,6 +1130,9 @@ async function askAi(phrase) {
   try {
     // Г2-д: план уроку живе на сервері — parse читає його з сесії сам.
     const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage())
+    // Коридори: сервер повертає фактично визначені предмет і мову — підпис
+    // селектора оновлюється наступною ж командою (ТЗ §4.2).
+    if (r?.corridor) corridor.applyCorridor(r.corridor)
     if (r.status === 'propose') {
       if (r.risk === 'low') executeAi(r)
       else aiPush({ kind: 'confirm', resp: r, done: false })
@@ -1849,6 +1869,68 @@ function runSelected() {
  * або per-акаунт) — відкриваємось у командах із поясненням, а не мовчимо:
  * кнопка в іншому модулі не має «нічого не робити».
  */
+// ── Коридори Інтегралика (ТЗ 2026-09-17 §4) ─────────────────────────────────
+// Один стан на застосунок: палітра й обробник пульта на ноутбуці. Поза
+// rollout-гейтом сервер відповідає 404 — стан лишається вимкненим мовчки.
+const corridor = useAssistantCorridor()
+
+async function corridorBoardSummary() {
+  try { return await buildBoardSummary() } catch { return null }   // без зору — лише без сигналів дошки
+}
+
+async function loadCorridor(id) {
+  if (!enabled.value || !id) { await corridor.loadBoard(null); return }
+  await corridor.loadBoard(id, {
+    boardSummary: await corridorBoardSummary(),
+    conversationId: conversationId.value,
+    locale: currentLocale.value,
+  })
+}
+watch(currentBoardId, (id) => { loadCorridor(id) }, { immediate: true })
+
+/** DESYNC/PAUSED: вибір предмета не записуємо (ТЗ §9.8) — дошка не синхронізована. */
+async function corridorSyncBlocked() {
+  if (!currentBoardId.value) return false
+  try {
+    const { useOpsSyncStore } = await import('@/modules/winterboard/stores/opsSyncStore')
+    const mode = useOpsSyncStore().mode
+    return mode === 'DESYNC' || mode === 'PAUSED'
+  } catch {
+    return false   // стору синхронізації немає (не кімната дошки) — нічого блокувати
+  }
+}
+
+async function onCorridorSubject(value, source = 'explicit_palette') {
+  const syncBlocked = await corridorSyncBlocked()
+  return corridor.setSubject(value, source, { syncBlocked, refresh: () => loadCorridor(currentBoardId.value) })
+}
+
+async function onCorridorLanguage(value, source = 'explicit_palette') {
+  const syncBlocked = await corridorSyncBlocked()
+  return corridor.setContentLanguage(value, source, { syncBlocked, refresh: () => loadCorridor(currentBoardId.value) })
+}
+
+/** Намір із пульта (LAW §9 v1.6): пише ноутбук, тим самим REST, що й клік. */
+function onCorridorRemoteCommand(e) {
+  const d = e?.detail || {}
+  if (!enabled.value || !d.boardId || d.boardId !== currentBoardId.value) return
+  const args = d.args || {}
+  let done = null
+  if (d.cmd === 'subject.set') done = onCorridorSubject(args.subject, 'explicit_remote')
+  else if (d.cmd === 'subject.auto') done = onCorridorSubject('auto', 'explicit_remote')
+  else if (d.cmd === 'language.set') done = onCorridorLanguage(args.language, 'explicit_remote')
+  else if (d.cmd === 'language.auto') done = onCorridorLanguage('auto', 'explicit_remote')
+  // Відповідь пульту — актуальний стан у будь-якому разі (і коли вибір відхилено).
+  if (done) done.finally(publishCorridorState)
+}
+
+function publishCorridorState() {
+  window.dispatchEvent(new CustomEvent(EVENT_STATE, {
+    detail: { boardId: corridor.state.boardId, state: corridor.remoteSnapshot() },
+  }))
+}
+watch(() => JSON.stringify(corridor.remoteSnapshot()), publishCorridorState)
+
 function onIntegralykAsk(e) {
   const text = String(e?.detail?.text ?? '').trim()
   if (!enabled.value || !text) return
@@ -1872,6 +1954,8 @@ function onKeydown(e) {
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   window.addEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.addEventListener(EVENT_COMMAND, onCorridorRemoteCommand)
+  window.addEventListener(EVENT_STATE_REQUEST, publishCorridorState)
   restoreFabPos()
   // Мобільний layout: стежимо за шириною екрана + екранною клавіатурою (VisualViewport)
   try {
@@ -1893,6 +1977,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.removeEventListener(EVENT_COMMAND, onCorridorRemoteCommand)
+  window.removeEventListener(EVENT_STATE_REQUEST, publishCorridorState)
   window.removeEventListener('mousemove', onEyesMove)
   try { narrowMq && (narrowMq.removeEventListener ? narrowMq.removeEventListener('change', updateNarrow) : narrowMq.removeListener(updateNarrow)) } catch { /* noop */ }
   if (window.visualViewport) {

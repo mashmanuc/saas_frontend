@@ -8307,6 +8307,30 @@
       "unlock": "Unlock",
       "delete": "Delete"
     },
+    "corridor": {
+      "subject": "Subject",
+      "materialLanguage": "Material language",
+      "auto": "Auto",
+      "general": "General",
+      "source": {
+        "explicit_remote": "chosen on the remote",
+        "explicit_palette": "chosen on the laptop",
+        "explicit_command": "from the command",
+        "lesson": "from the lesson",
+        "board": "from the board",
+        "conversation": "from earlier commands",
+        "phrase": "from the question",
+        "fallback": "subject not detected",
+        "ui_fallback": "by interface language"
+      },
+      "errors": {
+        "corridorUnavailable": "Could not read the board's subject and language.",
+        "corridorReadonly": "Only the teacher can change the board's subject and language.",
+        "corridorSyncBlocked": "The board is not in sync right now — the choice was not saved. Try again once the connection is back.",
+        "corridorInvalid": "This subject or language cannot be chosen right now.",
+        "corridorFailed": "Could not change the choice."
+      }
+    },
     "remote": {
       "button": "Phone remote",
       "qrTitle": "Phone remote",

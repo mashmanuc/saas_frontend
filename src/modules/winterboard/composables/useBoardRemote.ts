@@ -14,6 +14,11 @@
 // v1.2 (2026-09-03, з уроку): view.fit / view.zoom / view.scroll / card.reveal
 // через RemoteViewAdapter (масштаб і скрол полотна, «відповідь/розбір» на
 // картках задач). Стан для пульта доповнено `cards` і `zoom`.
+//
+// v1.6 (2026-09-17, коридори Інтегралика): subject.set / subject.auto /
+// language.set / language.auto — теж лише намір. Ноутбук передає його палітрі
+// Інтегралика подією (як `m4sh:integralyk-ask`), а вона записує вибір тим самим
+// REST, що й клік. Стан предмета й мови йде на пульт полем `assistant`.
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
@@ -45,8 +50,24 @@ export interface RemoteCommandDetail {
   pair: string
   clientId: string
   cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
-  args: { index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' }
+    | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
+  args: { index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string }
 }
+
+/** v1.6 — предмет і мова матеріалу Інтегралика для підпису на пульті (LAW §9). */
+export interface RemoteAssistantState {
+  subject_mode: 'auto' | 'locked'
+  subject: string
+  subject_source: string
+  language_mode: 'auto' | 'locked'
+  content_language: 'uk' | 'en'
+}
+
+/** Події з палітрою Інтегралика (рядки звіряє тест із `intent/corridors/assistantCorridor.js`). */
+export const ASSISTANT_COMMAND_EVENT = 'm4sh:assistant-corridor-command'
+export const ASSISTANT_STATE_EVENT = 'm4sh:assistant-corridor-state'
+export const ASSISTANT_STATE_REQUEST_EVENT = 'm4sh:assistant-corridor-state-request'
+const ASSISTANT_CMDS = new Set(['subject.set', 'subject.auto', 'language.set', 'language.auto'])
 
 /** Мінімальна пауза між remote.state при швидкому гортанні (сервер: 10/с). */
 export const REMOTE_STATE_THROTTLE_MS = 150
@@ -66,6 +87,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const lastRemoteSeenAt = ref<number | null>(null)
   const remoteConnected = computed(() => lastRemoteSeenAt.value !== null)
   const ignoredCount = ref(0)
+  /** v1.6: останній стан предмета/мови від палітри для ЦІЄЇ дошки (null — не показувати) */
+  const assistantState = ref<RemoteAssistantState | null>(null)
 
   /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
   const remoteUrl = computed(() => {
@@ -92,6 +115,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       msg.cards = { count: s.count, answer: s.answer, solution: s.solution, presenting: s.presenting }
     }
     if (opts.frozen) msg.frozen = !!opts.frozen.value
+    if (assistantState.value) msg.assistant = assistantState.value
     opts.sendMessage(msg)
   }
 
@@ -133,6 +157,20 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     },
   )
 
+  // v1.6: палітра Інтегралика повідомила новий стан предмета/мови цієї дошки
+  function onAssistantState(e: Event): void {
+    const d = (e as CustomEvent<{ boardId?: string | null; state?: RemoteAssistantState | null }>).detail
+    if (!d || !d.boardId || d.boardId !== opts.sessionId.value) return
+    assistantState.value = d.state ?? null
+    if (remoteConnected.value && opts.enabled.value) sendState()
+  }
+
+  /** Палітра могла опублікувати стан ДО монтування кімнати — попросимо повторити. */
+  function requestAssistantState(): void {
+    if (!opts.sessionId.value) return
+    window.dispatchEvent(new CustomEvent(ASSISTANT_STATE_REQUEST_EVENT, { detail: { boardId: opts.sessionId.value } }))
+  }
+
   // ── remote.command ← пульт ───────────────────────────────────────────
   function onRemoteCommand(e: Event): void {
     const d = (e as CustomEvent<RemoteCommandDetail>).detail
@@ -145,6 +183,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
 
     switch (d.cmd) {
       case 'hello':
+        requestAssistantState()   // палітра відповість подією; поки що — те, що маємо
         sendStateNow()
         return
       case 'page.goto': {
@@ -199,15 +238,25 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         return
       }
       default:
+        if (ASSISTANT_CMDS.has(d.cmd)) {
+          // Пульт не пише: намір — палітрі на ЦЬОМУ ноутбуці. Стан повернеться
+          // подією ASSISTANT_STATE_EVENT (і тоді, коли вибір відхилено).
+          window.dispatchEvent(new CustomEvent(ASSISTANT_COMMAND_EVENT, {
+            detail: { boardId: opts.sessionId.value, cmd: d.cmd, args: { ...(d.args || {}) } },
+          }))
+        }
         return
     }
   }
 
   window.addEventListener('wb:remote-command', onRemoteCommand)
+  window.addEventListener(ASSISTANT_STATE_EVENT, onAssistantState)
+  requestAssistantState()
   onUnmounted(() => {
     window.removeEventListener('wb:remote-command', onRemoteCommand)
+    window.removeEventListener(ASSISTANT_STATE_EVENT, onAssistantState)
     if (stateTimer) clearTimeout(stateTimer)
   })
 
-  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState }
+  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState }
 }

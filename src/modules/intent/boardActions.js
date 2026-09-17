@@ -84,6 +84,27 @@ async function _store() {
  */
 let _lastAiCard = null
 
+// Коридори Інтегралика (ТЗ 2026-09-17 §3.7, §6.3): мова матеріалу й походження
+// джерела — у ДАНИХ об'єкта, тож переживають reload, replay, clone і export.
+// Лише коли сервер прислав `corridor` (rollout-гейт); без нього дані об'єкта
+// байт-у-байт такі, як були. Список ключів закритий: сторонні поля не пишемо.
+const CORRIDOR_PROVENANCE_KEYS = [
+  'subject', 'requested_content_language', 'source_language', 'source_provider',
+  'source_url', 'license', 'author', 'retrieved_at', 'translation_used',
+]
+export function corridorData(corridor) {
+  if (!corridor || typeof corridor !== 'object') return {}
+  const lang = corridor.content_language
+  if (lang !== 'uk' && lang !== 'en') return {}
+  const provenance = {}
+  for (const key of CORRIDOR_PROVENANCE_KEYS) {
+    const value = corridor[key]
+    if (typeof value === 'boolean') provenance[key] = value
+    else if (typeof value === 'string' && value) provenance[key] = value.slice(0, 300)
+  }
+  return { content_language: lang, provenance }
+}
+
 const HANDLERS = {
   // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke
   async add_text({ text }) {
@@ -110,7 +131,7 @@ const HANDLERS = {
   // на дошку школи; без рядка джерела картинку не кладемо (ТЗ, тиждень 2).
   // Розмір: вписати в 480 по ширині, зберігши пропорції; якщо BE не дав w/h —
   // квадрат 360, канва сама підтягне після завантаження.
-  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at }) {
+  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at, corridor }) {
     if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
     if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
     const { store, page } = await _store()
@@ -145,6 +166,7 @@ const HANDLERS = {
         license: license || '',
         author: author || '',
         retrieved_at: retrieved_at || '',
+        ...corridorData(corridor),
       },
     }, page.id ?? '')
     // Підпис джерела під картинкою — окремий текстовий штрих (нуль нових
@@ -201,7 +223,7 @@ const HANDLERS = {
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
-  async add_card({ title, body, badge, preset }) {
+  async add_card({ title, body, badge, preset, corridor }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const assetId = _uuid()
@@ -220,7 +242,7 @@ const HANDLERS = {
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
-      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}) },
+      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}), ...corridorData(corridor) },
     }, page.id ?? '')
     // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
     _lastAiCard = { assetId, pageId: page.id ?? '' }
@@ -269,7 +291,7 @@ const HANDLERS = {
   // Дзеркало usePageManagement.addPage() → store.addPageUndoable() — та сама дія,
   // що й кнопка «+ Додати сторінку» в сайдбарі. Стелю (50) пильнує сам стор:
   // повертає '' при досягненні — тут просто чесно кажемо про це, а не мовчимо.
-  async add_page({ name, card }) {
+  async add_page({ name, card, corridor }) {
     const { store } = await _store()
     const newId = store.addPageUndoable({ name: name || undefined })
     if (!newId) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
@@ -286,7 +308,7 @@ const HANDLERS = {
         h: 380,
         rotation: 0,
         locked: false,
-        data: { version: 1, title: card.title || '', body: card.body || '', formulas: [] },
+        data: { version: 1, title: card.title || '', body: card.body || '', formulas: [], ...corridorData(corridor) },
       }, page.id ?? '')
     }
   },
