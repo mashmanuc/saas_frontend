@@ -176,6 +176,10 @@ describe('Коридори · підключення палітри й пуль�
     expect(palette).toContain("import CorridorSelector from './corridors/CorridorSelector.vue'")
     expect(remote).toContain("import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'")
     expect(remote).toContain("import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'")
+    // обидва входи передають у селектор РІВНО реєстр сервера — без фільтрів і підмін (kill-проба 13)
+    expect(palette).toContain(':registry="corridor.state.registry"')
+    expect(remote).toContain(':registry="corridorRegistry"')
+    expect(remote).toContain('corridorRegistry.value = reg?.enabled ? reg : null')
     // жодного власного списку предметів/мов у пульті чи палітрі
     for (const src of [palette, remote]) {
       expect(src).not.toMatch(/['"]history['"]\s*,\s*['"]math['"]|['"]math['"]\s*,\s*['"]history['"]/)
