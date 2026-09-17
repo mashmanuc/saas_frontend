@@ -228,9 +228,6 @@
             @select-subject="onCorridorSubject"
             @select-language="onCorridorLanguage"
           />
-          <!-- Г2-г: план уроку — лише коли сервер сказав «увімкнено» і дошка відкрита.
-               Без прапорця блоку немає і запитів немає (ТЗ §3.1). -->
-          <LessonPlanPanel v-if="lessonPlan.enabled && currentBoardId" :lp="lessonPlan" />
 
           <div ref="aiThreadEl" class="cmdp-ai-thread">
             <template v-for="(it, i) in aiThread" :key="i">
@@ -349,12 +346,13 @@ import {
   isIntegralykOn,
   isIntegralykServerDisabled,
 } from './integralykAccess'
-// Г2-г: план уроку на сесії — стан лише з сервера; панель над чатом.
+// Г2-г: план уроку на сесії — стан лише з сервера. Видимої панелі етапів
+// у вікні Інтегралика немає (прибрано 2026-09-18): стан лишається для
+// логіки compose/proposeDraft нижче, інтерфейс — звичайний чат.
 import { reactive } from 'vue'
 import { useLessonPlan } from './lessonPlanApi'
 // Той самий словник, що в Конструкторі: два списки типів розійшлися б за тиждень.
 import { LESSON_TYPE_OPTIONS } from '@/modules/lesson_constructor/lessonTypeRules'
-import LessonPlanPanel from './LessonPlanPanel.vue'
 import CorridorSelector from './corridors/CorridorSelector.vue'
 import { EVENT_COMMAND, EVENT_STATE, EVENT_STATE_REQUEST, useAssistantCorridor } from './corridors/assistantCorridor'
 import {
