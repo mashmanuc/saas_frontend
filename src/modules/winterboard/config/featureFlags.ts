@@ -1,5 +1,9 @@
 // WB: Feature flags for Winterboard rollout
 // Ref: TASK_BOARD_PHASES.md A7.2, LAW-14 (Rollout)
+
+// Глобальний i18n-інстанс (той самий, що CommandPalette.vue читає для
+// currentLocale) — потрібен isLessonConstructorEnabled() нижче.
+import { i18n } from '@/i18n'
 //
 // Priority order (first match wins):
 // 1. URL param: ?wb=true / ?wb=false
@@ -136,23 +140,36 @@ const LS_KEY_LC = 'lc_enabled'
  *
  * Priority (перша умова перемагає):
  * 1. localStorage: lc_enabled=true/false  (QA / manual dev override)
- * 2. Env variable: VITE_LESSON_CONSTRUCTOR_ENABLED=true/false
- * 3. Default: false (прихований у prod)
+ * 2. Інтерфейс англійською → вимкнено, незалежно від прапорця (див. нижче)
+ * 3. Env variable: VITE_LESSON_CONSTRUCTOR_ENABLED=true/false
+ * 4. Default: false (прихований у prod)
  */
 export function isLessonConstructorEnabled(): boolean {
-  // 1. localStorage override
+  // 1. localStorage override — QA свідомо форсує, навіть на en-інтерфейсі.
   const lsValue = getLocalStorage(LS_KEY_LC)
   if (lsValue !== null) {
     return lsValue === 'true'
   }
 
-  // 2. Env variable
+  // 2. Запит власника 2026-09-17: «для англомовного логічно мав би бути
+  // вимкнений». Конструктор генерує ВИКЛЮЧНО українську програму НМТ — теми
+  // (`lessonConstructorApi.ts` TOPICS) зашиті українськими рядками, не через
+  // i18n-ключі, тож і переклад тут не рятує. На en-інтерфейсі інструмент не
+  // просто незрозумілий — він показує українські назви тем усередині
+  // англійського UI. Перевіряємо мову ІНТЕРФЕЙСУ (не ринок/geo, як тарифи в
+  // `services/market.py` на бекенді) — саме її мав на увазі власник, і саме
+  // вона тут вирішує: чи вміє користувач прочитати те, що покаже вкладка.
+  if (i18n.global.locale.value === 'en') {
+    return false
+  }
+
+  // 3. Env variable
   const envValue = getEnvVar('VITE_LESSON_CONSTRUCTOR_ENABLED')
   if (envValue !== undefined) {
     return envValue === 'true'
   }
 
-  // 3. Default: disabled
+  // 4. Default: disabled
   return false
 }
 
