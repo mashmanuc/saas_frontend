@@ -152,6 +152,13 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   nmt3d: card('overlay', { fullscreen: true }),
   nmt_task: card('overlay', { fullscreen: true, ...TEXT_CARD }),
   theory_card: card('overlay', TEXT_CARD),
+  // H2–H3: шкала й карта — звичайні картки-оверлеї. Власних списків
+  // можливостей у них немає (ТЗ §9.2), лише спільний стандарт.
+  // Без `fullscreen`: розгортання потребує підтримки `isExpanded` у
+  // рендерері, а стандарт забороняє кнопки без дії. У v1 картки
+  // працюють вбудовано, як картка теорії.
+  timeline_card: card('overlay', TEXT_CARD),
+  map_card: card('overlay', TEXT_CARD),
   mash_scene: card('overlay'),
   geomash_scene: card('overlay', { fullscreen: true }),
   graphmash_3d: card('overlay', { fullscreen: true }),

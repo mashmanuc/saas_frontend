@@ -37,6 +37,8 @@ import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
+import TimelineCardRenderer from '../board/objects/TimelineCardRenderer.vue'
+import MapCardRenderer from '../board/objects/MapCardRenderer.vue'
 import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
 import MashSceneRenderer from '../board/objects/MashSceneRenderer.vue'
 import GeomashRenderer from '../board/objects/GeomashRenderer.vue'
@@ -321,6 +323,26 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       'spawn-companions': (payload: unknown) => ctx.onSpawnCompanions(payload),
       // TLV2-05C: 'request-height' додає збірка реєстру нижче — за `contentFit` стандарту.
     }),
+  },
+
+  // H2–H3: шкала й карта. Той самий adapter, що в решти карток —
+  // власних props/events у них немає (ТЗ §9.2).
+  timeline_card: {
+    component: TimelineCardRenderer,
+    wrapperClass: 'wb-timeline-card-overlay',
+    dataAttr: 'data-timeline-card-id',
+    testidPrefix: 'timeline-card-overlay',
+    buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  map_card: {
+    component: MapCardRenderer,
+    wrapperClass: 'wb-map-card-overlay',
+    dataAttr: 'data-map-card-id',
+    testidPrefix: 'map-card-overlay',
+    buildProps: stdProps,
+    buildEvents: stdEvents,
   },
 
   theory_card: {

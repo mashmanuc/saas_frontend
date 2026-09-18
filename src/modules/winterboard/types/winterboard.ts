@@ -232,6 +232,13 @@ export interface WBAsset {
     /** TheoryCard (2026-06-03) — рухома картка теорії+формул (Lesson Constructor). §3.7.12
      *  Замінює page-level theoryBlock/formulaBlock на повноцінний draggable WBAsset. */
     | 'theory_card'
+    /** TimelineCard (H2, 2026-09-18) — універсальна шкала подій із доказовими
+     *  джерелами. Один тип на ВСІ шкали: окремий компонент під конкретну
+     *  шкалу заборонений ТЗ (§6.2). */
+    | 'timeline_card'
+    /** MapCard (H3, 2026-09-18) — універсальна карта подій на локально
+     *  закріпленій основі. Без live tiles і без вигаданих історичних кордонів. */
+    | 'map_card'
     /** MashScene (2026-07-07, A3) — MASH Live Asset envelope з публічної воронки /mash/*
      *  (Proposal §8): сцена GraphMASH 2D/3D/GeoMASH їде на дошку ЗАВЖДИ (data.scene),
      *  рендер v1 = картка з deep-link «Відкрити у MASH» (нативізація — по-двигунно). §3.7.13 */
@@ -344,6 +351,8 @@ export interface WBAsset {
     | import('./quad').QuadraticData
     | import('./formulaCard').FormulaCardData
     | TheoryCardData
+    | TimelineCardData
+    | MapCardData
     | MashSceneData
     | GeomashSceneData
     | VisualCapsuleAssetData
@@ -527,6 +536,99 @@ export interface TheoryCardData {
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }
+
+// ─── Timeline / Map (H2–H3, ТЗ evidence/timeline/map) ──────────────────────
+//
+// ОДИН тип на всі шкали й одна на всі карти. Окремий компонент під конкретну
+// шкалу заборонений ТЗ (§6.2): інакше кожна нова тема народжувала б свій
+// майже-такий-самий рендерер, і стандарт картки розповзся б.
+
+/** Дата події з ЗАЯВЛЕНОЮ точністю. «1917» і «17 березня 1917» — різні
+ *  твердження, тому місяць і день необов'язкові, а не добудовуються. */
+export interface WBTimelineDate {
+  year: number
+  month?: number
+  day?: number
+  /** Дзеркало `facts.PRECISIONS` на бекенді. */
+  precision: 'day' | 'month' | 'year' | 'decade' | 'range' | 'unknown'
+}
+
+export interface WBTimelineEvent {
+  id: string
+  date_start: WBTimelineDate
+  /** Кінець періоду; `null` — подія-точка. */
+  date_end: WBTimelineDate | null
+  label: string
+  description: string
+  /** Зв'язок із marker-ами карти — за id, не за індексом. */
+  place_ids: string[]
+  image: string | null
+  sources: WBSourceRef[]
+}
+
+export interface TimelineCardData {
+  version: 1
+  title: string
+  /** `ordinal` — події рівномірно (default для уроку), `linear` — відстань
+   *  пропорційна часу. */
+  layout: 'ordinal' | 'linear'
+  orientation: 'horizontal' | 'vertical'
+  events: WBTimelineEvent[]
+  active_event_id: string | null
+  sources: WBSourceRef[]
+  /** LAW §9.D, INV-26 — як у решти матеріалів Інтегралика. */
+  content_language?: WBMaterialData['content_language']
+  provenance?: WBMaterialData['provenance']
+}
+
+export type TimelineCardAsset = WBAsset & { type: 'timeline_card'; data: TimelineCardData }
+
+export interface WBMapMarker {
+  id: string
+  label: string
+  lat: number
+  lon: number
+  date_label: string
+  description: string
+  event_ids: string[]
+  sources: WBSourceRef[]
+}
+
+export interface MapCardData {
+  version: 1
+  title: string
+  /** Локально закріплена основа. Live tiles заборонені ТЗ §7.2. */
+  basemap: 'world' | 'europe' | 'ukraine'
+  basemap_version: string
+  projection: 'mercator'
+  /** `none` — сучасна основа; історичні межі дозволені лише після появи
+   *  окремого закріпленого набору з provenance і ліцензією (ТЗ §7.2). */
+  historical_boundary_mode: 'none'
+  markers: WBMapMarker[]
+  routes: WBMapRoute[]
+  regions: WBMapRegion[]
+  active_marker_id: string | null
+  sources: WBSourceRef[]
+  content_language?: WBMaterialData['content_language']
+  provenance?: WBMaterialData['provenance']
+}
+
+/** Маршрут-стрілка між місцями (за id marker-ів, не за координатами). */
+export interface WBMapRoute {
+  id: string
+  label: string
+  marker_ids: string[]
+}
+
+/** Проста підсвічена область — список точок, без вигаданих кордонів. */
+export interface WBMapRegion {
+  id: string
+  label: string
+  points: Array<{ lat: number; lon: number }>
+}
+
+export type MapCardAsset = WBAsset & { type: 'map_card'; data: MapCardData }
+
 
 // ─── VisualCapsule (TLV2-03) — капсула V-D3.1 як WBAsset ──────────────────────
 // Дошка зберігає лише адресу капсули й режим; анімація й керування — у V-D3.1.

@@ -16,6 +16,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
+import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
 function _uuid() {
   return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
@@ -146,6 +147,85 @@ export function sourcesData(sources, status) {
     // невідоме падає в `mixed`.
     source_status: SOURCE_STATUSES.includes(status) ? status : 'mixed',
   }
+}
+
+// Санітизація вмісту шкали й карти. Та сама логіка, що для джерел: на дошку
+// лягає лише те, що має сенс. Подія без дати — не подія на шкалі часу, місце
+// без придатних координат — не marker; домальовувати їх не можна.
+const PRECISIONS = ['day', 'month', 'year', 'decade', 'range', 'unknown']
+const MAX_EVENTS = 12   // ТЗ §6.2: 1–12 подій у v1
+
+function sanitizeDate(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const year = Number(raw.year)
+  if (!Number.isFinite(year)) return null
+  const out = { year, precision: PRECISIONS.includes(raw.precision) ? raw.precision : 'year' }
+  const month = Number(raw.month)
+  if (Number.isInteger(month) && month >= 1 && month <= 12) out.month = month
+  const day = Number(raw.day)
+  if (Number.isInteger(day) && day >= 1 && day <= 31) out.day = day
+  return out
+}
+
+export function sanitizeSourceList(raw) {
+  const out = sourcesData(raw, 'verified')
+  return out.sources || []
+}
+
+export function sanitizeEvents(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const ev of raw.slice(0, MAX_EVENTS)) {
+    if (!ev || typeof ev !== 'object') continue
+    const start = sanitizeDate(ev.date_start)
+    if (!start) continue
+    out.push({
+      id: String(ev.id || _uuid()),
+      date_start: start,
+      date_end: sanitizeDate(ev.date_end),
+      label: String(ev.label || '').slice(0, 120),
+      description: String(ev.description || '').slice(0, 600),
+      place_ids: Array.isArray(ev.place_ids) ? ev.place_ids.map(String).slice(0, 12) : [],
+      image: typeof ev.image === 'string' && ev.image ? ev.image : null,
+      sources: sanitizeSourceList(ev.sources),
+    })
+  }
+  return out
+}
+
+export function sanitizeMarkers(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const m of (Array.isArray(raw) ? raw : []).slice(0, 24)) {
+    if (!m || typeof m !== 'object') continue
+    const lat = Number(m.lat)
+    const lon = Number(m.lon)
+    // Поза діапазоном — координати немає (дзеркало `facts.normalize_coordinate`).
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) continue
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) continue
+    out.push({
+      id: String(m.id || _uuid()),
+      label: String(m.label || '').slice(0, 120),
+      lat, lon,
+      date_label: String(m.date_label || '').slice(0, 40),
+      description: String(m.description || '').slice(0, 600),
+      event_ids: Array.isArray(m.event_ids) ? m.event_ids.map(String).slice(0, 12) : [],
+      sources: sanitizeSourceList(m.sources),
+    })
+  }
+  return out
+}
+
+export function sanitizeRoutes(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw.slice(0, 12).flatMap((r) => {
+    if (!r || typeof r !== 'object') return []
+    const ids = Array.isArray(r.marker_ids) ? r.marker_ids.map(String) : []
+    // Маршрут із однієї точки — не маршрут.
+    return ids.length >= 2
+      ? [{ id: String(r.id || _uuid()), label: String(r.label || '').slice(0, 120), marker_ids: ids }]
+      : []
+  })
 }
 
 // Мова вже створеного матеріалу для підсумку дошки (серверний резолвер мови, §3.7 п. 4).
@@ -285,6 +365,57 @@ const HANDLERS = {
 
   // theory_card (TheoryCardRenderer): текст із $LaTeX$ рендериться KaTeX —
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
+  // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
+  // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
+  async add_timeline({ title, layout, orientation, events, corridor, sources, source_status }) {
+    const { store, page } = await _store()
+    const { cx, cy } = _center(page)
+    const assetId = _uuid()
+    store.addAsset({
+      id: assetId, type: 'timeline_card', src: '',
+      x: cx - 380, y: cy - 220, w: 760, h: 440, rotation: 0, locked: false,
+      data: {
+        version: 1,
+        title: title || '',
+        layout: layout === 'linear' ? 'linear' : 'ordinal',
+        orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
+        events: sanitizeEvents(events),
+        active_event_id: null,
+        ...corridorData(corridor),
+        ...sourcesData(sources, source_status),
+        sources: sanitizeSourceList(sources),
+      },
+    }, page.id ?? '')
+    return { ok: true, assetId }
+  },
+
+  // H3: карта подій. Та сама механіка, що у шкали.
+  async add_map({ title, basemap, markers, routes, corridor, sources, source_status }) {
+    const { store, page } = await _store()
+    const { cx, cy } = _center(page)
+    const assetId = _uuid()
+    store.addAsset({
+      id: assetId, type: 'map_card', src: '',
+      x: cx - 340, y: cy - 260, w: 680, h: 520, rotation: 0, locked: false,
+      data: {
+        version: 1,
+        title: title || '',
+        basemap: ['world', 'europe', 'ukraine'].includes(basemap) ? basemap : 'europe',
+        basemap_version: BASEMAP_VERSION,
+        projection: 'mercator',
+        historical_boundary_mode: 'none',
+        markers: sanitizeMarkers(markers),
+        routes: sanitizeRoutes(routes),
+        regions: [],
+        active_marker_id: null,
+        ...corridorData(corridor),
+        ...sourcesData(sources, source_status),
+        sources: sanitizeSourceList(sources),
+      },
+    }, page.id ?? '')
+    return { ok: true, assetId }
+  },
+
   async add_card({ title, body, badge, preset, corridor, sources, source_status }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
@@ -734,6 +865,8 @@ export const KIND_LABELS = {
   geometry_2d_v2: 'планіметрія',
   nmt3d: 'стереометрія',
   theory_card: 'картка',
+  timeline_card: 'шкала часу',
+  map_card: 'карта',
   nmt_task: 'NMT-задача',
   calculus_card: 'аналіз функції',
   quadratic_card: 'парабола',
@@ -854,6 +987,20 @@ export function summarizeAsset(a) {
     label = d.formula || ''
   } else if (a.type === 'theory_card') {
     label = d.title || String(d.body || '').slice(0, 80)
+  } else if (a.type === 'timeline_card') {
+    // Підсумок має дати Інтегралику адресу: назву, активну подію і короткий
+    // список решти. Без активної події він не знав би, про що зараз мова.
+    const evs = Array.isArray(d.events) ? d.events : []
+    const active = evs.find((e) => e && e.id === d.active_event_id)
+    const names = evs.map((e) => (e && e.label) || '').filter(Boolean).slice(0, 6)
+    label = [d.title || '', active ? `активна: ${active.label}` : '', names.join(' · ')]
+      .filter(Boolean).join(' — ')
+  } else if (a.type === 'map_card') {
+    const ms = Array.isArray(d.markers) ? d.markers : []
+    const active = ms.find((m) => m && m.id === d.active_marker_id)
+    const names = ms.map((m) => (m && m.label) || '').filter(Boolean).slice(0, 6)
+    label = [d.title || '', active ? `активне: ${active.label}` : '', names.join(' · ')]
+      .filter(Boolean).join(' — ')
   } else if (a.type === 'geometry_2d_v2') {
     // Назва пресета (Трикутник/Коло…) — щоб Інтегралик міг адресувати планіметрію
     const preset = d.preset

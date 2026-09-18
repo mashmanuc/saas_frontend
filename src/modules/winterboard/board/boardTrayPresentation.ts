@@ -10,6 +10,8 @@ export type TrayCardFamily = 'text' | 'task' | 'math' | 'animation' | 'media' | 
 
 const FAMILY_BY_TYPE: Readonly<Record<string, TrayCardFamily>> = Object.freeze({
   theory_card: 'text',
+  timeline_card: 'text',
+  map_card: 'text',
   formula_card: 'text',
   sticky: 'text',
   document_viewer: 'text',

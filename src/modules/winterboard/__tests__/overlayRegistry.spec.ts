@@ -26,6 +26,9 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   'quadratic_card',
   'formula_card',
   'theory_card',
+  // H2–H3: шкала й карта — свідоме розширення набору.
+  'timeline_card',
+  'map_card',
   'mash_scene', // §3.7.13 (A3) — MASH Live Asset з воронки
   'geomash_scene', // §3.7.14 (B3) — жива GeoMASH-геометрія
   'graphmash_3d', // §3.7.15 (B4) — жива GraphMASH 3D-поверхня
