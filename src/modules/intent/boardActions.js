@@ -112,11 +112,15 @@ export function corridorData(corridor) {
 // INV-26), а це список джерел, на яких стоїть зміст. Одне не підміняє інше.
 const SOURCE_REF_KEYS = [
   'provider', 'source_id', 'title', 'url', 'language', 'author',
-  'license', 'retrieved_at', 'evidence', 'evidence_key', 'modified',
+  'license', 'license_url', 'revision_id', 'retrieved_at', 'evidence',
+  'evidence_key', 'modified',
 ]
 // Обов'язкові — дзеркало REQUIRED_KEYS у `apps/intent/corridors/source_ref.py`.
 // Джерело без них нікуди не веде, тому на дошку не лягає.
 const SOURCE_REF_REQUIRED = ['provider', 'title', 'url', 'retrieved_at', 'evidence']
+// Дзеркало `is_web_url` на BE. Не косметика: без цієї перевірки `javascript:`
+// з чужого метаданого поля став би клікабельним посиланням у картці вчителя.
+export const WEB_URL_RE = /^https?:\/\/.+/i
 const SOURCE_STATUSES = ['verified', 'mixed', 'teacher_provided']
 
 export function sourcesData(sources, status) {
@@ -131,7 +135,7 @@ export function sourcesData(sources, status) {
       else if (typeof value === 'string' && value) ref[key] = value.slice(0, key === 'evidence' ? 500 : 300)
       else ref[key] = key === 'modified' ? false : ''
     }
-    if (SOURCE_REF_REQUIRED.every(key => ref[key])) out.push(ref)
+    if (SOURCE_REF_REQUIRED.every(key => ref[key]) && WEB_URL_RE.test(ref.url)) out.push(ref)
   }
   if (!out.length) return {}
   return {

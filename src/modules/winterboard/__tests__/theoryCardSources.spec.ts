@@ -30,6 +30,8 @@ const REF = {
   language: 'en',
   author: 'Wikipedia contributors',
   license: 'CC BY-SA 4.0',
+  license_url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  revision_id: '1284477112',
   retrieved_at: '2026-09-18T10:00:00+00:00',
   evidence: 'Ukrainian hetman.',
   evidence_key: '',
@@ -83,6 +85,35 @@ describe('theory_card · підвал джерел', () => {
     expect(text).toContain('License: CC BY-SA 4.0')
     expect(text).not.toContain('Автор')
     expect(text).not.toContain('Ліцензія')
+    w.unmount()
+  })
+
+  it('версію джерела видно поряд із ліцензією', async () => {
+    const w = mountCard({ content_language: 'uk', sources: [REF] })
+    await w.find('.theory-card__sources-toggle').trigger('click')
+    expect(w.find('.theory-card__source').text()).toContain('Версія: 1284477112')
+    w.unmount()
+  })
+
+  it('непридатний URL показується текстом, а не посиланням', async () => {
+    const w = mountCard({ content_language: 'uk', sources: [{ ...REF, url: 'javascript:alert(1)' }] })
+    await w.find('.theory-card__sources-toggle').trigger('click')
+    const item = w.find('.theory-card__source')
+    // джерело лишається видимим — ховати його було б гірше, ніж показати без посилання
+    expect(item.text()).toContain('Ivan Mazepa')
+    expect(item.find('a').exists()).toBe(false)
+    expect(item.find('.theory-card__source-title--plain').exists()).toBe(true)
+    w.unmount()
+  })
+
+  it('зіпсований retrieved_at не ламає картку — рядка дати просто немає', async () => {
+    const w = mountCard({ content_language: 'uk', sources: [{ ...REF, retrieved_at: 'позавчора' }] })
+    await w.find('.theory-card__sources-toggle').trigger('click')
+    const item = w.find('.theory-card__source')
+    expect(item.exists()).toBe(true)
+    expect(item.text()).toContain('Ivan Mazepa')
+    expect(item.text()).not.toContain('Отримано')
+    expect(item.text()).not.toContain('позавчора')
     w.unmount()
   })
 

@@ -107,7 +107,11 @@
         >{{ sourceLabels.sources }}: {{ sources.length }}</button>
         <ol v-if="sourcesOpen" class="theory-card__sources-list">
           <li v-for="(ref, i) in sources" :key="i" class="theory-card__source">
+            <!-- Клікабельно лише справжнє веб-посилання: інакше `javascript:`
+                 з чужих метаданих став би активним у картці вчителя. Непридатне
+                 показуємо текстом, а не ховаємо — джерело лишається видимим. -->
             <a
+              v-if="isWebUrl(ref.url)"
               class="theory-card__source-title"
               :href="ref.url"
               target="_blank"
@@ -116,9 +120,11 @@
               @mousedown.stop
               @pointerdown.stop
             >{{ ref.title }}</a>
+            <span v-else class="theory-card__source-title theory-card__source-title--plain">{{ ref.title }}</span>
             <span v-if="ref.author" class="theory-card__source-meta">{{ sourceLabels.author }}: {{ ref.author }}</span>
             <span v-if="ref.license" class="theory-card__source-meta">{{ sourceLabels.license }}: {{ ref.license }}</span>
-            <span v-if="ref.retrieved_at" class="theory-card__source-meta">{{ sourceLabels.retrieved }}: {{ ref.retrieved_at.slice(0, 10) }}</span>
+            <span v-if="ref.revision_id" class="theory-card__source-meta">{{ sourceLabels.revision }}: {{ ref.revision_id }}</span>
+            <span v-if="retrievedDay(ref.retrieved_at)" class="theory-card__source-meta">{{ sourceLabels.retrieved }}: {{ retrievedDay(ref.retrieved_at) }}</span>
           </li>
         </ol>
       </div>
@@ -195,9 +201,23 @@ const effectivePreset = computed(() =>
 // Підписи мовою матеріалу, не UI-локалі: дзеркало `material_labels.py` на BE.
 // Через vue-i18n це зробити не можна — він дає локаль ІНТЕРФЕЙСУ, а ТЗ вимагає
 // мову самого матеріалу (англійська картка → `Sources`, навіть коли UI український).
-const SOURCE_LABELS: Record<string, { sources: string; author: string; license: string; retrieved: string }> = {
-  uk: { sources: 'Джерела', author: 'Автор', license: 'Ліцензія', retrieved: 'Отримано' },
-  en: { sources: 'Sources', author: 'Author', license: 'License', retrieved: 'Retrieved' },
+const SOURCE_LABELS: Record<string, {
+  sources: string; author: string; license: string; revision: string; retrieved: string
+}> = {
+  uk: { sources: 'Джерела', author: 'Автор', license: 'Ліцензія', revision: 'Версія', retrieved: 'Отримано' },
+  en: { sources: 'Sources', author: 'Author', license: 'License', revision: 'Revision', retrieved: 'Retrieved' },
+}
+// Дзеркало `WEB_URL_RE` (boardActions) і `is_web_url` (BE). Друга лінія:
+// санітизація при записі вже відсікає непридатне, але стара картка з дошки
+// могла прийти з чим завгодно, а рендер — останній рубіж перед `href`.
+const WEB_URL = /^https?:\/\/.+/i
+const isWebUrl = (url: unknown) => typeof url === 'string' && WEB_URL.test(url.trim())
+// Дата показується, лише якщо вона справді дата. Зіпсований `retrieved_at`
+// не має ні ламати картку, ні малювати обрізане сміття замість дня.
+function retrievedDay(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return ''
+  const ts = Date.parse(value)
+  return Number.isNaN(ts) ? '' : new Date(ts).toISOString().slice(0, 10)
 }
 const sources = computed(() => {
   const list = (data.value as TheoryCardData).sources
@@ -346,6 +366,7 @@ const hostWindowControls = useHostWindowControls()
 .theory-card__sources-list { margin: 6px 0 0; padding-left: 18px; }
 .theory-card__source { margin-bottom: 4px; font-size: calc(11px * var(--wb-card-text-scale, 1)); color: #64748b; }
 .theory-card__source-title { color: #2563eb; }
+.theory-card__source-title--plain { color: #64748b; }
 .theory-card__source-meta { display: block; }
 .theory-card__title {
   font-size: calc(20px * var(--wb-card-text-scale, 1)); font-weight: 700; color: #1e1b4b;

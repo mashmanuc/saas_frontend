@@ -489,6 +489,9 @@ export interface WBSourceRef {
   language: string
   author: string
   license: string
+  license_url: string
+  /** Конкретна версія джерела. Порожньо — провайдер її не дав. */
+  revision_id: string
   retrieved_at: string
   evidence: string
   evidence_key: string

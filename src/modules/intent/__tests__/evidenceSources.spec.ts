@@ -18,6 +18,8 @@ const REF = {
   language: 'uk',
   author: 'Автори Вікіпедії',
   license: 'CC BY-SA 4.0',
+  license_url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  revision_id: '48211903',
   retrieved_at: '2026-09-18T10:00:00+00:00',
   evidence: 'Український гетьман.',
   evidence_key: '',
@@ -68,6 +70,38 @@ describe('sourcesData — запис доказових джерел', () => {
   it('evidence обрізається — це доказ, а не другий текст картки', () => {
     const out = sourcesData([{ ...REF, evidence: 'я'.repeat(900) }], 'verified')
     expect(out.sources[0].evidence).toHaveLength(500)
+  })
+})
+
+describe('нові поля контракту й безпека посилання', () => {
+  it('license_url і revision_id доходять до дошки', () => {
+    const ref = sourcesData([REF], 'verified').sources[0]
+    expect(ref.license_url).toBe('https://creativecommons.org/licenses/by-sa/4.0/')
+    expect(ref.revision_id).toBe('48211903')
+  })
+
+  it('джерело без revision лишається придатним — це чесне «версія невідома»', () => {
+    const out = sourcesData([{ ...REF, revision_id: '' }], 'verified')
+    expect(out.sources).toHaveLength(1)
+    expect(out.sources[0].revision_id).toBe('')
+  })
+
+  it('не-веб URL на дошку не лягає взагалі', () => {
+    for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'ftp://a/b', 'uk.wikipedia.org/x', 'https://']) {
+      expect(sourcesData([{ ...REF, url: bad }], 'verified')).toEqual({})
+    }
+  })
+
+  it('звичайні http/https проходять', () => {
+    for (const ok of ['http://a.b/c', 'https://uk.wikipedia.org/wiki/A', 'HTTPS://A.B/C']) {
+      expect(sourcesData([{ ...REF, url: ok }], 'verified').sources).toHaveLength(1)
+    }
+  })
+
+  it('зіпсований retrieved_at не викидає джерело: обовʼязкове поле, а не дата', () => {
+    const out = sourcesData([{ ...REF, retrieved_at: 'позавчора' }], 'verified')
+    expect(out.sources).toHaveLength(1)
+    expect(out.sources[0].retrieved_at).toBe('позавчора')
   })
 })
 
