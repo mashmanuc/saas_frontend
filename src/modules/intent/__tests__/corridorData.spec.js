@@ -128,4 +128,36 @@ describe('створення матеріалу з мовою', () => {
     await runBoardAction({ kind: 'add_page', payload: { card: { title: 'Timeline', body: '1648' }, corridor: { content_language: 'en' } } })
     expect(assets[0].data).toMatchObject({ content_language: 'en', provenance: {} })
   })
+
+  it('H4 plan реально створює повʼязані timeline_card і map_card штатним шляхом', async () => {
+    const source = {
+      provider: 'wikidata', source_id: 'Q165419$P569', title: 'Ivan Mazepa',
+      url: 'https://www.wikidata.org/wiki/Q165419', language: 'en', author: '',
+      license: 'CC0', license_url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      revision_id: '2145', retrieved_at: '2026-09-18T10:00:00+00:00',
+      evidence: 'P569=1639', evidence_key: 'P569', modified: false,
+    }
+    const corridor = { ...PROVENANCE, content_language: 'en', source_provider: 'wikidata', license: 'CC0' }
+    await runBoardAction({ kind: 'add_timeline', payload: {
+      title: 'Ivan Mazepa', knowledge_set_id: 'knowledge-live', corridor, sources: [source],
+      events: [{ id: 'event-born', date_start: { year: 1639, precision: 'year' },
+        label: 'birth', place_ids: ['place-birthplace'], sources: [source] }],
+    } })
+    await runBoardAction({ kind: 'add_map', payload: {
+      title: 'Ivan Mazepa', basemap: 'ukraine', knowledge_set_id: 'knowledge-live',
+      corridor, sources: [source], markers: [{ id: 'place-birthplace', label: 'Mazepyntsi',
+        lat: 49.72, lon: 30.18, event_ids: ['event-born'], sources: [source] }],
+      routes: [], regions: [],
+    } })
+
+    expect(assets.map(asset => asset.type)).toEqual(['timeline_card', 'map_card'])
+    expect(assets[0].data).toMatchObject({
+      knowledge_set_id: 'knowledge-live', content_language: 'en', source_status: 'mixed',
+    })
+    expect(assets[1].data).toMatchObject({
+      knowledge_set_id: 'knowledge-live', basemap: 'ukraine',
+      projection: 'mercator', historical_boundary_mode: 'none', content_language: 'en',
+    })
+    expect(assets[1].data.basemap_version).toMatch(/^natural-earth-110m-/)
+  })
 })

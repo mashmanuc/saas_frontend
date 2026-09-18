@@ -40,12 +40,29 @@
     <div ref="bodyEl" class="map-card__body">
       <div ref="flowEl" class="map-card__flow">
         <div class="map-card__plot">
-          <svg class="map-card__svg" :viewBox="`0 0 ${VB} ${VB}`" preserveAspectRatio="xMidYMid meet">
+          <div class="map-card__zoom" @mousedown.stop @pointerdown.stop>
+            <button type="button" :title="labels.zoomOut" :disabled="zoom <= 1" @click.stop="changeZoom(-1)">−</button>
+            <button type="button" :title="labels.zoomIn" :disabled="zoom >= 4" @click.stop="changeZoom(1)">+</button>
+          </div>
+          <svg class="map-card__svg" :viewBox="mapViewBox" preserveAspectRatio="xMidYMid meet">
             <rect class="map-card__bg" x="0" y="0" :width="VB" :height="VB" />
+            <path
+              v-for="(path, i) in physicalLand"
+              :key="`land-${i}`"
+              class="map-card__land"
+              :d="path"
+              fill-rule="evenodd"
+            />
             <line
               v-for="g in gridLines" :key="g.k"
               class="map-card__grid"
               :x1="g.x1" :y1="g.y1" :x2="g.x2" :y2="g.y2"
+            />
+            <polygon
+              v-for="region in regionPolygons"
+              :key="region.id"
+              class="map-card__region"
+              :points="region.points"
             />
             <polyline
               v-for="r in routeLines" :key="r.id"
@@ -97,7 +114,7 @@ import { cardTextScaleStyle, presentationScaleOf } from '../../../board/cardPres
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { MAP_LABELS } from '../../../board/timelinePresentation'
-import { BASEMAPS, basemapSpec, project } from '../../../board/basemaps'
+import { BASEMAPS, basemapSpec, landPaths, project } from '../../../board/basemaps'
 import SourceList from './SourceList.vue'
 
 const { t } = useI18n()
@@ -110,6 +127,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:asset': [asset: WBAsset]
+  'activate-linked': [ids: string[]]
   delete: []
   'request-height': [neededPx: number]
 }>()
@@ -131,6 +149,8 @@ const materialLanguage = computed(() => (data.value.content_language === 'en' ? 
 const labels = computed(() => MAP_LABELS[materialLanguage.value])
 
 const spec = computed(() => basemapSpec(data.value.basemap))
+const zoom = ref(1)
+const physicalLand = computed(() => landPaths(spec.value, VB))
 
 /** Місця з придатними координатами. Решта не малюється взагалі: marker,
  *  притиснутий до краю, виглядав би як факт про інше місце. */
@@ -165,8 +185,33 @@ const routeLines = computed(() => {
   })
 })
 
+const regionPolygons = computed(() =>
+  (Array.isArray(data.value.regions) ? data.value.regions : []).flatMap((region) => {
+    const points = (Array.isArray(region.points) ? region.points : [])
+      .map(point => project(point?.lat, point?.lon, spec.value))
+      .filter(Boolean)
+    return points.length >= 3
+      ? [{ id: region.id, points: points.map(p => `${p!.x * VB},${p!.y * VB}`).join(' ') }]
+      : []
+  }),
+)
+
 const activeMarker = computed(() =>
   markers.value.find(m => m.id === data.value.active_marker_id) ?? null)
+
+const mapViewBox = computed(() => {
+  const size = VB / zoom.value
+  const active = placed.value.find(marker => marker.id === data.value.active_marker_id)
+  const centerX = active?.x ?? VB / 2
+  const centerY = active?.y ?? VB / 2
+  const x = Math.max(0, Math.min(VB - size, centerX - size / 2))
+  const y = Math.max(0, Math.min(VB - size, centerY - size / 2))
+  return `${x} ${y} ${size} ${size}`
+})
+
+function changeZoom(delta: number): void {
+  zoom.value = Math.max(1, Math.min(4, zoom.value + delta))
+}
 
 /** Вибір місця — один `asset_update` спільним шляхом (§9.3). */
 function selectMarker(id: string): void {
@@ -176,6 +221,10 @@ function selectMarker(id: string): void {
     ...props.asset,
     data: { ...data.value, active_marker_id: next },
   } as WBAsset)
+  if (next) {
+    const marker = markers.value.find(item => item.id === next)
+    if (marker?.event_ids?.length) emit('activate-linked', marker.event_ids)
+  }
 }
 
 const hostWindowControls = useHostWindowControls()
@@ -191,6 +240,7 @@ useCardContentFit({
     () => data.value.basemap,
     () => JSON.stringify(markers.value),
     () => JSON.stringify(data.value.routes ?? []),
+    () => JSON.stringify(data.value.regions ?? []),
     () => data.value.active_marker_id,
     () => JSON.stringify(data.value.sources ?? []),
     () => data.value.content_language,
@@ -233,11 +283,22 @@ defineExpose({ BASEMAPS })
 .map-card__plot { position: relative; }
 .map-card__svg { width: 100%; height: auto; display: block; }
 .map-card__bg { fill: #f8fafc; }
+.map-card__land { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
 .map-card__grid { stroke: #e2e8f0; stroke-width: 1; }
+.map-card__region { fill: rgba(245, 158, 11, 0.22); stroke: #d97706; stroke-width: 2; }
 .map-card__route { fill: none; stroke: #0ea5e9; stroke-width: 3; stroke-dasharray: 8 6; }
 .map-card__pin { fill: #059669; cursor: pointer; pointer-events: auto; }
 .map-card__marker.is-active .map-card__pin { fill: #b91c1c; }
 .map-card__pinlabel { font-size: 20px; fill: #0f172a; }
+.map-card__zoom {
+  position: absolute; z-index: 2; right: 6px; top: 6px; display: flex; gap: 4px;
+  pointer-events: auto;
+}
+.map-card__zoom button {
+  width: 28px; height: 28px; border: 1px solid #cbd5e1; border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94); color: #0f172a; cursor: pointer;
+}
+.map-card__zoom button:disabled { opacity: 0.45; cursor: default; }
 .map-card__basemap-note {
   margin: 4px 0 0; font-size: calc(11px * var(--wb-card-text-scale, 1)); color: #64748b;
 }

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-// @ts-expect-error — boardActions.js без типів, як і решта спеків модуля
 import { summarizeAsset } from '../boardActions'
 
 /**

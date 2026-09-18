@@ -344,6 +344,23 @@ function geomashIcon(): VNode {
   ])
 }
 
+function evidenceIcon(kind: string): VNode {
+  const b = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' }
+  if (kind === 'map') {
+    return h('svg', b, [
+      h('path', { d: 'M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z' }),
+      h('path', { d: 'M9 4v14M15 6v14' }),
+      h('circle', { cx: 13, cy: 10, r: 1.5, fill: CUR, stroke: 'none' }),
+    ])
+  }
+  return h('svg', b, [
+    h('line', { x1: 4, y1: 12, x2: 20, y2: 12 }),
+    h('circle', { cx: 7, cy: 12, r: 2, fill: CUR, stroke: 'none' }),
+    h('circle', { cx: 13, cy: 12, r: 2, fill: CUR, stroke: 'none' }),
+    h('circle', { cx: 19, cy: 12, r: 2, fill: CUR, stroke: 'none' }),
+  ])
+}
+
 /**
  * Спільна іконка вставки. `family` + `iconKey`:
  *   stereo → tplKey · planimetry → preset type · analysis → mode|graphCalc
@@ -358,6 +375,7 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case 'trig': return trigIcon(props.iconKey)
     case '3d': return threeDIcon(props.iconKey)
     case 'geomash': return geomashIcon()
+    case 'evidence': return evidenceIcon(props.iconKey)
     default:
       return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' },
         [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 })])

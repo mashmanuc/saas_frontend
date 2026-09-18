@@ -8877,6 +8877,11 @@
       "geomashSceneSub": "живая геометрия",
       "trigSolver": "уравнения / неравенства",
       "graphCalcSub": "y = f(x) · график · функции",
+      "evidenceApp": "Учебные объекты",
+      "timelineCard": "Шкала времени",
+      "timelineCardSub": "события · даты · источники",
+      "mapCard": "Карта событий",
+      "mapCardSub": "места · маршруты · источники",
       "trigSolverHint": "Тригонометрическое уравнение / неравенство"
     },
     "graphmash3d": {

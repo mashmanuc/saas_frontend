@@ -9431,6 +9431,11 @@
       "geomashSceneSub": "жива геометрія",
       "trigSolver": "рівняння / нерівності",
       "graphCalcSub": "y = f(x) · графік · функції",
+      "evidenceApp": "Навчальні обʼєкти",
+      "timelineCard": "Шкала часу",
+      "timelineCardSub": "події · дати · джерела",
+      "mapCard": "Карта подій",
+      "mapCardSub": "місця · маршрути · джерела",
       "trigSolverHint": "Тригонометричне рівняння / нерівність"
     },
     "graphmash3d": {

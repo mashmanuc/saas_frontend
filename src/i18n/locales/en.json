@@ -9343,6 +9343,11 @@
       "geomashSceneSub": "live geometry",
       "trigSolver": "Equations / inequalities",
       "graphCalcSub": "y = f(x) · plot · functions",
+      "evidenceApp": "Learning objects",
+      "timelineCard": "Timeline",
+      "timelineCardSub": "events · dates · sources",
+      "mapCard": "Event map",
+      "mapCardSub": "places · routes · sources",
       "trigSolverHint": "Trigonometric equation / inequality"
     },
     "graphmash3d": {

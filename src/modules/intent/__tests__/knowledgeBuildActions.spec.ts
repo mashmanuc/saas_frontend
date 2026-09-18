@@ -12,7 +12,7 @@
  * діапазоном — не marker, а маршрут з однієї точки — не маршрут.
  */
 import { describe, it, expect } from 'vitest'
-import { sanitizeEvents, sanitizeMarkers, sanitizeRoutes } from '../boardActions'
+import { sanitizeEvents, sanitizeMarkers, sanitizeRegions, sanitizeRoutes } from '../boardActions'
 
 const SOURCE = {
   provider: 'wikidata', source_id: 'Q1$a', title: 'Іван Мазепа',
@@ -115,5 +115,20 @@ describe('маршрути', () => {
   it('маршрут із однієї точки не маршрут', () => {
     expect(sanitizeRoutes([{ id: 'r1', label: 'Похід', marker_ids: ['a'] }])).toEqual([])
     expect(sanitizeRoutes([{ id: 'r2', label: '', marker_ids: [] }])).toEqual([])
+  })
+})
+
+describe('області', () => {
+  it('область потребує щонайменше три придатні точки', () => {
+    expect(sanitizeRegions([{ id: 'r', label: 'область', points: [
+      { lat: 50, lon: 30 }, { lat: 51, lon: 31 }, { lat: 49, lon: 32 },
+    ] }])[0].points).toHaveLength(3)
+    expect(sanitizeRegions([{ id: 'bad', points: [{ lat: 50, lon: 30 }] }])).toEqual([])
+  })
+
+  it('не домальовує точки поза земними координатами', () => {
+    expect(sanitizeRegions([{ id: 'bad', points: [
+      { lat: 91, lon: 30 }, { lat: 50, lon: 181 }, { lat: 49, lon: 32 },
+    ] }])).toEqual([])
   })
 })

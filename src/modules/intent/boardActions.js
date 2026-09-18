@@ -228,6 +228,23 @@ export function sanitizeRoutes(raw) {
   })
 }
 
+export function sanitizeRegions(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw.slice(0, 12).flatMap((region) => {
+    if (!region || typeof region !== 'object') return []
+    const points = (Array.isArray(region.points) ? region.points : []).flatMap((point) => {
+      const lat = Number(point?.lat)
+      const lon = Number(point?.lon)
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) return []
+      if (!Number.isFinite(lon) || lon < -180 || lon > 180) return []
+      return [{ lat, lon }]
+    })
+    return points.length >= 3
+      ? [{ id: String(region.id || _uuid()), label: String(region.label || '').slice(0, 120), points }]
+      : []
+  })
+}
+
 // Мова вже створеного матеріалу для підсумку дошки (серверний резолвер мови, §3.7 п. 4).
 // Лише зчитування; порожньо для об'єктів без коридору — summary як був.
 function materialLang(data) {
@@ -367,7 +384,7 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, corridor, sources, source_status }) {
+  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const assetId = _uuid()
@@ -381,6 +398,7 @@ const HANDLERS = {
         orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
         events: sanitizeEvents(events),
         active_event_id: null,
+        ...(knowledge_set_id ? { knowledge_set_id: String(knowledge_set_id).slice(0, 120) } : {}),
         ...corridorData(corridor),
         ...sourcesData(sources, source_status),
         sources: sanitizeSourceList(sources),
@@ -390,7 +408,7 @@ const HANDLERS = {
   },
 
   // H3: карта подій. Та сама механіка, що у шкали.
-  async add_map({ title, basemap, markers, routes, corridor, sources, source_status }) {
+  async add_map({ title, basemap, markers, routes, regions, knowledge_set_id, corridor, sources, source_status }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const assetId = _uuid()
@@ -406,8 +424,9 @@ const HANDLERS = {
         historical_boundary_mode: 'none',
         markers: sanitizeMarkers(markers),
         routes: sanitizeRoutes(routes),
-        regions: [],
+        regions: sanitizeRegions(regions),
         active_marker_id: null,
+        ...(knowledge_set_id ? { knowledge_set_id: String(knowledge_set_id).slice(0, 120) } : {}),
         ...corridorData(corridor),
         ...sourcesData(sources, source_status),
         sources: sanitizeSourceList(sources),

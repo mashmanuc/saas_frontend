@@ -19,7 +19,8 @@ import { createI18n } from 'vue-i18n'
 import uk from '../../../i18n/locales/uk.json'
 import TimelineCardRenderer from '../components/board/objects/TimelineCardRenderer.vue'
 import MapCardRenderer from '../components/board/objects/MapCardRenderer.vue'
-import { project, basemapSpec, BASEMAPS } from '../board/basemaps'
+import { project, basemapSpec, BASEMAPS, landPaths, NATURAL_EARTH_MANIFEST } from '../board/basemaps'
+import { linkedEvidenceUpdate } from '../board/evidenceLinkage'
 import { formatOneDate, formatTimelineDate } from '../board/timelinePresentation'
 import type { WBAsset } from '../types/winterboard'
 
@@ -59,7 +60,7 @@ function mapAsset(data: Record<string, unknown> = {}): WBAsset {
     id: 'mp1', type: 'map_card', src: '', x: 0, y: 0, w: 680, h: 520,
     rotation: 0, locked: false,
     data: {
-      version: 1, title: 'Місця', basemap: 'ukraine', basemap_version: 'neutral-grid-1',
+      version: 1, title: 'Місця', basemap: 'ukraine', basemap_version: 'natural-earth-110m-ca96624a',
       projection: 'mercator', historical_boundary_mode: 'none',
       markers: [
         { id: 'p1', label: 'Київ', lat: 50.45, lon: 30.52, date_label: '1687',
@@ -102,6 +103,12 @@ describe('локальна основа карти', () => {
 
   it('невідома основа відкочується до Європи, а не падає', () => {
     expect(basemapSpec('марс')).toBe(BASEMAPS.europe)
+  })
+
+  it('має закріплену physical-геометрію Natural Earth, а не порожню сітку', () => {
+    expect(NATURAL_EARTH_MANIFEST.commit).toHaveLength(40)
+    expect(NATURAL_EARTH_MANIFEST.sha256).toHaveLength(64)
+    expect(landPaths(basemapSpec('europe'))).not.toEqual([])
   })
 })
 
@@ -247,6 +254,48 @@ describe('map_card', () => {
     expect(w.find('.map-card__title').text()).toBe('Event map')
     expect(w.find('.map-card__basemap-note').text()).toBe('Modern map base')
     w.unmount()
+  })
+
+  it('малює physical land і просту область', () => {
+    const w = mountCard(MapCardRenderer, mapAsset({
+      regions: [{ id: 'rg1', label: 'Регіон', points: [
+        { lat: 50, lon: 28 }, { lat: 51, lon: 31 }, { lat: 49, lon: 32 },
+      ] }],
+    }))
+    expect(w.findAll('.map-card__land').length).toBeGreaterThan(0)
+    expect(w.findAll('.map-card__region')).toHaveLength(1)
+    w.unmount()
+  })
+
+  it('масштаб карти змінює viewBox, але не asset size і не пише operation', async () => {
+    const asset = mapAsset()
+    const w = mountCard(MapCardRenderer, asset)
+    const before = w.find('.map-card__svg').attributes('viewBox')
+    await w.find('[title="Збільшити карту"]').trigger('click')
+    expect(w.find('.map-card__svg').attributes('viewBox')).not.toBe(before)
+    expect(asset.w).toBe(680)
+    expect(w.emitted('update:asset')).toBeUndefined()
+    w.unmount()
+  })
+})
+
+describe('звʼязок шкали й карти', () => {
+  it('marker активує повʼязану подію тільки в тому самому knowledge-пакеті', () => {
+    const timeline = timelineAsset({ knowledge_set_id: 'k1' })
+    const map = mapAsset({ knowledge_set_id: 'k1' })
+    const updated = linkedEvidenceUpdate([timeline, map], map, ['e2'])
+    expect(updated?.type).toBe('timeline_card')
+    expect((updated?.data as any).active_event_id).toBe('e2')
+  })
+
+  it('шкала активує marker, а чужий пакет не зачіпає', () => {
+    const timeline = timelineAsset({ knowledge_set_id: 'k1' })
+    const map = mapAsset({ knowledge_set_id: 'k1' })
+    expect((linkedEvidenceUpdate([timeline, map], timeline, ['p1'])?.data as any).active_marker_id)
+      .toBe('p1')
+    expect(linkedEvidenceUpdate([
+      timeline, mapAsset({ knowledge_set_id: 'other' }),
+    ], timeline, ['p1'])).toBeNull()
   })
 })
 

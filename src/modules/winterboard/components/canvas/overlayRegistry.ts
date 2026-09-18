@@ -86,6 +86,8 @@ export interface OverlayCtx {
   toggleExpand: (id: string) => void
   /** emit('asset-update', asset) */
   onUpdate: (asset: WBAsset) => void
+  /** Активувати пов'язану подію/marker у парному evidence-об'єкті. */
+  onActivateLinked: (source: WBAsset, ids: string[]) => void
   /** emit('asset-delete', assetId) */
   onDelete: (id: string) => void
   /** emit('formula-card-edit', assetId) */
@@ -333,7 +335,10 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     dataAttr: 'data-timeline-card-id',
     testidPrefix: 'timeline-card-overlay',
     buildProps: stdProps,
-    buildEvents: stdEvents,
+    buildEvents: (asset, ctx) => ({
+      ...stdEvents(asset, ctx),
+      'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
+    }),
   },
 
   map_card: {
@@ -342,7 +347,10 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     dataAttr: 'data-map-card-id',
     testidPrefix: 'map-card-overlay',
     buildProps: stdProps,
-    buildEvents: stdEvents,
+    buildEvents: (asset, ctx) => ({
+      ...stdEvents(asset, ctx),
+      'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
+    }),
   },
 
   theory_card: {

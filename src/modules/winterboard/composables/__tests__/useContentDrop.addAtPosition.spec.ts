@@ -58,6 +58,10 @@ import {
   DEFAULT_SOLID_W,
   DEFAULT_SOLID_H,
 } from '../../constants/solidDefaults'
+import {
+  MAP_CARD_DRAG_MIME,
+  TIMELINE_CARD_DRAG_MIME,
+} from '../../constants/evidenceCardDefaults'
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -259,6 +263,26 @@ describe('useContentDrop.addAtPosition', () => {
     })
   })
 
+  describe('evidence cards — H2/H3', () => {
+    it.each([
+      [TIMELINE_CARD_DRAG_MIME, 'timeline_card', 760, 440],
+      [MAP_CARD_DRAG_MIME, 'map_card', 680, 520],
+    ])('creates one %s asset through the common add path', (mime, type, width, height) => {
+      const { addAtPosition, onAssetAdd } = makeComposable()
+      addAtPosition(mime, '{}', DROP_POS)
+
+      expect(onAssetAdd).toHaveBeenCalledOnce()
+      const asset = onAssetAdd.mock.calls[0][0]
+      expect(asset.type).toBe(type)
+      expect(asset.w).toBe(width)
+      expect(asset.h).toBe(height)
+      expect(asset.x + asset.w / 2).toBe(DROP_POS.x)
+      expect(asset.y + asset.h / 2).toBe(DROP_POS.y)
+      expect(asset.data.version).toBe(1)
+      expect(asset.data.content_language).toMatch(/^(uk|en)$/)
+    })
+  })
+
   // ── geometry_solid (§3.7.1) ───────────────────────────────────────────────
   // ── unknown MIME ──────────────────────────────────────────────────────────
   describe('unknown MIME type', () => {
@@ -278,6 +302,8 @@ describe('useContentDrop.addAtPosition', () => {
         [HELIX_DRAG_MIME, ''],
         [CALCULUS_DRAG_MIME, JSON.stringify({ mode: 'derivative' })],
         [GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: 'triangle' })],
+        [TIMELINE_CARD_DRAG_MIME, '{}'],
+        [MAP_CARD_DRAG_MIME, '{}'],
       ]
 
       for (const [mime, payload] of cases) {

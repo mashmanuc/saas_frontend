@@ -575,6 +575,8 @@ export interface TimelineCardData {
   orientation: 'horizontal' | 'vertical'
   events: WBTimelineEvent[]
   active_event_id: string | null
+  /** Спільний id одного knowledge_build-пакета для зв'язку шкали з картою. */
+  knowledge_set_id?: string
   sources: WBSourceRef[]
   /** LAW §9.D, INV-26 — як у решти матеріалів Інтегралика. */
   content_language?: WBMaterialData['content_language']
@@ -608,6 +610,7 @@ export interface MapCardData {
   routes: WBMapRoute[]
   regions: WBMapRegion[]
   active_marker_id: string | null
+  knowledge_set_id?: string
   sources: WBSourceRef[]
   content_language?: WBMaterialData['content_language']
   provenance?: WBMaterialData['provenance']

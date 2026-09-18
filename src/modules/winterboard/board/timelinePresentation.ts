@@ -23,6 +23,7 @@ export const TIMELINE_LABELS: Record<MaterialLanguage, {
 
 export const MAP_LABELS: Record<MaterialLanguage, {
   untitled: string; empty: string; modernBasemap: string; noCoordinates: string
+  zoomIn: string; zoomOut: string
 }> = {
   uk: {
     untitled: 'Карта подій',
@@ -31,12 +32,16 @@ export const MAP_LABELS: Record<MaterialLanguage, {
     // прямо. Мовчазна сучасна карта під історичними подіями — неправда.
     modernBasemap: 'Сучасна картографічна основа',
     noCoordinates: 'Координат немає',
+    zoomIn: 'Збільшити карту',
+    zoomOut: 'Зменшити карту',
   },
   en: {
     untitled: 'Event map',
     empty: 'No places yet',
     modernBasemap: 'Modern map base',
     noCoordinates: 'No coordinates',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
   },
 }
 

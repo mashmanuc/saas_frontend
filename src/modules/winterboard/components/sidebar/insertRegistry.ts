@@ -30,6 +30,7 @@ import { TRIG_CIRCLE_DRAG_MIME } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
+import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -40,6 +41,7 @@ export type MashFamily =
   | 'analysis'    // Аналіз функцій (graph_calculator + calculus_card)
   | 'quadratic'   // Квадратне рівняння
   | 'trig'        // Тригонометрія (trig_circle + helix + trig_solver)
+  | 'evidence'    // Універсальні доказові об'єкти: шкала й карта
   | '2d' | '3d' | 'geomash' | 'other'
 
 export interface InsertEntry {
@@ -229,6 +231,25 @@ const GEOMASH_INSERTS: InsertEntry[] = [
     keywords: kw('geomash', 'гео', 'сцена', 'геометрія', 'geometry') },
 ]
 
+const EVIDENCE_INSERTS: InsertEntry[] = [
+  {
+    id: 'evidence.timeline', family: 'evidence', category: 'evidence',
+    dragMime: TIMELINE_CARD_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.timelineCard', labelFallback: 'Шкала часу',
+    iconKey: 'timeline', sublabelKey: 'winterboard.insertTiles.timelineCardSub',
+    sublabel: 'події · дати · джерела',
+    keywords: kw('шкала часу', 'timeline', 'події', 'дати', 'history'),
+  },
+  {
+    id: 'evidence.map', family: 'evidence', category: 'evidence',
+    dragMime: MAP_CARD_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.mapCard', labelFallback: 'Карта подій',
+    iconKey: 'map', sublabelKey: 'winterboard.insertTiles.mapCardSub',
+    sublabel: 'місця · маршрути · джерела',
+    keywords: kw('карта подій', 'map', 'місця', 'маршрут', 'географія'),
+  },
+]
+
 /** Усі build-time вставки (без рантайм-geo). Для тестів + швидких шляхів. */
 export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...STEREO_INSERTS,
@@ -237,6 +258,7 @@ export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...TRIG_INSERTS,
   ...GRAPHMASH3D_INSERTS,
   ...GEOMASH_INSERTS,
+  ...EVIDENCE_INSERTS,
 ]
 
 // ── planimetry (geometry_2d_v2) — РАНТАЙМ ──────────────────────────────────────
@@ -289,7 +311,7 @@ export function insertsByFamily(entries: InsertEntry[] = allInserts()): Record<s
 }
 
 // ── mashApp — 4 картки верхнього рівня (BoardMASH Ф3.2) ─────────────────────────
-export type MashApp = '2d' | '3d' | 'geometry' | 'stereo'
+export type MashApp = '2d' | '3d' | 'geometry' | 'stereo' | 'content'
 
 /** family → 4-картка (analysis+quadratic+trig→2d; planimetry+geomash→geometry). */
 const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
@@ -297,6 +319,7 @@ const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
   '3d': '3d',
   planimetry: 'geometry', geomash: 'geometry',
   stereo: 'stereo',
+  evidence: 'content',
 }
 
 export function appOf(entry: InsertEntry): MashApp {
@@ -309,11 +332,12 @@ export const MASH_APPS: ReadonlyArray<{ app: MashApp; labelKey: string; labelFal
   { app: '3d', labelKey: '', labelFallback: 'GraphMASH 3D', iconFamily: '3d', iconKey: 'surface' },
   { app: 'geometry', labelKey: '', labelFallback: 'Geometry', iconFamily: 'geomash', iconKey: 'scene' },
   { app: 'stereo', labelKey: '', labelFallback: 'StereoMASH', iconFamily: 'stereo', iconKey: 'cube' },
+  { app: 'content', labelKey: 'winterboard.insertTiles.evidenceApp', labelFallback: 'Навчальні обʼєкти', iconFamily: 'evidence', iconKey: 'timeline' },
 ]
 
 /** Групування по 4 картках (для root-каталогу). */
 export function insertsByApp(entries: InsertEntry[] = allInserts()): Record<MashApp, InsertEntry[]> {
-  const out = { '2d': [], '3d': [], geometry: [], stereo: [] } as Record<MashApp, InsertEntry[]>
+  const out = { '2d': [], '3d': [], geometry: [], stereo: [], content: [] } as Record<MashApp, InsertEntry[]>
   for (const e of entries) out[appOf(e)].push(e)
   return out
 }

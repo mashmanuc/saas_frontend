@@ -28,6 +28,10 @@ import { HELIX_DRAG_MIME } from '../../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../../constants/trigSolverDefaults'
 import { GEOMETRY_2D_V2_DRAG_MIME } from '../../../constants/geometry2dV2Defaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../../constants/mashInsertDefaults'
+import {
+  MAP_CARD_DRAG_MIME,
+  TIMELINE_CARD_DRAG_MIME,
+} from '../../../constants/evidenceCardDefaults'
 
 /**
  * MIME-и, що МАЮТЬ гілку-резолвер у useContentDrop.addAtPosition (useContentDrop.ts:1000)
@@ -45,6 +49,8 @@ const RESOLVER_MIMES = new Set<string>([
   GEOMETRY_2D_V2_DRAG_MIME, // geometry_2d_v2
   GRAPHMASH_3D_DRAG_MIME,  // graphmash_3d (Ф3.1)
   GEOMASH_DRAG_MIME,       // geomash_scene (Ф3.1)
+  TIMELINE_CARD_DRAG_MIME, // timeline_card
+  MAP_CARD_DRAG_MIME,      // map_card
 ])
 
 function ids(entries: readonly InsertEntry[]): string[] {

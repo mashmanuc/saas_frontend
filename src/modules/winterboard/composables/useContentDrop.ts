@@ -20,6 +20,12 @@ import {
   type Geometry2DV2DragPayload,
 } from '../constants/geometry2dV2Defaults'
 import { BOARD_RECIPE_MIME, BoardRecipeError, buildBoardRecipeAsset } from '../board/preparedBoardRecipes'
+import {
+  MAP_CARD_DRAG_MIME,
+  TIMELINE_CARD_DRAG_MIME,
+  buildBlankMapAsset,
+  buildBlankTimelineAsset,
+} from '../constants/evidenceCardDefaults'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
@@ -1070,6 +1076,16 @@ export function useContentDrop(options: UseContentDropOptions) {
       const asset = buildDefaultGeomashSceneAsset()
       asset.x = pos.x - asset.w / 2
       asset.y = pos.y - asset.h / 2
+      onAssetAdd(asset)
+      return
+    }
+
+    if (mime === TIMELINE_CARD_DRAG_MIME || mime === MAP_CARD_DRAG_MIME) {
+      const localeValue = (i18n.global.locale as unknown as { value?: string })?.value
+      const language = localeValue === 'en' ? 'en' : 'uk'
+      const asset = mime === TIMELINE_CARD_DRAG_MIME
+        ? buildBlankTimelineAsset(pos, language)
+        : buildBlankMapAsset(pos, language)
       onAssetAdd(asset)
       return
     }

@@ -281,7 +281,7 @@
               <span class="tools-card__icon" aria-hidden="true">
                 <InsertIcon :family="app.iconFamily" :icon-key="app.iconKey" />
               </span>
-              <span class="tools-card__label">{{ app.labelFallback }}</span>
+              <span class="tools-card__label">{{ app.labelKey ? t(app.labelKey) : app.labelFallback }}</span>
               <span class="tools-card__count">{{ appCounts[app.app] }}</span>
             </button>
           </div>
@@ -318,6 +318,12 @@
             <template v-else-if="catalogFamily === '3d'">
               <div class="tools-results">
                 <InsertResultTile v-for="e in threeDEntries" :key="e.id" :entry="e" />
+              </div>
+            </template>
+
+            <template v-else-if="catalogFamily === 'content'">
+              <div class="tools-results">
+                <InsertResultTile v-for="e in contentEntries" :key="e.id" :entry="e" />
               </div>
             </template>
           </div>
@@ -501,13 +507,23 @@ const toolResults = computed(() => searchInserts(toolQuery.value))
 const catalogFamily = ref<MashApp | null>(null)
 const appCounts = computed<Record<MashApp, number>>(() => {
   const by = insertsByApp()
-  return { '2d': by['2d'].length, '3d': by['3d'].length, geometry: by.geometry.length, stereo: by.stereo.length }
+  return {
+    '2d': by['2d'].length,
+    '3d': by['3d'].length,
+    geometry: by.geometry.length,
+    stereo: by.stereo.length,
+    content: by.content.length,
+  }
 })
 const currentAppLabel = computed(() =>
-  MASH_APPS.find(a => a.app === catalogFamily.value)?.labelFallback ?? '',
+  {
+    const app = MASH_APPS.find(a => a.app === catalogFamily.value)
+    return app?.labelKey ? t(app.labelKey) : (app?.labelFallback ?? '')
+  },
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
+const contentEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'evidence'))
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,

@@ -27,6 +27,7 @@ import type { WBAsset } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
+import { linkedEvidenceUpdate } from '../../board/evidenceLinkage'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
@@ -118,6 +119,10 @@ const ctx = computed<OverlayCtx>(() => ({
     if (willExpand) wbStore.selectItems([id])
   },
   onUpdate: (asset: WBAsset) => emit('asset-update', asset),
+  onActivateLinked: (source: WBAsset, ids: string[]) => {
+    const linked = linkedEvidenceUpdate(props.assets, source, ids)
+    if (linked) emit('asset-update', linked)
+  },
   onDelete: (id: string) => emit('asset-delete', id),
   // WYSIWYG перекриття (overlayTopHit): той самий шлях, що @select-other у
   // legacy-блоках WBCanvas — selectItems, без нових write-шляхів.

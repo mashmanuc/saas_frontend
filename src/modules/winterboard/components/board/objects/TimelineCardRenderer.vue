@@ -44,7 +44,11 @@
         <p v-if="!events.length" class="timeline-card__empty">{{ labels.empty }}</p>
 
         <!-- Вісь. `ordinal` — рівні проміжки; `linear` — відстань за часом. -->
-        <ol v-else class="timeline-card__axis" :class="`is-${data.orientation || 'horizontal'}`">
+        <ol
+          v-else
+          class="timeline-card__axis"
+          :class="[`is-${data.orientation || 'horizontal'}`, { 'is-linear': data.layout === 'linear' }]"
+        >
           <li
             v-for="(ev, i) in events"
             :key="ev.id"
@@ -116,6 +120,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:asset': [asset: WBAsset]
+  'activate-linked': [ids: string[]]
   delete: []
   'request-height': [neededPx: number]
 }>()
@@ -165,6 +170,10 @@ function selectEvent(id: string): void {
     ...props.asset,
     data: { ...data.value, active_event_id: next },
   } as WBAsset)
+  if (next) {
+    const event = events.value.find(item => item.id === next)
+    if (event?.place_ids?.length) emit('activate-linked', event.place_ids)
+  }
 }
 
 function step(delta: number): void {
@@ -232,6 +241,20 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
 }
 .timeline-card__axis.is-vertical { display: flex; flex-direction: column; gap: 10px; }
 .timeline-card__event { flex: 0 0 auto; margin-left: var(--timeline-offset, 0); }
+.timeline-card__axis.is-horizontal.is-linear {
+  position: relative; display: block; min-height: 76px; overflow-x: visible;
+}
+.timeline-card__axis.is-horizontal.is-linear .timeline-card__event {
+  position: absolute; left: var(--timeline-offset, 0); margin-left: 0;
+  transform: translateX(-50%);
+}
+.timeline-card__axis.is-vertical.is-linear {
+  position: relative; display: block; min-height: 320px;
+}
+.timeline-card__axis.is-vertical.is-linear .timeline-card__event {
+  position: absolute; top: var(--timeline-offset, 0); margin-left: 0;
+  transform: translateY(-50%);
+}
 .timeline-card__dot {
   pointer-events: auto; display: flex; flex-direction: column; gap: 2px;
   background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;
