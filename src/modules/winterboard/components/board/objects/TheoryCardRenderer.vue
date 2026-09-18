@@ -122,7 +122,24 @@
             >{{ ref.title }}</a>
             <span v-else class="theory-card__source-title theory-card__source-title--plain">{{ ref.title }}</span>
             <span v-if="ref.author" class="theory-card__source-meta">{{ sourceLabels.author }}: {{ ref.author }}</span>
-            <span v-if="ref.license" class="theory-card__source-meta">{{ sourceLabels.license }}: {{ ref.license }}</span>
+            <!-- Назва ліцензії веде на її текст, але тільки якщо адреса
+                 справжня: та сама перевірка, що й для URL джерела. Без
+                 валідного `license_url` ліцензія лишається текстом — ховати
+                 її не можна, це умова показу матеріалу. -->
+            <span v-if="ref.license" class="theory-card__source-meta">
+              {{ sourceLabels.license }}:
+              <a
+                v-if="isWebUrl(ref.license_url)"
+                class="theory-card__source-license-link"
+                :href="ref.license_url"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                @click.stop
+                @mousedown.stop
+                @pointerdown.stop
+              >{{ ref.license }}</a>
+              <template v-else>{{ ref.license }}</template>
+            </span>
             <span v-if="ref.revision_id" class="theory-card__source-meta">{{ sourceLabels.revision }}: {{ ref.revision_id }}</span>
             <span v-if="retrievedDay(ref.retrieved_at)" class="theory-card__source-meta">{{ sourceLabels.retrieved }}: {{ retrievedDay(ref.retrieved_at) }}</span>
           </li>
@@ -258,6 +275,11 @@ useCardContentFit({
     () => data.value.preset,
     () => data.value.formulaTitle,
     () => JSON.stringify(data.value.formulas ?? []),
+    // H0: підвал джерел — теж вміст. Поява `sources[]` додає рядок «Джерела: N»,
+    // а розгорнутий список — ще й самі джерела. Без цих двох джерел висота
+    // лишалась від згорнутої картки, і список ліз під нижню межу.
+    () => (data.value.sources ?? []).length,
+    () => sourcesOpen.value,
     () => presentationScaleOf(props.asset),
     () => props.asset.w,
   ],
