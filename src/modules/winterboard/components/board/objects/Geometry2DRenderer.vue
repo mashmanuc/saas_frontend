@@ -266,7 +266,14 @@ function wireToolbarPersistence(): void {
         emitDataPatch({ toggles: nextToggles })
       })
     },
-    false,
+    // ⚠️ CAPTURE, не bubble. Кожна кнопка тулбара має ВЛАСНИЙ обробник, який
+    // першою дією робить `e.stopPropagation()` (vendor `geo2d-card.js`,
+    // makeGeoToolbar). У фазі спливання подія до тулбара вже не доходила, тож
+    // цей слухач не спрацьовував ЖОДНОГО разу: механізм був увесь на місці —
+    // слухач, `emitDataPatch`, `applyPersistedToggles` — і перемикачі все одно
+    // не зберігались. Перехоплення відбувається ДО обробника кнопки, а стан
+    // vendor-а ми читаємо у `queueMicrotask` — тобто вже після нього.
+    true,
   )
 }
 
