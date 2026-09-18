@@ -140,7 +140,11 @@ export function sourcesData(sources, status) {
   if (!out.length) return {}
   return {
     sources: out,
-    source_status: SOURCE_STATUSES.includes(status) ? status : 'verified',
+    // Fail closed. `verified` означає «джерела підтверджені» — це твердження
+    // про зміст, а не формальність. Підставляти його на невідоме чи відсутнє
+    // значення означало б сказати вчителю більше, ніж ми знаємо, тому
+    // невідоме падає в `mixed`.
+    source_status: SOURCE_STATUSES.includes(status) ? status : 'mixed',
   }
 }
 

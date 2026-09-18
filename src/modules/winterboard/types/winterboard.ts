@@ -519,6 +519,11 @@ export interface TheoryCardData {
    *  рендеряться як раніше, без рядка «Джерела». */
   sources?: WBSourceRef[]
   source_status?: WBSourceStatus
+  /** LAW §9.D, INV-26: мова матеріалу й походження — коли картку створив
+   *  коридор Інтегралика. Набір ключів `provenance` закритий; `sources[]` вище
+   *  живе ПОРЯД із ним і всередину не лізе. */
+  content_language?: WBMaterialData['content_language']
+  provenance?: WBMaterialData['provenance']
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }

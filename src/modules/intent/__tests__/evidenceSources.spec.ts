@@ -57,8 +57,23 @@ describe('sourcesData — запис доказових джерел', () => {
     }
   })
 
-  it('невідомий статус нормалізується, а не зберігається як є', () => {
-    expect(sourcesData([REF], 'вигаданий').source_status).toBe('verified')
+  it('невідомий статус — fail closed: mixed, а не verified', () => {
+    // `verified` означає «джерела підтверджені». Видавати це за замовчуванням
+    // на невідоме значення — хибне підтвердження: картка казала б учителю
+    // більше, ніж ми насправді знаємо.
+    expect(sourcesData([REF], 'вигаданий').source_status).toBe('mixed')
+  })
+
+  it('відсутній статус — теж mixed', () => {
+    expect(sourcesData([REF], undefined).source_status).toBe('mixed')
+    expect(sourcesData([REF], null as never).source_status).toBe('mixed')
+    expect(sourcesData([REF], '').source_status).toBe('mixed')
+  })
+
+  it('явні відомі статуси зберігаються як є', () => {
+    for (const st of ['verified', 'mixed', 'teacher_provided']) {
+      expect(sourcesData([REF], st).source_status).toBe(st)
+    }
   })
 
   it('порожнє й сміття дають порожній результат, а не половинні дані', () => {

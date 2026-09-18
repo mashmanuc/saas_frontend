@@ -240,10 +240,7 @@ const sources = computed(() => {
   const list = (data.value as TheoryCardData).sources
   return Array.isArray(list) ? list : []
 })
-const sourceLabels = computed(() => {
-  const lang = (props.asset.data as { content_language?: string } | undefined)?.content_language
-  return SOURCE_LABELS[lang === 'en' ? 'en' : 'uk']
-})
+const sourceLabels = computed(() => SOURCE_LABELS[data.value.content_language === 'en' ? 'en' : 'uk'])
 const sourcesOpen = ref(false)
 
 const presetStyle = computed(() => {
@@ -276,10 +273,16 @@ useCardContentFit({
     () => data.value.formulaTitle,
     () => JSON.stringify(data.value.formulas ?? []),
     // H0: підвал джерел — теж вміст. Поява `sources[]` додає рядок «Джерела: N»,
-    // а розгорнутий список — ще й самі джерела. Без цих двох джерел висота
-    // лишалась від згорнутої картки, і список ліз під нижню межу.
-    () => (data.value.sources ?? []).length,
+    // а розгорнутий список — ще й самі джерела. Без цих джерел висота лишалась
+    // від згорнутої картки, і список ліз під нижню межу.
+    //
+    // Стежимо за ВМІСТОМ, не за кількістю: заміна джерела довшим лишає
+    // `length` тим самим, а рядок переноситься й забирає більше місця.
+    () => JSON.stringify(data.value.sources ?? []),
     () => sourcesOpen.value,
+    // Службові підписи підвалу («Джерела»/«Sources», «Ліцензія»/«License»)
+    // залежать від мови матеріалу — вони різної довжини.
+    () => data.value.content_language,
     () => presentationScaleOf(props.asset),
     () => props.asset.w,
   ],

@@ -173,7 +173,10 @@ describe('відкритий список джерел змінює потріб
     flow.getBoundingClientRect = () => ({
       height: BASE
         + (w.find('.theory-card__sources').exists() ? FOOTER : 0)
-        + w.findAll('.theory-card__source').length * PER_SOURCE,
+        // Висота залежить від САМОГО тексту, а не лише від кількості рядків —
+        // довша назва переносить рядок і забирає більше місця.
+        + w.findAll('.theory-card__source')
+          .reduce((acc: number, el: any) => acc + PER_SOURCE + el.text().length, 0),
     }) as DOMRect
   }
 
@@ -197,6 +200,46 @@ describe('відкритий список джерел змінює потріб
     await w.find('.theory-card__sources-toggle').trigger('click')
     await flushPromises()
     expect(lastHeight(w)).toBe(collapsed)
+    w.unmount()
+  })
+
+  it('та сама кількість, але довший текст → висота збільшилась', async () => {
+    // Дефект: стеження лише за `sources.length` не бачить ЗАМІНИ джерела.
+    // Відкрита картка лишалась із висотою під коротку назву, і текст ліз під
+    // нижню межу.
+    const asset = card({ content_language: 'uk', sources: [REF] })
+    const w = mount(TheoryCardRenderer, {
+      props: { asset, isSelected: false, interactive: true },
+      global: { plugins: [i18n()] },
+    })
+    stubFlow(w)
+    await w.find('.theory-card__sources-toggle').trigger('click')
+    await flushPromises()
+    const short = lastHeight(w)
+
+    const longer = { ...REF, title: 'Ivan Mazepa, hetman of the Zaporozhian Host, ' + 'x'.repeat(120) }
+    await w.setProps({ asset: card({ content_language: 'uk', sources: [longer] }) })
+    await flushPromises()
+
+    expect(w.findAll('.theory-card__source')).toHaveLength(1)   // кількість НЕ змінилась
+    expect(lastHeight(w), 'заміна джерела не перерахувала висоту').toBeGreaterThan(short!)
+    w.unmount()
+  })
+
+  it('зміна мови матеріалу теж перераховує — підписи інші за довжиною', async () => {
+    const w = mount(TheoryCardRenderer, {
+      props: { asset: card({ content_language: 'uk', sources: [REF] }), isSelected: false, interactive: true },
+      global: { plugins: [i18n()] },
+    })
+    stubFlow(w)
+    await w.find('.theory-card__sources-toggle').trigger('click')
+    await flushPromises()
+    const uk = lastHeight(w)
+
+    await w.setProps({ asset: card({ content_language: 'en', sources: [REF] }) })
+    await flushPromises()
+    expect(w.find('.theory-card__sources-toggle').text()).toBe('Sources: 1')
+    expect(lastHeight(w)).not.toBe(uk)
     w.unmount()
   })
 
