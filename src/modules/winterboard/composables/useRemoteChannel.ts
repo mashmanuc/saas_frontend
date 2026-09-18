@@ -56,6 +56,26 @@ export function parseRemoteAssistant(raw: any): RemoteStateDetail['assistant'] |
   }
 }
 
+/** v1.7 (LAW §9, INV-27): картки поточної сторінки.
+ *
+ * Винесено з обробника повідомлень навмисно — так само, як `parseRemoteAssistant`
+ * вище. Доки розбір жив усередині `socket.onmessage`, жоден тест не міг його
+ * виконати, і саме там непомітно загубився `presenting`: ноутбук поле рахував і
+ * слав, пульт його читав, а між ними воно зникало — ▲/▼ назавжди неактивні.
+ *
+ * `presenting` зберігаємо ЛИШЕ коли це справді boolean: зіпсоване значення не
+ * має ні вмикати режим показу, ні псувати решту стану (сторінки важливіші).
+ */
+export function parseRemoteCards(raw: any): RemoteStateDetail['cards'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  return {
+    count: Number(raw.count) || 0,
+    answer: typeof raw.answer === 'boolean' ? raw.answer : null,
+    solution: typeof raw.solution === 'boolean' ? raw.solution : null,
+    ...(typeof raw.presenting === 'boolean' ? { presenting: raw.presenting } : {}),
+  }
+}
+
 const LOG_PREFIX = '[WB:remote]'
 const MAX_RECONNECT = 5
 const RECONNECT_BASE_MS = 1000
@@ -143,13 +163,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         if (typeof msg.frozen === 'boolean') detail.frozen = msg.frozen
         const assistant = parseRemoteAssistant(msg.assistant)
         if (assistant) detail.assistant = assistant
-        if (msg.cards && typeof msg.cards === 'object') {
-          detail.cards = {
-            count: Number(msg.cards.count) || 0,
-            answer: typeof msg.cards.answer === 'boolean' ? msg.cards.answer : null,
-            solution: typeof msg.cards.solution === 'boolean' ? msg.cards.solution : null,
-          }
-        }
+        const cards = parseRemoteCards(msg.cards)
+        if (cards) detail.cards = cards
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати
