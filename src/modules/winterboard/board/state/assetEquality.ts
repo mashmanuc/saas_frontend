@@ -140,6 +140,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'quadratic_card',   // §3.7.10 — a, b, c, showVertex/Axis/Roots, viewport
   'formula_card',     // §3.7.11 — formula (LaTeX), fontSize, color, bg
   'theory_card',      // §3.7.12 — title, body, hint, formulaTitle, formulas[]
+  'history_card',     // довідка про сутність — primary[], secondary[], expanded
   'timeline_card',    // H2 — title, layout, events[], active_event_id, sources[]
   'map_card',         // H3 — title, basemap, markers[], routes[], active_marker_id
   'mash_scene',       // §3.7.13 — app, sceneFormat, scene (envelope as-is), title

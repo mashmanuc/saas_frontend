@@ -37,6 +37,7 @@ import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
+import HistoryCardRenderer from '../board/objects/HistoryCardRenderer.vue'
 import TimelineCardRenderer from '../board/objects/TimelineCardRenderer.vue'
 import MapCardRenderer from '../board/objects/MapCardRenderer.vue'
 import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
@@ -88,6 +89,18 @@ export interface OverlayCtx {
   onUpdate: (asset: WBAsset) => void
   /** Активувати пов'язану подію/marker у парному evidence-об'єкті. */
   onActivateLinked: (source: WBAsset, ids: string[]) => void
+  /** Клік на сутність у довідковій картці — відкрити суміжну картку ПОРУЧ,
+   *  не заміняючи поточну. Необовʼязковий: полотно без цього обробника
+   *  просто не має переходів, а картка лишається робочою. */
+  onOpenEntity?: (source: WBAsset, qid: string, label: string) => void
+  /** Шпилька на карту дошки. Картка кличе його лише коли координата справді
+   *  є місцем події, а не центроїдом країни. */
+  onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void
+  /** Чи є на дошці карта — без неї шпильці нема куди лягти. */
+  hasMapCard?: boolean
+  /** Чи вміє кімната будувати суміжну картку. Поки обробника немає — false,
+   *  і картка не малює посилань, які нікуди не ведуть. */
+  hasEntityTarget?: boolean
   /** emit('asset-delete', assetId) */
   onDelete: (id: string) => void
   /** emit('formula-card-edit', assetId) */
@@ -334,7 +347,12 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     wrapperClass: 'wb-timeline-card-overlay',
     dataAttr: 'data-timeline-card-id',
     testidPrefix: 'timeline-card-overlay',
-    buildProps: stdProps,
+    buildProps: (asset, ctx) => ({
+      ...stdProps(asset, ctx),
+      // Явні кнопки шкали працюють і з активним олівцем; решта картки
+      // залишається прозорою для малювання по полотну.
+      navigable: ctx.isTutor && ctx.boardMode === 'edit',
+    }),
     buildEvents: (asset, ctx) => ({
       ...stdEvents(asset, ctx),
       'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
@@ -346,10 +364,37 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     wrapperClass: 'wb-map-card-overlay',
     dataAttr: 'data-map-card-id',
     testidPrefix: 'map-card-overlay',
-    buildProps: stdProps,
+    buildProps: (asset, ctx) => ({
+      ...stdProps(asset, ctx),
+      navigable: ctx.isTutor && ctx.boardMode === 'edit',
+    }),
     buildEvents: (asset, ctx) => ({
       ...stdEvents(asset, ctx),
       'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
+    }),
+  },
+
+  history_card: {
+    component: HistoryCardRenderer,
+    wrapperClass: 'wb-history-card-overlay',
+    dataAttr: 'data-history-card-id',
+    testidPrefix: 'history-card-overlay',
+    // Дії показуються, лише коли вони справді працюють. `onOpenEntity` поки
+    // ніхто не слухає — посилання лишаються текстом, поки не з'явиться
+    // обробник кімнати. Це не заглушка: ознака рахується з реального стану,
+    // тож кнопки з'являться самі, щойно адресат буде.
+    buildProps: (asset, ctx) => ({
+      ...stdProps(asset, ctx),
+      canOpenEntity: typeof ctx.onOpenEntity === 'function' && ctx.hasEntityTarget === true,
+      canPinToMap: ctx.hasMapCard === true,
+    }),
+    buildEvents: (asset, ctx) => ({
+      ...stdEvents(asset, ctx),
+      // Клік на сутність і шпилька на карту доходять до полотна тим самим
+      // шляхом, що решта подій картки — окремого каналу немає.
+      'open-entity': (qid: string, label: string) => ctx.onOpenEntity?.(asset, qid, label),
+      'to-map': (lat: number, lon: number, label: string) =>
+        ctx.onToMap?.(asset, lat, lon, label),
     }),
   },
 

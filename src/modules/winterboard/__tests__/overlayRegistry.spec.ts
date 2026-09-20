@@ -9,11 +9,16 @@
  * у WBCanvas.vue). Registry ПОВИНЕН покривати всі ці типи.
  */
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { OVERLAY_RENDERERS, OVERLAY_ASSET_TYPES, isOverlayType } from '../components/canvas/overlayRegistry'
 
 // Канонічний список з KONVA_PROXY_TYPES (WBCanvas.vue:907-920).
 // При додаванні нового типу → оновити ТУТ і в registry.
 const KONVA_PROXY_TYPES_CANONICAL = new Set([
+  // 2026-09-20: довідкова картка історичної сутності — така сама
+  // overlay-картка, як theory_card, тож має власний Konva-проксі.
+  'history_card',
   'geometry_solid',
   'graph_calculator',
   'geometry_2d_v2',
@@ -65,6 +70,17 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
       expect(typeof entry.expandable, `${type}: expandable must be boolean`).toBe('boolean')
       expect(typeof entry.buildProps, `${type}: buildProps must be function`).toBe('function')
       expect(typeof entry.buildEvents, `${type}: buildEvents must be function`).toBe('function')
+    }
+  })
+
+  it('кожен wrapper registry має CSS-позиціонування в unified overlay layer', () => {
+    const layer = readFileSync(resolve(__dirname, '../components/canvas/WBOverlayLayer.vue'), 'utf8')
+    for (const [type, entry] of Object.entries(OVERLAY_RENDERERS)) {
+      expect(
+        layer,
+        `${type}: .${entry.wrapperClass} відсутній у WBOverlayLayer.vue — ` +
+        'рендерер випаде у DOM-flow, а Konva-рамка рухатиметься окремо.',
+      ).toContain(`.${entry.wrapperClass}`)
     }
   })
 

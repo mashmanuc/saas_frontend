@@ -172,6 +172,80 @@ export function sanitizeSourceList(raw) {
   return out.sources || []
 }
 
+const HISTORY_VARIANTS = ['person', 'event', 'monument']
+const HISTORY_STATUSES = ['verified', 'mixed']
+
+/** Значення рядка картки. Закритий набір ключів — як у sourcesData. */
+function sanitizeHistoryValue(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const label = typeof raw.label === 'string' ? raw.label.trim().slice(0, 200) : ''
+  const display = typeof raw.display === 'string' ? raw.display.trim().slice(0, 200) : ''
+  if (!label && !display) return null
+  const out = { label: label || display }
+  if (display) out.display = display
+  // `qid` НЕ показується на картці — він лише адреса переходу.
+  if (typeof raw.qid === 'string' && /^Q\d+$/.test(raw.qid)) out.qid = raw.qid
+  if (typeof raw.old_style === 'string' && raw.old_style.trim()) {
+    out.old_style = raw.old_style.trim().slice(0, 80)
+  }
+  if (typeof raw.note === 'string' && raw.note.trim()) out.note = raw.note.trim().slice(0, 120)
+  // Координата приймається лише парою й лише в межах глобуса: половина пари
+  // або широта 500 дали б шпильку невідомо де.
+  const lat = Number(raw.lat)
+  const lon = Number(raw.lon)
+  if (Number.isFinite(lat) && Number.isFinite(lon)
+      && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+    out.lat = lat
+    out.lon = lon
+  }
+  return out
+}
+
+/** Рядок картки. Без значень рядка не існує — порожніх «—» на картці немає. */
+function sanitizeHistoryField(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const label = typeof raw.label === 'string' ? raw.label.trim().slice(0, 80) : ''
+  const values = Array.isArray(raw.values)
+    ? raw.values.map(sanitizeHistoryValue).filter(Boolean).slice(0, 24)
+    : []
+  if (!label || !values.length) return null
+  const total = Number.isInteger(raw.total) && raw.total >= values.length ? raw.total : values.length
+  return {
+    label,
+    status: HISTORY_STATUSES.includes(raw.status) ? raw.status : 'verified',
+    values,
+    total,
+  }
+}
+
+export function sanitizeHistoryFields(raw) {
+  return Array.isArray(raw) ? raw.map(sanitizeHistoryField).filter(Boolean).slice(0, 16) : []
+}
+
+/**
+ * Зображення картки. Показуємо ЛИШЕ з автором і ліцензією — той самий гейт,
+ * що для add_image: без атрибуції картинка на дошку не йде.
+ */
+export function sanitizeHistoryImage(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const url = typeof raw.url === 'string' ? raw.url.trim() : ''
+  const author = typeof raw.author === 'string' ? raw.author.trim() : ''
+  const license = typeof raw.license === 'string' ? raw.license.trim() : ''
+  if (!WEB_URL_RE.test(url) || !author || !license) return null
+  const out = {
+    url,
+    author: author.slice(0, 200),
+    license: license.slice(0, 80),
+    attribution: typeof raw.attribution === 'string' ? raw.attribution.trim().slice(0, 300) : '',
+  }
+  if (Number.isFinite(Number(raw.width))) out.width = Number(raw.width)
+  if (Number.isFinite(Number(raw.height))) out.height = Number(raw.height)
+  if (typeof raw.file_page === 'string' && WEB_URL_RE.test(raw.file_page.trim())) {
+    out.file_page = raw.file_page.trim()
+  }
+  return out
+}
+
 export function sanitizeEvents(raw) {
   if (!Array.isArray(raw)) return []
   const out = []
@@ -433,6 +507,54 @@ const HANDLERS = {
       },
     }, page.id ?? '')
     return { ok: true, assetId }
+  },
+
+  /**
+   * Довідкова картка історичної сутності (ТЗ дизайнера 2026-09-20).
+   *
+   * ⚠️ ТЕХНІЧНИХ НАЗВ У ПАЙЛОАДІ НЕМАЄ. Сервер кладе людські підписи мовою
+   * матеріалу; коди властивостей і `qid` на картку не малюються — `qid`
+   * лишається в даних лише як адреса переходу на суміжну картку.
+   *
+   * Порожній рядок сюди не доходить: `sanitizeHistoryField` відкидає поле без
+   * значень, тож «—» на картці не з'являється за побудовою.
+   */
+  async add_history_card({ variant, title, subtitle, image, primary, secondary,
+                           corridor, sources, source_status }) {
+    const { store, page } = await _store()
+    const { cx, cy } = _center(page)
+    const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
+    if (!titleValue) return
+    const primaryFields = sanitizeHistoryFields(primary)
+    const secondaryFields = sanitizeHistoryFields(secondary)
+    const imageValue = sanitizeHistoryImage(image)
+    const assetId = _uuid()
+    store.addAsset({
+      id: assetId,
+      type: 'history_card',
+      src: '',
+      x: cx - 260,
+      y: cy - 190,
+      // Ширина — 520, як у чинної theory_card: картка тієї самої сім'ї, а не
+      // сусідньої (THEORY_CARD_BASELINE.md, знято з коду).
+      w: 520,
+      h: 380,
+      rotation: 0,
+      locked: false,
+      data: {
+        version: 1,
+        variant: HISTORY_VARIANTS.includes(variant) ? variant : 'person',
+        title: titleValue,
+        ...(typeof subtitle === 'string' && subtitle.trim()
+          ? { subtitle: subtitle.trim().slice(0, 300) } : {}),
+        ...(imageValue ? { image: imageValue } : {}),
+        primary: primaryFields,
+        ...(secondaryFields.length ? { secondary: secondaryFields } : {}),
+        expanded: false,
+        ...corridorData(corridor),
+        ...sourcesData(sources, source_status),
+      },
+    }, page.id ?? '')
   },
 
   async add_card({ title, body, badge, preset, corridor, sources, source_status }) {
@@ -884,6 +1006,7 @@ export const KIND_LABELS = {
   geometry_2d_v2: 'планіметрія',
   nmt3d: 'стереометрія',
   theory_card: 'картка',
+  history_card: 'довідка',
   timeline_card: 'шкала часу',
   map_card: 'карта',
   nmt_task: 'NMT-задача',

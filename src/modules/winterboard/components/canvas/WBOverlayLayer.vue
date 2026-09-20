@@ -23,7 +23,7 @@
  */
 import { computed } from 'vue'
 
-import type { WBAsset } from '../../types/winterboard'
+import type { MapCardData, WBAsset, WBMapMarker } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -79,6 +79,10 @@ const emit = defineEmits<{
   'request-height': [payload: { assetId: string; neededPx: number }]
   /** Клік належить картці, намальованій ЗВЕРХУ — WBCanvas стартує її Konva-drag. */
   'foreign-drag': [payload: { assetId: string; ev: PointerEvent }]
+  /** Клік на сутність у довідковій картці — кімната будує суміжну картку. */
+  'open-entity': [payload: { sourceId: string; qid: string; label: string }]
+  /** Шпилька, якій нема куди лягти: карти на дошці ще немає. */
+  'to-map': [payload: { sourceId: string; lat: number; lon: number; label: string }]
 }>()
 
 const wbStore = useWBStore()
@@ -97,6 +101,43 @@ const EXPANDED_STYLE: Record<string, string> = {
   width: '100%',
   height: '100%',
   zIndex: '50',
+}
+
+/**
+ * Додати шпильку на НАЯВНУ карту дошки. `null` — карти ще немає.
+ *
+ * Свідомо не створюємо карту тут: поява об'єкта на дошці — рішення кімнати
+ * (їй належать координати вставки й Ops), а шар оверлеїв лише оновлює вже
+ * наявний асет через штатний `asset-update`.
+ *
+ * Повторна шпилька в те саме місце нічого не додає: дві однакові крапки на
+ * карті виглядали б як два різні факти.
+ */
+function mapMarkerUpdate(
+  assets: WBAsset[],
+  source: WBAsset,
+  lat: number,
+  lon: number,
+  label: string,
+): WBAsset | null {
+  const map = assets.find(a => a.type === 'map_card')
+  if (!map) return null
+  const data = (map.data ?? {}) as MapCardData
+  const markers: WBMapMarker[] = Array.isArray(data.markers) ? data.markers : []
+  const same = (m: WBMapMarker) =>
+    Math.abs(m.lat - lat) < 1e-6 && Math.abs(m.lon - lon) < 1e-6
+  if (markers.some(same)) return null
+  const marker: WBMapMarker = {
+    id: `marker-${source.id}-${markers.length + 1}`,
+    label,
+    lat,
+    lon,
+    date_label: '',
+    description: '',
+    event_ids: [],
+    sources: [],
+  }
+  return { ...map, data: { ...data, markers: [...markers, marker] } }
 }
 
 // Adapter context — reactive snapshot для build* функцій registry.
@@ -119,9 +160,28 @@ const ctx = computed<OverlayCtx>(() => ({
     if (willExpand) wbStore.selectItems([id])
   },
   onUpdate: (asset: WBAsset) => emit('asset-update', asset),
+  // Карта на дошці є → шпилька має адресата. Немає → кнопки не малюємо.
+  hasMapCard: props.assets.some(a => a.type === 'map_card'),
+  // Кімната ще не слухає `open-entity`. Доки не слухає — значення в картці
+  // лишаються звичайним текстом. Прапорець тут, а не в рендерері, щоб
+  // увімкнути його одним рядком, коли обробник з'явиться.
+  hasEntityTarget: false,
   onActivateLinked: (source: WBAsset, ids: string[]) => {
     const linked = linkedEvidenceUpdate(props.assets, source, ids)
     if (linked) emit('asset-update', linked)
+  },
+  // Клік на сутність у довідковій картці. Побудувати суміжну картку без мережі
+  // не можна, тому подія йде нагору — рішення й сам виклик коридору належать
+  // кімнаті, а не шару оверлеїв.
+  onOpenEntity: (source: WBAsset, qid: string, label: string) =>
+    emit('open-entity', { sourceId: source.id, qid, label }),
+  // Шпилька на карту — навпаки, суто стан дошки: беремо наявну карту або
+  // просимо кімнату створити нову. Нового шляху запису тут немає — усе через
+  // той самий `asset-update`.
+  onToMap: (source: WBAsset, lat: number, lon: number, label: string) => {
+    const updated = mapMarkerUpdate(props.assets, source, lat, lon, label)
+    if (updated) emit('asset-update', updated)
+    else emit('to-map', { sourceId: source.id, lat, lon, label })
   },
   onDelete: (id: string) => emit('asset-delete', id),
   // WYSIWYG перекриття (overlayTopHit): той самий шлях, що @select-other у
@@ -392,12 +452,43 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
 }
 
+/* H2–H3: без absolute-wrapper синя Konva-рамка була в координатах asset,
+   а сама шкала/карта випадала у звичайний DOM-flow ПІД дошку. У результаті
+   drag рухав рамку, але не видиму картку. Обидва типи мають той самий
+   positioning-контракт, що й решта HTML-overlays. */
+.wb-timeline-card-overlay,
+.wb-map-card-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-timeline-card-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.30);
+}
+.wb-map-card-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.30);
+}
+
 .wb-theory-card-overlay {
   position: absolute;
   z-index: 4;
   border-radius: 16px;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* Довідкова картка історичної сутності — та сама сім'я, що theory_card. */
+.wb-history-card-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 16px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-history-card-overlay--selected {
+  box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(67, 56, 202, 0.35));
 }
 .wb-theory-card-overlay--selected {
   box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(99, 102, 241, 0.35));

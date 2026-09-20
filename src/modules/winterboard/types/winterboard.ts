@@ -232,6 +232,7 @@ export interface WBAsset {
     /** TheoryCard (2026-06-03) — рухома картка теорії+формул (Lesson Constructor). §3.7.12
      *  Замінює page-level theoryBlock/formulaBlock на повноцінний draggable WBAsset. */
     | 'theory_card'
+    | 'history_card'
     /** TimelineCard (H2, 2026-09-18) — універсальна шкала подій із доказовими
      *  джерелами. Один тип на ВСІ шкали: окремий компонент під конкретну
      *  шкалу заборонений ТЗ (§6.2). */
@@ -351,6 +352,7 @@ export interface WBAsset {
     | import('./quad').QuadraticData
     | import('./formulaCard').FormulaCardData
     | TheoryCardData
+    | HistoryCardData
     | TimelineCardData
     | MapCardData
     | MashSceneData
@@ -510,6 +512,81 @@ export interface WBSourceRef {
 /** `verified` — усі джерела підтверджені; `mixed` — є суперечність;
  *  `teacher_provided` — матеріал учителя. */
 export type WBSourceStatus = 'verified' | 'mixed' | 'teacher_provided'
+
+/**
+ * `history_card` — довідкова картка історичної сутності (ТЗ дизайнера
+ * 2026-09-20). ОДИН тип на три подання: особа, подія, пам'ятка. Окремий тип
+ * під кожне заборонений тим самим правилом, що й для шкали: інакше кожна нова
+ * сутність народжувала б свій майже-такий-самий рендерер.
+ *
+ * ⚠️ ТЕХНІЧНИХ НАЗВ У ПАЙЛОАДІ НЕМАЄ (вимога власника). Сервер кладе сюди вже
+ * людські підписи мовою матеріалу: `label` рядка, `label` значення. Коди
+ * властивостей (`P18`, `P569`) і `qid` у картку НЕ малюються — `qid` живе тут
+ * лише для переходу на суміжну картку.
+ */
+export type HistoryCardVariant = 'person' | 'event' | 'monument'
+
+/** `mixed` — джерела розходяться; картка показує це бейджем, не помилкою. */
+export type HistoryFieldStatus = 'verified' | 'mixed'
+
+export interface HistoryCardImage {
+  url: string
+  width?: number
+  height?: number
+  /** Без автора або без вільної ліцензії зображення НЕ показуємо (гейт §6.1). */
+  author: string
+  license: string
+  /** Готовий рядок TASL мовою матеріалу — складає сервер. */
+  attribution: string
+  /** Сторінка файла: єдине, що має сенс відкривати. */
+  file_page?: string
+}
+
+export interface HistoryCardValue {
+  /** Єдине, що бачить учитель. */
+  label: string
+  /** Сутність для переходу. Порожньо → значення не є посиланням. */
+  qid?: string
+  /** Дата новим стилем, уже відформатована сервером. */
+  display?: string
+  /** Та сама дата старим стилем. Порожньо → примітки «?» немає. */
+  old_style?: string
+  /** Координата — лише коли шпилька справді має сенс (не центроїд країни). */
+  lat?: number
+  lon?: number
+  /** Уточнення під значенням (напр. роки перебування на посаді). */
+  note?: string
+}
+
+export interface HistoryCardField {
+  /** Підпис рядка мовою матеріалу. Не назва властивості. */
+  label: string
+  status: HistoryFieldStatus
+  values: HistoryCardValue[]
+  /** Скільки значень усього — коли показано не всі (кнопка «ще N»). */
+  total?: number
+}
+
+export interface HistoryCardData {
+  version: 1
+  variant: HistoryCardVariant
+  title: string
+  /** Короткий опис під назвою. Немає — рядок зникає. */
+  subtitle?: string
+  image?: HistoryCardImage
+  /** Рядки, видимі завжди (compact). */
+  primary: HistoryCardField[]
+  /** Рядки, видимі лише в розгорнутому стані. */
+  secondary?: HistoryCardField[]
+  /** Стан картки живе в асеті: переживає reload, replay і класну кімнату. */
+  expanded?: boolean
+  sources?: WBSourceRef[]
+  source_status?: WBSourceStatus
+  content_language?: WBMaterialData['content_language']
+  provenance?: WBMaterialData['provenance']
+}
+
+export type HistoryCardAsset = WBAsset & { type: 'history_card'; data: HistoryCardData }
 
 export interface TheoryCardData {
   version: 1

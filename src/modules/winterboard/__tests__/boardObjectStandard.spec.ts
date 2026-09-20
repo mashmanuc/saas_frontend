@@ -45,6 +45,10 @@ const PROXY_TYPES_BEFORE_TLV2_05A = [
   'geometry_solid', 'graph_calculator', 'geometry_2d_v2', 'calculus_card', 'trig_circle',
   'helix', 'trig_solver', 'nmt3d', 'nmt_task', 'quadratic_card', 'formula_card',
   'theory_card', 'timeline_card', 'map_card', 'mash_scene', 'geomash_scene', 'graphmash_3d', 'visual_capsule',
+  // 2026-09-20: довідкова картка історичної сутності. Свідоме розширення —
+  // вона така сама overlay-картка, як theory_card, і без проксі її не можна
+  // було б ні рухати, ні масштабувати.
+  'history_card',
 ].sort()
 
 /** `expandable: true` у реєстрі ДО TLV2-05A. Капсула додалась свідомо (ТЗ §3). */
