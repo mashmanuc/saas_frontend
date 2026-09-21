@@ -31,6 +31,8 @@ export class WBReplayEngineV2 {
   private speed: ReplaySpeedV2 = 1
   private state: ReplayStateV2 = 'idle'
   private playTimer: ReturnType<typeof setTimeout> | null = null
+  /** Наступна op — перша після play()/seekTo(): показати одразу, без паузи. */
+  private resumeFresh = true
   private firstOpAtMs: number = 0
 
   private callbacks: Partial<ReplayEngineV2Callbacks> = {}
@@ -125,6 +127,7 @@ export class WBReplayEngineV2 {
     if (this.state === 'playing') return
     if (this.currentIndex >= this.operations.length) this.currentIndex = 0
     this.setState('playing')
+    this.resumeFresh = true
     this._scheduleNext()
   }
 
@@ -167,6 +170,7 @@ export class WBReplayEngineV2 {
     const clamped = Math.max(0, Math.min(index, this.operations.length - 1))
     this.currentIndex = clamped
     this.callbacks.onProgress?.(clamped, this.operations.length)
+    this.resumeFresh = true
     if (wasPlaying) this._scheduleNext()
     return clamped
   }
@@ -216,12 +220,18 @@ export class WBReplayEngineV2 {
     }
 
     const op = this.operations[this.currentIndex]
-    const nextOp = this.operations[this.currentIndex + 1]
 
-    let delayMs = 16
-    if (nextOp) {
-      const t1 = new Date(op.created_at).getTime()
-      const t2 = new Date(nextOp.created_at).getTime()
+    // Op показується через проміжок від ПОПЕРЕДНЬОЇ op (як на уроці). Раніше
+    // брався проміжок до НАСТУПНОЇ — усе зсувалось на одну паузу: перша op
+    // чекала до 2 с, після seek дошка «мовчала» до 2 с, а потім дві op
+    // виринали разом (replayEngineTiming.spec). Першу op після play()/seekTo()
+    // показуємо одразу: її момент — це те місце, куди людина перемотала.
+    let delayMs = 4
+    const prevOp = this.resumeFresh ? undefined : this.operations[this.currentIndex - 1]
+    this.resumeFresh = false
+    if (prevOp) {
+      const t1 = new Date(prevOp.created_at).getTime()
+      const t2 = new Date(op.created_at).getTime()
       const diff = (isNaN(t1) || isNaN(t2)) ? 16 : Math.min(Math.max(0, t2 - t1), 2000)
       delayMs = Math.max(4, diff / this.speed)
     }
