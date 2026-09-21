@@ -172,7 +172,10 @@ export function sanitizeSourceList(raw) {
   return out.sources || []
 }
 
-const HISTORY_VARIANTS = ['person', 'event', 'monument']
+// Кожен вид тут МУСИТЬ мати стиль у `HistoryCardRenderer` (тест
+// `historyCard.spec.ts`): невідомий вид падає в 'person', і держава показалась
+// би як «Особа».
+export const HISTORY_VARIANTS = ['person', 'event', 'monument', 'polity']
 const HISTORY_STATUSES = ['verified', 'mixed']
 
 /** Непрозоре посилання `{provider, id}`: лише форма й довжина, без розбору `id`. */

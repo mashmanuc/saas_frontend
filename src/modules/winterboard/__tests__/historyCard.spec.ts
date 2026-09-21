@@ -16,6 +16,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import HistoryCardRenderer from '../components/board/objects/HistoryCardRenderer.vue'
+import { HISTORY_VARIANTS } from '../../intent/boardActions'
 import type { HistoryCardData, WBAsset } from '../types/winterboard'
 
 const i18n = {
@@ -269,5 +270,44 @@ describe('HistoryCard · мова матеріалу, не UI', () => {
     expect(render(KHMELNYTSKY).find('.history-card__badge').text()).toBe('Особа')
     expect(render({ variant: 'monument', title: 'X', primary: [] })
       .find('.history-card__badge').text()).toBe("Пам'ятка")
+  })
+})
+
+
+describe('HistoryCard · вид «Держава» (polity)', () => {
+  const RZECZPOSPOLITA: Partial<HistoryCardData> = {
+    variant: 'polity',
+    title: 'Річ Посполита',
+    primary: [
+      { label: 'Роки існування', status: 'verified', total: 1,
+        values: [{ label: '11 червня 1569 — 24 жовтня 1795' }] },
+      { label: 'Столиця', status: 'verified', total: 3,
+        values: [{ label: 'Краків' }, { label: 'Варшава' }, { label: 'Вільнюс' }] },
+    ],
+    content_language: 'uk',
+  }
+
+  it('має власний підпис у шапці — «Держава», а не «Пам\'ятка» чи «Особа»', () => {
+    expect(render(RZECZPOSPOLITA).find('.history-card__badge').text()).toBe('Держава')
+  })
+
+  it('англійська картка — «State»', () => {
+    expect(render({ ...RZECZPOSPOLITA, content_language: 'en' })
+      .find('.history-card__badge').text()).toBe('State')
+  })
+
+  it('кілька столиць — звичайні значення без бейджа розбіжності', () => {
+    const w = render(RZECZPOSPOLITA)
+    expect(w.text()).toContain('Краків')
+    expect(w.find('.history-card__mixed').exists()).toBe(false)
+  })
+
+  it('кожен вид, який пропускає санітайзер, має свій підпис у рендерері', () => {
+    // Розрив між цими двома списками й перетворив би державу на «Особу».
+    const badges = HISTORY_VARIANTS.map(variant =>
+      render({ variant: variant as HistoryCardData['variant'], title: 'X', primary: [] })
+        .find('.history-card__badge').text())
+    expect(new Set(badges).size).toBe(HISTORY_VARIANTS.length)
+    expect(HISTORY_VARIANTS).toContain('polity')
   })
 })

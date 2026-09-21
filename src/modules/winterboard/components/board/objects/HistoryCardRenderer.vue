@@ -219,6 +219,7 @@ const VARIANT_STYLES = {
   person:   { icon: '◍', accent: '#4338ca', border: '#c7d2fe', badge_uk: 'Особа',   badge_en: 'Person' },
   event:    { icon: '◈', accent: '#b45309', border: '#fde68a', badge_uk: 'Подія',   badge_en: 'Event' },
   monument: { icon: '▣', accent: '#047857', border: '#a7f3d0', badge_uk: "Пам'ятка", badge_en: 'Monument' },
+  polity:   { icon: '⬢', accent: '#9f1239', border: '#fecdd3', badge_uk: 'Держава', badge_en: 'State' },
 } as const
 
 /** Підписи мовою МАТЕРІАЛУ, не UI-локалі — дзеркало theory_card. */

@@ -528,7 +528,9 @@ export type WBSourceStatus = 'verified' | 'mixed' | 'teacher_provided'
  * зберігають і передають, але `id` НЕ тлумачать: `Q517` сьогодні, щось інше
  * завтра — формат картки від цього не зміниться.
  */
-export type HistoryCardVariant = 'person' | 'event' | 'monument'
+// `polity` — державне утворення (Гетьманщина, Київська Русь, Річ Посполита, Україна).
+// Внутрішня назва ширша за «держава», щоб не звузити контракт до сучасних держав.
+export type HistoryCardVariant = 'person' | 'event' | 'monument' | 'polity'
 
 /** `mixed` — джерела розходяться; картка показує це бейджем, не помилкою. */
 export type HistoryFieldStatus = 'verified' | 'mixed'
