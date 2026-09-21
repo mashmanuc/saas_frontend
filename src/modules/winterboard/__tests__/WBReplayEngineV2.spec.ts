@@ -122,27 +122,26 @@ describe('WBReplayEngineV2 — findIndexBySeq (C9 fix)', () => {
     expect(buggySessionLevelIndex < clampedIdx).toBe(false) // confirms the original bug
   })
 
-  it('C9b regression: snapEngineIdx === clampedIdx (snapshot exactly at target) must be accepted (delta=0)', () => {
-    // Bug observed in prod logs: target_idx=2088, snap_engine_idx=2088 → fallback with `<`
-    // Fix: condition changed to `<=` so delta=0 snapshot is accepted and loaded directly.
+  it('C9b (переглянуто 2026-09-22): знімок = стан ПІСЛЯ своєї op → для seek(T) годиться знімок на op[T-1], не на op[T]', () => {
+    // Спершу (прод-лог target_idx=2088, snap_engine_idx=2088) умову послабили до
+    // `<=`, вважаючи знімок на op[T] станом «перед T». Але ops_worker пише знімок
+    // ПІСЛЯ застосування op S (включно), тож знімок на op[T] уже містить op[T], і
+    // гра з T застосовувала її вдруге (addAsset не дедуплікує → подвійний об'єкт).
+    // useReplayV2 тепер шукає знімок для op[T-1] і бере дельту з snapEngineIdx+1
+    // (поведінку стережуть replaySeekForensics A/E).
     const ops: BoardOperation[] = []
     for (let i = 0; i < 100; i++) {
       ops.push(makeOp(i, 1000 + i, '2026-01-01T00:00:00.000Z'))
     }
     const engine = new WBReplayEngineV2(makeTimeline(ops))
-    // Snapshot at seq=1050 → engine index 50
-    const snapEngineIdx = engine.findIndexBySeq(1050)
-    expect(snapEngineIdx).toBe(50)
-
-    // seek target is also engine index 50 (snapshot exactly at target)
-    const clampedIdx = 50
-    const MAX_DELTA_OPS = 150
-    const deltaOps = clampedIdx - snapEngineIdx  // = 0
-
-    // With <= condition: 50 <= 50 AND 0 <= 150 → snapshot accepted
-    expect(snapEngineIdx >= 0 && snapEngineIdx <= clampedIdx && deltaOps <= MAX_DELTA_OPS).toBe(true)
-    // With old < condition: 50 < 50 → FALSE → wrongly rejected
-    expect(snapEngineIdx < clampedIdx).toBe(false) // confirms the C9b bug
+    const T = 51
+    const lastToApply = engine.getOperationAt(T - 1)!
+    // знімок, знайдений для seq op[T-1], лежить не пізніше T-1
+    const snapEngineIdx = engine.findIndexBySeq(lastToApply.seq as number)
+    expect(snapEngineIdx).toBe(T - 1)
+    const deltaOps = T - (snapEngineIdx + 1)
+    expect(deltaOps).toBe(0)
+    expect(snapEngineIdx < T).toBe(true)
   })
 
   it('C9: findIndexBySeq at index 0 (snapshot at session start of replay)', () => {
