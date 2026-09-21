@@ -158,7 +158,8 @@
       <button
         type="button"
         class="gc-insp__add-btn"
-        @click="b.onAddExpression()"
+        data-testid="gc-insp-add-expr"
+        @click="addExpressionAndFocus"
       >{{ t('winterboard.graphCalc.addExpression') }}</button>
     </div>
 
@@ -319,6 +320,25 @@ async function startEdit(id: string): Promise<void> {
 function onInputBlur(id: string): void {
   editingId.value = null   // reset UI-стан завжди, навіть якщо bridge вже null
   graphCalcInspectorState.bridge?.onInputBlur(id)
+}
+// «+ вираз» натискають, щоб ПИСАТИ: курсор одразу в новому (порожньому) полі.
+// Без цього фокус лишався на кнопці й набір ішов у нікуди (власник 2026-09-21).
+// Новий рядок шукаємо різницею id — контракт мосту (onAddExpression(): void)
+// не міняється. Після await міст міг зникнути (клік повз картку) — звідси `?.`.
+async function addExpressionAndFocus(): Promise<void> {
+  const bridge = graphCalcInspectorState.bridge
+  if (!bridge) return
+  const before = new Set(bridge.displayExpressions.map((e) => e.id))
+  bridge.onAddExpression()
+  await nextTick()
+  const added = graphCalcInspectorState.bridge?.displayExpressions.find((e) => !before.has(e.id))
+  if (!added) return
+  // Порожній рядок — завжди plain input: mqEditing міг лишитись true від
+  // попереднього редагування іншого рядка, і тоді змонтувався б MathQuill.
+  mqEditing.value = false
+  editingId.value = added.id
+  await nextTick()
+  rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(added.id)}"]`)?.focus()
 }
 function onRangeMinChange(name: string, value: string): void {
   graphCalcInspectorState.bridge?.onRangeMinChange(name, value)

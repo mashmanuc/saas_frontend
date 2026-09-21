@@ -123,6 +123,7 @@
             <input
               type="text"
               class="gc-input"
+              :data-expr-id="expr.id"
               :value="expr.src"
               :placeholder="idx === 0 ? t('winterboard.widget.graphCalc.exprPlaceholder') : ''"
               @input="onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
@@ -201,7 +202,7 @@
           type="button"
           class="gc-add-btn"
           data-testid="graph-calc-add-expr"
-          @click="onAddExpression"
+          @click="onInlineAddExpression"
         >+ add</button>
 
         <!-- Phase G4: inline quick-add templates (заміщає sidebar context panel).
@@ -354,7 +355,7 @@
 
 <script setup lang="ts">
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GraphCalculator, GraphCalc } from '../../../vendor/graph_calculator/graph-calculator.js'
 import type { WBAsset } from '../../../types/winterboard'
@@ -1220,7 +1221,7 @@ function genId(): string {
   return 'expr-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 }
 
-function onAddExpression() {
+function onAddExpression(): string | undefined {
   if (!calc || !props.interactive) return
   // FE-RULE-3: store/wrapper assigns id.
   const id = genId()
@@ -1234,6 +1235,16 @@ function onAddExpression() {
   const d = props.asset.data as { meta?: { last_snapshot_seq?: number } } | undefined
   lastAppliedSeq = (d && d.meta && d.meta.last_snapshot_seq) || lastAppliedSeq
   // calc.onChange wrapper auto-fires snapshot debounce.
+  return id
+}
+
+// «+ add» натиснули, щоб ПИСАТИ — курсор одразу в новому полі. Без цього фокус
+// лишався на кнопці, і набір ішов у нікуди (живий прогін власника 2026-09-21).
+async function onInlineAddExpression(): Promise<void> {
+  const id = onAddExpression()
+  if (!id) return
+  await nextTick()
+  rootEl.value?.querySelector<HTMLInputElement>(`input.gc-input[data-expr-id="${CSS.escape(id)}"]`)?.focus()
 }
 
 // Phase G4: inline quick-add templates (під «+ add» button).

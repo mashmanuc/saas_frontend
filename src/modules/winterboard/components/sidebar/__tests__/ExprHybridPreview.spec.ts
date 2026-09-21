@@ -20,6 +20,7 @@ import {
 } from '../../../board/state/calculusUiState'
 import {
   __resetGraphCalcInspectorForTests,
+  graphCalcInspectorState,
   registerGraphCalcInspector,
   type GraphCalcInspectorBridge,
 } from '../../../board/state/graphCalcInspectorState'
@@ -197,6 +198,55 @@ describe('GraphCalcInspector — MQ-поле НЕ розмонтовується
     await flushPromises()
     expect(row.find('.gc-insp__expr-input').exists()).toBe(true)
     expect(row.find('.wb-mq-field').exists()).toBe(false)
+    w.unmount()
+  })
+})
+
+// ─── «+ вираз» → курсор одразу в новому полі (власник, 2026-09-21) ───────
+// Баг: рядок додавався, а фокус лишався на кнопці — набір ішов у нікуди.
+// Другий шлях: після MathQuill-редагування іншого рядка mqEditing лишався
+// true, і новий порожній рядок змонтувався б як MQ, а не як поле вводу.
+describe('GraphCalcInspector — «+ вираз» фокусує новий рядок', () => {
+  beforeEach(() => {
+    __resetMathQuillLoaderForTests()
+    installFakeMQGlobal()
+    __resetGraphCalcInspectorForTests()
+    const bridge = gcBridge()
+    bridge.displayExpressions = [bridge.displayExpressions[0]]
+    bridge.onAddExpression = () => {
+      graphCalcInspectorState.bridge!.displayExpressions.push(
+        { id: 'new-1', src: '', color: '#00c', hidden: false, isParam: false },
+      )
+    }
+    registerGraphCalcInspector('gc-add-1', bridge)
+  })
+
+  afterEach(() => {
+    delete (window as never as { MathQuill?: unknown }).MathQuill
+    __resetMathQuillLoaderForTests()
+  })
+
+  async function addAndCheckFocus(w: ReturnType<typeof mount>): Promise<void> {
+    await w.find('[data-testid="gc-insp-add-expr"]').trigger('click')
+    await flushPromises()
+    const input = w.find('input[data-expr-id="new-1"]')
+    expect(input.exists()).toBe(true)
+    expect(document.activeElement).toBe(input.element)
+  }
+
+  it('без попереднього редагування', async () => {
+    const w = mount(GraphCalcInspector, { attachTo: document.body, global: { plugins: [i18nPlugin()] } })
+    await addAndCheckFocus(w)
+    w.unmount()
+  })
+
+  it('після MathQuill-редагування іншого рядка — все одно plain input з фокусом', async () => {
+    const w = mount(GraphCalcInspector, { attachTo: document.body, global: { plugins: [i18nPlugin()] } })
+    await w.findAll('.gc-insp__expr-row')[0].find('.gc-insp__expr-preview').trigger('click')
+    await flushPromises()
+    expect(w.find('.wb-mq-field').exists()).toBe(true)
+    await addAndCheckFocus(w)
+    expect(w.findAll('.gc-insp__expr-row')[1].find('.wb-mq-field').exists()).toBe(false)
     w.unmount()
   })
 })
