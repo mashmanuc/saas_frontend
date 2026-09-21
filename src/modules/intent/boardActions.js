@@ -24,41 +24,148 @@ function _uuid() {
     : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-// Розкладка послідовних вставок по сітці.
+// Розкладка вставок — за ТИМ, ЩО ВЖЕ ЛЕЖИТЬ на сторінці.
 //
-// ⚠️ БУВ КАСКАД НА 28 px — і він НЕ виконував того, що обіцяв коментар
-// («щоб не лягали одна на одну»). Картка теорії — 520×380, тож зсув 28 px
-// накривав попередню на 95%. Живий тест власника 2026-09-06 (Хмельницький
-// і двоє синів: 3 картки + 3 портрети) перетворив сторінку на купу, де
-// нижні картки не прочитати. Число 28 просто ніхто не звірив з розміром
-// того, що кладеться.
+// Історія двох помилок:
+// 1) каскад на 28 px (до 2026-09-06): картка 520 px накривала попередню на 95%;
+// 2) сітка слотів 560×420 з лічильником у пам'яті модуля (до 2026-09-21).
+//    Браузерне приймання Next Actions (Полтавська битва) дало 11 перекриттів на
+//    7 об'єктах: лічильник після перезавантаження сторінки починав знову з
+//    нуля й клав довідку ТОЧНО на картку події, а карта (680×520) і картки, що
+//    доросли під вміст, не вміщались у слот 560×420 і лізли на сусідів.
 //
-// Тепер крок — реальний слід картки з проміжком, а слоти рахуються від
-// РОЗМІРУ СТОРІНКИ, а не з припущення про 1920×1080: на вужчій сторінці
-// колонок буде менше, і сітка лишиться в межах полотна.
-const SLOT_W = 560          // 520 картка + 40 проміжок
-const SLOT_H = 420          // 380 картка + 40 проміжок
-let _cascade = 0
+// Тепер місце шукається серед реальних прямокутників сторінки й реального
+// розміру того, що кладемо: перша вільна позиція в порядку читання (зверху
+// вниз, зліва направо) з проміжком GAP. `reserveH` — висота, яку об'єкт займе
+// ПІСЛЯ підгонки під вміст (картки ростуть донизу), щоб сусід знизу не
+// опинився під ним.
+//
+// Вільного місця немає — найменше перекриття в межах сторінки (не «в ту саму
+// точку»). Для набору з кількох об'єктів (Next Actions) це вирішує виклик:
+// `planFitsCurrentPage` каже, чи набір вміститься, і якщо ні — набір іде на нову
+// сторінку (див. `nextActions.js`).
+const PLACE_MARGIN = 40
+const PLACE_GAP = 40
 
-function _center(page) {
-  const pw = page.width ?? 1920
-  const ph = page.height ?? 1080
-  const cols = Math.max(1, Math.floor(pw / SLOT_W))
-  const rows = Math.max(1, Math.floor(ph / SLOT_H))
-  const n = _cascade++
-  const slot = n % (cols * rows)
-  const col = slot % cols
-  const row = Math.floor(slot / cols)
-  // сітку центруємо на сторінці, щоб поля були однакові з обох боків
-  const marginX = (pw - cols * SLOT_W) / 2
-  const marginY = (ph - rows * SLOT_H) / 2
-  // після повного кола — зсув на пів-проміжку, щоб новий шар було видно,
-  // а не сплутати з попереднім
-  const wrap = Math.floor(n / (cols * rows)) * 20
-  return {
-    cx: Math.round(marginX + col * SLOT_W + SLOT_W / 2 + wrap),
-    cy: Math.round(marginY + row * SLOT_H + SLOT_H / 2 + wrap),
+// ⚠️ Вміст карток має ЕКРАННИЙ розмір, а auto-fit (INV-25) переводить його в
+// одиниці дошки через поточний зум: на зумі 0.37 та сама картка виростає до
+// ~1000 одиниць, на зумі 1 — до ~440. Тому резерв висоти ділимо на той самий
+// зум (живе приймання 2026-09-21: без цього четверта «сторона» лягла під третю,
+// що виросла вже після розкладки). Зум — лише читання стану перегляду.
+let _viewZoom = 1
+
+function _reserveFor(h, reserveH, ph) {
+  const zoom = _viewZoom > 0 ? Math.min(_viewZoom, 1) : 1
+  return Math.min(Math.max(h, Math.ceil(reserveH / zoom)), ph - 2 * PLACE_MARGIN)
+}
+
+function _pageSize(page) {
+  return { pw: page?.width ?? 1920, ph: page?.height ?? 1080 }
+}
+
+function _occupied(page) {
+  return (page?.assets ?? [])
+    .filter((a) => Number.isFinite(a?.x) && Number.isFinite(a?.y) && a.w > 0 && a.h > 0)
+    .map((a) => ({ x: a.x, y: a.y, w: a.w, h: a.h }))
+}
+
+function _overlapArea(a, b) {
+  const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+  const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  return ix > 0 && iy > 0 ? ix * iy : 0
+}
+
+/** Перша вільна позиція (лівий верхній кут) або `null`, якщо місця немає. */
+export function findFreeSpot(rects, w, h, pw = 1920, ph = 1080) {
+  const xs = [PLACE_MARGIN, ...rects.map((r) => r.x + r.w + PLACE_GAP)]
+  const ys = [PLACE_MARGIN, ...rects.map((r) => r.y + r.h + PLACE_GAP)]
+  const uniq = (list) => [...new Set(list.map((v) => Math.round(v)))].sort((a, b) => a - b)
+  for (const y of uniq(ys)) {
+    if (y + h > ph) continue
+    for (const x of uniq(xs)) {
+      if (x + w > pw) continue
+      const box = { x: x - PLACE_GAP / 2, y: y - PLACE_GAP / 2, w: w + PLACE_GAP, h: h + PLACE_GAP }
+      if (rects.every((r) => _overlapArea(box, r) === 0)) return { x, y }
+    }
   }
+  return null
+}
+
+function _leastOverlapSpot(rects, w, h, pw, ph) {
+  const maxX = Math.max(0, pw - w)
+  const maxY = Math.max(0, ph - h)
+  let best = { x: Math.min(PLACE_MARGIN, maxX), y: Math.min(PLACE_MARGIN, maxY) }
+  let bestArea = Infinity
+  for (let y = 0; y <= maxY; y += 40) {
+    for (let x = 0; x <= maxX; x += 40) {
+      const box = { x, y, w, h }
+      const area = rects.reduce((sum, r) => sum + _overlapArea(box, r), 0)
+      if (area < bestArea) { best = { x, y }; bestArea = area }
+      if (area === 0) return best
+    }
+  }
+  return best
+}
+
+/**
+ * Центр для нового об'єкта `w`×`h` (усі обробники рахують x/y від центру).
+ * `reserveH` — скільки він займе після підгонки під вміст.
+ */
+function _center(page, w = 520, h = 380, reserveH = h) {
+  const { pw, ph } = _pageSize(page)
+  const rects = _occupied(page)
+  const need = _reserveFor(h, reserveH, ph)
+  const spot = findFreeSpot(rects, w, need, pw, ph) ?? _leastOverlapSpot(rects, w, need, pw, ph)
+  return { cx: Math.round(spot.x + w / 2), cy: Math.round(spot.y + h / 2) }
+}
+
+// Слід, який об'єкт займе на сторінці: [ширина, висота після підгонки].
+// Має збігатися з розмірами в обробниках нижче (guard — `boardLayout.spec`).
+//
+// Висоти після підгонки — з живого приймання 2026-09-21: картка держави чи
+// особи виростає до ~420–540, довідка — до ~480. Резерв 440 + проміжок 40
+// дає дві смуги карток на сторінці 1080; вища картка залазить хіба в проміжок.
+const FOOTPRINT = {
+  add_history_card: [520, 440],
+  add_card: [520, 440],
+  add_map: [680, 520],
+  add_timeline: [760, 440],
+  add_formula: [380, 110],
+  add_graph: [480, 360],
+  add_image: [480, 400],
+  add_text: [320, 40],
+}
+
+/**
+ * Чи вміститься весь набір дій на поточній сторінці без перекриттів.
+ * Нічого не пише: розкладка лише симулюється на копії прямокутників.
+ */
+export async function planFitsCurrentPage(actions) {
+  const { page } = await _store()
+  const { pw, ph } = _pageSize(page)
+  const rects = _occupied(page)
+  for (const action of actions || []) {
+    const size = FOOTPRINT[action?.kind]
+    if (!size) continue
+    const [w, reserveH] = size
+    const h = _reserveFor(0, reserveH, ph)
+    const spot = findFreeSpot(rects, w, h, pw, ph)
+    if (!spot) return false
+    rects.push({ x: spot.x, y: spot.y, w, h })
+  }
+  return true
+}
+
+/**
+ * Нова сторінка для набору, що не вміщується на поточній, — тим самим шляхом,
+ * що й кнопка «+ Додати сторінку» (`addPageUndoable` → штатний `page_add`).
+ * Дошка переходить на неї: учитель бачить результат, а не купу.
+ */
+export async function openPageForPlan(name) {
+  const { store } = await _store()
+  const id = store.addPageUndoable({ name: name ? String(name).slice(0, 80) : undefined })
+  if (!id) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
+  return id
 }
 
 async function _store() {
@@ -66,6 +173,7 @@ async function _store() {
   const store = useWBStore()
   const page = store.currentPage
   if (!page) throw new Error('Дошка ще не завантажилась — спробуйте за мить.')
+  _viewZoom = Number(store.zoom) || 1
   return { store, page }
 }
 
@@ -366,7 +474,7 @@ const HANDLERS = {
   // Коридор (LAW §9.D): мова й провенанс — у `stroke.data`, як у картки в `asset.data`.
   async add_text({ text, corridor }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 320, 40)
     const material = corridorData(corridor)
     store.addStroke({
       id: _uuid(),
@@ -394,7 +502,6 @@ const HANDLERS = {
     if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
     if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
     const MAX_W = 480
     let width = Number(w) || 0
     let height = Number(h) || 0
@@ -404,6 +511,8 @@ const HANDLERS = {
     } else {
       width = 360; height = 360
     }
+    // + рядок підпису джерела під картинкою
+    const { cx, cy } = _center(page, width, height, height + 40)
     const assetId = _uuid()
     store.addAsset({
       id: assetId,
@@ -458,7 +567,7 @@ const HANDLERS = {
   // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру)
   async add_formula({ latex }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 380, 110)
     const assetId = _uuid()
     store.addAsset({
       id: assetId,
@@ -493,7 +602,7 @@ const HANDLERS = {
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
   async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 760, 440)
     const assetId = _uuid()
     store.addAsset({
       id: assetId, type: 'timeline_card', src: '',
@@ -517,7 +626,7 @@ const HANDLERS = {
   // H3: карта подій. Та сама механіка, що у шкали.
   async add_map({ title, basemap, markers, routes, regions, knowledge_set_id, corridor, sources, source_status }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 680, 520)
     const assetId = _uuid()
     store.addAsset({
       id: assetId, type: 'map_card', src: '',
@@ -555,7 +664,7 @@ const HANDLERS = {
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
                            corridor, sources, source_status, entity_ref }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 520, 380, 440)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
     if (!titleValue) return
     const primaryFields = sanitizeHistoryFields(primary)
@@ -595,7 +704,7 @@ const HANDLERS = {
 
   async add_card({ title, body, badge, preset, corridor, sources, source_status }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 520, 380, 440)
     const assetId = _uuid()
     const badgeValue = badge || ''
     const titleValue = title || ''
@@ -667,7 +776,7 @@ const HANDLERS = {
     if (!newId) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
     if (card && (card.title || card.body)) {
       const page = store.currentPage
-      const { cx, cy } = _center(page)
+      const { cx, cy } = _center(page, 520, 380, 440)
       store.addAsset({
         id: _uuid(),
         type: 'theory_card',
@@ -692,7 +801,7 @@ const HANDLERS = {
 
   async add_graph({ expressions, expression, params }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page)
+    const { cx, cy } = _center(page, 480, 360)
     const W = 480; const H = 360
     // «y=sin(x)» → src «sin(x)» (голий вираз рендериться як y=f(x))
     const strip = (s) => String(s ?? '').replace(/^\s*y\s*=\s*/i, '').trim()

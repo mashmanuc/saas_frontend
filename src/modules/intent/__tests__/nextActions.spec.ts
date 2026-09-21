@@ -13,15 +13,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const m = vi.hoisted(() => ({
   post: vi.fn(),
   runBoardAction: vi.fn(async () => {}),
+  planFits: vi.fn(async () => true),
+  openPage: vi.fn(async () => 'page-2'),
+  notifyInfo: vi.fn(),
   notifyWarning: vi.fn(),
   notifyError: vi.fn(),
 }))
 
 vi.mock('../../../utils/apiClient', () => ({ default: { post: m.post } }))
-vi.mock('../../../utils/notify', () => ({ notifyWarning: m.notifyWarning, notifyError: m.notifyError }))
+vi.mock('../../../utils/notify', () => ({
+  notifyInfo: m.notifyInfo, notifyWarning: m.notifyWarning, notifyError: m.notifyError,
+}))
 vi.mock('../boardActions', async (orig) => ({
   ...(await orig<typeof import('../boardActions')>()),
   runBoardAction: m.runBoardAction,
+  planFitsCurrentPage: m.planFits,
+  openPageForPlan: m.openPage,
 }))
 vi.mock('@/modules/winterboard/stores/opsSyncStore', () => ({
   useOpsSyncStore: () => ({ sessionId: 'board-1' }),
@@ -82,6 +89,39 @@ describe('runNextAction', () => {
     })
     expect(m.runBoardAction.mock.calls.map((c: any[]) => c[0].payload.title))
       .toEqual(['Шведська імперія', 'Гетьманщина'])
+  })
+
+  it('набір вміщується — лишається на поточній сторінці', async () => {
+    m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
+      { kind: 'add_history_card', payload: { title: 'A' } }] })
+    await runNextAction(SOURCE, SIDES)
+    expect(m.openPage).not.toHaveBeenCalled()
+  })
+
+  it('набір не вміщується — нова сторінка з назвою дії, потім ті самі кроки', async () => {
+    m.planFits.mockResolvedValueOnce(false)
+    m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
+      { kind: 'add_history_card', payload: { title: 'A' } }] })
+    const card = { ...SOURCE, data: { ...SOURCE.data, title: 'Полтавська битва' } }
+    await runNextAction(card, SIDES)
+    expect(m.openPage).toHaveBeenCalledWith('Полтавська битва — Сторони битви')
+    expect(m.notifyInfo).toHaveBeenCalled()
+    expect(m.openPage.mock.invocationCallOrder[0])
+      .toBeLessThan(m.runBoardAction.mock.invocationCallOrder[0])
+  })
+
+  it('нова сторінка теж заповнилась — продовження на ще одній, без перекриттів', async () => {
+    // Увесь набір не вміщується (1), перший крок на новій сторінці вміщується (2),
+    // другий — вже ні (3): відкривається «(2)».
+    m.planFits.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
+      { kind: 'add_history_card', payload: { title: 'A' } },
+      { kind: 'add_history_card', payload: { title: 'B' } }] })
+    const card = { ...SOURCE, data: { ...SOURCE.data, title: 'Полтавська битва' } }
+    await runNextAction(card, SIDES)
+    expect(m.openPage.mock.calls.map((c: unknown[]) => c[0])).toEqual([
+      'Полтавська битва — Сторони битви', 'Полтавська битва — Сторони битви (2)'])
+    expect(m.runBoardAction).toHaveBeenCalledTimes(2)
   })
 
   it('немає результату — чесне попередження, на дошку нічого не кладемо', async () => {

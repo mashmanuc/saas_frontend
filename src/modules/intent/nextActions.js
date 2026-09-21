@@ -12,8 +12,13 @@
  * немає ні кнопок, ні запитів.
  */
 import apiClient from '../../utils/apiClient'
-import { notifyError, notifyWarning } from '../../utils/notify'
-import { runBoardAction, sanitizeTeachingActions } from './boardActions'
+import { notifyError, notifyInfo, notifyWarning } from '../../utils/notify'
+import {
+  openPageForPlan,
+  planFitsCurrentPage,
+  runBoardAction,
+  sanitizeTeachingActions,
+} from './boardActions'
 
 const inFlight = new Set()
 // Одна сутність — один запит за сесію сторінки: картку перемальовують часто,
@@ -73,10 +78,30 @@ export async function runNextAction(source, action) {
       notifyWarning(plan.explain || 'Для цієї дії зараз немає результату.')
       return
     }
-    for (const step of plan.actions || []) {
+    const steps = plan.actions || []
+    // Результат дії кладеться ЦІЛИМ набором: не вміщується на сторінці без
+    // перекриттів — іде на нову сторінку, а не лягає на те, що вже є. Якщо й
+    // нова заповнилась (картки виросли під вміст) — продовження ще на одній.
+    const title = typeof source?.data?.title === 'string' ? source.data.title : ''
+    const pageName = title ? `${title} — ${action.label}` : action.label
+    let pagesOpened = 0
+    if (!(await planFitsCurrentPage(steps))) {
+      await openPageForPlan(pageName)
+      pagesOpened += 1
+    }
+    for (const step of steps) {
+      if (pagesOpened && !(await planFitsCurrentPage([step]))) {
+        await openPageForPlan(`${pageName} (${pagesOpened + 1})`)
+        pagesOpened += 1
+      }
       await runBoardAction(step)
       // дати вставці «осісти» — той самий ритм, що в плані палітри
       await new Promise((resolve) => setTimeout(resolve, 130))
+    }
+    if (pagesOpened) {
+      notifyInfo(pagesOpened === 1
+        ? `На сторінці не було місця — «${action.label}» на новій сторінці.`
+        : `«${action.label}» — на ${pagesOpened} нових сторінках, щоб картки не лягли одна на одну.`)
     }
   } catch (e) {
     notifyError(`Не вдалося виконати «${action.label}»: ${e?.message || 'невідома помилка'}`)

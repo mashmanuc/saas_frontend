@@ -401,6 +401,9 @@ useCardContentFit({
     () => [...fieldsOpen.value].join(','),
     () => data.value.content_language,
     () => presentationScaleOf(props.asset),
+    // Рядок «що показати далі» приходить із бекенду вже ПІСЛЯ монтування —
+    // без цього джерела картка не перемірялась, і кнопки ховались під скрол.
+    () => teachingActions.value.map((a) => a.id).join(','),
     () => props.asset.w,
   ],
   emitHeight: (neededPx) => emit('request-height', neededPx),
@@ -486,12 +489,19 @@ useExportCapture(
 .history-card__flow { display: flow-root; }
 
 /* 1 · медіа */
+/* Стеля картинки — частка ШИРИНИ картки, а не 260 екранних px (власник
+   2026-09-21: «при збільшенні/зменшенні картинка ховається»). Картка на екрані
+   ширшає зі зумом, а фіксована стеля лишалась 260 px — `cover` обрізав портрет
+   до смужки очей. Тепер пропорція кадру не залежить від зуму, а `contain`
+   показує портрет цілим (поля — фоном), пейзаж і так вміщається без полів. */
+.history-card__body { container-type: inline-size; }
 .history-card__media { margin: 0 0 14px; }
 .history-card__image {
   display: block;
   width: 100%;
   max-height: 260px;
-  object-fit: cover;
+  max-height: 62cqw;
+  object-fit: contain;
   border-radius: 3px;
   background: #f1f5f9;
 }
