@@ -8932,7 +8932,20 @@
         "rangeCollapse": "Свернуть",
         "rangeExpand": "Настроить диапазон",
         "paramHelp": "{shift}+drag или {icon} — управляет параметром",
-        "paramDragTitle": "Shift+drag по графику управляет параметром ({names})"
+        "paramDragTitle": "Shift+drag по графику управляет параметром ({names})",
+        "addPoint": "+ точка",
+        "quickAddTitle": "Добавить: {src}",
+        "quickCircle": "окружность",
+        "presentEnter": "Режим презентации — скрыть панель, график на весь размер",
+        "presentExit": "Выйти из режима презентации",
+        "paramModeOn": "Управление параметром перетаскиванием ВКЛЮЧЕНО ({names}). Клик — выключить.",
+        "paramModeOff": "Клик — управлять параметром перетаскиванием по графику ({names}). Или удерживайте Shift.",
+        "hintReplace": "Заменить «{token}» на «{suggestion}»",
+        "rangeMin": "мин",
+        "rangeMax": "макс",
+        "rangeStep": "шаг",
+        "zoomHome": "К началу координат",
+        "noTemplatesFor": "Нет шаблонов по «{query}»"
       },
       "helix": {
         "view": "обзор:",

@@ -9534,7 +9534,20 @@
         "rangeCollapse": "Згорнути",
         "rangeExpand": "Налаштувати діапазон",
         "paramHelp": "{shift}+drag або {icon} — керує параметром",
-        "paramDragTitle": "Shift+drag по графіку керує параметром ({names})"
+        "paramDragTitle": "Shift+drag по графіку керує параметром ({names})",
+        "addPoint": "+ точка",
+        "quickAddTitle": "Додати: {src}",
+        "quickCircle": "коло",
+        "presentEnter": "Режим презентації — приховати панель, графік на весь розмір",
+        "presentExit": "Вийти з режиму презентації",
+        "paramModeOn": "Керування параметром перетягуванням УВІМКНЕНО ({names}). Клік — вимкнути.",
+        "paramModeOff": "Клік — керувати параметром перетягуванням по графіку ({names}). Або тримайте Shift.",
+        "hintReplace": "Замінити «{token}» на «{suggestion}»",
+        "rangeMin": "мін",
+        "rangeMax": "макс",
+        "rangeStep": "крок",
+        "zoomHome": "До початку координат",
+        "noTemplatesFor": "Нема шаблонів за «{query}»"
       },
       "helix": {
         "view": "огляд:",

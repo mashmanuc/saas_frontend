@@ -461,6 +461,16 @@ const __GC = (function () {
       requestAnimationFrame(() => this._resize());
     }
 
+    /** Підписи кнопок масштабу мовою інтерфейсу (рушій сам i18n не має;
+     *  українські — лише дефолт для автономного використання). */
+    setZoomLabels(labels) {
+      const map = { in: labels && labels.zoomIn, out: labels && labels.zoomOut, home: labels && labels.home };
+      for (const btn of this.zoomBox.querySelectorAll('.gc-zb')) {
+        const text = map[btn.dataset.z];
+        if (text) { btn.title = text; btn.setAttribute('aria-label', text); }
+      }
+    }
+
     _resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const r = this.container.getBoundingClientRect();

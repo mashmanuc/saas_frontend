@@ -9446,7 +9446,20 @@
         "rangeCollapse": "Collapse",
         "rangeExpand": "Set range",
         "paramHelp": "{shift}+drag or {icon} — controls the parameter",
-        "paramDragTitle": "Shift+drag on the graph controls the parameter ({names})"
+        "paramDragTitle": "Shift+drag on the graph controls the parameter ({names})",
+        "addPoint": "+ point",
+        "quickAddTitle": "Add: {src}",
+        "quickCircle": "circle",
+        "presentEnter": "Presentation mode — hide the panel, graph fills the card",
+        "presentExit": "Exit presentation mode",
+        "paramModeOn": "Drag-to-control parameter is ON ({names}). Click to turn off.",
+        "paramModeOff": "Click to control the parameter by dragging the graph ({names}). Or hold Shift.",
+        "hintReplace": "Replace “{token}” with “{suggestion}”",
+        "rangeMin": "min",
+        "rangeMax": "max",
+        "rangeStep": "step",
+        "zoomHome": "Back to origin",
+        "noTemplatesFor": "No templates for “{query}”"
       },
       "helix": {
         "view": "view:",

@@ -63,8 +63,8 @@
         class="gc-present-btn"
         :class="{ 'is-active': uiState.presenting }"
         :title="uiState.presenting
-          ? 'Вийти з режиму презентації'
-          : 'Режим презентації — приховати панель, plot на весь розмір'"
+          ? t('winterboard.widget.graphCalc.presentExit')
+          : t('winterboard.widget.graphCalc.presentEnter')"
         data-testid="graph-calc-present-btn"
         @click.stop="onTogglePresenting"
       >{{ uiState.presenting ? '◧' : '◨' }}</button>
@@ -80,9 +80,9 @@
         :disabled="!paramModeAvailable"
         :title="paramModeAvailable
           ? (uiState.paramMode
-              ? `Керування параметром drag-ом УВІМКНЕНО (${dragParamNames.join(', ')}). Клік — вимкнути.`
-              : `Клік — керувати параметром drag-ом по графіку (${dragParamNames.join(', ')}). Або тримайте Shift.`)
-          : 'Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра'"
+              ? t('winterboard.widget.graphCalc.paramModeOn', { names: dragParamNames.join(', ') })
+              : t('winterboard.widget.graphCalc.paramModeOff', { names: dragParamNames.join(', ') }))
+          : t('winterboard.graphCalc.shiftDragOneParam')"
         data-testid="graph-calc-param-mode-btn"
         @click.stop="onToggleParamMode"
       >
@@ -93,7 +93,7 @@
         v-if="!hostWindowControls && (interactive && !asset.locked)"
         type="button"
         class="gc-delete"
-        title="Delete"
+        :title="t('winterboard.widget.delete')"
         data-testid="graph-calc-delete"
         @click="$emit('delete', asset.id)"
       >×</button>
@@ -167,7 +167,7 @@
                 <span class="gc-slash-item-label">{{ tpl.label }}</span>
               </div>
               <div v-if="slashFilteredTemplates.length === 0" class="gc-slash-empty">
-                Нема шаблонів за «{{ slashPopup.query }}»
+                {{ t('winterboard.widget.graphCalc.noTemplatesFor', { query: slashPopup.query }) }}
               </div>
             </div>
             <!-- Phase G: inline slider removed; sliders rendered ТІЛЬКИ у
@@ -189,7 +189,7 @@
                 <button
                   type="button"
                   class="gc-hint-btn"
-                  :title="`Замінити «${h.token}» на «${h.suggestion}»`"
+                  :title="t('winterboard.widget.graphCalc.hintReplace', { token: h.token, suggestion: h.suggestion })"
                   @click.stop="applyHint(expr.id, h)"
                 >
                   {{ h.token }} → {{ h.suggestion }}
@@ -203,7 +203,7 @@
           class="gc-add-btn"
           data-testid="graph-calc-add-expr"
           @click="onInlineAddExpression"
-        >+ add</button>
+        >{{ t('winterboard.graphCalc.addExpression') }}</button>
 
         <!-- Phase G4: inline quick-add templates (заміщає sidebar context panel).
              Compact pill buttons під «+ add» — не ламає layout, лишається у renderer. -->
@@ -213,10 +213,10 @@
             :key="tpl.src"
             type="button"
             class="gc-quick-btn"
-            :title="`Додати: ${tpl.src}`"
+            :title="t('winterboard.widget.graphCalc.quickAddTitle', { src: tpl.src })"
             :data-testid="`graph-calc-quick-${tpl.id}`"
             @click="onQuickAdd(tpl.src)"
-          >{{ tpl.label }}</button>
+          >{{ tpl.id === 'circle' ? t('winterboard.widget.graphCalc.quickCircle') : tpl.label }}</button>
         </div>
 
         <!-- Phase G4: help hint під параметрами (видно тільки коли є params). -->
@@ -252,7 +252,7 @@
             class="gc-add-btn"
             data-testid="graph-calc-add-point"
             @click="onAddPointAtCenter"
-          >+ point</button>
+          >{{ t('winterboard.widget.graphCalc.addPoint') }}</button>
         </div>
 
         <!-- Phase G: auto-detected param sliders. Renders from store state.params
@@ -263,7 +263,7 @@
              (розгортання авто-виділяє → інспектор у сайтбарі, на оверлеї не дублюємо). -->
         <div v-if="paramEntries.length > 0 && !isSelected" class="gc-params" data-testid="graph-calc-params">
           <div class="gc-params-header">
-            Параметри
+            {{ t('winterboard.graphCalc.params') }}
             <span
               v-if="dragParamNames.length"
               class="gc-params-hint"
@@ -272,7 +272,7 @@
             <span
               v-else
               class="gc-params-hint gc-params-hint--disabled"
-              title="Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра"
+              :title="t('winterboard.graphCalc.shiftDragOneParam')"
             >Shift-drag —</span>
           </div>
           <div
@@ -304,7 +304,7 @@
 
             <div v-if="paramExpanded[p.name]" class="gc-range-editor">
               <label class="gc-range-field">
-                <span>min</span>
+                <span>{{ t('winterboard.widget.graphCalc.rangeMin') }}</span>
                 <input
                   type="number"
                   class="gc-range-input"
@@ -317,7 +317,7 @@
                 />
               </label>
               <label class="gc-range-field">
-                <span>max</span>
+                <span>{{ t('winterboard.widget.graphCalc.rangeMax') }}</span>
                 <input
                   type="number"
                   class="gc-range-input"
@@ -330,7 +330,7 @@
                 />
               </label>
               <label class="gc-range-field">
-                <span>step</span>
+                <span>{{ t('winterboard.widget.graphCalc.rangeStep') }}</span>
                 <input
                   type="number"
                   class="gc-range-input"
@@ -385,7 +385,18 @@ import type { ParamFocus } from '../../../utils/paramFocus'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+// Кнопки масштабу малює сам рушій (без i18n) — підписи передаємо звідси
+// і оновлюємо при зміні мови. `?.` — тестові моки рушія цього методу не мають.
+function applyZoomLabels(): void {
+  ;(calc as any)?.setZoomLabels?.({
+    zoomIn: t('winterboard.room.zoomIn'),
+    zoomOut: t('winterboard.room.zoomOut'),
+    home: t('winterboard.widget.graphCalc.zoomHome'),
+  })
+}
+watch(locale, applyZoomLabels)
 
 interface Props {
   asset: WBAsset
@@ -1020,6 +1031,7 @@ function mountEngine() {
   } finally {
     isApplyingExternalState = false
   }
+  applyZoomLabels()
 
   // FE-RULE-6: install onChange via property guard so card.js (or any other
   // future code) cannot overwrite our wrapper. Internal vendor мутації

@@ -212,7 +212,7 @@
         <!-- Range editor (expanded) -->
         <div v-if="b.paramExpanded[p.name]" class="gc-insp__range-editor">
           <label class="gc-insp__range-field">
-            <span>min</span>
+            <span>{{ t('winterboard.widget.graphCalc.rangeMin') }}</span>
             <input
               type="number"
               class="gc-insp__range-input"
@@ -222,7 +222,7 @@
             />
           </label>
           <label class="gc-insp__range-field">
-            <span>max</span>
+            <span>{{ t('winterboard.widget.graphCalc.rangeMax') }}</span>
             <input
               type="number"
               class="gc-insp__range-input"
@@ -232,7 +232,7 @@
             />
           </label>
           <label class="gc-insp__range-field">
-            <span>step</span>
+            <span>{{ t('winterboard.widget.graphCalc.rangeStep') }}</span>
             <input
               type="number"
               class="gc-insp__range-input"
