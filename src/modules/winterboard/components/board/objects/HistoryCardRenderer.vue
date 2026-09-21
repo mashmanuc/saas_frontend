@@ -132,9 +132,10 @@
           </template>
         </dl>
 
-        <!-- 3½ · що показати далі (Next Actions V1). Кнопки приходять із
-             бекенду готовими й лише тоді, коли за ними є дані; у Replay і під
-             олівцем їх немає. Результат кліку — новий об'єкт дошки. -->
+        <!-- 3½ · що показати далі (Next Actions V1). Кнопки жива картка питає
+             в бекенду за своїм entity_ref (у даних картки їх немає) і лише
+             тоді, коли за ними є дані; у Replay і під олівцем їх немає.
+             Результат кліку — новий об'єкт дошки. -->
         <div v-if="teachingActions.length" class="history-card__actions" role="group"
              :aria-label="labels.nextActions">
           <button
@@ -178,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -208,11 +209,12 @@ const props = withDefaults(
     canOpenEntity?: boolean
     /** Чи є на дошці карта, куди лягла б шпилька. */
     canPinToMap?: boolean
-    /** Чи є кому виконати дію «що далі». Лише живе редагування — у Replay ні. */
-    canRunActions?: boolean
+    /** Хто скаже, які дії «що далі» є в цієї сутності. Є лише в живому
+     *  редагуванні тьютора — у Replay і в учня немає, тож і запиту немає. */
+    loadActions?: (ref: EntityRef) => Promise<WBTeachingAction[]>
   }>(),
   { isSelected: false, interactive: true, canOpenEntity: false, canPinToMap: false,
-    canRunActions: false },
+    loadActions: undefined },
 )
 
 const emit = defineEmits<{
@@ -234,12 +236,26 @@ const flowEl = ref<HTMLElement | null>(null)
 const EMPTY: HistoryCardData = { version: 1, variant: 'person', title: '', primary: [] }
 const data = computed<HistoryCardData>(() => (props.asset.data as HistoryCardData) ?? EMPTY)
 
-/** Дії показуються лише там, де їх є кому виконати, і лише ті, що прийшли з
- *  даними картки. Немає даних — немає кнопки; жодних «вимкнених» заглушок. */
+/** Дії «що далі» — НЕ стан картки (слово власника 2026-09-21): жива картка
+ *  питає їх за своїм entity_ref. Немає даних — немає кнопки; жодних
+ *  «вимкнених» заглушок. Під олівцем приховані, але не перепитуються. */
+const loadedActions = ref<WBTeachingAction[]>([])
+const entityKey = computed(() => {
+  const r = data.value.entity_ref
+  return r?.provider && r?.id ? `${r.provider}:${r.id}` : ''
+})
+let actionsRequest = 0
+watch([() => props.loadActions, entityKey], ([load, key]) => {
+  const ticket = ++actionsRequest
+  loadedActions.value = []
+  const ref0 = data.value.entity_ref
+  if (typeof load !== 'function' || !key || !ref0) return
+  load(ref0).then((list) => {
+    if (ticket === actionsRequest) loadedActions.value = Array.isArray(list) ? list : []
+  })
+}, { immediate: true })
 const teachingActions = computed<WBTeachingAction[]>(() =>
-  props.canRunActions && props.interactive && Array.isArray(data.value.next_actions)
-    ? data.value.next_actions
-    : [])
+  props.interactive ? loadedActions.value : [])
 
 /** Подання відрізняються лише акцентом, іконкою й підписом у шапці. */
 const VARIANT_STYLES = {

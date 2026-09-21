@@ -187,6 +187,15 @@ const ctx = computed<OverlayCtx>(() => ({
           .catch((e) => console.error('[WBOverlayLayer] next action failed', e))
       }
     : undefined,
+  // Список дій — не стан дошки: жива картка питає його в бекенду сама.
+  loadActions: wbStore.mode === 'edit' && props.isTutor
+    ? (entityRef: EntityRef) => import('@/modules/intent/nextActions')
+        .then(({ loadNextActions }) => loadNextActions(entityRef))
+        .catch((e) => {
+          console.error('[WBOverlayLayer] next actions unavailable', e)
+          return []
+        })
+    : undefined,
   // Шпилька на карту — навпаки, суто стан дошки: беремо наявну карту або
   // просимо кімнату створити нову. Нового шляху запису тут немає — усе через
   // той самий `asset-update`.

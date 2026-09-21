@@ -93,8 +93,10 @@ export interface OverlayCtx {
    *  не заміняючи поточну. Необовʼязковий: полотно без цього обробника
    *  просто не має переходів, а картка лишається робочою. */
   onOpenEntity?: (source: WBAsset, ref: EntityRef, label: string) => void
-  /** Next Actions V1: є лише в живому редагуванні. Немає → кнопок немає. */
+  /** Next Actions V1: обидва є лише в живому редагуванні тьютора. Немає →
+   *  ні кнопок, ні запиту за ними (Replay, учень). */
   onRunAction?: (source: WBAsset, action: WBTeachingAction) => void
+  loadActions?: (ref: EntityRef) => Promise<WBTeachingAction[]>
   /** Шпилька на карту дошки. Картка кличе його лише коли координата справді
    *  є місцем події, а не центроїдом країни. */
   onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void
@@ -389,7 +391,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       ...stdProps(asset, ctx),
       canOpenEntity: typeof ctx.onOpenEntity === 'function' && ctx.hasEntityTarget === true,
       canPinToMap: ctx.hasMapCard === true,
-      canRunActions: typeof ctx.onRunAction === 'function',
+      loadActions: typeof ctx.onRunAction === 'function' ? ctx.loadActions : undefined,
     }),
     buildEvents: (asset, ctx) => ({
       ...stdEvents(asset, ctx),

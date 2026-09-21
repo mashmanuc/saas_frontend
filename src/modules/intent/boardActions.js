@@ -553,7 +553,7 @@ const HANDLERS = {
    * значень, тож «—» на картці не з'являється за побудовою.
    */
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
-                           corridor, sources, source_status, entity_ref, next_actions }) {
+                           corridor, sources, source_status, entity_ref }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
@@ -586,11 +586,9 @@ const HANDLERS = {
         expanded: false,
         ...corridorData(corridor),
         ...sourcesData(sources, source_status),
-        // Next Actions V1: власне посилання й дії — записуються разом з карткою,
-        // тож Replay має їх без мережі.
+        // Власне посилання картки. Дій «що далі» тут НЕМАЄ: список кнопок — не
+        // стан дошки (слово власника 2026-09-21); його питає жива картка.
         ...(sanitizeEntityRef(entity_ref) ? { entity_ref: sanitizeEntityRef(entity_ref) } : {}),
-        ...(sanitizeTeachingActions(next_actions).length
-          ? { next_actions: sanitizeTeachingActions(next_actions) } : {}),
       },
     }, page.id ?? '')
   },

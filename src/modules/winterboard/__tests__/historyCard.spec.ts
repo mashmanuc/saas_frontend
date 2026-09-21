@@ -12,8 +12,8 @@
  *   3. Порожнє поле не малює рядок — ніяких «—».
  *   4. Зображення без автора або ліцензії на дошку не йде.
  */
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 import HistoryCardRenderer from '../components/board/objects/HistoryCardRenderer.vue'
 import { HISTORY_VARIANTS } from '../../intent/boardActions'
@@ -38,7 +38,8 @@ function render(
   data: Partial<HistoryCardData>,
   interactive = true,
   // За замовчуванням дії ВИМКНЕНІ — як на дошці, поки немає адресата.
-  caps: { canOpenEntity?: boolean; canPinToMap?: boolean; canRunActions?: boolean } = {},
+  caps: { canOpenEntity?: boolean; canPinToMap?: boolean;
+    loadActions?: (ref: unknown) => Promise<{ id: string; label: string }[]> } = {},
 ) {
   return mount(HistoryCardRenderer, {
     props: { asset: asset(data), interactive, ...caps },
@@ -314,40 +315,64 @@ describe('HistoryCard · вид «Держава» (polity)', () => {
 
 
 describe('HistoryCard · що показати далі (Next Actions V1)', () => {
-  const WITH_ACTIONS: Partial<HistoryCardData> = {
+  // Список дій — НЕ стан картки (слово власника 2026-09-21): у даних лише
+  // entity_ref, а кнопки жива картка питає через loadActions.
+  const CARD: Partial<HistoryCardData> = {
     ...POLTAVA,
     entity_ref: { provider: 'wikidata', id: 'Q152486' },
-    next_actions: [
-      { id: 'history.context', label: 'Передумови й наслідки' },
-      { id: 'history.related', label: 'Сторони битви' },
-      { id: 'history.map', label: 'Де це сталося' },
-    ],
   }
+  const ACTIONS = [
+    { id: 'history.context', label: 'Передумови й наслідки' },
+    { id: 'history.related', label: 'Сторони битви' },
+    { id: 'history.map', label: 'Де це сталося' },
+  ]
+  const loader = (list = ACTIONS) => vi.fn(async () => list)
 
-  it('кнопки — рівно ті, що прийшли з даними, у тому ж порядку', () => {
-    const w = render(WITH_ACTIONS, true, { canRunActions: true })
+  it('кнопки — рівно ті, що повернув бекенд, у тому ж порядку', async () => {
+    const load = loader()
+    const w = render(CARD, true, { loadActions: load })
+    await flushPromises()
+    expect(load).toHaveBeenCalledWith({ provider: 'wikidata', id: 'Q152486' })
     expect(w.findAll('.history-card__action').map(b => b.text()))
       .toEqual(['Передумови й наслідки', 'Сторони битви', 'Де це сталося'])
   })
 
   it('клік просить виконати дію — картка сама нічого не будує', async () => {
-    const w = render(WITH_ACTIONS, true, { canRunActions: true })
+    const w = render(CARD, true, { loadActions: loader() })
+    await flushPromises()
     await w.findAll('.history-card__action')[1].trigger('click')
     expect(w.emitted('run-action')![0]).toEqual([{ id: 'history.related', label: 'Сторони битви' }])
   })
 
-  it('немає кому виконати (Replay, учень) — кнопок немає взагалі', () => {
-    expect(render(WITH_ACTIONS, true, { canRunActions: false })
-      .find('.history-card__actions').exists()).toBe(false)
+  it('немає кому спитати (Replay, учень) — ні кнопок, ні запиту', async () => {
+    const w = render(CARD, true, {})
+    await flushPromises()
+    expect(w.find('.history-card__actions').exists()).toBe(false)
   })
 
-  it('під олівцем кнопок немає', () => {
-    expect(render(WITH_ACTIONS, false, { canRunActions: true })
-      .find('.history-card__actions').exists()).toBe(false)
+  it('список, що лишився в даних старої картки, ігнорується', async () => {
+    const stale = { ...CARD, next_actions: ACTIONS } as Partial<HistoryCardData>
+    const w = render(stale, true, { loadActions: loader([]) })
+    await flushPromises()
+    expect(w.find('.history-card__actions').exists()).toBe(false)
   })
 
-  it('немає даних — немає кнопки: жодних вимкнених заглушок', () => {
-    const w = render({ ...POLTAVA, next_actions: [] }, true, { canRunActions: true })
+  it('без entity_ref запиту немає', async () => {
+    const load = loader()
+    render(POLTAVA, true, { loadActions: load })
+    await flushPromises()
+    expect(load).not.toHaveBeenCalled()
+  })
+
+  it('під олівцем кнопок немає', async () => {
+    const w = render(CARD, false, { loadActions: loader() })
+    await flushPromises()
+    expect(w.find('.history-card__actions').exists()).toBe(false)
+  })
+
+  it('немає даних — немає кнопки: жодних вимкнених заглушок', async () => {
+    const w = render(CARD, true, { loadActions: loader([]) })
+    await flushPromises()
     expect(w.find('.history-card__actions').exists()).toBe(false)
     expect(w.find('.history-card__action[disabled]').exists()).toBe(false)
   })

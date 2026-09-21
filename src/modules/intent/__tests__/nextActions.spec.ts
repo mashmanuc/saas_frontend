@@ -28,12 +28,47 @@ vi.mock('@/modules/winterboard/stores/opsSyncStore', () => ({
 }))
 
 import { sanitizeTeachingActions } from '../boardActions'
-import { runNextAction } from '../nextActions'
+import { _resetNextActionsCache, loadNextActions, runNextAction } from '../nextActions'
 
 const SOURCE = { id: 'card-1', data: { entity_ref: { provider: 'wikidata', id: 'Q152486' } } }
 const SIDES = { id: 'history.related', label: 'Сторони битви' }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  _resetNextActionsCache()
+})
+
+describe('loadNextActions — список дій питають, а не зберігають', () => {
+  const REF = { provider: 'wikidata', id: 'Q152486' }
+
+  it('питає бекенд за посиланням картки й чистить відповідь', async () => {
+    m.post.mockResolvedValue({ actions: [{ id: 'history.map', label: 'Де це сталося' },
+      { id: 'P710', label: 'зламане' }] })
+    expect(await loadNextActions(REF)).toEqual([{ id: 'history.map', label: 'Де це сталося' }])
+    expect(m.post).toHaveBeenCalledWith('/v1/intents/next-actions/available/',
+      { board_id: 'board-1', entity_ref: REF })
+  })
+
+  it('одна сутність — один запит, скільки б карток її не показували', async () => {
+    m.post.mockResolvedValue({ actions: [] })
+    await Promise.all([loadNextActions(REF), loadNextActions({ ...REF })])
+    expect(m.post).toHaveBeenCalledTimes(1)
+  })
+
+  it('невдалий запит — порожньо, і наступний пробує знову', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    m.post.mockRejectedValueOnce(new Error('503')).mockResolvedValueOnce({ actions: [] })
+    expect(await loadNextActions(REF)).toEqual([])
+    await loadNextActions(REF)
+    expect(m.post).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it('без посилання — жодного запиту', async () => {
+    expect(await loadNextActions(null)).toEqual([])
+    expect(m.post).not.toHaveBeenCalled()
+  })
+})
 
 describe('runNextAction', () => {
   it('план бекенду кладеться тим самим runBoardAction — крок за кроком', async () => {
@@ -95,5 +130,11 @@ describe('Replay не резолвить дії', () => {
     const src = readFileSync(resolve(__dirname,
       '../../winterboard/components/canvas/WBOverlayLayer.vue'), 'utf-8')
     expect(src).toMatch(/onRunAction: wbStore\.mode === 'edit' && props\.isTutor\s*\n?\s*\?/)
+    expect(src).toMatch(/loadActions: wbStore\.mode === 'edit' && props\.isTutor\s*\n?\s*\?/)
+  })
+
+  it('картка, яку кладе план, не несе списку дій — лише entity_ref', () => {
+    const src = readFileSync(resolve(__dirname, '../boardActions.js'), 'utf-8')
+    expect(src).not.toMatch(/next_actions/)
   })
 })

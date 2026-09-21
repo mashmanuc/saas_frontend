@@ -196,7 +196,8 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
 })
 
 // Next Actions V1 (2026-09-21): кнопки «що далі» — лише коли є обробник.
-// Обробник дає шар оверлеїв тільки в живому редагуванні, тож у Replay їх немає.
+// Обробники дає шар оверлеїв тільки в живому редагуванні, тож у Replay їх немає
+// і картка навіть не питає, які дії доступні.
 describe('overlayRegistry · history_card · дії «що далі»', () => {
   const entry = OVERLAY_RENDERERS.history_card
   const base = {
@@ -207,14 +208,18 @@ describe('overlayRegistry · history_card · дії «що далі»', () => {
   } as any
   const asset = { id: 'hc', type: 'history_card', data: {} } as any
 
-  it('немає обробника → canRunActions=false', () => {
-    expect(entry.buildProps(asset, base).canRunActions).toBe(false)
+  it('немає обробника → картка не отримує, у кого питати дії', () => {
+    const load = async () => []
+    expect(entry.buildProps(asset, base).loadActions).toBeUndefined()
+    expect(entry.buildProps(asset, { ...base, loadActions: load }).loadActions).toBeUndefined()
   })
 
-  it('є обробник → canRunActions=true, а клік доходить до нього з асетом', () => {
+  it('є обробник → картка отримує loadActions, а клік доходить до нього з асетом', () => {
     const calls: unknown[] = []
-    const ctx = { ...base, onRunAction: (src: unknown, action: unknown) => calls.push([src, action]) }
-    expect(entry.buildProps(asset, ctx).canRunActions).toBe(true)
+    const load = async () => []
+    const ctx = { ...base, loadActions: load,
+      onRunAction: (src: unknown, action: unknown) => calls.push([src, action]) }
+    expect(entry.buildProps(asset, ctx).loadActions).toBe(load)
     const action = { id: 'history.map', label: 'Де це сталося' }
     ;(entry.buildEvents(asset, ctx) as any)['run-action'](action)
     expect(calls).toEqual([[asset, action]])

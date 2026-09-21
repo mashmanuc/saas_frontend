@@ -607,11 +607,9 @@ export interface HistoryCardData {
   source_status?: WBSourceStatus
   content_language?: WBMaterialData['content_language']
   provenance?: WBMaterialData['provenance']
-  /** Сама сутність картки — непрозоре посилання, для дій «що далі». */
+  /** Сама сутність картки — непрозоре посилання, для дій «що далі».
+   *  Самих дій у даних картки немає: список кнопок — не стан дошки. */
   entity_ref?: EntityRef
-  /** Доступні дії, пораховані бекендом ОДИН раз під час побудови картки.
-   *  Replay їх не перераховує; порожньо — жодної кнопки. */
-  next_actions?: WBTeachingAction[]
 }
 
 export type HistoryCardAsset = WBAsset & { type: 'history_card'; data: HistoryCardData }
