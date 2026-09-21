@@ -26,6 +26,10 @@ export const NON_SCENE_INSERT_IDS = [
   'quadratic.card',
   'trig.helix',
   'trig.solver',
+  // d10cbc7c (2026-09-18): доказові об'єкти історичного коридору (HistoryCard),
+  // не жива математична сцена — не роздувати метрику «задача → сцена».
+  'evidence.timeline',
+  'evidence.map',
 ]
 
 export function sceneMetricFromAction(action) {
