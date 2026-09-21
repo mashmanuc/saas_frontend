@@ -48,14 +48,27 @@ const mulSide = (n: GcNode): string => (isAdd(n) ? par(n) : toLatex(n))
 const powBase = (n: GcNode): string =>
   (n.kind === 'num' || n.kind === 'ident') ? toLatex(n) : par(n)
 
+/** Клас-маркер параметра в фокусі (Parameter Focus). Його і лише його
+ *  MathExpr пропускає через KaTeX `trust` — див. MathExpr.vue. */
+export const PARAM_FOCUS_SYM_CLASS = 'wb-pf-sym'
+
+// Ідентифікатор для підсвітки в поточному (синхронному) виклику
+// asciiMathToLatex; скидається у finally.
+let _highlightIdent: string | null = null
+
 function toLatex(n: GcNode): string {
   switch (n.kind) {
     case 'num':
       return Number.isFinite(n.v)
         ? String(parseFloat((n.v as number).toPrecision(10)))
         : String(n.v)
-    case 'ident':
-      return GREEK[n.name as string] || (n.name as string)
+    case 'ident': {
+      const out = GREEK[n.name as string] || (n.name as string)
+      // Лише вузол-ідентифікатор: `a` у `sin`/`tan` — це ім'я виклику, не ident.
+      return _highlightIdent !== null && n.name === _highlightIdent
+        ? '\\htmlClass{' + PARAM_FOCUS_SYM_CLASS + '}{' + out + '}'
+        : out
+    }
     case 'unary':
       return '-' + wrapT(n.arg as GcNode)
     case 'binop': {
@@ -98,9 +111,14 @@ function toLatex(n: GcNode): string {
  * ascii-вираз → LaTeX. Приймає і голі вирази (`x^2`), і рівняння (`y = x^2`).
  * THROWS на невалідному вводі — caller робить явний fallback.
  */
-export function asciiMathToLatex(src: string): string {
+export function asciiMathToLatex(src: string, opts?: { highlightIdent?: string }): string {
   const ast = GraphCalc.parse(src) as GcNode
-  return toLatex(ast)
+  _highlightIdent = opts?.highlightIdent ?? null
+  try {
+    return toLatex(ast)
+  } finally {
+    _highlightIdent = null
+  }
 }
 
 /**

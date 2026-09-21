@@ -500,6 +500,11 @@ const __GC = (function () {
             // Phase G3 v1.1 polish: track which curve is being controlled —
             // _render highlights it (thicker + glow). Cleared on pointerup.
             this._dragParamTargetExprId = candidate.exprId;
+            // Parameter Focus (2026-09-21): UI-обгортка показує фокус одразу
+            // на натисканні, а не з першим рухом; і знає, ЯКУ криву тягнуть.
+            if (this.onParamDragStart) {
+              try { this.onParamDragStart(candidate.paramName, candidate.exprId); } catch (err) { console.error('[graph-calc] onParamDragStart', err); }
+            }
             this._scheduleRender();
             try { this.canvas.setPointerCapture(e.pointerId); } catch (_) {}
             this.canvas.style.cursor = 'ns-resize';

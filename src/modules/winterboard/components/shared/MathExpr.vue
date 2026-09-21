@@ -29,14 +29,22 @@ import { computed } from 'vue'
 import katex from 'katex'
 import { toKatexCompatible } from '@/utils/katexCompat'
 import 'katex/dist/katex.min.css'
-import { asciiMathToLatex } from '../../utils/asciiMathToLatex'
+import { asciiMathToLatex, PARAM_FOCUS_SYM_CLASS } from '../../utils/asciiMathToLatex'
 
 const props = defineProps<{
   /** ascii-вираз зі store (напр. "x^2" або "y = 3x^2-4x+1"). */
   expr: string
   /** Display-режим KaTeX (блочний, більший). Default: inline. */
   display?: boolean
+  /** Parameter Focus: ідентифікатор, який обгорнути в `.wb-pf-sym`. */
+  highlightIdent?: string
 }>()
+
+// `\htmlClass` вимагає KaTeX `trust`. Довіряємо РІВНО одній команді з РІВНО
+// одним класом — тим, що ставить наш AST-конвертер; решта (\href, \url,
+// інші класи) як і раніше відхиляється.
+const trustParamFocusOnly = (ctx: { command: string; class?: string }): boolean =>
+  ctx.command === '\\htmlClass' && ctx.class === PARAM_FOCUS_SYM_CLASS
 
 // Один warn на унікальний невалідний вираз (module-scope — спільний для всіх
 // інстансів; без нього кожен re-render спамив би консоль тим самим виразом).
@@ -46,11 +54,16 @@ const html = computed<string | null>(() => {
   const src = (props.expr ?? '').trim()
   if (!src) return null
   try {
-    const latex = toKatexCompatible(asciiMathToLatex(src))
+    const hl = props.highlightIdent || undefined
+    const latex = toKatexCompatible(asciiMathToLatex(src, { highlightIdent: hl }))
     return katex.renderToString(latex, {
       output: 'htmlAndMathml',
       displayMode: props.display === true,
       throwOnError: true,
+      trust: hl ? trustParamFocusOnly : false,
+      // \htmlClass — «HTML extension»: без цього strict=warn пише в консоль на
+      // кожен кадр drag. Глушимо лише цей код і лише разом із trust вище.
+      ...(hl ? { strict: (code: string) => (code === 'htmlExtension' ? 'ignore' : 'warn') } : {}),
     })
   } catch (err) {
     if (!warned.has(src)) {

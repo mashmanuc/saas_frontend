@@ -30,15 +30,18 @@
     }"
   >
     <!-- Phase G3 v1 review: floating label під час drag-param (dp_inv_3:
-         param value MUST be visible during drag). -->
-    <div
-      v-if="activeDragParam"
-      class="gc-drag-param-label"
-      data-testid="graph-calc-drag-param-label"
-    >
-      <span class="gc-drag-param-icon">↕</span>
-      <span class="gc-drag-param-text">{{ activeDragParam.name }} = {{ activeDragParam.value.toFixed(2) }}</span>
-    </div>
+         param value MUST be visible during drag).
+         Parameter Focus (2026-09-21): великий, по центру над графіком, зникає
+         плавно (leave-transition) — без пульсу й анімацій заради ефекту. -->
+    <Transition name="gc-pf-fade">
+      <div
+        v-if="paramFocus && paramFocus.phase === 'active'"
+        class="gc-drag-param-label"
+        data-testid="graph-calc-drag-param-label"
+      >
+        <span class="gc-drag-param-text">{{ paramFocus.name }} = {{ formatParamValue(paramFocus.value) }}</span>
+      </div>
+    </Transition>
 
     <header class="gc-header">
       <span class="gc-title">f(x)</span>
@@ -107,7 +110,8 @@
             v-for="(expr, idx) in displayExpressions"
             :key="expr.id"
             class="gc-expr"
-            :class="{ 'is-param': expr.isParam }"
+            :class="[{ 'is-param': expr.isParam }, pfRowClass(expr)]"
+            :data-pf-role="paramFocusRole(paramFocus, expr) ?? undefined"
           >
             <span
               class="gc-swatch"
@@ -131,6 +135,11 @@
               @keypress.stop
               @keyup.stop
             />
+            <span
+              v-if="paramFocus && paramFocusRole(paramFocus, expr)"
+              class="gc-pf-value"
+              data-testid="graph-calc-pf-value"
+            >{{ paramFocus.name }} = {{ formatParamValue(paramFocus.value) }}</span>
 
             <!-- P2 #9 (2026-05-08): slash-command popup. Активний тільки для
                  input з матчевим exprId. ↓/↑ — навігація, Enter — apply,
@@ -369,6 +378,8 @@ import { getGraphCalcUi, toggleGraphCalcParamMode, toggleGraphCalcPresenting } f
 // Inspector bridge — param sliders move to GraphCalcInspector sidebar when selected.
 import { registerGraphCalcInspector, unregisterGraphCalcInspector } from '../../../board/state/graphCalcInspectorState'
 import type { GraphCalcInspectorBridge } from '../../../board/state/graphCalcInspectorState'
+import { formatParamValue, paramFocusRole, PARAM_FOCUS_FADE_MS } from '../../../utils/paramFocus'
+import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
@@ -490,8 +501,44 @@ const paramEntries = computed(() => {
 /** Per-param expand state (collapsed by default; click name → reveal range editor). */
 const paramExpanded = ref<Record<string, boolean>>({})
 
-/** Phase G3 v1 review (dp_inv_3): floating label state during drag-param. */
-const activeDragParam = ref<{ name: string; value: number } | null>(null)
+/** Parameter Focus (2026-09-21): який параметр тягнуть + яку криву.
+ *  Живе лише в UI живого уроку — не в ops, не в Replay (utils/paramFocus.ts). */
+const paramFocus = ref<ParamFocus | null>(null)
+let pfFadeTimer: ReturnType<typeof setTimeout> | null = null
+
+function startParamFocus(name: string, targetExprId: string | null): void {
+  if (!props.interactive) return
+  if (pfFadeTimer) { clearTimeout(pfFadeTimer); pfFadeTimer = null }
+  const cur = (calc as any)?.params?.[name]
+  const value = (cur && typeof cur === 'object') ? Number(cur.value) : Number(cur)
+  paramFocus.value = { name, value: Number.isFinite(value) ? value : 0, targetExprId, phase: 'active' }
+}
+
+function updateParamFocus(name: string, value: number): void {
+  const f = paramFocus.value
+  if (f && f.name === name && f.phase === 'active') f.value = value
+  else paramFocus.value = { name, value, targetExprId: (calc as any)?._dragParamTargetExprId ?? null, phase: 'active' }
+}
+
+/** Згасання: phase='fading' знімає акценти CSS-переходом, потім стан чиститься. */
+function endParamFocus(): void {
+  const f = paramFocus.value
+  if (!f || f.phase === 'fading') return
+  f.phase = 'fading'
+  pfFadeTimer = setTimeout(() => {
+    pfFadeTimer = null
+    if (paramFocus.value?.phase === 'fading') paramFocus.value = null
+  }, PARAM_FOCUS_FADE_MS)
+}
+
+function pfRowClass(expr: { id: string; src: string; hidden: boolean }): Record<string, boolean> {
+  const role = paramFocusRole(paramFocus.value, expr)
+  return {
+    'is-pf-target': role === 'target',
+    'is-pf-dependent': role === 'dependent',
+    'is-pf-fading': role !== null && paramFocus.value?.phase === 'fading',
+  }
+}
 
 // ─── Phase G4: param-mode toggle (g4_inv_1..10) ───────────────────────
 // uiState shared via module — sidebar context panel reads/writes same entry.
@@ -561,6 +608,7 @@ function onWindowBlur() {
   flushParam()
   flushSyncParams()
   flushSnapshot()
+  endParamFocus()
 }
 
 /**
@@ -641,6 +689,7 @@ const _gcBridge = reactive<GraphCalcInspectorBridge>({
   // Params
   paramEntries: [],
   dragParamNames: [],
+  paramFocus: null,
   paramExpanded: {},
   onSliderInput,
   flushParam,
@@ -1062,7 +1111,7 @@ function mountEngine() {
     else (calc as any).params[name].value = value  // fallback
 
     // dp_inv_3: floating label з actual emit value (matches user expectation).
-    activeDragParam.value = { name, value }
+    updateParamFocus(name, value)
     // Single emit per drag tick — deterministic for replay.
     emitParamSetThrottled(name, value)
   }
@@ -1071,8 +1120,11 @@ function mountEngine() {
     // CRITICAL: flush pending throttle so final value lands як op.
     // Without flush — last drag tick stuck у timeout, replay misses end state.
     flushParam()
-    // Hide floating label
-    activeDragParam.value = null
+    endParamFocus()
+  }
+  ;(calc as any).onParamDragStart = (name: string, exprId: string) => {
+    if (isApplyingExternalState) return
+    startParamFocus(name, exprId)
   }
 
   ;(calc as any).onPointDragEnd = (id: string, mathX: number, mathY: number) => {
@@ -1245,6 +1297,7 @@ const slashFilteredTemplates = computed<readonly SlashTemplate[]>(() => {
 watchEffect(() => {
   _gcBridge.paramEntries = paramEntries.value.map((p) => ({ ...p }))
   _gcBridge.dragParamNames = [...dragParamNames.value]
+  _gcBridge.paramFocus = paramFocus.value ? { ...paramFocus.value } : null
   _gcBridge.paramExpanded = { ...paramExpanded.value }
   _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
     id: e.id,
@@ -1437,6 +1490,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (pfFadeTimer) { clearTimeout(pfFadeTimer); pfFadeTimer = null }
   unregisterGraphCalcInspector(props.asset.id)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('beforeunload', onBeforeUnload)
@@ -1901,18 +1955,21 @@ const hostWindowControls = useHostWindowControls()
   line-height: 1;
 }
 
-/* Phase G3 v1: floating label under drag-param (dp_inv_3 visible feedback) */
+/* Phase G3 v1: floating label under drag-param (dp_inv_3 visible feedback).
+   Parameter Focus 2026-09-21: великий, по центру над полотном — учень читає
+   значення з задньої парти, а не шукає його в куті під кнопками. */
 .gc-drag-param-label {
   position: absolute;
-  top: 26px;
-  right: 8px;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 6px;
   font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   /* P1 (2026-05-08): glass-pill — світла warm-paper з blur замість dark
      toast. Не схоже на error-notification, у дусі brand. */
   color: var(--gc-ink, #2b2118);
@@ -1920,23 +1977,42 @@ const hostWindowControls = useHostWindowControls()
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
-  padding: 4px 10px;
+  border-color: var(--gc-pf-accent, #b45309);
+  padding: 6px 16px;
   border-radius: var(--gc-radius-pill, 10px);
   pointer-events: none;
   user-select: none;
   letter-spacing: 0.02em;
   box-shadow: var(--gc-shadow-toast, 0 2px 4px rgba(0, 0, 0, 0.2));
 }
-.gc-drag-param-icon {
-  font-size: 14px;
-  color: var(--gc-accent-2, #3b7b9b);
-  animation: gc-drag-pulse 1.2s ease-in-out infinite;
-}
 .gc-drag-param-text { white-space: nowrap; }
-@keyframes gc-drag-pulse {
-  0%, 100% { opacity: 0.5; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(-1px); }
+.gc-pf-fade-leave-active { transition: opacity 0.4s ease; }
+.gc-pf-fade-leave-to { opacity: 0; }
+
+/* Parameter Focus — один акцент (бурштин) для рядків, що залежать від
+   параметра. target (крива, яку тягнуть) = суцільна смуга + заливка;
+   dependent = та сама смуга, без заливки. Згасання — переходом 0.4 с
+   (== PARAM_FOCUS_FADE_MS). */
+.gc-expr {
+  box-shadow: inset 3px 0 0 transparent;
+  transition: box-shadow 0.4s ease, background-color 0.4s ease;
 }
+.gc-expr.is-pf-dependent { box-shadow: inset 3px 0 0 var(--gc-pf-accent, #b45309); }
+.gc-expr.is-pf-target {
+  box-shadow: inset 3px 0 0 var(--gc-pf-accent, #b45309);
+  background-color: var(--gc-pf-tint, rgba(245, 158, 11, 0.14));
+}
+.gc-expr.is-pf-fading { box-shadow: inset 3px 0 0 transparent; background-color: transparent; }
+.gc-pf-value {
+  flex-shrink: 0;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gc-pf-accent, #b45309);
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+}
+.is-pf-fading .gc-pf-value { opacity: 0; }
 
 /* Phase G2 review #3: hint row for ambiguous tokens (2ax → 2*a*x) */
 .gc-hint-row {

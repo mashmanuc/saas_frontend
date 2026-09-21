@@ -10,6 +10,7 @@
  * Pattern: mirrors nmt3dUiState.ts.
  */
 import { reactive } from 'vue'
+import type { ParamFocus } from '../../utils/paramFocus'
 
 export interface GcParamEntry {
   name: string
@@ -45,6 +46,9 @@ export interface GraphCalcInspectorBridge {
   /** Параметри, якими можна керувати drag-ом (крива залежить рівно від
    *  одного). Порожньо — підказка «Shift-drag» гасне. 2026-08-16. */
   dragParamNames: string[]
+  /** Parameter Focus: параметр, який зараз тягнуть Shift+Drag (null — ніхто).
+   *  Лише UI живого уроку — див. utils/paramFocus.ts. */
+  paramFocus: ParamFocus | null
   paramExpanded: Record<string, boolean>
   onSliderInput(name: string, value: number): void
   flushParam(): void

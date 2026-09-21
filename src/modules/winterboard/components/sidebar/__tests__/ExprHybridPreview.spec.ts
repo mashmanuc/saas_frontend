@@ -74,7 +74,7 @@ describe('CalculusInspector — гібрид прев\'ю ↔ input', () => {
 
 function gcBridge(): GraphCalcInspectorBridge {
   return {
-    paramEntries: [], dragParamNames: [], paramExpanded: {},
+    paramEntries: [], dragParamNames: [], paramFocus: null, paramExpanded: {},
     onSliderInput: () => {}, flushParam: () => {}, toggleParamExpand: () => {},
     onRangeMinChange: () => {}, onRangeMaxChange: () => {}, onRangeStepChange: () => {},
     displayExpressions: [

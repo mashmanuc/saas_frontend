@@ -48,6 +48,8 @@
           v-for="expr in b.displayExpressions"
           :key="expr.id"
           class="gc-insp__expr-row"
+          :class="pfRowClass(expr)"
+          :data-pf-role="pfRole(expr) ?? undefined"
         >
           <!-- Color swatch / visibility toggle -->
           <span
@@ -65,7 +67,10 @@
             type="button"
             class="gc-insp__expr-preview"
             @click="startEdit(expr.id)"
-          ><MathExpr :expr="expr.src" /></button>
+          ><MathExpr
+            :expr="expr.src"
+            :highlight-ident="pfRole(expr) ? b.paramFocus!.name : undefined"
+          /></button>
           <!-- MathQuill WYSIWYG (як standalone /mash/grapher/): тільки коли
                бібліотека доступна і вираз renderable; інакше plain input.
                «/» = дріб; slash-меню в MQ-режимі відсутнє (шаблони в quick-add). -->
@@ -109,6 +114,13 @@
             @keypress.stop
             @keyup.stop
           />
+
+          <!-- Parameter Focus: живе значення параметра в кінці рядка -->
+          <span
+            v-if="pfRole(expr)"
+            class="gc-insp__pf-value"
+            data-testid="gc-insp-pf-value"
+          >{{ b.paramFocus!.name }} = {{ formatParamValue(b.paramFocus!.value) }}</span>
 
           <!-- Delete row -->
           <button
@@ -243,6 +255,8 @@ import MathQuillField from '../shared/MathQuillField.vue'
 import { isRenderableAscii } from '../../utils/asciiMathToLatex'
 import { loadMathQuill } from '../../utils/mathquillLoader'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
+import { formatParamValue, paramFocusRole } from '../../utils/paramFocus'
+import type { ParamFocusRole } from '../../utils/paramFocus'
 
 const { t } = useI18n()
 
@@ -251,6 +265,20 @@ const { t } = useI18n()
 // teardown → null → page crash (P0). Обробники читають graphCalcInspectorState.bridge?.
 // напряму. Інваріант тримає тест InspectorTeardownGuard.
 const b = computed(() => graphCalcInspectorState.bridge!)
+
+// ── Parameter Focus (render-only, тому `b.value` тут дозволений) ──────────
+type PfExpr = { id: string; src: string; hidden: boolean }
+function pfRole(expr: PfExpr): ParamFocusRole | null {
+  return paramFocusRole(b.value.paramFocus, expr)
+}
+function pfRowClass(expr: PfExpr): Record<string, boolean> {
+  const role = pfRole(expr)
+  return {
+    'is-pf-target': role === 'target',
+    'is-pf-dependent': role === 'dependent',
+    'is-pf-fading': role !== null && b.value.paramFocus?.phase === 'fading',
+  }
+}
 
 // ── Гібрид «рендер у спокої» ──────────────────────────────────────────────
 // editingId = рядок у режимі вводу; решта показують KaTeX-прев'ю.
@@ -536,7 +564,52 @@ const QUICK_TEMPLATES = [
   align-items: center;
   gap: 4px;
   position: relative;
+  border-radius: 4px;
+  box-shadow: -3px 0 0 transparent;
+  transition: box-shadow 0.4s ease, background-color 0.4s ease;
 }
+
+/* ── Parameter Focus ──
+   Один акцент (бурштин). target — крива, яку тягнуть: смуга + заливка.
+   dependent — та сама смуга без заливки. Символ параметра у формулі —
+   той самий колір. Згасання 0.4 с == PARAM_FOCUS_FADE_MS. */
+.gc-insp__expr-row.is-pf-dependent { box-shadow: -3px 0 0 #b45309; }
+.gc-insp__expr-row.is-pf-target {
+  box-shadow: -3px 0 0 #b45309;
+  background-color: rgba(245, 158, 11, 0.16);
+}
+.gc-insp__expr-row.is-pf-fading { box-shadow: -3px 0 0 transparent; background-color: transparent; }
+/* Поле формули має власний фон — без цього заливка target ховається під ним. */
+.gc-insp__expr-row .gc-insp__expr-preview,
+.gc-insp__expr-row .gc-insp__expr-input {
+  transition: background-color 0.4s ease, border-color 0.4s ease;
+}
+.gc-insp__expr-row.is-pf-target .gc-insp__expr-preview,
+.gc-insp__expr-row.is-pf-target .gc-insp__expr-input {
+  background-color: rgba(245, 158, 11, 0.16);
+  border-color: #b45309;
+}
+.gc-insp__expr-row.is-pf-target.is-pf-fading .gc-insp__expr-preview,
+.gc-insp__expr-row.is-pf-target.is-pf-fading .gc-insp__expr-input {
+  background-color: #fffaf0;
+  border-color: rgba(59, 123, 155, 0.18);
+}
+.gc-insp__expr-row :deep(.wb-pf-sym) {
+  color: #b45309;
+  font-weight: 700;
+  transition: color 0.4s ease;
+}
+.gc-insp__expr-row.is-pf-fading :deep(.wb-pf-sym) { color: inherit; }
+.gc-insp__pf-value {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+}
+.gc-insp__expr-row.is-pf-fading .gc-insp__pf-value { opacity: 0; }
 
 .gc-insp__swatch {
   display: inline-block;
