@@ -27,8 +27,15 @@ import type { WBLessonMarker } from '../types/winterboard'
 // INV-V2-3: якщо delta > MAX_DELTA_OPS → treat snapshot як відсутній → full apply fallback.
 const MAX_DELTA_OPS = 150
 
-// Мінімальна кількість ops від початку, за якої має сенс робити HTTP за snapshot.
-const MIN_SEEK_FOR_SNAPSHOT = 30
+// До цієї кількості ops seek ЗАВЖДИ будує стан з ops (той самий шлях, що й гра),
+// знімок не запитується. Причина — знімки бувають биті: REPLAY_PIPELINE_SSOT §7
+// інваріант 5 (G1) «board_state = apply(ops)» порушено, а V2 знімок не перевіряє.
+// Звірка 2026-09-22 на локальному записі (461 op, 7 знімків): 3 знімки без
+// частини штрихів (напр. seq 322: 0 штрихів на стор. 3 проти 101 з ops) →
+// після перемотування дошка з дірками, і гра їх не повертає. Вартість
+// з ops виміряна на справжньому boardStore: 2000 ops ≈ 160 мс, 5000 ≈ 380 мс
+// (типові записи 100–2000 ops). Коли G1 закрито на бекенді — поріг знизити.
+const SEQUENTIAL_SEEK_MAX_OPS = 3000
 
 // ─── Snapshot observability (advisor 2026-05-14) ───────────────────────────
 // Module-level counters — видно як window.__replayV2Metrics у DevTools (dev-only).
@@ -282,7 +289,7 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
     let snapshotBoardState: Record<string, unknown> | null = null
     let _fetchMs = 0
 
-    if (clampedIdx >= MIN_SEEK_FOR_SNAPSHOT) {
+    if (clampedIdx > SEQUENTIAL_SEEK_MAX_OPS) {
       // seek(T) = стан після ops [0..T-1]. Знімок із seq=S — стан ПІСЛЯ op S
       // (ops_worker._create_snapshot, включно). Тож шукаємо знімок не пізніше
       // останньої op, яку треба застосувати, — op[T-1], а не op[T]: інакше
