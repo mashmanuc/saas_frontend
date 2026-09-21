@@ -237,7 +237,9 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
    *   2a. Snapshot found + delta ≤ MAX_DELTA_OPS:
    *       clearState() → loadState(snap.board_state) [atomic replace] → apply delta ops [sync]
    *   2b. No snapshot / delta > MAX_DELTA_OPS:
-   *       clearState() → apply all ops 0..idx [rAF chunked, V1 fallback path]
+   *       clearState() → apply all ops 0..idx-1 [sync, one pass — no visible scroll]
+   *
+   * Весь час seek таймер відтворення утримано (engine.holdForSeek).
    *
    * INV-V2-2: snapshot = atomic replace (always clearState first).
    * INV-V2-3: delta > MAX_DELTA_OPS → fallback, never slow V2.
@@ -264,6 +266,12 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
     cancelPendingSeek()
     const myVersion = ++_seekVersion
 
+    // Таймер відтворення стоїть, поки йде seek: інакше він докидає ops зі старої
+    // позиції (видно після кліку, а в запасному шляху — дублі й зламаний порядок).
+    // Стан 'playing' лишається; _finalizeSeek → engine.seekTo() запускає таймер
+    // з нової позиції. Якщо seek перебив новіший — таймер відновить той.
+    engine.value.holdForSeek()
+
     isSeeking.value = true
     isBatchingSeek.value = true
     seekCompleted.value = false
@@ -275,7 +283,12 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
     let _fetchMs = 0
 
     if (clampedIdx >= MIN_SEEK_FOR_SNAPSHOT) {
-      const targetOp = engine.value.getOperationAt(clampedIdx)
+      // seek(T) = стан після ops [0..T-1]. Знімок із seq=S — стан ПІСЛЯ op S
+      // (ops_worker._create_snapshot, включно). Тож шукаємо знімок не пізніше
+      // останньої op, яку треба застосувати, — op[T-1], а не op[T]: інакше
+      // знімок, зроблений рівно на op[T], уже містить наступну op, і гра
+      // застосувала б її вдруге.
+      const targetOp = engine.value.getOperationAt(clampedIdx - 1)
       const targetSeq = typeof targetOp?.seq === 'number' ? targetOp.seq : null
 
       if (targetSeq !== null) {
@@ -298,11 +311,11 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
             ? engine.value.findIndexBySeq(snap.seq)
             : -1
 
-          const deltaOps = snapEngineIdx >= 0 ? clampedIdx - snapEngineIdx : Infinity
+          // Знімок уже містить op[snapEngineIdx] → дельта з наступної.
+          const deltaOps = snapEngineIdx >= 0 ? clampedIdx - (snapEngineIdx + 1) : Infinity
 
-          // C9b: snapEngineIdx === clampedIdx = snapshot exactly at target → delta=0 → use it.
-          if (snapEngineIdx >= 0 && snapEngineIdx <= clampedIdx && deltaOps <= MAX_DELTA_OPS) {   // INV-V2-3
-            snapshotStartIdx = snapEngineIdx
+          if (snapEngineIdx >= 0 && snapEngineIdx < clampedIdx && deltaOps <= MAX_DELTA_OPS) {   // INV-V2-3
+            snapshotStartIdx = snapEngineIdx + 1
             snapshotBoardState = snap.board_state as Record<string, unknown>
           } else {
             // snapshot found but not usable (seq not in replay range or delta > MAX_DELTA_OPS)
@@ -351,41 +364,23 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       return
     }
 
-    // ── Step 2b: fallback — rAF chunked full apply (V1-compatible) ────────────
-    return new Promise<void>((resolve) => {
-      clearState()
-
-      const CHUNK_SIZE = 20
-
-      const applyChunk = (startIndex: number): void => {
-        if (!engine.value || !_onOp || _seekVersion !== myVersion) {
-          isSeeking.value = false
-          isBatchingSeek.value = false
-          resolve()
-          return
-        }
-
-        const end = Math.min(startIndex + CHUNK_SIZE, clampedIdx)
-        for (let i = startIndex; i < end; i++) {
-          const op = engine.value.getOperationAt(i)
-          if (op) {
-            try { _onOp(op) } catch (e) { console.warn(`[replay:v2] chunk op ${i}:`, e) }
-          }
-        }
-
-        seekProgress.value = clampedIdx > 0 ? end / clampedIdx : 0
-        currentIndex.value = end
-
-        if (end < clampedIdx) {
-          requestAnimationFrame(() => applyChunk(end))
-        } else {
-          _finalizeSeek(clampedIdx)
-          resolve()
-        }
+    // ── Step 2b: fallback — повне застосування ОДНИМ проходом ─────────────────
+    // Раніше — порції по 20 ops на кадр через rAF (V1, 2026-04-23, коли кожна op
+    // запускала fadeIn і перемальовування). Між порціями браузер малював дошку,
+    // і людина бачила прокручування всіх проміжних станів — «дьоргання» при
+    // перемотуванні (скарга власника 2026-09-22). Ефекти на op уже вимкнені
+    // (isBatchingSeek), тож порції лише показували проміжне. Вимір на справжньому
+    // boardStore: 200 ops ≈ 20 мс, 2000 ≈ 160 мс — одна коротка пауза замість
+    // секунди видимого прокручування. Перемальовування одне — після finalize.
+    clearState()
+    const applyOp = _onOp
+    for (let i = 0; i < clampedIdx; i++) {
+      const op = engine.value.getOperationAt(i)
+      if (op) {
+        try { applyOp(op) } catch (e) { console.warn(`[replay:v2] fallback op ${i}:`, e) }
       }
-
-      applyChunk(0)
-    })
+    }
+    _finalizeSeek(clampedIdx)
   }
 
   function _finalizeSeek(clampedIdx: number): void {

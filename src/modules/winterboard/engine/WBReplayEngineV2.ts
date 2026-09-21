@@ -149,6 +149,17 @@ export class WBReplayEngineV2 {
     }
   }
 
+  /**
+   * Зупинити таймер відтворення, НЕ змінюючи стан ('playing' лишається).
+   * Seek перебудовує дошку (асинхронний знімок + застосування ops); без цього
+   * таймер і далі докидав ops зі СТАРОЇ позиції — під час запиту знімка вони
+   * малювались після кліку, а в запасному шляху вклинювались у перебудову
+   * (дублі й порушення порядку, forensics 2026-09-22). Відновлює seekTo().
+   */
+  holdForSeek(): void {
+    this._clearTimer()
+  }
+
   /** Sync position to index. Returns clamped actual index. */
   seekTo(index: number): number {
     const wasPlaying = this.state === 'playing'
