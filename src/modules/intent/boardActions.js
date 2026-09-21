@@ -178,6 +178,23 @@ export function sanitizeSourceList(raw) {
 export const HISTORY_VARIANTS = ['person', 'event', 'monument', 'polity']
 const HISTORY_STATUSES = ['verified', 'mixed']
 
+/**
+ * Дії «що далі» (Next Actions V1). Лише форма: `id` у просторі імен предмета
+ * (`history.map`), людський `label`. Що саме робить дія — знає бекенд.
+ */
+export function sanitizeTeachingActions(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const item of raw) {
+    const id = typeof item?.id === 'string' ? item.id.trim() : ''
+    const label = typeof item?.label === 'string' ? item.label.trim().slice(0, 48) : ''
+    if (!/^[a-z]+\.[a-z_]+$/.test(id) || !label || out.some((x) => x.id === id)) continue
+    out.push({ id, label })
+    if (out.length >= 6) break
+  }
+  return out
+}
+
 /** Непрозоре посилання `{provider, id}`: лише форма й довжина, без розбору `id`. */
 function sanitizeEntityRef(raw) {
   if (!raw || typeof raw !== 'object') return null
@@ -536,7 +553,7 @@ const HANDLERS = {
    * значень, тож «—» на картці не з'являється за побудовою.
    */
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
-                           corridor, sources, source_status }) {
+                           corridor, sources, source_status, entity_ref, next_actions }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
@@ -569,6 +586,11 @@ const HANDLERS = {
         expanded: false,
         ...corridorData(corridor),
         ...sourcesData(sources, source_status),
+        // Next Actions V1: власне посилання й дії — записуються разом з карткою,
+        // тож Replay має їх без мережі.
+        ...(sanitizeEntityRef(entity_ref) ? { entity_ref: sanitizeEntityRef(entity_ref) } : {}),
+        ...(sanitizeTeachingActions(next_actions).length
+          ? { next_actions: sanitizeTeachingActions(next_actions) } : {}),
       },
     }, page.id ?? '')
   },

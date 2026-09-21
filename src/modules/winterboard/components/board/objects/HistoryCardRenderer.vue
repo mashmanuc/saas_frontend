@@ -132,6 +132,20 @@
           </template>
         </dl>
 
+        <!-- 3½ · що показати далі (Next Actions V1). Кнопки приходять із
+             бекенду готовими й лише тоді, коли за ними є дані; у Replay і під
+             олівцем їх немає. Результат кліку — новий об'єкт дошки. -->
+        <div v-if="teachingActions.length" class="history-card__actions" role="group"
+             :aria-label="labels.nextActions">
+          <button
+            v-for="action in teachingActions"
+            :key="action.id"
+            type="button"
+            class="history-card__action"
+            @click.stop="emit('run-action', action)"
+          >{{ action.label }}</button>
+        </div>
+
         <!-- 4 · підвал джерел — той самий вигляд, що в theory_card. -->
         <div v-if="sources.length" class="history-card__sources">
           <button
@@ -169,6 +183,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   EntityRef,
+  WBTeachingAction,
   HistoryCardData,
   HistoryCardField,
   HistoryCardValue,
@@ -193,8 +208,11 @@ const props = withDefaults(
     canOpenEntity?: boolean
     /** Чи є на дошці карта, куди лягла б шпилька. */
     canPinToMap?: boolean
+    /** Чи є кому виконати дію «що далі». Лише живе редагування — у Replay ні. */
+    canRunActions?: boolean
   }>(),
-  { isSelected: false, interactive: true, canOpenEntity: false, canPinToMap: false },
+  { isSelected: false, interactive: true, canOpenEntity: false, canPinToMap: false,
+    canRunActions: false },
 )
 
 const emit = defineEmits<{
@@ -205,6 +223,8 @@ const emit = defineEmits<{
   'open-entity': [ref: EntityRef, label: string]
   /** Шпилька на карту дошки. Лише коли координата справді місце події. */
   'to-map': [lat: number, lon: number, label: string]
+  /** Дія «що далі» — виконує кімната/шар через бекенд, картка лише просить. */
+  'run-action': [action: WBTeachingAction]
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -213,6 +233,13 @@ const flowEl = ref<HTMLElement | null>(null)
 
 const EMPTY: HistoryCardData = { version: 1, variant: 'person', title: '', primary: [] }
 const data = computed<HistoryCardData>(() => (props.asset.data as HistoryCardData) ?? EMPTY)
+
+/** Дії показуються лише там, де їх є кому виконати, і лише ті, що прийшли з
+ *  даними картки. Немає даних — немає кнопки; жодних «вимкнених» заглушок. */
+const teachingActions = computed<WBTeachingAction[]>(() =>
+  props.canRunActions && props.interactive && Array.isArray(data.value.next_actions)
+    ? data.value.next_actions
+    : [])
 
 /** Подання відрізняються лише акцентом, іконкою й підписом у шапці. */
 const VARIANT_STYLES = {
@@ -223,9 +250,12 @@ const VARIANT_STYLES = {
 } as const
 
 /** Підписи мовою МАТЕРІАЛУ, не UI-локалі — дзеркало theory_card. */
-const LABELS: Record<string, { mixed: string; oldStyle: string; toMap: string; retrieved: string }> = {
-  uk: { mixed: 'джерела розходяться', oldStyle: 'за старим стилем', toMap: 'на карту', retrieved: 'отримано' },
-  en: { mixed: 'sources disagree', oldStyle: 'old style', toMap: 'to map', retrieved: 'retrieved' },
+const LABELS: Record<string, { mixed: string; oldStyle: string; toMap: string; retrieved: string;
+  nextActions: string }> = {
+  uk: { mixed: 'джерела розходяться', oldStyle: 'за старим стилем', toMap: 'на карту', retrieved: 'отримано',
+        nextActions: 'Що показати далі' },
+  en: { mixed: 'sources disagree', oldStyle: 'old style', toMap: 'to map', retrieved: 'retrieved',
+        nextActions: 'What to show next' },
 }
 const lang = computed(() => (data.value.content_language === 'en' ? 'en' : 'uk'))
 const labels = computed(() => LABELS[lang.value])
@@ -552,6 +582,20 @@ useExportCapture(
 }
 
 /* 4 · джерела — вигляд theory_card, площа торкання більша (ТЗ §7) */
+.history-card__actions {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 12px; pointer-events: auto;
+}
+.history-card__action {
+  display: inline-flex; align-items: center;
+  min-height: 32px; padding: 4px 12px;
+  border: 1px solid var(--preset-border, #e2e8f0); border-radius: 999px;
+  background: #fff; cursor: pointer;
+  font-size: calc(13px * var(--wb-card-text-scale, 1)); font-weight: 600;
+  color: var(--accent, #4338ca);
+}
+.history-card__action:hover,
+.history-card__action:focus-visible { background: #f8fafc; }
 .history-card__sources {
   display: flex; justify-content: flex-end;
   margin-top: 10px; pointer-events: auto;

@@ -23,7 +23,7 @@
  */
 import { computed } from 'vue'
 
-import type { EntityRef, MapCardData, WBAsset, WBMapMarker } from '../../types/winterboard'
+import type { EntityRef, MapCardData, WBAsset, WBMapMarker, WBTeachingAction } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -175,6 +175,18 @@ const ctx = computed<OverlayCtx>(() => ({
   // кімнаті, а не шару оверлеїв.
   onOpenEntity: (source: WBAsset, ref: EntityRef, label: string) =>
     emit('open-entity', { sourceId: source.id, ref, label }),
+  // Next Actions V1: дія «що далі» — ЛИШЕ в живому редагуванні тьютора. У Replay
+  // (mode === 'replay') і в учня обробника немає, тож картка кнопок не малює і
+  // мережі не торкається: Replay відтворює результат, а не резолвить дію знову.
+  // Раннер вантажиться ліниво — шар оверлеїв не отримує статичної залежності
+  // від модуля Інтегралика; результат кладе той самий `runBoardAction`.
+  onRunAction: wbStore.mode === 'edit' && props.isTutor
+    ? (source: WBAsset, action: WBTeachingAction) => {
+        import('@/modules/intent/nextActions')
+          .then(({ runNextAction }) => runNextAction(source, action))
+          .catch((e) => console.error('[WBOverlayLayer] next action failed', e))
+      }
+    : undefined,
   // Шпилька на карту — навпаки, суто стан дошки: беремо наявну карту або
   // просимо кімнату створити нову. Нового шляху запису тут немає — усе через
   // той самий `asset-update`.

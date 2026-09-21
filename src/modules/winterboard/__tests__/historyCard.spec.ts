@@ -38,7 +38,7 @@ function render(
   data: Partial<HistoryCardData>,
   interactive = true,
   // За замовчуванням дії ВИМКНЕНІ — як на дошці, поки немає адресата.
-  caps: { canOpenEntity?: boolean; canPinToMap?: boolean } = {},
+  caps: { canOpenEntity?: boolean; canPinToMap?: boolean; canRunActions?: boolean } = {},
 ) {
   return mount(HistoryCardRenderer, {
     props: { asset: asset(data), interactive, ...caps },
@@ -309,5 +309,46 @@ describe('HistoryCard · вид «Держава» (polity)', () => {
         .find('.history-card__badge').text())
     expect(new Set(badges).size).toBe(HISTORY_VARIANTS.length)
     expect(HISTORY_VARIANTS).toContain('polity')
+  })
+})
+
+
+describe('HistoryCard · що показати далі (Next Actions V1)', () => {
+  const WITH_ACTIONS: Partial<HistoryCardData> = {
+    ...POLTAVA,
+    entity_ref: { provider: 'wikidata', id: 'Q152486' },
+    next_actions: [
+      { id: 'history.context', label: 'Передумови й наслідки' },
+      { id: 'history.related', label: 'Сторони битви' },
+      { id: 'history.map', label: 'Де це сталося' },
+    ],
+  }
+
+  it('кнопки — рівно ті, що прийшли з даними, у тому ж порядку', () => {
+    const w = render(WITH_ACTIONS, true, { canRunActions: true })
+    expect(w.findAll('.history-card__action').map(b => b.text()))
+      .toEqual(['Передумови й наслідки', 'Сторони битви', 'Де це сталося'])
+  })
+
+  it('клік просить виконати дію — картка сама нічого не будує', async () => {
+    const w = render(WITH_ACTIONS, true, { canRunActions: true })
+    await w.findAll('.history-card__action')[1].trigger('click')
+    expect(w.emitted('run-action')![0]).toEqual([{ id: 'history.related', label: 'Сторони битви' }])
+  })
+
+  it('немає кому виконати (Replay, учень) — кнопок немає взагалі', () => {
+    expect(render(WITH_ACTIONS, true, { canRunActions: false })
+      .find('.history-card__actions').exists()).toBe(false)
+  })
+
+  it('під олівцем кнопок немає', () => {
+    expect(render(WITH_ACTIONS, false, { canRunActions: true })
+      .find('.history-card__actions').exists()).toBe(false)
+  })
+
+  it('немає даних — немає кнопки: жодних вимкнених заглушок', () => {
+    const w = render({ ...POLTAVA, next_actions: [] }, true, { canRunActions: true })
+    expect(w.find('.history-card__actions').exists()).toBe(false)
+    expect(w.find('.history-card__action[disabled]').exists()).toBe(false)
   })
 })

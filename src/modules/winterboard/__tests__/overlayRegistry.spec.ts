@@ -194,3 +194,29 @@ describe('overlayRegistry — coverage (Refinement A, INV-RENDER-1)', () => {
     expect(props.isTutor).toBe(false)
   })
 })
+
+// Next Actions V1 (2026-09-21): кнопки «що далі» — лише коли є обробник.
+// Обробник дає шар оверлеїв тільки в живому редагуванні, тож у Replay їх немає.
+describe('overlayRegistry · history_card · дії «що далі»', () => {
+  const entry = OVERLAY_RENDERERS.history_card
+  const base = {
+    isSelected: () => false, interactive: true, isTutor: true, boardMode: 'edit',
+    disableAnimation: false, expandedId: null, toggleExpand: () => {}, onUpdate: () => {},
+    onDelete: () => {}, onFormulaEdit: () => {}, onSpawnCompanions: () => {},
+    onRequestHeight: () => {}, graph: {} as any,
+  } as any
+  const asset = { id: 'hc', type: 'history_card', data: {} } as any
+
+  it('немає обробника → canRunActions=false', () => {
+    expect(entry.buildProps(asset, base).canRunActions).toBe(false)
+  })
+
+  it('є обробник → canRunActions=true, а клік доходить до нього з асетом', () => {
+    const calls: unknown[] = []
+    const ctx = { ...base, onRunAction: (src: unknown, action: unknown) => calls.push([src, action]) }
+    expect(entry.buildProps(asset, ctx).canRunActions).toBe(true)
+    const action = { id: 'history.map', label: 'Де це сталося' }
+    ;(entry.buildEvents(asset, ctx) as any)['run-action'](action)
+    expect(calls).toEqual([[asset, action]])
+  })
+})

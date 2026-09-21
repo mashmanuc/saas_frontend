@@ -21,7 +21,7 @@
 //   proxy contract. Лишаються окремим блоком у WBCanvas незмінно.
 
 import type { Component } from 'vue'
-import type { EntityRef, WBAsset } from '../../types/winterboard'
+import type { EntityRef, WBAsset, WBTeachingAction } from '../../types/winterboard'
 
 import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
 
@@ -93,6 +93,8 @@ export interface OverlayCtx {
    *  не заміняючи поточну. Необовʼязковий: полотно без цього обробника
    *  просто не має переходів, а картка лишається робочою. */
   onOpenEntity?: (source: WBAsset, ref: EntityRef, label: string) => void
+  /** Next Actions V1: є лише в живому редагуванні. Немає → кнопок немає. */
+  onRunAction?: (source: WBAsset, action: WBTeachingAction) => void
   /** Шпилька на карту дошки. Картка кличе його лише коли координата справді
    *  є місцем події, а не центроїдом країни. */
   onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void
@@ -387,6 +389,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       ...stdProps(asset, ctx),
       canOpenEntity: typeof ctx.onOpenEntity === 'function' && ctx.hasEntityTarget === true,
       canPinToMap: ctx.hasMapCard === true,
+      canRunActions: typeof ctx.onRunAction === 'function',
     }),
     buildEvents: (asset, ctx) => ({
       ...stdEvents(asset, ctx),
@@ -395,6 +398,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       'open-entity': (ref: EntityRef, label: string) => ctx.onOpenEntity?.(asset, ref, label),
       'to-map': (lat: number, lon: number, label: string) =>
         ctx.onToMap?.(asset, lat, lon, label),
+      'run-action': (action: WBTeachingAction) => ctx.onRunAction?.(asset, action),
     }),
   },
 

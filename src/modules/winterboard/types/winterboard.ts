@@ -548,6 +548,17 @@ export interface HistoryCardImage {
   file_page?: string
 }
 
+/**
+ * Дія «що показати далі» на картці (Next Actions V1, 2026-09-21).
+ * Загальна для всіх предметів: бекенд коридору вирішує, які дії доступні, і
+ * присилає їх готовими. UI лише показує `label` і повертає `id` — він не знає,
+ * що таке «сторони битви» чи «родина».
+ */
+export interface WBTeachingAction {
+  id: string
+  label: string
+}
+
 /** Непрозоре посилання на сутність у зовнішньому джерелі. `id` не розбирається. */
 export interface EntityRef {
   provider: string
@@ -596,6 +607,11 @@ export interface HistoryCardData {
   source_status?: WBSourceStatus
   content_language?: WBMaterialData['content_language']
   provenance?: WBMaterialData['provenance']
+  /** Сама сутність картки — непрозоре посилання, для дій «що далі». */
+  entity_ref?: EntityRef
+  /** Доступні дії, пораховані бекендом ОДИН раз під час побудови картки.
+   *  Replay їх не перераховує; порожньо — жодної кнопки. */
+  next_actions?: WBTeachingAction[]
 }
 
 export type HistoryCardAsset = WBAsset & { type: 'history_card'; data: HistoryCardData }
