@@ -6641,7 +6641,10 @@
         "darkMode": "Dark Mode",
         "darkModeDescription": "Use dark theme for interface",
         "integralyk": "Integralyk assistant",
-        "integralykHint": "Show the AI assistant (mascot + command palette). Turn it off if you do not need it."
+        "integralykHint": "Show the AI assistant (mascot + command palette). Turn it off if you do not need it.",
+        "subjects": "My subjects",
+        "subjectsHint": "Which subjects to show in Integralyk and on the remote. With one subject selected, Integralyk works in it right away. Other subjects stay available: you can still pick them during a lesson.",
+        "subjectsAll": "All subjects"
       },
       "notifications": {
         "title": "Notification Settings",
@@ -8319,6 +8322,7 @@
         "lesson": "from the lesson",
         "board": "from the board",
         "conversation": "from earlier commands",
+        "teacher_profile": "from your profile",
         "phrase": "from the question",
         "fallback": "subject not detected",
         "ui_fallback": "by interface language"

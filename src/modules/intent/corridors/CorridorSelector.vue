@@ -101,10 +101,17 @@ function labelOf(entry) {
   return entry?.labels?.[uiLocale.value] || entry?.label || entry?.id || ''
 }
 
+// Назви для ПОТОЧНОГО предмета — з усіх активних (`available_subjects`), а не
+// лише з видимих. Профіль вчителя ховає предмети зі списку, але урок усе одно
+// може йти в прихованому (разова математика в історика, план уроку з
+// математики). Шукаючи назву лише в `subjects`, селектор підписав би такий
+// урок «Загальний» — неправду. Список для вибору лишається `subjects`.
+const namedSubjects = computed(() => props.registry?.available_subjects || subjects.value)
+
 function subjectLabel(id) {
-  const found = subjects.value.find(s => s.id === id)
+  const found = namedSubjects.value.find(s => s.id === id)
   // Невідомий предмет не вигадуємо — «Загальний» (ТЗ §4.2).
-  return found ? labelOf(found) : labelOf(subjects.value.find(s => s.id === 'general')) || t('winterboard.corridor.general')
+  return found ? labelOf(found) : labelOf(namedSubjects.value.find(s => s.id === 'general')) || t('winterboard.corridor.general')
 }
 
 function languageLabel(id) {

@@ -88,3 +88,40 @@ describe('CorridorSelector', () => {
     expect(w.get('[data-testid="corridor-error"]').text()).toContain('не синхронізована')
   })
 })
+
+// ── Предмети вчителя (2026-09-21): профіль ховає предмети зі СПИСКУ, а не з уроку ──
+describe('CorridorSelector · прихований профілем предмет', () => {
+  // Історик бачить лише «Історію», але разово будує графік → урок у математиці.
+  const HISTORIAN = {
+    ...REGISTRY,
+    subjects: REGISTRY.subjects.filter(s => s.id !== 'math'),
+    lockable_subjects: ['history'],
+    available_subjects: REGISTRY.subjects,
+  }
+
+  it('поточний предмет підписано правдиво, хоч його й немає у списку вибору', () => {
+    const w = mountSelector({ registry: HISTORIAN,
+      subject: { mode: 'auto', resolved: 'math', locked: null, source: 'phrase' } })
+    expect(w.get('[data-testid="corridor-subject-chip"]').text()).toBe('Предмет: Авто · Математика')
+  })
+
+  it('у списку вибору прихованого предмета немає', async () => {
+    const w = mountSelector({ registry: HISTORIAN })
+    await w.get('[data-testid="corridor-subject-chip"]').trigger('click')
+    expect(w.find('[data-testid="corridor-subject-math"]').exists()).toBe(false)
+    expect(w.find('[data-testid="corridor-subject-history"]').exists()).toBe(true)
+  })
+
+  it('без `available_subjects` (старий сервер) — як раніше, з `subjects`', () => {
+    const w = mountSelector()
+    expect(w.get('[data-testid="corridor-subject-chip"]').text()).toBe('Предмет: Авто · Історія')
+  })
+
+  it('джерело «з профілю» має людський підпис українською й англійською', () => {
+    const subject = { mode: 'auto', resolved: 'history', locked: null, source: 'teacher_profile' }
+    expect(mountSelector({ subject }).get('[data-testid="corridor-subject-chip"]').attributes('title'))
+      .toBe('з вашого профілю')
+    expect(mountSelector({ subject }, 'en').get('[data-testid="corridor-subject-chip"]').attributes('title'))
+      .toBe('from your profile')
+  })
+})
