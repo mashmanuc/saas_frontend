@@ -6,9 +6,10 @@
   заборонений тим самим правилом, що й для шкали.
 
   ⚠️ ТЕХНІЧНИХ НАЗВ НА КАРТЦІ НЕМАЄ (вимога власника 2026-09-20). Ні кодів
-  властивостей (`P18`, `P569`), ні `qid`, ні службових підписів полів. Сервер
-  кладе в пайлоад уже людські підписи мовою матеріалу; `qid` живе в даних лише
-  для переходу на суміжну картку й ніколи не рендериться.
+  властивостей (`P18`, `P569`), ні ідентифікаторів, ні службових підписів полів.
+  Сервер кладе в пайлоад уже людські підписи мовою матеріалу; `entity_ref` живе
+  в даних лише для переходу на суміжну картку, ніколи не рендериться й не
+  тлумачиться — це непрозоре посилання (інваріант `CLAUDE_RULES.md`).
 
   УСПАДКОВАНО З `theory_card` (THEORY_CARD_BASELINE.md, знято з коду):
     ширина 520 · accent-bar 7px · header 8/12/8/16 · body 18/24/22
@@ -88,10 +89,10 @@
                 class="history-card__value"
               >
                 <button
-                  v-if="value.qid && canOpenEntity"
+                  v-if="value.entity_ref && canOpenEntity"
                   type="button"
                   class="history-card__link"
-                  @click.stop="emit('open-entity', value.qid, value.label)"
+                  @click.stop="emit('open-entity', value.entity_ref, value.label)"
                 >{{ valueText(value, field, fi, vi) }}</button><span v-else>{{ valueText(value, field, fi, vi) }}</span><button
                   v-if="value.old_style"
                   type="button"
@@ -167,6 +168,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
+  EntityRef,
   HistoryCardData,
   HistoryCardField,
   HistoryCardValue,
@@ -200,7 +202,7 @@ const emit = defineEmits<{
   delete: []
   'request-height': [neededPx: number]
   /** Клік на сутність — картка суміжної сутності поруч, поточна лишається. */
-  'open-entity': [qid: string, label: string]
+  'open-entity': [ref: EntityRef, label: string]
   /** Шпилька на карту дошки. Лише коли координата справді місце події. */
   'to-map': [lat: number, lon: number, label: string]
 }>()

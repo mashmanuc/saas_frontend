@@ -6,7 +6,8 @@
  *
  * ГОЛОВНЕ, ЩО СТЕРЕЖУТЬ:
  *   1. На картці НЕМАЄ технічних назв (вимога власника 2026-09-20): ні кодів
- *      властивостей, ні QID. `qid` лишається в даних лише як адреса переходу.
+ *      властивостей, ні ідентифікаторів. `entity_ref` лишається в даних лише як
+ *      непрозора адреса переходу (інваріант `CLAUDE_RULES.md`, 2026-09-21).
  *   2. Дві дати в різних календарях — ОДИН рядок плюс примітка, не діапазон.
  *   3. Порожнє поле не малює рядок — ніяких «—».
  *   4. Зображення без автора або ліцензії на дошку не йде.
@@ -63,20 +64,20 @@ const POLTAVA: Partial<HistoryCardData> = {
     },
     {
       label: 'Місце', status: 'verified', total: 1,
-      values: [{ label: 'Полтава', qid: 'Q156747', lat: 49.589, lon: 34.551 }],
+      values: [{ label: 'Полтава', entity_ref: { provider: 'wikidata', id: 'Q156747' }, lat: 49.589, lon: 34.551 }],
     },
     {
       label: 'Учасники', status: 'mixed', total: 4,
       values: [
-        { label: 'Шведська імперія', qid: 'Q215443' },
-        { label: 'Гетьманщина', qid: 'Q212439' },
-        { label: 'Військо Запорозьке Низове', qid: 'Q4122709' },
-        { label: 'Московське царство', qid: 'Q186096' },
+        { label: 'Шведська імперія', entity_ref: { provider: 'wikidata', id: 'Q215443' } },
+        { label: 'Гетьманщина', entity_ref: { provider: 'wikidata', id: 'Q212439' } },
+        { label: 'Військо Запорозьке Низове', entity_ref: { provider: 'wikidata', id: 'Q4122709' } },
+        { label: 'Московське царство', entity_ref: { provider: 'wikidata', id: 'Q186096' } },
       ],
     },
   ],
   secondary: [
-    { label: 'Країна', status: 'verified', total: 1, values: [{ label: 'Україна', qid: 'Q212' }] },
+    { label: 'Країна', status: 'verified', total: 1, values: [{ label: 'Україна', entity_ref: { provider: 'wikidata', id: 'Q212' } }] },
   ],
   content_language: 'uk',
 }
@@ -98,8 +99,8 @@ describe('HistoryCard · технічних назв на картці нема�
   it('ні кодів властивостей, ні QID у видимому тексті', () => {
     const w = render(POLTAVA)
     const text = w.text()
-    // qid у даних є — він потрібен для переходу; на картці його бути не може
-    expect(POLTAVA.primary![1].values[0].qid).toBe('Q156747')
+    // посилання в даних є — воно потрібне для переходу; на картці його бути не може
+    expect(POLTAVA.primary![1].values[0].entity_ref?.id).toBe('Q156747')
     expect(text).not.toMatch(/Q\d{3,}/)
     expect(text).not.toMatch(/\bP\d{2,}\b/)
   })
@@ -213,10 +214,11 @@ describe('HistoryCard · два стани', () => {
 })
 
 describe('HistoryCard · переходи', () => {
-  it('значення з qid просить відкрити суміжну картку', async () => {
+  it('значення з entity_ref просить відкрити суміжну картку', async () => {
     const w = render(POLTAVA, true, LIVE)
     await w.findAll('.history-card__link')[0].trigger('click')
-    expect(w.emitted('open-entity')![0]).toEqual(['Q156747', 'Полтава'])
+    // Посилання йде далі ЦІЛИМ і непрозорим — рендерер `id` не розбирає.
+    expect(w.emitted('open-entity')![0]).toEqual([{ provider: 'wikidata', id: 'Q156747' }, 'Полтава'])
   })
 
   it('шпилька на карту лише коли координата є', async () => {
@@ -227,7 +229,7 @@ describe('HistoryCard · переходи', () => {
     expect(w.emitted('to-map')![0]).toEqual([49.589, 34.551, 'Полтава'])
   })
 
-  it('значення без qid не є посиланням', () => {
+  it('значення без entity_ref не є посиланням', () => {
     const w = render(KHMELNYTSKY, true, LIVE)
     expect(w.find('.history-card__link').exists()).toBe(false)
   })

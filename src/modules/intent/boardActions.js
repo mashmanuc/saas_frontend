@@ -175,6 +175,15 @@ export function sanitizeSourceList(raw) {
 const HISTORY_VARIANTS = ['person', 'event', 'monument']
 const HISTORY_STATUSES = ['verified', 'mixed']
 
+/** Непрозоре посилання `{provider, id}`: лише форма й довжина, без розбору `id`. */
+function sanitizeEntityRef(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const provider = typeof raw.provider === 'string' ? raw.provider.trim() : ''
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  if (!/^[a-z][a-z0-9_]{0,31}$/.test(provider) || !id || id.length > 128) return null
+  return { provider, id }
+}
+
 /** Значення рядка картки. Закритий набір ключів — як у sourcesData. */
 function sanitizeHistoryValue(raw) {
   if (!raw || typeof raw !== 'object') return null
@@ -183,8 +192,12 @@ function sanitizeHistoryValue(raw) {
   if (!label && !display) return null
   const out = { label: label || display }
   if (display) out.display = display
-  // `qid` НЕ показується на картці — він лише адреса переходу.
-  if (typeof raw.qid === 'string' && /^Q\d+$/.test(raw.qid)) out.qid = raw.qid
+  // `entity_ref` НЕ показується на картці — лише адреса переходу. Це непрозоре
+  // посилання: перевіряємо ФОРМУ нашої структури, а не формат `id` джерела.
+  // До 2026-09-21 тут стояло `/^Q\d+$/` — фронт розбирав ідентифікатор Wikidata,
+  // що суперечить інваріанту `CLAUDE_RULES.md` про адаптери.
+  const ref = sanitizeEntityRef(raw.entity_ref)
+  if (ref) out.entity_ref = ref
   if (typeof raw.old_style === 'string' && raw.old_style.trim()) {
     out.old_style = raw.old_style.trim().slice(0, 80)
   }
@@ -513,8 +526,8 @@ const HANDLERS = {
    * Довідкова картка історичної сутності (ТЗ дизайнера 2026-09-20).
    *
    * ⚠️ ТЕХНІЧНИХ НАЗВ У ПАЙЛОАДІ НЕМАЄ. Сервер кладе людські підписи мовою
-   * матеріалу; коди властивостей і `qid` на картку не малюються — `qid`
-   * лишається в даних лише як адреса переходу на суміжну картку.
+   * матеріалу; коди властивостей і ідентифікатори на картку не малюються —
+   * `entity_ref` лишається в даних лише як непрозора адреса переходу.
    *
    * Порожній рядок сюди не доходить: `sanitizeHistoryField` відкидає поле без
    * значень, тож «—» на картці не з'являється за побудовою.

@@ -23,7 +23,7 @@
  */
 import { computed } from 'vue'
 
-import type { MapCardData, WBAsset, WBMapMarker } from '../../types/winterboard'
+import type { EntityRef, MapCardData, WBAsset, WBMapMarker } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -80,7 +80,7 @@ const emit = defineEmits<{
   /** Клік належить картці, намальованій ЗВЕРХУ — WBCanvas стартує її Konva-drag. */
   'foreign-drag': [payload: { assetId: string; ev: PointerEvent }]
   /** Клік на сутність у довідковій картці — кімната будує суміжну картку. */
-  'open-entity': [payload: { sourceId: string; qid: string; label: string }]
+  'open-entity': [payload: { sourceId: string; ref: EntityRef; label: string }]
   /** Шпилька, якій нема куди лягти: карти на дошці ще немає. */
   'to-map': [payload: { sourceId: string; lat: number; lon: number; label: string }]
 }>()
@@ -173,8 +173,8 @@ const ctx = computed<OverlayCtx>(() => ({
   // Клік на сутність у довідковій картці. Побудувати суміжну картку без мережі
   // не можна, тому подія йде нагору — рішення й сам виклик коридору належать
   // кімнаті, а не шару оверлеїв.
-  onOpenEntity: (source: WBAsset, qid: string, label: string) =>
-    emit('open-entity', { sourceId: source.id, qid, label }),
+  onOpenEntity: (source: WBAsset, ref: EntityRef, label: string) =>
+    emit('open-entity', { sourceId: source.id, ref, label }),
   // Шпилька на карту — навпаки, суто стан дошки: беремо наявну карту або
   // просимо кімнату створити нову. Нового шляху запису тут немає — усе через
   // той самий `asset-update`.

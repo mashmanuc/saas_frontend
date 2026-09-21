@@ -21,7 +21,7 @@
 //   proxy contract. Лишаються окремим блоком у WBCanvas незмінно.
 
 import type { Component } from 'vue'
-import type { WBAsset } from '../../types/winterboard'
+import type { EntityRef, WBAsset } from '../../types/winterboard'
 
 import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
 
@@ -92,7 +92,7 @@ export interface OverlayCtx {
   /** Клік на сутність у довідковій картці — відкрити суміжну картку ПОРУЧ,
    *  не заміняючи поточну. Необовʼязковий: полотно без цього обробника
    *  просто не має переходів, а картка лишається робочою. */
-  onOpenEntity?: (source: WBAsset, qid: string, label: string) => void
+  onOpenEntity?: (source: WBAsset, ref: EntityRef, label: string) => void
   /** Шпилька на карту дошки. Картка кличе його лише коли координата справді
    *  є місцем події, а не центроїдом країни. */
   onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void
@@ -392,7 +392,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       ...stdEvents(asset, ctx),
       // Клік на сутність і шпилька на карту доходять до полотна тим самим
       // шляхом, що решта подій картки — окремого каналу немає.
-      'open-entity': (qid: string, label: string) => ctx.onOpenEntity?.(asset, qid, label),
+      'open-entity': (ref: EntityRef, label: string) => ctx.onOpenEntity?.(asset, ref, label),
       'to-map': (lat: number, lon: number, label: string) =>
         ctx.onToMap?.(asset, lat, lon, label),
     }),
