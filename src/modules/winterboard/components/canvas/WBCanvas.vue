@@ -1005,6 +1005,7 @@ import {
 } from '../../engine/zoomPan'
 import { notifyWarning } from '@/utils/notify'
 import { autofitExpressions, graphViewportFor } from '../../utils/graphAutofit'
+import { extractX0 } from '../../utils/taskPoint'
 
 // A3.3: Performance benchmark flag — set to true in dev to see console.time markers
 const __DEV_PERF__ = import.meta.env.DEV && import.meta.env.VITE_WB_PERF === 'true'
@@ -1203,7 +1204,10 @@ function handleSpawnCompanions(payload: {
 
     // null = для цього контенту немає чесного рендера (напр. зрізана
     // піраміда без шаблона) — пустушку не створюємо і в урок не пишемо.
-    const companionData = buildCompanionData(resolution)
+    const companionData = buildCompanionData(
+      resolution,
+      (sourceAsset?.data as { question?: string } | undefined)?.question,
+    )
     if (companionData === null) {
       // 2026-08-16, живий прогін власника («кнопка "Побудувати" не працює»):
       // задача про вектори у трикутнику → реєстр обрав nmt3d → екстрактор
@@ -1293,7 +1297,10 @@ function calculusViewportFor(expr: string, must: number[]): Record<string, unkno
 }
 
 /** null = companion чесно НЕ створюється (немає шаблона) — не пустушка. */
-function buildCompanionData(resolution: CompanionResolution): Record<string, unknown> | null {
+function buildCompanionData(
+  resolution: CompanionResolution,
+  question?: string,
+): Record<string, unknown> | null {
   const d = resolution.data
 
   switch (resolution.rendererType) {
@@ -1402,11 +1409,14 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
           viewport: calculusViewportFor(expr, [a, b]),
         }
       }
+      // x₀ з умови задачі («у точці x₀ = 3»); fingerprint точки не несе
+      // (прод 2026-09-22: картка стояла в x₀ = 1 при x₀ = 3 в умові).
+      const x0 = extractX0(question) ?? 1.0
       return {
         version: 1, mode: 'derivative',
-        expr, x0: 1.0,
+        expr, x0,
         showSecant: false, h: 0.5, showDerivTrace: false,
-        viewport: calculusViewportFor(expr, [1.0]),
+        viewport: calculusViewportFor(expr, [x0]),
       }
     }
 
