@@ -2,8 +2,11 @@
  * Тимчасовий превʼю: рендерить три картки з РЕАЛЬНИМИ пайлоадами в HTML-файл,
  * щоб подивитись очима. Не перевірка — показ.
  *
- * Запуск: npx vitest run src/modules/winterboard/__tests__/historyCardPreview.spec.ts
+ * Запуск: HISTORY_CARD_PREVIEW=1 npx vitest run src/modules/winterboard/__tests__/historyCardPreview.spec.ts
  * Результат: DATA/knowledge_probe/CARD_CONTRACT/board_payloads/preview.html
+ *
+ * Лише на явний запит: у звичайному прогоні він читав `../DATA` поза будь-яким
+ * git (у CI і воркtree — падіння) і ПИСАВ файл при кожному запуску тестів.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -18,7 +21,7 @@ const ROOT = resolve(__dirname, '../../../..')
 const DATA = resolve(ROOT, '../DATA/knowledge_probe/CARD_CONTRACT/board_payloads')
 const SFC = resolve(__dirname, '../components/board/objects/HistoryCardRenderer.vue')
 
-describe('HistoryCard · превʼю', () => {
+describe.runIf(process.env.HISTORY_CARD_PREVIEW === '1')('HistoryCard · превʼю (HISTORY_CARD_PREVIEW=1)', () => {
   it('рендерить три картки в preview.html', () => {
     const payloads = JSON.parse(readFileSync(resolve(DATA, 'all.json'), 'utf-8'))
     // Стилі беремо з самого SFC — те саме, що побачить дошка.

@@ -12,19 +12,22 @@
  * стан читається, пауза не бреше зникненням значка.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 /**
- * Читає файл від кореня репозиторію.
- *
- * Через cwd, а не через `new URL(..., import.meta.url)`: у vitest
- * `import.meta.url` не є file-URL, і конструктор падає з «URL must be of
- * scheme file». Перша редакція цього файлу так і впала — три тести з десяти.
+ * Корінь репозиторію фронту — від самого файлу (__dirname), а не через
+ * `process.cwd()/..` + `frontend/`: так тест падав у будь-якому воркtree і в CI.
+ * (`new URL(..., import.meta.url)` у vitest не годиться — не file-URL.)
  */
-async function readRepoFile(rel: string): Promise<string> {
+const FE_ROOT = resolve(__dirname, '../../../..')
+/** Код бекенду — сусідній репозиторій. Є лише в повному checkout `D:\m4sh_v1`,
+ *  у CI (там лише frontend) і в ізольованих воркtree його немає. */
+const BE_VIEWS = resolve(FE_ROOT, '../backend/apps/winterboard/api/views.py')
+
+async function readFile(abs: string): Promise<string> {
   const fs = await import('node:fs/promises')
-  const path = await import('node:path')
-  // process.cwd() === frontend/ під час прогону vitest
-  return fs.readFile(path.resolve(process.cwd(), '..', rel), 'utf-8')
+  return fs.readFile(abs, 'utf-8')
 }
 
 type RecState = 'idle' | 'recording' | 'paused' | 'finalized'
@@ -122,8 +125,7 @@ describe('межі адресата', () => {
   it('значок у розмітці стоїть під isStudent, не під !isTeacher', async () => {
     // Різниця не косметична: у кімнаті є третя роль (staff/адмін), і
     // `!isTeacher` показав би їй індикатор учня.
-    const src = await readRepoFile(
-      'frontend/src/modules/winterboard/views/WBClassroomRoom.vue')
+    const src = await readFile(resolve(FE_ROOT, 'src/modules/winterboard/views/WBClassroomRoom.vue'))
     const i = src.indexOf('wb-rec-indicator')
     expect(i).toBeGreaterThan(0)
     const block = src.slice(Math.max(0, i - 400), i)
@@ -131,11 +133,13 @@ describe('межі адресата', () => {
   })
 })
 
-describe('контракт події з бекендом', () => {
+// Без сусіднього backend/ контракт перевірити нема з чим — пропуск ЯВНИЙ, з
+// причиною в назві, а не хибне червоне в CI. Повний checkout запускає його.
+describe.skipIf(!existsSync(BE_VIEWS))('контракт події з бекендом (потрібен сусідній ../backend)', () => {
   it('kill-тест: BE шле саме ті поля, які читає FE', async () => {
     // Копія логіки вище розійшлася б із оригіналом непомітно, якби BE
     // перейменував поле. Тому звіряємось із самим BE-джерелом.
-    const be = await readRepoFile('backend/apps/winterboard/api/views.py')
+    const be = await readFile(BE_VIEWS)
     const i = be.indexOf('_broadcast_recording_state')
     expect(i).toBeGreaterThan(0)
     const body = be.slice(i, i + 1800)
@@ -145,7 +149,7 @@ describe('контракт події з бекендом', () => {
   })
 
   it('усі чотири переходи розсилаються', async () => {
-    const be = await readRepoFile('backend/apps/winterboard/api/views.py')
+    const be = await readFile(BE_VIEWS)
     const calls = be.match(/_broadcast_recording_state\(session, state=/g) ?? []
     // start · resume · pause · finalize — пропустити бодай один означає, що
     // учень побачить не той стан, у якому насправді сесія.

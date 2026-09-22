@@ -16,15 +16,16 @@
  */
 import { describe, it, expect } from 'vitest'
 
+/** Читає файл від кореня репозиторію ФРОНТУ (не через `../frontend/` —
+ *  тоді тест падав у будь-якому воркtree/CI, де тека зветься інакше). */
 async function readRepoFile(rel: string): Promise<string> {
   const fs = await import('node:fs/promises')
   const path = await import('node:path')
-  // process.cwd() === frontend/ під час прогону vitest
-  return fs.readFile(path.resolve(process.cwd(), '..', rel), 'utf-8')
+  return fs.readFile(path.resolve(__dirname, '../../../..', rel), 'utf-8')
 }
 
-const FLAGS = 'frontend/src/modules/winterboard/config/featureFlags.ts'
-const VIEW  = 'frontend/src/modules/winterboard/views/WBBoardList.vue'
+const FLAGS = 'src/modules/winterboard/config/featureFlags.ts'
+const VIEW  = 'src/modules/winterboard/views/WBBoardList.vue'
 
 describe('окрема ручка для курсів', () => {
   it('🔴 `isCoursesStudioEnabled` існує і за замовчуванням false', async () => {
