@@ -74,3 +74,21 @@ describe('tipPool — що показуємо', () => {
     }
   })
 })
+
+describe('assistantPlaceholder — поле чату за предметами', async () => {
+  const { assistantPlaceholder } = await import('../assistantTips')
+  it('лише історія — про історію, без математики', () => {
+    const text = assistantPlaceholder(tipSubjects(state()))
+    expect(text).not.toMatch(/математик/)
+    expect(text).toMatch(/подію чи постать/)
+  })
+  it('кілька предметів або невідомо — нейтрально', () => {
+    expect(assistantPlaceholder(tipSubjects(state({ registry: registry('math', 'history') }))))
+      .toBe('Продовжте діалог або запитайте за темою уроку…')
+    expect(assistantPlaceholder(new Set())).toBe('Продовжте діалог або запитайте за темою уроку…')
+    expect(assistantPlaceholder(null)).toBe('Продовжте діалог або запитайте за темою уроку…')
+  })
+  it('лише математика — про математику', () => {
+    expect(assistantPlaceholder(tipSubjects(state({ registry: registry('math') })))).toMatch(/математик/)
+  })
+})

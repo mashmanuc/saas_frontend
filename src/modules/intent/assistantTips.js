@@ -170,3 +170,14 @@ export function tipPool(context, subjects) {
     .filter((tip) => tip.s === 'platform' || subjects === null || subjects.has(tip.s))
     .map((tip) => tip.t)
 }
+
+/**
+ * Підказка в полі чату — за тим самим правилом, що й бульбашки: один видимий
+ * предмет — про нього; кілька або невідомо — нейтрально, без чужого предмета.
+ */
+export function assistantPlaceholder(subjects) {
+  const only = subjects && subjects.size === 1 ? [...subjects][0] : null
+  if (only === 'history') return 'Продовжте діалог або спитайте про подію чи постать…'
+  if (only === 'math') return 'Продовжте діалог або спитайте про математику…'
+  return 'Продовжте діалог або запитайте за темою уроку…'
+}

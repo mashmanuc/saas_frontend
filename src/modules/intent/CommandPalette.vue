@@ -331,7 +331,7 @@ import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
 import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
-import { tipPool, tipSubjects } from './assistantTips'
+import { assistantPlaceholder, tipPool, tipSubjects } from './assistantTips'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
@@ -938,7 +938,8 @@ const uiText = computed(() => {
     paletteAria: 'Командна палітра',
     listening: 'Слухаю… говоріть',
     commandPlaceholder: 'Що зробити? (напр. «урок», «дошку», «мої уроки»)',
-    aiPlaceholder: 'Продовжте діалог або спитайте про математику…',
+    // За предметами вчителя, як і бульбашки (слово власника 2026-09-22).
+    aiPlaceholder: assistantPlaceholder(tipSubjects(corridor.state)),
     noResults: 'Нічого не знайдено',
     threadWaiting: (count) => `Незавершена розмова (${count})`,
     pinTitle: 'Закріпити — дошка лишиться клікабельною',
