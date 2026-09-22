@@ -45,7 +45,7 @@
             <button type="button" :title="labels.zoomIn" :disabled="zoom >= 4" @click.stop="changeZoom(1)">+</button>
           </div>
           <svg class="map-card__svg" :viewBox="mapViewBox" preserveAspectRatio="xMidYMid meet">
-            <rect class="map-card__bg" x="0" y="0" :width="VB" :height="VB" />
+            <rect class="map-card__bg" x="0" y="0" :width="VB" :height="VBH" />
             <path
               v-for="(path, i) in physicalLand"
               :key="`land-${i}`"
@@ -74,10 +74,14 @@
               :class="{ 'is-active': m.id === data.active_marker_id }"
             >
               <circle
-                class="map-card__pin" :cx="m.x" :cy="m.y" r="6"
+                class="map-card__pin" :cx="m.x" :cy="m.y" r="9"
                 @click.stop="selectMarker(m.id)" @mousedown.stop @pointerdown.stop
               />
-              <text class="map-card__pinlabel" :x="m.x + 9" :y="m.y + 4">{{ m.label }}</text>
+              <line
+                v-if="m.ly !== m.y + 7"
+                class="map-card__leader" :x1="m.x" :y1="m.y" :x2="m.x + 12" :y2="m.ly - 7"
+              />
+              <text class="map-card__pinlabel" :x="m.x + 14" :y="m.ly">{{ m.label }}</text>
             </g>
           </svg>
           <!-- Не прикраса: без цього підпису сучасна основа під історичними
@@ -114,7 +118,7 @@ import { cardTextScaleStyle, presentationScaleOf } from '../../../board/cardPres
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { MAP_LABELS } from '../../../board/timelinePresentation'
-import { BASEMAPS, basemapSpec, landPaths, project } from '../../../board/basemaps'
+import { BASEMAPS, basemapAspect, basemapSpec, landPaths, project } from '../../../board/basemaps'
 import SourceList from './SourceList.vue'
 
 const { t } = useI18n()
@@ -150,14 +154,35 @@ const labels = computed(() => MAP_LABELS[materialLanguage.value])
 
 const spec = computed(() => basemapSpec(data.value.basemap))
 const zoom = ref(1)
-const physicalLand = computed(() => landPaths(spec.value, VB))
+// Висота полотна — за пропорціями самої основи: однаковий масштаб X/Y (див.
+// `basemapAspect`). Було VB × VB — «Україну» тягнуло вгору в ~1.45 раза.
+const VBH = computed(() => Math.round(VB * basemapAspect(spec.value)))
+const physicalLand = computed(() => landPaths(spec.value, VB, VBH.value))
 
 /** Місця з придатними координатами. Решта не малюється взагалі: marker,
  *  притиснутий до краю, виглядав би як факт про інше місце. */
-const placed = computed(() => markers.value.flatMap((m) => {
+const placed = computed(() => spreadLabels(markers.value.flatMap((m) => {
   const p = project(m.lat, m.lon, spec.value)
-  return p ? [{ id: m.id, label: m.label, x: p.x * VB, y: p.y * VB }] : []
-}))
+  return p ? [{ id: m.id, label: m.label, x: p.x * VB, y: p.y * VBH.value }] : []
+})))
+
+// Підписи близьких місць не мають лягати один на одний (власник 2026-09-22:
+// Суботів і Чигирин — ~10 км, на основі «Україна» підписи зливались). Точка
+// лишається на своїй координаті; зсувається лише ПІДПИС — нижче, з виноскою.
+const LABEL_H = 28
+const LABEL_CHAR_W = 12
+function spreadLabels(points: Array<{ id: string; label: string; x: number; y: number }>) {
+  const boxes: Array<{ x1: number; x2: number; y1: number; y2: number }> = []
+  return [...points].sort((a, b) => a.y - b.y || a.x - b.x).map((point) => {
+    const x1 = point.x + 14
+    const x2 = x1 + Math.max(1, String(point.label || '').length) * LABEL_CHAR_W
+    let ly = point.y + 7
+    const hits = (y: number) => boxes.some(b => x1 < b.x2 && b.x1 < x2 && y - LABEL_H + 6 < b.y2 && b.y1 < y + 6)
+    for (let i = 0; i < 12 && hits(ly); i++) ly += LABEL_H
+    boxes.push({ x1, x2, y1: ly - LABEL_H + 6, y2: ly + 6 })
+    return { ...point, ly }
+  })
+}
 
 const gridLines = computed(() => {
   const [west, south, east, north] = spec.value.bounds
@@ -165,11 +190,11 @@ const gridLines = computed(() => {
   const out: Array<{ k: string; x1: number; y1: number; x2: number; y2: number }> = []
   for (let lon = Math.ceil(west / step) * step; lon <= east; lon += step) {
     const p = project((south + north) / 2, lon, spec.value)
-    if (p) out.push({ k: `v${lon}`, x1: p.x * VB, y1: 0, x2: p.x * VB, y2: VB })
+    if (p) out.push({ k: `v${lon}`, x1: p.x * VB, y1: 0, x2: p.x * VB, y2: VBH.value })
   }
   for (let lat = Math.ceil(south / step) * step; lat <= north; lat += step) {
     const p = project(lat, (west + east) / 2, spec.value)
-    if (p) out.push({ k: `h${lat}`, x1: 0, y1: p.y * VB, x2: VB, y2: p.y * VB })
+    if (p) out.push({ k: `h${lat}`, x1: 0, y1: p.y * VBH.value, x2: VB, y2: p.y * VBH.value })
   }
   return out
 })
@@ -191,7 +216,7 @@ const regionPolygons = computed(() =>
       .map(point => project(point?.lat, point?.lon, spec.value))
       .filter(Boolean)
     return points.length >= 3
-      ? [{ id: region.id, points: points.map(p => `${p!.x * VB},${p!.y * VB}`).join(' ') }]
+      ? [{ id: region.id, points: points.map(p => `${p!.x * VB},${p!.y * VBH.value}`).join(' ') }]
       : []
   }),
 )
@@ -200,13 +225,14 @@ const activeMarker = computed(() =>
   markers.value.find(m => m.id === data.value.active_marker_id) ?? null)
 
 const mapViewBox = computed(() => {
-  const size = VB / zoom.value
+  const width = VB / zoom.value
+  const height = VBH.value / zoom.value
   const active = placed.value.find(marker => marker.id === data.value.active_marker_id)
   const centerX = active?.x ?? VB / 2
-  const centerY = active?.y ?? VB / 2
-  const x = Math.max(0, Math.min(VB - size, centerX - size / 2))
-  const y = Math.max(0, Math.min(VB - size, centerY - size / 2))
-  return `${x} ${y} ${size} ${size}`
+  const centerY = active?.y ?? VBH.value / 2
+  const x = Math.max(0, Math.min(VB - width, centerX - width / 2))
+  const y = Math.max(0, Math.min(VBH.value - height, centerY - height / 2))
+  return `${x} ${y} ${width} ${height}`
 })
 
 function changeZoom(delta: number): void {
@@ -282,14 +308,21 @@ defineExpose({ BASEMAPS })
 .map-card__flow { display: flow-root; }
 .map-card__plot { position: relative; }
 .map-card__svg { width: 100%; height: auto; display: block; }
-.map-card__bg { fill: #f8fafc; }
-.map-card__land { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 1.2; }
-.map-card__grid { stroke: #e2e8f0; stroke-width: 1; }
+/* Море й суша мусять розрізнятись з першого погляду: було #f8fafc і #e2e8f0 —
+   два майже однакові сірі, карта читалась як сіра пляма («обрубок»). */
+.map-card__bg { fill: #cfe3f5; }
+.map-card__land { fill: #f3efe3; stroke: #8a7f6a; stroke-width: 1.4; stroke-linejoin: round; }
+.map-card__grid { stroke: rgba(71, 85, 105, 0.16); stroke-width: 1; }
 .map-card__region { fill: rgba(245, 158, 11, 0.22); stroke: #d97706; stroke-width: 2; }
 .map-card__route { fill: none; stroke: #0ea5e9; stroke-width: 3; stroke-dasharray: 8 6; }
-.map-card__pin { fill: #059669; cursor: pointer; pointer-events: auto; }
+.map-card__pin { fill: #059669; stroke: #fff; stroke-width: 3; cursor: pointer; pointer-events: auto; }
 .map-card__marker.is-active .map-card__pin { fill: #b91c1c; }
-.map-card__pinlabel { font-size: 20px; fill: #0f172a; }
+.map-card__leader { stroke: #0f172a; stroke-width: 1.5; opacity: 0.55; }
+/* Ореол: підпис читається і на суші, і на морі. */
+.map-card__pinlabel {
+  font-size: 22px; font-weight: 600; fill: #0f172a;
+  paint-order: stroke; stroke: rgba(255, 255, 255, 0.92); stroke-width: 5px; stroke-linejoin: round;
+}
 .map-card__zoom {
   position: absolute; z-index: 2; right: 6px; top: 6px; display: flex; gap: 4px;
   pointer-events: auto;

@@ -61,12 +61,28 @@ export function basemapSpec(id: unknown): BasemapSpec {
  * Це навмисно: marker, притиснутий до краю, виглядав би як факт про місце, яке
  * насправді деінде. Краще чесно не показати.
  */
+function mercator(deg: number): number {
+  const clamped = Math.max(-85, Math.min(85, deg))
+  return Math.log(Math.tan(Math.PI / 4 + (clamped * Math.PI) / 360))
+}
+
+/**
+ * Висота основи до ширини в ОДНАКОВИХ одиницях (радіани Mercator).
+ *
+ * 2026-09-22 (власник: «карта — обрубок»): `projectRaw` віддає частки [0..1] по
+ * кожній осі окремо, а картка клала їх у квадрат 1000×1000 — основу «Україна»
+ * (20° × 9°, співвідношення ~0.69) розтягувало по вертикалі в ~1.45 раза.
+ * Рендерер множить y на `VB * basemapAspect(spec)`: масштаб X і Y однаковий.
+ */
+export function basemapAspect(spec: BasemapSpec): number {
+  const [west, south, east, north] = spec.bounds
+  const width = ((east - west) * Math.PI) / 180
+  const height = mercator(north) - mercator(south)
+  return height / width
+}
+
 function projectRaw(lat: number, lon: number, spec: BasemapSpec): { x: number; y: number } {
   const [west, south, east, north] = spec.bounds
-  const mercator = (deg: number) => {
-    const clamped = Math.max(-85, Math.min(85, deg))
-    return Math.log(Math.tan(Math.PI / 4 + (clamped * Math.PI) / 360))
-  }
   const yTop = mercator(north)
   const yBottom = mercator(south)
   return {
@@ -98,7 +114,7 @@ type LandCollection = { features?: Array<{ geometry?: LandGeometry }> }
 
 /** SVG paths фізичної суші для заданої основи. Координати поза viewport не
  * відкидаємо: SVG clip обрізає їх коректно, без фальшивих ліній по краях. */
-export function landPaths(spec: BasemapSpec, viewBox = 1000): string[] {
+export function landPaths(spec: BasemapSpec, viewBox = 1000, viewBoxHeight = viewBox): string[] {
   const collection = naturalEarthLand as unknown as LandCollection
   const out: string[] = []
   const ringPath = (ring: Position[]): string => ring.flatMap((point, index) => {
@@ -106,7 +122,7 @@ export function landPaths(spec: BasemapSpec, viewBox = 1000): string[] {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return []
     const p = projectRaw(lat, lon, spec)
     const command = index === 0 ? 'M' : 'L'
-    return [`${command}${(p.x * viewBox).toFixed(2)},${(p.y * viewBox).toFixed(2)}`]
+    return [`${command}${(p.x * viewBox).toFixed(2)},${(p.y * viewBoxHeight).toFixed(2)}`]
   }).join(' ') + ' Z'
 
   for (const feature of collection.features ?? []) {
