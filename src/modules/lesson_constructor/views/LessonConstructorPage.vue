@@ -49,24 +49,44 @@
           </h2>
           <p class="lc-section__hint">{{ topicsHint }}</p>
 
-          <!-- Розділами програми НМТ (слово власника 2026-09-22: «теми розкидані»).
-               Порядок і розділи — з таксономії на бекенді (`export_topics`). -->
-          <div v-for="group in topicGroups" :key="group.section" class="lc-topic-group">
-            <h3 class="lc-topic-group__title">{{ group.section }}</h3>
-            <div class="lc-topics">
-              <button
-                v-for="topic in group.topics"
-                :key="topic.value"
-                type="button"
-                class="lc-topic-chip"
-                :class="{
-                  'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                  'lc-topic-chip--disabled': !canPick(topic.value),
-                }"
-                @click="toggleTopic(topic.value)"
-              >
-                {{ topic.label }}
-              </button>
+          <!-- Два блоки (Алгебра / Геометрія), що згортаються; усередині розділ —
+               один рядок «назва | чипи» (слово власника 2026-09-22: «розділити на
+               алгебру і геометрію, а тоді розгортаються теми»). Блоки, розділи й
+               порядок — з таксономії на бекенді (`export_topics`). -->
+          <div v-for="block in topicBlocks" :key="block.block" class="lc-topic-block">
+            <button
+              type="button"
+              class="lc-topic-block__head"
+              :aria-expanded="openBlocks.includes(block.block)"
+              @click="toggleBlock(block.block)"
+            >
+              <span class="lc-topic-block__chevron" aria-hidden="true">
+                {{ openBlocks.includes(block.block) ? '▾' : '▸' }}
+              </span>
+              <span class="lc-topic-block__title">{{ block.block }}</span>
+              <span v-if="pickedIn(block).length" class="lc-topic-block__picked">
+                · {{ pickedIn(block).join(', ') }}
+              </span>
+            </button>
+            <div v-if="openBlocks.includes(block.block)" class="lc-topic-block__body">
+              <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
+                <div class="lc-topic-row__title">{{ group.section }}</div>
+                <div class="lc-topics">
+                  <button
+                    v-for="topic in group.topics"
+                    :key="topic.value"
+                    type="button"
+                    class="lc-topic-chip"
+                    :class="{
+                      'lc-topic-chip--active': selectedTopics.includes(topic.value),
+                      'lc-topic-chip--disabled': !canPick(topic.value),
+                    }"
+                    @click="toggleTopic(topic.value)"
+                  >
+                    {{ topic.label }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <p v-if="errors.topics" class="lc-error">{{ errors.topics }}</p>
@@ -401,16 +421,39 @@ function stepNo(n: number): number {
   return LESSON_TYPE_STEP_VISIBLE ? n : n - 1
 }
 
-/** Теми групами розділів — у порядку, який дав `export_topics`. */
-const topicGroups = computed(() => {
-  const groups: Array<{ section: string; topics: Array<(typeof TOPICS)[number]> }> = []
+type Topic = (typeof TOPICS)[number]
+type TopicBlock = { block: string; sections: Array<{ section: string; topics: Topic[] }> }
+
+/** Блоки → розділи → теми, у порядку, який дав `export_topics`. */
+const topicBlocks = computed(() => {
+  const blocks: TopicBlock[] = []
   for (const topic of TOPICS) {
-    const last = groups[groups.length - 1]
+    let block = blocks[blocks.length - 1]
+    if (!block || block.block !== topic.block) {
+      block = { block: topic.block, sections: [] }
+      blocks.push(block)
+    }
+    const last = block.sections[block.sections.length - 1]
     if (last && last.section === topic.section) last.topics.push(topic)
-    else groups.push({ section: topic.section, topics: [topic] })
+    else block.sections.push({ section: topic.section, topics: [topic] })
   }
-  return groups
+  return blocks
 })
+
+// Спочатку обидва блоки згорнуті: вчитель бачить два рядки, а не 61 чип.
+const openBlocks = ref<string[]>([])
+function toggleBlock(block: string) {
+  openBlocks.value = openBlocks.value.includes(block)
+    ? openBlocks.value.filter((b) => b !== block)
+    : [...openBlocks.value, block]
+}
+
+/** Назви обраних тем цього блоку — видно й у згорнутому заголовку. */
+function pickedIn(block: TopicBlock): string[] {
+  return block.sections.flatMap((s) => s.topics)
+    .filter((t) => selectedTopics.value.includes(t.value))
+    .map((t) => t.label)
+}
 
 const topicsNeeded = computed(() => topicsRequiredFor(lessonType.value))
 
@@ -601,10 +644,25 @@ async function handleGenerate() {
 }
 .lc-hint-blocked { margin: 8px 0 0; text-align: center; font-size: 13px; opacity: .8; }
 
-.lc-topic-group + .lc-topic-group { margin-top: 14px; }
-.lc-topic-group__title {
-  margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
-  text-transform: uppercase; color: #64748b;
+.lc-topic-block { border: 1px solid #e2e8f0; border-radius: 10px; }
+.lc-topic-block + .lc-topic-block { margin-top: 10px; }
+.lc-topic-block__head {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  padding: 12px 14px; background: none; border: 0; cursor: pointer; text-align: left;
+  font-size: 15px; color: #0f172a;
+}
+.lc-topic-block__chevron { width: 1em; color: #64748b; }
+.lc-topic-block__title { font-weight: 700; }
+.lc-topic-block__picked { color: #047857; font-weight: 600; }
+.lc-topic-block__body { padding: 0 14px 12px; }
+.lc-topic-row {
+  display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: start;
+  padding: 8px 0; border-top: 1px solid #f1f5f9;
+}
+.lc-topic-row__title { font-size: 13px; font-weight: 600; color: #64748b; padding-top: 6px; }
+@media (max-width: 640px) {
+  .lc-topic-row { grid-template-columns: 1fr; gap: 6px; }
+  .lc-topic-row__title { padding-top: 0; }
 }
 .lc-section__title {
   font-size: 1rem;

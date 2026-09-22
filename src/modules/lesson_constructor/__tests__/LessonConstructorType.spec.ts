@@ -45,6 +45,11 @@ const PARALLELOGRAM = 'Площа паралелограма, ромба, тра
 const TRIANGLE = 'Площа трикутника'
 const DERIVATIVE = 'Похідна'
 
+// Блоки тем (Алгебра / Геометрія) спочатку згорнуті — розгортаємо всі.
+async function openAll(w: any) {
+  for (const head of w.findAll('.lc-topic-block__head')) await head.trigger('click')
+  return w
+}
 function chip(w: any, text: string) {
   return w.findAll('button').find((b: any) => b.text().trim() === text)
 }
@@ -55,7 +60,7 @@ function generateBtn(w: any) {
   return w.find('.lc-btn-generate')
 }
 async function build(type: string, topics: string[]) {
-  const w = mount(LessonConstructorPage)
+  const w = await openAll(mount(LessonConstructorPage))
   await typeChip(w, type)!.trigger('click')
   for (const t of topics) await chip(w, t)!.trigger('click')
   return w
@@ -65,14 +70,14 @@ beforeEach(() => { generate.mockClear(); push.mockClear() })
 
 describe('тип уроку стоїть перед темами', () => {
   it('перша секція — саме тип', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     const titles = w.findAll('.lc-section__title').map(t => t.text())
     expect(titles[0]).toContain('1. Тип уроку')
     expect(titles[1]).toContain('2. Оберіть теми')
   })
 
   it('усі п’ять типів на екрані, custom немає', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     for (const l of ['Вивчення нової теми', 'Закріплення', 'Контроль',
                      'Узагальнення', 'Повторення']) {
       expect(typeChip(w, l)).toBeTruthy()
@@ -81,7 +86,7 @@ describe('тип уроку стоїть перед темами', () => {
   })
 
   it('без типу теми клікати не можна, і сказано чому', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await chip(w, TRIANGLE)!.trigger('click')
     expect(w.text()).toContain('Спершу оберіть тип уроку')
     expect(generateBtn(w).attributes('disabled')).toBeDefined()
@@ -162,19 +167,19 @@ describe('сім перевірок власника', () => {
 
 describe('підказки ведуть, а не забороняють', () => {
   it('для блокового типу сказано про дві споріднені', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await typeChip(w, 'Узагальнення')!.trigger('click')
     expect(w.text()).toContain('дві споріднені теми одного розділу')
   })
 
   it('для одиночного типу сказано про одну', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await typeChip(w, 'Контроль')!.trigger('click')
     expect(w.text()).toContain('Оберіть одну тему')
   })
 
   it('лічильник показує потребу типу, а не старі 5', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await typeChip(w, 'Узагальнення')!.trigger('click')
     expect(w.text()).toContain('0 / 2')
   })

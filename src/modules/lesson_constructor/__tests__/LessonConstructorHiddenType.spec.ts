@@ -26,16 +26,22 @@ const chip = (w: any, text: string) => w.findAll('.lc-topic-chip').find((b: any)
 
 beforeEach(() => { generate.mockClear(); push.mockClear() })
 
+// Блоки тем (Алгебра / Геометрія) спочатку згорнуті — розгортаємо всі.
+async function openAll(w: any) {
+  for (const head of w.findAll('.lc-topic-block__head')) await head.trigger('click')
+  return w
+}
+
 describe('крок типу схований', () => {
-  it('кроку «Тип уроку» на екрані немає, теми — перший крок', () => {
-    const w = mount(LessonConstructorPage)
+  it('кроку «Тип уроку» на екрані немає, теми — перший крок', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
     expect(w.find('.lc-type-chip').exists()).toBe(false)
     expect(w.text()).not.toContain('Тип уроку')
     expect(w.findAll('.lc-section__title')[0].text()).toMatch(/^1\. Оберіть тему/)
   })
 
   it('одна тема → запит із типом intro', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await chip(w, 'Похідна')!.trigger('click')
     await w.find('.lc-btn-generate').trigger('submit')
     await new Promise(r => setTimeout(r, 0))
@@ -45,7 +51,7 @@ describe('крок типу схований', () => {
   })
 
   it('клік по іншій темі замінює вибір — друга тема не додається', async () => {
-    const w = mount(LessonConstructorPage)
+    const w = await openAll(mount(LessonConstructorPage))
     await chip(w, 'Похідна')!.trigger('click')
     await chip(w, 'Інтеграл')!.trigger('click')
     await w.find('.lc-btn-generate').trigger('submit')
@@ -54,25 +60,45 @@ describe('крок типу схований', () => {
   })
 })
 
-describe('теми згруповані розділами', () => {
-  it('заголовки розділів у порядку програми', () => {
+describe('теми: два блоки, розділ = рядок', () => {
+  it('спочатку обидва блоки згорнуті — чипів не видно', () => {
     const w = mount(LessonConstructorPage)
-    const titles = w.findAll('.lc-topic-group__title').map((h: any) => h.text())
-    expect(titles[0]).toBe('Числа й вирази')
-    expect(titles).toContain('Планіметрія')
-    expect(titles.indexOf('Похідна та інтеграл')).toBeLessThan(titles.indexOf('Планіметрія'))
+    const titles = w.findAll('.lc-topic-block__title').map((h: any) => h.text())
+    expect(titles).toEqual(['Алгебра і початки аналізу', 'Геометрія'])
+    expect(w.findAll('.lc-topic-block__head')
+      .every((h: any) => h.attributes('aria-expanded') === 'false')).toBe(true)
+    expect(w.findAll('.lc-topic-chip').length).toBe(0)
   })
 
-  it('кожна тема показана рівно один раз', () => {
-    const w = mount(LessonConstructorPage)
+  it('розділи в порядку програми; дрібні злито', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
+    const rows = w.findAll('.lc-topic-row__title').map((h: any) => h.text())
+    expect(rows).toEqual([
+      'Числа й вирази', 'Рівняння й нерівності', 'Функції та початки аналізу',
+      'Комбінаторика, ймовірність, статистика', 'Планіметрія', 'Стереометрія',
+    ])
+  })
+
+  it('кожна тема показана рівно один раз', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
     expect(w.findAll('.lc-topic-chip').length).toBe(TOPICS.length)
   })
 
-  it('площі — у планіметрії, похідна — не поруч із ними', () => {
-    const w = mount(LessonConstructorPage)
-    const group = (title: string) => w.findAll('.lc-topic-group')
-      .find((g: any) => g.find('.lc-topic-group__title').text() === title)!
-    expect(group('Планіметрія').text()).toContain('Площа круга і його частин')
-    expect(group('Планіметрія').text()).not.toContain('Похідна')
+  it('площі — у геометрії, похідна — в алгебрі', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
+    const block = (title: string) => w.findAll('.lc-topic-block')
+      .find((b: any) => b.find('.lc-topic-block__title').text() === title)!
+    expect(block('Геометрія').text()).toContain('Площа круга і його частин')
+    expect(block('Геометрія').text()).not.toContain('Похідна')
+    expect(block('Алгебра і початки аналізу').text()).toContain('Похідна')
+  })
+
+  it('обрана тема видна в заголовку й після згортання', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
+    await chip(w, 'Призма')!.trigger('click')
+    const geo = w.findAll('.lc-topic-block__head')[1]
+    await geo.trigger('click')
+    expect(w.findAll('.lc-topic-block__head')[1].text()).toContain('Призма')
+    expect(w.findAll('.lc-topic-block__head')[0].text()).not.toContain('Призма')
   })
 })
