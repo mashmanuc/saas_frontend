@@ -27,6 +27,12 @@ function firstCall(): Record<string, any> {
 }
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
+// З 2026-09-22 крок типу схований (слово власника). Ці тести стережуть, що
+// його можна повернути одним рядком: вмикаємо прапорець лише тут.
+vi.mock('../lessonTypeRules', async () => ({
+  ...(await vi.importActual<any>('../lessonTypeRules')),
+  LESSON_TYPE_STEP_VISIBLE: true,
+}))
 vi.mock('../api/lessonConstructorApi', async () => {
   const actual = await vi.importActual<any>('../api/lessonConstructorApi')
   return { ...actual, lessonConstructorApi: { generate } }

@@ -204,6 +204,15 @@ export function reconcileTopics(
  * Чи можна взагалі клікнути цю тему зараз (для вигляду «неактивна»).
  * Уже обрану завжди можна зняти.
  */
+/**
+ * Крок «Тип уроку» на екрані конструктора (слово власника 2026-09-22: «тип уроку
+ * ми зараз не використовуємо — сховати; одна тема ок»). Сховано, а не видалено:
+ * повернути — один рядок. Поки крок схований, запит несе тип за замовчуванням
+ * `intro` (те саме, що сервер виводить для старих spec) — одна тема на урок.
+ */
+export const LESSON_TYPE_STEP_VISIBLE = false
+export const HIDDEN_STEP_LESSON_TYPE: LessonType = 'intro'
+
 export function canPickTopic(
   type: LessonType | '',
   selected: string[],

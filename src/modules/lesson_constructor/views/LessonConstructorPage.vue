@@ -19,7 +19,7 @@
         <!-- Стоїть ПЕРЕД темами свідомо: від типу залежить, скільки тем можна
              взяти, тож питати його після вибору тем означало б стирати вже
              зроблену роботу вчителя. -->
-        <section class="lc-section">
+        <section v-if="LESSON_TYPE_STEP_VISIBLE" class="lc-section">
           <h2 class="lc-section__title">1. Тип уроку</h2>
           <p class="lc-section__hint">Від типу залежить каркас плану і скільки тем брати.</p>
 
@@ -44,32 +44,37 @@
         <!-- ── Тема / теми ──────────────────────────────────────────────────── -->
         <section class="lc-section">
           <h2 class="lc-section__title">
-            2. Оберіть теми
+            {{ stepNo(2) }}. Оберіть {{ topicsNeeded === 1 ? 'тему' : 'теми' }}
             <span class="lc-badge">{{ selectedTopics.length }} / {{ topicsNeeded || '—' }}</span>
           </h2>
           <p class="lc-section__hint">{{ topicsHint }}</p>
 
-          <div class="lc-topics">
-            <button
-              v-for="topic in TOPICS"
-              :key="topic.value"
-              type="button"
-              class="lc-topic-chip"
-              :class="{
-                'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                'lc-topic-chip--disabled': !canPick(topic.value),
-              }"
-              @click="toggleTopic(topic.value)"
-            >
-              {{ topic.label }}
-            </button>
+          <!-- Розділами програми НМТ (слово власника 2026-09-22: «теми розкидані»).
+               Порядок і розділи — з таксономії на бекенді (`export_topics`). -->
+          <div v-for="group in topicGroups" :key="group.section" class="lc-topic-group">
+            <h3 class="lc-topic-group__title">{{ group.section }}</h3>
+            <div class="lc-topics">
+              <button
+                v-for="topic in group.topics"
+                :key="topic.value"
+                type="button"
+                class="lc-topic-chip"
+                :class="{
+                  'lc-topic-chip--active': selectedTopics.includes(topic.value),
+                  'lc-topic-chip--disabled': !canPick(topic.value),
+                }"
+                @click="toggleTopic(topic.value)"
+              >
+                {{ topic.label }}
+              </button>
+            </div>
           </div>
           <p v-if="errors.topics" class="lc-error">{{ errors.topics }}</p>
         </section>
 
         <!-- ── Кількість задач ──────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">3. Кількість задач</h2>
+          <h2 class="lc-section__title">{{ stepNo(3) }}. Кількість задач</h2>
           <div class="lc-task-count">
             <input
               v-model.number="taskCount"
@@ -96,7 +101,7 @@
 
         <!-- ── Тема оформлення ──────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">4. Стиль карток</h2>
+          <h2 class="lc-section__title">{{ stepNo(4) }}. Стиль карток</h2>
           <div class="lc-themes">
             <button
               v-for="t in THEMES"
@@ -114,7 +119,7 @@
 
         <!-- ── Фон дошки ────────────────────────────────────────────────────── -->
         <section class="lc-section">
-          <h2 class="lc-section__title">5. Фон дошки</h2>
+          <h2 class="lc-section__title">{{ stepNo(5) }}. Фон дошки</h2>
           <p class="lc-section__hint">Застосовується до всіх сторінок уроку, включно з теорією.</p>
 
           <!-- Режим: один колір / різнокольорові -->
@@ -280,6 +285,8 @@ import {
 } from '../api/lessonConstructorApi'
 import {
   LESSON_TYPE_OPTIONS,
+  LESSON_TYPE_STEP_VISIBLE,
+  HIDDEN_STEP_LESSON_TYPE,
   canPickTopic,
   focusIssue,
   isBlockType,
@@ -326,7 +333,8 @@ function hslToHex(h: number, s: number, l: number): string {
 // ── Form state ─────────────────────────────────────────────────────────────
 // Порожній рядок = тип ще не обрано. Замовчування тут було б брехнею: сервер
 // саме через мовчазний `intro` і відмовляв учителю, який нічого не обирав.
-const lessonType      = ref<LessonType | ''>('')
+// Крок типу схований → тип за замовчуванням (див. LESSON_TYPE_STEP_VISIBLE).
+const lessonType      = ref<LessonType | ''>(LESSON_TYPE_STEP_VISIBLE ? '' : HIDDEN_STEP_LESSON_TYPE)
 const typeNotice      = ref<string | null>(null)
 const selectedTopics  = ref<string[]>([])
 const taskCount       = ref(4)
@@ -388,6 +396,22 @@ const activeBgLabel = computed(
 )
 
 // ── Тип уроку і теми ───────────────────────────────────────────────────────
+/** Номер кроку на екрані: без кроку типу решта зсувається на один. */
+function stepNo(n: number): number {
+  return LESSON_TYPE_STEP_VISIBLE ? n : n - 1
+}
+
+/** Теми групами розділів — у порядку, який дав `export_topics`. */
+const topicGroups = computed(() => {
+  const groups: Array<{ section: string; topics: Array<(typeof TOPICS)[number]> }> = []
+  for (const topic of TOPICS) {
+    const last = groups[groups.length - 1]
+    if (last && last.section === topic.section) last.topics.push(topic)
+    else groups.push({ section: topic.section, topics: [topic] })
+  }
+  return groups
+})
+
 const topicsNeeded = computed(() => topicsRequiredFor(lessonType.value))
 
 const topicsHint = computed(() => {
@@ -401,6 +425,8 @@ const topicsHint = computed(() => {
 const focusProblem = computed(() => focusIssue(lessonType.value, selectedTopics.value))
 
 function canPick(topic: string): boolean {
+  // Без кроку типу вибір — перемикач (див. toggleTopic): жодна тема не «вимкнена».
+  if (!LESSON_TYPE_STEP_VISIBLE && topicsNeeded.value === 1) return true
   return canPickTopic(lessonType.value, selectedTopics.value, topic)
 }
 
@@ -420,6 +446,14 @@ function toggleTopic(value: string) {
   const idx = selectedTopics.value.indexOf(value)
   if (idx >= 0) {
     selectedTopics.value.splice(idx, 1)
+    typeNotice.value = null
+    return
+  }
+  // Крок типу схований → одна тема на урок, і клік по іншій ЗАМІНЮЄ вибір (як
+  // перемикач), а не впирається в заблоковану кнопку: без кроку типу вчитель
+  // не бачив би чому. З видимим кроком — старе правило (друга вимкнена).
+  if (!LESSON_TYPE_STEP_VISIBLE && topicsNeeded.value === 1 && selectedTopics.value.length) {
+    selectedTopics.value = [value]
     typeNotice.value = null
     return
   }
@@ -567,6 +601,11 @@ async function handleGenerate() {
 }
 .lc-hint-blocked { margin: 8px 0 0; text-align: center; font-size: 13px; opacity: .8; }
 
+.lc-topic-group + .lc-topic-group { margin-top: 14px; }
+.lc-topic-group__title {
+  margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+  text-transform: uppercase; color: #64748b;
+}
 .lc-section__title {
   font-size: 1rem;
   font-weight: 600;
