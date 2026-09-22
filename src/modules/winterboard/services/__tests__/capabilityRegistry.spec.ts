@@ -87,6 +87,19 @@ describe('картка похідної замість дубля-графіка
     expect(r.map((c) => c.rendererType)).toEqual(['graph_calculator'])
   })
 
+  it('квадратна функція: show_parabola + show_derivative → лише calculus_card (скрін −8x² + 10x)', () => {
+    const q = { equations: ['-8*x^2 + 10*x'], quadratic: { a: -8, b: 10, c: 0 } }
+    expect(resolveCompanions(['show_parabola', 'show_derivative'], q, []).map((c) => c.rendererType))
+      .toEqual(['calculus_card'])
+    expect(resolveCompanions(['show_quadratic_roots', 'show_discriminant', 'show_tangent'], q, []).map((c) => c.rendererType))
+      .toEqual(['calculus_card'])
+  })
+
+  it('квадратна задача без похідної — квадратна картка лишається', () => {
+    const q = { equations: ['x^2 - 4'], quadratic: { a: 1, b: 0, c: -4 } }
+    expect(resolveCompanions(['show_parabola'], q, []).map((c) => c.rendererType)).toEqual(['quadratic_card'])
+  })
+
   it('друге місце звільняється для іншого об\'єкта (не губимо третій інтент)', () => {
     const r = resolveCompanions(['show_graph', 'show_extrema', 'show_unit_circle'], eq, [])
     expect(r.map((c) => c.rendererType)).toEqual(['calculus_card', 'trig_circle'])

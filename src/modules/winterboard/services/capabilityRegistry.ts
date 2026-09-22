@@ -181,6 +181,9 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
  * `entities` лишається в сигнатурі: параметр описує fingerprint задачі, і
  * наступний критерій вибору рендерера, найпевніше, дивитиметься саме на нього.
  */
+/** Рендерери, що малюють ту саму криву f, що й картка похідної. */
+const SAME_CURVE_AS_CALCULUS = new Set(['graph_calculator', 'quadratic_card'])
+
 export function resolveCompanions(
   intents: string[],
   extractedData: Record<string, unknown>,
@@ -195,9 +198,10 @@ export function resolveCompanions(
     const guard = RENDERER_REQUIRES_DATA[renderer]
     return !guard || guard(extractedData)
   }
-  // Рішення власника 2026-09-22 (урок «Похідна», скрін: «два однакові
-  // графіка»): картка похідної сама малює криву f, тож графкалькулятор із ТІЄЮ
-  // САМОЮ функцією поруч — дубль. Є картка → графкалькулятора не пропонуємо.
+  // Рішення власника 2026-09-22 (урок «Похідна», скріни «два однакові
+  // графіка»): картка похідної сама малює криву f, тож графкалькулятор чи
+  // квадратна картка з ТІЄЮ САМОЮ функцією поруч — дубль. Є картка похідної →
+  // їх не пропонуємо (другий скрін: −8x² + 10x дав quadratic_card + calculus_card).
   const hasCalculus = intents.some(
     (i) => (INTENT_TO_RENDERERS[i] ?? []).includes('calculus_card'),
   ) && canSpawn('calculus_card')
@@ -207,7 +211,7 @@ export function resolveCompanions(
 
     for (const renderer of candidates) {
       if (!AVAILABLE_RENDERERS.has(renderer) || seen.has(renderer)) continue
-      if (renderer === 'graph_calculator' && hasCalculus) continue
+      if (hasCalculus && SAME_CURVE_AS_CALCULUS.has(renderer)) continue
 
       // Перевіряємо чи є необхідні дані для цього renderer-а
       const guard = RENDERER_REQUIRES_DATA[renderer]
