@@ -16,6 +16,10 @@ vi.mock('@/modules/auth/store/authStore', () => ({
 }))
 vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn() }))
 
+const routerBack = vi.fn()
+const routerPush = vi.fn()
+vi.mock('vue-router', () => ({ useRouter: () => ({ back: routerBack, push: routerPush }) }))
+
 const getActiveRemoteSession = vi.fn()
 vi.mock('../api/winterboardApi', () => ({
   winterboardApi: { getActiveRemoteSession: (...a: any[]) => getActiveRemoteSession(...a) },
@@ -89,6 +93,7 @@ beforeEach(() => {
   getActiveRemoteSession.mockReset()
   getActiveRemoteSession.mockResolvedValue({ session_id: 's-1', name: 'Алгебра 8-А', ts: 1 })
   toDataURL.mockClear()
+  routerBack.mockClear(); routerPush.mockClear()
 })
 afterEach(() => {
   while (mounted.length) { try { mounted.pop()!.unmount() } catch { /* already unmounted */ } }
@@ -154,6 +159,23 @@ describe('один маршрут — два вигляди', () => {
 })
 
 describe('сторінка «Підключити телефон»', () => {
+  it('«Назад» веде туди, звідки прийшов', async () => {
+    window.history.pushState(null, '', '/remote')   // є куди вертатись
+    const w = mountIt(WBRemoteConnectPage)
+    await flushPromises()
+    await w.find('.wb-remote-connect__back').trigger('click')
+    expect(routerBack).toHaveBeenCalledTimes(1)
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('прямий захід (QR, закладка) → «Назад» веде на дошки', async () => {
+    const w = mountIt(WBRemoteConnectPage)
+    await flushPromises()
+    Object.defineProperty(window.history, 'length', { value: 1, configurable: true })
+    await w.find('.wb-remote-connect__back').trigger('click')
+    expect(routerPush).toHaveBeenCalledWith('/winterboard/boards')
+  })
+
   it('акаунт і кроки на місці', async () => {
     const w = mountIt(WBRemoteConnectPage)
     await flushPromises()

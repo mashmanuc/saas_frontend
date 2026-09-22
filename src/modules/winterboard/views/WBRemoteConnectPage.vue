@@ -1,6 +1,9 @@
 <template>
   <div class="wb-remote-connect">
     <!-- 1. Для чого -->
+    <button type="button" class="wb-remote-connect__back" @click="goBack">
+      {{ t('winterboard.remote.connectPage.back') }}
+    </button>
     <header class="wb-remote-connect__head">
       <h1 class="wb-remote-connect__title">{{ t('winterboard.remote.connectPage.title') }}</h1>
       <p class="wb-remote-connect__lead">{{ t('winterboard.remote.connectPage.lead') }}</p>
@@ -60,6 +63,7 @@
  * без таймерів і повторів у циклі (LAW §12).
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { trackEvent } from '@/utils/telemetryAgent'
@@ -68,6 +72,13 @@ import RemoteQrBlock from '../components/remote/RemoteQrBlock.vue'
 
 const emit = defineEmits<{ (e: 'open-here'): void }>()
 const { t } = useI18n()
+const router = useRouter()
+
+/** «Назад» — звідки прийшов; з прямого заходу (QR, закладка) — на дошки. */
+function goBack(): void {
+  if (window.history.length > 1) router.back()
+  else void router.push('/winterboard/boards')
+}
 const authStore = useAuthStore()
 const accountEmail = computed(() => authStore.user?.email ?? '')
 
@@ -121,6 +132,10 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
 
 <style scoped>
 .wb-remote-connect { max-width: 880px; margin: 0 auto; padding: 32px 16px 48px; color: #0f172a; }
+.wb-remote-connect__back {
+  background: none; border: 0; padding: 4px 0 12px;
+  color: #475569; font-size: 14px; cursor: pointer;
+}
 .wb-remote-connect__head { margin-bottom: 20px; }
 .wb-remote-connect__title { margin: 0 0 8px; font-size: 26px; font-weight: 800; }
 .wb-remote-connect__lead { margin: 0; font-size: 16px; color: #475569; max-width: 640px; }

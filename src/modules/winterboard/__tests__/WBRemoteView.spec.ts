@@ -392,6 +392,12 @@ describe('підказка після першого підключення', ()
     return w
   }
 
+  it('з пульта є вихід на «Мої дошки» — інакше з повноекранного режиму нікуди', async () => {
+    const w = mountView()
+    await flushPromises()
+    expect(w.find('.wb-remote__home').attributes('to')).toBe('/winterboard/boards')
+  })
+
   it('до першого стану від дошки підказки немає', async () => {
     const w = mountView()
     await flushPromises()

@@ -2,6 +2,12 @@
   <div class="wb-remote" :data-state="channel.state.value">
     <!-- Шапка: статус зв'язку + хто ти + що керуєш -->
     <header class="wb-remote__top">
+      <!-- Вихід із пульта. Пульт — повноекранний режим, а на телефоні, доданому
+           на головний екран, браузерної «назад» немає взагалі: без цієї кнопки
+           з пульта нікуди не вийти (власник 2026-09-22). -->
+      <RouterLink to="/winterboard/boards" class="wb-remote__home" :aria-label="t('winterboard.remote.exitToBoards')">
+        <span aria-hidden="true">⌂</span>
+      </RouterLink>
       <span class="wb-remote__status" :class="`wb-remote__status--${channel.state.value}`">
         <span class="wb-remote__dot" aria-hidden="true" />
         {{ statusLabel }}
@@ -514,7 +520,13 @@ onBeforeUnmount(() => {
   padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   user-select: none; -webkit-user-select: none; touch-action: manipulation;
 }
-.wb-remote__top { display: flex; align-items: center; justify-content: space-between; }
+.wb-remote__top { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.wb-remote__home {
+  flex: none; width: 34px; height: 34px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #1e293b; color: #cbd5e1; font-size: 18px; text-decoration: none;
+}
+.wb-remote__status { margin-right: auto; }
 .wb-remote__status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #cbd5e1; }
 .wb-remote__dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
 .wb-remote__status--connected .wb-remote__dot { background: #22c55e; }
