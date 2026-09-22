@@ -6,24 +6,34 @@
            LibraryFolder.parent (not parent_id), LibraryFolder.assets_count (not asset_count)
            LibraryAsset.folder (not folder_id) -->
 <template>
+  <!-- Візуальний розбір «Матеріалів» 2026-09-22: одна колонка й одна
+       прокрутка (сторінки). Фільтри й папки — вкладки над сіткою, квота —
+       один рядок у заголовку, групи за датою. -->
   <div class="wb-library">
-    <!-- Sidebar: folder tree -->
-    <aside class="wb-library__sidebar">
-      <LibraryFolderTree
-        :folders="foldersTree"
-        :selected-id="selectedFolderId"
-        :loading="loadingFolders"
-        editable
-        @select="onSelectFolder"
-        @create="handleCreateFolder"
-        @rename="handleRenameFolder"
-        @delete="handleDeleteFolder"
-        @drop="handleFolderDrop"
-      />
-    </aside>
-
-    <!-- Main content -->
     <main class="wb-library__main">
+      <header class="wb-library__head">
+        <div class="wb-library__head-title">
+          <h1 class="wb-library__title">{{ t('winterboard.library.title') }}</h1>
+          <span class="wb-library__summary">{{ summaryLine }}</span>
+        </div>
+        <!-- П. 5: квота — рядок; смуга лише коли лишилось < 20 %. -->
+        <div
+          v-if="storageStats"
+          class="wb-library__quota"
+          :class="{ 'wb-library__quota--low': quotaLow }"
+          :title="quotaDetails"
+        >
+          <span>{{ t('winterboard.library.storage.line', {
+            used: formatBytes(storageStats.total_bytes),
+            limit: formatBytes(storageStats.limit_bytes),
+          }) }}</span>
+          <div v-if="quotaLow" class="wb-library__storage-track">
+            <div class="wb-library__storage-fill wb-library__storage-fill--upload" :style="{ width: uploadPercent + '%' }" />
+            <div class="wb-library__storage-fill wb-library__storage-fill--paste" :style="{ width: pastePercent + '%' }" />
+          </div>
+        </div>
+      </header>
+
       <!-- Toolbar -->
       <div class="wb-library__toolbar">
         <input
@@ -62,11 +72,11 @@
             class="wb-library__yt-btn"
             @click="showYtInput = true"
           >
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
               <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
             </svg>
-            + YouTube
+            {{ t('winterboard.library.fromYouTube') }}
           </button>
           <div v-else class="wb-library__yt-row">
             <input
@@ -134,39 +144,24 @@
         </div>
       </div>
 
-      <!-- Breadcrumb (Phase 33 B6) -->
+      <!-- П. 7: фільтри й папки — вкладки -->
+      <LibraryTabs
+        :folders="foldersTree"
+        :selected-id="selectedFolderId"
+        editable
+        @select="onSelectFolder"
+        @create="handleCreateFolder"
+        @rename="handleRenameFolder"
+        @delete="handleDeleteFolder"
+        @drop="handleFolderDrop"
+      />
+
+      <!-- Крихти — лише всередині вкладеної папки (верхній рівень видно на вкладках). -->
       <LibraryBreadcrumb
+        v-if="breadcrumb.length > 2"
         :items="breadcrumb"
         @navigate="onSelectFolder"
       />
-
-      <!-- Storage Bar (Phase AM-2) -->
-      <div v-if="storageStats" class="wb-library__storage-bar">
-        <div class="wb-library__storage-labels">
-          <span class="wb-library__storage-label">
-            {{ t('winterboard.library.storage.uploadsLabel', { size: formatBytes(storageStats.upload_bytes) }) }}
-          </span>
-          <span class="wb-library__storage-label wb-library__storage-label--paste">
-            {{ t('winterboard.library.storage.pastedLabel', { size: formatBytes(storageStats.paste_bytes) }) }}
-          </span>
-          <span class="wb-library__storage-usage">
-            {{ t('winterboard.library.storage.usageBar', {
-              used: formatBytes(storageStats.total_bytes),
-              limit: formatBytes(storageStats.limit_bytes),
-            }) }}
-          </span>
-        </div>
-        <div class="wb-library__storage-track">
-          <div
-            class="wb-library__storage-fill wb-library__storage-fill--upload"
-            :style="{ width: uploadPercent + '%' }"
-          />
-          <div
-            class="wb-library__storage-fill wb-library__storage-fill--paste"
-            :style="{ width: pastePercent + '%' }"
-          />
-        </div>
-      </div>
 
       <!-- Phase AM-3: Action bar for Pasted / Archive views -->
       <div v-if="selectedFolderId === PASTED_ID && !loading && filteredAssets.length > 0" class="wb-library__action-bar">
@@ -294,53 +289,44 @@
         </div>
       </div>
 
-      <!-- Grid view -->
-      <div
-        v-else-if="viewMode === 'grid'"
-        class="wb-library__grid"
-        role="list"
-        :aria-label="t('winterboard.library.assetsLabel')"
-      >
-        <LibraryAssetCard
-          v-for="asset in filteredAssets"
-          :key="asset.id"
-          :asset="asset"
-          :can-read-material="materialsEnabled"
-          role="listitem"
-          @toggle-favorite="onToggleFavorite"
-          @move="showMoveDropdown"
-          @delete="onDeleteAsset"
-          @rename="onRenameAsset"
-          @read-material="openMaterial"
-        />
+      <!-- Grid view (п. 1: сітка АБО список, не обидва) -->
+      <div v-else-if="viewMode === 'grid'" class="wb-library__groups">
+        <section v-for="group in assetGroups" :key="group.key" class="wb-library__group">
+          <h2 v-if="group.label" class="wb-library__group-title">
+            {{ group.label }}
+            <span class="wb-library__group-count">{{ group.items.length }}</span>
+          </h2>
+          <div class="wb-library__grid" role="list" :aria-label="group.label || t('winterboard.library.assetsLabel')">
+            <LibraryAssetCard
+              v-for="asset in group.items"
+              :key="asset.id"
+              :asset="asset"
+              :can-read-material="materialsEnabled"
+              role="listitem"
+              @toggle-favorite="onToggleFavorite"
+              @move="showMoveDropdown"
+              @delete="onDeleteAsset"
+              @rename="onRenameAsset"
+              @read-material="openMaterial"
+            />
+          </div>
+        </section>
       </div>
 
-      <!-- Ф6-4: панель сама питає BE і сама показує 403, якщо читання вимкнено -->
-      <MaterialExtractPanel
-        v-if="materialAsset"
-        :asset-id="materialAsset.id"
-        :asset-name="materialAsset.name"
-        @close="materialAsset = null"
-        @make-lesson="lessonOpen = true"
-      />
-      <MaterialLessonDialog
-        v-if="materialAsset && lessonOpen"
-        :busy="lessonBusy"
-        :error="lessonError"
-        :result="lessonResult"
-        @generate="onGenerateLesson"
-        @close="lessonOpen = false"
-      />
-
       <!-- Asset list view -->
-      <div
-        v-else
-        class="wb-library__list"
-        role="list"
-        :aria-label="t('winterboard.library.assetsLabel')"
-      >
+      <div v-else class="wb-library__groups">
+       <section v-for="group in assetGroups" :key="group.key" class="wb-library__group">
+        <h2 v-if="group.label" class="wb-library__group-title">
+          {{ group.label }}
+          <span class="wb-library__group-count">{{ group.items.length }}</span>
+        </h2>
         <div
-          v-for="asset in filteredAssets"
+          class="wb-library__list"
+          role="list"
+          :aria-label="group.label || t('winterboard.library.assetsLabel')"
+        >
+        <div
+          v-for="asset in group.items"
           :key="asset.id"
           class="wb-library__list-item"
           role="listitem"
@@ -413,35 +399,40 @@
               :title="asset.name"
               @dblclick.stop="startListRename(asset)"
             >{{ asset.name }}</span>
-            <span class="wb-library__list-meta">{{ formatFileSize(asset.size_bytes) }}</span>
+            <span class="wb-library__list-meta">
+              <span v-if="asset.content_item_id" class="wb-library__list-badge">{{ t('winterboard.library.source.lesson') }}</span>
+              {{ formatFileSize(asset.size_bytes) }}
+            </span>
           </div>
+          <span v-if="asset.is_favorite" class="wb-library__list-fav" aria-hidden="true">★</span>
           <div class="wb-library__list-actions">
-            <button
-              type="button"
-              class="wb-library__list-action"
-              :class="{ 'wb-library__list-action--active': asset.is_favorite }"
-              :title="t('winterboard.library.favorite')"
-              @click="onToggleFavorite(asset)"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M7 1.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L7 9.25l-3.09 1.75.59-3.435L2 5.13l3.455-.5L7 1.5z"
-                  :fill="asset.is_favorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="wb-library__list-action wb-library__list-action--danger"
-              :title="t('winterboard.library.delete')"
-              @click="onDeleteAsset(asset)"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M2 3.5h10M4.5 3.5V2.5A.5.5 0 015 2h4a.5.5 0 01.5.5v1M5.5 6.5v3M8.5 6.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                <path d="M2.5 3.5l.7 7.5a.5.5 0 00.5.5h6.6a.5.5 0 00.5-.5l.7-7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+            <LibraryAssetMenu
+              :asset="asset"
+              :can-read-material="materialsEnabled"
+              @action="(a, rect) => onListMenuAction(asset, a, rect)"
+            />
           </div>
         </div>
+        </div>
+       </section>
       </div>
+
+      <!-- Ф6-4: панель сама питає BE і сама показує 403, якщо читання вимкнено -->
+      <MaterialExtractPanel
+        v-if="materialAsset"
+        :asset-id="materialAsset.id"
+        :asset-name="materialAsset.name"
+        @close="materialAsset = null"
+        @make-lesson="lessonOpen = true"
+      />
+      <MaterialLessonDialog
+        v-if="materialAsset && lessonOpen"
+        :busy="lessonBusy"
+        :error="lessonError"
+        :result="lessonResult"
+        @generate="onGenerateLesson"
+        @close="lessonOpen = false"
+      />
 
       <!-- Pagination -->
       <nav
@@ -500,7 +491,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
+import { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
+import LibraryTabs from '../components/library/LibraryTabs.vue'
+import LibraryAssetMenu from '../components/library/LibraryAssetMenu.vue'
+import { groupAssets } from '../utils/libraryGroups'
 import apiClient from '@/utils/apiClient'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
 import MaterialExtractPanel from '../components/library/MaterialExtractPanel.vue'
@@ -539,7 +533,7 @@ const LIMIT = 24
 
 // ─── Composables ──────────────────────────────────────────────────────────────
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { showToast } = useToast()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -603,6 +597,54 @@ const pastePercent = computed(() => {
   if (!storageStats.value || !storageStats.value.limit_bytes) return 0
   return Math.min(100 - uploadPercent.value, (storageStats.value.paste_bytes / storageStats.value.limit_bytes) * 100)
 })
+
+// П. 5: смуга — лише коли вільного місця < 20 %; деталі — у підказці рядка.
+const quotaLow = computed(() => {
+  const st = storageStats.value
+  if (!st || !st.limit_bytes) return false
+  return st.total_bytes / st.limit_bytes > 0.8
+})
+const quotaDetails = computed(() => {
+  const st = storageStats.value
+  if (!st) return ''
+  return [
+    t('winterboard.library.storage.uploadsLabel', { size: formatBytes(st.upload_bytes) }),
+    t('winterboard.library.storage.pastedLabel', { size: formatBytes(st.paste_bytes) }),
+  ].join(' · ')
+})
+
+function countFolders(nodes: FolderTree[]): number {
+  return nodes.reduce((n, f) => n + 1 + countFolders(f.children), 0)
+}
+const summaryLine = computed(() => [
+  t('winterboard.library.filesCount', { count: total.value }),
+  t('winterboard.library.foldersCount', { count: countFolders(foldersTree.value) }),
+].join(' · '))
+
+// П. 9: групи за датою — лише для звичайних переглядів. «Нещодавні» мають
+// власний порядок (за використанням), архів і скопійовані — службові.
+const assetGroups = computed(() => {
+  const plain = selectedFolderId.value === RECENT_ID
+    || selectedFolderId.value === PASTED_ID
+    || selectedFolderId.value === ARCHIVED_ID
+    || searchQuery.value.trim() !== ''
+  if (plain) return [{ key: 'all', label: '', items: filteredAssets.value }]
+  return groupAssets(filteredAssets.value, {
+    locale: locale.value,
+    labels: {
+      thisWeek: t('winterboard.library.groups.thisWeek'),
+      documents: t('winterboard.library.groups.documents'),
+    },
+  })
+})
+
+function onListMenuAction(asset: LibraryAsset, action: string, rect: DOMRect): void {
+  if (action === 'rename') startListRename(asset)
+  else if (action === 'move') showMoveDropdown(asset, rect)
+  else if (action === 'toggle-favorite') onToggleFavorite(asset)
+  else if (action === 'delete') onDeleteAsset(asset)
+  else if (action === 'read-material') openMaterial(asset)
+}
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -1110,52 +1152,69 @@ onMounted(async () => {
 
 <style scoped>
 .wb-library {
+  /* П. 1: одна прокрутка — сторінки. Раніше фіксована висота + власні
+     прокрутки сітки й списку давали три вкладені смуги. */
   display: flex;
   min-height: 600px;
-  height: calc(100vh - 140px);
-  overflow: hidden;
   background: var(--wb-card-bg, #ffffff);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 12px;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────── */
-
-.wb-library__sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  background: var(--wb-card-bg, #ffffff);
+.wb-library__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 4px;
+}
+.wb-library__head-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.wb-library__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  color: var(--wb-fg, #0f172a);
+}
+.wb-library__summary,
+.wb-library__quota {
+  font-size: 12.5px;
+  color: var(--wb-fg-secondary, #64748b);
+  white-space: nowrap;
+}
+.wb-library__quota {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  align-items: flex-end;
+  gap: 4px;
 }
+.wb-library__quota--low { color: #b45309; font-weight: 600; }
+.wb-library__quota .wb-library__storage-track { width: 180px; }
 
-.wb-library__sidebar-footer {
-  padding: 8px;
-  border-top: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  margin-top: auto;
+.wb-library__groups {
+  padding: 4px 20px 20px;
 }
-
-.wb-library__new-folder-btn {
+.wb-library__group + .wb-library__group { margin-top: 8px; }
+.wb-library__group-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 7px 10px;
-  background: none;
-  border: 1px dashed var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 6px;
+  gap: 8px;
+  margin: 18px 0 10px;
   font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--wb-fg-secondary, #64748b);
-  cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
 }
-
-.wb-library__new-folder-btn:hover {
-  background: var(--wb-canvas-bg, #f1f5f9);
-  border-color: var(--wb-brand, #0066ff);
-  color: var(--wb-brand, #0066ff);
+.wb-library__group-count {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--wb-fg-secondary, #94a3b8);
 }
 
 /* ── Main ────────────────────────────────────────────────────────────── */
@@ -1165,7 +1224,10 @@ onMounted(async () => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+}
+
+.wb-library__main > .lib-tabs {
+  padding: 4px 20px 0;
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────── */
@@ -1174,8 +1236,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  padding: 12px 20px 8px;
   background: var(--wb-card-bg, #ffffff);
   flex-shrink: 0;
 }
@@ -1284,23 +1345,24 @@ onMounted(async () => {
   background: var(--wb-brand-hover, #0052cc);
 }
 
+/* П. 6: друга дія — обведена й нейтральна; червоний лише в логотипі. */
 .wb-library__yt-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid var(--wb-toolbar-border, #d6dde4);
   border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wb-fg, #0f172a);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s, border-color 0.12s;
   min-height: 34px;
   white-space: nowrap;
 }
-.wb-library__yt-btn:hover { background: #fee2e2; }
+.wb-library__yt-btn:hover { background: var(--wb-canvas-bg, #f4f7f6); border-color: #b8c3cc; }
 .wb-library__yt-row {
   display: flex;
   gap: 4px;
@@ -1329,25 +1391,32 @@ onMounted(async () => {
 /* ── Grid ────────────────────────────────────────────────────────────── */
 
 .wb-library__grid {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
   align-content: start;
 }
+/* Скелетон / архів — сітка поза групою, з власним відступом. */
+.wb-library__main > .wb-library__grid { padding: 20px; }
 
 /* ── List view ──────────────────────────────────────────────────────── */
 
 .wb-library__list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 20px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+.wb-library__list-badge {
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #e6f4ef;
+  color: #0f6b52;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
+.wb-library__list-fav { color: #d97706; font-size: 13px; }
 
 .wb-library__list-item {
   display: flex;
@@ -1446,13 +1515,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  opacity: 0;
-  transition: opacity 0.1s;
   flex-shrink: 0;
-}
-
-.wb-library__list-item:hover .wb-library__list-actions {
-  opacity: 1;
 }
 
 .wb-library__list-action {
@@ -1687,24 +1750,24 @@ onMounted(async () => {
     height: auto;
   }
 
-  .wb-library__sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-direction: row;
-  }
+  .wb-library__toolbar { flex-wrap: wrap; }
+  .wb-library__toolbar-actions { flex-wrap: wrap; flex-shrink: 1; max-width: 100%; }
+  .wb-library__head,
+  .wb-library__toolbar,
+  .wb-library__groups,
+  .wb-library__main > .lib-tabs { padding-left: 12px; padding-right: 12px; }
+  .wb-library__head { flex-direction: column; align-items: flex-start; }
+  .wb-library__quota { align-items: flex-start; }
 
   .wb-library__grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 10px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wb-library__upload-btn,
   .wb-library__upload-cta,
-  .wb-library__new-folder-btn,
   .wb-dialog__btn,
   .wb-dialog__input {
     transition: none;

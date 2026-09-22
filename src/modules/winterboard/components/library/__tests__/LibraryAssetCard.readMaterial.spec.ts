@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import uk from '@/i18n/locales/uk.json'
@@ -39,36 +39,44 @@ const mountCard = (props: Record<string, unknown> = {}) =>
   mount(LibraryAssetCard, {
     props: { asset, ...props },
     global: { plugins: [i18n] },
+    attachTo: document.body,
   })
 
-const readBtn = (w: ReturnType<typeof mountCard>) =>
-  w.findAll('.library-asset-card__action-btn')
-    .find(b => b.text().includes('📖'))
+// Дії картки — у меню «…» (візуальний розбір «Матеріалів» 2026-09-22, п. 4),
+// меню телепортоване в body. Відкриваємо його і читаємо пункти звідти.
+async function menuItems(w: ReturnType<typeof mountCard>): Promise<HTMLElement[]> {
+  await w.find('[data-testid="asset-menu-trigger"]').trigger('click')
+  return [...document.querySelectorAll<HTMLElement>('.lib-asset-menu [data-action]')]
+}
+const readItem = (items: HTMLElement[]) => items.find(b => b.dataset.action === 'read-material')
 
 describe('LibraryAssetCard · «прочитати матеріал» за станом сервера', () => {
-  it('прапорець вимкнено (дефолт) — кнопки НЕМАЄ', () => {
-    expect(readBtn(mountCard())).toBeUndefined()
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('прапорець вимкнено (дефолт) — пункту НЕМАЄ', async () => {
+    expect(readItem(await menuItems(mountCard()))).toBeUndefined()
   })
 
-  it('явне false — кнопки немає', () => {
-    expect(readBtn(mountCard({ canReadMaterial: false }))).toBeUndefined()
+  it('явне false — пункту немає', async () => {
+    expect(readItem(await menuItems(mountCard({ canReadMaterial: false })))).toBeUndefined()
   })
 
-  it('сервер сказав true — кнопка є і емітить подію', async () => {
+  it('сервер сказав true — пункт є і емітить подію', async () => {
     const w = mountCard({ canReadMaterial: true })
-    const btn = readBtn(w)
-    expect(btn).toBeDefined()
-    await btn!.trigger('click')
+    const item = readItem(await menuItems(w))
+    expect(item).toBeDefined()
+    item!.click()
     expect(w.emitted('read-material')).toHaveLength(1)
   })
 
-  it('решта дій картки не залежить від прапорця', () => {
-    // Улюблене/перейменувати/видалити мають лишатись на місці — інакше
-    // «сховати кнопку» тихо забрало б і сусідні.
-    const off = mountCard().findAll('.library-asset-card__action-btn').length
-    const on = mountCard({ canReadMaterial: true })
-      .findAll('.library-asset-card__action-btn').length
+  it('решта дій картки не залежить від прапорця', async () => {
+    // Улюблене/перейменувати/перемістити/в архів мають лишатись на місці —
+    // інакше «сховати пункт» тихо забрало б і сусідні.
+    const off = (await menuItems(mountCard())).length
+    document.body.innerHTML = ''
+    const on = (await menuItems(mountCard({ canReadMaterial: true }))).length
     expect(on - off).toBe(1)
+    expect(off).toBe(4)
   })
 })
 

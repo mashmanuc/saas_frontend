@@ -7689,7 +7689,8 @@
         "limit": "Ліміт",
         "usageBar": "{used} / {limit}",
         "uploadsLabel": "Завантажені: {size}",
-        "pastedLabel": "Скопійовані: {size}"
+        "pastedLabel": "Скопійовані: {size}",
+        "line": "{used} з {limit}"
       },
       "pasted": {
         "title": "Скопійовані",
@@ -7712,6 +7713,23 @@
         "restore": "Відновити",
         "restored": "Файл відновлено",
         "empty": "Архів порожній"
+      },
+      "title": "Матеріали",
+      "allTab": "Усі",
+      "fromYouTube": "З YouTube",
+      "moreActions": "Дії з файлом",
+      "unfavorite": "Прибрати з вибраного",
+      "folderActions": "Дії з папкою",
+      "subfolders": "Підпапки",
+      "filesCount": "Файлів: {count}",
+      "foldersCount": "папок: {count}",
+      "source": {
+        "lesson": "Урок",
+        "upload": "Завантажено"
+      },
+      "groups": {
+        "thisWeek": "Цього тижня",
+        "documents": "Документи й збірники"
       }
     },
     "materials": {

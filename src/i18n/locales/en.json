@@ -8109,7 +8109,8 @@
         "limit": "Limit",
         "usageBar": "{used} / {limit}",
         "uploadsLabel": "Uploads: {size}",
-        "pastedLabel": "Pasted: {size}"
+        "pastedLabel": "Pasted: {size}",
+        "line": "{used} of {limit}"
       },
       "pasted": {
         "title": "Pasted",
@@ -8132,6 +8133,23 @@
         "restore": "Restore",
         "restored": "File restored",
         "empty": "Archive is empty"
+      },
+      "title": "Materials",
+      "allTab": "All",
+      "fromYouTube": "From YouTube",
+      "moreActions": "File actions",
+      "unfavorite": "Remove from favorites",
+      "folderActions": "Folder actions",
+      "subfolders": "Subfolders",
+      "filesCount": "Files: {count}",
+      "foldersCount": "folders: {count}",
+      "source": {
+        "lesson": "Lesson",
+        "upload": "Uploaded"
+      },
+      "groups": {
+        "thisWeek": "This week",
+        "documents": "Documents & collections"
       }
     },
     "materials": {

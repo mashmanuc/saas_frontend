@@ -63,9 +63,9 @@
       </div>
     </div>
 
-    <!-- Info -->
+    <!-- Info: назва під прев'ю, дрібніше; бейдж і розмір — один рядок
+         (розбір 2026-09-22 п. 2–3: бейдж зрізався нижньою межею картки). -->
     <div class="library-asset-card__info">
-      <!-- Inline rename mode -->
       <div v-if="isRenaming" class="library-asset-card__rename-row" @click.stop>
         <input
           ref="renameInputRef"
@@ -79,89 +79,35 @@
         />
         <span class="library-asset-card__ext">{{ fileExtension }}</span>
       </div>
-      <!-- Normal display -->
       <span
         v-else
         class="library-asset-card__name"
         :title="asset.name"
         @dblclick.stop="startRename"
       >{{ asset.name }}</span>
-      <span class="library-asset-card__size">{{ formatSize(asset.size_bytes) }}</span>
-      <!-- Phase 16 INT-32: Source badge -->
-      <span v-if="sourceBadge" class="library-asset-card__source" :class="`library-asset-card__source--${sourceBadge.type}`">
-        {{ sourceBadge.label }}
-      </span>
+      <div class="library-asset-card__meta">
+        <span v-if="sourceBadge" class="library-asset-card__source" :class="`library-asset-card__source--${sourceBadge.type}`">
+          {{ sourceBadge.label }}
+        </span>
+        <span class="library-asset-card__size">{{ formatSize(asset.size_bytes) }}</span>
+      </div>
     </div>
 
-    <!-- Actions -->
+    <!-- Вибране — видно без наведення (раніше лише жовта рамка). -->
+    <span
+      v-if="asset.is_favorite"
+      class="library-asset-card__fav"
+      :title="t('winterboard.library.favorite')"
+      aria-hidden="true"
+    >★</span>
+
+    <!-- Дії — одна кнопка «…» у куті, меню з тими самими діями. -->
     <div class="library-asset-card__actions">
-      <!-- Ф6-4: кнопки НЕМАЄ, поки сервер не сказав, що читання ввімкнене.
-           Раніше вона показувалась завжди і на клік чесно відповідала
-           «вимкнено» — тобто існувала, щоб відмовити. -->
-      <button
-        v-if="canReadMaterial"
-        type="button"
-        class="library-asset-card__action-btn"
-        :aria-label="t('winterboard.materials.readAsset')"
-        :title="t('winterboard.materials.readAsset')"
-        @click.stop="emit('read-material', asset)"
-      >📖</button>
-      <button
-        type="button"
-        class="library-asset-card__action-btn"
-        :class="{ 'library-asset-card__action-btn--active': asset.is_favorite }"
-        :aria-label="t('winterboard.library.favorite')"
-        :aria-pressed="asset.is_favorite"
-        :title="t('winterboard.library.favorite')"
-        @click.stop="emit('toggle-favorite', asset)"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path
-            d="M7 1.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L7 9.25l-3.09 1.75.59-3.435L2 5.13l3.455-.5L7 1.5z"
-            :fill="asset.is_favorite ? 'currentColor' : 'none'"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="library-asset-card__action-btn"
-        :aria-label="t('winterboard.library.renameAsset')"
-        :title="t('winterboard.library.renameAsset')"
-        @click.stop="startRename"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M8.5 2.5l3 3M2 9.5L9.5 2l3 3L5 12.5H2v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="library-asset-card__action-btn"
-        :aria-label="t('winterboard.library.moveToFolder')"
-        :title="t('winterboard.library.moveToFolder')"
-        data-testid="move-asset-btn"
-        @click.stop="emitMove($event)"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M1.5 4A1.5 1.5 0 013 2.5h2.5l1 1.5H11A1.5 1.5 0 0112.5 5.5v5A1.5 1.5 0 0111 12H3A1.5 1.5 0 011.5 10.5V4z"
-            fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-          <path d="M7 7v3M5.5 8.5L7 10l1.5-1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="library-asset-card__action-btn library-asset-card__action-btn--danger"
-        :aria-label="t('winterboard.library.archiveAction')"
-        :title="t('winterboard.library.archiveAction')"
-        @click.stop="emit('delete', asset)"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <rect x="1" y="1.5" width="12" height="3" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M2 4.5v7a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-7M5.5 7.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-      </button>
+      <LibraryAssetMenu
+        :asset="asset"
+        :can-read-material="canReadMaterial"
+        @action="onMenuAction"
+      />
     </div>
   </div>
 </template>
@@ -171,6 +117,7 @@ import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setAssetDragData } from '../../utils/dragHelpers'
 import type { LibraryAsset } from '../../types/library'
+import LibraryAssetMenu from './LibraryAssetMenu.vue'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 
@@ -190,9 +137,12 @@ const emit = defineEmits<{
   'read-material': [asset: LibraryAsset]
 }>()
 
-function emitMove(e: MouseEvent): void {
-  const btn = e.currentTarget as HTMLElement
-  emit('move', props.asset, btn.getBoundingClientRect())
+function onMenuAction(action: string, rect: DOMRect): void {
+  if (action === 'rename') startRename()
+  else if (action === 'move') emit('move', props.asset, rect)
+  else if (action === 'toggle-favorite') emit('toggle-favorite', props.asset)
+  else if (action === 'delete') emit('delete', props.asset)
+  else if (action === 'read-material') emit('read-material', props.asset)
 }
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
@@ -242,8 +192,8 @@ const sourceBadge = computed<{ type: string; label: string } | null>(() => {
   const name = props.asset.name.toLowerCase()
   const ct = props.asset.content_type
   if (name.includes('youtube') || ct === 'video/youtube') return { type: 'youtube', label: 'YouTube' }
-  if (props.asset.content_item_id) return { type: 'lesson', label: 'Lesson' }
-  return { type: 'upload', label: 'Upload' }
+  if (props.asset.content_item_id) return { type: 'lesson', label: t('winterboard.library.source.lesson') }
+  return { type: 'upload', label: t('winterboard.library.source.upload') }
 })
 
 // ─── Inline rename ───────────────────────────────────────────────────────────
@@ -309,7 +259,7 @@ function onDragStart(e: DragEvent): void {
   position: relative;
   background: var(--wb-card-bg, #ffffff);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
   display: flex;
@@ -317,19 +267,18 @@ function onDragStart(e: DragEvent): void {
 }
 
 .library-asset-card:hover {
-  border-color: var(--wb-brand, #0066ff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border-color: var(--wb-brand, #0f766e);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
 }
 
-.library-asset-card--favorite {
-  border-color: #f59e0b;
-}
-
-/* ── Preview ─────────────────────────────────────────────────────────── */
+/* ── Preview — головна частина картки (п. 3). flex-shrink: 0 — інакше в
+   стиснутому контейнері прев'ю схлопувалось до нуля (так було на проді). ── */
 
 .library-asset-card__preview {
-  height: 120px;
-  background: var(--wb-canvas-bg, #f8fafc);
+  flex-shrink: 0;
+  aspect-ratio: 4 / 3;
+  background: var(--wb-canvas-bg, #f4f7f6);
+  border-bottom: 1px solid var(--wb-toolbar-border, #eef2f1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,10 +289,10 @@ function onDragStart(e: DragEvent): void {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: left top;
 }
 
 .library-asset-card__icon {
-  font-size: 36px;
   line-height: 1;
   user-select: none;
 }
@@ -354,12 +303,12 @@ function onDragStart(e: DragEvent): void {
   padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  flex: 1;
+  gap: 4px;
+  min-width: 0;
 }
 
 .library-asset-card__name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--wb-fg, #0f172a);
   white-space: nowrap;
@@ -368,12 +317,18 @@ function onDragStart(e: DragEvent): void {
   cursor: default;
 }
 
+.library-asset-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 /* ── Inline rename ─────────────────────────────────────────────────── */
 
 .library-asset-card__rename-row {
   display: flex;
   align-items: center;
-  gap: 0;
   min-width: 0;
 }
 
@@ -381,17 +336,13 @@ function onDragStart(e: DragEvent): void {
   flex: 1;
   min-width: 0;
   padding: 2px 6px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
-  border: 1px solid var(--wb-brand, #0066ff);
+  border: 1px solid var(--wb-brand, #0f766e);
   border-radius: 4px;
   outline: none;
   background: #fff;
   color: var(--wb-fg, #0f172a);
-}
-
-.library-asset-card__rename-input:focus {
-  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2);
 }
 
 .library-asset-card__ext {
@@ -404,92 +355,49 @@ function onDragStart(e: DragEvent): void {
 
 .library-asset-card__size {
   font-size: 11px;
-  color: var(--wb-fg-secondary, #94a3b8);
+  color: var(--wb-fg-secondary, #64748b);
+  white-space: nowrap;
 }
 
 .library-asset-card__source {
   font-size: 10px;
   font-weight: 600;
-  padding: 1px 5px;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
   border-radius: 4px;
-  display: inline-block;
-  width: fit-content;
+  line-height: 16px;
+  white-space: nowrap;
 }
 
-.library-asset-card__source--upload {
-  background: #f1f5f9;
-  color: #64748b;
+.library-asset-card__source--upload { background: #f1f5f9; color: #475569; }
+.library-asset-card__source--lesson { background: #e6f4ef; color: #0f6b52; }
+.library-asset-card__source--youtube { background: #f1f5f9; color: #475569; }
+
+.library-asset-card__fav {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #d97706;
+  font-size: 13px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
-.library-asset-card__source--lesson {
-  background: #ede9fe;
-  color: #7c3aed;
-}
-
-.library-asset-card__source--youtube {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* ── Actions ─────────────────────────────────────────────────────────── */
+/* ── «…» у куті — видно завжди (на планшеті hover немає). ─────────────── */
 
 .library-asset-card__actions {
   position: absolute;
   top: 6px;
   right: 6px;
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-
-.library-asset-card:hover .library-asset-card__actions,
-.library-asset-card:focus-within .library-asset-card__actions {
-  opacity: 1;
-}
-
-.library-asset-card__action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--wb-fg-secondary, #64748b);
-  transition: background 0.1s, color 0.1s;
-}
-
-.library-asset-card__action-btn:hover {
-  background: #ffffff;
-  color: var(--wb-fg, #0f172a);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
-
-.library-asset-card__action-btn--active {
-  color: #f59e0b;
-}
-
-.library-asset-card__action-btn--danger:hover {
-  color: #ef4444;
-  border-color: #fecaca;
-}
-
-/* ── Touch: always show actions ──────────────────────────────────────── */
-
-@media (hover: none) {
-  .library-asset-card__actions {
-    opacity: 1;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .library-asset-card,
-  .library-asset-card__actions,
-  .library-asset-card__action-btn {
-    transition: none;
-  }
+  .library-asset-card { transition: none; }
 }
 </style>

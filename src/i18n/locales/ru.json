@@ -8051,7 +8051,8 @@
         "limit": "Лимит",
         "usageBar": "{used} / {limit}",
         "uploadsLabel": "Загруженные: {size}",
-        "pastedLabel": "Скопированные: {size}"
+        "pastedLabel": "Скопированные: {size}",
+        "line": "{used} из {limit}"
       },
       "pasted": {
         "title": "Скопированные",
@@ -8074,6 +8075,23 @@
         "restore": "Восстановить",
         "restored": "Файл восстановлен",
         "empty": "Архив пуст"
+      },
+      "title": "Материалы",
+      "allTab": "Все",
+      "fromYouTube": "Из YouTube",
+      "moreActions": "Действия с файлом",
+      "unfavorite": "Убрать из избранного",
+      "folderActions": "Действия с папкой",
+      "subfolders": "Подпапки",
+      "filesCount": "Файлов: {count}",
+      "foldersCount": "папок: {count}",
+      "source": {
+        "lesson": "Урок",
+        "upload": "Загружено"
+      },
+      "groups": {
+        "thisWeek": "На этой неделе",
+        "documents": "Документы и сборники"
       }
     },
     "materials": {
