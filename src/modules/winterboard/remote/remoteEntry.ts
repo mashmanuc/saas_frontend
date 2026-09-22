@@ -24,20 +24,21 @@ export function isRemoteDevice(input: { isTouchInput: boolean; hasMultipleInputM
   return input.isTouchInput && !input.hasMultipleInputModes
 }
 
-// «Все одно відкрити пульт тут» — до кінця вкладки (sessionStorage).
-const FORCE_KEY = 'wb.remote.forceHere'
 // Підказка після першого підключення — раз на пристрій (localStorage).
+// ⚠️ «Все одно відкрити пульт тут» НЕ зберігається (власник 2026-09-22: «інші
+// спроби зразу перекидають на пульт без попередньої сторінки, і це не добре»).
+// Вибір діє на один перегляд: пішов зі сторінки — наступного разу знову
+// пояснення. Інакше вчитель залишався в пульті з «дошка не відкрита» й без
+// виходу, бо меню веде на ту саму адресу.
 const TIP_KEY = 'wb.remote.firstTipSeen'
 
 function read(storage: () => Storage, key: string): boolean {
   try { return storage().getItem(key) === '1' } catch { return false }
 }
 function write(storage: () => Storage, key: string): void {
-  // Сховище може бути вимкнене (приватне вікно) — тоді вибір живе до перезавантаження.
+  // Сховище може бути вимкнене (приватне вікно) — тоді підказка з'явиться ще раз.
   try { storage().setItem(key, '1') } catch { /* сховище недоступне — не критично */ }
 }
 
-export const remoteForcedHere = (): boolean => read(() => window.sessionStorage, FORCE_KEY)
-export const forceRemoteHere = (): void => write(() => window.sessionStorage, FORCE_KEY)
 export const firstTipSeen = (): boolean => read(() => window.localStorage, TIP_KEY)
 export const markFirstTipSeen = (): void => write(() => window.localStorage, TIP_KEY)

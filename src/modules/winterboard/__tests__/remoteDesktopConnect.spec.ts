@@ -119,14 +119,37 @@ describe('один маршрут — два вигляди', () => {
     expect(w.findComponent({ name: 'WBRemoteView' }).props('id')).toBe('board-7')
   })
 
-  it('«Все одно відкрити пульт тут» → пульт до кінця вкладки', async () => {
+  it('«Все одно відкрити пульт тут» → пульт у цьому перегляді', async () => {
     useDevice(LAPTOP)
     const w = mountIt(WBRemoteEntry)
     await w.find('.wb-remote-connect__here').trigger('click')
     expect(w.find('.stub-remote').exists()).toBe(true)
-    // та сама вкладка, новий вхід на маршрут — вибір пам'ятається
+  })
+
+  // Власник 2026-09-22: «інші спроби зразу перекидають на пульт без попередньої
+  // сторінки, і це не добре». Вибір НЕ зберігається.
+  it("наступний вхід — знову сторінка підключення, вибір не запам'ятався", async () => {
+    useDevice(LAPTOP)
+    const w = mountIt(WBRemoteEntry)
+    await w.find('.wb-remote-connect__here').trigger('click')
+    w.unmount()
     const again = mountIt(WBRemoteEntry)
-    expect(again.find('.stub-remote').exists()).toBe(true)
+    expect(again.find('.wb-remote-connect').exists()).toBe(true)
+    expect(again.find('.stub-remote').exists()).toBe(false)
+  })
+
+  it("з відкритого пульта на комп'ютері є дорога назад", async () => {
+    useDevice(LAPTOP)
+    const w = mountIt(WBRemoteEntry)
+    await w.find('.wb-remote-connect__here').trigger('click')
+    await w.find('.wb-remote-entry__back').trigger('click')
+    expect(w.find('.wb-remote-connect').exists()).toBe(true)
+  })
+
+  it('на телефоні дороги «назад до пояснення» нема — пульт і є екран', () => {
+    useDevice(PHONE)
+    const w = mountIt(WBRemoteEntry)
+    expect(w.find('.wb-remote-entry__back').exists()).toBe(false)
   })
 })
 

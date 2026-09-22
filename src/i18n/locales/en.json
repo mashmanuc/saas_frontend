@@ -8411,7 +8411,8 @@
         "boardError": "Couldn't find out which board is open.",
         "boardChecking": "Checking which board is open…",
         "duringLesson": "During a lesson, the phone button in the board header shows this same code and tells you when the phone has connected.",
-        "openHere": "Open the remote here anyway"
+        "openHere": "Open the remote here anyway",
+        "backToConnect": "← Phone connection page"
       },
       "firstTip": {
         "title": "Remote connected",
