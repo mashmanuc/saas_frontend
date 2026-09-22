@@ -14,7 +14,14 @@
       </div>
     </Card>
 
-    <div v-if="billingStore.isLoading" class="space-y-6">
+    <!-- Візуальний огляд 2026-09-22 (п.10): dev-панель показувала на цій
+         сторінці «Duplicate requests (1)». Перший кадр малювався ЩЕ ДО старту
+         завантаження (`isLoading` = false, бо `loadData()` кличеться в
+         `onMounted`), тож гілка з вмістом монтувалась, `PaymentHistorySection`
+         слав `GET /billing/payments/`, потім store вмикав `isLoading` → гілка
+         зникала → після завантаження монтувалась удруге і слала той самий
+         запит ще раз. Скелет тримаємо до кінця ПЕРШОГО завантаження. -->
+    <div v-if="showSkeleton" class="space-y-6">
       <Card class="space-y-4">
         <div class="h-6 w-48 animate-pulse rounded bg-muted"></div>
         <div class="h-4 w-full animate-pulse rounded bg-muted"></div>
@@ -94,6 +101,15 @@ import { isSameTier } from '../utils/planCode'
 const billingStore = useBillingStore()
 const { t } = useI18n()
 
+// Перше завантаження ще не завершилось → показуємо скелет, а не вміст
+// (див. коментар у шаблоні: інакше вміст монтується двічі).
+// Якщо store вже має дані (перехід назад на сторінку, попередній fetch) —
+// показувати скелет нема чого.
+const initialLoadDone = ref(false)
+const showSkeleton = computed(
+  () => billingStore.isLoading || (!initialLoadDone.value && !billingStore.me)
+)
+
 const plansError = computed(() => {
   if (billingStore.lastError && billingStore.plans.length === 0) {
     return billingStore.lastError
@@ -109,6 +125,8 @@ async function loadData() {
     ])
   } catch (error) {
     console.error('Failed to load billing data:', error)
+  } finally {
+    initialLoadDone.value = true
   }
 }
 

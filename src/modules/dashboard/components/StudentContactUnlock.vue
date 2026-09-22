@@ -173,11 +173,11 @@ async function handleRevoke() {
   background: transparent;
 }
 
+/* 2026-09-22 (візуальний огляд, п.8): «КОНТАКТИ СТУДЕНТА» капсом кричало
+   посеред спокійної картки. Той самий підпис, звичайним регістром. */
 .contacts-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-secondary);
   margin: 0 0 0.5rem;
 }
@@ -219,21 +219,25 @@ async function handleRevoke() {
   color: inherit;
 }
 
+/* «Відкликати» стоїть одразу під контактами і червоним читалось як тривога
+   (огляд п.8). Буденний вигляд; червоне лишаємо на наведення — рішення все
+   одно підтверджується окремим confirm(). */
 .revoke-link {
   margin-top: 0.6rem;
   padding: 0;
   background: none;
   border: none;
-  color: var(--danger, #dc2626);
+  color: var(--text-muted, #6b7280);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 .revoke-link:hover {
   opacity: 1;
+  color: var(--danger, #dc2626);
   text-decoration: underline;
 }
 

@@ -122,6 +122,20 @@ const iconComponent = computed(() => {
   background: var(--bg-secondary);
 }
 
+/* Ноутбук (низький екран) з мишею: меню має вміститись цілком. На 1280×800
+   п'ять груп на 11 пунктів давали 869 px при ~730 px місця — останню групу
+   «Профіль» зрізало нижньою межею, і під нею з'являвся власний скрол, якого
+   не видно (візуальний огляд 2026-09-22, п.0; власник дозволив чіпати меню
+   саме через цю проблему). Тач лишається з 44 px — правило тільки для
+   `pointer: fine`. */
+@media (max-height: 900px) and (pointer: fine) {
+  .nav-item {
+    min-height: 36px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
 .nav-item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;

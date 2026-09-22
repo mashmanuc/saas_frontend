@@ -27,14 +27,17 @@
       </div>
     </header>
 
-    <!-- Filters -->
-    <div class="flex flex-wrap gap-2 mb-4">
+    <!-- Filters.
+         Телефон: один рядок із горизонтальним гортанням замість чотирьох рядів
+         фільтрів — на 375 px перша ідея починалась аж на 398-й точці
+         (візуальний огляд 2026-09-22, п.12). З `sm:` і ширше — як було. -->
+    <div class="flex gap-2 mb-4 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-x-visible sm:pb-0">
       <button
         v-for="s in sorts"
         :key="s.value"
         type="button"
         :class="[
-          'px-3 py-1 rounded-full text-sm transition',
+          'shrink-0 px-3 py-1 rounded-full text-sm transition',
           filter.sort === s.value
             ? 'bg-blue-600 text-white'
             : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50',
@@ -46,7 +49,7 @@
       <select
         v-model="typeFilter"
         @change="applyFilter()"
-        class="px-3 py-1 rounded-full text-sm border border-slate-300 bg-white"
+        class="shrink-0 px-3 py-1 rounded-full text-sm border border-slate-300 bg-white"
       >
         <option value="">{{ $t('feedback.filter.allTypes') }}</option>
         <option v-for="t in TYPES" :key="t" :value="t">{{ $t(`feedback.type.${t}`) }}</option>
@@ -54,7 +57,7 @@
       <select
         v-model="categoryFilter"
         @change="applyFilter()"
-        class="px-3 py-1 rounded-full text-sm border border-slate-300 bg-white"
+        class="shrink-0 px-3 py-1 rounded-full text-sm border border-slate-300 bg-white"
       >
         <option value="">{{ $t('feedback.filter.allCategories') }}</option>
         <option v-for="c in CATEGORIES" :key="c" :value="c">{{ $t(`feedback.category.${c}`) }}</option>

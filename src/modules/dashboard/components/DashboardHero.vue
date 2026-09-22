@@ -7,7 +7,7 @@
     <div class="dashboard-hero__body">
       <h2 class="dashboard-hero__title">
         <span v-if="cta.urgency === 'high'" class="dashboard-hero__pulse" aria-hidden="true"></span>
-        {{ titleText }}
+        <span class="dashboard-hero__title-text" :title="titleText">{{ titleText }}</span>
       </h2>
       <p v-if="cta.subtitle" class="dashboard-hero__subtitle">
         {{ cta.subtitle }}
@@ -199,6 +199,18 @@ async function preflightCheck(cta: PrimaryCta): Promise<boolean> {
   font-weight: 700;
   color: var(--text-primary, #111827);
   line-height: 1.2;
+}
+
+/* Заголовок цитує назву уроку у 24 px: довга назва розтягувала банер на три
+   рядки, на телефоні — уже на два (візуальний огляд 2026-09-22, п.1).
+   Дві стрічки максимум, далі — трикрапка; повний текст лишається в title. */
+.dashboard-hero__title-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .dashboard-hero__subtitle {

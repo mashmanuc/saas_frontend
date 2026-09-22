@@ -171,6 +171,7 @@ import Button from '@/ui/Button.vue'
 import UpgradeHint from './UpgradeHint.vue'
 import { buildPlanFeatures } from '@/modules/payments/planLimitFeatures'
 import { isSamePlan, normalizePlanCode } from '../utils/planCode'
+import { activeLocale } from '@/utils/i18nDate'
 
 defineEmits(['cancel'])
 
@@ -218,7 +219,7 @@ const props = defineProps({
   }
 })
 
-const { d, t, te } = useI18n()
+const { t, te } = useI18n()
 
 /**
  * Що людині реально надається за її план — з `entitlement.limits` (BE віддає
@@ -261,10 +262,20 @@ const cancelScheduled = computed(() => {
   return isRecurringProviderSubscription.value && props.subscription?.cancel_at_period_end === true
 })
 
+// Візуальний огляд 2026-09-22 (п.10): «Діє до» показувалось порожнім.
+// Причина — `d(date, 'short')`: у `createI18n` (`src/i18n/index.js`) немає
+// `datetimeFormats`, тож іменований формат 'short' не існує і vue-i18n віддає
+// порожній рядок. CurrentPlanCard був єдиним місцем у застосунку, що кликало
+// `d()`. Формат — той самий, що в сусідній `SubscriptionPeriod.vue`.
 function formatDate(dateString) {
   if (!dateString) return ''
   const date = new Date(dateString)
-  return d(date, 'short')
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString(activeLocale(), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 function getStatusClass(status) {

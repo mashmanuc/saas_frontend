@@ -7,8 +7,10 @@
           {{ t('winterboard.replayList.subtitle') }}
         </p>
       </div>
+      <!-- 2026-09-22 (огляд, п.5): був самотній бейдж «5» без підпису —
+           незрозуміло, що саме 5. Тепер із назвою. -->
       <span v-if="!store.isLoading && store.replays.length > 0" class="replay-list__count">
-        {{ store.replays.length }}
+        {{ t('winterboard.replayList.countLabel', { count: store.replays.length }) }}
       </span>
     </header>
 

@@ -234,7 +234,10 @@
            STATIC layer — short bullet list + dismiss button. Persisted у
            localStorage: dismissed once → never shown again. NOT sticky, NOT
            reactive to layout, NOT computed. Pure presentation. -->
-      <aside v-if="showInfoBlock" class="wb-board-list__info" role="note">
+      <!-- 2026-09-22 (візуальний огляд, п.4): підказку бачив і акаунт із 243
+           дошками — онбординг мав би зникати сам, а не лише по ✕. Показуємо,
+           поки дошок менше трьох; хто вже працює, того не вчимо. -->
+      <aside v-if="showInfoBlock && !hasOwnBoards" class="wb-board-list__info" role="note">
         <p class="wb-board-list__info-title">{{ t('winterboard.boards.infoTitle') }}</p>
         <ul class="wb-board-list__info-list">
           <li>{{ t('winterboard.boards.infoBullet1') }}</li>
@@ -648,6 +651,8 @@ function readInfoBlockDismissed(): boolean {
   }
 }
 const showInfoBlock = ref(!readInfoBlockDismissed())
+/** Акаунт уже має свої дошки → онбординг-підказка недоречна. */
+const hasOwnBoards = computed(() => boards.value.length >= 3)
 function dismissInfoBlock(): void {
   try {
     window.localStorage.setItem(INFO_BLOCK_DISMISSED_KEY, '1')

@@ -7104,6 +7104,7 @@
     "replayList": {
       "title": "My Replays",
       "subtitle": "Recordings of your lessons and boards: watch, share a link",
+      "countLabel": "Replays: {count}",
       "untitled": "Untitled",
       "dragHint": "Drag this replay into a folder on the left",
       "loadMore": "Load more",
@@ -7868,7 +7869,7 @@
     "boards": {
       "myBoards": "Lesson Studio",
       "myBoardsSubtitle": "Lesson constructor and preparation",
-      "modeLibrary": "Library",
+      "modeLibrary": "Boards",
       "modeConstructor": "Constructor",
       "constructorComingSoonTitle": "Lesson Constructor",
       "constructorComingSoonDesc": "A tool for auto-generating structured lessons by topic, level and format will appear here.",

@@ -30,6 +30,16 @@
           <div class="wb-public-view__logo" aria-hidden="true">M4</div>
           <span class="wb-public-view__brand-name">M4SH</span>
         </router-link>
+        <!-- «← Мої записи» — лише власнику (публічний глядач такого списку не
+             має). Раніше з програвача не було видимого виходу, крім логотипа,
+             що веде на головну (візуальний огляд 2026-09-22, п.5а). -->
+        <router-link
+          v-if="isOwnerView"
+          to="/winterboard/replays"
+          class="wb-public-view__to-list"
+        >
+          ← {{ t('winterboard.replayList.title') }}
+        </router-link>
         <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
         <span v-if="ownerName" class="wb-public-view__author">{{ ownerName }}</span>
       </header>
@@ -277,6 +287,8 @@ import { activeLocale } from '@/utils/i18nDate'
 
 const { t } = useI18n()
 const route = useRoute()
+/** Свій запис (маршрут `/winterboard/replay/:replayId`), а не публічне посилання. */
+const isOwnerView = computed(() => route.name === 'winterboard-replay-owner')
 const router = useRouter()
 const store = useWBStore()
 
@@ -1128,6 +1140,20 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   text-decoration: none;
   font-size: 0.875rem;
+}
+
+.wb-public-view__to-list {
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+  color: var(--wb-brand, #047857);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wb-public-view__to-list:hover {
+  text-decoration: underline;
 }
 
 .wb-public-view__header {

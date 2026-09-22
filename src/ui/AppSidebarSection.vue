@@ -43,4 +43,25 @@ defineProps<{
   color: var(--text-muted, var(--text-secondary));
   opacity: 0.7;
 }
+/* Ноутбук (низький екран) з мишею: меню має вміститись цілком. На 1280×800
+   п'ять груп на 11 пунктів давали 869 px при ~730 px місця — останню групу
+   «Профіль» зрізало нижньою межею, і під нею з'являвся власний скрол, якого
+   не видно (візуальний огляд 2026-09-22, п.0; власник дозволив чіпати меню
+   саме через цю проблему). Тач лишається з 44 px — правило тільки для
+   `pointer: fine`. */
+@media (max-height: 900px) and (pointer: fine) {
+  .nav-section {
+    padding: 0;
+  }
+
+  .nav-section + .nav-section {
+    margin-top: 2px;
+    padding-top: 4px;
+  }
+
+  .nav-section-label {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
 </style>

@@ -7192,6 +7192,7 @@
     "replayList": {
       "title": "Мої записи",
       "subtitle": "Записи уроків та дощок: перегляньте, поділіться посиланням",
+      "countLabel": "Записів: {count}",
       "untitled": "Без назви",
       "dragHint": "Перетягніть запис у папку зліва",
       "loadMore": "Завантажити ще",
@@ -7448,7 +7449,7 @@
     "boards": {
       "myBoards": "Студія уроків",
       "myBoardsSubtitle": "Конструктор та підготовка уроків",
-      "modeLibrary": "Мої дошки",
+      "modeLibrary": "Дошки",
       "modeConstructor": "Конструктор",
       "constructorComingSoonTitle": "Конструктор уроків",
       "constructorComingSoonDesc": "Тут з'явиться інструмент для автоматичної генерації структурованих уроків за темою, рівнем і форматом.",

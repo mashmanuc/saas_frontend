@@ -81,18 +81,22 @@
             </svg>
           </button>
 
-          <!-- YouTube URL button -->
+          <!-- YouTube URL button. Планшет і вужче: лишається сама іконка —
+               з написом кнопка забирала окремий рядок тулбара (візуальний
+               огляд 2026-09-22, п.6). -->
           <button
             v-if="!showYtInput"
             type="button"
             class="wb-library__yt-btn"
+            :title="t('winterboard.library.fromYouTube')"
+            :aria-label="t('winterboard.library.fromYouTube')"
             @click="showYtInput = true"
           >
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
               <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
             </svg>
-            {{ t('winterboard.library.fromYouTube') }}
+            <span class="wb-library__yt-label">{{ t('winterboard.library.fromYouTube') }}</span>
           </button>
           <div v-else class="wb-library__yt-row">
             <input
@@ -1436,6 +1440,10 @@ onMounted(async () => {
   white-space: nowrap;
 }
 .wb-library__yt-btn:hover { background: var(--wb-canvas-bg, #f4f7f6); border-color: #b8c3cc; }
+@media (max-width: 900px) {
+  .wb-library__yt-label { display: none; }
+  .wb-library__yt-btn { gap: 0; padding: 8px 10px; }
+}
 .wb-library__yt-row {
   display: flex;
   gap: 4px;

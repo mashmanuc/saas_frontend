@@ -149,7 +149,10 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
 .wb-remote-connect__email { word-break: break-all; }
 .wb-remote-connect__board { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
 .wb-remote-connect__board--active { color: #047857; }
-.wb-remote-connect__board--none { color: #b45309; }
+/* «Урок ще не відкрито» — звичайний стан, а не попередження: помаранчевий
+   читався як помилка (візуальний огляд 2026-09-22, п.7). Помилка лишається
+   червоною, активна дошка — зеленою. */
+.wb-remote-connect__board--none { color: #475569; font-weight: 500; }
 .wb-remote-connect__board--error { color: #b91c1c; }
 .wb-remote-connect__board--checking { color: #64748b; font-weight: 400; }
 .wb-remote-connect__lessons {
