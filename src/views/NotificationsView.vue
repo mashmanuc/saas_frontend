@@ -53,11 +53,19 @@
       </div>
 
       <ul v-else class="notifications-list">
+        <!-- 2026-09-23 (візуальний огляд, п.14): картка нічого не робила по
+             кліку. `handleNotificationClick` існував у скрипті від початку, але
+             до розмітки під'єднаний не був — мертвий код. Тепер клік відкриває
+             те, про що сповіщення, і позначає його прочитаним. -->
         <li
           v-for="item in displayedItems"
           :key="item.id"
           class="notification-card"
-          :class="{ 'unread': !item.read_at }"
+          :class="{ 'unread': !item.read_at, 'clickable': hasTarget(item) }"
+          :role="hasTarget(item) ? 'link' : undefined"
+          :tabindex="hasTarget(item) ? 0 : undefined"
+          @click="handleNotificationClick(item)"
+          @keydown.enter="handleNotificationClick(item)"
         >
           <div class="card-indicator" />
           <div class="card-content">
@@ -188,25 +196,38 @@ function prevPage() {
   }
 }
 
+/** Чи є куди вести з цього сповіщення (для вигляду «клікабельне»). */
+function hasTarget(notification: InAppNotification): boolean {
+  return Boolean(targetRoute(notification))
+}
+
+/**
+ * Куди веде сповіщення. `null` — нікуди (просто інформація).
+ *
+ * `/tutor/inquiries` навмисно НЕ використовується: маршрут — редірект на
+ * Головну від часу вимкнення маркетплейсу (2026-06-17), а пункт меню прибрано
+ * 2026-09-22. Запрошені учні живуть у «Мої учні».
+ */
+function targetRoute(notification: InAppNotification): string | null {
+  const data: any = notification.data || {}
+  const role = authStore.userRole // 'student' | 'tutor' | null
+
+  if (data.thread_id) return `/tutor/messages/${data.thread_id}`
+  if (data.inquiry_id || data.relation_id) {
+    return role === 'tutor' ? '/tutor/students' : '/student/inquiries'
+  }
+  if (data.booking_id) return '/bookings'
+  if (data.billing) return '/tutor/billing'
+  return null
+}
+
 async function handleNotificationClick(notification: InAppNotification) {
   if (!notification.read_at) {
     await notificationsStore.markAsRead(notification.id)
   }
 
-  const role = authStore.userRole // 'student' | 'tutor' | null
-
-  // inquiry_id або relation_id → відкриваємо список запитів за роллю
-  if (notification.data?.inquiry_id || notification.data?.relation_id) {
-    if (role === 'tutor') {
-      router.push('/tutor/inquiries')
-    } else {
-      router.push('/student/inquiries')
-    }
-  } else if (notification.data?.booking_id) {
-    router.push('/bookings')
-  } else if (notification.data?.billing) {
-    router.push('/tutor/billing')
-  }
+  const to = targetRoute(notification)
+  if (to) router.push(to)
 }
 
 async function handleMarkAsRead(id: string) {
@@ -438,6 +459,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.notification-card.clickable {
+  cursor: pointer;
+}
+
+.notification-card.clickable:hover {
+  border-color: var(--accent, #047857);
 }
 
 .notification-card {

@@ -1,77 +1,78 @@
 <template>
-  <PageShell>
-    <div class="chat-list-page">
-      <header class="page-header">
-        <Heading :level="1">Повідомлення</Heading>
-        <p style="color: var(--text-secondary);">
-          Ваші активні чати з репетиторами та учнями
-        </p>
-      </header>
+  <!-- 2026-09-23: власний <PageShell> прибрано. Маршрути чату лежать у гілці
+       `path: '/'` з `component: PageShell` (router/index.js) — оболонка вже є, і
+       друга давала ДВІ шапки, а вміст сторінки не було видно взагалі. Ці два
+       екрани були єдиними в застосунку з власною оболонкою. -->
+  <div class="chat-list-page">
+    <header class="page-header">
+      <Heading :level="1">Повідомлення</Heading>
+      <p style="color: var(--text-secondary);">
+        Ваші активні чати з репетиторами та учнями
+      </p>
+    </header>
 
-      <!-- Loading -->
-      <div v-if="isLoading" class="loading-container">
-        <LoadingSpinner size="md" />
-      </div>
-
-      <!-- Error -->
-      <Alert
-        v-else-if="error"
-        variant="danger"
-        title="Помилка"
-        :description="error"
-        class="mb-4"
-      >
-        <Button variant="outline" size="sm" @click="loadThreads">
-          Спробувати знову
-        </Button>
-      </Alert>
-
-      <!-- Empty state -->
-      <EmptyState
-        v-else-if="threads.length === 0"
-        title="Немає активних чатів"
-        description="Ваші чати з'являться тут після початку переговорів з репетитором або учнем."
-        icon="💬"
-      />
-
-      <!-- Thread list -->
-      <div v-else class="thread-list">
-        <Card
-          v-for="thread in threads"
-          :key="thread.id"
-          class="thread-card"
-          @click="openThread(thread.id)"
-        >
-          <div class="thread-content">
-            <div class="thread-avatar">
-              <Avatar :text="getOtherUserName(thread)" size="md" />
-            </div>
-            <div class="thread-info">
-              <div class="thread-header">
-                <span class="thread-name">{{ getOtherUserName(thread) }}</span>
-                <Badge variant="primary" class="thread-badge">
-                  Переговори
-                </Badge>
-              </div>
-              <p class="thread-preview">
-                {{ thread.lastMessagePreview || 'Немає повідомлень' }}
-              </p>
-            </div>
-            <div v-if="thread.unreadCount" class="thread-unread">
-              <span class="unread-badge">{{ thread.unreadCount }}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
+    <!-- Loading -->
+    <div v-if="isLoading" class="loading-container">
+      <LoadingSpinner size="md" />
     </div>
-  </PageShell>
+
+    <!-- Error -->
+    <Alert
+      v-else-if="error"
+      variant="danger"
+      title="Помилка"
+      :description="error"
+      class="mb-4"
+    >
+      <Button variant="outline" size="sm" @click="loadThreads">
+        Спробувати знову
+      </Button>
+    </Alert>
+
+    <!-- Empty state -->
+    <EmptyState
+      v-else-if="threads.length === 0"
+      title="Немає активних чатів"
+      description="Ваші чати з'являться тут після початку переговорів з репетитором або учнем."
+      icon="💬"
+    />
+
+    <!-- Thread list -->
+    <div v-else class="thread-list">
+      <Card
+        v-for="thread in threads"
+        :key="thread.id"
+        class="thread-card"
+        @click="openThread(thread.id)"
+      >
+        <div class="thread-content">
+          <div class="thread-avatar">
+            <Avatar :text="getOtherUserName(thread)" size="md" />
+          </div>
+          <div class="thread-info">
+            <div class="thread-header">
+              <span class="thread-name">{{ getOtherUserName(thread) }}</span>
+              <Badge variant="primary" class="thread-badge">
+                Переговори
+              </Badge>
+            </div>
+            <p class="thread-preview">
+              {{ thread.lastMessagePreview || 'Немає повідомлень' }}
+            </p>
+          </div>
+          <div v-if="thread.unreadCount" class="thread-unread">
+            <span class="unread-badge">{{ thread.unreadCount }}</span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import PageShell from '@/ui/PageShell.vue'
 import Heading from '@/ui/Heading.vue'
 import Card from '@/ui/Card.vue'
 import Avatar from '@/ui/Avatar.vue'

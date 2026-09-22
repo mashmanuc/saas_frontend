@@ -6,9 +6,13 @@
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('winterboard.lesson.myLessonsTitle') }}</h1>
       <!-- LessonGrant: коди передачі паків між тьюторами (2026-07, Варіант A) -->
+      <!-- Підпис у tooltip: сама назва «Передати уроки» не пояснює, кому й що
+           саме (візуальний огляд 2026-09-22, п.3). Текст той самий, що перший
+           крок у модалці. -->
       <button
         type="button"
         class="px-4 py-2 text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+        :title="$t('knowledge.grants.headerBtnHint')"
         @click="showGrantModal = true"
       >
         🎁 {{ $t('knowledge.grants.headerBtn') }}
@@ -82,11 +86,25 @@
       </button>
     </div>
 
+    <!-- Телефон: папки згорнуті за кнопкою — розгорнутими вони забирали 115 px
+         і перша картка уроку починалась із другого екрана. Той самий вигляд, що
+         в Студії й Записах (візуальний огляд 2026-09-22, пп.3–5). -->
+    <button
+      type="button"
+      class="mb-3 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 md:hidden"
+      :aria-expanded="mobileFoldersOpen"
+      @click="mobileFoldersOpen = !mobileFoldersOpen"
+    >
+      📂 {{ t('winterboard.folders.sidebar') }}
+      <span class="ml-auto opacity-60" aria-hidden="true">{{ mobileFoldersOpen ? '▴' : '▾' }}</span>
+    </button>
+
     <!-- Main layout: sidebar + grid -->
     <div class="flex flex-col md:flex-row gap-4 md:gap-6">
       <!-- Folder sidebar -->
       <WBLessonFolders
         ref="folderSidebar"
+        :class="mobileFoldersOpen ? '' : 'hidden md:block'"
         :active-folder="activeFolder"
         :total-count="total"
         @select="onFolderSelect"
@@ -210,8 +228,15 @@
                 </span>
               </div>
 
-              <!-- Preview: thumbnail or emoji fallback (Phase 25 BUG-6) -->
-              <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+              <!-- Preview: thumbnail or emoji fallback (Phase 25 BUG-6).
+                   2026-09-23 (візуальний огляд, п.3): літера на градієнті нічого
+                   не каже про урок, а забирала цілий блок 16:9 — на телефоні
+                   назва уроку опинялась нижче половини екрана. Справжня
+                   мініатюра лишається на всю висоту; заглушка — вузька смужка. -->
+              <div
+                class="bg-gray-100 flex items-center justify-center overflow-hidden"
+                :class="lesson.board_thumbnail_url ? 'aspect-video' : 'h-14'"
+              >
                 <img
                   v-if="lesson.board_thumbnail_url"
                   :src="lesson.board_thumbnail_url"
@@ -221,7 +246,7 @@
                   @error="onThumbnailError($event, lesson)"
                 />
                 <div v-else class="flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 w-full h-full">
-                  <span class="text-2xl font-bold text-green-600/70">{{ lesson.title?.[0]?.toUpperCase() || '?' }}</span>
+                  <span class="text-lg font-bold text-green-600/70">{{ lesson.title?.[0]?.toUpperCase() || '?' }}</span>
                 </div>
               </div>
 
@@ -822,6 +847,8 @@ const notify = useNotifyStore()
 // Phase 24: search, status filter, folder
 const searchQuery = ref('')
 const activeFolder = ref<string | null>(null)
+/** Телефон: чи розгорнуті папки (на md+ клас не діє). */
+const mobileFoldersOpen = ref(false)
 const activeStatus = ref<string | null>(null)
 const total = ref(0)
 const hasMore = ref(false)

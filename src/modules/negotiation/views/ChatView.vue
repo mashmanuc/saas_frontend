@@ -1,73 +1,74 @@
 <template>
-  <PageShell>
-    <div class="chat-page">
-      <!-- Loading state -->
-      <div v-if="isLoading" class="loading-container">
-        <LoadingSpinner size="lg" />
-        <p class="mt-4" style="color: var(--text-secondary);">
-          Завантаження чату...
-        </p>
-      </div>
-
-      <!-- Error state -->
-      <div v-else-if="error" class="error-container">
-        <Alert
-          variant="danger"
-          title="Помилка завантаження"
-          :description="error"
-        >
-          <Button variant="outline" size="sm" @click="loadThread">
-            Спробувати знову
-          </Button>
-        </Alert>
-      </div>
-
-      <!-- Chat loaded -->
-      <div v-else-if="thread" class="chat-container">
-        <!-- Back navigation -->
-        <div class="chat-nav">
-          <Button variant="ghost" size="sm" @click="goBack">
-            <template #iconLeft>
-              <span>&larr;</span>
-            </template>
-            Назад
-          </Button>
-          <Badge v-if="thread.kind === 'contact'" variant="success">
-            Контакт
-          </Badge>
-          <Badge v-else variant="primary">
-            Переговори
-          </Badge>
-        </div>
-
-        <!-- Chat window -->
-        <NegotiationChatWindow
-          :thread-id="threadId"
-          :current-user-id="currentUserId"
-          :other-user-name="otherUserName"
-        />
-      </div>
-
-      <!-- Thread not found -->
-      <div v-else class="not-found-container">
-        <EmptyState
-          title="Чат не знайдено"
-          description="Цей чат не існує або у вас немає доступу до нього."
-        >
-          <Button variant="primary" @click="goBack">
-            Повернутися назад
-          </Button>
-        </EmptyState>
-      </div>
+  <!-- 2026-09-23: власний <PageShell> прибрано. Маршрути чату лежать у гілці
+       `path: '/'` з `component: PageShell` (router/index.js) — оболонка вже є, і
+       друга давала ДВІ шапки, а вміст сторінки не було видно взагалі. Ці два
+       екрани були єдиними в застосунку з власною оболонкою. -->
+  <div class="chat-page">
+    <!-- Loading state -->
+    <div v-if="isLoading" class="loading-container">
+      <LoadingSpinner size="lg" />
+      <p class="mt-4" style="color: var(--text-secondary);">
+        Завантаження чату...
+      </p>
     </div>
-  </PageShell>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="error-container">
+      <Alert
+        variant="danger"
+        title="Помилка завантаження"
+        :description="error"
+      >
+        <Button variant="outline" size="sm" @click="loadThread">
+          Спробувати знову
+        </Button>
+      </Alert>
+    </div>
+
+    <!-- Chat loaded -->
+    <div v-else-if="thread" class="chat-container">
+      <!-- Back navigation -->
+      <div class="chat-nav">
+        <Button variant="ghost" size="sm" @click="goBack">
+          <template #iconLeft>
+            <span>&larr;</span>
+          </template>
+          Назад
+        </Button>
+        <Badge v-if="thread.kind === 'contact'" variant="success">
+          Контакт
+        </Badge>
+        <Badge v-else variant="primary">
+          Переговори
+        </Badge>
+      </div>
+
+      <!-- Chat window -->
+      <NegotiationChatWindow
+        :thread-id="threadId"
+        :current-user-id="currentUserId"
+        :other-user-name="otherUserName"
+      />
+    </div>
+
+    <!-- Thread not found -->
+    <div v-else class="not-found-container">
+      <EmptyState
+        title="Чат не знайдено"
+        description="Цей чат не існує або у вас немає доступу до нього."
+      >
+        <Button variant="primary" @click="goBack">
+          Повернутися назад
+        </Button>
+      </EmptyState>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import PageShell from '@/ui/PageShell.vue'
 import Button from '@/ui/Button.vue'
 import Badge from '@/ui/Badge.vue'
 import Alert from '@/ui/Alert.vue'

@@ -430,7 +430,8 @@
       "label": "Theme",
       "light": "Light",
       "dark": "Dark",
-      "classic": "Classic"
+      "classic": "Classic",
+      "classicHint": "Light with a purple accent"
     },
     "calendar": "Calendar",
     "inquiries": "Inquiries",
@@ -6638,7 +6639,8 @@
         "integralykHint": "Show the AI assistant (mascot + command palette). Turn it off if you do not need it.",
         "subjects": "My subjects",
         "subjectsHint": "Which subjects to show in Integralyk and on the remote. With one subject selected, Integralyk works in it right away. Other subjects stay available: you can still pick them during a lesson.",
-        "subjectsAll": "All subjects"
+        "subjectsAll": "All subjects",
+        "subjectsAllHint": "Uncheck \"All subjects\" to pick individual ones."
       },
       "notifications": {
         "title": "Notification Settings",
@@ -10369,6 +10371,7 @@
     },
     "grants": {
       "headerBtn": "Hand over lessons",
+      "headerBtnHint": "Share your lessons with a colleague: they get a code and their own copies to edit and teach.",
       "title": "Transfer lessons to another teacher",
       "tabCreate": "Hand over lessons",
       "tabMyCodes": "My codes",

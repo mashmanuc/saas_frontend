@@ -51,7 +51,7 @@
                   type="button"
                   class="theme-option"
                   :class="{ active: currentTheme === option.value }"
-                  :title="$t(option.labelKey)"
+                  :title="themeTitle(option)"
                   :aria-pressed="currentTheme === option.value"
                   role="menuitemradio"
                   @click="setTheme(option.value)"
@@ -121,7 +121,7 @@
               type="button"
               class="theme-option"
               :class="{ active: currentTheme === option.value }"
-              :title="$t(option.labelKey)"
+              :title="themeTitle(option)"
               :aria-pressed="currentTheme === option.value"
               role="menuitemradio"
               @click="setTheme(option.value)"
@@ -167,6 +167,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ChevronDown, Settings, LogOut, Sun, Moon, GraduationCap } from 'lucide-vue-next'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -174,6 +175,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useLayoutStore } from '@/stores/layoutStore'
 import { storeToRefs } from 'pinia'
 
+const { t, te } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 const theme = useThemeStore()
@@ -207,6 +209,17 @@ const themeOptions = [
   { value: 'dark', icon: Moon, labelKey: 'nav.theme.dark' },
   { value: 'classic', icon: GraduationCap, labelKey: 'nav.theme.classic' },
 ]
+
+/**
+ * Підпис у tooltip. «Класична» — третій варіант, назва якого нічого не пояснює
+ * (візуальний огляд 2026-09-22, п.17): це світла тема з фіолетовим акцентом
+ * замість зеленого (`[data-theme="classic"]` у `assets/main.css`).
+ */
+function themeTitle(option: { value: string; labelKey: string }): string {
+  const name = t(option.labelKey)
+  const hintKey = `nav.theme.${option.value}Hint`
+  return te(hintKey) ? `${name} — ${t(hintKey)}` : name
+}
 
 function setTheme(value: string) {
   theme.setTheme(value)

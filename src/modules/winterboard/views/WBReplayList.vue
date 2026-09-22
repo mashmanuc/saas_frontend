@@ -14,9 +14,30 @@
       </span>
     </header>
 
+    <!-- Телефон: колонка папок стояла розгорнутою над списком і забирала
+         165 px — перша картка запису починалась із другого екрана (візуальний
+         огляд 2026-09-22, п.5). Згортаємо за кнопкою, як у Студії. -->
+    <button
+      type="button"
+      class="replay-list__folders-toggle"
+      :aria-expanded="mobileFoldersOpen"
+      @click="mobileFoldersOpen = !mobileFoldersOpen"
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M1.5 4.5A1 1 0 012.5 3.5h3l1.5 2h6a1 1 0 011 1v6a1 1 0 01-1 1h-11a1 1 0 01-1-1v-8z"
+              stroke="currentColor" stroke-width="1.3" fill="none"/>
+      </svg>
+      {{ t('winterboard.folders.sidebar') }}
+      <span class="replay-list__folders-caret" aria-hidden="true">{{ mobileFoldersOpen ? '▴' : '▾' }}</span>
+    </button>
+
     <div class="replay-list__body">
       <!-- ─── Sidebar: ReplayFolderTree ─────────────────────────────────── -->
-      <aside class="replay-list__sidebar" aria-label="Replay folders">
+      <aside
+        class="replay-list__sidebar"
+        :class="{ 'replay-list__sidebar--open': mobileFoldersOpen }"
+        aria-label="Replay folders"
+      >
         <ReplayFolderTree
           :folders="store.folders"
           :selected-id="selectedFolderKey"
@@ -218,6 +239,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const store = useReplayStore()
+
+/** Телефон: чи розгорнута колонка папок (на десктопі не діє). */
+const mobileFoldersOpen = ref(false)
 
 const copiedId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
@@ -645,17 +669,46 @@ async function onTabDrop(tab: ReplayStatus, e: DragEvent) {
   min-width: 0;
 }
 
+/* Кнопка «Папки» — лише на вузьких екранах. */
+.replay-list__folders-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #111827);
+  cursor: pointer;
+}
+
+.replay-list__folders-caret {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
 @media (max-width: 768px) {
+  .replay-list__folders-toggle {
+    display: inline-flex;
+  }
   .replay-list__body {
     grid-template-columns: 1fr;
   }
   .replay-list__sidebar {
+    display: none;
     border-right: none;
     border-bottom: 1px solid var(--border-color, #e5e7eb);
     padding-right: 0;
     padding-bottom: var(--space-md, 16px);
     position: static;
     max-height: none;
+  }
+  .replay-list__sidebar--open {
+    display: block;
   }
 }
 

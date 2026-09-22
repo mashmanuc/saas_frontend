@@ -59,7 +59,29 @@
     <template v-if="studioMode === 'library'">
 
     <!-- Sidebar (folders) -->
-    <aside v-if="showSidebar" class="wb-board-list__sidebar">
+    <!-- Планшет і телефон: колонка папок була `display: none` — до папок не
+         було як дістатись узагалі (візуальний огляд 2026-09-22, п.4). Тепер
+         вона згорнута за кнопкою: один рядок замість схованого розділу. -->
+    <button
+      v-if="showSidebar"
+      type="button"
+      class="wb-board-list__folders-toggle"
+      :aria-expanded="mobileFoldersOpen"
+      @click="mobileFoldersOpen = !mobileFoldersOpen"
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M1.5 4.5A1 1 0 012.5 3.5h3l1.5 2h6a1 1 0 011 1v6a1 1 0 01-1 1h-11a1 1 0 01-1-1v-8z"
+              stroke="currentColor" stroke-width="1.3" fill="none"/>
+      </svg>
+      {{ t('winterboard.folders.sidebar') }}
+      <span class="wb-board-list__folders-toggle-caret" aria-hidden="true">{{ mobileFoldersOpen ? '▴' : '▾' }}</span>
+    </button>
+
+    <aside
+      v-if="showSidebar"
+      class="wb-board-list__sidebar"
+      :class="{ 'wb-board-list__sidebar--open': mobileFoldersOpen }"
+    >
       <BoardFolderTree
         :folders="folderTree"
         :selected-folder-id="selectedFolderId"
@@ -650,6 +672,9 @@ function readInfoBlockDismissed(): boolean {
     return false  // SSR / disabled storage → show by default
   }
 }
+/** Телефон/планшет: чи розгорнута колонка папок (на десктопі не діє). */
+const mobileFoldersOpen = ref(false)
+
 const showInfoBlock = ref(!readInfoBlockDismissed())
 /** Акаунт уже має свої дошки → онбординг-підказка недоречна. */
 const hasOwnBoards = computed(() => boards.value.length >= 3)
@@ -1778,6 +1803,27 @@ onMounted(() => {
 
 /* ── Mobile responsive ───────────────────────────────────────────────── */
 
+/* Кнопка «Папки» — тільки на вузьких екранах; на десктопі колонка й так видна. */
+.wb-board-list__folders-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid var(--wb-toolbar-border, #d6dde4);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wb-fg, #0f172a);
+  cursor: pointer;
+}
+
+.wb-board-list__folders-toggle-caret {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
 @media (max-width: 768px) {
   .wb-board-list {
     padding: 16px 12px;
@@ -1787,8 +1833,19 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .wb-board-list__folders-toggle {
+    display: inline-flex;
+  }
+
   .wb-board-list__sidebar {
     display: none;
+  }
+
+  .wb-board-list__sidebar--open {
+    display: block;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
   }
 
   .wb-board-list__title {

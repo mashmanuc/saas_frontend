@@ -92,6 +92,12 @@
           />
           {{ $t('users.settings.general.subjectsAll') }}
         </label>
+        <!-- Поки стоїть «Усі предмети», окремі галочки сірі й неактивні —
+             збоку це читалось як зламаний список (візуальний огляд 2026-09-22,
+             п.13). Один рядок пояснює, що робити. -->
+        <p v-if="allSubjects" class="mt-1 pl-7 text-xs text-muted-foreground">
+          {{ $t('users.settings.general.subjectsAllHint') }}
+        </p>
         <label
           v-for="s in subjectChoices"
           :key="s.id"

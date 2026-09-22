@@ -279,15 +279,17 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
       },
       {
         slug: 'kalendar',
-        title: 'Calendar and slots',
-        summary: 'Schedule and availability.',
+        title: 'Lesson schedule',
+        summary: 'Your week and your lesson link.',
         body: `
-<p>In the <strong>calendar</strong> you see your availability, booked lessons, and blocked time.</p>
+<p>The <strong>Schedule</strong> page shows your week: planned lessons and blocked time.</p>
 <ul>
-  <li>Create availability slots (with a button or by dragging across the grid).</li>
-  <li>Edit a slot — change its time or duration.</li>
-  <li>Clicking a lesson in the calendar takes you to the corresponding board.</li>
+  <li><strong>Click an empty cell</strong> to open "Create lesson" — pick the time, duration and student.</li>
+  <li><strong>Click a lesson</strong> to open its card, and from there its board.</li>
+  <li>The ‹ › arrows move between weeks; "?" on the right explains the grid colours.</li>
+  <li>Above the grid is <strong>your lesson link</strong> (Zoom, Meet or your own); "Edit" takes you where to change it.</li>
 </ul>
+<p>Students do not see your schedule: you schedule the lesson yourself and invite the student with a link.</p>
 `,
       },
     ],
