@@ -27,7 +27,8 @@ export function useSidebarBadges() {
       map.set('/student/messages', { count: unreadMessages, type: 'danger' })
     }
 
-    // Inquiries (tutor): invited/pending students
+    // Запрошені учні. Бейдж на «/tutor/inquiries» прибрано разом із пунктом меню
+    // (2026-09-22): маршрут — редірект на Головну, маркетплейс вимкнено.
     // Runtime relationsStore uses options API (.js) with tutorRelations array.
     // TS sees setup API (.ts) which lacks this field — safe cast needed.
     const store = relationsStore as any
@@ -35,9 +36,6 @@ export function useSidebarBadges() {
     const invitedCount = Array.isArray(tutorRels)
       ? tutorRels.filter((r: any) => r.status === 'invited').length
       : 0
-    if (invitedCount > 0) {
-      map.set('/tutor/inquiries', { count: invitedCount, type: 'warning' })
-    }
 
     // Dashboard (tutor): same invited count as info CTA
     if (invitedCount > 0) {

@@ -8,6 +8,7 @@
 import { ref, onMounted, onUnmounted, readonly } from 'vue'
 import type { AuditSnapshot } from './types'
 import { getAuditSnapshot, initAuditCollector, disposeAuditCollector } from './auditCollector'
+import { AUDIT_FLAG_KEY } from './isAuditEnabled'
 import { resetNetworkStats } from './networkTracker'
 
 // Singleton state (shared between all consumers)
@@ -28,6 +29,17 @@ export function useAuditOverlay() {
 
   function toggle(): void {
     isVisible.value = !isVisible.value
+    // Shift+D повертає панель — знімаємо «вимкнено назовсім», інакше ✕ був би
+    // незворотним (візуальний огляд 2026-09-22, Топ-10 №5).
+    if (isVisible.value) {
+      try { localStorage.removeItem(AUDIT_FLAG_KEY) } catch { /* private mode */ }
+    }
+  }
+
+  /** ✕ на панелі: сховати й запам'ятати — на всіх сторінках і після перезавантаження. */
+  function dismiss(): void {
+    isVisible.value = false
+    try { localStorage.setItem(AUDIT_FLAG_KEY, 'false') } catch { /* private mode */ }
   }
 
   // Keyboard handler: Shift+D (no Ctrl/Alt/Meta)
@@ -76,5 +88,6 @@ export function useAuditOverlay() {
     snapshot: readonly(snapshot),
     isVisible: readonly(isVisible),
     toggle,
+    dismiss,
   }
 }

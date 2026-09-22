@@ -1,5 +1,24 @@
 <template>
-  <footer class="border-t border-border bg-background">
+  <!-- compact — футер усередині застосунку (PageShell): один рядок замість трьох
+       колонок. Візуальний огляд 2026-09-22, Топ-10 №6: на робочих сторінках
+       («Головна», «Сповіщення») повний футер займав до половини екрана. -->
+  <footer v-if="compact" class="border-t border-border bg-background">
+    <div class="container mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-3 text-xs text-muted-foreground">
+      <span>© {{ currentYear }} M4SH</span>
+      <router-link to="/legal/terms" class="hover:text-foreground transition-colors">
+        {{ $t('footer.legal.terms') }}
+      </router-link>
+      <router-link to="/legal/privacy" class="hover:text-foreground transition-colors">
+        {{ $t('footer.legal.privacy') }}
+      </router-link>
+      <router-link to="/contacts" class="hover:text-foreground transition-colors">
+        {{ $t('footer.contact.link') }}
+      </router-link>
+      <ProjectSupportLink />
+    </div>
+  </footer>
+
+  <footer v-else class="border-t border-border bg-background">
     <div class="container mx-auto px-4 py-8">
       <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
         <!-- Company Info -->
@@ -97,9 +116,11 @@
   </footer>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
+
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const currentYear = computed(() => new Date().getFullYear())
 

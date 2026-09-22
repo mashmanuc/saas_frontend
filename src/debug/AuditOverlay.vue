@@ -10,6 +10,19 @@
         data-testid="audit-overlay"
         @pointerdown="onDragStart"
       >
+        <!-- ✕ вимикає панель назовсім (localStorage), не лише до перезавантаження:
+             візуальний огляд 2026-09-22, Топ-10 №5 — вона висіла на кожній
+             сторінці й перекривала вміст. Повернути: Shift+D. -->
+        <button
+          type="button"
+          class="audit-overlay__close"
+          title="Сховати панель (Shift+D — повернути)"
+          aria-label="Сховати панель діагностики"
+          data-testid="audit-close"
+          @pointerdown.stop
+          @click.stop="dismiss"
+        >✕</button>
+
         <div class="audit-overlay__row" data-testid="audit-requests">
           <span class="audit-overlay__icon">📡</span>
           <span class="audit-overlay__label">Requests:</span>
@@ -100,7 +113,7 @@ import type { AuditIssue } from './types'
 
 const MAX_VISIBLE_ISSUES = 3
 
-const { snapshot, isVisible } = useAuditOverlay()
+const { snapshot, isVisible, dismiss } = useAuditOverlay()
 const thresh = DEFAULT_AUDIT_CONFIG.thresholds
 
 // ── Drag state ──────────────────────────────────────────────
@@ -213,6 +226,21 @@ const hiddenIssuesCount = computed(() => Math.max(0, allIssues.value.length - MA
 </script>
 
 <style scoped>
+.audit-overlay__close {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.audit-overlay__close:hover { opacity: 1; }
+
 .audit-overlay {
   position: fixed;
   bottom: 16px;

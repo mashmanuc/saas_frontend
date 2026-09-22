@@ -31,7 +31,7 @@
         <router-view />
       </main>
 
-      <AppFooter />
+      <AppFooter compact />
     </div>
 
     <!-- Toasts переїхали в App.vue (2026-08-17): winterboard має ВЛАСНИЙ
