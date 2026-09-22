@@ -7713,8 +7713,6 @@
       "fromYouTube": "З YouTube",
       "moreActions": "Дії з файлом",
       "unfavorite": "Прибрати з вибраного",
-      "folderActions": "Дії з папкою",
-      "subfolders": "Підпапки",
       "filesCount": "Файлів: {count}",
       "foldersCount": "папок: {count}",
       "source": {

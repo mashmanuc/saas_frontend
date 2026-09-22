@@ -8075,8 +8075,6 @@
       "fromYouTube": "Из YouTube",
       "moreActions": "Действия с файлом",
       "unfavorite": "Убрать из избранного",
-      "folderActions": "Действия с папкой",
-      "subfolders": "Подпапки",
       "filesCount": "Файлов: {count}",
       "foldersCount": "папок: {count}",
       "source": {

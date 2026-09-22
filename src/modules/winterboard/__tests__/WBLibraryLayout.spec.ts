@@ -66,11 +66,14 @@ describe('WBLibrary — один режим перегляду за раз', () 
     expect(w.find('.wb-library__storage-track').exists()).toBe(false)
   })
 
-  it('фільтри й папки — вкладки; окремої колонки дерева немає', async () => {
+  it('як у «Записах»: папки — колонка ліворуч, вкладки зверху — лише фільтри', async () => {
     const w = await mountLibrary()
-    expect(w.find('.wb-library__sidebar').exists()).toBe(false)
-    const tabs = w.findAll('.lib-tabs__tab').map((b) => b.text())
+    const tabs = w.findAll('.wb-library__tab').map((b) => b.text())
     expect(tabs).toEqual(['Усі', 'Вибране', 'Нещодавні', 'Скопійовані', 'Архів'])
-    expect(w.find('.lib-tabs__chip-name').text()).toBe('N_22')
+    const tree = w.find('.wb-library__sidebar .wb-folder-tree')
+    expect(tree.exists()).toBe(true)
+    expect(tree.text()).toContain('N_22')
+    // віртуальні розділи не дублюються в дереві
+    expect(tree.text()).not.toContain('Вибране')
   })
 })

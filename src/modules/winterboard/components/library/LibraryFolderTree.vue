@@ -23,77 +23,82 @@
       <span class="wb-folder-tree__label">{{ t('winterboard.library.allFiles') }}</span>
     </button>
 
-    <!-- Favorites shortcut -->
-    <button
-      type="button"
-      class="wb-folder-tree__item"
-      :class="{ 'wb-folder-tree__item--active': selectedId === FAVORITES_ID }"
-      :aria-current="selectedId === FAVORITES_ID ? 'true' : undefined"
-      @click="emit('select', FAVORITES_ID)"
-    >
-      <span class="wb-folder-tree__icon" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path
-            d="M7 1.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L7 9.25l-3.09 1.75.59-3.435L2 5.13l3.455-.5L7 1.5z"
-            fill="currentColor" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"
-          />
-        </svg>
-      </span>
-      <span class="wb-folder-tree__label">{{ t('winterboard.library.favorites') }}</span>
-    </button>
+    <!-- Вибране / Нещодавні / Скопійовані / Архів — фільтри, не папки. На сторінці
+         «Матеріали» вони у вкладках над сіткою (як «Усі · Архів · Кошик» у
+         «Записах»), у бічних панелях дошки — тут, як і були. -->
+    <template v-if="virtualSections">
+      <!-- Favorites shortcut -->
+      <button
+        type="button"
+        class="wb-folder-tree__item"
+        :class="{ 'wb-folder-tree__item--active': selectedId === FAVORITES_ID }"
+        :aria-current="selectedId === FAVORITES_ID ? 'true' : undefined"
+        @click="emit('select', FAVORITES_ID)"
+      >
+        <span class="wb-folder-tree__icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M7 1.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L7 9.25l-3.09 1.75.59-3.435L2 5.13l3.455-.5L7 1.5z"
+              fill="currentColor" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span class="wb-folder-tree__label">{{ t('winterboard.library.favorites') }}</span>
+      </button>
 
-    <!-- Recent -->
-    <button
-      type="button"
-      class="wb-folder-tree__item"
-      :class="{ 'wb-folder-tree__item--active': selectedId === RECENT_ID }"
-      :aria-current="selectedId === RECENT_ID ? 'true' : undefined"
-      @click="emit('select', RECENT_ID)"
-    >
-      <span class="wb-folder-tree__icon" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="wb-folder-tree__label">{{ t('winterboard.library.recent') }}</span>
-    </button>
+      <!-- Recent -->
+      <button
+        type="button"
+        class="wb-folder-tree__item"
+        :class="{ 'wb-folder-tree__item--active': selectedId === RECENT_ID }"
+        :aria-current="selectedId === RECENT_ID ? 'true' : undefined"
+        @click="emit('select', RECENT_ID)"
+      >
+        <span class="wb-folder-tree__icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M7 4v3l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="wb-folder-tree__label">{{ t('winterboard.library.recent') }}</span>
+      </button>
 
-    <!-- Pasted (Phase AM-2) -->
-    <button
-      type="button"
-      class="wb-folder-tree__item"
-      :class="{ 'wb-folder-tree__item--active': selectedId === PASTED_ID }"
-      :aria-current="selectedId === PASTED_ID ? 'true' : undefined"
-      @click="emit('select', PASTED_ID)"
-    >
-      <span class="wb-folder-tree__icon wb-folder-tree__icon--paste" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="3" y="1" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M5 1V0.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V1" stroke="currentColor" stroke-width="1"/>
-          <path d="M5.5 5h3M5.5 7.5h3M5.5 10h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span class="wb-folder-tree__label">{{ t('winterboard.library.storage.pasted') }}</span>
-    </button>
+      <!-- Pasted (Phase AM-2) -->
+      <button
+        type="button"
+        class="wb-folder-tree__item"
+        :class="{ 'wb-folder-tree__item--active': selectedId === PASTED_ID }"
+        :aria-current="selectedId === PASTED_ID ? 'true' : undefined"
+        @click="emit('select', PASTED_ID)"
+      >
+        <span class="wb-folder-tree__icon wb-folder-tree__icon--paste" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="3" y="1" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 1V0.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V1" stroke="currentColor" stroke-width="1"/>
+            <path d="M5.5 5h3M5.5 7.5h3M5.5 10h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="wb-folder-tree__label">{{ t('winterboard.library.storage.pasted') }}</span>
+      </button>
 
-    <!-- Archive (Phase AM-3) -->
-    <button
-      type="button"
-      class="wb-folder-tree__item"
-      :class="{ 'wb-folder-tree__item--active': selectedId === ARCHIVED_ID }"
-      :aria-current="selectedId === ARCHIVED_ID ? 'true' : undefined"
-      @click="emit('select', ARCHIVED_ID)"
-    >
-      <span class="wb-folder-tree__icon" aria-hidden="true">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M1 3h12V1.5A1.5 1.5 0 0 0 11.5 0h-9A1.5 1.5 0 0 0 1 1.5V3z" fill="currentColor" opacity="0.2"/>
-          <path d="M5 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span class="wb-folder-tree__label">{{ t('winterboard.library.archive.title') }}</span>
-    </button>
+      <!-- Archive (Phase AM-3) -->
+      <button
+        type="button"
+        class="wb-folder-tree__item"
+        :class="{ 'wb-folder-tree__item--active': selectedId === ARCHIVED_ID }"
+        :aria-current="selectedId === ARCHIVED_ID ? 'true' : undefined"
+        @click="emit('select', ARCHIVED_ID)"
+      >
+        <span class="wb-folder-tree__icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M1 3h12V1.5A1.5 1.5 0 0 0 11.5 0h-9A1.5 1.5 0 0 0 1 1.5V3z" fill="currentColor" opacity="0.2"/>
+            <path d="M5 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="wb-folder-tree__label">{{ t('winterboard.library.archive.title') }}</span>
+      </button>
+    </template>
 
     <!-- Divider -->
     <div v-if="flatNodes.length > 0 || editable" class="wb-folder-tree__divider" role="separator" />
@@ -264,11 +269,14 @@ interface Props {
   selectedId: number | null
   loading?: boolean
   editable?: boolean
+  /** Показувати Вибране / Нещодавні / Скопійовані / Архів у дереві. */
+  virtualSections?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   editable: false,
+  virtualSections: true,
 })
 
 const emit = defineEmits<{

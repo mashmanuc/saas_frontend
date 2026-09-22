@@ -6,10 +6,26 @@
            LibraryFolder.parent (not parent_id), LibraryFolder.assets_count (not asset_count)
            LibraryAsset.folder (not folder_id) -->
 <template>
-  <!-- Візуальний розбір «Матеріалів» 2026-09-22: одна колонка й одна
-       прокрутка (сторінки). Фільтри й папки — вкладки над сіткою, квота —
-       один рядок у заголовку, групи за датою. -->
+  <!-- Візуальний розбір «Матеріалів» 2026-09-22: одна прокрутка (сторінки),
+       квота — один рядок у заголовку, групи за датою, дії файлу в меню «…».
+       Папки — колонка ліворуч, як у «Записах» і «Студії» (рішення власника
+       того ж дня: «щоб було однаково»); вкладки над сіткою — лише фільтри. -->
   <div class="wb-library">
+    <aside class="wb-library__sidebar" :aria-label="t('winterboard.library.folders')">
+      <LibraryFolderTree
+        :folders="foldersTree"
+        :selected-id="activeFolderId"
+        :loading="loadingFolders"
+        :virtual-sections="false"
+        editable
+        @select="onSelectFolder"
+        @create="handleCreateFolder"
+        @rename="handleRenameFolder"
+        @delete="handleDeleteFolder"
+        @drop="handleFolderDrop"
+      />
+    </aside>
+
     <main class="wb-library__main">
       <header class="wb-library__head">
         <div class="wb-library__head-title">
@@ -144,21 +160,23 @@
         </div>
       </div>
 
-      <!-- П. 7: фільтри й папки — вкладки -->
-      <LibraryTabs
-        :folders="foldersTree"
-        :selected-id="selectedFolderId"
-        editable
-        @select="onSelectFolder"
-        @create="handleCreateFolder"
-        @rename="handleRenameFolder"
-        @delete="handleDeleteFolder"
-        @drop="handleFolderDrop"
-      />
+      <!-- Фільтри — вкладки, як «Усі · Архів · Кошик» у «Записах» -->
+      <nav class="wb-library__tabs" role="tablist" :aria-label="t('winterboard.library.viewMode')">
+        <button
+          v-for="tab in filterTabs"
+          :key="String(tab.id)"
+          type="button"
+          role="tab"
+          class="wb-library__tab"
+          :class="{ 'wb-library__tab--active': activeTabId === tab.id }"
+          :aria-selected="activeTabId === tab.id"
+          @click="onSelectTab(tab.id)"
+        >{{ tab.label }}</button>
+      </nav>
 
-      <!-- Крихти — лише всередині вкладеної папки (верхній рівень видно на вкладках). -->
+      <!-- Крихти — лише всередині папки -->
       <LibraryBreadcrumb
-        v-if="breadcrumb.length > 2"
+        v-if="activeFolderId !== null"
         :items="breadcrumb"
         @navigate="onSelectFolder"
       />
@@ -491,8 +509,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
-import LibraryTabs from '../components/library/LibraryTabs.vue'
+import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
 import LibraryAssetMenu from '../components/library/LibraryAssetMenu.vue'
 import { groupAssets } from '../utils/libraryGroups'
 import apiClient from '@/utils/apiClient'
@@ -612,6 +629,22 @@ const quotaDetails = computed(() => {
     t('winterboard.library.storage.pastedLabel', { size: formatBytes(st.paste_bytes) }),
   ].join(' · ')
 })
+
+// Вкладки-фільтри. Вибрана папка живе в тому ж selectedFolderId, що й
+// віртуальні розділи, тож при відкритій папці активна вкладка — «Усі».
+const filterTabs = computed(() => [
+  { id: null, label: t('winterboard.library.allTab') },
+  { id: FAVORITES_ID, label: t('winterboard.library.favorites') },
+  { id: RECENT_ID, label: t('winterboard.library.recent') },
+  { id: PASTED_ID, label: t('winterboard.library.storage.pasted') },
+  { id: ARCHIVED_ID, label: t('winterboard.library.archive.title') },
+] as Array<{ id: number | null; label: string }>)
+const activeTabId = computed<number | null>(() =>
+  selectedFolderId.value !== null && selectedFolderId.value < 0 ? selectedFolderId.value : null,
+)
+function onSelectTab(id: number | null): void {
+  onSelectFolder(id)
+}
 
 function countFolders(nodes: FolderTree[]): number {
   return nodes.reduce((n, f) => n + 1 + countFolders(f.children), 0)
@@ -1163,6 +1196,48 @@ onMounted(async () => {
   border-radius: 12px;
 }
 
+/* Колонка папок — як replay-list__sidebar: липка, без власної прокрутки. */
+.wb-library__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-right: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  align-self: flex-start;
+  position: sticky;
+  top: 16px;
+}
+
+.wb-library__tabs {
+  display: flex;
+  gap: 2px;
+  margin: 4px 20px 0;
+  border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
+}
+.wb-library__tab {
+  position: relative;
+  padding: 9px 12px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--wb-fg-secondary, #475569);
+  cursor: pointer;
+}
+.wb-library__tab:hover { color: var(--wb-fg, #0f172a); }
+.wb-library__tab--active {
+  color: var(--wb-brand, #0f766e);
+  font-weight: 600;
+}
+.wb-library__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--wb-brand, #0f766e);
+}
+
 .wb-library__head {
   display: flex;
   align-items: flex-end;
@@ -1226,10 +1301,6 @@ onMounted(async () => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-.wb-library__main > .lib-tabs {
-  padding: 4px 20px 0;
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────── */
@@ -1752,12 +1823,19 @@ onMounted(async () => {
     height: auto;
   }
 
+  .wb-library { flex-direction: column; }
+  .wb-library__sidebar {
+    width: 100%;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  }
+  .wb-library__tabs { margin: 4px 12px 0; overflow-x: auto; }
   .wb-library__toolbar { flex-wrap: wrap; }
   .wb-library__toolbar-actions { flex-wrap: wrap; flex-shrink: 1; max-width: 100%; }
   .wb-library__head,
   .wb-library__toolbar,
-  .wb-library__groups,
-  .wb-library__main > .lib-tabs { padding-left: 12px; padding-right: 12px; }
+  .wb-library__groups { padding-left: 12px; padding-right: 12px; }
   .wb-library__head { flex-direction: column; align-items: flex-start; }
   .wb-library__quota { align-items: flex-start; }
 
