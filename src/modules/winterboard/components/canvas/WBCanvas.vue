@@ -1004,6 +1004,7 @@ import {
   ZOOM_MAX,
 } from '../../engine/zoomPan'
 import { notifyWarning } from '@/utils/notify'
+import { autofitExpressions, graphViewportFor } from '../../utils/graphAutofit'
 
 // A3.3: Performance benchmark flag — set to true in dev to see console.time markers
 const __DEV_PERF__ = import.meta.env.DEV && import.meta.env.VITE_WB_PERF === 'true'
@@ -1283,6 +1284,14 @@ const NMT3D_TEMPLATE_KEYS = new Set([
   'sphere_in_cube', 'cube_in_sphere',
 ])
 
+/** Вікно картки аналізу під функцію; x₀ / a, b — обов'язково у вікні.
+ *  Немає явної функції — старе типове `{cx: 0, cy: 0, scale: 50}`. */
+function calculusViewportFor(expr: string, must: number[]): Record<string, unknown> {
+  const fit = autofitExpressions([expr], {}, must)
+  if (!fit) return { cx: 0, cy: 0, scale: 50 }
+  return { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, fit }
+}
+
 /** null = companion чесно НЕ створюється (немає шаблона) — не пустушка. */
 function buildCompanionData(resolution: CompanionResolution): Record<string, unknown> | null {
   const d = resolution.data
@@ -1305,6 +1314,10 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
         state: {
           ...DEFAULT_GRAPH_STATE,
           expressions,
+          // TZ_GRAPH_VIEWPORT_AUTOFIT §3.2: вікно під функцію задачі — один раз,
+          // у тому самому asset_add (прод 09-22: «Побудувати» до задачі на
+          // x³ + 15x² − 72x давав вікно, де крива — дві вертикальні риски).
+          viewport: graphViewportFor(expressions.map((e) => e.src), {}),
         },
       }
     }
@@ -1380,20 +1393,20 @@ function buildCompanionData(resolution: CompanionResolution): Record<string, unk
       const isIntegral = resolution.intent === 'show_integral_area'
       if (isIntegral) {
         const bounds = d.bounds as number[] | undefined
+        const a = bounds?.[0] ?? -1.5
+        const b = bounds?.[1] ?? 1.5
         return {
           version: 1, mode: 'integral',
-          expr,
-          a: bounds?.[0] ?? -1.5,
-          b: bounds?.[1] ?? 1.5,
+          expr, a, b,
           riemann: 'off', N: 12, showF: false,
-          viewport: { cx: 0, cy: 0, scale: 50 },
+          viewport: calculusViewportFor(expr, [a, b]),
         }
       }
       return {
         version: 1, mode: 'derivative',
         expr, x0: 1.0,
         showSecant: false, h: 0.5, showDerivTrace: false,
-        viewport: { cx: 0, cy: 0, scale: 50 },
+        viewport: calculusViewportFor(expr, [1.0]),
       }
     }
 
