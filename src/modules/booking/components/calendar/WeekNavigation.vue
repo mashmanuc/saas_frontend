@@ -1,34 +1,12 @@
 <template>
-  <div class="availability-status">
-    <div class="status-text" :class="{ 'status-text--empty': !hasAvailability }">
-      <span v-if="hasAvailability">
-        {{ t('calendar.weekNavigation.availableHours', { hours: formattedHours }) }}
-      </span>
-      <span v-else>
-        {{ t('calendar.weekNavigation.noAvailability') }}
-      </span>
-    </div>
-    <div class="actions">
-      <Button
-        variant="primary"
-        size="sm"
-        @click="handleMarkFreeTime"
-        data-testid="mark-free-time-btn"
-      >
-        {{ t('calendar.header.mark_free_time') }}
-      </Button>
-      <Button
-        variant="ghost"
-        iconOnly
-        @click="handleShowGuide"
-        :aria-label="t('calendar.weekNavigation.showGuide')"
-        title="Допомога"
-      >
-        <HelpCircleIcon class="w-5 h-5" />
-      </Button>
-    </div>
-  </div>
-
+  <!-- Смугу доступності («N год доступно» / «Ви ще жодного разу не позначали
+       вільний час» + кнопка «Позначити вільний час») прибрано 2026-09-22 за
+       рішенням власника. Підстава — візуальний огляд `UI_VISUAL_AUDIT_2026-09-22.md`
+       п.2: учень не бачить вільних годин тьютора, бо єдиний такий екран
+       (`StudentAvailabilityCalendar`) живе у вимкненому 2026-06-17 маркетплейсі.
+       Кнопка вела в режим, результат якого нікому не показувався.
+       Довідка («?») лишається — вона про весь календар, а не про доступність,
+       і переїхала в рядок навігації тижнем. -->
   <div class="week-navigation">
     <Button
       variant="ghost"
@@ -63,6 +41,17 @@
     >
       <ChevronRightIcon class="w-5 h-5" />
     </Button>
+
+    <Button
+      class="week-navigation__help"
+      variant="ghost"
+      iconOnly
+      @click="handleShowGuide"
+      :aria-label="t('calendar.weekNavigation.showGuide')"
+      :title="t('calendar.weekNavigation.showGuide')"
+    >
+      <HelpCircleIcon class="w-5 h-5" />
+    </Button>
   </div>
 </template>
 
@@ -83,15 +72,12 @@ const props = defineProps<{
   weekEnd?: string
   currentPage: number
   isLoading: boolean
-  totalAvailableHours?: number | null
-  hasAvailability?: boolean
 }>()
 
 const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
   'show-guide': []
-  'mark-free-time': []
 }>()
 
 const weekRangeFormatted = computed(() => {
@@ -101,12 +87,6 @@ const weekRangeFormatted = computed(() => {
   const end = new Date(props.weekEnd)
 
   return `${start.toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })}`
-})
-
-const formattedHours = computed(() => {
-  if (typeof props.totalAvailableHours !== 'number') return '0'
-  const rounded = Math.round(props.totalAvailableHours * 10) / 10
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1)
 })
 
 function handleNavigate(direction: -1 | 1) {
@@ -120,16 +100,11 @@ function handleToday() {
 function handleShowGuide() {
   emit('show-guide')
 }
-
-function handleMarkFreeTime() {
-  emit('mark-free-time')
-}
-
-const hasAvailability = computed(() => Boolean(props.hasAvailability))
 </script>
 
 <style scoped>
 .week-navigation {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,32 +167,12 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   background: var(--accent-bg-hover, #bae6fd);
 }
 
-.availability-status {
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 10px 16px;
-  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.04));
-  gap: 12px;
-}
-
-.status-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--success);
-}
-
-.status-text--empty {
-  color: var(--warning);
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+/* Довідка стоїть у куті смуги, щоб не зсувати стрілки з центру. */
+.week-navigation__help {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .scroll-available-btn {
@@ -262,25 +217,6 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   transform: translateY(-1px);
 }
 
-.mark-free-time-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background: var(--success);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-.mark-free-time-btn:hover {
-  background: var(--success-hover, #45a049);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-}
-
 .edit-availability-btn {
   padding: 8px 16px;
   background: var(--success);
@@ -315,5 +251,22 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   background: var(--bg-tertiary, #e5e7eb);
   color: var(--text-primary);
   transform: scale(1.05);
+}
+
+/* Телефон: `calendar-responsive.css` ставить смузі `flex-direction: column` —
+   те правило писане під іншу розмітку (`.week-navigation__controls`, якої тут
+   немає), і в нас стрілки ставали стовпчиком заввишки 162 px. Лишаємо рядок,
+   праворуч тримаємо місце під довідку, дату дозволяємо переносити. */
+@media (max-width: 767px) {
+  .week-navigation {
+    flex-direction: row;
+    gap: 4px;
+    padding: 8px 44px 8px 8px;
+  }
+
+  .week-range {
+    font-size: 14px;
+    text-align: center;
+  }
 }
 </style>

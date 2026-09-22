@@ -46,10 +46,9 @@
           <p>{{ t('calendar.guide.navigationDesc') }}</p>
         </section>
 
-        <section class="guide-section">
-          <h4>{{ t('calendar.guide.setupButton') }}</h4>
-          <p>{{ t('calendar.guide.setupButtonDesc') }}</p>
-        </section>
+        <!-- Розділ про кнопку «Позначити вільний час» прибрано 2026-09-22
+             разом із самою кнопкою (рішення власника): довідка описувала
+             дію, якої на сторінці вже немає. -->
 
         <section class="guide-section">
           <h4>{{ t('calendar.guide.limits') }}</h4>

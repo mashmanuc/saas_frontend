@@ -164,11 +164,19 @@ const copyBackupLink = async () => {
 </script>
 
 <style scoped>
+/* 2026-09-22: блок переїхав із-під сітки під навігацію тижнем (огляд п.2),
+   тому це самостійна картка, а не «підвал», приклеєний до низу таблиці. */
 .calendar-footer {
-  padding: 16px 24px;
+  padding: 16px;
   background: var(--bg-secondary);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  border-top: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+@media (min-width: 768px) {
+  .calendar-footer {
+    padding: 16px 24px;
+  }
 }
 
 .footer-content {
@@ -264,9 +272,19 @@ const copyBackupLink = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
+.footer-label {
+  min-width: 0;
+}
+
+/* `flex-shrink: 0` + `nowrap`: без них на телефоні бейдж стискався до
+   «ПЛАТФОРМ…» (візуальний огляд 2026-09-22, п.2). */
 .provider-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;

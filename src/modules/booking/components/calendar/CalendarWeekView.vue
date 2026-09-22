@@ -51,16 +51,15 @@
         :week-end="weekEndForNav"
         :current-page="currentPageForNav"
         :is-loading="isLoadingV055"
-        :total-available-hours="totalAvailableHours"
-        :has-availability="hasAvailability"
         @navigate="handleNavigate"
         @today="handleToday"
-        @scroll-first-available="handleScrollToFirstAvailable"
-        @open-availability="handleSetupAvailability"
-        @create-slot="handleCreateSlotFromToolbar"
         @show-guide="showGuideModal = true"
-        @mark-free-time="handleEnterAvailabilityMode"
       />
+
+      <!-- Лінк на урок — над сіткою (візуальний огляд 2026-09-22, п.2): порожня
+           сітка 06:00–21:00 займає весь екран, і єдиний корисний блок сторінки
+           лежав під нею — без прокрутки його не було видно. -->
+      <CalendarFooter v-if="!isAvailabilityMode && props.mode === 'tutor'" />
 
       <div v-if="isLoadingV055" class="loading-state">
         <LoaderIcon class="w-8 h-8 animate-spin text-blue-500" />
@@ -90,7 +89,6 @@
           @cell-click="handleCellClickRouter"
           @drag-complete="handleDragComplete"
         />
-        <CalendarFooter v-if="!isAvailabilityMode && props.mode === 'tutor'" lesson-link="https://zoom.us/j/example" />
       </template>
     </div>
     
