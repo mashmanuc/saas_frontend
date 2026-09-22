@@ -7725,7 +7725,8 @@
       "foldersCount": "папок: {count}",
       "source": {
         "lesson": "Урок",
-        "upload": "Завантажено"
+        "upload": "Завантажено",
+        "pasted": "Скопійовано"
       },
       "groups": {
         "thisWeek": "Цього тижня",

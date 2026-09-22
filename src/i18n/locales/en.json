@@ -8145,7 +8145,8 @@
       "foldersCount": "folders: {count}",
       "source": {
         "lesson": "Lesson",
-        "upload": "Uploaded"
+        "upload": "Uploaded",
+        "pasted": "Pasted"
       },
       "groups": {
         "thisWeek": "This week",

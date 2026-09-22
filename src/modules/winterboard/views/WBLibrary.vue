@@ -855,6 +855,8 @@ async function loadAssets(): Promise<void> {
         thumbnail_url: p.thumbnail_url || p.cdn_url,
         is_favorite: false,
         content_item_id: p.id,
+        // Бейдж «Скопійовано», а не «Урок»: content_item_id тут — id вставки.
+        _source: 'pasted',
         status: 'active',
         tags: [],
         created_at: p.created_at,
@@ -1921,10 +1923,53 @@ onMounted(async () => {
   color: #dc2626;
 }
 
+/* Архівна картка — розмітка тут, а стилі LibraryAssetCard scoped і сюди не
+   доходять: без цього прев'ю тягнулось на всю висоту, текст налазив на кнопку. */
+.library-asset-card--archived {
+  display: flex;
+  flex-direction: column;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.library-asset-card--archived .library-asset-card__preview {
+  flex-shrink: 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--wb-canvas-bg, #f4f7f6);
+  border-bottom: 1px solid var(--wb-toolbar-border, #eef2f1);
+}
+.library-asset-card--archived .library-asset-card__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left top;
+  opacity: 0.75;
+}
+.library-asset-card--archived .library-asset-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px 4px;
+  min-width: 0;
+}
+.library-asset-card--archived .library-asset-card__name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--wb-fg, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-asset-card--archived .library-asset-card__meta {
+  font-size: 11px;
+  color: #b45309;
+}
+
 .wb-library__restore-btn {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
+  align-self: flex-start;
+  margin: 4px 10px 10px;
   padding: 4px 10px;
   font-size: 11px;
   border: 1px solid #7c3aed;

@@ -192,6 +192,9 @@ const sourceBadge = computed<{ type: string; label: string } | null>(() => {
   const name = props.asset.name.toLowerCase()
   const ct = props.asset.content_type
   if (name.includes('youtube') || ct === 'video/youtube') return { type: 'youtube', label: 'YouTube' }
+  if ((props.asset as { _source?: string })._source === 'pasted') {
+    return { type: 'pasted', label: t('winterboard.library.source.pasted') }
+  }
   if (props.asset.content_item_id) return { type: 'lesson', label: t('winterboard.library.source.lesson') }
   return { type: 'upload', label: t('winterboard.library.source.upload') }
 })
@@ -372,6 +375,7 @@ function onDragStart(e: DragEvent): void {
 .library-asset-card__source--upload { background: #f1f5f9; color: #475569; }
 .library-asset-card__source--lesson { background: #e6f4ef; color: #0f6b52; }
 .library-asset-card__source--youtube { background: #f1f5f9; color: #475569; }
+.library-asset-card__source--pasted { background: #f3f0fb; color: #5b4a8a; }
 
 .library-asset-card__fav {
   position: absolute;
