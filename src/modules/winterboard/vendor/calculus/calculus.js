@@ -50,6 +50,17 @@
   // ---------------------------------------------------------------------------
   // CalculusCard — base canvas component with grid+axes, function plot, drag handles
   // ---------------------------------------------------------------------------
+  // Viewport (TZ_GRAPH_VIEWPORT_AUTOFIT_2026-09-22): px полотна на одиницю, окремо по осях.
+  const CALC_DEFAULT_SCALE = 50;
+  const CALC_SCALE_MIN = 1e-4, CALC_SCALE_MAX = 1e5;
+  function calcNormalizeFit(f) {
+    if (!f || typeof f !== 'object') return null;
+    const xMin = Number(f.xMin), xMax = Number(f.xMax), yMin = Number(f.yMin), yMax = Number(f.yMax);
+    if (![xMin, xMax, yMin, yMax].every(Number.isFinite)) return null;
+    if (!(xMax > xMin) || !(yMax > yMin)) return null;
+    return { xMin, xMax, yMin, yMax };
+  }
+
   class CalculusCard {
     constructor(container, opts) {
       this.container = container;
@@ -67,7 +78,10 @@
         N: 12,
         showF: false,
       }, opts);
-      this.viewport = { cx: 0, cy: 0, scale: 50 };
+      // Окремі масштаби осей + вписаний діапазон (TZ_GRAPH_VIEWPORT_AUTOFIT_2026-09-22).
+      this.viewport = { cx: 0, cy: 0, scaleX: CALC_DEFAULT_SCALE, scaleY: CALC_DEFAULT_SCALE };
+      this._fit = null;
+      this.onFitRequest = null; // () => void — кнопка «вписати» (Vue-обгортка)
       this._derivTrail = []; // pts [{x, y}]
       this._fnAst = null;
       this._fnFn = (x) => NaN;
@@ -127,13 +141,22 @@
       z.innerHTML = `
         <button data-z="in"  title="Збільшити">+</button>
         <button data-z="out" title="Зменшити">−</button>
-        <button data-z="home" title="До початку">⌂</button>`;
+        <button data-z="home" title="До початку">⌂</button>
+        <button data-z="fit" title="Вписати графік" style="display:none">⤢</button>`;
       c.appendChild(z);
+      this._zoomBox = z;
       z.addEventListener('click', (e) => {
         const k = e.target.dataset.z;
         if (k === 'in')   this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1.4);
         if (k === 'out')  this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1/1.4);
-        if (k === 'home') { this.viewport = { cx: 0, cy: 0, scale: 50 }; this._scheduleRender(); }
+        if (k === 'home') {
+          this._fit = null;
+          this.viewport = { cx: 0, cy: 0, scaleX: CALC_DEFAULT_SCALE, scaleY: CALC_DEFAULT_SCALE };
+          this._scheduleRender();
+        }
+        if (k === 'fit' && this.onFitRequest) {
+          try { this.onFitRequest(); } catch (err) { console.error('[calculus] fit', err); }
+        }
       });
 
       this._ro = new ResizeObserver(() => { this._render(); });
@@ -160,6 +183,63 @@
       this.canvas.style.width = w + 'px';
       this.canvas.style.height = h + 'px';
       this._dpr = dpr;
+      this._applyFit();
+    }
+
+    /** Вікно зі збережених даних: стара `{cx, cy, scale}`, нова `scaleX/scaleY`
+     *  або вписаний діапазон `fit`. Міграції збережених карток немає. */
+    setViewport(v) {
+      if (!v || typeof v !== 'object') return;
+      const cx = Number(v.cx) || 0, cy = Number(v.cy) || 0;
+      const pos = (n) => (Number.isFinite(n) && n > 0 ? n : null);
+      const base = pos(Number(v.scale)) || CALC_DEFAULT_SCALE;
+      this.viewport = { cx, cy, scaleX: pos(Number(v.scaleX)) || base, scaleY: pos(Number(v.scaleY)) || base };
+      this._fit = calcNormalizeFit(v.fit);
+      this._applyFit();
+      this._scheduleRender();
+    }
+
+    /** Що зберігається: ізотропний вигляд — рівно старий `{cx, cy, scale}`. */
+    getViewport() {
+      const vp = this.viewport;
+      if (this._fit) return { cx: vp.cx, cy: vp.cy, fit: { ...this._fit } };
+      if (vp.scaleX === vp.scaleY) return { cx: vp.cx, cy: vp.cy, scale: vp.scaleX };
+      return { cx: vp.cx, cy: vp.cy, scale: vp.scaleX, scaleX: vp.scaleX, scaleY: vp.scaleY };
+    }
+
+    setViewportFit(fit) {
+      const f = calcNormalizeFit(fit);
+      if (!f) return;
+      this._fit = f;
+      this._applyFit();
+      this._scheduleRender();
+    }
+
+    setFitEnabled(on) {
+      const btn = this._zoomBox && this._zoomBox.querySelector('[data-z="fit"]');
+      if (btn) btn.style.display = on ? '' : 'none';
+    }
+
+    setZoomLabels(labels) {
+      if (!this._zoomBox || !labels) return;
+      const map = { in: labels.zoomIn, out: labels.zoomOut, home: labels.home, fit: labels.fit };
+      for (const btn of this._zoomBox.querySelectorAll('button')) {
+        const text = map[btn.dataset.z];
+        if (text) { btn.title = text; btn.setAttribute('aria-label', text); }
+      }
+    }
+
+    _applyFit() {
+      const f = this._fit;
+      if (!f) return;
+      const w = this.canvas.width, h = this.canvas.height;
+      if (!(w > 0 && h > 0)) return;
+      this.viewport = {
+        cx: (f.xMin + f.xMax) / 2,
+        cy: (f.yMin + f.yMax) / 2,
+        scaleX: w / (f.xMax - f.xMin),
+        scaleY: h / (f.yMax - f.yMin),
+      };
     }
 
     _bindInteraction() {
@@ -210,8 +290,9 @@
         if (dragging === 'pan') {
           const dx = (e.clientX - lx) * (this._dpr || 1);
           const dy = (e.clientY - ly) * (this._dpr || 1);
-          this.viewport.cx -= dx / this.viewport.scale;
-          this.viewport.cy += dy / this.viewport.scale;
+          this._fit = null;
+          this.viewport.cx -= dx / this.viewport.scaleX;
+          this.viewport.cy += dy / this.viewport.scaleY;
         } else {
           const r = this.canvas.getBoundingClientRect();
           const px = (e.clientX - r.left) * (this._dpr || 1);
@@ -251,7 +332,13 @@
 
     _zoomAt(px, py, factor) {
       const before = this._pxToMath(px, py);
-      this.viewport.scale = Math.max(4, Math.min(400, this.viewport.scale * factor));
+      // Пропорційно по обох осях; межі — на кожну вісь.
+      const { scaleX: sx, scaleY: sy } = this.viewport;
+      const lo = CALC_SCALE_MIN / Math.min(sx, sy), hi = CALC_SCALE_MAX / Math.max(sx, sy);
+      const f = Math.max(lo, Math.min(hi, factor));
+      this._fit = null;
+      this.viewport.scaleX = sx * f;
+      this.viewport.scaleY = sy * f;
       const after = this._pxToMath(px, py);
       this.viewport.cx += before.x - after.x;
       this.viewport.cy += before.y - after.y;
@@ -261,15 +348,15 @@
     _pxToMath(px, py) {
       const w = this.canvas.width, h = this.canvas.height;
       return {
-        x: this.viewport.cx + (px - w/2) / this.viewport.scale,
-        y: this.viewport.cy - (py - h/2) / this.viewport.scale,
+        x: this.viewport.cx + (px - w/2) / this.viewport.scaleX,
+        y: this.viewport.cy - (py - h/2) / this.viewport.scaleY,
       };
     }
     _mathToPx(x, y) {
       const w = this.canvas.width, h = this.canvas.height;
       return {
-        x: w/2 + (x - this.viewport.cx) * this.viewport.scale,
-        y: h/2 - (y - this.viewport.cy) * this.viewport.scale,
+        x: w/2 + (x - this.viewport.cx) * this.viewport.scaleX,
+        y: h/2 - (y - this.viewport.cy) * this.viewport.scaleY,
       };
     }
 
@@ -316,25 +403,27 @@
     }
     _drawGrid() {
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
-      const xRange = w / this.viewport.scale, yRange = h / this.viewport.scale;
-      const step = this._niceStep(xRange);
-      const minor = step / 5;
-      this._gridStep = step;
+      const xRange = w / this.viewport.scaleX, yRange = h / this.viewport.scaleY;
+      // Крок на кожну вісь за однаковою щільністю в пікселях: при scaleX = scaleY
+      // збігаються — старі картки мають ту саму сітку.
+      const stepX = this._niceStep(xRange), stepY = this._niceStep(w / this.viewport.scaleY);
+      const minorX = stepX / 5, minorY = stepY / 5;
+      this._gridStepX = stepX; this._gridStepY = stepY;
       const x0 = this.viewport.cx - xRange/2, x1 = this.viewport.cx + xRange/2;
       const y0 = this.viewport.cy - yRange/2, y1 = this.viewport.cy + yRange/2;
       ctx.strokeStyle = PALETTE.gridMinor; ctx.lineWidth = 1; ctx.beginPath();
-      for (let x = Math.ceil(x0/minor)*minor; x <= x1 + 1e-9; x += minor) {
+      for (let x = Math.ceil(x0/minorX)*minorX; x <= x1 + minorX * 1e-6; x += minorX) {
         const px = this._mathToPx(x, 0).x; ctx.moveTo(px, 0); ctx.lineTo(px, h);
       }
-      for (let y = Math.ceil(y0/minor)*minor; y <= y1 + 1e-9; y += minor) {
+      for (let y = Math.ceil(y0/minorY)*minorY; y <= y1 + minorY * 1e-6; y += minorY) {
         const py = this._mathToPx(0, y).y; ctx.moveTo(0, py); ctx.lineTo(w, py);
       }
       ctx.stroke();
       ctx.strokeStyle = PALETTE.gridMajor; ctx.beginPath();
-      for (let x = Math.ceil(x0/step)*step; x <= x1 + 1e-9; x += step) {
+      for (let x = Math.ceil(x0/stepX)*stepX; x <= x1 + stepX * 1e-6; x += stepX) {
         const px = this._mathToPx(x, 0).x; ctx.moveTo(px, 0); ctx.lineTo(px, h);
       }
-      for (let y = Math.ceil(y0/step)*step; y <= y1 + 1e-9; y += step) {
+      for (let y = Math.ceil(y0/stepY)*stepY; y <= y1 + stepY * 1e-6; y += stepY) {
         const py = this._mathToPx(0, y).y; ctx.moveTo(0, py); ctx.lineTo(w, py);
       }
       ctx.stroke();
@@ -348,24 +437,30 @@
       ctx.moveTo(o.x, 0); ctx.lineTo(o.x, h);
       ctx.stroke();
       // labels
-      const step = this._gridStep || 1;
-      const xR = w/this.viewport.scale, yR = h/this.viewport.scale;
+      const stepX = this._gridStepX || 1, stepY = this._gridStepY || 1;
+      const xR = w/this.viewport.scaleX, yR = h/this.viewport.scaleY;
       const x0 = this.viewport.cx - xR/2, x1 = this.viewport.cx + xR/2;
       const y0 = this.viewport.cy - yR/2, y1 = this.viewport.cy + yR/2;
       ctx.fillStyle = PALETTE.axisLab;
       ctx.font = `${11*(this._dpr||1)}px JetBrains Mono, monospace`;
-      const fmtT = (n) => Math.abs(n) < 1e-10 ? '' : (Math.round(n*1000)/1000).toString().replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+      // Підпис — з округленням до кроку своєї осі (на y стоїть 500, 1000…).
+      const fmtT = (n, step) => {
+        const r = Math.round(n / step) * step;
+        if (Math.abs(r) < step * 1e-6) return '';
+        const digits = Math.max(0, Math.min(10, -Math.floor(Math.log10(step)) + 1));
+        return String(Number(r.toFixed(digits)));
+      };
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      for (let x = Math.ceil(x0/step)*step; x <= x1 + 1e-9; x += step) {
-        if (Math.abs(x) < 1e-10) continue;
+      for (let x = Math.ceil(x0/stepX)*stepX; x <= x1 + stepX * 1e-6; x += stepX) {
+        if (Math.abs(x) < stepX * 1e-6) continue;
         const px = this._mathToPx(x, 0).x;
-        ctx.fillText(fmtT(x), px, Math.max(2, Math.min(h - 14, o.y + 4)));
+        ctx.fillText(fmtT(x, stepX), px, Math.max(2, Math.min(h - 14, o.y + 4)));
       }
       ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-      for (let y = Math.ceil(y0/step)*step; y <= y1 + 1e-9; y += step) {
-        if (Math.abs(y) < 1e-10) continue;
+      for (let y = Math.ceil(y0/stepY)*stepY; y <= y1 + stepY * 1e-6; y += stepY) {
+        if (Math.abs(y) < stepY * 1e-6) continue;
         const py = this._mathToPx(0, y).y;
-        ctx.fillText(fmtT(y), Math.max(20, Math.min(w - 4, o.x - 4)), py);
+        ctx.fillText(fmtT(y, stepY), Math.max(20, Math.min(w - 4, o.x - 4)), py);
       }
     }
 
@@ -411,7 +506,7 @@
         ctx.setLineDash([]);
         ctx.beginPath(); ctx.moveTo(pL.x, pL.y); ctx.lineTo(pR.x, pR.y); ctx.stroke();
         // Tangent segment emphasis around P (a horizontal-pixel window)
-        const dxView = 60 * (this._dpr || 1) / this.viewport.scale;
+        const dxView = 60 * (this._dpr || 1) / this.viewport.scaleX;
         const pA = this._mathToPx(x0 - dxView, y0 - k * dxView);
         const pB = this._mathToPx(x0 + dxView, y0 + k * dxView);
         ctx.lineWidth = 4 * (this._dpr || 1);

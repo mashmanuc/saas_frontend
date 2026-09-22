@@ -24,6 +24,13 @@ class StubCard {
   opts: { expr: string } // існуючий sync-watch читає card.opts.expr
   constructor(_el: HTMLElement, o: { expr: string }) { this.opts = o }
   setExpression(v: string) { this.opts.expr = v }
+  // Вікно / «вписати» (TZ_GRAPH_VIEWPORT_AUTOFIT) — рендерер кличе їх на mount.
+  onFitRequest: (() => void) | null = null
+  setViewport(v: unknown) { this.viewport = v }
+  getViewport() { return this.viewport }
+  setViewportFit() {}
+  setFitEnabled() {}
+  setZoomLabels() {}
   destroy() {}
 }
 

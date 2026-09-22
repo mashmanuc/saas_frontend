@@ -40,9 +40,26 @@ export interface CalculusOpts {
   showF?: boolean
 }
 
+export interface CalculusViewportData {
+  cx: number
+  cy: number
+  scale?: number
+  scaleX?: number
+  scaleY?: number
+  fit?: { xMin: number; xMax: number; yMin: number; yMax: number }
+}
+
 export interface CalculusCardInstance {
   opts: Required<CalculusOpts>
-  viewport: { cx: number; cy: number; scale: number }
+  viewport: { cx: number; cy: number; scaleX: number; scaleY: number }
+  /** Читає стару `{cx, cy, scale}`, нову `scaleX/scaleY` і вписаний `fit`. */
+  setViewport(v: CalculusViewportData): void
+  /** Для збереження: ізотропний вигляд — рівно старий `{cx, cy, scale}`. */
+  getViewport(): CalculusViewportData
+  setViewportFit(fit: { xMin: number; xMax: number; yMin: number; yMax: number }): void
+  setFitEnabled(on: boolean): void
+  setZoomLabels(labels: { zoomIn?: string; zoomOut?: string; home?: string; fit?: string }): void
+  onFitRequest?: (() => void) | null
   setOption<K extends keyof CalculusOpts>(key: K, value: CalculusOpts[K]): void
   setExpression(src: string): void
   destroy(): void

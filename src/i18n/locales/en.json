@@ -9459,6 +9459,7 @@
         "rangeMax": "max",
         "rangeStep": "step",
         "zoomHome": "Back to origin",
+        "zoomFit": "Fit graph",
         "noTemplatesFor": "No templates for “{query}”"
       },
       "helix": {

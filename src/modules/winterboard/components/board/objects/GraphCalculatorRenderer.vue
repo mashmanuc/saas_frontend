@@ -384,6 +384,7 @@ import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { autofitExpressions, paramValuesOf } from '../../../utils/graphAutofit'
 
 const { t, locale } = useI18n()
 
@@ -394,6 +395,7 @@ function applyZoomLabels(): void {
     zoomIn: t('winterboard.room.zoomIn'),
     zoomOut: t('winterboard.room.zoomOut'),
     home: t('winterboard.widget.graphCalc.zoomHome'),
+    fit: t('winterboard.widget.graphCalc.zoomFit'),
   })
 }
 watch(locale, applyZoomLabels)
@@ -763,8 +765,7 @@ function snapshotSignature(s: GraphCalculatorState): string {
     const v = (p && typeof p === 'object') ? (p as { value?: number }).value ?? '' : p
     return `${k}=${v}`
   }).join(',')
-  const vpPart = `${s.viewport.cx},${s.viewport.cy},${s.viewport.scale}`
-  return `${s.expressions.length}#${exprPart}#${paramPart}#${vpPart}`
+  return `${s.expressions.length}#${exprPart}#${paramPart}#${viewportSignature(s.viewport)}`
 }
 
 /** Signature over expressions + viewport only (excludes params).
@@ -774,8 +775,30 @@ function exprVpSignature(s: GraphCalculatorState): string {
   const exprPart = s.expressions
     .map((e) => `${e.id}:${e.src}:${e.color}:${e.hidden ? 1 : 0}`)
     .join('|')
-  const vpPart = `${s.viewport.cx},${s.viewport.cy},${s.viewport.scale}`
-  return `${s.expressions.length}#${exprPart}#${vpPart}`
+  return `${s.expressions.length}#${exprPart}#${viewportSignature(s.viewport)}`
+}
+
+/** Вікно в підписі: стара форма `scale`, окремі `scaleX/scaleY` і вписаний
+ *  діапазон `fit` — інакше «вписати» не відрізнялось би від попереднього вікна. */
+function viewportSignature(v: GraphCalculatorState['viewport']): string {
+  const f = v.fit
+  const fitPart = f ? `${f.xMin},${f.xMax},${f.yMin},${f.yMax}` : ''
+  return `${v.cx},${v.cy},${v.scale},${v.scaleX ?? ''},${v.scaleY ?? ''},${fitPart}`
+}
+
+/** Кнопка «вписати» (TZ_GRAPH_VIEWPORT_AUTOFIT §3.3): автопідбір для поточних
+ *  видимих виразів → один знімок → один asset_update (штатний шлях).
+ *  Лише вчитель у режимі редагування: учень і Replay вікна не перераховують. */
+function onFitRequest(): void {
+  if (!calc || !props.interactive) return
+  const st = calc.getState() as GraphCalculatorState
+  const fit = autofitExpressions(
+    st.expressions.filter((e) => !e.hidden).map((e) => e.src),
+    paramValuesOf(st.params),
+  )
+  if (!fit) return
+  ;(calc as any).setViewportFit(fit)
+  scheduleSnapshot()
 }
 
 function buildSnapshotAsset(): WBAsset {
@@ -1032,6 +1055,8 @@ function mountEngine() {
     isApplyingExternalState = false
   }
   applyZoomLabels()
+  ;(calc as any).onFitRequest = onFitRequest
+  ;(calc as any).setFitEnabled?.(props.interactive)
 
   // FE-RULE-6: install onChange via property guard so card.js (or any other
   // future code) cannot overwrite our wrapper. Internal vendor мутації
@@ -1602,6 +1627,7 @@ function syncCanvasPointerEvents(): void {
 }
 
 watch(() => props.interactive, syncCanvasPointerEvents)
+watch(() => props.interactive, (on) => { (calc as any)?.setFitEnabled?.(on) })
 
 // ─── Watchers ──────────────────────────────────────────────────────────
 

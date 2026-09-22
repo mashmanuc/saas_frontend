@@ -25,8 +25,16 @@ export interface CalculusData {
   riemann?: RiemannMode
   N?: number
   showF?: boolean
-  // View transform
-  viewport?: { cx: number; cy: number; scale: number }
+  // View transform. Читаються всі форми (TZ_GRAPH_VIEWPORT_AUTOFIT_2026-09-22):
+  // стара `{cx, cy, scale}`, `scaleX/scaleY`, вписаний діапазон `fit`.
+  viewport?: {
+    cx: number
+    cy: number
+    scale?: number
+    scaleX?: number
+    scaleY?: number
+    fit?: { xMin: number; xMax: number; yMin: number; yMax: number }
+  }
 }
 
 export interface CalculusAsset extends WBAsset {

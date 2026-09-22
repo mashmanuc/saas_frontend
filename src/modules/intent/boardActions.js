@@ -16,6 +16,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
+import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
 function _uuid() {
@@ -853,7 +854,9 @@ const HANDLERS = {
         expressions: built,
         // BE вже провалідував діапазони (min<max, step>0, ім'я по регексу).
         params: (params && typeof params === 'object') ? params : {},
-        viewport: { cx: 0, cy: 0, scale: 38 },
+        // TZ_GRAPH_VIEWPORT_AUTOFIT §3.2: вікно під функцію — ОДИН раз, тут,
+        // у тому самому asset_add. Replay бачить записане й не перераховує.
+        viewport: graphViewportFor(built.map((e) => e.src), params),
       },
       meta: { last_snapshot_seq: 0 },
     }
@@ -1232,6 +1235,12 @@ export function assetParams(a) {
         // Масштаб і центр — те, чим тьютор просить «покажи від −10 до 10».
         viewport: st.viewport ? clean({
           cx: num(st.viewport.cx), cy: num(st.viewport.cy), scale: num(st.viewport.scale),
+          scaleX: num(st.viewport.scaleX), scaleY: num(st.viewport.scaleY),
+          // Вписане вікно — межі, які бачить тьютор («від −15 до 25»).
+          fit: st.viewport.fit ? clean({
+            xMin: num(st.viewport.fit.xMin), xMax: num(st.viewport.fit.xMax),
+            yMin: num(st.viewport.fit.yMin), yMax: num(st.viewport.fit.yMax),
+          }) : undefined,
         }) : undefined,
         points: pts.length ? pts : undefined,
       })

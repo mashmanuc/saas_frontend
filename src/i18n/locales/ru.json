@@ -8945,6 +8945,7 @@
         "rangeMax": "макс",
         "rangeStep": "шаг",
         "zoomHome": "К началу координат",
+        "zoomFit": "Вписать график",
         "noTemplatesFor": "Нет шаблонов по «{query}»"
       },
       "helix": {

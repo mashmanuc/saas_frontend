@@ -138,6 +138,7 @@ import type { CalculusBridge } from '../../../board/state/calculusUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import { autofitExpressions } from '../../../utils/graphAutofit'
 
 const { t } = useI18n()
 
@@ -243,8 +244,16 @@ async function mount(): Promise<void> {
 
   card = new W.CalculusCard(stageRef.value, { ...props.asset.data })
   if (props.asset.data.viewport) {
-    card.viewport = { ...props.asset.data.viewport }
+    card.setViewport({ ...props.asset.data.viewport })
   }
+  card.setZoomLabels({
+    zoomIn: t('winterboard.room.zoomIn'),
+    zoomOut: t('winterboard.room.zoomOut'),
+    home: t('winterboard.widget.graphCalc.zoomHome'),
+    fit: t('winterboard.widget.graphCalc.zoomFit'),
+  })
+  card.onFitRequest = onFitRequest
+  card.setFitEnabled(props.interactive)
   // Mirror standalone bundle: onChange fires on drag (x0 / a / b) — debounced
   // snapshot to store via asset_update op.
   card.onChange = () => scheduleSnapshot()
@@ -274,6 +283,20 @@ function syncCanvasPointerEvents(): void {
 }
 
 watch(() => props.interactive, syncCanvasPointerEvents)
+watch(() => props.interactive, (on) => { card?.setFitEnabled(on) })
+
+/** Кнопка «вписати» (TZ_GRAPH_VIEWPORT_AUTOFIT §3.3): вікно під f разом із
+ *  x₀ (похідна) або межами a, b (інтеграл) → один знімок → один asset_update.
+ *  Лише в режимі редагування: учень і Replay вікна не перераховують. */
+function onFitRequest(): void {
+  if (!card || !props.interactive) return
+  const o = card.opts
+  const must = o.mode === 'integral' ? [o.a, o.b] : [o.x0]
+  const fit = autofitExpressions([o.expr], {}, must.filter((v) => Number.isFinite(v)))
+  if (!fit) return
+  card.setViewportFit(fit)
+  scheduleSnapshot()
+}
 
 // Register / unregister bridge as selection changes.
 watch(() => props.isSelected, (sel) => {
@@ -373,7 +396,7 @@ function scheduleSnapshot(): void {
         x0: card.opts.x0,
         a: card.opts.a,
         b: card.opts.b,
-        viewport: { ...card.viewport },
+        viewport: card.getViewport(),
       },
     }
     emit('update:asset', patched)

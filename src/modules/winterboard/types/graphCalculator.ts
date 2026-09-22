@@ -27,11 +27,21 @@ export interface GraphExpression {
   paramRange?: GraphParamRange
 }
 
-/** Coordinate viewport state (per inv-21.8). */
+/** Coordinate viewport state (per inv-21.8).
+ *
+ *  TZ_GRAPH_VIEWPORT_AUTOFIT_2026-09-22: осі мають окремі масштаби. Читаються
+ *  всі три форми, міграції збережених дошок немає:
+ *  - `{cx, cy, scale}` — стара (і ізотропна нова), scaleX = scaleY = scale;
+ *  - `{cx, cy, scale, scaleX, scaleY}` — після пану/зуму вписаного вікна;
+ *  - `{cx, cy, fit}` — вписаний математичний діапазон; пікселі рахує рушій
+ *    за розміром полотна, тож учень і Replay бачать ті самі межі. */
 export interface GraphViewport {
   cx: number
   cy: number
-  scale: number
+  scale?: number
+  scaleX?: number
+  scaleY?: number
+  fit?: { xMin: number; xMax: number; yMin: number; yMax: number }
 }
 
 /**
