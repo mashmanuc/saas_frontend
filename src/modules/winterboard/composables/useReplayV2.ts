@@ -19,6 +19,7 @@ import {
   fetchOwnerReplayPlayback,
   fetchReplayTimeline,
   fetchLessonMarkers,
+  fetchPublicLessonMarkers,
   reportReplayView,
 } from '../api/replay'
 import type { BoardOperation } from '../types/replay'
@@ -416,7 +417,10 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
 
   async function loadMarkers(): Promise<void> {
     try {
-      const result = await fetchLessonMarkers(sessionId)
+      // Публічний перегляд → за токеном: owner-ендпоінт давав чужому 403/401 і тост.
+      const result = publicToken && !options.ownerReplayId
+        ? await fetchPublicLessonMarkers(publicToken)
+        : await fetchLessonMarkers(sessionId)
       markers.value = result.markers
     } catch { /* non-critical */ }
   }

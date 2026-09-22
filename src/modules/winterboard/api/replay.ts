@@ -671,8 +671,30 @@ export async function deleteReplayComment(
 // ─── Lesson Markers (Phase 10 P5) ─────────────────────────────────────
 
 /**
+ * GET /winterboard/replay/public/{token}/markers/ — маркери для публічного плеєра.
+ * Raw fetch без cookie (як fetchPublicNearestSnapshot): не йде через apiClient,
+ * тож не показує глобальних тостів 401/403 людині, яка просто дивиться запис.
+ * Маркери некритичні: будь-яка помилка → порожній список.
+ */
+export async function fetchPublicLessonMarkers(
+  publicToken: string,
+): Promise<{ markers: WBLessonMarker[] }> {
+  try {
+    const url = `${getApiBase()}/v1/winterboard/replay/public/${encodeURIComponent(publicToken)}/markers/`
+    const res = await fetch(url, { method: 'GET', credentials: 'omit', headers: { Accept: 'application/json' } })
+    if (!res.ok) return { markers: [] }
+    const data = await res.json() as { markers?: WBLessonMarker[] }
+    return { markers: Array.isArray(data.markers) ? data.markers : [] }
+  } catch (e) {
+    console.warn('[replay] public markers load failed', e)
+    return { markers: [] }
+  }
+}
+
+/**
  * GET /winterboard/sessions/{uuid}/markers/
  * Returns all markers for the session, ordered by [order, operation_index].
+ * Owner / учень уроку. Публічна сторінка — fetchPublicLessonMarkers.
  */
 export async function fetchLessonMarkers(
   sessionId: string,

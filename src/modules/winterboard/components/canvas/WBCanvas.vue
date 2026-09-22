@@ -939,6 +939,7 @@ import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
 import { containFit } from '../../engine/imageFit'
 import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMode } from '../../composables/useAssetStatus'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
@@ -5098,7 +5099,11 @@ onMounted(async () => {
   // ASSET_LIFECYCLE_SSOT Phase 2B: завантажити asset upload-статуси з БД для
   // render cross-reference (INV-ASSET-3). Non-blocking — render деградує до
   // op.src-only якщо не вдалось. wbStore.workspaceId = session.id.
-  if (wbStore.workspaceId) {
+  // Лише для того, хто увійшов: ендпоінт автентифікований, і анонім на
+  // публічному записі отримував 401 → глобальний тост «Сесію завершено. Увійдіть
+  // знову» людині, яка й не входила. Анонімові статуси не потрібні: без map
+  // пасивний глядач і так бачить лише resolvable src (INV-ASSET-8).
+  if (wbStore.workspaceId && useAuthStore().isAuthenticated) {
     void assetStatus.load(wbStore.workspaceId)
   }
 
