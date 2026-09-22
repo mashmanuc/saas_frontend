@@ -83,7 +83,7 @@
     </div>
 
     <!-- Main layout: sidebar + grid -->
-    <div class="flex gap-6">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6">
       <!-- Folder sidebar -->
       <WBLessonFolders
         ref="folderSidebar"
@@ -276,56 +276,81 @@
                     @share="handleShare(lesson)"
                     @transfer="quickGrant(lesson)"
                   />
-                  <!-- Move to folder (Phase 25 BUG-4) -->
-                  <MoveToFolderDropdown
-                    :lesson-id="lesson.id"
-                    :current-folder="lesson.folder"
-                    @moved="onLessonMoved(lesson, $event)"
-                  />
-                  <!-- Eye: тимчасово прихована — preview веде на недороблений route.
-                       Розкоментувати коли LessonViewPage буде готова. -->
-                  <!-- <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center disabled:opacity-50 disabled:cursor-wait"
-                    :title="$t('knowledge.lesson.startReplay')"
-                    :disabled="previewingLessonId === lesson.id"
-                    @click="handlePreview(lesson)"
-                  >
-                    {{ previewingLessonId === lesson.id ? '⏳' : '👁' }}
-                  </button> -->
-                  <!-- Edit button (Phase 25 B1) -->
-                  <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-                    :title="$t('knowledge.lesson.edit.editLesson')"
-                    @click="openEditDialog(lesson)"
-                  >
-                    ✏️
-                  </button>
-                  <!-- Delete button (Phase 25 BUG-2) -->
-                  <button
-                    type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
-                    :title="$t('knowledge.lesson.delete')"
-                    :disabled="deletingId === lesson.id"
-                    @click="confirmDelete(lesson)"
-                  >
-                    🗑
-                  </button>
-                </div>
+                  <!-- Решта дій — в одному меню «…» (візуальний огляд
+                       2026-09-22, Топ-10 №8): на картці було вісім елементів
+                       керування, і «Провести» тонуло серед іконок. -->
+                  <div class="relative" :data-lesson-menu="lesson.id">
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      :title="$t('knowledge.lesson.moreActions')"
+                      :aria-label="$t('knowledge.lesson.moreActions')"
+                      aria-haspopup="menu"
+                      :aria-expanded="openMenuLessonId === lesson.id"
+                      data-test="lesson-menu"
+                      @click.stop="toggleLessonMenu(lesson.id)"
+                    >
+                      ⋯
+                    </button>
 
-                <!-- Status action: Publish / Hide -->
-                <div class="mt-2">
-                  <button
-                    type="button"
-                    class="text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-                    :disabled="togglingId === lesson.id"
-                    @click="toggleVisibility(lesson)"
-                  >
-                    {{ lesson.status === 'public'
-                      ? $t('knowledge.lesson.search.hide')
-                      : $t('knowledge.lesson.search.publish') }}
-                  </button>
+                    <div
+                      v-if="openMenuLessonId === lesson.id"
+                      class="absolute right-0 z-20 mt-1 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                      role="menu"
+                      @click.stop
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        @click="closeLessonMenu(); openEditDialog(lesson)"
+                      >
+                        ✏️ {{ $t('knowledge.lesson.edit.editLesson') }}
+                      </button>
+
+                      <!-- Той самий випадайник папок, лише рядком у меню -->
+                      <MoveToFolderDropdown
+                        :lesson-id="lesson.id"
+                        :current-folder="lesson.folder"
+                        @moved="onLessonMoved(lesson, $event)"
+                      >
+                        <template #trigger="{ toggle }">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            @click="toggle"
+                          >
+                            📂 {{ $t('knowledge.lesson.move.moveToFolder') }}
+                          </button>
+                        </template>
+                      </MoveToFolderDropdown>
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        :disabled="togglingId === lesson.id"
+                        @click="closeLessonMenu(); toggleVisibility(lesson)"
+                      >
+                        👁 {{ lesson.status === 'public'
+                          ? $t('knowledge.lesson.search.hide')
+                          : $t('knowledge.lesson.search.publish') }}
+                      </button>
+
+                      <div class="my-1 border-t border-gray-100" role="separator" />
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        :disabled="deletingId === lesson.id"
+                        @click="closeLessonMenu(); confirmDelete(lesson)"
+                      >
+                        🗑 {{ $t('knowledge.lesson.delete') }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Share link display -->
@@ -729,7 +754,7 @@
 </style>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
@@ -805,6 +830,21 @@ const deleteTarget = ref<MyLesson | null>(null)
 
 // "Провести" — race guard для fresh session open
 const openingLessonId = ref<string | null>(null)
+
+// Меню «…» на картці уроку (Топ-10 №8): одночасно відкрите лише одне.
+const openMenuLessonId = ref<string | null>(null)
+function toggleLessonMenu(id: string): void {
+  openMenuLessonId.value = openMenuLessonId.value === id ? null : id
+}
+function closeLessonMenu(): void {
+  openMenuLessonId.value = null
+}
+function onDocumentClick(): void {
+  closeLessonMenu()
+}
+function onDocumentKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') closeLessonMenu()
+}
 
 // Preview: loading guard поки оновлюємо snapshot
 const previewingLessonId = ref<string | null>(null)
@@ -1010,6 +1050,13 @@ function formatDuration(seconds: number | null): string {
 
 onMounted(() => {
   loadLessons()
+  document.addEventListener('click', onDocumentClick)
+  document.addEventListener('keydown', onDocumentKeydown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClick)
+  document.removeEventListener('keydown', onDocumentKeydown)
 })
 
 // 1-click auto-open для resume_last_lesson CTA (?open=<lessonId>).

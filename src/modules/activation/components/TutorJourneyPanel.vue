@@ -42,6 +42,8 @@ const props = defineProps<{
   state?: ActivationStateDTO
   /** Кількість draft lessons з dashboard snapshot */
   draftLessonsCount?: number
+  /** У вчителя вже є свої уроки — онбординг більше не потрібен */
+  hasOwnWork?: boolean
 }>()
 
 // ── Milestones ────────────────────────────────────────────────────────────────
@@ -73,6 +75,11 @@ const firstLessonDone = computed(() => (props.draftLessonsCount ?? 0) > 0)
 // Ховаємо панель якщо state не завантажено або всі 4 виконано
 const isVisible = computed<boolean>(() => {
   if (!props.state) return false
+  // Візуальний огляд 2026-09-22 (Топ-10 №10): у акаунта з дев'ятьма уроками й
+  // сотнями дощок чекліст «Профіль створено / Перший урок» висів на Головній.
+  // Віха «перший урок проведено» лишалась невиконаною через облік активації, а
+  // не через справжній стан. Є свої уроки — онбординг відпрацював.
+  if (props.hasOwnWork) return false
   return milestones.value.some(ms => !ms.done)
 })
 </script>

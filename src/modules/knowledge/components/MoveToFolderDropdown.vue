@@ -3,15 +3,18 @@
      Only changes lesson.folder_id, never lesson.tutor_id -->
 <template>
   <div class="relative inline-block" ref="dropdownRoot">
-    <!-- Trigger button -->
-    <button
-      type="button"
-      class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-      :title="$t('knowledge.lesson.move.moveToFolder')"
-      @click="toggle"
-    >
-      📂
-    </button>
+    <!-- Trigger: за замовчуванням — та сама кнопка 📂; `trigger`-слот дає
+         вставити випадайник рядком у меню картки (Топ-10 №8, 2026-09-22). -->
+    <slot name="trigger" :toggle="toggle">
+      <button
+        type="button"
+        class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+        :title="$t('knowledge.lesson.move.moveToFolder')"
+        @click="toggle"
+      >
+        📂
+      </button>
+    </slot>
 
     <!-- Dropdown menu -->
     <Teleport to="body">

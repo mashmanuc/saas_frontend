@@ -29,15 +29,17 @@
         </div>
       </div>
 
+      <!-- Панель групових дій — лише коли щось вибрано (візуальний огляд
+           2026-09-22, Топ-10 №9). Раніше висіла завжди з двома сірими
+           кнопками, навіть для двох учнів. Вибір починається з чекбокса
+           на картці учня. -->
       <div
+        v-if="totalSelected"
         class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border-subtle bg-surface-soft/70 px-4 py-3 text-sm"
       >
         <div class="flex flex-wrap items-center gap-3 text-muted">
-          <span v-if="totalSelected">
+          <span>
             {{ $t('dashboard.tutor.bulk.selected', { count: totalSelected }) }}
-          </span>
-          <span v-else>
-            {{ $t('dashboard.tutor.bulk.selectHint') }}
           </span>
 
           <button

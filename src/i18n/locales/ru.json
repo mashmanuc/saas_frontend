@@ -2988,9 +2988,9 @@
       "dead_link": "Это действие больше недоступно — мы обновляем панель"
     },
     "secondary": {
-      "today_remaining": "Сегодня ещё {count} урок(ов):",
+      "today_remaining": "Сегодня ещё уроков: {count}",
       "pending_inquiries": "{count} новых запросов в «Запросах»",
-      "draft_lessons": "{count} черновик(ов) уроков",
+      "draft_lessons": "Черновиков уроков: {count}",
       "last_completed": "Прошлый урок с {counterpart} — можно повторить"
     }
   },
@@ -9338,7 +9338,8 @@
         "confirm": "Удалить",
         "cancel": "Отменить",
         "success": "Удалено {n} шаблонов"
-      }
+      },
+      "moreActions": "Ещё действия"
     },
     "folder": {
       "title": "Папки",

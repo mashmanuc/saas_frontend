@@ -3042,9 +3042,9 @@
       "dead_link": "Ця дія більше недоступна — ми оновлюємо панель"
     },
     "secondary": {
-      "today_remaining": "Сьогодні ще {count} урок(и):",
+      "today_remaining": "Сьогодні ще уроків: {count}",
       "pending_inquiries": "{count} нових запитів у «Запити»",
-      "draft_lessons": "{count} чернетк(и) уроків",
+      "draft_lessons": "Чернеток уроків: {count}",
       "last_completed": "Минулий урок з {counterpart} — можна повторити"
     },
     "tutor": {
@@ -10213,7 +10213,8 @@
         "selectFolder": "Оберіть папку",
         "moving": "Переміщення...",
         "moved": "Урок переміщено"
-      }
+      },
+      "moreActions": "Ще дії"
     },
     "folder": {
       "title": "Папки",

@@ -15,6 +15,7 @@
     <TutorJourneyPanel
       :state="activationState"
       :draft-lessons-count="draftLessonsCount"
+      :has-own-work="hasLesson"
     />
 
     <!-- Phase 29 (Activation) — Hero CTA (з fallback, Fix #1) -->

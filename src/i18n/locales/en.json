@@ -2211,9 +2211,9 @@
       "dead_link": "This action is no longer available — refreshing the panel"
     },
     "secondary": {
-      "today_remaining": "Today {count} more lesson(s):",
+      "today_remaining": "Lessons left today: {count}",
       "pending_inquiries": "{count} new inquiries in «Requests»",
-      "draft_lessons": "{count} draft lesson(s)",
+      "draft_lessons": "Draft lessons: {count}",
       "last_completed": "Last lesson with {counterpart} — replay available"
     },
     "tutor": {
@@ -10125,7 +10125,8 @@
         "selectFolder": "Select folder",
         "moving": "Moving...",
         "moved": "Lesson moved"
-      }
+      },
+      "moreActions": "More actions"
     },
     "folder": {
       "title": "Folders",
