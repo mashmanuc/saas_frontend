@@ -9,7 +9,6 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 
 export enum TutorHintId {
   DASHBOARD_WELCOME = 'tutor.dashboard.welcome',
-  CALENDAR_FIRST_VISIT = 'tutor.calendar.firstVisit',
   PROFILE_FORMAT_ONLINE = 'tutor.profile.format.online',
   PROFILE_FORMAT_OFFLINE = 'tutor.profile.format.offline',
   PROFILE_PUBLISH_BLOCKED = 'tutor.profile.publish.blocked',

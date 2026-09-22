@@ -117,7 +117,10 @@ const sorts = [
   { value: 'top', label: 'feedback.sort.top' },
 ]
 const TYPES = ['feature_request', 'bug_report', 'improvement', 'review', 'discussion']
-const CATEGORIES = ['ux', 'classroom', 'winterboard', 'performance', 'ai', 'marketplace', 'other']
+// «marketplace» прибрано 2026-09-22: домен вимкнено, пропонувати його в новому
+// відгуку нема сенсу. Ключ перекладу лишається — старі відгуки цієї категорії
+// ще показує консоль підтримки.
+const CATEGORIES = ['ux', 'classroom', 'winterboard', 'performance', 'ai', 'other']
 
 const filter = reactive({ sort: 'recent', page: 1 })
 const typeFilter = ref('')

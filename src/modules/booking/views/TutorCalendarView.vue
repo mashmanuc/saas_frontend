@@ -1,35 +1,21 @@
 <template>
+  <!-- Підказка першого візиту прибрана 2026-09-22 (рішення власника): вона
+       обіцяла «учні бачать вас у відкриті дні» і «профіль з'явиться в
+       Marketplace». Маркетплейс вимкнено 2026-06-17 (`apps.marketplace` поза
+       INSTALLED_APPS), а єдиний екран, де учень бачив вільний час тьютора
+       (`StudentAvailabilityCalendar` → `/v1/tutors/{slug}/availability`), живе
+       в тому ж вимкненому домені. Обидва речення були неправдою. -->
   <div class="tutor-calendar-wrapper">
-    <!-- FTUE: First visit hint when no availability -->
-    <OnboardingHint
-      :hint-id="TutorHintId.CALENDAR_FIRST_VISIT"
-      :condition="!hasAvailability"
-      icon="💡"
-    >
-      {{ $t('onboarding.hints.calendar.firstVisit.text') }}
-    </OnboardingHint>
-
     <CalendarWeekView />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
-import OnboardingHint from '@/components/OnboardingHint.vue'
-import { TutorHintId } from '@/composables/useOnboardingHints'
 import { useScheduleDeepLink } from '@/modules/booking/composables/useScheduleDeepLink'
 
 // Phase 1.5: deep-link ?booking={id} → scroll + highlight картки
 useScheduleDeepLink()
-
-// Default false = show hint immediately; hide only after API confirms has_availability=true
-const hasAvailability = ref(false)
-
-onMounted(async () => {
-  // Marketplace Extraction 2026-06-18: `/v1/marketplace/me/` вимкнено (BYO) → раніше
-  // 404 на кожен calendar-load. Hint некритичний — лишаємо дефолт (hasAvailability=false).
-})
 </script>
 
 <style scoped>
