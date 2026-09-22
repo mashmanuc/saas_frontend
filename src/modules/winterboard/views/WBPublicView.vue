@@ -261,6 +261,7 @@ import { getReplay } from '../api/replayLifecycleApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { useReplayV2 } from '../composables/useReplayV2'
+import { useReplayPlayhead } from '../composables/useReplayPlayhead'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
 import { createReplayApplier } from '../engine/applyReplayOperation'
@@ -334,45 +335,10 @@ const replayDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
 let replay: ReturnType<typeof useReplay> | null = null
 let _replayStateWatchStop: (() => void) | null = null  // CRITICAL 1: track watch handle to prevent leaks
-let _playheadWatchStop: (() => void) | null = null
-
-// Smooth playhead rAF ticker — advances at real wall-clock speed between op-fires.
-// Prevents jerkiness caused by large timestamp gaps between ops (pauses in lesson).
-const playheadMs = ref(0)
-let _playheadRaf: number | null = null
-let _playAnchorWall = 0    // performance.now() at playback start (or resync)
-let _playAnchorReplay = 0  // currentTimeMs at that anchor moment
-let _playSpeed = 1
-
-function _startPlayheadTick(): void {
-  if (_playheadRaf !== null) cancelAnimationFrame(_playheadRaf)
-  _playAnchorWall = performance.now()
-  _playAnchorReplay = replay?.currentTimeMs.value ?? 0
-  const total = replay?.totalDurationMs.value ?? 0
-  const tick = (): void => {
-    if (!replay || replay.state.value !== 'playing') {
-      _playheadRaf = null
-      return
-    }
-    const elapsed = performance.now() - _playAnchorWall
-    playheadMs.value = Math.min(_playAnchorReplay + elapsed * _playSpeed, total)
-    _playheadRaf = requestAnimationFrame(tick)
-  }
-  _playheadRaf = requestAnimationFrame(tick)
-}
-
-function _stopPlayheadTick(): void {
-  if (_playheadRaf !== null) {
-    cancelAnimationFrame(_playheadRaf)
-    _playheadRaf = null
-  }
-  if (replay) playheadMs.value = replay.currentTimeMs.value
-}
-
-function _resyncPlayheadAnchor(): void {
-  _playAnchorWall = performance.now()
-  _playAnchorReplay = replay?.currentTimeMs.value ?? 0
-}
+// Повзунок часу: плавно за годинником між op, вирівнюється з дошкою на кожній op
+// (рушій стискає паузи > 2 с — без вирівнювання повзунок відставав назавжди).
+const playhead = useReplayPlayhead()
+const playheadMs = playhead.playheadMs
 const replayApplier = createReplayApplier()
 
 // Snapshot of board state before entering replay — to restore on exit
@@ -473,12 +439,8 @@ async function enterReplayMode(): Promise<void> {
     _replayStateWatchStop()
     _replayStateWatchStop = null
   }
-  if (_playheadWatchStop) {
-    _playheadWatchStop()
-    _playheadWatchStop = null
-  }
-  _stopPlayheadTick()
-  playheadMs.value = 0
+  playhead.detach()
+  playhead.reset()
 
   // Save static snapshot before replay
   staticSnapshot = store.getSnapshotState()
@@ -596,15 +558,11 @@ async function enterReplayMode(): Promise<void> {
     })
   })
 
-  // Smooth playhead: start/stop rAF tick on state change.
-  // Resync anchor on each transition to 'playing' (handles seek → play correctly).
-  _playheadWatchStop = watch(() => replay!.state.value, (s) => {
-    if (s === 'playing') {
-      _resyncPlayheadAnchor()
-      _startPlayheadTick()
-    } else {
-      _stopPlayheadTick()
-    }
+  // Повзунок: тікер на старті гри + вирівнювання з дошкою на кожній op.
+  playhead.attach({
+    state: () => replay!.state.value,
+    currentTimeMs: () => replay!.currentTimeMs.value,
+    totalMs: () => replay!.totalDurationMs.value,
   })
 
   // Handle ?t= URL parameter — auto-seek to time
@@ -640,12 +598,8 @@ async function enterReplayMode(): Promise<void> {
 function exitReplayMode(): void {
   replayAudio.stopAudio()  // INV I6: stop audio on exit replay
   // Stop and destroy replay engine
-  if (_playheadWatchStop) {
-    _playheadWatchStop()
-    _playheadWatchStop = null
-  }
-  _stopPlayheadTick()
-  playheadMs.value = 0
+  playhead.detach()
+  playhead.reset()
   if (replay) {
     replay.stop()
     replay.destroy()
@@ -711,10 +665,7 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
   const targetIndex = replay.findIndexByTimeMs(targetTimeMs)
 
   // Snap playhead to target immediately so slider responds before canvas catches up.
-  // Also update the rAF anchor so the running tick doesn't overwrite this value.
-  playheadMs.value = targetTimeMs
-  _playAnchorWall = performance.now()
-  _playAnchorReplay = targetTimeMs
+  playhead.jumpTo(targetTimeMs)
 
   await replay.seekToWithSnapshot(
     targetIndex,
@@ -725,12 +676,11 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
   )
 
   // Resync anchor to actual seeked position (currentTimeMs updated by finalizeSeek).
-  _resyncPlayheadAnchor()
+  playhead.resyncToEngine()
 }
 
 function handleSpeedChange(speed: number): void {
-  _playSpeed = speed
-  if (replay?.state.value === 'playing') _resyncPlayheadAnchor()
+  playhead.setSpeed(speed)
   replay?.setSpeed(speed as ReplaySpeed)
 }
 
@@ -905,8 +855,7 @@ onMounted(async () => {
 // CRITICAL 5: Route guard — cleanup replay before navigation (prevents callbacks after unmount)
 onBeforeRouteLeave(() => {
   if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
-  if (_playheadWatchStop) { _playheadWatchStop(); _playheadWatchStop = null }
-  _stopPlayheadTick()
+  playhead.detach()
   audioManager.stop()
   replayAudio.destroy()
   if (replay) {
@@ -1103,8 +1052,7 @@ watch(_heroOverlayVisible, (show) => {
 onBeforeUnmount(() => {
   // INV I6: Stop audio + destroy watcher on unmount (safety net if route guard didn't fire)
   if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
-  if (_playheadWatchStop) { _playheadWatchStop(); _playheadWatchStop = null }
-  _stopPlayheadTick()
+  playhead.detach()
   audioManager.stop()
   replayAudio.destroy()
   if (replay) {
