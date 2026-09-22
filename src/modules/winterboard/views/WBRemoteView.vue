@@ -35,6 +35,20 @@
       </button>
     </p>
 
+    <!-- Після ПЕРШОГО підключення на цьому пристрої — три рядки, один раз
+         (TZ_REMOTE_DESKTOP_CONNECT §2.4). -->
+    <div v-if="showFirstTip" class="wb-remote__tip" role="note">
+      <p class="wb-remote__tip-title">{{ t('winterboard.remote.firstTip.title') }}</p>
+      <ul class="wb-remote__tip-list">
+        <li>{{ t('winterboard.remote.firstTip.line1') }}</li>
+        <li>{{ t('winterboard.remote.firstTip.line2') }}</li>
+        <li>{{ t('winterboard.remote.firstTip.line3') }}</li>
+      </ul>
+      <button type="button" class="wb-remote__tip-ok" @click="dismissFirstTip">
+        {{ t('winterboard.remote.firstTip.ok') }}
+      </button>
+    </div>
+
     <!-- Причина, чому пульт не керує — ЗАВЖДИ словами, ніколи мовчки -->
     <div v-if="reason" class="wb-remote__block" :class="`wb-remote__block--${reason.tone}`" role="status">
       <p class="wb-remote__reason">{{ reason.text }}</p>
@@ -157,6 +171,7 @@ import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
+import { firstTipSeen, markFirstTipSeen } from '../remote/remoteEntry'
 import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import type { RemoteStateDetail } from '../composables/useRemoteChannel'
@@ -240,6 +255,13 @@ const reasonCode = ref('')
 // 2026-09-03, власник: «постав телеметрію, щоб ти бачив, як я підключаюсь
 // або намагаюсь». Без тексту фраз — лише події, причини, коди, довжини.
 let firstStateSeen = false
+
+/** Підказка після першого підключення — раз на пристрій (localStorage). */
+const showFirstTip = ref(false)
+function dismissFirstTip(): void {
+  markFirstTipSeen()
+  showFirstTip.value = false
+}
 function tel(event: string, ctx: Record<string, unknown> = {}) {
   try { trackEvent(`wb.remote.${event}`, { board: boardId.value ?? null, ...ctx }) } catch { /* noop */ }
 }
@@ -260,7 +282,11 @@ const channel = useRemoteChannel({
     // заморожена дошка — не помилка зв'язку, а стан: показуємо як причину, кнопки лишаємо
     reasonKey.value = s.frozen ? 'boardFrozen' : null
     if (s.frozen) reasonCode.value = 'REPLAY_FROZEN_NO_WRITE'
-    if (!firstStateSeen) { firstStateSeen = true; tel('state_first', { pages: s.pageCount, cards: s.cards?.count ?? null }) }
+    if (!firstStateSeen) {
+      firstStateSeen = true
+      tel('state_first', { pages: s.pageCount, cards: s.cards?.count ?? null })
+      if (!firstTipSeen()) showFirstTip.value = true
+    }
     vibrate(15)
   },
   onError(code) {
@@ -506,6 +532,10 @@ onBeforeUnmount(() => {
 .wb-remote__switch { display: inline-block; margin-left: 8px; background: #334155; color: #f8fafc; border: 0; border-radius: 10px; padding: 8px 14px; font-size: 13px; min-height: 44px; }
 .wb-remote__switch:disabled { opacity: 0.6; }
 
+.wb-remote__tip { padding: 14px 16px; border-radius: 12px; background: #064e3b; color: #ecfdf5; font-size: 15px; line-height: 1.4; }
+.wb-remote__tip-title { margin: 0 0 6px; font-weight: 700; }
+.wb-remote__tip-list { margin: 0 0 10px; padding-left: 20px; list-style: disc; }
+.wb-remote__tip-ok { border: 0; border-radius: 10px; padding: 8px 18px; font-size: 15px; font-weight: 600; background: #ecfdf5; color: #064e3b; cursor: pointer; }
 .wb-remote__block { padding: 14px 16px; border-radius: 12px; background: #1e293b; font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px; }
 .wb-remote__block--warn { border: 1px solid #f59e0b; }
 .wb-remote__block--error { border: 1px solid #ef4444; }

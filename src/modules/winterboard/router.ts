@@ -225,7 +225,8 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     // Той самий тьютор, інший пристрій. Без opsSync/presence.join.
     path: '/remote',
     name: 'winterboard-remote',
-    component: () => import('./views/WBRemoteView.vue'),
+    // Телефон → пульт; комп'ютер → «Підключити телефон» (TZ_REMOTE_DESKTOP_CONNECT §2.1)
+    component: () => import('./views/WBRemoteEntry.vue'),
     // loginDirect: неавторизований → одразу /auth/login?redirect=/remote, не лендінг
     meta: { title: 'Пульт', roles: ['tutor'], loginDirect: true },
   },
@@ -234,7 +235,7 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     // Код зв'язки виводиться з id дошки (remotePair), ?pair ігнорується.
     path: '/winterboard/:id/remote',
     name: 'winterboard-remote-board',
-    component: () => import('./views/WBRemoteView.vue'),
+    component: () => import('./views/WBRemoteEntry.vue'),
     props: true,
     meta: { title: 'Пульт', roles: ['tutor'], loginDirect: true },
   },

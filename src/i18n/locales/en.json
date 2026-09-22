@@ -1226,7 +1226,7 @@
       "materials": "Materials",
       "myPlan": "My Plan",
       "myReplays": "My Replays",
-      "remote": "Remote",
+      "remote": "Phone remote",
       "feedback": "💡 Ideas & Feedback",
       "help": "Help",
       "marketplace": "Marketplace",
@@ -8401,7 +8401,31 @@
       "boardFrozenHint": "On the laptop tap “New recording” in the banner at the top, then the remote works again.",
       "holdToTalk": "Talk (hold)",
       "listening": "Listening…",
-      "voiceUnsupported": "Voice is not available in this browser — buttons still work."
+      "voiceUnsupported": "Voice is not available in this browser — buttons still work.",
+      "connectPage": {
+        "title": "Phone remote",
+        "lead": "Your phone turns the pages on the wall, puts a task on screen and listens to your voice — you don't need to look at it.",
+        "howTitle": "How to connect",
+        "step1": "Point your phone camera at the code or type the address.",
+        "step2": "Sign in on the phone with the same account:",
+        "step2NoEmail": "Sign in on the phone with the same account as here.",
+        "step3": "Open a lesson on this computer — the remote finds it by itself.",
+        "boardTitle": "Board",
+        "boardActive": "The remote will control the board “{name}”.",
+        "boardActiveNoName": "The remote will control the board open on this computer.",
+        "boardNone": "Open a lesson on this computer first.",
+        "boardError": "Couldn't find out which board is open.",
+        "boardChecking": "Checking which board is open…",
+        "duringLesson": "During a lesson, the phone button in the board header shows this same code and tells you when the phone has connected.",
+        "openHere": "Open the remote here anyway"
+      },
+      "firstTip": {
+        "title": "Remote connected",
+        "line1": "The buttons turn the pages on the wall.",
+        "line2": "Hold “Talk” and speak.",
+        "line3": "You can put the phone in your pocket.",
+        "ok": "Got it"
+      }
     },
     "youtube": {
       "insert": "Insert YouTube video",

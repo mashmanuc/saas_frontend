@@ -22,6 +22,7 @@
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
+import { remoteEntryUrl } from '../remote/remoteEntry'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 
 export interface BoardRemoteStore {
@@ -91,10 +92,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const assistantState = ref<RemoteAssistantState | null>(null)
 
   /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
-  const remoteUrl = computed(() => {
-    if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/remote`
-  })
+  const remoteUrl = computed(() => remoteEntryUrl())
 
   // ── remote.state → пульт ─────────────────────────────────────────────
   let stateTimer: ReturnType<typeof setTimeout> | null = null

@@ -367,3 +367,49 @@ describe('WBRemoteView — швидка зміна акаунта', () => {
     }
   })
 })
+
+// TZ_REMOTE_DESKTOP_CONNECT §2.4: після ПЕРШОГО підключення на пристрої — три
+// рядки; «Зрозуміло» ховає назавжди (localStorage).
+describe('підказка після першого підключення', () => {
+  beforeEach(() => {
+    channelState.value = 'idle'
+    getActiveRemoteSession.mockReset()
+    getActiveRemoteSession.mockResolvedValue({ session_id: SID, name: 'Алгебра 8-А', ts: 1 })
+    onStateCb = null
+    window.localStorage.clear()
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    while (mounted.length) { try { mounted.pop()!.unmount() } catch { /* already unmounted */ } }
+    vi.useRealTimers()
+  })
+
+  async function connectedView() {
+    const w = mountView()
+    await flushPromises()
+    onStateCb?.({ pair: PAIR, clientId: 'laptop', pageIndex: 0, pageCount: 3 })
+    await nextTick()
+    return w
+  }
+
+  it('до першого стану від дошки підказки немає', async () => {
+    const w = mountView()
+    await flushPromises()
+    expect(w.find('.wb-remote__tip').exists()).toBe(false)
+  })
+
+  it('перше підключення → підказка; «Зрозуміло» ховає', async () => {
+    const w = await connectedView()
+    expect(w.find('.wb-remote__tip').exists()).toBe(true)
+    await w.find('.wb-remote__tip-ok').trigger('click')
+    expect(w.find('.wb-remote__tip').exists()).toBe(false)
+  })
+
+  it('після «Зрозуміло» на цьому пристрої — більше ніколи', async () => {
+    const first = await connectedView()
+    await first.find('.wb-remote__tip-ok').trigger('click')
+    first.unmount()
+    const again = await connectedView()
+    expect(again.find('.wb-remote__tip').exists()).toBe(false)
+  })
+})

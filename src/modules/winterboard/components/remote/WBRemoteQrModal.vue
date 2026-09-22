@@ -5,13 +5,7 @@
         <h2 class="wb-remote-qr__title">{{ t('winterboard.remote.qrTitle') }}</h2>
         <p class="wb-remote-qr__hint">{{ t('winterboard.remote.qrHint') }}</p>
 
-        <div class="wb-remote-qr__code-wrap">
-          <img v-if="qrDataUrl" :src="qrDataUrl" class="wb-remote-qr__img" alt="QR" width="240" height="240" />
-          <div v-else class="wb-remote-qr__img wb-remote-qr__img--pending">…</div>
-        </div>
-
-        <p class="wb-remote-qr__or">{{ t('winterboard.remote.openOnPhone') }}</p>
-        <p class="wb-remote-qr__url">{{ displayUrl }}</p>
+        <RemoteQrBlock :url="url" />
 
         <p class="wb-remote-qr__status" :class="{ 'wb-remote-qr__status--on': remoteConnected }">
           {{ remoteConnected ? t('winterboard.remote.phoneConnected') : t('winterboard.remote.phoneWaiting') }}
@@ -32,11 +26,13 @@
  * Показує QR з УНІВЕРСАЛЬНОЮ адресою /remote (без id, без коду) — пульт сам
  * знаходить активну дошку. Ту саму адресу можна просто набрати або додати на
  * головний екран телефона. Статус — чи пульт уже вітався (hello).
+ * «QR + адреса» — спільний `RemoteQrBlock` (той самий, що на сторінці
+ * «Підключити телефон», ТЗ TZ_REMOTE_DESKTOP_CONNECT §2.3).
  */
-import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import RemoteQrBlock from './RemoteQrBlock.vue'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
   url: string
   remoteConnected: boolean
@@ -44,24 +40,6 @@ const props = defineProps<{
 defineEmits<{ (e: 'close'): void }>()
 
 const { t } = useI18n()
-const qrDataUrl = ref('')
-const displayUrl = computed(() => props.url.replace(/^https?:\/\//, ''))
-
-// qrcode — лінива залежність: тягнеться лише коли модалку відкрили
-watch(
-  () => [props.visible, props.url] as const,
-  async ([visible, url]) => {
-    if (!visible || !url) return
-    try {
-      const QRCode = (await import('qrcode')).default
-      qrDataUrl.value = await QRCode.toDataURL(url, { width: 240, margin: 1 })
-    } catch (err) {
-      console.warn('[WB:remote] QR render failed', err)
-      qrDataUrl.value = ''
-    }
-  },
-  { immediate: true },
-)
 </script>
 
 <style scoped>
@@ -78,11 +56,6 @@ watch(
 }
 .wb-remote-qr__title { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
 .wb-remote-qr__hint { margin: 0 0 16px; font-size: 14px; color: #475569; }
-.wb-remote-qr__code-wrap { display: flex; justify-content: center; }
-.wb-remote-qr__img { width: 240px; height: 240px; border-radius: 8px; }
-.wb-remote-qr__img--pending { display:flex; align-items:center; justify-content:center; background:#f1f5f9; color:#94a3b8; font-size: 32px; }
-.wb-remote-qr__or { margin: 12px 0 2px; font-size: 13px; color: #64748b; }
-.wb-remote-qr__url { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: .5px; word-break: break-all; }
 .wb-remote-qr__status { margin: 0 0 6px; font-size: 14px; color: #64748b; }
 .wb-remote-qr__status--on { color: #16a34a; font-weight: 600; }
 .wb-remote-qr__account { margin: 0 0 16px; font-size: 12px; color: #94a3b8; }
