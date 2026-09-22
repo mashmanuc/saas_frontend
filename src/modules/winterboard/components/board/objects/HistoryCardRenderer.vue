@@ -251,11 +251,18 @@ const entityKey = computed(() => {
   return r?.provider && r?.id ? `${r.provider}:${r.id}` : ''
 })
 let actionsRequest = 0
-watch([() => props.loadActions, entityKey], ([load, key]) => {
+// Стежимо за ТИМ, ЧИ є кому спитати, і за сутністю — не за ідентичністю
+// функції. Інакше кожна нова функція від шару оверлеїв скидала рядок кнопок,
+// висота стрибала, і картка писала asset_update по колу (прод 2026-09-22).
+const canLoadActions = computed(() => typeof props.loadActions === 'function')
+watch([canLoadActions, entityKey], ([can, key], previous) => {
+  const [wasAble, previousKey] = previous ?? [false, '']
+  if (can && wasAble && key === previousKey) return
   const ticket = ++actionsRequest
-  loadedActions.value = []
+  if (key !== previousKey || !can) loadedActions.value = []
   const ref0 = data.value.entity_ref
-  if (typeof load !== 'function' || !key || !ref0) return
+  const load = props.loadActions
+  if (!can || typeof load !== 'function' || !key || !ref0) return
   load(ref0).then((list) => {
     if (ticket === actionsRequest) loadedActions.value = Array.isArray(list) ? list : []
   })

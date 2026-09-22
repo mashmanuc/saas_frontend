@@ -141,6 +141,21 @@ function mapMarkerUpdate(
 }
 
 // Adapter context — reactive snapshot для build* функцій registry.
+// Next Actions: стабільні обробники — див. коментар у `ctx`.
+function runTeachingAction(source: WBAsset, action: WBTeachingAction): void {
+  import('@/modules/intent/nextActions')
+    .then(({ runNextAction }) => runNextAction(source, action))
+    .catch((e) => console.error('[WBOverlayLayer] next action failed', e))
+}
+function loadTeachingActions(entityRef: EntityRef): Promise<WBTeachingAction[]> {
+  return import('@/modules/intent/nextActions')
+    .then(({ loadNextActions }) => loadNextActions(entityRef))
+    .catch((e) => {
+      console.error('[WBOverlayLayer] next actions unavailable', e)
+      return []
+    })
+}
+
 const ctx = computed<OverlayCtx>(() => ({
   isSelected: (id: string) => wbStore.selectedIds.includes(id),
   interactive: props.tool === 'select' && wbStore.mode === 'edit',
@@ -180,22 +195,14 @@ const ctx = computed<OverlayCtx>(() => ({
   // мережі не торкається: Replay відтворює результат, а не резолвить дію знову.
   // Раннер вантажиться ліниво — шар оверлеїв не отримує статичної залежності
   // від модуля Інтегралика; результат кладе той самий `runBoardAction`.
-  onRunAction: wbStore.mode === 'edit' && props.isTutor
-    ? (source: WBAsset, action: WBTeachingAction) => {
-        import('@/modules/intent/nextActions')
-          .then(({ runNextAction }) => runNextAction(source, action))
-          .catch((e) => console.error('[WBOverlayLayer] next action failed', e))
-      }
-    : undefined,
+  // ⚠️ Обидва обробники — СТАБІЛЬНІ функції (оголошені поза `ctx`). `ctx`
+  // перераховується на кожен `asset_update` (залежить від `props.assets`), і
+  // нова функція щоразу змушувала картку перепитувати дії й скидати рядок
+  // кнопок → висота 406↔362 → asset_update → знову. Прод 2026-09-22: 2952
+  // операції від однієї картки за годину, картки мерехтіли.
+  onRunAction: wbStore.mode === 'edit' && props.isTutor ? runTeachingAction : undefined,
   // Список дій — не стан дошки: жива картка питає його в бекенду сама.
-  loadActions: wbStore.mode === 'edit' && props.isTutor
-    ? (entityRef: EntityRef) => import('@/modules/intent/nextActions')
-        .then(({ loadNextActions }) => loadNextActions(entityRef))
-        .catch((e) => {
-          console.error('[WBOverlayLayer] next actions unavailable', e)
-          return []
-        })
-    : undefined,
+  loadActions: wbStore.mode === 'edit' && props.isTutor ? loadTeachingActions : undefined,
   // Шпилька на карту — навпаки, суто стан дошки: беремо наявну карту або
   // просимо кімнату створити нову. Нового шляху запису тут немає — усе через
   // той самий `asset-update`.

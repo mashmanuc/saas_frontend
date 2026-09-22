@@ -171,6 +171,10 @@ describe('Replay не резолвить дії', () => {
       '../../winterboard/components/canvas/WBOverlayLayer.vue'), 'utf-8')
     expect(src).toMatch(/onRunAction: wbStore\.mode === 'edit' && props\.isTutor\s*\n?\s*\?/)
     expect(src).toMatch(/loadActions: wbStore\.mode === 'edit' && props\.isTutor\s*\n?\s*\?/)
+    // Обробники — стабільні функції, а не нові стрілки в кожному перерахунку ctx
+    // (прод 2026-09-22: цикл висоти, 2952 asset_update від однієї картки).
+    expect(src).toMatch(/props\.isTutor \? runTeachingAction : undefined/)
+    expect(src).toMatch(/props\.isTutor \? loadTeachingActions : undefined/)
   })
 
   it('картка, яку кладе план, не несе списку дій — лише entity_ref', () => {

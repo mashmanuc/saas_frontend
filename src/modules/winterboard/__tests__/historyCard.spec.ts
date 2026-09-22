@@ -370,6 +370,21 @@ describe('HistoryCard · що показати далі (Next Actions V1)', () =
     expect(w.emitted('run-action')![0]).toEqual([{ id: 'history.related', label: 'Сторони битви' }])
   })
 
+  it('⚠️ нова функція loadActions і нова висота НЕ скидають кнопки (прод 2026-09-22)', async () => {
+    // Шар оверлеїв перераховує ctx на кожен asset_update. Картка скидала рядок
+    // кнопок на кожну нову функцію → висота 406↔362 → 2952 asset_update.
+    const first = loader()
+    const w = render(CARD, true, { loadActions: first })
+    await flushPromises()
+    const second = loader()
+    const grown = { ...w.props('asset'), h: 406 }
+    await w.setProps({ loadActions: second, asset: grown })
+    await flushPromises()
+    expect(first).toHaveBeenCalledTimes(1)
+    expect(second).not.toHaveBeenCalled()
+    expect(w.findAll('.history-card__action')).toHaveLength(3)
+  })
+
   it('немає кому спитати (Replay, учень) — ні кнопок, ні запиту', async () => {
     const w = render(CARD, true, {})
     await flushPromises()
