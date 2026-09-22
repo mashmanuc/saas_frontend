@@ -1,4 +1,9 @@
-// ReplayV2: useReplayV2 — composable з snapshot-based seek.
+// ReplayV2: useReplayV2 — чинний composable Replay (дефолт WBPublicView з 2026-05-14;
+// V1 лише за ?replay=v1).
+//
+// Seek (REPLAY_MANIFEST v2.2, REPLAY-INV-5): до SEQUENTIAL_SEEK_MAX_OPS стан
+// будується з ops одним проходом; далі — знімок + дельта. Таймер гри утримано
+// на час seek.
 //
 // INV-V2-1: НЕ імпортує з useReplay.ts або WBReplayEngine.ts.
 // INV-V2-2: Snapshot load = atomic replace (clearState → loadState).
@@ -7,7 +12,6 @@
 // INV-V2-PUB: Phase B — usePublicSnapshots = true activates PublicSnapshotProvider.
 //
 // Return shape = той самий що useReplay (drop-in replacement).
-// Підключення: WBPublicView.vue feature flag ?replay=v2 / ?replay=v2-public.
 
 import { ref, shallowRef, readonly, computed, watch, onScopeDispose, getCurrentScope } from 'vue'
 import { WBReplayEngineV2, type ReplaySpeedV2, type ReplayStateV2 } from '../engine/WBReplayEngineV2'
