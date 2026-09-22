@@ -128,3 +128,45 @@ describe('сторож i18n графкалькулятора', () => {
     expect(visibleLiterals('../components/sidebar/GraphCalcInspector.vue')).toEqual([])
   })
 })
+
+// ─── Б-23: права панель у ru — російською, не українським запасним ────
+import GraphCalcInspector from '../components/sidebar/GraphCalcInspector.vue'
+import {
+  __resetGraphCalcInspectorForTests,
+  registerGraphCalcInspector,
+  type GraphCalcInspectorBridge,
+} from '../board/state/graphCalcInspectorState'
+
+function inspectorBridge(): GraphCalcInspectorBridge {
+  return {
+    paramEntries: [{ name: 'a', value: 1, min: -5, max: 5, step: 0.1 }],
+    dragParamNames: ['a'], paramFocus: null, paramExpanded: {},
+    onSliderInput: () => {}, flushParam: () => {}, toggleParamExpand: () => {},
+    onRangeMinChange: () => {}, onRangeMaxChange: () => {}, onRangeStepChange: () => {},
+    displayExpressions: [{ id: 'e1', src: 'y = a*x', color: '#c05', hidden: false, isParam: false }],
+    slashPopup: null, slashFilteredTemplates: [],
+    onSrcInput: () => {}, onInputBlur: () => {}, onEnterPress: () => {},
+    onArrowNav: () => {}, onToggleHidden: () => {}, onRemoveExpression: () => {},
+    onAddExpression: () => {}, onQuickAdd: () => {},
+    applySlashTemplate: () => {}, closeSlashPopup: () => {}, setSlashSelectedIdx: () => {},
+    isExpanded: false, toggleExpand: () => {},
+  }
+}
+
+describe('GraphCalcInspector — ru (Б-23)', () => {
+  const initial = i18n.global.locale.value
+  afterEach(() => { i18n.global.locale.value = initial })
+
+  it('заголовок, «+ выражение», «Параметры» — російською', async () => {
+    __resetGraphCalcInspectorForTests()
+    registerGraphCalcInspector('gc-ru', inspectorBridge())
+    i18n.global.locale.value = 'ru'
+    const w = mount(GraphCalcInspector)
+    await nextTick()
+    expect(w.find('.gc-insp__title').text()).toBe('Графический калькулятор')
+    expect(w.find('.gc-insp__add-btn').text()).toBe('+ выражение')
+    expect(w.text()).toContain('Параметры')
+    expect(w.text()).not.toContain('Графічний калькулятор')
+    w.unmount()
+  })
+})

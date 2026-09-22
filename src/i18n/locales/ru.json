@@ -8992,6 +8992,23 @@
         "showGraph": "Показать график",
         "showAllSolutions": "Показать все решения"
       }
+    },
+    "graphCalc": {
+      "title": "Графический калькулятор",
+      "collapse": "Свернуть",
+      "expand": "На всю доску",
+      "subtitle": "f(x) · выражения и параметры",
+      "quickAdd": "Быстро добавить",
+      "expressions": "Выражения",
+      "toggleVisibility": "Скрыть / показать",
+      "delete": "Удалить",
+      "noTemplates": "Нет шаблонов",
+      "addExpression": "+ выражение",
+      "emptyHint": "Добавьте параметр в формулу, напр.",
+      "params": "Параметры",
+      "shiftDragHint": "Shift+drag по графику управляет параметром",
+      "shiftDragOneParam": "Drag-параметр недоступен: ни одна кривая не зависит ровно от одного параметра",
+      "configureRange": "Настроить диапазон"
     }
   },
   "knowledge": {
