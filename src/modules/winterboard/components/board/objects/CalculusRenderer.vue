@@ -138,7 +138,7 @@ import type { CalculusBridge } from '../../../board/state/calculusUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
-import { autofitExpressions } from '../../../utils/graphAutofit'
+import { autofitExpressions, type GraphFit } from '../../../utils/graphAutofit'
 
 const { t } = useI18n()
 
@@ -290,13 +290,42 @@ watch(() => props.interactive, (on) => { card?.setFitEnabled(on) })
  *  Лише в режимі редагування: учень і Replay вікна не перераховують. */
 function onFitRequest(): void {
   if (!card || !props.interactive) return
-  const o = card.opts
-  const must = o.mode === 'integral' ? [o.a, o.b] : [o.x0]
-  const fit = autofitExpressions([o.expr], {}, must.filter((v) => Number.isFinite(v)))
+  const fit = fitFor(card.opts.expr)
   if (!fit) return
   card.setViewportFit(fit)
   scheduleSnapshot()
 }
+
+/** Вікно під функцію `expr` разом із x₀ (похідна) або a, b (інтеграл). */
+function fitFor(expr: string): GraphFit | null {
+  if (!card) return null
+  const o = card.opts
+  const must = o.mode === 'integral' ? [o.a, o.b] : [o.x0]
+  return autofitExpressions([expr], {}, must.filter((v) => Number.isFinite(v)))
+}
+
+/** Вчитель змінив функцію → вікно під нову функцію в ТОМУ САМОМУ оновленні
+ *  (рішення власника 2026-09-22: картка похідної в уроці «Похідна» показала
+ *  порожню сітку саме після зміни функції). Немає явної функції — вікно не чіпаємо. */
+function exprPatch(expr: string): Partial<CalculusAsset['data']> {
+  if (!props.interactive) return { expr }
+  const fit = fitFor(expr)
+  if (!fit || !card) return { expr }
+  card.setViewportFit(fit)
+  return { expr, viewport: card.getViewport() }
+}
+
+// Вікно, що прийшло ззовні (вчитель натиснув «вписати» / змінив функцію, а
+// це вкладка учня чи Replay), — застосувати. Власне ехо однакове — пропуск.
+watch(
+  () => props.asset.data.viewport,
+  (next) => {
+    if (!card || !next) return
+    if (JSON.stringify(next) === JSON.stringify(card.getViewport())) return
+    card.setViewport({ ...next })
+  },
+  { deep: true },
+)
 
 // Register / unregister bridge as selection changes.
 watch(() => props.isSelected, (sel) => {
@@ -438,7 +467,7 @@ function onExprInput(): void {
 
 function onExprCommit(): void {
   if (exprDraft.value !== props.asset.data.expr) {
-    patch({ expr: exprDraft.value })
+    patch(exprPatch(exprDraft.value))
   }
 }
 
@@ -448,7 +477,7 @@ function onExprPreset(expr: string): void {
   // мав delay у який graph не оновлювався поки watch не fired.
   exprDraft.value = expr
   if (card) card.setExpression(expr)
-  patch({ expr })
+  if (expr !== props.asset.data.expr) patch(exprPatch(expr))
 }
 
 function onDelete(): void { emit('delete') }
