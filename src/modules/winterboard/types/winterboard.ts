@@ -590,12 +590,26 @@ export interface HistoryCardField {
   total?: number
 }
 
+/** Чому пов'язана картка з'явилась на дошці (Next Actions V1, 2026-09-22). */
+export interface HistoryCardRelation {
+  /** Підпис дії: «Сторони битви», «Родина», «Складові». */
+  label: string
+  /** Назва сутності, з картки якої цю викликали. */
+  of: string
+  /** Роль у родині («син», «дружина»); для інших зв'язків немає. */
+  role?: string
+  of_ref?: EntityRef
+}
+
 export interface HistoryCardData {
   version: 1
   variant: HistoryCardVariant
   title: string
   /** Короткий опис під назвою. Немає — рядок зникає. */
   subtitle?: string
+  /** «Хто/що це» — 1–2 речення вступу статті; джерело — у `sources`. */
+  lead?: string
+  relation?: HistoryCardRelation
   image?: HistoryCardImage
   /** Рядки, видимі завжди (compact). */
   primary: HistoryCardField[]

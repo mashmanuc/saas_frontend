@@ -312,6 +312,26 @@ function sanitizeEntityRef(raw) {
   return { provider, id }
 }
 
+/** «Хто/що це» під назвою — 1–2 речення вступу; джерело лежить у `sources`. */
+function sanitizeLead(raw) {
+  return typeof raw === 'string' && raw.trim() ? raw.trim().slice(0, 400) : ''
+}
+
+/**
+ * Чому пов'язана картка з'явилась (Next Actions «Сторони / Родина / Складові»):
+ * підпис дії, роль у родині, сутність-джерело. Лише форма — зміст дав бекенд.
+ */
+export function sanitizeRelation(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
+  const label = text(raw.label, 48)
+  const of = text(raw.of, 200)
+  if (!label || !of) return null
+  const ofRef = sanitizeEntityRef(raw.of_ref)
+  return { label, of, ...(text(raw.role, 32) ? { role: text(raw.role, 32) } : {}),
+    ...(ofRef ? { of_ref: ofRef } : {}) }
+}
+
 /** Значення рядка картки. Закритий набір ключів — як у sourcesData. */
 function sanitizeHistoryValue(raw) {
   if (!raw || typeof raw !== 'object') return null
@@ -662,7 +682,7 @@ const HANDLERS = {
    * значень, тож «—» на картці не з'являється за побудовою.
    */
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
-                           corridor, sources, source_status, entity_ref }) {
+                           corridor, sources, source_status, entity_ref, lead, relation }) {
     const { store, page } = await _store()
     const { cx, cy } = _center(page, 520, 380, 440)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
@@ -689,6 +709,8 @@ const HANDLERS = {
         title: titleValue,
         ...(typeof subtitle === 'string' && subtitle.trim()
           ? { subtitle: subtitle.trim().slice(0, 300) } : {}),
+        ...(sanitizeLead(lead) ? { lead: sanitizeLead(lead) } : {}),
+        ...(sanitizeRelation(relation) ? { relation: sanitizeRelation(relation) } : {}),
         ...(imageValue ? { image: imageValue } : {}),
         primary: primaryFields,
         ...(secondaryFields.length ? { secondary: secondaryFields } : {}),

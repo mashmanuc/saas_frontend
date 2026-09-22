@@ -275,6 +275,32 @@ describe('HistoryCard · мова матеріалу, не UI', () => {
 })
 
 
+describe('HistoryCard · «хто це» і «чому тут» (2026-09-22)', () => {
+  it('lead — під назвою, факти лишаються', () => {
+    const w = render({ ...POLTAVA, lead: 'Полтавська битва — битва Великої Північної війни.' })
+    const heading = w.find('.history-card__heading').element
+    const lead = w.find('.history-card__lead')
+    expect(lead.text()).toBe('Полтавська битва — битва Великої Північної війни.')
+    expect(heading.nextElementSibling).toBe(lead.element)
+    expect(w.find('.history-card__fields').exists()).toBe(true)
+  })
+
+  it('немає lead — рядка немає', () => {
+    expect(render(POLTAVA).find('.history-card__lead').exists()).toBe(false)
+  })
+
+  it('картка з Next Action каже, чому вона тут', () => {
+    const w = render({ ...POLTAVA, relation: { label: 'Родина', of: 'Богдан Хмельницький', role: 'син' } })
+    expect(w.find('.history-card__relation').text()).toBe('↳ Родина · Богдан Хмельницький (син)')
+  })
+
+  it('без ролі — лише дія і джерело', () => {
+    const w = render({ ...POLTAVA, relation: { label: 'Сторони битви', of: 'Полтавська битва' } })
+    expect(w.find('.history-card__relation').text()).toBe('↳ Сторони битви · Полтавська битва')
+  })
+})
+
+
 describe('HistoryCard · вид «Держава» (polity)', () => {
   const RZECZPOSPOLITA: Partial<HistoryCardData> = {
     variant: 'polity',

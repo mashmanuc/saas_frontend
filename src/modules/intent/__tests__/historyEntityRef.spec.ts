@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { sanitizeHistoryFields } from '../boardActions'
+import { sanitizeHistoryFields, sanitizeRelation } from '../boardActions'
 
 function valueOf(ref: unknown) {
   const fields = sanitizeHistoryFields([
@@ -41,5 +41,25 @@ describe('entity_ref · непрозоре посилання', () => {
       expect(value.entity_ref).toBeUndefined()
       expect(value.label).toBe('Полтава')
     }
+  })
+})
+
+describe("relation · чому пов'язана картка тут (Next Actions, 2026-09-22)", () => {
+  it('підпис дії, сутність-джерело й роль проходять', () => {
+    expect(sanitizeRelation({ label: 'Родина', of: 'Богдан Хмельницький', role: 'син',
+      of_ref: { provider: 'wikidata', id: 'Q203808' } })).toEqual({
+      label: 'Родина', of: 'Богдан Хмельницький', role: 'син',
+      of_ref: { provider: 'wikidata', id: 'Q203808' } })
+  })
+
+  it('без підпису чи без джерела — відношення немає', () => {
+    expect(sanitizeRelation({ label: '', of: 'X' })).toBeNull()
+    expect(sanitizeRelation({ label: 'Сторони битви', of: '' })).toBeNull()
+    expect(sanitizeRelation(null)).toBeNull()
+  })
+
+  it('порожня роль не пишеться', () => {
+    expect(sanitizeRelation({ label: 'Сторони битви', of: 'Полтавська битва', role: '' }))
+      .toEqual({ label: 'Сторони битви', of: 'Полтавська битва' })
   })
 })

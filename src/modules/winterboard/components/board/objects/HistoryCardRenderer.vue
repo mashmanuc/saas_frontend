@@ -64,7 +64,12 @@
           </figcaption>
         </figure>
 
-        <!-- 2 · заголовок. Уся зона — перемикач стану. -->
+        <!-- 2 · заголовок. Уся зона — перемикач стану. Над ним — чому пов'язана
+             картка тут (Next Actions), під ним — «хто/що це» зі статті. -->
+        <p v-if="data.relation" class="history-card__relation">
+          ↳ {{ data.relation.label }} · {{ data.relation.of }}<template
+            v-if="data.relation.role"> ({{ data.relation.role }})</template>
+        </p>
         <button
           type="button"
           class="history-card__heading"
@@ -74,6 +79,7 @@
           <span class="history-card__title">{{ data.title }}</span>
           <span v-if="data.subtitle" class="history-card__subtitle">{{ data.subtitle }}</span>
         </button>
+        <p v-if="data.lead" class="history-card__lead">{{ data.lead }}</p>
 
         <!-- 3 · поля. Порожнє поле сюди не потрапляє: сервер його не кладе. -->
         <dl v-if="visibleFields.length" class="history-card__fields">
@@ -388,6 +394,8 @@ useCardContentFit({
   sources: [
     () => data.value.title,
     () => data.value.subtitle,
+    () => data.value.lead,
+    () => JSON.stringify(data.value.relation ?? null),
     () => data.value.variant,
     () => JSON.stringify(data.value.image ?? null),
     () => JSON.stringify(data.value.primary ?? []),
@@ -540,6 +548,19 @@ useExportCapture(
   font-size: calc(15px * var(--wb-card-text-scale, 1));
   line-height: 1.5;
   color: #6b7280;
+}
+
+.history-card__relation {
+  margin: 0 0 6px;
+  font-size: calc(12px * var(--wb-card-text-scale, 1));
+  line-height: 1.4;
+  color: var(--accent, #4338ca);
+}
+.history-card__lead {
+  margin: 0 0 12px;
+  font-size: calc(15px * var(--wb-card-text-scale, 1));
+  line-height: 1.5;
+  color: #334155;
 }
 
 /* 3 · поля */
