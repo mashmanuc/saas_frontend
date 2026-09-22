@@ -1072,6 +1072,21 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   padding: 16px;
 }
 
+/* Телефон: контейнери не розтягуються під ширину тижня — інакше картка їхала
+   за екран замість прокрутки всередині (огляд 2026-09-22, Топ-10 №1). */
+@media (max-width: 767px) {
+  .calendar-week-view,
+  .calendar-v055-layout {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .calendar-v055-layout {
+    padding: 12px;
+  }
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

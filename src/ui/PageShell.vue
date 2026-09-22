@@ -11,8 +11,11 @@
          G-2 Stage 2 Path B (Tailwind JIT verify failed for lg:ml-[var(...)],
          так що використовуємо Vue inline :style binding замість Tailwind class).
          CSS vars resolve runtime через standard CSS — без Tailwind involvement. -->
+    <!-- min-w-0: flex-елемент без цього не звужується нижче свого вмісту —
+         широка таблиця (тиждень розкладу) розпирала всю сторінку на телефоні
+         замість власної прокрутки (візуальний огляд 2026-09-22, Топ-10 №1). -->
     <div
-      class="flex-1 flex flex-col transition-[margin] duration-200"
+      class="flex-1 min-w-0 flex flex-col transition-[margin] duration-200"
       :style="mainAreaStyle"
     >
       <TopNav @toggle-side-nav="layout.openSidebar()" />

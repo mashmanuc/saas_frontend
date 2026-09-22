@@ -369,6 +369,10 @@ const handleDragEnd = async () => {
   .calendar-board-v2 {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    /* Без цих двох картка сама розтягувалась до 540px (min-width дітей) і
+       виїжджала за екран — прокрутка має бути ВСЕРЕДИНІ неї. */
+    min-width: 0;
+    max-width: 100%;
   }
 
   .calendar-header-row,

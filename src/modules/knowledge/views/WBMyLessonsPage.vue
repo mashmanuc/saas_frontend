@@ -270,6 +270,9 @@
                       ? '...'
                       : $t('knowledge.lesson.prepare.button') }}
                   </button>
+                  <!-- Друга дія і «⋯» — завжди в одному рядку, інакше на
+                       вузькій картці кожна кнопка займала свій рядок. -->
+                  <div class="flex items-center gap-2">
                   <!-- Одна кнопка «Поділитися ▾»: 👁 Показати (демо-лінк) / 🎁 Передати копію (grant) -->
                   <ShareLessonMenu
                     :busy="sharingInProgress[lesson.id] || quickGrantingId === lesson.id"
@@ -350,6 +353,7 @@
                         🗑 {{ $t('knowledge.lesson.delete') }}
                       </button>
                     </div>
+                  </div>
                   </div>
                 </div>
 
