@@ -6,7 +6,10 @@
       :aria-label="$t('notifications.bell.ariaLabel')"
       @click="toggle"
     >
-      <span class="bell-icon" aria-hidden="true">🔔</span>
+      <!-- 2026-09-23 (візуальний огляд, п.0): у шапці був жовтий емодзі-дзвінок,
+           а вкладка «Сповіщення» в Налаштуваннях малює лінійний дзвінок — одна
+           сутність двома різними іконками. Лишаємо одну, лінійну. -->
+      <Bell class="bell-icon" :size="18" aria-hidden="true" />
       <span v-if="unreadCount > 0" class="badge">
         {{ unreadCount > 9 ? '9+' : unreadCount }}
       </span>
@@ -79,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import { Bell } from 'lucide-vue-next'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -240,6 +244,11 @@ onBeforeUnmount(() => {
 
 .bell-icon {
   display: block;
+  color: var(--text-secondary, #6b7280);
+}
+
+.bell-button:hover .bell-icon {
+  color: var(--text-primary, #111827);
 }
 
 .badge {

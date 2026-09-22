@@ -5,9 +5,26 @@
       <p class="help-subtitle">{{ t('help.page.subtitle') }}</p>
     </header>
 
+    <!-- Телефон: перелік розділів займав два екрани до першого абзацу статті
+         (візуальний огляд 2026-09-22, п.11). Згорнуто за кнопкою; на широкому
+         екрані кнопки немає, колонка як була. -->
+    <button
+      type="button"
+      class="help-nav-toggle"
+      :aria-expanded="mobileNavOpen"
+      @click="mobileNavOpen = !mobileNavOpen"
+    >
+      {{ t('help.page.navLabel') }}
+      <span class="help-nav-toggle__caret" aria-hidden="true">{{ mobileNavOpen ? '▴' : '▾' }}</span>
+    </button>
+
     <div class="help-layout">
       <!-- Навігація за сценаріями -->
-      <aside class="help-nav" :aria-label="t('help.page.navLabel')">
+      <aside
+        class="help-nav"
+        :class="{ 'help-nav--open': mobileNavOpen }"
+        :aria-label="t('help.page.navLabel')"
+      >
         <nav v-for="section in sections" :key="section.key" class="help-nav__section">
           <div class="help-nav__section-title">
             <span class="help-nav__icon" aria-hidden="true">{{ section.icon }}</span>
@@ -43,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { HELP_SECTIONS, DEFAULT_HELP_SLUG } from '../data/helpArticles'
@@ -69,7 +86,12 @@ const current = computed(() => {
   return find(currentSlug.value) ?? find(DEFAULT_HELP_SLUG)
 })
 
+/** Телефон: чи розгорнутий перелік розділів (на широкому екрані не діє). */
+const mobileNavOpen = ref(false)
+
 function select(slug: string): void {
+  // Обрали статтю — ховаємо перелік, щоб одразу було видно текст.
+  mobileNavOpen.value = false
   if (slug === currentSlug.value) return
   router.push({ name: 'help', params: { slug } })
 }
@@ -212,16 +234,45 @@ function select(slug: string): void {
 }
 
 /* ── Mobile ── */
+/* Кнопка «Розділи допомоги» — лише на вузькому екрані. */
+.help-nav-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  cursor: pointer;
+}
+
+.help-nav-toggle__caret {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
 @media (max-width: 720px) {
+  .help-nav-toggle {
+    display: flex;
+  }
   .help-layout {
     grid-template-columns: 1fr;
   }
   .help-nav {
+    display: none;
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
     gap: var(--space-md, 16px);
     padding-bottom: var(--space-sm, 8px);
+  }
+  .help-nav--open {
+    display: flex;
   }
   .help-nav__section {
     flex: 1 1 140px;

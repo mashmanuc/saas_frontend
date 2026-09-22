@@ -10,12 +10,16 @@
     </Card>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
-      <nav class="space-y-1">
+      <!-- Телефон і планшет: шість вкладок стовпчиком займали весь перший
+           екран — до самих налаштувань треба було спершу прогорнути
+           (візуальний огляд 2026-09-22, п.13). Тепер один рядок із
+           горизонтальним гортанням; з `lg:` — колонка, як було. -->
+      <nav class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
-          class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition"
+          class="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition lg:w-full"
           :class="activeTab === tab.id 
             ? 'bg-primary text-primary-foreground' 
             : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground'"

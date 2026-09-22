@@ -1348,6 +1348,16 @@ onMounted(() => {
   transition: border-color 0.15s;
 }
 
+/* Планшет: пошук притискався до правого краю окремо від вкладок і виглядав
+   відірваним (візуальний огляд 2026-09-22, п.4). Даємо йому власний рядок на
+   всю ширину — видно, що це фільтр того самого списку. */
+@media (max-width: 900px) {
+  .wb-board-list__search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
 .wb-board-list__search:focus {
   border-color: var(--wb-brand, #0066ff);
   box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);

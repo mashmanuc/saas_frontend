@@ -450,8 +450,12 @@ const vClickOutside = {
   font-size: 0.75rem;
 }
 
+/* Кнопки в одному ряду мали різну висоту: «⋯» жила у власній обгортці, яка не
+   розтягувалась, а довге «Скопіювати посилання» переносилось у два рядки й
+   робило ряд вищим (візуальний огляд 2026-09-22, п.5). */
 .replay-card__actions {
   display: flex;
+  align-items: stretch;
   gap: var(--space-xs, 6px);
   margin-top: auto;
   padding-top: var(--space-xs, 6px);
@@ -460,6 +464,10 @@ const vClickOutside = {
 
 .replay-card__btn {
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   background: transparent;
@@ -501,6 +509,7 @@ const vClickOutside = {
 
 .replay-card__menu-wrap {
   position: relative;
+  display: flex;
 }
 
 .replay-card__menu {
