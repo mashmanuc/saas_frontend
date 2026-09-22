@@ -190,11 +190,24 @@ export function resolveCompanions(
   const seen = new Set<string>()
   const result: CompanionResolution[] = []
 
+  const canSpawn = (renderer: string) => {
+    if (!AVAILABLE_RENDERERS.has(renderer)) return false
+    const guard = RENDERER_REQUIRES_DATA[renderer]
+    return !guard || guard(extractedData)
+  }
+  // Рішення власника 2026-09-22 (урок «Похідна», скрін: «два однакові
+  // графіка»): картка похідної сама малює криву f, тож графкалькулятор із ТІЄЮ
+  // САМОЮ функцією поруч — дубль. Є картка → графкалькулятора не пропонуємо.
+  const hasCalculus = intents.some(
+    (i) => (INTENT_TO_RENDERERS[i] ?? []).includes('calculus_card'),
+  ) && canSpawn('calculus_card')
+
   for (const intent of intents) {
     const candidates = INTENT_TO_RENDERERS[intent] ?? []
 
     for (const renderer of candidates) {
       if (!AVAILABLE_RENDERERS.has(renderer) || seen.has(renderer)) continue
+      if (renderer === 'graph_calculator' && hasCalculus) continue
 
       // Перевіряємо чи є необхідні дані для цього renderer-а
       const guard = RENDERER_REQUIRES_DATA[renderer]

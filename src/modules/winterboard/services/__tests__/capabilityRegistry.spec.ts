@@ -68,3 +68,27 @@ describe('симетрія з 2D (регресія ТЗ-F, щоб не злам�
     expect(r.map((x) => x.rendererType)).toEqual(['geometry_2d_v2'])
   })
 })
+
+describe('картка похідної замість дубля-графіка (рішення власника 2026-09-22)', () => {
+  const eq = { equations: ['x^3 + 15*x^2 - 72*x'] }
+
+  it('задача на екстремум: show_graph + show_extrema → лише calculus_card', () => {
+    const r = resolveCompanions(['show_graph', 'show_extrema'], eq, [])
+    expect(r.map((c) => c.rendererType)).toEqual(['calculus_card'])
+  })
+
+  it('порядок інтентів не важить', () => {
+    const r = resolveCompanions(['show_extrema', 'show_graph'], eq, [])
+    expect(r.map((c) => c.rendererType)).toEqual(['calculus_card'])
+  })
+
+  it('без інтенту похідної — графкалькулятор як і був', () => {
+    const r = resolveCompanions(['show_graph', 'show_roots'], eq, [])
+    expect(r.map((c) => c.rendererType)).toEqual(['graph_calculator'])
+  })
+
+  it('друге місце звільняється для іншого об\'єкта (не губимо третій інтент)', () => {
+    const r = resolveCompanions(['show_graph', 'show_extrema', 'show_unit_circle'], eq, [])
+    expect(r.map((c) => c.rendererType)).toEqual(['calculus_card', 'trig_circle'])
+  })
+})
