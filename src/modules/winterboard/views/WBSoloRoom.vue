@@ -4435,6 +4435,15 @@ watch(() => store.workspaceName, (name) => {
   padding: 10px 16px 0;
 }
 
+/* Телефон: підказка «зберегти як урок» займала пів екрана (по одному слову в
+   рядок), а полотна не лишалось (візуальний огляд 2026-09-22, Топ-10 №3).
+   Дія не втрачена — «Зберегти як урок» є у шапці. */
+@media (max-width: 768px) {
+  .wb-save-template-hint {
+    display: none;
+  }
+}
+
 .wb-save-template-hint__cta {
   display: inline-flex;
   align-items: center;

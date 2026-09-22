@@ -2,7 +2,12 @@
      Supports nested folders up to 3 levels (INV-ORG-1).
      Create child folders via "+" button on each folder row. -->
 <template>
-  <aside class="wb-folders w-56 shrink-0 border-r border-gray-200 pr-4">
+  <!-- Телефон: колонка стає рядком над списком (візуальний огляд 2026-09-22,
+       Топ-10 №2 — на 375px вона лишалась збоку й стискала картки до ~100px). -->
+  <aside
+    class="wb-folders w-full border-b border-gray-200 pb-4 mb-4
+           md:w-56 md:shrink-0 md:border-b-0 md:border-r md:pr-4 md:pb-0 md:mb-0"
+  >
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">
         {{ $t('knowledge.folder.title') }}

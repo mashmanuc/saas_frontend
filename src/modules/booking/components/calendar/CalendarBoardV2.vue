@@ -362,6 +362,40 @@ const handleDragEnd = async () => {
   border-right: none;
 }
 
+/* Телефон: тиждень не стискаємо в 375px (колонка виходила ~40px, а «чипи»
+   днів по 78px розпирали сторінку — уся сторінка їхала вбік, огляд 2026-09-22
+   Топ-10 №1). Замість цього тиждень прокручується ВСЕРЕДИНІ картки. */
+@media (max-width: 767px) {
+  .calendar-board-v2 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-header-row,
+  .calendar-grid-container {
+    min-width: 540px;
+  }
+
+  .calendar-header-row {
+    grid-template-columns: 48px repeat(7, 1fr);
+    gap: 6px;
+    padding: 10px 8px 14px;
+  }
+
+  .calendar-grid-container {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .day-header-chip {
+    min-width: 0;
+    padding: 8px 6px;
+  }
+
+  .time-label {
+    font-size: 11px;
+  }
+}
+
 /* Custom scrollbar */
 .calendar-board-v2::-webkit-scrollbar {
   width: 8px;
