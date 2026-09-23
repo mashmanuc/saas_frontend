@@ -20,8 +20,12 @@
     <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
          відхиляє всі операції. Постійний банер + read-only полотно замість
          мовчазного тосту (борг із живого уроку 2026-09-03). -->
+    <!-- Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
+         «Завершити запис» людина бачила три повідомлення про одне й те саме
+         (FIRST USER GATE 2026-09-23, крок 6). Спершу — що робити із записом,
+         потім — чому дошка лише для перегляду й кнопка «Новий запис». -->
     <WBFrozenBanner
-      :visible="isBoardFrozen && !constructorMode"
+      :visible="isBoardFrozen && !constructorMode && !showRecordingDonePrompt"
       :can-restart="isSessionOwner && !!sessionId"
       :busy="isRecordingLoading || isRestartingRecording"
       @restart="handleRestartRecordingRequest"
@@ -569,6 +573,7 @@
           <div
             v-if="!isLoading && isCanvasEmpty"
             class="wb-empty-canvas-hint"
+            :style="emptyHintStyle"
             aria-hidden="true"
           >
             <svg width="48" height="48" viewBox="0 0 40 40" fill="none" class="wb-empty-canvas-hint__icon">
@@ -2349,6 +2354,19 @@ const isCanvasEmpty = computed(() => {
   if (!page) return true
   if (page.theoryBlock || page.formulaBlock) return false
   return page.strokes.length === 0 && page.assets.length === 0
+})
+
+// «Почніть малювати тут» має стояти НА аркуші. Раніше — центр усього поля,
+// а аркуш у цій кімнаті стоїть від лівого верхнього кута (сцена не зсувається:
+// `store.containerWidth` тут не задається, тож `stageConfig.x/y` = 0). На
+// широкому/високому полі напис опинявся на сірому під аркушем, куди малювати
+// не можна (FIRST USER GATE 2026-09-23, крок 3). Центр видимої частини
+// аркуша: коли аркуш більший за поле — це центр поля, як і було.
+const emptyHintStyle = computed(() => {
+  const w = Math.min(store.pageWidth * store.zoom, canvasContainerWidth.value || Infinity)
+  const h = Math.min(store.pageHeight * store.zoom, canvasContainerHeight.value || Infinity)
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return undefined
+  return { left: `${w / 2}px`, top: `${h / 2}px` }
 })
 
 // FTUE save-template hint: ненав'язлива inline-підказка під топбаром у конструкторі.

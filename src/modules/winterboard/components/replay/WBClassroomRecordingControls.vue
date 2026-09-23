@@ -14,7 +14,10 @@
       </button>
     </template>
 
-    <!-- FINALIZED → "Запис завершено" badge + "Новий запис" (з confirmation у parent) -->
+    <!-- FINALIZED → лише бейдж «Запис завершено».
+         Кнопку «Новий запис» тут прибрано (FIRST USER GATE 2026-09-23, крок 6):
+         у кімнаті вчитель у цьому стані ЗАВЖДИ бачить WBFrozenBanner з тією самою
+         кнопкою, і дві однакові кнопки поруч читались як два різні дії. -->
     <template v-else-if="recordingState === 'finalized'">
       <div class="wb-classroom-recording__frozen" :title="t('winterboard.recording.frozenHint')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -22,16 +25,6 @@
         </svg>
         <span>{{ t('winterboard.recording.frozen') }}</span>
       </div>
-      <button
-        type="button"
-        class="wb-classroom-recording__btn wb-classroom-recording__btn--restart"
-        :title="t('winterboard.recording.restartTitle')"
-        :disabled="isLoading"
-        @click="$emit('restart')"
-      >
-        <span class="wb-classroom-recording__dot wb-classroom-recording__dot--idle" aria-hidden="true" />
-        <span>{{ t('winterboard.recording.restart') }}</span>
-      </button>
     </template>
 
     <!-- RECORDING → REC + Pause -->

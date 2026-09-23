@@ -17,28 +17,15 @@ describe('WBRecordingBanner', () => {
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 
-  it('renders start button in finalized state (re-record enabled)', async () => {
-    const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
-    const btn = w.find('button')
-    expect(btn.exists()).toBe(true)
-    expect(btn.attributes('disabled')).toBeUndefined()
-  })
-
-  it('emits restart when button clicked in finalized state', async () => {
-    // DIR-хвости-2 §3 (2026-08-24): у finalized кнопка тепер емить 'restart'
-    // (btn--restart, WBRecordingBanner.vue:101-110) — це і Є re-record-флоу,
-    // який стеріг цей файл; 'start' лишився лише для idle. Тест приведено до
-    // чинного контракту, а не видалено: властивість «з finalized можна
-    // перезаписати» жива.
-    const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
-    await w.find('.wb-recording-banner__btn--restart').trigger('click')
-    expect(w.emitted('restart')).toHaveLength(1)
-  })
-
-  it('shows frozen indicator alongside start button in finalized state', () => {
+  it('finalized: лише бейдж «Запис завершено», без власної кнопки', () => {
+    // FIRST USER GATE 2026-09-23, крок 6: кнопка «Новий запис» була і тут, і в
+    // WBFrozenBanner — дві однакові поруч. Властивість «з finalized можна
+    // перезаписати» (re-record guard 2026-05-19, DIR-хвости-2 §3) жива: її
+    // тримає WBFrozenBanner (WBFrozenBanner.spec — кнопка емітить restart),
+    // який у WBSoloRoom видно за тієї ж умови, що й цей бейдж.
     const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
     expect(w.find('.wb-recording-banner__frozen').exists()).toBe(true)
-    expect(w.find('button').exists()).toBe(true)
+    expect(w.find('button').exists()).toBe(false)
   })
 
   it('does NOT show start button in recording state', () => {
@@ -69,7 +56,7 @@ describe('WBRecordingBanner', () => {
 
   it('disables button when isLoading=true', () => {
     const w = mount(WBRecordingBanner, {
-      props: { recordingState: 'finalized', isLoading: true },
+      props: { recordingState: 'idle', isLoading: true },
     })
     expect(w.find('button').attributes('disabled')).toBeDefined()
   })

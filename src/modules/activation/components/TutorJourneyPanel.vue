@@ -16,15 +16,9 @@
       </li>
     </ul>
 
-    <!-- CTA тільки поки перший урок ще не створено -->
-    <div v-if="!firstLessonDone" class="tutor-journey-panel__footer">
-      <router-link
-        :to="{ name: 'winterboard-boards' }"
-        class="tutor-journey-panel__cta"
-      >
-        {{ t('activation.journey.cta') }} →
-      </router-link>
-    </div>
+    <!-- Власної кнопки «Студія уроків →» тут більше немає (FIRST USER GATE
+         2026-09-23, крок 1): для нового вчителя Головна показувала три заклики
+         в одне місце. Єдина дія — кнопка DashboardHero; чекліст лише показує шлях. -->
   </div>
 </template>
 
@@ -69,8 +63,6 @@ const milestones = computed(() => [
     done: !!props.state?.first_lesson_completed_at,
   },
 ])
-
-const firstLessonDone = computed(() => (props.draftLessonsCount ?? 0) > 0)
 
 // Ховаємо панель якщо state не завантажено або всі 4 виконано
 const isVisible = computed<boolean>(() => {
@@ -142,29 +134,5 @@ const isVisible = computed<boolean>(() => {
 
 .tutor-journey-panel__label {
   line-height: 1.4;
-}
-
-/* ── CTA ── */
-.tutor-journey-panel__footer {
-  display: flex;
-}
-
-.tutor-journey-panel__cta {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  background: transparent;
-  color: var(--accent, #10b981);
-  border: 1.5px solid var(--accent, #10b981);
-  border-radius: var(--radius-md, 8px);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-}
-
-.tutor-journey-panel__cta:hover {
-  background: var(--accent, #10b981);
-  color: #fff;
 }
 </style>

@@ -8,8 +8,10 @@
       :dismissible="true"
     />
 
-    <!-- M4 Activation — TutorActivationCard (Intent question → Start card) -->
-    <TutorActivationCard :has-lesson="hasLesson" />
+    <!-- Картку TutorActivationCard («Що ти хочеш робити на M4SH?» → «Створи свій
+         перший інтерактивний урок») прибрано (FIRST USER GATE 2026-09-23, крок 1):
+         відповідь ні на що не впливала — будь-який варіант вів у ту саму Студію, —
+         а картка була третім закликом поруч із чеклістом і DashboardHero. -->
 
     <!-- M4 Activation — Journey milestones panel -->
     <TutorJourneyPanel
@@ -56,7 +58,6 @@ import { resolveCta } from '../utils/fallbackCta'
 // Sprint 2: trial-offer trigger (composable + lazy modal).
 import { useTrialActivation } from '@/modules/billing/composables/useTrialActivation'
 // M4 Activation
-import TutorActivationCard from '@/modules/activation/components/TutorActivationCard.vue'
 import TutorJourneyPanel from '@/modules/activation/components/TutorJourneyPanel.vue'
 import { useActivation } from '@/modules/activation/composables/useActivation'
 

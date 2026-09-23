@@ -40,9 +40,13 @@
     <!-- TLV2-G1b: видимий PAUSED (503) + «Повторити зараз»; черга не губиться. -->
     <OpsPausedBanner />
     <ProtocolMismatchModal />
-    <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис» -->
+    <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис».
+         Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
+         «Завершити запис» людина бачила три повідомлення про одне й те саме
+         (FIRST USER GATE 2026-09-23, крок 6). Спершу — що робити із записом,
+         потім — чому дошка лише для перегляду. -->
     <WBFrozenBanner
-      :visible="isBoardFrozen"
+      :visible="isBoardFrozen && !showRecordingDonePrompt"
       :can-restart="classroomRole.isTeacher.value"
       :busy="isRecordingLoading"
       @restart="handleRestartRecordingRequest"

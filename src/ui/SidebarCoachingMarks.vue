@@ -92,6 +92,11 @@ function clearHighlight() {
   }
 }
 
+function isOnScreen(el: Element): boolean {
+  const r = el.getBoundingClientRect()
+  return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth
+}
+
 function positionTooltip() {
   const step = currentStep.value
   if (!step) return
@@ -106,6 +111,16 @@ function positionTooltip() {
     } else {
       dismiss()
     }
+    return
+  }
+
+  // Меню згорнуте (вузьке вікно: сайдбар за лівим краєм, x ≈ −260) — пункт у
+  // DOM є, але людина його не бачить. Раніше підказка висіла посеред сторінки,
+  // вказувала в порожнечу й закривала картку під собою (FIRST USER GATE
+  // 2026-09-23, крок 1). Усі цілі туру — в одному меню, тож ховаємо тур цілком,
+  // але НЕ позначаємо пройденим: людина побачить його, коли меню буде видно.
+  if (!isOnScreen(el)) {
+    visible.value = false
     return
   }
 
@@ -135,6 +150,9 @@ function dismiss() {
 onMounted(() => {
   if (isHintVisible(TutorHintId.SIDEBAR_COACHING)) {
     setTimeout(() => {
+      // Меню не видно — навіть не відкриваємо, інакше підказка блимне й зникне
+      const first = document.querySelector(steps[0].target)
+      if (first && !isOnScreen(first)) return
       visible.value = true
       nextTick(positionTooltip)
     }, 800)

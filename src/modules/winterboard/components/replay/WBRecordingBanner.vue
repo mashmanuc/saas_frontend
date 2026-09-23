@@ -90,7 +90,11 @@
       </button>
     </template>
 
-    <!-- FINALIZED → frozen badge + Restart (new cycle) -->
+    <!-- FINALIZED → лише бейдж «Запис завершено».
+         Кнопку «Новий запис» тут прибрано (FIRST USER GATE 2026-09-23, крок 6):
+         у WBSoloRoom у цьому стані ЗАВЖДИ видно WBFrozenBanner (та сама умова
+         `!constructorMode`) з тією самою кнопкою, і дві однакові кнопки поруч
+         читались як дві різні дії. Перезапис із finalized живе там. -->
     <template v-else-if="recordingState === 'finalized'">
       <div class="wb-recording-banner__frozen" :title="t('winterboard.recording.frozenHint')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -98,16 +102,6 @@
         </svg>
         <span>{{ t('winterboard.recording.frozen') }}</span>
       </div>
-      <button
-        type="button"
-        class="wb-recording-banner__btn wb-recording-banner__btn--restart"
-        :title="t('winterboard.recording.restartTitle')"
-        :disabled="isLoading"
-        @click="$emit('restart')"
-      >
-        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
-        <span>{{ t('winterboard.recording.restart') }}</span>
-      </button>
     </template>
   </div>
 </template>
