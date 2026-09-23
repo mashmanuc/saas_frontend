@@ -174,12 +174,25 @@ export function paramValuesOf(params: Record<string, unknown> | null | undefined
 const DEFAULT_VIEWPORT = { cx: 0, cy: 0, scale: 38 }
 
 /** Вікно нового графка: вписаний діапазон або (нема явних функцій) — старе
- *  типове `{cx: 0, cy: 0, scale: 38}`. */
+ *  типове `{cx: 0, cy: 0, scale: 38}`.
+ *
+ *  ⚠️ `scale` поруч із `fit` — ОБОВ'ЯЗКОВО. 2026-09-22…23 тут повертався
+ *  `{cx, cy, fit}` без `scale`, бекенд (`WBGraphCalculatorViewportSerializer`)
+ *  такий op відхиляв (400), клієнт тримав його «у дорозі», і з першого графіка
+ *  від Інтегралика урок у вкладці не зберігався взагалі (FIRST USER GATE
+ *  2026-09-23, блокер №1). Бекенд тепер приймає й без `scale`, але пишемо
+ *  форму, яку розуміє і старий бекенд, і старі читачі. Рушій при монтуванні
+ *  однаково перераховує масштаб з `fit` під справжню рамку. */
 export function graphViewportFor(
   srcs: string[],
   params: Record<string, unknown> | null | undefined,
-): { cx: number; cy: number; scale?: number; fit?: GraphFit } {
+): { cx: number; cy: number; scale: number; fit?: GraphFit } {
   const fit = autofitExpressions(srcs, paramValuesOf(params))
   if (!fit) return { ...DEFAULT_VIEWPORT }
-  return { cx: round((fit.xMin + fit.xMax) / 2), cy: round((fit.yMin + fit.yMax) / 2), fit }
+  return {
+    cx: round((fit.xMin + fit.xMax) / 2),
+    cy: round((fit.yMin + fit.yMax) / 2),
+    scale: DEFAULT_VIEWPORT.scale,
+    fit,
+  }
 }

@@ -416,7 +416,10 @@ const __GC = (function () {
   /** Що зберігається. Ізотропний вигляд — рівно старий формат `{cx, cy, scale}`
    *  (стара дошка після відкриття не отримує жодного нового поля й op-у). */
   function writeViewport(vp, fit) {
-    if (fit) return { cx: vp.cx, cy: vp.cy, fit: { ...fit } };
+    // `scale` поруч із `fit` — обов'язково: без нього бекенд до 2026-09-23
+    // відхиляв op (400), і черга збереження дошки стояла (FIRST USER GATE,
+    // блокер №1). Рушій при монтуванні однаково перерахує масштаб із `fit`.
+    if (fit) return { cx: vp.cx, cy: vp.cy, scale: vp.scaleX, fit: { ...fit } };
     if (vp.scaleX === vp.scaleY) return { cx: vp.cx, cy: vp.cy, scale: vp.scaleX };
     // `scale` лишається для читачів, що знають лише стару форму.
     return { cx: vp.cx, cy: vp.cy, scale: vp.scaleX, scaleX: vp.scaleX, scaleY: vp.scaleY };

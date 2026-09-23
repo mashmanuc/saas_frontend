@@ -96,7 +96,12 @@ describe('вписане вікно (fit)', () => {
       const br = calc._pxToMath(w, h)
       expect(tl.x).toBeCloseTo(-15); expect(br.x).toBeCloseTo(25)
       expect(tl.y).toBeCloseTo(1000); expect(br.y).toBeCloseTo(-2500)
-      expect(calc.getState().viewport).toEqual({ cx: 5, cy: -750, fit })
+      // `scale` поруч із `fit` обов'язковий — без нього бекенд відхиляв op
+      // (FIRST USER GATE 2026-09-23, блокер №1). Тут раніше стояло рівно
+      // `{ cx, cy, fit }`, тобто тест закріплював саме зламану форму.
+      const saved = calc.getState().viewport
+      expect(saved).toMatchObject({ cx: 5, cy: -750, fit })
+      expect(Number.isFinite(saved.scale)).toBe(true)
     }
   })
 
