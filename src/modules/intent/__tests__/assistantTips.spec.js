@@ -92,3 +92,26 @@ describe('assistantPlaceholder — поле чату за предметами',
     expect(assistantPlaceholder(tipSubjects(state({ registry: registry('math') })))).toMatch(/математик/)
   })
 })
+
+// FIRST USER GATE 2026-09-23, крок 4: у першому полі були лише переходи
+// («урок», «дошку», «мої уроки») — новачок не дізнавався про графіки й формули.
+describe('commandPlaceholder — перше поле палітри за предметами', async () => {
+  const { commandPlaceholder } = await import('../assistantTips')
+  it('коридори вимкнено (null) — приклад графіка, без історії', () => {
+    const text = commandPlaceholder(null)
+    expect(text).toMatch(/графік/)
+    expect(text).not.toMatch(/битва|Хмельницький/)
+  })
+  it('лише історія — без математики', () => {
+    const text = commandPlaceholder(tipSubjects(state()))
+    expect(text).not.toMatch(/графік|формул/)
+    expect(text).toMatch(/Полтавська битва/)
+  })
+  it('лише математика — графік', () => {
+    expect(commandPlaceholder(tipSubjects(state({ registry: registry('math') })))).toMatch(/графік/)
+  })
+  it('реєстр ще не завантажено — нейтрально, без предмета', () => {
+    const text = commandPlaceholder(new Set())
+    expect(text).not.toMatch(/графік|битва/)
+  })
+})

@@ -54,6 +54,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
@@ -61,6 +62,7 @@ import Input from '../../../ui/Input.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 const token = computed(() => (typeof route.query?.token === 'string' ? route.query.token : ''))
 
 const password = ref('')
@@ -79,13 +81,24 @@ watch(
   }
 )
 
+// Бекенд для незбігу паролів шле сирий код `mismatch` замість тексту
+// (`ResetPasswordSerializer`) — перекладаємо, як на реєстрації.
+const RAW_CODE_KEYS = { mismatch: 'auth.register.passwordMismatch' }
+
 function fieldError(field) {
   const map = fieldMessages.value
   if (!map || typeof map !== 'object') return ''
   const list = map[field]
   if (!Array.isArray(list) || list.length === 0) return ''
-  return String(list[0])
+  const raw = String(list[0])
+  const key = RAW_CODE_KEYS[raw.trim()]
+  return key ? t(key) : raw
 }
+
+// Людина виправляє пароль → стара помилка під полями більше не про неї.
+watch([password, confirm], () => {
+  fieldMessages.value = null
+})
 
 const formatError = (err) => {
   const status = err?.response?.status
@@ -138,8 +151,10 @@ async function onSubmit() {
     return
   }
 
+  // Незбіг — під полем «Підтвердьте пароль», а не у вікні «Помилка сервера»:
+  // сервер тут ні до чого (FIRST USER GATE 2026-09-23, п.5).
   if (password.value !== confirm.value) {
-    error.value = 'Паролі не співпадають.'
+    fieldMessages.value = { new_password_confirm: ['mismatch'] }
     return
   }
 

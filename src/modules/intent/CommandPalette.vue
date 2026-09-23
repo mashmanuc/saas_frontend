@@ -166,7 +166,7 @@
         <template v-else-if="mode === 'boards'">
           <div class="cmdp-head">
             <button class="cmdp-back" @click="toCommands">{{ uiText.backToCommands }}</button>
-            <span class="cmdp-title">Мої дошки</span>
+            <span class="cmdp-title">Студія уроків</span>
           </div>
           <ul class="cmdp-list">
             <li v-for="b in boards" :key="b.id" class="cmdp-board">
@@ -331,7 +331,7 @@ import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { parseAi, sendIntent } from './sendIntent'
 import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
-import { assistantPlaceholder, tipPool, tipSubjects } from './assistantTips'
+import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from './assistantTips'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
@@ -684,7 +684,8 @@ const cmdSaveDraft = {
   },
   after: (r) => { notice.value = 'Збережено чернетку: ' + (r.result?.title || '') },
 }
-const cmdMyBoards = { id: 'my-boards', label: 'Мої дошки…', run: myBoards }
+// Назва як у меню й шапці дошки: «Мої дошки» — стара (FIRST USER GATE 2026-09-23).
+const cmdMyBoards = { id: 'my-boards', label: 'Студія уроків…', run: myBoards }
 const cmdMyLessons = { id: 'my-lessons', label: 'Мої уроки…', run: myLessons }
 const cmdOpenLast = { id: 'open-last-lesson', label: 'Відкрити останній урок', run: openLast }
 
@@ -937,7 +938,8 @@ const uiText = computed(() => {
     hideAssistant: 'Приховати помічника (увімкнути назад — у Налаштуваннях)',
     paletteAria: 'Командна палітра',
     listening: 'Слухаю… говоріть',
-    commandPlaceholder: 'Що зробити? (напр. «урок», «дошку», «мої уроки»)',
+    // Приклади за предметами вчителя — див. commandPlaceholder (FIRST USER GATE 2026-09-23).
+    commandPlaceholder: commandPlaceholder(tipSubjects(corridor.state)),
     // За предметами вчителя, як і бульбашки (слово власника 2026-09-22).
     aiPlaceholder: assistantPlaceholder(tipSubjects(corridor.state)),
     noResults: 'Нічого не знайдено',
@@ -1714,6 +1716,13 @@ function syncQueryFromDom() {
 
 function openPalette() {
   open.value = true
+  // Реєстр предметів вантажився лише з першою дошкою чи бульбашкою, тож на
+  // Головній перше поле показувало нейтральну підказку без прикладів
+  // (FIRST USER GATE 2026-09-23, крок 4). uiText — computed, підказка
+  // оновиться сама, щойно реєстр прийде.
+  if (!corridor.state.registryLoaded) {
+    corridor.ensureRegistry(currentLocale.value).catch((e) => console.warn('[CommandPalette] registry', e))
+  }
   // 0a (2026-07-31): тред БІЛЬШЕ НЕ стирається на відкриття. Раніше тут стояло
   // `aiThread.value = []  // новий діалог на кожне відкриття` — і розмова гинула
   // від будь-якого закриття панелі (а закривав її навіть клік по дошці). Тепер

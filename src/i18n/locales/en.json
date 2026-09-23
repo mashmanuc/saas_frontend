@@ -7887,7 +7887,7 @@
       "infoBullet3": "open, share and edit",
       "infoDismiss": "Got it",
       "empty": "No boards yet",
-      "emptyMessage": "Create your first board to get started",
+      "emptyMessage": "A lesson starts as a board: create one, fill it in and save it as a lesson — it will appear in “My lessons”.",
       "createFirst": "Create Board",
       "pageCount": "{n} pages",
       "untitled": "Untitled",
@@ -8425,7 +8425,7 @@
         "line3": "You can put the phone in your pocket.",
         "ok": "Got it"
       },
-      "exitToBoards": "My boards"
+      "exitToBoards": "Lesson Studio"
     },
     "youtube": {
       "insert": "Insert YouTube video",
