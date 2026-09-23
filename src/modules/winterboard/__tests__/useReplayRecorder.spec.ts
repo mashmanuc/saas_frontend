@@ -12,18 +12,24 @@ import { useReplayRecorder } from '../composables/useReplayRecorder'
 vi.mock('../api/replay', () => ({
   recordOperationsBatch: vi.fn(),
   createSnapshot: vi.fn(),
+  // SAVE_BLOCKED (2026-09-23): «Перевірити й надіслати» звіряє op_id через check-ops.
+  checkOps: vi.fn(),
   // HYG-1: `replay.ts:25` експортує PROTOCOL_VERSION (SSOT версії протоколу),
   // і споживачі його імпортують — мок мусить його віддавати, інакше падає
   // сам імпорт модуля, ще до тестів.
   PROTOCOL_VERSION: 'v3',
 }))
 
+// Одноразова подія SAVE_BLOCKED не має слати справжню телеметрію з тесту.
+vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn() }))
+
 vi.mock('@/utils/apiClient', () => ({
+  default: { get: vi.fn() },
   isCircuitBreakerOpen: vi.fn(() => false),
 }))
 
-import { recordOperationsBatch, createSnapshot } from '../api/replay'
-import { isCircuitBreakerOpen } from '@/utils/apiClient'
+import { recordOperationsBatch, createSnapshot, checkOps } from '../api/replay'
+import apiClient, { isCircuitBreakerOpen } from '@/utils/apiClient'
 
 const mockBatch = recordOperationsBatch as ReturnType<typeof vi.fn>
 const mockSnapshot = createSnapshot as ReturnType<typeof vi.fn>
@@ -88,21 +94,25 @@ describe('useReplayRecorder — op_id', () => {
     expect(ops[0].op_id).toBe('my-custom-uuid')
   })
 
-  it('при retry зберігає оригінальний op_id', async () => {
+  it('при повторі зберігає оригінальний op_id (повтор — лише дією вчителя)', async () => {
+    // SAVE_BLOCKED (LAW §5, 2026-09-23): обрив мережі більше не повторюється
+    // автоматично; повтор — «Перевірити й надіслати» (retryBlocked), і op_id той самий.
     mockBatch
       .mockRejectedValueOnce(new Error('network fail'))
-      .mockResolvedValueOnce({ recorded: 1, total_operations: 1 })
+      .mockResolvedValueOnce({ last_seq: 1 })
 
     const { recorder } = makeRecorder()
     recorder.record(makeOp())
-    await recorder.flush()  // fails → goes to retryQueue
+    await recorder.flush()  // обрив → SAVE_BLOCKED unconfirmed
 
-    const firstOps = mockBatch.mock.calls[0][2]
-    const firstOpId = firstOps[0].op_id
+    const firstOpId = mockBatch.mock.calls[0][2][0].op_id
+    await recorder.flush()  // автоматичного повтору немає
+    expect(mockBatch).toHaveBeenCalledTimes(1)
 
-    await recorder.flush()  // retries
-    const secondOps = mockBatch.mock.calls[1][2]
-    expect(secondOps[0].op_id).toBe(firstOpId)  // незмінний!
+    ;(checkOps as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ saved: [], missing: [firstOpId] })
+    ;(apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ last_seq: 0 })
+    expect(await useOpsSyncStore().retryBlocked()).toBe('sent')
+    expect(mockBatch.mock.calls[1][2][0].op_id).toBe(firstOpId)  // незмінний!
   })
 
   it('різні record() виклики отримують різні op_id', async () => {

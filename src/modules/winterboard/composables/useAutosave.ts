@@ -26,7 +26,7 @@
 
 import { computed, ref, watch, onUnmounted, type Ref } from 'vue'
 import type { WBSyncStatus } from '../types/winterboard'
-import { useOpsSyncStore, DesyncError } from '../stores/opsSyncStore'
+import { useOpsSyncStore, DesyncError, SaveBlockedError } from '../stores/opsSyncStore'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -101,13 +101,18 @@ export function useAutosave(
 
   const status = computed<WBSyncStatus>(() => {
     if (opsSync.isDesync) return 'error'
+    // SAVE_BLOCKED (LAW §4): сервер відмовив або не підтвердив — не «Збереження…»
+    // навічно і тим паче не «Збережено». Текст дає банер кімнати.
+    if (opsSync.isSaveBlocked) return 'error'
     if (opsSync.inFlightOps.length > 0 || opsSync.pendingOps.length > 0) {
       return 'syncing'
     }
     return saveCount.value > 0 || backgroundSaves.value > 0 ? 'saved' : 'idle'
   })
 
-  const isSaving = computed(() => opsSync.inFlightOps.length > 0)
+  // SAVE_BLOCKED: відхилений пакет лежить у inFlight, але його НІХТО не надсилає —
+  // «Збереження…» тут було б тим самим вічним хибним статусом (ТЗ §2.5).
+  const isSaving = computed(() => opsSync.inFlightOps.length > 0 && !opsSync.isSaveBlocked)
   const pendingOpsCount = computed(() => 0)  // backward-compat: ops belong to recorder
 
   // ── Public API ──
@@ -121,6 +126,10 @@ export function useAutosave(
       lastError.value = null
       options?.onSaved?.()
     } catch (err) {
+      if (err instanceof SaveBlockedError) {
+        // Банер SAVE_BLOCKED пояснює причину; сирий текст помилки вчителю не показуємо.
+        return
+      }
       if (err instanceof DesyncError) {
         // Store handles UI gates (modal/banner) via mode watch — caller sees status='error'
         lastError.value = err.message

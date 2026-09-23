@@ -7100,6 +7100,48 @@
         "retry": "Retry now",
         "retrying": "Sending…"
       },
+      "saveBlocked": {
+        "bannerLabel": "Board saving stopped",
+        "title": {
+          "rejected": "The server did not accept an action: {action}",
+          "unconfirmed": "Could not confirm saving",
+          "stopped": "Saving stopped"
+        },
+        "hint": {
+          "rejected": "Your changes are not on the server yet. We won’t retry automatically — download a copy or discard unsaved changes.",
+          "request_rejected": "The server rejected the request. Your changes are not on the server yet.",
+          "forbidden": "You no longer have permission to edit this board. Your changes are not on the server yet.",
+          "not_found": "This board was not found on the server. Your changes are not on the server yet.",
+          "too_large": "The changes are too large for one request. Your changes are not on the server yet.",
+          "rate_limited": "Too many requests. Wait a moment and press “Check and send”.",
+          "unconfirmed": "The connection dropped or the server did not answer. We’ll check what is already saved and send the rest."
+        },
+        "queued": "Changes not on the server yet: {count}",
+        "strokes": "strokes: {count}",
+        "storageFailed": "The browser could not keep a copy — changes exist only in this tab. Keep it open and download a copy.",
+        "queueFull": "The queue of unsaved changes is full — drawing is paused.",
+        "dropped": "{count} more changes were not accepted: the queue is full.",
+        "retry": "Check and send",
+        "checking": "Checking…",
+        "export": "Download a copy",
+        "discard": "Discard unsaved",
+        "confirmDiscard": "Discard {count} unsaved changes? The board will return to what is on the server. You can download a copy first.",
+        "confirmRetryRejected": "The app was updated. Try again to send the changes the server did not accept before?",
+        "result": {
+          "unproven": "Could not prove what was saved. Your changes stay here.",
+          "alreadySaved": "Everything was already on the server.",
+          "failed": "That didn’t work. Your changes stay here."
+        },
+        "action": {
+          "stroke": "stroke",
+          "graph": "graph",
+          "object": "board object",
+          "page": "page",
+          "other": "board change"
+        },
+        "status": "Saving stopped",
+        "barrier": "Resolve the unsaved board changes first — otherwise the lesson would be incomplete."
+      },
       "serverBusy": "Server temporarily busy. Try again in a minute.",
       "seqMismatch": "Whiteboard state out of sync — click Retry in the recovery banner.",
       "beaconUnsupported": "Couldn't save changes before page closed."

@@ -20,10 +20,12 @@
  *
  * ЗАЛИШЕНО і переписано під реальний контракт:
  *   TEST 1 (baseline)   — 200 ops rapid-fire, всі доходять, без втрат
- *   TEST 3 (500+recover)— транзієнтний збій: inFlight збережено, safety
- *                         interval (2s) добиває; warn — асерт, не шум
- *   TEST 5 (crash)      — localStorage backup → новий mount → відновлення
- *   ORDER ×2            — FIFO без збою і через 500-retry (inFlight first)
+ *   TEST 3 (500+recover)— 2026-09-23 (LAW §5, SAVE_BLOCKED): 500 → черга стоїть,
+ *                         safety interval НЕ повторює; «Перевірити й надіслати»
+ *                         (звірка check-ops) доставляє все рівно раз
+ *   TEST 5 (crash)      — запит завис (вкладку закрили до відповіді) → localStorage
+ *                         backup → новий mount → відновлення
+ *   ORDER ×2            — FIFO без збою і через 500 + дію вчителя (inFlight first)
  *   LATENCY             — батчинг: 100 ops → мало запитів
  *   TEST 6              — FE не створює snapshot (робить ops_worker BE)
  *
@@ -37,14 +39,17 @@ import { ref } from 'vue'
 const recordOperationsBatchMock = vi.fn()
 const createSnapshotMock = vi.fn()
 
+const checkOpsMock = vi.fn()
+
 vi.mock('../api/replay', () => ({
   recordOperationsBatch: (...args: unknown[]) => recordOperationsBatchMock(...args),
   createSnapshot: (...args: unknown[]) => createSnapshotMock(...args),
+  checkOps: (...args: unknown[]) => checkOpsMock(...args),
   PROTOCOL_VERSION: 'v3',
 }))
 
 vi.mock('@/utils/apiClient', () => ({
-  default: { get: vi.fn(), post: vi.fn() },
+  default: { get: vi.fn(async () => ({ last_seq: 0 })), post: vi.fn() },
   isCircuitBreakerOpen: () => false,
 }))
 
@@ -131,6 +136,9 @@ beforeEach(() => {
   localStorage.clear()
   recordOperationsBatchMock.mockReset()
   createSnapshotMock.mockReset()
+  // Сервер не має жодного з наших op_id — «Перевірити й надіслати» шле пакет.
+  checkOpsMock.mockReset()
+  checkOpsMock.mockImplementation(async (_sid: string, ids: string[]) => ({ saved: [], missing: ids }))
 })
 
 afterEach(() => {
@@ -159,10 +167,7 @@ describe('TEST 1 — baseline load (200 ops rapid-fire)', () => {
 
 // ── TEST 3 — TRANSIENT 500 + RECOVERY ───────────────────────────────────
 describe('TEST 3 — transient 500 + recovery', () => {
-  it('500 keeps inFlight; safety interval retries; all persisted', async () => {
-    // Один warn від рекордера на збій — це КОНТРАКТ («will retry on next
-    // tick»), тому він асертиться, а не шумить у лозі (хвости-2 §2 клас).
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('500 → SAVE_BLOCKED: safety interval не повторює; дія вчителя доставляє все рівно раз', async () => {
     let failuresLeft = 1
     let lastSeq = 0
     recordOperationsBatchMock.mockImplementation(
@@ -178,13 +183,22 @@ describe('TEST 3 — transient 500 + recovery', () => {
 
     const recorder = mountRecorder('sess-500')
     for (let i = 0; i < 10; i++) recorder.record(mkOp(i))
-
-    // Перший flush падає → inFlight збережено → safety interval (2s) добиває.
-    await waitUntil(() => lastSeq === 10, 6_000)
-
-    expect(lastSeq).toBe(10)
-    expect(warnSpy).toHaveBeenCalled()          // збій був і був залогований
     const store = useOpsSyncStore()
+
+    // Перший flush падає → SAVE_BLOCKED `unconfirmed` (невідомо, чи застосовано).
+    await waitUntil(() => store.mode === 'SAVE_BLOCKED', 3_000)
+    expect(store.saveBlock?.kind).toBe('unconfirmed')
+    const callsAfterFail = recordOperationsBatchMock.mock.calls.length
+
+    // Safety interval (2 с) більше НЕ шле той самий пакет по колу (LAW §12).
+    await new Promise((r) => setTimeout(r, 2_500))
+    expect(recordOperationsBatchMock.mock.calls.length).toBe(callsAfterFail)
+    expect(lastSeq).toBe(0)
+
+    // «Перевірити й надіслати»: check-ops каже «нічого немає» → одна спроба.
+    expect(await store.retryBlocked()).toBe('sent')
+    for (let guard = 0; guard < 5 && lastSeq < 10; guard++) await recorder.flush()
+    expect(lastSeq).toBe(10)
     expect(store.mode).toBe('SYNC')             // 500 ≠ DESYNC
     recorder.destroy()
   }, 10_000)
@@ -196,10 +210,10 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
 
-    // Step 1: перший рекордер не може відправити (crash до ACK)
-    recordOperationsBatchMock.mockImplementation(async () => {
-      throw make500()
-    })
+    // Step 1: запит завис — вкладку закрили до відповіді (crash до ACK). Відмова
+    // сервера (500) тепер — SAVE_BLOCKED зі своїм аварійним записом (saveBlocked.spec),
+    // тож звичайний backup перевіряємо на справжньому «не встигло».
+    recordOperationsBatchMock.mockImplementation(() => new Promise(() => {}))
     const recorder1 = mountRecorder('sess-crash')
     for (let i = 0; i < 5; i++) recorder1.record(mkOp(i))
     await waitUntil(() => recordOperationsBatchMock.mock.calls.length >= 1, 3_000)
@@ -207,7 +221,7 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
 
     const raw = localStorage.getItem('wb_ops_backup_sess-crash')
     expect(raw).not.toBeNull()
-    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
 
     // Step 2: «нова вкладка» — свіжа Pinia, порожній store
     setActivePinia(createPinia())
@@ -246,8 +260,7 @@ describe('ORDER CONSISTENCY — ops зберігають порядок запи
     recorder.destroy()
   }, 10_000)
 
-  it('порядок стабільний через 500-retry (inFlight retried FIRST)', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('порядок стабільний через 500 + «Перевірити й надіслати» (inFlight FIRST)', async () => {
     let callCount = 0
     let lastSeq = 0
     const receivedOrder: string[] = []
@@ -265,11 +278,13 @@ describe('ORDER CONSISTENCY — ops зберігають порядок запи
 
     const recorder = mountRecorder('sess-order-retry')
     for (let i = 0; i < 30; i++) recorder.record(mkOp(i))
-    await waitUntil(() => receivedOrder.length >= 30, 8_000)
+    const store = useOpsSyncStore()
+    await waitUntil(() => store.mode === 'SAVE_BLOCKED', 3_000)
+    expect(await store.retryBlocked()).toBe('sent')
+    for (let guard = 0; guard < 5 && receivedOrder.length < 30; guard++) await recorder.flush()
 
     const expected = Array.from({ length: 30 }, (_, i) => `stroke-${i}`)
     expect(receivedOrder).toEqual(expected)
-    expect(warnSpy).toHaveBeenCalled()
     recorder.destroy()
   }, 10_000)
 })

@@ -39,6 +39,8 @@
     <DesyncRecoveryBanner />
     <!-- TLV2-G1b: видимий PAUSED (503) + «Повторити зараз»; черга не губиться. -->
     <OpsPausedBanner />
+    <!-- SAVE_BLOCKED (LAW §4–§5): і вчитель, і учень бачать СВОЮ зупинену чергу. -->
+    <OpsSaveBlockedBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис».
          Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
@@ -583,6 +585,7 @@ import { useAutosave } from '../composables/useAutosave'
 import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
+import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -659,7 +662,7 @@ const route = useRoute()
 const store = useWBStore()
 const testStore = useTestStore()
 const { t } = useI18n()
-import { notifyInfo } from '@/utils/notify'
+import { notifyInfo, notifyError } from '@/utils/notify'
 const { announce } = useAnnouncer()
 const { showToast } = useToast()
 
@@ -795,6 +798,12 @@ async function handleStartRecording(): Promise<void> {
   if (!sid || isRecordingLoading.value || recordingState.value === 'recording') return
   isRecordingLoading.value = true
   try {
+    // SAVE_BLOCKED (LAW §5): не стартуємо запис з неповної дошки й НЕ знімаємо
+    // зупинку через resync нижче (resync скидає черги).
+    if (opsSync.isSaveBlocked) {
+      notifyError(t('winterboard.errors.saveBlocked.barrier'))
+      return
+    }
     // Def 5 (2026-05-13): ensure serverSeq is fresh before /start-recording/.
     // If opsSync is in DESYNC/BOOTSTRAP (e.g. bootstrap failed at mount, or 409
     // during session pushed to DESYNC before Def 1 auto-resync landed), the next
@@ -810,14 +819,15 @@ async function handleStartRecording(): Promise<void> {
       }
     }
     try {
-      await opsSync.flush()
+      // flushAll, не flush: один flush шле лише перші 50 ops (INV-22 bug history).
+      await opsSync.flushAll()
     } catch (e) {
-      console.warn('[WBClassroomRoom] opsSync.flush before start-recording failed', e)
+      console.warn('[WBClassroomRoom] opsSync.flushAll before start-recording failed', e)
     }
-    try {
-      await autosave.saveNow()
-    } catch (e) {
-      console.warn('[WBClassroomRoom] saveNow before start-recording failed', e)
+    // Бар'єр (LAW §5, ТЗ §6): recording_start_state будується з ПРИЙНЯТИХ ops.
+    if (opsSync.isSaveBlocked || opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) {
+      notifyError(t('winterboard.errors.saveBlocked.barrier'))
+      return
     }
     const result = await import('../api/replay').then(m => m.startRecording(sid))
     recordingState.value = result.recording_state
@@ -1101,6 +1111,8 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
 })
 
 const authStore = useAuthStore()
+// Аварійні записи SAVE_BLOCKED прив'язані до акаунта (ТЗ §7).
+watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
 const lessonRuntime = useLessonRuntimeStore()
 
 // Classroom Hub retired (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — навігація
@@ -1271,6 +1283,8 @@ const isDrawingDisabled = computed(() => isStudentDrawingBlocked(drawingGateInpu
 
 const effectiveTool = computed<WBToolType>(() => {
   if (isDrawingDisabled.value) return 'select'
+  // SAVE_BLOCKED: черга дійшла стелі або аварійний запис не вдався (LAW §4).
+  if (opsSync.inputLocked) return 'select'
   return store.currentTool
 })
 
@@ -1417,7 +1431,9 @@ const saveStatusText = computed(() => {
   switch (autosave.status.value) {
     case 'saved': return t('winterboard.room.saved')
     case 'syncing': return t('winterboard.room.saving')
-    case 'error': return autosave.lastError.value ?? t('winterboard.room.saveError')
+    case 'error':
+      if (opsSync.isSaveBlocked) return t('winterboard.errors.saveBlocked.status')
+      return autosave.lastError.value ?? t('winterboard.room.saveError')
     case 'offline': return t('winterboard.room.offline')
     default: return store.isDirty ? t('winterboard.room.unsavedChanges') : t('winterboard.room.ready')
   }

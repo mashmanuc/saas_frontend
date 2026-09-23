@@ -16,6 +16,8 @@
     <DesyncRecoveryBanner />
     <!-- TLV2-G1b: видимий PAUSED (503) + «Повторити зараз»; черга не губиться. -->
     <OpsPausedBanner />
+    <!-- SAVE_BLOCKED (LAW §4–§5): сервер відмовив / не підтвердив — черга стоїть, дії вчителя. -->
+    <OpsSaveBlockedBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
          відхиляє всі операції. Постійний банер + read-only полотно замість
@@ -158,7 +160,7 @@
           class="wb-header-btn wb-header-btn--invite"
           :title="t('winterboard.startClassroom.button')"
           :aria-label="t('winterboard.startClassroom.button')"
-          @click="isLocalWorkspace ? openCloudUpsell('invite') : (showInviteStudentModal = true)"
+          @click="isLocalWorkspace ? openCloudUpsell('invite') : openInviteStudentModal()"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -240,7 +242,7 @@
           type="button"
           class="wb-header-btn wb-header-btn--save-template"
           :title="t('knowledge.template.saveFromRoom') || 'Зберегти як урок'"
-          @click="showSaveLessonDialog = true"
+          @click="openSaveLessonDialog"
         >
           <svg v-if="!isUpdatingSnapshot" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -257,7 +259,7 @@
           type="button"
           class="wb-header-btn wb-header-btn--publish"
           :title="t('winterboard.room.publish') || 'Опублікувати урок'"
-          @click="showPublishDialog = true"
+          @click="openPublishDialog"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 14h12M8 2v9M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button> -->
@@ -267,7 +269,7 @@
           type="button"
           class="wb-header-btn wb-header-btn--template"
           :title="t('knowledge.template.saveFromRoom') || 'Зберегти як урок'"
-          @click="showSaveTemplateDialog = true"
+          @click="openSaveTemplateDialog"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
@@ -1115,6 +1117,8 @@ import { useBoardThumbnail } from '../composables/useBoardThumbnail'
 import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
+import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
+import { notifyError } from '@/utils/notify'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 import { useFollowMode } from '../composables/useFollowMode'
@@ -1438,9 +1442,10 @@ async function handleStartRecording(): Promise<void> {
   if (!sid || isManualRecording.value) return
   isRecordingLoading.value = true
   try {
-    // INV-T fix: flush pending autosave щоб session.state на backend містив актуальний
-    // board state (фон/асети/страйки) ДО того як backend зробить deepcopy у recording_start_state.
-    try { await autosave.saveNow() } catch (e) { console.warn('[WBSoloRoom] saveNow before start-recording failed', e) }
+    // INV-T fix: усі ops на сервері ДО того, як backend зробить deepcopy у
+    // recording_start_state. SAVE_BLOCKED / непорожня черга → запис не стартує
+    // з неповної дошки (LAW §5 «Остаточні відмови»).
+    if (!(await ensureBoardSavedForArtifact())) return
     const result = await import('../api/replay').then(m => m.startRecording(sid))
     isManualRecording.value = true
     isPausedRecording.value = false
@@ -1694,6 +1699,9 @@ const gridOverlay = useGridOverlay(sessionId.value ?? 'default')
 
 // Presence / remote cursors (A3.2)
 const authStore = useAuthStore()
+// Аварійні записи SAVE_BLOCKED прив'язані до акаунта: чужий запис на спільному
+// комп'ютері не підхоплюється (ТЗ §7).
+watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
 const presence = usePresence({
   sessionId,
   userId: String(authStore.user?.id ?? ''),
@@ -1717,7 +1725,10 @@ const showRemoteModal = ref(false)
 const isBoardFrozen = computed(() => soloRecordingState.value === 'finalized')
 // WBCanvas не має пропа read-only: як і в класній кімнаті, блокуємо малювання,
 // примусово віддаючи полотну інструмент «виділення», поки дошка заморожена.
-const soloEffectiveTool = computed(() => (isBoardFrozen.value ? 'select' : store.currentTool))
+// SAVE_BLOCKED: черга дійшла стелі або аварійний запис не вдався — нове малювання
+// не прийнялось би, тож не даємо його почати (LAW §4, не тихий no-op; банер пояснює).
+const soloEffectiveTool = computed(() =>
+  (isBoardFrozen.value || opsSync.inputLocked ? 'select' : store.currentTool))
 
 const boardRemote = useBoardRemote({
   sessionId,
@@ -2563,7 +2574,9 @@ const saveStatusText = computed(() => {
   switch (autosave.status.value) {
     case 'saved': return t('winterboard.room.saved')
     case 'syncing': return t('winterboard.room.saving')
-    case 'error': return autosave.lastError.value ?? t('winterboard.room.saveError')
+    case 'error':
+      if (opsSync.isSaveBlocked) return t('winterboard.errors.saveBlocked.status')
+      return autosave.lastError.value ?? t('winterboard.room.saveError')
     case 'offline': return t('winterboard.room.offline')
     default: return store.isDirty ? t('winterboard.room.unsavedChanges') : t('winterboard.room.ready')
   }
@@ -3383,12 +3396,47 @@ function handleTemplateSaved(template?: LessonTemplate): void {
 // Тут потрібен flushAll() — той самий патерн що handleUpdateLessonSnapshot()
 // нижче. Дренує ВСІ ops до повного очищення pendingOps + inFlightOps.
 async function openSaveLessonDialog(): Promise<void> {
+  // Раніше: flushAll кидав → `console.warn … (continuing)` → урок будувався з
+  // того, що встигло на сервер (так і виникли уроки 22–23.09 без графіка).
+  if (!(await ensureBoardSavedForArtifact())) return
+  showSaveLessonDialog.value = true
+}
+
+/**
+ * Бар'єр артефакту (LAW §5 «Остаточні відмови», ТЗ §6): урок, snapshot, публікація,
+ * передача в класну кімнату й старт запису будуються сервером з ПРИЙНЯТИХ ops.
+ * Якщо щось ще не на сервері — не створюємо неповний «готовий» результат.
+ */
+async function ensureBoardSavedForArtifact(): Promise<boolean> {
+  if (!sessionId.value || isLocalWorkspace) return true
+  flushPendingUpdates()
   try {
     await opsSync.flushAll()
   } catch (e) {
-    console.warn('[WBSoloRoom] flushAll before save-as-lesson failed (continuing):', e)
+    console.warn('[WBSoloRoom] flushAll before artifact failed:', e)
   }
-  showSaveLessonDialog.value = true
+  if (opsSync.isSaveBlocked || opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) {
+    // Глобальний notify: локальний useToast у цій кімнаті ніхто не рендерить (WBToast
+    // не змонтовано), тож повідомлення бар'єра інакше було б невидимим.
+    notifyError(t('winterboard.errors.saveBlocked.barrier'))
+    return false
+  }
+  return true
+}
+
+async function openSaveTemplateDialog(): Promise<void> {
+  if (!(await ensureBoardSavedForArtifact())) return
+  showSaveTemplateDialog.value = true
+}
+
+async function openPublishDialog(): Promise<void> {
+  if (!(await ensureBoardSavedForArtifact())) return
+  showPublishDialog.value = true
+}
+
+async function openInviteStudentModal(): Promise<void> {
+  if (!(await ensureBoardSavedForArtifact())) return
+  showInviteStudentModal.value = true
 }
 
 // Оновити шаблон — перезберегти snapshot існуючого уроку з поточного стану WBSession.
@@ -3400,11 +3448,8 @@ async function handleUpdateLessonSnapshot(): Promise<void> {
   if (!lessonId || !sid || isUpdatingSnapshot.value) return
   isUpdatingSnapshot.value = true
   try {
-    // flushAll() — дренує ВСІ pending ops (не тільки перші 50 як flush()).
-    // Патерн той самий що saveBeforeLeave(). Без flushAll ops > 50 не досягають BE.
-    try { await opsSync.flushAll() } catch (e) {
-      console.warn('[WBSoloRoom] flushAll before update-snapshot failed (continuing):', e)
-    }
+    // Усі ops на сервері, інакше snapshot уроку буде неповним (LAW §5, ТЗ §6).
+    if (!(await ensureBoardSavedForArtifact())) return
     await lessonViewApi.updateSnapshot(lessonId, sid)
     _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdated'), 'success')
   } catch (e) {

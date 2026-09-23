@@ -55,6 +55,9 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.mocked(apiClient.get).mockReset()
   vi.mocked(apiClient.post).mockReset()
+  // SAVE_BLOCKED (2026-09-23) пише аварійний запис і відновлює його на bootstrap —
+  // без очищення стан одного тесту переходив би в наступний, як після reload.
+  localStorage.clear()
 })
 
 describe('INV-24 #1 mode-guard: catchUp SYNC-only', () => {
@@ -101,13 +104,14 @@ describe('INV-24 #2 flush-first: failure → ABORT без hydrate', () => {
     store.record(_op())
     expect(store.pendingOps.length).toBe(1)
 
-    // Generic network error (без response) → _doFlush rethrow, inFlight preserved
+    // Немає HTTP-відповіді → SAVE_BLOCKED `unconfirmed` (LAW §5, 2026-09-23), inFlight preserved
     vi.mocked(apiClient.post).mockRejectedValueOnce(new Error('network down'))
     const applier = vi.fn()
 
     const result = await store.catchUp(applier)
 
     expect(result.status).toBe('flush-failed')
+    expect(store.mode).toBe('SAVE_BLOCKED')
     expect(applier).not.toHaveBeenCalled()
     expect(store.localSeq).toBe(5) // no advance
     // INV-24 #7: власні ops НЕ втрачені (inFlight preserved за flush-контрактом)

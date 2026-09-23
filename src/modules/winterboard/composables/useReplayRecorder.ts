@@ -33,6 +33,7 @@ import {
   BackpressureError,
   LifecycleStateError,
   SeqResyncError,
+  SaveBlockedError,
   type OpsSyncOp,
 } from '../stores/opsSyncStore'
 import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
@@ -145,6 +146,12 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const sid = options.sessionId.value
     // TLV2-G1b: черга store належить дошці store; під час зміни дошки не писати її чужій.
     if (!sid || opsSync.sessionId !== sid) return
+    // SAVE_BLOCKED (LAW §4): черга йде в аварійний запис з перевіркою, а не у
+    // звичайний backup, який після reload відправив би її знову.
+    if (opsSync.isSaveBlocked) {
+      opsSync.persistBlocked()
+      return
+    }
     saveBackup(sid, [...opsSync.pendingOps], [...opsSync.inFlightOps])
   }
 
@@ -337,6 +344,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
     const beforeCount = opsSync.pendingOps.length + opsSync.inFlightOps.length
     if (beforeCount === 0) return
+    // SAVE_BLOCKED: store і так відмовить без HTTP; тут лише не множимо виклики.
+    if (opsSync.isSaveBlocked) {
+      _persistBackup()
+      return
+    }
 
     // Phase S PR-3 (2026-04-28): bounded batcher invariants — defense-in-depth поверх
     // store FLUSH_BATCH_SIZE=50. Telemetry якщо пробивають ceiling.
@@ -415,6 +427,26 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       if (err instanceof BeaconUnsupportedError) {
         // Не повинно відбуватись з flush() (тільки sendBeacon throws це). Лог якщо станеться.
         console.warn('[WB:Recorder] flush() unexpected BeaconUnsupportedError:', err)
+        return
+      }
+      if (err instanceof SaveBlockedError) {
+        // SAVE_BLOCKED (LAW §4–§5): сервер остаточно відмовив або результат не
+        // підтверджено. Черга ціла, банер кімнати пояснює; телеметрія — одна подія
+        // на перехід, без payload (ТЗ §7).
+        if (err.entered) {
+          try {
+            trackEvent('wb.ops.save_blocked', {
+              session_id: sid,
+              kind: err.info?.kind ?? 'unknown',
+              http_status: err.info?.httpStatus ?? 0,
+              reason: err.info?.reason ?? null,
+              op_type: err.info?.invalidOpType ?? null,
+              in_flight_count: opsSync.inFlightOps.length,
+              pending_count: opsSync.pendingOps.length,
+            })
+          } catch { /* telemetry never throws */ }
+        }
+        _persistBackup()
         return
       }
       if (err instanceof SeqResyncError) {
@@ -503,6 +535,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     // → skip tick (don't burn cycles + don't trigger nested error path).
     flushTimer = setInterval(() => {
       if (opsSync.isPaused) return  // PAUSED — спроби дозволяє лише store (30 с / кнопка)
+      if (opsSync.isSaveBlocked) return  // SAVE_BLOCKED — лише дія вчителя (LAW §12)
       const ru = opsSync.retryUntil
       if (typeof ru === 'number' && ru > 0 && Date.now() < ru) return  // backoff active
       void flush()

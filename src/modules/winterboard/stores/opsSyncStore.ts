@@ -41,9 +41,12 @@ import apiClient from '@/utils/apiClient'
 import {
   PROTOCOL_VERSION,
   recordOperationsBatch,
+  checkOps,
   type BatchRecordResponse,
 } from '../api/replay'
 import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
+import { writeBlocked, readBlocked, removeBlocked, blockedKey } from '../composables/useBlockedOps'
+import { clearBackup, saveBackup } from '../composables/useOpsBackup'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -58,7 +61,45 @@ import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
 //     503 / без відповіді → лишаємось у PAUSED; інша відповідь → SYNC
 //
 // DESYNC reserved тільки для protocol/seq mismatch (INV-16 unchanged).
-export type OpsSyncMode = 'BOOTSTRAP' | 'SYNC' | 'PAUSED' | 'DESYNC'
+//
+// SAVE_BLOCKED (2026-09-23, SYSTEM_LAW §4–§5, P0 ТЗ чесного збереження):
+//   - сервер ОСТАТОЧНО відмовив пакету (400 validation_failed, інший 4xx, 429) або
+//     результат не підтверджено (5xx≠503, немає відповіді);
+//   - flush() THROWS SaveBlockedError ДО будь-якого HTTP — для всіх викликачів;
+//   - черги цілі (ті самі op_id), аварійний запис `useBlockedOps` з перевіркою;
+//   - record() приймає до стелі MAX_BLOCKED_QUEUE_OPS, далі — false + лічильник;
+//   - вихід лише дією вчителя (retryBlocked / discardBlocked); НЕ cross-tab.
+export type OpsSyncMode = 'BOOTSTRAP' | 'SYNC' | 'PAUSED' | 'DESYNC' | 'SAVE_BLOCKED'
+
+/** Чому збереження зупинено (SYSTEM_LAW §5 «Остаточні відмови»). */
+export type SaveBlockKind =
+  | 'rejected'          // 400 validation_failed, конкретний op з вихідного пакета
+  | 'request_rejected'  // 400 без коректного індексу, 415, інший 4xx
+  | 'forbidden'         // 403
+  | 'not_found'         // 404
+  | 'too_large'         // 413
+  | 'rate_limited'      // 429
+  | 'unconfirmed'       // 5xx≠503 або немає HTTP-відповіді — невідомо, чи застосовано
+
+export interface SaveBlockInfo {
+  kind: SaveBlockKind
+  /** 0 — немає HTTP-відповіді. */
+  httpStatus: number
+  /** Машинний код сервера (`reason`/`error`), без даних учителя. */
+  reason: string | null
+  invalidOpIndex: number | null
+  invalidOpId: string | null
+  invalidOpType: string | null
+  /** Не раніше цього моменту (мс) дозволена спроба для `rate_limited`. */
+  retryNotBefore: number | null
+  at: number
+  /** Відбиток збірки клієнта, що отримав відмову (повтор `rejected` — лише з іншою). */
+  feBuild: string
+  /** Аварійний запис ліг і перевірений. false → введення блокується. */
+  storageOk: boolean
+  /** Стан відновлено з аварійного запису після reload. */
+  restored: boolean
+}
 
 export interface OpsSyncOp {
   op_id: string
@@ -117,6 +158,23 @@ const RETRY_JITTER_MAX_MS = 150
 /** TLV2-G1b: у PAUSED — одна спроба відновлення раз на цей інтервал (SYSTEM_LAW §5, §12). */
 const PAUSE_AUTO_RETRY_MS = 30_000
 
+/** Стеля черги в SAVE_BLOCKED: далі record() відмовляє, кімната блокує введення (LAW §4). */
+const MAX_BLOCKED_QUEUE_OPS = 3000
+
+/**
+ * Відбиток збірки: у проді URL модуля містить хеш файлу й міняється з кожною
+ * новою версією. Повтор відхиленого (`rejected`) пакета дозволено лише іншій збірці.
+ */
+const FE_BUILD: string = (() => {
+  try { return new URL(import.meta.url).pathname } catch { return 'unknown' }
+})()
+
+/**
+ * Власник аварійного запису. Кімната ставить `setBlockedOwner(userId)` після
+ * входу; без нього записи не прив'язуються до акаунта (null == null).
+ */
+let _blockedOwnerId: string | null = null
+
 function _genTabId(): string {
   return `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -163,6 +221,15 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   /** Last flush() duration (ms) — exposed для queue visibility UI. */
   const _lastFlushDuration = ref(0)
 
+  // ── SAVE_BLOCKED (2026-09-23) ──
+  const saveBlock = ref<SaveBlockInfo | null>(null)
+  /** Дії, яким record() відмовив через стелю черги в SAVE_BLOCKED (видимо в банері). */
+  const droppedWhileBlocked = ref(0)
+  /** Іде дія вчителя «Перевірити й надіслати» / «Відкинути». */
+  const blockResolving = ref(false)
+  /** Ключі аварійних записів інших вкладок / попередньої сесії, які ця вкладка підхопила. */
+  let _adoptedBlockedKeys: string[] = []
+
   // ── BroadcastChannel (INV-19) ──
   let _channel: BroadcastChannel | null = null
 
@@ -207,6 +274,17 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const inFlightCount = computed(() => inFlightOps.value.length)
   const lastFlushDuration = computed(() => _lastFlushDuration.value)
   const retryUntil = computed(() => _retryUntil.value)
+  /** SAVE_BLOCKED: сервер відмовив або результат не підтверджено — черга стоїть. */
+  const isSaveBlocked = computed(() => mode.value === 'SAVE_BLOCKED')
+  /**
+   * Кімната має заблокувати введення: черга досягла стелі або аварійний запис
+   * не вдався (зміни лише в пам'яті вкладки). Не тихий no-op — банер пояснює.
+   */
+  const inputLocked = computed(() =>
+    mode.value === 'SAVE_BLOCKED' && (
+      saveBlock.value?.storageOk === false ||
+      pendingOps.value.length + inFlightOps.value.length >= MAX_BLOCKED_QUEUE_OPS
+    ))
 
   // ── Internal helpers ──
 
@@ -363,6 +441,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _resetRetryState()
       mode.value = 'SYNC'
       desyncReason.value = null
+      // SAVE_BLOCKED переживає reload і повторний bootstrap: невирішена черга НЕ
+      // повертається у звичайну відправку (LAW §5 «Остаточні відмови»).
+      _restoreBlocked(sid)
     } catch (err) {
       if (_isProtocolMismatch(err)) {
         enterDesync('protocol-version-mismatch')
@@ -386,6 +467,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // Phase S PR-3 (2026-04-28): PAUSED mode ACCEPTS ops (no UI input block).
     // DESYNC blocks (INV-16); BOOTSTRAP blocks (pre-init).
     if (mode.value === 'DESYNC' || mode.value === 'BOOTSTRAP') return false
+    if (
+      mode.value === 'SAVE_BLOCKED' &&
+      pendingOps.value.length + inFlightOps.value.length >= MAX_BLOCKED_QUEUE_OPS
+    ) {
+      // Стеля: не тихий no-op — лічильник у банері, кімната блокує введення (inputLocked).
+      droppedWhileBlocked.value += 1
+      return false
+    }
     pendingOps.value.push(op)
     return true
   }
@@ -421,6 +510,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // INV-16 guard FIRST (sync path — throws before any mutex acquisition)
     if (mode.value === 'DESYNC') {
       throw new DesyncError(`flush() blocked: ${desyncReason.value ?? 'unknown reason'}`)
+    }
+    // SAVE_BLOCKED (LAW §4): жоден викликач — safety interval, debounce, поріг 50,
+    // flushAll(), спроба з PAUSED — не відправляє чергу автоматично.
+    if (mode.value === 'SAVE_BLOCKED') {
+      throw new SaveBlockedError(saveBlock.value, false)
     }
     // Phase S PR-3 (2026-04-28): PAUSED — flush throws BackpressureError.
     // Caller (useReplayRecorder) catches gracefully. inFlightOps preserved.
@@ -697,9 +791,227 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         // (does NOT fire flush() until window expires).
         throw err
       }
-      // Other errors (network, 401, 5xx без specific handling): keep inFlight, propagate
+      // SAVE_BLOCKED (2026-09-23, LAW §5 «Остаточні відмови»): 400 validation_failed,
+      // інші остаточні 4xx, 429, 5xx≠503 і відсутність відповіді більше НЕ лишаються
+      // «тимчасовими» з повтором кожні 2 с. Черга ціла, відправка стоїть до дії вчителя.
+      const block = _classifyFinal(err, batch)
+      if (block) {
+        _enterSaveBlocked(block)
+        throw new SaveBlockedError(saveBlock.value, true)
+      }
+      // 401: штатний auth flow (LAW §6) — inFlight лишається, рекордер чекає auth.
       throw err
     }
+  }
+
+  /** Відповідь сервера → причина SAVE_BLOCKED, або null (401 / auth flow). */
+  function _classifyFinal(err: unknown, batch: OpsSyncOp[]): SaveBlockInfo | null {
+    const e = err as {
+      response?: {
+        status?: number
+        data?: {
+          error?: string
+          reason?: string
+          invalid_op_index?: unknown
+          invalid_op_id?: unknown
+        }
+      }
+    }
+    const status = e?.response?.status
+    const base = {
+      reason: null as string | null,
+      invalidOpIndex: null as number | null,
+      invalidOpId: null as string | null,
+      invalidOpType: null as string | null,
+      retryNotBefore: null as number | null,
+      at: Date.now(),
+      feBuild: FE_BUILD,
+      storageOk: true,
+      restored: false,
+    }
+    if (typeof status !== 'number') {
+      return { ...base, kind: 'unconfirmed', httpStatus: 0, reason: 'no_response' }
+    }
+    const data = e.response?.data ?? {}
+    const code = (typeof data.reason === 'string' && data.reason) ||
+      (typeof data.error === 'string' && data.error) || null
+    if (status === 401) return null
+    if (status === 400) {
+      const idx = data.invalid_op_index
+      const id = typeof data.invalid_op_id === 'string' ? data.invalid_op_id : null
+      const pointed = data.error === 'validation_failed' &&
+        typeof idx === 'number' && Number.isInteger(idx) && idx >= 0 && idx < batch.length &&
+        (id === null || batch[idx]?.op_id === id)
+      if (pointed) {
+        const bad = batch[idx as number]
+        return {
+          ...base, kind: 'rejected', httpStatus: 400, reason: code,
+          invalidOpIndex: idx as number, invalidOpId: bad?.op_id ?? null, invalidOpType: bad?.op_type ?? null,
+        }
+      }
+      // Request-level або індекс, що не збігся з пакетом → не розбирати навмання (ТЗ §4.2).
+      return { ...base, kind: 'request_rejected', httpStatus: 400, reason: code }
+    }
+    if (status === 403) return { ...base, kind: 'forbidden', httpStatus: 403, reason: code }
+    if (status === 404) return { ...base, kind: 'not_found', httpStatus: 404, reason: code }
+    if (status === 413) return { ...base, kind: 'too_large', httpStatus: 413, reason: code }
+    if (status === 429) {
+      const ra = _parseRetryAfter(err)
+      return { ...base, kind: 'rate_limited', httpStatus: 429, reason: code, retryNotBefore: ra === null ? null : Date.now() + ra }
+    }
+    if (status >= 500) return { ...base, kind: 'unconfirmed', httpStatus: status, reason: code }
+    // 409 з невідомим error, 415, інші 4xx
+    return { ...base, kind: 'request_rejected', httpStatus: status, reason: code }
+  }
+
+  function _enterSaveBlocked(info: SaveBlockInfo): void {
+    _resetRetryState()
+    mode.value = 'SAVE_BLOCKED'
+    saveBlock.value = info
+    persistBlocked()
+    // НЕ _broadcast: стан черги цієї вкладки, не контракту (LAW §4).
+  }
+
+  /**
+   * Аварійний запис поточної черги (LAW §4). Викликають вхід у SAVE_BLOCKED і
+   * рекордер (замість звичайного backup, поки дошка заблокована). Невдача → storageOk=false.
+   */
+  function persistBlocked(): boolean {
+    const sid = sessionId.value
+    const info = saveBlock.value
+    if (!sid || !info || mode.value !== 'SAVE_BLOCKED') return false
+    const ok = writeBlocked(sid, tabId.value, _blockedOwnerId, info,
+      inFlightOps.value.slice(), pendingOps.value.slice())
+    if (ok !== info.storageOk) saveBlock.value = { ...info, storageOk: ok }
+    if (ok) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
+    return ok
+  }
+
+  /** Після bootstrap: підхопити аварійні записи цієї дошки й повернути SAVE_BLOCKED. */
+  function _restoreBlocked(sid: string): void {
+    const found = readBlocked(sid, _blockedOwnerId)
+    if (found.length === 0) return
+    const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
+    const inFlight: OpsSyncOp[] = [...inFlightOps.value]
+    const pending: OpsSyncOp[] = [...pendingOps.value]
+    for (const { record } of found) {
+      for (const o of record.inFlight) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); inFlight.push(o) }
+      for (const o of record.pending) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); pending.push(o) }
+    }
+    inFlightOps.value = inFlight
+    pendingOps.value = pending
+    const latest = found[found.length - 1].record.info
+    _adoptedBlockedKeys = found.map(f => f.key).filter(k => k !== blockedKey(sid, tabId.value))
+    mode.value = 'SAVE_BLOCKED'
+    saveBlock.value = { ...latest, restored: true, storageOk: true }
+    persistBlocked()
+  }
+
+  function _dropBlockedStorage(sid: string): void {
+    removeBlocked([blockedKey(sid, tabId.value), ..._adoptedBlockedKeys])
+    _adoptedBlockedKeys = []
+  }
+
+  /** Чи можна зараз запропонувати «Перевірити й надіслати». */
+  const canRetryBlocked = computed(() => {
+    const info = saveBlock.value
+    if (mode.value !== 'SAVE_BLOCKED' || !info) return false
+    if (info.kind === 'unconfirmed') return true
+    if (info.kind === 'rate_limited') return info.retryNotBefore === null || Date.now() >= info.retryNotBefore
+    if (info.kind === 'rejected') return info.feBuild !== FE_BUILD
+    return false
+  })
+
+  /**
+   * «Перевірити й надіслати» — дія вчителя (LAW §5, §12): одна звірка й не більше
+   * одного HTTP-пакета. Дозволено для `unconfirmed`, `rate_limited` (не раніше
+   * Retry-After) і `rejected` лише з іншою збіркою клієнта.
+   */
+  async function retryBlocked(): Promise<'sent' | 'already-saved' | 'unproven' | 'not-allowed' | 'blocked'> {
+    const sid = sessionId.value
+    const info = saveBlock.value
+    if (!sid || !info || mode.value !== 'SAVE_BLOCKED' || blockResolving.value) return 'not-allowed'
+    if (!canRetryBlocked.value) return 'not-allowed'
+    blockResolving.value = true
+    try {
+      // Невідомо, чи сервер застосував пакет → звірка за op_id (не лише за last_seq:
+      // паралельна вкладка чи учень теж рухають seq).
+      if (inFlightOps.value.length > 0 && (info.kind === 'unconfirmed' || info.restored)) {
+        const ids = inFlightOps.value.map(o => o.op_id)
+        const res = await checkOps(sid, ids)
+        const saved = new Set(res?.saved ?? [])
+        const savedCount = ids.filter(id => saved.has(id)).length
+        if (savedCount === ids.length) {
+          inFlightOps.value = []
+        } else if (savedCount > 0) {
+          return 'unproven'  // частково — не можу довести; черга лишається
+        }
+      }
+      const state = await _fetchState(sid)
+      serverSeq.value = state.last_seq | 0
+      localSeq.value = Math.max(localSeq.value, state.last_seq | 0)
+      // Черга знову у звичайному backup ДО зняття аварійного запису.
+      saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])
+      _dropBlockedStorage(sid)
+      saveBlock.value = null
+      droppedWhileBlocked.value = 0
+      desyncReason.value = null
+      mode.value = 'SYNC'
+      if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) return 'already-saved'
+      try {
+        await _runExclusive(false)  // рівно один пакет; далі — звичайний ритм рекордера
+      } catch (err) {
+        if (err instanceof SaveBlockedError) return 'blocked'
+        throw err
+      }
+      return 'sent'
+    } finally {
+      blockResolving.value = false
+    }
+  }
+
+  /**
+   * «Відкинути незбережені зміни» — дія вчителя з підтвердженням (UI). Черга й
+   * аварійні записи знімаються; полотно UI перезавантажує з сервера.
+   */
+  async function discardBlocked(): Promise<void> {
+    const sid = sessionId.value
+    if (!sid || mode.value !== 'SAVE_BLOCKED') return
+    blockResolving.value = true
+    try {
+      _dropBlockedStorage(sid)
+      clearBackup(sid)
+      pendingOps.value = []
+      inFlightOps.value = []
+      saveBlock.value = null
+      droppedWhileBlocked.value = 0
+      const state = await _fetchState(sid)
+      serverSeq.value = state.last_seq | 0
+      localSeq.value = state.last_seq | 0
+      desyncReason.value = null
+      mode.value = 'SYNC'
+    } finally {
+      blockResolving.value = false
+    }
+  }
+
+  /** Копія невирішеної черги для завантаження вчителем (нікуди не відправляється). */
+  function exportBlocked(): Record<string, unknown> {
+    return {
+      format: 'm4sh-unsaved-board-ops',
+      version: 1,
+      session_id: sessionId.value,
+      exported_at: new Date().toISOString(),
+      reason: saveBlock.value
+        ? { kind: saveBlock.value.kind, http_status: saveBlock.value.httpStatus, code: saveBlock.value.reason }
+        : null,
+      ops: [...inFlightOps.value, ...pendingOps.value],
+    }
+  }
+
+  /** Прив'язка аварійних записів до акаунта (кімната після входу). */
+  function setBlockedOwner(userId: string | number | null | undefined): void {
+    _blockedOwnerId = userId === undefined || userId === null || userId === '' ? null : String(userId)
   }
 
   /**
@@ -806,6 +1118,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   function enterPaused(reason: string): void {
     if (mode.value === 'PAUSED') return  // already there
     if (mode.value === 'DESYNC') return  // DESYNC takes precedence (INV-16)
+    if (mode.value === 'SAVE_BLOCKED') return  // зупинку знімає лише вчитель
     mode.value = 'PAUSED'
     desyncReason.value = reason  // re-use field для UI banner messaging
     _retryUntil.value = null
@@ -859,6 +1172,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * Caller (DesyncRecoveryBanner button or auto on 409) тригерить resync().
    */
   async function resync(sid: string): Promise<void> {
+    // SAVE_BLOCKED (LAW §4, ТЗ §5.3): resync скидає черги — тут це мовчки викинуло б
+    // невирішені дії й зняло зупинку. Вихід із SAVE_BLOCKED — лише дія вчителя.
+    if (mode.value === 'SAVE_BLOCKED' && sid === sessionId.value) {
+      throw new SaveBlockedError(saveBlock.value, false)
+    }
     if (sid !== sessionId.value) {
       // Different session — full bootstrap
       reset()
@@ -970,6 +1288,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     desyncReason.value = null
     pendingOps.value = []
     inFlightOps.value = []
+    // SAVE_BLOCKED: у пам'яті скидаємо, аварійний запис лишається у сховищі й
+    // повернеться при наступному bootstrap цієї дошки.
+    saveBlock.value = null
+    droppedWhileBlocked.value = 0
+    _adoptedBlockedKeys = []
     // Phase S PR-3: reset retry state + cancel auto-retry timer (TLV2-G1b: + дозвіл спроби)
     _resetRetryState()
     probeInFlight.value = false
@@ -1004,6 +1327,13 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // TLV2-G1b: спроби відновлення з PAUSED
     pauseProbeSeq,
     probeInFlight,
+    // SAVE_BLOCKED (2026-09-23)
+    saveBlock,
+    isSaveBlocked,
+    inputLocked,
+    droppedWhileBlocked,
+    blockResolving,
+    canRetryBlocked,
 
     // Actions
     bootstrap,
@@ -1022,12 +1352,19 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // INV-24 WS-CATCHUP (2026-06-13): read-side reconciliation після (re)connect
     catchUp,
     reset,
+    // SAVE_BLOCKED: дії вчителя + аварійний запис
+    persistBlocked,
+    retryBlocked,
+    discardBlocked,
+    exportBlocked,
+    setBlockedOwner,
 
     // Constants (consumer/test access)
     PROTOCOL_VERSION,
     FLUSH_BATCH_SIZE,
     MAX_RETRY_ATTEMPTS,
     PAUSE_AUTO_RETRY_MS,
+    MAX_BLOCKED_QUEUE_OPS,
   }
 })
 
@@ -1107,6 +1444,23 @@ export class BackpressureError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'BackpressureError'
+  }
+}
+
+/**
+ * SAVE_BLOCKED (2026-09-23, LAW §4): flush() відмовляє без HTTP, бо сервер
+ * остаточно відмовив пакету або результат не підтверджено. `entered=true` — саме
+ * цей виклик перевів store у SAVE_BLOCKED (для одноразової телеметрії).
+ */
+export class SaveBlockedError extends Error {
+  public readonly info: SaveBlockInfo | null
+  public readonly entered: boolean
+
+  constructor(info: SaveBlockInfo | null, entered: boolean) {
+    super(`flush() blocked: save-blocked (${info?.kind ?? 'unknown'})`)
+    this.name = 'SaveBlockedError'
+    this.info = info
+    this.entered = entered
   }
 }
 
