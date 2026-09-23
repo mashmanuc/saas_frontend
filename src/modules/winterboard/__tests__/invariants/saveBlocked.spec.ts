@@ -80,6 +80,7 @@ function rejectSecond() {
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  useOpsSyncStore().setBlockedOwner(null)  // власник — рівня модуля, не переносити між тестами
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
   vi.setSystemTime(new Date('2026-09-23T20:00:00Z'))
   post.mockReset()
@@ -433,7 +434,7 @@ describe('Рев’ю P0 2026-09-24 · дірки відновлення', () =>
   })
 
   it('№2 · пошкоджений аварійний запис → storage_unreadable, 0 HTTP, сирі дані в експорті, discard знімає ключ', async () => {
-    const badKey = `wb_ops_blocked_v1_${SID}_oldtab`
+    const badKey = `wb_ops_blocked_v2_${SID}_anon_oldtab`
     localStorage.setItem(badKey, '{"v":1,"sessionId":"' + SID + '","pending":[{"op_id":"x"')
     const store = useOpsSyncStore()
     get.mockResolvedValueOnce({ last_seq: 4 })
@@ -454,7 +455,7 @@ describe('Рев’ю P0 2026-09-24 · дірки відновлення', () =>
   })
 
   it('№2 · невідома версія формату — теж нечитабельна, не «нічого немає»', async () => {
-    localStorage.setItem(`wb_ops_blocked_v1_${SID}_t2`, JSON.stringify({ v: 2, sessionId: SID, pending: [], inFlight: [] }))
+    localStorage.setItem(`wb_ops_blocked_v2_${SID}_anon_t2`, JSON.stringify({ v: 2, sessionId: SID, pending: [], inFlight: [] }))
     const r = readBlocked(SID, null)
     expect(r.records).toHaveLength(0)
     expect(r.unreadable).toHaveLength(1)
@@ -501,5 +502,152 @@ describe('Рев’ю P0 2026-09-24 · дірки відновлення', () =>
     post.mockResolvedValueOnce(ok(1))
     expect(await store.retryBlocked()).toBe('sent')
     expect(store.mode).toBe('SYNC')
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (2) · ручний повтор і власник запису', () => {
+  async function blockedUnconfirmed() {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    post.mockResolvedValueOnce({ saved: [], missing: ['a'] })  // check-ops
+    get.mockResolvedValueOnce({ last_seq: 3 })
+    return store
+  }
+  const batches = () => post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
+
+  it('поки пакет ручного повтору в мережі — режим лишається SAVE_BLOCKED', async () => {
+    const store = await blockedUnconfirmed()
+    post.mockImplementationOnce(() => new Promise(() => {}))
+    void store.retryBlocked()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(batches()).toHaveLength(2)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.isSaveBlocked).toBe(true)
+  })
+
+  it('503 на ручному повторі → SAVE_BLOCKED, без автоматичних повторів, черга ціла', async () => {
+    const store = await blockedUnconfirmed()
+    const rec = recorder()
+    post.mockRejectedValueOnce(httpError(503, { error: 'SERVER_BUSY' }, { 'retry-after': '1' }))
+    expect(await store.retryBlocked()).toBe('blocked')
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('unconfirmed')
+    expect(store.canRetryBlocked).toBe(true)
+    rec.start()
+    await vi.advanceTimersByTimeAsync(120_000)
+    rec.stop?.()
+    expect(batches()).toHaveLength(2)
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['a'])
+    expect(readBlocked(SID, null).records).toHaveLength(1)
+  })
+
+  it('409 SEQ_MISMATCH на ручному повторі → inFlight НЕ скинуто, SAVE_BLOCKED, наступна спроба лише кнопкою', async () => {
+    const store = await blockedUnconfirmed()
+    post.mockRejectedValueOnce(httpError(409, { error: 'SEQ_MISMATCH', expected_seq: 7 }))
+    expect(await store.retryBlocked()).toBe('blocked')
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('unconfirmed')
+    expect(store.saveBlock?.reason).toBe('seq_mismatch')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['a'])
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(batches()).toHaveLength(2)
+    // друга дія вчителя: звірка → свіжий seq → успіх
+    post.mockResolvedValueOnce({ saved: [], missing: ['a'] })
+    get.mockResolvedValueOnce({ last_seq: 7 })
+    post.mockResolvedValueOnce(ok(8))
+    expect(await store.retryBlocked()).toBe('sent')
+    expect((batches()[2][1] as { seq: number }).seq).toBe(7)
+    expect(store.mode).toBe('SYNC')
+  })
+
+  it('чужий запис невідомої версії (ключ іншого акаунта) → не видно, не експортується, не стирається', async () => {
+    const foreign = `wb_ops_blocked_v2_${SID}_u7_tabA`
+    localStorage.setItem(foreign, JSON.stringify({ v: 9, userId: '7', secret: 'A' }))
+    const store = useOpsSyncStore()
+    store.setBlockedOwner('8')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SYNC')
+    expect(JSON.stringify(store.exportBlocked())).not.toContain('secret')
+    expect(localStorage.getItem(foreign)).not.toBeNull()
+  })
+
+  it('А бачить свій пошкоджений запис; Б на тому ж комп’ютері — ні, і «Відкинути» Б його не стирає', async () => {
+    const aKey = `wb_ops_blocked_v2_${SID}_u7_tabA`
+    const aRaw = '{"v":1,"pending":[{"op_id":"x-of-A"'
+    localStorage.setItem(aKey, aRaw)
+    // Б: є власна зупинка → «Відкинути»
+    let store = syncStore()
+    store.setBlockedOwner('8')
+    store.record(op('b'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(JSON.stringify(store.exportBlocked())).not.toContain('x-of-A')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.discardBlocked()
+    expect(localStorage.getItem(aKey)).toBe(aRaw)
+    // А: той самий запис → storage_unreadable, сирий рядок у копії
+    setActivePinia(createPinia())
+    store = useOpsSyncStore()
+    store.setBlockedOwner('7')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    const exp = store.exportBlocked() as { unreadable_records?: Array<{ key: string; raw: string }> }
+    expect(exp.unreadable_records?.[0].key).toBe(aKey)
+    expect(exp.unreadable_records?.[0].raw).toBe(aRaw)
+  })
+
+  it('запис v1 з невстановленим власником → не віддаємо, не стираємо, не блокуємо', async () => {
+    const legacy = `wb_ops_blocked_v1_${SID}_tab-old`
+    localStorage.setItem(legacy, '{"v":1,"userId":"7","pend')
+    const store = useOpsSyncStore()
+    store.setBlockedOwner('8')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SYNC')
+    expect(localStorage.getItem(legacy)).not.toBeNull()
+  })
+
+  it('запис v1 чужого акаунта невідомої версії → пропущено', () => {
+    localStorage.setItem(`wb_ops_blocked_v1_${SID}_tab-old`, JSON.stringify({ v: 5, userId: '7' }))
+    const r = readBlocked(SID, '8')
+    expect(r.records).toHaveLength(0)
+    expect(r.unreadable).toHaveLength(0)
+  })
+
+  it('запис v1 свого акаунта, що читається → підхоплено і знято після вирішення', async () => {
+    const legacy = `wb_ops_blocked_v1_${SID}_tab-old`
+    localStorage.setItem(legacy, JSON.stringify({
+      v: 1, sessionId: SID, tabId: 'tab-old', userId: '7', savedAt: '2026-09-23T10:00:00Z',
+      info: { kind: 'unconfirmed', httpStatus: 0 }, inFlight: [op('L')], pending: [],
+    }))
+    const store = useOpsSyncStore()
+    store.setBlockedOwner('7')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['L'])
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.discardBlocked()
+    expect(localStorage.getItem(legacy)).toBeNull()
+  })
+
+  it('зіпсований savedAt поруч зі справним записом → без падіння, storage_unreadable', async () => {
+    const good = {
+      v: 1, sessionId: SID, tabId: 't1', userId: null, savedAt: '2026-09-23T10:00:00Z',
+      info: { kind: 'unconfirmed', httpStatus: 0 }, inFlight: [op('g')], pending: [],
+    }
+    localStorage.setItem(`wb_ops_blocked_v2_${SID}_anon_t1`, JSON.stringify(good))
+    localStorage.setItem(`wb_ops_blocked_v2_${SID}_anon_t2`, JSON.stringify({ ...good, tabId: 't2', savedAt: 12345 }))
+    expect(() => readBlocked(SID, null)).not.toThrow()
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['g'])
   })
 })

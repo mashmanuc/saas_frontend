@@ -232,6 +232,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   let _adoptedBlockedKeys: string[] = []
   /** Нечитабельні аварійні записи цієї дошки — лише для експорту вчителем. */
   let _unreadableBlocked: Array<{ key: string; raw: string }> = []
+  /** Ключ, під яким ЦЯ вкладка востаннє записала аварійну чергу. */
+  let _ownBlockedKey: string | null = null
+  /**
+   * Іде ручна спроба «Перевірити й надіслати». Режим лишається SAVE_BLOCKED до
+   * підтвердженого результату; будь-яка невдача — знову SAVE_BLOCKED, без
+   * автоматичних повторів 503 і без скидання inFlight на 409 (рев'ю P0, 2026-09-24).
+   */
+  let _manualAttempt = false
 
   // ── BroadcastChannel (INV-19) ──
   let _channel: BroadcastChannel | null = null
@@ -719,6 +727,18 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         pendingOps.value = []
         throw new DesyncError('flush() blocked: protocol-version-mismatch')
       }
+      if (_manualAttempt) {
+        // Одна спроба з дії вчителя. 409 SEQ_MISMATCH тут означає «seq зсунувся між
+        // звіркою і відправкою» — пакет НЕ застосовано, inFlight не скидаємо; 503 —
+        // сервер зайнятий, теж не застосовано. Обидва → повтор знову лише кнопкою.
+        const seqM = _isSeqMismatch(err)
+        let block = _classifyFinal(err, batch)
+        if (!block) throw err  // 401: зупинка лишається з попередньою причиною, auth flow
+        if (seqM.mismatch) block = { ...block, kind: 'unconfirmed', reason: 'seq_mismatch' }
+        else if (_isServerBusy(err)) block = { ...block, kind: 'unconfirmed', reason: block.reason ?? 'server_busy' }
+        _enterSaveBlocked(block)
+        throw new SaveBlockedError(saveBlock.value, true)
+      }
       const seqMismatch = _isSeqMismatch(err)
       if (seqMismatch.mismatch) {
         // 2026-05-13: AUTO-RESYNC instead of DESYNC (Def 1 fix).
@@ -885,6 +905,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (!sid || !info || mode.value !== 'SAVE_BLOCKED') return false
     const ok = writeBlocked(sid, tabId.value, _blockedOwnerId, info,
       inFlightOps.value.slice(), pendingOps.value.slice())
+    const key = blockedKey(sid, _blockedOwnerId, tabId.value)
+    if (_ownBlockedKey && _ownBlockedKey !== key) removeBlocked([_ownBlockedKey])
+    _ownBlockedKey = key
     if (ok !== info.storageOk) saveBlock.value = { ...info, storageOk: ok }
     if (ok) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
     return ok
@@ -909,7 +932,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     _adoptedBlockedKeys = [
       ...found.map(f => f.key),
       ...read.unreadable.map(u => u.key),
-    ].filter(k => k !== blockedKey(sid, tabId.value))
+    ].filter(k => k !== blockedKey(sid, _blockedOwnerId, tabId.value))
     mode.value = 'SAVE_BLOCKED'
     if (unreadable) {
       // Не «нічого немає»: запис є, але прочитати його не вдалося. Видима зупинка,
@@ -928,9 +951,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   }
 
   function _dropBlockedStorage(sid: string): void {
-    removeBlocked([blockedKey(sid, tabId.value), ..._adoptedBlockedKeys])
+    removeBlocked([blockedKey(sid, _blockedOwnerId, tabId.value),
+      ...(_ownBlockedKey ? [_ownBlockedKey] : []), ..._adoptedBlockedKeys])
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
+    _ownBlockedKey = null
   }
 
   /** Чи можна зараз запропонувати «Перевірити й надіслати». */
@@ -976,23 +1001,24 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       const state = await _fetchState(sid)
       serverSeq.value = state.last_seq | 0
       localSeq.value = Math.max(localSeq.value, state.last_seq | 0)
-      saveBlock.value = null
-      droppedWhileBlocked.value = 0
-      desyncReason.value = null
-      mode.value = 'SYNC'
       if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) {
+        _unblock()
         _dropBlockedStorage(sid)
         return 'already-saved'
       }
-      // Аварійний запис ЛИШАЄТЬСЯ, поки пакет у мережі: закриють вкладку до
-      // відповіді — reload поверне SAVE_BLOCKED, а звірка check-ops за op_id не
-      // дасть задвоїти (рев'ю P0, 2026-09-24).
+      // Режим лишається SAVE_BLOCKED, поки пакет у мережі: банер видно, рекордер
+      // нічого не шле сам, аварійний запис живий (закриють вкладку — reload поверне
+      // SAVE_BLOCKED, а звірка check-ops за op_id не дасть задвоїти). Рев'ю P0, 2026-09-24.
+      _manualAttempt = true
       try {
         await _runExclusive(false)  // рівно один пакет; далі — звичайний ритм рекордера
       } catch (err) {
         if (err instanceof SaveBlockedError) return 'blocked'
         throw err
+      } finally {
+        _manualAttempt = false
       }
+      _unblock()  // лише після підтвердженого 2xx
       // Знімаємо аварійний запис лише коли решта черги ПІДТВЕРДЖЕНО лягла у
       // звичайний backup. Сховище відмовило → запис лишається (безпечно: дедуп op_id).
       if (saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])) {
@@ -1004,6 +1030,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     } finally {
       blockResolving.value = false
     }
+  }
+
+  function _unblock(): void {
+    _resetRetryState()
+    saveBlock.value = null
+    droppedWhileBlocked.value = 0
+    desyncReason.value = null
+    mode.value = 'SYNC'
   }
 
   /**
@@ -1335,6 +1369,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     droppedWhileBlocked.value = 0
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
+    _ownBlockedKey = null
+    _manualAttempt = false
     // Phase S PR-3: reset retry state + cancel auto-retry timer (TLV2-G1b: + дозвіл спроби)
     _resetRetryState()
     probeInFlight.value = false
