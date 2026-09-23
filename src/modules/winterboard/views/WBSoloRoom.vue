@@ -1855,7 +1855,12 @@ const showSidebarOverlay = ref(false)
 const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate: recalculateCanvas } = useCanvasResize({
   containerRef: canvasContainerRef,
   onResize(w, h) {
-    // Auto-fit: if current zoom makes stage larger than container, adjust zoom down
+    // Страховка: сцена не повинна вилазити за контейнер, коли вікно зменшили.
+    // ⚠️ Раніше це правило діяло ЗАВЖДИ, тож будь-який resize — відкриття
+    // бічної панелі, поворот планшета, поява клавіатури — скидав масштаб,
+    // який учитель поставив руками. Тепер ручний масштаб недоторканний
+    // (візуальний огляд 2026-09-22, п.15).
+    if (userZoomed.value) return
     if (w > 0 && h > 0 && store.pageWidth > 0 && store.pageHeight > 0) {
       const maxZoomX = w / store.pageWidth
       const maxZoomY = h / store.pageHeight
@@ -1866,6 +1871,36 @@ const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate:
     }
   },
   debounceMs: 100,
+})
+
+// ── Перший показ дошки: сторінка вписується у вікно ──────────────────────────
+// Було: дошка відкривалась дрібною в куті. Автопідгін вище лише ЗМЕНШУВАВ
+// масштаб, коли сцена не влазила, і робив це без відступу, а «вписати сторінку»
+// (кнопка ⧉) треба було натискати руками. Тепер рівно один раз після
+// завантаження йдемо тим самим шляхом, що й ⧉ — `WBCanvas.fitToPage()`
+// (відступ 40 px, скрол у нуль). Далі масштаб — справа вчителя.
+const userZoomed = ref(false)
+const initialFitDone = ref(false)
+/** Наш власний fit не має вважатись «учитель змінив масштаб». */
+let applyingProgrammaticFit = false
+
+function fitPageNow(): void {
+  const fit = canvasRef.value?.fitToPage
+  if (!fit) return
+  applyingProgrammaticFit = true
+  try {
+    fit()
+  } finally {
+    applyingProgrammaticFit = false
+  }
+}
+
+watch(isLoading, async (loading) => {
+  if (loading || initialFitDone.value) return
+  await nextTick()
+  if (!canvasRef.value?.fitToPage) return
+  fitPageNow()
+  initialFitDone.value = true
 })
 
 // A1.4: Hide replay button on empty boards (check all pages)
@@ -1918,6 +1953,7 @@ const touchGestures = useTouchGestures(canvasContainerRef, {
     // Inertia finished — no action needed
   },
   onZoom(zoom, _centerX, _centerY) {
+    userZoomed.value = true
     store.setZoom(zoom)
     followMode.onUserInteraction()
   },
@@ -1929,10 +1965,11 @@ const touchGestures = useTouchGestures(canvasContainerRef, {
   },
   onDoubleTap(_x, _y) {
     // Double-tap: toggle between fit-to-page and 1x zoom
+    userZoomed.value = true
     if (store.zoom < 0.95 || store.zoom > 1.05) {
       store.setZoom(1)
     } else {
-      canvasRef.value?.fitToPage?.()
+      fitPageNow()
     }
     followMode.onUserInteraction()
   },
@@ -2914,6 +2951,7 @@ function handlePageDelete(index: number): void {
 // ─── Handlers: Zoom ─────────────────────────────────────────────────────────
 
 function handleZoomIn(): void {
+  userZoomed.value = true
   store.setZoom(store.zoom + 0.25)
   followMode.onUserInteraction()
 }
@@ -2961,17 +2999,22 @@ function onGridTypeChange(type: GridType): void {
 }
 
 function handleZoomOut(): void {
+  userZoomed.value = true
   store.setZoom(store.zoom - 0.25)
   followMode.onUserInteraction()
 }
 
 function handleZoomReset(): void {
+  userZoomed.value = true
   store.setZoom(1)
   followMode.onUserInteraction()
 }
 
 // A5.3: Handle zoom/scroll from WBCanvas (Ctrl+scroll, pinch, etc.)
 function handleZoomChange(zoom: number): void {
+  // Ctrl+колесо, pinch і наш власний fit приходять сюди одним каналом —
+  // програмний fit за «ручний» не рахуємо.
+  if (!applyingProgrammaticFit) userZoomed.value = true
   store.setZoom(zoom)
   followMode.onUserInteraction()
 }
@@ -2982,7 +3025,9 @@ function handleScrollChange(scrollX: number, scrollY: number): void {
 }
 
 function handleFitToPage(): void {
-  canvasRef.value?.fitToPage?.()
+  // Явне «вписати сторінку» — після нього автопідгін не заважає, тож прапорець
+  // ручного масштабу лишаємо як є.
+  fitPageNow()
 }
 
 // ─── Phase 37: Test System ─────────────────────────────────────────────────
