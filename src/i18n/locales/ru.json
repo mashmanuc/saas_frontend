@@ -7232,6 +7232,7 @@
       "undoShortcut": "Отменить (Ctrl+Z)",
       "redoShortcut": "Повторить (Ctrl+Shift+Z)",
       "exit": "Выйти",
+      "exitToStudio": "← Студия уроков",
       "saving": "Сохранение…",
       "saved": "Сохранено",
       "saveError": "Ошибка сохранения",

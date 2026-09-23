@@ -343,8 +343,13 @@
         >
           {{ t('winterboard.localWorkspace.saveWork') }}
         </button>
+        <!-- «Вийти» поруч із повноекранним режимом читалось як вихід з акаунта
+             (візуальний огляд 2026-09-22, п.15), хоча кнопка веде до Студії.
+             Пишемо, КУДИ вона веде — як «← Мої записи» у програвачі.
+             У класній кімнаті напис лишається «Вийти»: там це справді вихід
+             з живого уроку, а не перехід у список. -->
         <button v-else type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
-          {{ t('winterboard.room.exit') }}
+          {{ t('winterboard.room.exitToStudio') }}
         </button>
       </div>
     </header>

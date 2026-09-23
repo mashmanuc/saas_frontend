@@ -8014,6 +8014,7 @@
       "undoShortcut": "Скасувати (Ctrl+Z)",
       "redoShortcut": "Повторити (Ctrl+Shift+Z)",
       "exit": "Вийти",
+      "exitToStudio": "← Студія уроків",
       "saving": "Збереження",
       "saved": "Збережено",
       "saveError": "Помилка збереження",
