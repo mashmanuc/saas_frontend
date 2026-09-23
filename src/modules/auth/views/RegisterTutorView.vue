@@ -136,6 +136,7 @@ import Input from '../../../ui/Input.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
+import { useRegisterFieldErrors } from '../composables/useRegisterFieldErrors'
 
 const router = useRouter()
 const route = useRoute()
@@ -184,13 +185,6 @@ watch(
   }
 )
 
-function fieldError(field) {
-  const map = auth.lastFieldMessages
-  if (!map || typeof map !== 'object') return ''
-  const list = map[field]
-  if (!Array.isArray(list) || list.length === 0) return ''
-  return String(list[0])
-}
 
 // 2026-07-26: одне поле «Ім'я та прізвище» замість двох — кожне зайве поле
 // відсіює частину людей на реєстрації, а бекенду обидва потрібні лише як пара
@@ -205,6 +199,11 @@ const form = reactive({
   privacy_policy_accepted: false,
 })
 
+// Помилки полів: переклад сирих кодів бекенда, перевірка паролів до
+// надсилання й прибирання помилки, щойно поле змінили (FIRST USER GATE
+// 2026-09-23, п.7 — «mismatch» англійською, що не зникав).
+const { fieldError, validateBeforeSubmit } = useRegisterFieldErrors(auth, form, t)
+
 /** «Іван Сірко» → { first_name: 'Іван', last_name: 'Сірко' }; одне слово → прізвище порожнє. */
 function splitFullName(value) {
   const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean)
@@ -217,6 +216,7 @@ const nameError = computed(() =>
 )
 
 async function onSubmit() {
+  if (!validateBeforeSubmit()) return
   try {
     const origin = getCanonicalOrigin()
     const redirect = resolvePostAuthTarget()

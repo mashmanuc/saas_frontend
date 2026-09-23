@@ -1142,18 +1142,26 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
 }
 
+/* 2026-09-23 (FIRST USER GATE, п.6): було `color: var(--wb-brand)` — той самий
+   зелений, що й тло шапки (`--wb-header-bg`, rgb(4,120,87)), тож посилання
+   було на місці, але невидиме. Шапка біла по зеленому — посилання теж біле,
+   з рамкою, щоб читалось як кнопка. */
 .wb-public-view__to-list {
   flex-shrink: 0;
   margin-right: 0.75rem;
-  color: var(--wb-brand, #047857);
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  transition: background 0.15s ease;
 }
 
 .wb-public-view__to-list:hover {
-  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .wb-public-view__header {

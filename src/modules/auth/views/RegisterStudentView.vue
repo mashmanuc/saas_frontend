@@ -172,6 +172,7 @@ import Input from '../../../ui/Input.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
+import { useRegisterFieldErrors } from '../composables/useRegisterFieldErrors'
 
 const router = useRouter()
 const route = useRoute()
@@ -209,13 +210,6 @@ watch(
   }
 )
 
-function fieldError(field) {
-  const map = auth.lastFieldMessages
-  if (!map || typeof map !== 'object') return ''
-  const list = map[field]
-  if (!Array.isArray(list) || list.length === 0) return ''
-  return String(list[0])
-}
 
 const form = reactive({
   account_type: 'student',
@@ -228,11 +222,16 @@ const form = reactive({
   age_group: '',  // 'adult' | 'teen' | 'under14'
 })
 
+// Помилки полів — спільний помічник із формою вчителя (FIRST USER GATE
+// 2026-09-23, п.7).
+const { fieldError, validateBeforeSubmit } = useRegisterFieldErrors(auth, form, t)
+
 const canSubmit = computed(() =>
   form.age_group !== '' && form.age_group !== 'under14'
 )
 
 async function onSubmit() {
+  if (!validateBeforeSubmit()) return
   try {
     const origin = getCanonicalOrigin()
     const redirectQuery = `&redirect=${encodeURIComponent(resolvePostAuthTarget())}`

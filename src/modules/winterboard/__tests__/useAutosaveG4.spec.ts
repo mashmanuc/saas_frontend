@@ -39,7 +39,7 @@ vi.mock('@/utils/apiClient', () => ({
   isCircuitBreakerOpen: () => false,
 }))
 
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useAutosave } from '../composables/useAutosave'
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 
@@ -116,6 +116,37 @@ describe('G4: useAutosave — proxy над opsSyncStore, без власної �
     expect(autosave.status.value).toBe('error')
     expect(autosave.lastError.value).toBeTruthy()
     expect(recordOperationsBatchMock).not.toHaveBeenCalled()
+    autosave.destroy()
+  })
+
+  // FIRST USER GATE 2026-09-23, п.4: штрихи зберігає ФОНОВИЙ flush рекордера
+  // (store.flush() напряму, не saveNow). Статус не рахував його → шапка вічно
+  // писала «Незбережені зміни», хоча сервер усе прийняв.
+  it('фоновий flush (не saveNow) → статус «saved»', async () => {
+    const store = syncedStore()
+    const autosave = useAutosave(ref<string | null>('sess-g4'))
+    expect(autosave.status.value).toBe('idle')
+
+    store.record(_op(2))
+    await store.flush()
+    await nextTick()
+
+    expect(recordOperationsBatchMock).toHaveBeenCalledTimes(1)
+    expect(autosave.saveCount.value).toBe(0)          // saveNow не кликали
+    expect(autosave.status.value).toBe('saved')
+    autosave.destroy()
+  })
+
+  it('черга спорожніла БЕЗ нового seq від сервера → не «saved»', async () => {
+    const store = syncedStore()
+    const autosave = useAutosave(ref<string | null>('sess-g4'))
+
+    store.inFlightOps = [_op(3)] as never
+    await nextTick()
+    store.inFlightOps = [] as never      // скинуто, а не прийнято: serverSeq той самий
+    await nextTick()
+
+    expect(autosave.status.value).toBe('idle')
     autosave.destroy()
   })
 

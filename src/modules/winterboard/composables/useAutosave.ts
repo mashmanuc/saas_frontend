@@ -24,7 +24,7 @@
 // trigger reused — тепер це opsSyncStore.flush() proxy. Saves boolean status у UI
 // тепер reflect ops_sync state (inFlight = saving, DESYNC = error, SYNC empty = saved).
 
-import { computed, ref, onUnmounted, type Ref } from 'vue'
+import { computed, ref, watch, onUnmounted, type Ref } from 'vue'
 import type { WBSyncStatus } from '../types/winterboard'
 import { useOpsSyncStore, DesyncError } from '../stores/opsSyncStore'
 
@@ -72,12 +72,39 @@ export function useAutosave(
   //   pendingOps non-empty → 'syncing' (waiting for next flush tick)
   //   SYNC + empty buffers → 'saved' (after at least 1 successful flush)
   //   BOOTSTRAP / pre-first-flush → 'idle'
+  //
+  // ⚠️ 2026-09-23 (FIRST USER GATE, п.4): «after at least 1 successful flush»
+  // рахувало лише `saveNow()`. А штрихи, графіки, текст зберігає ФОНОВИЙ flush
+  // рекордера кімнати — повз saveNow, тож `saveCount` лишався 0, статус падав
+  // в 'idle', і шапка дошки вічно писала «Незбережені зміни», хоча все вже було
+  // на сервері (перевірено на проді: reload показував збережене).
+  //
+  // Тепер фонова відправка теж рахується. Це ЛИШЕ читання стану store для
+  // напису: flush, повтори, обробка помилок, стан-машина — без змін (LAW §4–§5).
+  // Пакет вважаємо прийнятим, коли `inFlightOps` спорожнів І сервер видав
+  // новий seq. Спорожніння без нового seq (напр. скинутий пакет) — не «збережено».
+  const backgroundSaves = ref(0)
+  let seqWhenSent: number | null = null
+  const stopFlushWatch = watch(
+    () => opsSync.inFlightOps.length,
+    (len, prevLen) => {
+      if ((prevLen ?? 0) === 0 && len > 0) {
+        seqWhenSent = opsSync.serverSeq
+      } else if ((prevLen ?? 0) > 0 && len === 0) {
+        if (seqWhenSent !== null && opsSync.serverSeq > seqWhenSent) {
+          backgroundSaves.value++
+        }
+        seqWhenSent = null
+      }
+    },
+  )
+
   const status = computed<WBSyncStatus>(() => {
     if (opsSync.isDesync) return 'error'
     if (opsSync.inFlightOps.length > 0 || opsSync.pendingOps.length > 0) {
       return 'syncing'
     }
-    return saveCount.value > 0 ? 'saved' : 'idle'
+    return saveCount.value > 0 || backgroundSaves.value > 0 ? 'saved' : 'idle'
   })
 
   const isSaving = computed(() => opsSync.inFlightOps.length > 0)
@@ -112,6 +139,7 @@ export function useAutosave(
 
   function destroy(): void {
     _destroyed = true
+    stopFlushWatch()
     // No timers / listeners / observers to cleanup post-Phase-2 cleanup.
     // opsSyncStore state survives (Pinia singleton); reset() called from
     // forceLogout / setAuth({access:null}) paths окремо.

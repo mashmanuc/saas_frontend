@@ -936,6 +936,7 @@
       "tutorOfferLink": "Tutor Agreement",
       "consentAnd": " and ",
       "passwordConfirm": "Confirm password",
+      "passwordMismatch": "Passwords do not match",
       "fullName": "Full name",
       "studentByInviteOnly": "Students do not sign up themselves — the teacher sends them an invite."
     },
@@ -1283,7 +1284,7 @@
   },
   "sidebarCoaching": {
     "step2": "Lesson Studio — create and prepare your lessons using the constructor or a board",
-    "step3": "Set your available hours here for your students",
+    "step3": "Schedule — your week of lessons. Click an empty cell to plan a lesson",
     "step4": "My Lessons — your library of ready materials. Click «Conduct» to start a class",
     "next": "Next",
     "done": "Got it",
