@@ -572,6 +572,7 @@ import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch, nextTick
 // P0 classroom student ops (2026-09-05): чистий гейт малювання — тестується без mount в'юхи.
 import { isStudentDrawingBlocked, drawingBlockReason } from '../composables/classroomDrawingGate'
 import { useRouter, useRoute } from 'vue-router'
+import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { selectAllOnCurrentPage } from '../board/selectableObjects'
@@ -1113,6 +1114,8 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
 const authStore = useAuthStore()
 // Аварійні записи SAVE_BLOCKED прив'язані до акаунта (ТЗ §7).
 watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
+// Черга без копії у сховищі — вихід/reload лише з підтвердженням.
+useUnsecuredQueueGuard()
 const lessonRuntime = useLessonRuntimeStore()
 
 // Classroom Hub retired (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07) — навігація

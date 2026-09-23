@@ -7126,13 +7126,15 @@
         "checking": "Checking…",
         "export": "Download a copy",
         "discard": "Discard unsaved",
+        "confirmLeave": "Unsaved changes ({count}) exist only in this tab’s memory. If you leave, they will be lost. Download a copy first. Leave anyway?",
         "confirmDiscard": "Discard {count} unsaved changes? The board will return to what is on the server. You can download a copy first.",
         "confirmRetryRejected": "The app was updated. Try again to send the changes the server did not accept before?",
         "result": {
           "unproven": "Could not prove what was saved. Your changes stay here.",
           "alreadySaved": "Everything was already on the server.",
           "failed": "That didn’t work. Your changes stay here.",
-          "tooEarly": "Too early. Try again in {seconds} s."
+          "tooEarly": "Too early. Try again in {seconds} s.",
+          "sentHeld": "Sent. But new changes could not be stored on this computer — they exist only in this tab’s memory. Press “Check and send” again or download a copy."
         },
         "action": {
           "stroke": "stroke",

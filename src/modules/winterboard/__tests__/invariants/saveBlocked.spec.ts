@@ -736,3 +736,61 @@ describe('Рев’ю P0 2026-09-24 (3) · перехід між дошками 
     expect(left[0].record.inFlight).toHaveLength(0)  // 'a' уже на сервері — не повертаємо
   })
 })
+
+describe('Рев’ю P0 2026-09-24 (4) · нові дії під час повтору, коли сховище відмовило повністю', () => {
+  const batches = () => post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
+
+  async function retryWithActionDuring(breakStorage: (k: string) => boolean) {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    post.mockResolvedValueOnce({ saved: [], missing: ['a'] })  // check-ops
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    let resolveBatch: (v: unknown) => void = () => {}
+    post.mockImplementationOnce(() => new Promise(r => { resolveBatch = r }))
+    const pending = store.retryBlocked()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.record(op('during'))).toBe(true)
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (breakStorage(k)) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    resolveBatch(ok(1))
+    const result = await pending
+    return { store, result, spy }
+  }
+
+  it('обидві копії відмовили → зупинка НЕ знімається, введення заблоковано, вихід під охороною', async () => {
+    const { store, result, spy } = await retryWithActionDuring(k => k.startsWith('wb_ops_'))
+    expect(result).toBe('sent-held')
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.storageOk).toBe(false)
+    expect(store.inputLocked).toBe(true)
+    expect(store.hasUnsecuredQueue).toBe(true)
+    expect(store.pendingOps.map(o => o.op_id)).toEqual(['during'])
+    expect(store.inFlightOps).toHaveLength(0)
+    // рекордер нічого не шле сам
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(batches()).toHaveLength(2)
+    // сховище ожило → наступна дія вчителя надсилає нові дії
+    spy.mockRestore()
+    expect(store.canRetryBlocked).toBe(true)
+    get.mockResolvedValueOnce({ last_seq: 1 })
+    post.mockResolvedValueOnce(ok(2))
+    expect(await store.retryBlocked()).toBe('sent')
+    expect((batches()[2][1] as { ops: Array<{ op_id: string }> }).ops.map(o => o.op_id)).toEqual(['during'])
+    expect(store.mode).toBe('SYNC')
+    expect(store.hasUnsecuredQueue).toBe(false)
+  })
+
+  it('аварійний запис відмовив, звичайний backup ліг → зупинку знято, нові дії в backup', async () => {
+    const { store, result, spy } = await retryWithActionDuring(k => k.startsWith('wb_ops_blocked_'))
+    spy.mockRestore()
+    expect(result).toBe('sent')
+    expect(store.mode).toBe('SYNC')
+    expect(readBackup(SID)?.pending.map((o: { op_id: string }) => o.op_id)).toEqual(['during'])
+    expect(readBlocked(SID, null).records).toHaveLength(0)
+  })
+})

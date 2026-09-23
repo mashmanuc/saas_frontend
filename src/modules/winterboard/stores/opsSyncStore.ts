@@ -296,6 +296,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       saveBlock.value?.storageOk === false ||
       pendingOps.value.length + inFlightOps.value.length >= MAX_BLOCKED_QUEUE_OPS
     ))
+  /**
+   * Незбережена черга без жодної копії у сховищі (`storage_failed`, LAW §4): вихід
+   * із дошки, reload чи закриття вкладки її знищить. Кімнати питають підтвердження
+   * (`useUnsecuredQueueGuard`).
+   */
+  const hasUnsecuredQueue = computed(() =>
+    mode.value === 'SAVE_BLOCKED' && saveBlock.value?.storageOk === false &&
+    pendingOps.value.length + inFlightOps.value.length > 0)
 
   // ── Internal helpers ──
 
@@ -981,7 +989,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * одного HTTP-пакета. Дозволено для `unconfirmed`, `rate_limited` (не раніше
    * Retry-After) і `rejected` лише з іншою збіркою клієнта.
    */
-  async function retryBlocked(): Promise<'sent' | 'already-saved' | 'unproven' | 'not-allowed' | 'blocked' | 'too-early'> {
+  async function retryBlocked(): Promise<'sent' | 'sent-held' | 'already-saved' | 'unproven' | 'not-allowed' | 'blocked' | 'too-early'> {
     const sid = sessionId.value
     const info = saveBlock.value
     if (!sid || !info || mode.value !== 'SAVE_BLOCKED' || blockResolving.value) return 'not-allowed'
@@ -1028,7 +1036,18 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       // рекордер відкладає на ~1 с. Оновлюємо його ЗАРАЗ, ще в SAVE_BLOCKED і без
       // await до saveBackup(): якщо backup нижче відмовить, лишиться копія з цими
       // діями, а не стара (рев'ю P0, 2026-09-24).
-      persistBlocked()
+      const recordOk = persistBlocked()
+      const rest = pendingOps.value.length + inFlightOps.value.length
+      if (!recordOk && rest > 0) {
+        // Аварійний запис нових дій не ліг. Знімати зупинку можна, лише якщо ліг
+        // звичайний backup; інакше ці дії — тільки в пам'яті вкладки: лишаємось у
+        // SAVE_BLOCKED (storage_failed: введення заблоковано, вихід із підтвердженням),
+        // наступна спроба — знову кнопкою (LAW §4, рев'ю P0, 2026-09-24).
+        if (!saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])) return 'sent-held'
+        _unblock()
+        _dropBlockedStorage(sid)  // старий запис містить лише вже надіслане
+        return 'sent'
+      }
       _unblock()  // лише після підтвердженого 2xx
       // Знімаємо аварійний запис лише коли решта черги ПІДТВЕРДЖЕНО лягла у
       // звичайний backup. Сховище відмовило → запис лишається (безпечно: дедуп op_id).
@@ -1429,6 +1448,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // SAVE_BLOCKED (2026-09-23)
     saveBlock,
     isSaveBlocked,
+    hasUnsecuredQueue,
     inputLocked,
     droppedWhileBlocked,
     blockResolving,

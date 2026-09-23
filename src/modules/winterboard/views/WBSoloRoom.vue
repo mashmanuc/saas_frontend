@@ -1105,6 +1105,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
 import { useWBStore } from '../board/state/boardStore'
 import { selectAllOnCurrentPage } from '../board/selectableObjects'
 import { useHistory } from '../composables/useHistory'
@@ -1702,6 +1703,9 @@ const authStore = useAuthStore()
 // Аварійні записи SAVE_BLOCKED прив'язані до акаунта: чужий запис на спільному
 // комп'ютері не підхоплюється (ТЗ §7).
 watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
+// Черга без копії у сховищі — вихід/зміна дошки/reload лише з підтвердженням.
+// ДО onBeforeRouteLeave нижче (той одразу прибирає рекордер).
+useUnsecuredQueueGuard()
 const presence = usePresence({
   sessionId,
   userId: String(authStore.user?.id ?? ''),

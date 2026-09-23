@@ -131,6 +131,7 @@ async function onRetry(): Promise<void> {
     const r = await opsSync.retryBlocked()
     if (r === 'unproven') resultText.value = t('winterboard.errors.saveBlocked.result.unproven')
     else if (r === 'already-saved') resultText.value = t('winterboard.errors.saveBlocked.result.alreadySaved')
+    else if (r === 'sent-held') resultText.value = t('winterboard.errors.saveBlocked.result.sentHeld')
     else if (r === 'too-early') {
       const ms = (info.value?.retryNotBefore ?? Date.now()) - Date.now()
       resultText.value = t('winterboard.errors.saveBlocked.result.tooEarly', { seconds: Math.max(1, Math.ceil(ms / 1000)) })
