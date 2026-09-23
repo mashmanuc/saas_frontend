@@ -45,4 +45,32 @@ describe('windowControlsPlacement', () => {
     const s = windowControlsPlacement({ left: 0, top: 100, width: 200 }, 0)
     expect(s.transform).toBe('translateX(-100%)')
   })
+
+  // Вікно Інтегралика після «побудуй графік» лишається відкритим праворуч від
+  // графіка (виміряно на 1440×900: вікно x 420–1020, графік до 425).
+  it('праворуч — вікно Інтегралика: групу туди не ставимо', () => {
+    const frame = { left: 22, top: 200, width: 346 }
+    // вікно починається трохи нижче за верх картки: праворуч закрито, зверху вільно
+    const palette = { left: 363, top: 196, right: 963, bottom: 760 }
+    const s = windowControlsPlacement(frame, 1117, [palette])
+    expect(s.transform).toBe('translateX(-100%)')
+    expect(s.left).toBe('368px')
+  })
+
+  it('вікно закриває і праворуч, і зверху — всередині кута, як було', () => {
+    const frame = { left: 22, top: 21, width: 346 }
+    const palette = { left: 363, top: 0, right: 963, bottom: 560 }
+    const s = windowControlsPlacement(frame, 1117, [palette])
+    expect(s).toEqual({
+      left: `${368 - WINDOW_CONTROLS_INSET_PX}px`,
+      top: `${21 + WINDOW_CONTROLS_INSET_PX}px`,
+      transform: 'translateX(-100%)',
+    })
+  })
+
+  it('вікно далеко — не заважає, група праворуч', () => {
+    const frame = { left: 22, top: 21, width: 346 }
+    const palette = { left: 900, top: 0, right: 1100, bottom: 400 }
+    expect(windowControlsPlacement(frame, 1117, [palette]).transform).toBeUndefined()
+  })
 })

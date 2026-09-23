@@ -10,6 +10,8 @@
  *   1. праворуч від кута — якщо до краю поля є місце на найширшу групу;
  *   2. над кутом — якщо над карткою є місце на висоту групи;
  *   3. всередині кута — як було (картка впритул до правого й верхнього краю).
+ * Місце, яке закриває плаваюче вікно (Інтегралик, `floatingObstacles`),
+ * пропускаємо: кнопки під вікном — однаково що без кнопок.
  *
  * Координати — px відносно `.wb-canvas` (ті самі, що `getOverlayStyle`).
  */
@@ -29,15 +31,35 @@ export interface CardFrame {
   width: number
 }
 
-export function windowControlsPlacement(frame: CardFrame, fieldWidth: number): Record<string, string> {
+export interface Box {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+function overlapsAny(box: Box, obstacles: readonly Box[]): boolean {
+  return obstacles.some((o) =>
+    box.left < o.right && box.right > o.left && box.top < o.bottom && box.bottom > o.top)
+}
+
+export function windowControlsPlacement(
+  frame: CardFrame,
+  fieldWidth: number,
+  obstacles: readonly Box[] = [],
+): Record<string, string> {
   const right = frame.left + frame.width
   const gap = WINDOW_CONTROLS_GAP_PX
+  const W = WINDOW_CONTROLS_MAX_W_PX
+  const H = WINDOW_CONTROLS_H_PX
 
-  if (fieldWidth > 0 && fieldWidth - (right + gap) >= WINDOW_CONTROLS_MAX_W_PX) {
+  const rightBox = { left: right + gap, top: frame.top, right: right + gap + W, bottom: frame.top + H }
+  if (fieldWidth > 0 && fieldWidth - (right + gap) >= W && !overlapsAny(rightBox, obstacles)) {
     return { left: `${right + gap}px`, top: `${frame.top}px` }
   }
-  const above = frame.top - gap - WINDOW_CONTROLS_H_PX
-  if (above >= 0) {
+  const above = frame.top - gap - H
+  const aboveBox = { left: right - W, top: above, right, bottom: above + H }
+  if (above >= 0 && !overlapsAny(aboveBox, obstacles)) {
     return { left: `${right}px`, top: `${above}px`, transform: 'translateX(-100%)' }
   }
   return {

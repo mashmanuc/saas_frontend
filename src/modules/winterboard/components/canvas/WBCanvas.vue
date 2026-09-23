@@ -912,6 +912,7 @@ import { OVERLAY_PROXY_TYPES, assetCapabilities, isMinimizedOnBoard, isResizable
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
+import { obstaclesRelativeTo } from '../../board/floatingObstacles'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls } from '../../composables/boardWindowControls'
 import { isAssetSelectable } from '../../board/selectableObjects'
@@ -1577,9 +1578,13 @@ const windowControlsStyle = computed<Record<string, string>>(() => {
     return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px` }
   }
   const frame = getOverlayStyle(asset)
+  // Вікно Інтегралика над полотном — туди кнопки не ставимо (floatingObstacles).
+  const fieldRect = containerRef.value?.getBoundingClientRect()
+  const obstacles = fieldRect ? obstaclesRelativeTo(fieldRect) : []
   return windowControlsPlacement(
     { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
     containerWidth.value,
+    obstacles,
   )
 })
 
@@ -3640,8 +3645,20 @@ function handleKeydown(e: KeyboardEvent): void {
     if (editingText.value) return
     if (stickyEditingId.value) return
     e.preventDefault()
-    const cx = (props.width / 2) / (props.zoom || 1) + (wbStore.scrollX || 0)
-    const cy = (props.height / 2) / (props.zoom || 1) + (wbStore.scrollY || 0)
+    // Центр ВИДИМОЇ частини аркуша (одиниці аркуша). Було `(props.width/2)/zoom
+    // + scrollX`: props.width — уже розмір аркуша, а не екрана, тож ділення на
+    // масштаб кидало стікер у правий нижній кут (при 54 % — (1678, 925) на
+    // аркуші 1920×1080; FIRST USER GATE 2026-09-23). scroll сцену не рухає (Б-26).
+    const z = props.zoom || 1
+    const o = wbStore.stageOrigin
+    const fieldW = containerWidth.value || props.width * z
+    const fieldH = containerHeight.value || props.height * z
+    const x0 = Math.max(0, -o.x / z)
+    const x1 = Math.min(props.width, (fieldW - o.x) / z)
+    const y0 = Math.max(0, -o.y / z)
+    const y1 = Math.min(props.height, (fieldH - o.y) / z)
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
     stickyNotes.createSticky(cx - 100, cy - 75)
     emit('tool-change', 'select')
     return

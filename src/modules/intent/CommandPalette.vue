@@ -335,6 +335,7 @@ import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from '
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
+import { setFloatingObstacle } from '@/modules/winterboard/board/floatingObstacles'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { explainWithRenderedMath } from './explainMath'
@@ -1678,6 +1679,32 @@ function panelPointerMove(e) {
   if (!panelDrag) return
   panelPos.value = clampPanel(e.clientX - panelDrag.dx, e.clientY - panelDrag.dy)
 }
+// Де стоїть вікно — для полотна, щоб воно не ставило під нього кнопки картки
+// «— ⛶ ×» (FIRST USER GATE 2026-09-23). Лише повідомляємо; поведінку вікна не міняємо.
+function reportPanelRect() {
+  const el = panelEl.value
+  if (!open.value || !el) { setFloatingObstacle('integralyk', null); return }
+  const r = el.getBoundingClientRect()
+  setFloatingObstacle('integralyk', { left: r.left, top: r.top, right: r.right, bottom: r.bottom })
+}
+let panelRO = null
+watch([open, panelEl, panelPos], async () => {
+  await nextTick()
+  reportPanelRect()
+  panelRO?.disconnect()
+  panelRO = null
+  if (panelEl.value && typeof ResizeObserver !== 'undefined') {
+    panelRO = new ResizeObserver(reportPanelRect)
+    panelRO.observe(panelEl.value)
+  }
+})
+window.addEventListener('resize', reportPanelRect)
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', reportPanelRect)
+  panelRO?.disconnect()
+  setFloatingObstacle('integralyk', null)
+})
+
 function panelPointerUp() {
   if (!panelDrag) return
   panelDrag = null
