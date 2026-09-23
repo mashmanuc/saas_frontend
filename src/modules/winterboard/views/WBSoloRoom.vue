@@ -673,6 +673,8 @@
           :local-mode="isLocalWorkspace"
           @place="placeItemAtCenter"
           @apply-template="handleApplyTemplate"
+          @library-state="onMaterialsLibraryState"
+          @needs-space="onMaterialsNeedsSpace"
         />
       </aside>
     </div>
@@ -1860,6 +1862,16 @@ const showSidebarOverlay = ref(false)
 const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate: recalculateCanvas } = useCanvasResize({
   containerRef: canvasContainerRef,
   onResize(w, h) {
+    // Панель «Матеріали» згорнулась сама (порожня бібліотека) — поле стало
+    // ширшим, а аркуш уже вписано у вузьке. Вписуємо ще раз, коли розмір
+    // устоявся, — якщо вчитель масштаб руками не чіпав.
+    if (refitAfterMaterialsCollapse) {
+      refitAfterMaterialsCollapse = false
+      if (initialFitDone.value && !userZoomed.value) {
+        fitPageNow()
+        return
+      }
+    }
     // Страховка: сцена не повинна вилазити за контейнер, коли вікно зменшили.
     // ⚠️ Раніше це правило діяло ЗАВЖДИ, тож будь-який resize — відкриття
     // бічної панелі, поворот планшета, поява клавіатури — скидав масштаб,
@@ -2333,6 +2345,27 @@ function toggleSidebarCollapse() {
   }
   // Notify ResizeObserver about container size change after CSS transition ends
   setTimeout(() => recalculateCanvas(), 220)
+}
+
+// ── Новачок: панель «Матеріали» стартує згорнутою ─────────────────────────────
+// FIRST USER GATE 2026-09-23: при 953 px панель з «Матеріалів ще немає» забирала
+// ~40 % ширини → аркуш 25 %. Коли перше завантаження списку порожнє — згортаємо
+// (лишається вкладка ▶). Розгортаємо самі лише те, що самі згорнули, і лише коли
+// панель потрібна: вибрано графік/інспектор або документ зі сторінками.
+let materialsAutoCollapsed = false
+let refitAfterMaterialsCollapse = false
+
+function onMaterialsLibraryState(state: { empty: boolean }) {
+  if (!state.empty || sidebarCollapsedBefore.value !== null) return
+  materialsAutoCollapsed = true
+  refitAfterMaterialsCollapse = true
+  toggleSidebarCollapse()
+}
+
+function onMaterialsNeedsSpace() {
+  if (!materialsAutoCollapsed || sidebarCollapsedBefore.value === null) return
+  materialsAutoCollapsed = false
+  toggleSidebarCollapse()
 }
 
 // Persist sidebar width to localStorage (debounced)

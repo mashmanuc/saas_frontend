@@ -337,7 +337,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, toRef, onMounted } from 'vue'
+import { ref, computed, toRef, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderIcon } from 'lucide-vue-next'
 import { useGroupSidebar } from '../../composables/useGroupSidebar'
@@ -420,6 +420,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   place: [item: AllowedContentItem]
   'apply-template': [templateId: string]
+  /** Перше завантаження списку завершилось; empty — «Матеріалів ще немає». */
+  'library-state': [state: { empty: boolean }]
+  /** Панель потрібна зараз: вибрано об'єкт з інспектором або документ зі сторінками. */
+  'needs-space': []
 }>()
 
 const { t } = useI18n()
@@ -529,6 +533,21 @@ const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,
 })
 const wbStore = useWBStore()
+
+// FIRST USER GATE 2026-09-23: у новачка панель відкривалась одразу з «Матеріалів
+// ще немає» і забирала ~40 % ширини (при 953 px аркуш — 25 %). Кімната згортає
+// панель, коли перше завантаження списку повернуло порожньо. Лише перше — далі
+// рішення за людиною; помилка завантаження — нічого не повідомляємо (лишаємо як є).
+let libraryStateReported = false
+watch(() => sidebar.isLoading.value, (loading, wasLoading) => {
+  if (libraryStateReported || loading || !wasLoading || sidebar.error.value) return
+  libraryStateReported = true
+  emit('library-state', { empty: sidebar.totalCount.value === 0 })
+})
+// Згорнута панель не має ховати вирази графіка чи сторінки PDF, коли їх вибрали.
+watch(() => hasActiveInspector.value || !!selectedDocAsset.value, (need) => {
+  if (need) emit('needs-space')
+})
 
 function handleFolderSelect(id: number | null) {
   selectedFolderId.value = id
