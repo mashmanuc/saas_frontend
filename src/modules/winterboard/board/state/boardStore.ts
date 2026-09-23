@@ -284,6 +284,8 @@ export interface WBBoardState {
   // Workspace identity (LAW-01)
   workspaceId: string | null
   workspaceName: string
+  /** Чи зсуває scroll сцену (пан). Вмикає кімната, яка вміє це врахувати. */
+  stageFollowsScroll: boolean
   ownerId: string | null
 
   // R0: Board runtime mode — edit (normal), replay (playback), readonly (public static)
@@ -576,6 +578,7 @@ export const useWBStore = defineStore('wb-board', {
   state: (): WBBoardState => ({
     workspaceId: null,
     workspaceName: 'Untitled',
+    stageFollowsScroll: false,
     ownerId: null,
 
     mode: 'edit',
@@ -778,14 +781,15 @@ export const useWBStore = defineStore('wb-board', {
     stageOrigin(state): { x: number; y: number } {
       const scaledW = state.pageWidth * state.zoom
       const scaledH = state.pageHeight * state.zoom
-      return {
-        x: state.containerWidth > 0
-          ? Math.max(0, (state.containerWidth - scaledW) / 2) + state.scrollX
-          : 0,
-        y: state.containerHeight > 0
-          ? Math.max(0, (state.containerHeight - scaledH) / 2) + state.scrollY
-          : 0,
-      }
+      const centerX = state.containerWidth > 0 ? Math.max(0, (state.containerWidth - scaledW) / 2) : 0
+      const centerY = state.containerHeight > 0 ? Math.max(0, (state.containerHeight - scaledH) / 2) : 0
+      // Пан (FIRST USER GATE 2026-09-23): scroll — як `scrollLeft` (скільки аркуша
+      // сховано зліва/згори), тож сцена зсувається на −scroll. Лише там, де кімната
+      // це ввімкнула (`stageFollowsScroll`, зараз — WBSoloRoom); інші кімнати ще
+      // переводять «екран → аркуш» без зсуву, тож для них сцена стоїть, як раніше.
+      const sx = state.stageFollowsScroll ? state.scrollX : 0
+      const sy = state.stageFollowsScroll ? state.scrollY : 0
+      return { x: centerX - sx, y: centerY - sy }
     },
 
     // Phase 34: Unified object access
@@ -3198,6 +3202,11 @@ export const useWBStore = defineStore('wb-board', {
     setZoom(zoom: number): void {
       // LAW-20: Zoom range 10%–500%
       this.zoom = Math.max(0.1, Math.min(5, zoom))
+    },
+
+    /** Пан зсуває аркуш — лише для кімнати, що це врахувала (див. `stageOrigin`). */
+    setStageFollowsScroll(on: boolean): void {
+      this.stageFollowsScroll = on
     },
 
     // A5.1: Set scroll position for follow mode + viewport sync

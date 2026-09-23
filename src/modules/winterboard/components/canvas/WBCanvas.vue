@@ -3,6 +3,7 @@
     ref="containerRef"
     class="wb-canvas"
     :class="[cursorClass, { 'wb-canvas--panning': isPanningRef }]"
+    :style="stageOffsetVars"
     tabindex="0"
     @keydown="handleKeydown"
     @dragover.prevent
@@ -1996,8 +1997,8 @@ const strokes = computed(() => {
   // Viewport bounds in canvas coordinates (account for scroll offset)
   const vw = props.width / props.zoom
   const vh = props.height / props.zoom
-  const vx = (containerRef.value?.scrollLeft ?? 0) / props.zoom
-  const vy = (containerRef.value?.scrollTop ?? 0) / props.zoom
+  const vx = Math.max(0, -wbStore.stageOrigin.x) / props.zoom
+  const vy = Math.max(0, -wbStore.stageOrigin.y) / props.zoom
 
   const visibleIds = spatialIndex.query({ x: vx, y: vy, w: vw, h: vh })
 
@@ -2891,9 +2892,11 @@ function getPointerPosition(): WBPoint | null {
     // Mouse: always 0.5
   }
 
+  // Konva дає точку відносно полотна сцени, а не аркуша: віднімаємо позицію
+  // сцени (пан зсуває її, `stageOrigin`). Без зсуву — те саме, що й було.
   return {
-    x: pos.x / props.zoom,
-    y: pos.y / props.zoom,
+    x: (pos.x - stage.x()) / props.zoom,
+    y: (pos.y - stage.y()) / props.zoom,
     t: Date.now(),
     pressure,
   }
@@ -3697,8 +3700,8 @@ async function handleDrop(e: DragEvent): Promise<void> {
   let dropY = 100
   const rect = containerRef.value?.getBoundingClientRect()
   if (rect) {
-    dropX = (e.clientX - rect.left) / (props.zoom || 1)
-    dropY = (e.clientY - rect.top) / (props.zoom || 1)
+    dropX = (e.clientX - rect.left - wbStore.stageOrigin.x) / (props.zoom || 1)
+    dropY = (e.clientY - rect.top - wbStore.stageOrigin.y) / (props.zoom || 1)
   }
 
   const asset = await imageHandleDrop(e, dropX, dropY)
@@ -5001,6 +5004,41 @@ function isZoomBlocked(): boolean {
  * scroll-blocking 'wheel' event"). Тепер listener підключений вручну у
  * onMounted з {passive: false} (бо preventDefault потрібен conditional).
  */
+// ── Пан: scroll = скільки аркуша сховано зліва/згори (як scrollLeft) ─────────
+// Діє лише коли кімната ввімкнула `stageFollowsScroll` (WBSoloRoom). В інших
+// кімнатах scroll, як і раніше, сцену не рухає — і тут поводимось як раніше.
+function currentScrollX(): number { return wbStore.stageFollowsScroll ? wbStore.scrollX : 0 }
+function currentScrollY(): number { return wbStore.stageFollowsScroll ? wbStore.scrollY : 0 }
+
+/** Не далі за край аркуша: гортати є куди лише коли аркуш більший за поле. */
+function clampScrollFor(x: number, y: number, zoom: number): { x: number; y: number } {
+  if (!wbStore.stageFollowsScroll) return { x, y }
+  const maxX = Math.max(0, props.width * zoom - (containerWidth.value || 0))
+  const maxY = Math.max(0, props.height * zoom - (containerHeight.value || 0))
+  return { x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) }
+}
+
+/** Для кімнати: той самий кламп для пану двома пальцями й follow-mode. */
+function clampScroll(x: number, y: number): { x: number; y: number } {
+  return clampScrollFor(x, y, props.zoom)
+}
+
+// Змінився масштаб чи розмір поля — scroll, що став «за краєм», повертаємо.
+watch(
+  () => [props.zoom, containerWidth.value, containerHeight.value, wbStore.stageFollowsScroll],
+  () => {
+    if (!wbStore.stageFollowsScroll) return
+    const c = clampScrollFor(wbStore.scrollX, wbStore.scrollY, props.zoom)
+    if (c.x !== wbStore.scrollX || c.y !== wbStore.scrollY) emit('scroll-change', c.x, c.y)
+  },
+)
+
+/** HTML-шари, що рахують `x × zoom` від кута поля, зсуваються разом зі сценою. */
+const stageOffsetVars = computed(() => ({
+  '--wb-stage-ox': `${wbStore.stageOrigin.x}px`,
+  '--wb-stage-oy': `${wbStore.stageOrigin.y}px`,
+}))
+
 function handleWheel(e: WheelEvent): void {
   // BUG-1 FIX: Block zoom during drawing or recent pen activity
   if (isZoomBlocked()) return
@@ -5021,11 +5059,20 @@ function handleWheel(e: WheelEvent): void {
 
     if (Math.abs(newZoom - oldZoom) < 0.001) return
 
-    const scroll = zoomToCursor(cursorX, cursorY, 0, 0, oldZoom, newZoom)
+    const scroll = zoomToCursor(cursorX, cursorY, currentScrollX(), currentScrollY(), oldZoom, newZoom)
+    const c = clampScrollFor(scroll.scrollX, scroll.scrollY, newZoom)
     emit('zoom-change', newZoom)
-    emit('scroll-change', scroll.scrollX, scroll.scrollY)
+    emit('scroll-change', c.x, c.y)
+    return
   }
-  // Plain scroll без Ctrl — пропускаємо до default behavior (scroll page).
+  // Звичайне колесо / два пальці на тачпаді — гортаємо аркуш, якщо він більший
+  // за поле (FIRST USER GATE 2026-09-23: до правої й нижньої частини збільшеного
+  // аркуша було не дістатися). Нікуди гортати — віддаємо подію браузеру, як і було.
+  if (!wbStore.stageFollowsScroll) return
+  const c = clampScrollFor(wbStore.scrollX + e.deltaX, wbStore.scrollY + e.deltaY, props.zoom)
+  if (c.x === wbStore.scrollX && c.y === wbStore.scrollY) return
+  e.preventDefault()
+  emit('scroll-change', c.x, c.y)
 }
 
 /** Middle mouse button → start panning */
@@ -5034,14 +5081,17 @@ function handlePanStart(e: MouseEvent): void {
   isPanningRef.value = true
   panStartX = e.clientX
   panStartY = e.clientY
-  panScrollStartX = 0
-  panScrollStartY = 0
+  // Від поточного scroll, а не від 0: інакше кожен новий пан стрибав на початок.
+  panScrollStartX = currentScrollX()
+  panScrollStartY = currentScrollY()
 
   const onPanMove = (ev: MouseEvent) => {
     if (!isPanning) return
     const dx = ev.clientX - panStartX
     const dy = ev.clientY - panStartY
-    emit('scroll-change', panScrollStartX - dx, panScrollStartY - dy)
+    // «Рука»: тягнеш праворуч — аркуш їде праворуч (scroll = скільки сховано зліва).
+    const c = clampScrollFor(panScrollStartX - dx, panScrollStartY - dy, props.zoom)
+    emit('scroll-change', c.x, c.y)
   }
 
   const onPanEnd = () => {
@@ -5102,9 +5152,10 @@ function handleTouchMoveZoom(e: TouchEvent): void {
   const rawZoom = pinchStartZoom * scale
   const newZoom = snapZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, rawZoom)))
 
-  const scroll = zoomToCursor(pinchCenterX, pinchCenterY, 0, 0, props.zoom, newZoom)
+  const scroll = zoomToCursor(pinchCenterX, pinchCenterY, currentScrollX(), currentScrollY(), props.zoom, newZoom)
+  const c = clampScrollFor(scroll.scrollX, scroll.scrollY, newZoom)
   emit('zoom-change', newZoom)
-  emit('scroll-change', scroll.scrollX, scroll.scrollY)
+  emit('scroll-change', c.x, c.y)
 }
 
 /** Touch end — stop pinch */
@@ -5505,6 +5556,7 @@ watch(
 defineExpose({
   getStage: () => stageRef.value?.getStage?.() || null,
   fitToPage: handleFitToPage,
+  clampScroll,
   fitToWidth: handleFitToWidth,
   /** Open text overlay for object (called from WBSelectionToolbar via parent) */
   openTextOverlay: (objectId: string) => { activeTextObjectId.value = objectId },
@@ -5542,6 +5594,19 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
 </script>
 
 <style scoped>
+/* Шари, які рахують позицію як `x × zoom` від кута поля (не через stageOrigin),
+   зсуваються разом зі сценою при пані. Властивість `translate` складається з
+   їхнім власним `transform`. Картки (getOverlayStyle) і дзеркало штрихів тут
+   НЕ перелічені: перші вже враховують stageOrigin, друге копіює готовий шар. */
+.wb-preview-canvas,
+.wb-text-edit-overlay,
+.wb-sticky-edit-overlay,
+.wb-media-overlay,
+.wb-laser-trail-dot,
+.wb-laser-dot {
+  translate: var(--wb-stage-ox, 0px) var(--wb-stage-oy, 0px);
+}
+
 .wb-canvas {
   position: relative;
   width: 100%;

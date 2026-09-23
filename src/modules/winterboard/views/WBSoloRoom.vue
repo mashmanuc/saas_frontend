@@ -609,6 +609,7 @@
 
         <!-- Remote cursors overlay (A3.1) -->
         <WBRemoteCursors
+          :style="{ translate: `${store.stageOrigin.x}px ${store.stageOrigin.y}px` }"
           :cursors="presence.remoteCursors.value"
           :zoom="store.zoom"
           :current-page-id="store.currentPage?.id ?? ''"
@@ -1750,6 +1751,8 @@ const followMode = useFollowMode({
   pageIds: computed(() => store.pages.map((p) => p.id)),
   setZoom: (z: number) => store.setZoom(z),
   setScroll: (x: number, y: number) => {
+    const c = clampScrollToPage(x, y)
+    x = c.x; y = c.y
     store.setScroll(x, y)
     // Apply scroll to canvas container
     if (canvasContainerRef.value) {
@@ -1897,6 +1900,17 @@ const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate:
 // завантаження йдемо тим самим шляхом, що й ⧉ — `WBCanvas.fitToPage()`
 // (відступ 40 px, скрол у нуль). Далі масштаб — справа вчителя.
 const userZoomed = ref(false)
+
+// ── Пан (FIRST USER GATE 2026-09-23) ─────────────────────────────────────────
+// Ця кімната враховує зсув сцени в усіх своїх «екран → аркуш», тож вмикає
+// `stageFollowsScroll`: пан/тачпад/два пальці рухають аркуш. Інші кімнати — ні.
+store.setStageFollowsScroll(true)
+onBeforeUnmount(() => store.setStageFollowsScroll(false))
+
+/** Кламп від полотна: гортати є куди лише коли аркуш більший за поле. */
+function clampScrollToPage(x: number, y: number): { x: number; y: number } {
+  return canvasRef.value?.clampScroll?.(x, y) ?? { x, y }
+}
 const initialFitDone = ref(false)
 /** Наш власний fit не має вважатись «учитель змінив масштаб». */
 let applyingProgrammaticFit = false
@@ -1963,7 +1977,8 @@ function isSelfInteractive3dSelected(): boolean {
 
 const touchGestures = useTouchGestures(canvasContainerRef, {
   onPan(dx, dy) {
-    store.setScroll(store.scrollX + dx, store.scrollY + dy)
+    const c = clampScrollToPage(store.scrollX + dx, store.scrollY + dy)
+    store.setScroll(c.x, c.y)
     followMode.onUserInteraction()
   },
   onPanEnd() {
@@ -2503,7 +2518,11 @@ function handleDeleteObjectText(objectId: string) {
 const selectionCanvasRect = computed(() => {
   // Depend on selectedIds so rect is recalculated on selection change
   if (store.selectedIds.length === 0) return null
-  return canvasContainerRef.value?.getBoundingClientRect() ?? null
+  const r = canvasContainerRef.value?.getBoundingClientRect()
+  if (!r) return null
+  // Тулбар рахує `rect.left + x × zoom` — початок аркуша, тобто з пан-зсувом сцени.
+  const o = store.stageOrigin
+  return new DOMRect(r.left + o.x, r.top + o.y, r.width, r.height)
 })
 
 // P2: Bounding box of selected objects for WBSelectionToolbar positioning
@@ -2717,9 +2736,10 @@ const pageJumpStyle = computed(() => {
   const zoom = store.zoom || 1
   const rect = canvasContainerRef.value?.getBoundingClientRect()
   if (!rect) return {}
-  // Position over the footer center of the asset
-  const left = rect.left + (asset.x + asset.w / 2) * zoom - 40
-  const top = rect.top + (asset.y + asset.h - 16) * zoom - 12
+  // Position over the footer center of the asset (з пан-зсувом сцени — stageOrigin)
+  const o = store.stageOrigin
+  const left = rect.left + o.x + (asset.x + asset.w / 2) * zoom - 40
+  const top = rect.top + o.y + (asset.y + asset.h - 16) * zoom - 12
   return {
     position: 'fixed' as const,
     left: `${left}px`,
