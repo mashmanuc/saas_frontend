@@ -62,11 +62,20 @@ interface Props {
   zoom?: number
   /** Current page ID — only show cursors on same page */
   currentPageId?: string
+  /**
+   * Позиція аркуша в полі (px) — пан зсуває сцену (`stageOrigin`). Зсуваємо
+   * кожен курсор, а не весь шар: шар обрізає вміст (`overflow: hidden`), і
+   * зсунутий цілком він ховав курсори біля правого/нижнього краю поля.
+   */
+  offsetX?: number
+  offsetY?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   zoom: 1,
   currentPageId: '',
+  offsetX: 0,
+  offsetY: 0,
 })
 
 // ─── Stale cursor cleanup ───────────────────────────────────────────────────
@@ -104,7 +113,7 @@ const visibleCursors = computed(() => {
 
 function getCursorStyle(cursor: WBRemoteCursor): Record<string, string> {
   return {
-    transform: `translate(${cursor.x * props.zoom}px, ${cursor.y * props.zoom}px)`,
+    transform: `translate(${cursor.x * props.zoom + props.offsetX}px, ${cursor.y * props.zoom + props.offsetY}px)`,
   }
 }
 </script>

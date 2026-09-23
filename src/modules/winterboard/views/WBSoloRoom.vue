@@ -609,7 +609,8 @@
 
         <!-- Remote cursors overlay (A3.1) -->
         <WBRemoteCursors
-          :style="{ translate: `${store.stageOrigin.x}px ${store.stageOrigin.y}px` }"
+          :offset-x="store.stageOrigin.x"
+          :offset-y="store.stageOrigin.y"
           :cursors="presence.remoteCursors.value"
           :zoom="store.zoom"
           :current-page-id="store.currentPage?.id ?? ''"
