@@ -295,7 +295,7 @@ const toolbarPosition = computed(() => {
   }
 
   // Canvas coords → screen coords relative to viewport (fixed positioning)
-  const offset = wbStore.canvasOffset
+  const offset = wbStore.stageOrigin
   const canvasRect = container.getBoundingClientRect()
 
   // Object position in viewport coords

@@ -764,6 +764,30 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Де НАСПРАВДІ стоїть Konva-сцена — `WBCanvas.stageConfig.x/y` бере саме це.
+     * Єдине джерело для HTML поверх аркуша (картки, бейджі) і для переведення
+     * «екран → аркуш» (drop, вставка з трею).
+     *
+     * Б-26 (2026-09-23): сцена зсувається на `canvasOffset` лише коли відомий
+     * розмір контейнера, а `setContainerSize` ніхто не викликає → сцена стоїть
+     * у (0,0). Картки ж брали `canvasOffset` = scroll: пан середньою кнопкою,
+     * два пальці чи Ctrl+колесо відривали їх від аркуша (графік їхав убік, а
+     * клік по ньому бив у порожнє місце). Тепер усі беруть позицію сцени.
+     */
+    stageOrigin(state): { x: number; y: number } {
+      const scaledW = state.pageWidth * state.zoom
+      const scaledH = state.pageHeight * state.zoom
+      return {
+        x: state.containerWidth > 0
+          ? Math.max(0, (state.containerWidth - scaledW) / 2) + state.scrollX
+          : 0,
+        y: state.containerHeight > 0
+          ? Math.max(0, (state.containerHeight - scaledH) / 2) + state.scrollY
+          : 0,
+      }
+    },
+
     // Phase 34: Unified object access
     getObjectById(state): (id: string) => WBStroke | WBAsset | null {
       return (id: string) => {

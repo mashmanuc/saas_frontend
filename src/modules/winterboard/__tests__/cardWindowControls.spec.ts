@@ -206,10 +206,10 @@ describe('INV-WIN-6 · полотно: одна група, правий вер�
     expect(canvas).not.toContain('minimizeButtonStyle')
   })
 
-  it('група стоїть у правому верхньому куті картки', () => {
+  it('група прив’язана до правого верхнього кута картки — через windowControlsPlacement', () => {
+    // FIRST USER GATE 2026-09-23: той самий кут, але зовні (кнопки лягали на графік).
     const block = canvas.slice(canvas.indexOf('const windowControlsStyle'), canvas.indexOf('function handleWindowExpand'))
-    expect(block).toContain('const right = parseFloat(frame.left) + parseFloat(frame.width) - WINDOW_CONTROLS_INSET_PX')
-    expect(block).toContain('const top = parseFloat(frame.top) + WINDOW_CONTROLS_INSET_PX')
+    expect(block).toContain('windowControlsPlacement(')
     expect(block).not.toContain('frame.height')
   })
 

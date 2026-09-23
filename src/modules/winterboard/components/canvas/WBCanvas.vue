@@ -911,6 +911,7 @@ import { useWBStore } from '../../board/state/boardStore'
 import { OVERLAY_PROXY_TYPES, assetCapabilities, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
+import { windowControlsPlacement, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls } from '../../composables/boardWindowControls'
 import { isAssetSelectable } from '../../board/selectableObjects'
@@ -1565,9 +1566,10 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
 const windowControlsActions = computed(() =>
   cardWindowActions(windowControlsTarget.value, trayViewer.value))
 
-const WINDOW_CONTROLS_INSET_PX = 6
-
-/** Правий верхній кут картки; для розгорнутої — правий верхній кут полотна. */
+/**
+ * Правий верхній кут картки — зовні, щоб кнопки не лягали на вміст
+ * (див. windowControlsPlacement); для розгорнутої — правий верхній кут полотна.
+ */
 const windowControlsStyle = computed<Record<string, string>>(() => {
   const asset = windowControlsTarget.value
   if (!asset) return {}
@@ -1575,9 +1577,10 @@ const windowControlsStyle = computed<Record<string, string>>(() => {
     return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px` }
   }
   const frame = getOverlayStyle(asset)
-  const right = parseFloat(frame.left) + parseFloat(frame.width) - WINDOW_CONTROLS_INSET_PX
-  const top = parseFloat(frame.top) + WINDOW_CONTROLS_INSET_PX
-  return { left: `${right}px`, top: `${top}px`, transform: 'translateX(-100%)' }
+  return windowControlsPlacement(
+    { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
+    containerWidth.value,
+  )
 })
 
 function handleWindowExpand(assetId: string): void {
@@ -1660,10 +1663,10 @@ const itemsWithAudio = computed(() => {
 })
 
 // Position badge at top-right corner of object (canvas coords → screen coords)
-// FIX: include canvasOffset for correct positioning during pan/scroll
+// FIX: include stageOrigin (actual stage position, Б-26)
 function audioBadgePosition(item: WBStroke | WBAsset) {
   const zoom = props.zoom
-  const offset = wbStore.canvasOffset
+  const offset = wbStore.stageOrigin
   let x: number, y: number, w: number
 
   if ('points' in item && (item as WBStroke).points) {
@@ -1820,7 +1823,7 @@ const textOverlayPosition = computed(() => {
   if (!activeTextObject.value) return {}
   const item = activeTextObject.value
   const zoom = props.zoom
-  const offset = wbStore.canvasOffset
+  const offset = wbStore.stageOrigin
   const isAsset = 'w' in item && 'h' in item
   const x = isAsset ? (item as WBAsset).x : ((item as WBStroke).points?.[0]?.x ?? 0)
   const y = isAsset ? (item as WBAsset).y + (item as WBAsset).h : ((item as WBStroke).points?.[0]?.y ?? 0) + 30
@@ -2161,14 +2164,15 @@ const cursorClass = computed(() => {
 const stageConfig = computed(() => {
   const cw = wbStore.containerWidth
   const ch = wbStore.containerHeight
-  const offset = wbStore.canvasOffset
+  // Позиція сцени — `stageOrigin`, той самий, що й у всіх HTML-оверлеїв (Б-26).
+  const origin = wbStore.stageOrigin
   return {
     width: cw > 0 ? cw : props.width * props.zoom,
     height: ch > 0 ? ch : props.height * props.zoom,
     scaleX: props.zoom,
     scaleY: props.zoom,
-    x: cw > 0 ? offset.x : 0,
-    y: ch > 0 ? offset.y : 0,
+    x: origin.x,
+    y: origin.y,
   }
 })
 
@@ -2535,7 +2539,7 @@ const groupDragOverlayStyle = computed(() => {
   if (!isFinite(minX)) return null
 
   // Canvas-space → screen-space (relative to canvas container)
-  const offset = wbStore.canvasOffset
+  const offset = wbStore.stageOrigin
   const zoom = props.zoom
 
   const left = (minX * zoom) + offset.x - OVERLAY_PAD
@@ -4291,11 +4295,11 @@ function handleAssetLiveTransform(asset: WBAsset, e: Konva.KonvaEventObject<Even
  *  transformOrigin:'center' = center-rotation pivot (matches Konva proxy offset=w/2).
  */
 function getOverlayStyle(asset: WBAsset): Record<string, string> {
-  // canvasOffset = pan/scroll state of the Konva stage (same offset applied to
+  // stageOrigin = actual Konva stage position (the same value applied to
   // stage x/y in stageConfig). All other overlay helpers (badge, toolbar label)
   // already include this offset — without it overlays drift away from their
   // Konva proxy on large displays where panning is more frequent.
-  const { x: ox, y: oy } = wbStore.canvasOffset
+  const { x: ox, y: oy } = wbStore.stageOrigin
   const lt = liveTransform.value?.id === asset.id ? liveTransform.value : null
   const x = (lt?.x ?? asset.x) * props.zoom + ox
   const y = (lt?.y ?? asset.y) * props.zoom + oy

@@ -590,8 +590,8 @@
           v-if="testStore.testMode"
           :test-objects="currentTestObjects"
           :zoom="store.zoom"
-          :scroll-x="store.scrollX ?? 0"
-          :scroll-y="store.scrollY ?? 0"
+          :scroll-x="-store.stageOrigin.x / (store.zoom || 1)"
+          :scroll-y="-store.stageOrigin.y / (store.zoom || 1)"
           :mode="testStore.testPhase"
           :selected-test-id="testStore.selectedTestId"
           :grade-result="currentPageGradeResult"
@@ -2115,9 +2115,9 @@ const contentDrop = useContentDrop({
   screenToCanvas: (x: number, y: number) => {
     const rect = canvasContainerRef.value?.getBoundingClientRect()
     if (rect) {
-      // Віднімаємо canvasOffset (stage.position() = центр-offset + scroll), інакше
+      // Віднімаємо stageOrigin (= stage.position(), Б-26), інакше
       // при fit-по-ширині / скролі координата зміщена (див. ADD_TOOL_AT_CLIENT).
-      const offset = store.canvasOffset
+      const offset = store.stageOrigin
       const zoom = store.zoom || 1
       return {
         x: (x - rect.left - offset.x) / zoom,
@@ -2137,11 +2137,11 @@ function insertToolAtCenter(mime: string, payloadStr: string) {
   const container = canvasContainerRef.value
   if (!container) return
   const zoom = store.zoom || 1
-  // Центр видимої області у page-координатах: віднімаємо canvasOffset
+  // Центр видимої області у page-координатах: віднімаємо stageOrigin
   // (= stage.position() = центр-offset + scroll) — той самий патерн, що
   // ADD_TOOL_AT_CLIENT/screenToCanvas. Старий scrollLeft/Top тут завжди 0
-  // (скрол живе у canvasOffset), а offset ігнорувався → зсув на fit-width.
-  const offset = store.canvasOffset
+  // (позиція сцени — stageOrigin), а offset ігнорувався → зсув на fit-width.
+  const offset = store.stageOrigin
   const step = (_insertCascade++ % 5) * 28
   const cx = (container.clientWidth / 2 - offset.x) / zoom + step
   const cy = (container.clientHeight / 2 - offset.y) / zoom + step
@@ -2163,12 +2163,12 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
   const rect = canvasContainerRef.value?.getBoundingClientRect()
   if (!rect) return
   const zoom = store.zoom || 1
-  // Screen→page має віднімати canvasOffset (= stage.position() = центр-offset +
+  // Screen→page має віднімати stageOrigin (= stage.position(), Б-26;
   // scroll), інакше при ненульовому offset (напр. fit-по-ширині на планшеті, коли
   // ландшафтний аркуш центрується вертикально) координата летить за сторінку →
   // об'єкт не вставляється / лягає за полотном. Той самий патерн, що badge/overlay
-  // positioning (WBCanvas «include canvasOffset for correct positioning»).
-  const offset = store.canvasOffset
+  // positioning (WBCanvas «include stageOrigin»).
+  const offset = store.stageOrigin
   contentDrop.addAtPosition(mime, payloadStr, {
     x: (clientX - rect.left - offset.x) / zoom,
     y: (clientY - rect.top - offset.y) / zoom,
@@ -2176,12 +2176,12 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
 })
 
 // ── Touch «+» на контенті сайдбару (файли / сторінки PDF·DOCX / слайди PPTX):
-// кладемо payload у ЦЕНТР ВИДИМОЇ області (canvasOffset-патерн, як drag-вставка).
+// кладемо payload у ЦЕНТР ВИДИМОЇ області (stageOrigin-патерн, як drag-вставка).
 // Раніше сторінки документів були drag-only → на тачі їх не поставити.
 provide(PLACE_SIDEBAR_CONTENT_KEY, (payload: SidebarDragPayload) => {
   const rect = canvasContainerRef.value?.getBoundingClientRect()
   const zoom = store.zoom || 1
-  const offset = store.canvasOffset
+  const offset = store.stageOrigin
   const pos = rect
     ? { x: (rect.width / 2 - offset.x) / zoom, y: (rect.height / 2 - offset.y) / zoom }
     : { x: (store.pageWidth ?? 800) / 2, y: (store.pageHeight ?? 600) / 2 }
@@ -3231,8 +3231,9 @@ function _dispatchTestClick(e: MouseEvent) {
   if (!container) return
 
   const rect = container.getBoundingClientRect()
-  const canvasX = (e.clientX - rect.left) / store.zoom + (store.scrollX ?? 0)
-  const canvasY = (e.clientY - rect.top) / store.zoom + (store.scrollY ?? 0)
+  // Б-26: від фактичної позиції сцени, а не від scroll (сцена scroll не бачить).
+  const canvasX = (e.clientX - rect.left - store.stageOrigin.x) / store.zoom
+  const canvasY = (e.clientY - rect.top - store.stageOrigin.y) / store.zoom
 
   handleTestCanvasClick(canvasX, canvasY)
 }

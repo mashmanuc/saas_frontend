@@ -66,7 +66,7 @@ const props = defineProps<{
   tool: string
   /** Роль глядача задає host; студент не отримує tutor-only контроли карток. */
   isTutor: boolean
-  /** Positioning helper з WBCanvas (canvasOffset + liveTransform + zoom). Single-source. */
+  /** Positioning helper з WBCanvas (stageOrigin + liveTransform + zoom). Single-source. */
   getOverlayStyle: (asset: WBAsset) => Record<string, string>
 }>()
 

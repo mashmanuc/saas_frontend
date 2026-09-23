@@ -126,13 +126,22 @@ function _center(page, w = 520, h = 380, reserveH = h) {
 // Висоти після підгонки — з живого приймання 2026-09-21: картка держави чи
 // особи виростає до ~420–540, довідка — до ~480. Резерв 440 + проміжок 40
 // дає дві смуги карток на сторінці 1080; вища картка залазить хіба в проміжок.
+// Графік від Інтегралика. Було 480×360 — чверть ширини аркуша 1920: на
+// ноутбуці (масштаб ~54 %) картка 259×194 px, криву ледь видно (FIRST USER
+// GATE 2026-09-23, крок 4). 640×480 — той самий формат 4:3, на третину ширший.
+// Не більше: вікно Інтегралика, яке після побудови лишається відкритим по
+// центру екрана, при 800×600 накривало 21 % графіка на 1440 px (виміряно).
+// Перетягування з панелі й демо-дошка мають свій розмір (DEFAULT_GRAPH_*).
+const GRAPH_W = 640
+const GRAPH_H = 480
+
 const FOOTPRINT = {
   add_history_card: [520, 440],
   add_card: [520, 440],
   add_map: [680, 520],
   add_timeline: [760, 440],
   add_formula: [380, 110],
-  add_graph: [480, 360],
+  add_graph: [GRAPH_W, GRAPH_H],
   add_image: [480, 400],
   add_text: [320, 40],
 }
@@ -824,8 +833,8 @@ const HANDLERS = {
 
   async add_graph({ expressions, expression, params }) {
     const { store, page } = await _store()
-    const { cx, cy } = _center(page, 480, 360)
-    const W = 480; const H = 360
+    const W = GRAPH_W; const H = GRAPH_H
+    const { cx, cy } = _center(page, W, H)
     // «y=sin(x)» → src «sin(x)» (голий вираз рендериться як y=f(x))
     const strip = (s) => String(s ?? '').replace(/^\s*y\s*=\s*/i, '').trim()
 
