@@ -9,6 +9,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import uk from '@/i18n/locales/uk.json'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 const png = (id: number, name: string) => ({
   id, name, storage_key: 'k', cdn_url: 'data:image/png;base64,', thumbnail_url: '', content_type: 'image/png',
@@ -64,6 +66,19 @@ describe('WBLibrary — один режим перегляду за раз', () 
     const w = await mountLibrary()
     expect(w.find('.wb-library__quota').text()).toContain('з 2 GB')
     expect(w.find('.wb-library__storage-track').exists()).toBe(false)
+  })
+
+  it('одна прокрутка: у стилях сторінки немає власних вертикальних смуг', () => {
+    // 2026-09-23. Другий структурний дефект розбору: фіксована висота сторінки
+    // + власні `overflow-y` у сітки й списку давали три вкладені смуги —
+    // сторінка, колонка, сітка. Перевіряємо саме джерело стилів: у happy-dom
+    // scoped-CSS не застосовується, тож computed-перевірка нічого не довела б.
+    const view = readFileSync(resolve(__dirname, '../views/WBLibrary.vue'), 'utf8')
+    const styles = view.slice(view.indexOf('<style'))
+    const vertical = [...styles.matchAll(/overflow(-y)?:\s*(auto|scroll)/g)].map((m) => m[0])
+    expect(vertical).toEqual([])
+    // Горизонтальна прокрутка вкладок на телефоні — навмисна, лишається.
+    expect(styles).toContain('overflow-x: auto')
   })
 
   it('як у «Записах»: папки — колонка ліворуч, вкладки зверху — лише фільтри', async () => {
