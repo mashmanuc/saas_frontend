@@ -924,7 +924,7 @@
       v-if="sessionId"
       v-model="showSaveLessonDialog"
       :session-id="sessionId"
-      :default-title="sessionName"
+      :default-title="isUntitledBoardName(sessionName) ? '' : sessionName"
       @saved="handleLessonSaved"
     />
 
@@ -3304,6 +3304,16 @@ function handleTestCanvasClick(canvasX: number, canvasY: number) {
 
 // ─── Handlers: Header ───────────────────────────────────────────────────────
 
+/**
+ * Назва дошки ще стартова («Без назви» / legacy «Untitled») — людина її не давала.
+ * FIRST USER GATE 2026-09-23: діалог «Зберегти як урок» підставляв «Без назви»,
+ * новачок так і зберігав урок, а дошка лишалась «Без назви» й після збереження.
+ */
+function isUntitledBoardName(name: string): boolean {
+  const n = (name || '').trim()
+  return !n || n === t('winterboard.room.untitled') || n === 'Untitled'
+}
+
 function handleTitleBlur(): void {
   if (!sessionName.value.trim()) {
     sessionName.value = t('winterboard.room.untitled')
@@ -3387,6 +3397,12 @@ async function handleUpdateLessonSnapshot(): Promise<void> {
 // Phase 21: Handle lesson saved
 function handleLessonSaved(lesson: { id: string; title: string }): void {
   showSaveLessonDialog.value = false
+  // Дошка без назви отримує назву уроку — тим самим шляхом, що й ручне
+  // перейменування в шапці (store + PATCH name).
+  if (lesson.title && isUntitledBoardName(sessionName.value)) {
+    sessionName.value = lesson.title
+    handleTitleBlur()
+  }
   console.info('[WBSoloRoom] Lesson saved:', lesson.id, lesson.title)
   savedItemTitle.value = lesson.title || ''
   savedItemKind.value = 'lesson'

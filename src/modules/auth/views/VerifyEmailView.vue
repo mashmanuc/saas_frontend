@@ -10,7 +10,9 @@
         <h1 class="text-xl font-semibold">{{ $t('auth.verifyEmail.success') }}</h1>
       </div>
 
-      <RouterLink :to="loginLink" class="block text-center text-sm hover:underline" style="color: var(--accent);">
+      <!-- Єдина дія на екрані — кнопка на всю ширину, а не дрібне посилання,
+           що губилося посеред порожнього поля (FIRST USER GATE 2026-09-23, крок 0). -->
+      <RouterLink :to="loginLink" class="verify-login-btn">
         {{ $t('auth.verifyEmail.loginCta') }}
       </RouterLink>
     </template>
@@ -117,5 +119,23 @@ onMounted(async () => {
   line-height: 1;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.verify-login-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.verify-login-btn:hover {
+  background: var(--accent-hover, var(--accent));
 }
 </style>

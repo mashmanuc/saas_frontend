@@ -7072,8 +7072,8 @@
       "loadError": "Failed to load constructor session",
       "untitled": "Untitled",
       "saveTemplateHint": {
-        "title": "Want to teach this lesson again?",
-        "body": "Save the board as a template — and reopen it anytime from “My lessons”, with any student.",
+        "title": "Save this board as a lesson",
+        "body": "It will appear in “My lessons”: open it anytime and teach it with any student.",
         "cta": "Save as template"
       }
     },
@@ -7558,6 +7558,7 @@
       "solidsHeader": "Geometry shapes",
       "solidsSectionHeader": "3D Solids",
       "tabMaterials": "Materials",
+      "listTitle": "My files",
       "tabTools": "Tools",
       "interactiveHeader": "Interactive",
       "geo2dHeader": "Planimetry",

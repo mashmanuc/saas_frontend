@@ -133,8 +133,11 @@
 
     <!-- Header -->
     <div class="content-sidebar__header">
+      <!-- Було `knowledge.materials` — це закінчення для лічильника («· 3 матеріалів»),
+           тож заголовок читався як обірване «матеріалів 0» (FIRST USER GATE 2026-09-23).
+           Власна назва, бо вкладка над панеллю вже зветься «Матеріали». -->
       <span class="content-sidebar__title">
-        {{ t('knowledge.materials') }}
+        {{ t('winterboard.contentSidebar.listTitle') }}
       </span>
       <span class="content-sidebar__count">{{ filteredCount }}</span>
       <label v-if="isTutor" class="content-sidebar__upload-btn" :title="t('winterboard.contentSidebar.upload')">
@@ -808,6 +811,7 @@ function onDrop(e: DragEvent) {
   padding: 10px 12px 6px;
 }
 .content-sidebar__upload-btn {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -841,7 +845,6 @@ function onDrop(e: DragEvent) {
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
-  flex: 1;
 }
 .content-sidebar__count {
   font-size: 11px;

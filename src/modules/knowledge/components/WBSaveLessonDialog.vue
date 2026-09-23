@@ -178,13 +178,15 @@ if (typeof window !== 'undefined') {
   background: #e2e8f0;
 }
 
+/* Акцент застосунку (зелений), а не сторонній синій #0066FF —
+   FIRST USER GATE 2026-09-23: єдина синя кнопка на шляху новачка. */
 .save-lesson-dialog__btn--save {
-  background: #0066FF;
-  color: #ffffff;
+  background: var(--accent, #047857);
+  color: var(--accent-contrast, #ffffff);
 }
 
 .save-lesson-dialog__btn--save:hover {
-  background: #0052cc;
+  background: var(--accent-hover, #065f46);
 }
 
 .save-lesson-dialog__btn--save:disabled {
