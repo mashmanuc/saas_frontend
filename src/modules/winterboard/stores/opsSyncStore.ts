@@ -80,6 +80,7 @@ export type SaveBlockKind =
   | 'too_large'         // 413
   | 'rate_limited'      // 429
   | 'unconfirmed'       // 5xx≠503 або немає HTTP-відповіді — невідомо, чи застосовано
+  | 'storage_unreadable' // аварійний запис цієї дошки є, але його не вдалося прочитати
 
 export interface SaveBlockInfo {
   kind: SaveBlockKind
@@ -229,6 +230,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const blockResolving = ref(false)
   /** Ключі аварійних записів інших вкладок / попередньої сесії, які ця вкладка підхопила. */
   let _adoptedBlockedKeys: string[] = []
+  /** Нечитабельні аварійні записи цієї дошки — лише для експорту вчителем. */
+  let _unreadableBlocked: Array<{ key: string; raw: string }> = []
 
   // ── BroadcastChannel (INV-19) ──
   let _channel: BroadcastChannel | null = null
@@ -889,8 +892,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
 
   /** Після bootstrap: підхопити аварійні записи цієї дошки й повернути SAVE_BLOCKED. */
   function _restoreBlocked(sid: string): void {
-    const found = readBlocked(sid, _blockedOwnerId)
-    if (found.length === 0) return
+    const read = readBlocked(sid, _blockedOwnerId)
+    const found = read.records
+    _unreadableBlocked = read.unreadable
+    const unreadable = read.readFailed || read.unreadable.length > 0
+    if (found.length === 0 && !unreadable) return
     const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
     const inFlight: OpsSyncOp[] = [...inFlightOps.value]
     const pending: OpsSyncOp[] = [...pendingOps.value]
@@ -900,16 +906,31 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     }
     inFlightOps.value = inFlight
     pendingOps.value = pending
-    const latest = found[found.length - 1].record.info
-    _adoptedBlockedKeys = found.map(f => f.key).filter(k => k !== blockedKey(sid, tabId.value))
+    _adoptedBlockedKeys = [
+      ...found.map(f => f.key),
+      ...read.unreadable.map(u => u.key),
+    ].filter(k => k !== blockedKey(sid, tabId.value))
     mode.value = 'SAVE_BLOCKED'
-    saveBlock.value = { ...latest, restored: true, storageOk: true }
+    if (unreadable) {
+      // Не «нічого немає»: запис є, але прочитати його не вдалося. Видима зупинка,
+      // повтор заборонений; учитель може завантажити сирі дані або відкинути (рев'ю P0).
+      saveBlock.value = {
+        kind: 'storage_unreadable', httpStatus: 0,
+        reason: read.readFailed ? 'storage_read_failed' : 'record_unreadable',
+        invalidOpIndex: null, invalidOpId: null, invalidOpType: null, retryNotBefore: null,
+        at: Date.now(), feBuild: FE_BUILD, storageOk: !read.readFailed, restored: true,
+      }
+    } else {
+      const latest = found[found.length - 1].record.info
+      saveBlock.value = { ...latest, restored: true, storageOk: true }
+    }
     persistBlocked()
   }
 
   function _dropBlockedStorage(sid: string): void {
     removeBlocked([blockedKey(sid, tabId.value), ..._adoptedBlockedKeys])
     _adoptedBlockedKeys = []
+    _unreadableBlocked = []
   }
 
   /** Чи можна зараз запропонувати «Перевірити й надіслати». */
@@ -917,7 +938,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     const info = saveBlock.value
     if (mode.value !== 'SAVE_BLOCKED' || !info) return false
     if (info.kind === 'unconfirmed') return true
-    if (info.kind === 'rate_limited') return info.retryNotBefore === null || Date.now() >= info.retryNotBefore
+    // Без Date.now(): computed не оновлюється сам, і кнопка лишалась би неактивною
+    // назавжди. Час перевіряє retryBlocked() у момент натискання ('too-early').
+    if (info.kind === 'rate_limited') return true
     if (info.kind === 'rejected') return info.feBuild !== FE_BUILD
     return false
   })
@@ -927,11 +950,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * одного HTTP-пакета. Дозволено для `unconfirmed`, `rate_limited` (не раніше
    * Retry-After) і `rejected` лише з іншою збіркою клієнта.
    */
-  async function retryBlocked(): Promise<'sent' | 'already-saved' | 'unproven' | 'not-allowed' | 'blocked'> {
+  async function retryBlocked(): Promise<'sent' | 'already-saved' | 'unproven' | 'not-allowed' | 'blocked' | 'too-early'> {
     const sid = sessionId.value
     const info = saveBlock.value
     if (!sid || !info || mode.value !== 'SAVE_BLOCKED' || blockResolving.value) return 'not-allowed'
     if (!canRetryBlocked.value) return 'not-allowed'
+    if (info.kind === 'rate_limited' && info.retryNotBefore !== null && Date.now() < info.retryNotBefore) {
+      return 'too-early'  // без HTTP; банер показує, скільки чекати
+    }
     blockResolving.value = true
     try {
       // Невідомо, чи сервер застосував пакет → звірка за op_id (не лише за last_seq:
@@ -950,19 +976,29 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       const state = await _fetchState(sid)
       serverSeq.value = state.last_seq | 0
       localSeq.value = Math.max(localSeq.value, state.last_seq | 0)
-      // Черга знову у звичайному backup ДО зняття аварійного запису.
-      saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])
-      _dropBlockedStorage(sid)
       saveBlock.value = null
       droppedWhileBlocked.value = 0
       desyncReason.value = null
       mode.value = 'SYNC'
-      if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) return 'already-saved'
+      if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) {
+        _dropBlockedStorage(sid)
+        return 'already-saved'
+      }
+      // Аварійний запис ЛИШАЄТЬСЯ, поки пакет у мережі: закриють вкладку до
+      // відповіді — reload поверне SAVE_BLOCKED, а звірка check-ops за op_id не
+      // дасть задвоїти (рев'ю P0, 2026-09-24).
       try {
         await _runExclusive(false)  // рівно один пакет; далі — звичайний ритм рекордера
       } catch (err) {
         if (err instanceof SaveBlockedError) return 'blocked'
         throw err
+      }
+      // Знімаємо аварійний запис лише коли решта черги ПІДТВЕРДЖЕНО лягла у
+      // звичайний backup. Сховище відмовило → запис лишається (безпечно: дедуп op_id).
+      if (saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])) {
+        _dropBlockedStorage(sid)
+      } else {
+        console.warn('[opsSync] retryBlocked: backup not confirmed — emergency record kept')
       }
       return 'sent'
     } finally {
@@ -979,13 +1015,15 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (!sid || mode.value !== 'SAVE_BLOCKED') return
     blockResolving.value = true
     try {
+      // Спершу стан сервера: упаде запит — нічого не стерто, зупинка лишається
+      // (рев'ю P0, 2026-09-24: раніше черга зникала до відповіді).
+      const state = await _fetchState(sid)
       _dropBlockedStorage(sid)
       clearBackup(sid)
       pendingOps.value = []
       inFlightOps.value = []
       saveBlock.value = null
       droppedWhileBlocked.value = 0
-      const state = await _fetchState(sid)
       serverSeq.value = state.last_seq | 0
       localSeq.value = state.last_seq | 0
       desyncReason.value = null
@@ -1006,6 +1044,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         ? { kind: saveBlock.value.kind, http_status: saveBlock.value.httpStatus, code: saveBlock.value.reason }
         : null,
       ops: [...inFlightOps.value, ...pendingOps.value],
+      ...(_unreadableBlocked.length > 0
+        ? { unreadable_records: _unreadableBlocked.map(u => ({ key: u.key, raw: u.raw })) }
+        : {}),
     }
   }
 
@@ -1293,6 +1334,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     saveBlock.value = null
     droppedWhileBlocked.value = 0
     _adoptedBlockedKeys = []
+    _unreadableBlocked = []
     // Phase S PR-3: reset retry state + cancel auto-retry timer (TLV2-G1b: + дозвіл спроби)
     _resetRetryState()
     probeInFlight.value = false

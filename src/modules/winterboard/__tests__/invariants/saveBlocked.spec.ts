@@ -238,7 +238,7 @@ describe('§5.3/§7/§8.6-7 · аварійний запис, reload, схови
     post.mockRejectedValueOnce(rejectSecond())
     await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
     expect(store.saveBlock?.storageOk).toBe(true)
-    expect(readBlocked(SID, null)).toHaveLength(1)
+    expect(readBlocked(SID, null).records).toHaveLength(1)
     expect(readBackup(SID)).toBeNull()
 
     // «reload»: новий store, bootstrap з сервера — черга НЕ йде у звичайну відправку
@@ -319,7 +319,7 @@ describe('§4.3 · «Перевірити й надіслати» — лише �
     expect(store.mode).toBe('SYNC')
     expect(store.serverSeq).toBe(5)
     expect(store.inFlightOps).toHaveLength(0)
-    expect(readBlocked(SID, null)).toHaveLength(0)
+    expect(readBlocked(SID, null).records).toHaveLength(0)
     const batchCalls = post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
     expect(batchCalls).toHaveLength(1)
   })
@@ -373,7 +373,133 @@ describe('§4.3 · «Перевірити й надіслати» — лише �
     expect(store.mode).toBe('SYNC')
     expect(store.inFlightOps).toHaveLength(0)
     expect(store.serverSeq).toBe(9)
-    expect(readBlocked(SID, null)).toHaveLength(0)
+    expect(readBlocked(SID, null).records).toHaveLength(0)
     expect(readBackup(SID)).toBeNull()
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 · дірки відновлення', () => {
+  it('№1 · після «Перевірити й надіслати» сховище відмовило → аварійний запис лишається', async () => {
+    const store = syncStore()
+    for (let i = 0; i < 60; i++) store.record(op(`o${i}`))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(store.inFlightOps).toHaveLength(50)
+    expect(store.pendingOps).toHaveLength(10)
+
+    post.mockResolvedValueOnce({ saved: [], missing: store.inFlightOps.map(o => o.op_id) })
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    post.mockResolvedValueOnce(ok(1))
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('wb_ops_backup_')) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    expect(await store.retryBlocked()).toBe('sent')
+    spy.mockRestore()
+    expect(store.pendingOps).toHaveLength(10)
+    expect(readBackup(SID)).toBeNull()
+    // решта 10 змін не втрачається при закритті вкладки: аварійний запис живий
+    const left = readBlocked(SID, null).records
+    expect(left).toHaveLength(1)
+    expect(left[0].record.pending.map(o => o.op_id)).toContain('o59')
+  })
+
+  it('№1 · backup ліг і перевірений → аварійний запис знято', async () => {
+    const store = syncStore()
+    for (let i = 0; i < 60; i++) store.record(op(`o${i}`))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    post.mockResolvedValueOnce({ saved: [], missing: store.inFlightOps.map(o => o.op_id) })
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    post.mockResolvedValueOnce(ok(1))
+    expect(await store.retryBlocked()).toBe('sent')
+    expect(readBackup(SID)?.pending).toHaveLength(10)
+    expect(readBlocked(SID, null).records).toHaveLength(0)
+  })
+
+  it('№1 · пакет повтору завис → аварійний запис ще на місці (закрили вкладку — не втрачено)', async () => {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    post.mockResolvedValueOnce({ saved: [], missing: ['a'] })
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    post.mockImplementationOnce(() => new Promise(() => {}))
+    void store.retryBlocked()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))).toHaveLength(2)
+    expect(readBlocked(SID, null).records).toHaveLength(1)
+  })
+
+  it('№2 · пошкоджений аварійний запис → storage_unreadable, 0 HTTP, сирі дані в експорті, discard знімає ключ', async () => {
+    const badKey = `wb_ops_blocked_v1_${SID}_oldtab`
+    localStorage.setItem(badKey, '{"v":1,"sessionId":"' + SID + '","pending":[{"op_id":"x"')
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 4 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    expect(store.canRetryBlocked).toBe(false)
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(post).not.toHaveBeenCalled()
+    const exported = store.exportBlocked() as { unreadable_records?: Array<{ key: string; raw: string }> }
+    expect(exported.unreadable_records?.[0].key).toBe(badKey)
+    expect(exported.unreadable_records?.[0].raw).toContain('"op_id":"x"')
+
+    get.mockResolvedValueOnce({ last_seq: 4 })
+    await store.discardBlocked()
+    expect(store.mode).toBe('SYNC')
+    expect(localStorage.getItem(badKey)).toBeNull()
+  })
+
+  it('№2 · невідома версія формату — теж нечитабельна, не «нічого немає»', async () => {
+    localStorage.setItem(`wb_ops_blocked_v1_${SID}_t2`, JSON.stringify({ v: 2, sessionId: SID, pending: [], inFlight: [] }))
+    const r = readBlocked(SID, null)
+    expect(r.records).toHaveLength(0)
+    expect(r.unreadable).toHaveLength(1)
+  })
+
+  it('№2 · сховище кинуло помилку на читанні → storage_unreadable', async () => {
+    localStorage.setItem('unrelated', '1')  // щоб цикл читання взагалі стартував
+    const store = useOpsSyncStore()
+    const spy = vi.spyOn(localStorage, 'key').mockImplementation(() => { throw new DOMException('denied', 'SecurityError') })
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    spy.mockRestore()
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    expect(store.saveBlock?.reason).toBe('storage_read_failed')
+  })
+
+  it('№3 · «Відкинути» при недоступному стані сервера → нічого не стерто', async () => {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    get.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.discardBlocked()).rejects.toThrow()
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['a'])
+    expect(readBlocked(SID, null).records).toHaveLength(1)
+    expect(store.blockResolving).toBe(false)
+  })
+
+  it('№4 · 429 Retry-After: кнопка активна; зарано → too-early без HTTP; після строку → надсилає', async () => {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(httpError(429, { error: 'throttled' }, { 'retry-after': '5' }))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(store.canRetryBlocked).toBe(true)
+    expect(await store.retryBlocked()).toBe('too-early')
+    expect(post).toHaveBeenCalledTimes(1)
+
+    vi.setSystemTime(Date.now() + 5_001)
+    expect(store.canRetryBlocked).toBe(true)
+    // 429 = сервер пакет точно не застосував → без звірки check-ops
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    post.mockResolvedValueOnce(ok(1))
+    expect(await store.retryBlocked()).toBe('sent')
+    expect(store.mode).toBe('SYNC')
   })
 })

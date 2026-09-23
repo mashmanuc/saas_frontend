@@ -27,7 +27,8 @@
     <div class="wb-save-blocked__text">
       <span class="wb-save-blocked__title">{{ title }}</span>
       <span class="wb-save-blocked__hint">{{ hint }}</span>
-      <span class="wb-save-blocked__count">
+      <!-- Нечитабельний запис: «0 змін» було б неправдою — скільки там, невідомо. -->
+      <span v-if="queuedCount > 0 || info.kind !== 'storage_unreadable'" class="wb-save-blocked__count">
         {{ t('winterboard.errors.saveBlocked.queued', { count: queuedCount }) }}<template v-if="strokeCount > 0"> · {{ t('winterboard.errors.saveBlocked.strokes', { count: strokeCount }) }}</template>
       </span>
       <span v-if="!info.storageOk" class="wb-save-blocked__warn">
@@ -130,6 +131,10 @@ async function onRetry(): Promise<void> {
     const r = await opsSync.retryBlocked()
     if (r === 'unproven') resultText.value = t('winterboard.errors.saveBlocked.result.unproven')
     else if (r === 'already-saved') resultText.value = t('winterboard.errors.saveBlocked.result.alreadySaved')
+    else if (r === 'too-early') {
+      const ms = (info.value?.retryNotBefore ?? Date.now()) - Date.now()
+      resultText.value = t('winterboard.errors.saveBlocked.result.tooEarly', { seconds: Math.max(1, Math.ceil(ms / 1000)) })
+    }
   } catch (err) {
     console.warn('[WB:SaveBlocked] retry failed:', err)
     resultText.value = t('winterboard.errors.saveBlocked.result.failed')

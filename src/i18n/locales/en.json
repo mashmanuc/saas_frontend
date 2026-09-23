@@ -7114,7 +7114,8 @@
           "not_found": "This board was not found on the server. Your changes are not on the server yet.",
           "too_large": "The changes are too large for one request. Your changes are not on the server yet.",
           "rate_limited": "Too many requests. Wait a moment and press “Check and send”.",
-          "unconfirmed": "The connection dropped or the server did not answer. We’ll check what is already saved and send the rest."
+          "unconfirmed": "The connection dropped or the server did not answer. We’ll check what is already saved and send the rest.",
+          "storage_unreadable": "Changes stored on this computer could not be read. Download a copy before discarding."
         },
         "queued": "Changes not on the server yet: {count}",
         "strokes": "strokes: {count}",
@@ -7130,7 +7131,8 @@
         "result": {
           "unproven": "Could not prove what was saved. Your changes stay here.",
           "alreadySaved": "Everything was already on the server.",
-          "failed": "That didn’t work. Your changes stay here."
+          "failed": "That didn’t work. Your changes stay here.",
+          "tooEarly": "Too early. Try again in {seconds} s."
         },
         "action": {
           "stroke": "stroke",

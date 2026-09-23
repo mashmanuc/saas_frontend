@@ -26,11 +26,16 @@ function keyFor(sessionId: string): string {
   return `${KEY_PREFIX}${sessionId}`
 }
 
-export function saveBackup<T>(sessionId: string, pending: T[], inFlight: T[]): void {
-  if (!sessionId) return
+/**
+ * Записати backup. `true` — запис ліг і перевірений читанням назад (або черга
+ * порожня й backup знято). `false` — сховище відмовило: викликач, якому це
+ * важливо (зняття аварійного запису SAVE_BLOCKED), НЕ має вважати чергу збереженою.
+ */
+export function saveBackup<T>(sessionId: string, pending: T[], inFlight: T[]): boolean {
+  if (!sessionId) return false
   if (pending.length === 0 && inFlight.length === 0) {
     clearBackup(sessionId)
-    return
+    return true
   }
   try {
     const payload: OpsBackup<T> = {
@@ -38,10 +43,14 @@ export function saveBackup<T>(sessionId: string, pending: T[], inFlight: T[]): v
       inFlight,
       savedAt: new Date().toISOString(),
     }
-    localStorage.setItem(keyFor(sessionId), JSON.stringify(payload))
+    const raw = JSON.stringify(payload)
+    localStorage.setItem(keyFor(sessionId), raw)
+    return localStorage.getItem(keyFor(sessionId)) === raw
   } catch (err) {
-    // QuotaExceededError / SecurityError — mute, non-critical
+    // QuotaExceededError / SecurityError — у гарячому шляху не критично (черга
+    // в пам'яті), але результат повертаємо: SAVE_BLOCKED на нього спирається.
     console.warn('[WB:opsBackup] save failed:', err)
+    return false
   }
 }
 

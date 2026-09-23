@@ -67,33 +67,53 @@ export function writeBlocked(
   }
 }
 
-/** Усі аварійні записи цієї дошки цього акаунта (з будь-якої вкладки), найстаріші першими. */
-export function readBlocked(sessionId: string, userId: string | null): Array<{ key: string; record: BlockedRecord }> {
-  if (!sessionId) return []
+export interface BlockedReadResult {
+  /** Прочитані записи цієї дошки цього акаунта, найстаріші першими. */
+  records: Array<{ key: string; record: BlockedRecord }>
+  /**
+   * Записи цієї дошки, які НЕ вдалося розібрати (пошкоджений JSON, невідомий
+   * формат, зламана структура). Їх не можна мовчки вважати «нічого немає» —
+   * там можуть бути незбережені дії (рев'ю P0, 2026-09-24).
+   */
+  unreadable: Array<{ key: string; raw: string }>
+  /** Саме сховище кинуло помилку під час читання — стан невідомий. */
+  readFailed: boolean
+}
+
+/** Усі аварійні записи цієї дошки цього акаунта (з будь-якої вкладки). */
+export function readBlocked(sessionId: string, userId: string | null): BlockedReadResult {
+  const result: BlockedReadResult = { records: [], unreadable: [], readFailed: false }
+  if (!sessionId) return result
   const prefix = `${KEY_PREFIX}${sessionId}_`
-  const out: Array<{ key: string; record: BlockedRecord }> = []
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (!key || !key.startsWith(prefix)) continue
       const raw = localStorage.getItem(key)
-      if (!raw) continue
-      let record: BlockedRecord
+      if (raw === null) continue
+      let record: BlockedRecord | null = null
       try {
         record = JSON.parse(raw) as BlockedRecord
       } catch {
+        record = null
+      }
+      const valid = !!record && record.v === FORMAT_VERSION && record.sessionId === sessionId &&
+        Array.isArray(record.inFlight) && Array.isArray(record.pending) && !!record.info
+      if (!valid) {
         console.warn('[WB:blockedOps] unreadable record kept as is:', key)
+        result.unreadable.push({ key, raw })
         continue
       }
-      if (record?.v !== FORMAT_VERSION || record.sessionId !== sessionId) continue
-      if (!Array.isArray(record.inFlight) || !Array.isArray(record.pending)) continue
-      if ((record.userId ?? null) !== (userId ?? null)) continue
-      out.push({ key, record })
+      // Чужий акаунт на спільному комп'ютері — не наш запис, не помилка.
+      if ((record!.userId ?? null) !== (userId ?? null)) continue
+      result.records.push({ key, record: record! })
     }
   } catch (err) {
     console.warn('[WB:blockedOps] read failed:', err)
+    result.readFailed = true
   }
-  return out.sort((a, b) => a.record.savedAt.localeCompare(b.record.savedAt))
+  result.records.sort((a, b) => a.record.savedAt.localeCompare(b.record.savedAt))
+  return result
 }
 
 export function removeBlocked(keys: string[]): void {
