@@ -46,7 +46,7 @@ import {
 } from '../api/replay'
 import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
 import { writeBlocked, readBlocked, removeBlocked, blockedKey } from '../composables/useBlockedOps'
-import { clearBackup, saveBackup } from '../composables/useOpsBackup'
+import { backupKey, clearBackup, readBackupChecked, saveBackup, setOpsOwner } from '../composables/useOpsBackup'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -159,8 +159,22 @@ const RETRY_JITTER_MAX_MS = 150
 /** TLV2-G1b: у PAUSED — одна спроба відновлення раз на цей інтервал (SYSTEM_LAW §5, §12). */
 const PAUSE_AUTO_RETRY_MS = 30_000
 
-/** Стеля черги в SAVE_BLOCKED: далі record() відмовляє, кімната блокує введення (LAW §4). */
+/**
+ * Стеля черги в SAVE_BLOCKED і PAUSED: далі record() відмовляє, кімната блокує
+ * введення (LAW §4; PAUSED — рішення власника 2026-09-24).
+ */
 const MAX_BLOCKED_QUEUE_OPS = 3000
+
+/**
+ * Сумарна стеля одного POST /replay/batch/ (поверх 50 ops). 128 KB = 2× ліміту
+ * однієї операції (64 KB): великі проміжні проксі/CDN не ріжуть запит, а один
+ * великий op завжди проходить сам. Раніше стеля була лише в коментарі.
+ */
+export const MAX_BATCH_BYTES = 128 * 1024
+const _enc = new TextEncoder()
+function _opBytes(op: OpsSyncOp): number {
+  try { return _enc.encode(JSON.stringify(op)).byteLength } catch { return MAX_BATCH_BYTES }
+}
 
 /**
  * Відбиток збірки: у проді URL модуля містить хеш файлу й міняється з кожною
@@ -224,8 +238,13 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
 
   // ── SAVE_BLOCKED (2026-09-23) ──
   const saveBlock = ref<SaveBlockInfo | null>(null)
-  /** Дії, яким record() відмовив через стелю черги в SAVE_BLOCKED (видимо в банері). */
+  /** Дії, яким record() відмовив через стелю черги в SAVE_BLOCKED / PAUSED (видимо в банері). */
   const droppedWhileBlocked = ref(0)
+  /**
+   * Останній запис звичайної копії черги (SYNC/PAUSED) не ліг. Разом із непорожньою
+   * чергою = «черга без копії»: у PAUSED блокує введення, будь-де — вихід (LAW §4–§5).
+   */
+  const backupFailed = ref(false)
   /** Іде дія вчителя «Перевірити й надіслати» / «Відкинути». */
   const blockResolving = ref(false)
   /** Ключі аварійних записів інших вкладок / попередньої сесії, які ця вкладка підхопила. */
@@ -291,19 +310,27 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * Кімната має заблокувати введення: черга досягла стелі або аварійний запис
    * не вдався (зміни лише в пам'яті вкладки). Не тихий no-op — банер пояснює.
    */
+  const _queued = (): number => pendingOps.value.length + inFlightOps.value.length
   const inputLocked = computed(() =>
-    mode.value === 'SAVE_BLOCKED' && (
-      saveBlock.value?.storageOk === false ||
-      pendingOps.value.length + inFlightOps.value.length >= MAX_BLOCKED_QUEUE_OPS
-    ))
+    (mode.value === 'SAVE_BLOCKED' && (
+      saveBlock.value?.storageOk === false || _queued() >= MAX_BLOCKED_QUEUE_OPS
+    )) ||
+    // PAUSED (рішення власника 2026-09-24): черга росте хвилинами — та сама стеля, і
+    // без копії у сховищі нові дії не приймаємо, доки копія не ляже або сервер не прийме.
+    (mode.value === 'PAUSED' && (
+      _queued() >= MAX_BLOCKED_QUEUE_OPS || (backupFailed.value && _queued() > 0)
+    )))
+  /** Для банера PAUSED: чому введення заблоковано. */
+  const pausedUnsecured = computed(() => mode.value === 'PAUSED' && backupFailed.value && _queued() > 0)
   /**
    * Незбережена черга без жодної копії у сховищі (`storage_failed`, LAW §4): вихід
    * із дошки, reload чи закриття вкладки її знищить. Кімнати питають підтвердження
    * (`useUnsecuredQueueGuard`).
    */
   const hasUnsecuredQueue = computed(() =>
-    mode.value === 'SAVE_BLOCKED' && saveBlock.value?.storageOk === false &&
-    pendingOps.value.length + inFlightOps.value.length > 0)
+    _queued() > 0 && (mode.value === 'SAVE_BLOCKED'
+      ? saveBlock.value?.storageOk === false
+      : backupFailed.value))
 
   // ── Internal helpers ──
 
@@ -346,6 +373,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   function _exitPause(): void {
     _resetRetryState()
     desyncReason.value = null
+    droppedWhileBlocked.value = 0
     mode.value = 'SYNC'
   }
 
@@ -450,6 +478,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _flushPromise = null
       // TLV2-G1b: таймер і лічильник 503 попередньої дошки не переходять на нову.
       _resetRetryState()
+      backupFailed.value = false
       // SAVE_BLOCKED попередньої дошки лишається в ЇЇ аварійному записі; пам'ять про
       // нього (ключі, причина) на нову дошку не переходить — інакше вирішення на Б
       // стерло б записи А (рев'ю P0, 2026-09-24).
@@ -491,7 +520,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // DESYNC blocks (INV-16); BOOTSTRAP blocks (pre-init).
     if (mode.value === 'DESYNC' || mode.value === 'BOOTSTRAP') return false
     if (
-      mode.value === 'SAVE_BLOCKED' &&
+      (mode.value === 'SAVE_BLOCKED' || mode.value === 'PAUSED') &&
       pendingOps.value.length + inFlightOps.value.length >= MAX_BLOCKED_QUEUE_OPS
     ) {
       // Стеля: не тихий no-op — лічильник у банері, кімната блокує введення (inputLocked).
@@ -655,8 +684,16 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       batch = inFlightOps.value.slice()  // retry existing
     } else {
       // Move up to FLUSH_BATCH_SIZE ops з pending → inFlight (atomic, synchronous).
-      // Phase S PR-3: also bound by MAX_BATCH_BYTES = 512KB aggregate ceiling.
-      const taking = Math.min(pendingOps.value.length, FLUSH_BATCH_SIZE)
+      // І не більше MAX_BATCH_BYTES сумарно; перший op іде завжди (сам ≤ 64 KB).
+      const limit = Math.min(pendingOps.value.length, FLUSH_BATCH_SIZE)
+      let taking = 0
+      let bytes = 0
+      while (taking < limit) {
+        const b = _opBytes(pendingOps.value[taking])
+        if (taking > 0 && bytes + b > MAX_BATCH_BYTES) break
+        bytes += b
+        taking++
+      }
       batch = pendingOps.value.splice(0, taking)  // sync: remove N from pending
       inFlightOps.value.push(...batch)            // sync: add to inFlight (no await between)
     }
@@ -917,19 +954,26 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (!sid || !info || mode.value !== 'SAVE_BLOCKED') return false
     const ok = writeBlocked(sid, tabId.value, _blockedOwnerId, info,
       inFlightOps.value.slice(), pendingOps.value.slice())
+    // Нечитабельну звичайну копію не чіпаємо: її сирі дані — лише для експорту вчителем.
     const key = blockedKey(sid, _blockedOwnerId, tabId.value)
     // Попередній ключ ЦІЄЇ ж дошки (змінився власник) знімаємо лише після того, як
     // новий запис підтверджено; ключ іншої дошки тут не буває (_forgetBlockMemory).
     if (ok && _ownBlockedKey && _ownBlockedKey !== key) removeBlocked([_ownBlockedKey])
     if (ok || !_ownBlockedKey) _ownBlockedKey = key
     if (ok !== info.storageOk) saveBlock.value = { ...info, storageOk: ok }
-    if (ok) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
+    if (ok && !_unreadableBlocked.some(u => u.key === backupKey(sid))) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
     return ok
   }
 
   /** Після bootstrap: підхопити аварійні записи цієї дошки й повернути SAVE_BLOCKED. */
   function _restoreBlocked(sid: string): void {
     const read = readBlocked(sid, _blockedOwnerId)
+    // Звичайна копія цієї дошки цього акаунта: пошкоджена ≠ «немає» (рев'ю P0, 2026-09-24).
+    const nb = readBackupChecked(sid)
+    if (nb.status === 'unreadable') {
+      if (nb.raw === null) read.readFailed = true
+      else read.unreadable.push({ key: nb.key, raw: nb.raw })
+    }
     const found = read.records
     _unreadableBlocked = read.unreadable
     const unreadable = read.readFailed || read.unreadable.length > 0
@@ -1127,6 +1171,22 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   /** Прив'язка аварійних записів до акаунта (кімната після входу). */
   function setBlockedOwner(userId: string | number | null | undefined): void {
     _blockedOwnerId = userId === undefined || userId === null || userId === '' ? null : String(userId)
+    setOpsOwner(_blockedOwnerId)  // звичайна копія черги теж прив'язана до акаунта
+  }
+
+  /**
+   * Записати чергу у сховище ЗАРАЗ і з перевіркою: у SAVE_BLOCKED — аварійний запис,
+   * інакше — звичайна копія (порожня черга → копію знято). `false` → «черга без
+   * копії» (`hasUnsecuredQueue`), не лише рядок у консолі (рев'ю P0, 2026-09-24).
+   */
+  function persistQueue(): boolean {
+    const sid = sessionId.value
+    if (!sid) return false
+    if (mode.value === 'SAVE_BLOCKED') return persistBlocked()
+    if (mode.value !== 'SYNC' && mode.value !== 'PAUSED') return false
+    const ok = saveBackup(sid, pendingOps.value.slice(), inFlightOps.value.slice())
+    backupFailed.value = !ok
+    return ok
   }
 
   /**
@@ -1407,6 +1467,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // повернеться при наступному bootstrap цієї дошки.
     saveBlock.value = null
     droppedWhileBlocked.value = 0
+    backupFailed.value = false
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
     _ownBlockedKey = null
@@ -1450,6 +1511,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     isSaveBlocked,
     hasUnsecuredQueue,
     inputLocked,
+    pausedUnsecured,
+    backupFailed,
     droppedWhileBlocked,
     blockResolving,
     canRetryBlocked,
@@ -1473,6 +1536,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     reset,
     // SAVE_BLOCKED: дії вчителя + аварійний запис
     persistBlocked,
+    persistQueue,
     retryBlocked,
     discardBlocked,
     exportBlocked,
@@ -1484,6 +1548,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     MAX_RETRY_ATTEMPTS,
     PAUSE_AUTO_RETRY_MS,
     MAX_BLOCKED_QUEUE_OPS,
+    MAX_BATCH_BYTES,
   }
 })
 

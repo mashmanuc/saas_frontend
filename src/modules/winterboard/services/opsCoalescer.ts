@@ -37,7 +37,14 @@ interface StrokeAppendPayload {
  *
  * Side effect: mutates `last.payload.points` у place (extends with incoming's points).
  */
-export function tryCoalesceStrokeAppend(last: OpsSyncOp, incoming: OpsSyncOp): boolean {
+const _enc = new TextEncoder()
+
+export function tryCoalesceStrokeAppend(
+  last: OpsSyncOp,
+  incoming: OpsSyncOp,
+  /** Ліміт payload однієї операції (сервер: 64 KB). Злиття понад нього — відмова. */
+  maxPayloadBytes: number = Number.POSITIVE_INFINITY,
+): boolean {
   if (last.op_type !== 'stroke_append' || incoming.op_type !== 'stroke_append') {
     return false
   }
@@ -53,8 +60,13 @@ export function tryCoalesceStrokeAppend(last: OpsSyncOp, incoming: OpsSyncOp): b
     return false
   }
 
+  const merged = [...lastPayload.points, ...incomingPayload.points]
+  if (Number.isFinite(maxPayloadBytes)) {
+    const bytes = _enc.encode(JSON.stringify({ ...lastPayload, points: merged })).byteLength
+    if (bytes > maxPayloadBytes) return false  // окремим op: кожна частина вже ≤ ліміту
+  }
   // Mutate last op's points у place (combined points = backwards-compatible)
-  lastPayload.points = [...lastPayload.points, ...incomingPayload.points]
+  lastPayload.points = merged
   return true
 }
 

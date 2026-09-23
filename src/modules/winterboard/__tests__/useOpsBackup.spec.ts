@@ -54,23 +54,23 @@ describe('opsBackup', () => {
     // Save a backup with a manually-aged savedAt
     const oldIso = new Date(Date.now() - 8 * 24 * 3_600 * 1_000).toISOString()
     localStorage.setItem(
-      `wb_ops_backup_${SID}`,
+      `wb_ops_backup_v2_${SID}_anon`,
       JSON.stringify({ pending: [{ id: 'old' }], inFlight: [], savedAt: oldIso }),
     )
 
     // TTL guard kicks in on read → returns null + clears
     expect(readBackup(SID)).toBeNull()
-    expect(localStorage.getItem(`wb_ops_backup_${SID}`)).toBeNull()
+    expect(localStorage.getItem(`wb_ops_backup_v2_${SID}_anon`)).toBeNull()
   })
 
   it('returns null for corrupt JSON without crashing', () => {
-    localStorage.setItem(`wb_ops_backup_${SID}`, '{not-valid-json}')
+    localStorage.setItem(`wb_ops_backup_v2_${SID}_anon`, '{not-valid-json}')
     expect(readBackup(SID)).toBeNull()
   })
 
   it('returns null for missing arrays', () => {
     localStorage.setItem(
-      `wb_ops_backup_${SID}`,
+      `wb_ops_backup_v2_${SID}_anon`,
       JSON.stringify({ savedAt: new Date().toISOString() }),
     )
     expect(readBackup(SID)).toBeNull()

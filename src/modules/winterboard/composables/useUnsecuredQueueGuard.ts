@@ -1,37 +1,60 @@
 /**
- * SAVE_BLOCKED + сховище відмовило (SYSTEM_LAW §4, `storage_failed`): черга живе лише
- * в пам'яті вкладки. Будь-який вихід її знищує — зміна дошки (bootstrap іншої сесії
- * очищає чергу, INV-CROSS-SESSION), вихід із кімнати, reload чи закриття вкладки.
- * Закон дозволяє вийти з цього стану лише дією вчителя: завантажити копію або
- * відкинути. Тому вихід без цього — лише після явного підтвердження (рев'ю P0, 2026-09-24).
+ * Вихід із дошки не губить чергу (SYSTEM_LAW §4–§5; рев'ю P0, 2026-09-24).
  *
- * ⚠️ Викликати в setup кімнати ДО власних onBeforeRouteLeave: guard'и одного
- * компонента виконуються в порядку реєстрації, а скасування має статися до того,
- * як кімната прибере рекордер.
+ * Перед будь-яким виходом — зміна дошки (той самий маршрут, інший параметр),
+ * перехід в інший розділ, reload чи закриття вкладки — черга має опинитися на
+ * сервері або в ПІДТВЕРДЖЕНІЙ копії у сховищі ЗАРАЗ, а не за секундним таймером
+ * рекордера. Не вийшло — вихід у застосунку скасовується (без «все одно піти»:
+ * закон дозволяє вийти із зупинки лише копією/відправкою або «Відкинути»);
+ * reload/закриття — нативне попередження браузера (більшого браузер не дає).
+ *
+ * ⚠️ Викликати в setup кімнати ДО власних onBeforeRouteLeave/Update: guard'и
+ * одного компонента виконуються в порядку реєстрації, скасування має статися
+ * до того, як кімната прибере рекордер.
  */
 import { onBeforeUnmount } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, type RouteLocationNormalized } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { notifyError } from '@/utils/notify'
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 
 export function useUnsecuredQueueGuard(): void {
   const opsSync = useOpsSyncStore()
   const { t } = useI18n()
 
-  function allowLeave(): boolean {
-    if (!opsSync.hasUnsecuredQueue) return true
-    return window.confirm(t('winterboard.errors.saveBlocked.confirmLeave', {
-      count: opsSync.pendingCount + opsSync.inFlightCount,
-    }))
+  const queued = (): number => opsSync.pendingCount + opsSync.inFlightCount
+
+  /** Черга на сервері або в перевіреній копії? */
+  async function secureQueue(): Promise<boolean> {
+    if (queued() === 0) return true
+    if (opsSync.isSync) {
+      try {
+        await opsSync.flushAll()
+      } catch (err) {
+        console.warn('[WB:leaveGuard] flush before leave failed:', err)
+      }
+      if (queued() === 0) return true
+    }
+    return opsSync.persistQueue()
   }
+
+  async function allowLeave(): Promise<boolean> {
+    if (await secureQueue()) return true
+    notifyError(t('winterboard.errors.saveBlocked.leaveBlocked', { count: queued() }))
+    return false
+  }
+
+  const sameParams = (a: RouteLocationNormalized, b: RouteLocationNormalized): boolean =>
+    JSON.stringify(a.params) === JSON.stringify(b.params)
 
   onBeforeRouteLeave(() => allowLeave())
   // /winterboard/:id → /winterboard/:id2 — той самий маршрут, leave не спрацьовує.
-  onBeforeRouteUpdate((to: RouteLocationNormalized, from: RouteLocationNormalized) =>
-    to.params.id === from.params.id ? true : allowLeave())
+  onBeforeRouteUpdate((to, from) => (sameParams(to, from) ? true : allowLeave()))
 
   function onBeforeUnload(e: BeforeUnloadEvent): void {
-    if (!opsSync.hasUnsecuredQueue) return
+    if (queued() === 0) return
+    // Синхронно: секундний таймер рекордера може не встигнути.
+    if (opsSync.persistQueue()) return
     e.preventDefault()
     e.returnValue = ''
   }

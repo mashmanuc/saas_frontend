@@ -7097,6 +7097,7 @@
         "bannerLabel": "Server temporarily busy — changes are waiting to be sent",
         "title": "Server temporarily busy — your changes are queued",
         "hint": "Changes in queue: {count}. Sending is retried automatically every {seconds} s.",
+        "storageFailed": "The browser did not store a copy — changes exist only in this tab. Drawing is paused until a copy is stored or the server accepts the changes. Do not close the tab.",
         "retry": "Retry now",
         "retrying": "Sending…"
       },
@@ -7126,7 +7127,7 @@
         "checking": "Checking…",
         "export": "Download a copy",
         "discard": "Discard unsaved",
-        "confirmLeave": "Unsaved changes ({count}) exist only in this tab’s memory. If you leave, they will be lost. Download a copy first. Leave anyway?",
+        "leaveBlocked": "Changes ({count}) are not saved on the server or on this computer yet — leaving now would lose them. Wait for saving, or download a copy and discard the unsaved changes.",
         "confirmDiscard": "Discard {count} unsaved changes? The board will return to what is on the server. You can download a copy first.",
         "confirmRetryRejected": "The app was updated. Try again to send the changes the server did not accept before?",
         "result": {

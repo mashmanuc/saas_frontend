@@ -39,6 +39,7 @@ import {
 import { useReplayRecorder } from '../../composables/useReplayRecorder'
 import { readBackup, saveBackup } from '../../composables/useOpsBackup'
 import { readBlocked } from '../../composables/useBlockedOps'
+import { tryCoalesceStrokeAppend } from '../../services/opsCoalescer'
 
 const SID = '00000000-0000-0000-0000-00000000c0de'
 const post = apiClient.post as ReturnType<typeof vi.fn>
@@ -792,5 +793,134 @@ describe('Рев’ю P0 2026-09-24 (4) · нові дії під час пов�
     expect(store.mode).toBe('SYNC')
     expect(readBackup(SID)?.pending.map((o: { op_id: string }) => o.op_id)).toEqual(['during'])
     expect(readBlocked(SID, null).records).toHaveLength(0)
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (5) · PAUSED, звичайна копія, розмір пакета', () => {
+  const batches = () => post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
+
+  function pausedStore() {
+    const store = syncStore()
+    store.mode = 'PAUSED'
+    return store
+  }
+
+  it('PAUSED: стеля черги як у SAVE_BLOCKED — відмова видима, введення заблоковано', () => {
+    const store = pausedStore()
+    for (let i = 0; i < store.MAX_BLOCKED_QUEUE_OPS; i++) store.pendingOps.push(op(`q${i}`))
+    expect(store.record(op('over'))).toBe(false)
+    expect(store.droppedWhileBlocked).toBe(1)
+    expect(store.inputLocked).toBe(true)
+  })
+
+  it('PAUSED: звичайна копія не лягла → введення заблоковано й «черга без копії»; копія лягла → знято', () => {
+    const store = pausedStore()
+    store.record(op('p1'))
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    expect(store.persistQueue()).toBe(false)
+    expect(store.inputLocked).toBe(true)
+    expect(store.pausedUnsecured).toBe(true)
+    expect(store.hasUnsecuredQueue).toBe(true)
+    spy.mockRestore()
+    expect(store.persistQueue()).toBe(true)
+    expect(store.inputLocked).toBe(false)
+    expect(store.hasUnsecuredQueue).toBe(false)
+  })
+
+  it('SYNC: невдала копія не блокує малювання (черга піде за ~2 с), але вихід охороняється', () => {
+    const store = syncStore()
+    store.record(op('s1'))
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    expect(store.persistQueue()).toBe(false)
+    spy.mockRestore()
+    expect(store.inputLocked).toBe(false)
+    expect(store.hasUnsecuredQueue).toBe(true)
+  })
+
+  it('рекордер: невдалий запис копії доходить до store, а не лише console.warn', async () => {
+    const store = syncStore()
+    const rec = recorder()
+    store.mode = 'PAUSED'
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    rec.record({ op_type: 'stroke_add', page_id: 'p1', payload: { stroke: { id: 's' } } } as never)
+    await vi.advanceTimersByTimeAsync(1_100)
+    spy.mockRestore()
+    expect(store.backupFailed).toBe(true)
+    expect(store.inputLocked).toBe(true)
+    rec.stop?.()
+  })
+
+  it('пошкоджена звичайна копія своєї дошки → storage_unreadable, сирі дані в експорті, не стерто до «Відкинути»', async () => {
+    const key = `wb_ops_backup_v2_${SID}_anon`
+    localStorage.setItem(key, '{"pending":[{"op_id":"lost-1"')
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    expect(localStorage.getItem(key)).not.toBeNull()
+    const exp = store.exportBlocked() as { unreadable_records?: Array<{ key: string; raw: string }> }
+    expect(exp.unreadable_records?.[0].raw).toContain('lost-1')
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.discardBlocked()
+    expect(localStorage.getItem(key)).toBeNull()
+  })
+
+  it('звичайна копія іншого акаунта на тій самій дошці не читається', () => {
+    const store = syncStore()
+    store.setBlockedOwner('7')
+    store.record(op('of-7'))
+    expect(store.persistQueue()).toBe(true)
+    store.setBlockedOwner('8')
+    expect(readBackup(SID)).toBeNull()
+    store.setBlockedOwner('7')
+    expect(readBackup<{ op_id: string }>(SID)?.pending.map(o => o.op_id)).toEqual(['of-7'])
+  })
+
+  it('пакет обмежено сумарним розміром, не лише 50 діями', async () => {
+    const store = syncStore()
+    const big = 'x'.repeat(50 * 1024)
+    for (let i = 0; i < 4; i++) store.record(op(`b${i}`, 'stroke_add', { blob: big }))
+    post.mockResolvedValueOnce(ok(2))
+    await store.flush()
+    const sent = (batches()[0][1] as { ops: unknown[] }).ops
+    expect(sent).toHaveLength(2)
+    expect(new TextEncoder().encode(JSON.stringify(sent)).byteLength).toBeLessThanOrEqual(store.MAX_BATCH_BYTES)
+    expect(store.pendingOps).toHaveLength(2)
+  })
+
+  it('злиття штрихів не перевищує 64 KB — інакше частина йде окремим op', () => {
+    const LIMIT = 64 * 1024
+    const pts = Array.from({ length: 2500 }, (_, i) => [i, i, 0.5])  // ~40 KB кожна частина
+    const last = op('a1', 'stroke_append', { stroke_id: 'S', points: [...pts] })
+    const incoming = op('a2', 'stroke_append', { stroke_id: 'S', points: [...pts] })
+    expect(tryCoalesceStrokeAppend(last, incoming, LIMIT)).toBe(false)
+    expect((last.payload as { points: unknown[] }).points).toHaveLength(2500)  // не змінено
+    const small1 = op('b1', 'stroke_append', { stroke_id: 'T', points: [[1, 1, 0.5]] })
+    const small2 = op('b2', 'stroke_append', { stroke_id: 'T', points: [[2, 2, 0.5]] })
+    expect(tryCoalesceStrokeAppend(small1, small2, LIMIT)).toBe(true)
+    expect((small1.payload as { points: unknown[] }).points).toHaveLength(2)
+  })
+
+  it('рекордер передає ліміт у злиття: під навантаженням великі частини не зливаються', () => {
+    const store = syncStore()
+    store.mode = 'PAUSED'  // flush не дозливає чергу — поріг злиття лишається досягнутим
+    const rec = recorder()
+    for (let i = 0; i < 60; i++) store.pendingOps.push(op(`f${i}`))
+    const pts = Array.from({ length: 2500 }, (_, i) => [i, i, 0.5])
+    rec.record({ op_id: 'a1', op_type: 'stroke_append', page_id: 'p1', payload: { stroke_id: 'S', points: pts } } as never)
+    rec.record({ op_id: 'a2', op_type: 'stroke_append', page_id: 'p1', payload: { stroke_id: 'S', points: pts } } as never)
+    const appends = store.pendingOps.filter(o => o.op_type === 'stroke_append')
+    expect(appends).toHaveLength(2)
+    for (const a of appends) {
+      expect(new TextEncoder().encode(JSON.stringify(a.payload)).byteLength).toBeLessThanOrEqual(64 * 1024)
+    }
+    rec.stop?.()
   })
 })

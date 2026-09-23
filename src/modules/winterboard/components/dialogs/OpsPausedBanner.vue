@@ -33,6 +33,16 @@
         <span class="wb-paused-banner__hint">
           {{ t('winterboard.errors.paused.hint', { count: queuedCount, seconds: autoRetrySeconds }) }}
         </span>
+        <!-- Рішення власника 2026-09-24: без копії у сховищі або на стелі черги — введення стоїть. -->
+        <span v-if="opsSync.pausedUnsecured" class="wb-paused-banner__warn">
+          {{ t('winterboard.errors.paused.storageFailed') }}
+        </span>
+        <span v-else-if="opsSync.inputLocked" class="wb-paused-banner__warn">
+          {{ t('winterboard.errors.saveBlocked.queueFull') }}
+        </span>
+        <span v-if="opsSync.droppedWhileBlocked > 0" class="wb-paused-banner__warn">
+          {{ t('winterboard.errors.saveBlocked.dropped', { count: opsSync.droppedWhileBlocked }) }}
+        </span>
       </div>
 
       <button
@@ -61,6 +71,7 @@ const autoRetrySeconds = Math.round(opsSync.PAUSE_AUTO_RETRY_MS / 1000)
 </script>
 
 <style scoped>
+.wb-paused-banner__warn { font-size: 13px; font-weight: 600; color: #b45309; }
 .wb-paused-banner {
   /* Як DesyncRecoveryBanner: sticky, не overlay, не блокує полотно. */
   position: sticky;

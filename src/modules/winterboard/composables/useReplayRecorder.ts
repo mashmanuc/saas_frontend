@@ -35,6 +35,7 @@ import {
   SeqResyncError,
   SaveBlockedError,
   type OpsSyncOp,
+  MAX_BATCH_BYTES,
 } from '../stores/opsSyncStore'
 import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
 
@@ -51,10 +52,7 @@ const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOpera
 // Phase S PR-3 (2026-04-28) — bounded batcher per REFACTOR_PLAN.md v2 §3.A.
 /** Hard cap per POST (BE accepts up to 100 ops/batch). */
 const MAX_BATCH_OPS = 100
-/** Aggregate batch ceiling per POST (defense-in-depth поверх per-op MAX_PAYLOAD_BYTES).
- *  128KB вибрано per helper review 2026-04-29 — 512KB risk: CDN/proxy/gunicorn intermediate limits.
- *  128KB = 2× headroom over per-op 64KB; ~100 small strokes (1-1.3KB avg) fit без issue. */
-const MAX_BATCH_BYTES = 128 * 1024
+// Сумарна стеля POST — MAX_BATCH_BYTES у opsSyncStore (там її й застосовано при нарізці).
 /** Coalescer trigger: коли pendingCount > N AND incoming op = stroke_append → merge. */
 const COALESCE_THRESHOLD = 50
 /** TLV2-G1b: після успішної спроби з PAUSED — скільки batch-ів черги дозлити одразу. */
@@ -146,13 +144,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const sid = options.sessionId.value
     // TLV2-G1b: черга store належить дошці store; під час зміни дошки не писати її чужій.
     if (!sid || opsSync.sessionId !== sid) return
-    // SAVE_BLOCKED (LAW §4): черга йде в аварійний запис з перевіркою, а не у
-    // звичайний backup, який після reload відправив би її знову.
-    if (opsSync.isSaveBlocked) {
-      opsSync.persistBlocked()
-      return
-    }
-    saveBackup(sid, [...opsSync.pendingOps], [...opsSync.inFlightOps])
+    // SAVE_BLOCKED (LAW §4): аварійний запис з перевіркою; інакше — звичайна копія,
+    // теж з перевіркою: невдача вмикає «черга без копії» в store, не лише console.warn.
+    opsSync.persistQueue()
   }
 
   // Trailing throttle для hot record() path. Reduces allocator pressure від
@@ -294,7 +288,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       opsSync.pendingOps.length > 0
     ) {
       const last = opsSync.pendingOps[opsSync.pendingOps.length - 1]
-      if (last && tryCoalesceStrokeAppend(last as OpsSyncOp, op as unknown as OpsSyncOp)) {
+      // Злитий штрих не має перевищити ліміт операції (64 KB), інакше сервер відхилить
+      // увесь пакет (рев'ю P0, 2026-09-24) — тоді op іде окремо.
+      if (last && tryCoalesceStrokeAppend(last as OpsSyncOp, op as unknown as OpsSyncOp, MAX_PAYLOAD_BYTES)) {
         // Merged into previous pending op — don't push new op
         opCount.value++
         _persistBackupThrottled()
@@ -371,12 +367,8 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       const flushed = beforeCount - afterCount
       if (flushed > 0) _totalFlushedOps += flushed
 
-      // ACK clears localStorage backup if все відправлено
-      if (afterCount === 0) {
-        clearBackup(sid)
-      } else {
-        _persistBackup()
-      }
+      // ACK: порожня черга → копію знято; інакше — перезаписано (обидва через store).
+      _persistBackup()
     } catch (err) {
       if (err instanceof DesyncError) {
         // Store already entered DESYNC + cleared buffers + emitted broadcast
@@ -642,7 +634,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
         clearTimeout(debounceTimer)
         debounceTimer = null
       }
-      saveBackup(prev, [...opsSync.pendingOps], [...opsSync.inFlightOps])
+      opsSync.persistQueue()  // store ще на prev; у SAVE_BLOCKED — аварійний запис, не звичайний
     },
     { flush: 'sync' },
   )

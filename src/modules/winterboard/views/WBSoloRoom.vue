@@ -1103,7 +1103,7 @@
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
 import { useWBStore } from '../board/state/boardStore'
@@ -4245,6 +4245,16 @@ onBeforeRouteLeave(async (to, _from, next) => {
   }
   await saveBeforeLeave()
   next()
+})
+
+// Дошка вантажиться лише при монтуванні: /winterboard/:id → :id2 перевикористовує
+// компонент, і без цього адреса показувала б Б на відкритій дошці А (рев'ю P0,
+// 2026-09-24). Черга А вже в безпеці (useUnsecuredQueueGuard вище) — повне
+// завантаження Б.
+onBeforeRouteUpdate((to, from) => {
+  if (to.params.id === from.params.id) return true
+  window.location.assign(router.resolve(to).href)
+  return false
 })
 
 watch(() => store.workspaceName, (name) => {
