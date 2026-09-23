@@ -232,7 +232,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   let _adoptedBlockedKeys: string[] = []
   /** Нечитабельні аварійні записи цієї дошки — лише для експорту вчителем. */
   let _unreadableBlocked: Array<{ key: string; raw: string }> = []
-  /** Ключ, під яким ЦЯ вкладка востаннє записала аварійну чергу. */
+  /** Ключ, під яким ЦЯ вкладка востаннє записала аварійну чергу ЦІЄЇ дошки. */
   let _ownBlockedKey: string | null = null
   /**
    * Іде ручна спроба «Перевірити й надіслати». Режим лишається SAVE_BLOCKED до
@@ -442,6 +442,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _flushPromise = null
       // TLV2-G1b: таймер і лічильник 503 попередньої дошки не переходять на нову.
       _resetRetryState()
+      // SAVE_BLOCKED попередньої дошки лишається в ЇЇ аварійному записі; пам'ять про
+      // нього (ключі, причина) на нову дошку не переходить — інакше вирішення на Б
+      // стерло б записи А (рев'ю P0, 2026-09-24).
+      _forgetBlockMemory()
     }
     sessionId.value = sid
     _initChannel()
@@ -906,8 +910,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     const ok = writeBlocked(sid, tabId.value, _blockedOwnerId, info,
       inFlightOps.value.slice(), pendingOps.value.slice())
     const key = blockedKey(sid, _blockedOwnerId, tabId.value)
-    if (_ownBlockedKey && _ownBlockedKey !== key) removeBlocked([_ownBlockedKey])
-    _ownBlockedKey = key
+    // Попередній ключ ЦІЄЇ ж дошки (змінився власник) знімаємо лише після того, як
+    // новий запис підтверджено; ключ іншої дошки тут не буває (_forgetBlockMemory).
+    if (ok && _ownBlockedKey && _ownBlockedKey !== key) removeBlocked([_ownBlockedKey])
+    if (ok || !_ownBlockedKey) _ownBlockedKey = key
     if (ok !== info.storageOk) saveBlock.value = { ...info, storageOk: ok }
     if (ok) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
     return ok
@@ -1018,6 +1024,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       } finally {
         _manualAttempt = false
       }
+      // Поки пакет був у мережі, дошка приймала нові дії, а їхній аварійний запис
+      // рекордер відкладає на ~1 с. Оновлюємо його ЗАРАЗ, ще в SAVE_BLOCKED і без
+      // await до saveBackup(): якщо backup нижче відмовить, лишиться копія з цими
+      // діями, а не стара (рев'ю P0, 2026-09-24).
+      persistBlocked()
       _unblock()  // лише після підтвердженого 2xx
       // Знімаємо аварійний запис лише коли решта черги ПІДТВЕРДЖЕНО лягла у
       // звичайний backup. Сховище відмовило → запис лишається (безпечно: дедуп op_id).
@@ -1030,6 +1041,16 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     } finally {
       blockResolving.value = false
     }
+  }
+
+  function _forgetBlockMemory(): void {
+    if (mode.value === 'SAVE_BLOCKED') mode.value = 'SYNC'  // bootstrap нижче однаково ставить SYNC
+    saveBlock.value = null
+    droppedWhileBlocked.value = 0
+    _adoptedBlockedKeys = []
+    _unreadableBlocked = []
+    _ownBlockedKey = null
+    _manualAttempt = false
   }
 
   function _unblock(): void {

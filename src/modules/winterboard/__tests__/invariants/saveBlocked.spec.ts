@@ -651,3 +651,88 @@ describe('Рев’ю P0 2026-09-24 (2) · ручний повтор і влас
     expect(store.inFlightOps.map(o => o.op_id)).toEqual(['g'])
   })
 })
+
+describe('Рев’ю P0 2026-09-24 (3) · перехід між дошками і дії під час ручного пакета', () => {
+  const SID_B = '00000000-0000-0000-0000-0000000000bb'
+  const batches = () => post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
+
+  async function blockA() {
+    const store = syncStore()
+    store.record(op('a1'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(readBlocked(SID, null).records).toHaveLength(1)
+    return store
+  }
+
+  it('А заблокована → відкрити Б → збій запису Б → копія А ціла', async () => {
+    const store = await blockA()
+    const aBefore = readBlocked(SID, null).records[0]
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID_B)
+    expect(store.mode).toBe('SYNC')
+    expect(store.saveBlock).toBeNull()
+    store.record(op('b1'))
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.includes(SID_B)) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    spy.mockRestore()
+    expect(store.saveBlock?.storageOk).toBe(false)
+    const aAfter = readBlocked(SID, null).records
+    expect(aAfter).toHaveLength(1)
+    expect(aAfter[0].key).toBe(aBefore.key)
+    expect(aAfter[0].record.inFlight.map(o => o.op_id)).toEqual(['a1'])
+  })
+
+  it('А заблокована → Б заблокована й відкинута → копія А ціла; повернення на А знову показує зупинку', async () => {
+    const store = await blockA()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID_B)
+    store.record(op('b1'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.discardBlocked()
+    expect(readBlocked(SID_B, null).records).toHaveLength(0)
+    expect(readBlocked(SID, null).records).toHaveLength(1)
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['a1'])
+  })
+
+  it('нова дія під час ручного пакета + успіх + backup відмовив → аварійна копія містить нову дію', async () => {
+    const store = syncStore()
+    store.record(op('a'))
+    post.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    post.mockResolvedValueOnce({ saved: [], missing: ['a'] })  // check-ops
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    let resolveBatch: (v: unknown) => void = () => {}
+    post.mockImplementationOnce(() => new Promise(r => { resolveBatch = r }))
+    const pending = store.retryBlocked()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(batches()).toHaveLength(2)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.record(op('during'))).toBe(true)  // вчитель малює, поки пакет у мережі
+
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('wb_ops_backup_')) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    resolveBatch(ok(1))
+    expect(await pending).toBe('sent')
+    spy.mockRestore()
+    expect(store.mode).toBe('SYNC')
+    expect(readBackup(SID)).toBeNull()
+    const left = readBlocked(SID, null).records
+    expect(left).toHaveLength(1)
+    expect(left[0].record.pending.map(o => o.op_id)).toEqual(['during'])
+    expect(left[0].record.inFlight).toHaveLength(0)  // 'a' уже на сервері — не повертаємо
+  })
+})
