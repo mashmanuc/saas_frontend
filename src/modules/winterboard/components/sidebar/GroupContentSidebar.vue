@@ -91,14 +91,14 @@
         :class="{ 'content-sidebar__tab--active': activeTab === 'materials' }"
         role="tab"
         :aria-selected="activeTab === 'materials'"
-        @click="activeTab = 'materials'"
+        @click="pickTab('materials')"
       >{{ t('winterboard.contentSidebar.tabMaterials') }}</button>
       <button
         class="content-sidebar__tab"
         :class="{ 'content-sidebar__tab--active': activeTab === 'tools' }"
         role="tab"
         :aria-selected="activeTab === 'tools'"
-        @click="activeTab = 'tools'"
+        @click="pickTab('tools')"
       >{{ t('winterboard.contentSidebar.tabTools') }}</button>
     </div>
 
@@ -215,9 +215,23 @@
       <button class="content-sidebar__retry" @click="sidebar.reload">&#8635;</button>
     </div>
 
-    <!-- Empty (no materials at all) -->
-    <div v-else-if="sidebar.totalCount.value === 0" class="content-sidebar__empty">
-      {{ t('knowledge.noMaterials') }}
+    <!-- Empty (no materials at all).
+         Було просто «Матеріалів ще немає. Завантажте файли.» — констатація на
+         екрані людини, яка щойно зареєструвалась (розбір першої хвилини нового
+         вчителя, 2026-09-24). Тепер тут сказано, НАВІЩО вантажити, і є кнопка. -->
+    <div v-else-if="sidebar.totalCount.value === 0" class="content-sidebar__empty content-sidebar__empty--first">
+      <p class="content-sidebar__empty-title">{{ t('winterboard.contentSidebar.emptyTitle') }}</p>
+      <p class="content-sidebar__empty-lead">{{ t('winterboard.contentSidebar.emptyLead') }}</p>
+      <label v-if="isTutor" class="content-sidebar__empty-cta">
+        <input
+          type="file"
+          multiple
+          accept="image/*,application/pdf,audio/*,video/*,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+          class="sr-only"
+          @change="handleFileInput"
+        />
+        <span>{{ t('winterboard.contentSidebar.emptyCta') }}</span>
+      </label>
     </div>
 
     <!-- Empty (filter / search miss) -->
@@ -273,6 +287,9 @@
         <!-- Порожній пошук → 4 картки-сімейства (root) АБО каталог сімейства -->
         <template v-else>
           <!-- RIGHT_PANEL_MODE = catalog_root: 4 картки -->
+          <!-- Плитки додаються І кліком (кнопка «+» у треї), І перетягуванням.
+               Пишемо обидва способи, клік першим: його знаходять самі. -->
+          <p v-if="catalogFamily === null" class="tools-hint">{{ t('winterboard.contentSidebar.toolsHint') }}</p>
           <div v-if="catalogFamily === null" class="tools-cards">
             <button
               v-for="app in shownApps"
@@ -506,6 +523,13 @@ const isFoldersPanelOpen = ref(false)
 // Tab switcher: 'materials' | 'tools'
 // Local Workspace: materials-вкладка прихована → стартуємо з «Інструменти».
 const activeTab = ref<'materials' | 'tools'>(props.localMode ? 'tools' : 'materials')
+/** Людина сама перемкнула вкладку — далі її вибір не чіпаємо. */
+let tabChosenByUser = false
+function pickTab(tab: 'materials' | 'tools'): void {
+  tabChosenByUser = true
+  activeTab.value = tab
+}
+
 
 // Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → картки.
 const toolQuery = ref('')
@@ -543,6 +567,20 @@ const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,
 })
 const wbStore = useWBStore()
+
+// У кого матеріалів НЕМАЄ, «Матеріали» відкривались порожнім екраном — саме на
+// ньому новий учитель і зупинявся (розбір першої хвилини, 2026-09-24). Тому
+// вкладку обираємо ЗА ДАНИМИ: файлів нуль → «Інструменти» (там завжди є що
+// взяти); файли є → «Матеріали», бо для такого вчителя вони й головні.
+// Рішення одноразове, після відповіді сервера, і лише доки людина не обрала сама.
+watch(
+  () => [sidebar.isLoading.value, sidebar.totalCount.value] as const,
+  ([loading, total]) => {
+    if (loading || tabChosenByUser || props.localMode) return
+    if (total === 0) activeTab.value = 'tools'
+  },
+  { immediate: true },
+)
 
 // FIRST USER GATE 2026-09-23: у новачка панель відкривалась одразу з «Матеріалів
 // ще немає» і забирала ~40 % ширини (при 953 px аркуш — 25 %). Кімната згортає
@@ -817,6 +855,14 @@ function onDrop(e: DragEvent) {
   gap: 6px;
   padding: 10px 12px 6px;
 }
+.content-sidebar__empty--first { text-align: left; padding: 16px 12px; }
+.content-sidebar__empty-title { margin: 0 0 6px; font-weight: 600; color: #334155; }
+.content-sidebar__empty-lead { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: #64748b; }
+.content-sidebar__empty-cta {
+  display: inline-block; padding: 8px 14px; border-radius: 10px; cursor: pointer;
+  background: #0f172a; color: #fff; font-size: 13px; font-weight: 600;
+}
+.tools-hint { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: #64748b; }
 .content-sidebar__upload-btn {
   margin-left: auto;
   display: inline-flex;

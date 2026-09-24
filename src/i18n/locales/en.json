@@ -7656,7 +7656,11 @@
         "presentation": "Presentations",
         "youtube": "YouTube",
         "document": "Documents"
-      }
+      },
+      "toolsHint": "Click to add to the board. Or drag it",
+      "emptyTitle": "No materials yet",
+      "emptyLead": "Upload a PDF or a presentation — its pages go onto the board and you can write over them.",
+      "emptyCta": "Upload a file"
     },
     "templates": {
       "chooseTemplate": "Choose a board template",
@@ -8559,7 +8563,7 @@
     },
     "emptyCanvas": {
       "hint": "Start drawing here",
-      "sub": "Or drag materials from the right panel"
+      "sub": "Or add a graph or a shape from the “Tools” panel on the right"
     },
     "documentViewer": {
       "pdf": "PDF",
