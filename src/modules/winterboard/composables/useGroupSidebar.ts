@@ -52,8 +52,39 @@ export function useGroupSidebar(
   const showPasteOnly = ref(false)
   const pasteCount = ref(0)
 
-  // ── Processing status polling ──────────────────────────────────────────────
+  // ── Живий статус обробки: WS-подія + опитування як запасний шлях ───────────
+  //
+  // Власник 2026-09-24: «при відкритій дошці додаю файл до матеріалів, а його
+  // крутить ніби грузить, а він давно завантажився». Цей composable живить
+  // панель «Матеріали» на ВСІХ дошках (Solo, Constructor, Classroom), і обидва
+  // канали оновлення статусу в ньому були зламані:
+  //   1) WS-події `content:processing-complete` він не слухав узагалі (її слухав
+  //      лише урочний `useContentSidebar` і модалки вибору сторінок);
+  //   2) опитування `pollPendingItems` першим рядком робило `if (!groupId) return`,
+  //      тобто в режимі бібліотеки (дошка без групи — типовий соло-випадок)
+  //      таймер цокав кожні 4 с і не робив нічого.
+  // Разом: значок «Обробка…» не зникав до перезавантаження сторінки.
+
+  /** Бекенд домалював файл — оновити значок на місці, без запиту. */
+  function onProcessingComplete(e: Event) {
+    const detail = (e as CustomEvent).detail as Record<string, unknown> | undefined
+    if (!detail) return
+    const item = items.value.find(i => i.content_item_id === detail.content_item_id)
+    if (!item) return
+    item.processing_status = (detail.processing_status as string) ?? 'ready'
+    if (detail.thumbnail_url) item.thumbnail_url = detail.thumbnail_url as string
+    if (detail.pages) item.pages = detail.pages as AllowedContentItem['pages']
+    if (typeof detail.page_count === 'number') item.page_count = detail.page_count
+    if (detail.slides) item.slides = detail.slides as AllowedContentItem['slides']
+    if (typeof detail.slide_count === 'number') item.slide_count = detail.slide_count
+  }
+  window.addEventListener('content:processing-complete', onProcessingComplete)
+
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  let pollCount = 0
+  // Стеля опитування: WS — основний канал, опитування лише страхує. Файл, що
+  // завис у 'pending' назавжди (втрачена задача), не має цокати в мережу вічно.
+  const MAX_POLLS = 75 // ~5 хв
 
   function hasPendingItems(): boolean {
     return items.value.some(
@@ -66,6 +97,7 @@ export function useGroupSidebar(
       clearInterval(pollTimer)
       pollTimer = null
     }
+    pollCount = 0
   }
 
   /**
@@ -73,10 +105,18 @@ export function useGroupSidebar(
    * so the sidebar reflects real-time processing state without a full reload.
    */
   async function pollPendingItems() {
-    if (!groupId.value) return
+    // Local Workspace: бекенду немає — опитувати нічого.
+    if (options?.enabled && !options.enabled()) {
+      stopPolling()
+      return
+    }
 
     const pending = items.value.filter(
-      i => i.processing_status === 'pending' || i.processing_status === 'processing',
+      i =>
+        (i.processing_status === 'pending' || i.processing_status === 'processing')
+        // Старі активи бібліотеки без ContentItem опитати неможливо
+        // (`/items/null/` = 404), тож у цикл їх не беремо.
+        && typeof i.content_item_id === 'number',
     )
     if (pending.length === 0) {
       stopPolling()
@@ -124,16 +164,30 @@ export function useGroupSidebar(
     // Stop timer if nothing left to poll
     if (!hasPendingItems()) {
       stopPolling()
+      return
+    }
+    pollCount += 1
+    if (pollCount > MAX_POLLS) {
+      console.warn('[GroupSidebar] poll budget exhausted, still pending', {
+        pending: items.value.filter(
+          i => i.processing_status === 'pending' || i.processing_status === 'processing',
+        ).length,
+      })
+      stopPolling()
     }
   }
 
   function startPolling() {
     if (pollTimer !== null || !hasPendingItems()) return
+    pollCount = 0
     pollTimer = setInterval(pollPendingItems, POLL_INTERVAL_MS)
   }
 
   // Clean up on composable teardown
-  onUnmounted(stopPolling)
+  onUnmounted(() => {
+    window.removeEventListener('content:processing-complete', onProcessingComplete)
+    stopPolling()
+  })
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
