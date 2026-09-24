@@ -62,6 +62,7 @@ vi.mock('@/utils/telemetryAgent', () => ({
   trackEvent: vi.fn(),
 }))
 
+import apiClient from '@/utils/apiClient'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import type { RecordOperationRequest } from '../types/replay'
@@ -240,8 +241,14 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
       request: () => new Promise(() => {}),
       query: async () => ({ held: [] }),
     } })
+    // Б-28: після запису відновлених дій — свіжий стан сервера на полотно; копію
+    // знімає лише успішна звірка.
+    const getMock = apiClient.get as unknown as ReturnType<typeof vi.fn>
+    getMock.mockImplementation(async () => ({ last_seq: persisted, state: { pages: [] } }))
+    const applyCatchUpState = vi.fn()
     const recorder2 = mountRecorder('sess-crash')
-    await waitUntil(() => infoSpy.mock.calls.some((c) => String(c[0]).includes('Restored')), 3_000)
+    recorder2.connectToStore({ onOperation: () => () => {}, applyCatchUpState })
+    await waitUntil(() => applyCatchUpState.mock.calls.length > 0, 3_000)
     await recorder2.flush()
 
     expect(persisted).toBeGreaterThanOrEqual(5)  // відновлено і доставлено
@@ -249,6 +256,7 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     // ACK повного буфера чистить backup — «сміття» не переживає успіх.
     expect(backupKeys()).toHaveLength(0)
     recorder2.destroy()
+    getMock.mockImplementation(async () => ({ last_seq: 0 }))
     vi.unstubAllGlobals()
   }, 10_000)
 })

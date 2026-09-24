@@ -81,6 +81,14 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   let flushTimer: ReturnType<typeof setInterval> | null = null
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let _destroyed = false
+  /** Б-28: для якої дошки копії вже відновлено (раз на дошку). */
+  let _restoredFor: string | null = null
+  /**
+   * Б-28: полотно вже показує стан дошки. Classroom підключає рекордер ДО getSession →
+   * hydrateFromSession (потрібно для запису) — звірка до гідратації була б перезаписана
+   * повільною відповіддю getSession. Тоді кімната кличе markCanvasReady() після неї.
+   */
+  let _canvasReady = true
 
   // Telemetry counters
   const opCount = ref(0)
@@ -185,8 +193,15 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   async function _restoreBackup(): Promise<void> {
     const sid = options.sessionId.value
     if (!sid || opsSync.sessionId !== sid) return
+    // Б-28: одне відновлення на дошку. start() і connectToStore() кличуть обидва; поки
+    // звірка йде (дії вже пішли з черги, копії ще не знято), другий виклик підхопив би
+    // ті самі дії вдруге й зняв би копії до підтвердження. (Не `restoredPending`: його
+    // ставить і відновлена зупинка — тоді звичайні копії теж треба підхопити, щоб
+    // «Відкинути» зняло й їх.)
+    if (_restoredFor === sid || opsSync.restoring) return
     const live = await liveTabIds()
     if (_destroyed || options.sessionId.value !== sid || opsSync.sessionId !== sid) return
+    if (_restoredFor === sid || opsSync.restoring) return
     // Далі все синхронно. Копії СВОЇХ вкладок цієї дошки (ключ = дошка + акаунт +
     // вкладка). Копії ЖИВИХ інших вкладок не чіпаємо: вони надішлють своє самі, а
     // видалення могло б з'їсти дію, дописану між нашим читанням і видаленням.
@@ -196,23 +211,50 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     if (all.records.length === 0) return
     const known = new Set([...opsSync.inFlightOps, ...opsSync.pendingOps].map(o => o.op_id))
     let restored = 0
-    for (const { backup } of all.records) {
+    let partial = false
+    outer: for (const { backup } of all.records) {
       for (const op of [...backup.inFlight, ...backup.pending]) {
         if (!op.op_id || known.has(op.op_id)) continue
-        if (!opsSync.record(op as unknown as OpsSyncOp)) return  // копії лишаються до наступного разу
+        if (!opsSync.record(op as unknown as OpsSyncOp)) { partial = true; break outer }
         known.add(op.op_id)
         restored++
       }
     }
-    // Копії МЕРТВИХ вкладок знімаємо лише після перевіреного запису своєї (там уже
-    // їхні дії); не ліг або живість невідома — лишаються.
-    if (opsSync.persistQueue()) {
-      const ownKey = backupKey(sid)
-      removeBackupKeys(all.records.map(r => r.key).filter(k => k !== ownKey && mayRemove(k, own, live)))
+    if (partial) {
+      // Store прийняв лише частину (стеля / не той режим): прийняте піде на сервер, але
+      // на полотні його нема — звірка потрібна; копії НЕ знімаємо (там неприйняте).
+      if (restored > 0) {
+        opsSync.noteRestored([])
+        if (opsSync.isSync && _canvasReady) await opsSync.reconcileRestored()
+      }
+      return
     }
-    if (restored > 0) {
-      console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
+    _restoredFor = sid  // store прийняв усе — повторно для цієї дошки не відновлюємо
+    const ownKey = backupKey(sid)
+    const removable = all.records.map(r => r.key).filter(k => k !== ownKey && mayRemove(k, own, live))
+    const persisted = opsSync.persistQueue()
+    if (restored === 0) {
+      // Нових дій нема (усе вже в черзі) — копії мертвих вкладок можна знімати, щойно
+      // власна копія підтверджена.
+      if (persisted) removeBackupKeys(removable)
+      return
     }
+    console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
+    // Б-28: дії з копії є лише в черзі — не на полотні. Звірка: записати звичайним
+    // шляхом → свіжий стан сервера → полотно. Копії знімає ЛИШЕ успішна звірка.
+    opsSync.noteRestored(removable)
+    if (opsSync.isSync && _canvasReady) await opsSync.reconcileRestored()
+  }
+
+  /** Б-28: після успішної відправки — звірити дії з копії, якщо попередня спроба
+   *  зупинилась на «транзитній» причині (409 / нова дія). Подієво, не таймером (LAW §12);
+   *  при збої читання стану чи stale — лише «Оновити сторінку». */
+  function _maybeReconcileAfterFlush(): void {
+    if (!_canvasReady || !opsSync.restoredPending || !opsSync.isSync || opsSync.restoring) return
+    if (opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) return
+    const p = opsSync.restoreProblem
+    if (p !== null && p !== 'flush' && p !== 'busy') return
+    void opsSync.reconcileRestored()
   }
 
   /**
@@ -227,11 +269,16 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     // Дозлив — лише після спроби, що ПРОСУНУЛА чергу. 409 лишає пакет у черзі
     // (LAW §5, 2026-09-24): негайно слати його знову = повтор, заборонений §12.
     if (opsSync.pendingOps.length + opsSync.inFlightOps.length >= start) return
-    for (let i = 0; i < RECOVERY_DRAIN_MAX_BATCHES && !_destroyed && opsSync.isSync; i++) {
-      const before = opsSync.pendingOps.length + opsSync.inFlightOps.length
-      if (before === 0) return
-      await flush()
-      if (opsSync.pendingOps.length + opsSync.inFlightOps.length >= before) return
+    try {
+      for (let i = 0; i < RECOVERY_DRAIN_MAX_BATCHES && !_destroyed && opsSync.isSync; i++) {
+        const before = opsSync.pendingOps.length + opsSync.inFlightOps.length
+        if (before === 0) return
+        await flush()
+        if (opsSync.pendingOps.length + opsSync.inFlightOps.length >= before) return
+      }
+    } finally {
+      // Б-28: після виходу з PAUSED відновлені з копії дії — на полотно.
+      if (!_destroyed) _maybeReconcileAfterFlush()
     }
   }
 
@@ -392,6 +439,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
       // ACK: порожня черга → копію знято; інакше — перезаписано (обидва через store).
       _persistBackup()
+      _maybeReconcileAfterFlush()
     } catch (err) {
       if (err instanceof DesyncError) {
         // Store already entered DESYNC + cleared buffers + emitted broadcast
@@ -626,16 +674,51 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * Returns unsubscribe function — call on unmount.
    */
   function connectToStore(
-    store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void },
+    store: {
+      onOperation: (l: (op: RecordOperationRequest) => void) => () => void
+      /** Б-28: застосувати стан сервера до полотна (boardStore). */
+      applyCatchUpState?: (state: Record<string, unknown>) => void
+    },
+    opts: { canvasReady?: boolean } = {},
   ): () => void {
     console.info('[WB:Recorder] connectToStore — listener registered')
+    _canvasReady = opts.canvasReady ?? true
+    // Б-28: звірка відновлених дій оновлює ЦЕ полотно (Solo і Classroom однаково).
+    let applier: ((state: Record<string, unknown>) => void) | null = null
+    if (typeof store.applyCatchUpState === 'function') {
+      const board = store
+      applier = (state) => board.applyCatchUpState!(state)
+      opsSync.setCanvasApplier(applier)
+    }
     // TLV2-G1b: connectToStore іде після bootstrap і в Solo, і в Classroom.
     // Відновлення асинхронне (живість вкладок) — дозлив черги лише ПІСЛЯ нього,
     // інакше в Solo (без start()) підхоплені дії чекали б наступної дії вчителя.
-    void _restoreBackup().then(() => {
+    void _restoreBackup().then(async () => {
+      if (_destroyed) return
+      // Б-28: дії з копії могли бути підхоплені ще до реєстрації полотна (start() раніше
+      // connectToStore) — звіряємо тепер, коли полотно є. Одна спроба, не цикл.
+      if (_canvasReady && opsSync.restoredPending && opsSync.isSync && !opsSync.restoring && opsSync.restoreProblem === null) {
+        await opsSync.reconcileRestored()
+      }
       if (!_destroyed && opsSync.isSync && opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) void flush()
     })
-    return store.onOperation((op) => { record(op) })
+    const unsubscribe = store.onOperation((op) => { record(op) })
+    return () => {
+      unsubscribe()
+      if (applier) opsSync.clearCanvasApplier(applier)
+    }
+  }
+
+  /**
+   * Б-28: кімната показала стан дошки (Classroom — після hydrateFromSession). Якщо дії з
+   * копії чекали полотна — одна звірка зараз.
+   */
+  function markCanvasReady(): void {
+    if (_canvasReady) return
+    _canvasReady = true
+    if (opsSync.restoredPending && opsSync.isSync && !opsSync.restoring && opsSync.restoreProblem === null) {
+      void opsSync.reconcileRestored()
+    }
   }
 
   // TLV2-G1b: виконавець спроб відновлення з PAUSED. Синхронно, щоб дозволений store
@@ -684,6 +767,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     stop,
     destroy,
     connectToStore,
+    markCanvasReady,
     manualSnapshot,
     opCount: readonly(opCount),
     isFlushing,

@@ -7101,6 +7101,17 @@
         "retry": "Retry now",
         "retrying": "Sending…"
       },
+      "restore": {
+        "restoring": "Restoring changes saved on this computer… Drawing will be back in a moment.",
+        "problem": {
+          "flush": "Changes restored from this computer are not saved yet. The copy is kept — reload the page to try again.",
+          "busy": "Restored changes are saved, but the board was not refreshed so a new action is not erased. The copy is kept — reload the page.",
+          "fetch": "Restored changes are saved, but the board state could not be read. The copy is kept — reload the page.",
+          "stale": "Restored changes are saved, but the server has not returned a fresh board state yet. The copy is kept — reload the page.",
+          "apply": "Restored changes are saved, but the board could not be refreshed. The copy is kept — reload the page."
+        },
+        "reload": "Reload page"
+      },
       "bootstrapFailed": {
         "text": "The board could not connect to saving — changes are NOT being saved right now. Drawing is paused.",
         "reload": "Reload page"

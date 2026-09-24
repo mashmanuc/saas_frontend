@@ -129,6 +129,8 @@ async function onRetry(): Promise<void> {
       !window.confirm(t('winterboard.errors.saveBlocked.confirmRetryRejected'))) return
   try {
     const r = await opsSync.retryBlocked()
+    // Б-28: зупинка відновлена з копії — ці дії ще не на полотні.
+    if ((r === 'sent' || r === 'already-saved') && opsSync.restoredPending) await opsSync.reconcileRestored()
     if (r === 'unproven') resultText.value = t('winterboard.errors.saveBlocked.result.unproven')
     else if (r === 'already-saved') resultText.value = t('winterboard.errors.saveBlocked.result.alreadySaved')
     else if (r === 'sent-held') resultText.value = t('winterboard.errors.saveBlocked.result.sentHeld')

@@ -43,6 +43,7 @@
     <OpsSaveBlockedBanner />
     <OpsLegacyCopyNotice />
     <OpsBootstrapFailedBanner />
+    <OpsRestoreBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис».
          Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
@@ -591,6 +592,7 @@ import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
+import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -2579,7 +2581,9 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
   // silent drop → recording_start_state captures empty state → blank replay.
   // Idempotent: cleanupRecorder() handles повторний виклик safely.
   if (!_unsubRecorder) {
-    _unsubRecorder = replayRecorder.connectToStore(store)
+    // Б-28: полотно ще не гідратоване (getSession нижче) — звірка відновлених дій
+    // чекатиме markCanvasReady(), інакше повільний getSession перезаписав би її.
+    _unsubRecorder = replayRecorder.connectToStore(store, { canvasReady: false })
   }
 
   // Set role + permissions
@@ -2621,6 +2625,8 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
   } catch (err) {
     console.error('[WB:ClassroomRoom] Failed to load session state', err)
   }
+  // Б-28: полотно показує стан дошки — тепер можна звіряти відновлені з копії дії.
+  replayRecorder.markCanvasReady()
 
   isLoading.value = false
   // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch

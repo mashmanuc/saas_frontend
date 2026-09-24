@@ -131,6 +131,10 @@ interface StateResponse {
 
 export type CatchUpStatus = 'applied' | 'current' | 'stale' | 'blocked' | 'flush-failed'
 
+/** Б-28: результат звірки відновлених із копії дій. */
+export type RestoreResult =
+  | 'applied' | 'blocked' | 'flush-failed' | 'fetch-failed' | 'stale' | 'busy' | 'no-applier' | 'apply-failed'
+
 export interface CatchUpResult {
   status: CatchUpStatus
   /** localSeq після catch-up (advance лише при status='applied'). */
@@ -261,6 +265,26 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * відкидає дії. Кімната показує банер і блокує малювання (рев'ю P0, 2026-09-24).
    */
   const bootstrapFailed = ref(false)
+
+  // ── Б-28 (2026-09-24): відновлені з копії дії — одразу на полотні ──
+  /** Іде звірка відновлених дій (запис → свіжий стан сервера → полотно). Малювання стоїть. */
+  const restoring = ref(false)
+  /** У черзі є дії з копії, яких ще нема на полотні (до успішної звірки). */
+  const restoredPending = ref(false)
+  /**
+   * Звірка не вдалася — копію НЕ знято, полотно НЕ чіпали. 'flush' — запис не пройшов
+   * (без SAVE_BLOCKED/PAUSED); 'busy' — поки читали стан, з'явилась нова дія (оновлення
+   * полотна стерло б її); 'fetch' — стан не прочитано; 'stale' — сервер позначив стан
+   * несвіжим або не віддав його.
+   */
+  const restoreProblem = ref<null | 'flush' | 'busy' | 'fetch' | 'stale' | 'apply'>(null)
+  /** Лічильник прийнятих record() — звірка бачить дію, що встигла записатись під час GET. */
+  let _recordCount = 0
+  /** Копії мертвих вкладок, з яких узято дії, — знімаються лише після успішної звірки. */
+  let _restoreKeys: string[] = []
+  /** Застосувати стан сервера до полотна (реєструє рекордер кімнати: boardStore.applyCatchUpState). */
+  let _canvasApplier: ((state: Record<string, unknown>) => void) | null = null
+  let _reconcilePromise: Promise<RestoreResult> | null = null
   /** Іде дія вчителя «Перевірити й надіслати» / «Відкинути». */
   const blockResolving = ref(false)
   /** Ключі аварійних записів інших вкладок / попередньої сесії, які ця вкладка підхопила. */
@@ -329,6 +353,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const _queued = (): number => pendingOps.value.length + inFlightOps.value.length
   const inputLocked = computed(() =>
     (mode.value === 'BOOTSTRAP' && bootstrapFailed.value) ||
+    // Б-28: поки звіряємо відновлені дії, нове малювання чекає — оновлення полотна
+    // станом сервера стерло б його з екрана.
+    restoring.value ||
     (mode.value === 'SAVE_BLOCKED' && (
       saveBlock.value?.storageOk === false || _queued() >= MAX_BLOCKED_QUEUE_OPS
     )) ||
@@ -497,6 +524,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _resetRetryState()
       backupFailed.value = false
       legacyCopies.value = []
+      _forgetRestore()
       // SAVE_BLOCKED попередньої дошки лишається в ЇЇ аварійному записі; пам'ять про
       // нього (ключі, причина) на нову дошку не переходить — інакше вирішення на Б
       // стерло б записи А (рев'ю P0, 2026-09-24).
@@ -551,6 +579,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       return false
     }
     pendingOps.value.push(op)
+    _recordCount++
     return true
   }
 
@@ -1002,6 +1031,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     _unreadableBlocked = read.unreadable.filter(u => mayAdopt(u.key, own, live))
     const unreadable = read.readFailed || _unreadableBlocked.length > 0
     if (found.length === 0 && !unreadable) return
+    // Дії з аварійних записів — з копії, на полотні їх немає (Б-28): після успішного
+    // «Перевірити й надіслати» полотно оновиться станом сервера.
+    if (found.some(f => f.record.inFlight.length + f.record.pending.length > 0)) restoredPending.value = true
     const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
     const inFlight: OpsSyncOp[] = [...inFlightOps.value]
     const pending: OpsSyncOp[] = [...pendingOps.value]
@@ -1178,6 +1210,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       const state = await _fetchState(sid)
       _dropBlockedStorage(sid)
       clearBackup(sid)
+      // Б-28: копії мертвих вкладок, з яких підхоплено відкинуті дії, — теж геть;
+      // інакше після reload вони підхопились би знову і зупинка поверталась би.
+      removeBackupKeys(_restoreKeys)
+      _forgetRestore()
       pendingOps.value = []
       inFlightOps.value = []
       saveBlock.value = null
@@ -1234,6 +1270,120 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       note: 'owner unknown — saved before 2026-09-24; not restored automatically',
       records: legacyCopies.value.map(c => ({ key: c.key, raw: c.raw })),
     }
+  }
+
+  // ── Б-28: звірка відновлених дій ──────────────────────────────────
+
+  function _forgetRestore(): void {
+    restoring.value = false
+    restoredPending.value = false
+    restoreProblem.value = null
+    _restoreKeys = []
+  }
+
+  /** Рекордер кімнати реєструє, як застосувати стан сервера до полотна (null — зняти). */
+  function setCanvasApplier(fn: ((state: Record<string, unknown>) => void) | null): void {
+    _canvasApplier = fn
+  }
+
+  /** Зняти полотно, лише якщо воно досі те саме (інша кімната могла вже зареєструвати своє). */
+  function clearCanvasApplier(fn: (state: Record<string, unknown>) => void): void {
+    if (_canvasApplier === fn) _canvasApplier = null
+  }
+
+  /** У черзі дії з копії; `keys` — копії мертвих вкладок, знімати після звірки. */
+  function noteRestored(keys: string[]): void {
+    restoredPending.value = true
+    for (const k of keys) if (!_restoreKeys.includes(k)) _restoreKeys.push(k)
+  }
+
+  /**
+   * Б-28: показати відновлені з копії дії на полотні. Той самий контракт, що INV-24
+   * catchUp (flushAll → GET /state/ → stale-guard → applyState), але з примусовим
+   * оновленням полотна: після запису `localSeq = last_seq`, тож catchUp відповів би
+   * «current», а WS-відлуння відсікає фільтр INV-15 — полотно лишалося без цих дій
+   * до наступного reload.
+   *
+   * Без окремого шляху запису (звичайний flushAll) і без повторів (LAW §12): одна
+   * спроба. Невдача → копію НЕ знято, полотно НЕ чіпали, `restoreProblem` видно в
+   * кімнаті. Дублів немає: полотно стає канонічним станом сервера, а вже записане
+   * сервер відсіює за op_id.
+   */
+  function reconcileRestored(): Promise<RestoreResult> {
+    if (!_canvasApplier) return Promise.resolve('no-applier')
+    if (_reconcilePromise) return _reconcilePromise
+    _reconcilePromise = (async () => {
+      if (_catchUpPromise) {
+        try { await _catchUpPromise } catch { /* помилку catchUp бачить його викликач */ }
+      }
+      try {
+        return await _doReconcile()
+      } finally {
+        restoring.value = false
+      }
+    })().finally(() => { _reconcilePromise = null })
+    return _reconcilePromise
+  }
+
+  async function _doReconcile(): Promise<RestoreResult> {
+    const sid = sessionId.value
+    const apply = _canvasApplier
+    // SAVE_BLOCKED / PAUSED / DESYNC мають власні банери; дії лишаються «відновленими»
+    // до успішного виходу з цих станів.
+    if (!sid || !apply || mode.value !== 'SYNC') return 'blocked'
+    try {
+      await flushAll()
+    } catch (err) {
+      console.warn('[opsSync] Б-28 reconcile: flush failed — copy kept, canvas untouched:', err)
+      if (mode.value === 'SYNC' && sessionId.value === sid) restoreProblem.value = 'flush'
+      return 'flush-failed'
+    }
+    if (mode.value !== 'SYNC' || sessionId.value !== sid) return 'blocked'
+    // Відрізок «читання стану → полотно»: нове малювання чекає (оновлення полотна
+    // стерло б його з екрана). Раніше блокували й на весь flushAll — зайве.
+    restoring.value = true
+    const seqAtRead = localSeq.value
+    const recordsAtRead = _recordCount
+    let response: StateResponse
+    try {
+      response = await _fetchState(sid)
+    } catch (err) {
+      console.warn('[opsSync] Б-28 reconcile: state read failed — copy kept, canvas untouched:', err)
+      if (sessionId.value === sid) restoreProblem.value = 'fetch'
+      return 'fetch-failed'
+    }
+    if (sessionId.value !== sid || mode.value !== 'SYNC') return 'blocked'
+    if (!response || typeof response !== 'object' || response.stale === true ||
+        !response.state || typeof response.state !== 'object') {
+      restoreProblem.value = 'stale'
+      return 'stale'
+    }
+    const last = response.last_seq | 0
+    if (pendingOps.value.length + inFlightOps.value.length > 0 ||
+        _recordCount !== recordsAtRead || localSeq.value !== seqAtRead || last < localSeq.value) {
+      // Нова дія (своя — у черзі чи вже записана, або чужа через WS), поки читали стан:
+      // цей стан її не містить, і оновлення полотна стерло б її з екрана.
+      restoreProblem.value = 'busy'
+      return 'busy'
+    }
+    // 4: полотно могли зняти (вихід із кімнати) або замінити, поки читали стан.
+    if (_canvasApplier !== apply) return 'blocked'
+    try {
+      apply(response.state)
+    } catch (err) {
+      console.warn('[opsSync] Б-28 reconcile: canvas apply failed — copy kept:', err)
+      restoreProblem.value = 'apply'
+      return 'apply-failed'
+    }
+    localSeq.value = Math.max(localSeq.value, last)
+    serverSeq.value = Math.max(serverSeq.value, last)
+    // Лише тепер — запис підтверджено, стан сервера на полотні: копії можна знімати.
+    removeBackupKeys(_restoreKeys)
+    _restoreKeys = []
+    restoredPending.value = false
+    restoreProblem.value = null
+    persistQueue()  // черга порожня → власну копію знято
+    return 'applied'
   }
 
   /** «Прибрати» старі копії (після підтвердження в UI). */
@@ -1429,6 +1579,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // Same session — fetch fresh state
     const response = await _fetchState(sid)
     _resetRetryState()  // TLV2-G1b: після resync знову первинна спроба + 2 повтори
+    // Б-28: черга (з діями з копії) скинута — пам'ять про відновлення теж; самі копії
+    // лишаються: після reload дії підхопляться знову, успіх не вдаватимемо.
+    _forgetRestore()
     pendingOps.value = []
     inFlightOps.value = []
     serverSeq.value = response.last_seq | 0
@@ -1470,6 +1623,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     applyState: (state: Record<string, unknown>) => void,
   ): Promise<CatchUpResult> {
     if (_catchUpPromise) return _catchUpPromise
+    if (_reconcilePromise) {
+      await _reconcilePromise  // Б-28: звірка відновлення вже оновлює полотно
+      if (_catchUpPromise) return _catchUpPromise  // інший виклик встиг стартувати, поки чекали
+    }
     _catchUpPromise = _doCatchUp(applyState).finally(() => {
       _catchUpPromise = null
     })
@@ -1538,6 +1695,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     backupFailed.value = false
     bootstrapFailed.value = false
     legacyCopies.value = []
+    _forgetRestore()
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
     _ownBlockedKey = null
@@ -1584,6 +1742,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     pausedUnsecured,
     backupFailed,
     bootstrapFailed,
+    restoring,
+    restoredPending,
+    restoreProblem,
     legacyCopies,
     droppedWhileBlocked,
     blockResolving,
@@ -1609,6 +1770,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // SAVE_BLOCKED: дії вчителя + аварійний запис
     persistBlocked,
     persistQueue,
+    setCanvasApplier,
+    clearCanvasApplier,
+    noteRestored,
+    reconcileRestored,
     exportLegacyCopies,
     dismissLegacyCopies,
     retryBlocked,

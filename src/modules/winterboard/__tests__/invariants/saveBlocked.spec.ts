@@ -995,14 +995,19 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     b.setBlockedOwner('7')
     expect(b.persistQueue()).toBe(true)
     expect(localStorage.getItem(aKey)).not.toBeNull()
-    // B відкриває дошку з рекордером → підхоплює дію A, пише свою копію, знімає копію A
+    // B відкриває дошку з рекордером і полотном → підхоплює дію A, записує її, звіряє
+    // полотно зі станом сервера (Б-28) — лише тоді знімає копію A.
+    post.mockResolvedValueOnce(ok(1))
+    get.mockResolvedValueOnce({ last_seq: 1, state: { pages: [] } })
+    const applyCatchUpState = vi.fn()
     const rec = recorder()
-    rec.start?.()
+    rec.connectToStore({ onOperation: () => () => {}, applyCatchUpState })
     await vi.advanceTimersByTimeAsync(0)
-    expect(b.pendingOps.map(o => o.op_id)).toContain('fromA')
-    const keys = Object.keys(localStorage).filter(k => k.startsWith(`wb_ops_backup_v2_${SID}_u7_`))
-    expect(keys).toHaveLength(1)
-    expect(keys[0]).not.toBe(aKey)
+    const sent = post.mock.calls.filter(c => String(c[0]).includes('/replay/batch/'))
+      .flatMap(c => (c[1] as { ops: Array<{ op_id: string }> }).ops.map(o => o.op_id))
+    expect(sent).toContain('fromA')
+    expect(applyCatchUpState).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem(aKey)).toBeNull()
     rec.stop?.()
   })
 

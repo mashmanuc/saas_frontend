@@ -20,6 +20,7 @@
     <OpsSaveBlockedBanner />
     <OpsLegacyCopyNotice />
     <OpsBootstrapFailedBanner />
+    <OpsRestoreBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
          відхиляє всі операції. Постійний банер + read-only полотно замість
@@ -1123,6 +1124,7 @@ import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
+import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
 import { notifyError } from '@/utils/notify'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
