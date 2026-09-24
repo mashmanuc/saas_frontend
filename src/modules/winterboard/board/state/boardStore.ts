@@ -2,6 +2,7 @@
 // Ref: ARCHITECTURE.md ADR-02, ManifestWinterboard_v2.md LAW-01/02/03/19
 // Based on classroom/board/state/boardStore.ts — stripped of classroom-specific code
 
+import { clampToPageTopLeft, limitDeltaAtEdge, movingMin } from '../pageBounds'
 import { serverPayloadBytes } from '../../services/opsPayloadSize'
 import { defineStore } from 'pinia'
 import { useTestStore } from './testStore'
@@ -1146,7 +1147,7 @@ export const useWBStore = defineStore('wb-board', {
         const newAssets: WBAsset[] = this.clipboardAssets.map((a, i) => {
           const id = `asset-paste-${now}-${i}-${Math.random().toString(36).slice(2, 6)}`
           newIds.push(id)
-          return { ...a, id, x: a.x + OFFSET, y: a.y + OFFSET }
+          return clampToPageTopLeft({ ...a, id, x: a.x + OFFSET, y: a.y + OFFSET })
         })
         const pageIndex = this.currentPageIndex
         this.pages[pageIndex] = {
@@ -1327,6 +1328,9 @@ export const useWBStore = defineStore('wb-board', {
      * У replay: `op.page_id`. Якщо page не існує → throw (TASK 6 fail-fast).
      */
     addAsset(asset: WBAsset, pageId: string, opts?: { skipHistory?: boolean }): void {
+      // Лівий і верхній край аркуша — межа (власник 2026-09-24). Лише дія
+      // користувача: replay / чужі операції / undo (skipHistory) — як є.
+      if (!opts?.skipHistory) asset = clampToPageTopLeft(asset)
       if (!pageId) {
         throw new Error('[WB] addAsset: pageId is required (TASK 1 hardening)')
       }
@@ -1374,6 +1378,9 @@ export const useWBStore = defineStore('wb-board', {
 
     /** Add asset to a specific page (used for drag-to-thumbnail). */
     addAssetToPage(pageIndex: number, asset: WBAsset, opts?: { skipHistory?: boolean }): void {
+      // Лівий і верхній край аркуша — межа (власник 2026-09-24). Лише дія
+      // користувача: replay / чужі операції / undo (skipHistory) — як є.
+      if (!opts?.skipHistory) asset = clampToPageTopLeft(asset)
       const page = this.pages[pageIndex]
       if (!page) return
 
@@ -1417,6 +1424,9 @@ export const useWBStore = defineStore('wb-board', {
      * Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md
      */
     updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean; skipBuffer?: boolean }): void {
+      // Лівий і верхній край аркуша — межа (власник 2026-09-24). Лише дія
+      // користувача: replay / чужі операції / undo (skipHistory) — як є.
+      if (!opts?.skipHistory) asset = clampToPageTopLeft(asset)
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -2201,6 +2211,9 @@ export const useWBStore = defineStore('wb-board', {
      * Atomic batch add for assets — same pattern as addStrokesBatch.
      */
     addAssetsBatch(assets: WBAsset[], opts?: { skipHistory?: boolean }): void {
+      // Лівий і верхній край аркуша — межа (власник 2026-09-24). Лише дія
+      // користувача: replay / чужі операції / undo (skipHistory) — як є.
+      if (!opts?.skipHistory) assets = assets.map(clampToPageTopLeft)
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page || assets.length === 0) return
@@ -2299,6 +2312,9 @@ export const useWBStore = defineStore('wb-board', {
 
     /** Same as addAssetsBatch but targets a specific page by index. */
     addAssetsBatchToPage(pageIndex: number, assets: WBAsset[], opts?: { skipHistory?: boolean }): void {
+      // Лівий і верхній край аркуша — межа (власник 2026-09-24). Лише дія
+      // користувача: replay / чужі операції / undo (skipHistory) — як є.
+      if (!opts?.skipHistory) assets = assets.map(clampToPageTopLeft)
       const page = this.pages[pageIndex]
       if (!page || assets.length === 0) return
 
@@ -2952,6 +2968,7 @@ export const useWBStore = defineStore('wb-board', {
      * Pushes to assets array, selects it, undoable.
      */
     addStickyNote(sticky: WBAsset): void {
+      sticky = clampToPageTopLeft(sticky) // лівий/верхній край — межа (власник 2026-09-24)
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -3553,14 +3570,14 @@ export const useWBStore = defineStore('wb-board', {
       // Clone assets
       for (const asset of page.assets) {
         if (!ids.has(asset.id)) continue
-        const clone: WBAsset = {
+        const clone: WBAsset = clampToPageTopLeft({
           ...asset,
           id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           locked: false,
           lockedBy: undefined,
           x: asset.x + 20,
           y: asset.y + 20,
-        }
+        })
         clonedAssets.push(clone)
         newIds.push(clone.id)
       }
@@ -3776,6 +3793,9 @@ export const useWBStore = defineStore('wb-board', {
 
       const ids = new Set<string>(this.selectedIds)
 
+      // Група не заходить за лівий/верхній край аркуша (власник 2026-09-24).
+      ;({ dx, dy } = this._limitGroupDelta(page, ids, dx, dy))
+
       // Move strokes
       const newStrokes = page.strokes.map((s) => {
         if (!ids.has(s.id)) return s
@@ -3796,6 +3816,17 @@ export const useWBStore = defineStore('wb-board', {
       // NO ops here — called per-frame during drag. Ops emitted at drag END.
     },
 
+    /** Зсув групи, обмежений лівим/верхнім краєм аркуша (для moveSelected*). */
+    _limitGroupDelta(
+      page: WBPage, ids: Set<string>, dx: number, dy: number,
+    ): { dx: number; dy: number } {
+      const { minX, minY } = movingMin(
+        page.strokes.filter((s) => ids.has(s.id)),
+        page.assets.filter((a) => ids.has(a.id) && isAssetSelectable(a)),
+      )
+      return { dx: limitDeltaAtEdge(minX, dx), dy: limitDeltaAtEdge(minY, dy) }
+    },
+
     // Phase 34 A2 FIX-1: Move only unlocked selected items
     moveSelectedUnlocked(dx: number, dy: number): void {
       const pageIndex = this.currentPageIndex
@@ -3805,6 +3836,9 @@ export const useWBStore = defineStore('wb-board', {
       const unlockedIds = this.selectedIds.filter(id => !this.isItemLocked(id))
       if (unlockedIds.length === 0) return
       const ids = new Set<string>(unlockedIds)
+
+      // Група не заходить за лівий/верхній край аркуша (власник 2026-09-24).
+      ;({ dx, dy } = this._limitGroupDelta(page, ids, dx, dy))
 
       const newStrokes = page.strokes.map((s) => {
         if (!ids.has(s.id)) return s

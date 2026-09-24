@@ -4245,6 +4245,27 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   }
 }
 
+/**
+ * Жива межа перетягування (власник 2026-09-24: «не вилазили за лівий і верхній
+ * край»). Konva кличе її на кожен рух із запропонованою абсолютною позицією
+ * вузла; ми рахуємо, де опиниться його рамка в координатах аркуша, і не пускаємо
+ * лівіше x=0 та вище y=0. Одна функція на всі перетягувані вузли — картки,
+ * картинки, штрихи, лінії, фігури. Кінець руху ще раз клемпить стор.
+ */
+function keepInsideTopLeft(this: Konva.Node, pos: Konva.Vector2d): Konva.Vector2d {
+  const layer = this.getLayer()
+  if (!layer) return pos
+  const cur = this.absolutePosition()
+  const scale = layer.getAbsoluteScale().x || 1
+  const rect = this.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true })
+  const nx = rect.x + (pos.x - cur.x) / scale
+  const ny = rect.y + (pos.y - cur.y) / scale
+  return {
+    x: nx < 0 ? pos.x - nx * scale : pos.x,
+    y: ny < 0 ? pos.y - ny * scale : pos.y,
+  }
+}
+
 /** Мінімум картки, що МУСИТЬ лишатись у межах сторінки, щоб хедер був досяжним. */
 const ASSET_REACH_PX = 48
 
@@ -4252,15 +4273,17 @@ const ASSET_REACH_PX = 48
  * Клемп позиції картки: хедер (верх картки) ніколи не виходить за верхній край
  * сторінки і завжди частково досяжний по горизонталі/знизу. Інакше картку
  * неможливо перетягнути назад (drag-зона = лише header; тіло — інструмент).
- * Низ/боки дозволяють звисання — досяжним лишається ASSET_REACH_PX хедера.
+ * Лівий і верхній край — жорсткі (власник 2026-09-24: «не вилазили за лівий і
+ * верхній край»; раніше ліворуч дозволялось звисання до ASSET_REACH_PX).
+ * Правий і нижній край дозволяють звисання — досяжним лишається ASSET_REACH_PX хедера.
  */
 function clampAssetToPage(asset: WBAsset, x: number, y: number): { x: number; y: number } {
   const page = wbStore.currentPage
   const pageW = page?.width ?? PAGE_WIDTH
   const pageH = page?.height ?? PAGE_HEIGHT
   return {
-    // ліворуч/праворуч: хоча б ASSET_REACH_PX ширини картки в межах сторінки
-    x: Math.min(Math.max(x, ASSET_REACH_PX - asset.w), pageW - ASSET_REACH_PX),
+    // ліворуч — не за край (x ≥ 0); праворуч — хоча б ASSET_REACH_PX у межах сторінки
+    x: Math.min(Math.max(x, 0), pageW - ASSET_REACH_PX),
     // верх: хедер не вище краю (y >= 0); низ: хедер не нижче краю сторінки
     y: Math.min(Math.max(y, 0), pageH - ASSET_REACH_PX),
   }
@@ -4508,6 +4531,7 @@ function getStrokeConfig(stroke: WBStroke): Record<string, unknown> {
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       globalCompositeOperation: stroke.tool === 'highlighter' ? 'multiply' : 'source-over',
       draggable: selectable && !isLockedItem && !isMultiSel,
+      dragBoundFunc: keepInsideTopLeft,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -4533,6 +4557,7 @@ function getLineConfig(stroke: WBStroke): Record<string, unknown> {
       lineJoin: 'round',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       draggable: selectable && !isLockedItem && !isMultiSel,
+      dragBoundFunc: keepInsideTopLeft,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -4557,6 +4582,7 @@ function getRectConfig(stroke: WBStroke): Record<string, unknown> {
       fill: 'transparent',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
+      dragBoundFunc: keepInsideTopLeft,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -4581,6 +4607,7 @@ function getCircleConfig(stroke: WBStroke): Record<string, unknown> {
       fill: 'transparent',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
+      dragBoundFunc: keepInsideTopLeft,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -4619,6 +4646,7 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
       wrap: 'word',
       opacity: isLockedItem ? 0.85 : 1,
       draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
+      dragBoundFunc: keepInsideTopLeft,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -4701,6 +4729,7 @@ function getBrokenPlaceholderGroupConfig(asset: WBAsset): Record<string, unknown
     name: `asset-${asset.id}`,
     ...centerXf(asset),
     draggable: currentTool.value === 'select' && !asset.locked,
+    dragBoundFunc: keepInsideTopLeft,
     listening: currentTool.value === 'select',
   }
 }
@@ -4865,6 +4894,7 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     // Phase 35: Image opacity from asset field
     opacity: effectiveOpacity,
     draggable: selectable && !isLockedItem && !isMultiSel,
+    dragBoundFunc: keepInsideTopLeft,
     perfectDrawEnabled: false,
     listening: selectable,
   }
@@ -4901,6 +4931,7 @@ function getSolidProxyConfig(asset: WBAsset): Record<string, unknown> {
     // hitFunc fallback не потрібен — Rect має фulfill hit area за замовчуванням
     // навіть з fill 'transparent' (Konva listens by default if listening: true).
     draggable: selectable && !isLockedItem && !isMultiSel,
+    dragBoundFunc: keepInsideTopLeft,
     listening: selectable,
     perfectDrawEnabled: false,
   }
@@ -4933,6 +4964,7 @@ function getClipGroupConfig(asset: WBAsset): Record<string, unknown> {
     name: `asset-${asset.id}`,
     ...centerXf(asset),
     draggable: selectable && !isLockedItem && !isMultiSel,
+    dragBoundFunc: keepInsideTopLeft,
     listening: selectable,
     clipFunc: (ctx: CanvasRenderingContext2D) => roundedRect(ctx, asset.w, asset.h, r),
   }
