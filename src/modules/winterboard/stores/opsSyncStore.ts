@@ -17,10 +17,10 @@
 //   1. pop ops з pendingOps → push у inFlightOps
 //   2. POST /replay/batch/ {seq: localSeq, ops: inFlightOps[]} з X-Protocol-Version
 //   3. on 201: clear inFlightOps; localSeq = response.last_seq
-//   4. on 409 SEQ_MISMATCH: AUTO-RESYNC (serverSeq = expected_seq, drop inFlight,
-//      keep pending) → throw SeqResyncError. Mode stays SYNC (NO DESYNC).
-//      Caller (useReplayRecorder) catches SeqResyncError → logs, next tick retries
-//      remaining pendingOps with correct seq. Transparent recovery, no user action.
+//   4. on 409 SEQ_MISMATCH: AUTO-RESYNC (serverSeq = expected_seq, KEEP inFlight і
+//      pending — 2026-09-24, рішення власника, LAW §5) → throw SeqResyncError. Mode
+//      stays SYNC (NO DESYNC). Caller (useReplayRecorder) catches SeqResyncError → logs,
+//      next natural tick sends the same batch first with correct seq. No user action.
 //      Old behavior (enterDesync) dropped all ops — data loss. SeqResyncError preserves
 //      pendingOps that haven't reached server yet.
 //   5. on 400 PROTOCOL_VERSION_MISMATCH: enterDesync (UI ProtocolMismatchModal)
@@ -813,28 +813,26 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       }
       const seqMismatch = _isSeqMismatch(err)
       if (seqMismatch.mismatch) {
-        // 2026-05-13: AUTO-RESYNC instead of DESYNC (Def 1 fix).
+        // AUTO-RESYNC (Def 1, 2026-05-13), без втрати пакета (2026-09-24, рішення
+        // власника, LAW §5).
         //
-        // 409 SEQ_MISMATCH means server is at `expected_seq` — client had a stale
-        // serverSeq (usually because an in-flight batch succeeded on server but client
-        // lost the response, e.g. during network drop / WS 1006 incident).
+        // 409 SEQ_MISMATCH: seq зсунувся (друга вкладка, пульт, учень). Сервер перевіряє
+        // seq ДО дедупу й застосування (ops_apply_service: крок 2 → 3), тож пакет НЕ
+        // записано. Раніше inFlight скидали як «уже оброблене» — дії першої вкладки
+        // зникали. Тепер:
+        //   - serverSeq/localSeq ← expected_seq;
+        //   - inFlightOps: KEEP — наступний flush шле ЦЕЙ самий пакет першим (порядок
+        //     не змінюється); якщо щось із нього таки було записано, сервер відсіє за
+        //     op_id (INV-14);
+        //   - pendingOps: KEEP;
+        //   - mode лишається SYNC; throw SeqResyncError (рекордер пише копію й чекає).
         //
-        // Old behavior: enterDesync + drop all ops → user must click "Sync" banner
-        //               → all ops lost.
-        //
-        // New behavior: correct serverSeq using `expected_seq` from 409 body →
-        //   - inFlightOps: DROP (were already processed by server or are stale)
-        //   - pendingOps: KEEP (haven't reached server, still valid for next flush)
-        //   - mode: stays SYNC (no user action required)
-        //   - throw SeqResyncError so caller can log without escalating to DESYNC
-        //
-        // Safety: SYSTEM_LAW §12 forbids retry loops. SeqResyncError doesn't retry
-        // immediately — caller returns, safety interval fires naturally next tick.
+        // LAW §12: жодного негайного повтору й жодного лічильника 409 — наступна спроба
+        // лише з природного тику (safety interval / наступна дія). Повторний 409 знову
+        // лише виправляє seq; черга не губиться.
         const correctedSeq = seqMismatch.expectedSeq ?? (serverSeq.value + 1)
         serverSeq.value = correctedSeq
         localSeq.value = Math.max(localSeq.value, correctedSeq)
-        inFlightOps.value = []  // stale — server either processed or rejected
-        // pendingOps preserved — will be sent in next flush() with correct seq
         const reason = `seq-mismatch auto-resynced (serverSeq → ${correctedSeq})`
         throw new SeqResyncError(reason)
       }

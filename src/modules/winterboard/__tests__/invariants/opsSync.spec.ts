@@ -97,8 +97,9 @@ describe('INV-CONVERGENCE / SSOT §6 — 409 SEQ_MISMATCH → AUTO-RESYNC (Def-1
     // serverSeq/localSeq corrected з body.expected_seq
     expect(store.serverSeq).toBe(12)
     expect(store.localSeq).toBe(12)
-    // inFlightOps dropped (stale — server already processed/rejected)
-    expect(store.inFlightOps.length).toBe(0)
+    // 2026-09-24 (LAW §5): пакет НЕ застосовано (сервер перевіряє seq до дедупу) —
+    // inFlight лишається й піде першим наступним flush із правильним seq.
+    expect(store.inFlightOps.length).toBe(1)
   })
 
   // INV-16 DESYNC-state behavior (DESYNC тригериться protocol-mismatch/cross-tab,

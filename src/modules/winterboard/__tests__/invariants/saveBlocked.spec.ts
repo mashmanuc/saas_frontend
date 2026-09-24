@@ -37,7 +37,7 @@ import {
   DesyncError,
 } from '../../stores/opsSyncStore'
 import { useReplayRecorder } from '../../composables/useReplayRecorder'
-import { readBackup, saveBackup } from '../../composables/useOpsBackup'
+import { readAllBackups, readBackup, saveBackup } from '../../composables/useOpsBackup'
 import { readBlocked } from '../../composables/useBlockedOps'
 import { tryCoalesceStrokeAppend } from '../../services/opsCoalescer'
 import { serverPayloadBytes } from '../../services/opsPayloadSize'
@@ -1198,5 +1198,86 @@ describe('Рев’ю P0 2026-09-24 (9) · дошку не підключено 
     await store.bootstrap(SID)
     expect(store.bootstrapFailed).toBe(false)
     expect(store.inputLocked).toBe(false)
+  })
+})
+
+describe('LAW §5 (2026-09-24) · 409 SEQ_MISMATCH не губить пакет', () => {
+  /**
+   * Чесний фейковий сервер: seq перевіряється ДО дедупу й застосування (як
+   * ops_apply_service: крок 2 → 3); дедуп за op_id; 409 несе expected_seq.
+   */
+  function fakeServer() {
+    const server = { seq: 0, applied: [] as string[] }
+    post.mockImplementation(async (url: string, body: { seq: number; ops: Array<{ op_id: string }> }) => {
+      if (!String(url).includes('/replay/batch/')) throw new Error(`unexpected ${url}`)
+      if (body.seq !== server.seq) throw httpError(409, { error: 'SEQ_MISMATCH', expected_seq: server.seq })
+      const fresh = body.ops.filter(o => !server.applied.includes(o.op_id))
+      server.applied.push(...fresh.map(o => o.op_id))
+      server.seq += fresh.length
+      return { data: { last_seq: server.seq, applied_count: fresh.length } }
+    })
+    return server
+  }
+
+  it('дві вкладки: друга зсунула seq — пакет першої не зникає й доходить наступним тиком', async () => {
+    const server = fakeServer()
+    const a = syncStore()
+    const recA = recorder()
+    recA.start()
+    setActivePinia(createPinia())
+    const b = syncStore()
+
+    b.record(op('b1'))
+    await b.flush()                                  // B: seq 0 → 1
+    a.record(op('a1'))
+    a.record(op('a2'))
+    await recA.flush()                               // A (через рекордер, як у кімнаті): stale 0 → 409
+    expect(a.mode).toBe('SYNC')
+    expect(a.serverSeq).toBe(1)
+    expect(a.inFlightOps.map(o => o.op_id)).toEqual(['a1', 'a2'])    // НЕ скинуто
+    // копія черги A (рекордер пише її на SeqResyncError) містить пакет, що отримав 409
+    // (обидва store тут в одному модулі — ключ вкладки модульний; шукаємо копію за вмістом)
+    const copyA = readAllBackups<{ op_id: string }>(SID).records.find(r => r.backup.inFlight.some(o => o.op_id === 'a1'))
+    expect(copyA?.backup.inFlight.map(o => o.op_id)).toEqual(['a1', 'a2'])
+
+    await vi.advanceTimersByTimeAsync(2_100)         // природний тик safety interval
+    expect(server.applied).toEqual(['b1', 'a1', 'a2'])
+    expect(a.inFlightOps).toHaveLength(0)
+    expect(a.pendingOps).toHaveLength(0)
+    recA.stop?.()
+  })
+
+  it('повторний конфлікт: seq зсувається двічі поспіль — жодного негайного повтору, порядок і кожен op рівно раз', async () => {
+    const server = fakeServer()
+    const store = syncStore()
+    store.record(op('x1'))
+    store.record(op('x2'))
+    server.seq = 3                                    // хтось записав 3 ops
+    await expect(store.flush()).rejects.toBeInstanceOf(SeqResyncError)
+    expect(post).toHaveBeenCalledTimes(1)            // без негайного повтору в тому ж flush
+    store.record(op('x3'))
+    server.seq = 5                                    // знову хтось встиг
+    await expect(store.flush()).rejects.toBeInstanceOf(SeqResyncError)
+    expect(post).toHaveBeenCalledTimes(2)
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['x1', 'x2'])
+    expect(store.pendingOps.map(o => o.op_id)).toEqual(['x3'])
+    await store.flush()                               // той самий пакет першим
+    await store.flush()
+    expect(server.applied).toEqual(['x1', 'x2', 'x3'])
+    expect(store.mode).toBe('SYNC')
+  })
+
+  it('409 під час спроби з PAUSED → SYNC, але без негайного дозливу (повтор лише з тику)', async () => {
+    const store = syncStore()
+    const rec = recorder()
+    store.record(op('p1'))
+    store.mode = 'PAUSED'
+    post.mockRejectedValueOnce(httpError(409, { error: 'SEQ_MISMATCH', expected_seq: 4 }))
+    store.retryNow()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.mode).toBe('SYNC')
+    expect(store.inFlightOps.map(o => o.op_id)).toEqual(['p1'])
+    expect(post).toHaveBeenCalledTimes(1)
+    rec.stop?.()
   })
 })

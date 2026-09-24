@@ -49,9 +49,9 @@ import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
 const INSTANT_FLUSH_THRESHOLD = 50
 const FLUSH_DEBOUNCE_MS = 150
 const FLUSH_SAFETY_INTERVAL_MS = 2_000
-// Ліміт операції рахуємо ЯК СЕРВЕР (serverPayloadBytes: не-ASCII = 6 байт) і з
-// невеликим запасом на розбіжність запису дробових експонент (JS 1e-7 / Python 1e-07).
-const MAX_PAYLOAD_BYTES = SERVER_PAYLOAD_LIMIT_BYTES - 256
+// Ліміт операції рахуємо РІВНО як сервер (serverPayloadBytes: реальні UTF-8 байти,
+// дроби — як Python repr; звірено з CPython) — запас не потрібен.
+const MAX_PAYLOAD_BYTES = SERVER_PAYLOAD_LIMIT_BYTES
 
 // Phase S PR-3 (2026-04-28) — bounded batcher per REFACTOR_PLAN.md v2 §3.A.
 /** Hard cap per POST (BE accepts up to 100 ops/batch). */
@@ -222,7 +222,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    */
   async function _runRecoveryAttempt(): Promise<void> {
     if (_destroyed) return
+    const start = opsSync.pendingOps.length + opsSync.inFlightOps.length
     await flush()
+    // Дозлив — лише після спроби, що ПРОСУНУЛА чергу. 409 лишає пакет у черзі
+    // (LAW §5, 2026-09-24): негайно слати його знову = повтор, заборонений §12.
+    if (opsSync.pendingOps.length + opsSync.inFlightOps.length >= start) return
     for (let i = 0; i < RECOVERY_DRAIN_MAX_BATCHES && !_destroyed && opsSync.isSync; i++) {
       const before = opsSync.pendingOps.length + opsSync.inFlightOps.length
       if (before === 0) return
@@ -461,11 +465,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
         return
       }
       if (err instanceof SeqResyncError) {
-        // 2026-05-13 Def 1: 409 SEQ_MISMATCH auto-resynced by store.
-        // serverSeq corrected to expected_seq; inFlight dropped; pendingOps preserved.
-        // No DESYNC, no user action required. Next safety interval will flush pending.
+        // 409 SEQ_MISMATCH auto-resynced by store: serverSeq ← expected_seq; inFlight і
+        // pending ЛИШАЮТЬСЯ (пакет не застосовано, LAW §5 з 2026-09-24). Наступний
+        // природний тик надішле той самий пакет першим. No DESYNC, no user action.
         console.info('[WB:Recorder] 409 seq auto-resynced:', err.message)
-        _persistBackup()  // crash-safety: pending ops that were preserved
+        _persistBackup()  // crash-safety: уся черга, включно з пакетом, що отримав 409
         return
       }
       // 503 SERVER_BUSY або транзієнтні мережеві помилки — inFlight preserved у store,

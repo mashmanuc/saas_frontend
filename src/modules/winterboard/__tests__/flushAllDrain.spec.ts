@@ -126,7 +126,8 @@ describe('flushAll() — drain helper (2026-05-08 hotfix)', () => {
     // операції чекають наступного flush, seq підтягнуто з `expected_seq`.
     expect(store.mode).toBe('SYNC')
     expect(store.pendingCount).toBeGreaterThan(0)
-    expect(store.inFlightCount).toBe(0)
+    // 2026-09-24 (LAW §5): пакет, що отримав 409, не застосовано — лишається першим
+    expect(store.inFlightCount).toBe(50)
     expect(store.serverSeq).toBe(12)
   })
 
