@@ -1621,35 +1621,6 @@ const windowControlsActions = computed(() =>
 
 const windowControlsWidth = ref(0)
 const windowControlsHeight = ref(0)
-// PDF/DOCX, картинки, стікери рухаються лише на полотні: до кінця руху стор
-// позиції не знає, тож кнопки «— ⛶ ×» стояли на старому місці (скрін власника
-// 2026-09-24). Поки вузол цілі рухається/змінює розмір — беремо рамку з вузла.
-// Скидаємо, щойно стор отримав нову позицію (або змінилась ціль).
-const controlsLiveFrame = shallowRef<{ id: string; x: number; y: number; w: number; h: number } | null>(null)
-function trackControlsTarget(e: Konva.KonvaEventObject<Event>): void {
-  const t = windowControlsTarget.value
-  const node = e.target as Konva.Node
-  if (!t || typeof node?.id !== 'function' || node.id() !== t.id) return
-  const layer = node.getLayer()
-  if (!layer) return
-  const r = node.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true })
-  controlsLiveFrame.value = { id: t.id, x: r.x, y: r.y, w: r.width, h: r.height }
-}
-watch(
-  () => {
-    const t = windowControlsTarget.value
-    return t ? [t.id, t.x, t.y, t.w, t.h] : null
-  },
-  () => { controlsLiveFrame.value = null },
-)
-/** Ціль кнопок з урахуванням живого руху вузла. */
-const controlsFrameAsset = computed<WBAsset | null>(() => {
-  const t = windowControlsTarget.value
-  const live = controlsLiveFrame.value
-  if (!t) return null
-  return live && live.id === t.id ? { ...t, x: live.x, y: live.y, w: live.w, h: live.h, rotation: 0 } : t
-})
-
 const areWindowControlsCovered = computed(() => {
   const target = controlsFrameAsset.value
   if (!target || expandedAssetId.value === target.id) return false
@@ -1689,7 +1660,10 @@ const windowControlsStyle = computed<Record<string, string>>(() => {
   if (expandedAssetId.value === asset.id) {
     return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px`, zIndex, visibility }
   }
-  const frame = getOverlayStyle(controlsFrameAsset.value ?? asset)
+  // Нативний об'єкт — рамка з намальованого вузла (див. controlsNodeFrame).
+  const nodeFrame = controlsNodeFrame.value
+  if (nodeFrame) return { ...windowControlsPlacement(nodeFrame.screen), zIndex, visibility }
+  const frame = getOverlayStyle(asset)
   // У шапці картки, праворуч (власник 2026-09-24: збоку — «як апендицити»).
   return { ...windowControlsPlacement(
     { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
@@ -2207,6 +2181,74 @@ const liveTransform = ref<LiveOverlayTransform | null>(null)
 
 // A6.1: Loading state — true after Konva is ready
 const konvaReady = ref(false)
+
+// Кнопки «— ⛶ ×» нативного об'єкта (PDF/DOCX, картинка, стікер) прив'язані до
+// того, що НАМАЛЬОВАНО на полотні, а не до збереженої позиції: вузол Konva —
+// єдине джерело. Раніше рамка бралась зі стору, а під час руху — з вузла (дві
+// правди), і кнопки розходились із документом (власник 2026-09-24, двічі).
+// Konva сам повідомляє про кожну зміну вузла (x/y/розмір/масштаб/поворот) і
+// сцени (масштаб і прокрутка) — на ці події й перераховуємо.
+// HTML-картки й медіа — не тут: їхні кнопки живуть усередині їхнього DOM.
+interface NodeFrame { screen: { left: number; top: number; width: number }; page: { x: number; y: number; w: number; h: number } }
+const controlsNodeFrame = shallowRef<NodeFrame | null>(null)
+const NODE_FRAME_EVENTS = 'xChange.wbCtl yChange.wbCtl widthChange.wbCtl heightChange.wbCtl scaleXChange.wbCtl scaleYChange.wbCtl rotationChange.wbCtl'
+let frameNode: Konva.Node | null = null
+let frameStage: Konva.Stage | null = null
+
+function readControlsNodeFrame(): void {
+  const node = frameNode
+  const layer = node?.getLayer()
+  const stage = node?.getStage()
+  const field = containerRef.value
+  if (!node || !layer || !stage || !field) { controlsNodeFrame.value = null; return }
+  const onScreen = node.getClientRect({ skipShadow: true, skipStroke: true })
+  const onPage = node.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true })
+  const content = stage.container().getBoundingClientRect()
+  const fieldBox = field.getBoundingClientRect()
+  controlsNodeFrame.value = {
+    screen: { left: content.left - fieldBox.left + onScreen.x, top: content.top - fieldBox.top + onScreen.y, width: onScreen.width },
+    page: { x: onPage.x, y: onPage.y, w: onPage.width, h: onPage.height },
+  }
+}
+
+function unbindControlsNode(): void {
+  frameNode?.off('.wbCtl')
+  frameStage?.off('.wbCtl')
+  frameNode = null
+  frameStage = null
+}
+
+// Ціль змінилась, вузол перестворено (assets), полотно готове — перев'язуємось.
+watch(
+  [windowControlsTarget, assets, konvaReady],
+  () => {
+    const t = windowControlsTarget.value
+    const native = t && (assetStandard(t.type)?.render ?? 'konva') === 'konva'
+    const stage = native ? stageRef.value?.getStage?.() : null
+    const node = t && stage ? (stage.findOne('#' + t.id) as Konva.Node | undefined) ?? null : null
+    if (node !== frameNode || stage !== frameStage) {
+      unbindControlsNode()
+      if (node && stage) {
+        frameNode = node
+        frameStage = stage
+        node.on(NODE_FRAME_EVENTS, readControlsNodeFrame)
+        stage.on('xChange.wbCtl yChange.wbCtl scaleXChange.wbCtl scaleYChange.wbCtl', readControlsNodeFrame)
+      }
+    }
+    readControlsNodeFrame()
+  },
+  { flush: 'post', immediate: true },
+)
+onUnmounted(unbindControlsNode)
+
+/** Ціль кнопок у координатах аркуша: для нативного — з вузла, інакше зі стору. */
+const controlsFrameAsset = computed<WBAsset | null>(() => {
+  const t = windowControlsTarget.value
+  const frame = controlsNodeFrame.value
+  if (!t) return null
+  return frame ? { ...t, x: frame.page.x, y: frame.page.y, w: frame.page.w, h: frame.page.h, rotation: 0 } : t
+})
+
 
 // PDF/зображення й HTML-картка мають один логічний порядок у page.assets[].
 // Konva збирає ВСІ нативні асети в один canvas, тож піднімаємо його лише для
@@ -5486,13 +5528,10 @@ onMounted(async () => {
     cacheBackgroundLayer()
     initPreviewCanvas()
     initStrokesOverlay()
-    // Кнопки «— ⛶ ×» ідуть за вузлом під час руху/зміни розміру (події спливають до stage).
-    stageRef.value?.getStage?.()?.on('dragmove.wbWinCtl transform.wbWinCtl', trackControlsTarget)
   })
 })
 
 onUnmounted(() => {
-  stageRef.value?.getStage?.()?.off('.wbWinCtl')
   // Remote laser cleanup
   window.removeEventListener('wb:remote-laser', onRemoteLaser)
   // BUG-3 FIX: Remove global mouseup listeners

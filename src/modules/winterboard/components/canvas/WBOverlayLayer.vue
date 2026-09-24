@@ -251,8 +251,8 @@ function wrapperClasses(item: RenderItem): Array<string | Record<string, boolean
     item.entry.wrapperClass,
     {
       [`${item.entry.wrapperClass}--selected`]: selected,
-      // Спільний клас — піднімає виділений overlay над іншими (z-index нижче у CSS),
-      // щоб у зоні накладання його pointer-events:auto stage вигравав клік.
+      // Спільний клас виділеного overlay. Стек НЕ змінює (див. CSS нижче):
+      // порядок на екрані = порядок page.assets[].
       'wb-overlay--selected': selected,
       'wb-overlay--board-expanded': item.entry.expandable && expandedId.value === item.asset.id,
     },
@@ -584,7 +584,8 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
    посередині, типи оголошені ПІСЛЯ нього (nmt3d/trig_solver/nmt_task/theory/
    mash_scene/geomash/graphmash3d) НЕ піднімались при виділенні (баг «піраміда
    не вискакує», 2026-07-16). Нові wrapper-класи додавати ВИЩЕ цього правила. */
-.wb-overlay--selected {
-  z-index: 5;
-}
+/* 2026-09-24: виділення більше НЕ піднімає картку (було z-index:5, 49b072eb).
+   Порядок на екрані = порядок page.assets[] (INV-RENDER-1) — інакше стрілки
+   ↑/↓ для виділеної картки видимо нічого не міняли (скаржився власник).
+   Клік у зоні перекриття по видимо верхній картці віддає їй overlayTopHit. */
 </style>

@@ -265,3 +265,98 @@ test('перетягування документа: кнопки йдуть з�
     expect(Math.abs(box.x + box.width - (after.right - 4))).toBeLessThan(4)
   }).toPass()
 })
+
+/** Чи малюється обгортка картки `a` над `b` (той самий шар): z-index, при рівності — DOM-порядок. */
+async function paintedAbove(page: import('@playwright/test').Page, a: string, b: string): Promise<boolean> {
+  return page.evaluate(([a, b]) => {
+    const ea = document.querySelector<HTMLElement>(`[data-theory-card-id="${a}"]`)
+    const eb = document.querySelector<HTMLElement>(`[data-theory-card-id="${b}"]`)
+    if (!ea || !eb) throw new Error('Немає обгорток карток')
+    const za = Number(getComputedStyle(ea).zIndex) || 0
+    const zb = Number(getComputedStyle(eb).zIndex) || 0
+    if (za !== zb) return za > zb
+    return !!(eb.compareDocumentPosition(ea) & Node.DOCUMENT_POSITION_FOLLOWING)
+  }, [a, b])
+}
+
+test('стрілки ↑/↓ видимо міняють порядок і для ВИДІЛЕНОЇ картки', async ({ page }) => {
+  // Власник 2026-09-24 (/workspace): «кнопки ↑↓ не працюють». Виділена картка
+  // піднімалась над усіма (z-index:5), тож її переміщення в списку не було видно.
+  await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+  await page.goto('/workspace')
+  await expect(page.locator('.wb-canvas')).toBeVisible()
+  await page.evaluate(async () => {
+    const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+    const store = useWBStore()
+    const current = store.currentPage
+    if (!current) throw new Error('Немає сторінки')
+    store.pages[store.currentPageIndex] = {
+      ...current,
+      assets: [
+        { id: 'z-low', type: 'theory_card', src: '', x: 100, y: 100, w: 400, h: 300, rotation: 0, locked: false,
+          data: { version: 1, title: 'НИЖНЯ', body: 'нижня', formulas: [] } },
+        { id: 'z-high', type: 'theory_card', src: '', x: 260, y: 180, w: 400, h: 300, rotation: 0, locked: false,
+          data: { version: 1, title: 'ВЕРХНЯ', body: 'верхня', formulas: [] } },
+      ],
+    }
+    store.selectItems(['z-low'])
+  })
+  await expect(page.locator('[data-theory-card-id="z-low"]')).toBeVisible()
+  // Виділення не змінює порядку: верхня лишається зверху.
+  expect(await paintedAbove(page, 'z-high', 'z-low')).toBe(true)
+
+  const toolbar = page.locator('.wb-selection-toolbar')
+  await toolbar.getByTitle('Показати поверх').click()
+  await expect.poll(() => paintedAbove(page, 'z-low', 'z-high')).toBe(true)
+
+  await toolbar.getByTitle('Перемістити назад').click()
+  await expect.poll(() => paintedAbove(page, 'z-high', 'z-low')).toBe(true)
+})
+
+test('кнопки документа стоять у його куті за будь-якого масштабу й прокрутки', async ({ page }) => {
+  // Власник 2026-09-24: «при зумові кнопки переставляються окремо».
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+  await page.goto('/workspace')
+  await expect(page.locator('.wb-canvas')).toBeVisible()
+  await page.evaluate(async () => {
+    const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+    const store = useWBStore()
+    const current = store.currentPage
+    if (!current) throw new Error('Немає сторінки')
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ff0000"/></svg>`
+    store.pages[store.currentPageIndex] = {
+      ...current,
+      assets: [
+        { id: 'anchor-doc', type: 'document_viewer', src: '', x: 300, y: 250, w: 900, h: 560,
+          rotation: 0, locked: false, currentPage: 0, totalPages: 1,
+          pages: [{ index: 0, url: `data:image/svg+xml,${encodeURIComponent(svg)}` }] },
+      ],
+    }
+    store.selectItems(['anchor-doc'])
+  })
+  const controls = page.locator('[data-testid="wb-card-window-controls"]')
+  await expect(controls).toHaveAttribute('data-asset-id', 'anchor-doc')
+
+  const gap = () => page.evaluate(() => {
+    const K = (window as any).Konva
+    const stage = K.stages.find((s: any) => s.findOne('#anchor-doc'))
+    const node = stage.findOne('#anchor-doc')
+    const r = node.getClientRect({ skipShadow: true, skipStroke: true })
+    const box = stage.container().getBoundingClientRect()
+    const c = document.querySelector('[data-testid="wb-card-window-controls"]')!.getBoundingClientRect()
+    return { right: Math.round(box.x + r.x + r.width - c.right), top: Math.round(c.top - (box.y + r.y)) }
+  })
+  const steps: Array<{ zoom: number; scroll: [number, number] }> = [
+    { zoom: 0.5, scroll: [0, 0] }, { zoom: 1.3, scroll: [300, 200] }, { zoom: 2, scroll: [900, 600] }, { zoom: 0.75, scroll: [0, 0] },
+  ]
+  for (const step of steps) {
+    await page.evaluate(async ({ zoom, scroll }) => {
+      const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+      const store = useWBStore()
+      store.setZoom(zoom)
+      store.setScroll(scroll[0], scroll[1])
+    }, step)
+    await expect.poll(gap, { message: `зум ${step.zoom}, прокрутка ${step.scroll}` }).toEqual({ right: 4, top: 2 })
+  }
+})
