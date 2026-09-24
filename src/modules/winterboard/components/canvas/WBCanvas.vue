@@ -923,6 +923,8 @@ import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { nextAutoFitHeight } from '../../composables/autoFitHeight'
+import { filterEvidenceCards } from '../../board/evidenceCards'
+import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
 import { useGrouping } from '../../composables/useGrouping'
 import { useLocking } from '../../composables/useLocking'
@@ -1083,10 +1085,18 @@ const duplicate = useDuplicate(wbStore)
 const stickyNotes = useStickyNotes(wbStore)
 // A9 (responsive): Per-page grid composable — starts the watcher that generates gridPatternDataUrl
 const { currentPageGrid } = usePageGrid()
+const { evidenceEnabled } = useEvidenceToolsGate()
 
 // Stable references — use props directly, fallback to empty array only once
 const allStrokes = computed(() => props.strokes ?? [])
-const assets = computed(() => props.assets ?? [])
+// Картки «Навчальних обʼєктів» ховаються тут, БІЛЯ ДЖЕРЕЛА: нижче з цього
+// списку ростуть і HTML-оверлеї, і Konva-проксі, тож інакше на полотні лишався
+// б невидимий прямокутник, який ловить кліки (правило — `board/evidenceCards`).
+const assets = computed(() => filterEvidenceCards(props.assets ?? [], {
+  evidenceEnabled: evidenceEnabled.value,
+  isTutor: props.isTutor !== false,
+  mode: wbStore.mode,
+}))
 
 // Phase 3C: Media assets (audio/video) rendered as HTML overlays — excluded from Konva
 const mediaAssets = computed(() =>

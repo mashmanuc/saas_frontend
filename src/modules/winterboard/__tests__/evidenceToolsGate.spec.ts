@@ -14,6 +14,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { visibleApps, visibleInserts, allInserts, searchInserts, MASH_APPS } from '../components/sidebar/insertRegistry'
+import { filterEvidenceCards, hideEvidenceCards } from '../board/evidenceCards'
 
 const fetchCorridorRegistry = vi.fn()
 vi.mock('@/modules/intent/corridors/corridorApi', () => ({
@@ -81,5 +82,41 @@ describe('джерело правди — сервер (INV-EV-3, INV-EV-4)', ()
       fs.readFileSync('src/modules/winterboard/composables/useEvidenceToolsGate.ts', 'utf8'))
     expect(src).toContain('fetchCorridorRegistry')
     expect(src.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/\b40\b/)
+  })
+})
+
+// Власник 2026-09-24: «і картки теж сховати в чужих».
+describe('картки шару на полотні', () => {
+  const cards = [
+    { id: 'a', type: 'timeline_card' },
+    { id: 'b', type: 'map_card' },
+    { id: 'c', type: 'theory_card' },
+  ]
+
+  it('чужий учитель у своїй дошці — карток шару немає', () => {
+    const out = filterEvidenceCards(cards, { evidenceEnabled: false, isTutor: true, mode: 'edit' })
+    expect(out.map(a => a.id)).toEqual(['c'])
+    expect(hideEvidenceCards({ evidenceEnabled: false, isTutor: true, mode: 'edit' })).toBe(true)
+  })
+
+  it('акаунт у гейті бачить усе', () => {
+    expect(filterEvidenceCards(cards, { evidenceEnabled: true, isTutor: true, mode: 'edit' }))
+      .toEqual(cards)
+  })
+
+  it('учень на уроці бачить усе — інакше урок власника розвалиться', () => {
+    expect(filterEvidenceCards(cards, { evidenceEnabled: false, isTutor: false, mode: 'edit' }))
+      .toEqual(cards)
+  })
+
+  it('Replay показує запис як він був', () => {
+    expect(filterEvidenceCards(cards, { evidenceEnabled: false, isTutor: true, mode: 'replay' }))
+      .toEqual(cards)
+  })
+
+  it('ховаємо біля джерела: той самий список живить і Konva-проксі', async () => {
+    const src = await import('node:fs').then(fs =>
+      fs.readFileSync('src/modules/winterboard/components/canvas/WBCanvas.vue', 'utf8'))
+    expect(src).toMatch(/const assets = computed\(\(\) => filterEvidenceCards\(/)
   })
 })
