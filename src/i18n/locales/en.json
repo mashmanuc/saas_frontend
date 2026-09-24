@@ -5662,7 +5662,13 @@
       "dismiss": "Later"
     },
     "upgradeHint": "Available on PRO",
-    "upgradeCta": "Learn more"
+    "upgradeCta": "Learn more",
+    "earlyAccess": {
+      "title": "Access to M4SH",
+      "subtitle": "For now M4SH is available at no cost.",
+      "cardTitle": "Early access",
+      "cardText": "Paid plans are not connected yet. Use everything M4SH offers at no cost."
+    }
   },
   "commonExtended": {
     "accept": "Accept",

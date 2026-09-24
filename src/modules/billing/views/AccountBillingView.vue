@@ -47,6 +47,11 @@
       </Button>
     </div>
 
+    <!-- Продаж вимкнено і людині нема чого показувати про оплати — чесний
+         екран раннього доступу замість «FREE + Без підписки + ліміти + порожня
+         історія» (слово власника 2026-09-24). Умови — у `showEarlyAccess`. -->
+    <EarlyAccessCard v-else-if="showEarlyAccess" />
+
     <div v-else class="space-y-6">
       <!-- PR-1 (2026-09-04, інваріант 1): у картку йде ЛИШЕ entitlement —
            displayPlanCode підставляв pending-план як «поточний». Pending
@@ -96,6 +101,8 @@ import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
+import EarlyAccessCard from '../components/EarlyAccessCard.vue'
+import { getPaymentHistory } from '../api/billingApi'
 import { isSameTier } from '../utils/planCode'
 
 const billingStore = useBillingStore()
@@ -110,6 +117,31 @@ const showSkeleton = computed(
   () => billingStore.isLoading || (!initialLoadDone.value && !billingStore.me)
 )
 
+/**
+ * Чи були в людини оплати. Історію тримає `PaymentHistorySection` у собі, а
+ * рішення «ховати чи ні» приймається тут, тож питаємо коротко (одна позиція).
+ * `null` = ще не знаємо; поки не знаємо — раннього доступу НЕ показуємо.
+ */
+const hadPayments = ref(null)
+
+/**
+ * Екран раннього доступу — лише коли ВСІ умови справдились разом:
+ *   1. сервер справді відповів про плани (`plansAnswered`) і сказав
+ *      `sales_enabled: false` — помилка чи очікування відповіді сюди не ведуть;
+ *   2. у людини немає підписки й немає очікуваного платежу;
+ *   3. entitlement = FREE;
+ *   4. історія платежів порожня (і ми це вже знаємо).
+ * Той, хто платив, бачить свій стан як раніше — просто без вітрини тарифів.
+ */
+const showEarlyAccess = computed(() =>
+  billingStore.plansAnswered &&
+  !billingStore.salesEnabled &&
+  billingStore.isFree &&
+  !billingStore.subscription &&
+  !billingStore.pendingPlanCode &&
+  hadPayments.value === false
+)
+
 const plansError = computed(() => {
   if (billingStore.lastError && billingStore.plans.length === 0) {
     return billingStore.lastError
@@ -121,7 +153,12 @@ async function loadData() {
   try {
     await Promise.all([
       billingStore.fetchMe(),
-      billingStore.fetchPlans()
+      billingStore.fetchPlans(),
+      // Помилка тут не ховає нічого: `hadPayments` лишиться null, і сторінка
+      // покаже звичайний вміст, а не ранній доступ (fail-closed).
+      getPaymentHistory(1, 0)
+        .then((res) => { hadPayments.value = (res?.total ?? res?.items?.length ?? 0) > 0 })
+        .catch(() => { hadPayments.value = null }),
     ])
   } catch (error) {
     console.error('Failed to load billing data:', error)

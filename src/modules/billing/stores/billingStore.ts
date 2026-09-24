@@ -36,6 +36,10 @@ export const useBillingStore = defineStore('billing-v074', () => {
   // `597bd2d` на origin/main при першому ж деплої її вимкнув би — сайт міг
   // казати різне залежно від того, який бік задеплоїли першим.
   const salesEnabled = ref(false)
+  // Чи ВІДПОВІВ сервер про плани успішно. `salesEnabled === false` саме по собі
+  // означає і «продаж вимкнено», і «ще не питали», і «запит упав» (fail-closed),
+  // а екран раннього доступу можна показувати лише в ПЕРШОМУ випадку.
+  const plansAnswered = ref(false)
   const isLoading = ref(false)
   const isLoadingPlans = ref(false)
   const isLoadingAction = ref(false)
@@ -99,6 +103,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
       // Fail-closed: лише явне true вмикає вітрину. Відсутнє поле (старий BE)
       // або будь-що інше — продаж вимкнено.
       salesEnabled.value = response?.sales_enabled === true
+      plansAnswered.value = true
 
       if (import.meta.env.DEV) {
         console.debug('[billingStore] Raw API response:', response)
@@ -132,6 +137,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
     } catch (err: any) {
       console.error('Failed to fetch plans:', err)
       lastError.value = err
+      plansAnswered.value = false
       throw err
     } finally {
       isLoadingPlans.value = false
@@ -237,6 +243,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
     me.value = null
     plans.value = []
     salesEnabled.value = false // fail-closed: до нової відповіді BE продаж вимкнено
+    plansAnswered.value = false
     isLoading.value = false
     isLoadingPlans.value = false
     isLoadingAction.value = false
@@ -266,6 +273,7 @@ export const useBillingStore = defineStore('billing-v074', () => {
     
     // v0.76.3: Pending plan computed
     pendingPlanCode,
+    plansAnswered,
     pendingSince,
     displayPlanCode,
     subscriptionStatus,
