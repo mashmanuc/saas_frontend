@@ -452,3 +452,66 @@ describe('Б-28 · рев’ю: гонки звірки', () => {
     void state
   })
 })
+
+describe('Б-28 · рев’ю 2: власна копія тримає відновлені дії до оновлення полотна', () => {
+  const ownCopyIds = (store: ReturnType<typeof useOpsSyncStore>) => {
+    const key = Object.keys(localStorage).find(k => k.startsWith(`wb_ops_backup_v2_${SID}_anon_${store.tabId}`))
+    if (!key) return null
+    const b = JSON.parse(localStorage.getItem(key)!) as { pending: Array<{ op_id: string }>; inFlight: Array<{ op_id: string }> }
+    return [...b.inFlight, ...b.pending].map(o => o.op_id)
+  }
+
+  it('перша звірка зірвалась → наступна відправка успішна → читання стану зірвалось → копія лишилась', async () => {
+    const { server, state } = fakeServer()
+    writeDeadCopy([stroke('x')])
+    const { store, rec } = await openBoard(server.seq)
+    server.seq = 3                                     // seq зсунувся → перша звірка: 409 під час запису
+    const { board } = canvas()
+    // Порядок: 1) звірка зірвалась на записі (409) → 2) наступна звичайна відправка
+    // (seq виправлено) успішна → 3) її звірка: читання стану падає.
+    get.mockRejectedValueOnce(new Error('Network Error'))
+    const flushSpy = vi.spyOn(store, 'reconcileRestored')
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(flushSpy).toHaveBeenCalledTimes(2)          // перша (409) + після успішної відправки
+    expect(server.applied).toEqual(['op-x'])          // запис пройшов
+    expect(store.pendingOps.length + store.inFlightOps.length).toBe(0)
+    expect(board.applyCatchUpState).not.toHaveBeenCalled()
+    expect(store.restoreProblem).toBe('fetch')
+    expect(ownCopyIds(store)).toEqual(['op-x'])        // власна копія лишилась, хоч черга порожня
+    expect(localStorage.getItem(DEAD_KEY)).not.toBeNull()
+    // успішна звірка (після «Оновити сторінку» / наступної спроби) — лише тепер копії знято
+    get.mockImplementationOnce(async () => state())
+    expect(await store.reconcileRestored()).toBe('applied')
+    expect(ownCopyIds(store)).toBeNull()
+    expect(localStorage.getItem(DEAD_KEY)).toBeNull()
+  })
+
+  it('без Web Locks (копію мертвої вкладки не знято б) — власна копія все одно тримає дії до звірки', async () => {
+    const { server } = fakeServer()
+    writeDeadCopy([stroke('y')])
+    vi.stubGlobal('navigator', { ...globalThis.navigator, locks: undefined })
+    const { store, rec } = await openBoard(server.seq)
+    const { board } = canvas()
+    get.mockRejectedValueOnce(new Error('Network Error'))
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.restoreProblem).toBe('fetch')
+    expect(ownCopyIds(store)).toEqual(['op-y'])
+  })
+
+  it('зупинка під час незавершеного відновлення не знімає звичайну копію з відновленими діями', async () => {
+    const { server } = fakeServer()
+    writeDeadCopy([stroke('z')])
+    const { store, rec } = await openBoard(server.seq)
+    const { board } = canvas()
+    get.mockRejectedValueOnce(new Error('Network Error'))
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.restoreProblem).toBe('fetch')
+    store.record(stroke('later'))
+    post.mockImplementationOnce(async () => { throw new Error('Network Error') })
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    expect(ownCopyIds(store)).toContain('op-z')
+  })
+})

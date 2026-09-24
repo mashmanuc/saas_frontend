@@ -212,11 +212,13 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const known = new Set([...opsSync.inFlightOps, ...opsSync.pendingOps].map(o => o.op_id))
     let restored = 0
     let partial = false
+    const adopted: OpsSyncOp[] = []
     outer: for (const { backup } of all.records) {
       for (const op of [...backup.inFlight, ...backup.pending]) {
         if (!op.op_id || known.has(op.op_id)) continue
         if (!opsSync.record(op as unknown as OpsSyncOp)) { partial = true; break outer }
         known.add(op.op_id)
+        adopted.push(op as unknown as OpsSyncOp)
         restored++
       }
     }
@@ -224,7 +226,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       // Store прийняв лише частину (стеля / не той режим): прийняте піде на сервер, але
       // на полотні його нема — звірка потрібна; копії НЕ знімаємо (там неприйняте).
       if (restored > 0) {
-        opsSync.noteRestored([])
+        opsSync.noteRestored([], adopted)
         if (opsSync.isSync && _canvasReady) await opsSync.reconcileRestored()
       }
       return
@@ -242,7 +244,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
     // Б-28: дії з копії є лише в черзі — не на полотні. Звірка: записати звичайним
     // шляхом → свіжий стан сервера → полотно. Копії знімає ЛИШЕ успішна звірка.
-    opsSync.noteRestored(removable)
+    opsSync.noteRestored(removable, adopted)
     if (opsSync.isSync && _canvasReady) await opsSync.reconcileRestored()
   }
 

@@ -282,6 +282,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   let _recordCount = 0
   /** Копії мертвих вкладок, з яких узято дії, — знімаються лише після успішної звірки. */
   let _restoreKeys: string[] = []
+  /**
+   * Дії, відновлені з копії, поки їх нема на полотні. Власна копія вкладки тримає їх
+   * (разом із чергою), навіть коли вони вже записані й черга порожня: знімається
+   * лише після успішного оновлення полотна (рев'ю Б-28, 2026-09-24).
+   */
+  let _restoredOps: OpsSyncOp[] = []
   /** Застосувати стан сервера до полотна (реєструє рекордер кімнати: boardStore.applyCatchUpState). */
   let _canvasApplier: ((state: Record<string, unknown>) => void) | null = null
   let _reconcilePromise: Promise<RestoreResult> | null = null
@@ -1011,7 +1017,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (ok && _ownBlockedKey && _ownBlockedKey !== key) removeBlocked([_ownBlockedKey])
     if (ok || !_ownBlockedKey) _ownBlockedKey = key
     if (ok !== info.storageOk) saveBlock.value = { ...info, storageOk: ok }
-    if (ok && !_unreadableBlocked.some(u => u.key === backupKey(sid))) clearBackup(sid)  // звичайний backup більше не має відправити цю чергу
+    // Звичайний backup більше не має відправити цю чергу. Але поки дії з копії не на
+    // полотні (Б-28), він тримає їх — навіть уже записані; знімає лише успішна звірка.
+    if (ok && !restoredPending.value && !_unreadableBlocked.some(u => u.key === backupKey(sid))) clearBackup(sid)
     return ok
   }
 
@@ -1033,7 +1041,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (found.length === 0 && !unreadable) return
     // Дії з аварійних записів — з копії, на полотні їх немає (Б-28): після успішного
     // «Перевірити й надіслати» полотно оновиться станом сервера.
-    if (found.some(f => f.record.inFlight.length + f.record.pending.length > 0)) restoredPending.value = true
+    if (found.some(f => f.record.inFlight.length + f.record.pending.length > 0)) {
+      restoredPending.value = true
+      _rememberRestored(found.flatMap(f => [...f.record.inFlight, ...f.record.pending]))
+    }
     const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
     const inFlight: OpsSyncOp[] = [...inFlightOps.value]
     const pending: OpsSyncOp[] = [...pendingOps.value]
@@ -1159,7 +1170,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         // звичайний backup; інакше ці дії — тільки в пам'яті вкладки: лишаємось у
         // SAVE_BLOCKED (storage_failed: введення заблоковано, вихід із підтвердженням),
         // наступна спроба — знову кнопкою (LAW §4, рев'ю P0, 2026-09-24).
-        if (!saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])) return 'sent-held'
+        if (!_writeOwnBackup(sid)) return 'sent-held'
         _unblock()
         _dropBlockedStorage(sid)  // старий запис містить лише вже надіслане
         return 'sent'
@@ -1167,7 +1178,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _unblock()  // лише після підтвердженого 2xx
       // Знімаємо аварійний запис лише коли решта черги ПІДТВЕРДЖЕНО лягла у
       // звичайний backup. Сховище відмовило → запис лишається (безпечно: дедуп op_id).
-      if (saveBackup(sid, [...pendingOps.value], [...inFlightOps.value])) {
+      if (_writeOwnBackup(sid)) {
         _dropBlockedStorage(sid)
       } else {
         console.warn('[opsSync] retryBlocked: backup not confirmed — emergency record kept')
@@ -1279,6 +1290,27 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     restoredPending.value = false
     restoreProblem.value = null
     _restoreKeys = []
+    _restoredOps = []
+  }
+
+  function _rememberRestored(ops: OpsSyncOp[]): void {
+    const known = new Set(_restoredOps.map(o => o.op_id))
+    for (const o of ops) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); _restoredOps.push(o) }
+  }
+
+  /**
+   * Єдиний запис власної звичайної копії. Поки дії з копії не на полотні — вони в копії
+   * теж (перед чергою, без дублів op_id), навіть якщо черга порожня: інакше збій
+   * наступного читання стану лишив би їх без жодної копії. Після reload їх підхопить
+   * знову, сервер відсіє вже записане, звірка покаже на полотні.
+   */
+  function _writeOwnBackup(sid: string): boolean {
+    if (!restoredPending.value || _restoredOps.length === 0) {
+      return saveBackup(sid, pendingOps.value.slice(), inFlightOps.value.slice())
+    }
+    const queued = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
+    const keep = _restoredOps.filter(o => !queued.has(o.op_id))
+    return saveBackup(sid, [...keep, ...pendingOps.value], inFlightOps.value.slice())
   }
 
   /** Рекордер кімнати реєструє, як застосувати стан сервера до полотна (null — зняти). */
@@ -1292,9 +1324,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   }
 
   /** У черзі дії з копії; `keys` — копії мертвих вкладок, знімати після звірки. */
-  function noteRestored(keys: string[]): void {
+  function noteRestored(keys: string[], ops: OpsSyncOp[] = []): void {
     restoredPending.value = true
     for (const k of keys) if (!_restoreKeys.includes(k)) _restoreKeys.push(k)
+    _rememberRestored(ops)
   }
 
   /**
@@ -1382,7 +1415,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     _restoreKeys = []
     restoredPending.value = false
     restoreProblem.value = null
-    persistQueue()  // черга порожня → власну копію знято
+    _restoredOps = []
+    persistQueue()  // черга порожня → власну копію знято — лише тепер
     return 'applied'
   }
 
@@ -1402,7 +1436,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (!sid) return false
     if (mode.value === 'SAVE_BLOCKED') return persistBlocked()
     if (mode.value !== 'SYNC' && mode.value !== 'PAUSED') return false
-    const ok = saveBackup(sid, pendingOps.value.slice(), inFlightOps.value.slice())
+    const ok = _writeOwnBackup(sid)
     backupFailed.value = !ok
     return ok
   }
