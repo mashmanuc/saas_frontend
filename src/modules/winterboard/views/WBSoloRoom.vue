@@ -203,7 +203,7 @@
              і лише власнику: на готовому уроці збагачувати нічого — він уже
              зібраний, і його не змінюють під час проведення. -->
         <button
-          v-if="constructorMode && sessionId && isSessionOwner"
+          v-if="hasEnrichableLesson"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.export.aiEnrich')"
@@ -215,7 +215,7 @@
              і пропонує покращення за категоріями (формула/теорія/графік).
              Та сама модалка і прев'ю, що ✨, лише режим інший (не форк). -->
         <button
-          v-if="constructorMode && sessionId && isSessionOwner"
+          v-if="hasEnrichableLesson"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.enrich.reviewButton')"
@@ -1825,6 +1825,7 @@ const showExportDialog = ref(false)
 const showEnrichModal = ref(false)
 // Фаза 5: ✨ = enrich (за інструкцією), 🔎 = review (увесь урок сам).
 const enrichMode = ref<'enrich' | 'review'>('enrich')
+
 // Палітра/AI-Producer: «експортуй дошку» відкриває ЦЕЙ продуктовий діалог (він робить
 // capture-фазу віджетів перед BE-експортом) — а не серверний шлях без capture, який
 // рендерить [nmt_task]-плейсхолдери. Якщо формат уже названо у фразі («у PDF») —
@@ -1871,6 +1872,36 @@ const isSessionOwner = computed(() => {
   if (!store.ownerId || !authStore.user) return false
   return String(store.ownerId) === String(authStore.user.id)
 })
+
+/* ── ✨ / 🔎 — лише там, де є що збагачувати ────────────────────────────────
+   Було: кнопки показувались на БУДЬ-ЯКІЙ дошці конструктора (`/prepare/:id`),
+   а працюють вони лише зі згенерованим уроком: модалка питає артефакт і на
+   порожній дошці каже «уроку для збагачення ще немає». Тобто кнопка є, вона
+   клікається — і веде в глухий кут (власник 2026-09-24: «якого хера ми
+   показуємо ці кнопки, якщо вони не працюють у таких уроках?»).
+   Тепер питаємо артефакт ТУТ і ховаємо кнопки, поки його немає. Fail-closed:
+   доки відповіді нема — кнопок нема. */
+const hasLessonArtifact = ref(false)
+
+const hasEnrichableLesson = computed(
+  () => !!(constructorMode.value && sessionId.value && isSessionOwner.value && hasLessonArtifact.value),
+)
+
+watch(
+  () => [constructorMode.value, sessionId.value, isSessionOwner.value] as const,
+  async ([isConstructor, sid, isOwner]) => {
+    if (!isConstructor || !sid || !isOwner) { hasLessonArtifact.value = false; return }
+    try {
+      const { shipApi } = await import('@/modules/ship/shipApi')
+      const art = await shipApi.getSessionArtifact(sid)
+      hasLessonArtifact.value = !!art?.id
+    } catch {
+      // Мережа лягла або ship вимкнено — кнопок не показуємо (як і при 404).
+      hasLessonArtifact.value = false
+    }
+  },
+  { immediate: true },
+)
 
 // ─── Заморожена дошка: перша спроба змінити → одне питання (2026-09-24) ─────
 // Рішення власника: жовтої смуги немає; коли власник береться змінювати дошку
