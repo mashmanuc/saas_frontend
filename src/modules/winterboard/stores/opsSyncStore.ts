@@ -187,12 +187,6 @@ const FE_BUILD: string = (() => {
   try { return new URL(import.meta.url).pathname } catch { return 'unknown' }
 })()
 
-/**
- * Власник аварійного запису. Кімната ставить `setBlockedOwner(userId)` після
- * входу; без нього записи не прив'язуються до акаунта (null == null).
- */
-let _blockedOwnerId: string | null = null
-
 function _genTabId(): string {
   return `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -210,6 +204,13 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const desyncReason = ref<string | null>(null)
   /** Tab id для INV-19 origin filtering. */
   const tabId = ref<string>(_genTabId())
+  /**
+   * Акаунт, якому належать копії черги цієї вкладки. Кімната ставить
+   * `setBlockedOwner(userId)` після входу; у межах store, не модуля — новий store
+   * (нова вкладка / тест) починає без власника.
+   */
+  let _blockedOwnerId: string | null = null
+  setOpsOwner(null)
   setOpsTab(tabId.value)  // звичайна копія черги — своя на кожну вкладку (рев'ю P0, 2026-09-24)
   holdTabLock(tabId.value)  // «вкладка жива»: її копії інші вкладки не підхоплюють і не стирають
   /**
@@ -255,6 +256,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    * чергою = «черга без копії»: у PAUSED блокує введення, будь-де — вихід (LAW §4–§5).
    */
   const backupFailed = ref(false)
+  /**
+   * Стан дошки при відкритті не отримано: store лишився в BOOTSTRAP і record()
+   * відкидає дії. Кімната показує банер і блокує малювання (рев'ю P0, 2026-09-24).
+   */
+  const bootstrapFailed = ref(false)
   /** Іде дія вчителя «Перевірити й надіслати» / «Відкинути». */
   const blockResolving = ref(false)
   /** Ключі аварійних записів інших вкладок / попередньої сесії, які ця вкладка підхопила. */
@@ -322,6 +328,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    */
   const _queued = (): number => pendingOps.value.length + inFlightOps.value.length
   const inputLocked = computed(() =>
+    (mode.value === 'BOOTSTRAP' && bootstrapFailed.value) ||
     (mode.value === 'SAVE_BLOCKED' && (
       saveBlock.value?.storageOk === false || _queued() >= MAX_BLOCKED_QUEUE_OPS
     )) ||
@@ -497,6 +504,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     }
     sessionId.value = sid
     _initChannel()
+    bootstrapFailed.value = false
     try {
       const response = await _fetchState(sid)
       // Які вкладки живі — ДО переходу в SYNC (далі без await: record() не вклиниться).
@@ -514,6 +522,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         enterDesync('protocol-version-mismatch')
         throw new DesyncError('bootstrap blocked: protocol-version-mismatch')
       }
+      // Не мовчки: без стану сервера жодна дія не збережеться (record() → false).
+      if (mode.value === 'BOOTSTRAP') bootstrapFailed.value = true
       throw err  // caller decides retry (transient errors etc.)
     }
   }
@@ -997,8 +1007,18 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
     const inFlight: OpsSyncOp[] = [...inFlightOps.value]
     const pending: OpsSyncOp[] = [...pendingOps.value]
+    // inFlight — лише пакет, результат якого невідомий (звірка check-ops). Записи
+    // кількох вкладок разом дали б > 100 ops в одному POST → 400 → глухий кут. Тож
+    // «у мережі» лишається тільки перший такий пакет (≤ FLUSH_BATCH_SIZE), решта — у
+    // pending у порядку запису; вже застосоване сервер відсіє за op_id (рев'ю P0, 2026-09-24).
     for (const { record } of found) {
-      for (const o of record.inFlight) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); inFlight.push(o) }
+      const takeAsInFlight = inFlight.length === 0
+      for (const o of record.inFlight) {
+        if (!o?.op_id || known.has(o.op_id)) continue
+        known.add(o.op_id)
+        if (takeAsInFlight && inFlight.length < FLUSH_BATCH_SIZE) inFlight.push(o)
+        else pending.push(o)
+      }
       for (const o of record.pending) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); pending.push(o) }
     }
     inFlightOps.value = inFlight
@@ -1096,6 +1116,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       // рекордер відкладає на ~1 с. Оновлюємо його ЗАРАЗ, ще в SAVE_BLOCKED і без
       // await до saveBackup(): якщо backup нижче відмовить, лишиться копія з цими
       // діями, а не стара (рев'ю P0, 2026-09-24).
+      // Якщо звичайна копія нижче не ляже, аварійний запис лишиться і після reload
+      // поверне зупинку. Причина в ньому — «не підтверджено» (повтор дозволено, звірка
+      // check-ops), а не стара `rejected`, з якої нові дії вийшли б лише «Відкинути».
+      if (saveBlock.value) {
+        saveBlock.value = { ...saveBlock.value, kind: 'unconfirmed', reason: 'held_after_retry', restored: false }
+      }
       const recordOk = persistBlocked()
       const rest = pendingOps.value.length + inFlightOps.value.length
       if (!recordOk && rest > 0) {
@@ -1186,7 +1212,17 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
 
   /** Прив'язка аварійних записів до акаунта (кімната після входу). */
   function setBlockedOwner(userId: string | number | null | undefined): void {
-    _blockedOwnerId = userId === undefined || userId === null || userId === '' ? null : String(userId)
+    const next = userId === undefined || userId === null || userId === '' ? null : String(userId)
+    // Вихід / смерть сесії (user → null) НЕ робить чергу «анонімною»: інакше наступний
+    // запис переїхав би на ключ `anon` і після повторного входу став би невидимим
+    // (рев'ю P0, 2026-09-24). Черга в пам'яті належить тому, хто її зробив.
+    if (next === null && _blockedOwnerId !== null) return
+    if (next !== null && _blockedOwnerId !== null && next !== _blockedOwnerId) {
+      // Інший акаунт у тій самій вкладці: чергу попереднього — в його копії, з пам'яті геть.
+      persistQueue()
+      reset()
+    }
+    _blockedOwnerId = next
     setOpsOwner(_blockedOwnerId)  // звичайна копія черги теж прив'язана до акаунта
   }
 
@@ -1502,6 +1538,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     saveBlock.value = null
     droppedWhileBlocked.value = 0
     backupFailed.value = false
+    bootstrapFailed.value = false
     legacyCopies.value = []
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
@@ -1548,6 +1585,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     inputLocked,
     pausedUnsecured,
     backupFailed,
+    bootstrapFailed,
     legacyCopies,
     droppedWhileBlocked,
     blockResolving,

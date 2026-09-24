@@ -42,6 +42,7 @@
     <!-- SAVE_BLOCKED (LAW §4–§5): і вчитель, і учень бачать СВОЮ зупинену чергу. -->
     <OpsSaveBlockedBanner />
     <OpsLegacyCopyNotice />
+    <OpsBootstrapFailedBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис».
          Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
@@ -589,6 +590,7 @@ import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue
 import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
+import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -812,7 +814,12 @@ async function handleStartRecording(): Promise<void> {
     // during session pushed to DESYNC before Def 1 auto-resync landed), the next
     // flush() after start-recording would use stale seq → 409 → loop.
     // resync() = GET /state/ → correct serverSeq → mode SYNC.
-    // Drops pendingOps (absorbed into start-recording snapshot) — acceptable.
+    // resync СТИРАЄ чергу, а на сервер вона не потрапила (у PAUSED — до 3000 дій):
+    // з непорожньою чергою запис не стартуємо, а не «поглинаємо» її (рев'ю P0, 2026-09-24).
+    if (opsSync.mode !== 'SYNC' && opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) {
+      notifyError(t('winterboard.errors.saveBlocked.barrier'))
+      return
+    }
     if (opsSync.mode !== 'SYNC') {
       try {
         await opsSync.resync(sid)

@@ -947,35 +947,38 @@ describe('Рев’ю P0 2026-09-24 (5) · PAUSED, звичайна копія, 
 })
 
 describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір як на сервері, старі копії', () => {
-  it('розмір рахується як на сервері: 11 000 «І» = 66 011 байт, а не 22 011', () => {
-    const payload = { text: 'І'.repeat(11_000) }
-    expect(serverPayloadBytes(payload)).toBe(66_011)
-    expect(new TextEncoder().encode(JSON.stringify(payload)).byteLength).toBe(22_011)
-    // пара сурогатів = два \\uXXXX, як у Python
-    expect(serverPayloadBytes({ e: '😀' })).toBe('{"e":""}'.length + 12)
+  it('розмір рахується як на сервері: реальні UTF-8 байти, дроби — як Python', () => {
+    expect(serverPayloadBytes({ text: 'І'.repeat(11_000) })).toBe(22_011)
+    expect(serverPayloadBytes({ e: '😀' })).toBe('{"e":""}'.length + 4)
+    // JS 1e-7 → Python 1e-07: на байт довше на кожному такому числі
+    expect(serverPayloadBytes({ p: [1e-7] })).toBe('{"p":[1e-07]}'.length)
   })
 
-  it('картка з довгим українським текстом не потрапляє в чергу й не зупиняє пакет', async () => {
+  it('картка з довгим українським текстом: у межах — іде, понад 64 KB — не зупиняє пакет', async () => {
     const store = syncStore()
     const rec = recorder()
     rec.record({ op_id: 'ok1', op_type: 'stroke_add', page_id: 'p1', payload: { stroke: { id: 's' } } } as never)
-    rec.record({ op_id: 'big', op_type: 'asset_update', page_id: 'p1', payload: { text: 'І'.repeat(11_000) } } as never)
-    expect(store.pendingOps.map(o => o.op_id)).toEqual(['ok1'])
-    expect(trackEvent).toHaveBeenCalledWith('wb.ops.payload_oversized', expect.objectContaining({ bytes: 66_000 + 11 + 0 }))
+    rec.record({ op_id: 'mid', op_type: 'asset_update', page_id: 'p1', payload: { text: 'І'.repeat(11_000) } } as never)
+    rec.record({ op_id: 'big', op_type: 'asset_update', page_id: 'p1', payload: { text: 'І'.repeat(33_000) } } as never)
+    // 11 000 «І» = 22 KB — сервер приймає, отже й фронт; 33 000 = 66 011 > 64 KB — ні
+    expect(store.pendingOps.map(o => o.op_id)).toEqual(['ok1', 'mid'])
+    expect(trackEvent).toHaveBeenCalledWith('wb.ops.payload_oversized', expect.objectContaining({ bytes: 66_011 }))
     rec.stop?.()
   })
 
   it('злиття штрихів рахує розмір як сервер', () => {
     const LIMIT = 64 * 1024
-    const label = 'Ї'.repeat(6_000)  // UTF-8 ~12 KB, сервер ~36 KB
-    const last = op('a1', 'stroke_append', { stroke_id: 'S', label, points: [[1, 1, 0.5]] })
-    const incoming = op('a2', 'stroke_append', { stroke_id: 'S', label, points: [[2, 2, 0.5]] })
-    // окремо кожна ~36 KB (як сервер) — злиття лишає label один раз, тож дозволено
+    const last = op('a1', 'stroke_append', { stroke_id: 'S', points: [[1, 1, 0.5]] })
+    const incoming = op('a2', 'stroke_append', { stroke_id: 'S', points: [[2, 2, 0.5]] })
     expect(tryCoalesceStrokeAppend(last, incoming, LIMIT)).toBe(true)
-    const big = op('b1', 'stroke_append', { stroke_id: 'T', label: 'Ї'.repeat(10_500), points: [[1, 1, 0.5]] })
-    const more = op('b2', 'stroke_append', { stroke_id: 'T', points: Array.from({ length: 400 }, () => [1, 1, 0.5]) })
-    expect(serverPayloadBytes({ ...big.payload, points: [[1, 1, 0.5], ...(more.payload as { points: unknown[] }).points] })).toBeGreaterThan(LIMIT)
-    expect(new TextEncoder().encode(JSON.stringify({ ...big.payload, points: [[1, 1, 0.5], ...(more.payload as { points: unknown[] }).points] })).byteLength).toBeLessThan(LIMIT)  // UTF-8 пропустив би
+    // Малі дроби: JS пише 1e-7, Python — 1e-07 (+1 байт на число). Рахунок
+    // JSON.stringify пропустив би злиття, сервер — ні.
+    const pts = (n: number) => Array.from({ length: n }, () => [1e-7, 2e-7, 0.5])
+    const big = op('b1', 'stroke_append', { stroke_id: 'T', points: pts(2900) })
+    const more = op('b2', 'stroke_append', { stroke_id: 'T', points: pts(1000) })
+    const merged = { stroke_id: 'T', points: pts(3900) }
+    expect(serverPayloadBytes(merged)).toBeGreaterThan(LIMIT)
+    expect(new TextEncoder().encode(JSON.stringify(merged)).byteLength).toBeLessThan(LIMIT)  // UTF-8 пропустив би
     expect(tryCoalesceStrokeAppend(big, more, LIMIT)).toBe(false)  // сервер: > 64 KB
   })
 
@@ -1095,5 +1098,105 @@ describe('Рев’ю P0 2026-09-24 (7) · копії живих вкладок 
     expect(b.pendingOps.map(o => o.op_id)).toContain('a1')
     expect(localStorage.getItem(aKey)).not.toBeNull()
     rec.stop?.()
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (8) · власник після виходу, злиття вкладок, повтор без копії', () => {
+  it('вихід / смерть сесії (user → null) не переносить запис на `anon`; після входу він видимий', async () => {
+    const store = syncStore()
+    store.setBlockedOwner('7')
+    store.record(op('mine'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    store.setBlockedOwner(null)          // authStore.user = null
+    store.record(op('after-logout'))
+    store.persistQueue()                  // destroy() рекордера на смерті сесії
+    expect(Object.keys(localStorage).some(k => k.includes('_anon_'))).toBe(false)
+    const rec = readBlocked(SID, '7').records
+    expect(rec).toHaveLength(1)
+    expect([...rec[0].record.inFlight, ...rec[0].record.pending].map(o => o.op_id)).toEqual(['mine', 'after-logout'])
+  })
+
+  it('інший акаунт у тій самій вкладці: черга попереднього — у ЙОГО копію, з пам’яті геть', () => {
+    const store = syncStore()
+    store.setBlockedOwner('7')
+    store.record(op('of-7'))
+    store.setBlockedOwner('8')
+    expect(store.pendingOps).toHaveLength(0)
+    store.setBlockedOwner('7')
+    // копія 7-го лишилась під його ключем
+    expect(Object.keys(localStorage).some(k => k.startsWith(`wb_ops_backup_v2_${SID}_u7_`))).toBe(true)
+  })
+
+  it('аварійні записи трьох мертвих вкладок по 50 → у мережі не більше одного пакета, решта у pending', async () => {
+    for (const t of ['t1', 't2', 't3']) {
+      localStorage.setItem(`wb_ops_blocked_v2_${SID}_anon_${t}`, JSON.stringify({
+        v: 1, sessionId: SID, tabId: t, userId: null, savedAt: `2026-09-23T10:0${t.slice(1)}:00Z`,
+        info: { kind: 'unconfirmed', httpStatus: 0 }, inFlight: Array.from({ length: 50 }, (_, i) => op(`${t}-${i}`)), pending: [],
+      }))
+    }
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.mode).toBe('SAVE_BLOCKED')
+    expect(store.inFlightOps).toHaveLength(50)
+    expect(store.inFlightOps[0].op_id).toBe('t1-0')
+    expect(store.pendingOps).toHaveLength(100)
+    expect(store.pendingOps[0].op_id).toBe('t2-0')
+  })
+
+  it('повтор успішний, звичайна копія не лягла → лишений запис має «не підтверджено», не старе `rejected`', async () => {
+    const store = syncStore()
+    store.record(op('a'))
+    store.record(op('bad'))
+    post.mockRejectedValueOnce(rejectSecond())
+    await expect(store.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    // «нова збірка клієнта»: дозволяємо повтор rejected
+    store.saveBlock = { ...store.saveBlock!, feBuild: 'older-build' }
+    // rejected: сервер точно не застосував — без звірки check-ops
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    let resolveBatch: (v: unknown) => void = () => {}
+    post.mockImplementationOnce(() => new Promise(r => { resolveBatch = r }))
+    const pending = store.retryBlocked()
+    await vi.advanceTimersByTimeAsync(0)
+    store.record(op('during'))
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('wb_ops_backup_')) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    resolveBatch(ok(2))
+    expect(await pending).toBe('sent')
+    spy.mockRestore()
+    const kept = readBlocked(SID, null).records
+    expect(kept).toHaveLength(1)
+    expect(kept[0].record.info.kind).toBe('unconfirmed')
+    expect(kept[0].record.pending.map(o => o.op_id)).toEqual(['during'])
+  })
+
+  it('копія із зіпсованою датою — нечитабельна (у банер і експорт), а не «прострочена й стерта»', async () => {
+    const key = `wb_ops_backup_v2_${SID}_anon_tab-old`
+    localStorage.setItem(key, JSON.stringify({ pending: [op('x')], inFlight: [], savedAt: 'not-a-date' }))
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.saveBlock?.kind).toBe('storage_unreadable')
+    expect(localStorage.getItem(key)).not.toBeNull()
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (9) · дошку не підключено до збереження', () => {
+  it('стан при відкритті не отримано → не мовчки: bootstrapFailed, малювання заблоковано; успіх знімає', async () => {
+    const store = useOpsSyncStore()
+    get.mockRejectedValueOnce(new Error('Network Error'))
+    await expect(store.bootstrap(SID)).rejects.toThrow('Network Error')
+    expect(store.mode).toBe('BOOTSTRAP')
+    expect(store.bootstrapFailed).toBe(true)
+    expect(store.inputLocked).toBe(true)
+    expect(store.record(op('lost'))).toBe(false)
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    expect(store.bootstrapFailed).toBe(false)
+    expect(store.inputLocked).toBe(false)
   })
 })

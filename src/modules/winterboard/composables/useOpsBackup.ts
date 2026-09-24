@@ -124,9 +124,15 @@ export function readAllBackups<T>(sessionId: string): BackupsRead<T> {
         result.unreadable.push({ key, raw })
         continue
       }
+      // Зіпсована дата — не «прострочено»: мовчки стерти незбережені дії не можна.
+      const savedMs = new Date(backup.savedAt).getTime()
+      if (!Number.isFinite(savedMs)) {
+        console.warn('[WB:opsBackup] backup with unreadable date kept as is:', key)
+        result.unreadable.push({ key, raw })
+        continue
+      }
       // TTL: ігноруємо старі бекапи (сесія могла змінитись, ops застарілі)
-      const age = Date.now() - new Date(backup.savedAt).getTime()
-      if (!Number.isFinite(age) || age > MAX_BACKUP_AGE_MS) {
+      if (Date.now() - savedMs > MAX_BACKUP_AGE_MS) {
         expired.push(key)
         continue
       }

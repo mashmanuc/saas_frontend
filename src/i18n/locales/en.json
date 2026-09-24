@@ -7101,6 +7101,10 @@
         "retry": "Retry now",
         "retrying": "Sending…"
       },
+      "bootstrapFailed": {
+        "text": "The board could not connect to saving — changes are NOT being saved right now. Drawing is paused.",
+        "reload": "Reload page"
+      },
       "legacyCopy": {
         "text": "This computer has unsaved changes to this board from an older version of the app. Their owner is unknown, so they were not sent automatically. You can download them or remove them.",
         "export": "Download",

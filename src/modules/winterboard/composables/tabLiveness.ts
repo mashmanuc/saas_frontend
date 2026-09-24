@@ -23,13 +23,26 @@ function locks(): LocksLike | null {
   return l && typeof l.request === 'function' && typeof l.query === 'function' ? l : null
 }
 
-/** Тримати позначку «вкладка жива» до її закриття. */
-export function holdTabLock(tabId: string): void {
-  const l = locks()
-  if (!l) return
+function requestLock(l: LocksLike, tabId: string): void {
   l.request(`${LOCK_PREFIX}${tabId}`, () => new Promise<void>(() => {})).catch((err) => {
     console.warn('[WB:tabLiveness] lock request failed:', err)
   })
+}
+
+/**
+ * Тримати позначку «вкладка жива» до її закриття. Сторінку, відновлену з
+ * back/forward cache, браузер міг лишити без замка — беремо його знову
+ * (`pageshow.persisted`), інакше інші вкладки вважали б живу вкладку мертвою.
+ */
+export function holdTabLock(tabId: string): void {
+  const l = locks()
+  if (!l) return
+  requestLock(l, tabId)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', (e: PageTransitionEvent) => {
+      if (e.persisted) requestLock(l, tabId)
+    })
+  }
 }
 
 /** Живі вкладки цього сайту; `null` — невідомо (немає Web Locks або помилка). */

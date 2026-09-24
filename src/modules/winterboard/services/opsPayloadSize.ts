@@ -1,28 +1,37 @@
 /**
- * Розмір payload операції РІВНО так, як його рахує сервер (рев'ю P0, 2026-09-24).
+ * Розмір payload операції РІВНО так, як його рахує сервер (2026-09-24).
  *
- * Сервер (`ops_apply_service.py`, `WBBoardOperationCreateSerializer.validate_payload`):
- *   len(json.dumps(payload, separators=(',', ':')).encode('utf-8')) > 64 * 1024
- * де payload — результат json.loads тіла, яке надіслав фронт. Відтворюємо Python:
+ * Сервер (`apps/winterboard/services/payload_size.py`) — єдине правило для пакетного
+ * шляху й серіалізатора:
+ *   len(json.dumps(payload, separators=(',', ':'), ensure_ascii=False)
+ *       .encode('utf-8', 'surrogatepass')) > 64 * 1024
+ * де payload — результат json.loads тіла від фронту. Відтворюємо Python:
  *
- *  - рядки: `ensure_ascii=True` — усе поза ' '..'~' стає `\uXXXX` (6 байт), зокрема
- *    не-ASCII (кожна UTF-16 одиниця; пара сурогатів = 12) і DEL 0x7F, який JS
- *    лишає як є; керівні символи — ті самі escape, що в JS (`\n`, `\u0001`…);
+ *  - рядки: реальні UTF-8 байти; escape лише `"`, `\` і керівні < 0x20 (ті самі, що
+ *    в JS: `\n`, `\u0001`…); одиночний сурогат (JS шле `\udXXX`) → surrogatepass,
+ *    3 байти; пара сурогатів → 4;
  *  - числа: токен JS без `.`/`e` Python читає як int — ті самі цифри; інакше float,
- *    і Python друкує його `repr`: наукова форма при десятковому порядку < -4 або ≥ 16
+ *    і Python друкує `repr`: наукова форма при десятковому порядку < -4 або ≥ 16
  *    (JS: < -7 або ≥ 21), експонента зі знаком і щонайменше двома цифрами
  *    (`1e-07`, `1e+16`), ціле значення з `.0`;
  *  - роздільники компактні — як JSON.stringify; порядок ключів той самий.
  *
- * Звірено з CPython диференційним прогоном (див. тест `opsPayloadSize.spec.ts`).
+ * Звірено з CPython диференційним прогоном (еталони — `opsPayloadSize.spec.ts`).
  */
 
 function strBytes(s: string): number {
-  const j = JSON.stringify(s)
-  let n = 0
-  for (let i = 0; i < j.length; i++) {
-    const c = j.charCodeAt(i)
-    n += c >= 0x20 && c < 0x7f ? 1 : 6
+  let n = 2  // лапки
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 0x22 || c === 0x5c) n += 2                       // \" \\
+    else if (c === 0x08 || c === 0x09 || c === 0x0a || c === 0x0c || c === 0x0d) n += 2
+    else if (c < 0x20) n += 6                                  // \u00XX
+    else if (c < 0x80) n += 1
+    else if (c < 0x800) n += 2
+    else if (c >= 0xd800 && c <= 0xdbff) {
+      const d = i + 1 < s.length ? s.charCodeAt(i + 1) : 0
+      if (d >= 0xdc00 && d <= 0xdfff) { n += 4; i++ } else n += 3  // пара / одиночний
+    } else n += 3                                              // BMP, у т.ч. одиночний low
   }
   return n
 }
