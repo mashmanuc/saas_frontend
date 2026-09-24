@@ -275,7 +275,7 @@
           <!-- RIGHT_PANEL_MODE = catalog_root: 4 картки -->
           <div v-if="catalogFamily === null" class="tools-cards">
             <button
-              v-for="app in MASH_APPS"
+              v-for="app in shownApps"
               :key="app.app"
               type="button"
               class="tools-card"
@@ -385,9 +385,10 @@ import TrigCircleTray from './TrigCircleTray.vue'
 import InsertResultTile from './InsertResultTile.vue'
 import { InsertIcon } from './insertIcons'
 import {
-  searchInserts, allInserts, insertsByApp, MASH_APPS,
+  searchInserts, allInserts, insertsByApp, MASH_APPS, visibleInserts, visibleApps,
   type MashApp, type InsertEntry,
 } from './insertRegistry'
+import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -508,12 +509,17 @@ const activeTab = ref<'materials' | 'tools'>(props.localMode ? 'tools' : 'materi
 
 // Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → картки.
 const toolQuery = ref('')
-const toolResults = computed(() => searchInserts(toolQuery.value))
+// «Навчальні обʼєкти» — лише акаунтам у гейті (див. useEvidenceToolsGate).
+const { evidenceEnabled } = useEvidenceToolsGate()
+const gateOpts = computed(() => ({ evidence: evidenceEnabled.value }))
+const shownApps = computed(() => visibleApps(gateOpts.value))
+const toolResults = computed(() =>
+  visibleInserts(gateOpts.value, searchInserts(toolQuery.value)))
 
 // Ф3.2: 4-картковий каталог. null = root (4 картки), інакше — drilldown у сімейство.
 const catalogFamily = ref<MashApp | null>(null)
 const appCounts = computed<Record<MashApp, number>>(() => {
-  const by = insertsByApp()
+  const by = insertsByApp(visibleInserts(gateOpts.value))
   return {
     '2d': by['2d'].length,
     '3d': by['3d'].length,
@@ -530,7 +536,8 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
-const contentEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'evidence'))
+const contentEntries = computed<InsertEntry[]>(
+  () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,

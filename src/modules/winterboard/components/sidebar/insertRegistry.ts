@@ -290,6 +290,23 @@ export function allInserts(): InsertEntry[] {
   return [...STATIC_INSERTS, ...geoInserts()]
 }
 
+/**
+ * Що показувати цьому акаунту. «Навчальні обʼєкти» (шкала часу, карта подій) —
+ * поки лише для акаунтів у rollout-гейті коридорів (домовленість власника;
+ * до 2026-09-24 гейта не було зовсім і їх бачили всі на проді).
+ */
+export function visibleInserts(
+  opts: { evidence: boolean },
+  entries: InsertEntry[] = allInserts(),
+): InsertEntry[] {
+  return opts.evidence ? entries : entries.filter((e) => e.family !== 'evidence')
+}
+
+/** Те саме для 4 (або 5) карток-застосунків root-каталогу. */
+export function visibleApps(opts: { evidence: boolean }): typeof MASH_APPS {
+  return opts.evidence ? MASH_APPS : MASH_APPS.filter((a) => a.app !== 'content')
+}
+
 /** Пошук за labelFallback / id / keywords (case-insensitive). Порожній q = всі. */
 export function searchInserts(q: string, entries: InsertEntry[] = allInserts()): InsertEntry[] {
   const needle = q.trim().toLowerCase()
