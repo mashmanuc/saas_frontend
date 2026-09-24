@@ -80,8 +80,27 @@ function rejectSecond() {
   })
 }
 
+/**
+ * Web Locks у jsdom немає. Фейк: жива лише вкладка поточного store + ті, що в
+ * `liveTabs` (тест задає явно). Решта — мертві (закрита / перезавантажена вкладка).
+ */
+let liveTabs: string[] = []
+function installLocks() {
+  vi.stubGlobal('navigator', {
+    ...globalThis.navigator,
+    locks: {
+      request: () => new Promise(() => {}),
+      query: async () => ({
+        held: [useOpsSyncStore().tabId, ...liveTabs].map(t => ({ name: `wb-tab:${t}` })),
+      }),
+    },
+  })
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
+  liveTabs = []
+  installLocks()
   useOpsSyncStore().setBlockedOwner(null)  // власник — рівня модуля, не переносити між тестами
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
   vi.setSystemTime(new Date('2026-09-23T20:00:00Z'))
@@ -92,6 +111,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.clearAllTimers()
   vi.useRealTimers()
   vi.restoreAllMocks()
@@ -975,6 +995,7 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     // B відкриває дошку з рекордером → підхоплює дію A, пише свою копію, знімає копію A
     const rec = recorder()
     rec.start?.()
+    await vi.advanceTimersByTimeAsync(0)
     expect(b.pendingOps.map(o => o.op_id)).toContain('fromA')
     const keys = Object.keys(localStorage).filter(k => k.startsWith(`wb_ops_backup_v2_${SID}_u7_`))
     expect(keys).toHaveLength(1)
@@ -982,7 +1003,7 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     rec.stop?.()
   })
 
-  it('нова вкладка не змогла записати свою копію → копію іншої вкладки НЕ знято', () => {
+  it('нова вкладка не змогла записати свою копію → копію іншої вкладки НЕ знято', async () => {
     const a = syncStore()
     a.record(op('fromA'))
     a.persistQueue()
@@ -996,6 +1017,7 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     })
     const rec = recorder()
     rec.start?.()
+    await vi.advanceTimersByTimeAsync(0)
     spy.mockRestore()
     expect(b.pendingOps.map(o => o.op_id)).toContain('fromA')
     expect(localStorage.getItem(aKey)).not.toBeNull()
@@ -1018,6 +1040,60 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     store.dismissLegacyCopies()
     expect(localStorage.getItem(legacyKey)).toBeNull()
     expect(store.legacyCopies).toHaveLength(0)
+    rec.stop?.()
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (7) · копії живих вкладок не чіпаємо', () => {
+  it('копію ЖИВОЇ вкладки A нова вкладка не підхоплює й не стирає — дія A, дописана пізніше, не зникає', async () => {
+    const a = syncStore()
+    a.record(op('a1'))
+    a.persistQueue()
+    const aTab = a.tabId
+    const aKey = Object.keys(localStorage).find(k => k.startsWith(`wb_ops_backup_v2_${SID}_anon_`))!
+    setActivePinia(createPinia())
+    liveTabs = [aTab]  // A відкрита
+    const b = syncStore()
+    const rec = recorder()
+    rec.start?.()
+    // A дописує дію, поки B відновлюється
+    localStorage.setItem(aKey, JSON.stringify({ pending: [op('a1'), op('a2')], inFlight: [], savedAt: new Date().toISOString() }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(b.pendingOps.map(o => o.op_id)).not.toContain('a1')
+    expect(JSON.parse(localStorage.getItem(aKey)!).pending.map((o: { op_id: string }) => o.op_id)).toEqual(['a1', 'a2'])
+    rec.stop?.()
+  })
+
+  it('аварійний запис ЖИВОЇ вкладки не підхоплюється і не стирається «Відкинути» іншої', async () => {
+    const a = syncStore()
+    a.record(op('a1'))
+    post.mockRejectedValueOnce(httpError(403))
+    await expect(a.flush()).rejects.toBeInstanceOf(SaveBlockedError)
+    const aTab = a.tabId
+    const aKey = readBlocked(SID, null).records[0].key
+    setActivePinia(createPinia())
+    liveTabs = [aTab]
+    const b = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await b.bootstrap(SID)
+    expect(b.mode).toBe('SYNC')
+    expect(b.pendingOps).toHaveLength(0)
+    expect(localStorage.getItem(aKey)).not.toBeNull()
+  })
+
+  it('Web Locks немає (живість невідома) → чужу копію підхоплюємо, але НЕ стираємо', async () => {
+    const a = syncStore()
+    a.record(op('a1'))
+    a.persistQueue()
+    const aKey = Object.keys(localStorage).find(k => k.startsWith(`wb_ops_backup_v2_${SID}_anon_`))!
+    setActivePinia(createPinia())
+    vi.stubGlobal('navigator', { ...globalThis.navigator, locks: undefined })
+    const b = syncStore()
+    const rec = recorder()
+    rec.start?.()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(b.pendingOps.map(o => o.op_id)).toContain('a1')
+    expect(localStorage.getItem(aKey)).not.toBeNull()
     rec.stop?.()
   })
 })

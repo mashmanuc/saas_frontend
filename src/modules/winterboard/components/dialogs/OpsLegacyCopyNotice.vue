@@ -4,11 +4,13 @@
      частина `wb_ops_blocked_v1_*`). Приписати їх акаунту автоматично не можна —
      на спільному браузері вони могли належати іншій людині, тож нова версія їх НЕ
      відновлює і не надсилає. Щоб вони не стали невидимими, кімната показує їх
-     тому, хто відкрив ЦЮ дошку (доступ до її вмісту він і так має): «Завантажити»
-     або «Прибрати» (з підтвердженням). Не блокує роботу.
+     ЛИШЕ ВЛАСНИКОВІ ДОШКИ: якби ці дії зберіглися, вони стали б частиною його
+     дошки — він не бачить нічого понад своє. Доступ до дошки (учень, спільний
+     перегляд) права читати чужі локальні дії не дає — іншим не показуємо й не
+     стираємо (рев'ю P0, 2026-09-24). «Завантажити» / «Прибрати» (з підтвердженням).
 -->
 <template>
-  <div v-if="opsSync.legacyCopies.length > 0" class="wb-legacy-copy" role="status">
+  <div v-if="visible" class="wb-legacy-copy" role="status">
     <span class="wb-legacy-copy__text">{{ t('winterboard.errors.legacyCopy.text') }}</span>
     <div class="wb-legacy-copy__actions">
       <button type="button" class="wb-legacy-copy__btn" @click="onExport">
@@ -22,11 +24,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useOpsSyncStore } from '../../stores/opsSyncStore'
+import { useWBStore } from '../../board/state/boardStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const { t } = useI18n()
 const opsSync = useOpsSyncStore()
+const board = useWBStore()
+const auth = useAuthStore()
+
+/** Лише власник дошки; невідомий власник чи користувач → не показуємо. */
+const visible = computed(() => {
+  const me = auth.user?.id
+  return opsSync.legacyCopies.length > 0 && me !== undefined && me !== null &&
+    !!board.ownerId && String(board.ownerId) === String(me)
+})
 
 function onExport(): void {
   const data = opsSync.exportLegacyCopies()

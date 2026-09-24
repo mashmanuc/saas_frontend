@@ -23,6 +23,7 @@ import type { RecordOperationRequest } from '../types/replay'
 import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 import { backupKey, clearBackup, readAllBackups, removeBackupKeys } from './useOpsBackup'
+import { liveTabIds, mayAdopt, mayRemove } from './tabLiveness'
 import { serverPayloadBytes, SERVER_PAYLOAD_LIMIT_BYTES } from '../services/opsPayloadSize'
 import { trackEvent } from '@/utils/telemetryAgent'
 import { notifyWarning, notifyError } from '@/utils/notify'
@@ -181,12 +182,17 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * черзі store, не дублюються. Якщо store ще не в SYNC/PAUSED, record() відмовить —
    * backup лишається до наступного виклику.
    */
-  function _restoreBackup(): void {
+  async function _restoreBackup(): Promise<void> {
     const sid = options.sessionId.value
     if (!sid || opsSync.sessionId !== sid) return
-    // Копії всіх СВОЇХ вкладок цієї дошки (ключ = дошка + акаунт + вкладка): попередня
-    // вкладка/завантаження лишила чергу — підхоплюємо без дублів op_id.
+    const live = await liveTabIds()
+    if (_destroyed || options.sessionId.value !== sid || opsSync.sessionId !== sid) return
+    // Далі все синхронно. Копії СВОЇХ вкладок цієї дошки (ключ = дошка + акаунт +
+    // вкладка). Копії ЖИВИХ інших вкладок не чіпаємо: вони надішлють своє самі, а
+    // видалення могло б з'їсти дію, дописану між нашим читанням і видаленням.
+    const own = opsSync.tabId
     const all = readAllBackups<RecordOperationRequest>(sid)
+    all.records = all.records.filter(r => mayAdopt(r.key, own, live))
     if (all.records.length === 0) return
     const known = new Set([...opsSync.inFlightOps, ...opsSync.pendingOps].map(o => o.op_id))
     let restored = 0
@@ -198,11 +204,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
         restored++
       }
     }
-    // Копії інших вкладок знімаємо ЛИШЕ після перевіреного запису своєї (там уже
-    // їхні дії); не ліг — лишаються, наступне відкриття знову їх підхопить.
+    // Копії МЕРТВИХ вкладок знімаємо лише після перевіреного запису своєї (там уже
+    // їхні дії); не ліг або живість невідома — лишаються.
     if (opsSync.persistQueue()) {
-      const own = backupKey(sid)
-      removeBackupKeys(all.records.map(r => r.key).filter(k => k !== own))
+      const ownKey = backupKey(sid)
+      removeBackupKeys(all.records.map(r => r.key).filter(k => k !== ownKey && mayRemove(k, own, live)))
     }
     if (restored > 0) {
       console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
@@ -531,7 +537,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
     // Restore backup (якщо є) перед стартом safety-interval.
     // Note: opsSyncStore.bootstrap() має бути вже викликано caller'ом.
-    _restoreBackup()
+    void _restoreBackup()
 
     // Safety interval — ловить ops які debounce не скинув (idle-період, long burst).
     //
@@ -620,8 +626,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   ): () => void {
     console.info('[WB:Recorder] connectToStore — listener registered')
     // TLV2-G1b: connectToStore іде після bootstrap і в Solo, і в Classroom.
-    _restoreBackup()
-    if (opsSync.isSync && opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) void flush()
+    // Відновлення асинхронне (живість вкладок) — дозлив черги лише ПІСЛЯ нього,
+    // інакше в Solo (без start()) підхоплені дії чекали б наступної дії вчителя.
+    void _restoreBackup().then(() => {
+      if (!_destroyed && opsSync.isSync && opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) void flush()
+    })
     return store.onOperation((op) => { record(op) })
   }
 

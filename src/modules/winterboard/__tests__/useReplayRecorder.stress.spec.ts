@@ -235,7 +235,13 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
       },
     )
 
+    // Вкладка 1 «впала» → її Web Lock знято: у живих лише нова вкладка.
+    vi.stubGlobal('navigator', { ...globalThis.navigator, locks: {
+      request: () => new Promise(() => {}),
+      query: async () => ({ held: [] }),
+    } })
     const recorder2 = mountRecorder('sess-crash')
+    await waitUntil(() => infoSpy.mock.calls.some((c) => String(c[0]).includes('Restored')), 3_000)
     await recorder2.flush()
 
     expect(persisted).toBeGreaterThanOrEqual(5)  // відновлено і доставлено
@@ -243,6 +249,7 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     // ACK повного буфера чистить backup — «сміття» не переживає успіх.
     expect(backupKeys()).toHaveLength(0)
     recorder2.destroy()
+    vi.unstubAllGlobals()
   }, 10_000)
 })
 

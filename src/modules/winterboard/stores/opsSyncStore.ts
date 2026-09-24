@@ -49,6 +49,7 @@ import { writeBlocked, readBlocked, removeBlocked, blockedKey } from '../composa
 import {
   backupKey, clearBackup, readAllBackups, readLegacyBackup, removeBackupKeys, saveBackup, setOpsOwner, setOpsTab,
 } from '../composables/useOpsBackup'
+import { holdTabLock, liveTabIds, mayAdopt, mayRemove } from '../composables/tabLiveness'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -210,6 +211,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   /** Tab id для INV-19 origin filtering. */
   const tabId = ref<string>(_genTabId())
   setOpsTab(tabId.value)  // звичайна копія черги — своя на кожну вкладку (рев'ю P0, 2026-09-24)
+  holdTabLock(tabId.value)  // «вкладка жива»: її копії інші вкладки не підхоплюють і не стирають
   /**
    * Копії старого формату без власника для цієї дошки: не відновлюються й не
    * надсилаються, лише показуються для ручного завантаження / прибирання.
@@ -497,6 +499,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     _initChannel()
     try {
       const response = await _fetchState(sid)
+      // Які вкладки живі — ДО переходу в SYNC (далі без await: record() не вклиниться).
+      const live = await liveTabIds()
       serverSeq.value = response.last_seq | 0
       localSeq.value = response.last_seq | 0
       _resetRetryState()
@@ -504,7 +508,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       desyncReason.value = null
       // SAVE_BLOCKED переживає reload і повторний bootstrap: невирішена черга НЕ
       // повертається у звичайну відправку (LAW §5 «Остаточні відмови»).
-      _restoreBlocked(sid)
+      _restoreBlocked(sid, live)
     } catch (err) {
       if (_isProtocolMismatch(err)) {
         enterDesync('protocol-version-mismatch')
@@ -975,7 +979,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   }
 
   /** Після bootstrap: підхопити аварійні записи цієї дошки й повернути SAVE_BLOCKED. */
-  function _restoreBlocked(sid: string): void {
+  function _restoreBlocked(sid: string, live: Set<string> | null): void {
     const read = readBlocked(sid, _blockedOwnerId)
     // Звичайні копії цієї дошки цього акаунта (усі вкладки): пошкоджена ≠ «немає».
     const nb = readAllBackups(sid)
@@ -983,9 +987,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     read.unreadable.push(...nb.unreadable)
     const legacy = readLegacyBackup(sid)
     legacyCopies.value = [...(legacy ? [legacy] : []), ...read.legacyUnknown]
-    const found = read.records
-    _unreadableBlocked = read.unreadable
-    const unreadable = read.readFailed || read.unreadable.length > 0
+    // Записи ЖИВИХ інших вкладок — їхня справа: не підхоплюємо й не стираємо (жива
+    // вкладка могла б дописати дію між нашим читанням і видаленням). Рев'ю P0, 2026-09-24.
+    const own = tabId.value
+    const found = read.records.filter(f => mayAdopt(f.key, own, live))
+    _unreadableBlocked = read.unreadable.filter(u => mayAdopt(u.key, own, live))
+    const unreadable = read.readFailed || _unreadableBlocked.length > 0
     if (found.length === 0 && !unreadable) return
     const known = new Set([...inFlightOps.value, ...pendingOps.value].map(o => o.op_id))
     const inFlight: OpsSyncOp[] = [...inFlightOps.value]
@@ -998,8 +1005,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     pendingOps.value = pending
     _adoptedBlockedKeys = [
       ...found.map(f => f.key),
-      ...read.unreadable.map(u => u.key),
-    ].filter(k => k !== blockedKey(sid, _blockedOwnerId, tabId.value))
+      ..._unreadableBlocked.map(u => u.key),
+    ].filter(k => k !== blockedKey(sid, _blockedOwnerId, tabId.value) && mayRemove(k, own, live))
     mode.value = 'SAVE_BLOCKED'
     if (unreadable) {
       // Не «нічого немає»: запис є, але прочитати його не вдалося. Видима зупинка,
