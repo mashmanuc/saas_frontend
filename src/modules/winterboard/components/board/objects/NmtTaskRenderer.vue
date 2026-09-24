@@ -343,15 +343,22 @@ const solutionZoom = useSolutionZoom()
 
 const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Є', 'Ж', 'З', 'І']
 
-const props = defineProps<{
+// ⚠️ `withDefaults` тут саме через `canFit`: Vue дає булевому пропу, якого не
+// передали, значення false — без явного дефолту картка в чужому хості (тест,
+// прев'ю) перестала б мірятись мовчки.
+const props = withDefaults(defineProps<{
   asset: WBAsset
   isSelected: boolean
   interactive: boolean
+  /** Чи міряти вміст і просити авто-висоту. Окремо від `interactive`: з
+   *  олівцем картка не приймає кліків, але підганятись під вміст мусить
+   *  (INV-25 п.8, власник 2026-09-24). */
+  canFit?: boolean
   /** Лише вчитель керує спільним ключем, розбором і самою карткою. */
   isTutor?: boolean
   /** Картка локально показана на весь доступний простір полотна. */
   isExpanded?: boolean
-}>()
+}>(), { canFit: true })
 
 const emit = defineEmits<{
   'update:asset': [asset: WBAsset]
@@ -420,7 +427,7 @@ const { requestFit: requestAutoFit } = useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
-  canMeasure: () => !props.isExpanded && props.interactive && !isMinimizedOnBoard(props.asset),
+  canMeasure: () => !props.isExpanded && props.canFit && !isMinimizedOnBoard(props.asset),
   // Тригери — рівно ті, після яких вміст справді змінює висоту.
   sources: [
     () => data.value.showSolution,

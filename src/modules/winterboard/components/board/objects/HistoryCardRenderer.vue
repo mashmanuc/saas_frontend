@@ -209,6 +209,10 @@ const props = withDefaults(
     asset: WBAsset
     isSelected?: boolean
     interactive?: boolean
+    /** Чи міряти вміст і просити авто-висоту. Окремо від `interactive`: з
+     *  олівцем картка не приймає кліків, але підганятись під вміст мусить
+     *  (INV-25 п.8, власник 2026-09-24). */
+    canFit?: boolean
     /** Чи є куди відкрити суміжну картку. Без обробника значення лишається
      *  звичайним текстом: кнопка, яка нічого не робить, гірша за її
      *  відсутність. */
@@ -219,7 +223,7 @@ const props = withDefaults(
      *  редагуванні тьютора — у Replay і в учня немає, тож і запиту немає. */
     loadActions?: (ref: EntityRef) => Promise<WBTeachingAction[]>
   }>(),
-  { isSelected: false, interactive: true, canOpenEntity: false, canPinToMap: false,
+  { isSelected: false, interactive: true, canFit: true, canOpenEntity: false, canPinToMap: false,
     loadActions: undefined },
 )
 
@@ -395,7 +399,7 @@ useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
-  canMeasure: () => props.interactive && !isMinimizedOnBoard(props.asset),
+  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset),
   // Стежимо за ВМІСТОМ, не за кількістю: розкриття будь-якого блоку робить
   // картку вищою, згортання повертає висоту назад.
   sources: [

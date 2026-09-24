@@ -70,11 +70,26 @@ export interface OverlayGraphHandlers {
   pointPromote: (assetId: string, id: string, curveExprId: string) => void
 }
 
+/**
+ * Хто міряє вміст і пише авто-висоту — INV-25 п.8: «лише клієнт учителя в
+ * режимі редагування». Інструмент НЕ впливає: з олівцем картка так само має
+ * підганятись під вміст (власник 2026-09-24: «коли вибраний олівець — картка
+ * не по вмісткості, тільки вибираю стрілочку — картка нормальна стає»).
+ */
+export function canFitInMode(boardMode: string, isTutor: boolean): boolean {
+  return boardMode === 'edit' && isTutor
+}
+
 export interface OverlayCtx {
   /** wbStore.selectedIds.includes(id) */
   isSelected: (id: string) => boolean
   /** currentTool === 'select' && wbStore.mode === 'edit' */
   interactive: boolean
+  /** Чи можна МІРЯТИ вміст і писати авто-висоту (INV-25 п.8: «лише клієнт
+   *  учителя в режимі редагування»). НЕ залежить від інструмента: з олівцем
+   *  картка так само має підганятись під вміст, інакше вчитель бачить
+   *  обрізану картку зі скролом, доки не візьме стрілку (власник 2026-09-24). */
+  canFit: boolean
   /** Явна роль від classroom host; solo/replay передають tutor-mode. */
   isTutor: boolean
   /** wbStore.mode — passed to nmt3d :board-mode */
@@ -437,7 +452,11 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = Object.from
       ...entry,
       expandable: isFullscreenAsset(type),
       // TLV2-05C: спільна авто-висота — кожному типу з `contentFit: 'height'` (SSOT INV-25),
-      // а не вручну окремим entry.
+      // а не вручну окремим entry. `canFit` іде тим самим шляхом, що й
+      // `request-height`: хто міряє — вирішує стандарт типу, а не entry.
+      buildProps: assetCapabilities(type).contentFit === 'height'
+        ? (a: WBAsset, ctx: OverlayCtx) => ({ ...entry.buildProps(a, ctx), canFit: ctx.canFit })
+        : entry.buildProps,
       buildEvents: assetCapabilities(type).contentFit === 'height'
         ? (a: WBAsset, ctx: OverlayCtx) => ({
             ...entry.buildEvents(a, ctx),

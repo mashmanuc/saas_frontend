@@ -169,16 +169,26 @@ describe('theory_card · ручний resize не вимикає безпеку'
 })
 
 describe('theory_card · не міряється, коли не можна писати', () => {
-  it('неінтерактивна (перо, учень) і згорнута — без запитів; відновлення з трею — повторний вимір', async () => {
-    const { w } = mountTheory({ interactive: false })
+  // 2026-09-24 (власник: «коли вибраний олівець — картка не по вмісткості»):
+  // вимір розв'язано з інструментом. Писати не можна в Replay і в учня
+  // (`canFit: false`, INV-25 п.8), а не тоді, коли вибрано перо.
+  it('учень або Replay і згорнута — без запитів; відновлення з трею — повторний вимір', async () => {
+    const { w } = mountTheory({ interactive: false, canFit: false })
     await flushPromises()
     expect(w.emitted('request-height')).toBeUndefined()
 
-    await w.setProps({ interactive: true, asset: theoryAsset({ minimized: true }) })
+    await w.setProps({ canFit: true, asset: theoryAsset({ minimized: true }) })
     await flushPromises()
     expect(w.emitted('request-height')).toBeUndefined()
 
     await w.setProps({ asset: theoryAsset({ minimized: false }) })
+    await flushPromises()
+    expect((w.emitted('request-height') ?? []).length).toBe(1)
+    w.unmount()
+  })
+
+  it('олівець (interactive: false, canFit: true) — картка все одно міряє', async () => {
+    const { w } = mountTheory({ interactive: false })
     await flushPromises()
     expect((w.emitted('request-height') ?? []).length).toBe(1)
     w.unmount()

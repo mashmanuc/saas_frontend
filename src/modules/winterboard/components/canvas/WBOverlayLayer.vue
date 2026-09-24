@@ -31,8 +31,7 @@ import { linkedEvidenceUpdate } from '../../board/evidenceLinkage'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
-  type OverlayCtx,
-} from './overlayRegistry'
+  type OverlayCtx, canFitInMode } from './overlayRegistry'
 // N1 Фаза 3 (2026-08-07): preset shadow для theory-card overlay
 const PRESET_SHADOWS: Record<string, string> = {
   definition:      'rgba(37, 99, 235, 0.35)',
@@ -159,6 +158,8 @@ function loadTeachingActions(entityRef: EntityRef): Promise<WBTeachingAction[]> 
 const ctx = computed<OverlayCtx>(() => ({
   isSelected: (id: string) => wbStore.selectedIds.includes(id),
   interactive: props.tool === 'select' && wbStore.mode === 'edit',
+  // Вимір — за INV-25 п.8 (учитель + редагування), без прив'язки до інструмента.
+  canFit: canFitInMode(wbStore.mode, props.isTutor),
   isTutor: props.isTutor,
   boardMode: wbStore.mode,
   disableAnimation: wbStore.mode === 'replay',

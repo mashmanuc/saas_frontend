@@ -59,7 +59,7 @@ function stubLayout(wrapper: ReturnType<typeof mount>, opts: {
   flow.getBoundingClientRect = () => ({ height: opts.flowH } as DOMRect)
 }
 
-function mountCard() {
+function mountCard(extra: Record<string, unknown> = {}) {
   return mount(Renderer, {
     props: {
       asset: {
@@ -73,6 +73,7 @@ function mountCard() {
       } as never,
       isSelected: false,
       interactive: true,
+      ...extra,
     },
     global: { mocks: { t }, stubs: { teleport: true } },
   })
@@ -110,6 +111,36 @@ describe('NmtTaskRenderer — вимірювання для автопідгон
   it('INV-MEASURE-3: у розмітці є окремий вузол потоку', () => {
     const w = mountCard()
     expect(w.find('.nmt-task__flow').exists()).toBe(true)
+    w.unmount()
+  })
+})
+
+// Власник 2026-09-24: «коли вибраний олівець — картка не по вмісткості, тільки
+// вибираю стрілочку — картка нормальна стає». Вимір був прив'язаний до
+// `interactive` (інструмент = стрілка); INV-25 п.8 вимагає лише «клієнт
+// учителя в режимі редагування».
+describe('вимір не залежить від інструмента (INV-25 п.8)', () => {
+  it('олівець: кліків картка не приймає, але висоту просить', async () => {
+    const w = mountCard({ interactive: false, canFit: true })
+    stubLayout(w, { cardH: 300, bodyClientH: 262, flowH: 700 })
+    const zoom = useSolutionZoom()
+    zoom.zoomIn()
+    await nextTick(); await nextTick()
+
+    const events = w.emitted('request-height') as Array<[number]> | undefined
+    expect(events, 'з олівцем картка мусить попросити висоту').toBeTruthy()
+    expect(events![events!.length - 1][0]).toBeGreaterThan(300)
+    w.unmount()
+  })
+
+  it('Replay або учень: canFit=false → жодної операції', async () => {
+    const w = mountCard({ interactive: false, canFit: false })
+    stubLayout(w, { cardH: 300, bodyClientH: 262, flowH: 700 })
+    const zoom = useSolutionZoom()
+    zoom.zoomIn()
+    await nextTick(); await nextTick()
+
+    expect(w.emitted('request-height')).toBeUndefined()
     w.unmount()
   })
 })

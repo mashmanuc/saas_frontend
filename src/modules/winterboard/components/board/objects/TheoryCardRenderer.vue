@@ -170,8 +170,12 @@ const props = withDefaults(
     asset: WBAsset
     isSelected?: boolean
     interactive?: boolean
+    /** Чи міряти вміст і просити авто-висоту. Окремо від `interactive`: з
+     *  олівцем картка не приймає кліків, але підганятись під вміст мусить
+     *  (INV-25 п.8, власник 2026-09-24). */
+    canFit?: boolean
   }>(),
-  { isSelected: false, interactive: true },
+  { isSelected: false, interactive: true, canFit: true },
 )
 
 const emit = defineEmits<{
@@ -263,7 +267,7 @@ useCardContentFit({
   body: bodyEl,
   flow: flowEl,
   // Перо, replay, учень і згорнута в трей картка операцій не породжують.
-  canMeasure: () => props.interactive && !isMinimizedOnBoard(props.asset),
+  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset),
   sources: [
     () => data.value.title,
     () => data.value.body,

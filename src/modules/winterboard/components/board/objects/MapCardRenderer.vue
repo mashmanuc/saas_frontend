@@ -125,8 +125,8 @@ const { t } = useI18n()
 const VB = 1000
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean }>(),
-  { isSelected: false, interactive: true },
+  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean }>(),
+  { isSelected: false, interactive: true, canFit: true },
 )
 
 const emit = defineEmits<{
@@ -260,7 +260,7 @@ useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
-  canMeasure: () => props.interactive && !isMinimizedOnBoard(props.asset),
+  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset),
   sources: [
     () => data.value.title,
     () => data.value.basemap,

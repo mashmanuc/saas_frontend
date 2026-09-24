@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { OVERLAY_RENDERERS, OVERLAY_ASSET_TYPES, isOverlayType } from '../components/canvas/overlayRegistry'
+import { OVERLAY_RENDERERS, OVERLAY_ASSET_TYPES, isOverlayType, canFitInMode } from '../components/canvas/overlayRegistry'
 
 // Канонічний список з KONVA_PROXY_TYPES (WBCanvas.vue:907-920).
 // При додаванні нового типу → оновити ТУТ і в registry.
@@ -223,5 +223,51 @@ describe('overlayRegistry · history_card · дії «що далі»', () => {
     const action = { id: 'history.map', label: 'Де це сталося' }
     ;(entry.buildEvents(asset, ctx) as any)['run-action'](action)
     expect(calls).toEqual([[asset, action]])
+  })
+})
+
+// Власник 2026-09-24: «коли вибраний олівець — картка не по вмісткості, тільки
+// вибираю стрілочку — картка нормальна стає». Вимір висоти залежав від
+// `interactive` (інструмент = стрілка), хоча INV-25 п.8 каже лише «клієнт
+// учителя в режимі редагування».
+describe('overlayRegistry · авто-висота не залежить від інструмента (INV-25 п.8)', () => {
+  const ctxBase = {
+    isSelected: () => false, isTutor: true, boardMode: 'edit',
+    disableAnimation: false, expandedId: null, toggleExpand: () => {}, onUpdate: () => {},
+    onDelete: () => {}, onFormulaEdit: () => {}, onSpawnCompanions: () => {},
+    onRequestHeight: () => {}, graph: {} as any,
+  } as any
+  const HEIGHT_CARDS = ['nmt_task', 'theory_card', 'history_card', 'map_card', 'timeline_card']
+
+  it('олівець (interactive=false, canFit=true) → картка міряє', () => {
+    for (const type of HEIGHT_CARDS) {
+      const props = OVERLAY_RENDERERS[type].buildProps(
+        { id: 'a', type, data: {} } as any,
+        { ...ctxBase, interactive: false, canFit: true },
+      )
+      expect(props.canFit, `${type}: з олівцем має міряти`).toBe(true)
+      expect(props.interactive, `${type}: кліки з олівцем не приймає`).toBe(false)
+    }
+  })
+
+  it('Replay або учень (canFit=false) → картка не міряє й операцій не пише', () => {
+    for (const type of HEIGHT_CARDS) {
+      const props = OVERLAY_RENDERERS[type].buildProps(
+        { id: 'a', type, data: {} } as any,
+        { ...ctxBase, interactive: false, canFit: false },
+      )
+      expect(props.canFit, `${type}: у Replay/учня вимір заборонено`).toBe(false)
+    }
+  })
+})
+
+describe('canFitInMode — хто міряє (INV-25 п.8)', () => {
+  it('учитель у редагуванні міряє будь-яким інструментом', () => {
+    expect(canFitInMode('edit', true)).toBe(true)
+  })
+
+  it('Replay і учень не міряють', () => {
+    expect(canFitInMode('replay', true)).toBe(false)
+    expect(canFitInMode('edit', false)).toBe(false)
   })
 })
