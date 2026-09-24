@@ -135,11 +135,11 @@
              finalized → "Запис завершено" badge + "Новий запис" (з confirmation)
              Backend: pause/resume — той самий Replay cycle; restart — новий Replay
              (попередній archived). -->
-        <!-- Поза уроком — щойно запис не в спокої (2026-09-24): жовтої смуги
-             більше немає, тож «Запис завершено» в шапці — єдина позначка, а
-             новий запис, почато з вікна «Як продовжити?», має видимий REC. -->
+        <!-- INV-LESSON-PLAY (MANIFEST, REPLAY_PIPELINE_SSOT §5.2): запис — ЛИШЕ в
+             уроці з «Провести урок». На звичайних дошках запису немає зовсім
+             (2026-09-24 я це правило порушила — показувала бейдж поза уроком). -->
         <WBRecordingBanner
-          v-if="isSessionOwner && (isLessonPlay || soloRecordingState !== 'idle') && !constructorMode"
+          v-if="isSessionOwner && isLessonPlay && !constructorMode"
           :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
@@ -1884,8 +1884,9 @@ const {
   onCancel: onFrozenCancel,
 } = useFrozenEditGuard({
   frozen: isBoardFrozen,
+  // INV-LESSON-PLAY: пропонувати новий запис — лише там, де запис існує (урок).
   active: computed(() =>
-    isBoardFrozen.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value),
+    isBoardFrozen.value && isLessonPlay.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value),
   currentTool: () => store.currentTool,
   setTool: (tool) => store.setTool(tool),
   clearSelection: () => store.clearSelection(),
