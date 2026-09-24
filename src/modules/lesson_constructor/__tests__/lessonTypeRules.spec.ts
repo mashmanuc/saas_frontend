@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   LESSON_TYPE_OPTIONS,
+  LESSON_TYPE_STEP_VISIBLE,
   ancestorsOf,
   canPickTopic,
   focusIssue,
@@ -91,7 +92,10 @@ describe('що заважає згенерувати', () => {
   it('intro + дві теми → пояснення і вихід', () => {
     const msg = focusIssue('intro', [TRIANGLE, CIRCLE])
     expect(msg).toContain('одну тему')
-    expect(msg).toContain('Узагальнення')      // куди йти, а не просто «не можна»
+    // Вихід є, але не через схований крок (власник 2026-09-24): раніше тут
+    // стояло «Узагальнення» — порада, яку нема куди виконати, поки
+    // LESSON_TYPE_STEP_VISIBLE === false.
+    expect(msg).toContain('окремий урок')      // куди йти, а не просто «не можна»
   })
 
   it('generalize + дві споріднені → перешкод немає', () => {
@@ -220,6 +224,18 @@ describe('пара «розділ + його підтема» — код і по
   it('однотемний урок дістає СВОЮ помилку, не про узагальнення', () => {
     expect(focusIssueOf('intro', ['areas', 'areas.circle'])?.code)
       .toBe('focus_single_topic')
+  })
+
+  // Власник 2026-09-24: підказка не має слати до контрола, якого на екрані
+  // немає. Поки крок «Тип уроку» схований, згадка «Узагальнення/Повторення»
+  // веде в нікуди — те саме вже виправлено на боці Інтегралика.
+  it('поки крок типу схований, підказка не шле до нього', () => {
+    const message = focusIssueOf('intro', ['areas', 'areas.circle'])!.message
+    expect(LESSON_TYPE_STEP_VISIBLE).toBe(false)
+    for (const hidden of ['Узагальнення', 'Повторення', 'тип уроку']) {
+      expect(message).not.toContain(hidden)
+    }
+    expect(message).toContain('одну тему')
   })
 
   it('другою темою не можна клікнути власну підтему', () => {
