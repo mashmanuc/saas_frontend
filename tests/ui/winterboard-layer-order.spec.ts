@@ -359,4 +359,33 @@ test('кнопки документа стоять у його куті за б�
     }, step)
     await expect.poll(gap, { message: `зум ${step.zoom}, прокрутка ${step.scroll}` }).toEqual({ right: 4, top: 2 })
   }
+
+  // Як власник на /workspace: виділення КЛІКОМ (чіпляється Transformer) і
+  // справжнє колесо з Ctrl над документом. Саме тут кнопки відставали рівно на
+  // крок масштабу (читались посеред пакета змін Konva).
+  await page.evaluate(async () => {
+    const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+    const store = useWBStore()
+    store.clearSelection()
+  })
+  const center = await page.evaluate(() => {
+    const K = (window as any).Konva
+    const stage = K.stages.find((s: any) => s.findOne('#anchor-doc'))
+    const r = stage.findOne('#anchor-doc').getClientRect()
+    const box = stage.container().getBoundingClientRect()
+    return { x: box.x + r.x + r.width / 2, y: box.y + r.y + r.height / 2 }
+  })
+  await expect(async () => {
+    await page.mouse.click(center.x, center.y)
+    await expect(controls).toHaveAttribute('data-asset-id', 'anchor-doc', { timeout: 500 })
+  }).toPass()
+  await expect.poll(gap).toEqual({ right: 4, top: 2 })
+  for (const delta of [-100, -100, 100, 100, 100]) {
+    await page.mouse.move(center.x, center.y)
+    await page.keyboard.down('Control')
+    await page.mouse.wheel(0, delta)
+    await page.keyboard.up('Control')
+    await page.waitForTimeout(150)
+    expect(await gap(), `Ctrl+колесо ${delta}`).toEqual({ right: 4, top: 2 })
+  }
 })

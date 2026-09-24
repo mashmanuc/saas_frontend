@@ -2211,6 +2211,21 @@ function readControlsNodeFrame(): void {
   }
 }
 
+// Konva оновлює вузол/сцену ПАКЕТОМ (setAttrs → _batchTransformChanges): події
+// xChange/scaleXChange летять ще посеред пакета, а кеш абсолютних позицій
+// скидається лише в його кінці. Читати рамку на самій події — отримати стару
+// (кнопки відставали рівно на крок масштабу; власник 2026-09-24, /workspace).
+// Тому подія лише ставить ОДНЕ перечитування після поточного синхронного кроку.
+let frameReadQueued = false
+function queueControlsFrameRead(): void {
+  if (frameReadQueued) return
+  frameReadQueued = true
+  queueMicrotask(() => {
+    frameReadQueued = false
+    readControlsNodeFrame()
+  })
+}
+
 function unbindControlsNode(): void {
   frameNode?.off('.wbCtl')
   frameStage?.off('.wbCtl')
@@ -2231,11 +2246,11 @@ watch(
       if (node && stage) {
         frameNode = node
         frameStage = stage
-        node.on(NODE_FRAME_EVENTS, readControlsNodeFrame)
-        stage.on('xChange.wbCtl yChange.wbCtl scaleXChange.wbCtl scaleYChange.wbCtl', readControlsNodeFrame)
+        node.on(NODE_FRAME_EVENTS, queueControlsFrameRead)
+        stage.on('xChange.wbCtl yChange.wbCtl scaleXChange.wbCtl scaleYChange.wbCtl', queueControlsFrameRead)
       }
     }
-    readControlsNodeFrame()
+    queueControlsFrameRead()
   },
   { flush: 'post', immediate: true },
 )
