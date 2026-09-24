@@ -62,5 +62,11 @@ export function isPaletteHiddenRoute({ name, path, meta }) {
   // Виняток один і названий: /workspace — це РЕДАГОВАНА демо-дошка (гість
   // малює у своїй), а не перегляд чужого; палітра там доречна.
   if (meta && meta.public === true && name !== 'local-workspace') return true
+  // 2026-09-24, знахідка власника: маскот висів і над ВЛАСНИМ записом уроку
+  // (`/winterboard/replay/:replayId` — той самий плеєр WBPublicView, але
+  // приватний маршрут, тож гейт `meta.public` його не ловив). Перегляд запису
+  // — не редагування дошки. Позначка `meta.viewOnly` — на маршруті, щоб
+  // наступна сторінка перегляду ховала палітру тим самим прапорцем.
+  if (meta && meta.viewOnly === true) return true
   return false
 }

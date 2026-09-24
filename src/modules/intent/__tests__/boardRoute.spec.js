@@ -9,6 +9,7 @@
  * Обидва тут як тести, щоб не повторились «за аналогією».
  */
 import { describe, it, expect } from 'vitest'
+import winterboardRoutes from '@/modules/winterboard/router'
 import {
   resolveBoardId,
   isPaletteHiddenRoute,
@@ -89,6 +90,15 @@ describe('isPaletteHiddenRoute', () => {
 
   it('виняток названий: /workspace — редагована демо-дошка, палітра доречна', () => {
     expect(isPaletteHiddenRoute({ name: 'local-workspace', path: '/workspace', meta: { public: true } })).toBe(false)
+  })
+
+  it('власний запис уроку (приватний плеєр) — палітри немає', () => {
+    // 2026-09-24: той самий WBPublicView, але маршрут приватний → meta.public
+    // немає, і маскот висів над плеєром. Беремо meta з САМОГО роутера, а не
+    // переписуємо руками, — інакше тест не помітив би, що позначку зняли.
+    const route = winterboardRoutes.find((r) => r.name === 'winterboard-replay-owner')
+    expect(route, 'маршрут власного запису зник або перейменований').toBeTruthy()
+    expect(isPaletteHiddenRoute({ name: route.name, path: '/winterboard/replay/abc', meta: route.meta })).toBe(true)
   })
 
   it('приватна сторінка (без meta.public) лишається видимою', () => {

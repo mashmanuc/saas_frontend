@@ -172,7 +172,9 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     name: 'winterboard-replay-owner',
     component: () => import('./views/WBPublicView.vue'),
     props: true,
-    meta: { title: 'Мій запис уроку', roles: ['tutor'] },
+    // viewOnly: перегляд завершеного запису — палітра Інтегралика тут
+    // безпредметна (boardRoute.isPaletteHiddenRoute; власник 2026-09-24).
+    meta: { title: 'Мій запис уроку', roles: ['tutor'], viewOnly: true },
   },
   {
     // Replay Lifecycle v4.1: 🪦 landing для trashed replays (HTTP 410 Gone)
