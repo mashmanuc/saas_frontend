@@ -25,7 +25,7 @@
     :data-testid="`nmt3d-renderer-${asset.id}`"
   >
     <!-- Header — pointer-events:none so card dragging works outside mode toggle -->
-    <header class="nmt3d-header">
+    <header class="nmt3d-header" :style="hostControlsReserve ? { paddingRight: `${hostControlsReserve}px` } : undefined">
       <span class="nmt3d-card-title">{{ cardTitle }}</span>
 
       <!-- Expand / collapse — always visible, pointer-events:auto overrides header none -->
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { useHostWindowControls, useHostControlsReserve } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Nmt3dAsset } from '../../../types/nmt3d'
@@ -617,6 +617,9 @@ watch(
 
 // TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
 const hostWindowControls = useHostWindowControls()
+// Спільна група «— ⛶ ×» сідає в правий край шапки — звільняємо під неї місце
+// (ширину міряє полотно; 0, якщо група не на цій картці). Власник 2026-09-24.
+const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
 </script>
 
 <style scoped>

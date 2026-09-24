@@ -736,6 +736,8 @@
          куті виділеної (або розгорнутої) картки. Які дії доступні — board/windowActions.ts. -->
     <WBCardWindowControls
       v-if="windowControlsTarget"
+      ref="windowControlsRef"
+      :class="{ 'wb-card-window-controls--header': expandedAssetId !== windowControlsTarget.id }"
       :data-asset-id="windowControlsTarget.id"
       :style="windowControlsStyle"
       :actions="windowControlsActions"
@@ -928,9 +930,8 @@ import { OVERLAY_PROXY_TYPES, assetCapabilities, isMinimizedOnBoard, isResizable
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
-import { obstaclesRelativeTo } from '../../board/floatingObstacles'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
-import { provideHostWindowControls } from '../../composables/boardWindowControls'
+import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
 import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -1605,15 +1606,39 @@ const windowControlsStyle = computed<Record<string, string>>(() => {
     return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px` }
   }
   const frame = getOverlayStyle(asset)
-  // Вікно Інтегралика над полотном — туди кнопки не ставимо (floatingObstacles).
-  const fieldRect = containerRef.value?.getBoundingClientRect()
-  const obstacles = fieldRect ? obstaclesRelativeTo(fieldRect) : []
+  // У шапці картки, праворуч (власник 2026-09-24: збоку — «як апендицити»).
   return windowControlsPlacement(
     { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
-    containerWidth.value,
-    obstacles,
   )
 })
+
+// Скільки місця група займає в шапці картки — заміряно з DOM (група буває
+// «— ⛶ ×» і «A− 100% A+ │ — ⛶ ×»). Картки з власними кнопками в правому краї
+// шапки звільняють це місце (useHostControlsReserve), щоб не лягати під групу.
+const windowControlsRef = ref<{ $el?: HTMLElement } | null>(null)
+const windowControlsWidth = ref(0)
+let windowControlsRo: ResizeObserver | null = null
+watch(
+  () => windowControlsRef.value?.$el,
+  (el) => {
+    windowControlsRo?.disconnect()
+    windowControlsRo = null
+    if (!el) { windowControlsWidth.value = 0; return }
+    const measure = () => { windowControlsWidth.value = el.offsetWidth }
+    measure()
+    if (typeof ResizeObserver !== 'undefined') {
+      windowControlsRo = new ResizeObserver(measure)
+      windowControlsRo.observe(el)
+    }
+  },
+  { flush: 'post' },
+)
+onUnmounted(() => windowControlsRo?.disconnect())
+provideHostControlsSlot(computed(() => {
+  const t = windowControlsTarget.value
+  if (!t || expandedAssetId.value === t.id || !windowControlsWidth.value) return { assetId: null, width: 0 }
+  return { assetId: t.id, width: windowControlsWidth.value + WINDOW_CONTROLS_INSET_PX }
+}))
 
 function handleWindowExpand(assetId: string): void {
   // Та сама поведінка, що й ⛶ у картці: перемикач, розгорнута картка виділена.

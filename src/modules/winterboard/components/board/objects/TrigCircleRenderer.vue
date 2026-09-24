@@ -33,7 +33,7 @@
     }"
     :data-testid="`trig-circle-renderer-${asset.id}`"
   >
-    <header class="trig-circle-header">
+    <header class="trig-circle-header" :style="hostControlsReserve ? { paddingRight: `${hostControlsReserve}px` } : undefined">
       <span class="trig-circle-title">{{ t('winterboard.trigCircle.cardTitle') }}</span>
       <!-- HUD toggle — show/hide values overlay (θ, sin, cos, tg, ctg) -->
       <button
@@ -184,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { useHostWindowControls, useHostControlsReserve } from '../../../composables/boardWindowControls'
 import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TrigCircleAsset, TrigCircleData } from '../../../types/trigCircle'
@@ -560,6 +560,9 @@ function onDelete(): void { emit('delete') }
 
 // TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
 const hostWindowControls = useHostWindowControls()
+// Спільна група «— ⛶ ×» сідає в правий край шапки — звільняємо під неї місце
+// (ширину міряє полотно; 0, якщо група не на цій картці). Власник 2026-09-24.
+const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
 </script>
 
 <style scoped>

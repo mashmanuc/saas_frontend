@@ -43,7 +43,7 @@
       </div>
     </Transition>
 
-    <header class="gc-header">
+    <header class="gc-header" :style="hostControlsReserve ? { paddingRight: `${hostControlsReserve}px` } : undefined">
       <span class="gc-title">f(x)</span>
       <!-- Expand to fill board canvas (mirrors nmt3d/trig_circle/helix pattern).
            Незалежна від presenting mode — expand завжди доступний. -->
@@ -354,7 +354,7 @@
 </template>
 
 <script setup lang="ts">
-import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { useHostWindowControls, useHostControlsReserve } from '../../../composables/boardWindowControls'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GraphCalculator, GraphCalc } from '../../../vendor/graph_calculator/graph-calculator.js'
@@ -1663,6 +1663,9 @@ defineExpose({
 
 // TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.
 const hostWindowControls = useHostWindowControls()
+// Спільна група «— ⛶ ×» сідає в правий край шапки — звільняємо під неї місце
+// (ширину міряє полотно; 0, якщо група не на цій картці). Власник 2026-09-24.
+const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
 </script>
 
 <style scoped>

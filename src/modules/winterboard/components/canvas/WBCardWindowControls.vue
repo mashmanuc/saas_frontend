@@ -125,6 +125,23 @@ const { t } = useI18n({ useScope: 'global' })
   pointer-events: auto;
 }
 
+/* У шапці картки (2026-09-24): без плашки — кнопки як у рядку вікна. */
+.wb-card-window-controls--header {
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.wb-card-window-controls--header .wb-card-window-controls__btn {
+  width: 20px;
+  height: 20px;
+  font-size: 13px;
+}
+.wb-card-window-controls--header .wb-card-window-controls__btn--label {
+  width: auto;
+}
+
 .wb-card-window-controls__btn {
   width: 24px;
   height: 24px;
