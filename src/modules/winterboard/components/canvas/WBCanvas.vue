@@ -896,6 +896,18 @@
       />
     </div>
 
+    <!-- Смуги прокрутки аркуша (2026-09-24): видно, що аркуш прогорнуто й куди.
+         Лише там, де аркуш гортається (stageFollowsScroll — WBSoloRoom). -->
+    <WBSheetScrollbars
+      v-if="wbStore.stageFollowsScroll"
+      :scroll-x="wbStore.scrollX"
+      :scroll-y="wbStore.scrollY"
+      :content-w="props.width * props.zoom"
+      :content-h="props.height * props.zoom"
+      :view-w="containerWidth"
+      :view-h="containerHeight"
+      @scroll="onSheetScrollbar"
+    />
   </div>
 </template>
 
@@ -906,6 +918,7 @@
 
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
+import WBSheetScrollbars from './WBSheetScrollbars.vue'
 import { useI18n } from 'vue-i18n'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
@@ -5069,6 +5082,12 @@ function clampScrollFor(x: number, y: number, zoom: number): { x: number; y: num
   const maxX = Math.max(0, props.width * zoom - (containerWidth.value || 0))
   const maxY = Math.max(0, props.height * zoom - (containerHeight.value || 0))
   return { x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) }
+}
+
+/** Смуга прокрутки аркуша — той самий кламп і той самий канал scroll-change. */
+function onSheetScrollbar(x: number, y: number): void {
+  const c = clampScroll(x, y)
+  if (c.x !== wbStore.scrollX || c.y !== wbStore.scrollY) emit('scroll-change', c.x, c.y)
 }
 
 /** Для кімнати: той самий кламп для пану двома пальцями й follow-mode. */

@@ -82,6 +82,8 @@ export function useFrozenEditGuard(opts: FrozenEditGuardOptions) {
 
   function onCanvasEvent(e: Event): void {
     if (!opts.active.value) return
+    // Лише вигляд (смуги прокрутки аркуша) — не спроба змінити дошку.
+    if ((e.target as Element | null)?.closest?.('[data-wb-view-control]')) return
     if (!shouldInterceptCanvasEvent(e as unknown as PointerLike)) return
     e.preventDefault()
     e.stopPropagation()
