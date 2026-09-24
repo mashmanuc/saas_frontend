@@ -214,7 +214,8 @@ describe('INV-WIN-6 · полотно: одна група, правий вер�
   })
 
   it('дії — спільним правилом; запис — штатними шляхами', () => {
-    expect(canvas).toMatch(/<WBCardWindowControls\s+v-if="windowControlsTarget"/)
+    expect(canvas).toMatch(/<Teleport v-if="windowControlsTarget"[^>]+:disabled="!windowControlsOverlayHost"/)
+    expect(canvas).toContain('<WBCardWindowControls')
     expect(canvas).toContain('@minimize="handleMinimize(windowControlsTarget)"')
     expect(canvas).toMatch(/function handleWindowDelete\(assetId: string\): void \{[\s\S]*?emit\('asset-delete', assetId\)/)
   })

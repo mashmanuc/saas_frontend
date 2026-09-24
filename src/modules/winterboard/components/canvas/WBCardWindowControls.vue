@@ -113,7 +113,7 @@ const { t } = useI18n({ useScope: 'global' })
 <style scoped>
 .wb-card-window-controls {
   position: absolute;
-  z-index: 55;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 2px;

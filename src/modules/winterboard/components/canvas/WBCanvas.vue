@@ -734,20 +734,21 @@
 
     <!-- TLV2-05B.2: віконні дії картки «— ⛶ ×» — ОДНА група на полотно, у правому верхньому
          куті виділеної (або розгорнутої) картки. Які дії доступні — board/windowActions.ts. -->
-    <WBCardWindowControls
-      v-if="windowControlsTarget"
-      ref="windowControlsRef"
-      :class="{ 'wb-card-window-controls--header': expandedAssetId !== windowControlsTarget.id }"
-      :data-asset-id="windowControlsTarget.id"
-      :style="windowControlsStyle"
-      :actions="windowControlsActions"
-      :is-expanded="expandedAssetId === windowControlsTarget.id"
-      :scale="presentationScaleOf(windowControlsTarget)"
-      @scale="(direction: -1 | 0 | 1) => handleWindowScale(windowControlsTarget, direction)"
-      @minimize="handleMinimize(windowControlsTarget)"
-      @expand="handleWindowExpand(windowControlsTarget.id)"
-      @delete="handleWindowDelete(windowControlsTarget.id)"
-    />
+    <Teleport v-if="windowControlsTarget" :to="windowControlsOverlayHost ?? 'body'" :disabled="!windowControlsOverlayHost">
+      <WBCardWindowControls
+        ref="windowControlsRef"
+        :class="{ 'wb-card-window-controls--header': expandedAssetId !== windowControlsTarget.id }"
+        :data-asset-id="windowControlsTarget.id"
+        :style="windowControlsStyle"
+        :actions="windowControlsActions"
+        :is-expanded="expandedAssetId === windowControlsTarget.id"
+        :scale="presentationScaleOf(windowControlsTarget)"
+        @scale="(direction: -1 | 0 | 1) => handleWindowScale(windowControlsTarget, direction)"
+        @minimize="handleMinimize(windowControlsTarget)"
+        @expand="handleWindowExpand(windowControlsTarget.id)"
+        @delete="handleWindowDelete(windowControlsTarget.id)"
+      />
+    </Teleport>
 
     <!-- TLV2-05B: нижній трей згорнутих карток ПОТОЧНОЇ сторінки (лише вчителю). -->
     <WBBoardTray
@@ -783,6 +784,7 @@
     <canvas
       ref="strokesOverlayRef"
       class="wb-strokes-overlay"
+      :style="{ visibility: nativeFront ? 'hidden' : 'visible' }"
     />
 
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
@@ -926,10 +928,11 @@ import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
 // TLV2-05A: стандарт об'єктів — одне джерело правди про можливості типу.
-import { OVERLAY_PROXY_TYPES, assetCapabilities, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
+import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
-import { windowControlsPlacement, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
+import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
+import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
 import { isAssetSelectable } from '../../board/selectableObjects'
@@ -1010,7 +1013,7 @@ import WBBoardTray from './WBBoardTray.vue'
 import WBCardWindowControls from './WBCardWindowControls.vue'
 import { useExpandedAssetSelection } from '../../composables/useExpandedAssetSelection'
 import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
-import { isOverlayType } from './overlayRegistry'
+import { isOverlayType, OVERLAY_RENDERERS } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -1592,39 +1595,90 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
   return hasWindowActions(cardWindowActions(asset, trayViewer.value)) ? asset : null
 })
 
+// HTML-картки та медіа мають власний DOM stacking context. Кнопки повинні бути
+// їхньою дитиною, а не окремим верхнім шаром полотна: інакше нижня картка
+// «протикає» кнопками будь-яку картку поверх неї.
+const windowControlsOverlayHost = shallowRef<HTMLElement | null>(null)
+watch([windowControlsTarget, assets], async () => {
+  await nextTick()
+  const asset = windowControlsTarget.value
+  const render = assetStandard(asset?.type)?.render
+  if (!asset || (render !== 'overlay' && render !== 'media')) {
+    windowControlsOverlayHost.value = null
+    return
+  }
+  const attribute = render === 'media' ? 'data-media-id' : OVERLAY_RENDERERS[asset.type]?.dataAttr
+  const root = containerRef.value
+  windowControlsOverlayHost.value = attribute && root
+    ? [...root.querySelectorAll<HTMLElement>(`[${attribute}]`)]
+        .find((el) => el.getAttribute(attribute) === asset.id) ?? null
+    : null
+}, { flush: 'post', immediate: true })
+
 const windowControlsActions = computed(() =>
   cardWindowActions(windowControlsTarget.value, trayViewer.value))
 
-/**
- * Правий верхній кут картки — зовні, щоб кнопки не лягали на вміст
- * (див. windowControlsPlacement); для розгорнутої — правий верхній кут полотна.
- */
+const windowControlsWidth = ref(0)
+const windowControlsHeight = ref(0)
+const areWindowControlsCovered = computed(() => {
+  const target = windowControlsTarget.value
+  if (!target || expandedAssetId.value === target.id) return false
+  const index = assets.value.findIndex((asset) => asset.id === target.id)
+  if (index < 0) return false
+  return windowControlsCovered(
+    { left: target.x, top: target.y, width: target.w, height: target.h, rotation: target.rotation },
+    assets.value.slice(index + 1)
+      .filter((asset) => !isMinimizedOnBoard(asset))
+      .map((asset) => ({ left: asset.x, top: asset.y, width: asset.w, height: asset.h, rotation: asset.rotation })),
+    props.zoom,
+    windowControlsWidth.value || 60,
+    windowControlsHeight.value || 24,
+  )
+})
+
+/** Правий верхній кут картки; для HTML-картки — усередині її власного шару. */
 const windowControlsStyle = computed<Record<string, string>>(() => {
   const asset = windowControlsTarget.value
   if (!asset) return {}
+  const render = assetStandard(asset.type)?.render ?? 'konva'
+  const zIndex = windowControlsZIndex(render, expandedAssetId.value === asset.id, nativeFront.value)
+  const visibility = areWindowControlsCovered.value
+    || ((render === 'overlay' || render === 'media') && !windowControlsOverlayHost.value)
+    ? 'hidden' : 'visible'
+  if (windowControlsOverlayHost.value) {
+    return {
+      top: `${WINDOW_CONTROLS_INSET_PX}px`,
+      right: `${WINDOW_CONTROLS_INSET_PX}px`,
+      transform: 'none',
+      zIndex: 'auto',
+      visibility,
+    }
+  }
   if (expandedAssetId.value === asset.id) {
-    return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px` }
+    return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px`, zIndex, visibility }
   }
   const frame = getOverlayStyle(asset)
   // У шапці картки, праворуч (власник 2026-09-24: збоку — «як апендицити»).
-  return windowControlsPlacement(
+  return { ...windowControlsPlacement(
     { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
-  )
+  ), zIndex, visibility }
 })
 
 // Скільки місця група займає в шапці картки — заміряно з DOM (група буває
 // «— ⛶ ×» і «A− 100% A+ │ — ⛶ ×»). Картки з власними кнопками в правому краї
 // шапки звільняють це місце (useHostControlsReserve), щоб не лягати під групу.
 const windowControlsRef = ref<{ $el?: HTMLElement } | null>(null)
-const windowControlsWidth = ref(0)
 let windowControlsRo: ResizeObserver | null = null
 watch(
   () => windowControlsRef.value?.$el,
   (el) => {
     windowControlsRo?.disconnect()
     windowControlsRo = null
-    if (!el) { windowControlsWidth.value = 0; return }
-    const measure = () => { windowControlsWidth.value = el.offsetWidth }
+    if (!el) { windowControlsWidth.value = 0; windowControlsHeight.value = 0; return }
+    const measure = () => {
+      windowControlsWidth.value = el.offsetWidth
+      windowControlsHeight.value = el.offsetHeight
+    }
     measure()
     if (typeof ResizeObserver !== 'undefined') {
       windowControlsRo = new ResizeObserver(measure)
@@ -2121,6 +2175,24 @@ const liveTransform = ref<LiveOverlayTransform | null>(null)
 
 // A6.1: Loading state — true after Konva is ready
 const konvaReady = ref(false)
+
+// PDF/зображення й HTML-картка мають один логічний порядок у page.assets[].
+// Konva збирає ВСІ нативні асети в один canvas, тож піднімаємо його лише для
+// представимого випадку: вся нативна група стоїть після HTML-групи.
+const nativeFront = computed(() => nativeAssetsAboveOverlays(assets.value))
+watch([nativeFront, konvaReady, () => wbStore.selectedIds], async () => {
+  await nextTick()
+  const assetsCanvas = assetsLayerRef.value?.getNode?.()?.getCanvas()?._canvas
+  const strokesCanvas = strokesLayerRef.value?.getNode?.()?.getCanvas()?._canvas
+  const previewCanvas = previewLayerRef.value?.getNode?.()?.getCanvas()?._canvas
+  const uiCanvas = uiLayerRef.value?.getNode?.()?.getCanvas()?._canvas
+  if (assetsCanvas) assetsCanvas.style.zIndex = nativeFront.value ? '6' : ''
+  if (strokesCanvas) strokesCanvas.style.zIndex = nativeFront.value ? '7' : ''
+  if (previewCanvas) previewCanvas.style.zIndex = nativeFront.value ? '8' : ''
+  const selectedNative = wbStore.selectedIds.some((id) =>
+    assetStandard(assets.value.find((asset) => asset.id === id)?.type)?.render === 'konva')
+  if (uiCanvas) uiCanvas.style.zIndex = nativeFront.value && selectedNative ? '9' : ''
+}, { flush: 'post' })
 
 // A6.3: Container dimensions for responsive sizing
 const containerWidth = ref(0)
