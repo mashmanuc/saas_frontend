@@ -20,7 +20,8 @@
       this.renderer = new Renderer(this.container, this.con,
         // i18n прокидається до рендерера — саме він малює formula-плашки.
         Object.assign({}, this.preset.defaults || {},
-                      this.i18n ? { i18n: this.i18n } : {}));
+                      this.i18n ? { i18n: this.i18n } : {},
+                      { fitReserve: () => this._reserveObjects() }));
       // apply toggles with defaults
       (this.preset.toggles || []).forEach((t) => {
         const on = !!t.default;
@@ -32,6 +33,37 @@
       this.renderer.onChange = () => {
         if (this.onPointMove) this.onPointMove(this._getFreePoints());
       };
+    }
+
+    /**
+     * Об'єкти, під які рендерер резервує місце у видимому полі (2026-09-24).
+     *
+     * Дефект із живої дошки власника: кожен render() заново вписує поле в межі
+     * НАМАЛЬОВАНОГО. Описане коло більше за трикутник — тож «Описане» зменшувало
+     * й зсувало всю фігуру, а зняття — повертало назад («фігура скаче»). Те саме
+     * з висотами тупокутного (основи й H — поза трикутником).
+     *
+     * Тепер поле рахується так, ніби УСІ побудови пресета ввімкнені: тіньова
+     * конструкція з тими самими вільними точками. Перемикачі більше не рухають
+     * фігуру; поле змінюється лише від перетягування точок і розміру картки.
+     */
+    _reserveObjects() {
+      const togs = this.preset.toggles || [];
+      if (!togs.length) return [];
+      const shadow = new Construction();
+      this.preset.build(shadow);
+      // recompute ПЕРЕД кожним setTo: точка «на прямій» (C трапеції) проєктує
+      // себе на пряму з похідних точок, а до recompute їх ще немає — коло в
+      // резерві виходило іншим, ніж на екрані (знайшов тест усіх пресетів).
+      shadow.recompute();
+      for (const o of this.con.objects) {
+        if (!o.movable || typeof o.x !== 'number' || typeof o.y !== 'number') continue;
+        const s = shadow.get(o.id);
+        if (s && typeof s.setTo === 'function') { s.setTo(o.x, o.y, shadow); shadow.recompute(); }
+      }
+      togs.forEach((t) => t.apply(shadow, true));
+      shadow.recompute();
+      return shadow.objects;
     }
 
     /** Returns {id: {x,y}} for every movable point in the current construction. */
@@ -100,6 +132,11 @@
         const next = !card.toggleState[t.key];
         card.setToggle(t.key, next);
         b.classList.toggle('active', next);
+        // Збереження — ПІСЛЯ зміни стану, у тому ж обробнику (2026-09-24).
+        // Раніше обгортка слухала тулбар у capture і читала стан у мікрозадачі;
+        // на справжньому кліку мікрозадача виконується МІЖ слухачами, тобто ДО
+        // цього обробника → зберігався попередній стан (другий клік «вмикав»).
+        if (typeof card.onUserToggle === 'function') card.onUserToggle();
       });
       bar.appendChild(b);
     });
@@ -133,7 +170,16 @@
     replay.className = 'tool replay';
     replay.setAttribute('data-key', 'reset');
     replay.innerHTML = '<span class="tool-icon">↻</span><span class="tool-label">Скинути</span>';
-    replay.addEventListener('click', (e) => { e.stopPropagation(); card.rebuild(); });
+    replay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      card.rebuild();
+      // rebuild повертає перемикачі до дефолтів — підсвітка кнопок теж.
+      bar.querySelectorAll('button.tool[data-key]').forEach((btn) => {
+        const k = btn.getAttribute('data-key');
+        if (k in card.toggleState) btn.classList.toggle('active', !!card.toggleState[k]);
+      });
+      if (typeof card.onUserToggle === 'function') card.onUserToggle();
+    });
     bar.appendChild(replay);
     return bar;
   }

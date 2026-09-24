@@ -116,7 +116,6 @@ describe('клік по перемикачу старої картки', () => {
     const w = await mountCard(asset)
 
     await toolButton(w, key).trigger('click')
-    // Рендерер читає стан vendor-а у мікрозадачі — дочекаємось її.
     await Promise.resolve()
     await flushPromises()
 
@@ -164,6 +163,36 @@ describe('клік по перемикачу старої картки', () => {
 
     const second = (w.emitted('update:asset') as any[])[1][0]
     expect(second.data.toggles).toEqual({ medians: true, altitudes: true, bisectors: false })
+    w.unmount()
+  })
+})
+
+describe('порядок подій справжнього кліку (2026-09-24)', () => {
+  // На справжньому кліку браузер виконує мікрозадачі МІЖ слухачами. Стара
+  // обгортка читала стан vendor-а в мікрозадачі з capture-слухача — тобто ДО
+  // обробника кнопки — і зберігала попередній стан: «Описане» вмикалось з
+  // другого кліку й у стан дошки не потрапляло. Програмний `trigger('click')`
+  // тримає мікрозадачі до кінця dispatch, тому тести вище цього не бачили.
+  // Звідси вимога: патч народжується СИНХРОННО, у тому ж dispatch, і вже з
+  // новим значенням — тоді порядок мікрозадач не має значення.
+  it('update:asset з новим значенням — одразу в dispatch кліку, без мікрозадач', async () => {
+    const w = await mountCard(oldCard())
+    ;(toolButton(w, 'medians').element as HTMLButtonElement).click()
+    const emitted = w.emitted('update:asset') as any[] | undefined
+    expect(emitted, 'патч чекає мікрозадачі — на живому кліку збережеться старий стан').toBeTruthy()
+    expect(emitted![0][0].data.toggles.medians).toBe(true)
+    w.unmount()
+  })
+
+  it('«Скинути» теж зберігає стан одразу — дефолтні перемикачі', async () => {
+    const asset = oldCard()
+    ;(asset as any).data.toggles = { medians: true }
+    const w = await mountCard(asset)
+    ;(w.find('button.tool[data-key="reset"]').element as HTMLButtonElement).click()
+    const emitted = w.emitted('update:asset') as any[] | undefined
+    expect(emitted).toBeTruthy()
+    expect(emitted![emitted!.length - 1][0].data.toggles.medians).toBe(false)
+    expect(toolButton(w, 'medians').classes()).not.toContain('active')
     w.unmount()
   })
 })

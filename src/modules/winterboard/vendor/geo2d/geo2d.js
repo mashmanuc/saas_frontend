@@ -510,7 +510,10 @@
       const onlyPts = this.con.objects.filter((o) => typeof o.x === 'number' && typeof o.y === 'number' && o.kind.includes('point') === false ? true : o.x !== undefined);
       // safer: just iterate true point-like
       let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity, any = false;
-      for (const o of this.con.objects) {
+      // Межі рахуються по намальованому + по зарезервованому (GeoCard.fitReserve:
+      // усі побудови пресета ввімкнені) — щоб перемикачі не рухали фігуру.
+      const reserve = typeof this.opts.fitReserve === 'function' ? this.opts.fitReserve() : [];
+      for (const o of this.con.objects.concat(reserve)) {
         if (typeof o.x === 'number' && typeof o.y === 'number' && o.kind !== 'segment' && o.kind !== 'line' && o.kind !== 'ray' && o.kind !== 'circle' && o.kind !== 'polygon' && !o.kind.endsWith('label') && o.kind !== 'angle_arc' && o.kind !== 'right_angle' && o.kind !== 'distance_line' && o.kind !== 'square_out' && o.kind !== 'formula') {
           xmin = Math.min(xmin, o.x); xmax = Math.max(xmax, o.x);
           ymin = Math.min(ymin, o.y); ymax = Math.max(ymax, o.y);

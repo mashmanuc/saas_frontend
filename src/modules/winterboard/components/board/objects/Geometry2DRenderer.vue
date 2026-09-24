@@ -252,35 +252,27 @@ function wirePointMovePersistence(): void {
 }
 
 function wireToolbarPersistence(): void {
-  if (!toolbarEl || !card) return
-  toolbarEl.addEventListener(
-    'click',
-    (e) => {
-      const btn = (e.target as HTMLElement | null)?.closest('button.tool') as HTMLElement | null
-      if (!btn || !card) return
-      const key = btn.dataset.key
-      if (!key) return
-      queueMicrotask(() => {
-        if (!card) return
-        const nextToggles = { ...(props.asset.data.toggles || {}), ...card.toggleState }
-        emitDataPatch({ toggles: nextToggles })
-      })
-    },
-    // ⚠️ CAPTURE, не bubble. Кожна кнопка тулбара має ВЛАСНИЙ обробник, який
-    // першою дією робить `e.stopPropagation()` (vendor `geo2d-card.js`,
-    // makeGeoToolbar). У фазі спливання подія до тулбара вже не доходила, тож
-    // цей слухач не спрацьовував ЖОДНОГО разу: механізм був увесь на місці —
-    // слухач, `emitDataPatch`, `applyPersistedToggles` — і перемикачі все одно
-    // не зберігались. Перехоплення відбувається ДО обробника кнопки, а стан
-    // vendor-а ми читаємо у `queueMicrotask` — тобто вже після нього.
-    true,
-  )
+  if (!card) return
+  // vendor кличе `onUserToggle` у ВЛАСНОМУ обробнику кнопки, ПІСЛЯ зміни стану
+  // (перемикач або «Скинути»). Історія (2026-09-24, живий клік власника):
+  // до цього слухали тулбар у capture і читали стан у `queueMicrotask`. На
+  // справжньому кліку браузер виконує мікрозадачі МІЖ слухачами — тобто ДО
+  // обробника кнопки: зберігався ПОПЕРЕДНІЙ стан, дошка його ж і відновлювала,
+  // і «Описане» вмикалось лише з другого кліку (і в стан так і не потрапляло).
+  // Тест із програмним `trigger('click')` цього не бачив: там мікрозадачі
+  // чекають до кінця dispatch.
+  card.onUserToggle = () => {
+    if (!card) return
+    const nextToggles = { ...(props.asset.data.toggles || {}), ...card.toggleState }
+    emitDataPatch({ toggles: nextToggles })
+  }
 }
 
 function destroyCard(): void {
   if (_pointMoveTimer) { clearTimeout(_pointMoveTimer); _pointMoveTimer = null }
   if (card) {
     card.onPointMove = null
+    card.onUserToggle = null
     try { card.destroy() } catch { /* idempotent */ }
     card = null
   }

@@ -52,7 +52,7 @@ export interface GeoPresetMeta {
 export interface GeoCardInstance {
   /**
    * Live snapshot of all toggle keys → current boolean state.
-   * Read-only from renderer perspective (wireToolbarPersistence reads after click).
+   * Read-only from renderer perspective (wireToolbarPersistence reads it in `onUserToggle`).
    */
   readonly toggleState: Record<string, boolean>
 
@@ -76,6 +76,13 @@ export interface GeoCardInstance {
    * Reset to `null` on destroy to avoid stale closure leaks.
    */
   onPointMove: ((points: Record<string, { x: number; y: number }>) => void) | null
+
+  /**
+   * Called by the bundle's toolbar AFTER the user flipped a toggle or pressed
+   * «Скинути» — inside the button's own handler, so `toggleState` is already new.
+   * Set by `wireToolbarPersistence`; reset to `null` on destroy.
+   */
+  onUserToggle: (() => void) | null
 
   /** Tear down the JSXGraph board and all event listeners. Idempotent. */
   destroy(): void
