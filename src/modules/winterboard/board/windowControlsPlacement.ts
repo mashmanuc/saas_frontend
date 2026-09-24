@@ -32,6 +32,22 @@ export interface CardRect extends CardFrame {
   rotation?: number
 }
 
+/** Порядок видимих шарів, а не лише порядок у масиві assets.
+ * HTML-картки живуть над звичайним Konva canvas навіть тоді, коли PDF
+ * записаний у масиві пізніше за картку. */
+export function isVisuallyAbove(
+  selectedRender: 'konva' | 'overlay' | 'media',
+  selectedIndex: number,
+  candidateRender: 'konva' | 'overlay' | 'media',
+  candidateIndex: number,
+  nativeFront: boolean,
+): boolean {
+  const layer = (render: 'konva' | 'overlay' | 'media') =>
+    render === 'media' ? 2 : render === 'konva' ? (nativeFront ? 1 : 0) : (nativeFront ? 0 : 1)
+  return layer(candidateRender) > layer(selectedRender)
+    || (layer(candidateRender) === layer(selectedRender) && candidateIndex > selectedIndex)
+}
+
 /** Верхня картка закриває дії нижньої, навіть якщо її тло напівпрозоре. */
 export function windowControlsCovered(
   target: CardRect,

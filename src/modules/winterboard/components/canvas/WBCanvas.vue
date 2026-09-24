@@ -931,7 +931,7 @@ import { useWBStore } from '../../board/state/boardStore'
 import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
-import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
+import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
@@ -1625,10 +1625,12 @@ const areWindowControlsCovered = computed(() => {
   if (!target || expandedAssetId.value === target.id) return false
   const index = assets.value.findIndex((asset) => asset.id === target.id)
   if (index < 0) return false
+  const targetRender = assetStandard(target.type)?.render ?? 'konva'
   return windowControlsCovered(
     { left: target.x, top: target.y, width: target.w, height: target.h, rotation: target.rotation },
-    assets.value.slice(index + 1)
-      .filter((asset) => !isMinimizedOnBoard(asset))
+    assets.value
+      .filter((asset, candidateIndex) => !isMinimizedOnBoard(asset)
+        && isVisuallyAbove(targetRender, index, assetStandard(asset.type)?.render ?? 'konva', candidateIndex, nativeFront.value))
       .map((asset) => ({ left: asset.x, top: asset.y, width: asset.w, height: asset.h, rotation: asset.rotation })),
     props.zoom,
     windowControlsWidth.value || 60,
@@ -2556,6 +2558,9 @@ const selectionIndicators = computed(() => {
 
   for (const asset of page.assets) {
     if (!ids.has(asset.id)) continue
+    // У нативного переглядача Transformer вже малює рамку. Друга рамка
+    // лишалась на старому місці під час drag і виглядала як «тінь» DOCX/PDF.
+    if (asset.type === 'document_viewer' && selectedNode.value?.id() === asset.id) continue
     // Media assets get CSS ring from wb-media-overlay--selected, skip Konva indicator for them
     if (asset.type === 'audio_player' || asset.type === 'video_player' || asset.type === 'youtube_player') continue
     const bbox = getAssetBBox(asset)

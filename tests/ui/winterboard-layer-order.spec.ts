@@ -116,3 +116,79 @@ test('кнопки HTML-картки живуть усередині її вла
   await controls.locator('[data-testid="wb-card-window-minimize"]').click()
   await expect(page.locator('[data-theory-card-id="upper"]')).toHaveCSS('display', 'none')
 })
+
+test('кнопки PDF не проступають крізь HTML-картку, навіть коли PDF пізніше у списку', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+  await page.goto('/workspace')
+  await expect(page.locator('.wb-canvas')).toBeVisible()
+  await page.evaluate(async () => {
+    const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+    const store = useWBStore()
+    const current = store.currentPage
+    if (!current) throw new Error('Немає сторінки')
+    store.pages[store.currentPageIndex] = {
+      ...current,
+      assets: [
+        { id: 'earlier-native', type: 'image', src: '', x: 20, y: 20, w: 50, h: 50, rotation: 0, locked: false },
+        { id: 'upper-card', type: 'theory_card', src: '', x: 280, y: 120, w: 400, h: 300,
+          rotation: 0, locked: false, data: { version: 1, title: 'КАРТКА', body: 'Тест', formulas: [] } },
+        { id: 'late-pdf', type: 'document_viewer', src: '', x: 100, y: 100, w: 400, h: 300,
+          rotation: 0, locked: false, currentPage: 0, totalPages: 1, pages: [] },
+      ],
+    }
+    store.selectItems(['late-pdf'])
+  })
+  const controls = page.locator('[data-testid="wb-card-window-controls"]')
+  await expect(controls).toHaveAttribute('data-asset-id', 'late-pdf')
+  await expect(controls).toHaveCSS('visibility', 'hidden')
+})
+
+test('під час перетягування PDF рамка виділення не лишається на старому місці', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+  await page.goto('/workspace')
+  await page.waitForFunction(() => !!localStorage.getItem('m4sh:local-ws:v1'))
+  const snapshotJson = await page.evaluate(() => {
+    const snapshot = JSON.parse(localStorage.getItem('m4sh:local-ws:v1') || 'null')
+    if (!snapshot?.state?.pages?.length) throw new Error('Немає локального стану')
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ff0000"/></svg>`
+    snapshot.state.pages = [{
+      ...snapshot.state.pages[0],
+      strokes: [],
+      assets: [
+        { id: 'drag-pdf', type: 'document_viewer', src: '', x: 100, y: 100, w: 400, h: 300,
+          rotation: 0, locked: false, currentPage: 0, totalPages: 1,
+          pages: [{ index: 0, url: `data:image/svg+xml,${encodeURIComponent(svg)}` }] },
+        { id: 'drag-card', type: 'theory_card', src: '', x: 280, y: 120, w: 400, h: 300,
+          rotation: 0, locked: false, data: { version: 1, title: 'КАРТКА', body: 'Тест', formulas: [] } },
+      ],
+    }]
+    snapshot.state.currentPageIndex = 0
+    return JSON.stringify(snapshot)
+  })
+  await page.addInitScript((value) => localStorage.setItem('m4sh:local-ws:v1', value), snapshotJson)
+  await page.reload()
+  const card = page.locator('[data-theory-card-id="drag-card"]')
+  await expect(card).toBeVisible()
+  await expect(page.locator('.wb-canvas-loader')).toHaveCount(0)
+  const box = await card.boundingBox()
+  if (!box) throw new Error('Немає картки')
+  const zoom = box.width / 400
+  const x = box.x - 120 * zoom
+  const y = box.y + 100 * zoom
+  await page.mouse.click(x, y)
+  await expect(page.locator('[data-testid="wb-card-window-controls"]')).toHaveAttribute('data-asset-id', 'drag-pdf')
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + 220, y + 35, { steps: 12 })
+  const staleAlpha = await page.evaluate(({ x, y }) => {
+    const canvases = [...document.querySelectorAll<HTMLCanvasElement>('.wb-canvas .konvajs-content > canvas')]
+    const ui = canvases.at(-1)
+    if (!ui) throw new Error('Немає UI шару')
+    const rect = ui.getBoundingClientRect()
+    const px = Math.round((x - rect.x) * ui.width / rect.width)
+    const py = Math.round((y - rect.y) * ui.height / rect.height)
+    return ui.getContext('2d')?.getImageData(px, py, 1, 1).data[3] ?? -1
+  }, { x, y })
+  await page.mouse.up()
+  expect(staleAlpha, `На старому місці лишилась напівпрозора рамка (alpha ${staleAlpha})`).toBe(0)
+})

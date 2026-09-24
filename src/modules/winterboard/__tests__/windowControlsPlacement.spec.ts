@@ -9,6 +9,7 @@ import {
   windowControlsPlacement,
   windowControlsZIndex,
   windowControlsCovered,
+  isVisuallyAbove,
   WINDOW_CONTROLS_INSET_PX,
   WINDOW_CONTROLS_TOP_PX,
 } from '../board/windowControlsPlacement'
@@ -34,6 +35,11 @@ describe('windowControlsPlacement — у шапці картки', () => {
 })
 
 describe('віконні дії не перекривають вищий об’єкт', () => {
+  it('HTML-картка вища за PDF навіть якщо PDF останній у масиві', () => {
+    expect(isVisuallyAbove('konva', 2, 'overlay', 1, false)).toBe(true)
+    expect(isVisuallyAbove('konva', 2, 'overlay', 1, true)).toBe(false)
+    expect(isVisuallyAbove('konva', 1, 'konva', 2, false)).toBe(true)
+  })
   it('Konva-документ лишається під HTML-карткою, а розгорнута картка має свій шар', () => {
     expect(windowControlsZIndex('konva', false)).toBe('3')
     expect(windowControlsZIndex('overlay', false)).toBe('5')
