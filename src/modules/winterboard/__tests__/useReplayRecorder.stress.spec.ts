@@ -244,7 +244,7 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     // Б-28: після запису відновлених дій — свіжий стан сервера на полотно; копію
     // знімає лише успішна звірка.
     const getMock = apiClient.get as unknown as ReturnType<typeof vi.fn>
-    getMock.mockImplementation(async () => ({ last_seq: persisted, state: { pages: [] } }))
+    getMock.mockImplementation(async () => ({ last_seq: persisted, state: { pages: [{ id: 'page-1', strokes: Array.from({ length: 5 }, (_, i) => ({ id: `stroke-${i}` })) }] } }))
     const applyCatchUpState = vi.fn()
     const recorder2 = mountRecorder('sess-crash')
     recorder2.connectToStore({ onOperation: () => () => {}, applyCatchUpState })

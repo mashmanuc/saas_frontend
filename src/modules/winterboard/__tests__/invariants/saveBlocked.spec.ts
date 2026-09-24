@@ -998,7 +998,7 @@ describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір �
     // B відкриває дошку з рекордером і полотном → підхоплює дію A, записує її, звіряє
     // полотно зі станом сервера (Б-28) — лише тоді знімає копію A.
     post.mockResolvedValueOnce(ok(1))
-    get.mockResolvedValueOnce({ last_seq: 1, state: { pages: [] } })
+    get.mockResolvedValueOnce({ last_seq: 1, state: { pages: [{ id: 'p1', strokes: [] }] } })
     const applyCatchUpState = vi.fn()
     const rec = recorder()
     rec.connectToStore({ onOperation: () => () => {}, applyCatchUpState })

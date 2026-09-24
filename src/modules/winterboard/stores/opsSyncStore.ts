@@ -1293,6 +1293,29 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     _restoredOps = []
   }
 
+  /**
+   * Чи містить стан сервера те, що ми щойно записали з копії: принаймні одна сторінка
+   * і кожен доданий із копії штрих (крім тих, що в копії ж і видалені). Інакше це
+   * не той стан, який можна показати як «відновлено».
+   */
+  function _stateShowsRestored(state: Record<string, unknown>): boolean {
+    const pages = (state as { pages?: Array<{ strokes?: Array<{ id?: unknown }> }> }).pages
+    if (!Array.isArray(pages) || pages.length === 0) return false
+    const expected = new Set<string>()
+    for (const o of _restoredOps) {
+      const p = (o.payload ?? {}) as { stroke?: { id?: unknown }; strokes?: Array<{ id?: unknown }>; stroke_id?: unknown }
+      if (o.op_type === 'stroke_add' && typeof p.stroke?.id === 'string') expected.add(p.stroke.id)
+      else if (o.op_type === 'strokes_add_batch' && Array.isArray(p.strokes)) {
+        for (const st of p.strokes) if (typeof st?.id === 'string') expected.add(st.id)
+      } else if (o.op_type === 'stroke_delete' && typeof p.stroke_id === 'string') expected.delete(p.stroke_id)
+    }
+    if (expected.size === 0) return true
+    const present = new Set<string>()
+    for (const pg of pages) for (const st of pg?.strokes ?? []) if (typeof st?.id === 'string') present.add(st.id)
+    for (const id of expected) if (!present.has(id)) return false
+    return true
+  }
+
   function _rememberRestored(ops: OpsSyncOp[]): void {
     const known = new Set(_restoredOps.map(o => o.op_id))
     for (const o of ops) if (o?.op_id && !known.has(o.op_id)) { known.add(o.op_id); _restoredOps.push(o) }
@@ -1387,7 +1410,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     }
     if (sessionId.value !== sid || mode.value !== 'SYNC') return 'blocked'
     if (!response || typeof response !== 'object' || response.stale === true ||
-        !response.state || typeof response.state !== 'object') {
+        !response.state || typeof response.state !== 'object' || !_stateShowsRestored(response.state)) {
+      // Несвіжий або неповний стан (напр. збірка з чанків без знімка сторінок одразу
+      // після запису) — полотно не чіпаємо, копію лишаємо: жодного удаваного успіху.
       restoreProblem.value = 'stale'
       return 'stale'
     }

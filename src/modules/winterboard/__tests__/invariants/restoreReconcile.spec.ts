@@ -515,3 +515,42 @@ describe('Б-28 · рев’ю 2: власна копія тримає відн�
     expect(ownCopyIds(store)).toContain('op-z')
   })
 })
+
+describe('Б-28 · стан без записаних відновлених дій — не успіх (стенд 2026-09-24)', () => {
+  it('сервер віддав стан без сторінок (збірка з чанків одразу після запису) → полотно не чіпаємо, копія ціла', async () => {
+    const { server } = fakeServer()
+    writeDeadCopy([stroke('x')])
+    const { store, rec } = await openBoard(server.seq)
+    const { board } = canvas()
+    get.mockResolvedValueOnce({ last_seq: 1, stale: false, state: { pages: [], activePageId: null } })
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(board.applyCatchUpState).not.toHaveBeenCalled()
+    expect(store.restoreProblem).toBe('stale')
+    expect(localStorage.getItem(DEAD_KEY)).not.toBeNull()
+  })
+
+  it('стан є, але без щойно записаного штриха з копії → stale, не «відновлено»', async () => {
+    const { server } = fakeServer()
+    writeDeadCopy([stroke('x')])
+    const { store, rec } = await openBoard(server.seq)
+    const { board } = canvas()
+    get.mockResolvedValueOnce({ last_seq: 1, state: { pages: [{ id: 'p1', strokes: [{ id: 'other' }] }] } })
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(board.applyCatchUpState).not.toHaveBeenCalled()
+    expect(store.restoreProblem).toBe('stale')
+  })
+
+  it('штрих із копії там же й видалений — його відсутність у стані нормальна', async () => {
+    const { server, state } = fakeServer()
+    writeDeadCopy([stroke('gone'), { op_id: 'op-del', op_type: 'stroke_delete', page_id: 'p1', payload: { stroke_id: 'gone' } } as never])
+    const { store, rec } = await openBoard(server.seq)
+    const { board } = canvas()
+    get.mockImplementationOnce(async () => ({ ...state(), state: { pages: [{ id: 'p1', strokes: [] }] } }))
+    rec.connectToStore(board)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(board.applyCatchUpState).toHaveBeenCalledTimes(1)
+    expect(store.restoreProblem).toBeNull()
+  })
+})
