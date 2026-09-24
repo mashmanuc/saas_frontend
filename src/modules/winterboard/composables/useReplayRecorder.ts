@@ -22,7 +22,8 @@ import { ref, readonly, watch, computed, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
 import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
-import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
+import { backupKey, clearBackup, readAllBackups, removeBackupKeys } from './useOpsBackup'
+import { serverPayloadBytes, SERVER_PAYLOAD_LIMIT_BYTES } from '../services/opsPayloadSize'
 import { trackEvent } from '@/utils/telemetryAgent'
 import { notifyWarning, notifyError } from '@/utils/notify'
 import { announceLifecycleBlock } from '../remote/lifecycleBlock'
@@ -47,7 +48,9 @@ import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
 const INSTANT_FLUSH_THRESHOLD = 50
 const FLUSH_DEBOUNCE_MS = 150
 const FLUSH_SAFETY_INTERVAL_MS = 2_000
-const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
+// Ліміт операції рахуємо ЯК СЕРВЕР (serverPayloadBytes: не-ASCII = 6 байт) і з
+// невеликим запасом на розбіжність запису дробових експонент (JS 1e-7 / Python 1e-07).
+const MAX_PAYLOAD_BYTES = SERVER_PAYLOAD_LIMIT_BYTES - 256
 
 // Phase S PR-3 (2026-04-28) — bounded batcher per REFACTOR_PLAN.md v2 §3.A.
 /** Hard cap per POST (BE accepts up to 100 ops/batch). */
@@ -181,15 +184,25 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   function _restoreBackup(): void {
     const sid = options.sessionId.value
     if (!sid || opsSync.sessionId !== sid) return
-    const backup = readBackup<RecordOperationRequest>(sid)
-    if (!backup || (backup.pending.length === 0 && backup.inFlight.length === 0)) return
+    // Копії всіх СВОЇХ вкладок цієї дошки (ключ = дошка + акаунт + вкладка): попередня
+    // вкладка/завантаження лишила чергу — підхоплюємо без дублів op_id.
+    const all = readAllBackups<RecordOperationRequest>(sid)
+    if (all.records.length === 0) return
     const known = new Set([...opsSync.inFlightOps, ...opsSync.pendingOps].map(o => o.op_id))
     let restored = 0
-    for (const op of [...backup.inFlight, ...backup.pending]) {
-      if (!op.op_id || known.has(op.op_id)) continue
-      if (!opsSync.record(op as unknown as OpsSyncOp)) return
-      known.add(op.op_id)
-      restored++
+    for (const { backup } of all.records) {
+      for (const op of [...backup.inFlight, ...backup.pending]) {
+        if (!op.op_id || known.has(op.op_id)) continue
+        if (!opsSync.record(op as unknown as OpsSyncOp)) return  // копії лишаються до наступного разу
+        known.add(op.op_id)
+        restored++
+      }
+    }
+    // Копії інших вкладок знімаємо ЛИШЕ після перевіреного запису своєї (там уже
+    // їхні дії); не ліг — лишаються, наступне відкриття знову їх підхопить.
+    if (opsSync.persistQueue()) {
+      const own = backupKey(sid)
+      removeBackupKeys(all.records.map(r => r.key).filter(k => k !== own))
     }
     if (restored > 0) {
       console.info(`[WB:Recorder] Restored ${restored} ops from localStorage backup`)
@@ -244,8 +257,8 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     //   - show user-facing toast (rejection observable, not invisible)
     //   - return without recording (op rejected, NOT chunked — chunking deferred Phase P2)
     try {
-      const payloadJson = JSON.stringify(op.payload ?? {})
-      const payloadBytes = new TextEncoder().encode(payloadJson).byteLength
+      // Як сервер: json.dumps(ensure_ascii) — «І» = 6 байт, не 2 (рев'ю P0, 2026-09-24).
+      const payloadBytes = serverPayloadBytes(op.payload ?? {})
       if (payloadBytes > MAX_PAYLOAD_BYTES) {
         try {
           trackEvent('wb.ops.payload_oversized', {

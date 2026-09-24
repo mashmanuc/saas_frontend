@@ -2,6 +2,7 @@
 // Ref: ARCHITECTURE.md ADR-02, ManifestWinterboard_v2.md LAW-01/02/03/19
 // Based on classroom/board/state/boardStore.ts — stripped of classroom-specific code
 
+import { serverPayloadBytes } from '../../services/opsPayloadSize'
 import { defineStore } from 'pinia'
 import { useTestStore } from './testStore'
 import type {
@@ -553,7 +554,7 @@ function _splitBatchBySize<T>(items: T[], maxBytes = 50_000): T[][] {
   let currentSize = 200  // JSON wrapper overhead
 
   for (const item of items) {
-    const itemSize = JSON.stringify(item).length
+    const itemSize = serverPayloadBytes(item)  // як сервер: не-ASCII = 6 байт
     if (itemSize > maxBytes) {
       // Single item exceeds limit — put alone (will be dropped at recorder, but logged)
       if (current.length > 0) { chunks.push(current); current = []; currentSize = 200 }

@@ -40,6 +40,7 @@ import { useReplayRecorder } from '../../composables/useReplayRecorder'
 import { readBackup, saveBackup } from '../../composables/useOpsBackup'
 import { readBlocked } from '../../composables/useBlockedOps'
 import { tryCoalesceStrokeAppend } from '../../services/opsCoalescer'
+import { serverPayloadBytes } from '../../services/opsPayloadSize'
 
 const SID = '00000000-0000-0000-0000-00000000c0de'
 const post = apiClient.post as ReturnType<typeof vi.fn>
@@ -857,7 +858,7 @@ describe('Рев’ю P0 2026-09-24 (5) · PAUSED, звичайна копія, 
   })
 
   it('пошкоджена звичайна копія своєї дошки → storage_unreadable, сирі дані в експорті, не стерто до «Відкинути»', async () => {
-    const key = `wb_ops_backup_v2_${SID}_anon`
+    const key = `wb_ops_backup_v2_${SID}_anon_tab-old`
     localStorage.setItem(key, '{"pending":[{"op_id":"lost-1"')
     const store = useOpsSyncStore()
     get.mockResolvedValueOnce({ last_seq: 0 })
@@ -921,6 +922,102 @@ describe('Рев’ю P0 2026-09-24 (5) · PAUSED, звичайна копія, 
     for (const a of appends) {
       expect(new TextEncoder().encode(JSON.stringify(a.payload)).byteLength).toBeLessThanOrEqual(64 * 1024)
     }
+    rec.stop?.()
+  })
+})
+
+describe('Рев’ю P0 2026-09-24 (6) · дві вкладки, розмір як на сервері, старі копії', () => {
+  it('розмір рахується як на сервері: 11 000 «І» = 66 011 байт, а не 22 011', () => {
+    const payload = { text: 'І'.repeat(11_000) }
+    expect(serverPayloadBytes(payload)).toBe(66_011)
+    expect(new TextEncoder().encode(JSON.stringify(payload)).byteLength).toBe(22_011)
+    // пара сурогатів = два \\uXXXX, як у Python
+    expect(serverPayloadBytes({ e: '😀' })).toBe('{"e":""}'.length + 12)
+  })
+
+  it('картка з довгим українським текстом не потрапляє в чергу й не зупиняє пакет', async () => {
+    const store = syncStore()
+    const rec = recorder()
+    rec.record({ op_id: 'ok1', op_type: 'stroke_add', page_id: 'p1', payload: { stroke: { id: 's' } } } as never)
+    rec.record({ op_id: 'big', op_type: 'asset_update', page_id: 'p1', payload: { text: 'І'.repeat(11_000) } } as never)
+    expect(store.pendingOps.map(o => o.op_id)).toEqual(['ok1'])
+    expect(trackEvent).toHaveBeenCalledWith('wb.ops.payload_oversized', expect.objectContaining({ bytes: 66_000 + 11 + 0 }))
+    rec.stop?.()
+  })
+
+  it('злиття штрихів рахує розмір як сервер', () => {
+    const LIMIT = 64 * 1024
+    const label = 'Ї'.repeat(6_000)  // UTF-8 ~12 KB, сервер ~36 KB
+    const last = op('a1', 'stroke_append', { stroke_id: 'S', label, points: [[1, 1, 0.5]] })
+    const incoming = op('a2', 'stroke_append', { stroke_id: 'S', label, points: [[2, 2, 0.5]] })
+    // окремо кожна ~36 KB (як сервер) — злиття лишає label один раз, тож дозволено
+    expect(tryCoalesceStrokeAppend(last, incoming, LIMIT)).toBe(true)
+    const big = op('b1', 'stroke_append', { stroke_id: 'T', label: 'Ї'.repeat(10_500), points: [[1, 1, 0.5]] })
+    const more = op('b2', 'stroke_append', { stroke_id: 'T', points: Array.from({ length: 400 }, () => [1, 1, 0.5]) })
+    expect(serverPayloadBytes({ ...big.payload, points: [[1, 1, 0.5], ...(more.payload as { points: unknown[] }).points] })).toBeGreaterThan(LIMIT)
+    expect(new TextEncoder().encode(JSON.stringify({ ...big.payload, points: [[1, 1, 0.5], ...(more.payload as { points: unknown[] }).points] })).byteLength).toBeLessThan(LIMIT)  // UTF-8 пропустив би
+    expect(tryCoalesceStrokeAppend(big, more, LIMIT)).toBe(false)  // сервер: > 64 KB
+  })
+
+  it('дві вкладки одного вчителя: порожня вкладка не стирає копію іншої; нова вкладка підхоплює й лише потім знімає', async () => {
+    // вкладка A: є незбережена дія
+    const a = syncStore()
+    a.setBlockedOwner('7')
+    a.record(op('fromA'))
+    expect(a.persistQueue()).toBe(true)
+    const aKey = Object.keys(localStorage).find(k => k.startsWith(`wb_ops_backup_v2_${SID}_u7_`))!
+    // вкладка B: свіжий store (інша вкладка), порожня черга пише «копію»
+    setActivePinia(createPinia())
+    const b = syncStore()
+    b.setBlockedOwner('7')
+    expect(b.persistQueue()).toBe(true)
+    expect(localStorage.getItem(aKey)).not.toBeNull()
+    // B відкриває дошку з рекордером → підхоплює дію A, пише свою копію, знімає копію A
+    const rec = recorder()
+    rec.start?.()
+    expect(b.pendingOps.map(o => o.op_id)).toContain('fromA')
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(`wb_ops_backup_v2_${SID}_u7_`))
+    expect(keys).toHaveLength(1)
+    expect(keys[0]).not.toBe(aKey)
+    rec.stop?.()
+  })
+
+  it('нова вкладка не змогла записати свою копію → копію іншої вкладки НЕ знято', () => {
+    const a = syncStore()
+    a.record(op('fromA'))
+    a.persistQueue()
+    const aKey = Object.keys(localStorage).find(k => k.startsWith(`wb_ops_backup_v2_${SID}_anon_`))!
+    setActivePinia(createPinia())
+    const b = syncStore()
+    const real = localStorage.setItem.bind(localStorage)
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('wb_ops_backup_v2_') && k !== aKey) throw new DOMException('quota', 'QuotaExceededError')
+      real(k, v)
+    })
+    const rec = recorder()
+    rec.start?.()
+    spy.mockRestore()
+    expect(b.pendingOps.map(o => o.op_id)).toContain('fromA')
+    expect(localStorage.getItem(aKey)).not.toBeNull()
+    rec.stop?.()
+  })
+
+  it('стара копія без власника: не відновлюється й не надсилається, але видима для завантаження й прибирання', async () => {
+    const legacyKey = `wb_ops_backup_${SID}`
+    localStorage.setItem(legacyKey, JSON.stringify({ pending: [op('old-1')], inFlight: [], savedAt: new Date().toISOString() }))
+    const store = useOpsSyncStore()
+    get.mockResolvedValueOnce({ last_seq: 0 })
+    await store.bootstrap(SID)
+    const rec = recorder()
+    rec.start?.()
+    expect(store.mode).toBe('SYNC')
+    expect(store.pendingOps.map(o => o.op_id)).not.toContain('old-1')
+    expect(store.legacyCopies.map(c => c.key)).toEqual([legacyKey])
+    const exp = store.exportLegacyCopies() as { records: Array<{ raw: string }> }
+    expect(exp.records[0].raw).toContain('old-1')
+    store.dismissLegacyCopies()
+    expect(localStorage.getItem(legacyKey)).toBeNull()
+    expect(store.legacyCopies).toHaveLength(0)
     rec.stop?.()
   })
 })

@@ -7101,6 +7101,12 @@
         "retry": "Retry now",
         "retrying": "Sending…"
       },
+      "legacyCopy": {
+        "text": "This computer has unsaved changes to this board from an older version of the app. Their owner is unknown, so they were not sent automatically. You can download them or remove them.",
+        "export": "Download",
+        "dismiss": "Remove",
+        "confirmDismiss": "Remove the old unsaved changes from this computer? You can download them first."
+      },
       "saveBlocked": {
         "bannerLabel": "Board saving stopped",
         "title": {

@@ -18,6 +18,7 @@
     <OpsPausedBanner />
     <!-- SAVE_BLOCKED (LAW §4–§5): сервер відмовив / не підтвердив — черга стоїть, дії вчителя. -->
     <OpsSaveBlockedBanner />
+    <OpsLegacyCopyNotice />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
          відхиляє всі операції. Постійний банер + read-only полотно замість
@@ -1119,6 +1120,7 @@ import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.v
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
+import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import { notifyError } from '@/utils/notify'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'

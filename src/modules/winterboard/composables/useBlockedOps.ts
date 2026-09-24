@@ -99,11 +99,13 @@ export interface BlockedReadResult {
   unreadable: Array<{ key: string; raw: string }>
   /** Саме сховище кинуло помилку під час читання — стан невідомий. */
   readFailed: boolean
+  /** Записи v1 цієї дошки з невстановленим власником — лише для ручного завантаження. */
+  legacyUnknown: Array<{ key: string; raw: string }>
 }
 
 /** Усі аварійні записи цієї дошки цього акаунта (з будь-якої вкладки). */
 export function readBlocked(sessionId: string, userId: string | null): BlockedReadResult {
-  const result: BlockedReadResult = { records: [], unreadable: [], readFailed: false }
+  const result: BlockedReadResult = { records: [], unreadable: [], readFailed: false, legacyUnknown: [] }
   if (!sessionId) return result
   const ownPrefix = `${KEY_PREFIX}${sessionId}_${ownerSeg(userId)}_`
   const legacyPrefix = `${LEGACY_PREFIX}${sessionId}_`
@@ -129,6 +131,7 @@ export function readBlocked(sessionId: string, userId: string | null): BlockedRe
         const known = uid === null || typeof uid === 'string'
         if (!known) {
           console.warn('[WB:blockedOps] legacy record with unknown owner left untouched:', key)
+          result.legacyUnknown.push({ key, raw })
           continue
         }
         if (uid !== me) continue

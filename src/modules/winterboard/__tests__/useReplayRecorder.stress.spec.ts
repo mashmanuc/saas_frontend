@@ -219,8 +219,9 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     await waitUntil(() => recordOperationsBatchMock.mock.calls.length >= 1, 3_000)
     recorder1.destroy()                          // destroy → persist backup
 
-    const raw = localStorage.getItem('wb_ops_backup_v2_sess-crash_anon')
-    expect(raw).not.toBeNull()
+    // ключ = дошка + акаунт + вкладка; нова вкладка підхоплює копії всіх своїх вкладок
+    const backupKeys = () => Object.keys(localStorage).filter(k => k.startsWith('wb_ops_backup_v2_sess-crash_anon_'))
+    expect(backupKeys()).toHaveLength(1)
     warnSpy.mockRestore()
 
     // Step 2: «нова вкладка» — свіжа Pinia, порожній store
@@ -240,7 +241,7 @@ describe('TEST 5 — crash/reload (localStorage restore)', () => {
     expect(persisted).toBeGreaterThanOrEqual(5)  // відновлено і доставлено
     expect(infoSpy.mock.calls.some((c) => String(c[0]).includes('Restored'))).toBe(true)
     // ACK повного буфера чистить backup — «сміття» не переживає успіх.
-    expect(localStorage.getItem('wb_ops_backup_v2_sess-crash_anon')).toBeNull()
+    expect(backupKeys()).toHaveLength(0)
     recorder2.destroy()
   }, 10_000)
 })

@@ -9,13 +9,17 @@
  *  5. Порожні буфери очищають backup замість зберігати {pending:[], inFlight:[]}
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { saveBackup, readBackup, clearBackup } from '../composables/useOpsBackup'
+import {
+  saveBackup, readBackup, clearBackup, readAllBackups, setOpsOwner, setOpsTab,
+} from '../composables/useOpsBackup'
 
 const SID = 'test-session-uuid-abc'
 
 beforeEach(() => {
   localStorage.clear()
   vi.useRealTimers()
+  setOpsOwner(null)
+  setOpsTab('tab-default')
 })
 
 describe('opsBackup', () => {
@@ -54,23 +58,23 @@ describe('opsBackup', () => {
     // Save a backup with a manually-aged savedAt
     const oldIso = new Date(Date.now() - 8 * 24 * 3_600 * 1_000).toISOString()
     localStorage.setItem(
-      `wb_ops_backup_v2_${SID}_anon`,
+      `wb_ops_backup_v2_${SID}_anon_tab-default`,
       JSON.stringify({ pending: [{ id: 'old' }], inFlight: [], savedAt: oldIso }),
     )
 
-    // TTL guard kicks in on read → returns null + clears
-    expect(readBackup(SID)).toBeNull()
-    expect(localStorage.getItem(`wb_ops_backup_v2_${SID}_anon`)).toBeNull()
+    // TTL guard kicks in on restore read → no records + clears
+    expect(readAllBackups(SID).records).toHaveLength(0)
+    expect(localStorage.getItem(`wb_ops_backup_v2_${SID}_anon_tab-default`)).toBeNull()
   })
 
   it('returns null for corrupt JSON without crashing', () => {
-    localStorage.setItem(`wb_ops_backup_v2_${SID}_anon`, '{not-valid-json}')
+    localStorage.setItem(`wb_ops_backup_v2_${SID}_anon_tab-default`, '{not-valid-json}')
     expect(readBackup(SID)).toBeNull()
   })
 
   it('returns null for missing arrays', () => {
     localStorage.setItem(
-      `wb_ops_backup_v2_${SID}_anon`,
+      `wb_ops_backup_v2_${SID}_anon_tab-default`,
       JSON.stringify({ savedAt: new Date().toISOString() }),
     )
     expect(readBackup(SID)).toBeNull()
@@ -96,5 +100,29 @@ describe('opsBackup', () => {
     saveBackup('', [{ id: 'x' }], [])
     expect(localStorage.length).toBe(0)
     expect(readBackup('')).toBeNull()
+  })
+})
+
+describe('opsBackup · ключ = дошка + акаунт + вкладка (рев’ю P0 2026-09-24)', () => {
+  it('порожня вкладка того ж учителя НЕ стирає копію незбережених дій іншої вкладки', () => {
+    setOpsOwner('7')
+    setOpsTab('tab-A')
+    expect(saveBackup(SID, [{ op_id: 'a1' }], [])).toBe(true)
+    setOpsTab('tab-B')
+    expect(saveBackup(SID, [], [])).toBe(true)  // порожня черга вкладки Б
+    const all = readAllBackups<{ op_id: string }>(SID)
+    expect(all.records).toHaveLength(1)
+    expect(all.records[0].backup.pending.map(o => o.op_id)).toEqual(['a1'])
+  })
+
+  it('readAllBackups бачить лише свої вкладки свого акаунта; пошкоджену — як нечитабельну', () => {
+    setOpsOwner('7')
+    setOpsTab('tab-A')
+    saveBackup(SID, [{ op_id: 'a1' }], [])
+    localStorage.setItem(`wb_ops_backup_v2_${SID}_u7_tab-C`, '{"pending":[{"op_id":"c')
+    localStorage.setItem(`wb_ops_backup_v2_${SID}_u77_tab-X`, JSON.stringify({ pending: [{ op_id: 'x' }], inFlight: [], savedAt: new Date().toISOString() }))
+    const all = readAllBackups<{ op_id: string }>(SID)
+    expect(all.records.map(r => r.key)).toEqual([`wb_ops_backup_v2_${SID}_u7_tab-A`])
+    expect(all.unreadable.map(u => u.key)).toEqual([`wb_ops_backup_v2_${SID}_u7_tab-C`])
   })
 })

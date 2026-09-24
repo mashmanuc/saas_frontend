@@ -17,6 +17,7 @@
 // Per REFACTOR_PLAN.md §3 task #8 (degradation strategy).
 
 import type { OpsSyncOp } from '../stores/opsSyncStore'
+import { serverPayloadBytes } from './opsPayloadSize'
 
 interface StrokeAppendPayload {
   stroke_id?: string
@@ -37,8 +38,6 @@ interface StrokeAppendPayload {
  *
  * Side effect: mutates `last.payload.points` у place (extends with incoming's points).
  */
-const _enc = new TextEncoder()
-
 export function tryCoalesceStrokeAppend(
   last: OpsSyncOp,
   incoming: OpsSyncOp,
@@ -62,7 +61,7 @@ export function tryCoalesceStrokeAppend(
 
   const merged = [...lastPayload.points, ...incomingPayload.points]
   if (Number.isFinite(maxPayloadBytes)) {
-    const bytes = _enc.encode(JSON.stringify({ ...lastPayload, points: merged })).byteLength
+    const bytes = serverPayloadBytes({ ...lastPayload, points: merged })  // як сервер
     if (bytes > maxPayloadBytes) return false  // окремим op: кожна частина вже ≤ ліміту
   }
   // Mutate last op's points у place (combined points = backwards-compatible)

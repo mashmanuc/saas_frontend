@@ -46,7 +46,9 @@ import {
 } from '../api/replay'
 import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
 import { writeBlocked, readBlocked, removeBlocked, blockedKey } from '../composables/useBlockedOps'
-import { backupKey, clearBackup, readBackupChecked, saveBackup, setOpsOwner } from '../composables/useOpsBackup'
+import {
+  backupKey, clearBackup, readAllBackups, readLegacyBackup, removeBackupKeys, saveBackup, setOpsOwner, setOpsTab,
+} from '../composables/useOpsBackup'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -207,6 +209,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const desyncReason = ref<string | null>(null)
   /** Tab id для INV-19 origin filtering. */
   const tabId = ref<string>(_genTabId())
+  setOpsTab(tabId.value)  // звичайна копія черги — своя на кожну вкладку (рев'ю P0, 2026-09-24)
+  /**
+   * Копії старого формату без власника для цієї дошки: не відновлюються й не
+   * надсилаються, лише показуються для ручного завантаження / прибирання.
+   */
+  const legacyCopies = ref<Array<{ key: string; raw: string }>>([])
 
   // ── Buffers (Option A: store owns flush lifecycle, not useReplayRecorder) ──
   /** Ops accepted via record() but не yet flushed to BE. */
@@ -479,6 +487,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       // TLV2-G1b: таймер і лічильник 503 попередньої дошки не переходять на нову.
       _resetRetryState()
       backupFailed.value = false
+      legacyCopies.value = []
       // SAVE_BLOCKED попередньої дошки лишається в ЇЇ аварійному записі; пам'ять про
       // нього (ключі, причина) на нову дошку не переходить — інакше вирішення на Б
       // стерло б записи А (рев'ю P0, 2026-09-24).
@@ -968,12 +977,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   /** Після bootstrap: підхопити аварійні записи цієї дошки й повернути SAVE_BLOCKED. */
   function _restoreBlocked(sid: string): void {
     const read = readBlocked(sid, _blockedOwnerId)
-    // Звичайна копія цієї дошки цього акаунта: пошкоджена ≠ «немає» (рев'ю P0, 2026-09-24).
-    const nb = readBackupChecked(sid)
-    if (nb.status === 'unreadable') {
-      if (nb.raw === null) read.readFailed = true
-      else read.unreadable.push({ key: nb.key, raw: nb.raw })
-    }
+    // Звичайні копії цієї дошки цього акаунта (усі вкладки): пошкоджена ≠ «немає».
+    const nb = readAllBackups(sid)
+    if (nb.readFailed) read.readFailed = true
+    read.unreadable.push(...nb.unreadable)
+    const legacy = readLegacyBackup(sid)
+    legacyCopies.value = [...(legacy ? [legacy] : []), ...read.legacyUnknown]
     const found = read.records
     _unreadableBlocked = read.unreadable
     const unreadable = read.readFailed || read.unreadable.length > 0
@@ -1172,6 +1181,24 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   function setBlockedOwner(userId: string | number | null | undefined): void {
     _blockedOwnerId = userId === undefined || userId === null || userId === '' ? null : String(userId)
     setOpsOwner(_blockedOwnerId)  // звичайна копія черги теж прив'язана до акаунта
+  }
+
+  /** Старі копії без власника — для файлу, який завантажує вчитель (нікуди не надсилається). */
+  function exportLegacyCopies(): Record<string, unknown> {
+    return {
+      format: 'm4sh-unsaved-board-ops-legacy',
+      version: 1,
+      session_id: sessionId.value,
+      exported_at: new Date().toISOString(),
+      note: 'owner unknown — saved before 2026-09-24; not restored automatically',
+      records: legacyCopies.value.map(c => ({ key: c.key, raw: c.raw })),
+    }
+  }
+
+  /** «Прибрати» старі копії (після підтвердження в UI). */
+  function dismissLegacyCopies(): void {
+    removeBackupKeys(legacyCopies.value.map(c => c.key))
+    legacyCopies.value = []
   }
 
   /**
@@ -1468,6 +1495,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     saveBlock.value = null
     droppedWhileBlocked.value = 0
     backupFailed.value = false
+    legacyCopies.value = []
     _adoptedBlockedKeys = []
     _unreadableBlocked = []
     _ownBlockedKey = null
@@ -1513,6 +1541,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     inputLocked,
     pausedUnsecured,
     backupFailed,
+    legacyCopies,
     droppedWhileBlocked,
     blockResolving,
     canRetryBlocked,
@@ -1537,6 +1566,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     // SAVE_BLOCKED: дії вчителя + аварійний запис
     persistBlocked,
     persistQueue,
+    exportLegacyCopies,
+    dismissLegacyCopies,
     retryBlocked,
     discardBlocked,
     exportBlocked,

@@ -41,6 +41,7 @@
     <OpsPausedBanner />
     <!-- SAVE_BLOCKED (LAW §4–§5): і вчитель, і учень бачать СВОЮ зупинену чергу. -->
     <OpsSaveBlockedBanner />
+    <OpsLegacyCopyNotice />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23): банер + read-only, учитель може «Новий запис».
          Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
@@ -587,6 +588,7 @@ import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.v
 import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import OpsPausedBanner from '../components/dialogs/OpsPausedBanner.vue'
 import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue'
+import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
