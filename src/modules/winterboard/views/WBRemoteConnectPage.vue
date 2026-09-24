@@ -46,7 +46,7 @@
       </section>
     </div>
 
-    <button type="button" class="wb-remote-connect__here" @click="emit('open-here')">
+    <button type="button" class="wb-remote-connect__here" @click="openHere">
       {{ t('winterboard.remote.connectPage.openHere') }}
     </button>
   </div>
@@ -56,6 +56,9 @@
 /**
  * «Пульт для телефону» на комп'ютері (ТЗ Салюта TZ_REMOTE_DESKTOP_CONNECT_2026-09-22 §2.2).
  * Великий екран пояснює, як підключитись; сам пульт — на телефоні.
+ *
+ * Сторінка — звичайний маршрут усередині PageShell (меню + шапка): голе
+ * полотно доречне пульту в руці, а не довідці на ноутбуці (власник 2026-09-24).
  *
  * Живого «Телефон підключено» тут свідомо НЕМАЄ: це знає лише вкладка дошки
  * (`useBoardRemote.lastRemoteSeenAt` з WS `remote.*`), а показати тут означало б
@@ -70,9 +73,14 @@ import { trackEvent } from '@/utils/telemetryAgent'
 import { winterboardApi } from '../api/winterboardApi'
 import RemoteQrBlock from '../components/remote/RemoteQrBlock.vue'
 
-const emit = defineEmits<{ (e: 'open-here'): void }>()
 const { t } = useI18n()
 const router = useRouter()
+
+/** «Все одно відкрити пульт тут» — один перехід, вибір живе в адресі. */
+function openHere(): void {
+  try { trackEvent('wb.remote.open_here', {}) } catch { /* телеметрія не критична */ }
+  void router.push({ name: 'winterboard-remote', query: { here: '1' } })
+}
 
 /** «Назад» — звідки прийшов; з прямого заходу (QR, закладка) — на дошки. */
 function goBack(): void {

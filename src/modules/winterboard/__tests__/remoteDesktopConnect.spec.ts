@@ -18,7 +18,12 @@ vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn() }))
 
 const routerBack = vi.fn()
 const routerPush = vi.fn()
-vi.mock('vue-router', () => ({ useRouter: () => ({ back: routerBack, push: routerPush }) }))
+const routerReplace = vi.fn()
+let routeQuery: Record<string, string> = {}
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ back: routerBack, push: routerPush, replace: routerReplace }),
+  useRoute: () => ({ query: routeQuery }),
+}))
 
 const getActiveRemoteSession = vi.fn()
 vi.mock('../api/winterboardApi', () => ({
@@ -93,29 +98,30 @@ beforeEach(() => {
   getActiveRemoteSession.mockReset()
   getActiveRemoteSession.mockResolvedValue({ session_id: 's-1', name: 'Алгебра 8-А', ts: 1 })
   toDataURL.mockClear()
-  routerBack.mockClear(); routerPush.mockClear()
+  routerBack.mockClear(); routerPush.mockClear(); routerReplace.mockClear()
+  routeQuery = {}
 })
 afterEach(() => {
   while (mounted.length) { try { mounted.pop()!.unmount() } catch { /* already unmounted */ } }
 })
 
-describe('один маршрут — два вигляди', () => {
-  it('телефон (лише дотик) → пульт', () => {
+describe("вхід у пульт: телефон — пульт, комп'ютер — сторінка застосунку", () => {
+  it('телефон (лише дотик) → пульт, нікуди не ведемо', () => {
     useDevice(PHONE)
     const w = mountIt(WBRemoteEntry)
     expect(w.find('.stub-remote').exists()).toBe(true)
-    expect(w.find('.wb-remote-connect').exists()).toBe(false)
+    expect(routerReplace).not.toHaveBeenCalled()
   })
 
   it.each([
     ['ноутбук з мишею', LAPTOP],
     ['ноутбук із тачскріном', TOUCH_LAPTOP],
     ["комп'ютер із графічним планшетом", PEN_TABLET_PC],
-  ])('%s → сторінка підключення, кнопок пульта нема', (_name, device) => {
+  ])('%s → сторінка підключення у звичайному каркасі, пульта нема', (_name, device) => {
     useDevice(device as Device)
     const w = mountIt(WBRemoteEntry)
-    expect(w.find('.wb-remote-connect').exists()).toBe(true)
     expect(w.find('.stub-remote').exists()).toBe(false)
+    expect(routerReplace).toHaveBeenCalledWith({ name: 'winterboard-remote-connect' })
   })
 
   it('id дошки доходить до пульта', () => {
@@ -124,31 +130,29 @@ describe('один маршрут — два вигляди', () => {
     expect(w.findComponent({ name: 'WBRemoteView' }).props('id')).toBe('board-7')
   })
 
-  it('«Все одно відкрити пульт тут» → пульт у цьому перегляді', async () => {
+  // Власник 2026-09-22: «інші спроби зразу перекидають на пульт без попередньої
+  // сторінки, і це не добре». Вибір живе в адресі, один перехід.
+  it("«Все одно відкрити пульт тут» (?here=1) → пульт на комп'ютері", () => {
     useDevice(LAPTOP)
+    routeQuery = { here: '1' }
     const w = mountIt(WBRemoteEntry)
-    await w.find('.wb-remote-connect__here').trigger('click')
     expect(w.find('.stub-remote').exists()).toBe(true)
+    expect(routerReplace).not.toHaveBeenCalled()
   })
 
-  // Власник 2026-09-22: «інші спроби зразу перекидають на пульт без попередньої
-  // сторінки, і це не добре». Вибір НЕ зберігається.
-  it("наступний вхід — знову сторінка підключення, вибір не запам'ятався", async () => {
+  it("наступний вхід без ?here — знову пояснення, вибір не запам'ятався", () => {
     useDevice(LAPTOP)
     const w = mountIt(WBRemoteEntry)
-    await w.find('.wb-remote-connect__here').trigger('click')
-    w.unmount()
-    const again = mountIt(WBRemoteEntry)
-    expect(again.find('.wb-remote-connect').exists()).toBe(true)
-    expect(again.find('.stub-remote').exists()).toBe(false)
+    expect(w.find('.stub-remote').exists()).toBe(false)
+    expect(routerReplace).toHaveBeenCalledWith({ name: 'winterboard-remote-connect' })
   })
 
   it("з відкритого пульта на комп'ютері є дорога назад", async () => {
     useDevice(LAPTOP)
+    routeQuery = { here: '1' }
     const w = mountIt(WBRemoteEntry)
-    await w.find('.wb-remote-connect__here').trigger('click')
     await w.find('.wb-remote-entry__back').trigger('click')
-    expect(w.find('.wb-remote-connect').exists()).toBe(true)
+    expect(routerReplace).toHaveBeenCalledWith({ name: 'winterboard-remote-connect' })
   })
 
   it('на телефоні дороги «назад до пояснення» нема — пульт і є екран', () => {
@@ -174,6 +178,13 @@ describe('сторінка «Підключити телефон»', () => {
     Object.defineProperty(window.history, 'length', { value: 1, configurable: true })
     await w.find('.wb-remote-connect__back').trigger('click')
     expect(routerPush).toHaveBeenCalledWith('/winterboard/boards')
+  })
+
+  it('«Все одно відкрити пульт тут» веде на пульт із позначкою в адресі', async () => {
+    const w = mountIt(WBRemoteConnectPage)
+    await flushPromises()
+    await w.find('.wb-remote-connect__here').trigger('click')
+    expect(routerPush).toHaveBeenCalledWith({ name: 'winterboard-remote', query: { here: '1' } })
   })
 
   it('акаунт і кроки на місці', async () => {

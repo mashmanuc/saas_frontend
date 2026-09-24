@@ -43,6 +43,15 @@ const winterboardSessionListRoute: RouteRecordRaw = {
 // Page-level routes — mounted inside PageShell (sidebar + header)
 const winterboardPageRoutes: RouteRecordRaw[] = [
   {
+    // «Пульт для телефону» на комп'ютері — звичайна сторінка застосунку, з
+    // бічним меню й шапкою (власник 2026-09-24). Голий повноекранний вигляд
+    // лишається лише самому пульту на телефоні (`/remote`).
+    path: 'winterboard/remote-connect',
+    name: 'winterboard-remote-connect',
+    component: () => import('./views/WBRemoteConnectPage.vue'),
+    meta: { title: 'Пульт для телефону', roles: ['tutor'] },
+  },
+  {
     // Classroom Hub RETIRED (CLASSROOM_HUB_RETIREMENT_PLAN_2026-06-07).
     // Функції перенесено: join → Dashboard «Майбутні» + LESSON_STARTED notif;
     // re-entry → G4 CTA; conduct → «Мої уроки». Redirect на role-home (guard
