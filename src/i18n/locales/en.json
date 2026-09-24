@@ -8913,6 +8913,10 @@
         "readOnlyOnly": "The teacher can start a new recording."
       },
       "resumed": "Recording is still active — resuming from where you left",
+      "frozenPrompt": {
+        "title": "Recording finished. How do you want to continue?",
+        "body": "A new recording starts from the current board. The previous one stays in “My recordings”."
+      },
       "restartConfirm": {
         "title": "Start a new recording?",
         "bodyArchive": "The previous recording will be archived and remain in your recordings list.",

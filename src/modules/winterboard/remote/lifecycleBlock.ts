@@ -25,7 +25,7 @@ export function lifecycleBlockMessage(code: LifecycleBlockCode): string {
     case 'SESSION_ARCHIVED':
       return 'Сесію архівовано — створіть нову дошку'
     case 'REPLAY_FROZEN_NO_WRITE':
-      return 'Запис уроку завершено — на цій дошці нічого не зберігається. Натисніть «Новий запис», щоб писати далі'
+      return 'Запис уроку завершено — зміни на цій дошці не зберігаються. Почніть новий запис, щоб писати далі'
     case 'PAUSED_RECORDING_READ_ONLY':
       return 'Запис на паузі — продовжте запис перед малюванням'
   }

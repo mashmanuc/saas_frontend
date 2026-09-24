@@ -12,11 +12,13 @@ import { announceLifecycleBlock, lifecycleBlockMessage, LIFECYCLE_BLOCK_EVENT } 
 describe('lifecycleBlock — чесний тост + подія для кімнати', () => {
   beforeEach(() => { notifyWarning.mockClear(); notifyError.mockClear() })
 
-  it('REPLAY_FROZEN_NO_WRITE: текст веде до «Новий запис», а не «нова дошка»', () => {
+  it('REPLAY_FROZEN_NO_WRITE: текст веде до нового запису, а не «нова дошка»', () => {
+    // 2026-09-24: окремої кнопки «Новий запис» у соло більше немає (бейдж
+    // «Запис завершено» відкриває вікно) — тост не посилається на кнопку.
     const msg = lifecycleBlockMessage('REPLAY_FROZEN_NO_WRITE')
-    expect(msg).toContain('Новий запис')
+    expect(msg).toContain('новий запис')
     expect(msg).not.toContain('нову дошку')
-    expect(msg).toContain('не зберігається')
+    expect(msg).toContain('не зберігаються')
   })
 
   it('announce: warning-тост для frozen/paused, error для archived', () => {

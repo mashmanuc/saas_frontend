@@ -95,13 +95,22 @@
          у WBSoloRoom у цьому стані ЗАВЖДИ видно WBFrozenBanner (та сама умова
          `!constructorMode`) з тією самою кнопкою, і дві однакові кнопки поруч
          читались як дві різні дії. Перезапис із finalized живе там. -->
+    <!-- 2026-09-24: жовтої смуги WBFrozenBanner у соло більше немає, тож бейдж
+         сам став кнопкою — відкриває вікно «Запис завершено. Як продовжити?»
+         (parent: emit('restart')). Одна дія, дубля немає. -->
     <template v-else-if="recordingState === 'finalized'">
-      <div class="wb-recording-banner__frozen" :title="t('winterboard.recording.frozenHint')">
+      <button
+        type="button"
+        class="wb-recording-banner__frozen"
+        :title="t('winterboard.recording.restartConfirm.confirm')"
+        :disabled="isLoading"
+        @click="$emit('restart')"
+      >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
         <span>{{ t('winterboard.recording.frozen') }}</span>
-      </div>
+      </button>
     </template>
   </div>
 </template>
@@ -322,6 +331,11 @@ const formattedDuration = computed(() => {
   border: 1px solid #d1d5db;
   color: #374151;
   font-size: 0.7rem;
+  cursor: pointer;
+}
+.wb-recording-banner__frozen:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #9ca3af;
 }
 
 @keyframes wb-rec-blink {

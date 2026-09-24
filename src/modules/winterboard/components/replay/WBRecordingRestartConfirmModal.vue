@@ -3,6 +3,10 @@
   Backend архівує попередній active Replay, новий цикл починається з поточного
   стану дошки. UX cleanup: явно показуємо user-у що це не "continuation",
   а свідомий новий запис.
+
+  variant="frozenEdit" (2026-09-24, рішення власника): те саме вікно з'являється
+  на першу спробу змінити дошку з завершеним записом (соло) — коротко:
+  «Запис завершено. Як продовжити?» + «Почати новий запис» / «Скасувати».
 -->
 <template>
   <Teleport to="body">
@@ -17,7 +21,7 @@
         class="wb-rec-restart-dialog bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 relative"
         role="dialog"
         aria-modal="true"
-        :aria-label="t('winterboard.recording.restartConfirm.title')"
+        :aria-label="t(titleKey)"
         tabindex="-1"
       >
         <!-- Warning icon -->
@@ -30,18 +34,23 @@
         </div>
 
         <h2 class="wb-rec-restart-dialog__title">
-          {{ t('winterboard.recording.restartConfirm.title') }}
+          {{ t(titleKey) }}
         </h2>
 
-        <p class="wb-rec-restart-dialog__body">
-          {{ t('winterboard.recording.restartConfirm.bodyArchive') }}
+        <p v-if="variant === 'frozenEdit'" class="wb-rec-restart-dialog__body">
+          {{ t('winterboard.recording.frozenPrompt.body') }}
         </p>
-        <p class="wb-rec-restart-dialog__body">
-          {{ t('winterboard.recording.restartConfirm.bodyNew') }}
-        </p>
-        <p class="wb-rec-restart-dialog__hint">
-          {{ t('winterboard.recording.restartConfirm.hint') }}
-        </p>
+        <template v-else>
+          <p class="wb-rec-restart-dialog__body">
+            {{ t('winterboard.recording.restartConfirm.bodyArchive') }}
+          </p>
+          <p class="wb-rec-restart-dialog__body">
+            {{ t('winterboard.recording.restartConfirm.bodyNew') }}
+          </p>
+          <p class="wb-rec-restart-dialog__hint">
+            {{ t('winterboard.recording.restartConfirm.hint') }}
+          </p>
+        </template>
 
         <div class="wb-rec-restart-dialog__actions">
           <button
@@ -70,15 +79,17 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
   modelValue: boolean
   isLoading?: boolean
+  /** 'frozenEdit' — питання на першу спробу змінити дошку з завершеним записом */
+  variant?: 'restart' | 'frozenEdit'
 }
 
-const props = withDefaults(defineProps<Props>(), { isLoading: false })
+const props = withDefaults(defineProps<Props>(), { isLoading: false, variant: 'restart' })
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -88,6 +99,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n({ useScope: 'global' })
 const dialogRef = ref<HTMLElement | null>(null)
+const titleKey = computed(() => (props.variant === 'frozenEdit'
+  ? 'winterboard.recording.frozenPrompt.title'
+  : 'winterboard.recording.restartConfirm.title'))
 
 watch(
   () => props.modelValue,

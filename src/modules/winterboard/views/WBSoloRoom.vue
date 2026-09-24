@@ -23,18 +23,9 @@
     <OpsRestoreBanner />
     <ProtocolMismatchModal />
     <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
-         відхиляє всі операції. Постійний банер + read-only полотно замість
-         мовчазного тосту (борг із живого уроку 2026-09-03). -->
-    <!-- Поки відкрита картка «Запис готовий!» — банер чекає: одразу після
-         «Завершити запис» людина бачила три повідомлення про одне й те саме
-         (FIRST USER GATE 2026-09-23, крок 6). Спершу — що робити із записом,
-         потім — чому дошка лише для перегляду й кнопка «Новий запис». -->
-    <WBFrozenBanner
-      :visible="isBoardFrozen && !constructorMode && !showRecordingDonePrompt"
-      :can-restart="isSessionOwner && !!sessionId"
-      :busy="isRecordingLoading || isRestartingRecording"
-      @restart="handleRestartRecordingRequest"
-    />
+         відхиляє всі операції. 2026-09-24 (рішення власника): постійної жовтої
+         смуги WBFrozenBanner більше немає — у шапці «Запис завершено», а на
+         першу спробу змінити дошку — вікно «Як продовжити?» (frozenEditGuard). -->
 
     <!-- B5.1: Skip to canvas link for keyboard/screen reader users -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
@@ -144,8 +135,11 @@
              finalized → "Запис завершено" badge + "Новий запис" (з confirmation)
              Backend: pause/resume — той самий Replay cycle; restart — новий Replay
              (попередній archived). -->
+        <!-- Поза уроком — щойно запис не в спокої (2026-09-24): жовтої смуги
+             більше немає, тож «Запис завершено» в шапці — єдина позначка, а
+             новий запис, почато з вікна «Як продовжити?», має видимий REC. -->
         <WBRecordingBanner
-          v-if="isSessionOwner && isLessonPlay && !constructorMode"
+          v-if="isSessionOwner && (isLessonPlay || soloRecordingState !== 'idle') && !constructorMode"
           :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
@@ -497,7 +491,7 @@
           @lock-selected="handleLockSelected"
           @unlock-selected="handleUnlockSelected"
           @clear-page-request="handleClearPageRequest"
-          @youtube-insert="showYouTubeModal = true"
+          @youtube-insert="handleYouTubeInsertRequest"
           @formula-card-insert="handleFormulaCardInsert"
         />
       </aside>
@@ -521,7 +515,7 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="onCanvasDrop" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -942,11 +936,14 @@
       :kind="savedItemKind"
     />
 
-    <!-- Recording restart confirmation: finalized → новий cycle -->
+    <!-- Заморожена дошка: перша спроба змінити → «Запис завершено. Як продовжити?»
+         (2026-09-24). «Новий запис» у шапці стартує одразу, без цього вікна. -->
     <WBRecordingRestartConfirmModal
-      v-model="showRestartConfirmModal"
-      :is-loading="isRestartingRecording"
-      @confirm="confirmRestartRecording"
+      v-model="showFrozenPrompt"
+      variant="frozenEdit"
+      :is-loading="isRecordingLoading || isRestartingRecording"
+      @confirm="onFrozenStartNew"
+      @cancel="onFrozenCancel"
     />
 
     <!-- Phase 37: Test grade results modal -->
@@ -1134,6 +1131,13 @@ import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
+import {
+  FROZEN_CANVAS_EVENTS,
+  FROZEN_PROMPT_EVENT,
+  isEditingTool,
+  shouldInterceptCanvasEvent,
+  type PointerLike,
+} from '../board/frozenEditGuard'
 import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
 import { PLACE_SIDEBAR_CONTENT_KEY } from '../composables/usePlaceSidebarContent'
 import type { SidebarDragPayload } from '../types/boardDrop'
@@ -1193,7 +1197,6 @@ import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
-import WBFrozenBanner from '../components/replay/WBFrozenBanner.vue'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
@@ -1375,7 +1378,7 @@ const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
 
 // Confirmation modal для restart (finalized → новий cycle)
-const showRestartConfirmModal = ref(false)
+const showFrozenPrompt = ref(false)
 const isRestartingRecording = ref(false)
 // INV-LESSON-PLAY: True = сесія відкрита через "Провести урок" (loadToSession).
 // Тільки для таких сесій показується WBRecordingBanner.
@@ -1509,9 +1512,12 @@ async function handleResumeRecording(): Promise<void> {
 // Restart: finalized → новий cycle (потребує user confirmation).
 // Banner emit('restart') → відкриваємо modal. Confirm → handleStartRecording
 // (BE сам архівує попередній Replay).
+// Бейдж «Запис завершено» у шапці → те саме вікно «Як продовжити?», що й на
+// спробу змінити дошку (2026-09-24): одна дія, один текст, без другого кроку.
 function handleRestartRecordingRequest(): void {
   if (isRecordingLoading.value || isRestartingRecording.value) return
-  showRestartConfirmModal.value = true
+  _frozenPending = null
+  showFrozenPrompt.value = true
 }
 
 async function confirmRestartRecording(): Promise<void> {
@@ -1519,7 +1525,6 @@ async function confirmRestartRecording(): Promise<void> {
   isRestartingRecording.value = true
   try {
     await handleStartRecording()
-    showRestartConfirmModal.value = false
   } finally {
     isRestartingRecording.value = false
   }
@@ -1875,6 +1880,67 @@ const isSessionOwner = computed(() => {
   return String(store.ownerId) === String(authStore.user.id)
 })
 
+// ─── Заморожена дошка: перша спроба змінити → одне питання (2026-09-24) ─────
+// Рішення власника: жовтої смуги немає; коли власник береться змінювати дошку
+// з завершеним записом — вікно «Почати новий запис» / «Скасувати». Сервер такі
+// зміни однаково відхилив би (INV-23), тож краще спитати ДО дії, ніж мовчки
+// загубити її. Дія з кнопки / «+» у панелі виконується після старту запису;
+// штрих пером повторити нема як — після вибору вчитель просто малює.
+const frozenGuardActive = computed(() =>
+  isBoardFrozen.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value)
+let _frozenPending: (() => void) | null = null
+
+/** true → дію перехоплено (вікно відкрито); false → виконуй як завжди. */
+function guardFrozenEdit(action?: () => void): boolean {
+  if (!frozenGuardActive.value) return false
+  _frozenPending = action ?? null
+  showFrozenPrompt.value = true
+  return true
+}
+
+async function onFrozenStartNew(): Promise<void> {
+  await confirmRestartRecording()
+  showFrozenPrompt.value = false
+  const pending = _frozenPending
+  _frozenPending = null
+  // Запис не стартував (помилку показує handleStartRecording) — дію не виконуємо.
+  if (pending && !isBoardFrozen.value) pending()
+}
+
+function onFrozenCancel(): void {
+  _frozenPending = null
+  if (isEditingTool(store.currentTool)) store.setTool('select')
+}
+
+// Щойно дошка замерзла — зняти виділення: інакше інспектор виділеної картки
+// (перемикачі геометрії тощо) лишився б у панелі й міняв дошку повз питання.
+watch(isBoardFrozen, (frozen) => { if (frozen) store.clearSelection() })
+
+// Вибір пера/фігур/тексту/гумки (кнопкою чи клавішею) — теж спроба змінити.
+watch(() => store.currentTool, (tool) => {
+  if (isEditingTool(tool)) guardFrozenEdit()
+})
+
+// Полотно: натискання/клік на замороженій дошці не доходять до карток і
+// Konva, а відкривають питання. Колесо, середня кнопка, pinch — вільні.
+function onFrozenCanvasEvent(e: Event): void {
+  if (!frozenGuardActive.value) return
+  if (!shouldInterceptCanvasEvent(e as unknown as PointerLike)) return
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.type === FROZEN_PROMPT_EVENT) guardFrozenEdit()
+}
+onMounted(() => {
+  const el = canvasContainerRef.value
+  if (!el) return
+  for (const type of FROZEN_CANVAS_EVENTS) el.addEventListener(type, onFrozenCanvasEvent, { capture: true })
+})
+onBeforeUnmount(() => {
+  const el = canvasContainerRef.value
+  if (!el) return
+  for (const type of FROZEN_CANVAS_EVENTS) el.removeEventListener(type, onFrozenCanvasEvent, { capture: true })
+})
+
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
 const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tablet')
 
@@ -2185,7 +2251,11 @@ function insertToolAtCenter(mime: string, payloadStr: string) {
   const cy = (container.clientHeight / 2 - offset.y) / zoom + step
   contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
 }
-provide(ADD_TOOL_TO_BOARD_KEY, insertToolAtCenter)
+// Заморожена дошка: «+» у панелі → питання; після старту запису вставка виконується.
+provide(ADD_TOOL_TO_BOARD_KEY, (mime: string, payloadStr: string) => {
+  if (guardFrozenEdit(() => insertToolAtCenter(mime, payloadStr))) return
+  insertToolAtCenter(mime, payloadStr)
+})
 
 // Phase 2.7: Інтегралик вставляє мат-інструмент за смислом — той самий санкціонований
 // шлях, що tray "+" (addAtPosition). boardActions резолвить insert_id → mime+payload.
@@ -2616,7 +2686,7 @@ useKeyboard({
   onToolChange: (tool: WBToolType) => store.setTool(tool),
   onUndo: () => handleUndo(),
   onRedo: () => handleRedo(),
-  onDelete: () => handleDeleteSelected(),
+  onDelete: () => { if (!guardFrozenEdit(() => handleDeleteSelected())) handleDeleteSelected() },
   onEscape: () => { selectedId.value = null },
   onPagePrev: () => handlePagePrev(),
   onPageNext: () => handlePageNext(),
@@ -2625,8 +2695,8 @@ useKeyboard({
   onZoomReset: () => handleZoomReset(),
   onSelectAll: () => handleSelectAll(),
   onCopy: () => boardClipboard.copySelected(),
-  onPaste: () => boardClipboard.pasteInternal(),
-  onCut: () => boardClipboard.cutSelected(),
+  onPaste: () => { if (!guardFrozenEdit(() => boardClipboard.pasteInternal())) boardClipboard.pasteInternal() },
+  onCut: () => { if (!guardFrozenEdit(() => boardClipboard.cutSelected())) boardClipboard.cutSelected() },
 })
 
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
@@ -2870,7 +2940,13 @@ function handleSendToPage(pageIndex: number): void {
 // ─── Handlers: Formula Card ──────────────────────────────────────────────────
 
 /** Викликається з WBToolbar → 'formula-card-insert' */
+function handleYouTubeInsertRequest(): void {
+  if (guardFrozenEdit(() => handleYouTubeInsertRequest())) return
+  showYouTubeModal.value = true
+}
+
 function handleFormulaCardInsert(): void {
+  if (guardFrozenEdit(() => handleFormulaCardInsert())) return
   editingFormulaAssetId.value = null
   showFormulaModal.value = true
 }
@@ -2967,18 +3043,21 @@ function handleSizeChange(size: number): void {
 // ─── Handlers: Undo / Redo / Clear ──────────────────────────────────────────
 
 function handleUndo(): void {
+  if (guardFrozenEdit(() => handleUndo())) return
   store.undo()
   // B5.1: Announce undo to screen readers
   announce(t('winterboard.a11y.undoAction', { action: t('winterboard.a11y.strokeRemoved') }))
 }
 
 function handleRedo(): void {
+  if (guardFrozenEdit(() => handleRedo())) return
   store.redo()
   // B5.1: Announce redo to screen readers
   announce(t('winterboard.a11y.redoAction', { action: t('winterboard.a11y.strokeRestored') }))
 }
 
 function handleClear(): void {
+  if (guardFrozenEdit(() => handleClear())) return
   store.clearPage()
 }
 
@@ -3241,6 +3320,13 @@ let _lastTestClickTs = 0
 let _pendingLabelEditId: string | null = null
 
 /** Convert DOM click to canvas coordinates and dispatch to test handler */
+// Перетягнутий матеріал на замороженій дошці: дані drag живуть лише в цій
+// події, тож повторити вставку після старту запису нема як — лише питання.
+function onCanvasDrop(e: DragEvent): void {
+  if (guardFrozenEdit()) { e.preventDefault(); return }
+  contentDrop.handleCanvasDrop(e)
+}
+
 function onCanvasContainerClick(e: MouseEvent) {
   // Phase 38: deselect тестового об'єкту при кліку на canvas (overlay = pointer-events:none)
   // НЕ десілектимо якщо клік був на самому тестовому елементі

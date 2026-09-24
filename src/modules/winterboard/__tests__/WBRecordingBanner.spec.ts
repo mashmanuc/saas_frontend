@@ -17,15 +17,18 @@ describe('WBRecordingBanner', () => {
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 
-  it('finalized: лише бейдж «Запис завершено», без власної кнопки', () => {
-    // FIRST USER GATE 2026-09-23, крок 6: кнопка «Новий запис» була і тут, і в
-    // WBFrozenBanner — дві однакові поруч. Властивість «з finalized можна
-    // перезаписати» (re-record guard 2026-05-19, DIR-хвости-2 §3) жива: її
-    // тримає WBFrozenBanner (WBFrozenBanner.spec — кнопка емітить restart),
-    // який у WBSoloRoom видно за тієї ж умови, що й цей бейдж.
+  it('finalized: бейдж «Запис завершено» — єдина кнопка, емітить restart', async () => {
+    // Історія: 2026-09-23 (FIRST USER GATE, крок 6) кнопку «Новий запис» звідси
+    // прибрали, бо поруч була жовта смуга WBFrozenBanner з тією самою кнопкою.
+    // 2026-09-24 (рішення власника) смуги в соло немає — властивість «з
+    // finalized можна перезаписати» (re-record guard 2026-05-19) тепер тримає
+    // сам бейдж: клік → restart → вікно «Запис завершено. Як продовжити?».
     const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
-    expect(w.find('.wb-recording-banner__frozen').exists()).toBe(true)
-    expect(w.find('button').exists()).toBe(false)
+    const badge = w.find('button.wb-recording-banner__frozen')
+    expect(badge.exists()).toBe(true)
+    expect(w.findAll('button')).toHaveLength(1)
+    await badge.trigger('click')
+    expect(w.emitted('restart')).toHaveLength(1)
   })
 
   it('does NOT show start button in recording state', () => {
