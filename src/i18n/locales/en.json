@@ -8481,7 +8481,7 @@
       "voiceUnsupported": "Voice is not available in this browser — buttons still work.",
       "connectPage": {
         "title": "Phone remote",
-        "lead": "Your phone turns the pages on the wall, puts a task on screen and listens to your voice — you don't need to look at it.",
+        "lead": "Control the board from your phone without walking to the computer: turn pages, show a card full screen, dictate commands.",
         "howTitle": "How to connect",
         "step1": "Point your phone camera at the code or type the address.",
         "step2": "Sign in on the phone with the same account:",
