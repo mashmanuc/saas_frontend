@@ -923,6 +923,7 @@ import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { nextAutoFitHeight } from '../../composables/autoFitHeight'
+import { useLayerRepaint } from '../../composables/useLayerRepaint'
 import { filterEvidenceCards } from '../../board/evidenceCards'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
@@ -2106,6 +2107,14 @@ let lastPenActivityTime = 0
 const PEN_ZOOM_BLOCK_MS = 800
 const shapePreview = ref<{ x: number; y: number; width: number; height: number } | null>(null)
 const selectedNode = shallowRef<Konva.Node | null>(null)
+// P1 (власник 2026-09-24): після зміни масштабу й зняття виділення на аркуші
+// лишались сині лінії та ручки — старі пікселі UI-шару, які ніхто не стер
+// (виміряно на проді: пікселі саме на цьому полотні, `resize` їх прибирав).
+// Кажемо Konva перемалювати шар, коли змінилось те, що на ньому має бути.
+useLayerRepaint(
+  () => (uiLayerRef.value as { getNode?: () => { batchDraw?: () => void } } | null)?.getNode?.(),
+  [() => props.zoom, () => wbStore.selectedIds.length, () => selectedNode.value],
+)
 const editingText = ref<WBStroke | null>(null)
 const editingTextValue = ref('')
 // BUG-FIX: Guard against immediate blur after textarea creation
