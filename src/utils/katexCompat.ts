@@ -616,6 +616,70 @@ function fixHlinePosition(tex: string): string {
 }
 
 /**
+ * Команди, які KaTeX приймає ВСЕРЕДИНІ `\text{…}`. Решта — математичні: на
+ * них рендер каже «Can't use function '\sqrt' in text mode» і, оскільки в
+ * `contentRenderer` стоїть `throwOnError: false`, малює ДЖЕРЕЛО червоним
+ * просто в картці.
+ */
+const TEXT_MODE_SAFE = new Set([
+  'text', 'textbf', 'textit', 'textrm', 'textsf', 'texttt', 'textnormal',
+  'quad', 'qquad', 'ldots', 'dots', ' ', ',', ';', ':', '!', '%', '$', '&',
+  '#', '_', '{', '}',
+])
+
+/** Чи є всередині `\text{…}` те, чого в текстовому режимі бути не може. */
+function hasMathInside(inner: string): boolean {
+  if (/(?<!\\)[\^_]/.test(inner)) return true
+  const commands = inner.match(/\\([a-zA-Z]+|.)/g) || []
+  return commands.some((c) => !TEXT_MODE_SAFE.has(c.slice(1)))
+}
+
+/**
+ * Зняти `\text{…}` з математики.
+ *
+ * ЧОМУ (власник 2026-09-25, під час запису ролика): Інтегралик поклав на
+ * дошку картку з `\frac{{\text{\sqrt3}}}{2}` — і замість «√3⁄2» у картці
+ * лишився червоний сирий LaTeX. Модель огортає символ у `\text{}`, бо в
+ * природній мові так «безпечніше», а KaTeX саме на цьому падає.
+ *
+ * Прозу чіпати не можна: `\text{сума кутів}` має лишитись текстом. Тому
+ * розгортаємо ЛИШЕ ті `\text{…}`, усередині яких є команда, недозволена в
+ * текстовому режимі, або `^`/`_`.
+ */
+function unwrapMathInText(tex: string): string {
+  if (!tex.includes('\\text{')) return tex
+  let current = tex
+  // Кілька проходів: `\text{\text{\sqrt3}}` розгортається шар за шаром.
+  for (let pass = 0; pass < 3; pass++) {
+    let out = ''
+    let i = 0
+    let changed = false
+    for (;;) {
+      const start = current.indexOf('\\text{', i)
+      if (start === -1) { out += current.slice(i); break }
+      out += current.slice(i, start)
+      const open = start + '\\text'.length
+      let depth = 0
+      let end = -1
+      for (let j = open; j < current.length; j++) {
+        const ch = current[j]
+        if (current[j - 1] === '\\') continue      // екранована дужка — не наша
+        if (ch === '{') depth++
+        else if (ch === '}') { depth--; if (depth === 0) { end = j; break } }
+      }
+      if (end === -1) { out += current.slice(start); break }   // незакрита — не чіпаємо
+      const inner = current.slice(open + 1, end)
+      if (hasMathInside(inner)) { out += inner; changed = true }
+      else out += current.slice(start, end + 1)
+      i = end + 1
+    }
+    current = out
+    if (!changed) break
+  }
+  return current
+}
+
+/**
  * Єдина точка входу для математичних сегментів.
  *
  * Навмисно одна функція, а не набір: наступну несумісність додавати сюди,
@@ -652,5 +716,6 @@ export function toKatexCompatible(tex: string): string {
     .replace(/√\s*(?=[{(\d])/g, '\\sqrt')
     .replace(/[–—]/g, '-')
   return fixHlinePosition(
-    newlineRowsToBreaks(stripArrayColumnSeparators(tabularToArray(symbolsToCommands))))
+    newlineRowsToBreaks(stripArrayColumnSeparators(
+      tabularToArray(unwrapMathInText(symbolsToCommands)))))
 }

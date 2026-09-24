@@ -276,7 +276,11 @@ describe('обидва рендерери лікуються разом', () => 
     const path = await import('node:path')
     const src = await fs.readFile(path.resolve(process.cwd(),
       'src/modules/winterboard/components/shared/MathExpr.vue'), 'utf-8')
-    expect(src).toContain('toKatexCompatible(asciiMathToLatex(src))')
+    // Сторож застарів, коли Parameter Focus додав аргумент
+    // (`asciiMathToLatex(src, { highlightIdent })`) — і з того часу був
+    // просто червоним, тобто не стеріг нічого. Звіряємо саме порядок
+    // шарів, а не повний рядок виклику.
+    expect(src).toContain('toKatexCompatible(asciiMathToLatex(')
   })
 })
 
@@ -333,5 +337,30 @@ describe('H (114) — градуси, записані як `^{o}`', () => {
     // Тести падали на СПРАВНОМУ коді. Дописувати сюди — лише редактором.
     const out = normalizeSourceText('Кут 30^{o}, тобто $x = 60^{o}$ і ще 90^{o}')
     expect(out).toBe('Кут 30°, тобто $x = 60^\\circ$ і ще 90°')
+  })
+})
+
+// ── \text{} з математикою всередині ────────────────────────────────────────
+// Власник 2026-09-25, під час запису ролика: Інтегралик поклав картку з
+// `\frac{{\text{\sqrt3}}}{2}` — і в картці лишився червоний сирий LaTeX
+// (KaTeX: «Can't use function '\sqrt' in text mode», а `contentRenderer`
+// малює джерело, бо в нього `throwOnError: false`).
+describe('математика всередині \text{}', () => {
+  it('формула власника рендериться, а не лишається джерелом', () => {
+    expect(renders(String.raw`\frac{{\text{\sqrt3}}}{2}`)).toBe(true)
+    expect(renders(String.raw`\text{\sqrt3}`)).toBe(true)
+    expect(renders(String.raw`\frac{\text{\frac{1}{2}}}{3}`)).toBe(true)
+  })
+
+  it('обгортка знімається лише з математики — проза лишається текстом', () => {
+    const prose = toKatexCompatible(String.raw`\text{сума кутів трикутника}`)
+    expect(prose).toBe(String.raw`\text{сума кутів трикутника}`)
+    // Мішаний випадок: текст поруч із формулою не має зникнути.
+    const mixed = toKatexCompatible(String.raw`\text{кут } \alpha`)
+    expect(mixed).toContain(String.raw`\text{кут }`)
+  })
+
+  it('верхній індекс у \text{} теж ламає рендер — розгортаємо', () => {
+    expect(renders(String.raw`\frac{\text{a^2}}{2}`)).toBe(true)
   })
 })
