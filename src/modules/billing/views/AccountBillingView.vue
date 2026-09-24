@@ -1,6 +1,11 @@
 <template>
   <div class="space-y-6">
-    <Card class="space-y-2">
+    <!-- Шапка сторінки — лише коли показуємо платний екран. На «Ранньому
+         доступі» вона дублювала б заголовок: «Ваш план / Перегляньте поточний
+         план та керуйте підпискою» одразу над «Доступ до M4SH / Поки що M4SH
+         доступний без оплати» (власник побачив це на проді 2026-09-24). Керує
+         підпискою там нічим, тож і обіцяти цього не треба. -->
+    <Card v-if="!showEarlyAccess" class="space-y-2">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Heading :level="1">{{ $t('billing.page.title') }}</Heading>

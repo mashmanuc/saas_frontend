@@ -78,6 +78,10 @@ describe('екран тарифу, поки продаж вимкнено', () =
     expect(w.findComponent({ name: 'PaymentHistorySection' }).exists()).toBe(false)
     expect(w.find('[data-testid="sales-disabled-notice"]').exists()).toBe(false)
     expect(w.text()).not.toContain('FREE')
+    // Шапка «Ваш план / керуйте підпискою» дублювала б заголовок екрана
+    // (власник побачив на проді 2026-09-24), а керувати там нічим.
+    expect(w.text()).not.toContain('billing.page.title')
+    expect(w.text()).not.toContain('billing.page.subtitle')
   })
 
   it('INV-EA-3: /billing/plans/ упав → звичайний екран, а не ранній доступ', async () => {
@@ -143,5 +147,6 @@ describe('екран тарифу, поки продаж вимкнено', () =
     expect(w.findComponent({ name: 'CurrentPlanCard' }).exists()).toBe(true)
     expect(w.findComponent({ name: 'PlansList' }).exists()).toBe(true)
     expect(w.findComponent({ name: 'PaymentHistorySection' }).exists()).toBe(true)
+    expect(w.text()).toContain('billing.page.title')   // шапка платного екрана на місці
   })
 })
