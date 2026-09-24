@@ -41,7 +41,9 @@ const PLAN = {
 
 function me(overrides: Partial<BillingMeDto> = {}): BillingMeDto {
   return {
-    subscription: null,
+    // Дзеркало прода 2026-09-24: без підписки сервер віддає ОБ'ЄКТ зі
+    // `status: 'none'`, а не null. Тест на `null` пропустив би дефект.
+    subscription: { status: 'none', provider: 'none', current_period_end: null, cancel_at_period_end: false, canceled_at: null } as never,
     entitlement: { plan_code: 'FREE', features: [], expires_at: null },
     pending_plan_code: null, pending_since: null,
     display_plan_code: 'FREE', subscription_status: 'none',
@@ -62,7 +64,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   getMe.mockResolvedValue(me())
   getPlans.mockResolvedValue({ plans: [PLAN], sales_enabled: false })
-  getPaymentHistory.mockResolvedValue({ items: [], total: 0 })
+  getPaymentHistory.mockResolvedValue({ results: [], count: 0 })
 })
 
 describe('екран тарифу, поки продаж вимкнено', () => {
@@ -107,7 +109,7 @@ describe('екран тарифу, поки продаж вимкнено', () =
 
     setActivePinia(createPinia())
     getMe.mockResolvedValue(me())
-    getPaymentHistory.mockResolvedValue({ items: [{ id: 1 }], total: 1 })
+    getPaymentHistory.mockResolvedValue({ results: [{ id: 1 }], count: 1 })
     expect((await mountView()).find('[data-testid="early-access"]').exists()).toBe(false)
   })
 
@@ -122,6 +124,16 @@ describe('екран тарифу, поки продаж вимкнено', () =
     getPlans.mockRejectedValue(new Error('500'))
     await store.fetchPlans().catch(() => {})
     expect(store.plansAnswered).toBe(false)
+  })
+
+  // Підписка вже активна, а entitlement ще не перемкнувся (вікно між оплатою
+  // і вебхуком): людина платить — раннього доступу вона бачити не має.
+  it('INV-EA-4-три: активна підписка при FREE-entitlement теж лишає екран як був', async () => {
+    getMe.mockResolvedValue(me({
+      subscription: { status: 'active', provider: 'liqpay', current_period_end: '2026-12-01T00:00:00Z', cancel_at_period_end: false, canceled_at: null } as never,
+    }))
+    const w = await mountView()
+    expect(w.find('[data-testid="early-access"]').exists()).toBe(false)
   })
 
   it('INV-EA-5: продаж увімкнено → платний екран без змін', async () => {

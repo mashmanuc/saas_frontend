@@ -137,7 +137,10 @@ const showEarlyAccess = computed(() =>
   billingStore.plansAnswered &&
   !billingStore.salesEnabled &&
   billingStore.isFree &&
-  !billingStore.subscription &&
+  // ⚠️ Сервер віддає `subscription` ОБ'ЄКТОМ навіть без підписки:
+  // `{status: 'none', plan_code: 'FREE', provider: 'none', …}` (звірено на
+  // проді 2026-09-24). Перевірка «об'єкт є» ховала б екран від усіх.
+  (billingStore.subscription?.status ?? 'none') === 'none' &&
   !billingStore.pendingPlanCode &&
   hadPayments.value === false
 )
@@ -157,7 +160,12 @@ async function loadData() {
       // Помилка тут не ховає нічого: `hadPayments` лишиться null, і сторінка
       // покаже звичайний вміст, а не ранній доступ (fail-closed).
       getPaymentHistory(1, 0)
-        .then((res) => { hadPayments.value = (res?.total ?? res?.items?.length ?? 0) > 0 })
+        // Форма відповіді — `{results: [], count: 0}` (звірено на проді);
+        // `total/items` лишаємо як запасні назви, щоб не залежати від однієї.
+        .then((res) => {
+          const count = res?.count ?? res?.total ?? res?.results?.length ?? res?.items?.length ?? 0
+          hadPayments.value = count > 0
+        })
         .catch(() => { hadPayments.value = null }),
     ])
   } catch (error) {
