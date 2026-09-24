@@ -1131,13 +1131,7 @@ import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
-import {
-  FROZEN_CANVAS_EVENTS,
-  FROZEN_PROMPT_EVENT,
-  isEditingTool,
-  shouldInterceptCanvasEvent,
-  type PointerLike,
-} from '../board/frozenEditGuard'
+import { useFrozenEditGuard } from '../composables/useFrozenEditGuard'
 import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
 import { PLACE_SIDEBAR_CONTENT_KEY } from '../composables/usePlaceSidebarContent'
 import type { SidebarDragPayload } from '../types/boardDrop'
@@ -1378,7 +1372,6 @@ const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
 
 // Confirmation modal для restart (finalized → новий cycle)
-const showFrozenPrompt = ref(false)
 const isRestartingRecording = ref(false)
 // INV-LESSON-PLAY: True = сесія відкрита через "Провести урок" (loadToSession).
 // Тільки для таких сесій показується WBRecordingBanner.
@@ -1516,8 +1509,7 @@ async function handleResumeRecording(): Promise<void> {
 // спробу змінити дошку (2026-09-24): одна дія, один текст, без другого кроку.
 function handleRestartRecordingRequest(): void {
   if (isRecordingLoading.value || isRestartingRecording.value) return
-  _frozenPending = null
-  showFrozenPrompt.value = true
+  openFrozenPrompt()
 }
 
 async function confirmRestartRecording(): Promise<void> {
@@ -1882,63 +1874,23 @@ const isSessionOwner = computed(() => {
 
 // ─── Заморожена дошка: перша спроба змінити → одне питання (2026-09-24) ─────
 // Рішення власника: жовтої смуги немає; коли власник береться змінювати дошку
-// з завершеним записом — вікно «Почати новий запис» / «Скасувати». Сервер такі
-// зміни однаково відхилив би (INV-23), тож краще спитати ДО дії, ніж мовчки
-// загубити її. Дія з кнопки / «+» у панелі виконується після старту запису;
-// штрих пером повторити нема як — після вибору вчитель просто малює.
-const frozenGuardActive = computed(() =>
-  isBoardFrozen.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value)
-let _frozenPending: (() => void) | null = null
-
-/** true → дію перехоплено (вікно відкрито); false → виконуй як завжди. */
-function guardFrozenEdit(action?: () => void): boolean {
-  if (!frozenGuardActive.value) return false
-  _frozenPending = action ?? null
-  showFrozenPrompt.value = true
-  return true
-}
-
-async function onFrozenStartNew(): Promise<void> {
-  await confirmRestartRecording()
-  showFrozenPrompt.value = false
-  const pending = _frozenPending
-  _frozenPending = null
-  // Запис не стартував (помилку показує handleStartRecording) — дію не виконуємо.
-  if (pending && !isBoardFrozen.value) pending()
-}
-
-function onFrozenCancel(): void {
-  _frozenPending = null
-  if (isEditingTool(store.currentTool)) store.setTool('select')
-}
-
-// Щойно дошка замерзла — зняти виділення: інакше інспектор виділеної картки
-// (перемикачі геометрії тощо) лишився б у панелі й міняв дошку повз питання.
-watch(isBoardFrozen, (frozen) => { if (frozen) store.clearSelection() })
-
-// Вибір пера/фігур/тексту/гумки (кнопкою чи клавішею) — теж спроба змінити.
-watch(() => store.currentTool, (tool) => {
-  if (isEditingTool(tool)) guardFrozenEdit()
-})
-
-// Полотно: натискання/клік на замороженій дошці не доходять до карток і
-// Konva, а відкривають питання. Колесо, середня кнопка, pinch — вільні.
-function onFrozenCanvasEvent(e: Event): void {
-  if (!frozenGuardActive.value) return
-  if (!shouldInterceptCanvasEvent(e as unknown as PointerLike)) return
-  e.preventDefault()
-  e.stopPropagation()
-  if (e.type === FROZEN_PROMPT_EVENT) guardFrozenEdit()
-}
-onMounted(() => {
-  const el = canvasContainerRef.value
-  if (!el) return
-  for (const type of FROZEN_CANVAS_EVENTS) el.addEventListener(type, onFrozenCanvasEvent, { capture: true })
-})
-onBeforeUnmount(() => {
-  const el = canvasContainerRef.value
-  if (!el) return
-  for (const type of FROZEN_CANVAS_EVENTS) el.removeEventListener(type, onFrozenCanvasEvent, { capture: true })
+// з завершеним записом — вікно «Почати новий запис» / «Скасувати». Механізм
+// спільний із класною кімнатою — composables/useFrozenEditGuard.ts.
+const {
+  showPrompt: showFrozenPrompt,
+  guard: guardFrozenEdit,
+  openPrompt: openFrozenPrompt,
+  onStartNew: onFrozenStartNew,
+  onCancel: onFrozenCancel,
+} = useFrozenEditGuard({
+  frozen: isBoardFrozen,
+  active: computed(() =>
+    isBoardFrozen.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value),
+  currentTool: () => store.currentTool,
+  setTool: (tool) => store.setTool(tool),
+  clearSelection: () => store.clearSelection(),
+  canvasEl: canvasContainerRef,
+  startNewRecording: () => confirmRestartRecording(),
 })
 
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
