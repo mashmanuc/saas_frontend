@@ -922,6 +922,7 @@
 
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
+import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import WBSheetScrollbars from './WBSheetScrollbars.vue'
 import { useI18n } from 'vue-i18n'
 import getStroke from 'perfect-freehand'
@@ -1620,8 +1621,37 @@ const windowControlsActions = computed(() =>
 
 const windowControlsWidth = ref(0)
 const windowControlsHeight = ref(0)
+// PDF/DOCX, картинки, стікери рухаються лише на полотні: до кінця руху стор
+// позиції не знає, тож кнопки «— ⛶ ×» стояли на старому місці (скрін власника
+// 2026-09-24). Поки вузол цілі рухається/змінює розмір — беремо рамку з вузла.
+// Скидаємо, щойно стор отримав нову позицію (або змінилась ціль).
+const controlsLiveFrame = shallowRef<{ id: string; x: number; y: number; w: number; h: number } | null>(null)
+function trackControlsTarget(e: Konva.KonvaEventObject<Event>): void {
+  const t = windowControlsTarget.value
+  const node = e.target as Konva.Node
+  if (!t || typeof node?.id !== 'function' || node.id() !== t.id) return
+  const layer = node.getLayer()
+  if (!layer) return
+  const r = node.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true })
+  controlsLiveFrame.value = { id: t.id, x: r.x, y: r.y, w: r.width, h: r.height }
+}
+watch(
+  () => {
+    const t = windowControlsTarget.value
+    return t ? [t.id, t.x, t.y, t.w, t.h] : null
+  },
+  () => { controlsLiveFrame.value = null },
+)
+/** Ціль кнопок з урахуванням живого руху вузла. */
+const controlsFrameAsset = computed<WBAsset | null>(() => {
+  const t = windowControlsTarget.value
+  const live = controlsLiveFrame.value
+  if (!t) return null
+  return live && live.id === t.id ? { ...t, x: live.x, y: live.y, w: live.w, h: live.h, rotation: 0 } : t
+})
+
 const areWindowControlsCovered = computed(() => {
-  const target = windowControlsTarget.value
+  const target = controlsFrameAsset.value
   if (!target || expandedAssetId.value === target.id) return false
   const index = assets.value.findIndex((asset) => asset.id === target.id)
   if (index < 0) return false
@@ -1659,7 +1689,7 @@ const windowControlsStyle = computed<Record<string, string>>(() => {
   if (expandedAssetId.value === asset.id) {
     return { top: `${WINDOW_CONTROLS_INSET_PX}px`, right: `${WINDOW_CONTROLS_INSET_PX}px`, zIndex, visibility }
   }
-  const frame = getOverlayStyle(asset)
+  const frame = getOverlayStyle(controlsFrameAsset.value ?? asset)
   // У шапці картки, праворуч (власник 2026-09-24: збоку — «як апендицити»).
   return { ...windowControlsPlacement(
     { left: parseFloat(frame.left), top: parseFloat(frame.top), width: parseFloat(frame.width) },
@@ -4360,27 +4390,6 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   }
 }
 
-/**
- * Жива межа перетягування (власник 2026-09-24: «не вилазили за лівий і верхній
- * край»). Konva кличе її на кожен рух із запропонованою абсолютною позицією
- * вузла; ми рахуємо, де опиниться його рамка в координатах аркуша, і не пускаємо
- * лівіше x=0 та вище y=0. Одна функція на всі перетягувані вузли — картки,
- * картинки, штрихи, лінії, фігури. Кінець руху ще раз клемпить стор.
- */
-function keepInsideTopLeft(this: Konva.Node, pos: Konva.Vector2d): Konva.Vector2d {
-  const layer = this.getLayer()
-  if (!layer) return pos
-  const cur = this.absolutePosition()
-  const scale = layer.getAbsoluteScale().x || 1
-  const rect = this.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true })
-  const nx = rect.x + (pos.x - cur.x) / scale
-  const ny = rect.y + (pos.y - cur.y) / scale
-  return {
-    x: nx < 0 ? pos.x - nx * scale : pos.x,
-    y: ny < 0 ? pos.y - ny * scale : pos.y,
-  }
-}
-
 /** Мінімум картки, що МУСИТЬ лишатись у межах сторінки, щоб хедер був досяжним. */
 const ASSET_REACH_PX = 48
 
@@ -5477,10 +5486,13 @@ onMounted(async () => {
     cacheBackgroundLayer()
     initPreviewCanvas()
     initStrokesOverlay()
+    // Кнопки «— ⛶ ×» ідуть за вузлом під час руху/зміни розміру (події спливають до stage).
+    stageRef.value?.getStage?.()?.on('dragmove.wbWinCtl transform.wbWinCtl', trackControlsTarget)
   })
 })
 
 onUnmounted(() => {
+  stageRef.value?.getStage?.()?.off('.wbWinCtl')
   // Remote laser cleanup
   window.removeEventListener('wb:remote-laser', onRemoteLaser)
   // BUG-3 FIX: Remove global mouseup listeners

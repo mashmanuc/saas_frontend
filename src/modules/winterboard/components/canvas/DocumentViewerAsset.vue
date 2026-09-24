@@ -51,6 +51,7 @@
  */
 import { computed, ref, watch, onMounted } from 'vue'
 import type { WBAsset } from '../../types/winterboard'
+import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -191,6 +192,8 @@ const groupConfig = computed(() => ({
   width: props.asset.w,
   height: props.asset.h,
   draggable: props.interactive && !props.asset.locked,
+  // Лівий/верхній край аркуша — межа й під час руху (власник 2026-09-24).
+  dragBoundFunc: keepInsideTopLeft,
   // не select-інструмент → listening:false: pointerdown падає на stage-handler
   // малювання (штрих поверх PDF), а не на цю ноду (drag документа)
   listening: props.interactive,

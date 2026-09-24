@@ -192,3 +192,76 @@ test('під час перетягування PDF рамка виділення
   await page.mouse.up()
   expect(staleAlpha, `На старому місці лишилась напівпрозора рамка (alpha ${staleAlpha})`).toBe(0)
 })
+
+test('перетягування документа: кнопки йдуть за ним, і він не заїжджає за лівий край', async ({ page }) => {
+  // Скрін власника 2026-09-24: DOCX потягли ліворуч — «— ×» лишились на старому
+  // місці, а документ заїхав за лівий край аркуша.
+  await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+  await page.goto('/workspace')
+  await page.waitForFunction(() => !!localStorage.getItem('m4sh:local-ws:v1'))
+  const snapshotJson = await page.evaluate(() => {
+    const snapshot = JSON.parse(localStorage.getItem('m4sh:local-ws:v1') || 'null')
+    if (!snapshot?.state?.pages?.length) throw new Error('Немає локального стану')
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ff0000"/></svg>`
+    snapshot.state.pages = [{
+      ...snapshot.state.pages[0],
+      strokes: [],
+      assets: [
+        { id: 'move-doc', type: 'document_viewer', src: '', x: 300, y: 200, w: 400, h: 300,
+          rotation: 0, locked: false, currentPage: 0, totalPages: 1,
+          pages: [{ index: 0, url: `data:image/svg+xml,${encodeURIComponent(svg)}` }] },
+      ],
+    }]
+    snapshot.state.currentPageIndex = 0
+    return JSON.stringify(snapshot)
+  })
+  await page.addInitScript((value) => localStorage.setItem('m4sh:local-ws:v1', value), snapshotJson)
+  await page.reload()
+  await expect(page.locator('.wb-canvas-loader')).toHaveCount(0)
+  await page.waitForFunction(() => {
+    const K = (window as any).Konva
+    return !!K?.stages?.some((s: any) => s.findOne('#move-doc'))
+  })
+
+  const docRect = () => page.evaluate(() => {
+    const K = (window as any).Konva
+    const stage = K?.stages?.find((s: any) => s.findOne('#move-doc'))
+    const node = stage?.findOne('#move-doc')
+    if (!node) throw new Error('Немає вузла документа')
+    const abs = node.getClientRect({ skipShadow: true, skipStroke: true })
+    const onPage = node.getClientRect({ relativeTo: node.getLayer(), skipShadow: true, skipStroke: true })
+    const box = stage.container().getBoundingClientRect()
+    return { left: box.x + abs.x, right: box.x + abs.x + abs.width, top: box.y + abs.y, bottom: box.y + abs.y + abs.height, pageX: onPage.x }
+  })
+
+  const start = await docRect()
+  const x = (start.left + start.right) / 2
+  const y = (start.top + start.bottom) / 2
+  const controls = page.locator('[data-testid="wb-card-window-controls"]')
+  // Перший клік одразу після завантаження полотно може ще не прийняти — повторюємо до виділення.
+  await expect(async () => {
+    await page.mouse.click(x, y)
+    await expect(controls).toHaveAttribute('data-asset-id', 'move-doc', { timeout: 500 })
+  }).toPass()
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x - 900, y + 20, { steps: 15 })
+  // Ще тримаємо мишу — стор нової позиції не знає.
+  const during = await docRect()
+  const cBox = await controls.boundingBox()
+  await page.mouse.up()
+  if (!cBox) throw new Error('Немає кнопок')
+  expect(during.pageX, 'документ заїхав за лівий край аркуша').toBeGreaterThanOrEqual(-0.5)
+  expect(Math.abs(cBox.x + cBox.width - (during.right - 4)), 'кнопки не пішли за документом').toBeLessThan(4)
+  expect(cBox.y).toBeGreaterThanOrEqual(during.top - 1)
+  expect(cBox.y).toBeLessThan(during.top + 20)
+
+  // Після відпускання — стор отримав нову позицію, кнопки там само, у куті документа.
+  await expect(async () => {
+    const after = await docRect()
+    const box = await controls.boundingBox()
+    if (!box) throw new Error('Немає кнопок')
+    expect(Math.abs(box.x + box.width - (after.right - 4))).toBeLessThan(4)
+  }).toPass()
+})

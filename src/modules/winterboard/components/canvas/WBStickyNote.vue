@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { WBAsset } from '../../types/winterboard'
+import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ const groupConfig = computed(() => ({
   width: props.sticky.w,
   height: props.sticky.h,
   draggable: props.interactive && !props.sticky.locked,
+  // Лівий/верхній край аркуша — межа й під час руху (власник 2026-09-24).
+  dragBoundFunc: keepInsideTopLeft,
   listening: props.interactive,
   id: props.sticky.id,
   name: 'sticky',
