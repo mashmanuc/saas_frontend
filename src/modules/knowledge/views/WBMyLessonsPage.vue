@@ -202,10 +202,14 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- ⚠️ Без `overflow-hidden`: на картці живуть випадні меню
+                 «Поділитися ▾» і «⋯» (absolute). Картка з обрізанням ховала
+                 їх повністю — кнопка натискалась, а меню не було видно
+                 (власник 2026-09-24). Кути мініатюри тримає сама мініатюра. -->
             <div
               v-for="lesson in lessons"
               :key="lesson.id"
-              class="wb-lesson-card wb-template-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow"
+              class="wb-lesson-card wb-template-card relative bg-white rounded-xl border hover:shadow-md transition-shadow"
               :class="templateSelectedIds.includes(lesson.id)
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200'"
@@ -234,7 +238,7 @@
                    назва уроку опинялась нижче половини екрана. Справжня
                    мініатюра лишається на всю висоту; заглушка — вузька смужка. -->
               <div
-                class="bg-gray-100 flex items-center justify-center overflow-hidden"
+                class="bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-xl"
                 :class="lesson.board_thumbnail_url ? 'aspect-video' : 'h-14'"
               >
                 <img
@@ -517,7 +521,7 @@
         <div
           v-for="session in conductedSessions"
           :key="session.id"
-          class="wb-conducted-card relative bg-white rounded-xl border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          class="wb-conducted-card relative bg-white rounded-xl border hover:shadow-md transition-shadow cursor-pointer"
           :class="conductedSelectedIds.includes(session.id)
             ? 'border-blue-500 bg-blue-50'
             : 'border-gray-200'"
@@ -542,7 +546,7 @@
           </div>
 
           <!-- Preview -->
-          <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+          <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-xl">
             <img
               v-if="session.thumbnail_url"
               :src="session.thumbnail_url"

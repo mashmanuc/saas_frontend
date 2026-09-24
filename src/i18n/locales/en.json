@@ -8382,7 +8382,8 @@
       "syncError": "Sync error",
       "followMode": "Follow mode",
       "publish": "Publish lesson",
-      "materials": "Materials"
+      "materials": "Materials",
+      "exitToLessons": "← My lessons"
     },
     "selection": {
       "toolbar": "Selection toolbar",

@@ -8120,7 +8120,8 @@
       "syncError": "Помилка синхронізації",
       "followMode": "Режим слідкування",
       "publish": "Опублікувати урок",
-      "materials": "Матеріали"
+      "materials": "Матеріали",
+      "exitToLessons": "← Мої уроки"
     },
     "selection": {
       "toolbar": "Панель виділення",

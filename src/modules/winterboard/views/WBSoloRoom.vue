@@ -358,7 +358,7 @@
              У класній кімнаті напис лишається «Вийти»: там це справді вихід
              з живого уроку, а не перехід у список. -->
         <button v-else type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
-          {{ t('winterboard.room.exitToStudio') }}
+          {{ t(exitTarget.label) }}
         </button>
       </div>
     </header>
@@ -1106,6 +1106,7 @@
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
+import { roomExitTarget } from '../board/roomExit'
 import { useRouter, useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
@@ -3488,9 +3489,16 @@ function handleLessonSaved(lesson: { id: string; title: string }): void {
 }
 
 // BUG-1 FIX: Save all pending changes before exiting
+/** Куди веде кнопка виходу — правило в `board/roomExit.ts` (там і тест). */
+const exitTarget = computed(() => roomExitTarget({
+  constructorMode: constructorMode.value,
+  isLessonPlay: isLessonPlay.value,
+  hasOriginLesson: !!originLessonId.value,
+}))
+
 async function handleExit(): Promise<void> {
   await saveBeforeLeave()
-  router.push('/winterboard/boards')
+  router.push(exitTarget.value.path)
 }
 
 // FIX-6: Navigate with autosave — used by sidebar overlay links
