@@ -146,15 +146,35 @@ export const TIPS = {
 }
 
 /**
- * Предмети, чиї підказки можна показати: `Set` id або `null` — «без обмежень».
+ * Предмети, чиї ІНСТРУМЕНТИ є в наборі поза коридорами.
  *
- * `null` — лише коли предметних коридорів у користувача немає взагалі (гейт
- * вимкнено): тоді все як до коридорів. Реєстр ще невідомий — порожня множина,
- * тобто лише підказки проєкту: краще нейтрально, ніж чужий предмет.
+ * Сьогодні це лише математика: графіки, формули й генерація уроку працюють
+ * будь-якому вчителю. Історія живе ЛИШЕ на коридорному шляху —
+ * `knowledge_build` (картки особи/події/держави, шкала, карта, довідка)
+ * викидається з набору без прапорця коридору (`ai/parser.py`, `ai/tooling.py`),
+ * а реєстр предметів поза гейтом віддає 404.
+ *
+ * ⚠️ Новий предмет сюди НЕ додається автоматично: fail-closed. Спершу інструмент
+ * має бути в базовому наборі, і аж тоді підказка про нього — інакше бульбашка
+ * знову обіцятиме те, чого людина не отримає.
+ */
+export const BASELINE_TIP_SUBJECTS = new Set(['math'])
+
+/** Предмети, доступні лише через коридор (для сторожа в тестах). */
+export const CORRIDOR_TIP_SUBJECTS = new Set(['history'])
+
+/**
+ * Предмети, чиї підказки можна показати — завжди `Set`, ніколи `null`.
+ *
+ * Коридорів немає (усі, крім гейту) → базовий набір. Раніше тут повертався
+ * `null` = «показати все», і звичайний учитель бачив історичні бульбашки на
+ * кшталт «„Полтавська битва“ — покладу картку події», хоча інструмента історії
+ * в його наборі немає: обіцянка без покриття (знахідка власника 2026-09-24).
+ * Реєстр ще невідомий — порожня множина: краще нейтрально, ніж чужий предмет.
  */
 export function tipSubjects(corridorState) {
   if (!corridorState?.registryLoaded) return new Set()
-  if (!corridorState.enabled || !corridorState.registry) return null
+  if (!corridorState.enabled || !corridorState.registry) return new Set(BASELINE_TIP_SUBJECTS)
   const locked = corridorState.subject?.locked
   if (locked && locked !== 'general') return new Set([locked])
   const ids = (corridorState.registry.subjects || [])
@@ -163,11 +183,18 @@ export function tipSubjects(corridorState) {
   return new Set(ids)
 }
 
-/** Фрази для контексту з урахуванням предметів. Проєктні — завжди. */
+/**
+ * Фрази для контексту з урахуванням предметів. Проєктні — завжди.
+ *
+ * ⚠️ Гілки «`subjects === null` → показати все» тут БУТИ НЕ ПОВИННО: саме через
+ * неї історичні підказки текли всім (2026-09-24). `tipSubjects` завжди віддає
+ * множину, а невідомий предмет не показуємо (fail-closed).
+ */
 export function tipPool(context, subjects) {
   const pool = TIPS[context] || TIPS.other
+  const allowed = subjects instanceof Set ? subjects : new Set()
   return pool
-    .filter((tip) => tip.s === 'platform' || subjects === null || subjects.has(tip.s))
+    .filter((tip) => tip.s === 'platform' || allowed.has(tip.s))
     .map((tip) => tip.t)
 }
 
@@ -181,14 +208,13 @@ export function tipPool(context, subjects) {
  * Було «напр. «урок», «дошку», «мої уроки»» — лише переходи. Новачок не
  * дізнавався, що Інтегралик малює графіки й формули, хоча запит звичайними
  * словами з цього ж поля працює (FIRST USER GATE 2026-09-23, крок 4).
- * Приклади — лише з реальних дій і того предмета, який учитель бачить:
- *   null — коридори вимкнено (усі, крім гейту): Інтегралик = математика + проєкт;
- *   порожня множина — реєстр ще не завантажено: нейтрально, без предмета.
+ * Приклади — лише з реальних дій і того предмета, який учитель бачить. Поза
+ * коридорами `tipSubjects` віддає базовий набір (математика), тож там прикладом
+ * буде графік; порожня множина (реєстр ще не завантажено) — нейтрально.
  */
 export function commandPlaceholder(subjects) {
-  if (subjects === null) return 'Що зробити? Напр. «побудуй графік y = x²», «встав формулу», «мої уроки»'
-  const hasMath = subjects.has('math')
-  const hasHistory = subjects.has('history')
+  const hasMath = !!subjects?.has('math')
+  const hasHistory = !!subjects?.has('history')
   if (hasMath && hasHistory) return 'Що зробити? Напр. «побудуй графік y = x²», «Полтавська битва», «мої уроки»'
   if (hasMath) return 'Що зробити? Напр. «побудуй графік y = x²», «встав формулу», «мої уроки»'
   if (hasHistory) return 'Що зробити? Напр. «Полтавська битва», «Богдан Хмельницький», «мої уроки»'

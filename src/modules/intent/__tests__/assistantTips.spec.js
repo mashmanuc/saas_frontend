@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { TIPS, tipPool, tipSubjects } from '../assistantTips'
+import { TIPS, tipPool, tipSubjects, BASELINE_TIP_SUBJECTS, CORRIDOR_TIP_SUBJECTS } from '../assistantTips'
 
 const registry = (...ids) => ({ subjects: ids.map((id) => ({ id })) })
 const state = (over = {}) => ({
@@ -35,8 +35,54 @@ describe('tipSubjects — які предмети видно', () => {
     expect(tipSubjects({ registryLoaded: false }).size).toBe(0)
   })
 
-  it('коридорів у користувача немає — як до коридорів (без обмежень)', () => {
-    expect(tipSubjects({ registryLoaded: true, enabled: false, registry: null })).toBeNull()
+  // Знахідка власника 2026-09-24: історія вимкнена для всіх, крім одного акаунта,
+  // а історичні бульбашки бачили всі. Правило: підказка предмета живе лише там,
+  // де живе інструмент предмета.
+  it('коридорів немає — лише базові предмети (математика), не «все»', () => {
+    const got = tipSubjects({ registryLoaded: true, enabled: false, registry: null })
+    expect(got).toBeInstanceOf(Set)
+    expect([...got]).toEqual(['math'])
+  })
+})
+
+describe('без коридору історичних підказок немає — у жодному контексті', () => {
+  const noCorridor = () => tipSubjects({ registryLoaded: true, enabled: false, registry: null })
+
+  for (const context of ['board', 'studio', 'other']) {
+    it(`${context}: історії нема, математика й проєкт на місці`, () => {
+      const got = kinds(context, noCorridor())
+      expect(got.has('history')).toBe(false)
+      expect(got.has('math')).toBe(true)
+      expect(got.has('platform')).toBe(true)
+    })
+  }
+
+  it('жодна показана фраза не згадує історичних команд', () => {
+    const shown = ['board', 'studio', 'other'].flatMap((c) => tipPool(c, noCorridor()))
+    for (const phrase of shown) {
+      expect(phrase).not.toMatch(/Полтавськ|Хмельницьк|Київська Русь|Берестейськ|картка (події|особи|держави)/)
+    }
+  })
+
+  // Прямий сторож на саму гілку: навіть якщо хтось передасть `null` (як було
+  // до 2026-09-24), це НЕ означає «показати все» — лише проєктні підказки.
+  it('null замість множини — жодного предмета, тільки проєктні', () => {
+    const got = kinds('board', null)
+    expect(got.has('history')).toBe(false)
+    expect(got.has('math')).toBe(false)
+    expect(got.has('platform')).toBe(true)
+  })
+
+  // Сторож: новий предмет у підказках без рішення про його гейт → червоне.
+  it('кожен предмет підказок оголошений або базовим, або коридорним', () => {
+    const tagged = new Set(Object.values(TIPS).flat().map((tip) => tip.s))
+    tagged.delete('platform')
+    for (const subject of tagged) {
+      expect(
+        BASELINE_TIP_SUBJECTS.has(subject) || CORRIDOR_TIP_SUBJECTS.has(subject),
+        `предмет «${subject}» у підказках, але не вирішено, чи є його інструмент поза коридором`,
+      ).toBe(true)
+    }
   })
 })
 
@@ -97,8 +143,10 @@ describe('assistantPlaceholder — поле чату за предметами',
 // («урок», «дошку», «мої уроки») — новачок не дізнавався про графіки й формули.
 describe('commandPlaceholder — перше поле палітри за предметами', async () => {
   const { commandPlaceholder } = await import('../assistantTips')
-  it('коридори вимкнено (null) — приклад графіка, без історії', () => {
-    const text = commandPlaceholder(null)
+  // 2026-09-24: `tipSubjects` більше не віддає `null` — поза коридорами це
+  // базовий набір (математика), тож приклад той самий, але вже не «все підряд».
+  it('коридорів немає — приклад графіка, без історії', () => {
+    const text = commandPlaceholder(tipSubjects({ registryLoaded: true, enabled: false, registry: null }))
     expect(text).toMatch(/графік/)
     expect(text).not.toMatch(/битва|Хмельницький/)
   })
