@@ -196,6 +196,15 @@ const getCookie = (name) => {
 const createRequestId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`)
 
+// Б-34: відмова власного гарду — CanceledError із позначкою, чий це гард, щоб обробник
+// помилок відповіді відрізняв «auth dead» від breaker-а й від abort() викликача без
+// розбору тексту повідомлення.
+const _guardCancel = (blockedBy, message) => {
+  const err = new axios.Cancel(message)
+  err.blockedBy = blockedBy
+  return err
+}
+
 api.interceptors.request.use(
   async (config) => {
     const store = useAuthStore()
@@ -208,7 +217,7 @@ api.interceptors.request.use(
     // pending. Rejection now rouтується через response error handler (line 287)
     // which checks meta.skipLoader та decrements ONLY якщо matching start fired.
     if (_cbOpen && !config.meta?.bypassCircuitBreaker) {
-      return Promise.reject(new axios.Cancel('[apiClient] Circuit breaker open — request blocked'))
+      return Promise.reject(_guardCancel('circuit_breaker', '[apiClient] Circuit breaker open — request blocked'))
     }
 
     // P0.0: Auth death guard — reject non-auth requests after forceLogout
@@ -218,7 +227,7 @@ api.interceptors.request.use(
     const _url = config.url || ''
     const _isAuthEndpoint = _url.includes('/auth/')
     if (isAuthDead() && !_isAuthEndpoint && !config.meta?.bypassAuthDeath) {
-      return Promise.reject(new axios.Cancel('[apiClient] Auth dead — request blocked'))
+      return Promise.reject(_guardCancel('auth_dead', '[apiClient] Auth dead — request blocked'))
     }
 
     // Phase 2 (2026-04-27) per SSOT §7 + AUTH MODEL CORRECTION:
@@ -366,8 +375,19 @@ api.interceptors.response.use(
       // тост «Немає з'єднання», а 5 підряд відкривали CB і блокували ВЕСЬ застосунок
       // на 30с. Збій некритичного запиту — не доказ, що бекенд мертвий.
       // Викликач сам відповідає за показ підсумку (див. WBExportDialog previewsFailed).
-      if (!error?.config?.meta?.nonCriticalRequest) {
-        _cbRecordFailure()
+      //
+      // Б-34 (2026-09-26): скасування (axios.isCancel) — відмова гарду request-інтерсептора
+      // або abort() самого викликача — теж не доказ: запит або не йшов у мережу, або його
+      // зняв викликач. Тому в лічбу breaker-а не йде (раніше п'ять відмов «auth dead»
+      // відкривали breaker на 30 с разом з /auth/login). Тост не показуємо лише для
+      // «auth dead» — причина там завершена сесія, не мережа. Відмова відкритого breaker-а
+      // й abort викликача тост лишають: іншого сигналу в них нема («Мої дошки» на
+      // CanceledError показують порожній список; плеєр запису робить свій 15-секундний
+      // тайм-аут через abort), а слухача 'api:circuit-open' у застосунку нема.
+      const cancelled = axios.isCancel(error)
+      const authDeadCancel = cancelled && error.blockedBy === 'auth_dead'
+      if (!error?.config?.meta?.nonCriticalRequest && !authDeadCancel) {
+        if (!cancelled) _cbRecordFailure()
         notifyError("Немає з’єднання з сервером. Перевірте мережу.")
       }
       return Promise.reject(error)
