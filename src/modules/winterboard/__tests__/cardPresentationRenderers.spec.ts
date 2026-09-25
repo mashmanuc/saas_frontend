@@ -168,16 +168,15 @@ describe('theory_card · ручний resize не вимикає безпеку'
   })
 })
 
-describe('theory_card · не міряється, коли не можна писати', () => {
+describe('theory_card · що зупиняє вимір', () => {
   // 2026-09-24 (власник: «коли вибраний олівець — картка не по вмісткості»):
-  // вимір розв'язано з інструментом. Писати не можна в Replay і в учня
-  // (`canFit: false`, INV-25 п.8), а не тоді, коли вибрано перо.
-  it('учень або Replay і згорнута — без запитів; відновлення з трею — повторний вимір', async () => {
-    const { w } = mountTheory({ interactive: false, canFit: false })
-    await flushPromises()
-    expect(w.emitted('request-height')).toBeUndefined()
-
-    await w.setProps({ canFit: true, asset: theoryAsset({ minimized: true }) })
+  // вимір розв'язано з інструментом.
+  // 2026-09-25 (власник, Replay): вимір розв'язано і з ПРАВОМ ПИСАТИ — глядач
+  // міряє, щоб показати повний текст, а операцію з цього робить лише вчитель
+  // (рішення в host: `planAutoFit`). Тут лишається те, що спиняє сам вимір:
+  // згорнута картка (міряла б нулі) і відсутність вузлів.
+  it('згорнута не міряється; відновлення з трею — повторний вимір', async () => {
+    const { w } = mountTheory({ interactive: false, asset: theoryAsset({ minimized: true }) })
     await flushPromises()
     expect(w.emitted('request-height')).toBeUndefined()
 

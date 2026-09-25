@@ -46,6 +46,22 @@ export interface AutoFitInput {
 }
 
 /**
+ * Куди подіти виміряну висоту: в операцію чи лише в показ.
+ *
+ * Власник 2026-09-25: у Replay картка була обрізана, бо глядач не мав права
+ * навіть поміряти. Тепер міряють усі, але той, хто не має права писати
+ * (учень, Replay, публічна сторінка), лише ПОКАЗУЄ картку потрібної висоти —
+ * жодної операції, записаний стан недоторканий.
+ */
+export function planAutoFit(
+  input: AutoFitInput & { canWrite: boolean },
+): { write: number | null; display: number | null } {
+  const next = nextAutoFitHeight(input)
+  if (next === null) return { write: null, display: null }
+  return input.canWrite ? { write: next, display: null } : { write: null, display: next }
+}
+
+/**
  * @returns нова висота картки або `null`, якщо змінювати нічого не треба.
  */
 export function nextAutoFitHeight(input: AutoFitInput): number | null {

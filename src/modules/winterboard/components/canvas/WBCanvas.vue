@@ -596,7 +596,7 @@
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :can-fit="wbStore.mode === 'edit' && props.isTutor !== false"
+          :can-fit="true"
           :is-tutor="props.isTutor !== false"
           :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
@@ -622,7 +622,7 @@
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :can-fit="wbStore.mode === 'edit' && props.isTutor !== false"
+          :can-fit="true"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
           @request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"
@@ -940,7 +940,7 @@ import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
-import { nextAutoFitHeight } from '../../composables/autoFitHeight'
+import { planAutoFit } from '../../composables/autoFitHeight'
 import { useLayerRepaint } from '../../composables/useLayerRepaint'
 import { filterEvidenceCards } from '../../board/evidenceCards'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
@@ -1014,7 +1014,7 @@ import WBBoardTray from './WBBoardTray.vue'
 import WBCardWindowControls from './WBCardWindowControls.vue'
 import { useExpandedAssetSelection } from '../../composables/useExpandedAssetSelection'
 import { isUnifiedOverlayRenderEnabled } from '../../config/featureFlags'
-import { isOverlayType, OVERLAY_RENDERERS } from './overlayRegistry'
+import { canWriteAutoFit, isOverlayType, OVERLAY_RENDERERS } from './overlayRegistry'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -4539,6 +4539,15 @@ function handleAssetLiveTransform(asset: WBAsset, e: Konva.KonvaEventObject<Even
  *  transformer is active, falls back to persisted asset props otherwise.
  *  transformOrigin:'center' = center-rotation pivot (matches Konva proxy offset=w/2).
  */
+/**
+ * Висота ЛИШЕ ДЛЯ ПОКАЗУ — для клієнтів, яким писати авто-висоту не можна
+ * (Replay, учень, публічна сторінка). Власник 2026-09-25: у записі уроку
+ * картка була обрізана зі смугою, бо в стані лежала висота, виміряна колись
+ * при іншій ширині. Стан від цього не змінюється: жодної операції звідси не
+ * йде, мапа живе лише в цьому клієнті й гине разом із ним.
+ */
+const viewFitH = ref(new Map<string, number>())
+
 function getOverlayStyle(asset: WBAsset): Record<string, string> {
   // stageOrigin = actual Konva stage position (the same value applied to
   // stage x/y in stageConfig). All other overlay helpers (badge, toolbar label)
@@ -4549,7 +4558,7 @@ function getOverlayStyle(asset: WBAsset): Record<string, string> {
   const x = (lt?.x ?? asset.x) * props.zoom + ox
   const y = (lt?.y ?? asset.y) * props.zoom + oy
   const w = (lt?.w ?? asset.w) * props.zoom
-  const h = (lt?.h ?? asset.h) * props.zoom
+  const h = (lt?.h ?? viewFitH.value.get(asset.id) ?? asset.h) * props.zoom
   const r = lt?.rotation ?? asset.rotation ?? 0
   return {
     left: `${x}px`,
@@ -4578,7 +4587,6 @@ function getOverlayStyle(asset: WBAsset): Record<string, string> {
  * та реплей бачать ту саму геометрію — не локальний CSS.
  */
 function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
-  if (wbStore.mode !== 'edit') return
   const asset = assets.value.find(a => a.id === assetId)
   if (!asset || asset.locked) return
   // TLV2-05C: лише типи з `contentFit: 'height'` (невідомий — ні); згорнута картка
@@ -4586,20 +4594,32 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
   if (assetCapabilities(asset.type).contentFit !== 'height' || isMinimizedOnBoard(asset)) return
 
   const data = asset.data as unknown as Record<string, unknown> | undefined
-  const nextH = nextAutoFitHeight({
+  const known = viewFitH.value.get(assetId)
+  const { write, display } = planAutoFit({
     neededPx,
     zoom: props.zoom,
     y: asset.y,
-    h: asset.h,
+    // Той, хто лише показує, рахує від висоти, яку вже показує, — інакше кожен
+    // вимір порівнювався б зі старою висотою зі стану й повторювався вічно.
+    h: known ?? asset.h,
     pageH: wbStore.currentPage?.height ?? PAGE_HEIGHT,
     lastAutoH: typeof data?.autoFitH === 'number' ? data.autoFitH : undefined,
+    canWrite: canWriteAutoFit(wbStore.mode, props.isTutor !== false),
   })
-  if (nextH === null) return
+
+  if (display !== null) {
+    // Лише показ: новий об'єкт мапи, щоб `getOverlayStyle` перерахувався.
+    const next = new Map(viewFitH.value)
+    next.set(assetId, display)
+    viewFitH.value = next
+    return
+  }
+  if (write === null) return
 
   emit('asset-update', {
     ...asset,
-    h: nextH,
-    data: { ...(data ?? {}), autoFitH: nextH } as unknown as WBAsset['data'],
+    h: write,
+    data: { ...(data ?? {}), autoFitH: write } as unknown as WBAsset['data'],
   })
 }
 

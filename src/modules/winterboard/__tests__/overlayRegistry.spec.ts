@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { OVERLAY_RENDERERS, OVERLAY_ASSET_TYPES, isOverlayType, canFitInMode } from '../components/canvas/overlayRegistry'
+import { OVERLAY_RENDERERS, OVERLAY_ASSET_TYPES, isOverlayType, canMeasureInMode, canWriteAutoFit } from '../components/canvas/overlayRegistry'
 
 // Канонічний список з KONVA_PROXY_TYPES (WBCanvas.vue:907-920).
 // При додаванні нового типу → оновити ТУТ і в registry.
@@ -250,24 +250,27 @@ describe('overlayRegistry · авто-висота не залежить від 
     }
   })
 
-  it('Replay або учень (canFit=false) → картка не міряє й операцій не пише', () => {
+  it('право міряти доходить до картки таким, яким його дав контекст', () => {
     for (const type of HEIGHT_CARDS) {
       const props = OVERLAY_RENDERERS[type].buildProps(
         { id: 'a', type, data: {} } as any,
         { ...ctxBase, interactive: false, canFit: false },
       )
-      expect(props.canFit, `${type}: у Replay/учня вимір заборонено`).toBe(false)
+      expect(props.canFit, `${type}: прапорець контексту не підмінюється`).toBe(false)
     }
   })
 })
 
-describe('canFitInMode — хто міряє (INV-25 п.8)', () => {
-  it('учитель у редагуванні міряє будь-яким інструментом', () => {
-    expect(canFitInMode('edit', true)).toBe(true)
+describe('два різні права: міряти і писати (INV-25 п.8)', () => {
+  // Власник 2026-09-25: у Replay картка була обрізана зі смугою, бо глядачеві
+  // заборонили навіть ПОМІРЯТИ вміст. Заборона закону — на запис операцій.
+  it('міряти може будь-який клієнт — це робота показу', () => {
+    expect(canMeasureInMode()).toBe(true)
   })
 
-  it('Replay і учень не міряють', () => {
-    expect(canFitInMode('replay', true)).toBe(false)
-    expect(canFitInMode('edit', false)).toBe(false)
+  it('писати авто-висоту — лише вчитель у режимі редагування', () => {
+    expect(canWriteAutoFit('edit', true)).toBe(true)
+    expect(canWriteAutoFit('replay', true)).toBe(false)
+    expect(canWriteAutoFit('edit', false)).toBe(false)
   })
 })
