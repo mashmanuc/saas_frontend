@@ -37,6 +37,30 @@ interface DisplayLatex {
 }
 type Segment = TextSegment | InlineLatex | DisplayLatex
 
+/**
+ * Керуючий символ усередині `$…$` — це з'їдена LaTeX-команда, не текст.
+ *
+ * Живий випадок власника 2026-09-25: у картці замість «√3⁄2» стояло «u3⁄2». У
+ * дошці лежало `$\frac{<перенос>u{3}}{2}$` — модель написала `\nu` з одинарним
+ * бекслешем, а `\n` є ВАЛІДНИМ JSON-escape, тож розбір відповіді моделі тихо
+ * замінив команду на перенос рядка плюс літеру.
+ *
+ * Бекенд відтепер лікує це на вході (`parser._fix_ctrl_inside_inline_math`), але
+ * ДОШКИ, ЗАПИСАНІ РАНІШЕ, уже несуть побитий текст — у стані, у Replay і в
+ * експорті. Тому та сама однозначність застосовується й при показі: усередині
+ * `$…$` керуючих символів бути не може (наш контракт `board_add_card`:
+ * «$...$ НЕ може містити перенос рядка»).
+ *
+ * `$$…$$` не чіпаємо: у виносній формулі перенос — це початок рядка системи.
+ */
+const CTRL_TO_LATEX: Record<string, string> = {
+  '\b': '\\b', '\f': '\\f', '\t': '\\t', '\r': '\\r', '\n': '\\n',
+}
+
+export function repairCtrlInInlineMath(inner: string): string {
+  return inner.replace(/[\b\f\t\r\n](?=[a-zA-Z])/g, (c) => CTRL_TO_LATEX[c] ?? c)
+}
+
 export function parseLatexSegments(rawText: string): Segment[] {
   // Шар 1: те, що створює межі формул — літеральний `\n`, роздільники
   // `\(…\)` і `\[…\]`, непарний `$`. Мусить відпрацювати ДО сегментації,
@@ -70,7 +94,7 @@ export function parseLatexSegments(rawText: string): Segment[] {
     } else if (isDisplay) {
       segments.push({ type: 'display', value: inner })
     } else {
-      segments.push({ type: 'inline', value: inner })
+      segments.push({ type: 'inline', value: repairCtrlInInlineMath(inner) })
     }
     lastIndex = match.index + raw.length
   }
