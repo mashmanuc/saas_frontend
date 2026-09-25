@@ -188,6 +188,42 @@ describe('useVoiceDictation — зупинка', () => {
     expect(field.value).toBe('нове')   // без reset() було б «надіслане нове»
   })
 
+  it('після stop() пізній результат рушія НЕ повертає текст у поле', async () => {
+    // Власник 2026-09-25: надіслав фразу — вона лишилась у полі, мікрофон
+    // червоний. Саме цей порядок: рушій дошле фінальний результат уже ПІСЛЯ
+    // того, як застосунок очистив поле й зупинив диктовку.
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitFinal('Доброго вечора')
+    expect(field.value).toBe('Доброго вечора')
+
+    field.value = ''     // застосунок: повідомлення відправлено, поле очищене
+    v.stop()             // і диктовку зупинено
+    instances[0].emitFinal('')   // пізній фінал від рушія
+
+    expect(field.value).toBe('')
+    expect(v.listening.value).toBe(false)
+  })
+
+  it('після stop() нова диктовка не тягне попередню фразу', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitFinal('перша фраза')
+    field.value = ''
+    v.stop()
+
+    v.start(field)
+    instances[0].emitFinal('друга')
+
+    expect(field.value).toBe('друга')
+  })
+
   it('відмова доступу до мікрофона гасить слухання', async () => {
     const useVoiceDictation = await load()
     const v = useVoiceDictation()

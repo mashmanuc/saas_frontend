@@ -42,6 +42,8 @@ export function useVoiceDictation(opts: { lang?: string } = {}) {
     // Накопичуємо фіналізовані шматки; поле = committed + поточний interim.
     // resultIndex → беремо лише НОВІ результати, кожен final додається рівно раз.
     recognition.onresult = (e: any) => {
+      // Пізній результат після зупинки ігноруємо повністю (див. `stop()`).
+      if (manualStop || !model) return
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i]
@@ -82,12 +84,19 @@ export function useVoiceDictation(opts: { lang?: string } = {}) {
     try { r.start(); listening.value = true } catch { /* вже слухає */ }
   }
 
-  /** Зупинити (користувач). */
+  /** Зупинити (користувач або застосунок після відправки). */
   function stop() {
     manualStop = true
     if (restartTimer) clearTimeout(restartTimer)
     try { recognition && recognition.stop() } catch { /* noop */ }
     listening.value = false
+    // 🔴 Власник 2026-09-25: надіслав фразу — вона ЛИШИЛАСЬ у полі, мікрофон
+    // червоний. Рушій Web Speech дошилає фінальний результат уже ПІСЛЯ
+    // `stop()`, а `onresult` писав його в поле з накопиченої бази — тобто
+    // повертав щойно надіслане речення назад. Відв'язуємо поле й гасимо базу:
+    // після зупинки писати більше нікуди й нічого.
+    committed = ''
+    model = null
   }
 
   function toggle(target: Ref<string>) {
