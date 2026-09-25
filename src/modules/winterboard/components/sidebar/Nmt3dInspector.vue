@@ -10,6 +10,7 @@
     3. View buttons — 3D / iso / front / side / top / bottom + reset
     4. Авто-обертання toggle
     5. ДОП. ПОБУДОВИ — checkboxes per template.aux (persisted to store via persistOpts)
+       + кнопка «показати всі / сховати всі» — одним збереженням
     6. Розгортка — only if template.buildUnfolded defined
 -->
 <template>
@@ -77,7 +78,15 @@
 
     <!-- ДОП. ПОБУДОВИ -->
     <div v-if="hasAux" class="nmt3d-inspector__section">
-      <div class="nmt3d-inspector__section-label">{{ t('winterboard.nmt3d.auxLabel') }}</div>
+      <div class="nmt3d-inspector__section-head">
+        <span class="nmt3d-inspector__section-label">{{ t('winterboard.nmt3d.auxLabel') }}</span>
+        <button
+          type="button"
+          class="nmt3d-inspector__aux-all"
+          data-testid="nmt3d-aux-all"
+          @click="toggleAllAux"
+        >{{ allAuxOn ? t('winterboard.nmt3d.auxHideAll') : t('winterboard.nmt3d.auxShowAll') }}</button>
+      </div>
       <label
         v-for="item in templateAux"
         :key="item.key"
@@ -182,6 +191,27 @@ function onOptChange(key: string, checked: boolean): void {
   // Persist opts via renderer closure
   const newOpts = { ...nmt3dUiState.latestOpts }
   nmt3dUiState.persistOpts?.(newOpts)
+}
+
+/** Усі доп. побудови ввімкнені — тоді кнопка їх ховає. */
+const allAuxOn = computed(() =>
+  templateAux.value.every((item) => !!nmt3dUiState.latestOpts[item.key]),
+)
+
+/**
+ * Показати або сховати всі доп. побудови одним натиском (власник 2026-09-25:
+ * «щоб кожного разу не приходилось вмикати окремо»). Шлях той самий, що в
+ * однієї галочки (setOpt + persistOpts), але зберігаємо ОДИН раз — одна зміна
+ * картки на дошці й у Replay, а не по одній на кожну побудову.
+ */
+function toggleAllAux(): void {
+  if (!ws.value) return
+  const checked = !allAuxOn.value
+  for (const item of templateAux.value) {
+    nmt3dUiState.latestOpts[item.key] = checked
+    ws.value.setOpt(item.key, checked)
+  }
+  nmt3dUiState.persistOpts?.({ ...nmt3dUiState.latestOpts })
 }
 </script>
 
@@ -322,6 +352,37 @@ function onOptChange(key: string, checked: boolean): void {
 }
 
 /* ── Aux checkboxes ── */
+.nmt3d-inspector__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.nmt3d-inspector__section-head .nmt3d-inspector__section-label {
+  margin-bottom: 0;
+}
+
+.nmt3d-inspector__aux-all {
+  background: #ede3d0;
+  border: 1px solid #d6c8b2;
+  border-radius: 4px;
+  color: #3a2f24;
+  font-size: 10px;
+  padding: 2px 7px;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.nmt3d-inspector__aux-all:hover {
+  background: #c4622a;
+  border-color: #c4622a;
+  color: #fff;
+}
+
 .nmt3d-inspector__aux-row {
   display: flex;
   align-items: flex-start;
