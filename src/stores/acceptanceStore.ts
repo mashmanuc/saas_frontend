@@ -147,6 +147,8 @@ export const useAcceptanceStore = defineStore('acceptance', () => {
     // Actions
     fetchAvailability,
     invalidate,
-    reset
+    reset,
+    // Скидання при виході (authStore.forceLogout, Б-35): reset() повертає всі поля.
+    $reset: reset,
   }
 })

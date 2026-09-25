@@ -224,5 +224,7 @@ export const useTrustStore = defineStore('trustGlobal', () => {
     isUserBlocked,
     hasBanInScope,
     reset,
+    // Скидання при виході (authStore.forceLogout, Б-35): reset() повертає всі поля.
+    $reset: reset,
   }
 })

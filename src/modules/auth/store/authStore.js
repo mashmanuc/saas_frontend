@@ -37,6 +37,49 @@ const getCsrfCookie = () => {
   return match ? match[1] : null
 }
 
+// Стори, які forceLogout НЕ скидає (Б-35, 2026-09-26). Решту — усі, що встигли
+// створитись, — скидає $reset(): у них дані попереднього користувача. Сюди
+// потрапляють лише ті, кому $reset зашкодив би. Новий стор за замовчуванням
+// скидають, а setup-стор без власного $reset валить охоронний тест
+// (__tests__/logoutStoreResetCoverage.spec.ts): у проді Pinia підставила б
+// йому noop, і дані лишались би мовчки.
+export const STORES_KEPT_ON_LOGOUT = new Set([
+  'auth', // forceLogout чистить його сам, поле за полем
+  // Стори документа — інтерфейс та інфраструктура, не дані користувача; частину
+  // main.js / App.vue ініціалізують раз на документ. $reset занулив би
+  // дескриптори в стані, а слухачі й таймери лишились би висіти; повторний вхід
+  // без перезавантаження їх не ініціалізує вдруге.
+  'realtime', // відписки WS і Map підписок у стані (сам WS гасить onAuthDeath)
+  'theme', // слухач системної теми в стані
+  'settings', // мова інтерфейсу
+  'locale', // мова інтерфейсу; його $reset ставить 'uk' всупереч вибору в localStorage
+  'layout', // розмітка вікна: viewport, сайдбар
+  'loader', // лічильник запитів і таймер: скидання посеред запитів збило б лічильник
+  // Ніде не створюється (FeatureFlag.vue і useFeatureFlag не імпортує ніхто);
+  // WS-підписка в стані. Прапорці рахуються під користувача й кешуються в
+  // localStorage — якщо стор оживе, див. Б-41.
+  'featureFlags',
+  // Тости гаснуть самі (таймер у кожному), а повідомлення про сам вихід
+  // («Сесію завершено») показують поруч із forceLogout — скидання стерло б його.
+  'notify',
+  // Модуль дошки — зона SYSTEM_LAW, без слова власника не чіпати. wb-board,
+  // wb-test, opsSync: стан живе циклом кімнати (mount → unmount), opsSync.reset()
+  // викидає незбережені ops, зміна стану дошки поза OpsApplyService заборонена
+  // (§12). replay — бібліотека записів (тека, пошук, список), дескрипторів і
+  // $reset у ній немає; її дані при виході лишаються — теж Б-41.
+  'wb-board',
+  'wb-test',
+  'opsSync',
+  'replay',
+  // Легасі-кімната /lessons/:id: таймери й підписки лежать у стані, $reset їх
+  // осиротив би. Дані в них при виході лишаються — борг Б-41 (debts/REGISTRY.md).
+  'board', // таймери автозбереження й курсорів, підписка
+  'chat', // таймери й WS-відписки
+  'presence', // таймер і підписка
+  'lessons', // таймер опитування
+  'webrtc', // ніде не імпортується; MediaStream у стані — без зупинки треків камера лишилась би ввімкненою
+])
+
 export const useAuthStore = defineStore('auth', {
   state: () => {
     const rawUser = storage.getUser()
@@ -581,6 +624,11 @@ export const useAuthStore = defineStore('auth', {
           // Migration: remove legacy access token from localStorage
           storage.removeAccess()
           this.sessionExpiredNotified = false
+          // Б-35 (2026-09-26): слухати вихід інших вкладок з першої ж миті сесії.
+          // Раніше слухача ставив лише _doBootstrap, коли сесію відновлено при
+          // завантаженні: вкладка, що увійшла сама (форма, Google, MFA, WebAuthn),
+          // про вихід в іншій не дізнавалась і працювала далі з JWT у пам'яті.
+          this.initStorageSync()
         } else {
           storage.remove('auth_session')
           this.lastRefreshAt = 0
@@ -610,16 +658,22 @@ export const useAuthStore = defineStore('auth', {
       // v0.87.0: КРИТИЧНО - reset всіх stores після зміни користувача/ролі
       // Це запобігає role context leak (tutor UI + student API)
       // Детермінований порядок: reset → init
+      //
+      // Кожен стор окремо й не мовчки (LAW §12). До 2026-09-26 обидва сиділи під
+      // одним мовчазним catch: relations.$reset() з 4b22a952 (2026-03-22) кидав
+      // ReferenceError, і contactAccess (контакти учнів) після входу не
+      // скидався жодного разу.
       try {
         const { useRelationsStore } = await import('../../../stores/relationsStore')
-        const relationsStore = useRelationsStore()
-        relationsStore.$reset()
-
+        useRelationsStore().$reset()
+      } catch (error) {
+        console.error('[auth] postAuthInit: стор "relations" не скинуто', error)
+      }
+      try {
         const { useContactAccessStore } = await import('../../../stores/contactAccessStore')
-        const contactAccessStore = useContactAccessStore()
-        contactAccessStore.$reset()
-      } catch {
-        // stores reset failed silently — not critical
+        useContactAccessStore().$reset()
+      } catch (error) {
+        console.error('[auth] postAuthInit: стор "contactAccess" не скинуто', error)
       }
     },
 
@@ -1124,38 +1178,50 @@ export const useAuthStore = defineStore('auth', {
       try {
         const { onAuthDeath } = await import('../../../core/auth/onAuthDeath')
         onAuthDeath()
-      } catch (_e) {
-        // onAuthDeath може не бути ініціалізований — fallback на прямий disconnect
+      } catch (error) {
+        // onAuthDeath може не бути ініціалізований — fallback на прямий disconnect.
+        // Не мовчки (LAW §12, Б-35): без onAuthDeath решта підсистем не зупинилась.
+        console.error('[auth] forceLogout: onAuthDeath не спрацював — лише запасне відключення WS', error)
         try {
           const { websocketService } = await import('../../../services/websocket')
           websocketService.disconnect()
-        } catch { /* ignore */ }
+        } catch (disconnectError) {
+          console.error('[auth] forceLogout: запасне відключення WS не вдалося', disconnectError)
+        }
       }
 
       // Phase 29: очищення TanStack Query cache при logout — запобігає витоку даних
       try {
         const { queryClient } = await import('../../../app/queryClient')
         queryClient.clear()
-      } catch {
-        // queryClient може не бути ініціалізований — це нормально
+      } catch (error) {
+        // Не мовчки (LAW §12, Б-35): тут лишився кеш запитів попереднього користувача.
+        console.error('[auth] forceLogout: кеш запитів (TanStack Query) НЕ очищено', error)
       }
 
       storage.clearAll()
 
       // 🔥 CRITICAL FIX v0.87.1: Очищення всіх Pinia stores при logout
       // Запобігає витоку даних між користувачами
-      try {
-        const pinia = this.$pinia
-        if (pinia) {
-          // Очищуємо всі stores крім auth
-          pinia._s.forEach((store, key) => {
-            if (key !== 'auth' && typeof store.$reset === 'function') {
-              store.$reset()
-            }
-          })
-        }
-      } catch {
-        // stores reset on logout failed silently — not critical
+      //
+      // Б-35 (2026-09-26): до цього тут був this.$pinia — у сторі Pinia 3 його
+      // немає (є лише _p), тож цикл із v0.87.1 не стартував жодного разу, а
+      // мовчазний catch це ховав. Власну вкладку чистить ще й перезавантаження
+      // після logout(); вихід в іншій вкладці (initStorageSync) — лише цей цикл.
+      const stores = this._p?._s
+      if (!stores) {
+        console.error('[auth] forceLogout: у стора немає _p._s — стори попереднього користувача НЕ скинуто')
+      } else {
+        stores.forEach((store, id) => {
+          if (STORES_KEPT_ON_LOGOUT.has(id)) return
+          try {
+            store.$reset()
+          } catch (error) {
+            // Не мовчки (LAW §12): у такому сторі лишились дані попереднього
+            // користувача. Решту сторів скидаємо далі.
+            console.error(`[auth] forceLogout: стор "${id}" не скинуто — у ньому лишились дані попереднього користувача`, error)
+          }
+        })
       }
     },
 
@@ -1240,11 +1306,14 @@ export const useAuthStore = defineStore('auth', {
       this.stopProactiveRefresh()
       this.refreshPromise = null
       this._storageSyncUnsubscribe?.()
+      this._storageSyncUnsubscribe = null
     },
 
     // Phase 1.3: Cross-tab sync via auth_session marker (not real token)
     initStorageSync() {
       if (typeof window === 'undefined') return () => {}
+      // Один слухач на документ: кличуть і _doBootstrap, і setAuth на кожен refresh.
+      if (this._storageSyncUnsubscribe) return this._storageSyncUnsubscribe
 
       const handler = (event) => {
         // Listen for auth_session marker OR legacy access key

@@ -41,5 +41,13 @@ export const usePracticeWorldsStore = defineStore('practiceWorlds', () => {
     }
   }
 
-  return { worlds, collection, status, error, load }
+  // Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора.
+  function $reset(): void {
+    worlds.value = []
+    collection.value = null
+    status.value = 'idle'
+    error.value = null
+  }
+
+  return { worlds, collection, status, error, load, $reset }
 })

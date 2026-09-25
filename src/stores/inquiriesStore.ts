@@ -252,7 +252,19 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   async function declineInquiry(inquiryId: string, payload: RejectInquiryPayload): Promise<RejectInquiryResponse> {
     return rejectInquiry(inquiryId, payload)
   }
-  
+
+  /**
+   * Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора.
+   */
+  function $reset(): void {
+    items.value = []
+    statusFilter.value = null
+    roleFilter.value = null
+    pendingRequestIds.value = new Set()
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     // State
     items,
@@ -278,6 +290,8 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     
     // Aliases (backward compatibility)
     requestContact,
-    declineInquiry
+    declineInquiry,
+
+    $reset
   }
 })

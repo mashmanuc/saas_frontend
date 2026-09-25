@@ -150,9 +150,16 @@ export const useExamStore = defineStore('exam', () => {
     error.value = null
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35): reset() і прапорці, які він лишає.
+  function $reset() {
+    reset()
+    loading.value = false
+    finishing.value = false
+  }
+
   return {
     run, result, answers, savingExt, currentIndex, remainingSec, loading, finishing, error,
     items, total, current, answeredCount, isActive,
-    load, setRun, goTo, next, prev, saveAnswer, tick, finish, loadResult, reset,
+    load, setRun, goTo, next, prev, saveAnswer, tick, finish, loadResult, reset, $reset,
   }
 })

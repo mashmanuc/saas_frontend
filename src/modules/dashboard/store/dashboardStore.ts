@@ -169,6 +169,15 @@ export const useDashboardStore = defineStore('dashboard', () => {
     isProfilePublished.value = false
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35): reset() і прапорці
+  // завантаження, які він лишає.
+  function $reset() {
+    reset()
+    isLoadingStudent.value = false
+    isLoadingTutor.value = false
+    isLoadingSnapshot.value = false
+  }
+
   return {
     // State
     isLoading,
@@ -206,5 +215,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     fetchTutorStats,
     fetchTutorSnapshot,
     reset,
+    $reset,
   }
 })

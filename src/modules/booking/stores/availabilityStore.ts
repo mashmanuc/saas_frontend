@@ -26,12 +26,19 @@ export const useAvailabilityStore = defineStore('availability', () => {
     await availabilityApi.deleteTemplate()
     template.value = null
   }
-  
+
+  // Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора.
+  function $reset() {
+    template.value = null
+    loading.value = false
+  }
+
   return {
     template,
     loading,
     loadTemplate,
     saveTemplate,
     deleteTemplate,
+    $reset,
   }
 })

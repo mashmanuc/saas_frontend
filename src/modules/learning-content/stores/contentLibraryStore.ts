@@ -206,6 +206,14 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
     error.value = null
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35): reset() і те, що він
+  // лишає. Таймер пошуку зупиняє clearSearch() усередині reset().
+  function $reset() {
+    reset()
+    isLoading.value = false
+    searchParams.value = {}
+  }
+
   // ── Getters ─────────────────────────────────────────────────
   const isUnitLoading = computed(() => (unitId: number) => loadingUnits.value.has(unitId))
   const isUnitExpanded = computed(() => (unitId: number) => expandedUnits.value.has(unitId))
@@ -252,6 +260,7 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
     searchItems,
     clearSearch,
     reset,
+    $reset,
     // Getters
     isUnitLoading,
     isUnitExpanded,

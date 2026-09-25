@@ -42,7 +42,14 @@ export const useLimitsStore = defineStore('limits', () => {
   
   const studentRequestLimit = computed(() => getLimitByType('student_request'))
   const tutorAcceptLimit = computed(() => getLimitByType('tutor_accept'))
-  
+
+  // Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора.
+  function $reset() {
+    limits.value = []
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     limits,
     isLoading,
@@ -51,6 +58,7 @@ export const useLimitsStore = defineStore('limits', () => {
     getLimitByType,
     canPerformAction,
     studentRequestLimit,
-    tutorAcceptLimit
+    tutorAcceptLimit,
+    $reset
   }
 })

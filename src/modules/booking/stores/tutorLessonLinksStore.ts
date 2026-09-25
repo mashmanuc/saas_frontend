@@ -117,6 +117,8 @@ export const useTutorLessonLinksStore = defineStore('tutorLessonLinks', () => {
     // Actions
     fetchLessonLinks,
     patchLessonLinks,
-    reset
+    reset,
+    // Скидання при виході (authStore.forceLogout, Б-35): reset() повертає всі поля.
+    $reset: reset
   }
 })

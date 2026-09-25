@@ -394,6 +394,24 @@ export const useAvailabilityDraftUnifiedStore = defineStore('availabilityDraftUn
     saveHistorySnapshot()
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35) — кожне поле як при
+  // створенні стора. resetState() скидає лише чернетку (mode, weekStart, прапорці
+  // завантаження лишає) — для виходу цього мало.
+  function $reset() {
+    mode.value = 'idle'
+    weekStart.value = null
+    timezone.value = null
+    token.value = null
+    changes.value = []
+    workloadProgress.value = null
+    conflicts.value = []
+    error.value = null
+    isLoading.value = false
+    isSaving.value = false
+    history.value = [[]]
+    historyIndex.value = 0
+  }
+
   return {
     // State
     mode,
@@ -439,5 +457,6 @@ export const useAvailabilityDraftUnifiedStore = defineStore('availabilityDraftUn
     deleteDraft,
     loadWorkloadProgress,
     loadFromSlots,
+    $reset,
   }
 })

@@ -460,9 +460,14 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   function $reset(): void {
     tutors.value = []
     totalCount.value = 0
+    totalPages.value = 0
     currentPage.value = 1
+    pageSize.value = 24
     filters.value = {}
-    sortBy.value = '-average_rating'
+    // Б-35 (2026-09-26): як при створенні стора. Тут стояло '-average_rating',
+    // і сортування після виходу відрізнялось від свіжого стора.
+    sortBy.value = 'recommended'
+    validationErrors.value = null
     currentProfile.value = null
     myProfile.value = null
     filterOptions.value = null

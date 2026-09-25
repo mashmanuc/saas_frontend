@@ -294,7 +294,23 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     if (!activeThreadId.value) return []
     return messagesByThread.value[activeThreadId.value] || []
   })
-  
+
+  /**
+   * Скидання при виході (authStore.forceLogout, Б-35): спершу відписка від каналу
+   * треду (_chatUnsubscribe живе поза станом), далі кожне поле — як при створенні.
+   */
+  function $reset() {
+    setActiveThread(null)
+    threads.value = []
+    messagesByThread.value = {}
+    isLoading.value = false
+    isLoadingThreads.value = false
+    isLoadingEnsure.value = false
+    isLoadingMessages.value = false
+    isSending.value = false
+    error.value = null
+  }
+
   return {
     // State
     threads,
@@ -321,5 +337,6 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     deleteMessage,
     markMessageRead,
     currentMessages,
+    $reset,
   }
 })

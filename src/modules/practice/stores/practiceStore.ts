@@ -116,8 +116,16 @@ export const usePracticeStore = defineStore('practice', () => {
     pendingUnlocks.value = pendingUnlocks.value.slice(1)
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35): reset() лишає профіль і
+  // теми — тобто саме дані користувача.
+  function $reset(): void {
+    reset()
+    profile.value = null
+    topicWorlds.value = []
+  }
+
   return {
     profile, topicWorlds, path, currentPuzzle, lastResult, pendingUnlocks, status, error, progress,
-    loadProfile, loadTopics, startTopic, loadNext, submit, reset, dismissUnlock,
+    loadProfile, loadTopics, startTopic, loadNext, submit, reset, dismissUnlock, $reset,
   }
 })

@@ -189,6 +189,15 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
     )
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора
+  // (clearCache() лишає loading).
+  function $reset() {
+    threadsByStudent.value = new Map()
+    unreadSummary.value = { threads: [], total: 0 }
+    loading.value = false
+    error.value = null
+  }
+
   return {
     // State
     loading,
@@ -207,5 +216,6 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
     markThreadRead,
     clearCache,
     removeThread,
+    $reset,
   }
 })

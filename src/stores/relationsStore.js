@@ -380,9 +380,10 @@ export const useRelationsStore = defineStore('relations', {
       this.tutorErrorCode = null
       this.tutorFilter = 'all'
       this.tutorSelectedIds = []
-      // Phase 28: reset TTL timestamps
-      _studentCache.invalidate()
-      _tutorCache.invalidate()
+      // Тут стояли _studentCache.invalidate() і _tutorCache.invalidate() (4b22a952,
+      // 2026-03-22, «Phase 28: reset TTL timestamps»), але в цьому файлі таких
+      // кешів ніколи не було: $reset кидав ReferenceError. Кеш запитів — TanStack
+      // Query, його чистить queryClient.clear() у forceLogout.
     },
   },
 })

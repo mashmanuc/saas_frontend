@@ -117,6 +117,12 @@ export const useStudentCollaborationStore = defineStore('studentCollaboration', 
     error.value = null
   }
 
+  // Скидання при виході (authStore.forceLogout, Б-35): reset() і isLoading, який він лишає.
+  function $reset() {
+    reset()
+    isLoading.value = false
+  }
+
   return {
     // State
     tutors,
@@ -136,5 +142,6 @@ export const useStudentCollaborationStore = defineStore('studentCollaboration', 
     acceptInvitation,
     declineInvitation,
     reset,
+    $reset,
   }
 })

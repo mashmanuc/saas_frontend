@@ -28,5 +28,7 @@ export const useChatOverlayStore = defineStore('chatOverlay', () => {
     otherUserName.value = ''
   }
 
-  return { isOpen, threadId, otherUserName, openByThread, close }
+  // Скидання при виході (authStore.forceLogout, Б-35): закритий оверлей — це і є
+  // початковий стан.
+  return { isOpen, threadId, otherUserName, openByThread, close, $reset: close }
 })

@@ -58,5 +58,13 @@ export const usePracticeCampaignStore = defineStore('practiceCampaign', () => {
     campaign.value = c // тригерить watcher карти → пішак ковзає на нову сходинку
   }
 
-  return { campaign, manifest, status, error, load, submitChallenge, applyCampaign }
+  // Скидання при виході (authStore.forceLogout, Б-35) — як при створенні стора.
+  function $reset(): void {
+    campaign.value = null
+    manifest.value = {}
+    status.value = 'idle'
+    error.value = null
+  }
+
+  return { campaign, manifest, status, error, load, submitChallenge, applyCampaign, $reset }
 })

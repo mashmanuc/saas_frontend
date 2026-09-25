@@ -357,6 +357,15 @@ export const useSearchStore = defineStore('search', () => {
     error.value = null
     suggestions.value = []
     sortBy.value = '-relevance'
+    // Б-35 (2026-09-26): $reset тепер кличе forceLogout — решта полів як при
+    // створенні стора.
+    pageSize.value = 20
+    isLoadingSuggestions.value = false
+    filterOptions.value = null
+    isLoadingOptions.value = false
+    filtersCacheExpired.value = false
+    filtersCacheLastUpdated.value = null
+    searchHistory.value = []
   }
 
   return {

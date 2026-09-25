@@ -189,6 +189,10 @@ export const useBookingStore = defineStore('booking', () => {
     isLoading.value = false
     error.value = null
     totalCount.value = 0
+    // Б-35 (2026-09-26): $reset тепер кличе forceLogout — без цих двох полів
+    // недавні учні попереднього вчителя діставались би наступному.
+    recentStudents.value = []
+    searchResults.value = []
   }
 
   return {

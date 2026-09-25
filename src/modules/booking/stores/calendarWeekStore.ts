@@ -912,6 +912,15 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     allOrderIds.value = []
     selectedEventId.value = null
     lastFetchedAt.value = null
+    // Б-35 (2026-09-26): $reset тепер кличе forceLogout. Цих полів setup не
+    // повертає — поза $state їх не бачить і охоронний тест, тож явно. Без
+    // deletedSlotIds слот, позначений до видалення попереднім вчителем,
+    // лишався б схованим у календарі наступного.
+    optimisticEventMap.clear()
+    deletedSlotIds.value = new Set()
+    etag.value = ''
+    currentPage.value = 0
+    currentTimezone.value = 'Europe/Kiev'
   }
   
   return {

@@ -308,6 +308,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     preferencesError.value = null
     mockOffline.value = false
     debugEvents.value = []
+    isRealtimeActive.value = false // Б-35: WS-підписку при виході знімає App.vue
     stopPolling()
   }
 
