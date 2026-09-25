@@ -680,6 +680,38 @@ function unwrapMathInText(tex: string): string {
 }
 
 /**
+ * Команда, написана СЛОВОМ усередині `\text{}` — це все одно команда.
+ *
+ * Живий випадок власника 2026-09-25 (другий за день): модель поклала на дошку
+ * `$\frac{\text{гипотенуза}}{2} \times \text{sqrt{3}}$` — і замість «√3» у
+ * картці стояло слово «sqrt3». Бекслеша немає, тож розгортач `\text{}` таке
+ * не чіпав: усередині ж «немає математики».
+ *
+ * Правило вузьке навмисно: беремо ЛИШЕ ті слова, які в тексті уроку не
+ * трапляються як слова (`sqrt`, `frac`, `cdot`, `times`, `sum`, `int`), і лише
+ * коли `\text{}` не містить нічого, крім команди та її аргументу. `\text{sin}`
+ * чи `\text{м}` не чіпаємо — це справжній текст усередині формули.
+ */
+const WORD_COMMANDS = ['sqrt', 'frac', 'cdot', 'times', 'sum', 'int', 'pi', 'alpha', 'beta']
+const TEXT_WORD_CMD_RE = new RegExp(
+  '\\\\text\\{\\s*(' + WORD_COMMANDS.join('|') + ')\\s*((?:\\{[^{}]*\\}|[0-9a-zA-Z]|\\{[^{}]*\\}\\{[^{}]*\\})?)\\s*\\}',
+  'g')
+
+function wordCommandsToReal(tex: string): string {
+  if (!tex.includes('\\text{')) return tex
+  return tex.replace(TEXT_WORD_CMD_RE, (_m, cmd: string, arg: string) => `\\${cmd}${arg}`)
+}
+
+/**
+ * Градус, записаний як `^\text{o}` — той самий дефект, що `^{o}` (див. блок H
+ * у `normalizeSourceText`), лише в іншій обгортці. Модель пише його регулярно:
+ * `$30^\text{o}$` замість `$30^\circ$`; KaTeX малює курсивну латинську «o».
+ */
+function textDegreeToCirc(tex: string): string {
+  return tex.replace(/\^\s*\{?\s*\\text\{\s*[oо°]\s*\}\s*\}?/g, '^\\circ')
+}
+
+/**
  * Єдина точка входу для математичних сегментів.
  *
  * Навмисно одна функція, а не набір: наступну несумісність додавати сюди,
@@ -717,5 +749,6 @@ export function toKatexCompatible(tex: string): string {
     .replace(/[–—]/g, '-')
   return fixHlinePosition(
     newlineRowsToBreaks(stripArrayColumnSeparators(
-      tabularToArray(unwrapMathInText(symbolsToCommands)))))
+      tabularToArray(unwrapMathInText(
+        textDegreeToCirc(wordCommandsToReal(symbolsToCommands)))))))
 }
