@@ -156,12 +156,22 @@ export const useAuthStore = defineStore('auth', {
           const status = err?.response?.status
           console.warn('[auth:bootstrap] Initial refresh failed, status:', status,
             '— REST API works via cookie, WS deferred until next refresh cycle')
-          // If refresh returned 401/422 — session is truly dead
-          if (status === 401 || status === 422) {
+          // If refresh returned 401/403/422 — session is truly dead
+          // (той самий набір, на який refreshAccess робить forceLogout).
+          if (status === 401 || status === 403 || status === 422) {
             await this.forceLogout('session_expired')
+            await this._exitToStartWithoutReload()
             return
           }
           // For 429/500/network — session is likely valid, continue
+        }
+        // Сесію зняли ще до нашого refresh (інший запит отримав 401 і сам зробив
+        // refresh, поки ми чекали CSRF) — refreshAccess повертає null без помилки,
+        // але вихід усе одно за bootstrap: refreshAccess до кінця bootstrap не
+        // перезавантажує документ.
+        if (!this.access) {
+          await this._exitToStartWithoutReload()
+          return
         }
       }
 
@@ -770,10 +780,14 @@ export const useAuthStore = defineStore('auth', {
         // flow (не взагалі 422 у системі).
         if ([401, 403, 422].includes(status)) {
           await this.forceLogout('session_expired')
+          // Під час bootstrap сесія в цьому документі так і не ожила — вихід робить
+          // _doBootstrap без перезавантаження (_exitToStartWithoutReload).
+          // Перезавантаження звідси = новий bootstrap = новий refresh.
+          //
           // Hard redirect — інакше user залишиться на authenticated URL з очищеним
           // store (router guard не спрацює без navigation). auth_return_url збережений
           // forceLogout-ом → після login user повернеться на ту саму сторінку.
-          if (typeof window !== 'undefined') {
+          if (this.initialized && typeof window !== 'undefined') {
             const returnUrl = sessionStorage.getItem('auth_return_url')
             const redirectParam = returnUrl && returnUrl !== '/start' && returnUrl !== '/login'
               ? `?redirect=${encodeURIComponent(returnUrl)}`
@@ -784,6 +798,43 @@ export const useAuthStore = defineStore('auth', {
         throw error
       } finally {
         this.refreshPromise = null
+      }
+    },
+
+    /**
+     * Вихід на /start, коли refresh остаточно відмовив ще під час bootstrap.
+     *
+     * БЕЗ перезавантаження документа (2026-09-26). Новий документ = новий
+     * bootstrap = новий POST /auth/refresh/. Коло рвалося лише тому, що
+     * forceLogout знімає позначку сесії; щойно вона переживала вихід (стенд з
+     * addInitScript, інша вкладка), його зупиняв тільки бекендний ліміт
+     * 30 / 5 хв — спільний для всієї IP. Виміряно Playwright: 31 запит за 4,8 с.
+     *
+     * Bootstrap іде до монтування застосунку: кімнат, WS, даних у сторах ще
+     * немає, чистити перезавантаженням нічого. Тому й «auth dead» тут знімаємо —
+     * інакше apiClient блокує гостьові запити сторінки входу (landing-config) і
+     * показує це як «Немає з'єднання з сервером».
+     */
+    async _exitToStartWithoutReload() {
+      try {
+        const { resetAuthDeath } = await import('../../../core/auth/onAuthDeath')
+        resetAuthDeath()
+      } catch (error) {
+        console.warn('[auth] Не вдалося зняти auth dead після невдалого refresh:', error)
+      }
+      if (typeof window === 'undefined') return
+      // auth_return_url зберіг forceLogout; на /start і /login він його не пише —
+      // там людина вже на вході.
+      const returnUrl = sessionStorage.getItem('auth_return_url')
+      if (!returnUrl || returnUrl === '/start' || returnUrl === '/login') return
+      try {
+        const { default: router } = await import('../../../router')
+        const failure = await router.replace({ path: '/start', query: { redirect: returnUrl } })
+        if (failure) {
+          console.warn('[auth] Перехід на /start після невдалого refresh скасовано:', failure)
+        }
+      } catch (error) {
+        console.warn('[auth] Перехід на /start після невдалого refresh не вдався:', error)
       }
     },
 
