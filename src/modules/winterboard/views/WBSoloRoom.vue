@@ -285,9 +285,9 @@
           <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Mobile: toggle materials/shapes sidebar as drawer -->
+        <!-- Висувна панель (≤768 px): відкрити/закрити матеріали й інструменти -->
         <button
-          v-if="isMobileDevice"
+          v-if="isSidebarDrawer"
           type="button"
           class="wb-header-btn wb-header-btn--materials"
           :title="t('winterboard.room.materials', 'Матеріали')"
@@ -622,9 +622,9 @@
         :upload-error="boardClipboard.uploadError.value"
       />
 
-      <!-- Mobile: backdrop overlay to close materials drawer on outside tap -->
+      <!-- Висувна панель: затемнення, тап поза панеллю її закриває -->
       <div
-        v-if="showMaterialsSidebar && isMobileDevice"
+        v-if="showMaterialsSidebar && isSidebarDrawer"
         class="wb-sidebar-materials-backdrop"
         @click="_showMaterialsSidebar = false"
       />
@@ -2171,8 +2171,24 @@ const sessionContextLabel = computed<string | null>(() => {
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
 const showMaterialsSidebar = computed(() => _showMaterialsSidebar.value)
-// Mobile: sidebar collapsed by default (≤768px overlay too large for small screens)
-const _showMaterialsSidebar = ref(window.innerWidth > 768)
+// Права панель висувна (drawer) у вікні ≤768 px — той самий поріг, що
+// `@media (max-width: 768px)` у стилях нижче. Кнопку «Матеріали» в шапці й
+// затемнення раніше вмикав `deviceMode === 'mobile'` (<640 px), тож у 641–768 px
+// (портретний планшет) панель стартувала схованою, а відкрити її було нічим —
+// ручка ◀ є лише при відкритій панелі (власник 2026-09-25). Умова тепер — сам поріг.
+const SIDEBAR_DRAWER_QUERY = '(max-width: 768px)'
+const sidebarDrawerMql = window.matchMedia(SIDEBAR_DRAWER_QUERY)
+const isSidebarDrawer = ref(sidebarDrawerMql.matches)
+// Висувна стартує закритою (завелика для малого екрана), бокова — відкритою.
+const _showMaterialsSidebar = ref(!isSidebarDrawer.value)
+function onSidebarDrawerChange(e: MediaQueryListEvent): void {
+  isSidebarDrawer.value = e.matches
+  // Перетин порогу (поворот планшета, зміна вікна) — стан нового режиму:
+  // інакше після повороту в альбомний панель лишалась схованою й без ручки.
+  _showMaterialsSidebar.value = !e.matches
+}
+sidebarDrawerMql.addEventListener('change', onSidebarDrawerChange)
+onBeforeUnmount(() => sidebarDrawerMql.removeEventListener('change', onSidebarDrawerChange))
 
 async function detectTutorGroup() {
   if (explicitGroupId.value) return
@@ -4926,7 +4942,7 @@ watch(() => store.workspaceName, (name) => {
   z-index: 14;
 }
 
-/* Materials toggle button — only rendered on mobile via v-if */
+/* Кнопка «Матеріали» — лише коли права панель висувна (≤768 px, v-if isSidebarDrawer) */
 .wb-header-btn--materials {
   display: flex;
 }
