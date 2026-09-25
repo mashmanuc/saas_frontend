@@ -771,9 +771,11 @@
       <!-- Page navigation -->
       <div class="wb-page-nav">
         <!-- Phase 37: Test mode toggle button — hidden in constructorMode (tasks always visible there).
-             Local Workspace: прихований як і «Матеріали» (рішення власника 2026-07-15). -->
+             Local Workspace: прихований як і «Матеріали» (рішення власника 2026-07-15).
+             2026-09-25, рішення власника «прибрати вхід 📝»: схований скрізь —
+             `TEST_MODE_ENTRY_VISIBLE` (там і чому). -->
         <button
-          v-if="!constructorMode && !isLocalWorkspace"
+          v-if="TEST_MODE_ENTRY_VISIBLE && !constructorMode && !isLocalWorkspace"
           type="button"
           class="wb-page-btn"
           :class="{ 'wb-page-btn--active': testStore.testMode }"
@@ -1227,7 +1229,7 @@ import CloudUpsellModal from '../components/dialogs/CloudUpsellModal.vue'
 import WBLanguageSwitcher from '../components/WBLanguageSwitcher.vue'
 
 // Phase 37: Test system
-import { useTestStore } from '../board/state/testStore'
+import { TEST_MODE_ENTRY_VISIBLE, useTestStore } from '../board/state/testStore'
 import WBTestOverlay from '../components/test/WBTestOverlay.vue'
 import WBTestGradeModal from '../components/test/WBTestGradeModal.vue'
 import TestObjectProperties from '../components/sidebar/properties/TestObjectProperties.vue'
