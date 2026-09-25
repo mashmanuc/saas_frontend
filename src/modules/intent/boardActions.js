@@ -17,6 +17,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
+import { engineRejects, rejectMessage, tangentLine } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
 function _uuid() {
@@ -852,6 +853,12 @@ const HANDLERS = {
       }))
       .filter((e) => e.src)
     if (!built.length) throw new Error('Не зрозумів вираз функції.')
+    // 2026-09-25: питаємо САМ рушій, чи він цей вираз намалює (див. graphTangent.ts).
+    const paramNames = Object.keys((params && typeof params === 'object') ? params : {})
+    for (const e of built) {
+      const why = engineRejects(e.src, paramNames)
+      if (why) throw new Error(rejectMessage(e.src, why))
+    }
 
     const assetId = `gc-${_uuid()}`
     // ОДНА структура на дошку і на урок. Була дубльована копія — і
@@ -963,6 +970,8 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name }) 
     // Міняємо вираз ПЕРШОГО графіка (data.state.expressions[0].src)
     if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
     const src = String(value).replace(/^\s*y\s*=\s*/i, '').trim()
+    const why = engineRejects(src, Object.keys(data.state.params || {}))
+    if (why) throw new Error(rejectMessage(src, why))
     if (data.state.expressions?.length) {
       data.state.expressions[0] = { ...data.state.expressions[0], src }
     } else {
@@ -1047,6 +1056,10 @@ HANDLERS.graph_add_expression = async function graph_add_expression({ object_id,
   if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
   const srcClean = String(src).replace(/^\s*y\s*=\s*/i, '').trim()
   if (!srcClean) throw new Error('Не зрозумів вираз нової кривої.')
+  // 2026-09-25: без цієї перевірки вираз зі штрихом похідної лягав у графік,
+  // крива не малювалась, а в чаті стояло «✓ Додаю криву».
+  const why = engineRejects(srcClean, Object.keys(data.state.params || {}))
+  if (why) throw new Error(rejectMessage(srcClean, why))
   const exprs = data.state.expressions || []
   if (exprs.length >= MAX_GRAPH_EXPRESSIONS) {
     throw new Error(`Графік уже має ${MAX_GRAPH_EXPRESSIONS} кривих — більше на одному полі нечитабельно. Скажіть «заміни ... на ${srcClean}», і я оновлю одну з них.`)
@@ -1054,6 +1067,41 @@ HANDLERS.graph_add_expression = async function graph_add_expression({ object_id,
   data.state.expressions = [
     ...exprs,
     { id: `e-${_uuid().slice(0, 8)}`, src: srcClean, color: GRAPH_COLORS[exprs.length % GRAPH_COLORS.length], hidden: false, label: label || undefined },
+  ]
+  store.updateAsset({ ...asset, data })
+}
+
+// 2026-09-25, власник: дотична в точці до графіка, який бачить Інтегралик.
+// Модель лише називає криву й точку (BE `_r_graph_add_tangent` перепитує, якщо
+// графіків чи кривих кілька); пряму РАХУЄ ДОШКА тим самим рушієм, що малює,
+// тож ні штриха похідної, ні арифметичної помилки в ній бути не може.
+HANDLERS.graph_add_tangent = async function graph_add_tangent({ object_id, src, x0 }) {
+  const { store, asset } = await _assetById(object_id)
+  if (asset.type !== 'graph_calculator') throw new Error('Дотичну можна провести лише на графіку.')
+  const point = Number(x0)
+  if (!Number.isFinite(point)) throw new Error('У якій точці провести дотичну? Назвіть x.')
+  const data = JSON.parse(JSON.stringify(asset.data || {}))
+  if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
+  const exprs = data.state.expressions || []
+  if (exprs.length >= MAX_GRAPH_EXPRESSIONS) {
+    throw new Error(`Графік уже має ${MAX_GRAPH_EXPRESSIONS} кривих — більше на одному полі нечитабельно. Приберіть одну, і я проведу дотичну.`)
+  }
+  // Крива залежить від повзунків — дотична до ТІЄЇ кривої, яку видно зараз.
+  const params = {}
+  for (const [name, cfg] of Object.entries(data.state.params || {})) {
+    const v = Number(cfg && typeof cfg === 'object' ? cfg.value : cfg)
+    if (Number.isFinite(v)) params[name] = v
+  }
+  const line = tangentLine(src, point, params)   // кидає людську помилку, якщо дотичної немає
+  data.state.expressions = [
+    ...exprs,
+    {
+      id: `e-${_uuid().slice(0, 8)}`,
+      src: line.src,
+      color: GRAPH_COLORS[exprs.length % GRAPH_COLORS.length],
+      hidden: false,
+      label: `дотична в x = ${point}`,
+    },
   ]
   store.updateAsset({ ...asset, data })
 }
