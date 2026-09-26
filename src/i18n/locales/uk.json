@@ -533,7 +533,9 @@
       "settings": "Налаштування",
       "theme": "Тема",
       "language": "Мова"
-    }
+    },
+    "staff": "Адмінка",
+    "dashboard": "Кабінет"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -5086,6 +5088,33 @@
     }
   },
   "staff": {
+    "realtime": {
+      "title": "Зв’язок у реальному часі",
+      "hoursShort": "{n} год",
+      "loadFailed": "Не вдалося завантажити метрики: {reason}",
+      "retry": "Спробувати ще",
+      "unavailable": "Метрики недоступні",
+      "loading": "Завантаження…",
+      "statusHealthy": "Усе гаразд",
+      "statusDegraded": "Є проблеми",
+      "statusCritical": "Критичні проблеми",
+      "authHealth": "Оновлення сесії",
+      "okCount": "{n} успішно",
+      "failCount": "{n} збоїв",
+      "wsReconnects": "Перепідключення WebSocket",
+      "totalCount": "{n} усього",
+      "sessionsCount": "{n} сесій",
+      "authDeath": "Повні розриви входу",
+      "recordingFailures": "Збої зупинки запису",
+      "failedCount": "{n} невдалих",
+      "fallbackCount": "{n} зупинено локально"
+    },
+    "roles": {
+      "student": "Учень",
+      "tutor": "Вчитель",
+      "admin": "Адміністратор",
+      "superadmin": "Суперадмін"
+    },
     "consoleName": "Адмін-панель",
     "sidebar": {
       "collapse": "Згорнути",
@@ -5103,16 +5132,23 @@
       "financeSection": "Фінанси",
       "payouts": "Виплати тьюторам",
       "system": "Система",
-      "health": "Стан платформи",
+      "health": "Показники платформи",
       "subscriptionPlans": "Плани підписки",
       "analytics": "Аналітика",
       "platformSettings": "Налаштування",
-      "backToApp": "Назад до платформи"
+      "backToApp": "Назад до платформи",
+      "realtime": "Реальний час"
     },
     "platformSettings": {
       "title": "Налаштування платформи",
-      "helpText": "Керуйте поведінкою платформи без перезапуску серверу. Зміни набувають чинності одразу.",
-      "noSettings": "Налаштування не знайдено"
+      "helpText": "Налаштування, що діють без перезапуску сервера.",
+      "noSettings": "Налаштування не знайдено",
+      "landing": {
+        "group": "Лендинг",
+        "replayLabel": "Реплей для демо-секції лендингу",
+        "replayDescription": "Публічний URL справжнього реплею для секції «Перегляньте, як проходив урок». Порожнє поле — показується анімація-заглушка.",
+        "saved": "Збережено ✓"
+      }
     },
     "breadcrumbs": {
       "staff": "Адміністрування",
@@ -5125,9 +5161,12 @@
       "verification": "Верифікація",
       "billing": "Фінанси",
       "payouts": "Виплати",
-      "health": "Стан платформи",
+      "health": "Показники платформи",
       "subscriptionPlans": "Плани підписки",
-      "analytics": "Аналітика"
+      "analytics": "Аналітика",
+      "realtime": "Реальний час",
+      "platformFeedback": "Пропозиції платформи",
+      "platformSettings": "Налаштування"
     },
     "analytics": {
       "title": "Аналітика воронки",
@@ -5213,7 +5252,9 @@
           "day30Active": "D30 Акт.",
           "day30ActiveTooltip": "Будь-яка активність протягом 30 днів після реєстрації"
         }
-      }
+      },
+      "hiddenBlocksNote": "Воронку, сповіщення, когорти, залученість, дохід, експерименти й тренд сховано: їх рахували знімки, які ніхто не наповнював, тож тут були нулі. Живі гроші — у «Фінансах».",
+      "revenueMovedLink": "Відкрити «Фінанси»"
     },
     "plans": {
       "title": "Плани підписки",
@@ -5272,7 +5313,8 @@
         "isActive": "Активний план",
         "isFeatured": "Рекомендований (featured)",
         "displayOrder": "Порядок відображення"
-      }
+      },
+      "confirmPriceChange": "Змінити ціну «{name}» з {old} на {new}? Нова ціна одразу піде в усі нові рахунки."
     },
     "dashboard": {
       "title": "Панель управління",
@@ -5298,7 +5340,10 @@
       "tiles": {
         "tutorActivity": "Активність тьюторів",
         "tutorActivityDesc": "Перегляд та управління активністю тьюторів"
-      }
+      },
+      "newIn7Days": "+{n} за 7 днів",
+      "inactiveCount": "{n} неактивних",
+      "trustSafety": "Довіра й безпека"
     },
     "users": {
       "title": "Користувачі",
@@ -5314,7 +5359,8 @@
       "role": "Роль",
       "bans": "Бани",
       "reports": "Скарги",
-      "plan": "План"
+      "plan": "План",
+      "banned": "Бан"
     },
     "billing": {
       "title": "Огляд фінансів",
@@ -5339,11 +5385,13 @@
       "statusFailed": "Помилка",
       "statusPending": "Очікує",
       "paymentDetail": "Деталі платежу",
-      "showing": "{from}–{to} з {total}"
+      "showing": "{from}–{to} з {total}",
+      "statusRefunded": "Повернено",
+      "loadFailed": "Не вдалося завантажити фінанси"
     },
     "health": {
-      "title": "Стан платформи",
-      "helpText": "Бізнес-показники платформи: скарги, бани, підписки, активність тьюторів. Технічний моніторинг (черга нотифікацій, кеш, WS) — в розділі Оператор.",
+      "title": "Показники платформи",
+      "helpText": "Бізнес-показники: користувачі, підписки, бани, незавершені оплати, активні вчителі. Технічний стан (база, кеш, фонові задачі) тут не перевіряється.",
       "users": "Користувачі",
       "openReports": "Відкриті скарги",
       "activeBans": "Активні бани",
@@ -5384,6 +5432,32 @@
         "profile_update": "Профіль оновлено",
         "email_verify": "Email підтверджено",
         "mfa_enable": "MFA увімкнено"
+      },
+      "events": {
+        "auth_login": "Вхід",
+        "auth_session_revoked": "Сесію завершено",
+        "auth_change_password": "Пароль змінено",
+        "auth_mfa_setup_started": "Почато налаштування MFA",
+        "auth_mfa_enabled": "MFA увімкнено",
+        "auth_mfa_disabled": "MFA вимкнено",
+        "auth_mfa_verified": "Вхід підтверджено кодом MFA",
+        "auth_mfa_backup_codes_regenerated": "Резервні коди MFA оновлено",
+        "lesson_quick_started": "Урок розпочато",
+        "lesson_status_changed": "Статус уроку змінено",
+        "profile_updated": "Профіль оновлено",
+        "relation_tutor_accept": "Учня прийнято",
+        "relation_tutor_bulk_archive": "Учнів архівовано",
+        "staff_plan_created": "Staff: план підписки створено",
+        "staff_plan_updated": "Staff: план підписки змінено",
+        "staff_plan_deactivated": "Staff: план підписки вимкнено",
+        "staff_ban_created": "Staff: бан створено",
+        "staff_ban_lifted": "Staff: бан знято",
+        "staff_billing_cancelled": "Staff: підписку скасовано",
+        "staff_billing_ops_finalize": "Staff: ручна фіналізація оплати",
+        "staff_user_mfa_reset": "Staff: MFA скинуто",
+        "staff_user_subscription_granted": "Staff: підписку видано",
+        "staff_user_role_changed": "Staff: роль змінено",
+        "staff_user_toggle_active": "Staff: акаунт увімкнено/вимкнено"
       }
     },
     "nav": {
@@ -5728,14 +5802,49 @@
       "resetMfaDesc": "Відключити двофакторну автентифікацію для користувача. Використовуйте коли користувач втратив доступ до authenticator-додатку.",
       "resetMfaBtn": "Скинути MFA",
       "confirmResetMfa": "Скинути MFA для {email}? Користувач повинен буде налаштувати MFA заново.",
-      "mfaResetSuccess": "MFA успішно скинуто",
+      "mfaResetSuccess": "MFA скинуто: під час наступного входу код не знадобиться.",
       "mfaResetFailed": "Не вдалося скинути MFA",
       "grantSubscription": "Надати підписку",
       "selectPlan": "Оберіть план...",
       "days": "днів",
       "grantBtn": "Надати",
       "subscriptionGranted": "Підписку '{plan}' надано на {days} днів",
-      "subscriptionGrantFailed": "Не вдалося надати підписку"
+      "subscriptionGrantFailed": "Не вдалося надати підписку",
+      "actionFailed": "Дію не виконано: {reason}",
+      "subscriptionSource": "Джерело",
+      "subscriptionSources": {
+        "STAFF": "Видано вручну (staff)",
+        "PLATA": "Оплата Plata (Монобанк)",
+        "PADDLE": "Оплата Paddle",
+        "LIQPAY": "Оплата LiqPay",
+        "STRIPE": "Оплата Stripe"
+      },
+      "subscriptionStatuses": {
+        "ACTIVE": "Активна",
+        "PAST_DUE": "Прострочена",
+        "CANCELED": "Скасована",
+        "CANCELLED": "Скасована",
+        "EXPIRED": "Завершилась",
+        "TRIALING": "Пробний період",
+        "PENDING": "Очікує оплати"
+      },
+      "banScopes": {
+        "ALL": "Усе",
+        "BILLING": "Оплата",
+        "CONTACTS": "Контакти",
+        "CHAT": "Чат",
+        "INQUIRIES": "Запити"
+      },
+      "banStatuses": {
+        "ACTIVE": "Діє",
+        "LIFTED": "Знято",
+        "EXPIRED": "Сплив"
+      },
+      "selectRole": "Оберіть роль…",
+      "confirmChangeRole": "Змінити роль {email} на «{role}»? Разом із роллю зміняться права доступу до адмінки.",
+      "mfaWasNotEnabled": "MFA у користувача не було увімкнено — скидати нічого.",
+      "confirmGrantSubscription": "Видати {plan} на {days} дн. користувачу {email}? Доступ з’явиться одразу, оплата не потрібна.",
+      "subscriptionGrantedReal": "Видано: {plan} до {until}. Зараз у користувача план: {entitlement}."
     },
     "journey": {
       "title": "Шлях користувача (воронка)",
@@ -5936,7 +6045,9 @@
       "actions": "Дії",
       "previewFinalize": "Попередній перегляд",
       "copyOrderId": "Копіювати ID замовлення",
-      "never": "Ніколи"
+      "never": "Ніколи",
+      "superadminOnly": "Операції білінгу доступні лише суперадміну.",
+      "manualFinalizeDisabled": "Ручне підтвердження оплати вимкнено: оплату підтверджує лише банк."
     },
     "profileModeration": {
       "title": "Модерація профілів",

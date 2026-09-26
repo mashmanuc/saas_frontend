@@ -446,7 +446,9 @@
       "settings": "Settings",
       "theme": "Theme",
       "language": "Language"
-    }
+    },
+    "staff": "Staff",
+    "dashboard": "Dashboard"
   },
   "notifications": {
     "title": "Notifications",
@@ -4585,6 +4587,33 @@
     }
   },
   "staff": {
+    "realtime": {
+      "title": "Realtime health",
+      "hoursShort": "{n} h",
+      "loadFailed": "Could not load the metrics: {reason}",
+      "retry": "Try again",
+      "unavailable": "Metrics unavailable",
+      "loading": "Loading…",
+      "statusHealthy": "All good",
+      "statusDegraded": "Issues detected",
+      "statusCritical": "Critical issues",
+      "authHealth": "Session refresh",
+      "okCount": "{n} ok",
+      "failCount": "{n} failed",
+      "wsReconnects": "WebSocket reconnects",
+      "totalCount": "{n} total",
+      "sessionsCount": "{n} sessions",
+      "authDeath": "Sign-in collapses",
+      "recordingFailures": "Recording stop failures",
+      "failedCount": "{n} failed",
+      "fallbackCount": "{n} stopped locally"
+    },
+    "roles": {
+      "student": "Student",
+      "tutor": "Teacher",
+      "admin": "Admin",
+      "superadmin": "Superadmin"
+    },
     "sidebar": {
       "collapse": "Collapse",
       "expand": "Expand",
@@ -4597,7 +4626,7 @@
       "platformFeedback": "💡 Platform Feedback",
       "billing": "Billing",
       "system": "System",
-      "health": "Platform Status",
+      "health": "Platform metrics",
       "backToApp": "Back to App",
       "financeSection": "Finance",
       "payouts": "Tutor Payouts",
@@ -4605,12 +4634,19 @@
       "verification": "Verification",
       "subscriptionPlans": "Subscription Plans",
       "analytics": "Analytics",
-      "platformSettings": "Settings"
+      "platformSettings": "Settings",
+      "realtime": "Realtime"
     },
     "platformSettings": {
       "title": "Platform Settings",
-      "helpText": "Manage platform behavior without server restart. Changes take effect immediately.",
-      "noSettings": "No settings found"
+      "helpText": "Settings that apply without a server restart.",
+      "noSettings": "No settings found",
+      "landing": {
+        "group": "Landing",
+        "replayLabel": "Replay for the landing demo section",
+        "replayDescription": "Public URL of a real replay for the “See how a lesson went” section. Leave empty to show the placeholder animation.",
+        "saved": "Saved ✓"
+      }
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -4620,12 +4656,15 @@
       "reports": "Reports",
       "tutorActivity": "Tutor Activity",
       "billing": "Billing",
-      "health": "Platform Status",
+      "health": "Platform metrics",
       "payouts": "Payouts",
       "profileModeration": "Profile Moderation",
       "verification": "Verification",
       "subscriptionPlans": "Subscription Plans",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "realtime": "Realtime",
+      "platformFeedback": "Platform feedback",
+      "platformSettings": "Settings"
     },
     "analytics": {
       "title": "Funnel Analytics",
@@ -4711,7 +4750,9 @@
           "day30Active": "D30 Act.",
           "day30ActiveTooltip": "Any activity within 30 days of registration"
         }
-      }
+      },
+      "hiddenBlocksNote": "The funnel, alerts, cohorts, engagement, revenue, experiments and trend are hidden: they read snapshots nobody filled, so they showed zeros. Real money is in “Finance”.",
+      "revenueMovedLink": "Open “Finance”"
     },
     "plans": {
       "title": "Subscription Plans",
@@ -4770,7 +4811,8 @@
         "isActive": "Active plan",
         "isFeatured": "Featured",
         "displayOrder": "Display order"
-      }
+      },
+      "confirmPriceChange": "Change the price of “{name}” from {old} to {new}? The new price applies to every new invoice right away."
     },
     "dashboard": {
       "title": "Staff Dashboard",
@@ -4796,7 +4838,10 @@
         "tutorActivity": "Tutor Activity",
         "tutorActivityDesc": "View and manage tutor activity"
       },
-      "helpText": "General platform status overview. View key metrics, recent activity, and quickly navigate to any section."
+      "helpText": "General platform status overview. View key metrics, recent activity, and quickly navigate to any section.",
+      "newIn7Days": "+{n} in 7 days",
+      "inactiveCount": "{n} inactive",
+      "trustSafety": "Trust & safety"
     },
     "users": {
       "title": "Users",
@@ -4812,7 +4857,8 @@
       "bans": "Bans",
       "reports": "Reports",
       "plan": "Plan",
-      "helpText": "Search and view all registered users. Click a row to see detailed information."
+      "helpText": "Search and view all registered users. Click a row to see detailed information.",
+      "banned": "Banned"
     },
     "billing": {
       "title": "Billing Overview",
@@ -4837,10 +4883,12 @@
       "showing": "{from}–{to} of {total}",
       "statusFailed": "Failed",
       "statusPending": "Pending",
-      "statusSuccess": "Success"
+      "statusSuccess": "Success",
+      "statusRefunded": "Refunded",
+      "loadFailed": "Could not load finance data"
     },
     "health": {
-      "title": "Platform Status",
+      "title": "Platform metrics",
       "users": "Users",
       "openReports": "Open Reports",
       "activeBans": "Active Bans",
@@ -4852,7 +4900,7 @@
       "alertReportsWarning": "Warning: {count} open reports",
       "asOf": "as of",
       "errorLoad": "Failed to load monitoring data",
-      "helpText": "Business platform metrics: reports, bans, subscriptions, tutor activity. Technical monitoring (notification queue, cache, WS) is available in the Operator section.",
+      "helpText": "Business metrics: users, subscriptions, bans, unfinished payments, active teachers. Technical health (database, cache, background jobs) is not checked here.",
       "inactive": "inactive",
       "last7d": "last 7 days",
       "pendingHint": "Check in Finance section",
@@ -4882,6 +4930,32 @@
         "profile_update": "Profile Updated",
         "email_verify": "Email Verified",
         "mfa_enable": "MFA Enabled"
+      },
+      "events": {
+        "auth_login": "Sign-in",
+        "auth_session_revoked": "Session ended",
+        "auth_change_password": "Password changed",
+        "auth_mfa_setup_started": "MFA setup started",
+        "auth_mfa_enabled": "MFA enabled",
+        "auth_mfa_disabled": "MFA disabled",
+        "auth_mfa_verified": "Sign-in confirmed with MFA",
+        "auth_mfa_backup_codes_regenerated": "MFA backup codes renewed",
+        "lesson_quick_started": "Lesson started",
+        "lesson_status_changed": "Lesson status changed",
+        "profile_updated": "Profile updated",
+        "relation_tutor_accept": "Student accepted",
+        "relation_tutor_bulk_archive": "Students archived",
+        "staff_plan_created": "Staff: plan created",
+        "staff_plan_updated": "Staff: plan changed",
+        "staff_plan_deactivated": "Staff: plan switched off",
+        "staff_ban_created": "Staff: ban created",
+        "staff_ban_lifted": "Staff: ban lifted",
+        "staff_billing_cancelled": "Staff: subscription cancelled",
+        "staff_billing_ops_finalize": "Staff: manual payment finalize",
+        "staff_user_mfa_reset": "Staff: MFA reset",
+        "staff_user_subscription_granted": "Staff: subscription granted",
+        "staff_user_role_changed": "Staff: role changed",
+        "staff_user_toggle_active": "Staff: account switched on/off"
       }
     },
     "nav": {
@@ -5226,14 +5300,49 @@
       "resetMfaDesc": "Disable two-factor authentication for the user. Use when the user has lost access to their authenticator app.",
       "resetMfaBtn": "Reset MFA",
       "confirmResetMfa": "Reset MFA for {email}? The user will need to set up MFA again.",
-      "mfaResetSuccess": "MFA successfully reset",
+      "mfaResetSuccess": "MFA reset: no code will be needed at the next sign-in.",
       "mfaResetFailed": "Failed to reset MFA",
       "grantSubscription": "Grant Subscription",
       "selectPlan": "Select plan...",
       "days": "days",
       "grantBtn": "Grant",
       "subscriptionGranted": "Subscription '{plan}' granted for {days} days",
-      "subscriptionGrantFailed": "Failed to grant subscription"
+      "subscriptionGrantFailed": "Failed to grant subscription",
+      "actionFailed": "Action failed: {reason}",
+      "subscriptionSource": "Source",
+      "subscriptionSources": {
+        "STAFF": "Granted manually (staff)",
+        "PLATA": "Paid via Plata (Monobank)",
+        "PADDLE": "Paid via Paddle",
+        "LIQPAY": "Paid via LiqPay",
+        "STRIPE": "Paid via Stripe"
+      },
+      "subscriptionStatuses": {
+        "ACTIVE": "Active",
+        "PAST_DUE": "Past due",
+        "CANCELED": "Cancelled",
+        "CANCELLED": "Cancelled",
+        "EXPIRED": "Expired",
+        "TRIALING": "Trial",
+        "PENDING": "Awaiting payment"
+      },
+      "banScopes": {
+        "ALL": "Everything",
+        "BILLING": "Payments",
+        "CONTACTS": "Contacts",
+        "CHAT": "Chat",
+        "INQUIRIES": "Inquiries"
+      },
+      "banStatuses": {
+        "ACTIVE": "Active",
+        "LIFTED": "Lifted",
+        "EXPIRED": "Expired"
+      },
+      "selectRole": "Choose a role…",
+      "confirmChangeRole": "Change the role of {email} to “{role}”? Staff console access changes together with the role.",
+      "mfaWasNotEnabled": "The user had no MFA enabled — nothing to reset.",
+      "confirmGrantSubscription": "Grant {plan} for {days} days to {email}? Access starts right away, no payment needed.",
+      "subscriptionGrantedReal": "Granted: {plan} until {until}. The user’s plan now: {entitlement}."
     },
     "journey": {
       "title": "User Journey (Funnel)",
@@ -5434,7 +5543,9 @@
       "subscriptionSection": "Subscription",
       "title": "Billing Operations",
       "userSection": "User",
-      "yes": "Yes"
+      "yes": "Yes",
+      "superadminOnly": "Billing operations are available to the superadmin only.",
+      "manualFinalizeDisabled": "Manual payment confirmation is off: only the bank confirms a payment."
     },
     "consoleName": "Admin Panel",
     "payouts": {

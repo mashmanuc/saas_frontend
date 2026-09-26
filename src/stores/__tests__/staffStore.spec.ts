@@ -320,7 +320,7 @@ describe('staffStore', () => {
         trust: {
           bans: [
             { id: 'ban-1', scope: BanScope.CONTACTS, ends_at: null, reason: 'Test', status: 'ACTIVE', created_at: '2024-01-01T00:00:00Z' },
-            { id: 'ban-2', scope: BanScope.PLATFORM, ends_at: null, reason: 'Test', status: 'LIFTED', created_at: '2024-01-01T00:00:00Z' }
+            { id: 'ban-2', scope: BanScope.ALL, ends_at: null, reason: 'Test', status: 'LIFTED', created_at: '2024-01-01T00:00:00Z' }
           ],
           blocks_count: 0,
           reports_open_count: 0

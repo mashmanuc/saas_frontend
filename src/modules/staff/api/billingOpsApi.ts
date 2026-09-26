@@ -44,6 +44,9 @@ export interface UserBillingSnapshotDto {
     cancel_at_period_end: boolean
   } | null
   checkout_sessions: CheckoutSessionDto[]
+  /** 2026-09-26: ручна фіналізація не питає банк → на бекенді вимкнена за замовчуванням.
+   *  Немає поля (старий бекенд) = false: кнопку сховано — безпечний бік. */
+  manual_finalize_enabled: boolean
 }
 
 export interface CheckoutSessionDto {
@@ -157,7 +160,8 @@ function normalizeSnapshot(raw: any): UserBillingSnapshotDto {
     user: raw?.user ?? null,
     entitlement: raw?.entitlement ?? null,
     subscription: raw?.subscription ?? null,
-    checkout_sessions: Array.isArray(raw?.checkout_sessions) ? raw.checkout_sessions : []
+    checkout_sessions: Array.isArray(raw?.checkout_sessions) ? raw.checkout_sessions : [],
+    manual_finalize_enabled: raw?.manual_finalize_enabled === true,
   }
 }
 

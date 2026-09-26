@@ -366,7 +366,9 @@
       "theme": "Тема",
       "language": "Язык"
     },
-    "learningContent": "Учебные материалы"
+    "learningContent": "Учебные материалы",
+    "staff": "Админка",
+    "dashboard": "Кабинет"
   },
   "notifications": {
     "title": "Уведомления",
@@ -4853,6 +4855,33 @@
     }
   },
   "staff": {
+    "realtime": {
+      "title": "Связь в реальном времени",
+      "hoursShort": "{n} ч",
+      "loadFailed": "Не удалось загрузить метрики: {reason}",
+      "retry": "Попробовать ещё",
+      "unavailable": "Метрики недоступны",
+      "loading": "Загрузка…",
+      "statusHealthy": "Всё в порядке",
+      "statusDegraded": "Есть проблемы",
+      "statusCritical": "Критические проблемы",
+      "authHealth": "Обновление сессии",
+      "okCount": "{n} успешно",
+      "failCount": "{n} сбоев",
+      "wsReconnects": "Переподключения WebSocket",
+      "totalCount": "{n} всего",
+      "sessionsCount": "{n} сессий",
+      "authDeath": "Полные разрывы входа",
+      "recordingFailures": "Сбои остановки записи",
+      "failedCount": "{n} неудачных",
+      "fallbackCount": "{n} остановлено локально"
+    },
+    "roles": {
+      "student": "Ученик",
+      "tutor": "Учитель",
+      "admin": "Администратор",
+      "superadmin": "Суперадмин"
+    },
     "sidebar": {
       "collapse": "Свернуть",
       "expand": "Развернуть",
@@ -4864,7 +4893,7 @@
       "tutorActivity": "Активность репетиторов",
       "billing": "Биллинг",
       "system": "Система",
-      "health": "Состояние платформы",
+      "health": "Показатели платформы",
       "backToApp": "Назад к приложению",
       "profileModeration": "Модерация профилей",
       "verification": "Верификация",
@@ -4873,7 +4902,8 @@
       "subscriptionPlans": "Планы подписки",
       "analytics": "Аналитика",
       "platformSettings": "Настройки",
-      "platformFeedback": "💡 Предложения по платформе"
+      "platformFeedback": "💡 Предложения по платформе",
+      "realtime": "Реальное время"
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -4883,12 +4913,15 @@
       "reports": "Жалобы",
       "tutorActivity": "Активность репетиторов",
       "billing": "Биллинг",
-      "health": "Состояние платформы",
+      "health": "Показатели платформы",
       "profileModeration": "Модерация профилей",
       "verification": "Верификация",
       "payouts": "Выплаты",
       "subscriptionPlans": "Планы подписки",
-      "analytics": "Аналитика"
+      "analytics": "Аналитика",
+      "realtime": "Реальное время",
+      "platformFeedback": "Предложения платформы",
+      "platformSettings": "Настройки"
     },
     "dashboard": {
       "title": "Панель управления Staff",
@@ -4914,7 +4947,10 @@
         "tutorActivity": "Активность репетиторов",
         "tutorActivityDesc": "Просмотр и управление активностью репетиторов"
       },
-      "helpText": "Общий обзор состояния платформы. Здесь вы видите ключевые показатели, последнюю активность и можете быстро перейти в нужный раздел."
+      "helpText": "Общий обзор состояния платформы. Здесь вы видите ключевые показатели, последнюю активность и можете быстро перейти в нужный раздел.",
+      "newIn7Days": "+{n} за 7 дней",
+      "inactiveCount": "{n} неактивных",
+      "trustSafety": "Доверие и безопасность"
     },
     "users": {
       "title": "Пользователи",
@@ -4930,7 +4966,8 @@
       "bans": "Баны",
       "reports": "Жалобы",
       "plan": "План",
-      "helpText": "Поиск и просмотр всех зарегистрированных пользователей. Нажмите на строку для просмотра подробной информации."
+      "helpText": "Поиск и просмотр всех зарегистрированных пользователей. Нажмите на строку для просмотра подробной информации.",
+      "banned": "Бан"
     },
     "billing": {
       "title": "Обзор биллинга",
@@ -4955,15 +4992,17 @@
       "statusFailed": "Ошибка",
       "statusPending": "Ожидает",
       "paymentDetail": "Детали платежа",
-      "showing": "{from}–{to} из {total}"
+      "showing": "{from}–{to} из {total}",
+      "statusRefunded": "Возвращено",
+      "loadFailed": "Не удалось загрузить финансы"
     },
     "health": {
-      "title": "Состояние платформы",
+      "title": "Показатели платформы",
       "users": "Пользователи",
       "openReports": "Открытые жалобы",
       "activeBans": "Активные баны",
       "activeSubs": "Активные подписки",
-      "helpText": "Бизнес-показатели платформы: жалобы, баны, подписки, активность репетиторов. Технический мониторинг (очередь уведомлений, кеш, WS) — в разделе Оператор.",
+      "helpText": "Бизнес-показатели: пользователи, подписки, баны, незавершённые оплаты, активные учителя. Техническое состояние (база, кэш, фоновые задачи) здесь не проверяется.",
       "suspicious": "Подозрительные пользователи",
       "pendingSessions": "Незавершённые сессии",
       "activeTutors": "Активные репетиторы",
@@ -5000,6 +5039,32 @@
         "profile_update": "Профиль обновлён",
         "email_verify": "Email подтверждён",
         "mfa_enable": "MFA включено"
+      },
+      "events": {
+        "auth_login": "Вход",
+        "auth_session_revoked": "Сессия завершена",
+        "auth_change_password": "Пароль изменён",
+        "auth_mfa_setup_started": "Начата настройка MFA",
+        "auth_mfa_enabled": "MFA включено",
+        "auth_mfa_disabled": "MFA выключено",
+        "auth_mfa_verified": "Вход подтверждён кодом MFA",
+        "auth_mfa_backup_codes_regenerated": "Резервные коды MFA обновлены",
+        "lesson_quick_started": "Урок начат",
+        "lesson_status_changed": "Статус урока изменён",
+        "profile_updated": "Профиль обновлён",
+        "relation_tutor_accept": "Ученик принят",
+        "relation_tutor_bulk_archive": "Ученики архивированы",
+        "staff_plan_created": "Staff: план создан",
+        "staff_plan_updated": "Staff: план изменён",
+        "staff_plan_deactivated": "Staff: план выключен",
+        "staff_ban_created": "Staff: бан создан",
+        "staff_ban_lifted": "Staff: бан снят",
+        "staff_billing_cancelled": "Staff: подписка отменена",
+        "staff_billing_ops_finalize": "Staff: ручная финализация оплаты",
+        "staff_user_mfa_reset": "Staff: MFA сброшено",
+        "staff_user_subscription_granted": "Staff: подписка выдана",
+        "staff_user_role_changed": "Staff: роль изменена",
+        "staff_user_toggle_active": "Staff: аккаунт включён/выключен"
       }
     },
     "nav": {
@@ -5344,14 +5409,49 @@
       "resetMfaDesc": "Отключить двухфакторную аутентификацию для пользователя. Используйте, когда пользователь потерял доступ к authenticator-приложению.",
       "resetMfaBtn": "Сбросить MFA",
       "confirmResetMfa": "Сбросить MFA для {email}? Пользователь должен будет настроить MFA заново.",
-      "mfaResetSuccess": "MFA успешно сброшено",
+      "mfaResetSuccess": "MFA сброшено: при следующем входе код не понадобится.",
       "mfaResetFailed": "Не удалось сбросить MFA",
       "grantSubscription": "Выдать подписку",
       "selectPlan": "Выберите план...",
       "days": "дней",
       "grantBtn": "Выдать",
       "subscriptionGranted": "Подписка '{plan}' выдана на {days} дней",
-      "subscriptionGrantFailed": "Не удалось выдать подписку"
+      "subscriptionGrantFailed": "Не удалось выдать подписку",
+      "actionFailed": "Действие не выполнено: {reason}",
+      "subscriptionSource": "Источник",
+      "subscriptionSources": {
+        "STAFF": "Выдано вручную (staff)",
+        "PLATA": "Оплата Plata (Монобанк)",
+        "PADDLE": "Оплата Paddle",
+        "LIQPAY": "Оплата LiqPay",
+        "STRIPE": "Оплата Stripe"
+      },
+      "subscriptionStatuses": {
+        "ACTIVE": "Активна",
+        "PAST_DUE": "Просрочена",
+        "CANCELED": "Отменена",
+        "CANCELLED": "Отменена",
+        "EXPIRED": "Завершилась",
+        "TRIALING": "Пробный период",
+        "PENDING": "Ожидает оплаты"
+      },
+      "banScopes": {
+        "ALL": "Всё",
+        "BILLING": "Оплата",
+        "CONTACTS": "Контакты",
+        "CHAT": "Чат",
+        "INQUIRIES": "Запросы"
+      },
+      "banStatuses": {
+        "ACTIVE": "Действует",
+        "LIFTED": "Снят",
+        "EXPIRED": "Истёк"
+      },
+      "selectRole": "Выберите роль…",
+      "confirmChangeRole": "Сменить роль {email} на «{role}»? Вместе с ролью изменятся права доступа к админке.",
+      "mfaWasNotEnabled": "MFA у пользователя не было включено — сбрасывать нечего.",
+      "confirmGrantSubscription": "Выдать {plan} на {days} дн. пользователю {email}? Доступ появится сразу, оплата не нужна.",
+      "subscriptionGrantedReal": "Выдано: {plan} до {until}. Сейчас у пользователя план: {entitlement}."
     },
     "consoleName": "Админ-панель",
     "analytics": {
@@ -5438,7 +5538,9 @@
           "day30Active": "D30 Акт.",
           "day30ActiveTooltip": "Любая активность в течение 30 дней после регистрации"
         }
-      }
+      },
+      "hiddenBlocksNote": "Воронка, оповещения, когорты, вовлечённость, доход, эксперименты и тренд скрыты: их считали снимки, которые никто не наполнял, поэтому там были нули. Живые деньги — в «Финансах».",
+      "revenueMovedLink": "Открыть «Финансы»"
     },
     "plans": {
       "title": "Планы подписки",
@@ -5497,7 +5599,8 @@
         "isActive": "Активный план",
         "isFeatured": "Рекомендуемый (featured)",
         "displayOrder": "Порядок отображения"
-      }
+      },
+      "confirmPriceChange": "Изменить цену «{name}» с {old} на {new}? Новая цена сразу пойдёт во все новые счета."
     },
     "journey": {
       "title": "Путь пользователя (воронка)",
@@ -5659,7 +5762,9 @@
       "actions": "Действия",
       "previewFinalize": "Предпросмотр",
       "copyOrderId": "Копировать ID заказа",
-      "never": "Никогда"
+      "never": "Никогда",
+      "superadminOnly": "Операции биллинга доступны только суперадмину.",
+      "manualFinalizeDisabled": "Ручное подтверждение оплаты выключено: оплату подтверждает только банк."
     },
     "profileModeration": {
       "title": "Модерация профилей",
@@ -5786,8 +5891,14 @@
     },
     "platformSettings": {
       "title": "Настройки платформы",
-      "helpText": "Управляйте поведением платформы без перезапуска сервера. Изменения вступают в силу сразу.",
-      "noSettings": "Настройки не найдены"
+      "helpText": "Настройки, которые действуют без перезапуска сервера.",
+      "noSettings": "Настройки не найдены",
+      "landing": {
+        "group": "Лендинг",
+        "replayLabel": "Реплей для демо-секции лендинга",
+        "replayDescription": "Публичный URL настоящего реплея для секции «Посмотрите, как прошёл урок». Пустое поле — показывается анимация-заглушка.",
+        "saved": "Сохранено ✓"
+      }
     },
     "replayAnalytics": {
       "title": "Аналитика записей",

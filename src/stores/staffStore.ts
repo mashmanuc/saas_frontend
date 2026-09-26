@@ -18,6 +18,19 @@ import type {
   StaffBan,
 } from '@/types/staff'
 
+/**
+ * 2026-09-26 (аудит адмінки): людське пояснення з тіла відповіді бекенда.
+ * `rethrowAsDomainError` бере лише `message`, а staff-ендпоінти кладуть пояснення
+ * в `detail` (або речення в `error`) — інакше людина бачила «Request failed with
+ * status code 409» чи нічого.
+ */
+function backendDetail(err: unknown): string | null {
+  const data = (err as any)?.response?.data
+  if (typeof data?.detail === 'string' && data.detail) return data.detail
+  if (typeof data?.error === 'string' && data.error.includes(' ')) return data.error
+  return null
+}
+
 interface StaffStoreState {
   userOverview: StaffUserOverview | null
   reports: StaffReport[]
@@ -199,7 +212,7 @@ export const useStaffStore = defineStore('staff', {
         try {
           rethrowAsDomainError(err)
         } catch (domainError: any) {
-          this.createBanError = domainError.message || 'Failed to create ban'
+          this.createBanError = backendDetail(err) || domainError.message || 'Failed to create ban'
           this.error = this.createBanError
           throw domainError
         }
@@ -243,7 +256,7 @@ export const useStaffStore = defineStore('staff', {
         try {
           rethrowAsDomainError(err)
         } catch (domainError: any) {
-          this.liftBanError = domainError.message || 'Failed to lift ban'
+          this.liftBanError = backendDetail(err) || domainError.message || 'Failed to lift ban'
           this.error = this.liftBanError
           throw domainError
         }
@@ -271,7 +284,7 @@ export const useStaffStore = defineStore('staff', {
         try {
           rethrowAsDomainError(err)
         } catch (domainError: any) {
-          this.cancelBillingError = domainError.message || 'Failed to cancel billing'
+          this.cancelBillingError = backendDetail(err) || domainError.message || 'Failed to cancel billing'
           this.error = this.cancelBillingError
           throw domainError
         }
@@ -301,7 +314,7 @@ export const useStaffStore = defineStore('staff', {
         try {
           rethrowAsDomainError(err)
         } catch (domainError: any) {
-          this.error = domainError.message || 'Failed to verify email'
+          this.error = backendDetail(err) || domainError.message || 'Failed to verify email'
           throw domainError
         }
       } finally {
@@ -330,7 +343,7 @@ export const useStaffStore = defineStore('staff', {
         try {
           rethrowAsDomainError(err)
         } catch (domainError: any) {
-          this.error = domainError.message || 'Failed to toggle user status'
+          this.error = backendDetail(err) || domainError.message || 'Failed to toggle user status'
           throw domainError
         }
       } finally {

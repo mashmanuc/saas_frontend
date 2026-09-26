@@ -4,10 +4,14 @@
  * Types for staff/admin operations: user overview, reports, bans, billing
  */
 
+// 2026-09-26: рівно ті області, що приймає бекенд (StaffBanCreateSerializer).
+// БУЛО PLATFORM/MESSAGING — бекенд їх не знав, створення бану тихо падало з 400.
 export enum BanScope {
+  ALL = 'ALL',
+  BILLING = 'BILLING',
   CONTACTS = 'CONTACTS',
-  PLATFORM = 'PLATFORM',
-  MESSAGING = 'MESSAGING'
+  CHAT = 'CHAT',
+  INQUIRIES = 'INQUIRIES'
 }
 
 export enum ReportStatus {
@@ -58,6 +62,8 @@ export interface StaffBillingInfo {
   subscription_status: string | null
   current_period_end: string | null
   cancel_at_period_end: boolean
+  /** Звідки підписка: PLATA/PADDLE/…; STAFF — видано вручну (2026-09-26). */
+  provider?: string | null
 }
 
 export interface StaffActivityInfo {

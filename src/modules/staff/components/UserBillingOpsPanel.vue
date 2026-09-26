@@ -104,6 +104,9 @@
       <!-- Checkout Sessions -->
       <section class="section checkout-sessions">
         <h4>{{ $t('staff.billingOps.sessionsSection') }}</h4>
+        <p v-if="sessions.length > 0 && !snapshot?.manual_finalize_enabled" class="text-muted">
+          {{ $t('staff.billingOps.manualFinalizeDisabled') }}
+        </p>
         <div v-if="sessions.length === 0" class="empty-state">
           {{ $t('staff.billingOps.noSessions') }}
         </div>
@@ -163,7 +166,10 @@
                 </td>
                 <td>{{ formatDateTime(session.created_at) }}</td>
                 <td class="actions-cell">
-                  <Button 
+                  <!-- 2026-09-26: ручну фіналізацію вимкнено на бекенді (не питає банк) →
+                       кнопку сховано; пояснення — над таблицею. -->
+                  <Button
+                    v-if="snapshot?.manual_finalize_enabled"
                     variant="primary"
                     size="sm"
                     :disabled="session.status === 'completed'"
@@ -171,6 +177,7 @@
                   >
                     {{ $t('staff.billingOps.previewFinalize') }}
                   </Button>
+                  <span v-else class="text-muted">—</span>
                 </td>
               </tr>
             </tbody>

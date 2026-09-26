@@ -10,7 +10,7 @@
             {{ staffStore.userOverview.user.first_name || '' }}
             {{ staffStore.userOverview.user.last_name || '' }}
             <Badge v-if="staffStore.userOverview.user.role" :variant="roleBadgeVariant(staffStore.userOverview.user.role)" size="sm">
-              {{ staffStore.userOverview.user.role }}
+              {{ roleLabel(staffStore.userOverview.user.role) }}
             </Badge>
           </template>
           <template v-else>{{ $t('staff.userOverview.title') }}</template>
@@ -22,7 +22,14 @@
       {{ staffStore.loadUserOverviewError }}
     </div>
 
-    <div v-if="staffStore.isLoading" class="loading">
+    <!-- 2026-09-26: помилки дій (скасування, бан, вимкнення) раніше йшли лише в console -->
+    <div v-if="actionError" class="error-banner" role="alert">
+      {{ $t('staff.userOverview.actionFailed', { reason: actionError }) }}
+    </div>
+
+    <!-- Спінер — лише поки картки цього користувача ще немає. БУЛО: будь-яка дія
+         вмикала спільний isLoading і ховала всю картку, панелі перемонтовувались. -->
+    <div v-if="showSpinner" class="loading">
       <LoadingSpinner />
     </div>
 
@@ -42,7 +49,7 @@
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.role') }}</span>
             <Badge :variant="roleBadgeVariant(staffStore.userOverview.user.role)" size="sm">
-              {{ staffStore.userOverview.user.role }}
+              {{ roleLabel(staffStore.userOverview.user.role) }}
             </Badge>
           </div>
           <div class="info-item">
@@ -94,18 +101,8 @@
               </Button>
             </div>
           </div>
-          <div class="info-item" v-if="staffStore.userOverview.user.role === 'tutor'">
-            <span class="label">{{ $t('staff.userOverview.publicProfile') }}</span>
-            <a
-              :href="`/tutors/${staffStore.userOverview.user.id}`"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="profile-link"
-            >
-              <ExternalLink :size="14" />
-              {{ $t('staff.userOverview.openProfile') }}
-            </a>
-          </div>
+          <!-- 2026-09-26: «Відкрити профіль» (/tutors/:id) прибрано — публічний профіль
+               жив у marketplace (вимкнено), посилання вело на лендинг. -->
         </div>
       </Card>
 
@@ -129,17 +126,8 @@
       <!-- Trust Section -->
       <Card class="section">
         <h2 class="section-heading">{{ $t('staff.userOverview.trustInfo') }}</h2>
-        
-        <div class="trust-stats">
-          <div class="mini-stat">
-            <span class="mini-stat-value">{{ staffStore.userOverview.trust.blocks_count }}</span>
-            <span class="mini-stat-label">{{ $t('staff.userOverview.blocksCount') }}</span>
-          </div>
-          <div class="mini-stat" :class="{ 'mini-stat-danger': staffStore.userOverview.trust.reports_open_count > 0 }">
-            <span class="mini-stat-value">{{ staffStore.userOverview.trust.reports_open_count }}</span>
-            <span class="mini-stat-label">{{ $t('staff.userOverview.reportsOpenCount') }}</span>
-          </div>
-        </div>
+        <!-- 2026-09-26: лічильники «Блокувань» і «Відкритих скарг» сховано — у v1 блок і
+             скаргу можна було створити лише в marketplace (вимкнено), тож вони завжди 0. -->
 
         <!-- Bans List -->
         <div class="bans-section">
@@ -157,9 +145,9 @@
               :class="{ 'ban-active': ban.status === 'ACTIVE' }"
             >
               <div class="ban-header">
-                <span class="ban-scope">{{ ban.scope }}</span>
+                <span class="ban-scope">{{ banScopeLabel(ban.scope) }}</span>
                 <span :class="`ban-status status-${ban.status.toLowerCase()}`">
-                  {{ ban.status }}
+                  {{ banStatusLabel(ban.status) }}
                 </span>
               </div>
               <div class="ban-details">
@@ -184,8 +172,10 @@
             </div>
           </div>
 
-          <!-- Create Ban Form -->
-          <div class="create-ban-section">
+          <!-- Create Ban Form — СХОВАНО 2026-09-26 (рішення «сховати, не видаляти»): у v1 бан
+               перевіряє лише оплата (billing/api/views.py), входу й дошки він не блокує, а
+               області PLATFORM/MESSAGING бекенд не приймав (тихий 400). Повернути — BAN_CREATION_ENABLED. -->
+          <div v-if="BAN_CREATION_ENABLED" class="create-ban-section">
             <h3>{{ $t('staff.userOverview.createBan') }}</h3>
             <form @submit.prevent="handleCreateBan" class="ban-form">
               <div class="form-group">
@@ -195,9 +185,7 @@
                   v-model="banForm.scope" 
                   required
                 >
-                  <option value="CONTACTS">CONTACTS</option>
-                  <option value="PLATFORM">PLATFORM</option>
-                  <option value="MESSAGING">MESSAGING</option>
+                  <option v-for="scope in BAN_SCOPES" :key="scope" :value="scope">{{ banScopeLabel(scope) }}</option>
                 </select>
               </div>
               <div class="form-group">
@@ -239,7 +227,11 @@
           </div>
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.subscriptionStatus') }}:</span>
-            <span>{{ staffStore.userOverview.billing.subscription_status || $t('staff.userOverview.noSubscription') }}</span>
+            <span>{{ staffStore.userOverview.billing.subscription_status ? subscriptionStatusLabel(staffStore.userOverview.billing.subscription_status) : $t('staff.userOverview.noSubscription') }}</span>
+          </div>
+          <div v-if="staffStore.userOverview.billing.provider" class="info-item">
+            <span class="label">{{ $t('staff.userOverview.subscriptionSource') }}:</span>
+            <span>{{ subscriptionSourceLabel(staffStore.userOverview.billing.provider) }}</span>
           </div>
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.currentPeriodEnd') }}:</span>
@@ -251,12 +243,14 @@
           </div>
         </div>
 
-        <div v-if="staffStore.userOverview.billing.subscription_status" class="billing-actions">
+        <!-- Лише для чинної підписки: БУЛО — кнопки й для EXPIRED/CANCELED → тихий 404 -->
+        <div v-if="canCancelSubscription" class="billing-actions">
           <h3>{{ $t('staff.userOverview.billingActions') }}</h3>
           <div class="action-buttons">
-            <Button 
+            <Button
+              v-if="!staffStore.userOverview.billing.cancel_at_period_end"
               variant="secondary"
-              :disabled="staffStore.isLoading || staffStore.userOverview.billing.cancel_at_period_end"
+              :disabled="staffStore.isLoading"
               @click="handleCancelBilling('at_period_end')"
             >
               {{ $t('staff.userOverview.cancelAtPeriodEnd') }}
@@ -275,7 +269,10 @@
       <!-- Billing Operations Section (v0.79.0) -->
       <Card class="section">
         <h2 class="section-heading">{{ $t('staff.userOverview.billingOperations') }}</h2>
-        <UserBillingOpsPanel :user-id="staffStore.userOverview.user.id" />
+        <!-- Бекенд пускає сюди лише суперкористувача (IsBillingOps): admin без цього
+             отримував 403-тост на кожному відкритті картки. -->
+        <UserBillingOpsPanel v-if="isSuperadmin" :user-id="staffStore.userOverview.user.id" />
+        <p v-else class="mgmt-desc">{{ $t('staff.billingOps.superadminOnly') }}</p>
       </Card>
 
       <!-- Account Management Section (v0.91.0) -->
@@ -287,13 +284,12 @@
           <div class="mgmt-panel">
             <h3 class="mgmt-panel-title">{{ $t('staff.userOverview.changeRole') }}</h3>
             <div class="mgmt-row">
+              <!-- БУЛО: за замовчуванням вибрано `tutor`, підписи — сирі коди ролей -->
               <select v-model="roleForm.newRole" class="mgmt-select">
-                <option value="student">student</option>
-                <option value="tutor">tutor</option>
-                <option value="admin">admin</option>
-                <option value="superadmin">superadmin</option>
+                <option value="" disabled>{{ $t('staff.userOverview.selectRole') }}</option>
+                <option v-for="role in ASSIGNABLE_ROLES" :key="role" :value="role">{{ roleLabel(role) }}</option>
               </select>
-              <Button variant="default" size="sm" :disabled="roleForm.loading" @click="handleChangeRole">
+              <Button variant="default" size="sm" :disabled="roleForm.loading || !roleForm.newRole" @click="handleChangeRole">
                 {{ roleForm.loading ? $t('common.saving') + '…' : $t('staff.userOverview.applyRole') }}
               </Button>
             </div>
@@ -320,7 +316,7 @@
             <div class="mgmt-row" style="flex-wrap: wrap; gap: 8px;">
               <select v-model="grantForm.planId" class="mgmt-select">
                 <option value="">{{ $t('staff.userOverview.selectPlan') }}</option>
-                <option v-for="p in availablePlans" :key="p.id" :value="p.id">{{ p.name }} ({{ p.slug }})</option>
+                <option v-for="p in grantablePlans" :key="p.id" :value="p.id">{{ p.name }} ({{ p.slug }})</option>
               </select>
               <input
                 v-model.number="grantForm.days"
@@ -381,11 +377,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ExternalLink, History, MonitorSmartphone, AlertTriangle } from 'lucide-vue-next'
+import { History, MonitorSmartphone, AlertTriangle } from 'lucide-vue-next'
 import { useStaffStore } from '@/stores/staffStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { getUserAuditLog } from '@/api/staff'
 import type { AuditEvent } from '@/api/staff'
 import { BanScope, BillingCancelMode } from '@/types/staff'
@@ -403,8 +400,10 @@ import type { PlanItem } from '@/modules/staff/api/subscriptionPlansApi'
 import { activeLocale } from '@/utils/i18nDate'
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, te } = useI18n()
 const staffStore = useStaffStore()
+const authStore = useAuthStore()
+const isSuperadmin = computed(() => String(authStore.user?.role || '').toLowerCase() === 'superadmin')
 
 // Останній вхід — із сесій (бекенд віддає `last_sign_in_at`); `last_login` — лише
 // запасний, бо його ніхто не пише (на проді 2 з 88, 2026-09-26).
@@ -419,23 +418,75 @@ const auditLogTotal = ref(0)
 
 // Account Management forms (v0.91.0)
 const availablePlans = ref<PlanItem[]>([])
-const roleForm = ref({ newRole: 'tutor', loading: false, result: '', error: false })
+const roleForm = ref({ newRole: '', loading: false, result: '', error: false })
 const mfaForm = ref({ loading: false, result: '', error: false })
 const grantForm = ref({ planId: '' as string | number, days: 30, loading: false, result: '', error: false })
 
+// 2026-09-26 (аудит адмінки): ролі, які адмінка дає ставити (бекенд перевіряє ще й хто ставить).
+const ASSIGNABLE_ROLES = ['student', 'tutor', 'admin', 'superadmin'] as const
+// Області, які приймає бекенд (StaffBanCreateSerializer). БУЛО: PLATFORM/MESSAGING → тихий 400.
+const BAN_SCOPES: BanScope[] = [BanScope.ALL, BanScope.BILLING, BanScope.CONTACTS, BanScope.CHAT, BanScope.INQUIRIES]
+// Створення бану сховано (рішення «сховати, не видаляти»): у v1 бан блокує лише оплату.
+const BAN_CREATION_ENABLED = false
+
+/** Людське пояснення помилки з тіла відповіді (`detail`, інакше речення в `error`). */
+function errorDetail(e: any, fallback: string): string {
+  const data = e?.response?.data
+  if (typeof data?.detail === 'string' && data.detail) return data.detail
+  if (typeof data?.error === 'string' && data.error.includes(' ')) return data.error
+  return fallback
+}
+
+// Видавати має сенс лише платний, увімкнений план у гривнях (USD/Paddle вимкнено).
+const grantablePlans = computed(() =>
+  availablePlans.value.filter(p => p.slug !== 'free' && (!p.currency || p.currency === 'UAH'))
+)
+
+const showSpinner = computed(() => {
+  const shownId = String(staffStore.userOverview?.user?.id ?? '')
+  return staffStore.isLoading && shownId !== String(route.params.id ?? '')
+})
+
+const actionError = computed(() => {
+  const err = staffStore.cancelBillingError || staffStore.liftBanError || staffStore.createBanError || staffStore.error
+  return err && err !== staffStore.loadUserOverviewError ? err : null
+})
+
+const canCancelSubscription = computed(() => {
+  const status = String(staffStore.userOverview?.billing?.subscription_status || '').toUpperCase()
+  return status === 'ACTIVE' || status === 'PAST_DUE'
+})
+
+function labelOr(key: string, fallback: string): string {
+  return te(key) ? t(key) : fallback
+}
+const roleLabel = (role: string) => labelOr(`staff.roles.${String(role || '').toLowerCase()}`, role)
+const banScopeLabel = (scope: string) => labelOr(`staff.userOverview.banScopes.${scope}`, scope)
+const banStatusLabel = (status: string) => labelOr(`staff.userOverview.banStatuses.${status}`, status)
+const subscriptionStatusLabel = (status: string) =>
+  labelOr(`staff.userOverview.subscriptionStatuses.${String(status).toUpperCase()}`, status)
+const subscriptionSourceLabel = (provider: string) =>
+  labelOr(`staff.userOverview.subscriptionSources.${String(provider).toUpperCase()}`, provider)
+
 async function handleChangeRole() {
-  if (!staffStore.userOverview) return
+  if (!staffStore.userOverview || !roleForm.value.newRole) return
   const userId = staffStore.userOverview.user.id
+  const confirmed = confirm(t('staff.userOverview.confirmChangeRole', {
+    email: staffStore.userOverview.user.email,
+    role: roleLabel(roleForm.value.newRole),
+  }))
+  if (!confirmed) return
   roleForm.value.loading = true
   roleForm.value.result = ''
   roleForm.value.error = false
   try {
     const res = await apiClient.patch(`/v1/staff/users/${userId}/change-role/`, { role: roleForm.value.newRole })
-    roleForm.value.result = t('staff.userOverview.roleChanged', { role: res.new_role })
+    roleForm.value.result = t('staff.userOverview.roleChanged', { role: roleLabel(res.new_role) })
+    roleForm.value.newRole = ''
     await staffStore.loadUserOverview(String(userId))
   } catch (e: any) {
     roleForm.value.error = true
-    roleForm.value.result = e?.response?.data?.error || t('staff.userOverview.roleChangeFailed')
+    roleForm.value.result = errorDetail(e, t('staff.userOverview.roleChangeFailed'))
   } finally {
     roleForm.value.loading = false
   }
@@ -449,11 +500,14 @@ async function handleResetMfa() {
   mfaForm.value.result = ''
   mfaForm.value.error = false
   try {
-    await apiClient.post(`/v1/staff/users/${userId}/reset-mfa/`)
-    mfaForm.value.result = t('staff.userOverview.mfaResetSuccess')
+    const res = await apiClient.post(`/v1/staff/users/${userId}/reset-mfa/`)
+    // БУЛО: «успішно» за будь-якої відповіді. Тепер — що сталося насправді.
+    mfaForm.value.result = res?.mfa_cleared
+      ? t('staff.userOverview.mfaResetSuccess')
+      : t('staff.userOverview.mfaWasNotEnabled')
   } catch (e: any) {
     mfaForm.value.error = true
-    mfaForm.value.result = e?.response?.data?.error || t('staff.userOverview.mfaResetFailed')
+    mfaForm.value.result = errorDetail(e, t('staff.userOverview.mfaResetFailed'))
   } finally {
     mfaForm.value.loading = false
   }
@@ -462,6 +516,14 @@ async function handleResetMfa() {
 async function handleGrantSubscription() {
   if (!staffStore.userOverview || !grantForm.value.planId) return
   const userId = staffStore.userOverview.user.id
+  const plan = grantablePlans.value.find(p => String(p.id) === String(grantForm.value.planId))
+  // БУЛО: видача без жодного підтвердження.
+  const confirmed = confirm(t('staff.userOverview.confirmGrantSubscription', {
+    plan: plan?.name ?? '',
+    days: grantForm.value.days,
+    email: staffStore.userOverview.user.email,
+  }))
+  if (!confirmed) return
   grantForm.value.loading = true
   grantForm.value.result = ''
   grantForm.value.error = false
@@ -470,14 +532,16 @@ async function handleGrantSubscription() {
       plan_id: grantForm.value.planId,
       days: grantForm.value.days,
     })
-    grantForm.value.result = t('staff.userOverview.subscriptionGranted', {
+    // entitlement_plan — план, який продукт РЕАЛЬНО бачить після видачі.
+    grantForm.value.result = t('staff.userOverview.subscriptionGrantedReal', {
       plan: res.plan,
-      days: res.days,
+      until: formatDate(res.valid_until),
+      entitlement: res.entitlement_plan,
     })
     await staffStore.loadUserOverview(String(userId))
   } catch (e: any) {
     grantForm.value.error = true
-    grantForm.value.result = e?.response?.data?.error || t('staff.userOverview.subscriptionGrantFailed')
+    grantForm.value.result = errorDetail(e, t('staff.userOverview.subscriptionGrantFailed'))
   } finally {
     grantForm.value.loading = false
   }
@@ -496,16 +560,31 @@ const banForm = ref({
   reason: ''
 })
 
-onMounted(async () => {
-  const userId = route.params.id as string
-  if (userId) {
-    try {
-      await staffStore.loadUserOverview(userId)
-    } catch (error) {
-      console.error('Failed to load user overview:', error)
-    }
-    loadAuditLog(userId)
+async function loadUser(userId: string) {
+  if (!userId) return
+  staffStore.clearErrors()
+  // Результати форм належать попередньому користувачеві — при переході з картки на
+  // картку вони лишались на екрані (знайдено наживо 2026-09-26).
+  roleForm.value = { newRole: '', loading: false, result: '', error: false }
+  mfaForm.value = { loading: false, result: '', error: false }
+  grantForm.value = { planId: '', days: 30, loading: false, result: '', error: false }
+  banForm.value = { scope: BanScope.CONTACTS, ends_at: '', reason: '' }
+  try {
+    await staffStore.loadUserOverview(userId)
+  } catch (error) {
+    console.error('Failed to load user overview:', error)
   }
+  loadAuditLog(userId)
+}
+
+// 2026-09-26: БУЛО лише onMounted — перехід з картки на картку лишав на екрані
+// попереднього користувача під адресою нового.
+watch(() => route.params.id, (id, oldId) => {
+  if (id && id !== oldId) loadUser(String(id))
+})
+
+onMounted(async () => {
+  await loadUser(route.params.id as string)
   // Load plans for grant-subscription panel (silent fail)
   try {
     const res = await getSubscriptionPlans()
