@@ -5,6 +5,9 @@
       <p class="help-text">{{ $t('staff.users.helpText') }}</p>
     </div>
 
+    <!-- 2026-09-26: хто онлайн просто зараз — щоб пушити, коли нікого немає -->
+    <PresenceNowPanel />
+
     <!-- Filters -->
     <Card class="filters-card">
       <div class="filters-row">
@@ -130,6 +133,7 @@ import Badge from '@/ui/Badge.vue'
 import Button from '@/ui/Button.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import EmptyState from '@/ui/EmptyState.vue'
+import PresenceNowPanel from '@/modules/staff/components/PresenceNowPanel.vue'
 
 const router = useRouter()
 

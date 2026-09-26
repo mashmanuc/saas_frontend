@@ -5,6 +5,10 @@
       <p class="analytics-help-text">{{ $t('staff.analytics.helpText') }}</p>
     </div>
 
+    <!-- 2026-09-26: присутність у часі, хто скільки споживає, що цінне (живі дані;
+         старі блоки нижче здебільшого читають незаповнювані знімки) -->
+    <PresenceUsageSection />
+
     <!-- Filters -->
     <Card class="filters-card">
       <div class="filters-row">
@@ -195,6 +199,7 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import Alert from '@/ui/Alert.vue'
 import EmptyState from '@/ui/EmptyState.vue'
 import AlertsPanel from '../components/AlertsPanel.vue'
+import PresenceUsageSection from '../components/PresenceUsageSection.vue'
 import CohortTable from '../components/CohortTable.vue'
 import EngagementPanel from '../components/EngagementPanel.vue'
 import RevenuePanel from '../components/RevenuePanel.vue'

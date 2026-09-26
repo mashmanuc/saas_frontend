@@ -5038,6 +5038,126 @@
       },
       "shownOf": "Showing {shown} of {total}"
     },
+    "presence": {
+      "title": "Presence and usage",
+      "period": "Period",
+      "periods": {
+        "d1": "Day",
+        "d7": "Week",
+        "d30": "Month",
+        "d90": "3 months"
+      },
+      "loading": "Loading…",
+      "loadFailed": "Could not load data",
+      "minutes": "{m} min",
+      "hoursMinutes": "{h} h {m} min",
+      "units": {
+        "mb": "{n} MB",
+        "gb": "{n} GB",
+        "tiny": "< 0.1 MB"
+      },
+      "weekdays": {
+        "0": "Mon",
+        "1": "Tue",
+        "2": "Wed",
+        "3": "Thu",
+        "4": "Fri",
+        "5": "Sat",
+        "6": "Sun"
+      },
+      "now": {
+        "nobody": "Nobody is online — safe to push",
+        "busy": "Online now: {people} · recordings: {recordings} · guests: {guests} — better wait",
+        "loadFailed": "Could not check who is online — do not push blindly",
+        "loading": "Checking who is online…",
+        "checkedAt": "Checked at {time}",
+        "refresh": "Refresh",
+        "onBoards": "On boards",
+        "inApp": "In the app",
+        "recordings": "Lesson recording in progress",
+        "untitledBoard": "Untitled board",
+        "guests": "Guests without an account in 30 min: {n}",
+        "confirming": "Looks empty — checking once more…",
+        "stale": "The answer is stale — press “Refresh” before pushing",
+        "staffOnline": "Staff online (not counted): {names}"
+      },
+      "timeline": {
+        "title": "Presence over time",
+        "noHistory": "No history yet: the first snapshot appears 5 minutes after deploy.",
+        "since": "Snapshots every 5 min, history since {date}",
+        "people": "People online (incl. guests)",
+        "onBoards": "On boards",
+        "disabled": "Presence history recording is off — the chart appears once it is enabled (a separate decision).",
+        "disabledSince": "History recording is off now — no new snapshots are added."
+      },
+      "heatmap": {
+        "title": "When people are here (weekday × hour, Kyiv)",
+        "hint": "Darker means more people. Light cells are quiet windows for pushing.",
+        "cell": "{day}, {hour}:00 — {value}"
+      },
+      "top": {
+        "title": "Who uses how much",
+        "sortBy": "Sort by",
+        "user": "User",
+        "staff": "staff",
+        "empty": "No data for this period",
+        "aiNote": "Integralyk — chat turns in the period; “AI this month” — chat + ✨ + PDF reading this month. Storage and board count are current totals, the rest is for the selected period. AI cost is not recorded.",
+        "cols": {
+          "online_minutes": "Online",
+          "board_minutes": "On boards",
+          "ai_requests": "Integralyk",
+          "ai_month": "AI this month",
+          "storage_bytes": "Storage",
+          "boards": "Boards",
+          "replays": "Recordings"
+        },
+        "samplingOff": "The “Online” and “On boards” columns are empty: presence recording is off."
+      },
+      "features": {
+        "title": "What is valuable",
+        "objects": "What people add to boards",
+        "tools": "What people ask Integralyk",
+        "noObjects": "No object data yet (the summary is computed nightly for yesterday)",
+        "noTools": "No Integralyk requests in this period",
+        "noTool": "no tool",
+        "people": "{n} people",
+        "until": "Object data up to {date} inclusive",
+        "opsLogStale": "The board operation log has not been written for a while — object data may be incomplete.",
+        "aggregationDisabled": "The nightly object summary is off — object data is not updated."
+      },
+      "objects": {
+        "image": "Image / PPTX",
+        "sticky": "Sticky note",
+        "audio_player": "Audio",
+        "video_player": "Video",
+        "youtube_player": "YouTube",
+        "document_viewer": "Document",
+        "geometry_2d_v2": "Geometry (construction)",
+        "geometry_solid": "Solid geometry (legacy)",
+        "graph_calculator": "2D graph",
+        "calculus_card": "Derivatives card",
+        "trig_circle": "Unit circle",
+        "helix": "Helix",
+        "trig_solver": "Trigonometry solver",
+        "nmt3d": "3D solids (StereoMASH)",
+        "nmt_task": "NMT task",
+        "quadratic_card": "Quadratic function",
+        "formula_card": "Formula",
+        "theory_card": "Theory",
+        "history_card": "History card",
+        "timeline_card": "Timeline",
+        "map_card": "Map",
+        "mash_scene": "MASH scene",
+        "geomash_scene": "GeoMASH scene",
+        "g3d": "3D",
+        "graphmash_3d": "3D graph",
+        "visual_capsule": "Visual capsule",
+        "stroke": "Pen drawing",
+        "pdf_import": "PDF (import)",
+        "text": "Text",
+        "unknown": "Unknown"
+      }
+    },
     "userOverview": {
       "title": "User Overview",
       "backToReports": "Back to Reports",
