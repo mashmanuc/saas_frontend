@@ -6171,7 +6171,11 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
 .wb-media-drag-surface {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  /* auto, не число (2026-09-26): шар іде в DOM після плеєра, тож і так лежить над ним —
+     нативні кнопки відео в режимі виділення глухі. Кнопки картки «×» (телепорт у цю ж
+     обгортку, z-index: auto) ідуть у DOM ще пізніше й лягають поверх шару. З z-index: 5
+     шар накривав «×»: клік по ньому лише виділяв картку. */
+  z-index: auto;
   cursor: grab;
   background: transparent;
 }

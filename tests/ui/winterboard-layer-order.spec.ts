@@ -389,3 +389,53 @@ test('кнопки документа стоять у його куті за б�
     expect(await gap(), `Ctrl+колесо ${delta}`).toEqual({ right: 4, top: 2 })
   }
 })
+
+// 2026-09-26: у режимі виділення медіакартку накриває прозорий шар перетягування
+// (.wb-media-drag-surface), а «×» телепортовано в ту саму обгортку з z-index: auto.
+// Шар мав z-index: 5 і лежав над кнопкою — клік по «×» лише виділяв картку.
+for (const media of [
+  { id: 'media-video', type: 'video_player', fields: {} },
+  { id: 'media-youtube', type: 'youtube_player', fields: { youtubeUrl: '' } },
+] as const) {
+  test(`«×» картки ${media.type} натискається в режимі виділення`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('local_ws_enabled', 'true'))
+    await page.goto('/workspace')
+    await expect(page.locator('.wb-canvas')).toBeVisible()
+    await page.evaluate(async ({ id, type, fields }) => {
+      const { useWBStore } = await import('/src/modules/winterboard/board/state/boardStore.ts')
+      const store = useWBStore()
+      const current = store.currentPage
+      if (!current) throw new Error('Немає сторінки тестової дошки')
+      store.pages[store.currentPageIndex] = {
+        ...current,
+        assets: [{ id, type, src: '', x: 100, y: 100, w: 640, h: 360, rotation: 0, locked: false, ...fields }],
+      }
+      store.setTool('select')
+      store.selectItems([id])
+    }, media)
+
+    const card = page.locator(`[data-media-id="${media.id}"]`)
+    const close = page.locator('[data-testid="wb-card-window-delete"]')
+    await expect(card.locator('.wb-media-drag-surface')).toHaveCount(1)
+    await expect(close).toBeVisible()
+    // Клік отримує той, хто зверху: у центрі «×» — сама кнопка. Для відео ще й центр
+    // картки — шар: нативні кнопки плеєра в режимі виділення глухі.
+    const top = await page.evaluate((id) => {
+      const at = (el: Element) => {
+        const r = el.getBoundingClientRect()
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+      }
+      return {
+        close: !!at(document.querySelector('[data-testid="wb-card-window-delete"]')!)
+          ?.closest('[data-testid="wb-card-window-delete"]'),
+        center: at(document.querySelector(`[data-media-id="${id}"]`)!)
+          ?.classList.contains('wb-media-drag-surface') ?? false,
+      }
+    }, media.id)
+    expect(top.close, 'шар перетягування накриває «×»').toBe(true)
+    if (media.type === 'video_player') expect(top.center, 'плеєр відео вийшов з-під шару').toBe(true)
+
+    await close.click()
+    await expect(card).toHaveCount(0)
+  })
+}
