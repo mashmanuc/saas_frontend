@@ -44,6 +44,10 @@ const LABEL_MAP: Record<string, string> = {
   'staff-health': 'staff.breadcrumbs.health',
   'staff-subscription-plans': 'staff.breadcrumbs.subscriptionPlans',
   'staff-analytics': 'staff.breadcrumbs.analytics',
+  // 2026-09-26: цих трьох не було — крихти на цих сторінках не показувались
+  'staff-platform-feedback': 'staff.breadcrumbs.platformFeedback',
+  'staff-cascade-health': 'staff.breadcrumbs.realtime',
+  'staff-platform-settings': 'staff.breadcrumbs.platformSettings',
 }
 
 const crumbs = computed<Crumb[]>(() => {

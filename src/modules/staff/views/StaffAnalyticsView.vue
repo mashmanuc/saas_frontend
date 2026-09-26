@@ -9,8 +9,17 @@
          старі блоки нижче здебільшого читають незаповнювані знімки) -->
     <PresenceUsageSection />
 
+    <!-- 2026-09-26 (аудит адмінки, «сховати, не видаляти»): воронка, сповіщення, drop-off,
+         когорти, залученість, дохід, експерименти й тренд читали знімки, які наповнюють задачі
+         лише з мертвого config/celery.py, а 6 із 8 подій «Сьогодні» у v1 ніхто не пише — тож
+         на проді там були нулі й «Поки порожньо». Прапорці нижче; код блоків на місці. -->
+    <Card class="section-card hidden-blocks-note">
+      <p>{{ $t('staff.analytics.hiddenBlocksNote') }}</p>
+      <router-link to="/staff/billing" class="note-link">{{ $t('staff.analytics.revenueMovedLink') }} →</router-link>
+    </Card>
+
     <!-- Filters -->
-    <Card class="filters-card">
+    <Card v-if="FUNNEL_V1_VISIBLE" class="filters-card">
       <div class="filters-row">
         <div class="filter-group">
           <label class="filter-label">{{ $t('staff.analytics.period') }}</label>
@@ -42,12 +51,12 @@
     </Card>
 
     <!-- Alerts (Phase 5.1) -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <AlertsPanel />
     </Card>
 
     <!-- Realtime Today -->
-    <Card class="section-card">
+    <Card v-if="FUNNEL_V1_VISIBLE" class="section-card">
       <div class="section-header">
         <h2 class="section-title">{{ $t('staff.analytics.realtimeTitle') }}</h2>
         <span class="section-date">{{ todayDate }}</span>
@@ -71,7 +80,7 @@
     </Card>
 
     <!-- Drop-off Analysis -->
-    <Card class="section-card">
+    <Card v-if="FUNNEL_V1_VISIBLE" class="section-card">
       <h2 class="section-title">{{ $t('staff.analytics.dropoffTitle') }}</h2>
       <div v-if="dropoffLoading" class="section-loading">
         <LoadingSpinner />
@@ -118,18 +127,18 @@
     </Card>
 
     <!-- Cohort Analysis (Phase 5.2) -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <CohortTable />
     </Card>
 
     <!-- Engagement Scores (Phase 6.2) -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <h2 class="section-title">{{ $t('staff.engagement.title') }}</h2>
       <EngagementPanel />
     </Card>
 
     <!-- Revenue Analytics (Phase 7.1) -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <h2 class="section-title">{{ $t('staff.revenue.title') }}</h2>
       <RevenuePanel />
     </Card>
@@ -143,13 +152,13 @@
     </Card>
 
     <!-- Experiments (Phase 8) -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <h2 class="section-title">{{ $t('staff.experiments.title') }}</h2>
       <ExperimentsPanel />
     </Card>
 
     <!-- Historical Funnel Trend -->
-    <Card class="section-card">
+    <Card v-if="DEAD_BLOCKS_VISIBLE" class="section-card">
       <h2 class="section-title">{{ $t('staff.analytics.trendTitle') }}</h2>
       <div v-if="snapshotLoading" class="section-loading">
         <LoadingSpinner />
@@ -208,6 +217,10 @@ import ExperimentsPanel from '../components/ExperimentsPanel.vue'
 import ReplayAnalyticsPanel from '../components/ReplayAnalyticsPanel.vue'
 
 const { t } = useI18n()
+
+// 2026-09-26 (аудит адмінки): мертві у v1 блоки сховано; повернути — ці прапорці.
+const FUNNEL_V1_VISIBLE = false
+const DEAD_BLOCKS_VISIBLE = false
 
 const FUNNEL_STEPS = [
   { key: 'registered', labelKey: 'staff.analytics.steps.registered', shortLabelKey: 'staff.analytics.stepsShort.reg' },
@@ -315,6 +328,7 @@ async function loadSnapshots() {
 }
 
 async function loadData() {
+  if (!FUNNEL_V1_VISIBLE) return  // блоки воронки сховано — не тягнути мертві знімки
   await Promise.all([loadRealtime(), loadDropoff(), loadSnapshots()])
 }
 
@@ -324,6 +338,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.hidden-blocks-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+  color: var(--text-secondary);
+}
+
+.note-link {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
 .staff-analytics {
   display: flex;
   flex-direction: column;

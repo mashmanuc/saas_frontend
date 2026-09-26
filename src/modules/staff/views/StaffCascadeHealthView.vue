@@ -2,7 +2,7 @@
   <div class="cascade-health" data-testid="cascade-health">
     <div class="page-header">
       <div class="page-header__top">
-        <h1 class="page-title">Realtime Health</h1>
+        <h1 class="page-title">{{ $t('staff.realtime.title') }}</h1>
         <div class="time-selector">
           <button
             v-for="h in [1, 6, 24]"
@@ -11,7 +11,7 @@
             :class="{ active: hours === h }"
             @click="hours = h"
           >
-            {{ h }}h
+            {{ $t('staff.realtime.hoursShort', { n: h }) }}
           </button>
         </div>
       </div>
@@ -26,14 +26,20 @@
       <LoadingSpinner />
     </div>
 
+    <!-- 2026-09-26: БУЛО — помилку писали в змінну й не показували: вічне «Loading...». -->
+    <div v-else-if="error && !data" class="error-state" role="alert">
+      <p>{{ $t('staff.realtime.loadFailed', { reason: error }) }}</p>
+      <button class="time-btn" @click="fetchData">{{ $t('staff.realtime.retry') }}</button>
+    </div>
+
     <div v-else-if="data" class="charts-grid">
       <!-- 1. Auth Health -->
       <Card class="chart-card">
         <div class="chart-header">
-          <h3>Auth Health</h3>
+          <h3>{{ $t('staff.realtime.authHealth') }}</h3>
           <div class="chart-stats">
-            <span class="stat-ok">{{ data.metrics.auth_refresh.success }} ok</span>
-            <span class="stat-fail">{{ data.metrics.auth_refresh.fail }} fail</span>
+            <span class="stat-ok">{{ $t('staff.realtime.okCount', { n: data.metrics.auth_refresh.success }) }}</span>
+            <span class="stat-fail">{{ $t('staff.realtime.failCount', { n: data.metrics.auth_refresh.fail }) }}</span>
           </div>
         </div>
         <div class="chart-body">
@@ -51,10 +57,10 @@
       <!-- 2. WS Reconnects -->
       <Card class="chart-card">
         <div class="chart-header">
-          <h3>WS Reconnects</h3>
+          <h3>{{ $t('staff.realtime.wsReconnects') }}</h3>
           <div class="chart-stats">
-            <span>{{ data.metrics.ws_reconnect.total }} total</span>
-            <span class="stat-muted">{{ data.metrics.ws_reconnect.unique_sessions }} sessions</span>
+            <span>{{ $t('staff.realtime.totalCount', { n: data.metrics.ws_reconnect.total }) }}</span>
+            <span class="stat-muted">{{ $t('staff.realtime.sessionsCount', { n: data.metrics.ws_reconnect.unique_sessions }) }}</span>
           </div>
         </div>
         <div class="chart-body">
@@ -71,7 +77,7 @@
       <!-- 3. Auth Death Events -->
       <Card class="chart-card">
         <div class="chart-header">
-          <h3>Auth Death</h3>
+          <h3>{{ $t('staff.realtime.authDeath') }}</h3>
           <span :class="data.metrics.auth_death.count > 0 ? 'stat-fail' : 'stat-ok'">
             {{ data.metrics.auth_death.count }}
           </span>
@@ -90,10 +96,10 @@
       <!-- 4. Recording Failures -->
       <Card class="chart-card">
         <div class="chart-header">
-          <h3>Recording Failures</h3>
+          <h3>{{ $t('staff.realtime.recordingFailures') }}</h3>
           <div class="chart-stats">
-            <span>{{ data.metrics.recording_stop_failed.count }} failed</span>
-            <span class="stat-muted">{{ data.metrics.recording_stop_failed.fallback_used }} fallback</span>
+            <span>{{ $t('staff.realtime.failedCount', { n: data.metrics.recording_stop_failed.count }) }}</span>
+            <span class="stat-muted">{{ $t('staff.realtime.fallbackCount', { n: data.metrics.recording_stop_failed.fallback_used }) }}</span>
           </div>
         </div>
         <div class="chart-body">
@@ -107,8 +113,9 @@
         </div>
       </Card>
 
-      <!-- 5. Auto-Stop (TTL) -->
-      <Card class="chart-card chart-card--full">
+      <!-- 5. Auto-Stop (TTL) — СХОВАНО 2026-09-26: 2-годинного TTL більше немає (запис
+           тепер завершує heartbeat 90 с), ряд завжди порожній. Повернути — AUTO_STOP_VISIBLE. -->
+      <Card v-if="AUTO_STOP_VISIBLE" class="chart-card chart-card--full">
         <div class="chart-header">
           <h3>Auto-Stop (TTL)</h3>
           <span :class="data.metrics.recording_auto_stopped.count > 2 ? 'stat-fail' : 'stat-ok'">
@@ -130,11 +137,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import { getCascadeMetrics, type CascadeMetrics } from '../api/staffHealthApi'
 import { activeLocale } from '@/utils/i18nDate'
+
+const { t } = useI18n()
+const AUTO_STOP_VISIBLE = false
 
 const hours = ref(1)
 const data = ref<CascadeMetrics | null>(null)
@@ -160,11 +171,11 @@ const statusClass = computed(() => {
   return `status-${data.value.status}`
 })
 const statusLabel = computed(() => {
-  if (!data.value) return 'Loading...'
+  if (!data.value) return error.value ? t('staff.realtime.unavailable') : t('staff.realtime.loading')
   const labels: Record<string, string> = {
-    healthy: 'System Healthy',
-    degraded: 'Issues Detected',
-    critical: 'Critical Issues',
+    healthy: t('staff.realtime.statusHealthy'),
+    degraded: t('staff.realtime.statusDegraded'),
+    critical: t('staff.realtime.statusCritical'),
   }
   return labels[data.value.status] || data.value.status
 })
@@ -173,7 +184,6 @@ const lastUpdated = computed(() => {
   return new Date(data.value.timestamp).toLocaleTimeString(activeLocale())
 })
 
-import { computed } from 'vue'
 
 async function fetchData() {
   const id = ++currentRequestId
@@ -340,6 +350,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.error-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 12px);
+  padding: var(--space-lg, 16px);
+  color: var(--danger-text, var(--color-danger, #b91c1c));
+}
+
 .cascade-health {
   max-width: 1200px;
   margin: 0 auto;

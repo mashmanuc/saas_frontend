@@ -40,9 +40,9 @@
 
       <!-- Summary status -->
       <Card class="status-summary">
+        <!-- 2026-09-26: БУЛО «Система працює нормально» — висновок з порогів скарг і сесій,
+             про справжній стан системи (БД, кеш, фонові задачі) він нічого не каже. -->
         <div class="summary-row">
-          <div class="summary-dot" :class="overallStatus" />
-          <span class="summary-text">{{ summaryLabel }}</span>
           <span class="summary-time">{{ $t('staff.health.asOf') }} {{ checkedAt }}</span>
         </div>
       </Card>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle, AlertCircle } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
@@ -85,18 +85,6 @@ interface Alert {
 const healthCards = ref<HealthCard[]>([])
 const alerts = ref<Alert[]>([])
 
-const overallStatus = computed(() => {
-  if (alerts.value.some(a => a.level === 'red')) return 'red'
-  if (alerts.value.some(a => a.level === 'yellow')) return 'yellow'
-  return 'green'
-})
-
-const summaryLabel = computed(() => {
-  if (overallStatus.value === 'red') return t('staff.health.statusCritical')
-  if (overallStatus.value === 'yellow') return t('staff.health.statusWarning')
-  return t('staff.health.statusHealthy')
-})
-
 onMounted(async () => {
   try {
     const res = await apiClient.get('/v1/staff/stats/overview/', {
@@ -105,7 +93,6 @@ onMounted(async () => {
 
     const openReports = res?.trust?.open_reports ?? 0
     const activeBans = res?.trust?.active_bans ?? 0
-    const suspiciousOpen = res?.trust?.suspicious_open ?? 0
     const pendingSessions = res?.billing?.pending_sessions ?? 0
     const activeTutors = res?.activity?.active_tutors ?? 0
     const inactiveTutors = res?.activity?.inactive_tutors ?? 0
@@ -121,24 +108,13 @@ onMounted(async () => {
         status: 'green',
         hint: newUsers7d > 0 ? `+${newUsers7d} ${t('staff.health.last7d')}` : undefined,
       },
-      {
-        key: 'reports',
-        label: t('staff.health.openReports'),
-        value: String(openReports),
-        status: openReports > 20 ? 'red' : openReports > 5 ? 'yellow' : 'green',
-        hint: openReports > 0 ? t('staff.health.reportsHint') : undefined,
-      },
+      // 2026-09-26 (аудит адмінки): «Відкриті скарги» і «Підозрілі юзери» сховано — у v1
+      // скарг не буває, а задача «підозрілих» стоїть лише в мертвому config/celery.py.
       {
         key: 'bans',
         label: t('staff.health.activeBans'),
         value: String(activeBans),
         status: activeBans > 10 ? 'red' : activeBans > 5 ? 'yellow' : 'green',
-      },
-      {
-        key: 'suspicious',
-        label: t('staff.health.suspicious'),
-        value: String(suspiciousOpen),
-        status: suspiciousOpen > 5 ? 'yellow' : 'green',
       },
       {
         key: 'pending',

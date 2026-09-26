@@ -44,8 +44,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import apiClient from '@/utils/apiClient'
 import { Menu, LogOut } from 'lucide-vue-next'
@@ -54,10 +54,13 @@ import StaffSidebar from '../components/StaffSidebar.vue'
 import StaffBreadcrumbs from '../components/StaffBreadcrumbs.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
+// 2026-09-26: мобільна шухляда закривається після вибору пункту (раніше лишалась відкритою)
+watch(() => route.fullPath, () => { mobileMenuOpen.value = false })
 const openReportsCount = ref(0)
 
 const handleLogout = async () => {

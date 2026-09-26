@@ -18,11 +18,9 @@
         <component :is="iconComponentForAction(ev.action)" class="feed-icon-svg" :size="16" />
         <div class="feed-body">
           <div class="feed-action">
-            <span class="feed-action-text">{{ ev.action }}</span>
-            <span v-if="ev.entity_type" class="feed-entity">
-              {{ ev.entity_type }}
-              <span v-if="ev.entity_id" class="feed-entity-id">#{{ ev.entity_id.slice(0, 8) }}</span>
-            </span>
+            <!-- 2026-09-26: БУЛО сирі коди (`auth.session_revoked`, `user_session #1a55…`) -->
+            <span class="feed-action-text">{{ actionLabel(ev.action) }}</span>
+            <span v-if="ev.metadata?.target_email" class="feed-entity">→ {{ ev.metadata.target_email }}</span>
           </div>
           <div class="feed-meta">
             <span v-if="ev.user_email" class="feed-user">{{ ev.user_email }}</span>
@@ -68,7 +66,7 @@ interface AuditEvent {
 }
 
 const router = useRouter()
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const events = ref<AuditEvent[]>([])
 const loading = ref(true)
@@ -105,8 +103,17 @@ function relativeTime(iso: string): string {
   return t('staff.activityFeed.daysAgo', { n: days })
 }
 
+/** Людський підпис події: `staff.ban.created` → ключ `events.staff_ban_created`. */
+function actionLabel(action: string): string {
+  const key = `staff.activityFeed.events.${String(action || '').replace(/\./g, '_')}`
+  return te(key) ? t(key) : String(action || '').replace(/[._]/g, ' ')
+}
+
+// БУЛО: клік відкривав автора події — для дій staff це сам staff, а не той, з ким дію зроблено.
 function navigateToEntity(ev: AuditEvent) {
-  if (ev.user_id) {
+  if (ev.entity_type === 'User' && ev.entity_id) {
+    router.push(`/staff/users/${ev.entity_id}`)
+  } else if (ev.user_id) {
     router.push(`/staff/users/${ev.user_id}`)
   }
 }

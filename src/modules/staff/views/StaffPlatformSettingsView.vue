@@ -9,13 +9,14 @@
       <LoadingSpinner />
     </div>
 
-    <div v-else-if="error" class="error-state">
-      <AlertTriangle :size="20" />
-      <span>{{ error }}</span>
-      <button class="btn btn-sm" @click="loadSettings">{{ $t('common.retry') }}</button>
-    </div>
-
     <template v-else>
+      <!-- 2026-09-26: БУЛО v-else-if — помилка перемикачів ховала всю сторінку разом із лендингом -->
+      <div v-if="error" class="error-state">
+        <AlertTriangle :size="20" />
+        <span>{{ error }}</span>
+        <button class="btn btn-sm" @click="loadSettings">{{ $t('common.retry') }}</button>
+      </div>
+
       <!-- Налаштування по категоріях -->
       <div
         v-for="(group, category) in groupedSettings"
@@ -53,14 +54,11 @@
 
       <!-- Лендінг — реальний реплей для демо-секції «Перегляньте, як проходив урок» -->
       <div class="settings-group">
-        <h2 class="group-title">Лендінг</h2>
+        <h2 class="group-title">{{ $t('staff.platformSettings.landing.group') }}</h2>
         <div class="setting-card">
           <div class="setting-info">
-            <div class="setting-label">Реплей для демо-секції лендінгу</div>
-            <div class="setting-description">
-              Публічний URL реального реплею для секції «Перегляньте, як проходив урок».
-              Порожнє → показується дефолтна заглушка (анімація).
-            </div>
+            <div class="setting-label">{{ $t('staff.platformSettings.landing.replayLabel') }}</div>
+            <div class="setting-description">{{ $t('staff.platformSettings.landing.replayDescription') }}</div>
             <input
               v-model="landingReplayUrl"
               type="url"
@@ -69,28 +67,24 @@
               :disabled="landingSaving"
             />
             <p v-if="landingError" class="landing-msg landing-msg--error">{{ landingError }}</p>
-            <p v-else-if="landingSaved" class="landing-msg landing-msg--ok">Збережено ✓</p>
+            <p v-else-if="landingSaved" class="landing-msg landing-msg--ok">{{ $t('staff.platformSettings.landing.saved') }}</p>
           </div>
           <div class="setting-control">
             <button class="btn btn-sm" :disabled="landingSaving" @click="saveLandingConfig">
-              {{ landingSaving ? '…' : 'Зберегти' }}
+              {{ landingSaving ? '…' : $t('common.save') }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Порожній стан -->
-      <div v-if="settings.length === 0" class="empty-state">
-        <Settings :size="40" />
-        <p>{{ $t('staff.platformSettings.noSettings') }}</p>
-      </div>
+      <!-- 2026-09-26: «Налаштувань немає» прибрано — блок лендингу є завжди, тож сторінка не порожня -->
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { AlertTriangle, Settings } from 'lucide-vue-next'
+import { AlertTriangle } from 'lucide-vue-next'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import platformSettingsApi, { type PlatformSetting } from '../api/platformSettingsApi'
 
@@ -105,10 +99,16 @@ const landingSaving = ref(false)
 const landingError = ref('')
 const landingSaved = ref(false)
 
+// 2026-09-26 (аудит адмінки, «сховати, не видаляти»): перемикач, що ні на що не впливає.
+// MARKETPLACE_AUTO_APPROVE_PROFILES пише FeatureToggle, а читачі (у вимкненому marketplace)
+// завжди брали env — і фраза «діє одразу» для нього була неправдою.
+const HIDDEN_SETTINGS = new Set(['MARKETPLACE_AUTO_APPROVE_PROFILES'])
+
 const groupedSettings = computed(() => {
   const groups: Record<string, PlatformSetting[]> = {}
   const list = Array.isArray(settings.value) ? settings.value : []
   for (const s of list) {
+    if (HIDDEN_SETTINGS.has(s.key)) continue
     if (!groups[s.category]) groups[s.category] = []
     groups[s.category].push(s)
   }

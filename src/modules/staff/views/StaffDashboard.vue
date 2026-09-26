@@ -10,7 +10,7 @@
       <StatCard
         :value="stats?.users?.total"
         :label="$t('staff.dashboard.users')"
-        :trend="stats?.users?.new_7d ? `${stats.users.new_7d} / 7d` : undefined"
+        :trend="stats?.users?.new_7d ? $t('staff.dashboard.newIn7Days', { n: stats.users.new_7d }) : undefined"
         color="accent"
         to="/staff/users"
         :loading="loading"
@@ -26,7 +26,9 @@
       >
         <template #icon><CreditCard :size="22" /></template>
       </StatCard>
+      <!-- 2026-09-26: «Відкриті скарги» сховано разом із розділом — у v1 скарг не буває -->
       <StatCard
+        v-if="REPORTS_VISIBLE"
         :value="stats?.trust?.open_reports"
         :label="$t('staff.dashboard.openReports')"
         :color="(stats?.trust?.open_reports ?? 0) > 0 ? 'danger' : 'default'"
@@ -38,8 +40,8 @@
       <StatCard
         :value="stats?.activity?.active_tutors"
         :label="$t('staff.dashboard.activeTutors')"
-        :trend="stats?.activity?.inactive_tutors ? `${stats.activity.inactive_tutors} inactive` : undefined"
-        to="/staff/tutor-activity"
+        :trend="stats?.activity?.inactive_tutors ? $t('staff.dashboard.inactiveCount', { n: stats.activity.inactive_tutors }) : undefined"
+        to="/staff/users?role=tutor"
         :loading="loading"
       >
         <template #icon><Activity :size="22" /></template>
@@ -68,7 +70,7 @@
             <div class="result-name">{{ u.first_name }} {{ u.last_name }}</div>
             <div class="result-meta">
               <span class="result-email">{{ u.email }}</span>
-              <Badge :variant="u.role === 'tutor' ? 'accent' : 'muted'" size="sm">{{ u.role }}</Badge>
+              <Badge :variant="u.role === 'tutor' ? 'accent' : 'muted'" size="sm">{{ roleLabel(u.role) }}</Badge>
             </div>
           </router-link>
           <router-link
@@ -88,14 +90,7 @@
       <Card class="section-card">
         <h2 class="section-title">{{ $t('staff.dashboard.quickActions') }}</h2>
         <div class="quick-links">
-          <router-link to="/staff/reports" class="quick-link">
-            <Flag :size="16" class="ql-icon-svg" />
-            <span>{{ $t('staff.sidebar.reports') }}</span>
-          </router-link>
-          <router-link to="/staff/tutor-activity" class="quick-link">
-            <Activity :size="16" class="ql-icon-svg" />
-            <span>{{ $t('staff.sidebar.tutorActivity') }}</span>
-          </router-link>
+          <!-- 2026-09-26: «Скарги» (сховано) і «Активність тьюторів» (marketplace, 503) прибрано -->
           <router-link to="/staff/billing" class="quick-link">
             <CreditCard :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.billing') }}</span>
@@ -137,22 +132,16 @@
 
       <!-- System Health mini -->
       <Card class="section-card">
-        <h2 class="section-title">{{ $t('staff.dashboard.systemHealth') }}</h2>
+        <!-- 2026-09-26: БУЛО «Здоров'я системи» — насправді про довіру; «Підозрілі» (задача
+             лише в мертвому розкладі) і «Звільнені» (marketplace) сховано. -->
+        <h2 class="section-title">{{ $t('staff.dashboard.trustSafety') }}</h2>
         <div v-if="loading" class="section-loading">
           <LoadingSpinner />
         </div>
         <div v-else class="health-mini">
           <div class="health-item">
-            <span class="health-dot" :class="(stats?.trust?.suspicious_open ?? 0) > 0 ? 'yellow' : 'green'" />
-            <span>{{ $t('staff.dashboard.suspicious') }}: {{ stats?.trust?.suspicious_open ?? 0 }}</span>
-          </div>
-          <div class="health-item">
             <span class="health-dot" :class="(stats?.trust?.active_bans ?? 0) > 5 ? 'yellow' : 'green'" />
             <span>{{ $t('staff.dashboard.bans') }}: {{ stats?.trust?.active_bans ?? 0 }}</span>
-          </div>
-          <div class="health-item">
-            <span class="health-dot green" />
-            <span>{{ $t('staff.dashboard.exempted') }}: {{ stats?.activity?.exempted_tutors ?? 0 }}</span>
           </div>
           <router-link to="/staff/health" class="pending-link">
             {{ $t('staff.dashboard.viewAll') }} →
@@ -165,6 +154,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useStaffStats } from '../composables/useStaffStats'
 import apiClient from '@/utils/apiClient'
 import {
@@ -182,6 +172,15 @@ import Badge from '@/ui/Badge.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 
 const { stats, loading } = useStaffStats()
+const { t, te } = useI18n()
+
+// 2026-09-26 (аудит адмінки): скарги у v1 не створюються — розділ і картку сховано.
+const REPORTS_VISIBLE = false
+
+function roleLabel(role: string): string {
+  const key = `staff.roles.${String(role || '').toLowerCase()}`
+  return te(key) ? t(key) : role
+}
 
 // Quick search
 const searchQuery = ref('')

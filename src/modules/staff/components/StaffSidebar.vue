@@ -59,7 +59,10 @@
 
       <div class="nav-section">
         <span v-if="!collapsed" class="nav-section-label">{{ $t('staff.sidebar.operations') }}</span>
+        <!-- 2026-09-26 (аудит адмінки, рішення «сховати, не видаляти»): у v1 поскаржитись
+             ніде — кнопка скарги жила лише в marketplace, тож розділ порожній назавжди. -->
         <router-link
+          v-if="REPORTS_VISIBLE"
           to="/staff/reports"
           class="nav-item"
           :class="{ active: route.path.startsWith('/staff/reports') }"
@@ -95,7 +98,9 @@
           <CreditCard class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.billing') }}</span>
         </router-link>
+        <!-- 2026-09-26: виплати тьюторам — спадок marketplace (у v1 ми тьюторам не платимо). -->
         <router-link
+          v-if="PAYOUTS_VISIBLE"
           to="/staff/payouts"
           class="nav-item"
           :class="{ active: route.path.startsWith('/staff/payouts') }"
@@ -111,7 +116,7 @@
         <router-link
           to="/staff/health"
           class="nav-item"
-          :class="{ active: route.path.startsWith('/staff/health') }"
+          :class="{ active: route.path === '/staff/health' }"
           :title="collapsed ? $t('staff.sidebar.health') : undefined"
         >
           <HeartPulse class="nav-icon-svg" :size="18" />
@@ -121,10 +126,10 @@
           to="/staff/health/realtime"
           class="nav-item"
           :class="{ active: route.path === '/staff/health/realtime' }"
-          :title="collapsed ? 'Realtime' : undefined"
+          :title="collapsed ? $t('staff.sidebar.realtime') : undefined"
         >
           <Activity class="nav-icon-svg" :size="18" />
-          <span v-if="!collapsed" class="nav-label">Realtime</span>
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.realtime') }}</span>
         </router-link>
         <router-link
           v-if="userRole === 'superadmin' || userRole === 'SUPERADMIN'"
@@ -158,8 +163,9 @@
     </nav>
 
     <div class="sidebar-footer">
+      <!-- БУЛО to="/": гард веде admin/superadmin з «/» знову в /staff — коло. -->
       <router-link
-        to="/"
+        to="/tutor"
         class="nav-item"
         :title="collapsed ? $t('staff.sidebar.backToApp') : undefined"
       >
@@ -178,6 +184,10 @@
 </template>
 
 <script setup lang="ts">
+// 2026-09-26 (аудит адмінки): розділи, мертві у v1, сховано — маршрути й код лишаються.
+const REPORTS_VISIBLE = false
+const PAYOUTS_VISIBLE = false
+
 import { useRoute } from 'vue-router'
 import {
   ShieldCheck,

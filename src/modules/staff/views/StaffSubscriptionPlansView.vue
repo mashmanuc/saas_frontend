@@ -100,22 +100,26 @@
             <button class="btn-edit" @click="openEditModal(plan)" :title="$t('staff.plans.edit')">
               <Pencil :size="14" />
             </button>
-            <button
-              v-if="plan.is_active"
-              class="btn-deactivate"
-              @click="handleDeactivate(plan)"
-              :title="$t('staff.plans.deactivate')"
-            >
-              <EyeOff :size="14" />
-            </button>
-            <button
-              v-else
-              class="btn-activate"
-              @click="handleActivate(plan)"
-              :title="$t('staff.plans.activate')"
-            >
-              <Eye :size="14" />
-            </button>
+            <!-- 2026-09-26: FREE не вимикається — з нього беруться ліміти для всіх
+                 (бекенд теж відмовить); вимкнений FREE ламав завантаження кожному. -->
+            <template v-if="plan.slug !== 'free'">
+              <button
+                v-if="plan.is_active"
+                class="btn-deactivate"
+                @click="handleDeactivate(plan)"
+                :title="$t('staff.plans.deactivate')"
+              >
+                <EyeOff :size="14" />
+              </button>
+              <button
+                v-else
+                class="btn-activate"
+                @click="handleActivate(plan)"
+                :title="$t('staff.plans.activate')"
+              >
+                <Eye :size="14" />
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -303,7 +307,9 @@ const defaultForm = (): PlanCreatePayload => ({
   features: [],
   limits: {},
   contact_grant_on_purchase: 0,
-  provider: 'stripe',
+  // 2026-09-26: БУЛО 'stripe' → план потрапляв у міжнародний ринок і на Stripe-чекаут.
+  // 'liqpay' = український ринок (як наявні плани й дефолт бекенда з 07-27).
+  provider: 'liqpay',
   provider_price_id: '',
   provider_product_id: '',
   is_active: true,
@@ -440,6 +446,19 @@ async function handleSubmit() {
   }
 
   const payload = { ...form.value, features, limits }
+
+  // 2026-09-26: ціна діє одразу на нові рахунки Plata — підтвердження обов'язкове.
+  if (editingPlan.value && form.value.price !== editingPlan.value.price) {
+    const ok = confirm(t('staff.plans.confirmPriceChange', {
+      name: editingPlan.value.name,
+      old: formatPrice(editingPlan.value.price / 100, editingPlan.value.currency),
+      new: formatPrice(form.value.price / 100, editingPlan.value.currency),
+    }))
+    if (!ok) {
+      submitting.value = false
+      return
+    }
+  }
 
   try {
     if (editingPlan.value) {

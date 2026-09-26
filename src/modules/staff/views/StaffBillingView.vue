@@ -5,6 +5,8 @@
       <p class="help-text">{{ $t('staff.billing.helpText') }}</p>
     </div>
 
+    <div v-if="loadError" class="error-banner" role="alert">{{ loadError }}</div>
+
     <div v-if="loading" class="loading-state">
       <LoadingSpinner />
     </div>
@@ -69,9 +71,9 @@
           <div class="filters-row">
             <select v-model="statusFilter" class="filter-select" @change="applyFilter">
               <option value="">{{ $t('staff.billing.allStatuses') }}</option>
-              <option value="success">{{ $t('staff.billing.statusSuccess') }}</option>
-              <option value="failed">{{ $t('staff.billing.statusFailed') }}</option>
-              <option value="pending">{{ $t('staff.billing.statusPending') }}</option>
+              <!-- 2026-09-26: БУЛО success/failed/pending — бекенд таких статусів не віддає,
+                   будь-який вибір давав «Платежів поки немає». -->
+              <option v-for="st in PAYMENT_STATUSES" :key="st" :value="st">{{ paymentStatusLabel(st) }}</option>
             </select>
           </div>
         </div>
@@ -188,6 +190,7 @@ const loading = ref(true)
 const stats = ref<any>({})
 const billing = ref<any>({})
 const statusFilter = ref('')
+const loadError = ref('')
 const pageOffset = ref(0)
 const pageSize = 10
 const detailPayment = ref<any>(null)
@@ -210,17 +213,22 @@ function openDetail(payment: any) {
   detailPayment.value = payment
 }
 
+// Статуси billing.Payment (бекенд віддає саме їх).
+const PAYMENT_STATUSES = ['SUCCEEDED', 'FAILED', 'REFUNDED', 'REQUIRES_ACTION'] as const
+
 function paymentStatusVariant(status: string): string {
-  if (status === 'success') return 'success'
-  if (status === 'failed') return 'danger'
+  if (status === 'SUCCEEDED') return 'success'
+  if (status === 'FAILED') return 'danger'
+  if (status === 'REFUNDED') return 'warning'
   return 'muted'
 }
 
 function paymentStatusLabel(status: string): string {
   const map: Record<string, string> = {
-    success: t('staff.billing.statusSuccess'),
-    failed: t('staff.billing.statusFailed'),
-    pending: t('staff.billing.statusPending'),
+    SUCCEEDED: t('staff.billing.statusSuccess'),
+    FAILED: t('staff.billing.statusFailed'),
+    REFUNDED: t('staff.billing.statusRefunded'),
+    REQUIRES_ACTION: t('staff.billing.statusPending'),
   }
   return map[status] || status
 }
@@ -232,7 +240,7 @@ function formatAmount(amount: number | string, currency: string): string {
     style: 'currency',
     currency: currency || 'UAH',
     minimumFractionDigits: 2,
-  }).format(num / 100)
+  }).format(num)  // 2026-09-26: БУЛО num / 100 — бекенд уже віддає гривні (49 ₴ показувалось як 0,49)
 }
 
 function formatAge(seconds: number) {
@@ -260,8 +268,9 @@ onMounted(async () => {
     ])
     stats.value = overviewRes?.billing || {}
     billing.value = billingRes || {}
-  } catch {
-    // Silent
+  } catch (e: any) {
+    // 2026-09-26: БУЛО мовчки — і сторінка казала «Всі платежі оброблені».
+    loadError.value = e?.response?.data?.detail || e?.message || t('staff.billing.loadFailed')
   } finally {
     loading.value = false
   }
@@ -269,6 +278,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.error-banner {
+  padding: var(--space-md, 12px) var(--space-lg, 16px);
+  border-radius: var(--radius-md, 8px);
+  background: var(--danger-bg, rgba(220, 38, 38, 0.08));
+  color: var(--danger-text, var(--color-danger, #b91c1c));
+}
+
 .staff-billing {
   display: flex;
   flex-direction: column;

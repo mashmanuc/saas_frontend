@@ -346,9 +346,17 @@ function openStatusModal(t) {
   modalKind.value = 'status'
 }
 
-function openEditModal(t) {
-  modalThread.value = t
-  modalKind.value = 'edit'
+// 2026-09-26 (аудит адмінки): список несе лише `description_preview`, тож модалка
+// отримувала порожній опис — «Зберегти» вимагало ≥20 символів, і текст автора
+// перезаписувався. Тепер спершу тягнемо повну тему; не вдалося — модалку не відкриваємо.
+async function openEditModal(thread) {
+  try {
+    const full = await api.getThread(thread.id)
+    modalThread.value = { ...thread, ...full }
+    modalKind.value = 'edit'
+  } catch (e) {
+    alert(e?.response?.data?.detail || 'Не вдалося завантажити тему для редагування')
+  }
 }
 
 function closeModal() {

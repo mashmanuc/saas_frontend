@@ -43,18 +43,16 @@ const formattedValue = computed(() => {
   return props.value
 })
 
+// 2026-09-26: знак і колір — лише для числа або рядка, що САМ починається зі знака.
+// БУЛО: будь-який рядок розбирався parseFloat → «++57 за 7 днів» і зелений «+119 неактивних».
 const trendClass = computed(() => {
   if (props.trend == null) return ''
-  const n = typeof props.trend === 'number' ? props.trend : parseFloat(String(props.trend))
-  if (isNaN(n)) return ''
-  return n > 0 ? 'trend-up' : n < 0 ? 'trend-down' : ''
+  if (typeof props.trend === 'number') return props.trend > 0 ? 'trend-up' : props.trend < 0 ? 'trend-down' : ''
+  const text = String(props.trend).trim()
+  return text.startsWith('+') ? 'trend-up' : text.startsWith('-') ? 'trend-down' : ''
 })
 
-const trendPrefix = computed(() => {
-  if (props.trend == null) return ''
-  const n = typeof props.trend === 'number' ? props.trend : parseFloat(String(props.trend))
-  return n > 0 ? '+' : ''
-})
+const trendPrefix = computed(() => (typeof props.trend === 'number' && props.trend > 0 ? '+' : ''))
 </script>
 
 <style scoped>

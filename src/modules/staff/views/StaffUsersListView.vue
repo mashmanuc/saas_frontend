@@ -18,17 +18,20 @@
             @input="debouncedSearch"
           />
         </div>
-        <Select v-model="roleFilter" class="role-filter">
-          <option value="">{{ $t('staff.users.allRoles') }}</option>
-          <option value="student">Student</option>
-          <option value="tutor">Tutor</option>
-          <option value="admin">Admin</option>
-        </Select>
-        <Select v-model="activeFilter" class="active-filter">
-          <option value="">{{ $t('staff.users.allStatuses') }}</option>
-          <option value="true">{{ $t('staff.users.active') }}</option>
-          <option value="false">{{ $t('staff.users.inactive') }}</option>
-        </Select>
+        <!-- 2026-09-26: БУЛО <option> у слоті — ui/Select його не малює (лише проп
+             `options`), тож обидва списки були без жодного пункту. -->
+        <Select
+          v-model="roleFilter"
+          class="role-filter"
+          :placeholder="$t('staff.users.allRoles')"
+          :options="roleOptions"
+        />
+        <Select
+          v-model="activeFilter"
+          class="active-filter"
+          :placeholder="$t('staff.users.allStatuses')"
+          :options="activeOptions"
+        />
       </div>
     </Card>
 
@@ -55,7 +58,8 @@
               <th>{{ $t('staff.users.email') }}</th>
               <th>{{ $t('staff.users.role') }}</th>
               <th>{{ $t('staff.users.bans') }}</th>
-              <th>{{ $t('staff.users.reports') }}</th>
+              <!-- 2026-09-26: «Скарги» сховано — у v1 скарг не буває -->
+              <th v-if="REPORTS_VISIBLE">{{ $t('staff.users.reports') }}</th>
               <th>{{ $t('staff.users.plan') }}</th>
             </tr>
           </thead>
@@ -69,17 +73,17 @@
               <td class="cell-num">{{ offset + i + 1 }}</td>
               <td class="cell-name">
                 <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
-                <Badge v-if="!user.is_active" variant="muted" size="sm">inactive</Badge>
+                <Badge v-if="!user.is_active" variant="muted" size="sm">{{ $t('staff.users.inactive') }}</Badge>
               </td>
               <td class="cell-email">{{ user.email }}</td>
               <td>
-                <Badge :variant="roleBadgeVariant(user.role)" size="sm">{{ user.role }}</Badge>
+                <Badge :variant="roleBadgeVariant(user.role)" size="sm">{{ roleLabel(user.role) }}</Badge>
               </td>
               <td>
-                <Badge v-if="user.has_active_ban" variant="danger" size="sm">BAN</Badge>
+                <Badge v-if="user.has_active_ban" variant="danger" size="sm">{{ $t('staff.users.banned') }}</Badge>
                 <span v-else class="text-muted">—</span>
               </td>
-              <td>
+              <td v-if="REPORTS_VISIBLE">
                 <span :class="{ 'text-danger': user.open_reports_count > 0 }">
                   {{ user.open_reports_count }}
                 </span>
@@ -123,8 +127,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/apiClient'
 import Card from '@/ui/Card.vue'
 import Input from '@/ui/Input.vue'
@@ -136,9 +141,25 @@ import EmptyState from '@/ui/EmptyState.vue'
 import PresenceNowPanel from '@/modules/staff/components/PresenceNowPanel.vue'
 
 const router = useRouter()
+const route = useRoute()
+const { t, te } = useI18n()
 
-const searchQuery = ref('')
-const roleFilter = ref('')
+// Початкові фільтри з адреси: дашборд веде сюди з ?role=tutor і ?q=… («Показати всіх»).
+const searchQuery = ref(String(route.query.q ?? ''))
+const roleFilter = ref(String(route.query.role ?? ''))
+const REPORTS_VISIBLE = false
+
+function roleLabel(role: string): string {
+  const key = `staff.roles.${String(role || '').toLowerCase()}`
+  return te(key) ? t(key) : role
+}
+const roleOptions = computed(() =>
+  ['student', 'tutor', 'admin', 'superadmin'].map(value => ({ value, label: roleLabel(value) }))
+)
+const activeOptions = computed(() => [
+  { value: 'true', label: t('staff.users.active') },
+  { value: 'false', label: t('staff.users.inactive') },
+])
 const activeFilter = ref('')
 const users = ref<any[]>([])
 const totalCount = ref(0)
