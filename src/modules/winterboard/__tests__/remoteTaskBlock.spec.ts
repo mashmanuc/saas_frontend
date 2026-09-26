@@ -129,7 +129,7 @@ describe('пульт: з «Задача на екран» є вороття (v1.
 
     await pageBtn.trigger('click')
     const sent = sendMock.mock.calls.map((c) => c[0]).filter((m) => m.type === 'remote.command')
-    expect(sent.at(-1)).toMatchObject({ cmd: 'view.page', args: {}, pair: PAIR })
+    expect(sent[sent.length - 1]).toMatchObject({ cmd: 'view.page', args: {}, pair: PAIR })
 
     // ноутбук виконав view.page (useBoardRemote → resetFocus) і прислав новий стан
     v.resetFocus()
