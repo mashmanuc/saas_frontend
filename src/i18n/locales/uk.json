@@ -5485,6 +5485,61 @@
       "statusDISMISSED": "Відхилена",
       "statusACTIONED": "Опрацьована"
     },
+    "insight": {
+      "devices": {
+        "title": "Пристрої й входи",
+        "empty": "Входів ще не було",
+        "loadFailed": "Не вдалося завантажити входи",
+        "country": "Країна",
+        "signedIn": "Вхід",
+        "lastActive": "Активність",
+        "kind": {
+          "phone": "Телефон",
+          "tablet": "Планшет",
+          "computer": "Комп'ютер",
+          "bot": "Бот",
+          "unknown": "Невідомий пристрій"
+        },
+        "status": {
+          "open": "Не завершена",
+          "ended": "Завершена",
+          "expired": "Строк минув"
+        },
+        "reasons": {
+          "logout": "вихід",
+          "user_revoke": "завершено з іншого пристрою",
+          "account_archived": "акаунт в архіві"
+        }
+      },
+      "errors": {
+        "title": "Помилки",
+        "empty": "Помилок не зафіксовано",
+        "loadFailed": "Не вдалося завантажити помилки",
+        "pageErrors": "Помилки на сторінках",
+        "failures": "Збої (дошка, вхід)",
+        "component": "Компонент",
+        "version": "Версія",
+        "events": {
+          "wb_ops_save_blocked": "Дошка не змогла зберегти зміни",
+          "wb_ops_desync": "Дошка розсинхронізувалась",
+          "wb_ops_paused": "Сервер не відповідав — збереження на паузі",
+          "wb_ops_lifecycle_blocked": "Зміни не прийнято: урок уже закрито",
+          "auth_refresh_fail": "Не вдалося оновити вхід",
+          "auth_death": "Сесія входу обірвалась",
+          "invariant_violation": "Порушено внутрішню перевірку",
+          "board_ops_apply_failed": "Сервер не застосував зміну дошки",
+          "board_validate_state_failed": "Стан дошки не пройшов перевірку",
+          "recording_stop_failed": "Не вдалося зупинити запис",
+          "wb_ops_payload_oversized": "Зміна дошки завелика для збереження"
+        },
+        "severity": {
+          "error": "помилка",
+          "warning": "попередження",
+          "info": "інфо"
+        }
+      },
+      "shownOf": "Показано {shown} з {total}"
+    },
     "userOverview": {
       "title": "Огляд користувача",
       "backToUsers": "Назад до користувачів",
@@ -5495,6 +5550,7 @@
       "role": "Роль",
       "createdAt": "Зареєстровано",
       "lastLogin": "Останній вхід",
+      "lastActive": "Остання активність",
       "never": "Ще не входив",
       "emailVerification": "Верифікація email",
       "emailVerified": "Підтверджено",

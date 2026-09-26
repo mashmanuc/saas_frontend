@@ -5101,6 +5101,61 @@
       "helpText": "Жалобы от пользователей, требующие рассмотрения. Отфильтруйте по статусу для удобства. Нажмите «Просмотреть» для деталей.",
       "status${report.status}": "{report.status}"
     },
+    "insight": {
+      "devices": {
+        "title": "Устройства и входы",
+        "empty": "Входов ещё не было",
+        "loadFailed": "Не удалось загрузить входы",
+        "country": "Страна",
+        "signedIn": "Вход",
+        "lastActive": "Активность",
+        "kind": {
+          "phone": "Телефон",
+          "tablet": "Планшет",
+          "computer": "Компьютер",
+          "bot": "Бот",
+          "unknown": "Неизвестное устройство"
+        },
+        "status": {
+          "open": "Не завершена",
+          "ended": "Завершена",
+          "expired": "Срок истёк"
+        },
+        "reasons": {
+          "logout": "выход",
+          "user_revoke": "завершено с другого устройства",
+          "account_archived": "аккаунт в архиве"
+        }
+      },
+      "errors": {
+        "title": "Ошибки",
+        "empty": "Ошибок не зафиксировано",
+        "loadFailed": "Не удалось загрузить ошибки",
+        "pageErrors": "Ошибки на страницах",
+        "failures": "Сбои (доска, вход)",
+        "component": "Компонент",
+        "version": "Версия",
+        "events": {
+          "wb_ops_save_blocked": "Доска не смогла сохранить изменения",
+          "wb_ops_desync": "Доска рассинхронизировалась",
+          "wb_ops_paused": "Сервер не отвечал — сохранение на паузе",
+          "wb_ops_lifecycle_blocked": "Изменения не приняты: урок уже закрыт",
+          "auth_refresh_fail": "Не удалось обновить вход",
+          "auth_death": "Сессия входа оборвалась",
+          "invariant_violation": "Нарушена внутренняя проверка",
+          "board_ops_apply_failed": "Сервер не применил изменение доски",
+          "board_validate_state_failed": "Состояние доски не прошло проверку",
+          "recording_stop_failed": "Не удалось остановить запись",
+          "wb_ops_payload_oversized": "Изменение доски слишком большое для сохранения"
+        },
+        "severity": {
+          "error": "ошибка",
+          "warning": "предупреждение",
+          "info": "инфо"
+        }
+      },
+      "shownOf": "Показано {shown} из {total}"
+    },
     "userOverview": {
       "title": "Обзор пользователя",
       "backToReports": "Назад к жалобам",
@@ -5137,6 +5192,7 @@
       "billingOperations": "Операции биллинга (ручная финализация)",
       "backToUsers": "Назад к пользователям",
       "lastLogin": "Последний вход",
+      "lastActive": "Последняя активность",
       "never": "Ещё не входил",
       "emailVerification": "Верификация email",
       "emailVerified": "Подтверждён",

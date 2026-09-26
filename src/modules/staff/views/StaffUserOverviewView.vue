@@ -51,7 +51,12 @@
           </div>
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.lastLogin') }}</span>
-            <span class="value">{{ staffStore.userOverview.user.last_login ? formatDate(staffStore.userOverview.user.last_login) : $t('staff.userOverview.never') }}</span>
+            <!-- 2026-09-26: із сесій — `last_login` ніхто не пише, тут майже завжди було «ніколи» -->
+            <span class="value">{{ lastSignIn ? formatDate(lastSignIn) : $t('staff.userOverview.never') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">{{ $t('staff.userOverview.lastActive') }}</span>
+            <span class="value">{{ staffStore.userOverview.user.last_active_at ? formatDate(staffStore.userOverview.user.last_active_at) : '—' }}</span>
           </div>
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.emailVerification') }}</span>
@@ -102,6 +107,23 @@
             </a>
           </div>
         </div>
+      </Card>
+
+      <!-- 2026-09-26, перед рекламою: з якого пристрою входив і які помилки мав -->
+      <Card class="section">
+        <h2 class="section-heading">
+          <MonitorSmartphone :size="18" class="section-icon" />
+          {{ $t('staff.insight.devices.title') }}
+        </h2>
+        <UserDevicesPanel :user-id="staffStore.userOverview.user.id" />
+      </Card>
+
+      <Card class="section">
+        <h2 class="section-heading">
+          <AlertTriangle :size="18" class="section-icon" />
+          {{ $t('staff.insight.errors.title') }}
+        </h2>
+        <UserErrorsPanel :user-id="staffStore.userOverview.user.id" />
       </Card>
 
       <!-- Trust Section -->
@@ -359,10 +381,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ExternalLink, History } from 'lucide-vue-next'
+import { ExternalLink, History, MonitorSmartphone, AlertTriangle } from 'lucide-vue-next'
 import { useStaffStore } from '@/stores/staffStore'
 import { getUserAuditLog } from '@/api/staff'
 import type { AuditEvent } from '@/api/staff'
@@ -373,6 +395,8 @@ import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
 import UserJourneyTimeline from '@/modules/staff/components/UserJourneyTimeline.vue'
+import UserDevicesPanel from '@/modules/staff/components/UserDevicesPanel.vue'
+import UserErrorsPanel from '@/modules/staff/components/UserErrorsPanel.vue'
 import apiClient from '@/utils/apiClient'
 import { getSubscriptionPlans } from '@/modules/staff/api/subscriptionPlansApi'
 import type { PlanItem } from '@/modules/staff/api/subscriptionPlansApi'
@@ -381,6 +405,13 @@ import { activeLocale } from '@/utils/i18nDate'
 const route = useRoute()
 const { t } = useI18n()
 const staffStore = useStaffStore()
+
+// Останній вхід — із сесій (бекенд віддає `last_sign_in_at`); `last_login` — лише
+// запасний, бо його ніхто не пише (на проді 2 з 88, 2026-09-26).
+const lastSignIn = computed(() => {
+  const u = staffStore.userOverview?.user
+  return u?.last_sign_in_at || u?.last_login || null
+})
 
 const auditLog = ref<AuditEvent[]>([])
 const auditLogLoading = ref(false)

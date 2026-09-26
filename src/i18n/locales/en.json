@@ -4983,6 +4983,61 @@
       "statusOPEN": "Open",
       "helpText": "User reports that require review. Filter by status for convenience. Click \"View\" for details."
     },
+    "insight": {
+      "devices": {
+        "title": "Devices and sign-ins",
+        "empty": "No sign-ins yet",
+        "loadFailed": "Could not load sign-ins",
+        "country": "Country",
+        "signedIn": "Signed in",
+        "lastActive": "Active",
+        "kind": {
+          "phone": "Phone",
+          "tablet": "Tablet",
+          "computer": "Computer",
+          "bot": "Bot",
+          "unknown": "Unknown device"
+        },
+        "status": {
+          "open": "Not ended",
+          "ended": "Ended",
+          "expired": "Expired"
+        },
+        "reasons": {
+          "logout": "signed out",
+          "user_revoke": "ended from another device",
+          "account_archived": "account archived"
+        }
+      },
+      "errors": {
+        "title": "Errors",
+        "empty": "No errors recorded",
+        "loadFailed": "Could not load errors",
+        "pageErrors": "Page errors",
+        "failures": "Failures (board, sign-in)",
+        "component": "Component",
+        "version": "Version",
+        "events": {
+          "wb_ops_save_blocked": "Board could not save changes",
+          "wb_ops_desync": "Board went out of sync",
+          "wb_ops_paused": "Server did not respond — saving paused",
+          "wb_ops_lifecycle_blocked": "Changes rejected: lesson already closed",
+          "auth_refresh_fail": "Could not refresh sign-in",
+          "auth_death": "Sign-in session dropped",
+          "invariant_violation": "Internal check failed",
+          "board_ops_apply_failed": "Server did not apply a board change",
+          "board_validate_state_failed": "Board state failed validation",
+          "recording_stop_failed": "Could not stop recording",
+          "wb_ops_payload_oversized": "Board change too large to save"
+        },
+        "severity": {
+          "error": "error",
+          "warning": "warning",
+          "info": "info"
+        }
+      },
+      "shownOf": "Showing {shown} of {total}"
+    },
     "userOverview": {
       "title": "User Overview",
       "backToReports": "Back to Reports",
@@ -5034,6 +5089,7 @@
       "emailVerified": "Verified",
       "inactive": "Inactive",
       "lastLogin": "Last Login",
+      "lastActive": "Last activity",
       "never": "Never logged in",
       "openProfile": "Open Profile",
       "publicProfile": "Public Profile",
