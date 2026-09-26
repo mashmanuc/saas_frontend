@@ -15,6 +15,7 @@
  */
 import { ref, type Ref } from 'vue'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const enabled = ref(false)
 let asked: Promise<void> | null = null
@@ -26,6 +27,22 @@ export function _resetEvidenceToolsGate(): void {
 }
 
 export function useEvidenceToolsGate(): { evidenceEnabled: Ref<boolean> } {
+  // 2026-09-27: сервер питаємо лише тоді, коли відповідь щось вирішує і не обернеться
+  // тостом чи викиданням людини зі сторінки:
+  //   • гість — 401, а apiClient на 401 показує «Сесію завершено. Увійдіть знову.» людині,
+  //     яка не входила (публічний реплей із лендингу, демо /workspace);
+  //   • сесію ще не перевірено — публічні маршрути bootstrap свідомо не роблять
+  //     (router/index.js, P0), тож протухла сесія з localStorage давала 401 → refresh 401 →
+  //     forceLogout і переліт на /start просто з реплею. Кімнати, де гейт і працює, —
+  //     захищені маршрути: там bootstrap проходить до рендеру;
+  //   • учень — 403 і тост «Доступ заборонено» посеред уроку (Інтегралик — інструмент
+  //     тьютора, BE `IsIntegralykUser`); учневі картки й так не ховаються (`hideEvidenceCards`).
+  // Для всіх трьох гейт і так закритий (fail-closed). `asked` лишається порожнім: стан
+  // змінився (увійшов, bootstrap пройшов) — наступний виклик спитає сервер.
+  const auth = useAuthStore()
+  if (!auth.isBootstrapped || !auth.isAuthenticated || auth.user?.role === 'student') {
+    return { evidenceEnabled: enabled }
+  }
   asked ??= fetchCorridorRegistry('uk')
     .then((reg: unknown) => {
       enabled.value = !!(reg as { enabled?: boolean } | null)?.enabled

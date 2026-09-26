@@ -11,6 +11,10 @@
  *   INV-EV-2  гейт відкритий → усе на місці
  *   INV-EV-3  список id на фронті НЕ дублюється: джерело — сервер
  *   INV-EV-4  помилка/404 → закрито (fail-closed), і сервер питаємо один раз
+ *   INV-EV-5  гість, неперевірена сесія й учень сервер не питають (2026-09-27:
+ *             публічний реплей із лендингу отримував 401 і показував гостю «Сесію
+ *             завершено. Увійдіть знову.», протухла сесія викидала на /start, учень
+ *             на уроці ловив 403 і тост «Доступ заборонено»)
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { visibleApps, visibleInserts, allInserts, searchInserts, MASH_APPS } from '../components/sidebar/insertRegistry'
@@ -20,6 +24,15 @@ const fetchCorridorRegistry = vi.fn()
 vi.mock('@/modules/intent/corridors/corridorApi', () => ({
   fetchCorridorRegistry: (...a: unknown[]) => fetchCorridorRegistry(...a),
 }))
+
+// Хто перед гейтом — рішення INV-EV-5. За замовчуванням: вчитель, сесію перевірено.
+const auth = { isAuthenticated: true, isBootstrapped: true, user: { role: 'tutor' } as { role: string } | null }
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => auth }))
+function asTutor() {
+  auth.isAuthenticated = true
+  auth.isBootstrapped = true
+  auth.user = { role: 'tutor' }
+}
 
 import { useEvidenceToolsGate, _resetEvidenceToolsGate } from '../composables/useEvidenceToolsGate'
 
@@ -39,10 +52,54 @@ describe('видимість «Навчальних обʼєктів»', () => {
   })
 })
 
+describe('хто не може отримати відповідь — сервер не питає (INV-EV-5, 2026-09-27)', () => {
+  beforeEach(() => {
+    _resetEvidenceToolsGate()
+    fetchCorridorRegistry.mockReset()
+    asTutor()
+  })
+
+  async function expectNoRequest() {
+    fetchCorridorRegistry.mockResolvedValue({ enabled: true })
+    const { evidenceEnabled } = useEvidenceToolsGate()
+    await Promise.resolve()
+    expect(fetchCorridorRegistry).not.toHaveBeenCalled()
+    expect(evidenceEnabled.value).toBe(false)
+  }
+
+  it('гість: запиту немає — інакше 401 і тост «Сесію завершено» людині, що не входила', async () => {
+    auth.isAuthenticated = false
+    auth.user = null
+    await expectNoRequest()
+  })
+
+  it('сесію не перевірено (публічний маршрут): запиту немає — протухла сесія викинула б на /start', async () => {
+    auth.isBootstrapped = false
+    await expectNoRequest()
+  })
+
+  it('учень: запиту немає — інакше 403 і тост «Доступ заборонено» посеред уроку', async () => {
+    auth.user = { role: 'student' }
+    await expectNoRequest()
+  })
+
+  it('увійшов у тій самій вкладці — наступний виклик сервер питає', async () => {
+    fetchCorridorRegistry.mockResolvedValue({ enabled: true })
+    auth.isAuthenticated = false
+    auth.isBootstrapped = false
+    useEvidenceToolsGate()
+    asTutor()
+    const { evidenceEnabled } = useEvidenceToolsGate()
+    await vi.waitFor(() => expect(evidenceEnabled.value).toBe(true))
+    expect(fetchCorridorRegistry).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('джерело правди — сервер (INV-EV-3, INV-EV-4)', () => {
   beforeEach(() => {
     _resetEvidenceToolsGate()
     fetchCorridorRegistry.mockReset()
+    asTutor()
   })
 
   it('enabled від сервера відкриває інструменти', async () => {
