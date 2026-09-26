@@ -724,12 +724,11 @@ export const winterboardApi = {
   },
 
   /**
-   * `config` — лише для афіші на лендингу (тихий запит: без лоадера й тоста «немає з'єднання»).
    * Токен кодуємо: параметр роутера вже декодований, і `…/public/a%2F..%2Fx` інакше давав би
    * запит на довільний шлях API (як уже робить `replay.ts`). Справжні токени (base64url) не змінюються.
    */
-  getPublicSession(token: string, config?: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return apiClient.get(`${BASE}/public/${encodeURIComponent(token)}/`, config).then((r: any) => r.data ?? r)
+  getPublicSession(token: string): Promise<Record<string, unknown>> {
+    return apiClient.get(`${BASE}/public/${encodeURIComponent(token)}/`).then((r: any) => r.data ?? r)
   },
 
   // ── Telemetry ──────────────────────────────────────────────────────

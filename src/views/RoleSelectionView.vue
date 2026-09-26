@@ -26,72 +26,46 @@ const showLanguageMenu = ref(false)
 const replayUrl = ref('')
 
 // Афіша реального уроку (2026-09-27, власник: «я думав там у вікні зразу буде наше око
-// з реплея»): рамка — зменшений стартовий екран реплею. Назва, кількість сторінок і
-// картинка дошки — з того самого публічного запиту, яким відкривається сторінка реплею.
-// Питаємо, лише коли рамка близько до екрана: запит не кешований і несе ще й стан дошки.
-// Для посилання на ЗАПИС (Replay) переглядів він не рахує; для «поділитися дошкою» —
-// рахує кожен показ (Б-85). Не вийшло — лишається око над анімацією.
-interface ReplayPreview { title: string; pageCount: number; imageUrl: string }
+// з реплея»): рамка — зменшений стартовий екран реплею. Назва, сторінки, тривалість і
+// картинка дошки приходять у тому самому кешованому landing-config (Б-85): бекенд
+// віддає їх лише для посилання на ЗАПИС — окремого запиту за афішею лендинг не робить.
+// Прев'ю немає (чуже посилання, запис приватний, старий бекенд) — око над анімацією.
+interface ReplayPreview { title: string; pageCount: number; minutes: number; imageUrl: string }
 const replayPreview = ref<ReplayPreview | null>(null)
 const posterLoaded = ref(false)
 const posterFailed = ref(false)
 const posterShown = computed(() => !!replayPreview.value?.imageUrl && posterLoaded.value && !posterFailed.value)
 const posterTitle = computed(() => replayPreview.value?.title || t('roleSelection.replayDemo.watchReal'))
+const replayMeta = computed(() => {
+  const p = replayPreview.value
+  if (!p) return ''
+  const parts: string[] = []
+  if (p.minutes > 0) parts.push(`${p.minutes} ${t('winterboard.replay.statMinutes')}`)
+  if (p.pageCount > 1) parts.push(`${p.pageCount} ${t('winterboard.replay.statPages')}`)
+  return parts.join(' · ')
+})
 const replayCtaLabel = computed(() => (posterShown.value && replayPreview.value?.title
   ? `${t('roleSelection.replayDemo.watchReal')}: ${replayPreview.value.title}`
   : t('roleSelection.replayDemo.watchReal')))
+
+/** Прев'ю з landing-config → те, що показує рамка. Невідома форма — прев'ю немає. */
+function toReplayPreview(raw: unknown): ReplayPreview | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const ms = Number(r.duration_ms) || 0
+  return {
+    title: typeof r.title === 'string' ? r.title : '',
+    pageCount: Number(r.page_count) || 0,
+    // Як на стартовому екрані реплею: хвилини вгору
+    minutes: ms > 0 ? Math.ceil(ms / 60000) : 0,
+    imageUrl: typeof r.thumbnail_url === 'string' ? r.thumbnail_url : '',
+  }
+}
 
 // Око живе лише поки рамку видно і людина не просила менше руху.
 const replayFrameRef = ref<HTMLElement | null>(null)
 const eyeActive = ref(false)
 let replayFrameObserver: IntersectionObserver | null = null
-let replayFrameNearObserver: IntersectionObserver | null = null
-
-/** Виконати, коли рамка підійде до екрана (≈ пів екрана наперед). Без IntersectionObserver — одразу. */
-function whenReplayFrameNear(run: () => void): void {
-  const el = replayFrameRef.value
-  if (!el || typeof IntersectionObserver === 'undefined') {
-    run()
-    return
-  }
-  replayFrameNearObserver?.disconnect()
-  replayFrameNearObserver = new IntersectionObserver((entries) => {
-    if (!entries.some((e) => e.isIntersecting)) return
-    replayFrameNearObserver?.disconnect()
-    replayFrameNearObserver = null
-    run()
-  }, { rootMargin: '600px 0px' })
-  replayFrameNearObserver.observe(el)
-}
-
-/** Токен запису, якщо посилання веде на НАШ публічний реплей. Форму шляху знає роутер, не регекс. */
-function publicReplayToken(url: string): string {
-  let path: string
-  try {
-    path = new URL(url).pathname
-  } catch {
-    return '' // не URL — афіші не буде, посилання однаково працює
-  }
-  const to = router.resolve(path)
-  return to.name === 'winterboard-public' ? String(to.params.token ?? '') : ''
-}
-
-async function loadReplayPreview(url: string): Promise<void> {
-  const token = publicReplayToken(url)
-  if (!token) return
-  try {
-    const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
-    const s = await winterboardApi.getPublicSession(token, { meta: { skipLoader: true, nonCriticalRequest: true } })
-    replayPreview.value = {
-      title: typeof s.name === 'string' ? s.name : '',
-      pageCount: Number(s.page_count) || 0,
-      imageUrl: typeof s.thumbnail_url === 'string' ? s.thumbnail_url : '',
-    }
-  } catch {
-    // Афіша — прикраса: без неї рамка лишається посиланням з оком над анімацією.
-    replayPreview.value = null
-  }
-}
 
 const currentLanguage = computed(() => {
   const lang = languages.find(l => l.code === locale.value)
@@ -115,8 +89,7 @@ onMounted(() => {
   api.get('/landing-config/')
     .then((res: any) => {
       replayUrl.value = res?.replay_demo_url || ''
-      const url = replayUrl.value
-      if (url) whenReplayFrameNear(() => { void loadReplayPreview(url) })
+      replayPreview.value = replayUrl.value ? toReplayPreview(res?.replay_demo_preview) : null
     })
     .catch(() => { /* заглушка */ })
 
@@ -133,8 +106,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   replayFrameObserver?.disconnect()
   replayFrameObserver = null
-  replayFrameNearObserver?.disconnect()
-  replayFrameNearObserver = null
 })
 
 // 2026-07-23: прокидаємо ?redirect далі. Гість із /workspace приходить сюди з
@@ -446,9 +417,8 @@ async function changeLanguage(langCode: string) {
                 <EyePlayer class="replay-cta-eye" :active="eyeActive" />
                 <span v-if="posterShown" class="replay-cta-info">
                   <span class="replay-cta-title">{{ posterTitle }}</span>
-                  <span v-if="(replayPreview?.pageCount ?? 0) > 1" class="replay-cta-meta">
-                    {{ replayPreview?.pageCount }} {{ t('winterboard.replay.statPages') }}
-                  </span>
+                  <!-- Як на стартовому екрані реплею: «15 хв · 4 стор.» -->
+                  <span v-if="replayMeta" class="replay-cta-meta">{{ replayMeta }}</span>
                 </span>
                 <span v-else class="replay-cta-label">{{ t('roleSelection.replayDemo.watchReal') }}</span>
               </a>
