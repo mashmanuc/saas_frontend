@@ -1,6 +1,7 @@
 import { createApp, watch } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { installLogoutGate } from './modules/auth/logout/logoutGate'
 import pinia from './stores'
 import i18n, { setupI18n, getInitialLocale } from './i18n'
 import './styles/tokens.css'
@@ -99,6 +100,8 @@ setupI18n(getInitialLocale()).then(async () => {
     })
   }
 
+  // ТЗ спільного екрана, R6: поки вихід не підтверджено сервером — лише екран блокування.
+  installLogoutGate(router)
   app.use(router)
   app.mount('#app')
 })

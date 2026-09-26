@@ -3,6 +3,11 @@ import authApi from '../api/authApi'
 import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 import { tokenVault } from '../../../utils/tokenVault'
+import { listUnsentWork, discardUnsentWork } from '../logout/unsentWork'
+import {
+  markLogoutPending, clearLogoutPending, isLogoutPending, LOGOUT_PENDING_ROUTE,
+} from '../logout/pendingLogout'
+import { useLogoutGuardStore } from './logoutGuardStore'
 
 const hasDocument = typeof document !== 'undefined'
 // Phase 2 (2026-04-27) per SSOT §7 + AUTH MODEL CORRECTION:
@@ -120,6 +125,12 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async _doBootstrap() {
+      // ТЗ спільного екрана, R6: вихід не підтверджено сервером — HttpOnly-cookie живі,
+      // тож refresh увійшов би знову як попередній учитель. Лише екран блокування.
+      if (isLogoutPending()) {
+        return
+      }
+
       // Якщо немає access токена — не намагаємося refresh, просто виходимо
       if (!this.access) {
         return
@@ -525,6 +536,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async setAuth({ access, exp, user } = {}) {
+      // Новий вхід (з користувачем, не refresh) замінив cookie — попередній
+      // незавершений вихід на цьому браузері більше не діє (ТЗ спільного екрана, R6).
+      if (user) {
+        clearLogoutPending()
+      }
       if (typeof access !== 'undefined') {
         // Phase 1.3: Keep JWT in memory for WS/beacon auth.
         // httpOnly cookie handles REST API auth.
@@ -916,13 +932,40 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async logout() {
-      try {
-        await authApi.logout()
-      } catch (error) {
-        // ігноруємо помилку logout, головне очистити стан локально
+    /**
+     * Вихід (ТЗ «Сесія спільного екрана і безпечний вихід», R6–R7).
+     *
+     * R7: якщо в браузері лежать неприйняті дії цього користувача — не виходимо, а
+     * показуємо їх (`LogoutUnsentDialog`); відкинути можна лише явно, `discardUnsent`.
+     * R6: вихід виконано лише після відповіді сервера `2xx`. Раніше помилку logout
+     * ковтали й «виходили» локально, хоча сесія на сервері жила, а HttpOnly-cookie
+     * лишались у браузері. Тепер — маркер «вихід не завершено» і екран блокування.
+     */
+    async logout({ discardUnsent = false } = {}) {
+      const work = listUnsentWork(this.user?.id)
+      if (work.length && !discardUnsent) {
+        useLogoutGuardStore().show(work)
+        return { status: 'blocked_unsent', work }
+      }
+      if (work.length) {
+        discardUnsentWork(work)
       }
 
+      const confirmed = await this._serverLogout()
+      if (!confirmed) {
+        markLogoutPending()
+        await this.forceLogout('logout_pending')
+        // Повернення на дошку попереднього вчителя наступній людині не потрібне.
+        sessionStorage.removeItem('auth_return_url')
+        if (typeof window !== 'undefined') {
+          // Повне перезавантаження: кімната й стори дошки розмонтовуються, а не
+          // ховаються під накладкою (дані не лишаються в DOM, heartbeat зупиняється).
+          window.location.href = LOGOUT_PENDING_ROUTE
+        }
+        return { status: 'pending' }
+      }
+
+      clearLogoutPending()
       await this.forceLogout('manual_logout')
 
       // Після logout — редирект на сторінку логіну з можливістю повернення
@@ -936,6 +979,36 @@ export const useAuthStore = defineStore('auth', {
           window.location.href = '/start'
         }
       }
+      return { status: 'done' }
+    },
+
+    /** `true` лише якщо сервер підтвердив вихід (`2xx`). */
+    async _serverLogout() {
+      try {
+        if (!getCsrfCookie()) {
+          await this.ensureCsrfToken()
+        }
+        await authApi.logout()
+        return true
+      } catch (error) {
+        console.warn('[auth:logout] server did not confirm logout:', error?.response?.status ?? error)
+        return false
+      }
+    },
+
+    /** Екран блокування: повторити вихід. `true` — сервер підтвердив, маркер знято. */
+    async retryPendingLogout() {
+      const confirmed = await this._serverLogout()
+      if (!confirmed) {
+        return false
+      }
+      clearLogoutPending()
+      await this.forceLogout('manual_logout')
+      sessionStorage.removeItem('auth_return_url')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/start'
+      }
+      return true
     },
 
     async forceLogout(reason = 'session_expired') {

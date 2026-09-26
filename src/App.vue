@@ -24,6 +24,8 @@
          модалка з PageShell НІКОЛИ не рендерилась там, де ліміти реально спрацьовують
          (export/import/AI). App.vue = єдиний корінь, спільний для всіх layout'ів. -->
     <LimitPaywallModalAsync v-if="authStore.isAuthenticated" />
+    <!-- ТЗ спільного екрана, R7: незбережені дії перед виходом — показати, не стирати мовчки. -->
+    <LogoutUnsentDialogAsync v-if="authStore.isAuthenticated" />
     <!-- Тости. Були в PageShell — і НЕ існували на winterboard-роутах, бо в
          дошки власний layout (той самий доказ, що вище про LimitPaywallModal).
          Наслідок був не косметичний: команди палітри й будь-які success/error
@@ -53,6 +55,7 @@ import { useChatOverlayStore } from '@/stores/chatOverlayStore'
 const ChatModalAsync = defineAsyncComponent(() => import('@/modules/chat/components/ChatModal.vue'))
 const CommandPalette = defineAsyncComponent(() => import('@/modules/intent/CommandPalette.vue'))
 const LimitPaywallModalAsync = defineAsyncComponent(() => import('@/modules/billing/components/LimitPaywallModal.vue'))
+const LogoutUnsentDialogAsync = defineAsyncComponent(() => import('@/modules/auth/components/LogoutUnsentDialog.vue'))
 
 const isDev = import.meta.env.DEV
 

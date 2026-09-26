@@ -825,6 +825,28 @@
     "optional": "Optional"
   },
   "auth": {
+    "logoutGuard": {
+      "title": "There are unsaved changes",
+      "lead": "The server has not accepted some changes on these boards yet. Open a board to send them, or sign out and discard them.",
+      "count": "Unsaved actions: {n}",
+      "unknownCount": "Could not read how many actions are unsaved",
+      "blocked": "rejected by the server",
+      "openBoard": "Open board",
+      "cancel": "Cancel",
+      "logoutAnyway": "Sign out anyway",
+      "discardWarning": "Actions that will be lost: {n}. They cannot be restored.",
+      "confirmDiscard": "Discard and sign out",
+      "board": "Board {id}"
+    },
+    "logoutPending": {
+      "title": "Sign-out not finished",
+      "text": "The server has not confirmed the sign-out. Until it does, this browser may still act as the previous account, so all data is hidden.",
+      "retry": "Try again",
+      "retrying": "Signing out…",
+      "failed": "The server did not respond again. Try once more or end the session from your phone.",
+      "phoneHint": "You can end this session from your phone: Settings → Security → \"End\".",
+      "switchAccount": "Sign in with another account"
+    },
     "layout": {
       "ariaLabel": "Authentication layout",
       "formLabel": "Authentication form",
