@@ -4858,7 +4858,9 @@
       "reports": "Reports",
       "plan": "Plan",
       "helpText": "Search and view all registered users. Click a row to see detailed information.",
-      "banned": "Banned"
+      "banned": "Banned",
+      "online": "Online",
+      "onlineBadge": "online"
     },
     "billing": {
       "title": "Billing Overview",

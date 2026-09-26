@@ -5360,7 +5360,9 @@
       "bans": "Бани",
       "reports": "Скарги",
       "plan": "План",
-      "banned": "Бан"
+      "banned": "Бан",
+      "online": "Онлайн",
+      "onlineBadge": "онлайн"
     },
     "billing": {
       "title": "Огляд фінансів",

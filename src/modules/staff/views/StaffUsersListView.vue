@@ -74,6 +74,8 @@
               <td class="cell-name">
                 <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
                 <Badge v-if="!user.is_active" variant="muted" size="sm">{{ $t('staff.users.inactive') }}</Badge>
+                <!-- 2026-09-26: хто зараз у застосунку чи на дошці (ті самі реєстри, що й «Зараз онлайн») -->
+                <Badge v-if="user.is_online" variant="success" size="sm">{{ $t('staff.users.onlineBadge') }}</Badge>
               </td>
               <td class="cell-email">{{ user.email }}</td>
               <td>
@@ -165,6 +167,8 @@ const roleOptions = computed(() =>
 const activeOptions = computed(() => [
   { value: 'true', label: t('staff.users.active') },
   { value: 'false', label: t('staff.users.inactive') },
+  // 2026-09-26 (прохання власника): зараз онлайн — у застосунку або на дошці
+  { value: 'online', label: t('staff.users.online') },
 ])
 const activeFilter = ref('')
 const users = ref<any[]>([])
@@ -194,7 +198,8 @@ async function fetchUsers() {
     }
     if (searchQuery.value) params.q = searchQuery.value
     if (roleFilter.value) params.role = roleFilter.value
-    if (activeFilter.value) params.is_active = activeFilter.value
+    if (activeFilter.value === 'online') params.online = 1
+    else if (activeFilter.value) params.is_active = activeFilter.value
 
     const res = await apiClient.get('/v1/staff/users/search/', {
       params,
@@ -203,7 +208,8 @@ async function fetchUsers() {
     users.value = res.results || []
     totalCount.value = res.count || 0
   } catch (e: any) {
-    error.value = e?.message || 'Failed to load users'
+    // 503 для «Онлайн» = реєстр присутності недоступний — показуємо пояснення бекенда
+    error.value = e?.response?.data?.detail || e?.message || 'Failed to load users'
   } finally {
     loading.value = false
   }

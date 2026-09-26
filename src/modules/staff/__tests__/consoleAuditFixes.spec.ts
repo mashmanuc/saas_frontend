@@ -65,9 +65,28 @@ describe('Користувачі: фільтри', () => {
     const role = selects[0].element as HTMLSelectElement
     const status = selects[1].element as HTMLSelectElement
     expect([...role.options].map(o => o.text)).toEqual(['Всі ролі', 'Учень', 'Вчитель', 'Адміністратор', 'Суперадмін'])
-    expect(status.options.length).toBe(3)
+    expect([...status.options].map(o => o.text)).toEqual(['Всі статуси', 'Активні', 'Неактивні', 'Онлайн'])
     expect(role.value).toBe('tutor')
     expect(get.mock.calls[0][1].params.role).toBe('tutor')
+  })
+})
+
+describe('Користувачі: «Онлайн»', () => {
+  it('пункт «Онлайн» шле online=1 (а не is_active) і показує позначку', async () => {
+    get.mockResolvedValue({ results: [
+      { id: 7, email: 'a@b.c', first_name: 'Олена', last_name: '', role: 'tutor', is_active: true, is_online: true },
+      { id: 8, email: 'd@e.f', first_name: 'Іван', last_name: '', role: 'tutor', is_active: true, is_online: false },
+    ], count: 2, presence_available: true })
+    const w = mountUk(StaffUsersListView)
+    await flushPromises()
+    await w.findAll('select')[1].setValue('online')
+    await flushPromises()
+    const params = get.mock.calls[get.mock.calls.length - 1][1].params
+    expect(params.online).toBe(1)
+    expect(params.is_active).toBeUndefined()
+    const rows = w.findAll('tbody tr')
+    expect(rows[0].text()).toContain('онлайн')
+    expect(rows[1].text()).not.toContain('онлайн')
   })
 })
 
