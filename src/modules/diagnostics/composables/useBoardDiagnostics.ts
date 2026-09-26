@@ -17,7 +17,7 @@ export function useBoardDiagnostics(sessionId: string) {
       message: 'Board version conflict',
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.board',
         clientVersion,
@@ -41,7 +41,7 @@ export function useBoardDiagnostics(sessionId: string) {
       message: `Board event dropped: ${reason}`,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.board',
         eventType,
@@ -61,7 +61,7 @@ export function useBoardDiagnostics(sessionId: string) {
       stack: error.stack,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.board',
         errorName: error.name,
@@ -83,7 +83,7 @@ export function useBoardDiagnostics(sessionId: string) {
       message: `Board sync recovered: ${method}`,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.board',
         fromVersion,
@@ -114,7 +114,7 @@ export function useBoardDiagnostics(sessionId: string) {
       stack: error instanceof Error ? error.stack : undefined,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: `classroom.${channel}`,
         channel,
@@ -139,7 +139,7 @@ export function useBoardDiagnostics(sessionId: string) {
         message: `WebSocket closed (${channel}): code=${code} reason=${reason}`,
         url: window.location.href,
         sessionId,
-        appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+        app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         context: {
           service: `classroom.${channel}`,
           channel,
@@ -164,7 +164,7 @@ export function useBoardDiagnostics(sessionId: string) {
       message: `Unexpected WebSocket message type: ${messageType}`,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: `classroom.${channel}`,
         channel,

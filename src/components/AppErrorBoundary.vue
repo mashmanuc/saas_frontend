@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onErrorCaptured } from 'vue'
+import { computed, ref, onErrorCaptured, getCurrentInstance } from 'vue'
 // Єдина залежність (умисно): крихітний ref-прапорець без власних залежностей —
 // див. коментар про самодостатність вище. Через нього router.onError повідомляє
 // про stale-chunk, який `onErrorCaptured` не бачить (chunk падає ДО монтування).
@@ -60,10 +60,21 @@ const localError = ref(false)
 const hasError = computed(() => localError.value || appFatalError.value !== null)
 const isStaleVersion = computed(() => !localError.value && appFatalError.value === 'stale-version')
 
-onErrorCaptured((err) => {
+// Збирач помилок (modules/diagnostics) слухає `app.config.errorHandler`, а
+// `return false` нижче зупиняє поширення — тож падіння сторінки, найчастіший
+// краш, не доходило нікуди, крім консолі (знайдено 2026-09-26). Передаємо його
+// явно. Обробник беремо з контексту застосунку, а не імпортом модуля diagnostics,
+// щоб екран помилки лишався самодостатнім (див. коментар вище).
+const appConfig = getCurrentInstance()?.appContext.config
+
+onErrorCaptured((err, instance, info) => {
   localError.value = true
   // Best-effort лог; НЕ кидаємо далі (return false зупиняє propagation).
   try { console.error('[AppErrorBoundary]', err) } catch { /* noop */ }
+  // Звіт не сміє зламати сам екран помилки — але й мовчати не можна.
+  try { appConfig?.errorHandler?.(err, instance, info) } catch (reportError) {
+    try { console.error('[AppErrorBoundary] звіт про помилку не вдався', reportError) } catch { /* noop */ }
+  }
   return false
 })
 

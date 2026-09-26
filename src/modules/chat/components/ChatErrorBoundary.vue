@@ -20,7 +20,8 @@
 </template>
 
 <script setup>
-import { ref, onErrorCaptured, provide, inject } from 'vue'
+import { ref, onErrorCaptured, provide, inject, getCurrentInstance } from 'vue'
+import { reportCapturedError } from '@/core/errors/reportCapturedError'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 
@@ -41,9 +42,13 @@ provide('chatErrorBoundary', {
   }
 })
 
+// Без пересилання падіння чату не доходило до звітів (2026-09-26).
+const appConfig = getCurrentInstance()?.appContext.config
+
 onErrorCaptured((err, instance, info) => {
   errorCount.value++
   hasError.value = true
+  reportCapturedError(appConfig, err, instance, info)
   
   // Categorize errors for better UX
   if (err.message?.includes('WebSocket') || err.message?.includes('websocket')) {

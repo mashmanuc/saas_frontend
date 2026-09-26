@@ -9,7 +9,11 @@ export interface FrontendErrorPayload {
   sessionId?: string
   browser?: string
   platform?: string
-  appVersion: string
+  /**
+   * Версія збірки. Бекенд чекає саме `app_version`: до 2026-09-26 фронт слав
+   * `appVersion`, і версія в кожному записі помилки була порожня.
+   */
+  app_version: string
   context?: Record<string, unknown>
 }
 

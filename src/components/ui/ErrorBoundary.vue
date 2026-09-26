@@ -18,7 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onErrorCaptured } from 'vue'
+import { ref, onErrorCaptured, getCurrentInstance } from 'vue'
+import { reportCapturedError } from '@/core/errors/reportCapturedError'
 import Button from '@/ui/Button.vue'
 
 interface Props {
@@ -41,10 +42,14 @@ const emit = defineEmits<{
 const hasError = ref(false)
 const errorDetails = ref<Error | null>(null)
 
-onErrorCaptured((err: Error) => {
+// Без пересилання падіння всередині boundary не доходило до звітів (2026-09-26).
+const appConfig = getCurrentInstance()?.appContext.config
+
+onErrorCaptured((err: Error, instance, info) => {
   hasError.value = true
   errorDetails.value = err
   console.error('[ErrorBoundary]', err)
+  reportCapturedError(appConfig, err, instance, info)
   return false
 })
 

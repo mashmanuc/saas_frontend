@@ -18,7 +18,7 @@ export function useWebRTCDiagnostics(sessionId: string) {
           message: `WebRTC ICE connection ${state}`,
           url: window.location.href,
           sessionId,
-          appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+          app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
           context: {
             service: 'classroom.webrtc',
             iceConnectionState: state,
@@ -39,7 +39,7 @@ export function useWebRTCDiagnostics(sessionId: string) {
           message: 'WebRTC connection failed',
           url: window.location.href,
           sessionId,
-          appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+          app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
           context: {
             service: 'classroom.webrtc',
             connectionState: state,
@@ -65,7 +65,7 @@ export function useWebRTCDiagnostics(sessionId: string) {
       stack: error.stack,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.webrtc',
         operation,
@@ -101,7 +101,7 @@ export function useWebRTCDiagnostics(sessionId: string) {
       stack: error.stack,
       url: window.location.href,
       sessionId,
-      appVersion: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+      app_version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       context: {
         service: 'classroom.webrtc',
         operation: 'addIceCandidate',

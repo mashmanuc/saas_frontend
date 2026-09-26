@@ -29,23 +29,80 @@ function getAppVersion(): string {
   return (import.meta.env.VITE_APP_VERSION as string) || 'unknown'
 }
 
-function getBrowserInfo(): string {
-  const ua = navigator.userAgent
-  if (ua.includes('Chrome')) return `Chrome ${ua.match(/Chrome\/(\d+)/)?.[1]}`
-  if (ua.includes('Firefox')) return `Firefox ${ua.match(/Firefox\/(\d+)/)?.[1]}`
-  if (ua.includes('Safari')) return `Safari ${ua.match(/Version\/(\d+)/)?.[1]}`
+// Порядок важливий: Edge, Opera, Samsung і Яндекс теж пишуть «Chrome/», а Chrome — «Safari/».
+const BROWSERS: Array<[RegExp, string]> = [
+  [/Edg(?:A|iOS)?\/(\d+)/, 'Edge'],
+  [/OPR\/(\d+)/, 'Opera'],
+  [/SamsungBrowser\/(\d+)/, 'Samsung Internet'],
+  [/YaBrowser\/(\d+)/, 'Yandex'],
+  [/(?:Firefox|FxiOS)\/(\d+)/, 'Firefox'],
+  [/CriOS\/(\d+)/, 'Chrome'],
+  [/Chrome\/(\d+)/, 'Chrome'],
+  [/Version\/(\d+).*Safari/, 'Safari'],
+]
+
+export function getBrowserInfo(ua: string = navigator.userAgent): string {
+  for (const [re, name] of BROWSERS) {
+    const m = ua.match(re)
+    if (m) return `${name} ${m[1]}`
+  }
   return ua.slice(0, 50)
 }
 
-function getPlatform(): string {
-  const platform = navigator.platform || ''
-  if (platform.includes('Win')) return 'Windows'
-  if (platform.includes('Mac')) return 'macOS'
-  if (platform.includes('Linux')) return 'Linux'
-  if (/Android/i.test(navigator.userAgent)) return 'Android'
-  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return 'iOS'
+function isIPadOnMacUA(ua: string, touchPoints: number): boolean {
+  // iPadOS 13+ представляється як «Macintosh»; видає його лише сенсорний екран.
+  return /Macintosh/.test(ua) && touchPoints > 1
+}
+
+/**
+ * ОС за user-agent. До 2026-09-26 першим перевірявся `navigator.platform`, а на
+ * Android він «Linux armv8l» — усі телефони Android записувались як «Linux»,
+ * а iPad — як «macOS». Тепер спершу мобільні системи з UA.
+ */
+export function getPlatform(
+  ua: string = navigator.userAgent,
+  platform: string = navigator.platform || '',
+  touchPoints: number = navigator.maxTouchPoints || 0,
+): string {
+  if (/Android/i.test(ua)) return 'Android'
+  if (/iPhone|iPod/i.test(ua)) return 'iOS'
+  if (/iPad/i.test(ua) || isIPadOnMacUA(ua, touchPoints)) return 'iPadOS'
+  if (/CrOS/.test(ua)) return 'ChromeOS'
+  if (platform.includes('Win') || /Windows/.test(ua)) return 'Windows'
+  if (platform.includes('Mac') || /Macintosh/.test(ua)) return 'macOS'
+  if (platform.includes('Linux') || /Linux/.test(ua)) return 'Linux'
   return platform
 }
+
+/** Тип пристрою тими ж словами, що й бекенд (`apps/diagnostics/device_info.py`). */
+export function getDeviceKind(
+  ua: string = navigator.userAgent,
+  touchPoints: number = navigator.maxTouchPoints || 0,
+): 'phone' | 'tablet' | 'computer' {
+  if (/iPad/i.test(ua) || isIPadOnMacUA(ua, touchPoints)) return 'tablet'
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? 'phone' : 'tablet'
+  if (/iPhone|iPod|Mobi/i.test(ua)) return 'phone'
+  return 'computer'
+}
+
+function getClientContext(): Record<string, unknown> {
+  try {
+    return {
+      // Сирий UA — бекенд розбирає його тим самим парсером, що й сесії входу: рукописний
+      // розбір вище не бачить WebView Telegram/Instagram, а саме звідти прийде реклама.
+      ua: navigator.userAgent.slice(0, 400),
+      kind: getDeviceKind(),
+      screen: `${window.screen?.width ?? 0}x${window.screen?.height ?? 0}`,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      dpr: window.devicePixelRatio || 1,
+      touch: navigator.maxTouchPoints || 0,
+    }
+  } catch {
+    return {}
+  }
+}
+
+let lastImmediateFlush = 0
 
 function shouldIgnore(message: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(message))
@@ -88,11 +145,13 @@ function createPayload(
     message,
     stack,
     url: window.location.href,
-    appVersion: getAppVersion(),
+    app_version: getAppVersion(),
     browser: getBrowserInfo(),
     platform: getPlatform(),
     context: {
       route: currentRouteInfo,
+      // Пристрій і екран: без них staff не відрізнить «зламалось на телефоні» від «на ПК».
+      client: getClientContext(),
       ...extraContext,
     },
   }
@@ -152,6 +211,14 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
     // Send to backend
     if (mode === 'console+remote') {
       diagnosticsApi.queueError(payload)
+      // Помилку — одразу, не чекаючи 5-секундного таймера: після краху людина тисне
+      // «Онови сторінку» за секунду-дві, а відправка при закритті сторінки
+      // (sendBeacon) іде на m4sh.org без бекенду — звіт губився (рев'ю 2026-09-26).
+      // Не частіше разу на секунду, щоб шквал помилок не став шквалом запитів.
+      if (severity === 'error' && Date.now() - lastImmediateFlush > 1000) {
+        lastImmediateFlush = Date.now()
+        void diagnosticsApi.flush?.()
+      }
     }
   }
 
@@ -164,7 +231,9 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
         info: string
       ) => {
         const error = err as Error
-        const componentName = instance?.$options?.name || 'Unknown'
+        // `<script setup>` (переважна більшість компонентів) не має `name` — лише `__name`.
+        const options = instance?.$options as { name?: string; __name?: string } | undefined
+        const componentName = options?.name || options?.__name || 'Unknown'
 
         // Surface the REAL error (message + own stack + clickable source) to console.
         // handleError() below logs only meta {vue_component, vue_info}, which hid the

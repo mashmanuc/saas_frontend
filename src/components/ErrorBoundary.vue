@@ -12,17 +12,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onErrorCaptured } from 'vue'
+import { ref, onErrorCaptured, getCurrentInstance } from 'vue'
+import { reportCapturedError } from '@/core/errors/reportCapturedError'
 import { AlertCircle as AlertCircleIcon, RefreshCw as RefreshCwIcon } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 
 const hasError = ref(false)
 const errorMessage = ref('')
 
-onErrorCaptured((err) => {
+// Без пересилання падіння всередині boundary не доходило до звітів (2026-09-26).
+const appConfig = getCurrentInstance()?.appContext.config
+
+onErrorCaptured((err, instance, info) => {
   hasError.value = true
   errorMessage.value = err.message || 'Unknown error occurred'
   console.error('Error captured by ErrorBoundary:', err)
+  reportCapturedError(appConfig, err, instance, info)
   
   // Prevent error from propagating
   return false
