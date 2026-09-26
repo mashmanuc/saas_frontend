@@ -1,10 +1,14 @@
 <!--
   «Є незбережені дії» перед виходом (ТЗ «Сесія спільного екрана і безпечний вихід», R7).
 
-  Вихід сам нічого не видаляє. Сервер на зв'язку — лише «Відкрити дошку»: черга
-  відправиться штатно (SYSTEM_LAW §5), а відмову сервера дошка покаже своїм банером
-  SAVE_BLOCKED з власними діями. Сервер недоступний — ще й «Вийти все одно» (§6.4 ТЗ):
-  спершу пропозиція завантажити копію (LAW §4), потім явне відкидання з числом дій.
+  Вихід сам нічого не видаляє. Для кожної дошки — чи можна ще надіслати її зміни:
+  - дошка є на сервері — лише «Відкрити дошку»: черга відправиться штатно
+    (SYSTEM_LAW §5), а відмову сервера дошка покаже своїм банером SAVE_BLOCKED;
+  - дошки немає або до неї немає доступу (400/403/404/410) чи сервер недоступний —
+    надіслати нікуди: «Завантажити копію» (LAW §4), потім явне відкидання з числом дій
+    (§6.4 ТЗ).
+  «Вийти все одно» — лише коли надіслати нікуди жодну з перелічених дошок: відкидання
+  прибирає копії всіх, тож дошку, яку ще можна зберегти, спершу треба відкрити.
   На спільному комп'ютері це важливо в обидва боки: не загубити роботу і не лишити
   її наступній людині.
 -->
@@ -30,17 +34,20 @@
                 ? t('auth.logoutGuard.unknownCount')
                 : t('auth.logoutGuard.count', { n: board.ops }) }}
               <template v-if="board.blocked"> · {{ t('auth.logoutGuard.blocked') }}</template>
+              <template v-if="linkOf(board.sessionId) === 'gone'"> · {{ t('auth.logoutGuard.boardGone') }}</template>
+              <template v-if="board.liveUnsaved"> · {{ t('auth.logoutGuard.notSaved') }}</template>
             </span>
           </div>
           <div class="logout-unsent__board-actions">
             <button
-              v-if="reachable === false"
+              v-if="unsendable(board.sessionId)"
               type="button"
               class="logout-unsent__download"
               data-testid="logout-unsent-download"
               @click="downloadCopy(board)"
             >{{ t('auth.logoutGuard.download') }}</button>
             <button
+              v-if="linkOf(board.sessionId) !== 'gone'"
               type="button"
               class="logout-unsent__open"
               data-testid="logout-unsent-open"
@@ -50,11 +57,7 @@
         </li>
       </ul>
 
-      <p class="logout-unsent__status" data-testid="logout-unsent-status">
-        {{ reachable === null
-          ? t('auth.logoutGuard.checking')
-          : reachable ? t('auth.logoutGuard.sendFirst') : t('auth.logoutGuard.offline') }}
-      </p>
+      <p class="logout-unsent__status" data-testid="logout-unsent-status">{{ statusText }}</p>
 
       <p v-if="confirming" class="logout-unsent__warning" data-testid="logout-unsent-warning">
         {{ t('auth.logoutGuard.discardWarning', { n: total }) }}
@@ -65,14 +68,14 @@
           {{ t('auth.logoutGuard.cancel') }}
         </button>
         <button
-          v-if="reachable === false && !confirming"
+          v-if="canDiscard && !confirming"
           type="button"
           class="logout-unsent__discard"
           data-testid="logout-unsent-discard"
           @click="confirming = true"
         >{{ t('auth.logoutGuard.logoutAnyway') }}</button>
         <button
-          v-else-if="reachable === false"
+          v-else-if="canDiscard"
           type="button"
           class="logout-unsent__discard"
           data-testid="logout-unsent-confirm"
@@ -93,6 +96,15 @@ import { useLogoutGuardStore } from '../store/logoutGuardStore'
 import { exportUnsentBoard, totalUnsentOps, type UnsentBoardWork } from '../logout/unsentWork'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 
+/**
+ * Чи можна ще надіслати зміни дошки:
+ * - `ok` — дошка є, сервер відповідає (зокрема 429 — він живий);
+ * - `gone` — дошки немає або доступу немає (400/403/404/410): надіслати нікуди;
+ * - `offline` — жодної відповіді або 5xx (і відкритий circuit breaker клієнта).
+ */
+type BoardLink = 'checking' | 'ok' | 'gone' | 'offline'
+const GONE_STATUSES = new Set([400, 403, 404, 410])
+
 const { t } = useI18n()
 const router = useRouter()
 const guard = useLogoutGuardStore()
@@ -101,36 +113,65 @@ const auth = useAuthStore()
 const confirming = ref(false)
 const busy = ref(false)
 const names = ref<Record<string, string>>({})
-/** null — ще перевіряємо; true — сервер відповів; false — жодної відповіді (або лише 5xx). */
-const reachable = ref<boolean | null>(null)
+const links = ref<Record<string, BoardLink>>({})
 const total = computed(() => totalUnsentOps(guard.work))
+
+function linkOf(sessionId: string): BoardLink {
+  return links.value[sessionId] ?? 'checking'
+}
+const checking = computed(() => guard.work.some(board => linkOf(board.sessionId) === 'checking'))
+/** Надіслати цю дошку нікуди — лише копія або відкидання. */
+function unsendable(sessionId: string): boolean {
+  const link = linkOf(sessionId)
+  return link === 'gone' || link === 'offline'
+}
+/** Відкидання — лише коли надіслати нікуди ЖОДНУ з дошок (воно прибирає копії всіх). */
+const canDiscard = computed(() =>
+  !checking.value && guard.work.length > 0 && guard.work.every(board => unsendable(board.sessionId)))
+
+const statusText = computed(() => {
+  if (checking.value) return t('auth.logoutGuard.checking')
+  if (!canDiscard.value) return t('auth.logoutGuard.sendFirst')
+  return guard.work.some(board => linkOf(board.sessionId) === 'offline')
+    ? t('auth.logoutGuard.offline')
+    : t('auth.logoutGuard.gone')
+})
 
 function boardName(sessionId: string): string {
   return names.value[sessionId] || t('auth.logoutGuard.board', { id: sessionId.slice(0, 8) })
 }
 
-// Назви дошок і водночас перевірка зв'язку: будь-яка відповідь сервера, крім 5xx, —
-// він на зв'язку, і тоді відкидання не пропонується (ТЗ R7, §6.4: спершу відправлення).
-// Без назв діалог працює (показує короткий id).
+function classify(result: PromiseSettledResult<unknown>): BoardLink {
+  if (result.status === 'fulfilled') return 'ok'
+  const status = (result.reason as { response?: { status?: number } })?.response?.status
+  if (typeof status !== 'number' || status >= 500) return 'offline'
+  return GONE_STATUSES.has(status) ? 'gone' : 'ok'
+}
+
+// Назви дошок і водночас перевірка, чи їх ще можна надіслати. Усі дошки паралельно;
+// результат застарілого циклу (закрили й відкрили знову) відкидається.
+// immediate: діалог вантажиться ледаче (App.vue) і може змонтуватися вже відкритим.
+let generation = 0
 watch(() => guard.open, async (open) => {
+  const run = ++generation
   confirming.value = false
-  reachable.value = null
+  links.value = {}
   if (!open) return
-  let answered = false
-  for (const board of guard.work) {
-    try {
-      const detail = await winterboardApi.getSession(board.sessionId) as { name?: string }
-      answered = true
-      if (detail?.name) names.value = { ...names.value, [board.sessionId]: detail.name }
-    } catch (err) {
-      const status = (err as { response?: { status?: number } })?.response?.status
-      if (typeof status === 'number' && status < 500) answered = true
-      console.warn('[auth:logout] board name unavailable', board.sessionId, err)
+  const boards = [...guard.work]
+  const results = await Promise.allSettled(boards.map(board => winterboardApi.getSession(board.sessionId)))
+  if (run !== generation || !guard.open) return
+  const next: Record<string, BoardLink> = {}
+  results.forEach((result, i) => {
+    const sessionId = boards[i].sessionId
+    next[sessionId] = classify(result)
+    if (result.status === 'fulfilled') {
+      const name = (result.value as { name?: string } | null)?.name
+      if (name) names.value = { ...names.value, [sessionId]: name }
+    } else {
+      console.warn('[auth:logout] board check failed', sessionId, result.reason)
     }
-  }
-  if (guard.open) reachable.value = answered
-// immediate: діалог вантажиться ледаче (App.vue) і може змонтуватися вже відкритим —
-// без цього перевірка зв'язку не почалась би, а відкидання не з'явилось би ніколи.
+  })
+  links.value = next
 }, { immediate: true })
 
 function cancel() {

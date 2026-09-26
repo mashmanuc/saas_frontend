@@ -47,13 +47,20 @@ export function installLogoutGate(router: Router): void {
  *   інакше ця вкладка записала б її знову при смерті сесії чи закритті.
  * - Вихід не підтверджено сервером: і ця вкладка — на екран блокування повним
  *   перезавантаженням, щоб дошка розмонтувалась, а не лишалась у DOM.
+ * - Маркер знято (вихід підтверджено деінде або увійшов новий учитель): екран блокування
+ *   тут більше не потрібен — повтор виходу звідси вивів би НОВОГО вчителя (друга
+ *   рецензія, знахідка 2). Повне перезавантаження на головну з нинішніми cookie.
  */
 export function onOtherTabLogout(event: StorageEvent): void {
   if (event.key === DISCARD_BROADCAST_KEY && event.newValue) {
     abandonOpenBoardQueue(parseDiscardBroadcast(event.newValue))
     return
   }
-  if (event.key === LOGOUT_PENDING_KEY && event.newValue && window.location.pathname !== LOGOUT_PENDING_ROUTE) {
+  if (event.key !== LOGOUT_PENDING_KEY) return
+  const onLockScreen = window.location.pathname === LOGOUT_PENDING_ROUTE
+  if (event.newValue && !onLockScreen) {
     window.location.href = LOGOUT_PENDING_ROUTE
+  } else if (!event.newValue && onLockScreen) {
+    window.location.href = '/'
   }
 }

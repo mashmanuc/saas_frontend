@@ -24,7 +24,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useLogoutGuardStore } from '../../store/logoutGuardStore'
 import { isLogoutPending, markLogoutPending, clearLogoutPending, isAllowedWhileLogoutPending } from '../pendingLogout'
 import { discardUnsentWork, listUnsentWork, totalUnsentOps } from '../unsentWork'
-import { registerOpenBoardQueue } from '../openBoardQueue'
+import { registerOpenBoardQueue, type OpenBoardQueue } from '../openBoardQueue'
 import { onOtherTabLogout } from '../logoutGate'
 
 const BOARD_A = '11111111-1111-4111-8111-111111111111'
@@ -235,12 +235,23 @@ describe('рецензія пакета A · вихід у браузері', ()
     expect(isLogoutPending()).toBe(false)
   })
 
-  it('знахідка 4: перед переліком черга відкритої дошки йде у сховище — видно й дії останньої секунди', async () => {
-    const off = registerOpenBoardQueue({
+  function fakeQueue(overrides: Partial<OpenBoardQueue> = {}): OpenBoardQueue {
+    return {
       sessionId: () => BOARD_A,
-      persist: () => { localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(2)); return true },
+      pending: () => 1,
+      blocked: () => false,
+      persist: () => true,
+      exportCopy: () => ({ ops: [] }),
       abandon: vi.fn(),
-    })
+      ...overrides,
+    }
+  }
+
+  it('знахідка 4: перед переліком черга відкритої дошки йде у сховище — видно й дії останньої секунди', async () => {
+    const off = registerOpenBoardQueue(fakeQueue({
+      pending: () => 2,
+      persist: () => { localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(2)); return true },
+    }))
     try {
       const result = await signedIn().logout()
       expect(result.status).toBe('blocked_unsent')
@@ -250,11 +261,25 @@ describe('рецензія пакета A · вихід у браузері', ()
     }
   })
 
+  it('друга рецензія, знахідка 3: копія не лягла у сховище — дошка все одно в переліку з числом дій у пам’яті', async () => {
+    const off = registerOpenBoardQueue(fakeQueue({ pending: () => 4, persist: () => false }))
+    try {
+      const result = await signedIn().logout()
+      expect(result.status).toBe('blocked_unsent')
+      expect(useLogoutGuardStore().work).toEqual([
+        expect.objectContaining({ sessionId: BOARD_A, ops: 4, keys: [], liveUnsaved: true }),
+      ])
+      expect(authApi.logout).not.toHaveBeenCalled()
+    } finally {
+      off()
+    }
+  })
+
   it("знахідка 4: явне відкидання — черга відкритої дошки геть із пам'яті, іншим вкладкам — сигнал", async () => {
     localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(3))
     vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
     const abandon = vi.fn()
-    const off = registerOpenBoardQueue({ sessionId: () => BOARD_A, persist: () => true, abandon })
+    const off = registerOpenBoardQueue(fakeQueue({ abandon }))
     const setItem = vi.spyOn(window.localStorage, 'setItem')
     try {
       await signedIn().logout({ discardUnsent: true })
@@ -272,13 +297,27 @@ describe('рецензія пакета A · вихід у браузері', ()
     localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(3))
     vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
     const abandon = vi.fn()
-    const off = registerOpenBoardQueue({ sessionId: () => BOARD_B, persist: () => true, abandon })
+    const off = registerOpenBoardQueue(fakeQueue({ sessionId: () => BOARD_B, pending: () => 0, abandon }))
     try {
       await signedIn().logout({ discardUnsent: true })
       expect(abandon).not.toHaveBeenCalled()
     } finally {
       off()
     }
+  })
+
+  it('друга рецензія, знахідка 2: маркер уже знято — повтор з екрана блокування НЕ йде на сервер', async () => {
+    const store = useAuthStore()
+    expect(isLogoutPending()).toBe(false)
+    expect(await store.retryPendingLogout()).toBe(true)
+    expect(authApi.logout).not.toHaveBeenCalled()
+    expect(location.href).toBe('/')
+  })
+
+  it('друга рецензія, знахідка 2: маркер зняли в іншій вкладці — екран блокування тут іде геть', () => {
+    location.pathname = '/logout-pending'
+    onOtherTabLogout(new StorageEvent('storage', { key: 'm4sh_logout_pending', newValue: null }))
+    expect(location.href).toBe('/')
   })
 
   it('знахідка 5: інша вкладка — вихід не підтверджено → і ця на екран блокування повним перезавантаженням', () => {
@@ -288,7 +327,7 @@ describe('рецензія пакета A · вихід у браузері', ()
 
   it('знахідка 4: інша вкладка — вчитель відкинув дії, черга тієї ж дошки тут теж геть', () => {
     const abandon = vi.fn()
-    const off = registerOpenBoardQueue({ sessionId: () => BOARD_A, persist: () => true, abandon })
+    const off = registerOpenBoardQueue(fakeQueue({ abandon }))
     try {
       onOtherTabLogout(new StorageEvent('storage', {
         key: 'm4sh_logout_discard', newValue: JSON.stringify({ ids: [BOARD_A], at: 1 }),

@@ -1,22 +1,30 @@
 /**
  * Черга дошки, відкритої в цій вкладці, — для виходу (ТЗ спільного екрана, R7;
- * рецензія пакета A, знахідка 4).
+ * рецензія пакета A, знахідка 4; друга рецензія, знахідка 3).
  *
  * Навіщо: копія черги пишеться у сховище з секундною затримкою, а при смерті сесії й
  * при `beforeunload` черга з пам'яті пишеться знову. Без цього реєстру вихід (а) не бачив
- * останніх дій у переліку і (б) після ЯВНОГО відкидання вчителем копія відкритої дошки
- * одразу з'являлась знову — дії попереднього вчителя лишались у спільному браузері.
+ * останніх дій у переліку, (б) після ЯВНОГО відкидання вчителем копія відкритої дошки
+ * одразу з'являлась знову — дії попереднього вчителя лишались у спільному браузері, і
+ * (в) якщо копія не лягла у сховище (переповнене, приватний режим), черга в пам'яті не
+ * потрапляла в перелік зовсім — дії губились без показаного числа.
  *
- * Модуль виходу не імпортує ops-стор дошки: рекордер відкритої дошки сам реєструє, як
- * зберегти чергу і як відкинути її з пам'яті (обидва — наявні дії стору). Той самий
- * підхід, що `registerAuthDeathCleanup`.
+ * Модуль виходу не імпортує ops-стор дошки: рекордер відкритої дошки сам реєструє наявні
+ * дії стору. Той самий підхід, що `registerAuthDeathCleanup`.
  */
+import type { UnsentBoardWork } from './unsentWork'
 
 export interface OpenBoardQueue {
   /** Дошка, чия черга зараз у пам'яті вкладки. */
   sessionId(): string | null
+  /** Скільки дій у пам'яті ще не прийнято сервером. */
+  pending(): number
+  /** Сервер уже відмовив (`SAVE_BLOCKED`). */
+  blocked(): boolean
   /** Черга → перевірена копія у сховищі зараз, а не за секундним таймером. */
   persist(): boolean
+  /** Копія черги з пам'яті для завантаження вчителем (форма `m4sh-unsaved-board-ops`). */
+  exportCopy(): Record<string, unknown>
   /** Явне відкидання вчителем при виході: черга геть із пам'яті (копії прибирає вихід). */
   abandon(): void
 }
@@ -30,13 +38,44 @@ export function registerOpenBoardQueue(queue: OpenBoardQueue): () => void {
   }
 }
 
-/** Перед переліком незбережених дій: черга відкритої дошки — у сховище. */
-export function persistOpenBoardQueue(): void {
-  if (!current) return
+/** Перед переліком незбережених дій: черга відкритої дошки — у сховище. `false` — не лягла. */
+export function persistOpenBoardQueue(): boolean {
+  if (!current) return true
   try {
-    current.persist()
+    return current.pending() === 0 || current.persist()
   } catch (err) {
     console.warn('[auth:logout] open board queue not persisted', err)
+    return false
+  }
+}
+
+/**
+ * Перелік з урахуванням черги в пам'яті: якщо її копія у сховище не лягла, дошка все
+ * одно має бути в переліку з числом дій у пам'яті. Інакше вихід пройшов би без діалогу.
+ */
+export function withOpenBoardQueue(work: UnsentBoardWork[], persisted: boolean): UnsentBoardWork[] {
+  if (persisted || !current) return work
+  const sid = current.sessionId()
+  const live = sid ? current.pending() : 0
+  if (!sid || live === 0) return work
+  const blocked = current.blocked()
+  const existing = work.find(board => board.sessionId === sid)
+  if (existing) {
+    return work.map(board => (board === existing
+      ? { ...board, ops: Math.max(board.ops, live), blocked: board.blocked || blocked, liveUnsaved: true }
+      : board))
+  }
+  return [...work, { sessionId: sid, ops: live, keys: [], blocked, unreadable: false, liveUnsaved: true }]
+}
+
+/** Копія черги з пам'яті відкритої дошки — для завантаження; `null`, якщо дошка інша. */
+export function exportOpenBoardQueue(sessionId: string): Record<string, unknown> | null {
+  if (!current || current.sessionId() !== sessionId) return null
+  try {
+    return current.exportCopy()
+  } catch (err) {
+    console.warn('[auth:logout] open board queue not exported', err)
+    return null
   }
 }
 

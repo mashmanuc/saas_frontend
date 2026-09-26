@@ -14,6 +14,8 @@
  * з 2026-09-24 (OpsLegacyCopyNotice — лише власнику дошки) — вихід їх не чіпає.
  */
 
+import { exportOpenBoardQueue } from './openBoardQueue'
+
 const KEY_RE = /^(wb_ops_backup_v2_|wb_ops_blocked_v2_)([0-9a-f-]{36})_(u\d+|anon)_(.+)$/
 
 export interface UnsentBoardWork {
@@ -27,6 +29,8 @@ export interface UnsentBoardWork {
   blocked: boolean
   /** Є копія, яку не вдалося прочитати: число дій невідоме. */
   unreadable: boolean
+  /** Черга відкритої дошки лише в пам'яті: її копія у сховище не лягла (переповнене тощо). */
+  liveUnsaved?: boolean
 }
 
 function countOps(raw: string | null): number | null {
@@ -131,6 +135,8 @@ export function exportUnsentBoard(
       unreadable.push({ key, raw })
     }
   }
+  // Копія не лягла у сховище — справжня черга лише в пам'яті відкритої дошки.
+  const live = board.liveUnsaved ? exportOpenBoardQueue(board.sessionId) : null
   return {
     format: 'm4sh-unsaved-board-ops',
     version: 1,
@@ -139,6 +145,7 @@ export function exportUnsentBoard(
     reason: null,
     source: 'logout',
     ops,
+    ...(live ? { live_queue: live } : {}),
     ...(unreadable.length > 0 ? { unreadable_records: unreadable } : {}),
   }
 }

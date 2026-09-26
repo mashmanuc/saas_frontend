@@ -4,7 +4,9 @@ import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 import { tokenVault } from '../../../utils/tokenVault'
 import { listUnsentWork, discardUnsentWork } from '../logout/unsentWork'
-import { abandonOpenBoardQueue, broadcastDiscard, persistOpenBoardQueue } from '../logout/openBoardQueue'
+import {
+  abandonOpenBoardQueue, broadcastDiscard, persistOpenBoardQueue, withOpenBoardQueue,
+} from '../logout/openBoardQueue'
 import {
   markLogoutPending, clearLogoutPending, isLogoutPending, LOGOUT_PENDING_ROUTE,
 } from '../logout/pendingLogout'
@@ -953,8 +955,9 @@ export const useAuthStore = defineStore('auth', {
     async logout({ discardUnsent = false } = {}) {
       // Копія черги відкритої дошки пишеться із секундною затримкою — спершу в сховище,
       // щоб перелік бачив і дії останньої секунди (рецензія пакета A, знахідка 4).
-      persistOpenBoardQueue()
-      const work = listUnsentWork(this.user?.id)
+      // Не лягла (переповнене сховище) — черга в пам'яті однаково йде в перелік.
+      const persisted = persistOpenBoardQueue()
+      const work = withOpenBoardQueue(listUnsentWork(this.user?.id), persisted)
       if (work.length && !discardUnsent) {
         useLogoutGuardStore().show(work)
         return { status: 'blocked_unsent', work }
@@ -1016,6 +1019,13 @@ export const useAuthStore = defineStore('auth', {
 
     /** Екран блокування: повторити вихід. `true` — сервер підтвердив, маркер знято. */
     async retryPendingLogout() {
+      // Маркер уже знято: вихід підтверджено в іншій вкладці або тут увійшов новий
+      // учитель. Повтор виходу звідси пішов би з cookie НОВОГО вчителя і вивів би його
+      // (друга рецензія, знахідка 2) — просто покидаємо екран блокування.
+      if (!isLogoutPending()) {
+        if (typeof window !== 'undefined') window.location.href = '/'
+        return true
+      }
       const confirmed = await this._serverLogout()
       if (!confirmed) {
         return false

@@ -74,10 +74,56 @@ describe('LogoutUnsentDialog', () => {
     expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Сервер на зв\'язку')
   })
 
-  it('відповідь 4xx — теж зв\'язок: відкидати не пропонується', async () => {
+  it('друга рецензія, знахідка 1: дошку видалено (404) — надіслати нікуди, тож копія й відкидання доступні', async () => {
     getSession.mockImplementation(async () => { throw Object.assign(new Error('404'), { response: { status: 404 } }) })
     const { wrapper } = await openDialog()
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="logout-unsent-download"]').exists()).toBe(true)
+    // «Відкрити дошку» для видаленої дошки лише вело б на список — його немає.
+    expect(wrapper.find('[data-testid="logout-unsent-open"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Надіслати ці зміни вже нікуди')
+  })
+
+  it('429 — сервер живий і дошка є: відкидати не пропонується', async () => {
+    getSession.mockImplementation(async () => { throw Object.assign(new Error('429'), { response: { status: 429 } }) })
+    const { wrapper } = await openDialog()
     expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+  })
+
+  it('одна дошка є, друга видалена — спершу відкрити ту, що є; копія — лише для видаленої', async () => {
+    const OTHER = '22222222-2222-4222-8222-222222222222'
+    getSession.mockImplementation(async (id: unknown) => {
+      if (id === OTHER) throw Object.assign(new Error('404'), { response: { status: 404 } })
+      return { name: 'Урок: Піраміда' }
+    })
+    const guard = useLogoutGuardStore()
+    const wrapper = mount(LogoutUnsentDialog, { global: { plugins: [i18n()] } })
+    guard.show([
+      { sessionId: BOARD, ops: 5, keys: [KEY], blocked: false, unreadable: false },
+      { sessionId: OTHER, ops: 2, keys: ['k2'], blocked: false, unreadable: false },
+    ])
+    await flushPromises()
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="logout-unsent-download"]')).toHaveLength(1)
+  })
+
+  it('застарілий цикл перевірки (закрили й відкрили знову) не перезаписує свіжий результат', async () => {
+    let releaseFirst: (value: unknown) => void = () => {}
+    getSession.mockImplementationOnce(() => new Promise(resolve => { releaseFirst = resolve }))
+    const guard = useLogoutGuardStore()
+    const wrapper = mount(LogoutUnsentDialog, { global: { plugins: [i18n()] } })
+    const work = [{ sessionId: BOARD, ops: 5, keys: [KEY], blocked: false, unreadable: false }]
+    guard.show(work)
+    await flushPromises()
+    guard.close()
+    await flushPromises()
+    offline()
+    guard.show(work)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
+    releaseFirst({ name: 'Урок' })   // перший, «живий» цикл завершився пізно
+    await flushPromises()
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
   })
 
   it('без зв\'язку: відкидання — лише другим натисканням, із числом дій, і саме як discardUnsent', async () => {

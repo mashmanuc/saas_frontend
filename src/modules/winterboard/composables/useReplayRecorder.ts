@@ -128,16 +128,16 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   // persist — щоб перелік перед виходом бачив і дії останньої секунди (копія з тротлінгом);
   // abandon — ЛИШЕ після явного відкидання вчителем: інакше смерть сесії й beforeunload
   // записали б чергу з пам'яті знову, і вона лишилась би в спільному браузері.
+  const _onThisBoard = (): boolean => {
+    const sid = options.sessionId.value
+    return !!sid && opsSync.sessionId === sid
+  }
   const _unregisterOpenBoardQueue = registerOpenBoardQueue({
-    sessionId: () => {
-      const sid = options.sessionId.value
-      return sid && opsSync.sessionId === sid ? sid : null
-    },
-    persist: () => {
-      const sid = options.sessionId.value
-      if (!sid || opsSync.sessionId !== sid) return false
-      return opsSync.persistQueue()
-    },
+    sessionId: () => (_onThisBoard() ? options.sessionId.value : null),
+    pending: () => (_onThisBoard() ? opsSync.pendingCount + opsSync.inFlightCount : 0),
+    blocked: () => _onThisBoard() && opsSync.mode === 'SAVE_BLOCKED',
+    persist: () => _onThisBoard() && opsSync.persistQueue(),
+    exportCopy: () => opsSync.exportBlocked(),
     abandon: () => opsSync.reset(),
   })
 
