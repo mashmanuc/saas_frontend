@@ -1191,6 +1191,9 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
+import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
+import { DEFAULT_BOARD_SIZES } from '../types/boardDrop'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
@@ -1754,7 +1757,63 @@ const boardRemote = useBoardRemote({
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: createRemoteViewAdapter(store as any),
   frozen: computed(() => isBoardFrozen.value),
+  // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
+  media: {
+    list: () => (store.currentPage?.assets ?? [])
+      .filter((a) => a.type === 'youtube_player')
+      .slice(0, 8)
+      .map((a) => {
+        const state = ytPlayStates[a.id] ?? 'idle'
+        return {
+          object_id: a.id,
+          title: String((a as { title?: string }).title ?? '').slice(0, 200),
+          state,
+          ...(state === 'error' && ytPlayErrors[a.id] ? { error: ytPlayErrors[a.id] } : {}),
+        }
+      }),
+    add: (ref, title) => addRemoteVideo(ref, title),
+    play: (id) => { if (isVideoOnCurrentPage(id)) playVideo(id) },
+    pause: (id) => { if (isVideoOnCurrentPage(id)) pauseVideo(id) },
+  },
 })
+
+function isVideoOnCurrentPage(id: string): boolean {
+  return !!store.currentPage?.assets.some((a) => a.id === id && a.type === 'youtube_player')
+}
+
+/**
+ * Пульт підтвердив вибір відео → картка на поточну сторінку тим самим шляхом,
+ * що й вставка посилання (handleAssetAdd: op + історія «скасувати»), у центр
+ * видимої області. Заморожена дошка — те саме питання, що й для «+» у панелі.
+ */
+function addRemoteVideo(ref: { provider: string; id: string }, title: string): void {
+  const url = videoRefToWatchUrl(ref)
+  if (!url) return
+  const place = () => {
+    const container = canvasContainerRef.value
+    const zoom = store.zoom || 1
+    const offset = store.stageOrigin
+    const size = DEFAULT_BOARD_SIZES.youtube_player ?? { w: 640, h: 360 }
+    const cx = container ? (container.clientWidth / 2 - offset.x) / zoom : (store.pageWidth ?? 800) / 2
+    const cy = container ? (container.clientHeight / 2 - offset.y) / zoom : 300
+    handleAssetAdd({
+      id: `yt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type: 'youtube_player',
+      src: url,
+      youtubeUrl: url,
+      x: cx - size.w / 2,
+      y: cy - size.h / 2,
+      w: size.w,
+      h: size.h,
+      rotation: 0,
+      locked: false,
+      title: title.slice(0, 200),
+      thumbnail: getYouTubeThumbnail(ref.id),
+    } as unknown as WBAsset)
+  }
+  if (guardFrozenEdit(place)) return
+  place()
+}
 
 function onLifecycleBlocked(e: Event) {
   const d = (e as CustomEvent<LifecycleBlockDetail>).detail

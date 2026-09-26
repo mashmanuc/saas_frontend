@@ -114,6 +114,113 @@
     </div>
     <p v-if="isReady && cards && cards.count === 0" class="wb-remote__note">{{ t('winterboard.remote.noCards') }}</p>
 
+    <!-- Прототип «відео з пульта» (2026-09-25): пошук → вибір → підтвердження →
+         картку ставить ноутбук; ▶/⏸ — лише коли на поточній сторінці є відео. -->
+    <section v-if="isReady" class="wb-remote__video">
+      <div v-if="videos.length" class="wb-remote__video-ctl">
+        <select
+          v-if="videos.length > 1"
+          v-model="activeVideoId"
+          class="wb-remote__video-pick"
+          :aria-label="t('winterboard.remote.video.pick')"
+        >
+          <option v-for="v in videos" :key="v.objectId" :value="v.objectId">
+            {{ v.title || t('winterboard.remote.video.untitled') }}
+          </option>
+        </select>
+        <p v-else class="wb-remote__video-name">{{ activeVideo?.title || t('winterboard.remote.video.untitled') }}</p>
+        <div class="wb-remote__row">
+          <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!activeVideo" @click="sendCmd('video.play', { object_id: activeVideoId })">
+            ▶ {{ t('winterboard.remote.video.play') }}
+          </button>
+          <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!activeVideo" @click="sendCmd('video.pause', { object_id: activeVideoId })">
+            ⏸ {{ t('winterboard.remote.video.pause') }}
+          </button>
+        </div>
+        <p v-if="activeVideo?.state === 'blocked'" class="wb-remote__video-blocked" role="status">
+          {{ t('winterboard.remote.video.blocked') }}
+        </p>
+        <p v-else-if="activeVideo?.state === 'error'" class="wb-remote__video-blocked" role="status">
+          {{ t(`winterboard.remote.video.playerError.${activeVideo.error ?? 'playback'}`) }}
+        </p>
+        <p v-else-if="activeVideo" class="wb-remote__note">{{ t(`winterboard.remote.video.state.${activeVideo.state}`) }}</p>
+      </div>
+
+      <form class="wb-remote__video-search" @submit.prevent="runVideoSearch()">
+        <input
+          v-model="videoQuery"
+          type="search"
+          class="wb-remote__video-input"
+          enterkeyhint="search"
+          :placeholder="t('winterboard.remote.video.placeholder')"
+          :aria-label="t('winterboard.remote.video.placeholder')"
+        >
+        <button type="submit" class="wb-remote__mini" :disabled="videoSearching || !videoQuery.trim()">
+          {{ videoSearching ? '…' : t('winterboard.remote.video.search') }}
+        </button>
+      </form>
+      <!-- Запасний шлях: посилання, яке вчитель знайшов сам (або вичерпано квоту пошуку) -->
+      <form class="wb-remote__video-link" @submit.prevent="runVideoLookup()">
+        <input
+          v-model="videoLink"
+          type="url"
+          inputmode="url"
+          class="wb-remote__video-input"
+          :placeholder="t('winterboard.remote.video.linkPlaceholder')"
+          :aria-label="t('winterboard.remote.video.linkPlaceholder')"
+        >
+        <div class="wb-remote__row">
+          <button v-if="canReadClipboard" type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="videoLooking" @click="pasteVideoLink">
+            {{ t('winterboard.remote.video.paste') }}
+          </button>
+          <button type="submit" class="wb-remote__mini wb-remote__mini--wide" :disabled="videoLooking || !videoLink.trim()">
+            {{ videoLooking ? '…' : t('winterboard.remote.video.check') }}
+          </button>
+        </div>
+      </form>
+
+      <p v-if="videoError" class="wb-remote__note">{{ videoError }}</p>
+
+      <div v-if="videoPick" class="wb-remote__video-confirm">
+        <!-- Прев'ю перед додаванням — однакове для пошуку й посилання -->
+        <div class="wb-remote__video-item wb-remote__video-item--preview">
+          <span class="wb-remote__video-thumb">
+            <img :src="videoPick.thumbnail" alt="" loading="lazy">
+            <span v-if="videoPick.duration_s != null" class="wb-remote__video-dur">{{ fmtDuration(videoPick.duration_s) }}</span>
+          </span>
+          <span class="wb-remote__video-meta">
+            <span class="wb-remote__video-title">{{ videoPick.title }}</span>
+            <span class="wb-remote__video-channel">{{ videoPick.channel }}</span>
+            <span v-if="languageBadge(videoPick)" class="wb-remote__video-lang">{{ languageBadge(videoPick) }}</span>
+          </span>
+        </div>
+        <p class="wb-remote__video-confirm-text">{{ t('winterboard.remote.video.confirm', { title: videoPick.title }) }}</p>
+        <div class="wb-remote__row">
+          <button type="button" class="wb-remote__mini wb-remote__mini--wide is-on" @click="confirmVideoPick">
+            {{ t('winterboard.remote.video.add') }}
+          </button>
+          <button type="button" class="wb-remote__mini wb-remote__mini--wide" @click="videoPick = null">
+            {{ t('winterboard.remote.video.cancel') }}
+          </button>
+        </div>
+      </div>
+      <ul v-else-if="videoResults.length" class="wb-remote__video-results">
+        <li v-for="r in videoResults" :key="r.ref.id">
+          <button type="button" class="wb-remote__video-item" @click="videoPick = r">
+            <span class="wb-remote__video-thumb">
+              <img :src="r.thumbnail" alt="" loading="lazy">
+              <span v-if="r.duration_s != null" class="wb-remote__video-dur">{{ fmtDuration(r.duration_s) }}</span>
+            </span>
+            <span class="wb-remote__video-meta">
+              <span class="wb-remote__video-title">{{ r.title }}</span>
+              <span class="wb-remote__video-channel">{{ r.channel }}</span>
+              <span v-if="languageBadge(r)" class="wb-remote__video-lang">{{ languageBadge(r) }}</span>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
     <!-- v1.6 (LAW §9): предмет і мова матеріалу Інтегралика — той самий селектор і той
          самий реєстр, що в палітрі на ноутбуці. Пульт шле лише намір; пише ноутбук. -->
     <CorridorSelector
@@ -172,7 +279,8 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import authApi from '@/modules/auth/api/authApi'
 import { trackEvent } from '@/utils/telemetryAgent'
-import { winterboardApi } from '../api/winterboardApi'
+import { winterboardApi, type VideoCandidate } from '../api/winterboardApi'
+import { matchVideoSearchPhrase } from '../remote/videoSearchPhrase'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase } from '../remote/remoteGrammar'
@@ -226,6 +334,121 @@ const cards = ref<{ count: number; answer: boolean | null; solution: boolean | n
 const hasCards = computed(() => !!cards.value && cards.value.count > 0)
 /** ▲/▼ мають сенс лише коли «Задача на екран» відкрила довгу картку. */
 const isPresentingTask = computed(() => !!cards.value?.presenting)
+
+// ── Прототип «відео з пульта» (2026-09-25) ─────────────────────────────────
+/** YouTube-картки поточної сторінки ноутбука (з remote.state) */
+const videos = ref<NonNullable<RemoteStateDetail['videos']>>([])
+const activeVideoId = ref('')
+// Кілька відео — за замовчуванням останнє (щойно додане); зникло — беремо інше
+watch(videos, (list) => {
+  if (!list.some((v) => v.objectId === activeVideoId.value)) activeVideoId.value = list[list.length - 1]?.objectId ?? ''
+})
+const activeVideo = computed(() => videos.value.find((v) => v.objectId === activeVideoId.value) ?? null)
+
+const videoQuery = ref('')
+const videoSearching = ref(false)
+const videoError = ref('')
+const videoResults = ref<VideoCandidate[]>([])
+/** Обране, але ще не підтверджене — дошка до «Додати» не змінюється */
+const videoPick = ref<VideoCandidate | null>(null)
+
+function fmtDuration(s: number): string {
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`
+}
+
+async function runVideoSearch(q?: string): Promise<void> {
+  const query = (q ?? videoQuery.value).trim()
+  if (!query || videoSearching.value) return
+  videoQuery.value = query
+  videoSearching.value = true
+  videoError.value = ''
+  videoResults.value = []
+  videoPick.value = null
+  tel('video_search', { len: query.length })
+  try {
+    const res = await winterboardApi.searchVideos(query)
+    videoResults.value = res.items ?? []
+    if (!videoResults.value.length) videoError.value = t('winterboard.remote.video.empty')
+    tel('video_results', { n: videoResults.value.length, pool: res.pool, took: res.took_ms, dropped: res.dropped })
+  } catch (e: any) {
+    const code = errorCode(e)
+    videoError.value = code === 'video_search_quota'
+      ? t('winterboard.remote.video.quota')
+      : code === 'video_search_user_limit'
+        ? t('winterboard.remote.video.userLimit')
+        : code === 'video_search_disabled'
+          ? t('winterboard.remote.video.disabled')
+          : t('winterboard.remote.video.failed')
+    tel('video_search_error', { code: code || 'unknown' })
+  } finally {
+    videoSearching.value = false
+  }
+}
+
+function errorCode(e: any): string {
+  const raw = e?.response?.data?.error ?? e?.data?.error ?? e?.error ?? ''
+  return typeof raw === 'string' ? raw : String(raw?.code ?? '')
+}
+
+/** Мова звуку: українську не підписуємо; невідому НЕ називаємо українською. */
+function languageBadge(v: VideoCandidate): string {
+  if (!v.audio_language || v.audio_language === 'uk') return ''
+  if (v.audio_language === 'unknown') return t('winterboard.remote.video.langUnknown')
+  return v.audio_language.toUpperCase()
+}
+
+// ── Запасний шлях: «Вставити посилання» ─────────────────────────────────────
+const videoLink = ref('')
+const videoLooking = ref(false)
+const canReadClipboard = typeof navigator !== 'undefined' && !!navigator.clipboard?.readText
+const LOOKUP_ERRORS = new Set(['invalid_link', 'not_found', 'not_embeddable', 'private', 'live', 'age_restricted',
+  'region_blocked', 'russian', 'user_limit', 'quota', 'disabled'])
+
+async function runVideoLookup(): Promise<void> {
+  const url = videoLink.value.trim()
+  if (!url || videoLooking.value) return
+  videoLooking.value = true
+  videoError.value = ''
+  videoResults.value = []
+  videoPick.value = null
+  tel('video_lookup', {})
+  try {
+    videoPick.value = await winterboardApi.lookupVideo(url)   // прев'ю + «Додати» — як у пошуку
+    tel('video_lookup_ok', { lang: videoPick.value.audio_language })
+  } catch (e: any) {
+    const code = errorCode(e).replace(/^video_lookup_/, '')
+    videoError.value = t(`winterboard.remote.video.lookupError.${LOOKUP_ERRORS.has(code) ? code : 'failed'}`)
+    tel('video_lookup_error', { code: code || 'unknown' })
+  } finally {
+    videoLooking.value = false
+  }
+}
+
+/** Вставити з буфера (жест кнопки; iOS ще спитає своє «Вставити») і одразу перевірити. */
+async function pasteVideoLink(): Promise<void> {
+  try {
+    const text = (await navigator.clipboard.readText()).trim()
+    if (!text) return
+    videoLink.value = text
+    await runVideoLookup()
+  } catch {
+    videoError.value = t('winterboard.remote.video.pasteDenied')
+  }
+}
+
+function confirmVideoPick(): void {
+  const pick = videoPick.value
+  if (!pick) return
+  if (sendCmd('video.add', { ref: pick.ref, title: pick.title.slice(0, 200) })) {
+    videoPick.value = null
+    videoResults.value = []
+    videoQuery.value = ''
+    videoLink.value = ''
+  }
+}
 
 /** v1.6 — предмет і мова матеріалу з ноутбука; реєстр — той самий, що в палітрі. */
 const assistant = ref<RemoteStateDetail['assistant'] | null>(null)
@@ -285,6 +508,7 @@ const channel = useRemoteChannel({
     pageCount.value = s.pageCount
     cards.value = s.cards ?? null
     assistant.value = s.assistant ?? null
+    videos.value = s.videos ?? []
     // заморожена дошка — не помилка зв'язку, а стан: показуємо як причину, кнопки лишаємо
     reasonKey.value = s.frozen ? 'boardFrozen' : null
     if (s.frozen) reasonCode.value = 'REPLAY_FROZEN_NO_WRITE'
@@ -363,6 +587,7 @@ function vibrate(ms: number) {
 
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
+  | 'video.add' | 'video.play' | 'video.pause'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
@@ -383,6 +608,13 @@ const ptt = usePushToTalk({
   lang: locale.value === 'en' ? 'en-US' : 'uk-UA',
   onFinal(text) {
     lastPhrase.value = `«${text}»`
+    // «Знайди відео про …» — пошук тут, на пульті (вибір і підтвердження — теж тут)
+    const videoQ = matchVideoSearchPhrase(text)
+    if (videoQ) {
+      tel('ptt', { route: 'video', len: text.length })
+      void runVideoSearch(videoQ)
+      return
+    }
     const cmd = matchRemotePhrase(text)
     tel('ptt', { route: cmd ? 'grammar' : 'ai', grammar: cmd ?? null, len: text.length })
     if (cmd === 'page.next') return goRel(1)
@@ -593,4 +825,32 @@ onBeforeUnmount(() => {
 .wb-remote__talk:disabled { opacity: .35; }
 .wb-remote__talk-icon { font-size: 26px; }
 .wb-remote__note, .wb-remote__last { text-align: center; color: #94a3b8; font-size: 13px; margin: 0; }
+
+/* Прототип «відео з пульта» */
+.wb-remote__video { display: flex; flex-direction: column; gap: 10px; }
+.wb-remote__video-ctl { display: flex; flex-direction: column; gap: 8px; }
+.wb-remote__video-name { margin: 0; font-size: 14px; font-weight: 600; text-align: center; }
+.wb-remote__video-pick { min-height: 44px; border-radius: 12px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 0 10px; font-size: 14px; }
+.wb-remote__video-blocked { margin: 0; padding: 10px 12px; border-radius: 12px; background: #b45309; color: #fff; font-weight: 600; text-align: center; }
+.wb-remote__video-search { display: flex; gap: 8px; }
+.wb-remote__video-input {
+  flex: 3; min-height: 48px; border-radius: 12px; border: 1px solid #334155; background: #0b1222; color: #f8fafc;
+  padding: 0 12px; font-size: 16px; user-select: text; -webkit-user-select: text;
+}
+.wb-remote__video-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.wb-remote__video-item {
+  width: 100%; display: flex; gap: 10px; align-items: flex-start; padding: 6px; border: 0; border-radius: 12px;
+  background: #1e293b; color: #f8fafc; text-align: left; cursor: pointer;
+}
+.wb-remote__video-thumb { position: relative; flex: 0 0 128px; }
+.wb-remote__video-thumb img { width: 128px; height: 72px; object-fit: cover; border-radius: 8px; display: block; }
+.wb-remote__video-dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0, 0, 0, .8); font-size: 11px; padding: 1px 4px; border-radius: 4px; }
+.wb-remote__video-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wb-remote__video-title { font-size: 14px; line-height: 1.25; max-height: 3.75em; overflow: hidden; }
+.wb-remote__video-channel { font-size: 12px; color: #94a3b8; }
+.wb-remote__video-confirm { padding: 12px; border-radius: 14px; background: #1e293b; display: flex; flex-direction: column; gap: 8px; }
+.wb-remote__video-item--preview { background: #0b1222; cursor: default; }
+.wb-remote__video-lang { align-self: flex-start; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: #475569; color: #f8fafc; }
+.wb-remote__video-link { display: flex; flex-direction: column; gap: 8px; }
+.wb-remote__video-confirm-text { margin: 0; font-size: 15px; line-height: 1.35; }
 </style>

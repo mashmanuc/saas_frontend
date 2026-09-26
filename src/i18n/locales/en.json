@@ -8466,6 +8466,31 @@
       }
     },
     "remote": {
+      "video": {
+        "pick": "Which video",
+        "untitled": "Untitled video",
+        "play": "Play",
+        "pause": "Pause",
+        "blocked": "Tap the board to start the video",
+        "placeholder": "Find a video about…",
+        "search": "Find",
+        "confirm": "Add to the current board page: “{title}”?",
+        "add": "Add",
+        "cancel": "Cancel",
+        "empty": "Nothing found. Try different words or paste a link.",
+        "failed": "Video search failed. Please try again.",
+        "quota": "Video search is used up for today. Paste a video link below.",
+        "userLimit": "Too many searches in a row. Try again in a minute or paste a link.",
+        "disabled": "Video search is not configured.",
+        "linkPlaceholder": "Or paste a YouTube video link",
+        "paste": "Paste from clipboard",
+        "check": "Check",
+        "pasteDenied": "Could not read the clipboard. Long-press the field and choose Paste.",
+        "langUnknown": "language not set",
+        "lookupError": { "invalid_link": "This is not a YouTube video link.", "not_found": "Video not found: removed or private.", "not_embeddable": "The owner does not allow this video on other sites.", "private": "This video is private.", "live": "Live streams are not added.", "age_restricted": "Age-restricted videos do not play on the board.", "region_blocked": "This video is not available in Ukraine.", "russian": "Russian-language video — not added.", "user_limit": "Too many checks today. Try again tomorrow.", "quota": "Video checks are used up for today.", "disabled": "Remote video is not configured.", "failed": "Could not check the video. Please try again." },
+        "playerError": { "not_found": "The video was removed or is private — it does not play.", "not_embeddable": "The owner does not allow this video on the board.", "playback": "The video does not play on the board." },
+        "state": { "idle": "Ready to play", "loading": "Starting…", "playing": "Playing", "paused": "Paused", "ended": "Video ended", "blocked": "Tap the board to start the video", "error": "Does not play" }
+      },
       "button": "Phone remote",
       "qrTitle": "Phone remote",
       "qrHint": "Scan with your phone camera or type the address on your phone. The remote finds the board you have open on the laptop.",
@@ -8542,6 +8567,8 @@
       "exitToBoards": "Lesson Studio"
     },
     "youtube": {
+      "tapToStart": "Tap the board to start the video",
+      "untitled": "YouTube video",
       "insert": "Insert YouTube video",
       "modalTitle": "Insert YouTube video",
       "urlLabel": "URL",

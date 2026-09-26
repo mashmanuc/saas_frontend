@@ -288,9 +288,14 @@
         />
         <!-- Transparent drag surface — covers video/youtube in select mode for drag -->
         <!-- Video controls work when NOT in select mode (pen, draw, etc.) -->
+        <!-- YouTube (рішення власника 2026-09-26): у звичайному режимі кнопки самого
+             плеєра натискаються, а картку виділяють і тягнуть за шапку — тому шар
+             лише на шапці (28 px, як .wb-youtube-player__title). Нічого видимого
+             поверх плеєра (правила YouTube); нижні ручки розміру — під карткою. -->
         <div
           v-if="currentTool === 'select' && (asset.type === 'video_player' || asset.type === 'youtube_player')"
           class="wb-media-drag-surface"
+          :class="{ 'wb-media-drag-surface--header': asset.type === 'youtube_player' }"
         />
         <!-- Resize handles for video/youtube (visible when selected in select mode) -->
         <template v-if="isResizableMedia(asset) && wbStore.selectedIds.includes(asset.id) && currentTool === 'select'">
@@ -298,7 +303,7 @@
             v-for="corner in RESIZE_CORNERS"
             :key="corner.name"
             class="wb-media-resize-handle"
-            :class="`wb-media-resize-handle--${corner.name}`"
+            :class="[`wb-media-resize-handle--${corner.name}`, { 'wb-media-resize-handle--outside': asset.type === 'youtube_player' }]"
             :style="{ cursor: corner.cursor }"
             @pointerdown.stop.prevent="handleMediaResizeStart(asset, corner.name, $event)"
           />
@@ -6157,6 +6162,9 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
 .wb-media-resize-handle--top-right { top: -5px; right: -5px; }
 .wb-media-resize-handle--bottom-left { bottom: -5px; left: -5px; }
 .wb-media-resize-handle--bottom-right { bottom: -5px; right: -5px; }
+/* YouTube: нижні ручки цілком під карткою — не на плеєрі (верхні й так на шапці) */
+.wb-media-resize-handle--outside.wb-media-resize-handle--bottom-left,
+.wb-media-resize-handle--outside.wb-media-resize-handle--bottom-right { bottom: -12px; }
 
 /* Transparent drag surface — covers video/youtube in select mode */
 /* Captures pointer events for drag, prevents video controls from blocking move */
@@ -6169,6 +6177,18 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
 }
 .wb-media-drag-surface:active {
   cursor: grabbing;
+}
+/* YouTube: лише шапка (висота = .wb-youtube-player__title), плеєр під нею приймає кліки.
+   z-index: auto — кнопки картки «— ⛶ ×» (телепорт у цю ж обгортку, z-index: auto,
+   ідуть у DOM пізніше) лягають поверх шару. user-select: none — інакше натискання
+   на шапці починає виділення тексту, наступне натискання тягне вже це виділення
+   (перетягування картки не стартує), а iframe плеєра заливає синім. */
+.wb-media-drag-surface--header {
+  bottom: auto;
+  height: 28px;
+  z-index: auto;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Phase O PR-O4 / PR-O4.3: geometry_solid HTML overlay (Three.js widget — non-Konva).

@@ -29,6 +29,8 @@ export interface RemoteStateDetail {
   cards?: { count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean }
   /** Дошка з фіналізованим записом: команди дійдуть, але нічого не збережеться */
   frozen?: boolean
+  /** Відео з пульта (V1) — YouTube-картки поточної сторінки ноутбука */
+  videos?: Array<{ objectId: string; title: string; state: RemoteVideoPlayState; error?: RemoteVideoError }>
   /** v1.6 — предмет і мова матеріалу Інтегралика на ноутбуці (LAW §9) */
   assistant?: {
     subjectMode: 'auto' | 'locked'
@@ -74,6 +76,26 @@ export function parseRemoteCards(raw: any): RemoteStateDetail['cards'] | undefin
     solution: typeof raw.solution === 'boolean' ? raw.solution : null,
     ...(typeof raw.presenting === 'boolean' ? { presenting: raw.presenting } : {}),
   }
+}
+
+export type RemoteVideoPlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'ended' | 'blocked' | 'error'
+export type RemoteVideoError = 'not_found' | 'not_embeddable' | 'playback'
+const VIDEO_STATES = new Set<RemoteVideoPlayState>(['idle', 'loading', 'playing', 'paused', 'ended', 'blocked', 'error'])
+const VIDEO_ERRORS = new Set<RemoteVideoError>(['not_found', 'not_embeddable', 'playback'])
+
+/** Відео з пульта (V1): відео поточної сторінки ноутбука. Зіпсоване — відкидаємо. */
+export function parseRemoteVideos(raw: any): RemoteStateDetail['videos'] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: NonNullable<RemoteStateDetail['videos']> = []
+  for (const v of raw) {
+    if (!v || typeof v.object_id !== 'string' || !v.object_id || !VIDEO_STATES.has(v.state)) return undefined
+    const item: NonNullable<RemoteStateDetail['videos']>[number] = {
+      objectId: v.object_id, title: typeof v.title === 'string' ? v.title : '', state: v.state,
+    }
+    if (v.state === 'error' && VIDEO_ERRORS.has(v.error)) item.error = v.error
+    out.push(item)
+  }
+  return out
 }
 
 const LOG_PREFIX = '[WB:remote]'
@@ -165,6 +187,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         if (assistant) detail.assistant = assistant
         const cards = parseRemoteCards(msg.cards)
         if (cards) detail.cards = cards
+        const videos = parseRemoteVideos(msg.videos)
+        if (videos) detail.videos = videos
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

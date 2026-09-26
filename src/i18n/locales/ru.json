@@ -8112,6 +8112,8 @@
       "delete": "Удалить"
     },
     "youtube": {
+      "tapToStart": "Нажмите на доску, чтобы запустить видео",
+      "untitled": "Видео YouTube",
       "insert": "Вставить YouTube видео",
       "modalTitle": "Вставить YouTube видео",
       "urlLabel": "URL",

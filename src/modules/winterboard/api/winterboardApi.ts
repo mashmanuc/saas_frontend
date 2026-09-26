@@ -314,6 +314,27 @@ export interface StartClassroomResponse {
 // ── API Client ─────────────────────────────────────────────────────────
 
 const BASE = '/v1/winterboard'
+
+/** Кандидат відео — наш контракт; `ref.id` непрозорий (розбирає лише youtubeParser). */
+export interface VideoCandidate {
+  ref: { provider: string; id: string }
+  title: string
+  channel: string
+  thumbnail: string
+  duration_s: number | null
+  /** 'uk' | 'unknown' (звук не позначено — НЕ називаємо українським) | інший код; 'ru' сервер не віддає */
+  audio_language: string
+  made_for_kids: boolean
+}
+
+export interface VideoSearchResponse {
+  items: VideoCandidate[]
+  dropped: Record<string, number>
+  pool: number
+  took_ms: number
+  /** Той самий запит уже шукали — відповідь із кешу, квота не витрачена */
+  cached?: boolean
+}
 const COPILOT = '/v1/learning-engine'   // 8a-2 Tutor Copilot
 
 export const winterboardApi = {
@@ -333,6 +354,22 @@ export const winterboardApi = {
    */
   getActiveRemoteSession(): Promise<{ session_id: string; name: string; ts: number | null }> {
     return apiClient.get(`${BASE}/remote/active/`).then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * Прототип «відео з пульта» (2026-09-25): пошук відео для вибору на телефоні.
+   * Лише читання — дошку змінює ноутбук після підтвердження (remote video.add).
+   */
+  searchVideos(q: string): Promise<VideoSearchResponse> {
+    return apiClient.get(`${BASE}/video-search/`, { params: { q } }).then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * «Вставити посилання» (V1): ті самі перевірки, що й у пошуку; квоту пошуку
+   * не витрачає. Сервер сам бере з посилання чистий id (без si, t тощо).
+   */
+  lookupVideo(url: string): Promise<VideoCandidate> {
+    return apiClient.get(`${BASE}/video-lookup/`, { params: { url } }).then((r: any) => r.data ?? r)
   },
 
   /**

@@ -59,9 +59,10 @@ describe('getYouTubeThumbnail', () => {
 })
 
 describe('getYouTubeEmbedUrl', () => {
-  it('returns embed URL with modestbranding', () => {
+  // enablejsapi=1 + origin — сторінка керує плеєром (▶/⏸ з пульта, прототип 2026-09-25)
+  it('returns embed URL with modestbranding and JS API for our origin', () => {
     expect(getYouTubeEmbedUrl('dQw4w9WgXcQ')).toBe(
-      'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1',
+      `https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
     )
   })
 })

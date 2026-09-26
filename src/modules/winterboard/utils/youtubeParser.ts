@@ -44,7 +44,23 @@ export function getYouTubeThumbnail(videoId: string): string {
 /**
  * Generate YouTube embed URL from video ID.
  * rel=0 hides related videos, modestbranding=1 reduces YouTube branding.
+ * enablejsapi=1 — сторінка може керувати плеєром (▶/⏸ з пульта, прототип
+ * 2026-09-25; без нього YouTube ігнорує команди). origin — вимога YouTube до
+ * enablejsapi: плеєр шле події лише нашій сторінці.
  */
 export function getYouTubeEmbedUrl(videoId: string): string {
-  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`
+  const origin = typeof window !== 'undefined' && window.location?.origin
+    ? `&origin=${encodeURIComponent(window.location.origin)}`
+    : ''
+  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1${origin}`
+}
+
+/**
+ * Наш `ref: {provider, id}` (контракт M4SH) → адреса відео. Єдине місце, де
+ * розбирається формат id джерела (CLAUDE_RULES «зовнішні контракти закінчуються
+ * на адаптері»); решта коду id не інтерпретує.
+ */
+export function videoRefToWatchUrl(ref: { provider: string; id: string }): string | null {
+  if (ref.provider !== 'youtube' || !/^[A-Za-z0-9_-]{1,64}$/.test(ref.id)) return null
+  return `https://www.youtube.com/watch?v=${ref.id}`
 }

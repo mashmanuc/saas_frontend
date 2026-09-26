@@ -44,6 +44,28 @@ export interface UseBoardRemoteOptions {
   view?: RemoteViewAdapter
   /** Дошка з фіналізованим записом (writes відхиляються) — пульт має сказати це вчителю */
   frozen?: Ref<boolean> | ComputedRef<boolean>
+  /** Прототип «відео з пульта» (2026-09-25). Без нього video.* ігноруються. */
+  media?: RemoteMediaAdapter
+}
+
+/** Відео поточної сторінки для ▶/⏸ на пульті (у remote.state — поле `videos`). */
+export interface RemoteVideoState {
+  object_id: string
+  title: string
+  state: 'idle' | 'loading' | 'playing' | 'paused' | 'ended' | 'blocked' | 'error'
+  /** Лише при state='error': причина від плеєра YouTube */
+  error?: 'not_found' | 'not_embeddable' | 'playback'
+}
+
+/**
+ * Прототип «відео з пульта»: пульт лише надсилає намір. Картку ставить ноутбук
+ * штатним шляхом (як вставка посилання), відтворенням керує ноутбук.
+ */
+export interface RemoteMediaAdapter {
+  list: () => RemoteVideoState[]
+  add: (ref: { provider: string; id: string }, title: string) => void
+  play: (objectId: string) => void
+  pause: (objectId: string) => void
 }
 
 export interface RemoteCommandDetail {
@@ -52,7 +74,11 @@ export interface RemoteCommandDetail {
   clientId: string
   cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
     | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
-  args: { index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string }
+    | 'video.add' | 'video.play' | 'video.pause'
+  args: {
+    index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
+    ref?: { provider: string; id: string }; title?: string; object_id?: string
+  }
 }
 
 /** v1.6 — предмет і мова матеріалу Інтегралика для підпису на пульті (LAW §9). */
@@ -114,7 +140,17 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     }
     if (opts.frozen) msg.frozen = !!opts.frozen.value
     if (assistantState.value) msg.assistant = assistantState.value
+    if (opts.media) msg.videos = opts.media.list()
     opts.sendMessage(msg)
+  }
+
+  // Відео на сторінці з'явилось/зникло або змінило стан (грає / пауза / заблоковано)
+  if (opts.media) {
+    const media = opts.media
+    watch(
+      () => JSON.stringify(media.list()),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
   }
 
   // Заморозка змінилась (фіналізували / «Новий запис») → пульт має знати одразу
@@ -232,6 +268,22 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const what = d.args?.what
         if (what !== 'answer' && what !== 'solution') return
         view.reveal(what)
+        sendState()
+        return
+      }
+      // Прототип «відео з пульта»: намір; картку й відтворення робить ноутбук
+      case 'video.add': {
+        const ref = d.args?.ref
+        if (!opts.media || !ref || typeof ref.provider !== 'string' || typeof ref.id !== 'string') return
+        opts.media.add({ provider: ref.provider, id: ref.id }, String(d.args?.title ?? ''))
+        return   // нова картка → watch надішле стан
+      }
+      case 'video.play':
+      case 'video.pause': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!opts.media || !objectId) return
+        if (d.cmd === 'video.play') opts.media.play(objectId)
+        else opts.media.pause(objectId)
         sendState()
         return
       }
