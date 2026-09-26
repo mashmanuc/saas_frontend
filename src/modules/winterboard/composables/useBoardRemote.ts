@@ -72,7 +72,7 @@ export interface RemoteCommandDetail {
   userId: string
   pair: string
   clientId: string
-  cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+  cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
     | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
     | 'video.add' | 'video.play' | 'video.pause'
   args: {
@@ -246,6 +246,13 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'view.fit':
         if (!view) return
         view.fitTask()
+        sendState()
+        return
+      // v1.10 — з «Задача на екран» назад до звичайного вигляду сторінки
+      // (той самий скид, що й при зміні сторінки)
+      case 'view.page':
+        if (!view) return
+        view.resetFocus()
         sendState()
         return
       case 'view.zoom': {

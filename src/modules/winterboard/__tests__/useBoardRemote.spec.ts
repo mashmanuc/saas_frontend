@@ -221,6 +221,17 @@ describe('useBoardRemote', () => {
     expect(states).toBeGreaterThanOrEqual(1)
   })
 
+  // v1.10 (баг власника 2026-09-26): з «Задача на екран» не було вороття на пульті
+  it('v1.10: view.page → адаптер скидає розгортання (resetFocus), пульт отримує новий стан', () => {
+    const { api, view, sendMessage } = setupWithView()
+    const pair = api.pairCode.value
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.page', args: {} })
+    expect(view.resetFocus).toHaveBeenCalledTimes(1)
+    expect(view.fitTask).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS * 4)
+    expect(sendMessage.mock.calls.some(c => c[0].type === 'remote.state')).toBe(true)
+  })
+
   it('frozen: стан несе frozen, а його зміна (Новий запис) сама шле стан пульту', async () => {
     const frozen = ref(true)
     const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })

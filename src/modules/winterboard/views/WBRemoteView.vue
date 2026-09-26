@@ -94,25 +94,34 @@
       </button>
     </div>
 
-    <!-- v1.2 — вигляд для учнів і картки задач (з уроку власника 2026-09-03) -->
+    <!-- v1.2 — вигляд для учнів і картки задач (з уроку власника 2026-09-03).
+         2026-09-26 (власник): без карток задач на сторінці цей блок зайвий — не
+         показуємо його зовсім, а не лише сіримо кнопки. -->
+    <template v-if="hasCards">
     <div class="wb-remote__row">
-      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!isReady || !hasCards" @click="sendCmd('view.fit')">
-        {{ t('winterboard.remote.fitTask') }}
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!isReady" @click="sendCmd('view.fit')">
+        {{ isPresentingTask && (cards?.count ?? 0) > 1 ? t('winterboard.remote.nextTask') : t('winterboard.remote.fitTask') }}
       </button>
       <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="sendCmd('view.zoom', { delta: -1 })">A−</button>
       <button type="button" class="wb-remote__mini" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
     </div>
+    <!-- v1.10: з «Задача на екран» — назад до звичайного вигляду сторінки -->
+    <div v-if="isPresentingTask" class="wb-remote__row">
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide wb-remote__page-view" :disabled="!isReady" @click="sendCmd('view.page')">
+        {{ t('winterboard.remote.fitPage') }}
+      </button>
+    </div>
     <div class="wb-remote__row">
       <button type="button" class="wb-remote__mini" :disabled="!isReady || !isPresentingTask" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
       <button type="button" class="wb-remote__mini" :disabled="!isReady || !isPresentingTask" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
-      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.answer }" :disabled="!isReady || !hasCards" @click="sendCmd('card.reveal', { what: 'answer' })">
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.answer }" :disabled="!isReady" @click="sendCmd('card.reveal', { what: 'answer' })">
         {{ cards?.answer ? t('winterboard.remote.hideAnswer') : t('winterboard.remote.showAnswer') }}
       </button>
-      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.solution }" :disabled="!isReady || !hasCards" @click="sendCmd('card.reveal', { what: 'solution' })">
+      <button type="button" class="wb-remote__mini wb-remote__mini--wide" :class="{ 'is-on': cards?.solution }" :disabled="!isReady" @click="sendCmd('card.reveal', { what: 'solution' })">
         {{ cards?.solution ? t('winterboard.remote.hideSolution') : t('winterboard.remote.showSolution') }}
       </button>
     </div>
-    <p v-if="isReady && cards && cards.count === 0" class="wb-remote__note">{{ t('winterboard.remote.noCards') }}</p>
+    </template>
 
     <!-- Прототип «відео з пульта» (2026-09-25): пошук → вибір → підтвердження →
          картку ставить ноутбук; ▶/⏸ — лише коли на поточній сторінці є відео. -->
@@ -585,7 +594,7 @@ function vibrate(ms: number) {
   try { navigator.vibrate?.(ms) } catch { /* noop */ }
 }
 
-type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
   | 'video.add' | 'video.play' | 'video.pause'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {

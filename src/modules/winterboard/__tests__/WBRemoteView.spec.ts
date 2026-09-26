@@ -65,7 +65,8 @@ const MSG = {
   noToken: 'протухла', serverRejected: 'Сервер відхилив ({code})',
   prev: 'Назад', next: 'Далі', newPage: 'Нова сторінка', undo: 'Відмінити',
   boardFrozen: 'Запис на цій дошці завершено — нічого не зберігається.', boardFrozenHint: 'Натисни «Новий запис»',
-  fitTask: 'Задача на екран', fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
+  fitTask: 'Задача на екран', nextTask: 'Наступна задача', fitPage: 'Уся сторінка',
+  fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
   showAnswer: 'Відповідь', hideAnswer: 'Сховати відповідь', showSolution: 'Розбір', hideSolution: 'Сховати розбір',
   noCards: 'На цій сторінці нема карток задач',
   holdToTalk: 'Говорю', listening: 'Слухаю…', voiceUnsupported: 'x',
@@ -254,41 +255,45 @@ describe('WBRemoteView v1.1', () => {
     expect(lastCmd()).toMatchObject({ cmd: 'phrase', args: { text: 'додай завдання по числовій нерівності' } })
   })
 
-  it('v1.2: кнопки вигляду/карток вимкнені без стану; зі станом шлють view.fit / view.zoom / view.scroll / card.reveal', async () => {
+  // Кнопки задач — за підписом (текст або aria-label): поза блоком задач є інші `.wb-remote__mini`.
+  const TASK_BUTTONS = [MSG.fitTask, MSG.fontDown, MSG.fontUp, MSG.scrollUp, MSG.scrollDown, MSG.showAnswer, MSG.showSolution]
+  const findBtn = (w: any, label: string) =>
+    w.findAll('button').find((b: any) => b.text() === label || b.attributes('aria-label') === label)
+
+  it('v1.2: без стану блоку задач немає; зі станом кнопки шлють view.fit / view.zoom / view.scroll / card.reveal / view.page', async () => {
     const w = mountView()
     await flushPromises()
-    const minis = () => w.findAll('.wb-remote__mini')
-    expect(minis().every(b => (b.element as HTMLButtonElement).disabled)).toBe(true)
+    // 2026-09-26 (власник): поки невідомо, чи є на сторінці картки задач, кнопок задач немає зовсім
+    for (const label of TASK_BUTTONS) expect(findBtn(w, label)).toBeUndefined()
 
     onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true, presenting: true } })
     await nextTick()
     send.mockClear()
-    await minis()[0].trigger('click')   // Задача на екран
+    await findBtn(w, MSG.fitTask).trigger('click')
     expect(lastCmd()).toMatchObject({ cmd: 'view.fit' })
-    await minis()[1].trigger('click')   // A−
+    await findBtn(w, MSG.fontDown).trigger('click')   // A−
     expect(lastCmd()).toMatchObject({ cmd: 'view.zoom', args: { delta: -1 } })
-    await minis()[2].trigger('click')   // A+
+    await findBtn(w, MSG.fontUp).trigger('click')     // A+
     expect(lastCmd()).toMatchObject({ cmd: 'view.zoom', args: { delta: 1 } })
-    await minis()[3].trigger('click')   // ▲
+    await findBtn(w, MSG.scrollUp).trigger('click')   // ▲
     expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: -1 } })
-    await minis()[4].trigger('click')   // ▼
+    await findBtn(w, MSG.scrollDown).trigger('click') // ▼
     expect(lastCmd()).toMatchObject({ cmd: 'view.scroll', args: { dir: 1 } })
-    await minis()[5].trigger('click')   // Відповідь
+    await findBtn(w, MSG.showAnswer).trigger('click')
     expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
-    expect(minis()[5].text()).toBe(MSG.showAnswer)
-    expect(minis()[6].text()).toBe(MSG.hideSolution)   // solution=true → «Сховати розбір»
+    expect(findBtn(w, MSG.hideSolution)).toBeTruthy()   // solution=true → «Сховати розбір»
+    // v1.10: задача на екрані (presenting) → «Уся сторінка» повертає звичайний вигляд
+    await findBtn(w, MSG.fitPage).trigger('click')
+    expect(lastCmd()).toMatchObject({ cmd: 'view.page' })
   })
 
-  it('v1.2: без карток на сторінці — «Задача на екран» і «Відповідь/Розбір» вимкнені, підказка показана', async () => {
+  it('без карток на сторінці — блоку задач немає зовсім, і підказки теж (власник 2026-09-26: кнопки зайві)', async () => {
     const w = mountView()
     await flushPromises()
     onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, cards: { count: 0, answer: null, solution: null } })
     await nextTick()
-    const minis = w.findAll('.wb-remote__mini')
-    expect((minis[0].element as HTMLButtonElement).disabled).toBe(true)
-    expect((minis[1].element as HTMLButtonElement).disabled).toBe(false)   // A− працює і без карток
-    expect((minis[5].element as HTMLButtonElement).disabled).toBe(true)
-    expect(w.text()).toContain(MSG.noCards)
+    for (const label of TASK_BUTTONS) expect(findBtn(w, label)).toBeUndefined()
+    expect(w.text()).not.toContain(MSG.noCards)
   })
 
   it('v1.2: голос «покажи відповідь» → card.reveal; «вниз» → view.scroll', async () => {
