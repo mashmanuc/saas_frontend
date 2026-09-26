@@ -8808,7 +8808,7 @@
           "not_image": "This file can’t be shown on the board as a photo.",
           "load_failed": "The laptop couldn’t load the photo. Check the laptop’s internet connection and try again.",
           "limit": "The board has too many objects — the photo wasn’t added. It’s saved in Materials.",
-          "unsupported": "Photos from the remote don’t work on this board yet — only on your own board. The photo is saved in Materials.",
+          "unsupported": "Photos from the remote go only into a lesson you are running (Lessons → Conduct) — not into a template in the Lesson Studio or a classroom. The photo is saved in Materials.",
           "error": "The laptop couldn’t add the photo. Please try again."
         },
         "uploadError": {
@@ -8853,7 +8853,7 @@
       "tooManyConnections": "The server did not accept the connection.",
       "tooManyConnectionsHint": "Either the server just restarted (wait 30 s) or two board tabs are open on the laptop — close the extra one. Then tap “Connect”.",
       "boardNotAnswering": "The board is open but not answering.",
-      "boardNotAnsweringHint": "The laptop probably runs an old build: press Ctrl+Shift+R there, then “Refresh” here.",
+      "boardNotAnsweringHint": "The remote works only in a lesson you are running (Lessons → Conduct), not in a template in the Lesson Studio. If the laptop already shows a lesson, press Ctrl+Shift+R there, then “Refresh” here.",
       "noToken": "The phone session expired — sign in again.",
       "serverRejected": "The server rejected the command ({code}).",
       "prev": "Back",

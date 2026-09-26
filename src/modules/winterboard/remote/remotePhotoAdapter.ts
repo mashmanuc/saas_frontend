@@ -22,6 +22,11 @@ export interface PhotoLibraryAsset {
 
 export interface RemotePhotoDeps {
   /**
+   * Чи ця дошка — урок, який проводять (після «Провести»), а не шаблон у Студії.
+   * Пульт підключається лише до уроку; у шаблон фото з пульта не кладемо.
+   */
+  supported: () => boolean
+  /**
    * Id дошки, яку зараз тримає стор. Стор глобальний: поки вантажилось фото, вчитель
    * міг перейти на іншу дошку — тоді класти не можна, навіть якщо номер сторінки збігся.
    */
@@ -69,6 +74,8 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
   }
 
   async function run(req: RemotePhotoRequest): Promise<RemotePhotoOutcome> {
+    // Студія (шаблон уроку) — не місце для фото з пульта: воно для уроку, який проводять
+    if (!deps.supported()) return rejected('unsupported')
     const id = photoAssetIdFor(req.requestId)
     // Порядок перевірок: дошка → чи фото вже лежить → стан сторінки. Інакше «вже
     // лежить» на перегорнутій сторінці дало б page_changed, і нова спроба — копію.

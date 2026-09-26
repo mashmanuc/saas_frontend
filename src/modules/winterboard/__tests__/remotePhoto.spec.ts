@@ -15,6 +15,7 @@ import { useBoardRemote } from '../composables/useBoardRemote'
 import { derivePair } from '../remote/remotePair'
 import { targetSize, canPassThrough, sniffImageType, PHOTO_MAX_SIDE, PHOTO_PASSTHROUGH_MAX_BYTES } from '../remote/preparePhoto'
 import { photoUploadError } from '../remote/photoUploadError'
+import soloRoomSource from '../views/WBSoloRoom.vue?raw'
 
 const RID = '3f2b8c1e-9a4d-4c6b-8e21-5d7a0f9b1c2e'
 const RID2 = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
@@ -103,6 +104,7 @@ describe('розміщення перевіреного зображення (б
 function deps(over: Partial<RemotePhotoDeps> = {}) {
   const placed = new Set<string>()
   const d = {
+    supported: vi.fn(() => true),
     boardId: vi.fn((): string | null => 'board-A'),
     currentPageId: vi.fn((): string | null => 'page-1'),
     currentPageIndex: vi.fn(() => 1),
@@ -232,6 +234,13 @@ describe('адаптер photo.add на ноутбуці', () => {
       loadImage: vi.fn(async () => { seen.add(photoAssetIdFor(RID)); page = 2; return { naturalWidth: 10, naturalHeight: 10 } }),
     })
     expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'placed' })
+    expect(d.place).not.toHaveBeenCalled()
+  })
+
+  it('Студія (шаблон уроку) — unsupported одразу: пульт лише для уроку, який проводять', async () => {
+    const d = deps({ supported: vi.fn(() => false) })
+    expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'rejected', reason: 'unsupported' })
+    expect(d.fetchLibraryAsset).not.toHaveBeenCalled()
     expect(d.place).not.toHaveBeenCalled()
   })
 
@@ -385,5 +394,20 @@ describe('підготовка фото на телефоні', () => {
     // межа невідома — без «понад ? МБ»
     expect(photoUploadError({ response: { status: 413, data: {} } })).toEqual({ key: 'image_too_large', params: {} })
     expect(photoUploadError({ response: { status: 400, data: { error: 'file_too_large' } } })).toEqual({ key: 'image_too_large', params: {} })
+  })
+})
+
+// ── Пульт лише в уроці, не в шаблоні Студії (рішення власника 2026-09-26) ─────
+
+describe('пульт у WBSoloRoom — лише урок, не Студія', () => {
+  it('слухач команд має ту саму умову, що й кнопка «Пульт на телефон» (без Студії)', () => {
+    const enabled = soloRoomSource.split(/\r?\n/).find((l) => l.includes('enabled: computed(') && l.includes('isSessionOwner'))
+    expect(enabled).toBeDefined()
+    expect(enabled).toContain('!constructorMode.value')
+    expect(soloRoomSource).toContain('v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"')
+  })
+
+  it('фото в Студії — unsupported ще й в адаптері (друга лінія)', () => {
+    expect(soloRoomSource).toContain('supported: () => !constructorMode.value')
   })
 })

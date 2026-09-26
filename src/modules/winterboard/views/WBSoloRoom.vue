@@ -1756,7 +1756,10 @@ const boardRemote = useBoardRemote({
   },
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),
-  enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace),
+  // Пульт — лише в уроці, не в шаблоні (рішення власника): та сама умова, що й у
+  // кнопки «Пульт на телефон». Без !constructorMode телефон через m4sh.org/remote
+  // знаходив відкриту в Студії дошку й керував шаблоном (сторінки, відео, фото).
+  enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace && !constructorMode.value),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: createRemoteViewAdapter(store as any),
   frozen: computed(() => isBoardFrozen.value),
@@ -1780,6 +1783,9 @@ const boardRemote = useBoardRemote({
   },
   // Фото з телефона (LAW §9 v1.9): ноутбук сам перевіряє актив від свого акаунта
   photo: createRemotePhotoAdapter({
+    // Лише урок, який проводять (winterboard-solo після «Провести»); у Студії
+    // (constructorMode — шаблон уроку) відповідаємо unsupported
+    supported: () => !constructorMode.value,
     // кімнату закрито — стор уже не наш (навіть якщо id дошки ще не змінився)
     boardId: () => (remotePhotoActive ? store.workspaceId : null),
     // не store.currentPageId: той геттер кидає виняток, коли сторінок немає

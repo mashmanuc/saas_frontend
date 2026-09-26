@@ -728,7 +728,8 @@ function helloUntilState() {
     if (tries > 5) {
       if (helloTimer) { clearInterval(helloTimer); helloTimer = null }
       // 6 hello за ~5 с без жодного remote.state і без error від сервера:
-      // ноутбук у кімнаті, але не слухає (стара збірка) або не власник
+      // ноутбук у кімнаті, але не слухає: Студія (шаблон — там пульт вимкнено,
+      // рішення власника 2026-09-26), стара збірка або не власник
       reasonKey.value = 'boardNotAnswering'
       tel('reason', { reason: 'boardNotAnswering', code: 'no_state_after_hello' })
       return
