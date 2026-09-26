@@ -19,6 +19,11 @@ import { parseRemotePhoto, type RemotePhotoResult } from '../remote/photoContrac
 
 export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'unavailable'
 
+/** v1.12 (пульт v2, LAW §9): що ноутбук у цій кімнаті вміє понад навігацію. Закритий набір. */
+export type RemoteCap = 'photo' | 'video'
+export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video']
+const REMOTE_CAPS_MAX = 8
+
 export interface RemoteStateDetail {
   pair: string
   clientId: string
@@ -42,6 +47,11 @@ export interface RemoteStateDetail {
   }
   /** v1.9 — результат останньої спроби «фото на дошку» (LAW §9) */
   photo?: RemotePhotoResult
+  /**
+   * v1.12 — можливості ноутбука (пульт v2): ряд «+ Фото / + Відео» лише за цим полем.
+   * Немає поля (старий ноутбук у кеші) — пульт показує все, як до v2.
+   */
+  caps?: RemoteCap[]
 }
 
 /** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
@@ -108,6 +118,21 @@ const RECONNECT_BASE_MS = 1000
 function jitter(ms: number): number {
   const j = ms * 0.2
   return Math.max(0, Math.round(ms + (Math.random() * 2 - 1) * j))
+}
+
+/**
+ * v1.12: `caps` з `remote.state`. Зіпсоване поле (не список, не рядки, задовге) відкидаємо
+ * цілим → `undefined` (пульт поводиться як зі старим ноутбуком); невідомі значення —
+ * поодинці, без повторів. Дзеркало `_validate_remote_caps` на сервері.
+ */
+export function parseRemoteCaps(raw: any): RemoteCap[] | undefined {
+  if (!Array.isArray(raw) || raw.length > REMOTE_CAPS_MAX) return undefined
+  const out: RemoteCap[] = []
+  for (const item of raw) {
+    if (typeof item !== 'string') return undefined
+    if ((REMOTE_CAPS as readonly string[]).includes(item) && !out.includes(item as RemoteCap)) out.push(item as RemoteCap)
+  }
+  return out
 }
 
 export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void; onError?: (code: string) => void }) {
@@ -194,6 +219,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         if (videos) detail.videos = videos
         const photo = parseRemotePhoto(msg.photo)
         if (photo) detail.photo = photo
+        const caps = parseRemoteCaps(msg.caps)
+        if (caps) detail.caps = caps
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

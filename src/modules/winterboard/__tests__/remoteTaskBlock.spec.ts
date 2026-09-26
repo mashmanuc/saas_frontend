@@ -107,11 +107,20 @@ describe('пульт: блок задач лише коли на сторінц�
   })
 
   it('картка є, задача не розгорнута — «Задача на екран» є, «Усієї сторінки» немає', async () => {
+    // пульт v2 (ТЗ §2, зона D): поза показом — лише «Задача на екран»; у показі кнопка
+    // МІНЯЄТЬСЯ на «Уся сторінка», а «Відповідь», «Розбір», A± і ▲▼ з'являються поруч
     const w = await mountRemote()
-    await pushState(createRemoteViewAdapter(makeStore([taskCard('a', 100, 300)])))
-    const texts = buttonTexts(w)
-    for (const label of ['Задача на екран', 'A−', 'A+', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).toContain(label)
-    expect(texts).not.toContain('Уся сторінка')
+    const v = createRemoteViewAdapter(makeStore([taskCard('a', 100, 300)]))
+    await pushState(v)
+    let texts = buttonTexts(w)
+    expect(texts).toContain('Задача на екран')
+    for (const label of ['Уся сторінка', 'Наступна задача', 'A−', 'A+', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).not.toContain(label)
+    v.fitTask()
+    await pushState(v)
+    texts = buttonTexts(w)
+    expect(texts).not.toContain('Задача на екран')
+    for (const label of ['Уся сторінка', 'A−', 'A+', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).toContain(label)
+    expect(texts).not.toContain('Наступна задача')   // одна картка — гортати нема чого
     w.unmount()
   })
 })

@@ -63,6 +63,29 @@ describe('useBoardRemote', () => {
     expect(api.pairCode.value).toBe(derivePair(sessionId.value))
   })
 
+  // v1.12 (пульт v2): ноутбук каже телефону, що вміє понад навігацію — за цим телефон
+  // показує або ховає ряд «+ Фото / + Відео». Класна кімната без адаптерів → [].
+  it('remote.state несе caps за наявними адаптерами: без них — [], з media і photo — [photo, video]', () => {
+    const bare = setup()
+    fire({ userId: 'u', pair: bare.api.pairCode.value, clientId: 'phone', cmd: 'hello', args: {} })
+    expect(bare.sendMessage.mock.calls[0][0]).toMatchObject({ type: 'remote.state', caps: [] })
+
+    const sendMessage = vi.fn()
+    let api!: ReturnType<typeof useBoardRemote>
+    const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
+    const media = { list: () => [], add: vi.fn(), play: vi.fn(), pause: vi.fn() }
+    const photo = { add: vi.fn(async () => ({ status: 'placed' as const })) }
+    const wrapper = mount(defineComponent({
+      setup() {
+        api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), media: media as any, photo: photo as any })
+        return () => h('div')
+      },
+    }))
+    mounted.push(wrapper)
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'phone', cmd: 'hello', args: {} })
+    expect(sendMessage.mock.calls[0][0]).toMatchObject({ type: 'remote.state', caps: ['photo', 'video'] })
+  })
+
   it('remoteUrl — універсальний /remote без id і без коду', () => {
     const { api } = setup()
     expect(api.remoteUrl.value).toBe(`${window.location.origin}/remote`)

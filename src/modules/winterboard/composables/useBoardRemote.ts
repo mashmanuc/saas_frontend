@@ -152,6 +152,9 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (opts.frozen) msg.frozen = !!opts.frozen.value
     if (assistantState.value) msg.assistant = assistantState.value
     if (opts.media) msg.videos = opts.media.list()
+    // v1.12 (пульт v2): що ця кімната вміє понад навігацію — телефон за цим показує або
+    // ховає ряд «+ Фото / + Відео». Лише підказка для UI: команди перевіряються, як і раніше.
+    msg.caps = [...(opts.photo ? ['photo'] : []), ...(opts.media ? ['video'] : [])]
     if (photoResult.value) msg.photo = photoResult.value
     opts.sendMessage(msg)
   }

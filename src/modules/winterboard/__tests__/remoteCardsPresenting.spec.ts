@@ -164,7 +164,7 @@ describe('пульт: ▲/▼ активні саме в режимі показ
     w.unmount()
   })
 
-  it('без режиму показу кнопки лишаються неактивні — це не регрес, а задум', async () => {
+  it('без режиму показу ▲/▼ немає зовсім — кластер задачі міняє режим (пульт v2)', async () => {
     const w = await mountRemote()
     const store = makeStore([taskCard('a', 100, 300)])
     const v = createRemoteViewAdapter(store)
@@ -173,7 +173,7 @@ describe('пульт: ▲/▼ активні саме в режимі показ
                  cards: parseRemoteCards(wireFormat(v.summary())) })
     await nextTick()
 
-    for (const btn of arrows(w)) expect(btn.attributes('disabled')).toBeDefined()
+    expect(arrows(w)).toHaveLength(0)
     w.unmount()
   })
 })

@@ -266,11 +266,16 @@ describe('WBRemoteView v1.1', () => {
     // 2026-09-26 (власник): поки невідомо, чи є на сторінці картки задач, кнопок задач немає зовсім
     for (const label of TASK_BUTTONS) expect(findBtn(w, label)).toBeUndefined()
 
-    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true, presenting: true } })
+    // пульт v2 (ТЗ §2, зона D): поза показом — лише «Задача на екран»; решта з'являється в показі
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true, presenting: false } })
     await nextTick()
     send.mockClear()
     await findBtn(w, MSG.fitTask).trigger('click')
     expect(lastCmd()).toMatchObject({ cmd: 'view.fit' })
+    expect(findBtn(w, MSG.fontDown)).toBeUndefined()
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, zoom: 1, cards: { count: 1, answer: false, solution: true, presenting: true } })
+    await nextTick()
+    expect(findBtn(w, MSG.fitTask)).toBeUndefined()   // у показі кнопка міняється на «Уся сторінка»
     await findBtn(w, MSG.fontDown).trigger('click')   // A−
     expect(lastCmd()).toMatchObject({ cmd: 'view.zoom', args: { delta: -1 } })
     await findBtn(w, MSG.fontUp).trigger('click')     // A+
@@ -327,11 +332,13 @@ describe('WBRemoteView v1.1', () => {
     await flushPromises()
     onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3 })
     await nextTick()
+    await w.find('[data-testid="open-settings"]').trigger('click')   // пульт v2: «Відключити» — у налаштуваннях
     await w.find('.wb-remote__exit').trigger('click')
     expect(disconnect).toHaveBeenCalledTimes(1)
     await nextTick()
     expect(w.find('.wb-remote__exit--primary').exists()).toBe(true)
-    expect(w.find('.wb-remote__grid').exists()).toBe(true)   // нікуди не кинуло
+    expect(w.find('.wb-remote__top').exists()).toBe(true)    // нікуди не кинуло
+    expect(w.find('.wb-remote__grid').exists()).toBe(false)  // пульт v2: без дошки клавіатури немає
     await w.find('.wb-remote__exit--primary').trigger('click')
     await flushPromises()
     expect(getActiveRemoteSession).toHaveBeenCalledTimes(2)

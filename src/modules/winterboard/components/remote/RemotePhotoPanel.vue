@@ -40,7 +40,11 @@
 
     <div v-else-if="phase === 'placed'" class="wb-remote-photo__done" role="status" data-testid="photo-placed">
       <p class="wb-remote-photo__ok">✓ {{ t('winterboard.remote.photo.placed') }}</p>
-      <button type="button" class="wb-remote-photo__btn" @click="reset">{{ t('winterboard.remote.photo.another') }}</button>
+      <div class="wb-remote-photo__row">
+        <button type="button" class="wb-remote-photo__btn" data-testid="photo-another" @click="reset">{{ t('winterboard.remote.photo.another') }}</button>
+        <!-- пульт v2: «Готово» закриває аркуш, «Ще фото» лишає його відкритим -->
+        <button type="button" class="wb-remote-photo__btn" data-testid="photo-done" @click="finish">{{ t('winterboard.remote.photo.done') }}</button>
+      </div>
     </div>
 
     <div v-else-if="phase === 'rejected' && reason" class="wb-remote-photo__problem" role="status" data-testid="photo-rejected" :data-reason="reason">
@@ -49,7 +53,7 @@
         <button v-if="RETRYABLE.has(reason)" type="button" class="wb-remote-photo__btn is-on" data-testid="photo-retry" :disabled="!ready" @click="retryAfterReject">
           {{ reason === 'page_changed' ? t('winterboard.remote.photo.placeHere') : t('winterboard.remote.photo.retry') }}
         </button>
-        <button type="button" class="wb-remote-photo__btn" data-testid="photo-done" @click="reset">{{ t('winterboard.remote.photo.done') }}</button>
+        <button type="button" class="wb-remote-photo__btn" data-testid="photo-done" @click="finish">{{ t('winterboard.remote.photo.done') }}</button>
       </div>
     </div>
 
@@ -59,7 +63,7 @@
         <button type="button" class="wb-remote-photo__btn is-on" data-testid="photo-resend" :disabled="!ready" @click="send">
           {{ t('winterboard.remote.photo.resend') }}
         </button>
-        <button type="button" class="wb-remote-photo__btn" @click="reset">{{ t('winterboard.remote.photo.done') }}</button>
+        <button type="button" class="wb-remote-photo__btn" @click="finish">{{ t('winterboard.remote.photo.done') }}</button>
       </div>
     </div>
 
@@ -73,7 +77,7 @@
 
     <div v-else-if="phase === 'prepare_error'" class="wb-remote-photo__problem" role="status" data-testid="photo-prepare-error" :data-code="prepareError">
       <p>{{ t(`winterboard.remote.photo.prepareError.${prepareError}`) }}</p>
-      <button type="button" class="wb-remote-photo__btn" @click="reset">{{ t('winterboard.remote.photo.done') }}</button>
+      <button type="button" class="wb-remote-photo__btn" @click="finish">{{ t('winterboard.remote.photo.done') }}</button>
     </div>
   </section>
 </template>
@@ -100,6 +104,13 @@ const props = defineProps<{
   tel?: (event: string, ctx?: Record<string, unknown>) => void
 }>()
 
+const emit = defineEmits<{
+  /** «Готово» після результату — батько закриває аркуш (пульт v2) */
+  (e: 'done'): void
+  /** Поточна фаза — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
+  (e: 'phase', phase: Phase): void
+}>()
+
 /** Скільки чекати відповіді ноутбука, перш ніж чесно сказати «не підтверджено» */
 const ACK_TIMEOUT_MS = 15_000
 /**
@@ -113,6 +124,7 @@ type Phase = 'idle' | 'preparing' | 'preview' | 'uploading' | 'sending' | 'place
 
 const { t } = useI18n()
 const phase = ref<Phase>('idle')
+watch(phase, (p) => emit('phase', p))
 const cameraInput = ref<HTMLInputElement | null>(null)
 const galleryInput = ref<HTMLInputElement | null>(null)
 const prepared = shallowRef<PreparedPhoto | null>(null)
@@ -149,6 +161,12 @@ function reset(): void {
   reason.value = null
   uploadError.value = null
   phase.value = 'idle'
+}
+
+/** «Готово» після результату: скинути й дати батькові закрити аркуш (пульт v2). */
+function finish(): void {
+  reset()
+  emit('done')
 }
 
 async function onFile(e: Event): Promise<void> {
