@@ -166,7 +166,9 @@ async function handleRecovery() {
   // FE-75.1: Recovery scenario - logout and redirect to login
   const { useAuthStore } = await import('@/modules/auth/store/authStore')
   const authStore = useAuthStore()
-  await authStore.logout()
+  const result = await authStore.logout()
+  // Незбережені дії: вихід зупинено, відкрито діалог — не йти зі сторінки.
+  if (result?.status === 'blocked_unsent') return
   router.push({ 
     name: 'login', 
     query: { redirect: '/tutor/billing', message: 'session_expired' } 

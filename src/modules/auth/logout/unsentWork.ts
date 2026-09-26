@@ -101,3 +101,44 @@ export function discardUnsentWork(
     }
   }
 }
+
+/**
+ * Копія незбережених дій дошки для завантаження вчителем — перед явним відкиданням
+ * (SYSTEM_LAW §4: «Відкинути» — лише після пропозиції завантажити копію). Та сама форма,
+ * що в експорті `SAVE_BLOCKED` (`opsSyncStore.exportBlocked`); нікуди не відправляється.
+ * Нечитабельні записи йдуть сирими — «нічого немає» про них казати не можна.
+ */
+export function exportUnsentBoard(
+  board: UnsentBoardWork,
+  storage: Storage | null = typeof localStorage === 'undefined' ? null : localStorage,
+): Record<string, unknown> {
+  const ops: unknown[] = []
+  const unreadable: Array<{ key: string; raw: string | null }> = []
+  for (const key of board.keys) {
+    let raw: string | null = null
+    try {
+      raw = storage ? storage.getItem(key) : null
+    } catch (err) {
+      console.warn('[auth:logout] queue copy not readable for export', key, err)
+    }
+    try {
+      const record = raw ? JSON.parse(raw) as { pending?: unknown; inFlight?: unknown } : null
+      const inFlight = Array.isArray(record?.inFlight) ? record!.inFlight : []
+      const pending = Array.isArray(record?.pending) ? record!.pending : []
+      if (!record) unreadable.push({ key, raw })
+      ops.push(...inFlight, ...pending)
+    } catch {
+      unreadable.push({ key, raw })
+    }
+  }
+  return {
+    format: 'm4sh-unsaved-board-ops',
+    version: 1,
+    session_id: board.sessionId,
+    exported_at: new Date().toISOString(),
+    reason: null,
+    source: 'logout',
+    ops,
+    ...(unreadable.length > 0 ? { unreadable_records: unreadable } : {}),
+  }
+}

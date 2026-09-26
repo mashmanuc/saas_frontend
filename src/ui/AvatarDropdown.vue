@@ -248,10 +248,13 @@ function close() {
 
 async function handleLogout() {
   close()
+  let result: { status?: string } | undefined
   try {
-    await auth.logout()
+    result = await auth.logout()
   } finally {
-    router.push('/auth/login').catch(() => {})
+    // Незбережені дії: вихід зупинено, відкрито діалог — лишаємо людину на місці
+    // (перехід розмонтував би дошку під діалогом). Інакше вихід сам веде далі.
+    if (result?.status !== 'blocked_unsent') router.push('/auth/login').catch(() => {})
   }
 }
 

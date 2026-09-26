@@ -11,9 +11,13 @@
  * перекидає будь-яку сторінку, крім дозволених, на екран блокування.
  */
 import type { Router } from 'vue-router'
-import { LOGOUT_PENDING_ROUTE, isAllowedWhileLogoutPending, isLogoutPending } from './pendingLogout'
+import {
+  LOGOUT_PENDING_KEY, LOGOUT_PENDING_ROUTE, isAllowedWhileLogoutPending, isLogoutPending,
+} from './pendingLogout'
+import { DISCARD_BROADCAST_KEY, abandonOpenBoardQueue, parseDiscardBroadcast } from './openBoardQueue'
 
 const ROUTE_NAME = 'logout-pending'
+let listeningToOtherTabs = false
 
 export function installLogoutGate(router: Router): void {
   if (!router.hasRoute(ROUTE_NAME)) {
@@ -30,4 +34,26 @@ export function installLogoutGate(router: Router): void {
     }
     return true
   })
+  if (typeof window !== 'undefined' && !listeningToOtherTabs) {
+    window.addEventListener('storage', onOtherTabLogout)
+    listeningToOtherTabs = true
+  }
+}
+
+/**
+ * Вихід в ІНШІЙ вкладці цього браузера (подія `storage` приходить лише в інші вкладки;
+ * рецензія пакета A, знахідка 5 і 4).
+ * - Вчитель явно відкинув незбережені дії: черга тих самих дошок і тут геть із пам'яті,
+ *   інакше ця вкладка записала б її знову при смерті сесії чи закритті.
+ * - Вихід не підтверджено сервером: і ця вкладка — на екран блокування повним
+ *   перезавантаженням, щоб дошка розмонтувалась, а не лишалась у DOM.
+ */
+export function onOtherTabLogout(event: StorageEvent): void {
+  if (event.key === DISCARD_BROADCAST_KEY && event.newValue) {
+    abandonOpenBoardQueue(parseDiscardBroadcast(event.newValue))
+    return
+  }
+  if (event.key === LOGOUT_PENDING_KEY && event.newValue && window.location.pathname !== LOGOUT_PENDING_ROUTE) {
+    window.location.href = LOGOUT_PENDING_ROUTE
+  }
 }

@@ -4,6 +4,7 @@ import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 import { tokenVault } from '../../../utils/tokenVault'
 import { listUnsentWork, discardUnsentWork } from '../logout/unsentWork'
+import { abandonOpenBoardQueue, broadcastDiscard, persistOpenBoardQueue } from '../logout/openBoardQueue'
 import {
   markLogoutPending, clearLogoutPending, isLogoutPending, LOGOUT_PENDING_ROUTE,
 } from '../logout/pendingLogout'
@@ -416,6 +417,10 @@ export const useAuthStore = defineStore('auth', {
         const res = await authApi.mfaVerify({ otp, session_id: sessionId })
         const access = res?.access
         this.setAuth({ access })
+        // Новий вхід (зокрема «Увійти іншим акаунтом» з екрана блокування): нові cookie
+        // замінили старі, маркер «вихід не завершено» знімається. setAuth без user його
+        // не знімає — так поводиться refresh, — тому тут явно (рецензія, знахідка 2).
+        clearLogoutPending()
         await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
@@ -467,6 +472,10 @@ export const useAuthStore = defineStore('auth', {
         const res = await authApi.webauthnVerify({ session_id: sessionId, ...assertion })
         const access = res?.access
         this.setAuth({ access })
+        // Новий вхід (зокрема «Увійти іншим акаунтом» з екрана блокування): нові cookie
+        // замінили старі, маркер «вихід не завершено» знімається. setAuth без user його
+        // не знімає — так поводиться refresh, — тому тут явно (рецензія, знахідка 2).
+        clearLogoutPending()
         await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
@@ -942,12 +951,21 @@ export const useAuthStore = defineStore('auth', {
      * лишались у браузері. Тепер — маркер «вихід не завершено» і екран блокування.
      */
     async logout({ discardUnsent = false } = {}) {
+      // Копія черги відкритої дошки пишеться із секундною затримкою — спершу в сховище,
+      // щоб перелік бачив і дії останньої секунди (рецензія пакета A, знахідка 4).
+      persistOpenBoardQueue()
       const work = listUnsentWork(this.user?.id)
       if (work.length && !discardUnsent) {
         useLogoutGuardStore().show(work)
         return { status: 'blocked_unsent', work }
       }
       if (work.length) {
+        // Явне відкидання вчителем: спершу черги з пам'яті (інші вкладки й ця), потім
+        // копії. Інакше смерть сесії й beforeunload записали б їх знову, і дії лишились би
+        // у спільному браузері для наступної людини.
+        const boards = work.map(board => board.sessionId)
+        broadcastDiscard(boards)
+        abandonOpenBoardQueue(boards)
         discardUnsentWork(work)
       }
 

@@ -1,5 +1,8 @@
 import api from '../../../utils/apiClient'
 
+/** Вихід — під Path refresh-cookie, щоб браузер його сюди надсилав (див. `logout`). */
+export const LOGOUT_URL = '/v1/auth/refresh/logout'
+
 const authApi = {
   login(payload) {
     return api.post('/v1/auth/login', payload)
@@ -77,8 +80,11 @@ const authApi = {
     return api.post('/v1/auth/csrf', null, { meta: { skipLoader: true } })
   },
 
+  // ТЗ спільного екрана, R6: Path refresh-cookie — `/api/v1/auth/refresh/`, тож браузер
+  // шле його лише під цим шляхом. Вихід живе й тут; на `/v1/auth/logout` після спливу
+  // access (60 хв) сервер не бачив жодного cookie і сесія лишалась живою.
   logout(payload) {
-    return api.post('/v1/auth/logout', payload)
+    return api.post(LOGOUT_URL, payload)
   },
 
   getCurrentUser() {

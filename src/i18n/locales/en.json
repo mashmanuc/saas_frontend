@@ -827,7 +827,11 @@
   "auth": {
     "logoutGuard": {
       "title": "There are unsaved changes",
-      "lead": "The server has not accepted some changes on these boards yet. Open a board to send them, or sign out and discard them.",
+      "lead": "The server has not accepted some changes on these boards yet.",
+      "checking": "Checking the connection to the server…",
+      "sendFirst": "The server is reachable. Open the board so the changes are sent, then sign out.",
+      "offline": "The server is unreachable. You can download a copy of the changes or sign out and discard them.",
+      "download": "Download a copy",
       "count": "Unsaved actions: {n}",
       "unknownCount": "Could not read how many actions are unsaved",
       "blocked": "rejected by the server",

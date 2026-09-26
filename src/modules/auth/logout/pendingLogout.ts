@@ -14,6 +14,9 @@
 
 const KEY = 'm4sh_logout_pending'
 
+/** Ключ маркера — для слухача інших вкладок (`logoutGate`). */
+export const LOGOUT_PENDING_KEY = KEY
+
 export const LOGOUT_PENDING_ROUTE = '/logout-pending'
 
 export function markLogoutPending(): void {

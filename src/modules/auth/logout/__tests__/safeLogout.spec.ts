@@ -14,6 +14,8 @@ vi.mock('../../api/authApi', () => ({
     csrf: vi.fn(async () => ({ csrf: 't' })),
     getCurrentUser: vi.fn(),
     refresh: vi.fn(),
+    mfaVerify: vi.fn(),
+    webauthnVerify: vi.fn(),
   },
 }))
 
@@ -22,6 +24,8 @@ import { useAuthStore } from '../../store/authStore'
 import { useLogoutGuardStore } from '../../store/logoutGuardStore'
 import { isLogoutPending, markLogoutPending, clearLogoutPending, isAllowedWhileLogoutPending } from '../pendingLogout'
 import { discardUnsentWork, listUnsentWork, totalUnsentOps } from '../unsentWork'
+import { registerOpenBoardQueue } from '../openBoardQueue'
+import { onOtherTabLogout } from '../logoutGate'
 
 const BOARD_A = '11111111-1111-4111-8111-111111111111'
 const BOARD_B = '22222222-2222-4222-8222-222222222222'
@@ -185,5 +189,116 @@ describe('authStore · маркер і вхід', () => {
     expect(isLogoutPending()).toBe(true)
     await store.setAuth({ access: '__cookie__', user: { id: 9, role: 'tutor' } })
     expect(isLogoutPending()).toBe(false)
+  })
+})
+
+describe('рецензія пакета A · вихід у браузері', () => {
+  function signedIn() {
+    const store = useAuthStore()
+    store.access = 'jwt'
+    store.user = { id: 7, email: 't@example.com', role: 'tutor' }
+    return store
+  }
+
+  it('знахідка 1: вихід — під Path refresh-cookie, інакше браузер не шле туди refresh', async () => {
+    const actual = await vi.importActual<typeof import('../../api/authApi')>('../../api/authApi')
+    expect(actual.LOGOUT_URL.startsWith('/v1/auth/refresh/')).toBe(true)
+    const api = (await import('@/utils/apiClient')).default
+    const post = vi.spyOn(api, 'post').mockResolvedValue({} as never)
+    await actual.default.logout()
+    expect(post).toHaveBeenCalledWith(actual.LOGOUT_URL, undefined)
+  })
+
+  it('знахідка 2: MFA після «Увійти іншим акаунтом» знімає маркер — нового вчителя не вивело', async () => {
+    markLogoutPending()
+    const store = useAuthStore()
+    store.pendingMfaSessionId = 'mfa-1'
+    vi.mocked(authApi.mfaVerify).mockResolvedValueOnce({ access: 'jwt' } as never)
+    vi.spyOn(store, 'postAuthInit').mockResolvedValue(undefined as never)
+    vi.spyOn(store, 'ensureCsrfToken').mockResolvedValue(undefined as never)
+    vi.spyOn(store, 'startProactiveRefresh').mockImplementation(() => {})
+    vi.spyOn(store, 'reloadUser').mockResolvedValue(undefined as never)
+    await store.verifyMfa('123456')
+    expect(isLogoutPending()).toBe(false)
+  })
+
+  it('знахідка 2: WebAuthn — так само', async () => {
+    markLogoutPending()
+    const store = useAuthStore()
+    store.pendingWebAuthnSessionId = 'wa-1'
+    vi.mocked(authApi.webauthnVerify).mockResolvedValueOnce({ access: 'jwt' } as never)
+    vi.spyOn(store, 'postAuthInit').mockResolvedValue(undefined as never)
+    vi.spyOn(store, 'ensureCsrfToken').mockResolvedValue(undefined as never)
+    vi.spyOn(store, 'startProactiveRefresh').mockImplementation(() => {})
+    vi.spyOn(store, 'reloadUser').mockResolvedValue(undefined as never)
+    await store.verifyWebAuthn({ credential: {} })
+    expect(isLogoutPending()).toBe(false)
+  })
+
+  it('знахідка 4: перед переліком черга відкритої дошки йде у сховище — видно й дії останньої секунди', async () => {
+    const off = registerOpenBoardQueue({
+      sessionId: () => BOARD_A,
+      persist: () => { localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(2)); return true },
+      abandon: vi.fn(),
+    })
+    try {
+      const result = await signedIn().logout()
+      expect(result.status).toBe('blocked_unsent')
+      expect(useLogoutGuardStore().work.map(w => w.ops)).toEqual([2])
+    } finally {
+      off()
+    }
+  })
+
+  it("знахідка 4: явне відкидання — черга відкритої дошки геть із пам'яті, іншим вкладкам — сигнал", async () => {
+    localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(3))
+    vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
+    const abandon = vi.fn()
+    const off = registerOpenBoardQueue({ sessionId: () => BOARD_A, persist: () => true, abandon })
+    const setItem = vi.spyOn(window.localStorage, 'setItem')
+    try {
+      await signedIn().logout({ discardUnsent: true })
+      expect(abandon).toHaveBeenCalledTimes(1)
+      expect(setItem).toHaveBeenCalledWith('m4sh_logout_discard', expect.stringContaining(BOARD_A))
+      expect(localStorage.getItem('m4sh_logout_discard')).toBeNull()
+      expect(localStorage.getItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`)).toBeNull()
+    } finally {
+      off()
+      setItem.mockRestore()
+    }
+  })
+
+  it('знахідка 4: відкрита інша дошка — її черга не чіпається', async () => {
+    localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(3))
+    vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
+    const abandon = vi.fn()
+    const off = registerOpenBoardQueue({ sessionId: () => BOARD_B, persist: () => true, abandon })
+    try {
+      await signedIn().logout({ discardUnsent: true })
+      expect(abandon).not.toHaveBeenCalled()
+    } finally {
+      off()
+    }
+  })
+
+  it('знахідка 5: інша вкладка — вихід не підтверджено → і ця на екран блокування повним перезавантаженням', () => {
+    onOtherTabLogout(new StorageEvent('storage', { key: 'm4sh_logout_pending', newValue: '2026-09-26T05:00:00Z' }))
+    expect(location.href).toBe('/logout-pending')
+  })
+
+  it('знахідка 4: інша вкладка — вчитель відкинув дії, черга тієї ж дошки тут теж геть', () => {
+    const abandon = vi.fn()
+    const off = registerOpenBoardQueue({ sessionId: () => BOARD_A, persist: () => true, abandon })
+    try {
+      onOtherTabLogout(new StorageEvent('storage', {
+        key: 'm4sh_logout_discard', newValue: JSON.stringify({ ids: [BOARD_A], at: 1 }),
+      }))
+      expect(abandon).toHaveBeenCalledTimes(1)
+      // Прибирання ключа (newValue null) — не сигнал.
+      onOtherTabLogout(new StorageEvent('storage', { key: 'm4sh_logout_discard', newValue: null }))
+      expect(abandon).toHaveBeenCalledTimes(1)
+    } finally {
+      off()
+    }
   })
 })

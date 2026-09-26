@@ -61,7 +61,9 @@ const mobileMenuOpen = ref(false)
 const openReportsCount = ref(0)
 
 const handleLogout = async () => {
-  await authStore.logout()
+  const result = await authStore.logout()
+  // Незбережені дії: вихід зупинено, відкрито діалог — не йти зі сторінки.
+  if (result?.status === 'blocked_unsent') return
   router.push('/auth/login')
 }
 

@@ -64,8 +64,9 @@ const authApi = {
     return apiClient.post('/v1/auth/csrf')
   },
 
+  // Під Path refresh-cookie — інакше браузер його сюди не шле (див. modules/auth/api/authApi.js).
   logout(payload?: any): Promise<void> {
-    return apiClient.post('/v1/auth/logout', payload)
+    return apiClient.post('/v1/auth/refresh/logout', payload)
   },
 
   getCurrentUser(): Promise<any> {

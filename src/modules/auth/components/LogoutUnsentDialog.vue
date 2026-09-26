@@ -1,10 +1,12 @@
 <!--
   «Є незбережені дії» перед виходом (ТЗ «Сесія спільного екрана і безпечний вихід», R7).
 
-  Вихід сам нічого не видаляє. Вчитель або відкриває дошку — черга відправиться
-  штатно (SYSTEM_LAW §5), — або явно відкидає роботу, бачачи, скільки дій буде
-  втрачено. На спільному комп'ютері це важливо в обидва боки: не загубити роботу і
-  не лишити її наступній людині.
+  Вихід сам нічого не видаляє. Сервер на зв'язку — лише «Відкрити дошку»: черга
+  відправиться штатно (SYSTEM_LAW §5), а відмову сервера дошка покаже своїм банером
+  SAVE_BLOCKED з власними діями. Сервер недоступний — ще й «Вийти все одно» (§6.4 ТЗ):
+  спершу пропозиція завантажити копію (LAW §4), потім явне відкидання з числом дій.
+  На спільному комп'ютері це важливо в обидва боки: не загубити роботу і не лишити
+  її наступній людині.
 -->
 <template>
   <div
@@ -30,14 +32,29 @@
               <template v-if="board.blocked"> · {{ t('auth.logoutGuard.blocked') }}</template>
             </span>
           </div>
-          <button
-            type="button"
-            class="logout-unsent__open"
-            data-testid="logout-unsent-open"
-            @click="openBoard(board.sessionId)"
-          >{{ t('auth.logoutGuard.openBoard') }}</button>
+          <div class="logout-unsent__board-actions">
+            <button
+              v-if="reachable === false"
+              type="button"
+              class="logout-unsent__download"
+              data-testid="logout-unsent-download"
+              @click="downloadCopy(board)"
+            >{{ t('auth.logoutGuard.download') }}</button>
+            <button
+              type="button"
+              class="logout-unsent__open"
+              data-testid="logout-unsent-open"
+              @click="openBoard(board.sessionId)"
+            >{{ t('auth.logoutGuard.openBoard') }}</button>
+          </div>
         </li>
       </ul>
+
+      <p class="logout-unsent__status" data-testid="logout-unsent-status">
+        {{ reachable === null
+          ? t('auth.logoutGuard.checking')
+          : reachable ? t('auth.logoutGuard.sendFirst') : t('auth.logoutGuard.offline') }}
+      </p>
 
       <p v-if="confirming" class="logout-unsent__warning" data-testid="logout-unsent-warning">
         {{ t('auth.logoutGuard.discardWarning', { n: total }) }}
@@ -48,14 +65,14 @@
           {{ t('auth.logoutGuard.cancel') }}
         </button>
         <button
-          v-if="!confirming"
+          v-if="reachable === false && !confirming"
           type="button"
           class="logout-unsent__discard"
           data-testid="logout-unsent-discard"
           @click="confirming = true"
         >{{ t('auth.logoutGuard.logoutAnyway') }}</button>
         <button
-          v-else
+          v-else-if="reachable === false"
           type="button"
           class="logout-unsent__discard"
           data-testid="logout-unsent-confirm"
@@ -73,7 +90,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/authStore'
 import { useLogoutGuardStore } from '../store/logoutGuardStore'
-import { totalUnsentOps } from '../logout/unsentWork'
+import { exportUnsentBoard, totalUnsentOps, type UnsentBoardWork } from '../logout/unsentWork'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 
 const { t } = useI18n()
@@ -84,29 +101,55 @@ const auth = useAuthStore()
 const confirming = ref(false)
 const busy = ref(false)
 const names = ref<Record<string, string>>({})
+/** null — ще перевіряємо; true — сервер відповів; false — жодної відповіді (або лише 5xx). */
+const reachable = ref<boolean | null>(null)
 const total = computed(() => totalUnsentOps(guard.work))
 
 function boardName(sessionId: string): string {
   return names.value[sessionId] || t('auth.logoutGuard.board', { id: sessionId.slice(0, 8) })
 }
 
-// Назви дошок — лише для читабельності; без них діалог працює (показує короткий id).
+// Назви дошок і водночас перевірка зв'язку: будь-яка відповідь сервера, крім 5xx, —
+// він на зв'язку, і тоді відкидання не пропонується (ТЗ R7, §6.4: спершу відправлення).
+// Без назв діалог працює (показує короткий id).
 watch(() => guard.open, async (open) => {
   confirming.value = false
+  reachable.value = null
   if (!open) return
+  let answered = false
   for (const board of guard.work) {
-    if (names.value[board.sessionId]) continue
     try {
       const detail = await winterboardApi.getSession(board.sessionId) as { name?: string }
+      answered = true
       if (detail?.name) names.value = { ...names.value, [board.sessionId]: detail.name }
     } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (typeof status === 'number' && status < 500) answered = true
       console.warn('[auth:logout] board name unavailable', board.sessionId, err)
     }
   }
-})
+  if (guard.open) reachable.value = answered
+// immediate: діалог вантажиться ледаче (App.vue) і може змонтуватися вже відкритим —
+// без цього перевірка зв'язку не почалась би, а відкидання не з'явилось би ніколи.
+}, { immediate: true })
 
 function cancel() {
   guard.close()
+}
+
+/** Копія дій дошки у файл — перед відкиданням (LAW §4); нікуди не відправляється. */
+function downloadCopy(board: UnsentBoardWork) {
+  const data = exportUnsentBoard(board)
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  a.href = url
+  a.download = `m4sh-unsaved-${board.sessionId}-${stamp}.json`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 function openBoard(sessionId: string) {
@@ -154,10 +197,13 @@ async function discardAndLogout() {
 .logout-unsent__board { display: flex; flex-direction: column; min-width: 0; }
 .logout-unsent__name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .logout-unsent__count { font-size: 13px; color: #64748b; }
+.logout-unsent__board-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .logout-unsent__open,
+.logout-unsent__download,
 .logout-unsent__cancel {
   padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer;
 }
+.logout-unsent__status { margin: 0 0 12px; font-size: 14px; color: #334155; }
 .logout-unsent__warning { margin: 0 0 12px; font-size: 14px; color: #b91c1c; }
 .logout-unsent__actions { display: flex; justify-content: flex-end; gap: 8px; }
 .logout-unsent__discard {

@@ -22,6 +22,7 @@ import { ref, readonly, watch, computed, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
 import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
+import { registerOpenBoardQueue } from '@/modules/auth/logout/openBoardQueue'
 import { backupKey, clearBackup, readAllBackups, removeBackupKeys } from './useOpsBackup'
 import { liveTabIds, mayAdopt, mayRemove } from './tabLiveness'
 import { serverPayloadBytes, SERVER_PAYLOAD_LIMIT_BYTES } from '../services/opsPayloadSize'
@@ -120,6 +121,24 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       }
     }
     destroy()
+  })
+
+  // ТЗ спільного екрана, R7 (рецензія пакета A, знахідка 4): вихід бачить чергу цієї
+  // дошки й відкидає її лише через наявні дії стору — сам модуль виходу стор не імпортує.
+  // persist — щоб перелік перед виходом бачив і дії останньої секунди (копія з тротлінгом);
+  // abandon — ЛИШЕ після явного відкидання вчителем: інакше смерть сесії й beforeunload
+  // записали б чергу з пам'яті знову, і вона лишилась би в спільному браузері.
+  const _unregisterOpenBoardQueue = registerOpenBoardQueue({
+    sessionId: () => {
+      const sid = options.sessionId.value
+      return sid && opsSync.sessionId === sid ? sid : null
+    },
+    persist: () => {
+      const sid = options.sessionId.value
+      if (!sid || opsSync.sessionId !== sid) return false
+      return opsSync.persistQueue()
+    },
+    abandon: () => opsSync.reset(),
   })
 
   // ─── Helpers ──
@@ -668,6 +687,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     opCount.value = 0
     _totalFlushedOps = 0
     _unregisterAuthDeath()
+    _unregisterOpenBoardQueue()
   }
 
   /**
