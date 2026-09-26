@@ -1192,7 +1192,7 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
-import { buildPlacedImageAsset, loadImageDimensions, PLACED_IMAGE_VIEW_FRACTION, type ResolvedImage } from '../board/placeImage'
+import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
 import { fetchAsset as fetchLibraryAsset } from '../api/library'
 import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
 import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
@@ -1780,6 +1780,10 @@ const boardRemote = useBoardRemote({
   },
   // Фото з телефона (LAW §9 v1.9): ноутбук сам перевіряє актив від свого акаунта
   photo: createRemotePhotoAdapter({
+    // кімнату закрито — стор уже не наш (навіть якщо id дошки ще не змінився)
+    boardId: () => (remotePhotoActive ? store.workspaceId : null),
+    // не store.currentPageId: той геттер кидає виняток, коли сторінок немає
+    currentPageId: () => store.currentPage?.id ?? null,
     currentPageIndex: () => store.currentPageIndex,
     isFrozen: () => isBoardFrozen.value,
     // DESYNC/BOOTSTRAP: record() — no-op, фото лягло б лише на цьому екрані
@@ -1792,27 +1796,29 @@ const boardRemote = useBoardRemote({
   }),
 })
 
+/** Адаптер фото з пульта живе, поки живе кімната (фото не кладеться в чужий стор). */
+let remotePhotoActive = true
+onBeforeUnmount(() => { remotePhotoActive = false })
+
 /**
  * Розміщення ПЕРЕВІРЕНОГО зображення (LAW §9 v1.9): центр видимої частини аркуша,
- * до 80 % видимої області, пропорції без спотворення, штатний handleAssetAdd
- * (op asset_add + «скасувати»). Звідки картинка — не знає: сьогодні фото з
- * телефона вчителя, згодом — схвалена вчителем робота учня.
+ * до 80 % її, пропорції без спотворення, штатний handleAssetAdd (op asset_add +
+ * «скасувати»). Звідки картинка — не знає: сьогодні фото з телефона вчителя,
+ * згодом — схвалена вчителем робота учня.
  */
 function placeVerifiedImage(image: ResolvedImage, id: string): void {
   const container = canvasContainerRef.value
-  const zoom = store.zoom || 1
-  const offset = store.stageOrigin
-  const viewW = container ? container.clientWidth / zoom : (store.pageWidth ?? 800)
-  const viewH = container ? container.clientHeight / zoom : 600
-  const center = container
-    ? { x: (container.clientWidth / 2 - offset.x) / zoom, y: (container.clientHeight / 2 - offset.y) / zoom }
-    : { x: viewW / 2, y: viewH / 2 }
-  handleAssetAdd(buildPlacedImageAsset({
-    id,
-    image,
-    center,
-    maxSize: { w: viewW * PLACED_IMAGE_VIEW_FRACTION, h: viewH * PLACED_IMAGE_VIEW_FRACTION },
-  }))
+  const page = { w: store.pageWidth ?? 800, h: store.pageHeight ?? 600 }
+  const frame = container
+    ? placementFrame({
+      containerW: container.clientWidth,
+      containerH: container.clientHeight,
+      zoom: store.zoom || 1,
+      offset: store.stageOrigin,
+      page,
+    })
+    : { center: { x: page.w / 2, y: page.h / 2 }, maxSize: { w: page.w * 0.8, h: page.h * 0.8 } }
+  handleAssetAdd(buildPlacedImageAsset({ id, image, center: frame.center, maxSize: frame.maxSize }))
 }
 
 function isVideoOnCurrentPage(id: string): boolean {

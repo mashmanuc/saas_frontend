@@ -5,10 +5,11 @@
 // розкодовує й HEIC), зменшує й кодує в JPEG.
 //
 // JPEG перекодовуємо ЗАВЖДИ: так зникають метадані EXIF, серед них GPS-координати
-// місця зйомки (фото зі школи не повинно нести її адресу у «Матеріали»).
+// місця зйомки (фото з камери не повинно нести адресу школи у «Матеріали»).
 // Поворот за EXIF браузер уже врахував у пікселях.
 // PNG/WebP (здебільшого знімки екрана з текстом) у межах ліміту їдуть як є —
-// повторне стиснення в JPEG лише розмило б дрібний текст.
+// повторне стиснення в JPEG лише розмило б дрібний текст. ⚠️ Їхні метадані (рідко —
+// eXIf/XMP із GPS) при цьому лишаються: «GPS зникає» гарантовано лише для JPEG.
 
 import { PHOTO_MIME_TYPES } from './photoContract'
 
@@ -54,11 +55,32 @@ export function targetSize(width: number, height: number, maxSide = PHOTO_MAX_SI
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) }
 }
 
-/** Чи можна завантажити файл як є: PNG/WebP, у межах розміру й ваги. JPEG — ніколи (EXIF/GPS). */
+/** Чи можна завантажити файл як є: PNG/WebP, у межах розміру й ваги. JPEG — ніколи (EXIF/GPS). Тип — за байтами. */
 export function canPassThrough(type: string, bytes: number, width: number, height: number, maxSide = PHOTO_MAX_SIDE): boolean {
   const t = (type || '').toLowerCase()
   if (t === 'image/jpeg' || !PHOTO_MIME_TYPES.has(t)) return false
   return Math.max(width, height) <= maxSide && bytes <= PHOTO_PASSTHROUGH_MAX_BYTES
+}
+
+/**
+ * Тип за першими байтами (сигнатурою), а не за File.type: файл із байтами JPEG і
+ * типом image/png пройшов би «як є» й отримав би від сервера незрозуміле
+ * unsupported_format. Невідома сигнатура — '' (тоді перекодовуємо).
+ */
+export function sniffImageType(head: Uint8Array): string {
+  const at = (i: number, bytes: number[]) => bytes.every((b, k) => head[i + k] === b)
+  if (at(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image/png'
+  if (at(0, [0x52, 0x49, 0x46, 0x46]) && at(8, [0x57, 0x45, 0x42, 0x50])) return 'image/webp'
+  if (at(0, [0xff, 0xd8, 0xff])) return 'image/jpeg'
+  return ''
+}
+
+async function sniffFileType(file: Blob): Promise<string> {
+  try {
+    return sniffImageType(new Uint8Array(await file.slice(0, 16).arrayBuffer()))
+  } catch {
+    return ''   // не прочитали — перекодуємо, це завжди безпечно
+  }
 }
 
 function stamp(d = new Date()): string {
@@ -105,23 +127,33 @@ function drawInto(target: HTMLCanvasElement, source: CanvasImageSource): void {
   ctx.drawImage(source, 0, 0, target.width, target.height)
 }
 
+/** Звільнити пам'ять canvas одразу (iOS тримає її до збирання сміття й падає на великих фото). */
+function release(c: HTMLCanvasElement): void {
+  c.width = 0
+  c.height = 0
+}
+
 /**
  * Зменшення кроками «навпіл», поки різниця більша за вдвічі, і фінальний крок —
  * так дрібний текст різкіший, ніж від одного великого стрибка.
  */
 function downscale(source: HTMLImageElement, width: number, height: number, tw: number, th: number): HTMLCanvasElement {
   let current: CanvasImageSource = source
+  let previous: HTMLCanvasElement | null = null
   let cw = width
   let ch = height
   while (cw / 2 >= tw && ch / 2 >= th) {
     const step = canvasOf(Math.round(cw / 2), Math.round(ch / 2))
     drawInto(step, current)
+    if (previous) release(previous)
+    previous = step
     current = step
     cw = step.width
     ch = step.height
   }
   const out = canvasOf(tw, th)
   drawInto(out, current)
+  if (previous) release(previous)
   return out
 }
 
@@ -137,12 +169,19 @@ export async function preparePhoto(file: File, options: PreparePhotoOptions = {}
   const decoded = await decode(file)
   try {
     const original = { width: decoded.width, height: decoded.height, bytes: file.size, type: file.type }
-    if (canPassThrough(file.type, file.size, decoded.width, decoded.height, maxSide)) {
+    const sniffed = await sniffFileType(file)
+    if (sniffed && sniffed === (file.type || '').toLowerCase()
+      && canPassThrough(sniffed, file.size, decoded.width, decoded.height, maxSide)) {
       return { file, width: decoded.width, height: decoded.height, original, reencoded: false }
     }
     const t = targetSize(decoded.width, decoded.height, maxSide)
     const canvas = downscale(decoded.source, decoded.width, decoded.height, t.width, t.height)
-    const blob = await toJpeg(canvas, quality)
+    let blob: Blob
+    try {
+      blob = await toJpeg(canvas, quality)
+    } finally {
+      release(canvas)
+    }
     const out = new File([blob], `phone-photo-${stamp()}.jpg`, { type: 'image/jpeg' })
     return { file: out, width: t.width, height: t.height, original, reencoded: true }
   } finally {

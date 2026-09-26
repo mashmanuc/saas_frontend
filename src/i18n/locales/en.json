@@ -8788,7 +8788,7 @@
         "pick": "From gallery",
         "preparing": "Preparing photo…",
         "info": "{width}×{height} · {size}",
-        "confirm": "Add to the current board page?",
+        "confirm": "Add to board page {page}?",
         "add": "Add",
         "cancel": "Cancel",
         "uploading": "Uploading photo…",
@@ -8799,7 +8799,7 @@
         "retry": "Try again",
         "resend": "Send again",
         "placeHere": "Add to the current page",
-        "unconfirmed": "Couldn’t confirm the photo was added. It’s saved in Materials; check the board and try again if needed.",
+        "unconfirmed": "Couldn’t confirm the photo was added. It’s saved in Materials; check the board (reload the page on the laptop if needed) and try again.",
         "reason": {
           "page_changed": "The board page changed while the photo was uploading. Add it to the current page — page {page}?",
           "frozen": "This board’s recording is finished — new changes aren’t saved. The photo is saved in Materials.",
@@ -8812,7 +8812,7 @@
           "error": "The laptop couldn’t add the photo. Please try again."
         },
         "uploadError": {
-          "offline": "No connection — the photo wasn’t uploaded.",
+          "offline": "No connection or the server didn’t respond — the photo may not have uploaded. Check Materials or try again.",
           "unsupported_format": "This photo format isn’t supported. Use JPEG, PNG or WebP.",
           "invalid_image": "The file is damaged or isn’t an image.",
           "image_too_large": "The photo is too large.",

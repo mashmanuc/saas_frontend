@@ -21,12 +21,15 @@ export function photoUploadError(e: unknown): PhotoUploadErrorInfo {
       }
       if (code === 'file_too_large') {
         const limit = resp.data?.limit_mb
-        return { key: 'file_too_large', params: { limit: typeof limit === 'number' ? limit : '?' } }
+        // межа невідома — без «понад ? МБ», просто «завелике»
+        return typeof limit === 'number'
+          ? { key: 'file_too_large', params: { limit } }
+          : { key: 'image_too_large', params: {} }
       }
       return { key: 'failed', params: {} }
     case 401: return { key: 'auth', params: {} }
     case 403: return { key: 'forbidden', params: {} }
-    case 413: return { key: 'file_too_large', params: { limit: '?' } }
+    case 413: return { key: 'image_too_large', params: {} }
     case 429: return { key: 'rate_limited', params: {} }
     case 507: return { key: 'quota', params: {} }
     default: return { key: 'failed', params: {} }

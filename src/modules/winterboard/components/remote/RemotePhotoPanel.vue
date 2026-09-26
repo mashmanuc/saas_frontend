@@ -24,7 +24,7 @@
       <p class="wb-remote-photo__meta">
         {{ t('winterboard.remote.photo.info', { width: prepared.width, height: prepared.height, size: fmtSize(prepared.file.size) }) }}
       </p>
-      <p class="wb-remote-photo__question">{{ t('winterboard.remote.photo.confirm') }}</p>
+      <p class="wb-remote-photo__question">{{ t('winterboard.remote.photo.confirm', { page: (pageIndex ?? 0) + 1 }) }}</p>
       <div class="wb-remote-photo__row">
         <button type="button" class="wb-remote-photo__btn is-on" data-testid="photo-add" :disabled="!ready" @click="upload">
           {{ t('winterboard.remote.photo.add') }}
@@ -102,8 +102,11 @@ const props = defineProps<{
 
 /** Скільки чекати відповіді ноутбука, перш ніж чесно сказати «не підтверджено» */
 const ACK_TIMEOUT_MS = 15_000
-/** Відмови, після яких має сенс спробувати ще раз (стан дошки міг змінитись) */
-const RETRYABLE: ReadonlySet<PhotoRejectReason> = new Set(['page_changed', 'input_locked', 'load_failed', 'error'])
+/**
+ * Відмови, після яких має сенс спробувати ще раз без нового завантаження: стан дошки
+ * міг змінитись (перегорнули; «Новий запис» зняв заморозку; на новій сторінці є місце).
+ */
+const RETRYABLE: ReadonlySet<PhotoRejectReason> = new Set(['page_changed', 'input_locked', 'load_failed', 'error', 'limit', 'frozen'])
 
 type Phase = 'idle' | 'preparing' | 'preview' | 'uploading' | 'sending' | 'placed'
   | 'rejected' | 'unconfirmed' | 'upload_error' | 'prepare_error'
@@ -116,6 +119,8 @@ const prepared = shallowRef<PreparedPhoto | null>(null)
 const previewUrl = ref('')
 const libraryAssetId = ref<number | null>(null)
 const requestId = ref<string | null>(null)
+/** Сторінка, яку вчитель бачив, натискаючи «Додати» (а не та, що буде після завантаження) */
+const attemptPage = ref<number | null>(null)
 const reason = ref<PhotoRejectReason | null>(null)
 const uploadError = ref<PhotoUploadErrorInfo | null>(null)
 const prepareError = ref<PhotoPrepareErrorCode>('undecodable')
@@ -140,6 +145,7 @@ function reset(): void {
   prepared.value = null
   libraryAssetId.value = null
   requestId.value = null
+  attemptPage.value = null
   reason.value = null
   uploadError.value = null
   phase.value = 'idle'
@@ -168,6 +174,9 @@ async function onFile(e: Event): Promise<void> {
 async function upload(): Promise<void> {
   const p = prepared.value
   if (!p || phase.value === 'uploading') return
+  // Сторінку фіксуємо ЗАРАЗ: поки файл їде (секунди), дошку можуть перегорнути —
+  // тоді ноутбук відповість page_changed, а не покладе фото мовчки на іншу сторінку.
+  attemptPage.value = props.pageIndex
   phase.value = 'uploading'
   try {
     const asset = await uploadAsset(p.file, null, { purpose: PHOTO_UPLOAD_PURPOSE })
@@ -182,11 +191,11 @@ async function upload(): Promise<void> {
   }
 }
 
-/** photo.add з поточною сторінкою пульта. Повтор тієї ж спроби — той самий request_id. */
+/** photo.add зі сторінкою цієї спроби. Повтор тієї ж спроби — той самий request_id і сторінка. */
 function send(): void {
   if (libraryAssetId.value === null || !requestId.value) return
   clearAckTimer()
-  const page = props.pageIndex
+  const page = attemptPage.value
   if (page === null || !props.ready || !props.send({
     library_asset_id: libraryAssetId.value, request_id: requestId.value, page_index: page,
   })) {
@@ -206,13 +215,16 @@ function send(): void {
 /** Після явної відмови фото не лягло — нова спроба з новим request_id (LAW §9 v1.9). */
 function retryAfterReject(): void {
   requestId.value = newRequestId()
+  attemptPage.value = props.pageIndex   // нова спроба — на поточну сторінку
   send()
 }
 
 watch(() => props.result, (r) => {
   if (!r || !requestId.value || r.request_id !== requestId.value) return
-  // пізня відповідь після «не підтверджено» теж зараховується
-  if (phase.value !== 'sending' && phase.value !== 'unconfirmed') return
+  // пізня відповідь після «не підтверджено» теж зараховується; а «placed» виправляє
+  // й показану відмову (стара відмова могла приїхати раніше за нову відповідь)
+  const open = phase.value === 'sending' || phase.value === 'unconfirmed'
+  if (!open && !(phase.value === 'rejected' && r.status === 'placed')) return
   clearAckTimer()
   if (r.status === 'placed') {
     phase.value = 'placed'

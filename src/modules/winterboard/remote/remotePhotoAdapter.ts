@@ -16,9 +16,18 @@ export interface PhotoLibraryAsset {
   status: string
   content_type: string
   cdn_url: string
+  /** Є лише в активів зі штатного завантаження (файл пройшов сховище й квоту) */
+  content_item_id?: number | null
 }
 
 export interface RemotePhotoDeps {
+  /**
+   * Id дошки, яку зараз тримає стор. Стор глобальний: поки вантажилось фото, вчитель
+   * міг перейти на іншу дошку — тоді класти не можна, навіть якщо номер сторінки збігся.
+   */
+  boardId: () => string | null
+  /** Id поточної сторінки: видалена сторінка лишає той самий номер, але це вже інша сторінка */
+  currentPageId: () => string | null
   currentPageIndex: () => number
   /** Дошка з фіналізованим записом (REPLAY_FROZEN_NO_WRITE) */
   isFrozen: () => boolean
@@ -61,7 +70,12 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
 
   async function run(req: RemotePhotoRequest): Promise<RemotePhotoOutcome> {
     const id = photoAssetIdFor(req.requestId)
+    // Порядок перевірок: дошка → чи фото вже лежить → стан сторінки. Інакше «вже
+    // лежить» на перегорнутій сторінці дало б page_changed, і нова спроба — копію.
+    const board = deps.boardId()
+    if (!board) return rejected('page_changed')
     if (deps.hasAssetAnywhere(id)) return { status: 'placed' }
+    const pageId = deps.currentPageId()
 
     const early = blocker(req.pageIndex)
     if (early) return rejected(early)
@@ -80,6 +94,8 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
       return rejected('not_found')
     }
     if (!PHOTO_MIME_TYPES.has(String(asset.content_type || '').toLowerCase())) return rejected('not_image')
+    // Лише файл зі штатного завантаження (ТЗ §3.4): не «метадані» з довільним cdn_url
+    if (!asset.content_item_id) return rejected('not_image')
 
     let dims: { naturalWidth: number; naturalHeight: number }
     try {
@@ -89,9 +105,11 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
       return rejected('load_failed')
     }
 
-    // Поки вантажилось, фото могло вже лягти (інша вкладка цієї ж дошки), а
-    // сторінку — перегорнути. На іншу сторінку фото не кладемо.
+    // Поки вантажилось, дошку могли змінити (стор спільний), фото — вже покласти
+    // (інша вкладка цієї ж дошки), а сторінку — перегорнути чи видалити.
+    if (deps.boardId() !== board) return rejected('page_changed')
     if (deps.hasAssetAnywhere(id)) return { status: 'placed' }
+    if (deps.currentPageId() !== pageId) return rejected('page_changed')
     const late = blocker(req.pageIndex)
     if (late) return rejected(late)
 

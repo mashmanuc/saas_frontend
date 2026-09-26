@@ -88,6 +88,52 @@ describe('RemotePhotoPanel', () => {
     expect(w.find('[data-testid="photo-sending"]').exists()).toBe(true)
   })
 
+  it('сторінка — та, що була при «Додати», а не після завантаження (перегорнули під час завантаження)', async () => {
+    let finish: (v: unknown) => void = () => {}
+    uploadAsset.mockImplementation(() => new Promise((r) => { finish = r }))
+    const { w, sent } = mountPanel({ pageIndex: 2 })
+    await pickFile(w)
+    expect(w.text()).toContain('Додати на сторінку 3 дошки?')
+    await w.find('[data-testid="photo-add"]').trigger('click')
+    await w.setProps({ pageIndex: 5 })                       // поки файл їде
+    finish({ id: 77, cdn_url: 'https://cdn/x.jpg', status: 'active', content_type: 'image/jpeg' })
+    await flushPromises()
+    expect(sent(0).page_index).toBe(2)                        // ноутбук відповість page_changed, а не покладе на 6
+  })
+
+  it('стара відмова, а потім «placed» тієї ж спроби — показуємо правду: фото на дошці', async () => {
+    const { w, sent } = mountPanel()
+    await pickFile(w)
+    await w.find('[data-testid="photo-add"]').trigger('click')
+    await flushPromises()
+    const rid = sent(0).request_id
+    await w.setProps({ result: { request_id: rid, status: 'rejected', reason: 'load_failed' } })
+    expect(w.find('[data-testid="photo-rejected"]').exists()).toBe(true)
+    await w.setProps({ result: { request_id: rid, status: 'placed' } })
+    expect(w.find('[data-testid="photo-placed"]').exists()).toBe(true)
+  })
+
+  it('ліміт об’єктів і заморожена дошка — повтор без нового завантаження', async () => {
+    const { w, send } = mountPanel()
+    await pickFile(w)
+    await w.find('[data-testid="photo-add"]').trigger('click')
+    await flushPromises()
+    for (const reason of ['limit', 'frozen'] as const) {
+      const last = send.mock.calls[send.mock.calls.length - 1]![0]
+      await w.setProps({ result: { request_id: last.request_id, status: 'rejected', reason } })
+      expect(w.find('[data-testid="photo-retry"]').exists()).toBe(true)
+      await w.find('[data-testid="photo-retry"]').trigger('click')
+    }
+    expect(uploadAsset).toHaveBeenCalledTimes(1)
+  })
+
+  it('«Скасувати» звільняє прев’ю', async () => {
+    const { w } = mountPanel()
+    await pickFile(w)
+    await w.find('[data-testid="photo-cancel"]').trigger('click')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
+  })
+
   it('результат чужої спроби ігнорується; своєї — «Фото на дошці»', async () => {
     const { w, send, sent } = mountPanel()
     await pickFile(w)

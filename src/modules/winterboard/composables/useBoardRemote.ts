@@ -315,6 +315,9 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'photo.add': {
         const req = readPhotoRequest(d.args as Record<string, unknown>)
         if (!req) return
+        // Старий результат (зокрема цієї ж спроби) не повинен їхати в наступних
+        // станах, поки нова відповідь не готова: телефон прийняв би його за свіжий.
+        photoResult.value = null
         if (!opts.photo) {
           reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'unsupported' })
           return

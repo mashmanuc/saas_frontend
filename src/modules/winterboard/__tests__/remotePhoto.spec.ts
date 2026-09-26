@@ -9,11 +9,11 @@ import { mount, flushPromises } from '@vue/test-utils'
 import {
   parseRemotePhoto, readPhotoRequest, newRequestId, photoAssetIdFor, PHOTO_REQUEST_ID_RE,
 } from '../remote/photoContract'
-import { fitImageSize, buildPlacedImageAsset } from '../board/placeImage'
+import { fitImageSize, buildPlacedImageAsset, placementFrame } from '../board/placeImage'
 import { createRemotePhotoAdapter, type RemotePhotoDeps } from '../remote/remotePhotoAdapter'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { derivePair } from '../remote/remotePair'
-import { targetSize, canPassThrough, PHOTO_MAX_SIDE, PHOTO_PASSTHROUGH_MAX_BYTES } from '../remote/preparePhoto'
+import { targetSize, canPassThrough, sniffImageType, PHOTO_MAX_SIDE, PHOTO_PASSTHROUGH_MAX_BYTES } from '../remote/preparePhoto'
 import { photoUploadError } from '../remote/photoUploadError'
 
 const RID = '3f2b8c1e-9a4d-4c6b-8e21-5d7a0f9b1c2e'
@@ -73,6 +73,22 @@ describe('розміщення перевіреного зображення (б
     expect(fitImageSize({ src: 'x', naturalWidth: 120, naturalHeight: 80 }, { w: 800, h: 600 })).toEqual({ w: 120, h: 80 })
   })
 
+  it('рамка — у видимій частині АРКУША: проєктор 4:3 з аркушем 16:9 не дає фото вилізти за низ', () => {
+    // аркуш 1920×1080, контейнер 1024×768, масштаб по ширині ≈ 0.533, аркуш угорі
+    const f = placementFrame({ containerW: 1024, containerH: 768, zoom: 1024 / 1920, offset: { x: 0, y: 0 }, page: { w: 1920, h: 1080 } })
+    expect(f.center.x).toBeCloseTo(960, 0)
+    expect(f.center.y).toBeCloseTo(540, 0)          // центр аркуша, а не центр екрана (720)
+    const a = buildPlacedImageAsset({ id: 'p', image: { src: 'x', naturalWidth: 2304, naturalHeight: 3072 }, center: f.center, maxSize: f.maxSize })
+    expect(a.y).toBeGreaterThanOrEqual(0)
+    expect(a.y + a.h).toBeLessThanOrEqual(1080)       // низ у межах аркуша
+  })
+
+  it('аркуш зовсім не видно — рамка з видимої області', () => {
+    const f = placementFrame({ containerW: 800, containerH: 600, zoom: 1, offset: { x: -5000, y: -5000 }, page: { w: 1920, h: 1080 } })
+    expect(f.center).toEqual({ x: 5400, y: 5300 })
+    expect(f.maxSize).toEqual({ w: 640, h: 480 })
+  })
+
   it('кладе картинку центром у задану точку', () => {
     const a = buildPlacedImageAsset({
       id: 'photo-1', image: { src: 'https://cdn/x.jpg', naturalWidth: 2000, naturalHeight: 1000 },
@@ -87,12 +103,14 @@ describe('розміщення перевіреного зображення (б
 function deps(over: Partial<RemotePhotoDeps> = {}) {
   const placed = new Set<string>()
   const d = {
+    boardId: vi.fn((): string | null => 'board-A'),
+    currentPageId: vi.fn((): string | null => 'page-1'),
     currentPageIndex: vi.fn(() => 1),
     isFrozen: vi.fn(() => false),
     isInputLocked: vi.fn(() => false),
     canAddObject: vi.fn(() => true),
     hasAssetAnywhere: vi.fn((id: string) => placed.has(id)),
-    fetchLibraryAsset: vi.fn(async () => ({ status: 'active', content_type: 'image/jpeg', cdn_url: 'https://cdn/p.jpg' })),
+    fetchLibraryAsset: vi.fn(async () => ({ status: 'active', content_type: 'image/jpeg', cdn_url: 'https://cdn/p.jpg', content_item_id: 5 })),
     loadImage: vi.fn(async () => ({ naturalWidth: 3072, naturalHeight: 2304 })),
     place: vi.fn((_img, id: string) => { placed.add(id) }),
     ...over,
@@ -132,6 +150,8 @@ describe('адаптер photo.add на ноутбуці', () => {
     ['not_image', { fetchLibraryAsset: vi.fn(async () => ({ status: 'active', content_type: 'image/gif', cdn_url: 'u' })) }],
     ['not_image', { fetchLibraryAsset: vi.fn(async () => ({ status: 'active', content_type: 'application/pdf', cdn_url: 'u' })) }],
     ['load_failed', { loadImage: vi.fn(async () => { throw new Error('image_load_failed') }) }],
+    // лише файл зі штатного завантаження: «метадані» з довільним cdn_url — ні
+    ['not_image', { fetchLibraryAsset: vi.fn(async () => ({ status: 'active', content_type: 'image/png', cdn_url: 'https://evil/x.png', content_item_id: null })) }],
   ])('%s — фото не кладеться', async (reason, over) => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const d = deps(over as Partial<RemotePhotoDeps>)
@@ -181,6 +201,44 @@ describe('адаптер photo.add на ноутбуці', () => {
     })
     expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'rejected', reason: 'page_changed' })
     expect(d.place).not.toHaveBeenCalled()
+  })
+
+  it('перейшли на іншу дошку, поки вантажилось фото, — не кладемо, навіть коли номер сторінки той самий', async () => {
+    let board = 'board-A'
+    const d = deps({
+      boardId: vi.fn(() => board),
+      loadImage: vi.fn(async () => { board = 'board-B'; return { naturalWidth: 10, naturalHeight: 10 } }),
+    })
+    expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'rejected', reason: 'page_changed' })
+    expect(d.place).not.toHaveBeenCalled()
+  })
+
+  it('поточну сторінку видалили, поки вантажилось (номер той самий) — не кладемо', async () => {
+    let pageId = 'page-1'
+    const d = deps({
+      currentPageId: vi.fn(() => pageId),
+      loadImage: vi.fn(async () => { pageId = 'page-2'; return { naturalWidth: 10, naturalHeight: 10 } }),
+    })
+    expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'rejected', reason: 'page_changed' })
+    expect(d.place).not.toHaveBeenCalled()
+  })
+
+  it('фото вже поклала інша вкладка, а сторінку перегорнули — placed, а не page_changed (інакше нова спроба дала б копію)', async () => {
+    const seen = new Set<string>()
+    let page = 1
+    const d = deps({
+      currentPageIndex: vi.fn(() => page),
+      hasAssetAnywhere: vi.fn((id: string) => seen.has(id)),
+      loadImage: vi.fn(async () => { seen.add(photoAssetIdFor(RID)); page = 2; return { naturalWidth: 10, naturalHeight: 10 } }),
+    })
+    expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'placed' })
+    expect(d.place).not.toHaveBeenCalled()
+  })
+
+  it('дошки немає (кімнату закрито) — відмова без запитів', async () => {
+    const d = deps({ boardId: vi.fn(() => null) })
+    expect(await createRemotePhotoAdapter(d).add(REQ)).toEqual({ status: 'rejected', reason: 'page_changed' })
+    expect(d.fetchLibraryAsset).not.toHaveBeenCalled()
   })
 
   it('фото лягло іншим шляхом, поки вантажилось, — placed без другої операції', async () => {
@@ -240,6 +298,22 @@ describe('ноутбук: photo.add через адаптер кімнати', (
     expect(lastState(sendMessage).photo).toEqual({ request_id: RID, status: 'placed' })
   })
 
+  it('новий photo.add одразу прибирає старий результат зі станів (не видати старе за нове)', async () => {
+    vi.useFakeTimers()
+    const add = vi.fn()
+      .mockImplementationOnce(async () => ({ status: 'rejected' as const, reason: 'load_failed' as const }))
+      .mockImplementationOnce(() => new Promise(() => {}))   // друга відповідь ще не готова
+    const { sendMessage } = setupRemote({ add })
+    fire('photo.add', { library_asset_id: 9, request_id: RID, page_index: 1 })
+    await flushPromises()
+    vi.advanceTimersByTime(200)
+    expect(lastState(sendMessage).photo).toEqual({ request_id: RID, status: 'rejected', reason: 'load_failed' })
+    fire('photo.add', { library_asset_id: 9, request_id: RID, page_index: 1 })   // «Надіслати ще раз»
+    fire('hello')                                                                  // будь-який стан далі
+    vi.advanceTimersByTime(200)
+    expect(lastState(sendMessage).photo).toBeUndefined()
+  })
+
   it('без адаптера (класна кімната) — чесне rejected: unsupported, а не мовчанка', async () => {
     vi.useFakeTimers()
     const { sendMessage } = setupRemote()
@@ -282,6 +356,13 @@ describe('підготовка фото на телефоні', () => {
     expect(targetSize(1200, 900, 3072)).toEqual({ width: 1200, height: 900 })
   })
 
+  it('тип — за сигнатурою байтів, а не за File.type', () => {
+    expect(sniffImageType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]))).toBe('image/png')
+    expect(sniffImageType(new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50]))).toBe('image/webp')
+    expect(sniffImageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]))).toBe('image/jpeg')
+    expect(sniffImageType(new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]))).toBe('')   // HEIC
+  })
+
   it('JPEG перекодовуємо завжди (EXIF/GPS), PNG/WebP у межах — як є', () => {
     expect(canPassThrough('image/jpeg', 100_000, 800, 600)).toBe(false)
     expect(canPassThrough('image/png', 100_000, 800, 600)).toBe(true)
@@ -301,5 +382,8 @@ describe('підготовка фото на телефоні', () => {
     expect(photoUploadError({ response: { status: 507, data: {} } }).key).toBe('quota')
     expect(photoUploadError({ response: { status: 401, data: {} } }).key).toBe('auth')
     expect(photoUploadError({ response: { status: 502, data: {} } }).key).toBe('failed')
+    // межа невідома — без «понад ? МБ»
+    expect(photoUploadError({ response: { status: 413, data: {} } })).toEqual({ key: 'image_too_large', params: {} })
+    expect(photoUploadError({ response: { status: 400, data: { error: 'file_too_large' } } })).toEqual({ key: 'image_too_large', params: {} })
   })
 })
