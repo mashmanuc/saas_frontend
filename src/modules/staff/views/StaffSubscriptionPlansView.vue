@@ -102,24 +102,23 @@
             </button>
             <!-- 2026-09-26: FREE не вимикається — з нього беруться ліміти для всіх
                  (бекенд теж відмовить); вимкнений FREE ламав завантаження кожному. -->
-            <template v-if="plan.slug !== 'free'">
-              <button
-                v-if="plan.is_active"
-                class="btn-deactivate"
-                @click="handleDeactivate(plan)"
-                :title="$t('staff.plans.deactivate')"
-              >
-                <EyeOff :size="14" />
-              </button>
-              <button
-                v-else
-                class="btn-activate"
-                @click="handleActivate(plan)"
-                :title="$t('staff.plans.activate')"
-              >
-                <Eye :size="14" />
-              </button>
-            </template>
+            <button
+              v-if="plan.is_active && plan.slug !== 'free'"
+              class="btn-deactivate"
+              @click="handleDeactivate(plan)"
+              :title="$t('staff.plans.deactivate')"
+            >
+              <EyeOff :size="14" />
+            </button>
+            <!-- «Активувати» — для будь-якого вимкненого, зокрема FREE (його треба вміти повернути) -->
+            <button
+              v-else-if="!plan.is_active"
+              class="btn-activate"
+              @click="handleActivate(plan)"
+              :title="$t('staff.plans.activate')"
+            >
+              <Eye :size="14" />
+            </button>
           </div>
         </div>
       </div>

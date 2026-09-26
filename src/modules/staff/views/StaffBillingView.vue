@@ -52,7 +52,8 @@
           </thead>
           <tbody>
             <tr v-for="cs in billing.pending_checkouts" :key="cs.order_id">
-              <td class="cell-mono">{{ cs.order_id.slice(0, 8) }}…</td>
+              <!-- БУЛО slice(0,8): order_id Plata = «order_<hex>», тож усі рядки виглядали однаково -->
+              <td class="cell-mono" :title="cs.order_id">{{ cs.order_id }}</td>
               <td>{{ cs.user_email }}</td>
               <td>{{ cs.plan }}</td>
               <td :class="cs.pending_age_seconds > 3600 ? 'cell-danger' : ''">
@@ -161,7 +162,8 @@
             <dd>{{ detailPayment.provider }}</dd>
           </div>
           <div class="detail-row" v-if="detailPayment.order_id">
-            <dt>{{ $t('staff.billing.order') }}</dt>
+            <!-- це provider_payment_id (номер у провайдера), не наш order_id із таблиці чекаутів -->
+            <dt>{{ $t('staff.billing.providerPaymentId') }}</dt>
             <dd class="mono">{{ detailPayment.order_id }}</dd>
           </div>
           <div class="detail-row">

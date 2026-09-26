@@ -4885,7 +4885,8 @@
       "statusPending": "Pending",
       "statusSuccess": "Success",
       "statusRefunded": "Refunded",
-      "loadFailed": "Could not load finance data"
+      "loadFailed": "Could not load finance data",
+      "providerPaymentId": "Provider payment ID"
     },
     "health": {
       "title": "Platform metrics",
@@ -5342,7 +5343,9 @@
       "confirmChangeRole": "Change the role of {email} to “{role}”? Staff console access changes together with the role.",
       "mfaWasNotEnabled": "The user had no MFA enabled — nothing to reset.",
       "confirmGrantSubscription": "Grant {plan} for {days} days to {email}? Access starts right away, no payment needed.",
-      "subscriptionGrantedReal": "Granted: {plan} until {until}. The user’s plan now: {entitlement}."
+      "subscriptionGrantedReal": "Granted: {plan} until {until}. The user’s plan now: {entitlement}.",
+      "mfaResetWithGrace": "MFA reset. Sign-in without a code works until {until} — by then the user must set MFA up again.",
+      "roleChangedMfaGrace": "The new role requires MFA: it must be set up by {until}."
     },
     "journey": {
       "title": "User Journey (Funnel)",
@@ -5890,7 +5893,8 @@
       "featuresTitle": "Features",
       "cancelScheduledWarning": "Subscription will be canceled at period end",
       "cancelButton": "Cancel Subscription",
-      "includedTitle": "What's included"
+      "includedTitle": "What's included",
+      "providerStaff": "Granted by the M4SH team"
     },
     "noPlanState": {
       "title": "No Subscription",

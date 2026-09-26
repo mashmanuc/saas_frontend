@@ -153,6 +153,12 @@ function roleLabel(role: string): string {
   const key = `staff.roles.${String(role || '').toLowerCase()}`
   return te(key) ? t(key) : role
 }
+// Той самий маршрут з іншим ?role / ?q (напр. знову з дашборда) — підхопити.
+watch(() => [route.query.role, route.query.q], ([role, q]) => {
+  roleFilter.value = String(role ?? '')
+  if (String(q ?? '') !== searchQuery.value) searchQuery.value = String(q ?? '')
+})
+
 const roleOptions = computed(() =>
   ['student', 'tutor', 'admin', 'superadmin'].map(value => ({ value, label: roleLabel(value) }))
 )

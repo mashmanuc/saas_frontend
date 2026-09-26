@@ -52,8 +52,11 @@
           <span class="text-muted-foreground">
             {{ $t('billing.currentPlanCard.providerLabel') }}
           </span>
+          <!-- 2026-09-26: видача staff без оплати — людині «Staff» нічого не каже -->
           <span class="font-medium capitalize text-foreground">
-            {{ subscription.provider }}
+            {{ String(subscription.provider).toLowerCase() === 'staff'
+              ? $t('billing.currentPlanCard.providerStaff')
+              : subscription.provider }}
           </span>
         </div>
       </div>

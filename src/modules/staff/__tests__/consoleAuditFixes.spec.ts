@@ -25,6 +25,7 @@ import StatCard from '../components/StatCard.vue'
 import RecentActivityFeed from '../components/RecentActivityFeed.vue'
 import StaffUsersListView from '../views/StaffUsersListView.vue'
 import StaffBillingView from '../views/StaffBillingView.vue'
+import CurrentPlanCard from '@/modules/billing/components/CurrentPlanCard.vue'
 
 function mountUk(component: any, props: Record<string, unknown> = {}) {
   const i18n = createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk }, missingWarn: false })
@@ -95,9 +96,12 @@ describe('Фінанси: суми й статуси', () => {
 
 describe('Остання активність', () => {
   it('подія перекладена, ціль показана, клік веде на того, з ким дію зроблено', async () => {
+    // Так подію видачі пише бекенд: entity — сама підписка, людина — у metadata.target_user_id
+    // (рев'ю 2026-09-26: попередня версія тесту подавала entity_type 'User', якого бекенд не пише).
     get.mockResolvedValue({ results: [{
-      id: 'e1', action: 'staff.user.subscription_granted', entity_type: 'User', entity_id: '42',
-      user_id: 1, user_email: 'staff@m4sh.local', metadata: { target_email: 'teacher@m4sh.local' },
+      id: 'e1', action: 'staff.user.subscription_granted', entity_type: 'Subscription',
+      entity_id: '0b6d7c1e-0000-4000-8000-000000000000', user_id: 1, user_email: 'staff@m4sh.local',
+      metadata: { target_user_id: '42', target_email: 'teacher@m4sh.local' },
       created_at: new Date().toISOString(),
     }] })
     const w = mountUk(RecentActivityFeed)
@@ -107,6 +111,17 @@ describe('Остання активність', () => {
     expect(w.text()).not.toContain('staff.user.subscription_granted')
     await w.find('.feed-item').trigger('click')
     expect(push).toHaveBeenCalledWith('/staff/users/42')
+  })
+})
+
+describe('Кабінет вчителя: видана вручну підписка', () => {
+  it('провайдер STAFF показано людською мовою, а не «Staff»', () => {
+    const w = mountUk(CurrentPlanCard, {
+      planCode: 'PRO',
+      subscription: { status: 'ACTIVE', provider: 'staff', current_period_end: '2026-10-26T10:00:00Z' },
+    })
+    expect(w.text()).toContain('Надано командою M4SH')
+    expect(w.text()).not.toMatch(/Staff/)
   })
 })
 
@@ -122,6 +137,8 @@ describe('Нові ключі перекладу є в uk/en/ru', () => {
     'staff.realtime.title', 'staff.realtime.loadFailed',
     'staff.analytics.hiddenBlocksNote', 'staff.billing.statusRefunded', 'staff.plans.confirmPriceChange',
     'staff.activityFeed.events.staff_user_subscription_granted', 'staff.platformSettings.landing.replayLabel',
+    'staff.userOverview.mfaResetWithGrace', 'staff.userOverview.roleChangedMfaGrace', 'staff.billing.providerPaymentId',
+    'billing.currentPlanCard.providerStaff',
   ]
   const get = (obj: any, path: string) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj)
   for (const [name, messages] of Object.entries({ uk, en, ru })) {

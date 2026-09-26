@@ -66,6 +66,12 @@ export interface StaffBillingInfo {
   provider?: string | null
 }
 
+/** Права ТОГО, ХТО ДИВИТЬСЯ картку (бекенд, 2026-09-26) — фронт їх не вгадує. */
+export interface StaffViewerPermissions {
+  can_billing_ops: boolean
+  is_superadmin: boolean
+}
+
 export interface StaffActivityInfo {
   inquiries_count_30d: number
   contacts_unlocked_30d: number
@@ -74,6 +80,7 @@ export interface StaffActivityInfo {
 export interface StaffUserOverview {
   user: StaffUser
   trust: StaffTrustInfo
+  viewer?: StaffViewerPermissions
   billing: StaffBillingInfo
   activity: StaffActivityInfo
 }

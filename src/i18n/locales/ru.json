@@ -4994,7 +4994,8 @@
       "paymentDetail": "Детали платежа",
       "showing": "{from}–{to} из {total}",
       "statusRefunded": "Возвращено",
-      "loadFailed": "Не удалось загрузить финансы"
+      "loadFailed": "Не удалось загрузить финансы",
+      "providerPaymentId": "Номер у провайдера"
     },
     "health": {
       "title": "Показатели платформы",
@@ -5451,7 +5452,9 @@
       "confirmChangeRole": "Сменить роль {email} на «{role}»? Вместе с ролью изменятся права доступа к админке.",
       "mfaWasNotEnabled": "MFA у пользователя не было включено — сбрасывать нечего.",
       "confirmGrantSubscription": "Выдать {plan} на {days} дн. пользователю {email}? Доступ появится сразу, оплата не нужна.",
-      "subscriptionGrantedReal": "Выдано: {plan} до {until}. Сейчас у пользователя план: {entitlement}."
+      "subscriptionGrantedReal": "Выдано: {plan} до {until}. Сейчас у пользователя план: {entitlement}.",
+      "mfaResetWithGrace": "MFA сброшено. Войти без кода можно до {until} — к этому времени пользователь должен настроить MFA заново.",
+      "roleChangedMfaGrace": "Новая роль требует MFA: настроить его нужно до {until}."
     },
     "consoleName": "Админ-панель",
     "analytics": {
@@ -6125,7 +6128,8 @@
       "featuresTitle": "Возможности",
       "cancelScheduledWarning": "Подписка будет отменена в конце периода",
       "cancelButton": "Отменить подписку",
-      "includedTitle": "Что входит"
+      "includedTitle": "Что входит",
+      "providerStaff": "Предоставлено командой M4SH"
     },
     "noPlanState": {
       "title": "Без подписки",

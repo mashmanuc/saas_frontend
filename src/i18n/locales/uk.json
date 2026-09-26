@@ -5387,7 +5387,8 @@
       "paymentDetail": "Деталі платежу",
       "showing": "{from}–{to} з {total}",
       "statusRefunded": "Повернено",
-      "loadFailed": "Не вдалося завантажити фінанси"
+      "loadFailed": "Не вдалося завантажити фінанси",
+      "providerPaymentId": "Номер у провайдера"
     },
     "health": {
       "title": "Показники платформи",
@@ -5844,7 +5845,9 @@
       "confirmChangeRole": "Змінити роль {email} на «{role}»? Разом із роллю зміняться права доступу до адмінки.",
       "mfaWasNotEnabled": "MFA у користувача не було увімкнено — скидати нічого.",
       "confirmGrantSubscription": "Видати {plan} на {days} дн. користувачу {email}? Доступ з’явиться одразу, оплата не потрібна.",
-      "subscriptionGrantedReal": "Видано: {plan} до {until}. Зараз у користувача план: {entitlement}."
+      "subscriptionGrantedReal": "Видано: {plan} до {until}. Зараз у користувача план: {entitlement}.",
+      "mfaResetWithGrace": "MFA скинуто. Увійти без коду можна до {until} — до цього часу людина має налаштувати MFA заново.",
+      "roleChangedMfaGrace": "Нова роль вимагає MFA: налаштувати його треба до {until}."
     },
     "journey": {
       "title": "Шлях користувача (воронка)",
@@ -6387,7 +6390,8 @@
       "featuresTitle": "Можливості",
       "cancelScheduledWarning": "Підписка буде скасована в кінці періоду",
       "cancelButton": "Скасувати підписку",
-      "includedTitle": "Що входить"
+      "includedTitle": "Що входить",
+      "providerStaff": "Надано командою M4SH"
     },
     "noPlanState": {
       "title": "Без підписки",

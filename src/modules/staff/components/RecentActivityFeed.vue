@@ -110,8 +110,12 @@ function actionLabel(action: string): string {
 }
 
 // БУЛО: клік відкривав автора події — для дій staff це сам staff, а не той, з ким дію зроблено.
+// Події staff несуть metadata.target_user_id (видача, скасування, бан, роль, MFA…).
 function navigateToEntity(ev: AuditEvent) {
-  if (ev.entity_type === 'User' && ev.entity_id) {
+  const target = ev.metadata?.target_user_id
+  if (target) {
+    router.push(`/staff/users/${target}`)
+  } else if (ev.entity_type === 'User' && ev.entity_id) {
     router.push(`/staff/users/${ev.entity_id}`)
   } else if (ev.user_id) {
     router.push(`/staff/users/${ev.user_id}`)

@@ -33,7 +33,9 @@
       <LoadingSpinner />
     </div>
 
-    <div v-else-if="staffStore.userOverview" class="overview-content">
+    <!-- Лише картка користувача з адреси: при збої чи запізнілій відповіді іншого
+         користувача не показуємо (рев'ю 2026-09-26) — дії йшли б на нього. -->
+    <div v-else-if="isRouteUserShown" class="overview-content">
       <!-- User Info Section -->
       <Card class="section">
         <h2 class="section-heading">{{ $t('staff.userOverview.userInfo') }}</h2>
@@ -248,7 +250,7 @@
           <h3>{{ $t('staff.userOverview.billingActions') }}</h3>
           <div class="action-buttons">
             <Button
-              v-if="!staffStore.userOverview.billing.cancel_at_period_end"
+              v-if="!staffStore.userOverview.billing.cancel_at_period_end && String(staffStore.userOverview.billing.subscription_status).toUpperCase() !== 'TRIALING'"
               variant="secondary"
               :disabled="staffStore.isLoading"
               @click="handleCancelBilling('at_period_end')"
@@ -271,7 +273,7 @@
         <h2 class="section-heading">{{ $t('staff.userOverview.billingOperations') }}</h2>
         <!-- Бекенд пускає сюди лише суперкористувача (IsBillingOps): admin без цього
              отримував 403-тост на кожному відкритті картки. -->
-        <UserBillingOpsPanel v-if="isSuperadmin" :user-id="staffStore.userOverview.user.id" />
+        <UserBillingOpsPanel v-if="canBillingOps" :user-id="staffStore.userOverview.user.id" />
         <p v-else class="mgmt-desc">{{ $t('staff.billingOps.superadminOnly') }}</p>
       </Card>
 
@@ -403,7 +405,12 @@ const route = useRoute()
 const { t, te } = useI18n()
 const staffStore = useStaffStore()
 const authStore = useAuthStore()
-const isSuperadmin = computed(() => String(authStore.user?.role || '').toLowerCase() === 'superadmin')
+// Права глядача — з бекенда (overview.viewer); роль із authStore — лише запасний варіант.
+const viewer = computed(() => staffStore.userOverview?.viewer ?? null)
+const isSuperadmin = computed(() =>
+  viewer.value ? !!viewer.value.is_superadmin : String(authStore.user?.role || '').toLowerCase() === 'superadmin'
+)
+const canBillingOps = computed(() => (viewer.value ? !!viewer.value.can_billing_ops : isSuperadmin.value))
 
 // Останній вхід — із сесій (бекенд віддає `last_sign_in_at`); `last_login` — лише
 // запасний, бо його ніхто не пише (на проді 2 з 88, 2026-09-26).
@@ -422,8 +429,11 @@ const roleForm = ref({ newRole: '', loading: false, result: '', error: false })
 const mfaForm = ref({ loading: false, result: '', error: false })
 const grantForm = ref({ planId: '' as string | number, days: 30, loading: false, result: '', error: false })
 
-// 2026-09-26 (аудит адмінки): ролі, які адмінка дає ставити (бекенд перевіряє ще й хто ставить).
-const ASSIGNABLE_ROLES = ['student', 'tutor', 'admin', 'superadmin'] as const
+// 2026-09-26 (аудит адмінки): ролі, які адмінка дає ставити. Ролі адмінки видає лише
+// суперадмін (бекенд теж відмовить) — адміну їх і не пропонуємо.
+const ASSIGNABLE_ROLES = computed(() =>
+  isSuperadmin.value ? ['student', 'tutor', 'admin', 'superadmin'] : ['student', 'tutor']
+)
 // Області, які приймає бекенд (StaffBanCreateSerializer). БУЛО: PLATFORM/MESSAGING → тихий 400.
 const BAN_SCOPES: BanScope[] = [BanScope.ALL, BanScope.BILLING, BanScope.CONTACTS, BanScope.CHAT, BanScope.INQUIRIES]
 // Створення бану сховано (рішення «сховати, не видаляти»): у v1 бан блокує лише оплату.
@@ -439,13 +449,13 @@ function errorDetail(e: any, fallback: string): string {
 
 // Видавати має сенс лише платний, увімкнений план у гривнях (USD/Paddle вимкнено).
 const grantablePlans = computed(() =>
-  availablePlans.value.filter(p => p.slug !== 'free' && (!p.currency || p.currency === 'UAH'))
+  availablePlans.value.filter(p => !p.slug.startsWith('free') && (!p.currency || p.currency === 'UAH'))
 )
 
-const showSpinner = computed(() => {
-  const shownId = String(staffStore.userOverview?.user?.id ?? '')
-  return staffStore.isLoading && shownId !== String(route.params.id ?? '')
-})
+const isRouteUserShown = computed(() =>
+  !!staffStore.userOverview && String(staffStore.userOverview.user?.id ?? '') === String(route.params.id ?? '')
+)
+const showSpinner = computed(() => !isRouteUserShown.value && !staffStore.loadUserOverviewError)
 
 const actionError = computed(() => {
   const err = staffStore.cancelBillingError || staffStore.liftBanError || staffStore.createBanError || staffStore.error
@@ -454,7 +464,8 @@ const actionError = computed(() => {
 
 const canCancelSubscription = computed(() => {
   const status = String(staffStore.userOverview?.billing?.subscription_status || '').toUpperCase()
-  return status === 'ACTIVE' || status === 'PAST_DUE'
+  // TRIALING — лише «негайно» (пробний завершується сам; рев'ю 2026-09-26)
+  return status === 'ACTIVE' || status === 'PAST_DUE' || status === 'TRIALING'
 })
 
 function labelOr(key: string, fallback: string): string {
@@ -482,6 +493,7 @@ async function handleChangeRole() {
   try {
     const res = await apiClient.patch(`/v1/staff/users/${userId}/change-role/`, { role: roleForm.value.newRole })
     roleForm.value.result = t('staff.userOverview.roleChanged', { role: roleLabel(res.new_role) })
+      + (res?.mfa_grace_until ? ' ' + t('staff.userOverview.roleChangedMfaGrace', { until: formatDate(res.mfa_grace_until) }) : '')
     roleForm.value.newRole = ''
     await staffStore.loadUserOverview(String(userId))
   } catch (e: any) {
@@ -502,9 +514,11 @@ async function handleResetMfa() {
   try {
     const res = await apiClient.post(`/v1/staff/users/${userId}/reset-mfa/`)
     // БУЛО: «успішно» за будь-якої відповіді. Тепер — що сталося насправді.
-    mfaForm.value.result = res?.mfa_cleared
-      ? t('staff.userOverview.mfaResetSuccess')
-      : t('staff.userOverview.mfaWasNotEnabled')
+    mfaForm.value.result = !res?.mfa_cleared
+      ? t('staff.userOverview.mfaWasNotEnabled')
+      : res?.mfa_grace_until
+        ? t('staff.userOverview.mfaResetWithGrace', { until: formatDate(res.mfa_grace_until) })
+        : t('staff.userOverview.mfaResetSuccess')
   } catch (e: any) {
     mfaForm.value.error = true
     mfaForm.value.result = errorDetail(e, t('staff.userOverview.mfaResetFailed'))
@@ -560,8 +574,13 @@ const banForm = ref({
   reason: ''
 })
 
+// Послідовність запитів: запізніла відповідь на попередню адресу не повинна
+// лишитись на екрані під новою (рев'ю 2026-09-26).
+let loadSeq = 0
+
 async function loadUser(userId: string) {
   if (!userId) return
+  const seq = ++loadSeq
   staffStore.clearErrors()
   // Результати форм належать попередньому користувачеві — при переході з картки на
   // картку вони лишались на екрані (знайдено наживо 2026-09-26).
@@ -573,6 +592,12 @@ async function loadUser(userId: string) {
     await staffStore.loadUserOverview(userId)
   } catch (error) {
     console.error('Failed to load user overview:', error)
+  }
+  if (seq !== loadSeq) {
+    // новіший запит уже пішов; якщо ця відповідь перезаписала сховище — перечитати поточного
+    const routeId = String(route.params.id ?? '')
+    if (routeId && String(staffStore.userOverview?.user?.id ?? '') !== routeId) loadUser(routeId)
+    return
   }
   loadAuditLog(userId)
 }
