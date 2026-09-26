@@ -3,7 +3,11 @@
     <!-- Глобальний fallback: краш верхнього рівня / збій чанка → брендована
          сторінка «Онови», а не порожній екран (замість blank 2026-07-21). -->
     <AppErrorBoundary>
-      <router-view />
+      <!-- Сесію завершено (вихід, «Завершити» з телефона, вихід в іншій вкладці): сторінку з
+           даними розмонтовано ДО переходу — інакше «Залишитись» у «Покинути сайт?» під час
+           запису лишав дошку на екрані (прийняття власника 2026-09-26; ТЗ R6). -->
+      <SessionEndedView v-if="hidePageForEndedSession" />
+      <router-view v-else />
     </AppErrorBoundary>
     <DiagnosticsPanel v-if="isDev" />
     <AuditOverlayAsync v-if="isAuditMode" />
@@ -40,6 +44,8 @@ import { useRoute } from 'vue-router'
 import { PageThemeProvider } from './modules/ui/theme'
 import AppErrorBoundary from './components/AppErrorBoundary.vue'
 import ToastContainer from './ui/ToastContainer.vue'
+import SessionEndedView from './modules/auth/views/SessionEndedView.vue'
+import { resetSessionEndedView, sessionEnded, shouldHidePage } from './modules/auth/logout/sessionEndedView'
 import { DiagnosticsPanel } from './modules/diagnostics'
 import { isAuditEnabled } from '@/debug/isAuditEnabled'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -78,6 +84,9 @@ const layout = useLayoutStore()
 layout.init()
 layout.bindRouteChanges(useRoute())
 
+const currentRoute = useRoute()
+const hidePageForEndedSession = computed(() => shouldHidePage(sessionEnded.value, currentRoute))
+
 // Global chat overlay — notification (bell/toast) відкриває working ChatModal по thread_id.
 // P4 suppression: не показувати toast якщо саме цей thread уже відкрито в overlay.
 const chatOverlay = useChatOverlayStore()
@@ -95,6 +104,11 @@ if (isDev) {
 let unsubNotifPolling = null
 
 const authStore = useAuthStore()
+
+// Новий вхід у цій вкладці знімає «сесію завершено» (modules/auth/logout/sessionEndedView.ts).
+watch(() => authStore.isAuthenticated, (now) => {
+  if (now) resetSessionEndedView()
+})
 
 // Phase 29 B1: user context (entitlements + limits + billing) via TanStack Query
 // DISABLED: Backend endpoint /v1/users/me/context/ not yet implemented.

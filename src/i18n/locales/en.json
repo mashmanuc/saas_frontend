@@ -854,6 +854,11 @@
       "phoneHint": "You can end this session from your phone: Settings → Security → \"End\".",
       "switchAccount": "Sign in with another account"
     },
+    "sessionEnded": {
+      "title": "Session ended",
+      "text": "This account's data is hidden. Sign in again to continue.",
+      "login": "Sign in"
+    },
     "layout": {
       "ariaLabel": "Authentication layout",
       "formLabel": "Authentication form",

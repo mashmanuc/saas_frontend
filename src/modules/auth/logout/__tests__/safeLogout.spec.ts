@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 
 vi.mock('../../api/authApi', () => ({
   default: {
@@ -320,8 +321,10 @@ describe('рецензія пакета A · вихід у браузері', ()
     expect(location.href).toBe('/')
   })
 
-  it('знахідка 5: інша вкладка — вихід не підтверджено → і ця на екран блокування повним перезавантаженням', () => {
+  it('знахідка 5: інша вкладка — вихід не підтверджено → і ця на екран блокування повним перезавантаженням', async () => {
     onOtherTabLogout(new StorageEvent('storage', { key: 'm4sh_logout_pending', newValue: '2026-09-26T05:00:00Z' }))
+    // Перехід — після перемальовування: спершу сторінку з дошкою прибрано (sessionEndedView).
+    await nextTick()
     expect(location.href).toBe('/logout-pending')
   })
 
