@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 import LandingTrigCircle from './LandingTrigCircle.vue'
 import LandingNmt3d from './LandingNmt3d.vue'
 import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 import api from '@/api/client'
+
+// Те саме око, що на стартовому екрані реплею. Вантажиться лише тоді, коли адмін
+// задав реальний урок (рамка-посилання), — першому екрану лендингу воно не потрібне.
+const EyePlayer = defineAsyncComponent(() => import('@/modules/winterboard/components/public/EyePlayer.vue'))
 
 const router = useRouter()
 const route = useRoute()
@@ -20,6 +24,74 @@ const showLanguageMenu = ref(false)
 // Реальний реплей для демо-секції (Staff-config). Порожнє → дефолтна заглушка.
 // PLAN: saas_docs/plans/LANDING_REPLAY_DEMO_CONFIG_PLAN_2026-06-24.md
 const replayUrl = ref('')
+
+// Афіша реального уроку (2026-09-27, власник: «я думав там у вікні зразу буде наше око
+// з реплея»): рамка — зменшений стартовий екран реплею. Назва, кількість сторінок і
+// картинка дошки — з того самого публічного запиту, яким відкривається сторінка реплею.
+// Питаємо, лише коли рамка близько до екрана: запит не кешований і несе ще й стан дошки.
+// Для посилання на ЗАПИС (Replay) переглядів він не рахує; для «поділитися дошкою» —
+// рахує кожен показ (Б-85). Не вийшло — лишається око над анімацією.
+interface ReplayPreview { title: string; pageCount: number; imageUrl: string }
+const replayPreview = ref<ReplayPreview | null>(null)
+const posterLoaded = ref(false)
+const posterFailed = ref(false)
+const posterShown = computed(() => !!replayPreview.value?.imageUrl && posterLoaded.value && !posterFailed.value)
+const posterTitle = computed(() => replayPreview.value?.title || t('roleSelection.replayDemo.watchReal'))
+const replayCtaLabel = computed(() => (posterShown.value && replayPreview.value?.title
+  ? `${t('roleSelection.replayDemo.watchReal')}: ${replayPreview.value.title}`
+  : t('roleSelection.replayDemo.watchReal')))
+
+// Око живе лише поки рамку видно і людина не просила менше руху.
+const replayFrameRef = ref<HTMLElement | null>(null)
+const eyeActive = ref(false)
+let replayFrameObserver: IntersectionObserver | null = null
+let replayFrameNearObserver: IntersectionObserver | null = null
+
+/** Виконати, коли рамка підійде до екрана (≈ пів екрана наперед). Без IntersectionObserver — одразу. */
+function whenReplayFrameNear(run: () => void): void {
+  const el = replayFrameRef.value
+  if (!el || typeof IntersectionObserver === 'undefined') {
+    run()
+    return
+  }
+  replayFrameNearObserver?.disconnect()
+  replayFrameNearObserver = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return
+    replayFrameNearObserver?.disconnect()
+    replayFrameNearObserver = null
+    run()
+  }, { rootMargin: '600px 0px' })
+  replayFrameNearObserver.observe(el)
+}
+
+/** Токен запису, якщо посилання веде на НАШ публічний реплей. Форму шляху знає роутер, не регекс. */
+function publicReplayToken(url: string): string {
+  let path: string
+  try {
+    path = new URL(url).pathname
+  } catch {
+    return '' // не URL — афіші не буде, посилання однаково працює
+  }
+  const to = router.resolve(path)
+  return to.name === 'winterboard-public' ? String(to.params.token ?? '') : ''
+}
+
+async function loadReplayPreview(url: string): Promise<void> {
+  const token = publicReplayToken(url)
+  if (!token) return
+  try {
+    const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
+    const s = await winterboardApi.getPublicSession(token, { meta: { skipLoader: true, nonCriticalRequest: true } })
+    replayPreview.value = {
+      title: typeof s.name === 'string' ? s.name : '',
+      pageCount: Number(s.page_count) || 0,
+      imageUrl: typeof s.thumbnail_url === 'string' ? s.thumbnail_url : '',
+    }
+  } catch {
+    // Афіша — прикраса: без неї рамка лишається посиланням з оком над анімацією.
+    replayPreview.value = null
+  }
+}
 
 const currentLanguage = computed(() => {
   const lang = languages.find(l => l.code === locale.value)
@@ -41,8 +113,28 @@ onMounted(() => {
   // Публічний landing-config: якщо адмін вписав реальний реплей — показуємо лінк,
   // інакше лишається дефолтна заглушка (graceful на помилку).
   api.get('/landing-config/')
-    .then((res: any) => { replayUrl.value = res?.replay_demo_url || '' })
+    .then((res: any) => {
+      replayUrl.value = res?.replay_demo_url || ''
+      const url = replayUrl.value
+      if (url) whenReplayFrameNear(() => { void loadReplayPreview(url) })
+    })
     .catch(() => { /* заглушка */ })
+
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
+  if (!reduceMotion && typeof IntersectionObserver !== 'undefined' && replayFrameRef.value) {
+    // Останній запис: у пачці записів перший буває застарілим (рамку вже прогорнули назад)
+    replayFrameObserver = new IntersectionObserver((entries) => {
+      eyeActive.value = !!entries[entries.length - 1]?.isIntersecting
+    })
+    replayFrameObserver.observe(replayFrameRef.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  replayFrameObserver?.disconnect()
+  replayFrameObserver = null
+  replayFrameNearObserver?.disconnect()
+  replayFrameNearObserver = null
 })
 
 // 2026-07-23: прокидаємо ?redirect далі. Гість із /workspace приходить сюди з
@@ -297,42 +389,68 @@ async function changeLanguage(langCode: string) {
           </div>
           <div class="demo-visual">
             <!-- Адмін вписав реальний реплей (Staff) → клікабельна рамка (нова вкладка);
-                 інакше — дефолтна заглушка-анімація. -->
+                 інакше — дефолтна заглушка-анімація.
+                 2026-09-26: role="img" лише без посилання — «картинка» ховала вкладене
+                 посилання від читалок екрана. -->
             <div
+              ref="replayFrameRef"
               class="demo-frame replay-frame"
-              :class="{ 'replay-frame--link': replayUrl }"
-              role="img"
-              :aria-label="t('roleSelection.replayDemo.videoLabel')"
+              :class="{ 'replay-frame--link': replayUrl, 'replay-frame--poster': posterShown }"
+              :role="replayUrl ? undefined : 'img'"
+              :aria-label="replayUrl ? undefined : t('roleSelection.replayDemo.videoLabel')"
             >
-              <!-- Не відео: анімація відтворює штрихи дошки так, як їх малювали (це і є Replay). -->
-              <svg class="replay-strokes" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <g class="rs-grid">
-                  <path d="M0 60H400M0 110H400M0 160H400M0 210H400" />
-                  <path d="M60 0V250M130 0V250M200 0V250M270 0V250M340 0V250" />
-                </g>
-                <path class="rs-stroke rs-axis" pathLength="1" d="M44 202 H366" />
-                <path class="rs-stroke rs-axis rs-axis-y" pathLength="1" d="M72 224 V36" />
-                <path class="rs-stroke rs-curve" pathLength="1" d="M112 78 Q200 250 296 78" />
-                <circle class="rs-stroke rs-ring" pathLength="1" cx="296" cy="78" r="14" />
-                <circle class="rs-dot" cx="296" cy="78" r="4.5" />
-                <text class="rs-eq" x="150" y="52">y = x²</text>
-              </svg>
-              <div class="replay-scrub" aria-hidden="true"><span class="replay-scrub-fill"></span></div>
-              <span class="replay-badge">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
-                {{ t('roleSelection.replayDemo.videoLabel') }}
-              </span>
-              <!-- Реальний реплей (Staff): повнорамковий клікабельний оверлей-лінк (нова вкладка) -->
+              <!-- Афіша реального уроку: картинка дошки цього запису — тло, як на стартовому
+                   екрані реплею. Прозора, доки не завантажилась (lazy не вантажить display:none). -->
+              <img
+                v-if="replayPreview?.imageUrl && !posterFailed"
+                class="replay-poster"
+                :class="{ 'replay-poster--ready': posterLoaded }"
+                :src="replayPreview.imageUrl"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                @load="posterLoaded = true"
+                @error="posterFailed = true"
+              />
+              <template v-if="!posterShown">
+                <!-- Не відео: анімація відтворює штрихи дошки так, як їх малювали (це і є Replay). -->
+                <svg class="replay-strokes" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                  <g class="rs-grid">
+                    <path d="M0 60H400M0 110H400M0 160H400M0 210H400" />
+                    <path d="M60 0V250M130 0V250M200 0V250M270 0V250M340 0V250" />
+                  </g>
+                  <path class="rs-stroke rs-axis" pathLength="1" d="M44 202 H366" />
+                  <path class="rs-stroke rs-axis rs-axis-y" pathLength="1" d="M72 224 V36" />
+                  <path class="rs-stroke rs-curve" pathLength="1" d="M112 78 Q200 250 296 78" />
+                  <circle class="rs-stroke rs-ring" pathLength="1" cx="296" cy="78" r="14" />
+                  <circle class="rs-dot" cx="296" cy="78" r="4.5" />
+                  <text class="rs-eq" x="150" y="52">y = x²</text>
+                </svg>
+                <div class="replay-scrub" aria-hidden="true"><span class="replay-scrub-fill"></span></div>
+                <span class="replay-badge">
+                  <!-- З посиланням ▶ один — у зіниці ока по центру -->
+                  <svg v-if="!replayUrl" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
+                  {{ t('roleSelection.replayDemo.videoLabel') }}
+                </span>
+              </template>
+              <!-- Реальний реплей (Staff): уся рамка — посилання (нова вкладка). По центру —
+                   наше око з реплея; під ним назва й сторінки запису або плашка з підписом. -->
               <a
                 v-if="replayUrl"
                 :href="replayUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="replay-cta"
-                :aria-label="t('roleSelection.replayDemo.watchReal')"
+                :aria-label="replayCtaLabel"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4" /></svg>
-                {{ t('roleSelection.replayDemo.watchReal') }}
+                <EyePlayer class="replay-cta-eye" :active="eyeActive" />
+                <span v-if="posterShown" class="replay-cta-info">
+                  <span class="replay-cta-title">{{ posterTitle }}</span>
+                  <span v-if="(replayPreview?.pageCount ?? 0) > 1" class="replay-cta-meta">
+                    {{ replayPreview?.pageCount }} {{ t('winterboard.replay.statPages') }}
+                  </span>
+                </span>
+                <span v-else class="replay-cta-label">{{ t('roleSelection.replayDemo.watchReal') }}</span>
               </a>
             </div>
           </div>
@@ -1360,30 +1478,107 @@ async function changeLanguage(langCode: string) {
   font-weight: 600;
 }
 
-/* Реальний реплей (Staff-config): рамка стає клікабельним лінком + CTA-оверлей */
+/* Реальний реплей (Staff-config): уся рамка — посилання (нова вкладка), по центру наше око.
+   2026-09-26 (власник: «чи має так виглядати на лендінгу?»): раніше постійний темний шар 32 %
+   лежав на УМОВНІЙ анімації — блок виглядав вимкненим, а білий напис мав контраст ≈2:1.
+   2026-09-27 (власник: «я думав там у вікні зразу буде наше око з реплея»): рамка — зменшений
+   стартовий екран реплею. Є афіша (картинка дошки цього запису) → затемнення й білий підпис,
+   як у реплеї; афіші немає → око над анімацією, підпис на суцільній плашці. */
 .replay-frame--link {
   cursor: pointer;
   text-decoration: none;
   display: block;
 }
 
+.replay-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top; /* задача й розв'язок зверху дошки — ріжемо низ */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.replay-poster--ready {
+  opacity: 1;
+}
+
 .replay-cta {
   position: absolute;
   inset: 0;
-  text-decoration: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: rgba(15, 23, 42, 0.32);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
+  border-radius: inherit;
+  text-decoration: none;
+  background: transparent;
   transition: background 0.2s ease;
 }
 
-.replay-frame--link:hover .replay-cta {
-  background: rgba(15, 23, 42, 0.5);
+.replay-cta:hover {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+/* Як оверлей стартового екрана реплею: затемнення, щоб білий підпис читався на дошці */
+.replay-frame--poster .replay-cta,
+.replay-frame--poster .replay-cta:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.replay-cta-eye {
+  width: clamp(120px, 46%, 260px);
+  flex-shrink: 0;
+}
+
+/* Світіння ока на hover — те саме, що на стартовому екрані реплею */
+.replay-cta:hover :deep(.eye-player-glow) {
+  filter: drop-shadow(0 0 18px var(--shadow-strong, rgba(5, 150, 105, 0.35)))
+          drop-shadow(0 0 42px var(--shadow, rgba(5, 150, 105, 0.2)));
+}
+
+.replay-cta-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: calc(100% - 2rem);
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.replay-cta-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.replay-cta-meta {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.replay-cta-label {
+  max-width: calc(100% - 2rem);
+  text-align: center;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* рамка має overflow: hidden — зовнішній обідок фокусу обрізався б, тому всередину */
+.replay-cta:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1392,6 +1587,7 @@ async function changeLanguage(langCode: string) {
   .rs-stroke { stroke-dashoffset: 0; }
   .rs-dot, .rs-eq { opacity: 1; transform: none; }
   .replay-scrub-fill { transform: scaleX(1); }
+  .replay-cta, .replay-poster { transition: none; }
 }
 
 /* Board features grid (6 реальних фішок) */
@@ -1524,6 +1720,19 @@ async function changeLanguage(langCode: string) {
 
   .demo-description {
     text-align: center;
+  }
+
+  .replay-cta-eye {
+    width: clamp(110px, 44%, 200px);
+  }
+
+  .replay-cta-title {
+    font-size: 1rem;
+  }
+
+  .replay-cta-meta,
+  .replay-cta-label {
+    font-size: 0.875rem;
   }
 
   .board-features-grid {
