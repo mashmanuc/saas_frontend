@@ -15,6 +15,7 @@
 
 import { ref, onUnmounted, type Ref } from 'vue'
 import { getWsBaseUrl, isPresenceAvailable, _getFreshTokenAsync } from './usePresence'
+import { parseRemotePhoto, type RemotePhotoResult } from '../remote/photoContract'
 
 export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'unavailable'
 
@@ -39,6 +40,8 @@ export interface RemoteStateDetail {
     languageMode: 'auto' | 'locked'
     contentLanguage: 'uk' | 'en'
   }
+  /** v1.9 — результат останньої спроби «фото на дошку» (LAW §9) */
+  photo?: RemotePhotoResult
 }
 
 /** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
@@ -189,6 +192,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         if (cards) detail.cards = cards
         const videos = parseRemoteVideos(msg.videos)
         if (videos) detail.videos = videos
+        const photo = parseRemotePhoto(msg.photo)
+        if (photo) detail.photo = photo
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

@@ -230,6 +230,17 @@
       </ul>
     </section>
 
+    <!-- v1.9 (LAW §9): фото з телефона на поточну сторінку. Змонтована, поки відома
+         дошка, — коротка втрата зв'язку не губить незавершену спробу. -->
+    <RemotePhotoPanel
+      v-if="pair"
+      :ready="isReady"
+      :page-index="pageIndex"
+      :result="photoResult"
+      :send="sendPhoto"
+      :tel="tel"
+    />
+
     <!-- v1.6 (LAW §9): предмет і мова матеріалу Інтегралика — той самий селектор і той
          самий реєстр, що в палітрі на ноутбуці. Пульт шле лише намір; пише ноутбук. -->
     <CorridorSelector
@@ -298,6 +309,8 @@ import { firstTipSeen, markFirstTipSeen } from '../remote/remoteEntry'
 import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import type { RemoteStateDetail } from '../composables/useRemoteChannel'
+import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
+import type { RemotePhotoResult } from '../remote/photoContract'
 
 const props = defineProps<{ id?: string }>()
 const { t, locale } = useI18n()
@@ -347,6 +360,8 @@ const isPresentingTask = computed(() => !!cards.value?.presenting)
 // ── Прототип «відео з пульта» (2026-09-25) ─────────────────────────────────
 /** YouTube-картки поточної сторінки ноутбука (з remote.state) */
 const videos = ref<NonNullable<RemoteStateDetail['videos']>>([])
+/** v1.9: результат останньої спроби «фото на дошку» від ноутбука */
+const photoResult = ref<RemotePhotoResult | null>(null)
 const activeVideoId = ref('')
 // Кілька відео — за замовчуванням останнє (щойно додане); зникло — беремо інше
 watch(videos, (list) => {
@@ -518,6 +533,7 @@ const channel = useRemoteChannel({
     cards.value = s.cards ?? null
     assistant.value = s.assistant ?? null
     videos.value = s.videos ?? []
+    photoResult.value = s.photo ?? null
     // заморожена дошка — не помилка зв'язку, а стан: показуємо як причину, кнопки лишаємо
     reasonKey.value = s.frozen ? 'boardFrozen' : null
     if (s.frozen) reasonCode.value = 'REPLAY_FROZEN_NO_WRITE'
@@ -597,12 +613,18 @@ function vibrate(ms: number) {
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
   | 'video.add' | 'video.play' | 'video.pause'
+  | 'photo.add'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
   if (cmd !== 'hello') tel('cmd', { cmd, sent: ok, len: cmd === 'phrase' ? String(args.text ?? '').length : undefined })
   if (ok) vibrate(8)
   return ok
+}
+
+/** v1.9: фото вже в «Матеріалах» — лише ідентифікатори, байтів у WS немає (LAW §9). */
+function sendPhoto(args: { library_asset_id: number; request_id: string; page_index: number }): boolean {
+  return sendCmd('photo.add', args)
 }
 
 function goRel(delta: 1 | -1) {

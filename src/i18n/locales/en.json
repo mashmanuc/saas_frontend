@@ -8782,6 +8782,52 @@
         "playerError": { "not_found": "The video was removed or is private — it does not play.", "not_embeddable": "The owner does not allow this video on the board.", "playback": "The video does not play on the board." },
         "state": { "idle": "Ready to play", "loading": "Starting…", "playing": "Playing", "paused": "Paused", "ended": "Video ended", "blocked": "Tap the board to start the video", "error": "Does not play" }
       },
+      "photo": {
+        "title": "Photo to board",
+        "take": "Take photo",
+        "pick": "From gallery",
+        "preparing": "Preparing photo…",
+        "info": "{width}×{height} · {size}",
+        "confirm": "Add to the current board page?",
+        "add": "Add",
+        "cancel": "Cancel",
+        "uploading": "Uploading photo…",
+        "sending": "Photo saved to Materials; sending to the board…",
+        "placed": "Photo is on the board",
+        "another": "Another photo",
+        "done": "Done",
+        "retry": "Try again",
+        "resend": "Send again",
+        "placeHere": "Add to the current page",
+        "unconfirmed": "Couldn’t confirm the photo was added. It’s saved in Materials; check the board and try again if needed.",
+        "reason": {
+          "page_changed": "The board page changed while the photo was uploading. Add it to the current page — page {page}?",
+          "frozen": "This board’s recording is finished — new changes aren’t saved. The photo is saved in Materials.",
+          "input_locked": "The board isn’t accepting changes right now (see the message on the laptop). The photo is saved in Materials.",
+          "not_found": "The laptop couldn’t find this photo in your Materials. Make sure the laptop uses the same account.",
+          "not_image": "This file can’t be shown on the board as a photo.",
+          "load_failed": "The laptop couldn’t load the photo. Check the laptop’s internet connection and try again.",
+          "limit": "The board has too many objects — the photo wasn’t added. It’s saved in Materials.",
+          "unsupported": "Photos from the remote don’t work on this board yet — only on your own board. The photo is saved in Materials.",
+          "error": "The laptop couldn’t add the photo. Please try again."
+        },
+        "uploadError": {
+          "offline": "No connection — the photo wasn’t uploaded.",
+          "unsupported_format": "This photo format isn’t supported. Use JPEG, PNG or WebP.",
+          "invalid_image": "The file is damaged or isn’t an image.",
+          "image_too_large": "The photo is too large.",
+          "file_too_large": "The file is too large (over {limit} MB).",
+          "auth": "Your session has ended — please sign in again.",
+          "forbidden": "You don’t have access to upload.",
+          "rate_limited": "Too many uploads in a row. Wait a minute and try again.",
+          "quota": "Your Materials storage is full — the photo wasn’t uploaded.",
+          "failed": "Couldn’t upload the photo."
+        },
+        "prepareError": {
+          "undecodable": "This phone’s browser can’t open this photo format (for example, HEIC). Choose another photo or set the camera format to JPEG (“Most Compatible”).",
+          "encode_failed": "Couldn’t prepare the photo on this phone."
+        }
+      },
       "button": "Phone remote",
       "qrTitle": "Phone remote",
       "qrHint": "Scan with your phone camera or type the address on your phone. The remote finds the board you have open on the laptop.",

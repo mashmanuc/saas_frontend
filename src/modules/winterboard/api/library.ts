@@ -80,11 +80,19 @@ export async function createAsset(data: LibraryAssetCreateRequest): Promise<Libr
  * Backend creates ContentItem (SSOT) + LibraryAsset (organizer) atomically.
  * Returns the created LibraryAsset with content_item_id populated.
  */
-export async function uploadAsset(file: File, folderId?: number | null): Promise<LibraryAsset> {
+export async function uploadAsset(
+  file: File,
+  folderId?: number | null,
+  opts?: { purpose?: 'remote_photo' },
+): Promise<LibraryAsset> {
   const formData = new FormData()
   formData.append('file', file)
   if (folderId != null) {
     formData.append('folder', String(folderId))
+  }
+  // LAW §9 v1.9: фото з телефона — сервер приймає лише перевірені JPEG/PNG/WebP
+  if (opts?.purpose) {
+    formData.append('purpose', opts.purpose)
   }
   // IMPORTANT: do NOT set Content-Type manually — axios must auto-detect
   // multipart/form-data with boundary from FormData object.

@@ -1191,6 +1191,9 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
+import { buildPlacedImageAsset, loadImageDimensions, PLACED_IMAGE_VIEW_FRACTION, type ResolvedImage } from '../board/placeImage'
+import { fetchAsset as fetchLibraryAsset } from '../api/library'
 import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
 import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
 import { DEFAULT_BOARD_SIZES } from '../types/boardDrop'
@@ -1775,7 +1778,42 @@ const boardRemote = useBoardRemote({
     play: (id) => { if (isVideoOnCurrentPage(id)) playVideo(id) },
     pause: (id) => { if (isVideoOnCurrentPage(id)) pauseVideo(id) },
   },
+  // Фото з телефона (LAW §9 v1.9): ноутбук сам перевіряє актив від свого акаунта
+  photo: createRemotePhotoAdapter({
+    currentPageIndex: () => store.currentPageIndex,
+    isFrozen: () => isBoardFrozen.value,
+    // DESYNC/BOOTSTRAP: record() — no-op, фото лягло б лише на цьому екрані
+    isInputLocked: () => opsSync.inputLocked || opsSync.mode === 'DESYNC' || opsSync.mode === 'BOOTSTRAP',
+    canAddObject: () => store.canAddObject,
+    hasAssetAnywhere: (id) => store.pages.some((p) => p.assets.some((a) => a.id === id)),
+    fetchLibraryAsset: (id) => fetchLibraryAsset(id),
+    loadImage: (src) => loadImageDimensions(src),
+    place: (image, id) => placeVerifiedImage(image, id),
+  }),
 })
+
+/**
+ * Розміщення ПЕРЕВІРЕНОГО зображення (LAW §9 v1.9): центр видимої частини аркуша,
+ * до 80 % видимої області, пропорції без спотворення, штатний handleAssetAdd
+ * (op asset_add + «скасувати»). Звідки картинка — не знає: сьогодні фото з
+ * телефона вчителя, згодом — схвалена вчителем робота учня.
+ */
+function placeVerifiedImage(image: ResolvedImage, id: string): void {
+  const container = canvasContainerRef.value
+  const zoom = store.zoom || 1
+  const offset = store.stageOrigin
+  const viewW = container ? container.clientWidth / zoom : (store.pageWidth ?? 800)
+  const viewH = container ? container.clientHeight / zoom : 600
+  const center = container
+    ? { x: (container.clientWidth / 2 - offset.x) / zoom, y: (container.clientHeight / 2 - offset.y) / zoom }
+    : { x: viewW / 2, y: viewH / 2 }
+  handleAssetAdd(buildPlacedImageAsset({
+    id,
+    image,
+    center,
+    maxSize: { w: viewW * PLACED_IMAGE_VIEW_FRACTION, h: viewH * PLACED_IMAGE_VIEW_FRACTION },
+  }))
+}
 
 function isVideoOnCurrentPage(id: string): boolean {
   return !!store.currentPage?.assets.some((a) => a.id === id && a.type === 'youtube_player')

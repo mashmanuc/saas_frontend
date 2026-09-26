@@ -23,6 +23,8 @@
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
+import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
+import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 
 export interface BoardRemoteStore {
@@ -46,6 +48,11 @@ export interface UseBoardRemoteOptions {
   frozen?: Ref<boolean> | ComputedRef<boolean>
   /** Прототип «відео з пульта» (2026-09-25). Без нього video.* ігноруються. */
   media?: RemoteMediaAdapter
+  /**
+   * v1.9 «фото з телефона» (LAW §9). Без адаптера (класна кімната тощо) ноутбук
+   * відповідає `rejected: unsupported`, а не мовчить.
+   */
+  photo?: RemotePhotoAdapter
 }
 
 /** Відео поточної сторінки для ▶/⏸ на пульті (у remote.state — поле `videos`). */
@@ -75,9 +82,11 @@ export interface RemoteCommandDetail {
   cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
     | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
     | 'video.add' | 'video.play' | 'video.pause'
+    | 'photo.add'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
+    library_asset_id?: number; request_id?: string; page_index?: number
   }
 }
 
@@ -116,6 +125,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const ignoredCount = ref(0)
   /** v1.6: останній стан предмета/мови від палітри для ЦІЄЇ дошки (null — не показувати) */
   const assistantState = ref<RemoteAssistantState | null>(null)
+  /** v1.9: результат останньої спроби photo.add — лише в пам'яті вкладки, іде в кожен remote.state */
+  const photoResult = ref<RemotePhotoResult | null>(null)
 
   /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
   const remoteUrl = computed(() => remoteEntryUrl())
@@ -141,7 +152,13 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (opts.frozen) msg.frozen = !!opts.frozen.value
     if (assistantState.value) msg.assistant = assistantState.value
     if (opts.media) msg.videos = opts.media.list()
+    if (photoResult.value) msg.photo = photoResult.value
     opts.sendMessage(msg)
+  }
+
+  function reportPhoto(result: RemotePhotoResult): void {
+    photoResult.value = result
+    sendState()
   }
 
   // Відео на сторінці з'явилось/зникло або змінило стан (грає / пауза / заблоковано)
@@ -294,6 +311,23 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         sendState()
         return
       }
+      // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить
+      case 'photo.add': {
+        const req = readPhotoRequest(d.args as Record<string, unknown>)
+        if (!req) return
+        if (!opts.photo) {
+          reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'unsupported' })
+          return
+        }
+        opts.photo.add(req).then(
+          (outcome) => reportPhoto({ request_id: req.requestId, ...outcome }),
+          (err) => {
+            console.warn('[WB:remote] photo.add failed:', err)
+            reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'error' })
+          },
+        )
+        return
+      }
       default:
         if (ASSISTANT_CMDS.has(d.cmd)) {
           // Пульт не пише: намір — палітрі на ЦЬОМУ ноутбуці. Стан повернеться
@@ -315,5 +349,5 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (stateTimer) clearTimeout(stateTimer)
   })
 
-  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState }
+  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult }
 }
