@@ -74,7 +74,7 @@ const MSG = {
   remoteAddress: 'Адреса пульта', searchOff: 'Пошук вимкнено — вставте посилання.',
   photo: { title: 'Фото на дошку', take: 'Зробити фото', pick: 'З галереї' },
   video: {
-    placeholder: 'Знайти відео про…', search: 'Знайти', linkPlaceholder: 'посилання', paste: 'Вставити з буфера',
+    placeholder: 'Знайти відео про…', search: 'Знайти', sayTopic: 'Сказати тему (тримати)', linkPlaceholder: 'посилання', paste: 'Вставити з буфера',
     check: 'Перевірити', disabled: 'Пошук відео не налаштовано.', empty: 'Нічого', failed: 'Не вдалося',
     quota: 'вичерпано', userLimit: 'ліміт', pick: 'Яке відео', untitled: 'Без назви', play: 'Грати', pause: 'Пауза',
   },

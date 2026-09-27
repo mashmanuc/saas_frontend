@@ -190,7 +190,7 @@
         class="wb-remote__talk"
         :class="{ 'wb-remote__talk--on': ptt.listening.value }"
         :disabled="!isReady"
-        @pointerdown.prevent="ptt.press()"
+        @pointerdown.prevent="startRemoteVoice"
         @pointerup.prevent="ptt.release()"
         @pointercancel.prevent="ptt.release()"
         @pointerleave="ptt.release()"
@@ -252,6 +252,22 @@
         </form>
         <!-- Пошук не налаштовано (немає ключа) — на цю сесію лишаємо лише посилання -->
         <p v-else class="wb-remote__note" data-testid="video-search-off">{{ t('winterboard.remote.searchOff') }}</p>
+        <button
+          v-if="ptt.supported && !videoSearchOff"
+          type="button"
+          class="wb-remote__video-mic"
+          :class="{ 'wb-remote__video-mic--on': ptt.listening.value && videoVoiceActive }"
+          :disabled="!isReady || videoSearching"
+          :aria-pressed="ptt.listening.value && videoVoiceActive"
+          @pointerdown.prevent="startVideoVoice"
+          @pointerup.prevent="ptt.release()"
+          @pointercancel.prevent="ptt.release()"
+          @pointerleave="ptt.release()"
+          @contextmenu.prevent
+        >
+          <span aria-hidden="true">🎙</span>
+          {{ ptt.listening.value && videoVoiceActive ? t('winterboard.remote.listening') : t('winterboard.remote.video.sayTopic') }}
+        </button>
         <!-- Запасний шлях: посилання, яке вчитель знайшов сам (або вичерпано квоту пошуку) -->
         <form class="wb-remote__video-link" @submit.prevent="runVideoLookup()">
           <input
@@ -820,10 +836,30 @@ function goRel(delta: 1 | -1) {
 }
 
 // ── Голос: коротка граматика → команда; інакше → фраза Інтегралику на ноутбуці
+const videoVoiceActive = ref(false)
+function startVideoVoice(): void {
+  if (!isReady.value || videoSearching.value || sheet.value !== 'video' || ptt.listening.value) return
+  if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
+  videoVoiceActive.value = true
+  ptt.press()
+}
+function startRemoteVoice(): void {
+  videoVoiceActive.value = false
+  ptt.press()
+}
+
 const ptt = usePushToTalk({
   lang: locale.value === 'en' ? 'en-US' : 'uk-UA',
   onFinal(text) {
     lastPhrase.value = `«${text}»`
+    if (videoVoiceActive.value) {
+      videoVoiceActive.value = false
+      if (sheet.value === 'video' && canVideo.value && !videoSearchOff.value) {
+        tel('ptt', { route: 'video_sheet', len: text.length })
+        void runVideoSearch(matchVideoSearchPhrase(text) ?? text)
+      }
+      return
+    }
     // «Знайди відео про …» — пошук тут, на пульті (вибір і підтвердження — теж тут)
     const videoQ = matchVideoSearchPhrase(text)
     if (videoQ) {
@@ -1116,6 +1152,13 @@ onBeforeUnmount(() => {
 .wb-remote__video-pick { min-height: 44px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 0 10px; font-size: 14px; }
 .wb-remote__video-blocked { margin: 0; padding: 10px 12px; border-radius: 12px; background: #b45309; color: #fff; font-weight: 600; text-align: center; }
 .wb-remote__video-search { display: flex; gap: 8px; }
+.wb-remote__video-mic {
+  width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px; touch-action: none;
+}
+.wb-remote__video-mic--on { border-color: var(--accent); background: #1e3a8a; }
+.wb-remote__video-mic:disabled { opacity: .5; }
 .wb-remote__video-input {
   flex: 3; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-3); color: var(--text);
   padding: 0 12px; font-size: 16px; user-select: text; -webkit-user-select: text;

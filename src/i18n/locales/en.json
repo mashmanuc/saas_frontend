@@ -8776,6 +8776,7 @@
         "blocked": "Tap the board to start the video",
         "placeholder": "Find a video about…",
         "search": "Find",
+        "sayTopic": "Say a topic (hold)",
         "confirm": "Add to the current board page: “{title}”?",
         "add": "Add",
         "cancel": "Cancel",

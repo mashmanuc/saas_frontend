@@ -26,10 +26,11 @@ vi.mock('../composables/useRemoteChannel', () => ({
   },
 }))
 let onFinalCb: ((t: string) => void) | null = null
+let pttSupported = true
 vi.mock('../composables/usePushToTalk', () => ({
   usePushToTalk: (opts: any) => {
     onFinalCb = opts.onFinal
-    return { supported: true, listening: ref(false), press: vi.fn(), release: vi.fn() }
+    return { supported: pttSupported, listening: ref(false), press: vi.fn(), release: vi.fn() }
   },
 }))
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { email: 't@m4sh.local' }, forceLogout: vi.fn() }) }))
@@ -75,6 +76,7 @@ describe('WBRemoteView — відео (V1)', () => {
     channelState.value = 'idle'
     send.mockClear(); searchVideos.mockReset(); lookupVideo.mockReset()
     onStateCb = null; onFinalCb = null
+    pttSupported = true
   })
   afterEach(() => { while (mounted.length) { try { mounted.pop()!.unmount() } catch { /* */ } } })
 
@@ -171,5 +173,41 @@ describe('WBRemoteView — відео (V1)', () => {
     await flushPromises()
     expect(searchVideos).toHaveBeenCalledWith('теорему Піфагора')
     expect(lastCmd()).toBeNull()   // фраза НЕ пішла Інтегралику на ноутбук
+  })
+
+  it('кнопка мікрофона у відео шукає названу тему без команди й не додає картку сама', async () => {
+    searchVideos.mockResolvedValue({ items: [cand('EaN-JbyA348', 'Теорема Піфагора')], dropped: {}, pool: 1, took_ms: 1 })
+    const w = await ready()
+    await w.find('[data-testid="open-video"]').trigger('click')
+    const mic = w.find('.wb-remote__video-mic')
+    expect(mic.text()).toContain(T.sayTopic)
+    await mic.trigger('pointerdown')
+    onFinalCb!('теорема Піфагора')
+    await flushPromises()
+    expect(searchVideos).toHaveBeenCalledTimes(1)
+    expect(searchVideos).toHaveBeenCalledWith('теорема Піфагора')
+    expect((w.find('.wb-remote__video-search input').element as HTMLInputElement).value).toBe('теорема Піфагора')
+    expect(w.findAll('.wb-remote__video-results .wb-remote__video-item')).toHaveLength(1)
+    expect(lastCmd()).toBeNull()
+  })
+
+  it('кнопка відео приймає і повну фразу, не відправляючи її Інтегралику', async () => {
+    searchVideos.mockResolvedValue({ items: [], dropped: {}, pool: 0, took_ms: 1 })
+    const w = await ready()
+    await w.find('[data-testid="open-video"]').trigger('click')
+    await w.find('.wb-remote__video-mic').trigger('pointerdown')
+    onFinalCb!('Додай відео про Піфагора')
+    await flushPromises()
+    expect(searchVideos).toHaveBeenCalledWith('Піфагора')
+    expect(lastCmd()).toBeNull()
+  })
+
+  it('без підтримки голосу пошук залишається доступним і не називається вимкненим', async () => {
+    pttSupported = false
+    const w = await ready()
+    await w.find('[data-testid="open-video"]').trigger('click')
+    expect(w.find('.wb-remote__video-search').exists()).toBe(true)
+    expect(w.find('.wb-remote__video-mic').exists()).toBe(false)
+    expect(w.find('[data-testid="video-search-off"]').exists()).toBe(false)
   })
 })
