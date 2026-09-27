@@ -61,5 +61,11 @@ export function parseUploadError(e: unknown): UploadErrorInfo {
       params: { actual: body?.actual_mb ?? '?', limit: body?.limit_mb ?? '?' },
     }
   }
+  // Б-74 (2026-09-27): сервер перевіряє зображення за байтами й відповідає
+  // `unsupported_format:<mime>` (напр. HEIC, перейменований на .jpg). Це причина, а не збій —
+  // «Помилка завантаження» підштовхувала б повторювати те саме.
+  if (typeof code === 'string' && code.startsWith('unsupported_format')) {
+    return { key: 'unsupported_format', params: {} }
+  }
   return { key: 'upload_failed', params: {} }
 }
