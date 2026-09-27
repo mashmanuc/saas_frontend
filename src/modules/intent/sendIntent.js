@@ -31,7 +31,7 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null, boardSummaryError = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
     context: {
@@ -52,6 +52,9 @@ export async function parseAi(phrase, boardId = null, history = [], boardSummary
       page,
       // Г2-д: план уроку клієнт більше НЕ шле — сервер читає його зі збереженої
       // сесії за board_id (TZ_G2 §4). Зайвий ключ тут ігнорується сервером.
+      // Б-13 (2026-09-27): дошка відкрита, а стан зібрати не вдалося — чому саме.
+      // Сервер пише це в лог і каже моделі «не прочитано», а не «дошки немає».
+      ...(boardSummaryError ? { board_summary_error: boardSummaryError } : {}),
     },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })

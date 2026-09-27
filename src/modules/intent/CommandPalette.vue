@@ -1125,14 +1125,23 @@ async function askAi(phrase) {
   aiBusy.value = true
   // Phase 2.6 «зір» + 2.7 каталог: на відкритій дошці — стан канви + доступні інструменти
   let boardSummary = null
+  let boardSummaryError = null
   let toolCatalog = null
   if (currentBoardId.value) {
-    try { boardSummary = await buildBoardSummary() } catch { /* без зору — не блокуємо parse */ }
-    try { toolCatalog = await buildToolCatalog() } catch { /* без каталогу — не блокуємо */ }
+    // Не блокуємо parse, але й не мовчимо (LAW §12). Б-13: цей catch був
+    // порожнім, і відкрита дошка без стану виглядала для моделі як «дошки
+    // немає» — вона казала «не бачу дошки», а в консолі не лишалось нічого.
+    try { boardSummary = await buildBoardSummary() } catch (e) {
+      boardSummaryError = String(e?.message || e).slice(0, 200)
+      console.error('[Інтегралик] стан дошки не зібрано:', e)
+    }
+    try { toolCatalog = await buildToolCatalog() } catch (e) {
+      console.error('[Інтегралик] каталог інструментів дошки не зібрано:', e)
+    }
   }
   try {
     // Г2-д: план уроку живе на сервері — parse читає його з сесії сам.
-    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage())
+    const r = await parseAi(phrase, currentBoardId.value, history, boardSummary, toolCatalog, currentLocale.value, conversationId.value, currentPage(), boardSummaryError)
     // Коридори: сервер повертає фактично визначені предмет і мову — підпис
     // селектора оновлюється наступною ж командою (ТЗ §4.2).
     if (r?.corridor) corridor.applyCorridor(r.corridor)
@@ -1814,7 +1823,11 @@ function runSelected() {
 const corridor = useAssistantCorridor()
 
 async function corridorBoardSummary() {
-  try { return await buildBoardSummary() } catch { return null }   // без зору — лише без сигналів дошки
+  try { return await buildBoardSummary() } catch (e) {
+    // Без зору — лише без сигналів дошки; але не мовчки (LAW §12, Б-13).
+    console.error('[Інтегралик] стан дошки для коридору не зібрано:', e)
+    return null
+  }
 }
 
 async function loadCorridor(id) {
