@@ -790,9 +790,17 @@
           :is-grid-active="gridOverlay.isGridActive.value"
           @update:model-value="onGridTypeChange"
         />
-        <!-- Phase 35 B5: Grid size dropdown (visible when grid active) -->
+        <!-- Phase 35 B5: Grid size dropdown (visible when grid active).
+             TABLET 1А (рішення власника 2026-09-27): підпис «Клітинка» — без нього «20px» поруч
+             із кнопкою сітки приймали за товщину олівця (`feedback/TABLET_ISSUES_2026-09-27.md` №1). -->
+        <label
+          v-if="gridOverlay.isGridActive.value"
+          class="wb-grid-size-label"
+          for="wb-grid-size-select"
+        >{{ t('winterboard.room.gridCell', 'Клітинка') }}</label>
         <select
           v-if="gridOverlay.isGridActive.value"
+          id="wb-grid-size-select"
           class="wb-grid-size-select"
           :value="store.gridSize ?? 20"
           @change="onGridSizeChange"
@@ -5086,6 +5094,12 @@ watch(() => store.workspaceName, (name) => {
 }
 
 /* Phase 35 B5: Grid size select */
+.wb-grid-size-label {
+  font-size: 12px;
+  color: var(--wb-fg-muted, #64748b);
+  white-space: nowrap;
+}
+
 .wb-grid-size-select {
   height: 28px;
   border: 1px solid var(--wb-border, #e2e8f0);

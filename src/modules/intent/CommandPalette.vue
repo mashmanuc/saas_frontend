@@ -56,7 +56,11 @@
     <div
       v-if="enabled && open"
       class="cmdp-overlay"
-      :class="{ 'cmdp-overlay--pinned': isPinned }"
+      :class="{
+        'cmdp-overlay--pinned': isPinned,
+        'cmdp-overlay--sheet': layout === 'sheet',
+        'cmdp-overlay--dock': layout === 'dock',
+      }"
       :style="overlayStyle"
       @click.self="onOverlayClick"
     >
@@ -337,6 +341,7 @@ import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { setFloatingObstacle } from '@/modules/winterboard/board/floatingObstacles'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
+import { resolvePaletteLayout, keyboardInset, dockBox, DOCK_WIDTH, shouldAutofocus } from './paletteLayout'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { explainWithRenderedMath } from './explainMath'
 import { createPinPolicy } from './pinPolicy'
@@ -1208,7 +1213,7 @@ async function askAi(phrase) {
     react('sad')
   } finally {
     aiBusy.value = false
-    nextTick(() => aiInputEl.value?.focus())
+    nextTick(() => autofocus(aiInputEl.value))
   }
 }
 
@@ -1610,8 +1615,45 @@ const isNarrow = ref(false)
 const kbInset = ref(0)
 let narrowMq = null
 function updateNarrow() { isNarrow.value = !!(narrowMq && narrowMq.matches) }
+
+// ── TABLET 2А + 3А + 3Б (рішення власника 2026-09-27: «1А, 2А, 3А+Б»). БУЛО: ширше за 640 px
+// вікно всюди «як на комп'ютері» (600 px по центру): на планшеті закривало майже всю дошку,
+// а поле введення ховалось під екранною клавіатурою. Рішення — `./paletteLayout.ts`.
+const isTouch = ref(false)   // основний ввід — дотик: (hover: none) and (pointer: coarse)
+const isWide = ref(false)    // ширина від 1024 px
+let touchMq = null
+let wideMq = null
+function updateTouch() { isTouch.value = !!(touchMq && touchMq.matches) }
+function updateWide() { isWide.value = !!(wideMq && wideMq.matches) }
+// 'sheet' — лист знизу; 'dock' — панель праворуч (планшет в альбомі на дошці); 'float' — вікно.
+const layout = computed(() => resolvePaletteLayout({
+  narrow: isNarrow.value,
+  touch: isTouch.value,
+  wide: isWide.value,
+  onBoard: !!currentBoardId.value,
+  keyboard: kbInset.value > 0,
+}))
+// Панель праворуч — на висоту полотна дошки: шапка («Зберегти як урок») і нижня смуга
+// (масштаб) лишаються відкритими; з клавіатурою — у видимій частині над нею.
+const dockRect = ref({ top: 0, bottom: 0 })
+function updateDock() {
+  if (layout.value !== 'dock') return
+  const canvas = document.getElementById('wb-canvas')?.getBoundingClientRect()
+  const vv = window.visualViewport
+  dockRect.value = dockBox(
+    canvas ? { top: canvas.top, bottom: canvas.bottom } : null,
+    window.innerHeight,
+    kbInset.value,
+    vv ? vv.offsetTop : 0,
+  )
+}
+watch([open, layout], () => { if (open.value) nextTick(updateDock) })
+// TABLET 3Б: на сенсорному екрані поле не отримує фокус саме — фокус відкриває клавіатуру,
+// яка закриває більшу частину екрана, навіть коли людина хотіла говорити. Фокус — від дотику.
+function autofocus(el) { if (el && shouldAutofocus(isTouch.value)) el.focus() }
+
 const overlayStyle = computed(() =>
-  isNarrow.value && kbInset.value ? { paddingBottom: kbInset.value + 'px' } : {},
+  layout.value === 'sheet' && kbInset.value ? { paddingBottom: kbInset.value + 'px' } : {},
 )
 
 // ── 0b (2026-07-31): PIN-режим — дошку можна чіпати, чат лишається ──────────
@@ -1641,9 +1683,11 @@ const {
 function onOverlayClick() { if (!isPinned.value) close() }
 function onViewportResize() {
   const vv = window.visualViewport
-  if (!vv || !isNarrow.value || !open.value) { kbInset.value = 0; return }
-  const inset = Math.round(window.innerHeight - vv.height - vv.offsetTop)
-  kbInset.value = inset > 90 ? inset : 0   // >90px ≈ клавіатура (не URL-бар)
+  // TABLET 3А: і на телефоні, і на будь-якому сенсорному екрані. БУЛО: лише до 640 px —
+  // на планшеті поле введення лишалось під клавішами.
+  if (!vv || !open.value || !(isNarrow.value || isTouch.value)) { kbInset.value = 0; return }
+  kbInset.value = keyboardInset(window.innerHeight, vv.height, vv.offsetTop)
+  updateDock()
 }
 
 // ── Панель перетягувана за ШАПКУ (щоб не закривала дошку під час дій Інтегралика) ──
@@ -1656,7 +1700,18 @@ const panelPos = ref(null)             // {x,y} | null → центр (флек�
 let panelDrag = null
 
 const panelStyle = computed(() => {
-  if (isNarrow.value) {
+  if (layout.value === 'dock') {
+    return {
+      position: 'fixed',
+      right: '0',
+      top: dockRect.value.top + 'px',
+      bottom: dockRect.value.bottom + 'px',
+      width: DOCK_WIDTH + 'px',
+      maxWidth: '100vw',
+      margin: '0',
+    }
+  }
+  if (layout.value === 'sheet') {
     // лист над клавіатурою: обмежуємо висоту видимою областю (innerHeight − клавіатура)
     return kbInset.value ? { maxHeight: (window.innerHeight - kbInset.value - 8) + 'px' } : {}
   }
@@ -1676,7 +1731,7 @@ function clampPanel(x, y) {
 }
 
 function panelPointerDown(e) {
-  if (isNarrow.value) return                     // телефон: лист фіксований знизу, не тягається
+  if (layout.value !== 'float') return          // лист знизу й панель праворуч не тягаються
   // drag лише за шапку; не за кнопки/поля/списки
   if (!e.target.closest('.cmdp-head')) return
   if (e.target.closest('button, input, a')) return
@@ -1697,7 +1752,7 @@ function reportPanelRect() {
   setFloatingObstacle('integralyk', { left: r.left, top: r.top, right: r.right, bottom: r.bottom })
 }
 let panelRO = null
-watch([open, panelEl, panelPos], async () => {
+watch([open, panelEl, panelPos, layout, dockRect], async () => {
   await nextTick()
   reportPanelRect()
   panelRO?.disconnect()
@@ -1781,7 +1836,7 @@ function openPalette() {
   autoPinOnce()
   restorePanelPos()   // відновити місце, куди юзер відсунув панель
   applyItgSkin()      // маскот у шапці теж отримує скін часу доби
-  nextTick(() => (hasThread ? aiInputEl.value : inputEl.value)?.focus())
+  nextTick(() => autofocus(hasThread ? aiInputEl.value : inputEl.value))
   clearInterval(domSyncTimer)
   domSyncTimer = setInterval(syncQueryFromDom, 300)
 }
@@ -1796,10 +1851,10 @@ function newDialog() {
   aiInput.value = ''
   aiBusy.value = false
   voice.reset()   // голос диктує з чистого, не дописує до попередньої розмови
-  nextTick(() => aiInputEl.value?.focus())
+  nextTick(() => autofocus(aiInputEl.value))
 }
 function close() { open.value = false; loading.value = false; clearInterval(domSyncTimer); voice.stop(); kbInset.value = 0 }
-function toCommands() { mode.value = 'commands'; retargetVoice(); error.value = ''; nextTick(() => inputEl.value?.focus()) }
+function toCommands() { mode.value = 'commands'; retargetVoice(); error.value = ''; nextTick(() => autofocus(inputEl.value)) }
 function move(d) { syncQueryFromDom(); const n = filtered.value.length; if (n) selected.value = (selected.value + d + n) % n }
 function runSelected() {
   syncQueryFromDom()
@@ -1915,6 +1970,15 @@ onMounted(() => {
     updateNarrow()
     narrowMq.addEventListener ? narrowMq.addEventListener('change', updateNarrow) : narrowMq.addListener(updateNarrow)
   } catch { /* matchMedia недоступний */ }
+  try {
+    touchMq = window.matchMedia('(hover: none) and (pointer: coarse)')
+    wideMq = window.matchMedia('(min-width: 1024px)')
+    updateTouch()
+    updateWide()
+    touchMq.addEventListener ? touchMq.addEventListener('change', updateTouch) : touchMq.addListener(updateTouch)
+    wideMq.addEventListener ? wideMq.addEventListener('change', updateWide) : wideMq.addListener(updateWide)
+  } catch { /* matchMedia недоступний */ }
+  window.addEventListener('resize', updateDock)
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', onViewportResize)
     window.visualViewport.addEventListener('scroll', onViewportResize)
@@ -1933,6 +1997,9 @@ onBeforeUnmount(() => {
   window.removeEventListener(EVENT_STATE_REQUEST, publishCorridorState)
   window.removeEventListener('mousemove', onEyesMove)
   try { narrowMq && (narrowMq.removeEventListener ? narrowMq.removeEventListener('change', updateNarrow) : narrowMq.removeListener(updateNarrow)) } catch { /* noop */ }
+  try { touchMq && (touchMq.removeEventListener ? touchMq.removeEventListener('change', updateTouch) : touchMq.removeListener(updateTouch)) } catch { /* noop */ }
+  try { wideMq && (wideMq.removeEventListener ? wideMq.removeEventListener('change', updateWide) : wideMq.removeListener(updateWide)) } catch { /* noop */ }
+  window.removeEventListener('resize', updateDock)
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', onViewportResize)
     window.visualViewport.removeEventListener('scroll', onViewportResize)
@@ -2151,10 +2218,25 @@ onBeforeUnmount(() => {
 /* Палітра = нижній «лист» на всю ширину, а не плаваюче центроване вікно: поле вводу
    лишається над клавіатурою (JS overlayStyle/panelStyle піднімає й обмежує лист по
    VisualViewport). Маскот дефолтно — у зоні великого пальця (знизу-праворуч). */
+/* TABLET 2А (2026-09-27): лист — класом `cmdp-overlay--sheet` (телефон і планшет у портреті),
+   а не лише медіа-запитом до 640 px. */
+.cmdp-overlay.cmdp-overlay--sheet { align-items: flex-end; justify-content: center; padding: 0; }
+.cmdp-overlay--sheet .cmdp-panel { width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; }
+.cmdp-overlay--sheet .cmdp-list, .cmdp-overlay--sheet .cmdp-ai-thread { max-height: 38vh; }
+
+/* ═══════════ ПАНЕЛЬ ПРАВОРУЧ: планшет в альбомі на дошці (TABLET 2А) ═══════════ */
+/* Розмір і місце — JS (panelStyle: висота полотна, над клавіатурою). Стрічка займає все,
+   що лишилось між шапкою й полем введення. */
+.cmdp-overlay.cmdp-overlay--dock { padding: 0; }
+.cmdp-overlay--dock .cmdp-panel { display: flex; flex-direction: column; border-radius: 14px 0 0 14px; }
+.cmdp-overlay--dock .cmdp-list, .cmdp-overlay--dock .cmdp-ai-thread { flex: 1 1 auto; min-height: 0; max-height: none; }
+
+/* ═══════════ ДОТИК: мікрофон — головна кнопка поля (TABLET 3Б) ═══════════ */
+@media (hover: none) and (pointer: coarse) {
+  .cmdp-mic { width: 48px; height: 48px; font-size: 22px; border-color: #0d9488; background: #ecfdf5; }
+}
+
 @media (max-width: 640px) {
-  .cmdp-overlay { align-items: flex-end; justify-content: center; padding: 0; }
-  .cmdp-panel { width: 100%; max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; }
-  .cmdp-list, .cmdp-ai-thread { max-height: 38vh; }
   .cmdp-tip { max-width: min(230px, 74vw); }
   .cmdp-fab-wrap { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: 14px; }
 }

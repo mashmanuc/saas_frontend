@@ -7559,6 +7559,7 @@
       "publish": "Опубликовать урок",
       "bgColor": "Фон страницы",
       "bgColorShort": "BG",
+      "gridCell": "Клетка",
       "bgColorAllPages": "Все страницы",
       "bgColorAllPagesTitle": "Применить фон ко всем страницам доски",
       "materials": "Материалы"

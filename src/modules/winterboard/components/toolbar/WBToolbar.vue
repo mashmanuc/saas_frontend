@@ -26,31 +26,30 @@
           :aria-pressed="currentTool === tool.id"
           :aria-label="`${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`"
           :data-tooltip="toolTooltip(tool)"
-          :tabindex="getTabIndex(0, drawingTools.findIndex(t => t.id === tool.id))"
+          :tabindex="getTabIndex(0, toolDomIndex(tool.id))"
           @click="emit('tool-change', tool.id)"
         >
           <component :is="tool.icon" class="wb-toolbar__icon" />
         </button>
+        <!-- TABLET 1А (рішення власника 2026-09-27): «товщина + колір» — одразу під олівцем і
+             маркером. БУЛО: окремою групою після всіх 10 інструментів, у самому низу панелі
+             (`feedback/TABLET_ISSUES_2026-09-27.md` №1). Місце постійне — для інструментів без
+             кольору кнопка лише приглушена, інакше кнопки під нею стрибали б під пальцем. -->
+        <div
+          v-if="si === STYLE_AFTER_SUBGROUP"
+          class="wb-toolbar__style-slot"
+          :class="{ 'wb-toolbar__style-slot--idle': !showColorPalette }"
+        >
+          <WBColorFlyout
+            :model-value="currentColor"
+            :current-tool="currentTool"
+            :current-size="currentSize"
+            @update:model-value="emit('color-change', $event)"
+            @update:current-size="emit('size-change', $event)"
+          />
+        </div>
       </template>
     </div>
-
-    <!-- Stroke style flyout: thickness + color combined (B3: hidden for eraser/select) -->
-    <Transition name="wb-collapse">
-      <template v-if="showColorPalette">
-        <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
-      </template>
-    </Transition>
-    <Transition name="wb-collapse">
-      <div v-if="showColorPalette" class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.color_section')">
-        <WBColorFlyout
-          :model-value="currentColor"
-          :current-tool="currentTool"
-          :current-size="currentSize"
-          @update:model-value="emit('color-change', $event)"
-          @update:current-size="emit('size-change', $event)"
-        />
-      </div>
-    </Transition>
 
     <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
 
@@ -62,7 +61,7 @@
         :disabled="!canUndo"
         :aria-label="`${t('winterboard.tools.undo')} (Ctrl+Z)`"
         :data-tooltip="`${t('winterboard.tools.undo')} (Ctrl+Z)`"
-        :tabindex="getTabIndex(3, 0)"
+        :tabindex="getTabIndex(1, 0)"
         @click="emit('undo')"
       >
         <WBIconUndo class="wb-toolbar__icon" />
@@ -73,7 +72,7 @@
         :disabled="!canRedo"
         :aria-label="`${t('winterboard.tools.redo')} (Ctrl+Y)`"
         :data-tooltip="`${t('winterboard.tools.redo')} (Ctrl+Y)`"
-        :tabindex="getTabIndex(3, 1)"
+        :tabindex="getTabIndex(1, 1)"
         @click="emit('redo')"
       >
         <WBIconRedo class="wb-toolbar__icon" />
@@ -84,7 +83,7 @@
         class="wb-toolbar__btn wb-toolbar__btn--danger wb-toolbar__btn--tooltip"
         :aria-label="t('winterboard.clear.button')"
         :data-tooltip="t('winterboard.clear.button')"
-        :tabindex="getTabIndex(3, 2)"
+        :tabindex="getTabIndex(1, 2)"
         :disabled="!canClearPage"
         @click="emit('clear-page-request')"
       >
@@ -105,7 +104,7 @@
           class="wb-toolbar__btn wb-toolbar__btn--tooltip"
           :aria-label="t(hasLockedInSelection ? 'winterboard.lock.unlock' : 'winterboard.lock.lock')"
           :data-tooltip="t(hasLockedInSelection ? 'winterboard.lock.unlock' : 'winterboard.lock.lock')"
-          :tabindex="getTabIndex(4, 0)"
+          :tabindex="getTabIndex(2, 0)"
           @click="hasLockedInSelection ? emit('unlock-selected') : emit('lock-selected')"
         >
           <WBIconUnlock v-if="hasLockedInSelection" class="wb-toolbar__icon" />
@@ -115,8 +114,8 @@
     </Transition>
 
     <!-- P3: YouTube insert button -->
-    <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
-    <div class="wb-toolbar__group" role="group" :aria-label="t('winterboard.youtube.insert')">
+    <div class="wb-toolbar__sep wb-toolbar__sep--extras" role="separator" aria-hidden="true" />
+    <div class="wb-toolbar__group wb-toolbar__group--extras" role="group" :aria-label="t('winterboard.youtube.insert')">
       <button
         type="button"
         class="wb-toolbar__btn wb-toolbar__btn--tooltip"
@@ -298,6 +297,18 @@ const toolSubGroups: ToolDef[][] = [
   drawingTools.slice(6),     // text, eraser, laser, sticky
 ]
 
+// TABLET 1А: «товщина + колір» стоїть у групі інструментів після підгрупи «олівець, маркер».
+// Для стрілок і roving tabindex це ще одна кнопка групи — інструменти після неї зсунуті на 1.
+const STYLE_AFTER_SUBGROUP = 1
+const STYLE_DOM_INDEX = toolSubGroups
+  .slice(0, STYLE_AFTER_SUBGROUP + 1)
+  .reduce((n, group) => n + group.length, 0)
+
+function toolDomIndex(toolId: WBToolType): number {
+  const i = drawingTools.findIndex(t => t.id === toolId)
+  return i < STYLE_DOM_INDEX ? i : i + 1
+}
+
 // ─── B3: Conditional visibility ─────────────────────────────────────────────
 
 const THICKNESS_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'circle']
@@ -319,10 +330,9 @@ function toolTooltip(tool: ToolDef): string {
 // Only the "active" item in each group has tabindex=0, rest have tabindex=-1
 
 const toolbarEl = ref<HTMLElement | null>(null)
-// Group sizes: [tools(8), thickness(4), palette(8 max), actions(3), lock(1)]
-// Dynamic — actual count resolved from DOM via getGroupElements()
-const GROUP_SIZES = [drawingTools.length, 4, 8, 4, 1]  // tools(9), thickness(4), palette(8), actions(4), lock(1)
-const MAX_GROUPS = GROUP_SIZES.length
+// Групи й кількість кнопок у них — з DOM (getGroupElements): інструменти (з «товщина +
+// колір»), дії, замок (лише з виділенням), додаткове. БУЛО: сталий список розмірів ще з часів
+// окремих «товщина» й «палітра» — він розходився з тим, що на екрані.
 
 // Track active index within each group
 const activeIndices = reactive<number[]>([0, 0, 0, 0, 0])
@@ -364,7 +374,8 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   }
   if (currentGroup === -1) return
 
-  const groupSize = GROUP_SIZES[currentGroup]
+  const groupSize = Math.max(1, getGroupElements(currentGroup).length)
+  const groupCount = groups.length
   const currentIdx = activeIndices[currentGroup]
 
   switch (event.key) {
@@ -388,12 +399,12 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
     case 'Tab': {
       if (event.shiftKey) {
         // Shift+Tab: previous group
-        const prevGroup = (currentGroup - 1 + MAX_GROUPS) % MAX_GROUPS
+        const prevGroup = (currentGroup - 1 + groupCount) % groupCount
         event.preventDefault()
         focusItem(prevGroup, activeIndices[prevGroup])
       } else {
         // Tab: next group
-        const nextGroup = (currentGroup + 1) % MAX_GROUPS
+        const nextGroup = (currentGroup + 1) % groupCount
         event.preventDefault()
         focusItem(nextGroup, activeIndices[nextGroup])
       }
@@ -449,6 +460,16 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   height: 1px;
   margin: 6px 4px;
   background: var(--wb-toolbar-border, #e2e8f0);
+}
+
+/* TABLET 1А: «товщина + колір» під олівцем — місце постійне; для інструментів без кольору
+   (вибір, гумка, лазер, стікер) кнопка приглушена, але натискається. */
+.wb-toolbar__style-slot {
+  display: flex;
+  justify-content: center;
+}
+.wb-toolbar__style-slot--idle {
+  opacity: 0.45;
 }
 
 /* Thin sub-separator between tool sub-groups (lighter than main sep) */
@@ -722,8 +743,11 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 .wb-toolbar[data-variant="tablet"] .wb-toolbar__btn--tooltip::after {
   display: none;
 }
-/* Phase 4 B8: Hide thickness/color sections when collapsed on tablet */
-.wb-toolbar[data-variant="tablet"]:not(.wb-toolbar--expanded) .wb-toolbar__group:nth-child(n+2):nth-child(-n+4) {
+/* TABLET 1А (2026-09-27): згорнута планшетна панель ховає лише додаткове (YouTube, формула).
+   БУЛО: групи 2–4 за позицією — тобто саме «товщина + колір», а коли кольору для інструмента
+   не було (гумка, вибір), то й «скасувати / повторити». */
+.wb-toolbar[data-variant="tablet"]:not(.wb-toolbar--expanded) .wb-toolbar__group--extras,
+.wb-toolbar[data-variant="tablet"]:not(.wb-toolbar--expanded) .wb-toolbar__sep--extras {
   display: none;
 }
 /* Phase 4 B8: Toggle button at bottom */

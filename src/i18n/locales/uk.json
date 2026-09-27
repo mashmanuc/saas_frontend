@@ -8457,6 +8457,7 @@
       "showPagePanel": "Показати панель сторінок",
       "bgColor": "Фон сторінки",
       "bgColorShort": "BG",
+      "gridCell": "Клітинка",
       "bgColorAllPages": "Усі сторінки",
       "bgColorAllPagesTitle": "Застосувати фон до всіх сторінок дошки",
       "syncError": "Помилка синхронізації",
