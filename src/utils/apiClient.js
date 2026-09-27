@@ -71,6 +71,14 @@ const refreshQueue = []
 const REFRESH_BUFFER_MS = 60 * 1000  // 60s ДО expiry per SSOT §7
 const REFRESH_PROACTIVE_FALLBACK_MS = 45 * 60 * 1000  // legacy timestamp proxy (no-exp sessions)
 
+// Б-37 (2026-09-27): ендпойнти, що сесії НЕ читають зовсім — на бекенді
+// `authentication_classes = []` (`V1AuthLoginView`, `V1AuthRegisterView`,
+// `V1AuthGoogleView`, `V1AuthGoogleRegisterView`). Їхній 401 — відповідь ФОРМИ
+// («невірний email або пароль», «email не підтверджено»), а не стан сесії.
+// Ендпойнти з `M4SHJWTAuthentication` (mfa/verify, reset-password, verify-email…)
+// сюди НЕ входять: їхній 401 буває й від протухлого токена, там refresh потрібен.
+const SESSIONLESS_CREDENTIAL_ENDPOINT = /\/auth\/(login|register|google(\/register)?)\/?(\?|$)/
+
 // ── Global Circuit Breaker ──────────────────────────────────────────────
 // Prevents self-DDOS: if backend is unreachable, stop ALL non-essential requests.
 // Resets on: network recovery (online event), manual retry, or cooldown expiry.
@@ -442,6 +450,14 @@ api.interceptors.response.use(
         notifyWarning('Сесію завершено. Увійдіть знову.')
         store.sessionExpiredNotified = true
       }
+    }
+
+    // Б-37: 401 форми входу — не про сесію. Раніше невірний пароль давав ще й тост
+    // «Сесію завершено», а якщо в сторі лишався `access` (роутер пускає на форму, коли
+    // немає `user`) — refresh, повтор того самого пароля, знову 401 і forceLogout.
+    // Помилку віддаємо формі як є: повідомлення показує вона.
+    if (status === 401 && SESSIONLESS_CREDENTIAL_ENDPOINT.test(url)) {
+      return Promise.reject(error)
     }
 
     if (status === 401 && !isAuthRefresh && !isAuthLogout) {
