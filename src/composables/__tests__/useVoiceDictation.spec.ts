@@ -314,6 +314,20 @@ describe('useVoiceDictation — Chrome на Android (Б-108)', () => {
     v.stop()
   })
 
+  it('розпізнавач, що дає гіпотезам оцінку, — теж без повторів (запобіжник)', async () => {
+    // Якщо на якомусь пристрої проміжні гіпотези прийдуть з confidence > 0, правило
+    // «confidence 0 = гіпотеза» не спрацює; рятує заміна шматка, який продовжують.
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    for (const h of OWNER_HYPOTHESES) instances[0].emitFinal(h, 0.8)
+
+    expect(field.value).toBe(OWNER_PHRASE)
+    v.stop()
+  })
+
   it('поки людина говорить, поле показує останню гіпотезу без повторів', async () => {
     const useVoiceDictation = await load()
     const field = ref('')
