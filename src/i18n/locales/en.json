@@ -9147,6 +9147,13 @@
       "exitReplay": "Exit",
       "shareMoment": "Share moment",
       "momentCopied": "Moment link copied!",
+      "lessonDuration": "lesson lasted {time}",
+      "end": {
+        "label": "End of recording",
+        "watchAgain": "Watch again",
+        "share": "Share",
+        "linkCopied": "Link copied"
+      },
       "loading": "Loading replay…",
       "replayReady": "Replay ready",
       "operationsCount": "{count} operations",

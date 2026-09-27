@@ -14,6 +14,7 @@
 //   - Snapshot fetching (це SnapshotProvider через composable)
 
 import type { BoardOperation, ReplayTimeline } from '../types/replay'
+import { REPLAY_BURST_MS, REPLAY_EPILOGUE_MS, REPLAY_MIN_DELAY_MS, viewGapMs } from './replayViewTime'
 
 export type ReplayStateV2 = 'idle' | 'playing' | 'paused' | 'ended'
 export type ReplaySpeedV2 = 0.5 | 1 | 2 | 4 | 10
@@ -23,6 +24,8 @@ export interface ReplayEngineV2Callbacks {
   onProgress: (current: number, total: number) => void
   onStateChange: (state: ReplayStateV2) => void
   onComplete: () => void
+  /** Остання op показана — почалась витримка готової дошки (REPLAY_EPILOGUE_MS), стан лишається 'playing'. */
+  onEpilogue: () => void
 }
 
 export class WBReplayEngineV2 {
@@ -31,6 +34,13 @@ export class WBReplayEngineV2 {
   private speed: ReplaySpeedV2 = 1
   private state: ReplayStateV2 = 'idle'
   private playTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * Витримка після останньої op: готова дошка видима, повзунок доходить до кінця, потім 'ended'.
+   * Раніше 'ended' ставився в тому ж такті, що й остання op, — програвач одразу накривав дошку
+   * заставкою і кадру «дошка завершена» не було (скарга власника 2026-09-27).
+   */
+  private epilogueTimer: ReturnType<typeof setTimeout> | null = null
+  private inEpilogue = false
   /** Наступна op — перша після play()/seekTo(): показати одразу, без паузи. */
   private resumeFresh = true
   private firstOpAtMs: number = 0
@@ -62,6 +72,8 @@ export class WBReplayEngineV2 {
   getTotalOperations(): number { return this.operations.length }
   getOperationAt(index: number): BoardOperation | null { return this.operations[index] ?? null }
   getFirstOpAtMs(): number { return this.firstOpAtMs }
+  /** Іде витримка готової дошки після останньої op. */
+  isInEpilogue(): boolean { return this.inEpilogue }
 
   /**
    * Бінарний пошук O(log n): перший індекс з offset ≥ targetMs.
@@ -133,6 +145,9 @@ export class WBReplayEngineV2 {
 
   pause(): void {
     if (this.state !== 'playing') return
+    // Пауза під час витримки = одразу кінець: дошка вже завершена, а «продовжити» з кінця
+    // означало б почати спочатку.
+    if (this.inEpilogue) { this._finishEpilogue(); return }
     this._clearTimer()
     this.setState('paused')
   }
@@ -146,7 +161,8 @@ export class WBReplayEngineV2 {
 
   setSpeed(speed: ReplaySpeedV2): void {
     this.speed = speed || 1
-    if (this.state === 'playing') {
+    // Витримка від швидкості не залежить — спокійний кінець однаковий на будь-якій швидкості.
+    if (this.state === 'playing' && !this.inEpilogue) {
       this._clearTimer()
       this._scheduleNext()
     }
@@ -204,9 +220,6 @@ export class WBReplayEngineV2 {
 
   // ─── Private ───────────────────────────────────────────────────────────────
 
-  /** Ops з різницею < BURST_THRESHOLD_MS застосовуються атомарно (paste, batch). */
-  private static readonly BURST_THRESHOLD_MS = 16
-
   private setState(s: ReplayStateV2): void {
     this.state = s
     this.callbacks.onStateChange?.(s)
@@ -214,8 +227,7 @@ export class WBReplayEngineV2 {
 
   private _scheduleNext(): void {
     if (this.currentIndex >= this.operations.length) {
-      this.setState('ended')
-      this.callbacks.onComplete?.()
+      this._startEpilogue()
       return
     }
 
@@ -226,14 +238,15 @@ export class WBReplayEngineV2 {
     // чекала до 2 с, після seek дошка «мовчала» до 2 с, а потім дві op
     // виринали разом (replayEngineTiming.spec). Першу op після play()/seekTo()
     // показуємо одразу: її момент — це те місце, куди людина перемотала.
-    let delayMs = 4
+    // Проміжок рахує та сама функція, що й шкала програвача (replayViewTime) —
+    // інакше повзунок і дошка розійдуться.
+    let delayMs = REPLAY_MIN_DELAY_MS
     const prevOp = this.resumeFresh ? undefined : this.operations[this.currentIndex - 1]
     this.resumeFresh = false
     if (prevOp) {
       const t1 = new Date(prevOp.created_at).getTime()
       const t2 = new Date(op.created_at).getTime()
-      const diff = (isNaN(t1) || isNaN(t2)) ? 16 : Math.min(Math.max(0, t2 - t1), 2000)
-      delayMs = Math.max(4, diff / this.speed)
+      delayMs = Math.max(REPLAY_MIN_DELAY_MS, viewGapMs(t2 - t1) / this.speed)
     }
 
     this.playTimer = setTimeout(() => {
@@ -249,7 +262,7 @@ export class WBReplayEngineV2 {
         const cur = this.operations[this.currentIndex]
         const tp = new Date(prev.created_at).getTime()
         const tc = new Date(cur.created_at).getTime()
-        if (isNaN(tp) || isNaN(tc) || tc - tp >= WBReplayEngineV2.BURST_THRESHOLD_MS) break
+        if (isNaN(tp) || isNaN(tc) || tc - tp >= REPLAY_BURST_MS) break
         this.callbacks.onOperation?.(cur, this.currentIndex)
         this.callbacks.onProgress?.(this.currentIndex + 1, this.operations.length)
         this.currentIndex++
@@ -259,10 +272,32 @@ export class WBReplayEngineV2 {
     }, delayMs)
   }
 
+  private _startEpilogue(): void {
+    this.inEpilogue = true
+    this.callbacks.onEpilogue?.()
+    this.epilogueTimer = setTimeout(() => this._finishEpilogue(), REPLAY_EPILOGUE_MS)
+  }
+
+  private _finishEpilogue(): void {
+    if (this.epilogueTimer !== null) {
+      clearTimeout(this.epilogueTimer)
+      this.epilogueTimer = null
+    }
+    this.inEpilogue = false
+    this.setState('ended')
+    this.callbacks.onComplete?.()
+  }
+
+  /** Зупиняє і гру, і витримку (seek, stop, destroy — виходять із витримки без 'ended'). */
   private _clearTimer(): void {
     if (this.playTimer !== null) {
       clearTimeout(this.playTimer)
       this.playTimer = null
     }
+    if (this.epilogueTimer !== null) {
+      clearTimeout(this.epilogueTimer)
+      this.epilogueTimer = null
+    }
+    this.inEpilogue = false
   }
 }

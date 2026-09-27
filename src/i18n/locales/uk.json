@@ -9280,6 +9280,13 @@
       "exitReplay": "Вийти",
       "shareMoment": "Поділитися моментом",
       "momentCopied": "Посилання на момент скопійовано!",
+      "lessonDuration": "урок тривав {time}",
+      "end": {
+        "label": "Кінець запису",
+        "watchAgain": "Переглянути ще раз",
+        "share": "Поділитися",
+        "linkCopied": "Посилання скопійовано"
+      },
       "loading": "Завантаження replay…",
       "replayReady": "Replay готовий",
       "operationsCount": "{count} операцій",

@@ -15,6 +15,12 @@
 
 import { ref, shallowRef, readonly, computed, watch, onScopeDispose, getCurrentScope } from 'vue'
 import { WBReplayEngineV2, type ReplaySpeedV2, type ReplayStateV2 } from '../engine/WBReplayEngineV2'
+import {
+  buildViewTimeline,
+  findIndexByViewMs as findIndexOnViewTimeline,
+  lessonMsAtView as lessonMsOnViewTimeline,
+  type ReplayViewTimeline,
+} from '../engine/replayViewTime'
 import { AuthSnapshotProvider } from '../engine/snapshot/AuthSnapshotProvider'
 import { PublicSnapshotProvider } from '../engine/snapshot/PublicSnapshotProvider'
 import { NullSnapshotProvider, type ReplaySnapshotProvider } from '../engine/snapshot/SnapshotProvider'
@@ -82,11 +88,20 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
   const isBatchingSeek = ref(false)   // сумісність з V1 interface
   const seekCompleted = ref(false)    // сумісність з V1 interface
 
-  // Time-axis
+  // Time-axis: реальний час уроку (для ?t= і підпису «урок тривав»)
   const firstOpAtMs = ref(0)
   const lastOpAtMs = ref(0)
   const currentTimeMs = ref(0)
   const totalDurationMs = computed(() => Math.max(0, lastOpAtMs.value - firstOpAtMs.value))
+
+  // Шкала перегляду (REPLAY_MANIFEST v2.3): та сама формула, що й затримки рушія.
+  // Повзунок, підпис, клік по шкалі й мітки — лише через неї.
+  const viewTimeline = shallowRef<ReplayViewTimeline | null>(null)
+  const currentViewMs = ref(0)
+  const totalViewMs = computed(() => viewTimeline.value?.totalViewMs ?? 0)
+  /** performance.now() на початку витримки після останньої op; null — витримки немає. */
+  const epilogueStartedAt = ref<number | null>(null)
+  const viewMsAtIndex = (idx: number): number => viewTimeline.value?.viewAt[idx] ?? 0
 
   // Lesson markers
   const markers = ref<WBLessonMarker[]>([])
@@ -165,6 +180,9 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
         lastOpAtMs.value = new Date(timeline.operations[timeline.operations.length - 1].created_at).getTime()
         currentTimeMs.value = 0
       }
+      viewTimeline.value = buildViewTimeline((timeline.operations ?? []).map(o => o.created_at))
+      currentViewMs.value = 0
+      epilogueStartedAt.value = null
 
       if (timeline.start_state && onStartState) {
         try { onStartState(timeline.start_state) } catch (e) { console.warn('[replay:v2] start_state hydrate failed', e) }
@@ -176,13 +194,18 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
           currentIndex.value = safeIdx + 1
           const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
           currentTimeMs.value = Math.max(0, typeof tMs === 'number' ? tMs : 0)
+          currentViewMs.value = viewMsAtIndex(safeIdx)
           onOp(op)
         })
         .on('onProgress', (cur, total) => {
           currentIndex.value = typeof cur === 'number' ? cur : 0
           totalOperations.value = typeof total === 'number' ? total : 0
         })
-        .on('onStateChange', (s) => { state.value = s })
+        .on('onStateChange', (s) => {
+          state.value = s
+          if (s !== 'playing') epilogueStartedAt.value = null
+        })
+        .on('onEpilogue', () => { epilogueStartedAt.value = performance.now() })
         .on('onComplete', () => { state.value = 'ended' })
 
       if (publicToken && !pingSent.value && timeline.operations?.length) {
@@ -225,6 +248,7 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       currentIndex.value = engine.value.getCurrentIndex()
       const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
       currentTimeMs.value = Math.max(0, tMs)
+      currentViewMs.value = viewMsAtIndex(currentIndex.value - 1)
     }
     state.value = engine.value.getState()
   }
@@ -271,6 +295,8 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       const actualIdx = engine.value.seekTo(0)
       currentIndex.value = actualIdx
       currentTimeMs.value = 0
+      currentViewMs.value = 0
+      epilogueStartedAt.value = null
       return
     }
 
@@ -409,6 +435,8 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
       currentTimeMs.value = Math.max(0, tMs)
     }
+    currentViewMs.value = viewMsAtIndex(actualIdx)
+    epilogueStartedAt.value = null
   }
 
   // ─── Markers ───────────────────────────────────────────────────────────────
@@ -483,5 +511,17 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
     getOperationAt: (idx: number) => engine.value?.getOperationAt(idx) ?? null,
     findIndexByTimeMs: (ms: number) => engine.value?.findIndexByTimeMs(ms) ?? 0,
     getOperationTimeMs: (idx: number) => engine.value?.getOperationTimeMs(idx) ?? 0,
+    // ─── Шкала перегляду (v2.3) ──────────────────────────────────────────────
+    /** Час перегляду поточної позиції, мс (на 1×). */
+    currentViewMs: readonly(currentViewMs),
+    /** Уся шкала перегляду: остання op + витримка REPLAY_EPILOGUE_MS. */
+    totalViewMs,
+    /** Реальна тривалість уроку (перша → остання op), мс — для підпису «урок тривав». */
+    lessonDurationMs: totalDurationMs,
+    epilogueStartedAt: readonly(epilogueStartedAt),
+    viewMsAtIndex,
+    findIndexByViewMs: (ms: number) => (viewTimeline.value ? findIndexOnViewTimeline(viewTimeline.value, ms) : 0),
+    /** Час уроку для точки шкали перегляду — для `?t=` (старі посилання — у часі уроку). */
+    lessonMsAtView: (ms: number) => (viewTimeline.value ? lessonMsOnViewTimeline(viewTimeline.value, ms) : 0),
   }
 }

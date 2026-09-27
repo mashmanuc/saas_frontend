@@ -75,13 +75,34 @@
           <EyePlayer class="wb-public-view__hero-eye" capture-touch @click="handleHeroPlay" />
           <div class="wb-public-view__hero-info">
             <h2 class="wb-public-view__hero-title">{{ displayTitle }}</h2>
-            <p v-if="replayDurationSeconds > 0 || store.pageCount > 1" class="wb-public-view__hero-meta">
-              <span v-if="replayDurationSeconds > 0">{{ Math.ceil(replayDurationSeconds / 60) }} {{ t('winterboard.replay.statMinutes', 'хв') }}</span>
-              <span v-if="replayDurationSeconds > 0 && store.pageCount > 1"> · </span>
-              <span v-if="store.pageCount > 1">{{ store.pageCount }} {{ t('winterboard.replay.statPages') }}</span>
+            <p v-if="heroMetaParts.length > 0" class="wb-public-view__hero-meta">
+              {{ heroMetaParts.join(' · ') }}
             </p>
           </div>
         </div>
+
+        <!-- Кінець запису (власник 2026-09-27): дошка й шкала лишаються, ненав'язливі дії
+             з'являються після витримки готової дошки. Стартова заставка «кінцем» не буває. -->
+        <Transition name="wb-replay-end">
+          <div
+            v-if="showEndActions && isReplayMode && hasReplayData && !showHeroOverlay"
+            class="wb-public-view__end-actions"
+            role="group"
+            :aria-label="t('winterboard.replay.end.label')"
+          >
+            <button type="button" class="wb-public-view__end-btn" @click="restartReplay">
+              {{ t('winterboard.replay.end.watchAgain') }}
+            </button>
+            <button v-if="canShareReplay" type="button" class="wb-public-view__end-btn" @click="shareReplay">
+              {{ t('winterboard.replay.end.share') }}
+            </button>
+          </div>
+        </Transition>
+        <Transition name="wb-replay-end">
+          <div v-if="showLinkCopied" class="wb-public-view__end-toast" role="status" aria-live="polite">
+            {{ t('winterboard.replay.end.linkCopied') }}
+          </div>
+        </Transition>
       </div>
 
       <!-- Replay player controls (visible after Play clicked) -->
@@ -93,6 +114,8 @@
         :current-index="replay?.currentIndex.value ?? 0"
         :total-operations="replay?.totalOperations.value ?? 0"
         :markers="replayMarkers"
+        :lesson-seconds="replayLessonSeconds"
+        :lesson-duration-seconds="lessonDurationSeconds"
         @play="handleReplayPlay"
         @pause="handleReplayPause"
         @seek="handleReplaySeek"
@@ -144,6 +167,7 @@ import { getReplay } from '../api/replayLifecycleApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { useReplayV2 } from '../composables/useReplayV2'
+import { REPLAY_EPILOGUE_MS } from '../engine/replayViewTime'
 import { useReplayPlayhead } from '../composables/useReplayPlayhead'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
@@ -199,10 +223,21 @@ useCanvasResize({
 // ── Replay ──
 const hasReplayData = ref(false)
 const isReplayMode = ref(false)
-const showHeroOverlay = ref(true)  // Hero overlay shown until user clicks Play
+const showHeroOverlay = ref(true)  // Hero overlay shown until user clicks Play — лише ДО першої гри
+// Кінець запису: дії «Переглянути ще раз / Поділитися» поверх видимої дошки (не заставка).
+const showEndActions = ref(false)
+const showLinkCopied = ref(false)
+// Довжина шкали, с. V2 — час перегляду (паузи стиснуто, + витримка); V1 (?replay=v1) — реальний.
 const replayDurationSeconds = ref(0)
+// Реальна тривалість уроку (перша → остання op), с — окремий підпис, не шкала.
+const lessonDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
 let replay: ReturnType<typeof useReplay> | null = null
+type ReplayV2Api = ReturnType<typeof useReplayV2>
+/** V2 — шкала перегляду; V1 (аварійний ?replay=v1) — стара шкала реального часу. */
+function viewApi(): ReplayV2Api | null {
+  return replay && 'currentViewMs' in replay ? (replay as unknown as ReplayV2Api) : null
+}
 let _replayStateWatchStop: (() => void) | null = null  // CRITICAL 1: track watch handle to prevent leaks
 // Повзунок часу: плавно за годинником між op, вирівнюється з дошкою на кожній op
 // (рушій стискає паузи > 2 с — без вирівнювання повзунок відставав назавжди).
@@ -246,20 +281,45 @@ const displayTitle = computed(() => {
   return t('winterboard.room.untitled')
 })
 
-// Replay current time — плавний rAF-інтерполятор між op-fires.
-// playheadMs: просувається у реальному часі між подіями, уникає стрибків при паузах у записі.
-// Seek-цільова позиція береться з findIndexByTimeMs (REPLAY_MANIFEST §1, time-axis single source).
+// Позиція на шкалі (REPLAY_MANIFEST v2.3): у V2 — час перегляду, та сама формула, що й
+// затримки рушія (replayViewTime), тож повзунок іде рівно й доходить до кінця разом з дошкою.
 const replayCurrentSeconds = computed(() => Math.max(0, playheadMs.value / 1000))
+// Час уроку в точці повзунка — для `?t=`: старі посилання несуть час уроку, нові — теж.
+const replayLessonSeconds = computed(() => {
+  const ms = playheadMs.value
+  const v = viewApi()
+  return Math.max(0, (v ? v.lessonMsAtView(ms) : ms) / 1000)
+})
+
+function formatClock(sec: number): string {
+  const total = Math.max(0, Math.floor(sec))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`
+}
+
+const heroMetaParts = computed(() => {
+  const parts: string[] = []
+  if (replayDurationSeconds.value > 0) parts.push(formatClock(replayDurationSeconds.value))
+  if (lessonDurationSeconds.value > 0) {
+    parts.push(t('winterboard.replay.lessonDuration', { time: formatClock(lessonDurationSeconds.value) }))
+  }
+  if (store.pageCount > 1) parts.push(`${store.pageCount} ${t('winterboard.replay.statPages')}`)
+  return parts
+})
 
 // Map lesson markers → replay marker format.
 // lesson_time_seconds беремо з реального timestamp op[operation_index], а не з лінійного idx/total,
 // інакше крапка маркера на тайлайні і момент, куди веде клік, розʼїжджаються.
 const replayMarkers = computed(() => {
   if (!replay) return []
+  const v = viewApi()
   return replay.markers.value.map(m => ({
     id: m.id,
     title: m.title,
-    lesson_time_seconds: replay!.getOperationTimeMs(m.operation_index) / 1000,
+    // Позиція на шкалі: V2 — момент перегляду op мітки; V1 — реальний час.
+    lesson_time_seconds: (v ? v.viewMsAtIndex(m.operation_index) : replay!.getOperationTimeMs(m.operation_index)) / 1000,
     category: m.category,
     page_id: m.page_id,
   }))
@@ -381,7 +441,11 @@ async function enterReplayMode(): Promise<void> {
 
   // Fallback: derive duration from operation timestamps if lesson_time_seconds was missing
   // HIGH 21: minimum 1s to prevent division by zero in seek calculations
-  if (replayDurationSeconds.value <= 0 && replay.totalDurationMs.value > 0) {
+  const v2 = viewApi()
+  if (v2) {
+    replayDurationSeconds.value = v2.totalViewMs.value / 1000
+    lessonDurationSeconds.value = v2.lessonDurationMs.value / 1000
+  } else if (replayDurationSeconds.value <= 0 && replay.totalDurationMs.value > 0) {
     replayDurationSeconds.value = Math.max(1, Math.ceil(replay.totalDurationMs.value / 1000))
   }
 
@@ -415,7 +479,10 @@ async function enterReplayMode(): Promise<void> {
   // Must be set up HERE (after `replay` is assigned), not at setup level,
   // because `replay` is a plain `let` — Vue can't track its assignment.
   _replayStateWatchStop = watch(() => replay!.state.value, (s) => {
-    if (s === 'ended') showHeroOverlay.value = true
+    // Кінець: готова дошка вже постояла витримку (рушій), тепер — ненав'язливі дії; дошка й
+    // шкала лишаються. Раніше тут вмикалась стартова заставка з затемненням у ту саму мить,
+    // що й остання op, — «обрізалось» (власник 2026-09-27).
+    showEndActions.value = s === 'ended'
   })
 
   // P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
@@ -428,7 +495,13 @@ async function enterReplayMode(): Promise<void> {
   })
 
   // Повзунок: тікер на старті гри + вирівнювання з дошкою на кожній op.
-  playhead.attach({
+  playhead.attach(v2 ? {
+    state: () => replay!.state.value,
+    currentTimeMs: () => v2.currentViewMs.value,
+    totalMs: () => v2.totalViewMs.value,
+    epilogueStartedAt: () => v2.epilogueStartedAt.value,
+    epilogueMs: REPLAY_EPILOGUE_MS,
+  } : {
     state: () => replay!.state.value,
     currentTimeMs: () => replay!.currentTimeMs.value,
     totalMs: () => replay!.totalDurationMs.value,
@@ -439,7 +512,8 @@ async function enterReplayMode(): Promise<void> {
   if (tParam) {
     const seconds = Number(tParam)
     if (!isNaN(seconds) && seconds > 0) {
-      await handleReplaySeek(seconds * 1000)
+      // `t` — час уроку (так його писали й старі посилання), не час перегляду.
+      await seekToLessonMs(seconds * 1000)
       return
     }
   }
@@ -491,31 +565,62 @@ function exitReplayMode(): void {
 function handleHeroPlay(): void {
   showHeroOverlay.value = false
   if (!replay) return
-
-  if (replay.state.value === 'ended') {
-    // If user seeked via page nav (currentIndex < total), play from that position.
-    // Canvas was already rebuilt by seekToWithSnapshot in handlePageNav.
-    const atEnd = replay.currentIndex.value >= replay.totalOperations.value
-    if (atEnd) {
-      // Natural end — restart from beginning
-      replay.seekToWithSnapshot(
-        0,
-        (bs) => store.loadSnapshot(bs as Parameters<typeof store.loadSnapshot>[0]),
-        resetBoardForReplay,
-      ).then(() => replay?.play())
-    } else {
-      // Already seeked to a specific position — just play from there
-      replay.play()
-    }
-  } else {
-    replay?.play()
+  // Natural end — з початку; якщо після кінця перемотали (page nav / шкала) — грати звідти.
+  if (isAtNaturalEnd()) {
+    void restartReplay()
+    return
   }
+  replay.play()
+}
+
+function isAtNaturalEnd(): boolean {
+  return !!replay && replay.state.value === 'ended' && replay.currentIndex.value >= replay.totalOperations.value
+}
+
+/**
+ * З початку: спершу скинути дошку, потім грати. Просте play() після кінця запускало рушій
+ * з op[0] поверх ГОТОВОЇ дошки — ops лягли б удруге (досі не було видно, бо панель після
+ * кінця ховалась під заставкою).
+ */
+async function restartReplay(): Promise<void> {
+  if (!replay) return
+  await seekToIndex(0, 0)
+  replay?.play()
+}
+
+// «Поділитися» в кінці — лише для публічного посилання; власник ділиться записом зі списку.
+const canShareReplay = computed(() => Boolean(route.params.token))
+
+async function shareReplay(): Promise<void> {
+  const url = new URL(window.location.href)
+  url.search = ''   // увесь запис, без ?t= і службових прапорців
+  url.hash = ''
+  const text = url.toString()
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (err) {
+    // Буфер недоступний (http, політика браузера) — запасний шлях, як у «Поділитися моментом».
+    console.info('[WB:PublicView] clipboard.writeText недоступний, копіюємо через поле:', err)
+    const input = document.createElement('input')
+    input.value = text
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+  }
+  showLinkCopied.value = true
+  setTimeout(() => { showLinkCopied.value = false }, 2500)
 }
 
 // NOTE: watch for replay.state → showHeroOverlay is set up inside enterReplayMode()
 // (after `replay` object is created) — see FIX comment there.
 
 function handleReplayPlay(): void {
+  if (isAtNaturalEnd()) {
+    void restartReplay()
+    return
+  }
+  showEndActions.value = false
   replay?.play()
 }
 
@@ -523,18 +628,38 @@ function handleReplayPause(): void {
   replay?.pause()
 }
 
-async function handleReplaySeek(timeMs: number): Promise<void> {
-  replayAudio.stopAudio()  // INV I5: stop audio on seek
+/** Клік по шкалі, ←/→, мітки: `timelineMs` — позиція на шкалі (V2 — час перегляду). */
+async function handleReplaySeek(timelineMs: number): Promise<void> {
   // CRITICAL 3: guard against missing replay / empty timeline
   if (!replay || replay.totalOperations.value <= 0) return
+  // Бінарний пошук першої op з позицією ≥ цілі. Лінійне ratio*totalOps було причиною
+  // "стрибків" повзунка — ops розподілені у часі нерівномірно.
+  const target = Math.max(0, timelineMs)
+  const v = viewApi()
+  const targetIndex = v ? v.findIndexByViewMs(target) : replay.findIndexByTimeMs(target)
+  await seekToIndex(targetIndex, target)
+}
 
-  // Time-based seek: знаходимо першу op з offset ≥ timeMs (бінарний пошук у engine).
-  // Лінійне ratio*totalOps було причиною "стрибків" повзунка — ops розподілені у часі нерівномірно.
-  const targetTimeMs = Math.max(0, timeMs)
-  const targetIndex = replay.findIndexByTimeMs(targetTimeMs)
+/** `?t=` — час уроку (старі посилання): op за реальним часом, повзунок — на її момент перегляду. */
+async function seekToLessonMs(lessonMs: number): Promise<void> {
+  if (!replay || replay.totalOperations.value <= 0) return
+  const targetIndex = replay.findIndexByTimeMs(Math.max(0, lessonMs))
+  await seekToIndex(targetIndex, timelineMsAtIndex(targetIndex))
+}
+
+/** Позиція op на шкалі: V2 — момент перегляду, V1 — реальний час. */
+function timelineMsAtIndex(index: number): number {
+  const v = viewApi()
+  return v ? v.viewMsAtIndex(index) : (replay?.getOperationTimeMs(index) ?? 0)
+}
+
+async function seekToIndex(targetIndex: number, displayMs: number): Promise<void> {
+  if (!replay) return
+  replayAudio.stopAudio()  // INV I5: stop audio on seek
+  showEndActions.value = false
 
   // Snap playhead to target immediately so slider responds before canvas catches up.
-  playhead.jumpTo(targetTimeMs)
+  playhead.jumpTo(displayMs)
 
   await replay.seekToWithSnapshot(
     targetIndex,
@@ -597,14 +722,9 @@ async function handlePageNav(targetIndex: number): Promise<void> {
   }
 
   if (firstOpIdx >= 0) {
-    replayAudio.stopAudio()
-    await replay.seekToWithSnapshot(
-      firstOpIdx,
-      (boardState) => {
-        store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
-      },
-      resetBoardForReplay,
-    )
+    // Той самий шлях, що й клік по шкалі: повзунок стає на момент op, дії кінця ховаються
+    // (інакше після кінця «Переглянути ще раз» висіла б над дошкою іншої сторінки на 100 %).
+    await seekToIndex(firstOpIdx, timelineMsAtIndex(firstOpIdx))
   }
 
   // Ensure correct page is shown (seek may land on a page_navigate op
@@ -1094,6 +1214,63 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .wb-public-view__spinner {
     animation: none;
+  }
+}
+
+/* ── Кінець запису: ненав'язливі дії поверх готової дошки (власник 2026-09-27).
+      Палітра — як у панелі програвача (PublicReplayPlayer), що теж лише світла. ── */
+.wb-public-view__end-actions {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  z-index: 5;
+}
+.wb-public-view__end-btn {
+  border: 0;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wb-public-view__end-btn:hover,
+.wb-public-view__end-btn:focus-visible {
+  background: #f1f5f9;
+}
+.wb-public-view__end-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  font-size: 13px;
+  z-index: 6;
+}
+.wb-replay-end-enter-active,
+.wb-replay-end-leave-active {
+  transition: opacity 0.5s ease;
+}
+.wb-replay-end-enter-from,
+.wb-replay-end-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-replay-end-enter-active,
+  .wb-replay-end-leave-active {
+    transition: none;
   }
 }
 

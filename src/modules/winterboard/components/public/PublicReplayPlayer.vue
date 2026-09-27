@@ -82,6 +82,13 @@
       <span class="public-replay-player__time">
         {{ formatTime(currentSeconds) }} / {{ formatTime(durationSeconds) }}
       </span>
+      <!-- Реальна тривалість уроку — окремо від шкали (шкала = час перегляду, паузи стиснуто). -->
+      <span
+        v-if="lessonDurationSeconds && lessonDurationSeconds > 0"
+        class="public-replay-player__lesson-duration"
+      >
+        {{ t('winterboard.replay.lessonDuration', { time: formatTime(lessonDurationSeconds) }) }}
+      </span>
 
       <!-- Share moment button -->
       <button
@@ -135,6 +142,7 @@ import { useI18n } from 'vue-i18n'
 export interface ReplayMarker {
   id: string
   title: string
+  /** Позиція мітки на ЦІЙ шкалі, с (у WBPublicView — час перегляду). */
   lesson_time_seconds: number
   category?: string
 }
@@ -156,6 +164,10 @@ const props = defineProps<{
   totalOperations?: number
   markers?: ReplayMarker[]
   speed?: number
+  /** Час уроку поточної позиції, с — для `?t=` (старі посилання — у часі уроку). Немає — береться currentSeconds. */
+  lessonSeconds?: number
+  /** Реальна тривалість уроку, с — окремий підпис біля шкали. */
+  lessonDurationSeconds?: number
 }>()
 
 const emit = defineEmits<{
@@ -202,16 +214,21 @@ function seekRelative(delta: number): void {
 }
 
 function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
+  const total = Math.max(0, Math.floor(sec))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`
 }
 
 // A3.1: Share moment — copy URL with ?t= to clipboard
 const showMomentToast = ref(false)
 
 function handleShareMoment(): void {
-  const seconds = Math.floor(props.currentSeconds)
+  // `t` — завжди час уроку: так його читають і старі посилання (REPLAY_MANIFEST v2.3).
+  const seconds = Math.floor(props.lessonSeconds ?? props.currentSeconds)
   const url = new URL(window.location.href)
   url.searchParams.set('t', String(seconds))
 
@@ -362,6 +379,13 @@ function handleShareMoment(): void {
   font-variant-numeric: tabular-nums;
 }
 
+.public-replay-player__lesson-duration {
+  font-size: 12px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .public-replay-player__speed {
   margin-left: auto;
   padding: 4px 8px;
@@ -451,6 +475,10 @@ function handleShareMoment(): void {
     min-height: 44px;
   }
   .public-replay-player__share-moment {
+    display: none;
+  }
+  /* Вузький екран: рядок керування не вміщає другий підпис; реальна тривалість є на заставці. */
+  .public-replay-player__lesson-duration {
     display: none;
   }
   .public-replay-player__time {

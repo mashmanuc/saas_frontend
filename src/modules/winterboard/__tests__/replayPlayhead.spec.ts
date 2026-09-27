@@ -1,8 +1,11 @@
 /**
- * Повзунок часу не відстає від дошки на стиснутих паузах.
- * Ops записані в 0 / 1000 / 11000 / 12000 мс: пауза 10 с рушій стискає до 2 с.
- * Раніше повзунок ішов за годинником від старту гри й після паузи показував
- * ~3 с, коли дошка вже була на 11-й секунді (REPLAY_SEEK_INVESTIGATION §6.1).
+ * Повзунок Replay на шкалі ЧАСУ ПЕРЕГЛЯДУ (REPLAY_MANIFEST v2.3, рішення власника 2026-09-27).
+ * Ops записані в 0 / 1000 / 11000 / 12000 мс: пауза 10 с рушій стискає до 2 с, тож на шкалі
+ * перегляду ops стоять на 0 / 1000 / 3000 / 4000, а вся шкала = 4000 + витримка 2500.
+ *
+ * Було (v2.2): шкала в реальному часі — повзунок 2 с повз, потім перескакував на 11 000, а
+ * під кінець «скакав» до кінця; `ended` — у ту саму мить, що й остання op
+ * (REPLAY_TIMELINE_AND_ENDING_INVESTIGATION_2026-09-27.md).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -27,26 +30,36 @@ vi.mock('../api/replay', () => {
 })
 
 import { useReplayV2 } from '../composables/useReplayV2'
-import { useReplayPlayhead } from '../composables/useReplayPlayhead'
+import { epilogueCurve, useReplayPlayhead } from '../composables/useReplayPlayhead'
+import { REPLAY_EPILOGUE_MS } from '../engine/replayViewTime'
 
+const LAST_OP_VIEW_MS = 4000
+const TOTAL_VIEW_MS = LAST_OP_VIEW_MS + REPLAY_EPILOGUE_MS
+
+/** Так само, як під'єднує WBPublicView (v2.3). */
 async function setup() {
   const r = useReplayV2('s')
   await r.loadTimeline(() => {})
   const ph = useReplayPlayhead()
   ph.attach({
     state: () => r.state.value,
-    currentTimeMs: () => r.currentTimeMs.value,
-    totalMs: () => r.totalDurationMs.value,
+    currentTimeMs: () => r.currentViewMs.value,
+    totalMs: () => r.totalViewMs.value,
+    epilogueStartedAt: () => r.epilogueStartedAt.value,
+    epilogueMs: REPLAY_EPILOGUE_MS,
   })
   return { r, ph }
 }
 
-/** Прокрутити фальшивий час кроками кадру, щоб rAF-тікер жив. */
-async function run(ms: number) {
+/** Прокрутити фальшивий час кроками кадру, щоб rAF-тікер жив; повертає значення повзунка на кожному кадрі. */
+async function run(ms: number, read?: () => number): Promise<number[]> {
+  const samples: number[] = []
   for (let t = 0; t < ms; t += 16) {
     await vi.advanceTimersByTimeAsync(16)
     await nextTick()
+    if (read) samples.push(read())
   }
+  return samples
 }
 
 beforeEach(() => {
@@ -54,18 +67,30 @@ beforeEach(() => {
 })
 afterEach(() => { vi.useRealTimers() })
 
-describe('useReplayPlayhead', () => {
-  it('після стиснутої паузи повзунок стоїть на часі дошки, а не відстає', async () => {
-    const { r, ph } = await setup()
-    r.play()
-    // op2 (11000) показується через ~1000 + 2000 мс гри
-    await run(3100)
-    expect(r.currentTimeMs.value).toBe(11000)
-    expect(ph.playheadMs.value).toBeGreaterThanOrEqual(11000)
-    expect(ph.playheadMs.value).toBeLessThan(11200)
+describe('useReplayPlayhead — шкала часу перегляду', () => {
+  it('шкала: остання op на 4000, уся шкала = 4000 + витримка; реальний урок = 12 000', async () => {
+    const { r } = await setup()
+    expect(r.totalViewMs.value).toBe(TOTAL_VIEW_MS)
+    expect(r.lessonDurationMs.value).toBe(12000)
+    expect(r.viewMsAtIndex(2)).toBe(3000)
   })
 
-  it('між op повзунок іде плавно (за годинником), не стоїть', async () => {
+  it('стиснута пауза 10 с — повзунок іде рівно, без стрибка вперед чи назад', async () => {
+    const { r, ph } = await setup()
+    r.play()
+    const s = await run(3900, () => ph.playheadMs.value)
+    for (let i = 1; i < s.length; i++) {
+      const step = s[i] - s[i - 1]
+      expect(step).toBeLessThanOrEqual(16 + 20)   // один кадр + дрібне вирівнювання на op
+      expect(step).toBeGreaterThanOrEqual(-20)
+    }
+    // через ~3,1 с гри дошка на op2 (реальні 11 с), а повзунок — на 3,1 с перегляду, не на 11 с
+    expect(r.currentTimeMs.value).toBe(11000)
+    expect(ph.playheadMs.value).toBeGreaterThan(3800)
+    expect(ph.playheadMs.value).toBeLessThan(4000)
+  })
+
+  it('між op повзунок іде за годинником, не стоїть', async () => {
     const { r, ph } = await setup()
     r.play()
     await run(500)
@@ -73,12 +98,58 @@ describe('useReplayPlayhead', () => {
     expect(ph.playheadMs.value).toBeLessThan(600)
   })
 
-  it('кінець запису: повзунок = тривалість, не більше', async () => {
+  it('кінець: остання op — витримка з видимою дошкою; повзунок монотонно доходить до кінця; ended рівно на 100 %', async () => {
     const { r, ph } = await setup()
     r.play()
-    await run(6000)
+    await run(LAST_OP_VIEW_MS + 50)
+    // остання op показана, але кінця ще немає: витримка, стан 'playing'
+    expect(r.currentIndex.value).toBe(TIMES.length)
+    expect(r.state.value).toBe('playing')
+    expect(r.epilogueStartedAt.value).not.toBeNull()
+    expect(ph.playheadMs.value).toBeLessThan(TOTAL_VIEW_MS)
+    const s = await run(REPLAY_EPILOGUE_MS - 100, () => ph.playheadMs.value)
+    for (let i = 1; i < s.length; i++) expect(s[i]).toBeGreaterThanOrEqual(s[i - 1])
+    expect(r.state.value).toBe('playing')
+    await run(200)
     expect(r.state.value).toBe('ended')
-    expect(ph.playheadMs.value).toBe(12000)
+    expect(ph.playheadMs.value).toBe(TOTAL_VIEW_MS)
+  })
+
+  it('на 2× витримка така сама за тривалістю, і повзунок так само стає рівно на 100 %', async () => {
+    const { r, ph } = await setup()
+    ph.setSpeed(2); r.setSpeed(2)
+    r.play()
+    await run(LAST_OP_VIEW_MS / 2 + 50)
+    expect(r.state.value).toBe('playing')
+    await run(REPLAY_EPILOGUE_MS - 150)
+    expect(r.state.value).toBe('playing')
+    expect(ph.playheadMs.value).toBeLessThanOrEqual(TOTAL_VIEW_MS)
+    await run(250)
+    expect(r.state.value).toBe('ended')
+    expect(ph.playheadMs.value).toBe(TOTAL_VIEW_MS)
+  })
+
+  it('пауза під час витримки — одразу кінець на 100 %', async () => {
+    const { r, ph } = await setup()
+    r.play()
+    await run(LAST_OP_VIEW_MS + 500)
+    r.pause()
+    await nextTick()
+    expect(r.state.value).toBe('ended')
+    expect(ph.playheadMs.value).toBe(TOTAL_VIEW_MS)
+  })
+
+  it('крива доходу монотонна й закінчується на 1 для швидкостей 0…3 і вище', () => {
+    for (const a of [0, 0.5, 1, 2, 3, 10]) {
+      let prev = 0
+      for (let u = 0; u <= 1.0001; u += 0.01) {
+        const h = epilogueCurve(u, a)
+        expect(h).toBeGreaterThanOrEqual(prev - 1e-9)
+        expect(h).toBeLessThanOrEqual(1 + 1e-9)
+        prev = h
+      }
+      expect(epilogueCurve(1, a)).toBeCloseTo(1, 9)
+    }
   })
 
   it('setSpeed не відкидає повзунок назад', async () => {

@@ -9,15 +9,34 @@
 // переставляє якір на свій час — повзунок перескакує стиснуту паузу разом із
 // дошкою.
 //
+// v2.3 (2026-09-27): джерело дає ЧАС ПЕРЕГЛЯДУ (replayViewTime) — на кожній op якір стає
+// туди, де тікер уже й так стоїть, тож повзунок іде рівно, без стрибків. Після останньої op
+// рушій тримає витримку: повзунок плавно доходить до кінця зі швидкості, з якою їхав, і
+// м'яко зупиняється рівно на 100 % у мить 'ended'.
+//
 // Лише UI: не пише ops і не чіпає стан дошки.
 
 import { ref, watch } from 'vue'
 
 export interface ReplayPlayheadSource {
   state: () => string
-  /** Час останньої показаної op від початку запису, мс. */
+  /** Позиція останньої показаної op на шкалі, мс (v2.3 — час перегляду). */
   currentTimeMs: () => number
   totalMs: () => number
+  /** performance.now() початку витримки після останньої op; null — витримки немає. */
+  epilogueStartedAt?: () => number | null
+  /** Тривалість витримки в реальному часі, мс. */
+  epilogueMs?: number
+}
+
+/**
+ * Крива доходу до кінця: h(0)=0, h(1)=1, h'(0)=a (швидкість, з якою повзунок їхав), h'(1)=0
+ * (м'яка зупинка). При a ≤ 3 монотонна; a обмежується 0…3.
+ */
+export function epilogueCurve(u: number, a: number): number {
+  const x = Math.max(0, Math.min(1, u))
+  const k = Math.max(0, Math.min(3, a))
+  return k * x + (3 - 2 * k) * x * x + (k - 2) * x * x * x
 }
 
 export function useReplayPlayhead() {
@@ -28,6 +47,10 @@ export function useReplayPlayhead() {
   let anchorReplay = 0
   let speed = 1
   let stopWatches: (() => void) | null = null
+  // Дохід до кінця під час витримки: з якої точки й з якою початковою швидкістю.
+  let glideKey: number | null = null
+  let glideFrom = 0
+  let glideSlope = 1
 
   function anchor(atMs: number): void {
     anchorWall = performance.now()
@@ -46,8 +69,23 @@ export function useReplayPlayhead() {
       raf = null
       return
     }
-    const elapsed = performance.now() - anchorWall
-    playheadMs.value = Math.min(anchorReplay + elapsed * speed, src.totalMs())
+    const total = src.totalMs()
+    const epilogueAt = src.epilogueStartedAt?.() ?? null
+    const epilogueMs = src.epilogueMs ?? 0
+    if (epilogueAt !== null && epilogueMs > 0) {
+      if (glideKey !== epilogueAt) {
+        glideKey = epilogueAt
+        glideFrom = playheadMs.value
+        const distance = Math.max(1, total - glideFrom)
+        glideSlope = (speed * epilogueMs) / distance
+      }
+      const u = (performance.now() - epilogueAt) / epilogueMs
+      playheadMs.value = glideFrom + (total - glideFrom) * epilogueCurve(u, glideSlope)
+    } else {
+      glideKey = null
+      const elapsed = performance.now() - anchorWall
+      playheadMs.value = Math.min(anchorReplay + elapsed * speed, total)
+    }
     raf = requestAnimationFrame(tick)
   }
 
@@ -66,7 +104,9 @@ export function useReplayPlayhead() {
         startTick()
       } else {
         stopTick()
-        playheadMs.value = source.currentTimeMs()
+        glideKey = null
+        // Кінець — рівно 100 %: шкала включає витримку після останньої op.
+        playheadMs.value = s === 'ended' ? source.totalMs() : source.currentTimeMs()
       }
     })
     const stopOp = watch(source.currentTimeMs, (t) => {
@@ -81,6 +121,7 @@ export function useReplayPlayhead() {
     stopWatches?.()
     stopWatches = null
     stopTick()
+    glideKey = null
     src = null
   }
 
@@ -103,6 +144,7 @@ export function useReplayPlayhead() {
 
   function reset(): void {
     stopTick()
+    glideKey = null
     playheadMs.value = 0
   }
 
