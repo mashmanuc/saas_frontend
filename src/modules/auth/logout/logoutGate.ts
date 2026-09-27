@@ -17,7 +17,7 @@ import {
   LOGOUT_PENDING_KEY, LOGOUT_PENDING_ROUTE, isAllowedWhileLogoutPending, isLogoutPending,
 } from './pendingLogout'
 import { DISCARD_BROADCAST_KEY, abandonOpenBoardQueue, parseDiscardBroadcast } from './openBoardQueue'
-import { endSessionView } from './sessionEndedView'
+import { endSessionView, needsFreshDocument } from './sessionEndedView'
 
 const ROUTE_NAME = 'logout-pending'
 let listeningToOtherTabs = false
@@ -35,6 +35,16 @@ export function installLogoutGate(router: Router): void {
   router.beforeEach((to) => {
     if (isLogoutPending() && !isAllowedWhileLogoutPending(to.path, to.query as Record<string, unknown>)) {
       return LOGOUT_PENDING_ROUTE
+    }
+    return true
+  })
+  // Б-41: сесія вже вмирала в цьому документі — сторінку з даними відкриваємо повним
+  // завантаженням, щоб новий вхід не успадкував сторів попереднього акаунта
+  // (див. `needsFreshDocument`).
+  router.beforeEach((to) => {
+    if (needsFreshDocument(to)) {
+      window.location.href = to.fullPath
+      return false
     }
     return true
   })

@@ -18,11 +18,24 @@ import { readonly, ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 const ended = ref(false)
+// Б-41: документ пережив сесію. На відміну від `ended`, новий вхід цей прапорець НЕ знімає:
+// чистим документ робить лише перезавантаження.
+let documentOutlivedSession = false
 
 export const sessionEnded = readonly(ended)
 
 export function endSessionView(): void {
   ended.value = true
+}
+
+/**
+ * Б-41: сесія, що ЖИЛА в цьому документі (bootstrap завершено), померла. Ставить
+ * `authStore.forceLogout`. Відмова refresh усередині самого bootstrap сюди не йде: там
+ * жоден стор ще не вантажив даних акаунта, і вхід після неї лишається без зайвого
+ * перезавантаження (найчастіший шлях учителя, що повернувся за тиждень).
+ */
+export function markDocumentOutlivedSession(): void {
+  documentOutlivedSession = true
 }
 
 export function resetSessionEndedView(): void {
@@ -37,4 +50,25 @@ export function isPublicRoute(route: Pick<RouteLocationNormalizedLoaded, 'matche
 /** Чи прибрати сторінку: сесію завершено, а маршрут показує дані акаунта. */
 export function shouldHidePage(isEnded: boolean, route: Pick<RouteLocationNormalizedLoaded, 'matched'>): boolean {
   return isEnded && !isPublicRoute(route)
+}
+
+/**
+ * Б-41 (2026-09-27): чи відкривати сторінку повним завантаженням, а не SPA-переходом.
+ *
+ * Сесія вже вмирала в цьому документі без перезавантаження: вихід в іншій вкладці,
+ * 401 перехоплювача, завершення з іншого пристрою. Частину сторів вихід свідомо не
+ * скидає (`STORES_KEPT_ON_LOGOUT` в `authStore.js`: модуль дошки під SYSTEM_LAW, `replay`,
+ * легасі-кімната), і новий вхід у тому самому документі успадковував їхні дані —
+ * наступний учитель бачив теку й пошук «Моїх записів» попереднього (відтворено наживо).
+ * Повне завантаження дає чистий застосунок, як і кнопка `SessionEndedView`. Публічні
+ * сторінки (вхід, стартова, публічний запис) нічого з акаунта не показують — туди
+ * SPA-переходи лишаються, і перегляд публічного запису не переривається.
+ */
+export function needsFreshDocument(route: Pick<RouteLocationNormalizedLoaded, 'matched'>): boolean {
+  return documentOutlivedSession && !isPublicRoute(route)
+}
+
+/** Лише для тестів: у житті документ «оновлює» тільки перезавантаження. */
+export function resetDocumentOutlivedSessionForTests(): void {
+  documentOutlivedSession = false
 }

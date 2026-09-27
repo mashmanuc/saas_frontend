@@ -10,6 +10,7 @@ import {
 import {
   markLogoutPending, clearLogoutPending, isLogoutPending, LOGOUT_PENDING_ROUTE,
 } from '../logout/pendingLogout'
+import { markDocumentOutlivedSession } from '../logout/sessionEndedView'
 import { useLogoutGuardStore } from './logoutGuardStore'
 
 const hasDocument = typeof document !== 'undefined'
@@ -1155,6 +1156,11 @@ export const useAuthStore = defineStore('auth', {
       if (reason === 'session_expired') {
         sessionStorage.setItem('auth_message', 'session_expired')
       }
+
+      // Б-41: сесія жила в цьому документі (bootstrap завершено) — наступну сторінку з
+      // даними відкриє повне завантаження (logoutGate + sessionEndedView.needsFreshDocument):
+      // частина сторів тут свідомо не скидається (STORES_KEPT_ON_LOGOUT).
+      if (this.initialized) markDocumentOutlivedSession()
 
       this.stopProactiveRefresh()
       this.access = null
