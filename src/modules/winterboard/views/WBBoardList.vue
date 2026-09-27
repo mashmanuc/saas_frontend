@@ -900,7 +900,8 @@ let fetchAbort: AbortController | null = null
 async function fetchBoards(): Promise<void> {
   // Cancel previous in-flight request
   fetchAbort?.abort()
-  fetchAbort = new AbortController()
+  const controller = new AbortController()
+  fetchAbort = controller
 
   loading.value = true
   loadError.value = false
@@ -927,8 +928,10 @@ async function fetchBoards(): Promise<void> {
     boards.value = res.results ?? []
     total.value = res.count ?? 0
   } catch (err: any) {
-    // Ignore aborted requests
-    if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return
+    // Мовчимо лише про запит, який замінив новіший (його abort — наш). Відмову відкритого
+    // circuit breaker чи «auth dead» apiClient теж подає як CanceledError (Б-39): для
+    // людини це «не вдалося завантажити», а не «дошок немає».
+    if (controller.signal.aborted) return
     console.error('[WB:BoardList] Failed to load boards', err)
     loadError.value = true
   } finally {

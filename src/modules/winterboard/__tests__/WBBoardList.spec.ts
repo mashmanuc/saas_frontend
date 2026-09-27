@@ -285,4 +285,19 @@ describe('WBBoardList.vue (B13)', () => {
       String(c[0]).includes('Failed to load boards'))).toBe(true)
     errorSpy.mockRestore()
   })
+
+  // Б-39 (2026-09-27): відкритий circuit breaker apiClient відхиляє запит як CanceledError.
+  // Раніше список вважав будь-який CanceledError своїм abort і показував «порожньо» —
+  // учитель бачив «дошок немає» замість «не вдалося завантажити».
+  it('відмова відкритого circuit breaker — помилка завантаження, а не «порожньо»', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { default: axios } = await import('axios')
+    mockListSessions.mockRejectedValueOnce(
+      Object.assign(new axios.Cancel('[apiClient] Circuit breaker open — request blocked'),
+        { blockedBy: 'circuit_breaker' }))
+    const wrapper = await mountBoardList()
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+    expect(wrapper.find('.wb-board-list__empty-title').text()).toBe('winterboard.boards.loadError')
+    errorSpy.mockRestore()
+  })
 })
