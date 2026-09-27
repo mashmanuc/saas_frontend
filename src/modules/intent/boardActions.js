@@ -970,8 +970,10 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name }) 
   if (type === 'graph_expression') {
     // Міняємо вираз ПЕРШОГО графіка (data.state.expressions[0].src)
     if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
-    // Б-14: те саме правило, що для нового графіка (withSliders).
-    const planned = withSliders([String(value)], data.state.params || {})
+    // Б-14: те саме правило, що для нового графіка (withSliders). Решта кривих
+    // лишається — їхні повзунки теж; повзунки лише старої кривої прибираються.
+    const siblings = (data.state.expressions || []).slice(1).map((e) => String(e?.src || ''))
+    const planned = withSliders([String(value)], data.state.params || {}, { siblings })
     const src = planned.srcs[0]
     data.state.params = planned.params
     if (data.state.expressions?.length) {

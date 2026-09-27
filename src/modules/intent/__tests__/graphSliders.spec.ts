@@ -35,6 +35,7 @@ vi.mock('@/modules/ship/sceneRecorder', () => ({ recordCompanionScene: vi.fn() }
 vi.mock('@/modules/winterboard/constants/nmt3dDefaults', () => ({ NMT3D_TEMPLATE_LABELS: {} }))
 
 import { GraphCalc } from '@/modules/winterboard/vendor/graph_calculator/graph-calculator.js'
+import { extractParamsFromAll } from '@/modules/winterboard/utils/graphCalculatorUtils'
 import { MAX_GRAPH_PARAMS, planGraphSrc, toEngineSyntax, withSliders } from '../graphTangent'
 import { runBoardAction } from '../boardActions'
 
@@ -43,6 +44,12 @@ const SLIDER = { value: 1, min: -10, max: 10, step: 0.1 }
 /** Що рушій зробить із виразом при цих повзунках. */
 function engineKind(src: string, params: Record<string, unknown>): string {
   return (GraphCalc.classify(src, Object.keys(params)) as { kind: string }).kind
+}
+
+/** Значення кривої в точці — тим самим рушієм, що малює (повзунки = 1). */
+function valueAt(src: string, sliders: string[], x: number): number {
+  const env = { ...(GraphCalc as any).CONSTS, ...Object.fromEntries(sliders.map((n) => [n, 1])), x }
+  return (GraphCalc as any).evalAst((GraphCalc as any).parse(src), env) as number
 }
 
 beforeEach(() => {
@@ -90,6 +97,41 @@ describe('план виразу — через сам рушій', () => {
   it('синтаксична помилка — як і раніше, відмова рушія', () => {
     expect(planGraphSrc("(2*x-2)'(2)").reject).not.toBeNull()
   })
+
+  // Рецензія 2026-09-27: без дужок `e^kx` ставало (e^k)·x, `1/kx` — x/k —
+  // крива будувалась ХИБНО, а не порожньо. Звіряємо значення, а не рядок.
+  it.each([
+    ['e^kx', 2, Math.exp(2)],
+    ['2^ax', 3, 8],
+    ['1/kx', 2, 0.5],
+    ['Ax^2 + Bx + C', 2, 7],
+    ['2ax + b', 2, 5],
+    ['0.5ax^2', 2, 2],
+    ['x^2 + 2ax', 2, 8],
+    ['sin(πx)', 0.5, 1],
+  ])('%s у x = %s — те, що мав на увазі вчитель', (src, x, expected) => {
+    const plan = planGraphSrc(src as string)
+
+    expect(plan.reject).toBeNull()
+    expect(valueAt(plan.src, plan.sliders, x as number)).toBeCloseTo(expected as number, 9)
+  })
+
+  it('`t` рушій тримає для себе — відмова, а не повзунок, який param-sync прибере', () => {
+    expect(planGraphSrc('3t^2').reject).toContain('«t»')
+    expect(planGraphSrc('sin(x - t)').reject).toContain('«t»')
+  })
+
+  it('злите з літерою рушія (`ex`) — відмова, а не тиха пряма e·x без повзунка', () => {
+    // Розбиваємо злите лише тоді, коли з першої літери вийде повзунок; `e` — стала.
+    expect(planGraphSrc('ex + 1').reject).toContain('«ex»')
+  })
+
+  it('кожен новий повзунок param-sync визнає параметром (інакше прибрав би разом із кривою)', () => {
+    for (const src of ['Ax² + Bx + C', 'kx + b', 'e^kx', 'x^2 + y^2 = r^2', 'a*sin(b*x)']) {
+      const plan = planGraphSrc(src)
+      expect(extractParamsFromAll([plan.src]), src).toEqual(expect.arrayContaining(plan.sliders))
+    }
+  })
 })
 
 describe('повзунки для графіка', () => {
@@ -102,6 +144,15 @@ describe('повзунки для графіка', () => {
 
   it(`понад ${MAX_GRAPH_PARAMS} повзунки — відмова`, () => {
     expect(() => withSliders(['a*x^4 + b*x^3 + c*x^2 + d*x + f'], {})).toThrow(/щонайбільше 4 повзунки/)
+  })
+
+  it('стеля — лише на НОВІ повзунки: п\'ять власних повзунків учителя не блокують криву без літер', () => {
+    const own = { a: SLIDER, b: SLIDER, c: SLIDER, d: SLIDER, f: SLIDER }
+
+    const planned = withSliders(['x^2'], own)
+
+    expect(planned.srcs).toEqual(['x^2'])
+    expect(planned.params).toEqual(own)
   })
 })
 
@@ -155,5 +206,24 @@ describe('шляхи запису на дошку', () => {
     const state = assets[0].data.state
     expect(state.expressions[0].src).toBe('A*x^2 + C')
     expect(state.params).toEqual({ A: SLIDER, C: SLIDER })
+  })
+
+  it('заміна кривої: повзунки лише старої кривої йдуть, сусідньої — лишаються', async () => {
+    assets = [{
+      id: 'g1',
+      type: 'graph_calculator',
+      data: { state: {
+        expressions: [{ id: 'e1', src: 'A*x^2 + B*x' }, { id: 'e2', src: 'x + C' }],
+        params: { A: SLIDER, B: SLIDER, C: SLIDER },
+        viewport: { cx: 0, cy: 0, scale: 38 },
+      } },
+    }]
+
+    // Рецензія 2026-09-27: A, B, C + k, b = 5 → хибна відмова «щонайбільше 4».
+    await runBoardAction({ kind: 'set_param', payload: { object_id: 'g1', type: 'graph_expression', value: 'kx + b' } })
+
+    const state = assets[0].data.state
+    expect(state.expressions.map((e: { src: string }) => e.src)).toEqual(['k*x + b', 'x + C'])
+    expect(state.params).toEqual({ C: SLIDER, k: SLIDER, b: SLIDER })
   })
 })

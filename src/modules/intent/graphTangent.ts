@@ -12,6 +12,7 @@
  *     картці похідної (`vendor/calculus`), тож дві дотичні на дошці збігаються.
  */
 import { GraphCalc } from '@/modules/winterboard/vendor/graph_calculator/graph-calculator.js'
+import { GRAPH_RESERVED_TOKENS, extractParamsFromAll } from '@/modules/winterboard/utils/graphCalculatorUtils'
 
 /** Крок чисельної похідної — як у картці похідної (`numDeriv`). */
 const H = 1e-4
@@ -45,12 +46,29 @@ export function toEngineSyntax(src: string): string {
     .replace(/[·⋅∙×]/g, '*')
     .replace(/[−–]/g, '-')
     .replace(/÷/g, '/')
+    // З пробілами: рушій множить сусідні імена (` pi x` = π·x, `2 pi` = 2π), а
+    // «pix» чи `x(pi)` (виклик функції x) він не розбере.
+    .replace(/π/g, ' pi ')
 }
 
 /** Невідоме «літера + змінна» — коефіцієнт, злитий зі змінною (`Ax`, `kx`). */
 const GLUED = /^([A-Za-z])([xy])$/
-/** Однолітерне невідоме — повзунок. */
+/** Однолітерне невідоме — повзунок (якщо рушій не тримає цю літеру для себе). */
 const SLIDER = /^[A-Za-z]$/
+
+/**
+ * `Ax` → `A*x` у тексті виразу. Межа слова задана явно, бо цифра перед іменем
+ * (`2ax`) для `\b` — не межа. Після `^` чи `/` злите ім'я — одне ціле:
+ * `e^kx` = e^(k·x), `1/kx` = 1/(k·x); деінде степінь — лише на змінну:
+ * `Ax^2` = A·x². Без цього розрізнення крива будувалась би ХИБНО, а не порожньо.
+ */
+function splitGlued(src: string, name: string): string {
+  const re = new RegExp(`(?<![A-Za-z_])${name}(?![A-Za-z0-9_])`, 'g')
+  return src.replace(re, (_match: string, offset: number, whole: string) => {
+    const before = whole.slice(0, offset).trimEnd().slice(-1)
+    return before === '^' || before === '/' ? `(${name[0]}*${name[1]})` : `${name[0]}*${name[1]}`
+  })
+}
 
 export interface GraphSrcPlan {
   /** Вираз у синтаксисі рушія — саме його пишемо в графік. */
@@ -68,8 +86,10 @@ export interface GraphSrcPlan {
  * `Ax² + Bx + C` без значень — дія проходила, картка з'являлась порожньою, у
  * чаті «✓». Власник 2026-09-27: такий вираз — крива з повзунками. Рушій читає
  * імена жадібно (`Ax` — одне невідоме, не A·x), тож: злите «літера + змінна»
- * розбиваємо, однолітерні невідомі стають повзунками, будь-яке інше невідоме
- * (`sinx`, `abx`, `alpha`) — чесна відмова, а не пряма чи порожнє полотно.
+ * розбиваємо (`splitGlued`), однолітерні невідомі стають повзунками. Відмова —
+ * для літер, які рушій тримає для себе (`t`: param-sync її не вважає параметром
+ * і прибрав би повзунок разом із кривою), і для будь-якого іншого невідомого
+ * (`sinx`, `abx`, `alpha`): чесна відмова краща за хибну криву.
  */
 export function planGraphSrc(src: string, paramNames: string[] = []): GraphSrcPlan {
   let clean = toEngineSyntax(src)
@@ -79,10 +99,14 @@ export function planGraphSrc(src: string, paramNames: string[] = []): GraphSrcPl
     if (res.kind === 'invalid') return { src: clean, sliders: [], reject: res.error || 'невідомий запис' }
     if (res.kind !== 'needsParam') return { src: clean, sliders: [], reject: null }
     const unknown = res.unknown || []
-    const glued = unknown.filter((name) => GLUED.test(name))
+    const glued = unknown.filter((name) => GLUED.test(name) && !GRAPH_RESERVED_TOKENS.has(name[0]))
     if (glued.length) {
-      for (const name of glued) clean = clean.replace(new RegExp(`\\b${name}\\b`, 'g'), `${name[0]}*${name[1]}`)
+      for (const name of glued) clean = splitGlued(clean, name)
       continue
+    }
+    const reserved = unknown.filter((name) => GRAPH_RESERVED_TOKENS.has(name))
+    if (reserved.length) {
+      return { src: clean, sliders: [], reject: `«${reserved.join('», «')}» рушій повзунком не робить — візьміть іншу літеру` }
     }
     const odd = unknown.filter((name) => !SLIDER.test(name))
     if (odd.length) return { src: clean, sliders: [], reject: `невідоме позначення «${odd.join('», «')}»` }
@@ -106,22 +130,31 @@ export function tooManyParamsMessage(names: string[]): string {
  * шляхів запису (новий графік, заміна кривої, додавання кривої): кожен вираз
  * через `planGraphSrc`, повзунки накопичуються, стеля — на весь графік.
  * Не намалюється → кидає людську відмову, нічого не пишемо.
+ *
+ * `siblings` — вирази, що лишаються на графіку (заміна кривої): параметри, яких
+ * не згадує вже жодна крива, прибираємо — як param-sync після правки вчителя
+ * (`extractParamsFromAll`), — інакше повзунки старої кривої з'їли б стелю.
  */
 export function withSliders(
   srcs: string[],
   params: Record<string, unknown> = {},
+  { siblings }: { siblings?: string[] } = {},
 ): { srcs: string[]; params: Record<string, unknown> } {
-  const merged: Record<string, unknown> = { ...params }
+  let merged: Record<string, unknown> = { ...params }
+  let added = false
   const out = srcs.map((src) => {
     const plan = planGraphSrc(src, Object.keys(merged))
     if (plan.reject) throw new Error(rejectMessage(src, plan.reject))
     Object.assign(merged, sliderParams(plan.sliders))
+    added = added || plan.sliders.length > 0
     return plan.src
   })
-  const names = Object.keys(merged)
-  if (names.length > MAX_GRAPH_PARAMS && names.length > Object.keys(params).length) {
-    throw new Error(tooManyParamsMessage(names))
+  if (siblings) {
+    const used = extractParamsFromAll([...out, ...siblings])
+    if (used) merged = Object.fromEntries(Object.entries(merged).filter(([name]) => used.includes(name)))
   }
+  const names = Object.keys(merged)
+  if (added && names.length > MAX_GRAPH_PARAMS) throw new Error(tooManyParamsMessage(names))
   return { srcs: out, params: merged }
 }
 
