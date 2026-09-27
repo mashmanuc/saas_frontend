@@ -19,13 +19,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 
-/** Мінімальний двійник Web Speech API — рівно те, що читає composable. */
+/**
+ * Двійник Web Speech API — рівно те, що читає composable.
+ *
+ * Б-108 (2026-09-27): як у справжньому Chrome, список `results` у межах сесії лише
+ * РОСТЕ, а `resultIndex` — індекс нового елемента; `start()` відкриває нову сесію.
+ * БУЛО: кожна подія — новий список з одного результату, тож двійник не міг показати,
+ * що рушій робить на Android.
+ */
 class FakeRecognition {
   lang = ''
   interimResults = false
   continuous = false
   maxAlternatives = 0
   started = false
+  results: any[] = []
   onresult: ((e: any) => void) | null = null
   onend: (() => void) | null = null
   onerror: ((e: any) => void) | null = null
@@ -39,6 +47,7 @@ class FakeRecognition {
       throw err
     }
     this.started = true
+    this.results = []
   }
 
   stop() {
@@ -46,11 +55,49 @@ class FakeRecognition {
     this.onend?.()
   }
 
-  /** Подати фінальний результат так, як його бачить composable. */
-  emitFinal(text: string) {
-    const res: any = [{ transcript: text }]
+  private push(res: any) {
+    this.results.push(res)
+    this.onresult?.({ resultIndex: this.results.length - 1, results: [...this.results] })
+  }
+
+  private dropInterim() {
+    while (this.results.length && !this.results[this.results.length - 1].isFinal) this.results.pop()
+  }
+
+  /** Фінал настільного Chrome: з оцінкою; заміщає проміжний хвіст тієї ж фрази. */
+  emitFinal(text: string, confidence = 0.9) {
+    const res: any = [{ transcript: text, confidence }]
     res.isFinal = true
-    this.onresult?.({ resultIndex: 0, results: [res] })
+    this.dropInterim()
+    this.push(res)
+  }
+
+  /** Проміжний результат настільного Chrome (isFinal = false) у хвості списку. */
+  emitInterim(text: string) {
+    const res: any = [{ transcript: text, confidence: 0 }]
+    res.isFinal = false
+    this.dropInterim()
+    this.push(res)
+  }
+
+  /**
+   * Chrome на Android у `continuous`: проміжна гіпотеза — ВСЯ фраза досі — приходить
+   * ФІНАЛОМ з confidence 0 і дописується новим елементом
+   * (`SpeechRecognitionImpl.java`: `if (mContinuous && provisional) provisional = false;`).
+   */
+  emitAndroidHypothesis(text: string) {
+    const res: any = [{ transcript: text, confidence: 0 }]
+    res.isFinal = true
+    this.push(res)
+  }
+
+  /** Справжній фінал Android: з оцінкою; після нього Chromium завершує сесію. */
+  emitAndroidFinal(text: string, confidence = 0.93) {
+    const res: any = [{ transcript: text, confidence }]
+    res.isFinal = true
+    this.push(res)
+    this.started = false
+    this.onend?.()
   }
 }
 
@@ -232,5 +279,175 @@ describe('useVoiceDictation — зупинка', () => {
     instances[0].onerror?.({ error: 'not-allowed' })
 
     expect(v.listening.value).toBe(false)
+  })
+})
+
+// ── Б-108 (власник 2026-09-27, Android-планшет) ─────────────────────────────
+// Надіслане в Інтегралика: «Поясни Поясни мені Поясни мені Поясни мені що Поясни
+// мені що я Поясни мені що я можу Поясни мені що я можу робити Поясни мені що я
+// можу робити». Рівно такий рядок дає СТАРИЙ composable на послідовності подій,
+// яку Chrome на Android шле в `continuous` (див. двійник вище).
+
+/** Фраза власника так, як її віддає Chrome на Android: гіпотези + справжній фінал. */
+const OWNER_HYPOTHESES = [
+  'Поясни',
+  'Поясни мені',
+  'Поясни мені',
+  'Поясни мені що',
+  'Поясни мені що я',
+  'Поясни мені що я можу',
+  'Поясни мені що я можу робити',
+]
+const OWNER_PHRASE = 'Поясни мені що я можу робити'
+
+describe('useVoiceDictation — Chrome на Android (Б-108)', () => {
+  it('фраза власника не множиться: у полі одна фраза, а не всі гіпотези', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    for (const h of OWNER_HYPOTHESES) instances[0].emitAndroidHypothesis(h)
+    instances[0].emitAndroidFinal(OWNER_PHRASE)
+
+    expect(field.value).toBe(OWNER_PHRASE)
+    v.stop()
+  })
+
+  it('поки людина говорить, поле показує останню гіпотезу без повторів', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    for (const h of OWNER_HYPOTHESES) {
+      instances[0].emitAndroidHypothesis(h)
+      expect(field.value).toBe(h)
+    }
+    v.stop()
+  })
+
+  it('рушій виправив слово в гіпотезі — у полі лише остання версія', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitAndroidHypothesis('Поясни мене')
+    instances[0].emitAndroidHypothesis('Поясни мені що')
+    instances[0].emitAndroidFinal('Поясни мені, що?')
+
+    expect(field.value).toBe('Поясни мені, що?')
+    v.stop()
+  })
+
+  it('друга фраза після авто-рестарту дописується, перша не множиться', async () => {
+    vi.useFakeTimers()
+    try {
+      const useVoiceDictation = await load()
+      const field = ref('')
+      const v = useVoiceDictation()
+
+      v.start(field)
+      for (const h of OWNER_HYPOTHESES) instances[0].emitAndroidHypothesis(h)
+      instances[0].emitAndroidFinal(OWNER_PHRASE)   // Chromium сам завершує сесію
+      vi.advanceTimersByTime(300)                     // composable перезапускає рушій
+      expect(instances[0].started).toBe(true)
+
+      instances[0].emitAndroidHypothesis('і дай')
+      instances[0].emitAndroidHypothesis('і дай приклад')
+      expect(field.value).toBe(`${OWNER_PHRASE} і дай приклад`)
+      instances[0].emitAndroidFinal('і дай приклад')
+
+      expect(field.value).toBe(`${OWNER_PHRASE} і дай приклад`)
+      v.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('сесія скінчилась без справжнього фіналу — остання гіпотеза не губиться', async () => {
+    vi.useFakeTimers()
+    try {
+      const useVoiceDictation = await load()
+      const field = ref('')
+      const v = useVoiceDictation()
+
+      v.start(field)
+      instances[0].emitAndroidHypothesis('Поясни')
+      instances[0].emitAndroidHypothesis('Поясни мені')
+      instances[0].started = false
+      instances[0].onend?.()                          // рушій обірвав сесію (тиша, мережа)
+      vi.advanceTimersByTime(300)
+
+      instances[0].emitAndroidHypothesis('що робити')
+      expect(field.value).toBe('Поясни мені що робити')
+      v.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('стоп посеред фрази: у полі остання гіпотеза, пізній фінал її не множить', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitAndroidHypothesis('Поясни')
+    instances[0].emitAndroidHypothesis('Поясни мені')
+    v.stop()
+    instances[0].emitAndroidFinal('Поясни мені')      // рушій дошле фінал уже після стопу
+
+    expect(field.value).toBe('Поясни мені')
+    expect(v.listening.value).toBe(false)
+  })
+
+  it('ре-таргет посеред фрази: у нове поле — лише сказане після перемикання', async () => {
+    const useVoiceDictation = await load()
+    const cmdField = ref('')
+    const aiField = ref('')
+    const v = useVoiceDictation()
+
+    v.start(cmdField)
+    instances[0].emitAndroidHypothesis('розкажи про')
+    v.start(aiField)
+    // Android і далі повторює початок фрази в кожній гіпотезі.
+    instances[0].emitAndroidHypothesis('розкажи про похідну')
+
+    expect(aiField.value).toBe('похідну')
+    expect(cmdField.value).toBe('розкажи про')
+    v.stop()
+  })
+})
+
+describe('useVoiceDictation — настільний Chrome (контроль до Б-108)', () => {
+  it('окремі фінали й проміжний хвіст складаються як раніше', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitFinal('Поясни мені')
+    instances[0].emitInterim('що я')
+    expect(field.value).toBe('Поясни мені що я')
+    instances[0].emitFinal('що я можу робити')
+
+    expect(field.value).toBe('Поясни мені що я можу робити')
+    v.stop()
+  })
+
+  it('кілька фраз в одній сесії не губляться і не повторюються', async () => {
+    const useVoiceDictation = await load()
+    const field = ref('вже було')
+    const v = useVoiceDictation()
+
+    v.start(field)
+    instances[0].emitFinal('перша')
+    instances[0].emitFinal('друга')
+    instances[0].emitFinal('третя')
+
+    expect(field.value).toBe('вже було перша друга третя')
+    v.stop()
   })
 })
