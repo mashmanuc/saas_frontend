@@ -68,6 +68,13 @@
           {{ t('auth.logoutGuard.cancel') }}
         </button>
         <button
+          v-if="canRecheck"
+          type="button"
+          class="logout-unsent__cancel"
+          data-testid="logout-unsent-recheck"
+          @click="checkBoards"
+        >{{ t('auth.logoutGuard.recheck') }}</button>
+        <button
           v-if="canDiscard && !confirming"
           type="button"
           class="logout-unsent__discard"
@@ -100,9 +107,11 @@ import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
  * Чи можна ще надіслати зміни дошки:
  * - `ok` — дошка є, сервер відповідає (зокрема 429 — він живий);
  * - `gone` — дошки немає або доступу немає (400/403/404/410): надіслати нікуди;
- * - `offline` — жодної відповіді або 5xx (і відкритий circuit breaker клієнта).
+ * - `offline` — жодної відповіді або 5xx;
+ * - `paused` — запит не пішов: відкритий circuit breaker клієнта (Б-51). Сервер може ожити
+ *   за 30 с, тож відкидання поки не пропонуємо — лише «Перевірити ще раз».
  */
-type BoardLink = 'checking' | 'ok' | 'gone' | 'offline'
+type BoardLink = 'checking' | 'ok' | 'gone' | 'offline' | 'paused'
 const GONE_STATUSES = new Set([400, 403, 404, 410])
 
 const { t } = useI18n()
@@ -129,8 +138,15 @@ function unsendable(sessionId: string): boolean {
 const canDiscard = computed(() =>
   !checking.value && guard.work.length > 0 && guard.work.every(board => unsendable(board.sessionId)))
 
+/** Б-51: без зв'язку — перевірку можна повторити, не закриваючи діалог. */
+const canRecheck = computed(() => !checking.value && guard.work.some(board => {
+  const link = linkOf(board.sessionId)
+  return link === 'offline' || link === 'paused'
+}))
+
 const statusText = computed(() => {
   if (checking.value) return t('auth.logoutGuard.checking')
+  if (guard.work.some(board => linkOf(board.sessionId) === 'paused')) return t('auth.logoutGuard.paused')
   if (!canDiscard.value) return t('auth.logoutGuard.sendFirst')
   return guard.work.some(board => linkOf(board.sessionId) === 'offline')
     ? t('auth.logoutGuard.offline')
@@ -143,6 +159,8 @@ function boardName(sessionId: string): string {
 
 function classify(result: PromiseSettledResult<unknown>): BoardLink {
   if (result.status === 'fulfilled') return 'ok'
+  // Б-51: відмова відкритого breaker-а (apiClient, `blockedBy`) — запит у мережу не йшов.
+  if ((result.reason as { blockedBy?: string })?.blockedBy === 'circuit_breaker') return 'paused'
   const status = (result.reason as { response?: { status?: number } })?.response?.status
   if (typeof status !== 'number' || status >= 500) return 'offline'
   return GONE_STATUSES.has(status) ? 'gone' : 'ok'
@@ -152,11 +170,14 @@ function classify(result: PromiseSettledResult<unknown>): BoardLink {
 // результат застарілого циклу (закрили й відкрили знову) відкидається.
 // immediate: діалог вантажиться ледаче (App.vue) і може змонтуватися вже відкритим.
 let generation = 0
-watch(() => guard.open, async (open) => {
+watch(() => guard.open, checkBoards, { immediate: true })
+
+// Б-51: та сама перевірка — при відкритті й кнопкою «Перевірити ще раз».
+async function checkBoards() {
   const run = ++generation
   confirming.value = false
   links.value = {}
-  if (!open) return
+  if (!guard.open) return
   const boards = [...guard.work]
   const results = await Promise.allSettled(boards.map(board => winterboardApi.getSession(board.sessionId)))
   if (run !== generation || !guard.open) return
@@ -172,7 +193,7 @@ watch(() => guard.open, async (open) => {
     }
   })
   links.value = next
-}, { immediate: true })
+}
 
 function cancel() {
   guard.close()

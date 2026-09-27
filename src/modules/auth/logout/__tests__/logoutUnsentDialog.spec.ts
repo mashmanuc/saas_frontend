@@ -169,3 +169,43 @@ describe('LogoutUnsentDialog', () => {
     expect(localStorage.getItem(KEY)).not.toBeNull()
   })
 })
+
+// Б-51 (2026-09-27): відкритий circuit breaker apiClient — запит у мережу не йшов, і сервер
+// може ожити за 30 с. Раніше діалог казав «Сервер недоступний» і пропонував відкинути дії;
+// повторити перевірку можна було лише закривши й відкривши діалог.
+describe('LogoutUnsentDialog · Б-51: breaker і повторна перевірка', () => {
+  const breakerOpen = () => getSession.mockImplementation(async () => {
+    throw Object.assign(new Error('[apiClient] Circuit breaker open — request blocked'),
+      { blockedBy: 'circuit_breaker' })
+  })
+
+  it('відмова breaker-а — «призупинено», відкидання не пропонується, є «Перевірити ще раз»', async () => {
+    breakerOpen()
+    const { wrapper } = await openDialog()
+
+    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('призупинено')
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(true)
+  })
+
+  it('«Перевірити ще раз» без закриття діалогу: сервер ожив → відкрити дошку, не відкидати', async () => {
+    offline()
+    const { wrapper } = await openDialog()
+    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Сервер недоступний')
+
+    online()
+    await wrapper.get('[data-testid="logout-unsent-recheck"]').trigger('click')
+    await flushPromises()
+
+    expect(getSession).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('Урок: Піраміда')
+    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(false)
+  })
+
+  it('сервер на зв\'язку — кнопки повтору немає', async () => {
+    online()
+    const { wrapper } = await openDialog()
+    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(false)
+  })
+})
