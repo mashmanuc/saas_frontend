@@ -275,27 +275,27 @@
       }, opts);
       this._build();
       this._bindInteraction();
-      this._pollTimers = [0, 50, 200, 500].map((ms) => setTimeout(() => this._render(), ms));
+      this._pollTimers = [0, 50, 200, 500].map((ms) => setTimeout(() => this._safeRender(), ms));
     }
 
-    setOption(k, v) { this.opts[k] = v; this._render(); this.onChange && this.onChange(); }
+    setOption(k, v) { this.opts[k] = v; this._safeRender(); this.onChange && this.onChange(); }
     setA(a) {
       a = Math.max(this._aRange()[0], Math.min(this._aRange()[1], a));
       if (this.opts.snapSpecial) a = this._snap(a);
       this.opts.a = a;
-      this._render();
+      this._safeRender();
       this.onChange && this.onChange();
     }
     setType(t) {
       this.opts.type = t;
       const [lo, hi] = this._aRange();
       this.opts.a = Math.max(lo, Math.min(hi, this.opts.a));
-      this._render();
+      this._safeRender();
       this.onChange && this.onChange();
     }
     setRel(rel) {
       this.opts.rel = rel;
-      this._render();
+      this._safeRender();
       this.onChange && this.onChange();
     }
     _isIneq() { return this.opts.rel && this.opts.rel !== '='; }
@@ -326,9 +326,9 @@
       this.hud = document.createElement('div');
       this.hud.className = 'calc-hud calc-hud-eq';
       c.appendChild(this.hud);
-      this._ro = new ResizeObserver(() => this._render());
+      this._ro = new ResizeObserver(() => this._safeRender());
       this._ro.observe(c);
-      this._onWinResize = () => this._render();
+      this._onWinResize = () => this._safeRender();
       window.addEventListener('resize', this._onWinResize);
     }
 
@@ -352,7 +352,10 @@
       const pad = 24 * dpr;
       if (!this.opts.showGraph || w < 600 * dpr) {
         const size = Math.min(w, h) - pad * 2;
-        return { dual: false, circle: { cx: w/2, cy: h/2, r: size/2 - 44*dpr } };
+        // Б-93 (2026-09-27): на крихітній картці (Replay на телефоні) size/2 − 44·dpr < 0,
+        // і ctx.arc кидав IndexSizeError з таймера → екран падіння всієї сторінки.
+        // Той самий запобіжник, що вже стоїть у trig-circle.js.
+        return { dual: false, circle: { cx: w/2, cy: h/2, r: Math.max(1, size/2 - 44*dpr) } };
       }
       const labelMargin = 40 * dpr;
       const circleColW = w * 0.46 - pad * 2;
@@ -440,6 +443,20 @@
     }
 
     // ==== render =========================================================
+    // Б-93: малювання йде з таймерів, ResizeObserver і сеттерів, які кличе Replay. Збій прикраси
+    // не має валити всю сторінку: віджет лишається порожнім, помилка — в консолі (один раз на
+    // екземпляр, не мовчки і без спаму на кожен resize).
+    _safeRender() {
+      try {
+        this._render();
+      } catch (e) {
+        if (!this._renderErrorLogged) {
+          this._renderErrorLogged = true;
+          console.error('[TrigEquation] render failed', e);
+        }
+      }
+    }
+
     _render() {
       this._resize();
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;

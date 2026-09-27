@@ -1,0 +1,104 @@
+// Б-93 (2026-09-27): Replay на телефоні падав на «Щось пішло не так», якщо на дошці був віджет
+// тригонометричних рівнянь. На крихітній картці радіус кола виходив від'ємним
+// (size/2 − 44·dpr), ctx.arc кидав IndexSizeError з таймера малювання — поза будь-яким try,
+// і глобальний обробник показував екран падіння всієї сторінки.
+//
+// Перевіряємо сам вендорний віджет у jsdom з підробленим 2D-контекстом, який поводиться як
+// Chromium: arc з від'ємним радіусом кидає IndexSizeError.
+
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
+
+type Rect = { width: number; height: number }
+
+let arcRadii: number[] = []
+let failOn: string | null = null
+
+function fakeContext(): CanvasRenderingContext2D {
+  const store: Record<string | symbol, unknown> = {}
+  const noop = () => {}
+  return new Proxy(store, {
+    get(target, prop) {
+      if (prop === 'arc') {
+        return (_x: number, _y: number, r: number) => {
+          arcRadii.push(r)
+          if (r < 0) throw new DOMException(`The radius provided (${r}) is negative.`, 'IndexSizeError')
+        }
+      }
+      if (failOn && prop === failOn) return () => { throw new Error(`boom in ${failOn}`) }
+      if (prop === 'measureText') return () => ({ width: 10 })
+      if (prop in target) return target[prop]
+      return noop
+    },
+    set(target, prop, value) { target[prop] = value; return true },
+  }) as unknown as CanvasRenderingContext2D
+}
+
+function container(rect: Rect): HTMLElement {
+  const el = document.createElement('div')
+  el.getBoundingClientRect = () => ({ ...rect, x: 0, y: 0, top: 0, left: 0, right: rect.width, bottom: rect.height, toJSON: () => ({}) }) as DOMRect
+  document.body.appendChild(el)
+  return el
+}
+
+type TrigEquationCtor = new (el: HTMLElement, opts: Record<string, unknown>) => { destroy?: () => void }
+let TrigEquation: TrigEquationCtor
+
+beforeAll(async () => {
+  ;(globalThis as any).ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+  HTMLCanvasElement.prototype.getContext = (() => fakeContext()) as any
+  await import('../vendor/trig/index')   // штатний завантажувач вендорних віджетів (ставить window.TrigEquation)
+  TrigEquation = (window as any).TrigEquation
+})
+
+describe('віджет тригонометричних рівнянь на крихітній картці (Б-93)', () => {
+  let consoleError: ReturnType<typeof vi.spyOn>
+  const made: Array<{ destroy?: () => void }> = []
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    arcRadii = []
+    failOn = null
+    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true })
+    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    while (made.length) made.pop()?.destroy?.()
+    vi.useRealTimers()
+    consoleError.mockRestore()
+    document.body.innerHTML = ''
+  })
+
+  it('картка 30×30 на телефоні (dpr 2): жодного від\'ємного радіуса, таймери не кидають, консоль чиста', () => {
+    const w = new TrigEquation(container({ width: 30, height: 30 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
+    made.push(w)
+    expect(() => vi.runAllTimers()).not.toThrow()
+    expect(arcRadii.length).toBeGreaterThan(0)
+    expect(arcRadii.every((r) => r >= 0)).toBe(true)
+    expect(consoleError).not.toHaveBeenCalled()   // виправлено причину, а не лише зловлено помилку
+  })
+
+  it('нерівність на крихітній картці (інший шлях малювання кола) — теж без від\'ємного радіуса', () => {
+    const w = new TrigEquation(container({ width: 24, height: 60 }), { type: 'cos', rel: '>', a: 0.3 })
+    made.push(w)
+    expect(() => vi.runAllTimers()).not.toThrow()
+    expect(arcRadii.every((r) => r >= 0)).toBe(true)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('будь-який інший збій малювання не валить сторінку: віджет мовчить, у консолі — один запис', () => {
+    failOn = 'fillText'
+    const w = new TrigEquation(container({ width: 400, height: 400 }), { type: 'sin', a: 0.5 })
+    made.push(w)
+    expect(() => vi.runAllTimers()).not.toThrow()   // 4 таймери малювання
+    expect(consoleError).toHaveBeenCalledTimes(1)   // не спам на кожен таймер/resize
+    expect(String(consoleError.mock.calls[0][0])).toContain('[TrigEquation] render failed')
+  })
+
+  it('звичайна картка: коло малюється з додатним радіусом, як і раніше', () => {
+    const w = new TrigEquation(container({ width: 800, height: 420 }), { type: 'sin', a: 0.5, showGraph: true })
+    made.push(w)
+    vi.runAllTimers()
+    expect(Math.max(...arcRadii)).toBeGreaterThan(40)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+})
