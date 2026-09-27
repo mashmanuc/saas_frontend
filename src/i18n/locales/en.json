@@ -912,6 +912,13 @@
       "orContinueWith": "Or sign in with"
     },
     "oauth": {
+      "embedded": {
+        "text": "Google sign-in doesn't work in an app's built-in browser (Telegram, Instagram, etc.) — Google blocks it. Open this page in Chrome or Safari (menu ⋮ or ··· → \"Open in browser\") or sign in with email.",
+        "openChrome": "Open in Chrome",
+        "copy": "Copy link",
+        "copied": "Copied — paste it into Chrome or Safari",
+        "copyManual": "Copy the address and open it in Chrome or Safari:"
+      },
       "loading": "Loading Google Sign-In...",
       "retry": "Try again",
       "continueWithGoogle": "Continue with Google",

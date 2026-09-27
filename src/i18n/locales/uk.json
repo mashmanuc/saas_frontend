@@ -1040,6 +1040,13 @@
       "orContinueWith": "Або увійти через"
     },
     "oauth": {
+      "embedded": {
+        "text": "Вхід через Google не працює у вбудованому браузері застосунку (Telegram, Instagram тощо) — так вирішив Google. Відкрийте сторінку в Chrome чи Safari (меню ⋮ або ··· → «Відкрити в браузері») або увійдіть через email.",
+        "openChrome": "Відкрити в Chrome",
+        "copy": "Скопіювати посилання",
+        "copied": "Скопійовано — вставте в Chrome чи Safari",
+        "copyManual": "Скопіюйте адресу й відкрийте її в Chrome чи Safari:"
+      },
       "loading": "Завантаження Google Sign-In...",
       "retry": "Спробувати ще раз",
       "continueWithGoogle": "Продовжити з Google",
