@@ -37,6 +37,7 @@ import {
   fetchPublicReplayByToken,
   fetchNearestSnapshot,
   fetchLessonMarkers,
+  fetchPublicLessonMarkers,
   reportReplayView,
 } from '../api/replay'
 import type { BoardOperation } from '../types/replay'
@@ -373,10 +374,15 @@ export function useReplay(sessionId: string, publicToken?: string) {
 
   async function loadMarkers(): Promise<void> {
     try {
-      const result = await fetchLessonMarkers(sessionId)
+      // Б-92 (REPLAY-INV-10): публічна сторінка — маркери за токеном, як у V2. Owner-only
+      // ендпоінт давав глядачам аварійного ?replay=v1 401 (а з ним і тост «Сесію завершено»).
+      const result = publicToken
+        ? await fetchPublicLessonMarkers(publicToken)
+        : await fetchLessonMarkers(sessionId)
       markers.value = result.markers
-    } catch {
-      // markers are non-critical — silent fail
+    } catch (err) {
+      // Маркери не критичні: запис лишається без позначок, але збій видно в консолі.
+      console.info('[replay:v1] markers unavailable:', err)
     }
   }
 

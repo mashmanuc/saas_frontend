@@ -21,6 +21,7 @@ vi.mock('../api/replay', async (importOriginal) => {
 })
 
 import { useReplayV2 } from '../composables/useReplayV2'
+import { useReplay } from '../composables/useReplay'
 
 beforeEach(() => { calls.owner = 0; calls.pub = 0 })
 
@@ -40,6 +41,23 @@ describe('useReplayV2.loadMarkers — який ендпоінт', () => {
 
   it('без токена (автентифікований шлях) → owner-ендпоінт', async () => {
     const r = useReplayV2('sess')
+    await r.loadMarkers()
+    expect(calls).toEqual({ owner: 1, pub: 0 })
+  })
+})
+
+// Б-92: аварійний ?replay=v1 (V1, useReplay) на публічній сторінці теж ходить за маркерами
+// за токеном. Раніше V1 завжди кликав owner-only ендпоінт → анонімові 401 у консолі.
+describe('useReplay (V1, ?replay=v1).loadMarkers — який ендпоінт', () => {
+  it('публічний токен → публічні маркери, owner-ендпоінт не чіпається', async () => {
+    const r = useReplay('sess', 'tok')
+    await r.loadMarkers()
+    expect(calls).toEqual({ owner: 0, pub: 1 })
+    expect(r.markers.value.map((m) => m.id)).toEqual(['m1'])
+  })
+
+  it('без токена → owner-ендпоінт, як і раніше', async () => {
+    const r = useReplay('sess')
     await r.loadMarkers()
     expect(calls).toEqual({ owner: 1, pub: 0 })
   })
