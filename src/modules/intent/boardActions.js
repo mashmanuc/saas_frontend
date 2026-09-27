@@ -17,7 +17,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
-import { engineRejects, rejectMessage, tangentLine } from './graphTangent'
+import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
 function _uuid() {
@@ -854,11 +854,11 @@ const HANDLERS = {
       .filter((e) => e.src)
     if (!built.length) throw new Error('Не зрозумів вираз функції.')
     // 2026-09-25: питаємо САМ рушій, чи він цей вираз намалює (див. graphTangent.ts).
-    const paramNames = Object.keys((params && typeof params === 'object') ? params : {})
-    for (const e of built) {
-      const why = engineRejects(e.src, paramNames)
-      if (why) throw new Error(rejectMessage(e.src, why))
-    }
+    // Б-14 (2026-09-27): і яких повзунків бракує — `Ax² + Bx + C` без значень
+    // стає параболою з повзунками A, B, C, а не порожньою карткою з «✓».
+    const planned = withSliders(built.map((e) => e.src), (params && typeof params === 'object') ? params : {})
+    built.forEach((e, i) => { e.src = planned.srcs[i] })
+    const graphParams = planned.params
 
     const assetId = `gc-${_uuid()}`
     // ОДНА структура на дошку і на урок. Була дубльована копія — і
@@ -868,11 +868,12 @@ const HANDLERS = {
       version: 1,
       state: {
         expressions: built,
-        // BE вже провалідував діапазони (min<max, step>0, ім'я по регексу).
-        params: (params && typeof params === 'object') ? params : {},
+        // Параметри моделі BE вже провалідував (min<max, step>0, ім'я по регексу);
+        // повзунки, додані тут, — зі стандартними межами рушія.
+        params: graphParams,
         // TZ_GRAPH_VIEWPORT_AUTOFIT §3.2: вікно під функцію — ОДИН раз, тут,
         // у тому самому asset_add. Replay бачить записане й не перераховує.
-        viewport: graphViewportFor(built.map((e) => e.src), params),
+        viewport: graphViewportFor(built.map((e) => e.src), graphParams),
       },
       meta: { last_snapshot_seq: 0 },
     }
@@ -969,9 +970,10 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name }) 
   if (type === 'graph_expression') {
     // Міняємо вираз ПЕРШОГО графіка (data.state.expressions[0].src)
     if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
-    const src = String(value).replace(/^\s*y\s*=\s*/i, '').trim()
-    const why = engineRejects(src, Object.keys(data.state.params || {}))
-    if (why) throw new Error(rejectMessage(src, why))
+    // Б-14: те саме правило, що для нового графіка (withSliders).
+    const planned = withSliders([String(value)], data.state.params || {})
+    const src = planned.srcs[0]
+    data.state.params = planned.params
     if (data.state.expressions?.length) {
       data.state.expressions[0] = { ...data.state.expressions[0], src }
     } else {
@@ -1058,15 +1060,16 @@ HANDLERS.graph_add_expression = async function graph_add_expression({ object_id,
   if (!srcClean) throw new Error('Не зрозумів вираз нової кривої.')
   // 2026-09-25: без цієї перевірки вираз зі штрихом похідної лягав у графік,
   // крива не малювалась, а в чаті стояло «✓ Додаю криву».
-  const why = engineRejects(srcClean, Object.keys(data.state.params || {}))
-  if (why) throw new Error(rejectMessage(srcClean, why))
+  // Б-14 (2026-09-27): і бракуючі повзунки — те саме правило (withSliders).
+  const planned = withSliders([srcClean], data.state.params || {})
+  data.state.params = planned.params
   const exprs = data.state.expressions || []
   if (exprs.length >= MAX_GRAPH_EXPRESSIONS) {
     throw new Error(`Графік уже має ${MAX_GRAPH_EXPRESSIONS} кривих — більше на одному полі нечитабельно. Скажіть «заміни ... на ${srcClean}», і я оновлю одну з них.`)
   }
   data.state.expressions = [
     ...exprs,
-    { id: `e-${_uuid().slice(0, 8)}`, src: srcClean, color: GRAPH_COLORS[exprs.length % GRAPH_COLORS.length], hidden: false, label: label || undefined },
+    { id: `e-${_uuid().slice(0, 8)}`, src: planned.srcs[0], color: GRAPH_COLORS[exprs.length % GRAPH_COLORS.length], hidden: false, label: label || undefined },
   ]
   store.updateAsset({ ...asset, data })
 }
