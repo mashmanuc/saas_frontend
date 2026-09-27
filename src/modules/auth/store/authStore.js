@@ -788,6 +788,9 @@ export const useAuthStore = defineStore('auth', {
           // PR2 (2026-04-26): proactive guard timestamp — оновлюємо ТІЛЬКИ
           // при успішному refresh, щоб 45-хв guard у apiClient не fire'ив зайве.
           this.lastRefreshAt = Date.now()
+          // Б-55: успіх знімає відкладання після 429 — інакше наступна відмова чекала б
+          // подвоєний від давно минулого 429 час.
+          this._rateLimitBackoffMs = null
           // Phase 2 (2026-04-27) SSOT §7: capture `exp` Unix seconds для dynamic guard.
           // BE Phase 1 V1AuthRefreshView повертає {access, exp}. Якщо exp відсутній
           // (legacy session pre-deploy) — accessExp лишається 0 → fallback proxy.
@@ -816,8 +819,12 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         const status = error?.response?.status
         if (status === 429) {
-          // Exponential backoff for rate limit - starts at 5s, max 5min
-          const currentBackoff = this._rateLimitBackoffMs || 5_000
+          // Б-55: сервер каже, скільки чекати (`details.retry_after`, секунди — Б-47); без
+          // цього поля — як і раніше, експонента від 5 с до 5 хв.
+          const serverWaitS = Number(error?.response?.data?.details?.retry_after)
+          const currentBackoff = serverWaitS > 0
+            ? Math.min(serverWaitS * 1000, 5 * 60_000)
+            : (this._rateLimitBackoffMs || 5_000)
           const nextBackoff = Math.min(currentBackoff * 2, 5 * 60_000)
           this._rateLimitBackoffMs = nextBackoff
           this.lockedUntil = new Date(Date.now() + currentBackoff).toISOString()
@@ -929,6 +936,17 @@ export const useAuthStore = defineStore('auth', {
      *   - Якщо exp absent (legacy/bootstrap): REFRESH_INTERVAL_FALLBACK_MS (20m proxy)
      *   - Floored at REFRESH_MIN_DELAY_MS, ceiled at REFRESH_MAX_DELAY_MS (sanity bounds)
      */
+    /**
+     * Б-55: чи токен уже треба оновлювати — правило LAW §6 (`now > exp - 60 с`), те саме,
+     * що в `apiClient`. Без `exp` (стара сесія) — 20-хвилинний проксі від останнього
+     * refresh, як і планувальник.
+     */
+    _accessNeedsRefresh() {
+      const exp = this.accessExp
+      if (typeof exp === 'number' && exp > 0) return Date.now() > exp * 1000 - REFRESH_BUFFER_MS
+      return !this.lastRefreshAt || Date.now() - this.lastRefreshAt > REFRESH_INTERVAL_FALLBACK_MS
+    },
+
     _computeNextRefreshDelay() {
       const exp = this.accessExp
       if (typeof exp !== 'number' || exp <= 0) {
@@ -1001,7 +1019,19 @@ export const useAuthStore = defineStore('auth', {
         this._visibilityHandler = async () => {
           if (document.visibilityState !== 'visible') return
           if (!this.access) return
-          // Рефрешимо одразу при поверненні — не чекаємо наступного інтервалу
+          // Б-55: лише коли токен уже треба оновлювати (LAW §6). Раніше КОЖНЕ повернення
+          // на вкладку робило refresh — часте перемикання вкладок давало бурю, і сесія
+          // ловила 429 від ліміту Б-47. Таймер фонової вкладки браузер пригальмовує, тож
+          // його все одно переставляємо від поточного `exp`.
+          if (!this._accessNeedsRefresh()) {
+            if (refreshTimer) {
+              clearTimeout(refreshTimer)
+              refreshTimer = null
+            }
+            _scheduleNext()
+            return
+          }
+          // Токен застарів — рефрешимо одразу, не чекаємо наступного інтервалу
           try {
             const newToken = await this.refreshAccess()
             if (newToken && newToken !== '__cookie__') {
