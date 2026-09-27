@@ -10,7 +10,7 @@ import {
 import {
   markLogoutPending, clearLogoutPending, isLogoutPending, LOGOUT_PENDING_ROUTE,
 } from '../logout/pendingLogout'
-import { markDocumentOutlivedSession } from '../logout/sessionEndedView'
+import { isTabOnPublicPage, markDocumentOutlivedSession } from '../logout/sessionEndedView'
 import { useLogoutGuardStore } from './logoutGuardStore'
 
 const hasDocument = typeof document !== 'undefined'
@@ -842,7 +842,9 @@ export const useAuthStore = defineStore('auth', {
           // Hard redirect — інакше user залишиться на authenticated URL з очищеним
           // store (router guard не спрацює без navigation). auth_return_url збережений
           // forceLogout-ом → після login user повернеться на ту саму сторінку.
-          if (this.initialized && typeof window !== 'undefined') {
+          // Б-36: на публічній сторінці лишаємося — сесії вона не потребує, а стори з
+          // даними акаунта наступний вхід не успадкує (Б-41, needsFreshDocument).
+          if (this.initialized && typeof window !== 'undefined' && !(await isTabOnPublicPage())) {
             const returnUrl = sessionStorage.getItem('auth_return_url')
             const redirectParam = returnUrl && returnUrl !== '/start' && returnUrl !== '/login'
               ? `?redirect=${encodeURIComponent(returnUrl)}`
@@ -878,6 +880,13 @@ export const useAuthStore = defineStore('auth', {
         console.warn('[auth] Не вдалося зняти auth dead після невдалого refresh:', error)
       }
       if (typeof window === 'undefined') return
+      // Б-36: публічна сторінка (посилання скидання пароля чи підтвердження email з листа,
+      // публічний запис) сесії не потребує — людину лишаємо на місці, протухлу сесію
+      // forceLogout уже зняв. Інакше посилання з листа спрацьовувало лише з другого разу.
+      if (await isTabOnPublicPage()) {
+        sessionStorage.removeItem('auth_return_url')
+        return
+      }
       // auth_return_url зберіг forceLogout; на /start і /login він його не пише —
       // там людина вже на вході.
       const returnUrl = sessionStorage.getItem('auth_return_url')

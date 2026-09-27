@@ -15,7 +15,7 @@
  * маршрут не публічний. Знімає прапорець новий вхід.
  */
 import { readonly, ref } from 'vue'
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
 const ended = ref(false)
 // Б-41: документ пережив сесію. На відміну від `ended`, новий вхід цей прапорець НЕ знімає:
@@ -45,6 +45,30 @@ export function resetSessionEndedView(): void {
 /** Публічна сторінка (вхід, стартова, екран блокування) — її ховати не треба. */
 export function isPublicRoute(route: Pick<RouteLocationNormalizedLoaded, 'matched'>): boolean {
   return route.matched.some(record => record.meta?.requiresAuth === false)
+}
+
+/**
+ * Б-36: чи адреса вкладки — публічна сторінка. Саме з адреси, а не з `currentRoute`:
+ * bootstrap іде до першої навігації роутера (`main.js`), і `currentRoute` там — ще
+ * порожній початковий маршрут.
+ */
+export function isPublicLocation(router: Pick<Router, 'resolve'>, href: string): boolean {
+  return isPublicRoute(router.resolve(href))
+}
+
+/**
+ * Б-36: вкладка стоїть на публічній сторінці. Роутер імпортується ліниво — він сам тягне
+ * `authStore`. Не визначили — вважаємо непублічною (поведінка до Б-36), не мовчки.
+ */
+export async function isTabOnPublicPage(): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  try {
+    const { default: router } = await import('@/router')
+    return isPublicLocation(router, window.location.pathname + window.location.search)
+  } catch (error) {
+    console.warn('[auth] Не вдалося визначити, чи сторінка публічна:', error)
+    return false
+  }
 }
 
 /** Чи прибрати сторінку: сесію завершено, а маршрут показує дані акаунта. */

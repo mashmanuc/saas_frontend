@@ -4,6 +4,7 @@ import { useLoaderStore } from '../stores/loaderStore'
 import { useLimitPaywallStore } from '../stores/limitPaywallStore'
 import { notifyError, notifyWarning } from './notify'
 import { isAuthDead } from '../core/auth/onAuthDeath'
+import { isTabOnPublicPage } from '../modules/auth/logout/sessionEndedView'
 
 // Debug recorder (only in debug mode)
 let debugRecorder = null
@@ -529,7 +530,8 @@ api.interceptors.response.use(
         if (refreshStatus === 401 || refreshStatus === 422) {
           const hadSession = Boolean(store.access)
           await store.forceLogout('session_expired')
-          if (hadSession) {
+          // Б-36: на публічній сторінці протухлу сесію знімаємо мовчки й лишаємо людину там.
+          if (hadSession && !(await isTabOnPublicPage())) {
             notifySessionExpired()
             try {
               const { default: router } = await import('../router')
@@ -546,7 +548,10 @@ api.interceptors.response.use(
     if (status === 401 && (isAuthRefresh || isAuthLogout || original._retry)) {
       const hadSession = Boolean(store.access)
       await store.forceLogout()
-      if (hadSession) {
+      // Б-36: протухла сесія на публічній сторінці (посилання скидання пароля чи
+      // підтвердження email з листа, публічний запис) — без тосту й без переходу: сесії
+      // сторінка не потребує, а вихід на /start ламав посилання з листа до другого кліку.
+      if (hadSession && !(await isTabOnPublicPage())) {
         notifySessionExpired()
         try {
           const { default: router } = await import('../router')
