@@ -13,9 +13,17 @@
 // Звідси scroll для «ліва/верхня грань картки на відступі m»:
 //   scroll = m - base(zoom) - a*zoom.
 
+//
+// v1.13 (Б-109, рішення власника 2026-09-27 «Б-109 а»): A−/A+ поза показом — ті самі
+// A−/A+, що на картці (спільний масштаб §9.C, одна операція на команду); у показі —
+// локальний множник лише розгорнутої картки, який скидається з кінцем показу.
+
 import { useTutorRevealGate } from './useStudentTutor'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
-import { getNmtPresentationScale, setNmtPresentationScale } from './useNmtPresentationScale'
+import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
+import {
+  hasSharedTextScale, nextPresentationScale, presentationScaleOf, withPresentationScale,
+} from '../board/cardPresentation'
 
 export interface RemoteViewStore {
   containerWidth: number
@@ -79,25 +87,45 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   }
 
   /**
-   * A−/A+: змінюють РОЗМІР СИМВОЛІВ у поточній картці, а не масштаб дошки.
+   * A−/A+: змінюють РОЗМІР СИМВОЛІВ картки, а не масштаб дошки (власник з уроку
+   * 2026-09-04: збільшення рамки не робить текст читабельним). LAW §9.C v1.13:
    *
-   * Власник з уроку 2026-09-04: збільшення рамки не робить текст читабельним.
-   * Кадрування картки лишається окремою дією «Задача на екран» (fitTask).
+   *  • у показі (картка розгорнута «Задача на екран») — локальний множник саме
+   *    розгорнутої картки: лише цей екран, без операції, сервера й реплею;
+   *    скидається з кінцем показу (`resetFocus`);
+   *  • у звичайному вигляді — ті самі A−/A+, що на верхній панелі картки: крок
+   *    спільного `data.presentationScale`, рівно один штатний asset_update на
+   *    команду, на межі кроків — жодного. Клас, учень і Replay бачать те саме,
+   *    висоту переміряє сама картка (INV-25).
+   *
+   * Картка — розгорнута, інакше у фокусі, інакше перша. Повертає масштаб після команди.
    */
   function changeTextScale(delta: number): number {
     const cards = taskCards()
-    const asset = cards[focusIndex] ?? cards[0]
+    const expanded = cards.find((a) => a.id === store.expandedAssetId)
+    const asset = expanded ?? cards[focusIndex] ?? cards[0]
     const steps = Math.max(-3, Math.min(3, Math.trunc(delta)))
     if (!asset || steps === 0) return 1
-    // A+ — лише локальний вигляд проєктора. Не створює asset_update, не
-    // торкається сервера та не потрапляє в реплей уроку.
-    const current = getNmtPresentationScale(asset.id)
-    const rawNext = current * Math.pow(NMT_PRESENTATION_SCALE.STEP, steps)
-    const next = Math.round(
-      Math.min(NMT_PRESENTATION_SCALE.MAX, Math.max(NMT_PRESENTATION_SCALE.MIN, rawNext)) * 100,
-    ) / 100
-    setNmtPresentationScale(asset.id, next)
-    if (focusIndex < 0) focusIndex = 0
+    focusIndex = cards.indexOf(asset)
+    if (expanded) {
+      const current = getNmtPresentationScale(asset.id)
+      const rawNext = current * Math.pow(NMT_PRESENTATION_SCALE.STEP, steps)
+      const next = Math.round(
+        Math.min(NMT_PRESENTATION_SCALE.MAX, Math.max(NMT_PRESENTATION_SCALE.MIN, rawNext)) * 100,
+      ) / 100
+      return setNmtPresentationScale(asset.id, next)
+    }
+    // Команду виконує лише ноутбук учителя-власника (`enabled` у useBoardRemote),
+    // тож це та сама дія, що кнопка на картці (`cardWindowActions().scale`).
+    if (!hasSharedTextScale(asset.type)) return 1
+    const current = presentationScaleOf(asset)
+    let next = current
+    for (let i = 0; i < Math.abs(steps); i++) {
+      const step = nextPresentationScale(next, steps > 0 ? 1 : -1)
+      if (step === null) break
+      next = step
+    }
+    if (next !== current) store.updateAsset(withPresentationScale(asset, next))
     return next
   }
 
@@ -157,10 +185,14 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
     }
   }
 
-  /** Сторінка змінилась — повертаємо звичайний вигляд, фокус скидається. */
+  /**
+   * Кінець показу («Уся сторінка» або інша сторінка): звичайний вигляд, фокус скидається,
+   * локальний множник A± теж (§9.C v1.13) — він живе лише в показі.
+   */
   function resetFocus(): void {
     focusIndex = -1
     store.expandedAssetId = null
+    resetNmtPresentationScales()
   }
 
   return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards }

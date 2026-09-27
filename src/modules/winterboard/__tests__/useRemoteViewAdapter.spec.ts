@@ -67,7 +67,9 @@ describe('useRemoteViewAdapter', () => {
     const store = makeStore([card('top', 0, 100), card('mid', 0, 500), card('low', 0, 900)])
     const v = createRemoteViewAdapter(store)
     v.changeTextScale(1)
-    expect(getNmtPresentationScale('top')).toBe(1.25)
+    expect(store.updateAsset).toHaveBeenCalledTimes(1)   // §9.C v1.13: спільний масштаб, не локальний
+    expect(store.pages[0].assets.find((a: any) => a.id === 'top').data.presentationScale).toBe(1.15)
+    expect(getNmtPresentationScale('top')).toBe(1)
     expect(store.expandedAssetId).toBeNull()
     expect(v.summary().presenting).toBe(false)
     expect(v.fitTask()).toBe(0)          // збільшена картка, а не наступна за нею
@@ -80,11 +82,12 @@ describe('useRemoteViewAdapter', () => {
     expect(store.expandedAssetId).toBe('low')
   })
 
-  it('A+ збільшує символи картки, але НЕ масштаб полотна і НЕ рамку', () => {
+  it('у показі A+ — локальний множник розгорнутої картки: без операції, не полотно, не рамка', () => {
     const store = makeStore([card('a', 0, 0, 800)])
     const v = createRemoteViewAdapter(store)
     store.zoom = 1
     const initialWidth = store.pages[0].assets[0].w
+    v.fitTask()   // «Задача на екран»
     expect(v.changeTextScale(1)).toBe(1.25)
     expect(getNmtPresentationScale('a')).toBe(1.25)
     expect(store.zoom).toBe(1)
@@ -92,6 +95,49 @@ describe('useRemoteViewAdapter', () => {
     expect(store.updateAsset).not.toHaveBeenCalled()
     expect(v.changeTextScale(3)).toBe(2) // стеля саме для шрифту
     expect(v.changeTextScale(-1)).toBe(1.6)
+    expect(store.updateAsset).not.toHaveBeenCalled()
+  })
+
+  it('Б-109: поза показом A± — крок спільного масштабу картки, рівно одна операція на команду', () => {
+    const store = makeStore([card('a', 10, 20, 800)])
+    const v = createRemoteViewAdapter(store)
+    const scaleOnBoard = () => store.pages[0].assets[0].data.presentationScale
+    expect(v.changeTextScale(1)).toBe(1.15)
+    expect(store.updateAsset).toHaveBeenCalledTimes(1)
+    expect(scaleOnBoard()).toBe(1.15)
+    const { x, y, w, h } = store.pages[0].assets[0]
+    expect([x, y, w, h]).toEqual([10, 20, 800, 200])   // геометрію пише лише автопідгонка картки (INV-25)
+    expect(v.changeTextScale(3)).toBe(1.75)            // три кроки — одна операція
+    expect(store.updateAsset).toHaveBeenCalledTimes(2)
+    expect(v.changeTextScale(1)).toBe(2)
+    expect(v.changeTextScale(1)).toBe(2)               // межа: операції немає
+    expect(store.updateAsset).toHaveBeenCalledTimes(3)
+    expect(v.changeTextScale(-1)).toBe(1.75)
+    expect(store.updateAsset).toHaveBeenCalledTimes(4)
+    expect(getNmtPresentationScale('a')).toBe(1)       // локальний множник не чіпали
+    expect(store.expandedAssetId).toBeNull()
+  })
+
+  it('Б-109: у показі операцій немає, і після «Уся сторінка» множника вже немає', () => {
+    const store = makeStore([card('a', 0, 0, 800)])
+    const v = createRemoteViewAdapter(store)
+    v.fitTask()
+    v.changeTextScale(1); v.changeTextScale(1); v.changeTextScale(1)
+    expect(getNmtPresentationScale('a')).toBe(1.95)
+    v.resetFocus()   // «Уся сторінка» або інша сторінка
+    expect(getNmtPresentationScale('a')).toBe(1)
+    expect(store.updateAsset).not.toHaveBeenCalled()
+    expect(store.pages[0].assets[0].data.presentationScale).toBeUndefined()
+  })
+
+  it('Б-109: ціль у показі — саме розгорнута картка, навіть коли фокус деінде', () => {
+    const store = makeStore([card('a', 0, 100), card('b', 0, 500)])
+    const v = createRemoteViewAdapter(store)
+    store.expandedAssetId = 'b'   // розгорнули на ноутбуці, не з пульта
+    expect(v.changeTextScale(1)).toBe(1.25)
+    expect(getNmtPresentationScale('b')).toBe(1.25)
+    expect(getNmtPresentationScale('a')).toBe(1)
+    expect(store.updateAsset).not.toHaveBeenCalled()
   })
 
   it('A+ без карток не чіпає сторінку', () => {
@@ -157,13 +203,17 @@ describe('useRemoteViewAdapter', () => {
 describe('useRemoteViewAdapter — A+/A− змінюють типографіку, не дошку', () => {
   beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
 
-  it('A+ не зменшує текст, A− не збільшує текст', () => {
+  it('A+ не зменшує текст, A− не збільшує текст — у показі (локально) і поза ним (спільно)', () => {
     const store = makeStore([card('a', 0, 0, 400)], { zoom: 1 })
     const v = createRemoteViewAdapter(store)
+    expect(v.changeTextScale(2)).toBe(1.3)
+    expect(v.changeTextScale(-1)).toBe(1.15)
+    expect(store.updateAsset).toHaveBeenCalledTimes(2)
+    v.fitTask()
     expect(v.changeTextScale(2)).toBe(1.56)
     expect(v.changeTextScale(-1)).toBe(1.25)
     expect(store.zoom).toBe(1)
-    expect(store.updateAsset).not.toHaveBeenCalled()
+    expect(store.updateAsset).toHaveBeenCalledTimes(2)
   })
 
   it('fitTask не залежить від виміру полотна: режим показу локальний', () => {

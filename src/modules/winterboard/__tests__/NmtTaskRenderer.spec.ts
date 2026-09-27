@@ -79,13 +79,16 @@ const OPTIONS = [
 describe('NmtTaskRenderer — multiple_select', () => {
   beforeEach(() => resetNmtPresentationScales())
 
-  it('A+ реактивно змінює лише типографіку картки на цьому екрані', async () => {
+  it('A+ пульта в показі реактивно змінює лише типографіку розгорнутої картки на цьому екрані', async () => {
     const w = mountTask({
       taskType: 'single_choice', question: 'Знайдіть $x$', options: OPTIONS,
     })
     expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1')
     setNmtPresentationScale('a1', 1.25)
     await nextTick()
+    // §9.C v1.13 (Б-109): поза показом локальний множник не діє — там A± пишуть спільний масштаб
+    expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1;')
+    await w.setProps({ isExpanded: true })
     expect(w.find('.nmt-task').attributes('style')).toContain('--nmt-presentation-scale: 1.25')
     expect(w.find('.nmt-task__question').text()).toContain('Знайдіть')
   })

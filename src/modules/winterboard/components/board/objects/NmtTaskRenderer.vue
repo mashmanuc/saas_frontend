@@ -395,11 +395,14 @@ const data = computed(() => (props.asset.data as unknown as NmtTaskData))
 
 /**
  * TLV2-05C · масштаб типографіки задачі = спільний учительський (`data.presentationScale`,
- * SYSTEM_LAW §9.C) × локальний множник пульта `view.zoom` (v1.3, лише цей екран).
+ * SYSTEM_LAW §9.C) × локальний множник пульта `view.zoom` — лише поки картка розгорнута
+ * (показ, §9.C v1.13). Поза показом A± пульта пишуть спільний масштаб, а множник сюди не
+ * потрапляє: інакше автопідгонка (INV-25) записала б висоту від вигляду одного екрана (Б-109).
  * Діє на ВСЮ картку через `--nmt-presentation-scale`, а не лише на розбір.
  */
 const remoteScale = useNmtPresentationScale(() => props.asset.id)
-const presentationScale = computed(() => presentationScaleOf(props.asset) * remoteScale.value)
+const presentationScale = computed(() =>
+  presentationScaleOf(props.asset) * (props.isExpanded ? remoteScale.value : 1))
 
 /** Базовий розмір розбору: у режимі стандарту — фіксований (масштабує картка), у V1 — особистий. */
 const solutionBasePx = computed(() =>

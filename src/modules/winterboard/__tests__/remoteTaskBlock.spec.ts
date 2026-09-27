@@ -137,9 +137,12 @@ describe('Б-106: A−/A+ і поза показом (власник 2026-09-27:
     const calls = sendMock.mock.calls
     const sent = calls[calls.length - 1][0]
     expect(sent).toMatchObject({ cmd: 'view.zoom', args: { delta: 1 } })
-    // ноутбук виконує ту саму команду, що прийшла з пульта
+    // ноутбук виконує ту саму команду, що прийшла з пульта: поза показом — спільний масштаб
+    // картки однією штатною операцією (§9.C v1.13, Б-109), як кнопка A+ на самій картці
     v.changeTextScale(sent.args.delta)
-    expect(getNmtPresentationScale('a')).toBe(1.25)
+    expect(store.updateAsset).toHaveBeenCalledTimes(1)
+    expect(store.updateAsset.mock.calls[0][0]).toMatchObject({ id: 'a', data: { presentationScale: 1.15 } })
+    expect(getNmtPresentationScale('a')).toBe(1)
     expect(store.expandedAssetId).toBeNull()
     await pushState(v)
     const texts = buttonTexts(w)

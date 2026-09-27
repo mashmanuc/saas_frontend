@@ -249,10 +249,25 @@ describe('nmt_task · масштабується вся задача, а не л
     w.unmount()
   })
 
-  it('локальний множник пульта множиться на спільний масштаб, а не замінює його', () => {
+  it('локальний множник пульта множиться на спільний масштаб — лише в показі (§9.C v1.13)', async () => {
     setNmtPresentationScale('q1', 1.25)
-    const w = mountTask({ asset: taskAsset({ presentationScale: 1.3 }) })
+    const w = mountTask({ asset: taskAsset({ presentationScale: 1.3 }), isExpanded: true })
     expect(parseFloat(scaleVar(w))).toBeCloseTo(1.625, 5)
+    await w.setProps({ isExpanded: false })
+    expect(parseFloat(scaleVar(w))).toBeCloseTo(1.3, 5)   // звичайний вигляд — лише спільний масштаб
+    w.unmount()
+  })
+
+  it('Б-109: множник пульта поза показом не міняє висоту — автопідгонка його не бачить', async () => {
+    const w = mountTask()
+    stubLayout(w, { root: '.nmt-task', body: '.nmt-task__body', flow: '.nmt-task__flow' },
+      { cardH: 400, bodyClientH: 340, flowAt100: 300, scaleVar: '--nmt-presentation-scale' })
+    await flushPromises()
+    const before = (w.emitted('request-height') ?? []).length
+    setNmtPresentationScale('q1', 1.5)   // як старий A+ пульта поза показом
+    await flushPromises()
+    expect((w.emitted('request-height') ?? []).length).toBe(before)
+    expect(parseFloat(scaleVar(w))).toBeCloseTo(1, 5)
     w.unmount()
   })
 
