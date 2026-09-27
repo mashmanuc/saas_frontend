@@ -93,9 +93,10 @@
       <p v-if="why" class="wb-remote__why" role="status" data-testid="why">{{ why }}</p>
 
       <!-- D. Контекст (вид В): з'являється з вмістом сторінки, ядро не зсувається.
-           Картки задач: поза показом — одна кнопка; у показі вона МІНЯЄТЬСЯ на
-           «Уся сторінка» (+ «Наступна задача», коли карток кілька), «Відповідь»,
-           «Розбір» і дрібний ряд A± ▲▼. Відео поточної сторінки — ▶/⏸. -->
+           Картки задач: поза показом — «Задача на екран»; у показі вона МІНЯЄТЬСЯ на
+           «Уся сторінка» (+ «Наступна задача», коли карток кілька), «Відповідь» і «Розбір».
+           Дрібний ряд: A− A+ — завжди, коли є картки; ▲▼ — лише в показі (Б-106).
+           Відео поточної сторінки — ▶/⏸. -->
       <div v-if="hasCards || videos.length" class="wb-remote__context" data-testid="context">
         <template v-if="hasCards">
           <div v-if="!isPresentingTask" class="wb-remote__row">
@@ -122,13 +123,20 @@
                 {{ cards?.solution ? t('winterboard.remote.hideSolution') : t('winterboard.remote.showSolution') }}
               </button>
             </div>
-            <div class="wb-remote__row wb-remote__row--fine">
-              <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="sendCmd('view.zoom', { delta: -1 })">A−</button>
-              <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
+          </template>
+          <!-- Б-106 (власник 2026-09-27, з планшета): A−/A+ — і поза показом. Учитель збільшує
+               задачу й пише на дошці збоку, а клас бачить її великою; розгортати картку на весь
+               екран заради шрифту не треба. Ноутбук робить view.zoom і без показу (картка у фокусі,
+               інакше перша). ▲/▼ гортають лише розгорнуту картку — тому вони тільки в показі.
+               Ряд — сітка на чотири: A− A+ стоять на тих самих місцях в обох режимах. -->
+          <div class="wb-remote__row wb-remote__row--fine" data-testid="zoom-row">
+            <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="sendCmd('view.zoom', { delta: -1 })">A−</button>
+            <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
+            <template v-if="isPresentingTask">
               <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
               <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
-            </div>
-          </template>
+            </template>
+          </div>
         </template>
 
         <!-- Відео поточної сторінки: ▶/⏸ (v1.8); пошук і посилання — в аркуші «Відео» -->
@@ -1038,6 +1046,8 @@ onBeforeUnmount(() => {
    не влазить — гортається лише ця зона. */
 .wb-remote__context { display: flex; flex-direction: column; gap: 8px; max-height: 40dvh; overflow-y: auto; }
 .wb-remote__row { display: flex; gap: 8px; }
+/* Б-106: сітка на чотири — A− A+ на тих самих місцях і поза показом (2 кнопки), і в показі (з ▲▼) */
+.wb-remote__row--fine { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .wb-remote__mini {
   flex: 1; min-height: 48px; border: 0; border-radius: 14px; background: var(--surface); color: var(--text);
   font-size: 16px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;

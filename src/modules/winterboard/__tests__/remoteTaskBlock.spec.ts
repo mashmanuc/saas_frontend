@@ -16,7 +16,7 @@ import uk from '../../../i18n/locales/uk.json'
 import { createRemoteViewAdapter, TASK_ASSET_TYPE } from '../composables/useRemoteViewAdapter'
 import { parseRemoteCards } from '../composables/useRemoteChannel'
 import { resetTutorGate } from '../composables/useStudentTutor'
-import { resetNmtPresentationScales } from '../composables/useNmtPresentationScale'
+import { getNmtPresentationScale, resetNmtPresentationScales } from '../composables/useNmtPresentationScale'
 import { derivePair } from '../remote/remotePair'
 
 const channelState = ref<'idle' | 'connected' | 'disconnected'>('idle')
@@ -106,21 +106,73 @@ describe('пульт: блок задач лише коли на сторінц�
     w.unmount()
   })
 
-  it('картка є, задача не розгорнута — «Задача на екран» є, «Усієї сторінки» немає', async () => {
-    // пульт v2 (ТЗ §2, зона D): поза показом — лише «Задача на екран»; у показі кнопка
-    // МІНЯЄТЬСЯ на «Уся сторінка», а «Відповідь», «Розбір», A± і ▲▼ з'являються поруч
+  it('картка є, задача не розгорнута — «Задача на екран» і A− A+ є, «Усієї сторінки» немає', async () => {
+    // пульт v2 (ТЗ §2, зона D) + Б-106: поза показом — «Задача на екран» і A− A+; у показі
+    // кнопка МІНЯЄТЬСЯ на «Уся сторінка», а «Відповідь», «Розбір» і ▲▼ з'являються поруч
     const w = await mountRemote()
     const v = createRemoteViewAdapter(makeStore([taskCard('a', 100, 300)]))
     await pushState(v)
     let texts = buttonTexts(w)
     expect(texts).toContain('Задача на екран')
-    for (const label of ['Уся сторінка', 'Наступна задача', 'A−', 'A+', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).not.toContain(label)
+    for (const label of ['A−', 'A+']) expect(texts).toContain(label)
+    for (const label of ['Уся сторінка', 'Наступна задача', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).not.toContain(label)
     v.fitTask()
     await pushState(v)
     texts = buttonTexts(w)
     expect(texts).not.toContain('Задача на екран')
     for (const label of ['Уся сторінка', 'A−', 'A+', '▲', '▼', 'Відповідь', 'Розбір']) expect(texts).toContain(label)
     expect(texts).not.toContain('Наступна задача')   // одна картка — гортати нема чого
+    w.unmount()
+  })
+})
+
+describe('Б-106: A−/A+ і поза показом (власник 2026-09-27: збільшити задачу й писати збоку)', () => {
+  it('A+ поза показом збільшує символи картки на ноутбуці, показ не вмикається; ▲▼ немає', async () => {
+    const w = await mountRemote()
+    const store = makeStore([taskCard('a', 100, 300)])
+    const v = createRemoteViewAdapter(store)
+    await pushState(v)
+    sendMock.mockClear()
+    await byText(w, 'A+')!.trigger('click')
+    const calls = sendMock.mock.calls
+    const sent = calls[calls.length - 1][0]
+    expect(sent).toMatchObject({ cmd: 'view.zoom', args: { delta: 1 } })
+    // ноутбук виконує ту саму команду, що прийшла з пульта
+    v.changeTextScale(sent.args.delta)
+    expect(getNmtPresentationScale('a')).toBe(1.25)
+    expect(store.expandedAssetId).toBeNull()
+    await pushState(v)
+    const texts = buttonTexts(w)
+    for (const label of ['Задача на екран', 'A−', 'A+']) expect(texts).toContain(label)
+    for (const label of ['▲', '▼', 'Уся сторінка']) expect(texts).not.toContain(label)
+    w.unmount()
+  })
+
+  it('дві картки: A+ збільшив першу → «Задача на екран» розгортає саме її, а не другу', async () => {
+    const w = await mountRemote()
+    const store = makeStore([taskCard('a', 100, 300), taskCard('b', 100, 900)])
+    const v = createRemoteViewAdapter(store)
+    await pushState(v)
+    v.changeTextScale(1)                 // A+ з пульта, поза показом
+    expect(v.fitTask()).toBe(0)          // «Задача на екран»
+    expect(store.expandedAssetId).toBe('a')
+    await pushState(v)
+    for (const label of ['A−', 'A+', '▲', '▼', 'Уся сторінка', 'Наступна задача']) expect(buttonTexts(w)).toContain(label)
+    expect(v.fitTask()).toBe(1)          // «Наступна задача» гортає далі, як і раніше
+    expect(store.expandedAssetId).toBe('b')
+    w.unmount()
+  })
+
+  it('A− A+ стоять на тих самих місцях у звичайному вигляді й у показі (сітка на чотири)', async () => {
+    const w = await mountRemote()
+    const v = createRemoteViewAdapter(makeStore([taskCard('a', 100, 300)]))
+    await pushState(v)
+    const row = () => w.find('[data-testid="zoom-row"]')
+    expect(row().classes()).toContain('wb-remote__row--fine')
+    expect(row().findAll('button').map((b) => b.text())).toEqual(['A−', 'A+'])
+    v.fitTask()
+    await pushState(v)
+    expect(row().findAll('button').map((b) => b.text())).toEqual(['A−', 'A+', '▲', '▼'])
     w.unmount()
   })
 })

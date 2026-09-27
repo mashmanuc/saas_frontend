@@ -66,7 +66,11 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   function fitTask(): number {
     const cards = taskCards()
     if (!cards.length) { focusIndex = -1; return -1 }
-    const nextIndex = (focusIndex + 1) % cards.length
+    // По колу гортаємо лише з уже розгорнутої картки. Поза показом фокус міг поставити
+    // A−/A+ (Б-106: вони тепер і поза показом) — тоді на екран іде саме збільшена картка,
+    // а не наступна за нею.
+    const presenting = focusIndex >= 0 && store.expandedAssetId === cards[focusIndex]?.id
+    const nextIndex = presenting ? (focusIndex + 1) % cards.length : Math.min(Math.max(focusIndex, 0), cards.length - 1)
     const asset = cards[nextIndex]
     focusIndex = nextIndex
     store.expandedAssetId = asset.id

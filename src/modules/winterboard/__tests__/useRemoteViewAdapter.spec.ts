@@ -63,6 +63,23 @@ describe('useRemoteViewAdapter', () => {
     expect(v.fitTask()).toBe(0)
   })
 
+  it('Б-106: A+ поза показом ставить фокус без показу; «Задача на екран» розгортає саме її, далі — по колу', () => {
+    const store = makeStore([card('top', 0, 100), card('mid', 0, 500), card('low', 0, 900)])
+    const v = createRemoteViewAdapter(store)
+    v.changeTextScale(1)
+    expect(getNmtPresentationScale('top')).toBe(1.25)
+    expect(store.expandedAssetId).toBeNull()
+    expect(v.summary().presenting).toBe(false)
+    expect(v.fitTask()).toBe(0)          // збільшена картка, а не наступна за нею
+    expect(store.expandedAssetId).toBe('top')
+    expect(v.fitTask()).toBe(1)
+    expect(v.fitTask()).toBe(2)
+    // ноутбук сам згорнув показ (фокус лишився на 'low') → «Задача на екран» повертає ту саму картку
+    store.expandedAssetId = null
+    expect(v.fitTask()).toBe(2)
+    expect(store.expandedAssetId).toBe('low')
+  })
+
   it('A+ збільшує символи картки, але НЕ масштаб полотна і НЕ рамку', () => {
     const store = makeStore([card('a', 0, 0, 800)])
     const v = createRemoteViewAdapter(store)
