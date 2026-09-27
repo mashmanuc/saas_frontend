@@ -94,6 +94,36 @@ describe('useBoardRemote v1.6 · предмет і мова', () => {
   })
 })
 
+describe('useBoardRemote v1.14 · «– Згорнути вікно Інтегралика»', () => {
+  it('assistant.minimize з пульта → ЛИШЕ подія палітрі тим самим каналом; дошка, запис і стан не чіпаються', () => {
+    const { api, store, undo, sendMessage } = setup()
+    const seen: any[] = []
+    const listener = (e: Event) => seen.push((e as CustomEvent).detail)
+    window.addEventListener(ASSISTANT_COMMAND_EVENT, listener)
+    window.dispatchEvent(new CustomEvent('wb:remote-command', {
+      detail: { userId: 'u', pair: api.pairCode.value, clientId: 'phone', cmd: 'assistant.minimize', args: {} },
+    }))
+    window.removeEventListener(ASSISTANT_COMMAND_EVENT, listener)
+    expect(seen).toEqual([{ boardId: SID, cmd: 'assistant.minimize', args: {} }])
+    expect(store.goToPage).not.toHaveBeenCalled()
+    expect(store.addPage).not.toHaveBeenCalled()
+    expect(undo).not.toHaveBeenCalled()
+    expect(sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('чужий пульт (інша пара) — жодної події палітрі', () => {
+    setup()
+    const seen: any[] = []
+    const listener = (e: Event) => seen.push((e as CustomEvent).detail)
+    window.addEventListener(ASSISTANT_COMMAND_EVENT, listener)
+    window.dispatchEvent(new CustomEvent('wb:remote-command', {
+      detail: { userId: 'u', pair: 'ZZZZ', clientId: 'phone', cmd: 'assistant.minimize', args: {} },
+    }))
+    window.removeEventListener(ASSISTANT_COMMAND_EVENT, listener)
+    expect(seen).toEqual([])
+  })
+})
+
 describe('parseRemoteAssistant (телефон)', () => {
   it('валідне поле → camelCase', () => {
     expect(parseRemoteAssistant(SNAPSHOT)).toEqual({

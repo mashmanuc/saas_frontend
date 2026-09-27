@@ -8896,6 +8896,7 @@
       "noCards": "No task cards on this page",
       "boardFrozen": "Recording on this board is finished — nothing is being saved.",
       "boardFrozenHint": "On the laptop tap “New recording” in the banner at the top, then the remote works again.",
+      "minimizeAssistant": "Minimise the Integralyk window",
       "holdToTalk": "Talk (hold)",
       "listening": "Listening…",
       "voiceUnsupported": "Voice is not available in this browser — buttons still work.",

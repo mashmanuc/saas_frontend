@@ -1921,6 +1921,12 @@ async function onCorridorLanguage(value, source = 'explicit_palette') {
 function onCorridorRemoteCommand(e) {
   const d = e?.detail || {}
   if (!enabled.value || !d.boardId || d.boardId !== currentBoardId.value) return
+  // LAW §9 v1.14 (власник 2026-09-28): «– Згорнути вікно Інтегралика» на пульті — те саме,
+  // що «–» у шапці: згорнути в маскота, розмова лишається. Уже згорнуте — нічого.
+  if (d.cmd === 'assistant.minimize') {
+    if (open.value) close()
+    return
+  }
   const args = d.args || {}
   let done = null
   if (d.cmd === 'subject.set') done = onCorridorSubject(args.subject, 'explicit_remote')

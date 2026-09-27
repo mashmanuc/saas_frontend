@@ -200,3 +200,28 @@ describe('Коридори · підключення палітри й пуль�
     expect(remote).not.toContain('parseAi')
   })
 })
+
+describe('LAW §9 v1.14 · «– Згорнути вікно Інтегралика» з пульта', () => {
+  const palette = read('modules/intent/CommandPalette.vue')
+  const remote = read('modules/winterboard/views/WBRemoteView.vue')
+
+  it('палітра на assistant.minimize робить РІВНО те, що «–» у шапці: той самий close(), розмову не чіпає', () => {
+    // «–» у шапці вікна — це close()
+    expect(palette).toMatch(/class="cmdp-min" @click="close"/)
+    const start = palette.indexOf('function onCorridorRemoteCommand(')
+    const body = palette.slice(start, palette.indexOf('\n}\n', start))
+    expect(body).toMatch(/if \(d\.cmd === 'assistant\.minimize'\) \{\s*if \(open\.value\) close\(\)\s*return\s*\}/)
+    // лише згорнути: не новий діалог, не очищення треду, не закриття з втратою
+    expect(body).not.toMatch(/newDialog|aiItems\.value\s*=|conversationId\.value\s*=|clearDialog/)
+  })
+
+  it('пульт шле лише намір без аргументів; кнопка стоїть одразу над «Говорю»', () => {
+    expect(remote).toContain("@click=\"sendCmd('assistant.minimize')\"")
+    const btn = remote.indexOf('data-testid="assistant-minimize"')
+    const talk = remote.indexOf('class="wb-remote__talk"')
+    expect(btn).toBeGreaterThan(-1)
+    expect(talk).toBeGreaterThan(btn)
+    // між кнопкою й «Говорю» — жодної іншої кнопки
+    expect(remote.slice(btn, talk).match(/<button/g)?.length ?? 0).toBe(1)
+  })
+})

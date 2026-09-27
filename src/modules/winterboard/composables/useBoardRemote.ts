@@ -19,6 +19,10 @@
 // language.set / language.auto — теж лише намір. Ноутбук передає його палітрі
 // Інтегралика подією (як `m4sh:integralyk-ask`), а вона записує вибір тим самим
 // REST, що й клік. Стан предмета й мови йде на пульт полем `assistant`.
+//
+// v1.14 (2026-09-28, власник: «кнопка яка буде згортати вікно інтегралика»):
+// assistant.minimize — тим самим каналом палітрі; вона робить те саме, що «–» у
+// шапці вікна (згорнути в маскота, розмова лишається). Без аргументів, без ops.
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
@@ -78,7 +82,7 @@ export interface RemoteCommandDetail {
   pair: string
   clientId: string
   cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
-    | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
+    | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
     | 'video.add' | 'video.play' | 'video.pause'
     | 'photo.add'
   args: {
@@ -101,7 +105,7 @@ export interface RemoteAssistantState {
 export const ASSISTANT_COMMAND_EVENT = 'm4sh:assistant-corridor-command'
 export const ASSISTANT_STATE_EVENT = 'm4sh:assistant-corridor-state'
 export const ASSISTANT_STATE_REQUEST_EVENT = 'm4sh:assistant-corridor-state-request'
-const ASSISTANT_CMDS = new Set(['subject.set', 'subject.auto', 'language.set', 'language.auto'])
+const ASSISTANT_CMDS = new Set(['subject.set', 'subject.auto', 'language.set', 'language.auto', 'assistant.minimize'])
 
 /** Мінімальна пауза між remote.state при швидкому гортанні (сервер: 10/с). */
 export const REMOTE_STATE_THROTTLE_MS = 150

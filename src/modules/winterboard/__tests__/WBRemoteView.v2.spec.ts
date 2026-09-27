@@ -69,6 +69,7 @@ const MSG = {
   fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
   showAnswer: 'Відповідь', hideAnswer: 'Сховати відповідь', showSolution: 'Розбір', hideSolution: 'Сховати розбір',
   holdToTalk: 'Говорю', listening: 'Слухаю…', voiceUnsupported: 'x', exitToBoards: 'Студія',
+  minimizeAssistant: 'Згорнути вікно Інтегралика',
   addPhoto: 'Фото', addVideo: 'Відео', sheetVideo: 'Відео на дошку', settings: 'Налаштування', close: 'Закрити',
   whyFirstPage: 'Це перша сторінка', whyLastPage: 'Це остання сторінка',
   remoteAddress: 'Адреса пульта', searchOff: 'Пошук вимкнено — вставте посилання.',
@@ -104,6 +105,48 @@ async function connected(extra: Record<string, unknown> = {}) {
 }
 const btnByText = (w: any, label: string) =>
   w.findAll('button').find((b: any) => b.text() === label || b.attributes('aria-label') === label)
+
+describe('LAW §9 v1.14 · «– Згорнути вікно Інтегралика» (власник 2026-09-28)', () => {
+  const minBtn = (w: any) => w.find('[data-testid="assistant-minimize"]')
+  beforeEach(() => {
+    channelState.value = 'idle'
+    send.mockClear(); connect.mockClear(); disconnect.mockClear()
+    getActiveRemoteSession.mockReset()
+    getActiveRemoteSession.mockResolvedValue({ session_id: SID, name: 'Алгебра 8-А', ts: 1 })
+    onStateCb = null; onFinalCb = null
+    try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
+  })
+  afterEach(() => { while (mounted.length) mounted.pop()!.unmount() })
+
+  it('до першого стану кнопки немає, як і решти клавіатури', async () => {
+    const w = mountView()
+    await flushPromises()
+    expect(minBtn(w).exists()).toBe(false)
+  })
+
+  it('з уроком: текст «– Згорнути вікно Інтегралика», тап шле лише намір assistant.minimize без аргументів', async () => {
+    const w = await connected()
+    expect(minBtn(w).exists()).toBe(true)
+    expect(minBtn(w).text().replace(/\s+/g, ' ').trim()).toBe('– Згорнути вікно Інтегралика')
+    send.mockClear()
+    await minBtn(w).trigger('click')
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(lastCmd()).toMatchObject({ type: 'remote.command', pair: PAIR, cmd: 'assistant.minimize', args: {} })
+  })
+
+  it('стоїть одразу над «Говорю» — наступний елемент після неї саме «Говорю»', async () => {
+    const w = await connected()
+    const next = (minBtn(w).element as HTMLElement).nextElementSibling as HTMLElement | null
+    expect(next?.classList.contains('wb-remote__talk')).toBe(true)
+  })
+
+  it('без зв’язку з ноутбуком кнопка на місці, але неактивна (як решта)', async () => {
+    const w = await connected()
+    channelState.value = 'reconnecting'
+    await nextTick()
+    expect(minBtn(w).attributes('disabled')).toBeDefined()
+  })
+})
 
 describe('пульт v2 · клавіатура лише з дошкою', () => {
   beforeEach(() => {

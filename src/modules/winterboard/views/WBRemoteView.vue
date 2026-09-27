@@ -183,6 +183,19 @@
         </button>
       </div>
 
+      <!-- LAW §9 v1.14 (власник 2026-09-28, погоджено): згорнути вікно Інтегралика на
+           ноутбуці — те саме, що «–» у його шапці; розмова лишається. Одразу над «Говорю». -->
+      <button
+        type="button"
+        class="wb-remote__assistant-min"
+        data-testid="assistant-minimize"
+        :disabled="!isReady"
+        @click="sendCmd('assistant.minimize')"
+      >
+        <span aria-hidden="true">–</span>
+        {{ t('winterboard.remote.minimizeAssistant') }}
+      </button>
+
       <!-- F. Говорю (тримати) — пришпилено знизу, єдина кнопка з акцентом -->
       <button
         v-if="ptt.supported"
@@ -812,7 +825,7 @@ function vibrate(ms: number) {
 }
 
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
-  | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto'
+  | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
@@ -1111,6 +1124,17 @@ onBeforeUnmount(() => {
 .wb-remote__badge--busy { background: var(--surface-2); color: #cbd5e1; }
 .wb-remote__badge--ok { background: var(--success); color: #fff; }
 .wb-remote__badge--warn { background: var(--warn); color: #0f172a; }
+
+/* v1.14: «– Згорнути вікно Інтегралика» — другорядна, як «🎙 Сказати тему» в аркуші «Відео»;
+   пришпилена знизу разом із «Говорю», одразу над нею (auto-відступ бере вона, а не «Говорю») */
+.wb-remote__assistant-min {
+  margin-top: auto; width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__assistant-min:disabled { opacity: .5; }
+.wb-remote__assistant-min + .wb-remote__talk { margin-top: 0; }
 
 /* F. Говорю */
 .wb-remote__talk {
