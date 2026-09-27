@@ -108,7 +108,6 @@ function deps(over: Partial<RemotePhotoDeps> = {}) {
     boardId: vi.fn((): string | null => 'board-A'),
     currentPageId: vi.fn((): string | null => 'page-1'),
     currentPageIndex: vi.fn(() => 1),
-    isFrozen: vi.fn(() => false),
     isInputLocked: vi.fn(() => false),
     canAddObject: vi.fn(() => true),
     hasAssetAnywhere: vi.fn((id: string) => placed.has(id)),
@@ -135,7 +134,6 @@ describe('адаптер photo.add на ноутбуці', () => {
 
   it.each([
     ['page_changed', { currentPageIndex: vi.fn(() => 2) }],
-    ['frozen', { isFrozen: vi.fn(() => true) }],
     ['input_locked', { isInputLocked: vi.fn(() => true) }],
     ['limit', { canAddObject: vi.fn(() => false) }],
   ])('%s — відмова ще до запитів', async (reason, over) => {

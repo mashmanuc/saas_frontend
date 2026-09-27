@@ -1,7 +1,9 @@
 <template>
   <div class="wb-classroom-recording" role="status" aria-live="polite">
-    <!-- IDLE → start NEW cycle (нічого ще не записувалось) -->
-    <template v-if="recordingState === 'idle'">
+    <!-- IDLE / FINALIZED → start NEW cycle. Після завершення — новий запис з
+         поточного стану; попередній лишається в «Моїх записах» (INV-23 v3,
+         рішення власника 2026-09-27: завершений запис дошку не блокує). -->
+    <template v-if="recordingState === 'idle' || recordingState === 'finalized'">
       <button
         type="button"
         class="wb-classroom-recording__btn wb-classroom-recording__btn--start"
@@ -11,26 +13,6 @@
       >
         <span class="wb-classroom-recording__dot wb-classroom-recording__dot--idle" aria-hidden="true" />
         <span>{{ t('winterboard.recording.start') }}</span>
-      </button>
-    </template>
-
-    <!-- FINALIZED → бейдж «Запис завершено», він же кнопка.
-         Історія: 2026-09-23 (FIRST USER GATE, крок 6) кнопку «Новий запис» звідси
-         прибрали, бо поруч була жовта смуга WBFrozenBanner з тією самою кнопкою.
-         2026-09-24 смуги в кімнаті немає — бейдж сам емітить restart, і кімната
-         показує вікно «Запис завершено. Як продовжити?». Дубля немає. -->
-    <template v-else-if="recordingState === 'finalized'">
-      <button
-        type="button"
-        class="wb-classroom-recording__frozen"
-        :title="t('winterboard.recording.restartConfirm.confirm')"
-        :disabled="isLoading"
-        @click="$emit('restart')"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>{{ t('winterboard.recording.frozen') }}</span>
       </button>
     </template>
 
@@ -96,7 +78,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  /** idle → start NEW recording cycle (new Replay on finalize) */
+  /** idle | finalized → start NEW recording cycle (new Replay on finalize) */
   start: []
   /** recording → paused (same cycle, no Replay created) */
   pause: []
@@ -104,9 +86,6 @@ defineEmits<{
   resume: []
   /** recording | paused → finalized (Replay created/finalized) */
   finalize: []
-  /** finalized → start a NEW cycle (BE archives previous Replay).
-   *  Parent повинен показати confirmation modal перед викликом API. */
-  restart: []
 }>()
 
 // ── Timer ──
@@ -174,15 +153,13 @@ const formattedDuration = computed(() => {
   cursor: not-allowed;
 }
 
-.wb-classroom-recording__btn--start,
-.wb-classroom-recording__btn--restart {
+.wb-classroom-recording__btn--start {
   background: rgba(255, 255, 255, 0.9);
   color: #374151;
   border-color: #d1d5db;
 }
 
-.wb-classroom-recording__btn--start:hover:not(:disabled),
-.wb-classroom-recording__btn--restart:hover:not(:disabled) {
+.wb-classroom-recording__btn--start:hover:not(:disabled) {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -278,42 +255,18 @@ const formattedDuration = computed(() => {
   min-width: 36px;
 }
 
-.wb-classroom-recording__frozen {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #6b7280;
-  font-size: 0.7rem;
-  padding: 3px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-}
-.wb-classroom-recording__frozen:hover:not(:disabled) {
-  background: #ffffff;
-  border-color: #9ca3af;
-  color: #374151;
-}
-
 @keyframes wb-classroom-rec-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 
-:root[data-theme='dark'] .wb-classroom-recording__btn--start,
-:root[data-theme='dark'] .wb-classroom-recording__btn--restart {
+:root[data-theme='dark'] .wb-classroom-recording__btn--start {
   background: rgba(55, 65, 81, 0.9);
   color: #e5e7eb;
   border-color: #4b5563;
 }
 
-:root[data-theme='dark'] .wb-classroom-recording__btn--start:hover:not(:disabled),
-:root[data-theme='dark'] .wb-classroom-recording__btn--restart:hover:not(:disabled) {
+:root[data-theme='dark'] .wb-classroom-recording__btn--start:hover:not(:disabled) {
   background: #374151;
-}
-
-:root[data-theme='dark'] .wb-classroom-recording__frozen {
-  color: #9ca3af;
 }
 </style>

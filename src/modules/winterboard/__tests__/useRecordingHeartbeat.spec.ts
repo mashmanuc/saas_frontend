@@ -152,6 +152,39 @@ describe('useRecordingHeartbeat', () => {
     expect(mockPost).toHaveBeenCalledTimes(1) // stopped
   })
 
+  it('409 HEARTBEAT_NOT_APPLICABLE → stop + onRecordingEnded зі станом сервера (INV-23 v3)', async () => {
+    // Сторож автозавершив запис, поки зв'язку не було: відмови запису на дошку
+    // з v3 немає, тож кімната дізнається саме звідси.
+    const sessionId = ref<string | null>('sess-1')
+    const isRecording = ref(true)
+    const onRecordingEnded = vi.fn()
+    mockPost.mockRejectedValue({
+      response: { status: 409, data: { error: 'HEARTBEAT_NOT_APPLICABLE', recording_state: 'finalized' } },
+    })
+
+    const { start } = useRecordingHeartbeat({ sessionId, isRecording, onRecordingEnded })
+    start()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(onRecordingEnded).toHaveBeenCalledTimes(1)
+    expect(onRecordingEnded).toHaveBeenCalledWith('finalized')
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(mockPost).toHaveBeenCalledTimes(1) // stopped
+    expect(onRecordingEnded).toHaveBeenCalledTimes(1)
+  })
+
+  it('401 не викликає onRecordingEnded (це не кінець запису)', async () => {
+    const sessionId = ref<string | null>('sess-1')
+    const isRecording = ref(true)
+    const onRecordingEnded = vi.fn()
+    mockPost.mockRejectedValue({ response: { status: 401 } })
+
+    const { start } = useRecordingHeartbeat({ sessionId, isRecording, onRecordingEnded })
+    start()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(onRecordingEnded).not.toHaveBeenCalled()
+  })
+
   it('403 response → stop ticker', async () => {
     const sessionId = ref<string | null>('sess-1')
     const isRecording = ref(true)

@@ -45,11 +45,10 @@
     <OpsBootstrapFailedBanner />
     <OpsRestoreBanner />
     <ProtocolMismatchModal />
-    <!-- Дошка з фіналізованим записом (INV-23): сервер відхиляє всі операції.
-         2026-09-24 (P1 перед відео, як у соло): жовтої смуги WBFrozenBanner
-         немає. Вчитель — бейдж «Запис завершено» у шапці + вікно «Як
-         продовжити?» на першу спробу змінити (useFrozenEditGuard). Учень —
-         лише read-only статус у шапці, нового запису почати не може. -->
+    <!-- INV-23 v3 (рішення власника 2026-09-27): завершений запис дошку НЕ
+         блокує ні вчителю, ні учню. Новий запис — лише кнопкою «Записати
+         урок» у вчителя, з поточного стану; попередній лишається в «Моїх
+         записах». -->
 
     <!-- Skip link for a11y -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
@@ -91,16 +90,6 @@
           {{ recordingState === 'paused'
             ? t('winterboard.recording.studentPaused')
             : t('winterboard.recording.studentActive') }}
-        </span>
-        <!-- Учень на дошці з завершеним записом: лише статус, без дій
-             (2026-09-24 — замість жовтої смуги «Учитель може почати новий запис»). -->
-        <span
-          v-else-if="classroomRole.isStudent.value && isBoardFrozen"
-          class="wb-rec-indicator wb-rec-indicator--frozen"
-          role="status"
-          :title="t('winterboard.recording.frozenHint')"
-        >
-          {{ t('winterboard.recording.frozen') }}
         </span>
         <span
           v-if="lessonStatus"
@@ -203,7 +192,6 @@
           @pause="handlePauseRecording"
           @resume="handleResumeRecording"
           @finalize="handleFinalizeRecording"
-          @restart="handleRestartRecordingRequest"
         />
         <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
              самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
@@ -357,7 +345,7 @@
         class="wb-classroom-room__canvas"
         tabindex="-1"
         @dragover.prevent
-        @drop="onCanvasDrop"
+        @drop="contentDrop.handleCanvasDrop($event)"
       >
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -466,17 +454,6 @@
       :current-seq="finalizeBarrierCurrentSeq"
       :retry-after-ms="finalizeBarrierRetryAfterMs"
       @retry="onFinalizeBarrierRetry"
-    />
-
-    <!-- Заморожена дошка (вчитель): перша спроба змінити або клік по бейджу
-         «Запис завершено» → «Запис завершено. Як продовжити?» (2026-09-24).
-         Backend архівує попередній active Replay у /start-recording/. -->
-    <WBRecordingRestartConfirmModal
-      v-model="showFrozenPrompt"
-      variant="frozenEdit"
-      :is-loading="isRecordingLoading || isRestartingRecording"
-      @confirm="onFrozenStartNew"
-      @cancel="onFrozenCancel"
     />
 
     <!-- End session / complete lesson confirmation (teacher) — замінює native confirm() -->
@@ -623,7 +600,6 @@ import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
-import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
 import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
@@ -642,7 +618,6 @@ import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
-import { useFrozenEditGuard } from '../composables/useFrozenEditGuard'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
 
 // Learning Content integration
@@ -676,7 +651,7 @@ const route = useRoute()
 const store = useWBStore()
 const testStore = useTestStore()
 const { t } = useI18n()
-import { notifyInfo, notifyError } from '@/utils/notify'
+import { notifyInfo, notifyError, notifyWarning } from '@/utils/notify'
 const { announce } = useAnnouncer()
 const { showToast } = useToast()
 
@@ -805,7 +780,18 @@ const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
 useRecordingHeartbeat({
   sessionId: resolvedSessionId,
   isRecording: isSessionActive,
+  onRecordingEnded: onRecordingEndedByServer,
 })
+
+// INV-23 v3: запис закрив сервер (сторож — зв'язку не було понад 90 с). Відмови
+// запису, з якої кімната раніше про це дізнавалась, більше немає — переходимо в
+// стан сервера й кажемо вчителю. (Розсилку сторожа ловить onRemoteRecordingState.)
+function onRecordingEndedByServer(state: string | null): void {
+  if (recordingState.value !== 'recording' && recordingState.value !== 'paused') return
+  recordingState.value = state === 'idle' ? 'idle' : 'finalized'
+  recordingStartedAt.value = null
+  if (state !== 'idle') notifyWarning(t('winterboard.recording.autoFinalized'))
+}
 
 async function handleStartRecording(): Promise<void> {
   const sid = resolvedSessionId.value
@@ -853,7 +839,8 @@ async function handleStartRecording(): Promise<void> {
     if (result.recording_started_at) {
       recordingStartedAt.value = result.recording_started_at
     }
-    // Re-record: скинути стан попереднього запису (BE архівував його у start_recording)
+    // Новий запис: попередній лишається в «Моїх записах» (INV-23 v3), а «поточний»
+    // для шерингу з'явиться після його завершення.
     activeReplayId.value = null
     showRecordingDonePrompt.value = false
     if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
@@ -898,28 +885,6 @@ async function handlePauseRecording(): Promise<void> {
     console.error('[WBClassroomRoom] Failed to pause recording:', e)
   } finally {
     isRecordingLoading.value = false
-  }
-}
-
-// ── Restart (finalized → новий cycle) — потребує user confirmation ──
-// Backend сам архівує попередній active Replay у start_recording логіці —
-// тому restart = handleStartRecording() з confirmation modal перед викликом.
-const isRestartingRecording = ref(false)
-
-// Бейдж «Запис завершено» у шапці → те саме вікно, що й на спробу змінити
-// дошку (2026-09-24): одна дія, один текст, без другого підтвердження.
-function handleRestartRecordingRequest(): void {
-  if (isRecordingLoading.value || isRestartingRecording.value) return
-  openFrozenPrompt()
-}
-
-async function confirmRestartRecording(): Promise<void> {
-  if (isRestartingRecording.value) return
-  isRestartingRecording.value = true
-  try {
-    await handleStartRecording()
-  } finally {
-    isRestartingRecording.value = false
   }
 }
 
@@ -1103,16 +1068,8 @@ const contentDrop = useContentDrop({
   },
 })
 
-// Перетягнутий матеріал на замороженій дошці: дані drag живуть лише в цій
-// події, тож повторити вставку після старту запису нема як — лише питання.
-function onCanvasDrop(e: DragEvent): void {
-  if (guardFrozenEdit()) { e.preventDefault(); return }
-  contentDrop.handleCanvasDrop(e)
-}
-
 // ── Quick place: sidebar item click → place at canvas center ──
 async function handleSidebarPlace(item: AllowedContentItem) {
-  if (guardFrozenEdit(() => { void handleSidebarPlace(item) })) return
   await contentDrop.handleSidebarDrop(
     {
       content_item_id: item.content_item_id as number,
@@ -1128,8 +1085,6 @@ async function handleSidebarPlace(item: AllowedContentItem) {
 
 // ── Tray touch drag: place tool at touch release position ──
 provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: number, clientY: number) => {
-  // Заморожена дошка: позиція пальця після вікна вже нічого не означає — лише питання.
-  if (guardFrozenEdit()) return
   const rect = canvasContainerRef.value?.getBoundingClientRect()
   if (!rect) return
   const zoom = store.zoom || 1
@@ -1175,7 +1130,6 @@ const boardRemote = useBoardRemote({
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
   view: createRemoteViewAdapter(store as any),
-  frozen: computed(() => recordingState.value === 'finalized'),
 })
 
 const followMode = useFollowMode({
@@ -1244,9 +1198,9 @@ const showYouTubeModal = ref(false)
 
 const isLocked = computed(() => classroomSession.isLocked.value)
 
-// Дошка з фіналізованим записом — сервер відхиляє ВСІ операції (INV-23),
-// включно з учнівськими (їх персистить учитель echo-record'ом). Read-only всім.
-const isBoardFrozen = computed(() => recordingState.value === 'finalized')
+// Сумісність: старий сервер (до INV-23 v3) відхиляв запис на завершену дошку
+// з REPLAY_FROZEN_NO_WRITE — тоді показуємо стан «запис завершено». Новий
+// сервер цей код не віддає: завершений запис дошку не блокує.
 function onLifecycleBlocked(e: Event) {
   const d = (e as CustomEvent<LifecycleBlockDetail>).detail
   if (d?.code === 'REPLAY_FROZEN_NO_WRITE') recordingState.value = 'finalized'
@@ -1254,27 +1208,9 @@ function onLifecycleBlocked(e: Event) {
 window.addEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked)
 onBeforeUnmount(() => window.removeEventListener(LIFECYCLE_BLOCK_EVENT, onLifecycleBlocked))
 
-// Заморожена дошка: перша спроба ВЧИТЕЛЯ змінити → «Як продовжити?» (2026-09-24,
-// той самий механізм, що в соло). Учень нового запису не починає й вікна не бачить.
-const {
-  showPrompt: showFrozenPrompt,
-  guard: guardFrozenEdit,
-  openPrompt: openFrozenPrompt,
-  onStartNew: onFrozenStartNew,
-  onCancel: onFrozenCancel,
-} = useFrozenEditGuard({
-  frozen: isBoardFrozen,
-  active: computed(() => isBoardFrozen.value && classroomRole.isTeacher.value),
-  currentTool: () => store.currentTool,
-  setTool: (tool) => store.setTool(tool),
-  clearSelection: () => { store.clearSelection(); selectedId.value = null },
-  canvasEl: canvasContainerRef,
-  startNewRecording: () => confirmRestartRecording(),
-})
-
 // isDrawingDisabled / effectiveTool — нижче, після connectedTeacher: гейт тепер
 // залежить від присутності writer-а (P0 classroom student ops, 2026-09-05), а
-// порядок оголошень const у <script setup> значущий (TDZ — див. isBoardFrozen).
+// порядок оголошень const у <script setup> значущий (TDZ).
 
 const connectedStudents = computed(() =>
   classroomSession.connectedUsers.value.filter((u) => u.role !== 'owner'),
@@ -1321,7 +1257,6 @@ const writerOnline = computed(() => {
 
 const drawingGateInput = computed(() => ({
   isWriter: classroomRole.isWriter.value,
-  frozen: isBoardFrozen.value,
   locked: isLocked.value,
   canDraw: classroomRole.canDraw.value,
   writerOnline: writerOnline.value,
@@ -1521,7 +1456,7 @@ useKeyboard({
   },
   onUndo: () => handleUndo(),
   onRedo: () => handleRedo(),
-  onDelete: () => { if (!guardFrozenEdit(() => handleDeleteSelected())) handleDeleteSelected() },
+  onDelete: () => handleDeleteSelected(),
   onEscape: () => { selectedId.value = null },
   onPagePrev: () => handlePagePrev(),
   onPageNext: () => handlePageNext(),
@@ -1530,8 +1465,8 @@ useKeyboard({
   onZoomReset: () => handleZoomReset(),
   onSelectAll: () => handleSelectAll(),
   onCopy: () => boardClipboard.copySelected(),
-  onPaste: () => { if (!guardFrozenEdit(() => boardClipboard.pasteInternal())) boardClipboard.pasteInternal() },
-  onCut: () => { if (!guardFrozenEdit(() => boardClipboard.cutSelected())) boardClipboard.cutSelected() },
+  onPaste: () => boardClipboard.pasteInternal(),
+  onCut: () => boardClipboard.cutSelected(),
 })
 
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
@@ -1747,21 +1682,18 @@ function handleSizeChange(size: number): void {
 
 function handleUndo(): void {
   if (!classroomRole.canDraw.value) return
-  if (guardFrozenEdit(() => handleUndo())) return
   store.undo()
   announce(t('winterboard.a11y.undoAction', { action: t('winterboard.a11y.strokeRemoved') }))
 }
 
 function handleRedo(): void {
   if (!classroomRole.canDraw.value) return
-  if (guardFrozenEdit(() => handleRedo())) return
   store.redo()
   announce(t('winterboard.a11y.redoAction', { action: t('winterboard.a11y.strokeRestored') }))
 }
 
 function handleClear(): void {
   if (!classroomRole.canClear.value) return
-  if (guardFrozenEdit(() => handleClear())) return
   store.clearPage()
 }
 
@@ -1792,13 +1724,11 @@ function handlePageSelect(index: number): void {
 }
 
 function handleYouTubeInsertRequest(): void {
-  if (guardFrozenEdit(() => handleYouTubeInsertRequest())) return
   showYouTubeModal.value = true
 }
 
 function handlePageAdd(): void {
   if (!classroomRole.canAddPage.value) return
-  if (guardFrozenEdit(() => handlePageAdd())) return
   store.addPage()
 }
 
@@ -1807,7 +1737,6 @@ function handlePageDelete(index: number): void {
   // від programmatic виклику (console, automation, race).
   if (!classroomRole.canDeletePage.value) return
   if (!store.pages[index]) return
-  if (guardFrozenEdit(() => handlePageDelete(index))) return
   store.deletePageUndoable(index)
 }
 
@@ -2511,6 +2440,15 @@ function onRemoteRecordingState(e: Event) {
     notifyInfo(t('winterboard.recording.studentStarted'))
     announce(t('winterboard.recording.studentStarted'))
   }
+
+  // INV-23 v3: «завершено», якого вчитель не натискав, — це сторож (зв'язку не
+  // було понад 90 с). Своє «Завершити» кімната вже поставила сама з відповіді API
+  // (тоді was = finalized) або ще чекає її (_finalizeAttemptInFlight).
+  if (classroomRole.isTeacher.value && next === 'finalized'
+      && (was === 'recording' || was === 'paused') && !_finalizeAttemptInFlight.value) {
+    recordingStartedAt.value = null
+    notifyWarning(t('winterboard.recording.autoFinalized'))
+  }
 }
 window.addEventListener('wb:recording-state', onRemoteRecordingState)
 
@@ -2828,10 +2766,6 @@ onBeforeUnmount(async () => {
 /* На паузі — той самий значок, але без пульсу й без червоного: запис не
    йде, проте сесія ще записується, і зникнення значка збрехало б. */
 .wb-rec-indicator--paused {
-  background: rgba(100, 116, 139, 0.14);
-  color: rgb(71, 85, 105);
-}
-.wb-rec-indicator--frozen {
   background: rgba(100, 116, 139, 0.14);
   color: rgb(71, 85, 105);
 }

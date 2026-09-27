@@ -15,7 +15,9 @@ describe('WBSoloRoom · запис лише в уроці', () => {
     expect(src).toMatch(/<WBRecordingBanner\s+v-if="isSessionOwner && isLessonPlay && !constructorMode"/)
   })
 
-  it('вікно «Почати новий запис» — теж тільки в уроці', () => {
-    expect(src).toMatch(/isBoardFrozen\.value && isLessonPlay\.value && isSessionOwner\.value/)
+  it('завершений запис дошку не блокує — ні вікна, ні read-only (INV-23 v3, 2026-09-27)', () => {
+    // Новий запис — лише кнопкою запису (вона сама в уроці, див. тест вище).
+    expect(src).not.toMatch(/useFrozenEditGuard|isBoardFrozen|WBRecordingRestartConfirmModal/)
+    expect(src).toMatch(/const soloEffectiveTool = computed\(\(\) =>\s*\(opsSync\.inputLocked \? 'select' : store\.currentTool\)\)/)
   })
 })

@@ -34,8 +34,6 @@ export interface RemotePhotoDeps {
   /** Id поточної сторінки: видалена сторінка лишає той самий номер, але це вже інша сторінка */
   currentPageId: () => string | null
   currentPageIndex: () => number
-  /** Дошка з фіналізованим записом (REPLAY_FROZEN_NO_WRITE) */
-  isFrozen: () => boolean
   /** Дію не можна записати або кімната сама блокує введення */
   isInputLocked: () => boolean
   canAddObject: () => boolean
@@ -67,7 +65,6 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
   /** Стан дошки, за якого класти фото не можна. Перевіряється і до, і після очікувань. */
   function blocker(pageIndex: number): PhotoRejectReason | null {
     if (pageIndex !== deps.currentPageIndex()) return 'page_changed'
-    if (deps.isFrozen()) return 'frozen'
     if (deps.isInputLocked()) return 'input_locked'
     if (!deps.canAddObject()) return 'limit'
     return null

@@ -33,6 +33,15 @@ export interface UseHeartbeatOptions {
   sessionId: Ref<string | null | undefined>
   isRecording: Ref<boolean>
   intervalMs?: number
+  /**
+   * Сервер каже, що запису вже немає (409 HEARTBEAT_NOT_APPLICABLE): сторож
+   * автозавершив його, поки зв'язку не було понад 90 с, або запис закрито деінде.
+   * INV-23 v3 (2026-09-27): завершений запис дошку не блокує, тож відмови запису
+   * (REPLAY_FROZEN_NO_WRITE), з якої кімната раніше про це дізнавалась, більше
+   * немає — кімната сама переходить у стан сервера й каже про це людині.
+   * Composable нічого не мутує — лише передає стан із відповіді (або null).
+   */
+  onRecordingEnded?: (recordingState: string | null) => void
 }
 
 export interface UseHeartbeatReturn {
@@ -107,12 +116,14 @@ export function useRecordingHeartbeat(opts: UseHeartbeatOptions): UseHeartbeatRe
       // state changed (BE auto-finalize або explicit stop race). Silently stop
       // ticker per §23.12 — UI re-fetch'не state через інший signal.
       if (status === 409 && errResp?.data?.error === 'HEARTBEAT_NOT_APPLICABLE') {
+        const recordingState = (errResp?.data as { recording_state?: string })?.recording_state ?? null
         console.warn(LOG, {
           event: 'be_reports_not_applicable',
-          recording_state: (errResp?.data as { recording_state?: string })?.recording_state,
+          recording_state: recordingState,
           sessionId: sid,
         })
         stop()
+        opts.onRecordingEnded?.(recordingState)
         return
       }
       // Транзитна помилка (network blip / 5xx). Не retry — наступний tick через intervalMs.

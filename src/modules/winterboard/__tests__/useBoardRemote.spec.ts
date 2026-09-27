@@ -255,25 +255,20 @@ describe('useBoardRemote', () => {
     expect(sendMessage.mock.calls.some(c => c[0].type === 'remote.state')).toBe(true)
   })
 
-  it('frozen: стан несе frozen, а його зміна (Новий запис) сама шле стан пульту', async () => {
-    const frozen = ref(true)
+  it('INV-23 v3: стан пульта не несе frozen — завершений запис дошку не блокує', () => {
     const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
     const sendMessage = vi.fn()
     let api!: ReturnType<typeof useBoardRemote>
     mounted.push(mount(defineComponent({
       setup() {
-        api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), frozen })
+        api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true) })
         return () => h('div')
       },
     })))
     fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'hello', args: {} })
-    expect(sendMessage.mock.calls[0][0]).toMatchObject({ type: 'remote.state', frozen: true })
-    sendMessage.mockClear()
-    frozen.value = false
-    await nextTick()
-    vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS + 5)
-    const last = sendMessage.mock.calls.map(c => c[0]).filter(m => m.type === 'remote.state').pop()
-    expect(last).toMatchObject({ frozen: false })
+    const state = sendMessage.mock.calls[0][0]
+    expect(state).toMatchObject({ type: 'remote.state' })
+    expect('frozen' in state).toBe(false)
   })
 
   it('v1.2: зміна сторінки скидає фокус картки в адаптері', async () => {

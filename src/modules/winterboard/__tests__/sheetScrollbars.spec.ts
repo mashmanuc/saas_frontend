@@ -27,11 +27,9 @@ describe('sheetScroll — геометрія повзунка', () => {
 describe('WBSheetScrollbars', () => {
   const base = { scrollX: 0, scrollY: 280, contentW: 1920, contentH: 1080, viewW: 1100, viewH: 800 }
 
-  it('аркуш більший за поле → обидві смуги, позначені як «лише вигляд»', () => {
+  it('аркуш більший за поле → обидві смуги', () => {
     const w = mount(WBSheetScrollbars, { props: base })
-    const bars = w.findAll('.wb-sheet-scroll')
-    expect(bars).toHaveLength(2)
-    for (const b of bars) expect(b.attributes('data-wb-view-control')).toBeDefined()
+    expect(w.findAll('.wb-sheet-scroll')).toHaveLength(2)
   })
 
   it('аркуш вміщається → смуг немає', () => {

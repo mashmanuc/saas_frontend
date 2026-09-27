@@ -3,15 +3,11 @@
      Колесо / тачпад гортають збільшений аркуш (75117419), але цього не було
      видно: верх аркуша з заголовками карток ховався без жодного знаку, і
      здавалось, що картку не зсунути. Смуги показують, що аркуш прогорнуто й
-     куди; повзунок можна тягнути мишею. Лише вигляд: ops не пише.
-
-     `data-wb-view-control` — натискання тут не вважається спробою змінити
-     дошку (useFrozenEditGuard пропускає його на дошці з завершеним записом). -->
+     куди; повзунок можна тягнути мишею. Лише вигляд: ops не пише. -->
 <template>
   <div
     v-if="showY"
     class="wb-sheet-scroll wb-sheet-scroll--y"
-    data-wb-view-control
     @pointerdown.stop="onTrackDown($event, 'y')"
   >
     <div
@@ -23,7 +19,6 @@
   <div
     v-if="showX"
     class="wb-sheet-scroll wb-sheet-scroll--x"
-    data-wb-view-control
     @pointerdown.stop="onTrackDown($event, 'x')"
   >
     <div

@@ -22,10 +22,10 @@
     <OpsBootstrapFailedBanner />
     <OpsRestoreBanner />
     <ProtocolMismatchModal />
-    <!-- Дошка з фіналізованим записом (INV-23 REPLAY_FROZEN_NO_WRITE): сервер
-         відхиляє всі операції. 2026-09-24 (рішення власника): постійної жовтої
-         смуги WBFrozenBanner більше немає — у шапці «Запис завершено», а на
-         першу спробу змінити дошку — вікно «Як продовжити?» (frozenEditGuard). -->
+    <!-- INV-23 v3 (рішення власника 2026-09-27): завершений запис дошку НЕ
+         блокує — ні read-only, ні вікна «Як продовжити?». Новий запис — лише
+         кнопкою «Записати урок», з поточного стану; попередній лишається в
+         «Моїх записах». -->
 
     <!-- B5.1: Skip to canvas link for keyboard/screen reader users -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
@@ -132,9 +132,9 @@
              idle      → "Записати урок"
              recording → REC + timer + [Пауза | Завершити]
              paused    → paused indicator + [Продовжити | Завершити]
-             finalized → "Запис завершено" badge + "Новий запис" (з confirmation)
-             Backend: pause/resume — той самий Replay cycle; restart — новий Replay
-             (попередній archived). -->
+             finalized → як idle: «Записати урок» (новий запис з поточного стану)
+             Backend: pause/resume — той самий Replay cycle; новий старт — новий
+             Replay, попередній лишається active (INV-23 v3). -->
         <!-- INV-LESSON-PLAY (MANIFEST, REPLAY_PIPELINE_SSOT §5.2): запис — ЛИШЕ в
              уроці з «Провести урок». На звичайних дошках запису немає зовсім
              (2026-09-24 я це правило порушила — показувала бейдж поза уроком). -->
@@ -147,7 +147,6 @@
           @pause="handlePauseRecording"
           @resume="handleResumeRecording"
           @finalize="handleFinalizeRecording"
-          @restart="handleRestartRecordingRequest"
         />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
@@ -515,7 +514,7 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="onCanvasDrop" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -938,16 +937,6 @@
       :kind="savedItemKind"
     />
 
-    <!-- Заморожена дошка: перша спроба змінити → «Запис завершено. Як продовжити?»
-         (2026-09-24). «Новий запис» у шапці стартує одразу, без цього вікна. -->
-    <WBRecordingRestartConfirmModal
-      v-model="showFrozenPrompt"
-      variant="frozenEdit"
-      :is-loading="isRecordingLoading || isRestartingRecording"
-      @confirm="onFrozenStartNew"
-      @cancel="onFrozenCancel"
-    />
-
     <!-- Phase 37: Test grade results modal -->
     <WBTestGradeModal
       v-if="showGradeModal && currentGradeResult"
@@ -1125,7 +1114,7 @@ import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
-import { notifyError } from '@/utils/notify'
+import { notifyError, notifyWarning } from '@/utils/notify'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 import { useFollowMode } from '../composables/useFollowMode'
@@ -1133,7 +1122,6 @@ import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
-import { useFrozenEditGuard } from '../composables/useFrozenEditGuard'
 import { ADD_TOOL_AT_CLIENT_KEY } from '../composables/useTouchDragFromTray'
 import { PLACE_SIDEBAR_CONTENT_KEY } from '../composables/usePlaceSidebarContent'
 import type { SidebarDragPayload } from '../types/boardDrop'
@@ -1172,7 +1160,6 @@ import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
-import WBRecordingRestartConfirmModal from '../components/replay/WBRecordingRestartConfirmModal.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import type { LessonTemplate } from '@/modules/knowledge/api/templateApi'
@@ -1379,8 +1366,6 @@ const isPausedRecording = ref(false)  // recording → paused state
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
 
-// Confirmation modal для restart (finalized → новий cycle)
-const isRestartingRecording = ref(false)
 // INV-LESSON-PLAY: True = сесія відкрита через "Провести урок" (loadToSession).
 // Тільки для таких сесій показується WBRecordingBanner.
 // False = пряма Студія уроків сесія → запис відключений (тьютор не плутається).
@@ -1396,7 +1381,8 @@ let _recordingDoneTimer: number | null = null
 //   idle      — нічого не записується, можна start
 //   recording — active recording cycle
 //   paused    — recording cycle на паузі (same Replay, resume повертає)
-//   finalized — Replay created/frozen, restart починає НОВИЙ cycle
+//   finalized — Replay створено; дошка працює далі, «Записати урок» починає
+//               НОВИЙ запис з поточного стану (INV-23 v3, 2026-09-27)
 import type { RecordingState as ApiRecordingState } from '../api/replay'
 // ТЗ-H A-2: картинка, додана ТЬЮТОРОМ, має потрапити і в урок (AST), інакше
 // на дошці вона є, а в експортованій колоді зникає.
@@ -1419,7 +1405,27 @@ const isSoloRecordingActive = computed(() =>
 useRecordingHeartbeat({
   sessionId,
   isRecording: isSoloRecordingActive,
+  onRecordingEnded: onRecordingEndedByServer,
 })
+
+// INV-23 v3: запис закрив сервер (сторож — зв'язку не було понад 90 с). Відмови
+// запису, з якої кімната раніше про це дізнавалась, більше немає — переходимо в
+// стан сервера й кажемо людині; «поточний» запис для шерингу — найновіший.
+function onRecordingEndedByServer(state: string | null): void {
+  if (!isManualRecording.value) return
+  isManualRecording.value = false
+  isPausedRecording.value = false
+  recordingStartedAt.value = null
+  isReplayFrozen.value = state !== 'idle'
+  if (state === 'idle') return
+  notifyWarning(t('winterboard.recording.autoFinalized'))
+  const sid = sessionId.value
+  if (!sid) return
+  import('../api/replayLifecycleApi')
+    .then(api => api.listReplays({ status: 'all', source_session: sid }))
+    .then((res) => { if (sessionId.value === sid) activeReplayId.value = res.replays[0]?.id ?? null })
+    .catch((err) => { console.warn('[WBSoloRoom] listReplays after auto-finalize failed', err) })
+}
 
 // Recorder завжди enabled у solo edit board.
 const replayRecorder = useReplayRecorder({
@@ -1463,7 +1469,8 @@ async function handleStartRecording(): Promise<void> {
     isPausedRecording.value = false
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
-    // Re-record: скинути стан попереднього запису (BE архівував його у start_recording)
+    // Новий запис: попередній лишається в «Моїх записах» (INV-23 v3), а «поточний»
+    // для шерингу з'явиться після його завершення.
     activeReplayId.value = null
     showRecordingDonePrompt.value = false
     if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
@@ -1507,26 +1514,6 @@ async function handleResumeRecording(): Promise<void> {
     console.error('[WBSoloRoom] Failed to resume recording:', e)
   } finally {
     isRecordingLoading.value = false
-  }
-}
-
-// Restart: finalized → новий cycle (потребує user confirmation).
-// Banner emit('restart') → відкриваємо modal. Confirm → handleStartRecording
-// (BE сам архівує попередній Replay).
-// Бейдж «Запис завершено» у шапці → те саме вікно «Як продовжити?», що й на
-// спробу змінити дошку (2026-09-24): одна дія, один текст, без другого кроку.
-function handleRestartRecordingRequest(): void {
-  if (isRecordingLoading.value || isRestartingRecording.value) return
-  openFrozenPrompt()
-}
-
-async function confirmRestartRecording(): Promise<void> {
-  if (isRestartingRecording.value) return
-  isRestartingRecording.value = true
-  try {
-    await handleStartRecording()
-  } finally {
-    isRestartingRecording.value = false
   }
 }
 
@@ -1731,20 +1718,13 @@ const presence = usePresence({
 // від goToPage/addPage/undo, як від кліку. pair перевіряється тут, не на сервері.
 const showRemoteModal = ref(false)
 
-// Дошка з фіналізованим записом — сервер відхиляє всі операції (INV-23).
-// Джерела істини: detail.is_replay_frozen при завантаженні, «replay created»
-// після шарингу, і подія від recorder-а, якщо запис фіналізував watchdog
-// поки дошка відкрита. Полотно read-only + банер (див. template).
-// ⚠️ ОГОЛОШЕННЯ МАЄ СТОЯТИ ВИЩЕ useBoardRemote: watch(opts.frozen) у
-// useBoardRemote читає джерело одразу при створенні (Vue seed-ить oldValue),
-// тому computed нижче за виклик = ReferenceError у setup і біла сторінка.
-const isBoardFrozen = computed(() => soloRecordingState.value === 'finalized')
-// WBCanvas не має пропа read-only: як і в класній кімнаті, блокуємо малювання,
-// примусово віддаючи полотну інструмент «виділення», поки дошка заморожена.
-// SAVE_BLOCKED: черга дійшла стелі або аварійний запис не вдався — нове малювання
-// не прийнялось би, тож не даємо його почати (LAW §4, не тихий no-op; банер пояснює).
+// WBCanvas не має пропа read-only: малювання блокуємо, примусово віддаючи
+// полотну інструмент «виділення». SAVE_BLOCKED: черга дійшла стелі або аварійний
+// запис не вдався — нове малювання не прийнялось би, тож не даємо його почати
+// (LAW §4, не тихий no-op; банер пояснює). Завершений запис дошку НЕ блокує
+// (INV-23 v3, рішення власника 2026-09-27).
 const soloEffectiveTool = computed(() =>
-  (isBoardFrozen.value || opsSync.inputLocked ? 'select' : store.currentTool))
+  (opsSync.inputLocked ? 'select' : store.currentTool))
 
 const boardRemote = useBoardRemote({
   sessionId,
@@ -1762,7 +1742,6 @@ const boardRemote = useBoardRemote({
   enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace && !constructorMode.value),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: createRemoteViewAdapter(store as any),
-  frozen: computed(() => isBoardFrozen.value),
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
     list: () => (store.currentPage?.assets ?? [])
@@ -1791,7 +1770,6 @@ const boardRemote = useBoardRemote({
     // не store.currentPageId: той геттер кидає виняток, коли сторінок немає
     currentPageId: () => store.currentPage?.id ?? null,
     currentPageIndex: () => store.currentPageIndex,
-    isFrozen: () => isBoardFrozen.value,
     // DESYNC/BOOTSTRAP: record() — no-op, фото лягло б лише на цьому екрані
     isInputLocked: () => opsSync.inputLocked || opsSync.mode === 'DESYNC' || opsSync.mode === 'BOOTSTRAP',
     canAddObject: () => store.canAddObject,
@@ -1861,7 +1839,6 @@ function addRemoteVideo(ref: { provider: string; id: string }, title: string): v
       thumbnail: getYouTubeThumbnail(ref.id),
     } as unknown as WBAsset)
   }
-  if (guardFrozenEdit(place)) return
   place()
 }
 
@@ -2013,28 +1990,6 @@ watch(
   },
   { immediate: true },
 )
-
-// ─── Заморожена дошка: перша спроба змінити → одне питання (2026-09-24) ─────
-// Рішення власника: жовтої смуги немає; коли власник береться змінювати дошку
-// з завершеним записом — вікно «Почати новий запис» / «Скасувати». Механізм
-// спільний із класною кімнатою — composables/useFrozenEditGuard.ts.
-const {
-  showPrompt: showFrozenPrompt,
-  guard: guardFrozenEdit,
-  openPrompt: openFrozenPrompt,
-  onStartNew: onFrozenStartNew,
-  onCancel: onFrozenCancel,
-} = useFrozenEditGuard({
-  frozen: isBoardFrozen,
-  // INV-LESSON-PLAY: пропонувати новий запис — лише там, де запис існує (урок).
-  active: computed(() =>
-    isBoardFrozen.value && isLessonPlay.value && isSessionOwner.value && !constructorMode.value && !!sessionId.value),
-  currentTool: () => store.currentTool,
-  setTool: (tool) => store.setTool(tool),
-  clearSelection: () => store.clearSelection(),
-  canvasEl: canvasContainerRef,
-  startNewRecording: () => confirmRestartRecording(),
-})
 
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
 const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tablet')
@@ -2362,11 +2317,7 @@ function insertToolAtCenter(mime: string, payloadStr: string) {
   const cy = (container.clientHeight / 2 - offset.y) / zoom + step
   contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
 }
-// Заморожена дошка: «+» у панелі → питання; після старту запису вставка виконується.
-provide(ADD_TOOL_TO_BOARD_KEY, (mime: string, payloadStr: string) => {
-  if (guardFrozenEdit(() => insertToolAtCenter(mime, payloadStr))) return
-  insertToolAtCenter(mime, payloadStr)
-})
+provide(ADD_TOOL_TO_BOARD_KEY, insertToolAtCenter)
 
 // Phase 2.7: Інтегралик вставляє мат-інструмент за смислом — той самий санкціонований
 // шлях, що tray "+" (addAtPosition). boardActions резолвить insert_id → mime+payload.
@@ -2797,7 +2748,7 @@ useKeyboard({
   onToolChange: (tool: WBToolType) => store.setTool(tool),
   onUndo: () => handleUndo(),
   onRedo: () => handleRedo(),
-  onDelete: () => { if (!guardFrozenEdit(() => handleDeleteSelected())) handleDeleteSelected() },
+  onDelete: () => handleDeleteSelected(),
   onEscape: () => { selectedId.value = null },
   onPagePrev: () => handlePagePrev(),
   onPageNext: () => handlePageNext(),
@@ -2806,8 +2757,8 @@ useKeyboard({
   onZoomReset: () => handleZoomReset(),
   onSelectAll: () => handleSelectAll(),
   onCopy: () => boardClipboard.copySelected(),
-  onPaste: () => { if (!guardFrozenEdit(() => boardClipboard.pasteInternal())) boardClipboard.pasteInternal() },
-  onCut: () => { if (!guardFrozenEdit(() => boardClipboard.cutSelected())) boardClipboard.cutSelected() },
+  onPaste: () => boardClipboard.pasteInternal(),
+  onCut: () => boardClipboard.cutSelected(),
 })
 
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
@@ -3052,12 +3003,10 @@ function handleSendToPage(pageIndex: number): void {
 
 /** Викликається з WBToolbar → 'formula-card-insert' */
 function handleYouTubeInsertRequest(): void {
-  if (guardFrozenEdit(() => handleYouTubeInsertRequest())) return
   showYouTubeModal.value = true
 }
 
 function handleFormulaCardInsert(): void {
-  if (guardFrozenEdit(() => handleFormulaCardInsert())) return
   editingFormulaAssetId.value = null
   showFormulaModal.value = true
 }
@@ -3154,21 +3103,18 @@ function handleSizeChange(size: number): void {
 // ─── Handlers: Undo / Redo / Clear ──────────────────────────────────────────
 
 function handleUndo(): void {
-  if (guardFrozenEdit(() => handleUndo())) return
   store.undo()
   // B5.1: Announce undo to screen readers
   announce(t('winterboard.a11y.undoAction', { action: t('winterboard.a11y.strokeRemoved') }))
 }
 
 function handleRedo(): void {
-  if (guardFrozenEdit(() => handleRedo())) return
   store.redo()
   // B5.1: Announce redo to screen readers
   announce(t('winterboard.a11y.redoAction', { action: t('winterboard.a11y.strokeRestored') }))
 }
 
 function handleClear(): void {
-  if (guardFrozenEdit(() => handleClear())) return
   store.clearPage()
 }
 
@@ -3431,13 +3377,6 @@ let _lastTestClickTs = 0
 let _pendingLabelEditId: string | null = null
 
 /** Convert DOM click to canvas coordinates and dispatch to test handler */
-// Перетягнутий матеріал на замороженій дошці: дані drag живуть лише в цій
-// події, тож повторити вставку після старту запису нема як — лише питання.
-function onCanvasDrop(e: DragEvent): void {
-  if (guardFrozenEdit()) { e.preventDefault(); return }
-  contentDrop.handleCanvasDrop(e)
-}
-
 function onCanvasContainerClick(e: MouseEvent) {
   // Phase 38: deselect тестового об'єкту при кліку на canvas (overlay = pointer-events:none)
   // НЕ десілектимо якщо клік був на самому тестовому елементі

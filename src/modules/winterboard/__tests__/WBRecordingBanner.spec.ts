@@ -17,18 +17,17 @@ describe('WBRecordingBanner', () => {
     expect(btn.attributes('disabled')).toBeUndefined()
   })
 
-  it('finalized: бейдж «Запис завершено» — єдина кнопка, емітить restart', async () => {
-    // Історія: 2026-09-23 (FIRST USER GATE, крок 6) кнопку «Новий запис» звідси
-    // прибрали, бо поруч була жовта смуга WBFrozenBanner з тією самою кнопкою.
-    // 2026-09-24 (рішення власника) смуги в соло немає — властивість «з
-    // finalized можна перезаписати» (re-record guard 2026-05-19) тепер тримає
-    // сам бейдж: клік → restart → вікно «Запис завершено. Як продовжити?».
+  it('finalized: та сама кнопка «Записати урок», що й в idle — емітить start', async () => {
+    // INV-23 v3 (рішення власника 2026-09-27): завершений запис дошку не блокує;
+    // новий запис — лише добровільно, звичайною кнопкою запису, з поточного стану.
+    // Бейджа «Запис завершено» і вікна «Як продовжити?» більше немає.
     const w = mount(WBRecordingBanner, { props: { recordingState: 'finalized' } })
-    const badge = w.find('button.wb-recording-banner__frozen')
-    expect(badge.exists()).toBe(true)
+    const btn = w.find('button.wb-recording-banner__btn--start')
+    expect(btn.exists()).toBe(true)
     expect(w.findAll('button')).toHaveLength(1)
-    await badge.trigger('click')
-    expect(w.emitted('restart')).toHaveLength(1)
+    await btn.trigger('click')
+    expect(w.emitted('start')).toHaveLength(1)
+    expect(w.emitted('restart')).toBeUndefined()
   })
 
   it('does NOT show start button in recording state', () => {

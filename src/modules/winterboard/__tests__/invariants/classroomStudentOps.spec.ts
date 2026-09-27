@@ -161,10 +161,11 @@ describe('P0 classroom student ops — сценарій 2: учитель від
   // Бажана поведінка (рішення власника 2026-09-05): учитель відключився →
   // учневі заблоковано малювання, нічого не губиться. Предикат винесено у чистий
   // helper composables/classroomDrawingGate.ts; WBClassroomRoom.isDrawingDisabled
-  // лише викликає його з {isWriter, frozen, locked, canDraw, writerOnline}, де
+  // лише викликає його з {isWriter, locked, canDraw, writerOnline}, де
   // writerOnline = presence.isConnected && connectedTeacher.is_online.
-  const student = { isWriter: false, frozen: false, locked: false, canDraw: true }
-  const teacher = { isWriter: true, frozen: false, locked: false, canDraw: true }
+  // `frozen` прибрано 2026-09-27: завершений запис дошку не блокує (INV-23 v3).
+  const student = { isWriter: false, locked: false, canDraw: true }
+  const teacher = { isWriter: true, locked: false, canDraw: true }
 
   it('учень + writer офлайн → малювання ЗАБЛОКОВАНО, причина writer_offline (індикатор каже «учитель офлайн»)', () => {
     const input = { ...student, writerOnline: false }
@@ -182,8 +183,7 @@ describe('P0 classroom student ops — сценарій 2: учитель від
     expect(isStudentDrawingBlocked({ ...teacher, writerOnline: false })).toBe(false)
   })
 
-  it('порядок причин збережено з WBClassroomRoom: frozen → locked → no_permission → writer_offline', () => {
-    expect(drawingBlockReason({ ...student, writerOnline: false, frozen: true })).toBe('frozen')
+  it('порядок причин збережено з WBClassroomRoom: locked → no_permission → writer_offline', () => {
     expect(drawingBlockReason({ ...student, writerOnline: false, locked: true })).toBe('locked')
     expect(drawingBlockReason({ ...teacher, writerOnline: false, locked: true })).toBeNull() // замок не б'є по writer-у
     expect(drawingBlockReason({ ...student, writerOnline: true, canDraw: false })).toBe('no_permission')

@@ -9316,31 +9316,8 @@
       "finalize": "Finalize",
       "finalizeTitle": "Stop and save the replay",
       "active": "Recording",
-      "frozen": "Recording finished",
-      "frozenHint": "Previous replay saved and archived",
-      "restart": "New recording",
-      "restartTitle": "Start a new recording — the previous one will be archived",
-      "frozenBanner": {
-        "title": "Recording finished — the board is read-only",
-        "hint": "Nothing you write now will be saved or appear in the replay. Tap “New recording” to keep writing: the previous replay stays archived.",
-        "action": "New recording",
-        "busy": "Starting…",
-        "readOnlyOnly": "The teacher can start a new recording."
-      },
       "resumed": "Recording is still active — resuming from where you left",
-      "frozenPrompt": {
-        "title": "Recording finished. How do you want to continue?",
-        "body": "A new recording starts from the current board. The previous one stays in “My recordings”."
-      },
-      "restartConfirm": {
-        "title": "Start a new recording?",
-        "bodyArchive": "The previous recording will be archived and remain in your recordings list.",
-        "bodyNew": "A new recording will start from the current board state and create a separate replay.",
-        "hint": "The previous replay is not deleted — you can return to it from the recordings list.",
-        "cancel": "Cancel",
-        "confirm": "Start new recording",
-        "starting": "Starting…"
-      },
+      "autoFinalized": "Recording ended automatically: the board was offline for over a minute. It’s saved in My recordings; press “Record lesson” to record again.",
       "consent": {
         "title": "Lesson recording consent",
         "draftNotice": "⚠️ Draft wording — the final text is being prepared by a lawyer.",

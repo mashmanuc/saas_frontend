@@ -44,8 +44,6 @@ export interface UseBoardRemoteOptions {
   enabled: Ref<boolean> | ComputedRef<boolean>
   /** v1.2: масштаб/скрол/картки. Необов'язково — без нього v1.2-команди ігноруються. */
   view?: RemoteViewAdapter
-  /** Дошка з фіналізованим записом (writes відхиляються) — пульт має сказати це вчителю */
-  frozen?: Ref<boolean> | ComputedRef<boolean>
   /** Прототип «відео з пульта» (2026-09-25). Без нього video.* ігноруються. */
   media?: RemoteMediaAdapter
   /**
@@ -149,7 +147,6 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       msg.zoom = s.zoom
       msg.cards = { count: s.count, answer: s.answer, solution: s.solution, presenting: s.presenting }
     }
-    if (opts.frozen) msg.frozen = !!opts.frozen.value
     if (assistantState.value) msg.assistant = assistantState.value
     if (opts.media) msg.videos = opts.media.list()
     // v1.12 (пульт v2): що ця кімната вміє понад навігацію — телефон за цим показує або
@@ -171,11 +168,6 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       () => JSON.stringify(media.list()),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
-  }
-
-  // Заморозка змінилась (фіналізували / «Новий запис») → пульт має знати одразу
-  if (opts.frozen) {
-    watch(opts.frozen, () => { if (remoteConnected.value && opts.enabled.value) sendState() })
   }
 
   function sendState(): void {

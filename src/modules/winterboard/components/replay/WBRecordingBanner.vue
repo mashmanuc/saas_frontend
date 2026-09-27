@@ -5,16 +5,17 @@
     idle       → start a new cycle ("Записати урок")
     recording  → REC + timer + [Пауза | Завершити запис]
     paused     → paused indicator + [Продовжити | Завершити запис]
-    finalized  → archived-and-ready badge + "Новий запис" (з confirmation у parent)
+    finalized  → те саме, що idle: «Записати урок» (emit('start'))
 
     Семантика:
       - resume === same replay cycle (pause/resume не створюють новий Replay)
-      - restart === НОВИЙ replay cycle (попередній archived backend-ом)
-    Parent відповідає за confirmation modal перед emit('restart').
+      - start з finalized === НОВИЙ запис з поточного стану дошки; попередній
+        лишається в «Моїх записах» (INV-23 v3, рішення власника 2026-09-27:
+        завершений запис дошку не блокує, новий — лише добровільно)
   -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <!-- IDLE → start -->
-    <template v-if="recordingState === 'idle'">
+    <!-- IDLE / FINALIZED → start (після завершення — новий запис з поточного стану) -->
+    <template v-if="recordingState === 'idle' || recordingState === 'finalized'">
       <button
         type="button"
         class="wb-recording-banner__btn wb-recording-banner__btn--start"
@@ -89,29 +90,6 @@
         <span>{{ t('winterboard.recording.finalize') }}</span>
       </button>
     </template>
-
-    <!-- FINALIZED → лише бейдж «Запис завершено».
-         Кнопку «Новий запис» тут прибрано (FIRST USER GATE 2026-09-23, крок 6):
-         у WBSoloRoom у цьому стані ЗАВЖДИ видно WBFrozenBanner (та сама умова
-         `!constructorMode`) з тією самою кнопкою, і дві однакові кнопки поруч
-         читались як дві різні дії. Перезапис із finalized живе там. -->
-    <!-- 2026-09-24: жовтої смуги WBFrozenBanner у соло більше немає, тож бейдж
-         сам став кнопкою — відкриває вікно «Запис завершено. Як продовжити?»
-         (parent: emit('restart')). Одна дія, дубля немає. -->
-    <template v-else-if="recordingState === 'finalized'">
-      <button
-        type="button"
-        class="wb-recording-banner__frozen"
-        :title="t('winterboard.recording.restartConfirm.confirm')"
-        :disabled="isLoading"
-        @click="$emit('restart')"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span>{{ t('winterboard.recording.frozen') }}</span>
-      </button>
-    </template>
   </div>
 </template>
 
@@ -129,7 +107,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  /** idle → start NEW recording cycle (new Replay on finalize) */
+  /** idle | finalized → start NEW recording cycle (new Replay on finalize) */
   start: []
   /** recording → paused (same cycle, no Replay created) */
   pause: []
@@ -137,9 +115,6 @@ defineEmits<{
   resume: []
   /** recording | paused → finalized (Replay created/finalized) */
   finalize: []
-  /** finalized → start a NEW cycle (BE archives previous Replay).
-   *  Parent повинен показати confirmation modal перед викликом API. */
-  restart: []
 }>()
 
 // ── Timer (running під час recording, freezed на pause) ──
@@ -223,15 +198,13 @@ const formattedDuration = computed(() => {
   cursor: not-allowed;
 }
 
-.wb-recording-banner__btn--start,
-.wb-recording-banner__btn--restart {
+.wb-recording-banner__btn--start {
   background: rgba(255, 255, 255, 0.9);
   color: #374151;
   border-color: #d1d5db;
 }
 
-.wb-recording-banner__btn--start:hover:not(:disabled),
-.wb-recording-banner__btn--restart:hover:not(:disabled) {
+.wb-recording-banner__btn--start:hover:not(:disabled) {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -321,43 +294,18 @@ const formattedDuration = computed(() => {
   color: #b45309;
 }
 
-.wb-recording-banner__frozen {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #d1d5db;
-  color: #374151;
-  font-size: 0.7rem;
-  cursor: pointer;
-}
-.wb-recording-banner__frozen:hover:not(:disabled) {
-  background: #ffffff;
-  border-color: #9ca3af;
-}
-
 @keyframes wb-rec-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 
-:root[data-theme='dark'] .wb-recording-banner__btn--start,
-:root[data-theme='dark'] .wb-recording-banner__btn--restart {
+:root[data-theme='dark'] .wb-recording-banner__btn--start {
   background: rgba(55, 65, 81, 0.9);
   color: #e5e7eb;
   border-color: #4b5563;
 }
 
-:root[data-theme='dark'] .wb-recording-banner__btn--start:hover:not(:disabled),
-:root[data-theme='dark'] .wb-recording-banner__btn--restart:hover:not(:disabled) {
+:root[data-theme='dark'] .wb-recording-banner__btn--start:hover:not(:disabled) {
   background: #374151;
-}
-
-:root[data-theme='dark'] .wb-recording-banner__frozen {
-  background: rgba(55, 65, 81, 0.9);
-  border-color: #4b5563;
-  color: #e5e7eb;
 }
 </style>
