@@ -50,7 +50,9 @@
  *   P3: pages[] NOT sent via WS
  */
 import { computed, ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { WBAsset } from '../../types/winterboard'
+import { documentHeaderText } from '../../board/documentTitle'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
 
@@ -86,6 +88,8 @@ const emit = defineEmits<{
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const HEADER_H = 28
+/** Праворуч у шапці — віконні кнопки «— ×» виділеної картки й замок: назва під них не заходить. */
+const HEADER_RIGHT_RESERVE = 56
 const FOOTER_H = 32
 const BTN_W = 36
 const BTN_H = 24
@@ -230,20 +234,22 @@ const headerConfig = computed(() => ({
   cornerRadius: [CORNER_R, CORNER_R, 0, 0],
 }))
 
+const { t } = useI18n()
+
+// Власник 2026-09-28 («так»): у шапці — назва файлу, як у «Сценарії» на пульті; без назви —
+// вид документа мовою інтерфейсу, а не англійське «Presentation» (board/documentTitle.ts).
 const headerTextConfig = computed(() => {
-  const ct = props.asset.content_ref?.content_type ?? 'pdf'
-  const label = ct === 'presentation' ? 'Presentation'
-    : ct === 'document' ? 'Document'
-    : 'PDF'
   return {
     x: 8,
     y: 6,
-    width: props.asset.w - 16,
-    text: label,
+    width: Math.max(0, props.asset.w - 16 - HEADER_RIGHT_RESERVE),
+    text: documentHeaderText(props.asset, t),
     fontSize: 12,
     fontFamily: 'Inter, sans-serif',
     fontStyle: 'bold',
     fill: '#475569',
+    // один рядок: довга назва обрізається «…», а не лізе на сторінку документа
+    wrap: 'none',
     ellipsis: true,
     listening: false,
   }
