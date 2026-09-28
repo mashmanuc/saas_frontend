@@ -1,7 +1,9 @@
 <template>
   <!-- Аркуш «📋 Сценарій» (LAW §9 v1.15, ТЗ TZ_REMOTE_SCENARIO §2.2–§2.3): відео, аудіо й
        документи дошки за сторінками. Кнопки — лише в об'єктів сторінки, що на екрані;
-       до інших — через «Відкрити». Вимкнена кнопка лишається на місці, тап пояснює чому. -->
+       до інших — через «Відкрити». Вимкнена кнопка лишається на місці, тап пояснює чому.
+       Власник 2026-09-28: кожна сторінка — плитка; непарні й парні сторінки різного кольору,
+       об'єкти в плитці чергуються відтінком — щоб з першого погляду було видно, де що. -->
   <div class="wb-scn" data-testid="scenario-sheet">
     <p v-if="!groups.length" class="wb-scn__empty" data-testid="scenario-empty">{{ t('winterboard.remote.scenario.empty') }}</p>
 
@@ -10,7 +12,12 @@
       :key="g.pageIndex"
       :ref="(el) => setGroupEl(g.pageIndex, el)"
       class="wb-scn__group"
-      :class="{ 'wb-scn__group--current': g.current }"
+      :class="{
+        'wb-scn__group--current': g.current,
+        // парність за НОМЕРОМ сторінки (1, 3, 5… — непарні), а не за порядком плиток
+        'wb-scn__group--odd': g.pageIndex % 2 === 0,
+        'wb-scn__group--even': g.pageIndex % 2 === 1,
+      }"
       :data-testid="`scenario-page-${g.pageIndex}`"
     >
       <header class="wb-scn__page">
@@ -28,10 +35,10 @@
       </header>
 
       <article
-        v-for="it in g.items"
+        v-for="(it, i) in g.items"
         :key="it.objectId"
         class="wb-scn__item"
-        :class="{ 'wb-scn__item--dim': !g.current }"
+        :class="{ 'wb-scn__item--dim': !g.current, 'wb-scn__item--alt': i % 2 === 1 }"
         :data-testid="`scenario-item-${it.objectId}`"
       >
         <!-- Сторінка не на екрані: лише значок і назва; тап по назві = «Відкрити» -->
@@ -253,19 +260,38 @@ watch(() => props.open, async (open) => {
 </script>
 
 <style scoped>
-.wb-scn { display: flex; flex-direction: column; gap: 12px; }
+/* Плитки (власник 2026-09-28): непарна сторінка — синя, парна — фіолетова; об'єкти всередині
+   чергують світліший і темніший відтінок своєї плитки. Лише відтінки поверхні, не семантичні
+   кольори (accent/success/warn/danger, v2 §5). Контраст тексту на кожному тлі ≥ 4.5:1 — з
+   «warn» і приглушеною назвою; звірено для темної теми пульта. */
+.wb-scn {
+  --scn-odd: #1b3560; --scn-odd-a: #22406f; --scn-odd-b: #172c50;
+  --scn-even: #3a2457; --scn-even-a: #452b66; --scn-even-b: #311e4a;
+  /* Кнопки — світліший шар поверх будь-якої плитки, а не сірий --surface-2, що зливався б із тлом */
+  --scn-btn: rgba(255, 255, 255, .12); --scn-btn-active: rgba(255, 255, 255, .2);
+  --scn-status: #cbd5e1;
+  display: flex; flex-direction: column; gap: 12px;
+}
 .wb-scn__empty { margin: 0; text-align: center; color: var(--muted); font-size: 14px; }
-.wb-scn__group { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 14px; border: 2px solid transparent; }
+.wb-scn__group { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 2px solid transparent; }
+.wb-scn__group--odd { background: var(--scn-odd); }
+.wb-scn__group--even { background: var(--scn-even); }
+/* Сторінка «на екрані» — та сама світла рамка; видно на обох кольорах */
 .wb-scn__group--current { border-color: #cbd5e1; }
 .wb-scn__page { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
 .wb-scn__page-name { font-size: 14px; font-weight: 700; color: var(--text); }
 .wb-scn__open {
-  min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px;
-  background: var(--surface-2); color: var(--text); font-size: 14px; font-weight: 600; -webkit-tap-highlight-color: transparent;
+  min-height: 40px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 12px;
+  background: var(--scn-btn); color: var(--text); font-size: 14px; font-weight: 600; -webkit-tap-highlight-color: transparent;
 }
 .wb-scn__open:disabled { opacity: .4; }
-.wb-scn__item { display: flex; flex-direction: column; gap: 8px; }
-.wb-scn__item--dim { opacity: .6; }
+.wb-scn__item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; }
+.wb-scn__group--odd .wb-scn__item { background: var(--scn-odd-a); }
+.wb-scn__group--odd .wb-scn__item--alt { background: var(--scn-odd-b); }
+.wb-scn__group--even .wb-scn__item { background: var(--scn-even-a); }
+.wb-scn__group--even .wb-scn__item--alt { background: var(--scn-even-b); }
+/* Сторінка не на екрані — приглушено вміст, а не тло: чергування лишається видимим */
+.wb-scn__item--dim > * { opacity: .6; }
 .wb-scn__name {
   margin: 0; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 32px;
   font-size: 15px; font-weight: 600; color: var(--text); background: transparent; border: 0; padding: 0; text-align: left;
@@ -273,7 +299,7 @@ watch(() => props.open, async (open) => {
 .wb-scn__name--link { width: 100%; -webkit-tap-highlight-color: transparent; }
 .wb-scn__icon { flex: none; font-size: 18px; }
 .wb-scn__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wb-scn__status { margin: 0; font-size: 13px; color: var(--muted); }
+.wb-scn__status { margin: 0; font-size: 13px; color: var(--scn-status); }
 .wb-scn__status--warn { color: var(--warn); font-weight: 600; }
 /* Кнопки — 48 px, два стовпці (ТЗ §2.3, відступи як v2 §5) */
 .wb-scn__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -282,10 +308,10 @@ watch(() => props.open, async (open) => {
 .wb-scn__pager { text-align: center; font-size: 15px; font-weight: 700; color: var(--text); }
 .wb-scn__slot { display: flex; }
 .wb-scn__btn {
-  flex: 1; width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--surface-2); color: var(--text);
+  flex: 1; width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--scn-btn); color: var(--text);
   font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.wb-scn__btn:active { background: var(--surface-3); }
+.wb-scn__btn:active { background: var(--scn-btn-active); }
 /* Вимкнена лишається на місці; тап ловить обгортка й пояснює причину */
 .wb-scn__btn:disabled { opacity: .4; pointer-events: none; }
 .wb-scn__why { margin: 0; text-align: center; font-size: 13px; color: var(--warn); }

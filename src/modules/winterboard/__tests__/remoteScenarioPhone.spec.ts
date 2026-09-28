@@ -225,6 +225,19 @@ describe('INV-SCN-P2 · аркуш «Сценарій»', () => {
     expect(lastSent(w)).toEqual(['page.goto', { index: 0 }])
   })
 
+  it('плитки: непарні й парні сторінки — різні класи (за номером сторінки); об\'єкти в плитці чергуються', () => {
+    // Власник 2026-09-28: «непарні — один колір, парні — інші… так само і список на одній дошці»
+    const w = mountSheet({ scenario: parsed([ITEMS[0], ITEMS[1], ITEMS[2], ITEMS[3], ITEMS[4]]), pageIndex: 1 })
+    const tone = (pi: number) => w.find(`[data-testid="scenario-page-${pi}"]`).classes()
+      .filter((c) => c === 'wb-scn__group--odd' || c === 'wb-scn__group--even')
+    expect(tone(0)).toEqual(['wb-scn__group--odd'])     // «Сторінка 1»
+    expect(tone(1)).toEqual(['wb-scn__group--even'])    // «Сторінка 2» — на екрані, рамка своя
+    expect(tone(2)).toEqual(['wb-scn__group--odd'])     // «Сторінка 3»
+    expect(w.find('[data-testid="scenario-page-1"]').classes()).toContain('wb-scn__group--current')
+    // стор. 2: відео, аудіо, ще відео — сусідні різного відтінку
+    expect(['vid-2', 'aud-3', 'yt-4'].map((id) => inItem(w, id).classes().includes('wb-scn__item--alt'))).toEqual([false, true, false])
+  })
+
   it('об\'єкти сторінки не на екрані — лише значок і назва, без жодної кнопки керування', () => {
     const w = mountSheet({ pageIndex: 2 })
     for (const id of ['vid-2', 'aud-3', 'doc-6']) {
