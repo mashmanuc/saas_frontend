@@ -4641,8 +4641,17 @@ watch(() => store.workspaceName, (name) => {
 /* ── Header ────────────────────────────────────────────────────────────────── */
 
 /* Режим проєктора: шапка зникає після бездіяльності, полотно займає її місце.
-   Будь-який дотик/рух повертає шапку (useDisplayMode.resetAutoHide). */
-.wb-solo-room--ui-hidden .wb-solo-room__header {
+   Будь-який дотик/рух повертає шапку (useDisplayMode.resetAutoHide).
+   Власник 2026-09-28: разом із шапкою — ліва панель інструментів і нижня панель,
+   на екрані лишається тільки дошка (тож і відкриті панелі сторінок і «Матеріалів»).
+   Без ⛶ (зокрема при F11) — без змін. */
+.wb-solo-room--ui-hidden .wb-solo-room__header,
+.wb-solo-room--ui-hidden .wb-solo-room__toolbar,
+.wb-solo-room--ui-hidden .wb-solo-room__page-panel,
+.wb-solo-room--ui-hidden .wb-solo-room__resize-handle,
+.wb-solo-room--ui-hidden .wb-solo-room__sidebar-toggle,
+.wb-solo-room--ui-hidden .wb-solo-room__content-sidebar,
+.wb-solo-room--ui-hidden .wb-solo-room__footer {
   display: none;
 }
 
