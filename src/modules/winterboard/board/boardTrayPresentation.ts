@@ -31,6 +31,10 @@ const FAMILY_BY_TYPE: Readonly<Record<string, TrayCardFamily>> = Object.freeze({
   graphmash_3d: 'math',
   visual_capsule: 'animation',
   image: 'media',
+  // З 2026-09-28 медіа згортаються (ТЗ «Сценарій» §4.1) — у треї своя родина, не `generic`
+  youtube_player: 'media',
+  video_player: 'media',
+  audio_player: 'media',
 })
 
 /** Родина типу для кольору маркера; невідомий тип — `generic`. */

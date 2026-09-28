@@ -47,12 +47,15 @@ function stroke(id: string): WBStroke {
 }
 
 describe('INV-SEL-1 · одне правило', () => {
-  it('згорнута картка не виділяється; видима, штрих і медіа — так', () => {
+  it('згорнута картка не виділяється; видима картка й медіа — так', () => {
     expect(isAssetSelectable(card('t', 'theory_card', 0, 0, { minimized: true }))).toBe(false)
     expect(isAssetSelectable(card('t', 'theory_card', 0, 0))).toBe(true)
     expect(isAssetSelectable(card('t', 'theory_card', 0, 0, { minimized: false }))).toBe(true)
-    // Медіа не згортаються — тому й з minimized:true лишаються на полотні й виділяються.
-    expect(isAssetSelectable(card('v', 'video_player', 0, 0, { minimized: true }))).toBe(true)
+    // Медіа згортаються з 2026-09-28 (рішення власника, ТЗ «Сценарій» §4.1): згорнуте — у треї,
+    // тож не виділяється й не їде з груповим рухом, як будь-яка згорнута картка. Свідома зміна.
+    expect(isAssetSelectable(card('v', 'video_player', 0, 0))).toBe(true)
+    expect(isAssetSelectable(card('v', 'video_player', 0, 0, { minimized: true }))).toBe(false)
+    expect(isAssetSelectable(card('a', 'audio_player', 0, 0, { minimized: true }))).toBe(false)
     expect(isAssetSelectable(null)).toBe(false)
   })
 

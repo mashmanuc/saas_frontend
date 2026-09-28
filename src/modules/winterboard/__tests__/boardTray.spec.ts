@@ -8,7 +8,10 @@
  * живе в журналі операцій — тому його бачать учень, reload, replay і клон.
  *
  * ІНВАРІАНТИ
- *   INV-TRAY-1  згортаються лише картки з `minimizable`; примітив, медіа й невідомий тип — ні
+ *   INV-TRAY-1  згортаються лише картки з `minimizable`; примітив і невідомий тип — ні.
+ *               Медіа (відео, YouTube, аудіо) — так, з 2026-09-28: рішення власника «кожний
+ *               можна згорнути» (ТЗ TZ_REMOTE_SCENARIO §4.1, Р1); до того TLV2-05B їх
+ *               виключав. Тиша згорнутого програвача — mediaMinimize.spec.ts
  *   INV-TRAY-2  згортання/відновлення = рівно один `asset_update` того самого id; без add/delete/копії
  *   INV-TRAY-3  місце, розмір, шар, блокування й дані не змінюються
  *   INV-TRAY-4  трей — лише поточна сторінка; одна вкладка на об'єкт; порядок = шари
@@ -26,6 +29,8 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import uk from '../../../i18n/locales/uk.json'
+import en from '../../../i18n/locales/en.json'
+import { trayCardFamily } from '../board/boardTrayPresentation'
 import { useWBStore } from '../board/state/boardStore'
 import { cancelPendingUpdates } from '../board/state/assetUpdateBatcher'
 import { STANDARD_ASSET_TYPES, isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
@@ -66,14 +71,15 @@ const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk
 // ─── Правила ────────────────────────────────────────────────────────────────
 
 describe('INV-TRAY-1 · що може потрапити в трей', () => {
-  it.each(['theory_card', 'nmt_task', 'geometry_2d_v2', 'visual_capsule', 'geomash_scene', 'image', 'document_viewer'])(
+  // Медіа — з 2026-09-28 (рішення власника, ТЗ «Сценарій» §4.1): свідома зміна тесту
+  it.each(['theory_card', 'nmt_task', 'geometry_2d_v2', 'visual_capsule', 'geomash_scene', 'image', 'document_viewer',
+    'video_player', 'youtube_player', 'audio_player'])(
     '%s згортається', (type) => {
       expect(isMinimizableAsset(type)).toBe(true)
       expect(isMinimizedOnBoard(card('a', type, { minimized: true }))).toBe(true)
     })
 
   it.each([
-    ['медіа', { type: 'video_player' }],
     ['невідомий тип', { type: 'visual_capsule_v9' }],
     ['без типу', {}],
     ['штрих-примітив', { tool: 'pen' }],
@@ -151,9 +157,21 @@ describe('INV-TRAY-6/7 · хто бачить трей і дію «Згорну�
     }
   })
 
-  it('медіа й уже згорнуту картку згорнути не можна', () => {
-    expect(canMinimize(card('v', 'video_player'), TEACHER)).toBe(false)
+  it('медіа вчитель згортає (з 2026-09-28, рішення власника); уже згорнуту картку — ні', () => {
+    for (const type of ['video_player', 'youtube_player', 'audio_player']) {
+      expect(canMinimize(card('v', type), TEACHER), type).toBe(true)
+      expect(canMinimize(card('v', type), STUDENT), type).toBe(false)
+    }
     expect(canMinimize(minimizedAsset(theory), TEACHER)).toBe(false)
+    expect(canMinimize(minimizedAsset(card('v', 'video_player')), TEACHER)).toBe(false)
+  })
+
+  it('медіа в треї підписане своїм видом і має родину media, а не «Картка»', () => {
+    for (const [type, uk_, en_] of [['video_player', 'Відео', 'Video'], ['youtube_player', 'Відео', 'Video'], ['audio_player', 'Аудіо', 'Audio']]) {
+      expect((uk as any).winterboard.tray.kind[type], type).toBe(uk_)
+      expect((en as any).winterboard.tray.kind[type], type).toBe(en_)
+      expect(trayCardFamily(type), type).toBe('media')
+    }
   })
 })
 

@@ -10229,7 +10229,10 @@
         "visual_capsule": "Анімація",
         "image": "Зображення",
         "sticky": "Нотатка",
-        "document_viewer": "Документ"
+        "document_viewer": "Документ",
+        "video_player": "Відео",
+        "youtube_player": "Відео",
+        "audio_player": "Аудіо"
       }
     },
     "boardRecipe": {

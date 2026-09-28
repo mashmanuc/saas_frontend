@@ -52,7 +52,10 @@ describe('INV-WIN-1/2 · які дії показати', () => {
     ['geomash_scene', { scale: false, minimize: true, expand: true, delete: true }],
     ['visual_capsule', { scale: false, minimize: true, expand: true, delete: true }],
     ['image', { scale: false, minimize: true, expand: false, delete: true }],
-    ['video_player', { scale: false, minimize: false, expand: false, delete: true }],
+    // Медіа згортаються з 2026-09-28 (рішення власника, ТЗ «Сценарій» §4.1) — свідома зміна
+    ['video_player', { scale: false, minimize: true, expand: false, delete: true }],
+    ['youtube_player', { scale: false, minimize: true, expand: false, delete: true }],
+    ['audio_player', { scale: false, minimize: true, expand: false, delete: true }],
   ])('вчитель · %s', (type, expected) => {
     expect(cardWindowActions(card(type), TEACHER)).toEqual(expected)
   })

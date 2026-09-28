@@ -10141,7 +10141,10 @@
         "visual_capsule": "Animation",
         "image": "Image",
         "sticky": "Note",
-        "document_viewer": "Document"
+        "document_viewer": "Document",
+        "video_player": "Video",
+        "youtube_player": "Video",
+        "audio_player": "Audio"
       }
     },
     "boardRecipe": {
