@@ -23,12 +23,18 @@
 // v1.14 (2026-09-28, власник: «кнопка яка буде згортати вікно інтегралика»):
 // assistant.minimize — тим самим каналом палітрі; вона робить те саме, що «–» у
 // шапці вікна (згорнути в маскота, розмова лишається). Без аргументів, без ops.
+//
+// v1.15 «📋 Сценарій» (2026-09-28, ТЗ TZ_REMOTE_SCENARIO): відео, аудіо й документи
+// дошки з телефона — адаптер `scenario` (лише в уроці, як media і photo). video.play /
+// video.pause з v1.15 керують будь-яким програвачем; нові video.volume, view.focus,
+// card.minimize, card.restore, doc.page. Стан — поле `scenario`, `caps` += 'scenario'.
 
 import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
 import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
+import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 
 export interface BoardRemoteStore {
@@ -55,6 +61,11 @@ export interface UseBoardRemoteOptions {
    * відповідає `rejected: unsupported`, а не мовчить.
    */
   photo?: RemotePhotoAdapter
+  /**
+   * v1.15 «Сценарій» (LAW §9). Є адаптер — `caps` отримує 'scenario', у стані поле
+   * `scenario`. Без нього (класна кімната) нові команди ігноруються, кнопки на пульті немає.
+   */
+  scenario?: RemoteScenarioAdapter
 }
 
 /** Відео поточної сторінки для ▶/⏸ на пульті (у remote.state — поле `videos`). */
@@ -85,6 +96,7 @@ export interface RemoteCommandDetail {
     | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
     | 'video.add' | 'video.play' | 'video.pause'
     | 'photo.add'
+    | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
@@ -153,9 +165,15 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     }
     if (assistantState.value) msg.assistant = assistantState.value
     if (opts.media) msg.videos = opts.media.list()
+    if (opts.scenario) msg.scenario = opts.scenario.state()
     // v1.12 (пульт v2): що ця кімната вміє понад навігацію — телефон за цим показує або
-    // ховає ряд «+ Фото / + Відео». Лише підказка для UI: команди перевіряються, як і раніше.
-    msg.caps = [...(opts.photo ? ['photo'] : []), ...(opts.media ? ['video'] : [])]
+    // ховає ряд «+ Фото / + Відео» (v1.15: і кнопку «📋 Сценарій»). Лише підказка для UI:
+    // команди перевіряються, як і раніше.
+    msg.caps = [
+      ...(opts.photo ? ['photo'] : []),
+      ...(opts.media ? ['video'] : []),
+      ...(opts.scenario ? ['scenario'] : []),
+    ]
     if (photoResult.value) msg.photo = photoResult.value
     opts.sendMessage(msg)
   }
@@ -170,6 +188,16 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const media = opts.media
     watch(
       () => JSON.stringify(media.list()),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
+  }
+
+  // v1.15: сценарій змінився — об'єкт з'явився/зник, згорнули, сторінка документа, стан
+  // програвача чи гучність. Тим самим тротлінгом 150 мс, що й videos.
+  if (opts.scenario) {
+    const scenario = opts.scenario
+    watch(
+      () => JSON.stringify(scenario.state()),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
@@ -304,11 +332,47 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'video.play':
       case 'video.pause': {
         const objectId = String(d.args?.object_id ?? '')
-        if (!opts.media || !objectId) return
-        if (d.cmd === 'video.play') opts.media.play(objectId)
-        else opts.media.pause(objectId)
+        if (!objectId) return
+        // v1.15: зі сценарієм — будь-який програвач сторінки (YouTube, файл, аудіо);
+        // без нього — як v1.8, лише YouTube через медіа-адаптер.
+        const player = opts.scenario ?? opts.media
+        if (!player) return
+        if (d.cmd === 'video.play') player.play(objectId)
+        else player.pause(objectId)
         sendState()
         return
+      }
+      // v1.15 «Сценарій»: намір — ноутбук робить те саме, що кнопки на дошці
+      case 'video.volume': {
+        const objectId = String(d.args?.object_id ?? '')
+        const delta = d.args?.delta
+        if (!opts.scenario || !objectId || (delta !== 1 && delta !== -1)) return
+        opts.scenario.volume(objectId, delta as -1 | 1)
+        sendState()
+        return
+      }
+      case 'view.focus': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!opts.scenario || !objectId) return
+        opts.scenario.focus(objectId)
+        sendState()   // focus_id не реактивний — підтверджуємо явно
+        return
+      }
+      case 'card.minimize':
+      case 'card.restore': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!opts.scenario || !objectId) return
+        if (d.cmd === 'card.minimize') opts.scenario.minimize(objectId)
+        else opts.scenario.restore(objectId)
+        sendState()
+        return
+      }
+      case 'doc.page': {
+        const objectId = String(d.args?.object_id ?? '')
+        const dir = d.args?.dir
+        if (!opts.scenario || !objectId || (dir !== 1 && dir !== -1)) return
+        opts.scenario.docPage(objectId, dir as -1 | 1)
+        return   // новий currentPage → watch надішле стан
       }
       // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить
       case 'photo.add': {

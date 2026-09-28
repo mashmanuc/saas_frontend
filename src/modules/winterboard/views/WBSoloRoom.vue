@@ -1187,6 +1187,7 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
+import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
 import { fetchAsset as fetchLibraryAsset } from '../api/library'
 import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
@@ -1734,6 +1735,19 @@ const showRemoteModal = ref(false)
 const soloEffectiveTool = computed(() =>
   (opsSync.inputLocked ? 'select' : store.currentTool))
 
+// v1.2 + v1.15: вигляд полотна з пульта. «На весь екран» (Сценарій) бере видиму частину
+// полотна з DOM (стор тут розміру поля не знає) і застосовує масштаб тим самим шляхом,
+// що Ctrl+колесо: handleZoomChange / handleScrollChange; прокрутку обмежує саме полотно
+// (clampScrollFor з НОВИМ масштабом).
+const remoteView = createRemoteViewAdapter(store as any, {
+  viewportSize: () => ({ width: canvasContainerWidth.value, height: canvasContainerHeight.value }),
+  applyView: (zoom, x, y) => {
+    const c = canvasRef.value?.clampScrollFor?.(x, y, zoom) ?? { x, y }
+    handleZoomChange(zoom)
+    handleScrollChange(c.x, c.y)
+  },
+})
+
 const boardRemote = useBoardRemote({
   sessionId,
   store: {
@@ -1749,7 +1763,7 @@ const boardRemote = useBoardRemote({
   // знаходив відкриту в Студії дошку й керував шаблоном (сторінки, відео, фото).
   enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace && !constructorMode.value),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
-  view: createRemoteViewAdapter(store as any),
+  view: remoteView,
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
     list: () => (store.currentPage?.assets ?? [])
@@ -1785,6 +1799,18 @@ const boardRemote = useBoardRemote({
     fetchLibraryAsset: (id) => fetchLibraryAsset(id),
     loadImage: (src) => loadImageDimensions(src),
     place: (image, id) => placeVerifiedImage(image, id),
+  }),
+  // v1.15 «Сценарій»: відео, аудіо й документи всіх сторінок; кнопки — для поточної.
+  // Запис — тим самим шляхом, що кнопки дошки (handleAssetUpdate); ті самі умови, що на
+  // полотні (учитель — `:is-tutor="true"` кімнати, режим стору).
+  scenario: createRemoteScenarioAdapter({
+    pages: () => store.pages,
+    currentPageIndex: () => store.currentPageIndex,
+    viewer: () => ({ isTutor: true, mode: store.mode }),
+    // DESYNC/BOOTSTRAP: record() — no-op; inputLocked — кімната сама блокує введення
+    canWrite: () => !(opsSync.inputLocked || opsSync.mode === 'DESYNC' || opsSync.mode === 'BOOTSTRAP'),
+    updateAsset: (asset) => handleAssetUpdate(asset),
+    view: remoteView,
   }),
 })
 

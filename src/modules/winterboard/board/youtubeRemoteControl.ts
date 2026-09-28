@@ -24,6 +24,11 @@ export type YtPlayError = 'not_found' | 'not_embeddable' | 'playback'
 interface YtPlayer {
   playVideo(): void
   pauseVideo(): void
+  // «Сценарій» (LAW §9 v1.15): гучність — документовані методи IFrame Player API
+  setVolume(volume: number): void
+  getVolume(): number
+  isMuted(): boolean
+  unMute(): void
 }
 interface YtNamespace {
   Player: new (el: HTMLIFrameElement, opts: {
@@ -55,6 +60,30 @@ const entries = new Map<string, Entry>()
 export const ytPlayStates = reactive<Record<string, YtPlayState>>({})
 /** Причина стану `error` (для зрозумілого повідомлення на пульті). */
 export const ytPlayErrors = reactive<Record<string, YtPlayError>>({})
+/**
+ * Чутна гучність 0…100 (вимкнений звук = 0) — лише коли плеєр готовий. Подій зміни
+ * гучності YouTube не має, тож перечитуємо на готовність і на кожну зміну стану плеєра.
+ */
+export const ytVolumes = reactive<Record<string, number>>({})
+
+/** Крок «Тихіше / Гучніше» пульта — 10 процентних пунктів (ТЗ «Сценарій» Р3). */
+const YT_VOLUME_STEP = 10
+
+function readVolume(player: YtPlayer): number | null {
+  try {
+    return player.isMuted() ? 0 : Math.round(player.getVolume())
+  } catch (err) {
+    console.warn('[WB:remote] YouTube volume read failed:', err)
+    return null
+  }
+}
+
+function syncVolume(id: string): void {
+  const entry = entries.get(id)
+  if (!entry?.ready || !entry.player) return
+  const v = readVolume(entry.player)
+  if (v !== null) ytVolumes[id] = v
+}
 const pendingOnTap = new Set<string>()
 let apiPromise: Promise<YtNamespace> | null = null
 let tapArmed = false
@@ -125,9 +154,10 @@ export function registerYouTubeFrame(id: string, frame: HTMLIFrameElement): void
       events: {
         onReady: () => {
           entry.ready = true
+          syncVolume(id)
           if (entry.playWhenReady) { entry.playWhenReady = false; playVideo(id) }
         },
-        onStateChange: (e) => applyPlayerState(id, e.data),
+        onStateChange: (e) => { applyPlayerState(id, e.data); syncVolume(id) },
         onError: (e) => applyPlayerError(id, e.data),
       },
     })
@@ -145,6 +175,7 @@ export function unregisterYouTubeFrame(id: string, frame?: HTMLIFrameElement): v
   pendingOnTap.delete(id)
   delete ytPlayStates[id]
   delete ytPlayErrors[id]
+  delete ytVolumes[id]
 }
 
 export function playVideo(id: string): boolean {
@@ -177,12 +208,40 @@ export function pauseVideo(id: string): boolean {
   return true
 }
 
+/**
+ * 🔉/🔊 з пульта (LAW §9 v1.15): ±10 п.п. у межах 0…100 від поточної гучності плеєра.
+ * Вимкнений звук: «Гучніше» спершу вмикає його (з нуля — одразу 10 %). Плеєр ще не
+ * готовий — команду ігноруємо (null), як і поле `volume` у стані пульта (ТЗ §4.2).
+ */
+export function changeVideoVolume(id: string, delta: -1 | 1): number | null {
+  const entry = entries.get(id)
+  if (!entry?.ready || !entry.player) return null
+  const player = entry.player
+  const current = readVolume(player)
+  if (current === null) return null
+  let next: number
+  if (delta > 0 && player.isMuted()) {
+    player.unMute()
+    next = Math.round(player.getVolume())
+    if (next === 0) { next = YT_VOLUME_STEP; player.setVolume(next) }
+  } else {
+    next = Math.max(0, Math.min(100, current + delta * YT_VOLUME_STEP))
+    player.setVolume(next)
+    if (next > 0 && player.isMuted()) player.unMute()
+  }
+  // Значення кладемо самі: плеєр застосовує setVolume асинхронно, getVolume() одразу
+  // після нього ще може віддати старе.
+  ytVolumes[id] = next
+  return next
+}
+
 /** Лише для тестів. */
 export function __resetYouTubeRemoteControlForTests(): void {
   entries.clear()
   pendingOnTap.clear()
   for (const k of Object.keys(ytPlayStates)) delete ytPlayStates[k]
   for (const k of Object.keys(ytPlayErrors)) delete ytPlayErrors[k]
+  for (const k of Object.keys(ytVolumes)) delete ytVolumes[k]
   apiPromise = null
   if (tapArmed) {
     window.removeEventListener('pointerdown', onUserTap, true)

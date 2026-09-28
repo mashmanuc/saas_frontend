@@ -30,10 +30,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAudioAsset } from '../../../types/mediaObjects'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
+import { registerMediaElement, unregisterMediaElement } from '../../../board/htmlMediaRemoteControl'
 
 const props = defineProps<{
   obj: WBAudioAsset
@@ -56,6 +57,20 @@ watch(
 function onPlay(): void {
   if (isMinimized.value) audioEl.value?.pause()
 }
+
+// Пульт «Сценарій» (LAW §9 v1.15, ТЗ §4.2): <audio> учителя реєструється за id об'єкта —
+// ▶/⏸ і гучність з телефона йдуть через htmlMediaRemoteControl. В учня програвача немає.
+watch(
+  [audioEl, () => props.obj.id, () => props.isTutor],
+  ([el, id, tutor], [prevEl, prevId]) => {
+    if (prevEl && prevId) unregisterMediaElement(prevId, prevEl)
+    if (el && id && tutor) registerMediaElement(id, el)
+  },
+  { flush: 'post' },
+)
+onBeforeUnmount(() => {
+  if (audioEl.value) unregisterMediaElement(props.obj.id, audioEl.value)
+})
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)

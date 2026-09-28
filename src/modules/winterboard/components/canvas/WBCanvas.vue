@@ -5825,6 +5825,8 @@ defineExpose({
   getStage: () => stageRef.value?.getStage?.() || null,
   fitToPage: handleFitToPage,
   clampScroll,
+  /** v1.15 «На весь екран» з пульта: той самий кламп, але для НОВОГО масштабу. */
+  clampScrollFor,
   fitToWidth: handleFitToWidth,
   /** Open text overlay for object (called from WBSelectionToolbar via parent) */
   openTextOverlay: (objectId: string) => { activeTextObjectId.value = objectId },

@@ -42,11 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBVideoAsset } from '../../../types/mediaObjects'
 import type { VideoSyncState } from '../../../composables/useMediaSync'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
+import { registerMediaElement, unregisterMediaElement } from '../../../board/htmlMediaRemoteControl'
 
 const props = defineProps<{
   obj: WBVideoAsset
@@ -94,6 +95,20 @@ watch(
 function onPlay(): void {
   if (isMinimized.value) videoEl.value?.pause()
 }
+
+// Пульт «Сценарій» (LAW §9 v1.15, ТЗ §4.2): у вчителя елемент реєструється за id
+// об'єкта — ▶/⏸ і гучність з телефона йдуть через htmlMediaRemoteControl.
+watch(
+  [videoEl, () => props.obj.id, () => props.isTutor],
+  ([el, id, tutor], [prevEl, prevId]) => {
+    if (prevEl && prevId) unregisterMediaElement(prevId, prevEl)
+    if (el && id && tutor) registerMediaElement(id, el)
+  },
+  { flush: 'post' },
+)
+onBeforeUnmount(() => {
+  if (videoEl.value) unregisterMediaElement(props.obj.id, videoEl.value)
+})
 
 watch(() => syncState.value.position, (pos) => {
   const el = videoEl.value

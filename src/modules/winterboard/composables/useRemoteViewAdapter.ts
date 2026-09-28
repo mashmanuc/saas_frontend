@@ -17,6 +17,12 @@
 // v1.13 (Б-109, рішення власника 2026-09-27 «Б-109 а»): A−/A+ поза показом — ті самі
 // A−/A+, що на картці (спільний масштаб §9.C, одна операція на команду); у показі —
 // локальний множник лише розгорнутої картки, який скидається з кінцем показу.
+//
+// v1.15 «Сценарій» (ТЗ TZ_REMOTE_SCENARIO §4.3): «На весь екран» для відео й документа —
+// збільшення полотна ЦЬОГО екрана до об'єкта (у цих типів немає власного розгортання).
+// ⚠️ Формула вище — з v1.2. З 2026-09-23 (FIRST USER GATE) у кімнаті уроку аркуш
+// зсувається на −scroll (`boardStore.stageOrigin`: center − scroll, центр = 0, коли
+// стор не знає розміру поля). Тому тут: екран = center(zoom) − scroll + p·zoom.
 
 import { useTutorRevealGate } from './useStudentTutor'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
@@ -40,7 +46,23 @@ export interface RemoteViewStore {
   setZoom: (z: number) => void
   setScroll: (x: number, y: number) => void
   updateAsset: (asset: any, opts?: { skipHistory?: boolean }) => void
+  /** Прокрутка зсуває аркуш (кімната уроку). Без цього «На весь екран» не має куди вести. */
+  stageFollowsScroll?: boolean
 }
+
+/** v1.15: як кімната дає розмір поля й застосовує вигляд (той самий шлях, що Ctrl+колесо). */
+export interface RemoteViewOptions {
+  /** Видима частина полотна, px (DOM). Без нього — `store.containerWidth/Height`. */
+  viewportSize?: () => { width: number; height: number } | null
+  /** Застосувати масштаб і прокрутку. Без нього — `store.setZoom` / `store.setScroll`. */
+  applyView?: (zoom: number, scrollX: number, scrollY: number) => void
+}
+
+/** Відступ об'єкта від країв видимої частини в «На весь екран» (ТЗ §4.3). */
+export const FOCUS_MARGIN_PX = 24
+/** Дозволений масштаб полотна (`boardStore.setZoom`, LAW-20). */
+export const FOCUS_ZOOM_MIN = 0.1
+export const FOCUS_ZOOM_MAX = 5
 
 export interface RemoteCardsSummary {
   count: number
@@ -53,9 +75,66 @@ export interface RemoteCardsSummary {
 export const TASK_ASSET_TYPE = 'nmt_task'
 export const SCROLL_FRACTION = 0.4
 
-export function createRemoteViewAdapter(store: RemoteViewStore) {
+export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteViewOptions = {}) {
   /** Індекс картки, на яку востаннє «наводили» (для циклу по картках і для A−/A+) */
   let focusIndex = -1
+  /** v1.15: об'єкт «на весь екран» і вигляд до ПЕРШОГО показу (його повертає «Уся сторінка»). */
+  let objectFocus: string | null = null
+  let savedView: { zoom: number; scrollX: number; scrollY: number } | null = null
+
+  function applyView(zoom: number, scrollX: number, scrollY: number): void {
+    if (opts.applyView) opts.applyView(zoom, scrollX, scrollY)
+    else { store.setZoom(zoom); store.setScroll(scrollX, scrollY) }
+  }
+
+  /** Кінець «Задачі на екран»: картку згорнуто, фокус і локальний множник A± скинуто. */
+  function endTaskPresentation(): void {
+    focusIndex = -1
+    store.expandedAssetId = null
+    resetNmtPresentationScales()
+  }
+
+  /** Кінець «На весь екран»: масштаб і прокрутка — як до першого показу. */
+  function endObjectFocus(): void {
+    if (savedView) applyView(savedView.zoom, savedView.scrollX, savedView.scrollY)
+    savedView = null
+    objectFocus = null
+  }
+
+  /**
+   * v1.15 «На весь екран»: полотно цього екрана так, щоб об'єкт поточної сторінки зайняв
+   * видиму частину з відступом 24 px, у межах дозволеного масштабу. Лише вигляд — без ops,
+   * запису й Replay (як `view.fit` v1.2). Показ один за раз: знімає «Задачу на екран».
+   */
+  function focusObject(assetId: string): boolean {
+    if (store.stageFollowsScroll === false) return false
+    const page = store.pages[store.currentPageIndex]
+    const asset = page?.assets.find((a) => a && a.id === assetId)
+    if (!asset || !(asset.w > 0) || !(asset.h > 0)) return false
+    const vp = opts.viewportSize?.() ?? { width: store.containerWidth, height: store.containerHeight }
+    if (!vp || !(vp.width > 0) || !(vp.height > 0)) return false
+    if (store.expandedAssetId) endTaskPresentation()
+    if (!savedView) savedView = { zoom: store.zoom, scrollX: store.scrollX, scrollY: store.scrollY }
+    const m = FOCUS_MARGIN_PX
+    const fit = Math.min((vp.width - 2 * m) / asset.w, (vp.height - 2 * m) / asset.h)
+    const zoom = Math.max(FOCUS_ZOOM_MIN, Math.min(FOCUS_ZOOM_MAX, fit))
+    // Де стоїть аркуш при цьому масштабі (boardStore.stageOrigin): центр поля або 0.
+    const centerX = store.containerWidth > 0 ? Math.max(0, (store.containerWidth - store.pageWidth * zoom) / 2) : 0
+    const centerY = store.containerHeight > 0 ? Math.max(0, (store.containerHeight - store.pageHeight * zoom) / 2) : 0
+    // Об'єкт — посередині видимої частини: center − scroll + p·zoom = target.
+    const targetX = (vp.width - asset.w * zoom) / 2
+    const targetY = (vp.height - asset.h * zoom) / 2
+    applyView(zoom, centerX + asset.x * zoom - targetX, centerY + asset.y * zoom - targetY)
+    objectFocus = assetId
+    return true
+  }
+
+  /** Об'єкт «на весь екран», поки він є на поточній сторінці (поле `scenario.focus_id`). */
+  function objectFocusId(): string | null {
+    if (!objectFocus) return null
+    const page = store.pages[store.currentPageIndex]
+    return page?.assets.some((a) => a && a.id === objectFocus) ? objectFocus : null
+  }
 
   function taskCards(): any[] {
     const page = store.pages[store.currentPageIndex]
@@ -74,6 +153,8 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
   function fitTask(): number {
     const cards = taskCards()
     if (!cards.length) { focusIndex = -1; return -1 }
+    // Показ один за раз (v1.15): «Задача на екран» знімає «На весь екран» об'єкта.
+    if (savedView || objectFocus) endObjectFocus()
     // По колу гортаємо лише з уже розгорнутої картки. Поза показом фокус міг поставити
     // A−/A+ (Б-106: вони тепер і поза показом) — тоді на екран іде саме збільшена картка,
     // а не наступна за нею.
@@ -187,15 +268,15 @@ export function createRemoteViewAdapter(store: RemoteViewStore) {
 
   /**
    * Кінець показу («Уся сторінка» або інша сторінка): звичайний вигляд, фокус скидається,
-   * локальний множник A± теж (§9.C v1.13) — він живе лише в показі.
+   * локальний множник A± теж (§9.C v1.13) — він живе лише в показі. v1.15: і «На весь
+   * екран» об'єкта — масштаб і прокрутка повертаються такими, як були до показу.
    */
   function resetFocus(): void {
-    focusIndex = -1
-    store.expandedAssetId = null
-    resetNmtPresentationScales()
+    endTaskPresentation()
+    if (savedView || objectFocus) endObjectFocus()
   }
 
-  return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards }
+  return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId }
 }
 
 export type RemoteViewAdapter = ReturnType<typeof createRemoteViewAdapter>
