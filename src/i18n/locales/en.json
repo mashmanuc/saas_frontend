@@ -904,6 +904,7 @@
       "requestUnlock": "Request unlock",
       "errors": {
         "invalidCredentials": "Invalid email or password.",
+        "emailNotVerified": "Your email isn't confirmed yet. Open the email from M4SH and click the link — or send the email again.",
         "rateLimited": "Too many attempts. Please try again later.",
         "requiredEmail": "Email is required.",
         "requiredPassword": "Password is required.",

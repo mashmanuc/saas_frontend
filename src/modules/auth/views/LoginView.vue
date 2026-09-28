@@ -277,8 +277,10 @@ const inlineErrorMessage = computed(() => {
       return t('auth.login.errors.invalidCredentials')
     case 'rate_limited':
       return t('auth.login.errors.rateLimited')
+    // Б-112: бекенд віддає цей код лише після правильного пароля — пояснюємо, що
+    // бракує підтвердження пошти (кнопка повторного листа — під повідомленням).
     case 'email_not_verified':
-      return t('auth.login.errors.invalidCredentials')
+      return t('auth.login.errors.emailNotVerified')
     default:
       return auth.lastErrorCode ? t('auth.login.errors.unknown') : ''
   }
