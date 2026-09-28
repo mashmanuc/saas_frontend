@@ -270,7 +270,7 @@ describe('INV-SCN-P2 · аркуш «Сценарій»', () => {
   it('відео на екрані: «грає · гучність 60 %»; ▶ ⏸ 🔉 🔊 ⛶ — шлють намір для свого object_id', async () => {
     const w = mountSheet()
     const v = inItem(w, 'vid-2')
-    expect(v.find('[data-testid="scenario-status"]').text()).toBe(`${R.video.state.playing} · ${fill(S.volume, { v: 60 })}`)
+    expect(v.find('[data-testid="scenario-status"]').text()).toBe(`● ${R.video.state.playing} · ${fill(S.volume, { v: 60 })}`) // «●» — грає (власник 2026-09-28)
     for (const [tid, cmd, args] of [
       ['scenario-play', 'video.play', { object_id: 'vid-2' }],
       ['scenario-pause', 'video.pause', { object_id: 'vid-2' }],
@@ -328,7 +328,7 @@ describe('INV-SCN-P2 · аркуш «Сценарій»', () => {
   it('гучність ще невідома (плеєр не завантажився) — 🔉 і 🔊 вимкнені, причина одна', async () => {
     const w = mountSheet({ scenario: parsed([without('volume', ITEMS[1])]) })
     const v = inItem(w, 'vid-2')
-    expect(v.find('[data-testid="scenario-status"]').text()).toBe(R.video.state.playing)
+    expect(v.find('[data-testid="scenario-status"]').text()).toBe(`● ${R.video.state.playing}`) // «●» — грає (власник 2026-09-28)
     for (const tid of ['scenario-quieter', 'scenario-louder']) {
       expect((v.find(`[data-testid="${tid}"]`).element as HTMLButtonElement).disabled).toBe(true)
       await tapSlot(v.find(`[data-testid="${tid}"]`))
@@ -427,6 +427,40 @@ describe('INV-SCN-P2 · аркуш «Сценарій»', () => {
   it('порожній список — один рядок пояснення', () => {
     const w = mountSheet({ scenario: parsed([]) })
     expect(w.find('[data-testid="scenario-empty"]').text()).toBe(S.empty)
+  })
+  it('▶/⏸ показують стан: «▶ Грає» зелена, «⏸ На паузі» підсвічена, «▶ Запускається…»; решта — звичайні', async () => {
+    // Власник 2026-09-28: «вчитель… не бачить, чи воно відтворюється, чи не відтворюється»
+    const V = uk.winterboard.remote.video
+    const one = (state: string) => parsed([{ object_id: 'vid-2', kind: 'video', title: 'Маятник', page_index: 1, minimized: false, state, volume: 60 }])
+    const w = mountSheet({ scenario: one('playing') })
+    const play = () => inItem(w, 'vid-2').find('[data-testid="scenario-play"]')
+    const pause = () => inItem(w, 'vid-2').find('[data-testid="scenario-pause"]')
+    const status = () => inItem(w, 'vid-2').find('[data-testid="scenario-status"]')
+    expect(play().classes()).toContain('wb-scn__btn--playing')
+    expect(play().text()).toBe(`▶ ${V.state.playing}`)
+    expect(play().attributes('aria-pressed')).toBe('true')
+    expect(pause().classes()).not.toContain('wb-scn__btn--paused')
+    expect(pause().text()).toBe(`⏸ ${S.pause}`)
+    expect(status().classes()).toContain('wb-scn__status--playing')
+    expect(status().text().startsWith('●')).toBe(true)
+
+    await w.setProps({ scenario: one('paused') })
+    expect(play().classes()).not.toContain('wb-scn__btn--playing')
+    expect(play().text()).toBe(`▶ ${S.play}`)
+    expect(pause().classes()).toContain('wb-scn__btn--paused')
+    expect(pause().text()).toBe(`⏸ ${V.state.paused}`)
+    expect(pause().attributes('aria-pressed')).toBe('true')
+    expect(status().classes()).not.toContain('wb-scn__status--playing')
+
+    await w.setProps({ scenario: one('loading') })
+    expect(play().text()).toBe(`▶ ${V.starting}`)
+    expect(play().classes()).not.toContain('wb-scn__btn--playing')
+
+    await w.setProps({ scenario: one('idle') })
+    expect(play().classes()).not.toContain('wb-scn__btn--playing')
+    expect(pause().classes()).not.toContain('wb-scn__btn--paused')
+    expect(play().text()).toBe(`▶ ${S.play}`)
+    w.unmount()
   })
 })
 

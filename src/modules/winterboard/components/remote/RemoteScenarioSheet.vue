@@ -52,8 +52,16 @@
         </p>
 
         <template v-if="g.current">
-          <p v-if="statusOf(it)" class="wb-scn__status" :class="{ 'wb-scn__status--warn': it.state === 'blocked' || it.state === 'error' }" data-testid="scenario-status">
-            {{ statusOf(it) }}
+          <p
+            v-if="statusOf(it)"
+            class="wb-scn__status"
+            :class="{
+              'wb-scn__status--warn': it.state === 'blocked' || it.state === 'error',
+              'wb-scn__status--playing': isPlayingNow(it),
+            }"
+            data-testid="scenario-status"
+          >
+            <span v-if="isPlayingNow(it)" aria-hidden="true">● </span>{{ statusOf(it) }}
           </p>
 
           <!-- Згорнутий: лише «Повернути» -->
@@ -66,11 +74,28 @@
           <!-- Відео й аудіо -->
           <template v-else-if="isPlayable(it)">
             <div class="wb-scn__row">
-              <button type="button" class="wb-scn__btn" data-testid="scenario-play" :disabled="!ready" @click="send('video.play', { object_id: it.objectId })">
-                ▶ {{ t('winterboard.remote.scenario.play') }}
+              <!-- Власник 2026-09-28: з кнопок видно стан — «▶ Грає» зелена, «⏸ На паузі» підсвічена -->
+              <button
+                type="button"
+                class="wb-scn__btn"
+                :class="{ 'wb-scn__btn--playing': it.state === 'playing' }"
+                data-testid="scenario-play"
+                :aria-pressed="it.state === 'playing'"
+                :disabled="!ready"
+                @click="send('video.play', { object_id: it.objectId })"
+              >
+                ▶ {{ playLabel(it.state) }}
               </button>
-              <button type="button" class="wb-scn__btn" data-testid="scenario-pause" :disabled="!ready" @click="send('video.pause', { object_id: it.objectId })">
-                ⏸ {{ t('winterboard.remote.scenario.pause') }}
+              <button
+                type="button"
+                class="wb-scn__btn"
+                :class="{ 'wb-scn__btn--paused': it.state === 'paused' }"
+                data-testid="scenario-pause"
+                :aria-pressed="it.state === 'paused'"
+                :disabled="!ready"
+                @click="send('video.pause', { object_id: it.objectId })"
+              >
+                ⏸ {{ pauseLabel(it.state) }}
               </button>
             </div>
             <div class="wb-scn__row">
@@ -187,6 +212,23 @@ function labelOf(it: RemoteScenarioItem): string {
 }
 
 const isPlayable = (it: RemoteScenarioItem) => it.kind === 'video' || it.kind === 'audio'
+
+/** Грає просто зараз (незгорнутий програвач) — зелена крапка в рядку стану. */
+function isPlayingNow(it: RemoteScenarioItem): boolean {
+  return isPlayable(it) && !it.minimized && it.state === 'playing'
+}
+
+/** Підпис ▶ за станом програвача: «Грає» / «Запускається…» / «Грати». */
+function playLabel(state: RemoteScenarioItem['state']): string {
+  if (state === 'playing') return t('winterboard.remote.video.state.playing')
+  if (state === 'loading') return t('winterboard.remote.video.starting')
+  return t('winterboard.remote.scenario.play')
+}
+
+/** Підпис ⏸: «На паузі», коли стоїть на паузі, інакше «Пауза». */
+function pauseLabel(state: RemoteScenarioItem['state']): string {
+  return state === 'paused' ? t('winterboard.remote.video.state.paused') : t('winterboard.remote.scenario.pause')
+}
 
 function statusOf(it: RemoteScenarioItem): string {
   if (it.minimized) return t('winterboard.remote.scenario.minimized')
@@ -314,6 +356,10 @@ watch(() => props.open, async (open) => {
   font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .wb-scn__btn:active { background: var(--scn-btn-active); }
+/* Власник 2026-09-28: стан відтворення видно з витягнутої руки — кнопка поточного стану підсвічена */
+.wb-scn__btn--playing { background: var(--success); color: #fff; box-shadow: inset 0 0 0 2px #5eead4; }
+.wb-scn__btn--paused { background: rgba(255, 255, 255, .26); box-shadow: inset 0 0 0 2px #cbd5e1; }
+.wb-scn__status--playing { color: #5eead4; font-weight: 600; }
 /* Вимкнена лишається на місці; тап ловить обгортка й пояснює причину */
 .wb-scn__btn:disabled { opacity: .4; pointer-events: none; }
 .wb-scn__why { margin: 0; text-align: center; font-size: 13px; color: var(--warn); }

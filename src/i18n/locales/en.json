@@ -8794,6 +8794,7 @@
         "langUnknown": "language not set",
         "lookupError": { "invalid_link": "This is not a YouTube video link.", "not_found": "Video not found: removed or private.", "not_embeddable": "The owner does not allow this video on other sites.", "private": "This video is private.", "live": "Live streams are not added.", "age_restricted": "Age-restricted videos do not play on the board.", "region_blocked": "This video is not available in Ukraine.", "russian": "Russian-language video — not added.", "user_limit": "Too many checks today. Try again tomorrow.", "quota": "Video checks are used up for today.", "disabled": "Remote video is not configured.", "failed": "Could not check the video. Please try again." },
         "playerError": { "not_found": "The video was removed or is private — it does not play.", "not_embeddable": "The owner does not allow this video on the board.", "playback": "The video does not play on the board." },
+        "starting": "Starting…",
         "state": { "idle": "Ready to play", "loading": "Starting…", "playing": "Playing", "paused": "Paused", "ended": "Video ended", "blocked": "Tap the board to start the video", "error": "Does not play" }
       },
       "photo": {

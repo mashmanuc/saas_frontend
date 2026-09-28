@@ -153,11 +153,30 @@
           </select>
           <p v-else class="wb-remote__video-name">{{ activeVideo?.title || t('winterboard.remote.video.untitled') }}</p>
           <div class="wb-remote__row">
-            <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!activeVideo" @click="sendCmd('video.play', { object_id: activeVideoId })">
-              ▶ {{ t('winterboard.remote.video.play') }}
+            <!-- Власник 2026-09-28: з кнопок видно стан — «▶ Грає» зелена, «⏸ На паузі» підсвічена (як у «Сценарії») -->
+            <button
+              type="button"
+              class="wb-remote__mini wb-remote__mini--wide"
+              :class="{ 'wb-remote__mini--playing': activeVideo?.state === 'playing' }"
+              data-testid="video-play"
+              :aria-pressed="activeVideo?.state === 'playing'"
+              :disabled="!activeVideo"
+              @click="sendCmd('video.play', { object_id: activeVideoId })"
+            >
+              ▶ {{ activeVideo?.state === 'playing' ? t('winterboard.remote.video.state.playing')
+                : activeVideo?.state === 'loading' ? t('winterboard.remote.video.starting')
+                  : t('winterboard.remote.video.play') }}
             </button>
-            <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!activeVideo" @click="sendCmd('video.pause', { object_id: activeVideoId })">
-              ⏸ {{ t('winterboard.remote.video.pause') }}
+            <button
+              type="button"
+              class="wb-remote__mini wb-remote__mini--wide"
+              :class="{ 'wb-remote__mini--paused': activeVideo?.state === 'paused' }"
+              data-testid="video-pause"
+              :aria-pressed="activeVideo?.state === 'paused'"
+              :disabled="!activeVideo"
+              @click="sendCmd('video.pause', { object_id: activeVideoId })"
+            >
+              ⏸ {{ activeVideo?.state === 'paused' ? t('winterboard.remote.video.state.paused') : t('winterboard.remote.video.pause') }}
             </button>
           </div>
           <p v-if="activeVideo?.state === 'blocked'" class="wb-remote__video-blocked" role="status">
@@ -166,7 +185,11 @@
           <p v-else-if="activeVideo?.state === 'error'" class="wb-remote__video-blocked" role="status">
             {{ t(`winterboard.remote.video.playerError.${activeVideo.error ?? 'playback'}`) }}
           </p>
-          <p v-else-if="activeVideo" class="wb-remote__note">{{ t(`winterboard.remote.video.state.${activeVideo.state}`) }}</p>
+          <p
+            v-else-if="activeVideo"
+            class="wb-remote__note"
+            :class="{ 'wb-remote__note--playing': activeVideo.state === 'playing' }"
+          ><span v-if="activeVideo.state === 'playing'" aria-hidden="true">● </span>{{ t(`winterboard.remote.video.state.${activeVideo.state}`) }}</p>
         </div>
       </div>
 
@@ -1172,6 +1195,9 @@ onBeforeUnmount(() => {
 .wb-remote__mini--fine { min-height: 44px; font-size: 15px; }
 .wb-remote__mini.is-on { background: var(--success); }
 .wb-remote__mini:active { background: var(--surface-2); }
+/* Власник 2026-09-28: стан відео видно з кнопок — як у «Сценарії» */
+.wb-remote__mini--playing { background: var(--success); color: #fff; box-shadow: inset 0 0 0 2px #5eead4; }
+.wb-remote__mini--paused { background: rgba(255, 255, 255, .26); box-shadow: inset 0 0 0 2px #cbd5e1; }
 .wb-remote__mini:disabled { opacity: .4; }
 
 /* E. Додати — лише за caps */
@@ -1219,6 +1245,7 @@ onBeforeUnmount(() => {
 .wb-remote__talk:disabled { opacity: .4; }
 .wb-remote__talk-icon { font-size: 24px; }
 .wb-remote__note, .wb-remote__last { text-align: center; color: var(--muted); font-size: 13px; margin: 0; }
+.wb-remote__note--playing { color: #5eead4; font-weight: 600; }
 
 /* Аркуші знизу */
 .wb-remote__scrim { position: fixed; inset: 0; background: rgba(2, 6, 23, .55); z-index: 30; }

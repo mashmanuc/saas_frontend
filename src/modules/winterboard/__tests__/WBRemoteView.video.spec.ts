@@ -158,6 +158,28 @@ describe('WBRemoteView — відео (V1)', () => {
     expect(lastCmd()).toMatchObject({ cmd: 'video.pause', args: { object_id: 'yt-1' } })
   })
 
+  it('▶/⏸ показують стан відео: «▶ Грає» зелена, «⏸ На паузі» підсвічена, «● Грає» в рядку стану', async () => {
+    // Власник 2026-09-28 — як у «Сценарії»: стан видно з кнопок
+    const V = uk.winterboard.remote.video
+    const w = await ready([{ objectId: 'yt-1', title: 'Т', state: 'playing' }])
+    const play = () => w.find('[data-testid="video-play"]')
+    const pause = () => w.find('[data-testid="video-pause"]')
+    expect(play().classes()).toContain('wb-remote__mini--playing')
+    expect(play().text()).toBe(`▶ ${V.state.playing}`)
+    expect(pause().classes()).not.toContain('wb-remote__mini--paused')
+    expect(w.find('.wb-remote__note').classes()).toContain('wb-remote__note--playing')
+    expect(w.find('.wb-remote__note').text()).toBe(`● ${V.state.playing}`)
+    onStateCb!({ pair: PAIR, clientId: 'laptop', pageIndex: 0, pageCount: 2, videos: [{ objectId: 'yt-1', title: 'Т', state: 'paused' }] })
+    await flushPromises()
+    expect(play().classes()).not.toContain('wb-remote__mini--playing')
+    expect(play().text()).toBe(`▶ ${V.play}`)
+    expect(pause().classes()).toContain('wb-remote__mini--paused')
+    expect(pause().text()).toBe(`⏸ ${V.state.paused}`)
+    onStateCb!({ pair: PAIR, clientId: 'laptop', pageIndex: 0, pageCount: 2, videos: [{ objectId: 'yt-1', title: 'Т', state: 'loading' }] })
+    await flushPromises()
+    expect(play().text()).toBe(`▶ ${V.starting}`)
+  })
+
   it('заблоковано браузером і помилка плеєра — зрозумілі тексти', async () => {
     const w = await ready([{ objectId: 'yt-1', title: 'Т', state: 'blocked' }])
     expect(w.find('.wb-remote__video-blocked').text()).toBe(T.blocked)
