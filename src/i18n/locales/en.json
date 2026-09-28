@@ -7291,10 +7291,10 @@
     },
     "benefits": {
       "title": "What You Can't Assemble Anywhere Else",
-      "subtitle": "Every lesson tool plus a full action-level recording — in a single space",
+      "subtitle": "Every lesson tool plus action-level recording (Replay) — in a single space",
       "noMiddlemen": {
         "title": "For Students — A Lesson You Can Rewind",
-        "description": "The whole lesson is saved — and you can rewatch it anytime, just the way it happened in class. Didn't quite get something? Open the recording, find the moment you need and go over it at your own pace, as many times as you like."
+        "description": "A recorded lesson can be rewatched anytime, just the way it happened in class. Didn't quite get something? Open the recording, find the moment you need and go over it at your own pace, as many times as you like."
       },
       "affordablePrices": {
         "title": "For teachers — the whole lesson in one window",
@@ -7338,14 +7338,14 @@
         },
         "lifetimeAccess": {
           "title": "Lessons Are Saved for Good",
-          "text": "Every finished lesson is saved in full — materials, actions and recording. Come back to it anytime, and you decide who gets access."
+          "text": "Every lesson's board is saved with all its materials — and with Replay if you recorded it. Come back to it anytime, and you decide who gets access."
         }
       }
     },
     "hero": {
-      "eyebrow": "Interactive whiteboard for online lessons",
-      "title": "Math you can\nactually touch",
-      "subtitle": "Live formulas, 3D objects, graphs and interactive tasks — all in one board",
+      "eyebrow": "Interactive whiteboard for lessons — online and in class",
+      "title": "The whole lesson —\non one board",
+      "subtitle": "Presentations, PDFs, video, audio and tasks for any subject. Run the lesson from your laptop or your phone, and turn on Replay recording when you need it. For maths — live graphs and 3D shapes.",
       "ctaTutor": "Start teaching on M4SH",
       "ctaMore": "Learn more",
       "trigCaption": "Trigonometry — drag the point with your mouse"
