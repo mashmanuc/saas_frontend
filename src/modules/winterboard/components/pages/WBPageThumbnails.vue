@@ -112,6 +112,7 @@ import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBPage } from '../../types/winterboard'
 import { SIDEBAR_DRAG_MIME, type SidebarDragPayload } from '../../types/boardDrop'
+import { coverCrop, isImageBackground } from '../../board/pageBackground'
 
 const { t } = useI18n()
 
@@ -260,6 +261,18 @@ function renderThumbnail(canvas: HTMLCanvasElement, page: WBPage): void {
   const scaleY = THUMB_H / 1080
   const scale = Math.min(scaleX, scaleY)
 
+  // Фото фоном (власник 2026-09-28: «в ескізах не змінився фон»): той самий кадр
+  // «заповнити», що на полотні (WBCanvas) — поверх кольору, під штрихами й об'єктами.
+  if (isImageBackground(page.background)) {
+    const photo = thumbnailPhoto(page.background.url)
+    if (photo) {
+      const pageW = 1920 * scale
+      const pageH = 1080 * scale
+      const c = coverCrop(photo.naturalWidth, photo.naturalHeight, pageW, pageH)
+      ctx.drawImage(photo, c.x, c.y, c.width, c.height, 0, 0, pageW, pageH)
+    }
+  }
+
   // Draw strokes (simplified polylines)
   for (const stroke of (page.strokes || [])) {
     if (!stroke.points || stroke.points.length < 2) continue
@@ -298,6 +311,25 @@ function renderThumbnail(canvas: HTMLCanvasElement, page: WBPage): void {
       ctx.fillRect(x, y, w, h)
     }
   }
+}
+
+// Фото-фону в мініатюрі: кожна адреса вантажиться раз; поки вантажиться — лише колір,
+// після завантаження — перемальовка. Пікселі мініатюр ніхто не читає, тож crossOrigin не треба.
+const thumbnailPhotos = new Map<string, HTMLImageElement | 'loading' | 'error'>()
+
+function thumbnailPhoto(url: string): HTMLImageElement | null {
+  const hit = thumbnailPhotos.get(url)
+  if (hit && typeof hit === 'object') return hit
+  if (hit) return null
+  const img = new Image()
+  img.onload = () => {
+    thumbnailPhotos.set(url, img)
+    scheduleRender()
+  }
+  img.onerror = () => thumbnailPhotos.set(url, 'error')
+  thumbnailPhotos.set(url, 'loading')
+  img.src = url
+  return null
 }
 
 let renderTimeout: ReturnType<typeof setTimeout> | null = null
@@ -373,6 +405,7 @@ watch(
     strokeCount: p.strokes?.length || 0,
     assetCount: p.assets?.length || 0,
     bg: p.backgroundColor || '',
+    photo: isImageBackground(p.background) ? p.background.url : '',
   })),
   () => scheduleRender(),
   { deep: true }

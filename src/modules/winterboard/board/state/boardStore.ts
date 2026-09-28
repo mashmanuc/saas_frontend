@@ -1040,6 +1040,52 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Фон сторінок дією вчителя — ОДНИМ кроком ↶/↷ (власник 2026-09-28: «назад не повертається»).
+     * Відкат повертає фон, що був на кожній із цих сторінок; op той самий — background_update.
+     */
+    changePageBackgrounds(changes: Array<{ pageId: string; background: WBPageBackground }>): void {
+      const steps = changes.flatMap(({ pageId, background }) => {
+        const page = this.pages.find(p => p.id === pageId)
+        // фон сторінки лише замінюють цілим (setPageBackground), а не правлять на місці — посилання досить
+        return page ? [{ pageId, before: page.background ?? 'white', after: background }] : []
+      })
+      if (steps.length === 0) return
+      const cmd: WBCommand = {
+        apply: () => steps.forEach(s => this.setPageBackground(s.after, s.pageId)),
+        revert: () => steps.forEach(s => this.setPageBackground(s.before, s.pageId)),
+      }
+      cmd.apply()
+      this.undoStack = trimStack([...this.undoStack, cmd])
+      this.redoStack = []
+    },
+
+    /**
+     * «Зробити фоном сторінки»: картинка переходить у фон ОДНИМ кроком ↶/↷ — відкат повертає
+     * і фон, що був, і картинку (раніше ↶ повертав лише картинку, а фото лишалось фоном).
+     */
+    imageToPageBackground(assetId: string, background: WBPageBackground): void {
+      const page = this.pages[this.currentPageIndex]
+      const asset = page?.assets.find(a => a.id === assetId)
+      if (!page?.id || !asset) return
+      const pageId = page.id
+      const before = page.background ?? 'white'
+      const snapshot = { ...asset }
+      const cmd: WBCommand = {
+        apply: () => {
+          this.setPageBackground(background, pageId)
+          this.deleteAssetFromPage(pageId, snapshot.id, { skipHistory: true })
+        },
+        revert: () => {
+          this.setPageBackground(before, pageId)
+          this.addAsset(snapshot, pageId, { skipHistory: true })
+        },
+      }
+      cmd.apply()
+      this.undoStack = trimStack([...this.undoStack, cmd])
+      this.redoStack = []
+    },
+
     // A9: Per-page grid actions ──────────────────────────────────────────────
 
     /**

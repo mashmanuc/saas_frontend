@@ -7,7 +7,8 @@
  *   • телефон: «Зробити фоном сторінки», текст успіху, «Прибрати фон сторінки».
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ref, reactive, defineComponent, h } from 'vue'
+import { ref, reactive, defineComponent, h, nextTick } from 'vue'
+import { setActivePinia, createPinia } from 'pinia'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import uk from '../../../i18n/locales/uk.json'
@@ -18,7 +19,9 @@ import { applyReplayOperation, type ReplayStoreApi } from '../engine/applyReplay
 import { createRemotePhotoAdapter, type RemotePhotoDeps } from '../remote/remotePhotoAdapter'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { derivePair } from '../remote/remotePair'
-import type { WBPageBackground } from '../types/winterboard'
+import type { WBAsset, WBPage, WBPageBackground } from '../types/winterboard'
+import { useWBStore, _resetOperationListeners } from '../board/state/boardStore'
+import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import soloRoomSource from '../views/WBSoloRoom.vue?raw'
 import canvasSource from '../components/canvas/WBCanvas.vue?raw'
 
@@ -277,7 +280,15 @@ describe('WBSoloRoom: підключення фото-фону', () => {
     expect(soloRoomSource).toContain(':can-make-background="!!selectedImageForBackground"')
     expect(soloRoomSource).toContain('@make-background="handleMakeBackground"')
     expect(soloRoomSource).toContain('data-testid="clear-photo-background"')
-    expect(soloRoomSource).toContain('setBackground: (bg) => store.setPageBackground(bg)')
+    // ↶/↷ (власник 2026-09-28: «назад не повертається»): «Зробити фоном» — один крок із картинкою,
+    // «Прибрати» і фон з пульта — кроком історії, не прямим записом
+    expect(soloRoomSource).toContain('store.imageToPageBackground(asset.id, withImageBackground(')
+    expect(soloRoomSource).toContain("store.changePageBackgrounds([{ pageId: page.id, background: withoutImageBackground(page.background) }])")
+    expect(soloRoomSource).toContain('if (pageId) store.changePageBackgrounds([{ pageId, background: bg }])')
+    // колір «BG» теж фон сторінки: фото-фон на тих самих сторінках знімається ДО кольору
+    const onChange = soloRoomSource.slice(soloRoomSource.indexOf('function onBgColorChange('))
+    expect(onChange.indexOf('.filter((p) => p.id && isImageBackground(p.background))')).toBeGreaterThan(0)
+    expect(onChange.indexOf('store.changePageBackgrounds(')).toBeLessThan(onChange.indexOf('store.setBackgroundColor(color'))
     // кнопка з підписом в один рядок (не квадрат 28×28 — текст ламався в три рядки)
     expect(soloRoomSource).toMatch(/\.wb-page-btn\.wb-bg-photo-clear \{[^}]*width: auto;[^}]*white-space: nowrap;/)
   })
@@ -290,5 +301,141 @@ describe('WBCanvas: фото-фон справді малюється', () => {
     const onLoad = canvasSource.slice(canvasSource.indexOf('const bgImageCache = useImageCache('))
     expect(onLoad.slice(0, 300)).toContain('layer?.clearCache?.()')
     expect(canvasSource).toMatch(/`\$\{bg\.type\}:\$\{bg\.url\}`[\s\S]{0,200}layer\?\.clearCache\?\.\(\)/)
+  })
+})
+
+// ↶/↷ фону (власник 2026-09-28: «я вручну поставив фон, а назад не повертається»): раніше ↶ повертав
+// лише картинку, а фото лишалось фоном. Кожен крок має дійти на сервер (op), інакше F5 поверне старе.
+describe('стор: фон сторінки — одним кроком ↶/↷, з op на сервер', () => {
+  let store: ReturnType<typeof useWBStore>
+  let ops: Array<{ op_type: string; page_id?: string; payload: Record<string, unknown> }>
+  const img = { id: 'img-1', type: 'image', src: '/media/a.jpg', x: 10, y: 20, w: 300, h: 200, rotation: 0 } as WBAsset
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    _resetOperationListeners()
+    store = useWBStore()
+    store.pages = [
+      { id: 'p1', name: '1', strokes: [], assets: [{ ...img }], background: 'grid' },
+      { id: 'p2', name: '2', strokes: [], assets: [], background: { type: 'image', url: '/media/b.jpg', prev: 'white' } },
+    ] as WBPage[]
+    store.currentPageIndex = 0
+    ops = []
+    store.onOperation((op) => ops.push(op as unknown as (typeof ops)[number]))
+  })
+  afterEach(() => _resetOperationListeners())
+
+  it('«Зробити фоном»: ↶ повертає і фон, що був, і картинку; ↷ — знову фото фоном', () => {
+    const photo = withImageBackground('grid', { url: '/media/a.jpg', assetId: 'img-1' })
+    store.imageToPageBackground('img-1', photo)
+    expect(store.pages[0].background).toEqual(photo)
+    expect(store.pages[0].assets).toHaveLength(0)
+    expect(ops.map((o) => o.op_type)).toEqual(['background_update', 'asset_delete'])
+
+    ops = []
+    store.undo()
+    expect(store.pages[0].background).toBe('grid')
+    expect(store.pages[0].assets.map((a) => a.id)).toEqual(['img-1'])
+    expect(ops.map((o) => o.op_type)).toEqual(['background_update', 'asset_add'])
+    expect(ops[0].payload).toEqual({ background: 'grid' })
+
+    ops = []
+    store.redo()
+    expect(store.pages[0].background).toEqual(photo)
+    expect(store.pages[0].assets).toHaveLength(0)
+    expect(ops.map((o) => o.op_type)).toEqual(['background_update', 'asset_delete'])
+  })
+
+  it('фон кількох сторінок (колір «BG» на всі) — один крок ↶ повертає фото на кожній', () => {
+    store.pages[0].background = { type: 'image', url: '/media/a.jpg', prev: 'grid' }
+    store.changePageBackgrounds([
+      { pageId: 'p1', background: 'grid' },
+      { pageId: 'p2', background: 'white' },
+    ])
+    expect(store.pages.map((pg) => pg.background)).toEqual(['grid', 'white'])
+    expect(ops.map((o) => o.page_id)).toEqual(['p1', 'p2'])
+
+    store.undo()
+    expect(store.pages[0].background).toEqual({ type: 'image', url: '/media/a.jpg', prev: 'grid' })
+    expect(store.pages[1].background).toEqual({ type: 'image', url: '/media/b.jpg', prev: 'white' })
+    expect(store.canUndo).toBe(false)
+  })
+})
+
+// Власник 2026-09-28: «коли вставив з телефона — в ескізах не змінився фон». Мініатюра малює той
+// самий кадр «заповнити», що полотно, щойно фото завантажилось.
+describe('мініатюри сторінок: фото-фон видно', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  function stubThumbnailEnv(draws: unknown[][]) {
+    const noop = () => {}
+    const ctx = new Proxy({}, {
+      get: (_t, k) => (k === 'drawImage' ? (...a: unknown[]) => { draws.push(a) } : noop),
+      set: () => true,
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never)
+    class FakeImage {
+      onload: null | (() => void) = null
+      onerror: null | (() => void) = null
+      naturalWidth = 600
+      naturalHeight = 800
+      set src(_v: string) { Promise.resolve().then(() => this.onload?.()) }
+    }
+    vi.stubGlobal('Image', FakeImage)
+    class FakeObserver {
+      constructor(private cb: (e: Array<{ target: Element; isIntersecting: boolean }>) => void) {}
+      observe(el: Element) { this.cb([{ target: el, isIntersecting: true }]) }
+      disconnect() {}
+    }
+    vi.stubGlobal('IntersectionObserver', FakeObserver)
+    vi.useFakeTimers()
+    return FakeImage
+  }
+  const i18n = createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
+  const photoBg = { type: 'image', url: '/media/a.jpg', prev: 'white' } as WBPageBackground
+
+  it('сторінка з фото-фоном — drawImage з кадром «заповнити» на всю сторінку мініатюри', async () => {
+    const draws: unknown[][] = []
+    const FakeImage = stubThumbnailEnv(draws)
+    const page = {
+      id: 'p1', name: '1', strokes: [], assets: [], backgroundColor: '#ffc0cb',
+      background: { type: 'image', url: '/media/a.jpg', prev: 'white' },
+    } as WBPage
+    const w = mount(WBPageThumbnails, { props: { pages: [page], currentIndex: 0 }, global: { plugins: [i18n] } })
+    await nextTick()
+    await nextTick()
+    await Promise.resolve()
+    expect(draws).toHaveLength(0) // поки фото вантажиться — лише колір
+    vi.advanceTimersByTime(600)
+    expect(draws).toHaveLength(1)
+    const [image, sx, sy, sw, sh, dx, dy, dw, dh] = draws[0]
+    expect(image).toBeInstanceOf(FakeImage)
+    // сторінка 1920×1080 у мініатюрі 120×67.5; знімок 600×800 — середня смуга по висоті
+    expect([sx, sy, sw, sh]).toEqual([0, 231.25, 600, 337.5])
+    expect([dx, dy, dw, dh]).toEqual([0, 0, 120, 67.5])
+    w.unmount()
+  })
+
+  it('фон став фото ВЖЕ після показу мініатюр (фото з телефона) — мініатюра перемальовується', async () => {
+    const draws: unknown[][] = []
+    stubThumbnailEnv(draws)
+    // стор міняє фон НА МІСЦІ (setPageBackground: page.background = …), масив сторінок той самий
+    const pages = reactive([
+      { id: 'p1', name: '1', strokes: [], assets: [], backgroundColor: '#ffc0cb', background: 'white' },
+    ]) as WBPage[]
+    const w = mount(WBPageThumbnails, { props: { pages, currentIndex: 0 }, global: { plugins: [i18n] } })
+    await nextTick()
+    await nextTick()
+    pages[0].background = photoBg
+    await nextTick()
+    vi.advanceTimersByTime(600) // перемальовка за зміною фону → почалось завантаження фото
+    await Promise.resolve()
+    vi.advanceTimersByTime(600) // фото завантажилось → ще одна перемальовка
+    expect(draws).toHaveLength(1)
+    w.unmount()
   })
 })

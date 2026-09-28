@@ -1875,9 +1875,13 @@ const boardRemote = useBoardRemote({
     fetchLibraryAsset: (id) => fetchLibraryAsset(id),
     loadImage: (src) => loadImageDimensions(src),
     place: (image, id) => placeVerifiedImage(image, id),
-    // v1.19 (власник 2026-09-28): фото фоном поточної сторінки — штатний background_update
+    // v1.19 (власник 2026-09-28): фото фоном поточної сторінки — штатний background_update;
+    // ↶ на ноутбуці відкочує і це, як фото-об'єкт з пульта
     currentBackground: () => store.currentPage?.background,
-    setBackground: (bg) => store.setPageBackground(bg),
+    setBackground: (bg) => {
+      const pageId = store.currentPage?.id
+      if (pageId) store.changePageBackgrounds([{ pageId, background: bg }])
+    },
   }),
   // v1.15 «Сценарій»: відео, аудіо й документи всіх сторінок; кнопки — для поточної.
   // Запис — тим самим шляхом, що кнопки дошки (handleAssetUpdate); ті самі умови, що на
@@ -2970,20 +2974,24 @@ const selectedImageForBackground = computed<WBAsset | null>(() => {
   return asset && asset.type === 'image' && !asset.locked && isSafeBackgroundUrl(asset.src) ? asset : null
 })
 
-/** «Зробити фоном сторінки»: картинка переходить у фон (об'єкт знімається штатним видаленням). */
+/**
+ * «Зробити фоном сторінки»: картинка переходить у фон (об'єкт знімається штатним видаленням).
+ * Один крок ↶/↷ — відкат повертає і фон, що був, і картинку (власник 2026-09-28: «назад не повертається»).
+ */
 function handleMakeBackground(): void {
   const asset = selectedImageForBackground.value
   if (!asset || !asset.src) return
-  store.setPageBackground(withImageBackground(store.currentPage?.background, { url: asset.src, assetId: asset.id }))
   store.clearSelection()
-  handleAssetDelete(asset.id)
+  store.imageToPageBackground(asset.id, withImageBackground(store.currentPage?.background, { url: asset.src, assetId: asset.id }))
 }
 
 const currentPageHasPhotoBackground = computed(() => isImageBackground(store.currentPage?.background))
 
-/** «Прибрати фото-фон»: повертаємо фон, що був до фото (або білий). */
+/** «Прибрати фото-фон»: повертаємо фон, що був до фото (або білий); ↶ повертає фото. */
 function clearPhotoBackground(): void {
-  store.setPageBackground(withoutImageBackground(store.currentPage?.background))
+  const page = store.currentPage
+  if (!page?.id) return
+  store.changePageBackgrounds([{ pageId: page.id, background: withoutImageBackground(page.background) }])
 }
 
 function handleAssetDelete(assetId: string): void {
@@ -3362,6 +3370,14 @@ function onBgColorChange(e: Event) {
   // Фінальний коміт обраного кольору.
   const color = (e.target as HTMLInputElement).value
   if (!store.setBackgroundColor) return
+  // Власник 2026-09-28: «міняю фон усіх сторінок — в ескізах міняється, а на сторінці — ні».
+  // Колір — теж фон сторінки: фото-фон на цих сторінках знімаємо (одним кроком ↶ — фото повертаються).
+  const targets = applyBgToAllPages.value ? store.pages : store.currentPage ? [store.currentPage] : []
+  store.changePageBackgrounds(
+    targets
+      .filter((p) => p.id && isImageBackground(p.background))
+      .map((p) => ({ pageId: p.id, background: withoutImageBackground(p.background) })),
+  )
   if (applyBgToAllPages.value) {
     for (const page of store.pages) store.setBackgroundColor(color, page.id)
   } else {
