@@ -44,7 +44,7 @@ import AudioPlayerObject from '../components/board/objects/AudioPlayerObject.vue
 import YouTubePlayerObject from '../components/board/objects/YouTubePlayerObject.vue'
 import type { WBAsset } from '../types/winterboard'
 
-const base = { x: 10, y: 20, w: 320, h: 180, zIndex: 1 }
+const base = { x: 10, y: 20, w: 320, h: 180, rotation: 0, zIndex: 1 }
 const video = (minimized = false) => ({ id: 'vid-1', type: 'video_player' as const, src: '/v.mp4', title: 'Досліди', ...base, minimized })
 const audio = (minimized = false) => ({ id: 'aud-1', type: 'audio_player' as const, src: '/a.mp3', title: 'Пісня', ...base, minimized })
 const youtube = (minimized = false) => ({
