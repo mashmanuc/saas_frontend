@@ -135,10 +135,15 @@ describe('INV-STD-4 · похідні списки не змінили пове�
     expect(assetCapabilities('audio_player').resizable).toBe(false)
   })
 
-  it('TLV2-05B: згортаються всі картки, крім медіа (сховане відео грало б звук)', () => {
+  // Змінено свідомо — рішення власника 2026-09-28 («кожний можна згорнути», ТЗ
+  // TZ_REMOTE_SCENARIO §4.1). До того 05B виключав медіа: сховане відео грало б звук.
+  // Цю умову тепер закриває правило «згорнутий програвач мовчить» (mediaMinimize.spec.ts).
+  it('TLV2-05B + «Сценарій»: згортаються всі картки, медіа теж', () => {
     const minimizable = STANDARD_ASSET_TYPES.filter(t => assetCapabilities(t).minimizable).sort()
-    const media = ['audio_player', 'video_player', 'youtube_player']
-    expect(minimizable).toEqual(STANDARD_ASSET_TYPES.filter(t => !media.includes(t)).sort())
+    expect(minimizable).toEqual([...STANDARD_ASSET_TYPES].sort())
+    for (const media of ['audio_player', 'video_player', 'youtube_player']) {
+      expect(assetCapabilities(media).minimizable, media).toBe(true)
+    }
   })
 
   it('кожна картка рухається, видаляється, блокується й міняє шар', () => {

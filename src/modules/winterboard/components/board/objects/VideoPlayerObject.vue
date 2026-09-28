@@ -12,6 +12,7 @@
       controls
       controlslist="nodownload"
       playsinline
+      @play="onPlay"
       @ended="onEnded"
       @loadedmetadata="onLoadedMeta"
       @error="onVideoError"
@@ -45,6 +46,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBVideoAsset } from '../../../types/mediaObjects'
 import type { VideoSyncState } from '../../../composables/useMediaSync'
+import { isMinimizedOnBoard } from '../../../board/objectStandard'
 
 const props = defineProps<{
   obj: WBVideoAsset
@@ -77,6 +79,21 @@ watch(isPlaying, (playing) => {
     el.pause()
   }
 })
+
+// Згорнутий програвач мовчить на кожному екрані (ТЗ «Сценарій» §4.1): за даними, не
+// за дією — учитель і учень однаково ставлять СВІЙ <video> на паузу, щойно бачать
+// `minimized`. Сам елемент лишається змонтованим (WBCanvas), тож позиція не губиться.
+// Стежимо й за самим елементом: після перезавантаження згорнуте є ще до монтування.
+const isMinimized = computed(() => isMinimizedOnBoard(props.obj))
+watch(
+  [isMinimized, videoEl],
+  ([minimized, el]) => { if (minimized && el) el.pause() },
+  { immediate: true },
+)
+/** Будь-який старт відтворення, поки згорнуто (синхронізація, рідні кнопки) — одразу пауза. */
+function onPlay(): void {
+  if (isMinimized.value) videoEl.value?.pause()
+}
 
 watch(() => syncState.value.position, (pos) => {
   const el = videoEl.value

@@ -51,10 +51,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { parseYouTubeVideoId, getYouTubeEmbedUrl } from '../../../utils/youtubeParser'
 import {
+  pauseVideo,
   registerYouTubeFrame,
   unregisterYouTubeFrame,
   ytPlayStates,
 } from '../../../board/youtubeRemoteControl'
+import { isMinimizedOnBoard } from '../../../board/objectStandard'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 // WBAsset.type='youtube_player' will be added by Agent A in Day 3.
@@ -73,6 +75,7 @@ export interface WBYouTubeAsset {
   locked?: boolean
   lockedBy?: string
   zIndex?: number
+  minimized?: boolean
 }
 
 const props = defineProps<{
@@ -100,6 +103,21 @@ watch(
   { flush: 'post' },
 )
 const blocked = computed(() => ytPlayStates[props.obj.id] === 'blocked')
+
+// Згорнутий програвач мовчить на кожному екрані (ТЗ «Сценарій» §4.1, рішення власника
+// 2026-09-28): правило за даними — цей екран бачить `minimized` і ставить СВІЙ плеєр на
+// паузу. Так звук не лишається ні в класі, ні в учня вдома, ні після перезавантаження.
+// Стан плеєра теж у стеженні: якщо відео встигли запустити, поки плеєр ще не був
+// готовий приймати паузу, — пауза в ту мить, коли він скаже «грає».
+watch(
+  [() => isMinimizedOnBoard(props.obj), () => ytPlayStates[props.obj.id]],
+  ([minimized, state], prev) => {
+    if (!minimized) return
+    const justMinimized = !prev || !prev[0]
+    if (justMinimized || state === 'playing' || state === 'loading') pauseVideo(props.obj.id)
+  },
+  { immediate: true },
+)
 
 // ─── Натискання на дошці (рішення власника 2026-09-26) ──────────────────────
 // У звичайному режимі кнопки плеєра натискаються, а картку тягнуть за шапку.

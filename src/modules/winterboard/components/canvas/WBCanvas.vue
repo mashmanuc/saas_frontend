@@ -262,6 +262,9 @@
           top: `${asset.y * props.zoom}px`,
           width: `${asset.w * props.zoom}px`,
           height: asset.type !== 'audio_player' ? `${asset.h * props.zoom}px` : undefined,
+          // Згорнуте медіа (ТЗ «Сценарій» §4.1) лишається ЗМОНТОВАНИМ, як оверлеї
+          // (display:none, не v-if): «Повернути» продовжує з того самого місця.
+          ...(isMinimizedOnBoard(asset) ? { display: 'none' } : {}),
         }"
         @mousedown.stop
         @click.stop

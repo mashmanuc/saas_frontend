@@ -16,6 +16,7 @@
       controls
       preload="metadata"
       class="audio-object__player"
+      @play="onPlay"
     />
 
     <!-- Student: read-only view (Zoom transmits audio) -->
@@ -29,17 +30,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAudioAsset } from '../../../types/mediaObjects'
+import { isMinimizedOnBoard } from '../../../board/objectStandard'
 
-defineProps<{
+const props = defineProps<{
   obj: WBAudioAsset
   isTutor: boolean
 }>()
 
 const { t } = useI18n()
 const audioEl = ref<HTMLAudioElement>()
+
+// Згорнутий програвач мовчить (ТЗ «Сценарій» §4.1): за даними — щойно цей екран бачить
+// `minimized`, ставить свій <audio> на паузу. В учня програвача немає (лише підпис), тож
+// і глушити нічого; елемент учителя лишається змонтованим, позиція не губиться.
+const isMinimized = computed(() => isMinimizedOnBoard(props.obj))
+watch(
+  [isMinimized, audioEl],
+  ([minimized, el]) => { if (minimized && el) el.pause() },
+  { immediate: true },
+)
+/** Старт відтворення, поки згорнуто (рідні кнопки, будь-що) — одразу пауза. */
+function onPlay(): void {
+  if (isMinimized.value) audioEl.value?.pause()
+}
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
