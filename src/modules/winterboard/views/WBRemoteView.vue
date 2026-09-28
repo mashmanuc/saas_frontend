@@ -1228,6 +1228,14 @@ onBeforeUnmount(() => {
 @keyframes wb-remote-sheet-in { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .wb-remote__sheet { animation: none; } }
 .wb-remote__sheet-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+/* Власник 2026-09-28 («так»): шапка аркуша з «×» завжди вгорі, аркуш прокручується під нею —
+   у «Сценарії» автопрокрутка до поточної сторінки виносила шапку за край. */
+/* margin/padding −/+10 px: фон шапки доходить до самого верху аркуша (його padding-top 10 px), тож
+   плитки під нею не просвічують смужкою над шапкою; у спокої вигляд той самий. */
+.wb-remote__sheet-top {
+  position: sticky; top: -10px; z-index: 2; background: var(--surface);
+  margin-top: -10px; padding-top: 10px;
+}
 .wb-remote__sheet-title { font-size: 16px; font-weight: 700; }
 .wb-remote__sheet-close {
   width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text);

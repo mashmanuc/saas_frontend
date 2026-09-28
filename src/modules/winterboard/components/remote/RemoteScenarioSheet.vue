@@ -274,6 +274,8 @@ watch(() => props.open, async (open) => {
 }
 .wb-scn__empty { margin: 0; text-align: center; color: var(--muted); font-size: 14px; }
 .wb-scn__group { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 2px solid transparent; }
+/* Автопрокрутка до поточної сторінки зупиняється під закріпленою шапкою аркуша (40 px + відступ). */
+.wb-scn__group { scroll-margin-top: 56px; }
 .wb-scn__group--odd { background: var(--scn-odd); }
 .wb-scn__group--even { background: var(--scn-even); }
 /* Сторінка «на екрані» — та сама світла рамка; видно на обох кольорах */
