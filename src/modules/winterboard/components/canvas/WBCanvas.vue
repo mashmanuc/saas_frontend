@@ -6226,6 +6226,10 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
 .wb-media-overlay--show :deep(.video-object__video) {
   border-radius: 0;
 }
+/* Назва вже у шапці показу — власний підпис відео-файлу в куті не дублюємо (скрін власника 2026-09-28) */
+.wb-media-overlay--show :deep(.video-object__title) {
+  display: none;
+}
 /* Soft selection — subtle glow, NO harsh outline */
 .wb-media-overlay--selected {
   box-shadow:

@@ -21,6 +21,13 @@
     <OpsLegacyCopyNotice />
     <OpsBootstrapFailedBanner />
     <OpsRestoreBanner />
+    <!-- Власник 2026-09-28: пульт підключився — один дотик для повного екрана (⛶ або F11), тоді
+         «На весь екран» з пульта розгортає відео на весь монітор. -->
+    <LessonFullscreenPrompt
+      v-if="fullscreenPrompt.visible.value"
+      @enter="projector.enter()"
+      @dismiss="fullscreenPrompt.dismiss()"
+    />
     <ProtocolMismatchModal />
     <!-- INV-23 v3 (рішення власника 2026-09-27): завершений запис дошку НЕ
          блокує — ні read-only, ні вікна «Як продовжити?». Новий запис — лише
@@ -1237,6 +1244,8 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPrompt'
+import LessonFullscreenPrompt from '../components/remote/LessonFullscreenPrompt.vue'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
@@ -1872,6 +1881,14 @@ const boardRemote = useBoardRemote({
 /** Адаптер фото з пульта живе, поки живе кімната (фото не кладеться в чужий стор). */
 let remotePhotoActive = true
 onBeforeUnmount(() => { remotePhotoActive = false })
+
+// Власник 2026-09-28: щойно пульт підключився — «⛶ Повний екран для уроку» (та сама дія, що ⛶ у
+// шапці) або F11. Умова — та сама, що `enabled` пульта вище.
+const fullscreenPrompt = useLessonFullscreenPrompt({
+  enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace && !constructorMode.value),
+  remoteConnected: boardRemote.remoteConnected,
+  projectorOn: projector.enabled,
+})
 
 /**
  * Розміщення ПЕРЕВІРЕНОГО зображення (LAW §9 v1.9): центр видимої частини аркуша,

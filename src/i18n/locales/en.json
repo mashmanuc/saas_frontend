@@ -8779,6 +8779,12 @@
       }
     },
     "remote": {
+      "fullscreenPrompt": {
+        "title": "Remote connected",
+        "hint": "So videos from the remote fill the whole monitor. Or press F11 — stays on for the whole lesson, even after F5",
+        "enter": "Full screen for the lesson",
+        "close": "Close"
+      },
       "video": {
         "pick": "Which video",
         "untitled": "Untitled video",
