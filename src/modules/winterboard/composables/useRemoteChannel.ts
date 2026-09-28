@@ -19,10 +19,31 @@ import { parseRemotePhoto, type RemotePhotoResult } from '../remote/photoContrac
 
 export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'unavailable'
 
-/** v1.12 (пульт v2, LAW §9): що ноутбук у цій кімнаті вміє понад навігацію. Закритий набір. */
-export type RemoteCap = 'photo' | 'video'
-export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video']
+/**
+ * v1.12 (пульт v2, LAW §9): що ноутбук у цій кімнаті вміє понад навігацію. Закритий набір.
+ * v1.15: 'scenario' — кнопка «📋 Сценарій» (адаптер лише в уроці).
+ */
+export type RemoteCap = 'photo' | 'video' | 'scenario'
+export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario']
 const REMOTE_CAPS_MAX = 8
+
+/** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). */
+export type RemoteScenarioKind = 'video' | 'audio' | 'presentation' | 'pdf' | 'document'
+export interface RemoteScenarioItem {
+  objectId: string
+  kind: RemoteScenarioKind
+  title: string
+  pageIndex: number
+  minimized: boolean
+  /** Лише для об'єктів сторінки, що на екрані (відео/аудіо) */
+  state?: RemoteVideoPlayState
+  error?: RemoteVideoError
+  /** Чутна гучність 0…100; немає — плеєр ще не завантажився */
+  volume?: number
+  /** Лише для документів сторінки, що на екрані: 0 ≤ docPage < docPages */
+  docPage?: number
+  docPages?: number
+}
 
 export interface RemoteStateDetail {
   pair: string
@@ -52,6 +73,8 @@ export interface RemoteStateDetail {
    * Немає поля (старий ноутбук у кеші) — пульт показує все, як до v2.
    */
   caps?: RemoteCap[]
+  /** v1.15 — «Сценарій»: відео, аудіо й документи дошки; `focusId` — об'єкт «на весь екран» */
+  scenario?: { focusId: string | null; items: RemoteScenarioItem[] }
 }
 
 /** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
@@ -109,6 +132,65 @@ export function parseRemoteVideos(raw: any): RemoteStateDetail['videos'] | undef
     out.push(item)
   }
   return out
+}
+
+const SCENARIO_KINDS = new Set<RemoteScenarioKind>(['video', 'audio', 'presentation', 'pdf', 'document'])
+const SCENARIO_ITEMS_MAX = 50
+const SCENARIO_ID_MAX = 64
+const SCENARIO_TITLE_MAX = 200
+const SCENARIO_PAGE_INDEX_MAX = 10000
+const SCENARIO_DOC_PAGES_MAX = 10000
+const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
+
+/**
+ * v1.15 «Сценарій»: `scenario` з `remote.state`. Дзеркало `_validate_remote_scenario` на
+ * сервері: будь-яке порушення — поле відкидаємо ЦІЛИМ (`undefined`), стан лишається
+ * валідним — сторінки важливіші за сценарій. Поля відтворення — лише у відео й аудіо,
+ * сторінка документа — лише в документах.
+ */
+export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const focus = raw.focus_id
+  if (focus != null && (typeof focus !== 'string' || focus.length < 1 || focus.length > SCENARIO_ID_MAX)) return undefined
+  if (!Array.isArray(raw.items) || raw.items.length > SCENARIO_ITEMS_MAX) return undefined
+  const items: RemoteScenarioItem[] = []
+  for (const it of raw.items) {
+    if (!it || typeof it !== 'object' || Array.isArray(it)) return undefined
+    const { object_id: id, kind, page_index: pageIndex, minimized } = it
+    const title = it.title === undefined ? '' : it.title
+    if (typeof id !== 'string' || id.length < 1 || id.length > SCENARIO_ID_MAX) return undefined
+    if (!SCENARIO_KINDS.has(kind) || typeof title !== 'string') return undefined
+    if (!isInt(pageIndex) || pageIndex < 0 || pageIndex > SCENARIO_PAGE_INDEX_MAX) return undefined
+    if (typeof minimized !== 'boolean') return undefined
+    const item: RemoteScenarioItem = { objectId: id, kind, title: title.slice(0, SCENARIO_TITLE_MAX), pageIndex, minimized }
+    // Необов'язкові поля: null = немає, як `is not None` на сервері
+    const { state, error, volume, doc_page: docPage, doc_pages: docPages } = it
+    if (kind === 'video' || kind === 'audio') {
+      if (docPage != null || docPages != null) return undefined
+      if (state != null) {
+        if (!VIDEO_STATES.has(state)) return undefined
+        item.state = state
+      }
+      if (error != null) {
+        if (state !== 'error' || !VIDEO_ERRORS.has(error)) return undefined
+        item.error = error
+      }
+      if (volume != null) {
+        if (!isInt(volume) || volume < 0 || volume > 100) return undefined
+        item.volume = volume
+      }
+    } else {
+      if (state != null || error != null || volume != null) return undefined
+      if (docPage != null || docPages != null) {
+        if (!isInt(docPage) || !isInt(docPages)) return undefined
+        if (docPages < 1 || docPages > SCENARIO_DOC_PAGES_MAX || docPage < 0 || docPage >= docPages) return undefined
+        item.docPage = docPage
+        item.docPages = docPages
+      }
+    }
+    items.push(item)
+  }
+  return { focusId: focus ?? null, items }
 }
 
 const LOG_PREFIX = '[WB:remote]'
@@ -221,6 +303,8 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
         if (photo) detail.photo = photo
         const caps = parseRemoteCaps(msg.caps)
         if (caps) detail.caps = caps
+        const scenario = parseRemoteScenario(msg.scenario)
+        if (scenario) detail.scenario = scenario
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

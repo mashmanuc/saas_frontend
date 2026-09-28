@@ -183,6 +183,24 @@
         </button>
       </div>
 
+      <!-- LAW §9 v1.15 «📋 Сценарій» (ТЗ §2.1): рядок на всю ширину під «+ Фото / + Відео».
+           Лише за caps ∋ 'scenario' (вид А); N = 0 — вимкнена на місці, тап пояснює (вид Б). -->
+      <template v-if="canScenario">
+        <div class="wb-remote__scenario-slot" data-testid="scenario-slot" @click="whyScenario">
+          <button
+            type="button"
+            class="wb-remote__add-btn wb-remote__scenario-btn"
+            data-testid="open-scenario"
+            :disabled="!isReady || scenarioCount === 0"
+            @click="openSheet('scenario')"
+          >
+            <span aria-hidden="true">📋</span>
+            <span>{{ t('winterboard.remote.scenario.button') }} · {{ scenarioCount }}</span>
+          </button>
+        </div>
+        <p v-if="scenarioWhy" class="wb-remote__why" role="status" data-testid="scenario-why-empty">{{ scenarioWhy }}</p>
+      </template>
+
       <!-- LAW §9 v1.14 (власник 2026-09-28, погоджено): згорнути вікно Інтегралика на
            ноутбуці — те саме, що «–» у його шапці; розмова лишається. Одразу над «Говорю». -->
       <button
@@ -343,6 +361,17 @@
         </ul>
       </div>
 
+      <!-- LAW §9 v1.15: «Сценарій» — відео, аудіо й документи дошки за сторінками -->
+      <RemoteScenarioSheet
+        v-if="canScenario"
+        v-show="sheet === 'scenario'"
+        :scenario="scenario"
+        :page-index="pageIndex"
+        :ready="isReady"
+        :open="sheet === 'scenario'"
+        @send="(cmd, args) => sendCmd(cmd as RemoteCmd, args)"
+      />
+
       <!-- Налаштування (ТЗ §4.3): акаунт → предмет і мова → «Оновити» → адреса → «Відключити» -->
       <div v-show="sheet === 'settings'" class="wb-remote__settings" data-testid="settings-sheet">
         <p class="wb-remote__who">
@@ -436,6 +465,7 @@ import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import type { RemoteStateDetail, RemoteCap } from '../composables/useRemoteChannel'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
+import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
 
 const props = defineProps<{ id?: string }>()
@@ -492,6 +522,23 @@ const isPresentingTask = computed(() => !!cards.value?.presenting)
 const caps = ref<RemoteCap[] | null>(null)
 const canPhoto = computed(() => !caps.value || caps.value.includes('photo'))
 const canVideo = computed(() => !caps.value || caps.value.includes('video'))
+/**
+ * v1.15 «Сценарій»: лише коли ноутбук сам оголосив 'scenario' (ТЗ §2.1). На відміну від
+ * фото й відео, старий ноутбук без `caps` кнопки НЕ отримує: списку він не шле.
+ */
+const canScenario = computed(() => caps.value?.includes('scenario') === true)
+const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
+const scenarioCount = computed(() => scenario.value?.items.length ?? 0)
+const scenarioWhy = ref('')
+let scenarioWhyTimer: ReturnType<typeof setTimeout> | null = null
+/** Вид Б: тап по вимкненій «📋 Сценарій» пояснює причину одним рядком під нею. */
+function whyScenario(): void {
+  if (isReady.value && scenarioCount.value > 0) return
+  scenarioWhy.value = isReady.value ? t('winterboard.remote.scenario.empty') : t('winterboard.remote.waitingBoard')
+  if (scenarioWhyTimer) clearTimeout(scenarioWhyTimer)
+  scenarioWhyTimer = setTimeout(() => { scenarioWhy.value = '' }, 2500)
+  tel('why', { which: 'scenario' })
+}
 
 // ── Прототип «відео з пульта» (2026-09-25) ─────────────────────────────────
 /** YouTube-картки поточної сторінки ноутбука (з remote.state) */
@@ -685,6 +732,7 @@ const channel = useRemoteChannel({
     videos.value = s.videos ?? []
     photoResult.value = s.photo ?? null
     caps.value = s.caps ?? null
+    scenario.value = s.scenario ?? null
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
     reasonKey.value = s.frozen ? 'boardFrozen' : null
@@ -780,7 +828,7 @@ function whyDisabled(which: 'prev' | 'next' | 'ready'): void {
 }
 
 // ── Аркуші (ТЗ §4): один за раз; «Назад» Android закриває аркуш, а не пульт ──
-type Sheet = 'photo' | 'video' | 'settings'
+type Sheet = 'photo' | 'video' | 'settings' | 'scenario'
 const sheet = ref<Sheet | null>(null)
 /** Ми поклали запис в історію заради «Назад» — і маємо самі його зняти при «×» */
 let sheetInHistory = false
@@ -789,9 +837,12 @@ const sheetTitle = computed(() => {
     case 'photo': return t('winterboard.remote.photo.title')
     case 'video': return t('winterboard.remote.sheetVideo')
     case 'settings': return t('winterboard.remote.settings')
+    case 'scenario': return t('winterboard.remote.scenario.title')
     default: return ''
   }
 })
+// Дошка перестала вміти «Сценарій» (інша кімната) — аркуш без вмісту не лишаємо
+watch(canScenario, (can) => { if (!can && sheet.value === 'scenario') closeSheet() })
 function openSheet(name: Sheet): void {
   if (sheet.value === name) return
   if (!sheet.value) {
@@ -828,6 +879,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add'
+  | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
@@ -1011,6 +1063,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPopState)
   if (helloTimer) clearInterval(helloTimer)
   if (whyTimer) clearTimeout(whyTimer)
+  if (scenarioWhyTimer) clearTimeout(scenarioWhyTimer)
   stopStateWatch()
   try { wakeLock?.release?.() } catch { /* noop */ }
 })
@@ -1117,6 +1170,11 @@ onBeforeUnmount(() => {
 .wb-remote__add-btn:active { background: var(--surface-2); }
 .wb-remote__add-btn:disabled { opacity: .4; }
 .wb-remote__add-plus { font-size: 20px; line-height: 1; color: #cbd5e1; }
+/* v1.15 «📋 Сценарій»: рядок на всю ширину, 56 px як ряд E. Вимкнена лишається на місці,
+   а тап ловить обгортка й пояснює причину (вид Б), як у ядра. */
+.wb-remote__scenario-slot { display: flex; }
+.wb-remote__scenario-btn { width: 100%; }
+.wb-remote__scenario-btn:disabled { pointer-events: none; }
 .wb-remote__badge {
   position: absolute; top: 6px; right: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
   font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
