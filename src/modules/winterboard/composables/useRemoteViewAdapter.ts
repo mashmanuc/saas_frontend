@@ -27,6 +27,7 @@
 import { useTutorRevealGate } from './useStudentTutor'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
+import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
 import {
   hasSharedTextScale, nextPresentationScale, presentationScaleOf, withPresentationScale,
 } from '../board/cardPresentation'
@@ -94,11 +95,12 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     resetNmtPresentationScales()
   }
 
-  /** Кінець «На весь екран»: масштаб і прокрутка — як до першого показу. */
+  /** Кінець «На весь екран»: масштаб і прокрутка — як до першого показу; відео — з показу. */
   function endObjectFocus(): void {
     if (savedView) applyView(savedView.zoom, savedView.scrollX, savedView.scrollY)
     savedView = null
     objectFocus = null
+    closeMediaShow()
   }
 
   /**
@@ -107,10 +109,20 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
    * запису й Replay (як `view.fit` v1.2). Показ один за раз: знімає «Задачу на екран».
    */
   function focusObject(assetId: string): boolean {
-    if (store.stageFollowsScroll === false) return false
     const page = store.pages[store.currentPageIndex]
     const asset = page?.assets.find((a) => a && a.id === assetId)
-    if (!asset || !(asset.w > 0) || !(asset.h > 0)) return false
+    if (!asset) return false
+    // Власник 2026-09-28 («так»): відео — не масштаб полотна, а показ на весь екран, як
+    // презентація (`board/mediaShow.ts`). Той самий програвач, лише вигляд цього екрана.
+    if (isMediaShowType(asset.type)) {
+      if (store.expandedAssetId) endTaskPresentation()
+      if (savedView) endObjectFocus()
+      openMediaShow(assetId)
+      objectFocus = assetId
+      return true
+    }
+    if (store.stageFollowsScroll === false) return false
+    if (!(asset.w > 0) || !(asset.h > 0)) return false
     const vp = opts.viewportSize?.() ?? { width: store.containerWidth, height: store.containerHeight }
     if (!vp || !(vp.width > 0) || !(vp.height > 0)) return false
     if (store.expandedAssetId) endTaskPresentation()
@@ -124,16 +136,26 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     // Об'єкт — посередині видимої частини: center − scroll + p·zoom = target.
     const targetX = (vp.width - asset.w * zoom) / 2
     const targetY = (vp.height - asset.h * zoom) / 2
+    // Показ відео (якщо був) закриваємо: показ один за раз
+    closeMediaShow()
     applyView(zoom, centerX + asset.x * zoom - targetX, centerY + asset.y * zoom - targetY)
     objectFocus = assetId
     return true
   }
 
-  /** Об'єкт «на весь екран», поки він є на поточній сторінці (поле `scenario.focus_id`). */
+  /**
+   * Об'єкт «на весь екран», поки він є на поточній сторінці (поле `scenario.focus_id`).
+   * Відео в показі вчитель може закрити й на ноутбуці (× чи Esc) — тоді показу вже немає:
+   * читаємо реактивний `mediaShow`, тож пульт отримає новий стан сам.
+   */
   function objectFocusId(): string | null {
+    const showId = mediaShow.id
     if (!objectFocus) return null
     const page = store.pages[store.currentPageIndex]
-    return page?.assets.some((a) => a && a.id === objectFocus) ? objectFocus : null
+    const asset = page?.assets.find((a) => a && a.id === objectFocus)
+    if (!asset) return null
+    if (isMediaShowType(asset.type) && showId !== objectFocus) return null
+    return objectFocus
   }
 
   function taskCards(): any[] {

@@ -40,6 +40,7 @@ vi.mock('../board/htmlMediaRemoteControl', async () => {
 import { ytPlayErrors, ytPlayStates, ytVolumes } from '../board/youtubeRemoteControl'
 import { mediaPlayStates, mediaVolumes } from '../board/htmlMediaRemoteControl'
 import { createRemoteScenarioAdapter, scenarioKind, SCENARIO_ITEMS_MAX } from '../remote/remoteScenarioAdapter'
+import { closeMediaShow, mediaShow } from '../board/mediaShow'
 import { createRemoteViewAdapter, FOCUS_MARGIN_PX, TASK_ASSET_TYPE } from '../composables/useRemoteViewAdapter'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import type { WBAsset } from '../types/winterboard'
@@ -251,8 +252,10 @@ function viewStore(over: Record<string, unknown> = {}) {
     zoom: 1, scrollX: 0, scrollY: 0,
     expandedAssetId: null, currentPageIndex: 0, stageFollowsScroll: true,
     pages: [{ assets: [
-      asset('vid-1', 'video_player', 500, 300, { w: 640, h: 360 }),
-      asset('dot', 'video_player', 10, 10, { w: 10, h: 10 }),
+      asset('doc-1', 'document_viewer', 500, 300, { w: 640, h: 360 }),
+      asset('dot', 'document_viewer', 10, 10, { w: 10, h: 10 }),
+      asset('vid-1', 'video_player', 900, 900, { w: 640, h: 360, title: 'Маятник' }),
+      asset('yt-1', 'youtube_player', 900, 100, { w: 480, h: 270 }),
       { id: 'task-1', type: TASK_ASSET_TYPE, x: 0, y: 0, w: 400, h: 200, data: { externalId: 'task-1' } },
     ] }],
     setZoom: vi.fn(), setScroll: vi.fn(), updateAsset: vi.fn(),
@@ -269,7 +272,7 @@ function viewStore(over: Record<string, unknown> = {}) {
 describe('INV-SCN-5 · «На весь екран» — полотно цього екрана до об\'єкта', () => {
   it('об\'єкт посередині видимої частини з відступом 24 px (center − scroll + p·zoom)', () => {
     const { view, applied } = viewStore()
-    expect(view.focusObject('vid-1')).toBe(true)
+    expect(view.focusObject('doc-1')).toBe(true)
     const [z, x, y] = applied[0]
     const m = FOCUS_MARGIN_PX
     expect(z).toBeCloseTo(Math.min((1000 - 2 * m) / 640, (600 - 2 * m) / 360), 10)
@@ -280,12 +283,12 @@ describe('INV-SCN-5 · «На весь екран» — полотно цьог�
     expect(top).toBeCloseTo((600 - 360 * z) / 2, 6)
     expect(left).toBeGreaterThanOrEqual(m - 1e-9)
     expect(left + 640 * z).toBeLessThanOrEqual(1000 - m + 1e-9)
-    expect(view.objectFocusId()).toBe('vid-1')
+    expect(view.objectFocusId()).toBe('doc-1')
   })
 
   it('стор знає розмір поля — центр аркуша той самий, що в boardStore.stageOrigin', () => {
     const { view, applied } = viewStore({ containerWidth: 1000, containerHeight: 600, pageWidth: 400, pageHeight: 300 })
-    view.focusObject('vid-1')
+    view.focusObject('doc-1')
     const [z, x] = applied[0]
     const center = Math.max(0, (1000 - 400 * z) / 2)
     expect(center - x + 500 * z).toBeCloseTo((1000 - 640 * z) / 2, 6)
@@ -299,7 +302,7 @@ describe('INV-SCN-5 · «На весь екран» — полотно цьог�
 
   it('«Уся сторінка» / зміна сторінки: вигляд до ПЕРШОГО показу, фокус знято', () => {
     const { store, view, applied } = viewStore({ zoom: 0.8, scrollX: 12, scrollY: 34 })
-    view.focusObject('vid-1')
+    view.focusObject('doc-1')
     view.focusObject('dot')          // другий показ не перезаписує запам'ятоване
     view.resetFocus()
     expect(applied[applied.length - 1]).toEqual([0.8, 12, 34])
@@ -314,7 +317,7 @@ describe('INV-SCN-5 · «На весь екран» — полотно цьог�
     const { store, view, applied } = viewStore({ zoom: 0.7 })
     view.fitTask()
     expect(store.expandedAssetId).toBe('task-1')
-    view.focusObject('vid-1')
+    view.focusObject('doc-1')
     expect(store.expandedAssetId).toBeNull()
     view.fitTask()
     expect(applied[applied.length - 1][0]).toBe(0.7) // вигляд повернуто
@@ -324,10 +327,73 @@ describe('INV-SCN-5 · «На весь екран» — полотно цьог�
 
   it('кімната без зсуву аркуша прокруткою або без розміру поля — нічого не робимо', () => {
     const a = viewStore({ stageFollowsScroll: false })
-    expect(a.view.focusObject('vid-1')).toBe(false)
+    expect(a.view.focusObject('doc-1')).toBe(false)
     expect(a.applied).toHaveLength(0)
     const b = createRemoteViewAdapter(viewStore().store, { viewportSize: () => null })
-    expect(b.focusObject('vid-1')).toBe(false)
+    expect(b.focusObject('doc-1')).toBe(false)
+  })
+})
+
+
+// ── INV-SCN-5b · відео «на весь екран» — показ, як презентація (власник 2026-09-28) ─────────
+
+describe('INV-SCN-5b · відео «на весь екран» — показ поверх екрана, а не масштаб полотна', () => {
+  afterEach(() => closeMediaShow())
+
+  it('відео (файл і YouTube) відкривається показом: полотно не рухається, focus_id — це відео', () => {
+    for (const id of ['vid-1', 'yt-1']) {
+      const { store, view, applied } = viewStore({ zoom: 0.9 })
+      expect(view.focusObject(id)).toBe(true)
+      expect(mediaShow.id).toBe(id)
+      expect(applied).toHaveLength(0)
+      expect(store.zoom).toBe(0.9)
+      expect(view.objectFocusId()).toBe(id)
+      closeMediaShow()
+    }
+  })
+
+  it('«Уся сторінка» / інша сторінка (resetFocus) закриває показ', () => {
+    const { view } = viewStore()
+    view.focusObject('vid-1')
+    view.resetFocus()
+    expect(mediaShow.id).toBeNull()
+    expect(view.objectFocusId()).toBeNull()
+  })
+
+  it('закрили на ноутбуці (× чи Esc) — пульт отримує focus_id: null', () => {
+    const { view } = viewStore()
+    view.focusObject('vid-1')
+    closeMediaShow()
+    expect(view.objectFocusId()).toBeNull()
+  })
+
+  it('Esc закриває показ; інші клавіші не доходять до дошки під показом', () => {
+    const { view } = viewStore()
+    view.focusObject('vid-1')
+    const boardKey = vi.fn()
+    window.addEventListener('keydown', boardKey)
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(boardKey).not.toHaveBeenCalled()
+    expect(mediaShow.id).toBe('vid-1')
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(mediaShow.id).toBeNull()
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+    expect(boardKey).toHaveBeenCalledTimes(1)          // показ закрито — дошка знову чує клавіші
+    window.removeEventListener('keydown', boardKey)
+  })
+
+  it('показ один за раз: документ «на весь екран» чи «Задача на екран» закривають показ відео', () => {
+    const { view, applied } = viewStore()
+    view.focusObject('vid-1')
+    view.focusObject('doc-1')
+    expect(mediaShow.id).toBeNull()
+    expect(applied).toHaveLength(1)                    // документ — масштаб полотна
+    expect(view.objectFocusId()).toBe('doc-1')
+    view.focusObject('yt-1')
+    expect(mediaShow.id).toBe('yt-1')
+    expect(applied[applied.length - 1][0]).toBe(1)     // вигляд до документа повернуто
+    view.fitTask()
+    expect(mediaShow.id).toBeNull()
   })
 })
 

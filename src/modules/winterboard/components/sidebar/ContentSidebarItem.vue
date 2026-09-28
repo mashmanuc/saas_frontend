@@ -56,6 +56,18 @@
       {{ item.title }}
     </span>
 
+    <!-- Власник 2026-09-28 («так»): відео — запуск на весь екран кнопкою ▶, як презентація -->
+    <button
+      v-if="isTutor && isVideo && item.cdn_url"
+      type="button"
+      class="sidebar-item__play-btn"
+      data-testid="sidebar-video-play"
+      :aria-label="t('winterboard.player.play')"
+      :title="t('winterboard.player.play')"
+      @click.stop="videoShowOpen = true"
+      @mousedown.stop
+    >▶</button>
+
     <!-- Place on board button (shown on hover) -->
     <button
       v-if="isTutor && isInteractable"
@@ -111,12 +123,21 @@
     @close="showDocxSelector = false"
     @retry="$emit('retry', item)"
   />
+
+  <!-- Відео на весь екран (власник 2026-09-28) — як PresentationPlayer у презентації -->
+  <VideoShowPlayer
+    v-if="videoShowOpen && isVideo && item.cdn_url"
+    :src="item.cdn_url"
+    :title="item.title"
+    @close="videoShowOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AllowedContentItem } from '../../types/sidebar'
+import VideoShowPlayer from './VideoShowPlayer.vue'
 import { SIDEBAR_DRAG_MIME, type SidebarDragPayload } from '../../types/boardDrop'
 import PdfPageSelector from './PdfPageSelector.vue'
 import PresentationSlideSelector from './PresentationSlideSelector.vue'
@@ -150,6 +171,9 @@ const isInteractable = computed(() => isReady.value || isPlayableMedia.value)
 const isPdf = computed(() => props.item.asset_category === 'pdf')
 const isPresentation = computed(() => props.item.asset_category === 'presentation')
 const isDocx = computed(() => props.item.asset_category === 'document')
+const isVideo = computed(() => props.item.asset_category === 'video')
+/** Відео з «Матеріалів» на весь екран (кнопка ▶) — лише цей екран, як PresentationPlayer. */
+const videoShowOpen = ref(false)
 
 const thumbSrc = computed<string | null>(() => {
   // BUG-2 FIX: Skip thumbnail_url for categories that don't have real thumbnails
@@ -317,6 +341,23 @@ function onDragEnd() {
 }
 .sidebar-item:hover .sidebar-item__drag-hint {
   display: inline;
+}
+
+/* ── Відео: ▶ на весь екран (завжди видно, як ▶ у презентації) ── */
+.sidebar-item__play-btn {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 4px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.sidebar-item__play-btn:hover {
+  background: #2563eb;
 }
 
 /* ── Add-to-board button ── */

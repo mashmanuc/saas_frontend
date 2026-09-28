@@ -256,8 +256,9 @@
         :class="{
           'wb-media-overlay--selected': wbStore.selectedIds.includes(asset.id),
           'wb-media-overlay--selectable': currentTool === 'select',
+          'wb-media-overlay--show': isInMediaShow(asset),
         }"
-        :style="{
+        :style="isInMediaShow(asset) ? {} : {
           left: `${asset.x * props.zoom}px`,
           top: `${asset.y * props.zoom}px`,
           width: `${asset.w * props.zoom}px`,
@@ -270,6 +271,19 @@
         @click.stop
         @pointerdown.stop="handleMediaPointerDown(asset, $event)"
       >
+        <!-- Показ відео на весь екран (власник 2026-09-28, board/mediaShow.ts): та сама картка
+             стилем поверх усього екрана — назва й × угорі, над програвачем, а не на ньому. -->
+        <div v-if="isInMediaShow(asset)" class="wb-media-show__bar" data-testid="media-show-bar">
+          <span class="wb-media-show__title">{{ mediaShowTitle(asset) }}</span>
+          <button
+            type="button"
+            class="wb-media-show__close"
+            data-testid="media-show-close"
+            :aria-label="t('winterboard.player.close')"
+            :title="t('winterboard.player.close')"
+            @click.stop="closeMediaShow()"
+          >&#x2715;</button>
+        </div>
         <AudioPlayerObject
           v-if="asset.type === 'audio_player'"
           :obj="asAudioAsset(asset)"
@@ -296,12 +310,12 @@
              лише на шапці (28 px, як .wb-youtube-player__title). Нічого видимого
              поверх плеєра (правила YouTube); нижні ручки розміру — під карткою. -->
         <div
-          v-if="currentTool === 'select' && (asset.type === 'video_player' || asset.type === 'youtube_player')"
+          v-if="currentTool === 'select' && (asset.type === 'video_player' || asset.type === 'youtube_player') && !isInMediaShow(asset)"
           class="wb-media-drag-surface"
           :class="{ 'wb-media-drag-surface--header': asset.type === 'youtube_player' }"
         />
         <!-- Resize handles for video/youtube (visible when selected in select mode) -->
-        <template v-if="isResizableMedia(asset) && wbStore.selectedIds.includes(asset.id) && currentTool === 'select'">
+        <template v-if="isResizableMedia(asset) && wbStore.selectedIds.includes(asset.id) && currentTool === 'select' && !isInMediaShow(asset)">
           <div
             v-for="corner in RESIZE_CORNERS"
             :key="corner.name"
@@ -939,6 +953,7 @@ import { useWBStore } from '../../board/state/boardStore'
 // TLV2-05A: стандарт об'єктів — одне джерело правди про можливості типу.
 import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
+import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
@@ -1601,6 +1616,8 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
   if (!id) return null
   const asset = assets.value.find(a => a.id === id) ?? null
   if (!asset || isMinimizedOnBoard(asset)) return null
+  // У показі на весь екран у відео лише «×» показу: «— ×» картки (× там — видалення) не малюємо
+  if (isInMediaShow(asset)) return null
   return hasWindowActions(cardWindowActions(asset, trayViewer.value)) ? asset : null
 })
 
@@ -4063,10 +4080,25 @@ function handleMediaResizeStart(asset: WBAsset, corner: string, e: PointerEvent)
  * Skip drag initiation if the click target is a native control element
  * (audio element, buttons, inputs) so that audio/video controls still work.
  */
+/**
+ * Відео в показі на весь екран (власник 2026-09-28, `board/mediaShow.ts`): лише відео поточної
+ * сторінки й лише незгорнуте — згорнуте мовчить і сховане (§4.1 «Сценарію»).
+ */
+function isInMediaShow(asset: WBAsset): boolean {
+  return mediaShow.id === asset.id && isMediaShowType(asset.type) && !isMinimizedOnBoard(asset)
+}
+
+function mediaShowTitle(asset: WBAsset): string {
+  const title = typeof asset.title === 'string' ? asset.title.trim() : ''
+  return title || t('winterboard.remote.video.untitled')
+}
+
 function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   // Always stop — prevents Konva canvas from receiving drawing events under overlay
   // (.stop on the template handles stopPropagation; this function handles drag logic)
 
+  // У показі на весь екран картку не тягнуть і не виділяють — лише кнопки плеєра й «×»
+  if (isInMediaShow(asset)) return
   if (currentTool.value !== 'select') return
 
   // Don't initiate drag when clicking native media controls or buttons
@@ -6132,6 +6164,67 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.15),
     0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+/* Показ відео на весь екран (власник 2026-09-28, board/mediaShow.ts) — вигляд як у
+   PresentationPlayer: темне тло поверх усього екрана, угорі назва й ×, відео по центру.
+   Та сама картка, лише стиль: DOM не переноситься, тож відео не перезапускається.
+   Предки полотна не мають transform/filter (звірено) — fixed рахується від вікна. */
+.wb-media-overlay--show,
+.wb-media-overlay--show.wb-media-overlay--selectable:hover {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  box-sizing: border-box;
+  padding: 64px 24px 24px;
+  background: rgba(0, 0, 0, 0.92);
+  border-radius: 0;
+  box-shadow: none;
+}
+.wb-media-show__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.wb-media-show__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-media-show__close {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.wb-media-show__close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+/* Назва вже у шапці показу; власна шапка YouTube-картки лишається лише з «торкніться екрана» */
+.wb-media-overlay--show :deep(.wb-youtube-player__title:not(.wb-youtube-player__title--blocked)) {
+  display: none;
+}
+.wb-media-overlay--show :deep(.wb-youtube-player),
+.wb-media-overlay--show :deep(.video-object__video) {
+  border-radius: 0;
 }
 /* Soft selection — subtle glow, NO harsh outline */
 .wb-media-overlay--selected {
