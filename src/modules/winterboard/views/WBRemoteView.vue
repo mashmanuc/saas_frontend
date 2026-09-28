@@ -289,6 +289,9 @@
         :page-index="pageIndex"
         :result="photoResult"
         :send="sendPhoto"
+        :send-background="sendPhotoBackground"
+        :bg-photo="bgPhoto"
+        @clear-background="clearPhotoBackground"
         :tel="tel"
         @phase="photoPhase = $event"
         @done="closeSheet"
@@ -575,6 +578,8 @@ function whyScenario(): void {
 const videos = ref<NonNullable<RemoteStateDetail['videos']>>([])
 /** v1.9: результат останньої спроби «фото на дошку» від ноутбука */
 const photoResult = ref<RemotePhotoResult | null>(null)
+/** v1.19: на поточній сторінці ноутбука фото-фон */
+const bgPhoto = ref(false)
 /** Фаза панелі фото — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
 const photoPhase = ref('idle')
 const photoBadge = computed<{ text: string; tone: 'busy' | 'ok' | 'warn' } | null>(() => {
@@ -764,6 +769,7 @@ const channel = useRemoteChannel({
     caps.value = s.caps ?? null
     scenario.value = s.scenario ?? null
     boardBusy.value = s.busy === 'saving_template'
+    bgPhoto.value = s.bgPhoto === true
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
     reasonKey.value = s.frozen ? 'boardFrozen' : null
@@ -924,7 +930,7 @@ function vibrate(ms: number) {
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
   | 'video.add' | 'video.play' | 'video.pause'
-  | 'photo.add'
+  | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
@@ -937,6 +943,17 @@ function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
 /** v1.9: фото вже в «Матеріалах» — лише ідентифікатори, байтів у WS немає (LAW §9). */
 function sendPhoto(args: { library_asset_id: number; request_id: string; page_index: number }): boolean {
   return sendCmd('photo.add', args)
+}
+
+/** v1.19 (власник 2026-09-28): те саме фото — фоном сторінки; перевіряє й пише ноутбук. */
+function sendPhotoBackground(args: { library_asset_id: number; request_id: string; page_index: number }): boolean {
+  return sendCmd('photo.background', args)
+}
+
+/** v1.19: прибрати фото-фон зі сторінки, яку бачить учитель. */
+function clearPhotoBackground(): void {
+  if (pageIndex.value === null) return
+  sendCmd('photo.background_clear', { page_index: pageIndex.value })
 }
 
 function goRel(delta: 1 | -1) {

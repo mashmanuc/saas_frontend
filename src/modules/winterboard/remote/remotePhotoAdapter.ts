@@ -6,6 +6,8 @@
 // Жодних повторів запитів кодом (LAW §12): відмова одразу йде на телефон.
 
 import type { ResolvedImage } from '../board/placeImage'
+import type { WBPageBackground } from '../types/winterboard'
+import { isImageBackground, withImageBackground, withoutImageBackground } from '../board/pageBackground'
 import {
   PHOTO_MIME_TYPES, photoAssetIdFor,
   type PhotoRejectReason, type RemotePhotoOutcome, type RemotePhotoRequest,
@@ -43,11 +45,24 @@ export interface RemotePhotoDeps {
   loadImage: (src: string) => Promise<{ naturalWidth: number; naturalHeight: number }>
   /** Штатне розміщення на поточній сторінці (handleAssetAdd → op asset_add) */
   place: (image: ResolvedImage, id: string) => void
+  /** v1.19: фон поточної сторінки (для «Прибрати фон» і ідемпотентності). Без нього — unsupported. */
+  currentBackground?: () => WBPageBackground | undefined
+  /** v1.19: штатний background_update поточної сторінки */
+  setBackground?: (bg: WBPageBackground) => void
 }
 
 export interface RemotePhotoAdapter {
   add: (req: RemotePhotoRequest) => Promise<RemotePhotoOutcome>
+  /** v1.19: те саме фото — фоном поточної сторінки (ті самі перевірки, що в add). */
+  setBackground: (req: RemotePhotoRequest) => Promise<RemotePhotoOutcome>
+  /** v1.19: прибрати фото-фон зі сторінки, яку бачив учитель; false — нічого не зроблено. */
+  clearBackground: (pageIndex: number) => boolean
+  /** v1.19: на поточній сторінці фото-фон (поле `bg_photo` стану пульта). */
+  hasBackgroundPhoto: () => boolean
 }
+
+/** Куди лягає фото: об'єктом на сторінку (photo.add) чи фоном сторінки (photo.background, v1.19). */
+type Mode = 'object' | 'background'
 
 function rejected(reason: PhotoRejectReason): RemotePhotoOutcome {
   return { status: 'rejected', reason }
@@ -63,25 +78,34 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
   const inFlight = new Map<string, Promise<RemotePhotoOutcome>>()
 
   /** Стан дошки, за якого класти фото не можна. Перевіряється і до, і після очікувань. */
-  function blocker(pageIndex: number): PhotoRejectReason | null {
+  function blocker(pageIndex: number, mode: Mode): PhotoRejectReason | null {
     if (pageIndex !== deps.currentPageIndex()) return 'page_changed'
     if (deps.isInputLocked()) return 'input_locked'
-    if (!deps.canAddObject()) return 'limit'
+    // фон — не новий об'єкт: стеля об'єктів його не стосується
+    if (mode === 'object' && !deps.canAddObject()) return 'limit'
     return null
   }
 
-  async function run(req: RemotePhotoRequest): Promise<RemotePhotoOutcome> {
+  /** Цю спробу вже виконано: фото лежить (object) чи вже стоїть фоном поточної сторінки (background). */
+  function alreadyDone(req: RemotePhotoRequest, mode: Mode): boolean {
+    if (mode === 'object') return deps.hasAssetAnywhere(photoAssetIdFor(req.requestId))
+    const bg = deps.currentBackground?.()
+    return isImageBackground(bg) && bg.requestId === req.requestId
+  }
+
+  async function run(req: RemotePhotoRequest, mode: Mode): Promise<RemotePhotoOutcome> {
     // Студія (шаблон уроку) — не місце для фото з пульта: воно для уроку, який проводять
     if (!deps.supported()) return rejected('unsupported')
+    if (mode === 'background' && (!deps.setBackground || !deps.currentBackground)) return rejected('unsupported')
     const id = photoAssetIdFor(req.requestId)
     // Порядок перевірок: дошка → чи фото вже лежить → стан сторінки. Інакше «вже
     // лежить» на перегорнутій сторінці дало б page_changed, і нова спроба — копію.
     const board = deps.boardId()
     if (!board) return rejected('page_changed')
-    if (deps.hasAssetAnywhere(id)) return { status: 'placed' }
+    if (alreadyDone(req, mode)) return { status: 'placed' }
     const pageId = deps.currentPageId()
 
-    const early = blocker(req.pageIndex)
+    const early = blocker(req.pageIndex, mode)
     if (early) return rejected(early)
 
     let asset: PhotoLibraryAsset
@@ -112,22 +136,43 @@ export function createRemotePhotoAdapter(deps: RemotePhotoDeps): RemotePhotoAdap
     // Поки вантажилось, дошку могли змінити (стор спільний), фото — вже покласти
     // (інша вкладка цієї ж дошки), а сторінку — перегорнути чи видалити.
     if (deps.boardId() !== board) return rejected('page_changed')
-    if (deps.hasAssetAnywhere(id)) return { status: 'placed' }
+    if (alreadyDone(req, mode)) return { status: 'placed' }
     if (deps.currentPageId() !== pageId) return rejected('page_changed')
-    const late = blocker(req.pageIndex)
+    const late = blocker(req.pageIndex, mode)
     if (late) return rejected(late)
 
+    if (mode === 'background') {
+      // v1.19: те саме перевірене фото — фоном поточної сторінки; попередній фон — у prev
+      deps.setBackground!(withImageBackground(deps.currentBackground!(), {
+        url: asset.cdn_url, assetId: String(req.libraryAssetId), requestId: req.requestId,
+      }))
+      return { status: 'placed' }
+    }
     deps.place({ src: asset.cdn_url, naturalWidth: dims.naturalWidth, naturalHeight: dims.naturalHeight }, id)
     return { status: 'placed' }
   }
 
+  function start(req: RemotePhotoRequest, mode: Mode): Promise<RemotePhotoOutcome> {
+    const key = `${mode}:${req.requestId}`
+    const pending = inFlight.get(key)
+    if (pending) return pending
+    const p = run(req, mode).finally(() => { inFlight.delete(key) })
+    inFlight.set(key, p)
+    return p
+  }
+
   return {
-    add(req) {
-      const pending = inFlight.get(req.requestId)
-      if (pending) return pending
-      const p = run(req).finally(() => { inFlight.delete(req.requestId) })
-      inFlight.set(req.requestId, p)
-      return p
+    add: (req) => start(req, 'object'),
+    setBackground: (req) => start(req, 'background'),
+    clearBackground(pageIndex) {
+      // Лише сторінка, яку бачив учитель, і лише коли запис можливий (як і додавання)
+      if (!deps.supported() || !deps.setBackground || !deps.currentBackground) return false
+      if (pageIndex !== deps.currentPageIndex() || deps.isInputLocked()) return false
+      const bg = deps.currentBackground()
+      if (!isImageBackground(bg)) return false
+      deps.setBackground(withoutImageBackground(bg))
+      return true
     },
+    hasBackgroundPhoto: () => deps.supported() && isImageBackground(deps.currentBackground?.()),
   }
 }

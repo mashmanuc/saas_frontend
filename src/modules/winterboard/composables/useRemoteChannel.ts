@@ -83,6 +83,8 @@ export interface RemoteStateDetail {
    * вимикає кнопки дошки. Немає поля — дошка пише, як завжди.
    */
   busy?: 'saving_template'
+  /** v1.19 — на поточній сторінці фото-фон: у аркуші «Фото» є «Прибрати фон сторінки» */
+  bgPhoto?: boolean
 }
 
 /** v1.18: закритий набір, як на сервері; інше — поля немає. */
@@ -325,6 +327,8 @@ export function useRemoteChannel(opts: {
         if (scenario) detail.scenario = scenario
         const busy = parseRemoteBusy(msg.busy)
         if (busy) detail.busy = busy
+        // v1.19: лише справжній boolean, як і на сервері
+        if (typeof msg.bg_photo === 'boolean') detail.bgPhoto = msg.bg_photo
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

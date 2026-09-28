@@ -28,6 +28,7 @@
  */
 import type { BoardOperation } from '../types/replay'
 import type { WBStroke, WBAsset, WBPageBackground, WBPageGridSettings } from '../types/winterboard'
+import { normalizePageBackground } from '../board/pageBackground'
 import {
   createSimpleMoveAnimator,
   prefersReducedMotion,
@@ -64,6 +65,8 @@ export interface ReplayStoreApi {
   setGridSize: (size: number) => void
   updateCurrentPageGrid: (updates: Partial<WBPageGridSettings>) => void
   setBackgroundColor: (color: string, pageId?: string) => void
+  /** Фото фоном (власник 2026-09-28): той самий background_update з полем `background` */
+  setPageBackground: (background: WBPageBackground, pageId?: string) => void
   createGroup: (itemIds: string[]) => unknown
   deleteGroup: (groupId: string) => void
   lockItems: (ids: string[]) => void
@@ -421,6 +424,12 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
           // Use resolvedPageId (post-ID-mapping), not raw op.page_id — consistent
           // with asset_add, object_update and other handlers in this switch.
           store.setBackgroundColor(payload.color, resolvedPageId || undefined)
+        }
+        // Власник 2026-09-28: фото фоном — той самий op із полем `background`. Лише відомі
+        // значення (normalizePageBackground); невідоме не застосовуємо.
+        if (payload.background !== undefined) {
+          const bg = normalizePageBackground(payload.background)
+          if (bg) store.setPageBackground(bg, resolvedPageId || undefined)
         }
         break
 

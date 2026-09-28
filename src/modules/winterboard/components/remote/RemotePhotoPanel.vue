@@ -13,6 +13,15 @@
         🖼 {{ t('winterboard.remote.photo.pick') }}
       </button>
     </div>
+    <!-- v1.19: на поточній сторінці фото-фон — його можна прибрати (повертається фон, що був до фото) -->
+    <button
+      v-if="phase === 'idle' && bgPhoto"
+      type="button"
+      class="wb-remote-photo__btn"
+      data-testid="photo-clear-background"
+      :disabled="!ready"
+      @click="emit('clear-background')"
+    >✕ {{ t('winterboard.remote.photo.clearBackground') }}</button>
     <!-- capture — лише побажання браузеру (задня камера); галерея — окремою дією -->
     <input ref="cameraInput" class="wb-remote-photo__input" type="file" accept="image/*" capture="environment" data-testid="photo-camera-input" @change="onFile">
     <input ref="galleryInput" class="wb-remote-photo__input" type="file" accept="image/*" data-testid="photo-gallery-input" @change="onFile">
@@ -26,20 +35,29 @@
       </p>
       <p class="wb-remote-photo__question">{{ t('winterboard.remote.photo.confirm', { page: (pageIndex ?? 0) + 1 }) }}</p>
       <div class="wb-remote-photo__row">
-        <button type="button" class="wb-remote-photo__btn is-on" data-testid="photo-add" :disabled="!ready" @click="upload">
+        <button type="button" class="wb-remote-photo__btn is-on" data-testid="photo-add" :disabled="!ready" @click="upload('object')">
           {{ t('winterboard.remote.photo.add') }}
         </button>
         <button type="button" class="wb-remote-photo__btn" data-testid="photo-cancel" @click="reset">
           {{ t('winterboard.remote.photo.cancel') }}
         </button>
       </div>
+      <!-- v1.19 (власник 2026-09-28): те саме фото — фоном сторінки -->
+      <button
+        v-if="sendBackground"
+        type="button"
+        class="wb-remote-photo__btn"
+        data-testid="photo-as-background"
+        :disabled="!ready"
+        @click="upload('background')"
+      >🖼 {{ t('winterboard.remote.photo.asBackground') }}</button>
     </div>
 
     <p v-else-if="phase === 'uploading'" class="wb-remote-photo__status" role="status">{{ t('winterboard.remote.photo.uploading') }}</p>
     <p v-else-if="phase === 'sending'" class="wb-remote-photo__status" role="status" data-testid="photo-sending">{{ t('winterboard.remote.photo.sending') }}</p>
 
     <div v-else-if="phase === 'placed'" class="wb-remote-photo__done" role="status" data-testid="photo-placed">
-      <p class="wb-remote-photo__ok">✓ {{ t('winterboard.remote.photo.placed') }}</p>
+      <p class="wb-remote-photo__ok">✓ {{ mode === 'background' ? t('winterboard.remote.photo.placedBackground') : t('winterboard.remote.photo.placed') }}</p>
       <div class="wb-remote-photo__row">
         <button type="button" class="wb-remote-photo__btn" data-testid="photo-another" @click="reset">{{ t('winterboard.remote.photo.another') }}</button>
         <!-- пульт v2: «Готово» закриває аркуш, «Ще фото» лишає його відкритим -->
@@ -70,7 +88,7 @@
     <div v-else-if="phase === 'upload_error'" class="wb-remote-photo__problem" role="status" data-testid="photo-upload-error" :data-code="uploadError?.key">
       <p>{{ uploadError ? t(`winterboard.remote.photo.uploadError.${uploadError.key}`, uploadError.params) : '' }}</p>
       <div class="wb-remote-photo__row">
-        <button type="button" class="wb-remote-photo__btn is-on" :disabled="!ready" @click="upload">{{ t('winterboard.remote.photo.retry') }}</button>
+        <button type="button" class="wb-remote-photo__btn is-on" :disabled="!ready" @click="upload(mode)">{{ t('winterboard.remote.photo.retry') }}</button>
         <button type="button" class="wb-remote-photo__btn" @click="reset">{{ t('winterboard.remote.photo.cancel') }}</button>
       </div>
     </div>
@@ -101,6 +119,10 @@ const props = defineProps<{
   result: RemotePhotoResult | null
   /** Надіслати photo.add; false — канал не відправив */
   send: (args: { library_asset_id: number; request_id: string; page_index: number }) => boolean
+  /** v1.19: надіслати photo.background (те саме фото — фоном сторінки). Немає — кнопки немає. */
+  sendBackground?: (args: { library_asset_id: number; request_id: string; page_index: number }) => boolean
+  /** v1.19: на поточній сторінці ноутбука фото-фон */
+  bgPhoto?: boolean
   tel?: (event: string, ctx?: Record<string, unknown>) => void
 }>()
 
@@ -109,6 +131,8 @@ const emit = defineEmits<{
   (e: 'done'): void
   /** Поточна фаза — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
   (e: 'phase', phase: Phase): void
+  /** v1.19: «Прибрати фон сторінки» */
+  (e: 'clear-background'): void
 }>()
 
 /** Скільки чекати відповіді ноутбука, перш ніж чесно сказати «не підтверджено» */
@@ -133,6 +157,8 @@ const libraryAssetId = ref<number | null>(null)
 const requestId = ref<string | null>(null)
 /** Сторінка, яку вчитель бачив, натискаючи «Додати» (а не та, що буде після завантаження) */
 const attemptPage = ref<number | null>(null)
+/** v1.19: куди лягає фото цієї спроби — на сторінку (photo.add) чи фоном (photo.background) */
+const mode = ref<'object' | 'background'>('object')
 const reason = ref<PhotoRejectReason | null>(null)
 const uploadError = ref<PhotoUploadErrorInfo | null>(null)
 const prepareError = ref<PhotoPrepareErrorCode>('undecodable')
@@ -158,6 +184,7 @@ function reset(): void {
   libraryAssetId.value = null
   requestId.value = null
   attemptPage.value = null
+  mode.value = 'object'
   reason.value = null
   uploadError.value = null
   phase.value = 'idle'
@@ -189,9 +216,10 @@ async function onFile(e: Event): Promise<void> {
 }
 
 /** «Додати»: рівно одне завантаження; команда — лише після успішного завантаження. */
-async function upload(): Promise<void> {
+async function upload(target: 'object' | 'background' = 'object'): Promise<void> {
   const p = prepared.value
   if (!p || phase.value === 'uploading') return
+  mode.value = target
   // Сторінку фіксуємо ЗАРАЗ: поки файл їде (секунди), дошку можуть перегорнути —
   // тоді ноутбук відповість page_changed, а не покладе фото мовчки на іншу сторінку.
   attemptPage.value = props.pageIndex
@@ -214,9 +242,9 @@ function send(): void {
   if (libraryAssetId.value === null || !requestId.value) return
   clearAckTimer()
   const page = attemptPage.value
-  if (page === null || !props.ready || !props.send({
-    library_asset_id: libraryAssetId.value, request_id: requestId.value, page_index: page,
-  })) {
+  const args = { library_asset_id: libraryAssetId.value, request_id: requestId.value, page_index: page ?? 0 }
+  const sender = mode.value === 'background' ? props.sendBackground : props.send
+  if (page === null || !props.ready || !sender || !sender(args)) {
     phase.value = 'unconfirmed'
     tel('photo_unconfirmed', { why: 'not_sent' })
     return

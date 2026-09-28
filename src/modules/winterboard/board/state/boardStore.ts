@@ -1019,6 +1019,27 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Фон сторінки як значення (власник 2026-09-28: фото фоном). Той самий op, що й колір —
+     * `background_update`, але з полем `background` (сервер складає його в `page.background`).
+     * Replay/учень застосовують через applyReplayOperation; у replay-режимі op не шлемо.
+     */
+    setPageBackground(background: WBPageBackground, pageId?: string): void {
+      const page = pageId
+        ? this.pages.find(p => p.id === pageId)
+        : this.pages[this.currentPageIndex]
+      if (!page) return
+      page.background = background
+      this.markDirty()
+      if (this.mode !== 'replay') {
+        _emitOperation({
+          op_type: 'background_update',
+          page_id: page.id ?? '',
+          payload: { background },
+        })
+      }
+    },
+
     // A9: Per-page grid actions ──────────────────────────────────────────────
 
     /**

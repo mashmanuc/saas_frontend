@@ -161,6 +161,24 @@
         </svg>
       </button>
 
+      <!-- Власник 2026-09-28: «Зробити фоном сторінки» — лише для однієї картинки -->
+      <button
+        v-if="canMakeBackground"
+        type="button"
+        class="wb-selection-toolbar__btn"
+        data-testid="selection-make-background"
+        :title="t('winterboard.selection.makeBackground')"
+        :aria-label="t('winterboard.selection.makeBackground')"
+        :disabled="isLocked"
+        @click="$emit('make-background')"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2.5 11l3.2-3.2 2.3 2.3 1.8-1.8 3.7 3.7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="10.5" cy="5.5" r="1.1" fill="currentColor"/>
+        </svg>
+      </button>
+
       <!-- Lock / Unlock -->
       <button
         v-if="isLocked"
@@ -460,9 +478,15 @@ const props = defineProps<{
    * Керування лишається у шапці оверлея (⛶/✕) і сайдбар-інспекторі.
    */
   expandedAssetId?: string | null
+  /**
+   * Власник 2026-09-28 (фото фоном): виділена картинка може стати фоном сторінки. Кімната
+   * вмикає, лише коли вона сама обробляє `make-background`; інакше кнопки немає.
+   */
+  canMakeBackground?: boolean
 }>()
 
 const emit = defineEmits<{
+  'make-background': []
   'bring-to-front': []
   'send-to-back': []
   duplicate: []

@@ -873,6 +873,15 @@
             <span class="wb-bg-color__all-text">{{ t('winterboard.room.bgColorAllPages', 'Усі сторінки') }}</span>
           </label>
         </div>
+        <!-- Власник 2026-09-28: фото фоном — прибрати й повернути фон, що був до фото -->
+        <button
+          v-if="currentPageHasPhotoBackground"
+          type="button"
+          class="wb-page-btn wb-bg-photo-clear"
+          data-testid="clear-photo-background"
+          :title="t('winterboard.room.clearPhotoBackgroundTitle')"
+          @click="clearPhotoBackground"
+        >✕ {{ t('winterboard.room.clearPhotoBackground') }}</button>
         <div class="wb-page-nav__sep"></div>
         <!-- Toggle панелі мініатюр -->
         <button
@@ -1074,6 +1083,8 @@
       @delete-object-text="handleDeleteObjectText"
       @link-saved="handleLinkSaved"
       @link-removed="handleLinkRemoved"
+      :can-make-background="!!selectedImageForBackground"
+      @make-background="handleMakeBackground"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -1247,6 +1258,7 @@ import { useBoardRemote } from '../composables/useBoardRemote'
 import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPrompt'
 import LessonFullscreenPrompt from '../components/remote/LessonFullscreenPrompt.vue'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
+import { isImageBackground, isSafeBackgroundUrl, withImageBackground, withoutImageBackground } from '../board/pageBackground'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
 import { fetchAsset as fetchLibraryAsset } from '../api/library'
@@ -1863,6 +1875,9 @@ const boardRemote = useBoardRemote({
     fetchLibraryAsset: (id) => fetchLibraryAsset(id),
     loadImage: (src) => loadImageDimensions(src),
     place: (image, id) => placeVerifiedImage(image, id),
+    // v1.19 (власник 2026-09-28): фото фоном поточної сторінки — штатний background_update
+    currentBackground: () => store.currentPage?.background,
+    setBackground: (bg) => store.setPageBackground(bg),
   }),
   // v1.15 «Сценарій»: відео, аудіо й документи всіх сторінок; кнопки — для поточної.
   // Запис — тим самим шляхом, що кнопки дошки (handleAssetUpdate); ті самі умови, що на
@@ -2945,6 +2960,30 @@ function handleAssetAdd(asset: WBAsset): void {
 
 function handleAssetUpdate(asset: WBAsset): void {
   store.updateAsset(asset)
+}
+
+// ── Власник 2026-09-28: фото фоном сторінки ─────────────────────────────────
+/** Одна виділена картинка з адресою, яку побачать учень і Replay (не data:/blob:) — у власника уроку. */
+const selectedImageForBackground = computed<WBAsset | null>(() => {
+  if (!isSessionOwner.value || isLocalWorkspace || store.selectedIds.length !== 1) return null
+  const asset = store.currentPage?.assets.find((a) => a.id === store.selectedIds[0])
+  return asset && asset.type === 'image' && !asset.locked && isSafeBackgroundUrl(asset.src) ? asset : null
+})
+
+/** «Зробити фоном сторінки»: картинка переходить у фон (об'єкт знімається штатним видаленням). */
+function handleMakeBackground(): void {
+  const asset = selectedImageForBackground.value
+  if (!asset || !asset.src) return
+  store.setPageBackground(withImageBackground(store.currentPage?.background, { url: asset.src, assetId: asset.id }))
+  store.clearSelection()
+  handleAssetDelete(asset.id)
+}
+
+const currentPageHasPhotoBackground = computed(() => isImageBackground(store.currentPage?.background))
+
+/** «Прибрати фото-фон»: повертаємо фон, що був до фото (або білий). */
+function clearPhotoBackground(): void {
+  store.setPageBackground(withoutImageBackground(store.currentPage?.background))
 }
 
 function handleAssetDelete(assetId: string): void {
@@ -5367,6 +5406,16 @@ watch(() => store.workspaceName, (name) => {
   background: var(--wb-brand, #2563eb);
   color: #fff;
   border-color: var(--wb-brand, #2563eb);
+}
+/* Фото-фон 2026-09-28: кнопка з підписом, а не квадратна іконка 28×28 (інакше текст
+   ламається в три рядки й наїжджає на «Усі сторінки»). Два класи — сильніші за
+   .wb-page-btn у медіазапитах для дотику. */
+.wb-page-btn.wb-bg-photo-clear {
+  width: auto;
+  padding: 0 8px;
+  white-space: nowrap;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 .wb-page-btn--panel-active:hover {
   background: #1d4ed8;

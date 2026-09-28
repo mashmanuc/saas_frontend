@@ -8431,6 +8431,8 @@
       "dismiss": "Закрити"
     },
     "room": {
+      "clearPhotoBackground": "Прибрати фото-фон",
+      "clearPhotoBackgroundTitle": "Прибрати фото з фону сторінки — повернеться фон, що був до нього",
       "untitled": "Без назви",
       "undoShortcut": "Скасувати (Ctrl+Z)",
       "redoShortcut": "Повторити (Ctrl+Shift+Z)",
@@ -8477,6 +8479,7 @@
       "exitToLessons": "← Мої уроки"
     },
     "selection": {
+      "makeBackground": "Зробити фоном сторінки",
       "toolbar": "Панель виділення",
       "bringToFront": "Показати поверх",
       "sendToBack": "Перемістити назад",
@@ -8547,6 +8550,9 @@
         "state": { "idle": "Готове до запуску", "loading": "Запускаю…", "playing": "Грає", "paused": "На паузі", "ended": "Відео закінчилось", "blocked": "Натисніть на дошку для запуску відео", "error": "Не відтворюється" }
       },
       "photo": {
+        "asBackground": "Зробити фоном сторінки",
+        "placedBackground": "Фото на фоні сторінки",
+        "clearBackground": "Прибрати фон сторінки",
         "title": "Фото на дошку",
         "take": "Зробити фото",
         "pick": "З галереї",

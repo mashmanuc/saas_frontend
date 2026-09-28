@@ -32,6 +32,7 @@ function makeStore(): ReplayStoreApi & { _calls: Record<string, unknown[][]> } {
     setGridSize: track('setGridSize') as ReplayStoreApi['setGridSize'],
     updateCurrentPageGrid: track('updateCurrentPageGrid') as ReplayStoreApi['updateCurrentPageGrid'],
     setBackgroundColor: track('setBackgroundColor') as ReplayStoreApi['setBackgroundColor'],
+    setPageBackground: track('setPageBackground') as ReplayStoreApi['setPageBackground'],
     createGroup: track('createGroup') as ReplayStoreApi['createGroup'],
     deleteGroup: track('deleteGroup') as ReplayStoreApi['deleteGroup'],
     lockItems: track('lockItems') as ReplayStoreApi['lockItems'],

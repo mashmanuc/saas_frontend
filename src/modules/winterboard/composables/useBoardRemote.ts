@@ -109,7 +109,7 @@ export interface RemoteCommandDetail {
   cmd: 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
     | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
     | 'video.add' | 'video.play' | 'video.pause'
-    | 'photo.add'
+    | 'photo.add' | 'photo.background' | 'photo.background_clear'
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
@@ -189,6 +189,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.scenario ? ['scenario'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
+    // v1.19: на поточній сторінці фото-фон — телефон показує «Прибрати фон сторінки»
+    if (opts.photo) msg.bg_photo = opts.photo.hasBackgroundPhoto()
     const busy = opts.busy?.()
     if (busy) msg.busy = busy
     opts.sendMessage(msg)
@@ -214,6 +216,15 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const scenario = opts.scenario
     watch(
       () => JSON.stringify(scenario.state()),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
+  }
+
+  // v1.19: фото-фон з'явився чи зник на поточній сторінці — телефон має знати одразу
+  if (opts.photo) {
+    const photo = opts.photo
+    watch(
+      () => photo.hasBackgroundPhoto(),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
@@ -462,6 +473,32 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
             reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'error' })
           },
         )
+        return
+      }
+      // v1.19 (власник 2026-09-28): те саме фото — фоном поточної сторінки. Перевіряє й пише
+      // ноутбук (адаптер фото, штатний background_update); результат — тим самим полем photo.
+      case 'photo.background': {
+        const req = readPhotoRequest(d.args as Record<string, unknown>)
+        if (!req) return
+        photoResult.value = null
+        if (!opts.photo) {
+          reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'unsupported' })
+          return
+        }
+        opts.photo.setBackground(req).then(
+          (outcome) => reportPhoto({ request_id: req.requestId, ...outcome }),
+          (err) => {
+            console.warn('[WB:remote] photo.background failed:', err)
+            reportPhoto({ request_id: req.requestId, status: 'rejected', reason: 'error' })
+          },
+        )
+        return
+      }
+      case 'photo.background_clear': {
+        const pageIndex = d.args?.page_index
+        if (!opts.photo || typeof pageIndex !== 'number' || !Number.isInteger(pageIndex) || pageIndex < 0) return
+        opts.photo.clearBackground(pageIndex)
+        sendState()   // підтвердити стан і тоді, коли прибирати не було чого
         return
       }
       default:

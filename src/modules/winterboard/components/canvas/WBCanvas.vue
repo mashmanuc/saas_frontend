@@ -953,6 +953,7 @@ import { useWBStore } from '../../board/state/boardStore'
 // TLV2-05A: стандарт об'єктів — одне джерело правди про можливості типу.
 import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
+import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
@@ -2361,10 +2362,32 @@ const assetConfigCache = new Map<string, { sig: string; config: Record<string, u
 let previewRafId: number | null = null
 
 // A5.2: Image cache for PDF background images
+// Фото-фон 2026-09-28: шар фону кешований (cacheBackgroundLayer) — лише batchDraw
+// перемальовував старий знімок шару, і щойно завантажений фон не з'являвся.
+// nextTick — щоб vue-konva встиг покласти вузол картинки до перемальовки.
 const bgImageCache = useImageCache(() => {
-  // Force Konva redraw when background image loads
-  backgroundLayerRef.value?.getNode?.()?.batchDraw?.()
+  nextTick(() => {
+    const layer = backgroundLayerRef.value?.getNode?.()
+    layer?.clearCache?.()
+    layer?.batchDraw?.()
+  })
 })
+
+// Фон сторінки змінився на інший PDF/фото без перемикання сторінки (фото з пульта,
+// «Зробити фоном сторінки», «Прибрати») — той самий кешований шар треба скинути.
+watch(
+  () => {
+    const bg = props.background
+    return bg && typeof bg === 'object' ? `${bg.type}:${bg.url}` : ''
+  },
+  () => {
+    nextTick(() => {
+      const layer = backgroundLayerRef.value?.getNode?.()
+      layer?.clearCache?.()
+      layer?.batchDraw?.()
+    })
+  },
+)
 
 // A5.3: Pan state (middle mouse drag)
 let isPanning = false
@@ -2443,6 +2466,22 @@ const backgroundConfig = computed(() => ({
 const pdfBackgroundConfig = computed<Record<string, unknown> | null>(() => {
   const bg = props.background
   if (!bg || typeof bg === 'string') return null
+  // Власник 2026-09-28: фото фоном — заповнює всю сторінку, краї знімка обрізаються
+  // (board/pageBackground.ts). Позаду всього: той самий шар, що PDF-фон.
+  if (isImageBackground(bg)) {
+    const photo = bgImageCache.get(bg.url)
+    if (!photo) return null
+    return {
+      x: 0,
+      y: 0,
+      width: props.width,
+      height: props.height,
+      image: photo,
+      crop: coverCrop(photo.naturalWidth, photo.naturalHeight, props.width, props.height),
+      listening: false,
+      name: 'photo-background',
+    }
+  }
   if (bg.type !== 'pdf') return null
 
   const img = bgImageCache.get(bg.url)
@@ -2475,14 +2514,14 @@ const bgPatternType = computed<string>(() => {
 const pdfBgLoading = computed<boolean>(() => {
   const bg = props.background
   if (!bg || typeof bg === 'string') return false
-  if (bg.type !== 'pdf') return false
+  if (bg.type !== 'pdf' && bg.type !== 'image') return false
   return bgImageCache.getState(bg.url) === 'loading'
 })
 
 const pdfBgError = computed<boolean>(() => {
   const bg = props.background
   if (!bg || typeof bg === 'string') return false
-  if (bg.type !== 'pdf') return false
+  if (bg.type !== 'pdf' && bg.type !== 'image') return false
   return bgImageCache.isBroken(bg.url)
 })
 

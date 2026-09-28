@@ -110,3 +110,21 @@ describe('WBSelectionToolbar × розгорнутий на всю сторін�
     expect(w.find('.wb-selection-toolbar').exists()).toBe(true)
   })
 })
+
+// Власник 2026-09-28 (фото фоном): «Зробити фоном сторінки» — лише коли кімната вмикає
+describe('WBSelectionToolbar × «Зробити фоном сторінки»', () => {
+  it('кнопки немає, поки кімната не ввімкнула (класна кімната, Студія без обробника)', async () => {
+    const w = await mountToolbar({})
+    expect(w.find('[data-testid="selection-make-background"]').exists()).toBe(false)
+  })
+
+  it('увімкнено — кнопка є й шле make-background; заблокована картка — вимкнена', async () => {
+    const w = await mountToolbar({ canMakeBackground: true })
+    const btn = w.find('[data-testid="selection-make-background"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    expect(w.emitted('make-background')).toHaveLength(1)
+    const locked = await mountToolbar({ canMakeBackground: true, isLocked: true })
+    expect(locked.find('[data-testid="selection-make-background"]').attributes('disabled')).toBeDefined()
+  })
+})

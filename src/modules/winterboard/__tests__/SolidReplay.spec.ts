@@ -136,6 +136,7 @@ function makeMockStore(initialAssets: WBAsset[] = []): MockStore {
     setGridSize: () => bump('setGridSize'),
     updateCurrentPageGrid: () => bump('updateCurrentPageGrid'),
     setBackgroundColor: () => bump('setBackgroundColor'),
+    setPageBackground: () => bump('setPageBackground'),
     createGroup: () => {
       bump('createGroup')
       return undefined

@@ -8697,6 +8697,8 @@
       "dismiss": "Dismiss"
     },
     "room": {
+      "clearPhotoBackground": "Remove photo background",
+      "clearPhotoBackgroundTitle": "Remove the photo from the page background — the previous background returns",
       "untitled": "Untitled",
       "undoShortcut": "Undo (Ctrl+Z)",
       "redoShortcut": "Redo (Ctrl+Shift+Z)",
@@ -8743,6 +8745,7 @@
       "exitToLessons": "← My lessons"
     },
     "selection": {
+      "makeBackground": "Set as page background",
       "toolbar": "Selection toolbar",
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
@@ -8813,6 +8816,9 @@
         "state": { "idle": "Ready to play", "loading": "Starting…", "playing": "Playing", "paused": "Paused", "ended": "Video ended", "blocked": "Tap the board to start the video", "error": "Does not play" }
       },
       "photo": {
+        "asBackground": "Set as page background",
+        "placedBackground": "The photo is now the page background",
+        "clearBackground": "Remove page background",
         "title": "Photo to board",
         "take": "Take photo",
         "pick": "From gallery",

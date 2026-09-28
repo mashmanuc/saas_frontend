@@ -438,7 +438,21 @@ export interface WBPdfBackground {
   assetId: string
 }
 
-export type WBPageBackground = 'white' | 'grid' | 'dots' | 'lined' | WBPdfBackground
+/**
+ * Фото фоном сторінки (власник 2026-09-28): заповнює сторінку, краї обрізаються, позаду всіх
+ * об'єктів. `prev` — фон до фото (його повертає «Прибрати фон»). Див. board/pageBackground.ts.
+ */
+export interface WBImageBackground {
+  type: 'image'
+  url: string
+  /** Звідки фото: id активу бібліотеки чи об'єкта дошки (лише provenance) */
+  assetId?: string
+  /** request_id спроби з пульта — повтор тієї ж спроби не ставить фон удруге */
+  requestId?: string
+  prev?: 'white' | 'grid' | 'dots' | 'lined' | WBPdfBackground
+}
+
+export type WBPageBackground = 'white' | 'grid' | 'dots' | 'lined' | WBPdfBackground | WBImageBackground
 
 export interface WBPage {
   id: string

@@ -74,7 +74,11 @@ describe('useBoardRemote', () => {
     let api!: ReturnType<typeof useBoardRemote>
     const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
     const media = { list: () => [], add: vi.fn(), play: vi.fn(), pause: vi.fn() }
-    const photo = { add: vi.fn(async () => ({ status: 'placed' as const })) }
+    const photo = {
+      add: vi.fn(async () => ({ status: 'placed' as const })),
+      // v1.19: дії фото-фону (тут не використовуються)
+      setBackground: vi.fn(), clearBackground: vi.fn(() => false), hasBackgroundPhoto: vi.fn(() => false),
+    }
     const wrapper = mount(defineComponent({
       setup() {
         api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), media: media as any, photo: photo as any })

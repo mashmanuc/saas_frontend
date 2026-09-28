@@ -269,7 +269,11 @@ function setupRemote(photo?: { add: ReturnType<typeof vi.fn> }) {
   const sendMessage = vi.fn()
   const w = mount(defineComponent({
     setup() {
-      useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), ...(photo ? { photo } : {}) })
+      // v1.19: адаптер фото має й дії фону — у цих тестах вони не використовуються
+      const adapter = photo
+        ? { setBackground: vi.fn(), clearBackground: vi.fn(() => false), hasBackgroundPhoto: vi.fn(() => false), ...photo }
+        : undefined
+      useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), ...(adapter ? { photo: adapter } : {}) })
       return () => h('div')
     },
   }))
