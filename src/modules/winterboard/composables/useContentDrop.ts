@@ -660,6 +660,8 @@ export function useContentDrop(options: UseContentDropOptions) {
           totalPages: board_object.totalPages ?? 0,
           // pages[] NOT stored in asset — DocumentViewerAsset fetches on demand
           viewerMode: 'compact',
+          // Назва матеріалу — як в audio/video (підпис на пульті «Сценарій», LAW §9 v1.15)
+          title: board_object.title || undefined,
         }
 
         console.info('[WB:Drop] document_viewer: pages=%d src=%s', asset.totalPages, src)
@@ -901,6 +903,8 @@ export function useContentDrop(options: UseContentDropOptions) {
           type: 'document_viewer', src, x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false,
           content_ref: contentRef ? { content_id: contentRef.content_id, content_type: contentRef.content_type as 'pdf' | 'document' | 'presentation' } : undefined,
           currentPage: board_object.currentPage ?? 0, totalPages: board_object.totalPages ?? 0, viewerMode: 'compact',
+          // Назва матеріалу — як в audio/video (підпис на пульті «Сценарій», LAW §9 v1.15)
+          title: board_object.title || undefined,
         }
       }
 
