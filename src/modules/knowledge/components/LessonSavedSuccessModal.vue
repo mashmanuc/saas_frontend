@@ -11,7 +11,10 @@
   Props:
     modelValue: boolean — v-model show/hide
     lessonTitle: string
-    kind: 'lesson' | 'template'
+    kind: 'lesson' | 'template' | 'copy'
+      copy — «Зберегти як новий шаблон» з проведеного уроку: «Мої уроки» відкриваються
+      в НОВІЙ вкладці, бо урок і пульт мають лишитися відкритими (ТЗ
+      TZ_SAVE_FROM_LIVE_LESSON_AS_TEMPLATE §1 п. 4).
 -->
 <template>
   <Teleport to="body">
@@ -58,23 +61,25 @@
           {{ bodyText }}
           <span v-if="lessonTitle" class="lesson-saved-dialog__name">«{{ lessonTitle }}»</span>
         </p>
-        <p class="lesson-saved-dialog__hint">{{ hintText }}</p>
+        <p class="lesson-saved-dialog__hint" data-testid="saved-hint">{{ hintText }}</p>
 
         <!-- Actions -->
         <div class="lesson-saved-dialog__actions">
           <button
             type="button"
             class="lesson-saved-dialog__btn lesson-saved-dialog__btn--ghost"
+            data-testid="saved-continue"
             @click="continueHere"
           >
-            {{ t('knowledge.savedSuccess.continueHere') }}
+            {{ kind === 'copy' ? t('knowledge.savedSuccess.continueLesson') : t('knowledge.savedSuccess.continueHere') }}
           </button>
           <button
             type="button"
             class="lesson-saved-dialog__btn lesson-saved-dialog__btn--primary"
+            data-testid="saved-open-list"
             @click="goToList"
           >
-            {{ t('knowledge.savedSuccess.goToList') }}
+            {{ kind === 'copy' ? t('knowledge.savedSuccess.openInMyLessons') : t('knowledge.savedSuccess.goToList') }}
           </button>
         </div>
       </div>
@@ -90,7 +95,7 @@ import { useRouter } from 'vue-router'
 interface Props {
   modelValue: boolean
   lessonTitle?: string
-  kind?: 'lesson' | 'template'
+  kind?: 'lesson' | 'template' | 'copy'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -112,18 +117,23 @@ const AUTO_DISMISS_MS = 8000
 let dismissTimer: ReturnType<typeof setTimeout> | null = null
 
 const title = computed(() =>
-  props.kind === 'template'
-    ? t('knowledge.savedSuccess.titleTemplate')
-    : t('knowledge.savedSuccess.titleLesson'),
+  props.kind === 'copy'
+    ? t('knowledge.savedSuccess.titleCopy')
+    : props.kind === 'template'
+      ? t('knowledge.savedSuccess.titleTemplate')
+      : t('knowledge.savedSuccess.titleLesson'),
 )
 
 const bodyText = computed(() =>
-  props.kind === 'template'
-    ? t('knowledge.savedSuccess.bodyTemplate')
-    : t('knowledge.savedSuccess.bodyLesson'),
+  props.kind === 'copy'
+    ? t('knowledge.savedSuccess.bodyCopy')
+    : props.kind === 'template'
+      ? t('knowledge.savedSuccess.bodyTemplate')
+      : t('knowledge.savedSuccess.bodyLesson'),
 )
 
-const hintText = computed(() => t('knowledge.savedSuccess.hint'))
+const hintText = computed(() =>
+  props.kind === 'copy' ? t('knowledge.savedSuccess.hintCopy') : t('knowledge.savedSuccess.hint'))
 
 watch(
   () => props.modelValue,
@@ -153,6 +163,11 @@ function continueHere(): void {
 
 function goToList(): void {
   close()
+  if (props.kind === 'copy') {
+    // Урок і пульт лишаються відкритими — «Мої уроки» в новій вкладці.
+    window.open(router.resolve({ name: 'MyLessons' }).href, '_blank', 'noopener')
+    return
+  }
   router.push({ name: 'MyLessons' })
 }
 </script>

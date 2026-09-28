@@ -78,6 +78,16 @@ export interface RemoteStateDetail {
   caps?: RemoteCap[]
   /** v1.15 — «Сценарій»: відео, аудіо й документи дошки; `focusId` — об'єкт «на весь екран» */
   scenario?: { focusId: string | null; items: RemoteScenarioItem[] }
+  /**
+   * v1.18 — ноутбук на 1–3 с не пише в дошку (зберігає шаблон): пульт показує причину й
+   * вимикає кнопки дошки. Немає поля — дошка пише, як завжди.
+   */
+  busy?: 'saving_template'
+}
+
+/** v1.18: закритий набір, як на сервері; інше — поля немає. */
+export function parseRemoteBusy(raw: unknown): 'saving_template' | undefined {
+  return raw === 'saving_template' ? 'saving_template' : undefined
 }
 
 /** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
@@ -313,6 +323,8 @@ export function useRemoteChannel(opts: {
         if (caps) detail.caps = caps
         const scenario = parseRemoteScenario(msg.scenario)
         if (scenario) detail.scenario = scenario
+        const busy = parseRemoteBusy(msg.busy)
+        if (busy) detail.busy = busy
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

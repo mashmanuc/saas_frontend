@@ -7509,7 +7509,16 @@
           "other": "board change"
         },
         "status": "Saving stopped",
-        "barrier": "Resolve the unsaved board changes first — otherwise the lesson would be incomplete."
+        "barrier": "Resolve the unsaved board changes first — otherwise the lesson would be incomplete.",
+        "barrierReason": {
+          "unconfirmed": "Could not confirm that all changes reached the server — check the connection and try again.",
+          "save_blocked": "Board saving is stopped — resolve it in the banner at the top first.",
+          "desync": "This tab is out of sync with the server — reload the page, then save.",
+          "bootstrap": "The board is still loading — try again in a moment.",
+          "paused": "The server is busy and changes are queued — press “Retry now” in the banner or try again in a minute.",
+          "queue": "Not all changes reached the server — check the connection and try again.",
+          "offline": "No internet connection — changes cannot be saved."
+        }
       },
       "serverBusy": "Server temporarily busy. Try again in a minute.",
       "seqMismatch": "Whiteboard state out of sync — click Retry in the recovery banner.",
@@ -8934,6 +8943,8 @@
         "whyMax": "Can't go louder",
         "whyNoVolume": "Volume — once the player has loaded"
       },
+      "busySaving": "The laptop is saving the template…",
+      "busySavingWhy": "Wait — the laptop is saving the template",
       "holdToTalk": "Talk (hold)",
       "listening": "Listening…",
       "voiceUnsupported": "Voice is not available in this browser — buttons still work.",
@@ -9133,6 +9144,19 @@
       "statusCompleted": "Completed",
       "saveTitle": "Save as Lesson",
       "saveSubtitle": "Save your current board state as a lesson in your library",
+      "saveErrorState": "Could not confirm the board state on the server — nothing was saved. Try again.",
+      "saveErrorPlan": "Could not save the lesson plan — nothing was saved. Try again.",
+      "saveErrorNetwork": "No connection to the server — nothing was saved. Check the connection and try again.",
+      "copy": {
+        "button": "Save as a new template",
+        "title": "Save as a new template",
+        "subtitle": "A copy of this lesson with the whole board and plan will appear in «My Lessons». The original template stays unchanged.",
+        "titleLabel": "Template name",
+        "save": "Save template",
+        "saving": "Saving…",
+        "savingBanner": "Saving the template…",
+        "defaultTitle": "{title} — copy"
+      },
       "titleLabel": "Lesson title",
       "titlePlaceholder": "E.g. Equations with absolute value",
       "saveButton": "Save as lesson template",
@@ -10344,6 +10368,11 @@
     "savedSuccess": {
       "titleLesson": "Lesson saved",
       "titleTemplate": "Template saved",
+      "titleCopy": "Template saved",
+      "bodyCopy": "The new template is now in «My Lessons»:",
+      "hintCopy": "The lesson and the remote stay open.",
+      "continueLesson": "Continue the lesson",
+      "openInMyLessons": "Open in My Lessons",
       "bodyLesson": "Your lesson is saved under «My Lessons».",
       "bodyTemplate": "Your template is saved under «My Lessons».",
       "hint": "Open the list to view or edit — or stay here and keep working.",

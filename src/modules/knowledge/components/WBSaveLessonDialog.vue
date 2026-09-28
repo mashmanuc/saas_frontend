@@ -13,16 +13,16 @@
         class="save-lesson-dialog bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
         role="dialog"
         aria-modal="true"
-        :aria-label="$t('winterboard.lesson.saveTitle')"
+        :aria-label="texts.title"
         tabindex="-1"
       >
-        <h2 class="text-lg font-bold text-gray-900">{{ $t('winterboard.lesson.saveTitle') }}</h2>
-        <p class="text-sm text-gray-500 mt-1">{{ $t('winterboard.lesson.saveSubtitle') }}</p>
+        <h2 class="text-lg font-bold text-gray-900">{{ texts.title }}</h2>
+        <p class="text-sm text-gray-500 mt-1">{{ texts.subtitle }}</p>
 
         <!-- Title input -->
         <div class="mt-4">
           <label for="lesson-title" class="block text-sm font-medium text-gray-700">
-            {{ $t('winterboard.lesson.titleLabel') }}
+            {{ texts.label }}
           </label>
           <input
             id="lesson-title"
@@ -37,7 +37,7 @@
         </div>
 
         <!-- Error -->
-        <p v-if="saveError" class="mt-2 text-sm text-red-600" role="alert">{{ saveError }}</p>
+        <p v-if="saveError" class="mt-2 text-sm text-red-600" role="alert" data-testid="save-lesson-error">{{ saveError }}</p>
 
         <!-- Actions -->
         <div class="save-lesson-dialog__actions">
@@ -54,7 +54,7 @@
             class="save-lesson-dialog__btn save-lesson-dialog__btn--save"
             @click="save"
           >
-            {{ isSaving ? $t('winterboard.lesson.saving') : $t('winterboard.lesson.saveButton') }}
+            {{ isSaving ? texts.saving : texts.save }}
           </button>
         </div>
       </div>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { computed, ref, watch, nextTick, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 
@@ -73,6 +73,18 @@ const props = defineProps<{
   modelValue: boolean
   sessionId: string
   defaultTitle?: string
+  /**
+   * 'copy' — «Зберегти як новий шаблон» з проведеного уроку (ТЗ
+   * TZ_SAVE_FROM_LIVE_LESSON_AS_TEMPLATE; LAW §9 v1.18). Той самий API, інші тексти.
+   */
+  mode?: 'lesson' | 'copy'
+  /**
+   * Перед запитом (момент знімка): бар'єр артефакту й блок дошки. Рядок — причина
+   * відмови: показуємо її, запиту немає; null — зберігаємо.
+   */
+  beforeSave?: () => Promise<string | null>
+  /** Після спроби — завжди, коли викликали beforeSave (успіх, відмова, виняток): зняти блок. */
+  afterSave?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -85,6 +97,32 @@ const titleInput = ref<HTMLInputElement | null>(null)
 const title = ref('')
 const isSaving = ref(false)
 const saveError = ref<string | null>(null)
+
+const texts = computed(() => props.mode === 'copy'
+  ? {
+      title: t('winterboard.lesson.copy.title'),
+      subtitle: t('winterboard.lesson.copy.subtitle'),
+      label: t('winterboard.lesson.copy.titleLabel'),
+      save: t('winterboard.lesson.copy.save'),
+      saving: t('winterboard.lesson.copy.saving'),
+    }
+  : {
+      title: t('winterboard.lesson.saveTitle'),
+      subtitle: t('winterboard.lesson.saveSubtitle'),
+      label: t('winterboard.lesson.titleLabel'),
+      save: t('winterboard.lesson.saveButton'),
+      saving: t('winterboard.lesson.saving'),
+    })
+
+/** Причина відмови сервера людською мовою (ТЗ §2: учитель бачить причину, нічого не збережено). */
+function saveErrorText(err: unknown): string {
+  const e = err as { response?: { status?: number; data?: { error?: unknown } }; data?: { error?: unknown } }
+  const code = e?.response?.data?.error ?? e?.data?.error
+  if (code === 'board_state_unavailable') return t('winterboard.lesson.saveErrorState')
+  if (code === 'plan_transfer_failed') return t('winterboard.lesson.saveErrorPlan')
+  if (!e?.response) return t('winterboard.lesson.saveErrorNetwork')
+  return t('winterboard.lesson.saveError')
+}
 
 // Reset form when dialog opens
 watch(() => props.modelValue, (open) => {
@@ -100,6 +138,8 @@ watch(() => props.modelValue, (open) => {
 })
 
 function close(): void {
+  // Посеред збереження вікно не закриваємо: результат (успіх чи причина) — тут.
+  if (isSaving.value) return
   emit('update:modelValue', false)
 }
 
@@ -109,21 +149,33 @@ async function save(): Promise<void> {
 
   isSaving.value = true
   saveError.value = null
+  let saved: { id: string; title: string } | null = null
 
   try {
+    if (props.beforeSave) {
+      const refusal = await props.beforeSave()
+      if (refusal) {
+        saveError.value = refusal
+        return
+      }
+    }
     const lesson = await lessonSaveApi.saveLessonFromSession({
       session_id: props.sessionId,
       title: trimmed,
     })
-    emit('saved', { id: lesson.id, title: lesson.title })
-    close()
+    saved = { id: lesson.id, title: lesson.title }
   } catch (err: unknown) {
     // Юзеру — завжди локалізоване дружнє повідомлення (НЕ сирий BE-код/англ. рядок).
     // Технічні деталі лишаємо у console для діагностики.
-    saveError.value = t('winterboard.lesson.saveError')
+    saveError.value = saveErrorText(err)
     console.error('[WBSaveLessonDialog] save error:', err)
   } finally {
+    if (props.beforeSave) props.afterSave?.()
     isSaving.value = false
+  }
+  if (saved) {
+    emit('saved', saved)
+    close()
   }
 }
 

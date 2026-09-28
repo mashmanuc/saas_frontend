@@ -71,7 +71,16 @@ export interface UseBoardRemoteOptions {
    * `scenario`. Без нього (класна кімната) нові команди ігноруються, кнопки на пульті немає.
    */
   scenario?: RemoteScenarioAdapter
+  /**
+   * v1.18 «Зберегти як новий шаблон» (LAW §9): ноутбук на 1–3 с не пише в дошку. Поки
+   * повертає значення — у `remote.state` поле `busy`, а команди пульта (крім `hello`)
+   * чекають і виконуються одразу після: не губляться, але в шаблон не потрапляють.
+   */
+  busy?: () => RemoteBusy | null
 }
+
+/** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
+export type RemoteBusy = 'saving_template'
 
 /** Відео поточної сторінки для ▶/⏸ на пульті (у remote.state — поле `videos`). */
 export interface RemoteVideoState {
@@ -180,6 +189,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.scenario ? ['scenario'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
+    const busy = opts.busy?.()
+    if (busy) msg.busy = busy
     opts.sendMessage(msg)
   }
 
@@ -269,6 +280,32 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   // стенд 2026-09-28). `immediate` — якщо hello прийшов раніше, а кімната вже готова.
   onMounted(() => { watch(opts.enabled, answerHelloWhenReady, { immediate: true }) })
 
+  // v1.18: команди, що прийшли, поки ноутбук зберігає шаблон, — виконати одразу після
+  const deferred: RemoteCommandDetail[] = []
+  const DEFERRED_MAX = 50
+  function deferCommand(d: RemoteCommandDetail): void {
+    if (deferred.length >= DEFERRED_MAX) {
+      // понад 50 команд за 1–3 с — не людина; видно в консолі, не мовчки (LAW §12)
+      console.warn('[WB:remote] command not deferred — queue full:', d.cmd)
+      return
+    }
+    deferred.push(d)
+  }
+  if (opts.busy) {
+    const busy = opts.busy
+    watch(() => busy(), (now, was) => {
+      // пульт має дізнатися одразу — і що дошка зайнята, і що вже ні
+      if (remoteConnected.value && opts.enabled.value) sendStateNow()
+      if (!now && was) {
+        const queue = deferred.splice(0)
+        for (const d of queue) {
+          if (!opts.enabled.value) break   // кімнати вже немає — дошку не чіпаємо
+          handleRemoteCommand(d)
+        }
+      }
+    })
+  }
+
   function onRemoteCommand(e: Event): void {
     const d = (e as CustomEvent<RemoteCommandDetail>).detail
     if (!d) return
@@ -281,6 +318,14 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (d.pair !== pairCode.value) { ignoredCount.value += 1; return }
 
     lastRemoteSeenAt.value = Date.now()
+    if (d.cmd !== 'hello' && opts.busy?.()) {
+      deferCommand(d)
+      return
+    }
+    handleRemoteCommand(d)
+  }
+
+  function handleRemoteCommand(d: RemoteCommandDetail): void {
     const store = opts.store
     const view = opts.view
 

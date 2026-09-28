@@ -232,6 +232,22 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <!-- «Зберегти як новий шаблон» (ТЗ TZ_SAVE_FROM_LIVE_LESSON_AS_TEMPLATE, власник 2026-09-28):
+             лише в уроці, проведеному з шаблону, і лише власнику. Студія, клас, учень, локальна
+             дошка — немає; дошка без шаблону має «Зберегти як урок» вище (двох однакових немає). -->
+        <button
+          v-if="canSaveAsNewTemplate && !isSidebarDrawer"
+          type="button"
+          class="wb-header-btn wb-header-btn--save-copy"
+          data-testid="save-as-new-template"
+          :title="t('winterboard.lesson.copy.button')"
+          :aria-label="t('winterboard.lesson.copy.button')"
+          :disabled="savingTemplate"
+          @click="openSaveCopyDialog"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="wb-header-btn__label">{{ t('winterboard.lesson.copy.button') }}</span>
+        </button>
         <!-- Constructor mode: зберегти дошку як урок — завжди відкриває модалку. -->
         <button
           v-if="constructorMode && sessionId && isSessionOwner"
@@ -329,6 +345,24 @@
            обрізаною, попри те що sticky «працював». Прямий нащадок скрол-
            контейнера піниться відносно екрана. -->
       <div class="wb-header-auth">
+        <!-- «Зберегти як новий шаблон» на ≤768 px. Шапка тут прокручується вбік, і
+             кнопка з `__actions` стояла за краєм (390 px: x 556–600) — ТЗ §4 п. 6
+             цього не дозволяє. Тому на цій ширині вона тут, у приліпленому до
+             правого краю блоці поруч із «Вийти» (той самий прийом, що 09-03 для
+             входу), лише значком. У `__actions` на цій ширині її немає: у DOM
+             завжди одна. -->
+        <button
+          v-if="canSaveAsNewTemplate && isSidebarDrawer"
+          type="button"
+          class="wb-header-btn wb-header-btn--save-copy"
+          data-testid="save-as-new-template"
+          :title="t('winterboard.lesson.copy.button')"
+          :aria-label="t('winterboard.lesson.copy.button')"
+          :disabled="savingTemplate"
+          @click="openSaveCopyDialog"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button
           v-if="isLocalWorkspace"
           type="button"
@@ -938,6 +972,22 @@
       @saved="handleLessonSaved"
     />
 
+    <!-- «Зберегти як новий шаблон»: той самий діалог і API; момент знімка — «Зберегти шаблон»
+         (бар'єр + блок дошки й пульта до відповіді сервера, LAW §9 v1.18) -->
+    <WBSaveLessonDialog
+      v-if="sessionId && canSaveAsNewTemplate"
+      v-model="showSaveCopyDialog"
+      mode="copy"
+      :session-id="sessionId"
+      :default-title="copyDefaultTitle"
+      :before-save="beginTemplateSave"
+      :after-save="endTemplateSave"
+      @saved="handleCopySaved"
+    />
+    <div v-if="savingTemplate" class="wb-saving-template" role="status" data-testid="saving-template">
+      {{ t('winterboard.lesson.copy.savingBanner') }}
+    </div>
+
     <!-- Soft success confirmation after save як шаблон/урок -->
     <LessonSavedSuccessModal
       v-model="showSavedSuccessModal"
@@ -1123,6 +1173,7 @@ import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
 import { notifyError, notifyWarning } from '@/utils/notify'
+import { artifactBarrierReason, type ArtifactBarrierReason } from '../composables/artifactBarrier'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 import { useFollowMode } from '../composables/useFollowMode'
@@ -1732,8 +1783,10 @@ const showRemoteModal = ref(false)
 // запис не вдався — нове малювання не прийнялось би, тож не даємо його почати
 // (LAW §4, не тихий no-op; банер пояснює). Завершений запис дошку НЕ блокує
 // (INV-23 v3, рішення власника 2026-09-27).
+/** «Зберегти як новий шаблон» (LAW §9 v1.18): від «Зберегти шаблон» до відповіді сервера дошка не пише. */
+const savingTemplate = ref(false)
 const soloEffectiveTool = computed(() =>
-  (opsSync.inputLocked ? 'select' : store.currentTool))
+  (opsSync.inputLocked || savingTemplate.value ? 'select' : store.currentTool))
 
 // v1.2 + v1.15: вигляд полотна з пульта. «На весь екран» (Сценарій) бере видиму частину
 // полотна з DOM (стор тут розміру поля не знає) і застосовує масштаб тим самим шляхом,
@@ -1762,6 +1815,8 @@ const boardRemote = useBoardRemote({
   // кнопки «Пульт на телефон». Без !constructorMode телефон через m4sh.org/remote
   // знаходив відкриту в Студії дошку й керував шаблоном (сторінки, відео, фото).
   enabled: computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace && !constructorMode.value),
+  // v1.18: «Ноутбук зберігає шаблон…» на пульті; команди цих секунд — одразу після збереження
+  busy: () => (savingTemplate.value ? 'saving_template' : null),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: remoteView,
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
@@ -1941,7 +1996,7 @@ const showSaveTemplateDialog = ref(false)
 // Soft success modal — після save як шаблон/урок
 const showSavedSuccessModal = ref(false)
 const savedItemTitle = ref('')
-const savedItemKind = ref<'lesson' | 'template'>('lesson')
+const savedItemKind = ref<'lesson' | 'template' | 'copy'>('lesson')
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showEnrichModal = ref(false)
@@ -3589,20 +3644,72 @@ async function openSaveLessonDialog(): Promise<void> {
  * Якщо щось ще не на сервері — не створюємо неповний «готовий» результат.
  */
 async function ensureBoardSavedForArtifact(): Promise<boolean> {
-  if (!sessionId.value || isLocalWorkspace) return true
-  flushPendingUpdates()
-  try {
-    await opsSync.flushAll()
-  } catch (e) {
-    console.warn('[WBSoloRoom] flushAll before artifact failed:', e)
-  }
-  if (opsSync.isSaveBlocked || opsSync.pendingOps.length + opsSync.inFlightOps.length > 0) {
+  const reason = await artifactBarrier()
+  if (reason) {
     // Глобальний notify: локальний useToast у цій кімнаті ніхто не рендерить (WBToast
     // не змонтовано), тож повідомлення бар'єра інакше було б невидимим.
-    notifyError(t('winterboard.errors.saveBlocked.barrier'))
+    notifyError(barrierText(reason))
     return false
   }
   return true
+}
+
+/**
+ * Той самий бар'єр, але з причиною (2026-09-28, ТЗ «Зберегти як новий шаблон» §2):
+ * виняток `flushAll()` — сам відмова, а не «лог і далі»; DESYNC/PAUSED/BOOTSTRAP і
+ * офлайн теж зупиняють (у DESYNC `record()` — no-op, тож порожня черга нічого не доводить).
+ */
+async function artifactBarrier(): Promise<ArtifactBarrierReason | null> {
+  if (!sessionId.value || isLocalWorkspace) return null
+  flushPendingUpdates()
+  let flushFailed = false
+  try {
+    await opsSync.flushAll()
+  } catch (e) {
+    flushFailed = true
+    console.warn('[WBSoloRoom] flushAll before artifact failed:', e)
+  }
+  return artifactBarrierReason({
+    flushFailed,
+    mode: opsSync.mode,
+    pendingCount: opsSync.pendingOps.length + opsSync.inFlightOps.length,
+    online: typeof navigator === 'undefined' || navigator.onLine !== false,
+  })
+}
+
+function barrierText(reason: ArtifactBarrierReason): string {
+  return t(`winterboard.errors.saveBlocked.barrierReason.${reason}`)
+}
+
+// ── «Зберегти як новий шаблон» (ТЗ TZ_SAVE_FROM_LIVE_LESSON_AS_TEMPLATE; LAW §9 v1.18) ──
+const showSaveCopyDialog = ref(false)
+const canSaveAsNewTemplate = computed(() =>
+  !!sessionId.value && isSessionOwner.value && !!sourceLessonId.value && !constructorMode.value && !isLocalWorkspace)
+const copyDefaultTitle = computed(() =>
+  isUntitledBoardName(sessionName.value) ? '' : t('winterboard.lesson.copy.defaultTitle', { title: sessionName.value }))
+
+async function openSaveCopyDialog(): Promise<void> {
+  if (savingTemplate.value) return
+  if (!(await ensureBoardSavedForArtifact())) return
+  showSaveCopyDialog.value = true
+}
+
+/** Момент знімка: блок дошки й пульта (busy) → бар'єр ще раз; причина — у вікні, запиту немає. */
+async function beginTemplateSave(): Promise<string | null> {
+  savingTemplate.value = true
+  const reason = await artifactBarrier()
+  return reason ? barrierText(reason) : null
+}
+
+/** Завжди після спроби (успіх, відмова, виняток): дошка й пульт знову пишуть. */
+function endTemplateSave(): void {
+  savingTemplate.value = false
+}
+
+function handleCopySaved(lesson: { id: string; title: string }): void {
+  savedItemTitle.value = lesson.title || ''
+  savedItemKind.value = 'copy'
+  showSavedSuccessModal.value = true
 }
 
 async function openSaveTemplateDialog(): Promise<void> {
@@ -4786,12 +4893,43 @@ watch(() => store.workspaceName, (name) => {
    Подвійний клас піднімає specificity (0,2,0), щоб width:auto перебивав
    .wb-header-btn{width:Npx} з медіа-запитів (≥1920px р.4315 / ≤768px) — інакше
    кнопку тиснуло до фікс-ширини й лейбл налазив на «Вийти». */
-.wb-header-btn.wb-header-btn--save-template {
+.wb-header-btn.wb-header-btn--save-template,
+.wb-header-btn.wb-header-btn--save-copy {
   width: auto;
   gap: 6px;
   padding: 0 12px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* «Зберегти як новий шаблон»: підпис довший — лише значок уже на планшеті, щоб
+   шапка не вилазила за край (ТЗ §4 п. 6). */
+@media (max-width: 1180px) {
+  .wb-header-btn.wb-header-btn--save-copy {
+    width: 32px;
+    padding: 0;
+    gap: 0;
+  }
+  .wb-header-btn--save-copy .wb-header-btn__label {
+    display: none;
+  }
+}
+
+/* «Зберігаємо шаблон…» — над дошкою на 1–3 с збереження (дошка не пише). */
+.wb-saving-template {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
 }
 
 .wb-header-btn__label {

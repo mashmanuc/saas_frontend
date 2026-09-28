@@ -69,6 +69,7 @@ const MSG = {
   fontUp: 'Більше', fontDown: 'Менше', scrollUp: 'Вгору', scrollDown: 'Вниз',
   showAnswer: 'Відповідь', hideAnswer: 'Сховати відповідь', showSolution: 'Розбір', hideSolution: 'Сховати розбір',
   holdToTalk: 'Говорю', listening: 'Слухаю…', voiceUnsupported: 'x', exitToBoards: 'Студія',
+  busySaving: 'Ноутбук зберігає шаблон…', busySavingWhy: 'Зачекайте — ноутбук зберігає шаблон',
   minimizeAssistant: 'Згорнути вікно Інтегралика',
   addPhoto: 'Фото', addVideo: 'Відео', sheetVideo: 'Відео на дошку', settings: 'Налаштування', close: 'Закрити',
   whyFirstPage: 'Це перша сторінка', whyLastPage: 'Це остання сторінка',
@@ -145,6 +146,40 @@ describe('LAW §9 v1.14 · «– Згорнути вікно Інтеграли�
     channelState.value = 'reconnecting'
     await nextTick()
     expect(minBtn(w).attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('LAW §9 v1.18 · ноутбук зберігає шаблон (busy)', () => {
+  beforeEach(() => {
+    channelState.value = 'idle'
+    send.mockClear(); connect.mockClear(); disconnect.mockClear()
+    getActiveRemoteSession.mockReset()
+    getActiveRemoteSession.mockResolvedValue({ session_id: SID, name: 'Алгебра 8-А', ts: 1 })
+    onStateCb = null; onFinalCb = null
+    try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
+  })
+  afterEach(() => { while (mounted.length) mounted.pop()!.unmount() })
+
+  it('busy: рядок «Ноутбук зберігає шаблон…», кнопки дошки вимкнені на місці, тап пояснює', async () => {
+    const w = await connected({ busy: 'saving_template' })
+    expect(w.find('[data-testid="remote-busy"]').text()).toBe('Ноутбук зберігає шаблон…')
+    const core = w.findAll('.wb-remote__btn')
+    expect(core.length).toBe(4)
+    for (const b of core) expect(b.attributes('disabled')).toBeDefined()
+    expect(w.find('.wb-remote__talk').attributes('disabled')).toBeDefined()
+    await w.find('[data-testid="slot-next"]').trigger('click')
+    expect(w.find('[data-testid="why"]').text()).toBe('Зачекайте — ноутбук зберігає шаблон')
+    send.mockClear()
+    await w.findAll('.wb-remote__btn')[2].trigger('click')   // «Нова сторінка» — вимкнена, команди немає
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('busy зник — рядка немає, кнопки знову працюють', async () => {
+    const w = await connected({ busy: 'saving_template' })
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 3 })
+    await nextTick()
+    expect(w.find('[data-testid="remote-busy"]').exists()).toBe(false)
+    expect(w.findAll('.wb-remote__btn')[2].attributes('disabled')).toBeUndefined()
   })
 })
 

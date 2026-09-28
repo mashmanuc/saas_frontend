@@ -26,6 +26,11 @@
       ><span aria-hidden="true">⚙</span></button>
     </header>
 
+    <!-- v1.18: ноутбук 1–3 с зберігає шаблон — кнопки дошки вимкнені на місці, причина словами -->
+    <p v-if="keyboard && boardBusy" class="wb-remote__busy" role="status" data-testid="remote-busy">
+      {{ t('winterboard.remote.busySaving') }}
+    </p>
+
     <!-- Причина, чому пульт не керує — ЗАВЖДИ словами, ніколи мовчки -->
     <div v-if="reason" class="wb-remote__block" :class="`wb-remote__block--${reason.tone}`" role="status">
       <p class="wb-remote__reason">{{ reason.text }}</p>
@@ -543,6 +548,8 @@ const isPresentingTask = computed(() => !!cards.value?.presenting)
  * (стара збірка в кеші): показуємо все, як до v2. Порожній список — ряду «Додати» немає.
  */
 const caps = ref<RemoteCap[] | null>(null)
+/** v1.18: ноутбук зберігає шаблон — дошка 1–3 с не пише, кнопки дошки вимкнені на місці */
+const boardBusy = ref(false)
 const canPhoto = computed(() => !caps.value || caps.value.includes('photo'))
 const canVideo = computed(() => !caps.value || caps.value.includes('video'))
 /**
@@ -756,6 +763,7 @@ const channel = useRemoteChannel({
     photoResult.value = s.photo ?? null
     caps.value = s.caps ?? null
     scenario.value = s.scenario ?? null
+    boardBusy.value = s.busy === 'saving_template'
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
     reasonKey.value = s.frozen ? 'boardFrozen' : null
@@ -831,7 +839,7 @@ const isOnline = computed(() => channel.state.value === 'connected')
 const isLinked = computed(() => ['connected', 'connecting', 'reconnecting'].includes(channel.state.value))
 /** Клавіатура з'являється з першим remote.state і живе до розриву каналу (ТЗ §2) */
 const keyboard = computed(() => pageIndex.value !== null)
-const isReady = computed(() => isOnline.value && pageIndex.value !== null)
+const isReady = computed(() => isOnline.value && pageIndex.value !== null && !boardBusy.value)
 const canPrev = computed(() => isReady.value && (pageIndex.value ?? 0) > 0)
 const canNext = computed(() =>
   isReady.value && pageIndex.value !== null && pageCount.value !== null && pageIndex.value < pageCount.value - 1,
@@ -859,6 +867,7 @@ function whyDisabled(which: 'prev' | 'next' | 'ready'): void {
   if (which === 'prev' && canPrev.value) return
   if (which === 'next' && canNext.value) return
   if (which === 'ready' && isReady.value) return
+  if (boardBusy.value) { showWhy(t('winterboard.remote.busySavingWhy')); return }
   if (!isReady.value) { showWhy(t('winterboard.remote.waitingBoard')); return }
   showWhy(t(which === 'prev' ? 'winterboard.remote.whyFirstPage' : 'winterboard.remote.whyLastPage'))
   tel('why', { which })
@@ -1151,6 +1160,10 @@ onBeforeUnmount(() => {
 .wb-remote__block { padding: 14px 16px; border-radius: 12px; background: var(--surface); font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; gap: 8px; }
 .wb-remote__block--warn { border: 1px solid var(--warn); }
 .wb-remote__block--error { border: 1px solid #ef4444; }
+.wb-remote__busy {
+  margin: 0; padding: 10px 12px; border-radius: 12px; background: #1e3a8a; color: #fff;
+  font-size: 15px; font-weight: 600; text-align: center;
+}
 .wb-remote__reason { margin: 0; font-weight: 600; }
 .wb-remote__hint { margin: 0; font-size: 13px; color: #cbd5e1; }
 .wb-remote__refresh { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 0; border-radius: 10px; padding: 10px 16px; font-size: 14px; min-height: 44px; }

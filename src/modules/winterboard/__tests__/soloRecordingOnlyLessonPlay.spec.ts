@@ -18,6 +18,8 @@ describe('WBSoloRoom · запис лише в уроці', () => {
   it('завершений запис дошку не блокує — ні вікна, ні read-only (INV-23 v3, 2026-09-27)', () => {
     // Новий запис — лише кнопкою запису (вона сама в уроці, див. тест вище).
     expect(src).not.toMatch(/useFrozenEditGuard|isBoardFrozen|WBRecordingRestartConfirmModal/)
-    expect(src).toMatch(/const soloEffectiveTool = computed\(\(\) =>\s*\(opsSync\.inputLocked \? 'select' : store\.currentTool\)\)/)
+    // Друга умова — «Зберегти як новий шаблон» (власник 2026-09-28): 1–3 с, поки сервер
+    // знімає стан, дошка не пише. До запису вона не має стосунку; стану запису тут як не було.
+    expect(src).toMatch(/const soloEffectiveTool = computed\(\(\) =>\s*\(opsSync\.inputLocked \|\| savingTemplate\.value \? 'select' : store\.currentTool\)\)/)
   })
 })
