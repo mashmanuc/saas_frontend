@@ -763,6 +763,15 @@ const channel = useRemoteChannel({
     else reasonKey.value = 'serverRejected'
     tel('reason', { reason: reasonKey.value, code })
   },
+  // LAW §9 v1.16 (Б-120): ноутбук після F5 (чи втрати мережі) пульт «забуває» і стан не шле,
+  // доки не почує hello. Бачимо, що дошка нашого акаунта знову в кімнаті, — вітаємось ОДИН
+  // раз на кожне приєднання: подія, а не опитування чи повтор (§12). Учень у класі — не ми.
+  onBoardJoin(userId) {
+    const me = String(authStore.user?.id ?? '')
+    if (!pair.value || (me && userId !== me)) return
+    sendCmd('hello')
+    tel('hello_on_join')
+  },
 })
 
 const reason = computed(() => {

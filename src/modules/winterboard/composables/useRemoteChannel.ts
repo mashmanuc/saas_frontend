@@ -12,6 +12,9 @@
 // закриття (ws_4008 / ws_rejected …); UI пульта показує людині причину.
 // v1 цього не показував — власник дивився на «Зв'язок є» + «Чекаю дошку…»
 // і не міг зрозуміти, що саме не так.
+//
+// v1.16 (Б-120): `presence.join` — сигнал «дошка (пере)підключилась» (F5 ноутбука, мережа).
+// Канал лише передає його пульту (`onBoardJoin`); що робити — вирішує пульт.
 
 import { ref, onUnmounted, type Ref } from 'vue'
 import { getWsBaseUrl, isPresenceAvailable, _getFreshTokenAsync } from './usePresence'
@@ -217,7 +220,12 @@ export function parseRemoteCaps(raw: any): RemoteCap[] | undefined {
   return out
 }
 
-export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void; onError?: (code: string) => void }) {
+export function useRemoteChannel(opts: {
+  onState: (s: RemoteStateDetail) => void
+  onError?: (code: string) => void
+  /** v1.16 (Б-120): хтось приєднався до кімнати дошки — `userId` з `presence.join` */
+  onBoardJoin?: (userId: string) => void
+}) {
   const state: Ref<RemoteChannelState> = ref('idle')
   const lastError = ref<string | null>(null)
   /** Сесія, до якої канал підключений зараз (для UI і для перепідключення) */
@@ -309,8 +317,12 @@ export function useRemoteChannel(opts: { onState: (s: RemoteStateDetail) => void
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати
         setError(String(msg.code ?? 'error'))
+      } else if (msg?.type === 'presence.join') {
+        // v1.16 (Б-120): дошка (пере)підключилась — після F5 ноутбук пульт «забуває»
+        // і мовчить, доки пульт не привітається знову
+        opts.onBoardJoin?.(String(msg.userId ?? ''))
       }
-      // решта типів (presence.*, ops.applied, stroke.broadcast…) пульту не потрібні
+      // решта типів (presence.leave, ops.applied, stroke.broadcast…) пульту не потрібні
     }
     socket.onclose = (ev) => {
       if (ws !== socket) return   // late close від попереднього сокета (INV-WS-1)

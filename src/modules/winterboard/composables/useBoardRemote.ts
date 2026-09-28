@@ -28,8 +28,13 @@
 // дошки з телефона — адаптер `scenario` (лише в уроці, як media і photo). video.play /
 // video.pause з v1.15 керують будь-яким програвачем; нові video.volume, view.focus,
 // card.minimize, card.restore, doc.page. Стан — поле `scenario`, `caps` += 'scenario'.
+//
+// v1.16 (Б-120): після F5 ноутбук пульт «забуває» (lastRemoteSeenAt = null) і стан не шле,
+// доки не почує hello; пульт тепер вітається сам, щойно бачить presence.join дошки. Такий
+// hello може прийти раніше, ніж кімната стала готовою (`enabled`: власник ще не відомий), —
+// його не губимо: одна відповідь, щойно `enabled`. Інші команди до готовності — як і раніше.
 
-import { ref, computed, watch, onUnmounted, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
@@ -250,9 +255,29 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   }
 
   // ── remote.command ← пульт ───────────────────────────────────────────
+  /** v1.16 (Б-120): пульт привітався, поки кімната ще не готова — відповімо, щойно стане */
+  let helloWhileDisabled = false
+  function answerHelloWhenReady(on: boolean): void {
+    if (!on || !helloWhileDisabled) return
+    helloWhileDisabled = false
+    lastRemoteSeenAt.value = Date.now()
+    requestAssistantState()
+    sendStateNow()
+  }
+  // Лише ПІСЛЯ setup кімнати: `enabled` кімнати читає значення, оголошені нижче виклику
+  // useBoardRemote (WBSoloRoom — `isSessionOwner`), і watch у setup упав би на них (TDZ; живий
+  // стенд 2026-09-28). `immediate` — якщо hello прийшов раніше, а кімната вже готова.
+  onMounted(() => { watch(opts.enabled, answerHelloWhenReady, { immediate: true }) })
+
   function onRemoteCommand(e: Event): void {
     const d = (e as CustomEvent<RemoteCommandDetail>).detail
-    if (!d || !opts.enabled.value) return
+    if (!d) return
+    if (!opts.enabled.value) {
+      // Лише hello нашої дошки й лише як позначка: жодної дії до готовності (Студія,
+      // не власник — `enabled` так і не стане true, відповіді не буде).
+      if (d.cmd === 'hello' && d.pair === pairCode.value) helloWhileDisabled = true
+      return
+    }
     if (d.pair !== pairCode.value) { ignoredCount.value += 1; return }
 
     lastRemoteSeenAt.value = Date.now()
