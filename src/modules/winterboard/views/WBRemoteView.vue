@@ -745,11 +745,16 @@ const channel = useRemoteChannel({
     vibrate(15)
   },
   onError(code) {
+    // Б-121 (2026-09-28): сервер більше не пускає в кімнату чужої дошки. Відмова йде ДО accept,
+    // тож браузер бачить не 4403, а 1006 — канал каже `ws_rejected` (перевірено на стенді;
+    // `ws_4403` — якщо колись закриватиме після accept). Раніше тут був `forbidden` після hello.
+    const maybeNotOurs = code === 'forbidden' || code === 'ws_4403' || code === 'ws_rejected'
     // Стара адреса з id чужої дошки (живий урок 2026-09-06: телефон тримав
     // /winterboard/<id>/remote від дошки іншого акаунта, а «Оновити» брав той
     // самий id знову і знову). Один раз — без петлі (LAW §12) — перепитуємо,
-    // яка дошка відкрита на ноутбуці ПІД ЦИМ акаунтом, і йдемо туди.
-    if (code === 'forbidden' && props.id && !routeIdRejected) {
+    // яка дошка відкрита на ноутбуці ПІД ЦИМ акаунтом, і йдемо туди. Якщо й своя
+    // відмовить (ліміт з'єднань) — далі звичайна причина, без другого кола.
+    if (maybeNotOurs && props.id && !routeIdRejected) {
       routeIdRejected = true
       tel('fallback', { from: 'route_id', code })
       channel.disconnect()
@@ -757,9 +762,9 @@ const channel = useRemoteChannel({
       return
     }
     reasonCode.value = code
-    if (code === 'forbidden') reasonKey.value = 'wrongAccount'
+    if (code === 'forbidden' || code === 'ws_4403') reasonKey.value = 'wrongAccount'
     else if (code === 'ws_4008' || code === 'ws_rejected') reasonKey.value = 'tooManyConnections'
-    else if (code === 'no_token' || code === 'ws_4401' || code === 'ws_4403') reasonKey.value = 'noToken'
+    else if (code === 'no_token' || code === 'ws_4401') reasonKey.value = 'noToken'
     else reasonKey.value = 'serverRejected'
     tel('reason', { reason: reasonKey.value, code })
   },

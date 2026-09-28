@@ -161,10 +161,50 @@ describe('WBRemoteView v1.1', () => {
       expect(w.text()).toContain(MSG.wrongAccount)              // тепер чесно: і id чужий, і своєї немає
     })
 
+    it('Б-121: сервер відхилив сокет до accept (браузер бачить 1006 → ws_rejected) на id-адресі → той самий один запасний шлях', async () => {
+      // Живий стенд 2026-09-28: сервер Б-121 не пускає в кімнату чужої дошки ДО accept, тож
+      // браузер отримує 1006, а не 4403. Для пульта з id-адресою це та сама «чужа адреса».
+      const w = mountView({ id: STALE })
+      await flushPromises()
+      onErrorCb?.('ws_rejected')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(connect).toHaveBeenLastCalledWith(SID)
+      expect(w.text()).not.toContain(MSG.tooManyConnections)
+      // своя дошка теж відмовила (справжній ліміт з'єднань) — без другого кола, чесна причина
+      onErrorCb?.('ws_rejected')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(w.text()).toContain(MSG.tooManyConnections)
+    })
+
+    it('Б-121: код 4403 (якщо закриття після accept) на id-адресі → запасний шлях; не «сесія протухла»', async () => {
+      const w = mountView({ id: STALE })
+      await flushPromises()
+      onErrorCb?.('ws_4403')
+      await flushPromises()
+      expect(getActiveRemoteSession).toHaveBeenCalledTimes(1)
+      expect(connect).toHaveBeenLastCalledWith(SID)
+      onErrorCb?.('ws_4403')
+      await flushPromises()
+      expect(w.text()).toContain(MSG.wrongAccount)
+      expect(w.text()).not.toContain(MSG.noToken)
+    })
+
+    it('/remote без id: ws_rejected — як і раніше «забагато з\'єднань», без запасного шляху', async () => {
+      const w = mountView()
+      await flushPromises()
+      getActiveRemoteSession.mockClear()
+      onErrorCb?.('ws_rejected')
+      await flushPromises()
+      expect(getActiveRemoteSession).not.toHaveBeenCalled()
+      expect(w.text()).toContain(MSG.tooManyConnections)
+    })
+
     it('«Оновити» на id-адресі шукає дошку ноутбука по API, а не тримається за id', async () => {
       const w = mountView({ id: STALE })
       await flushPromises()
-      onErrorCb?.('ws_rejected')          // будь-яка причина, щоб з'явився блок з «Оновити»
+      onErrorCb?.('ws_4008')              // будь-яка причина, щоб з'явився блок з «Оновити» (Б-121: ws_rejected на id-адресі тепер іде запасним шляхом)
       await nextTick()
       await w.find('.wb-remote__refresh').trigger('click')
       await flushPromises()
