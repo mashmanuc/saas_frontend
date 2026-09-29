@@ -127,6 +127,7 @@
               :value="expr.src"
               :placeholder="idx === 0 ? t('winterboard.widget.graphCalc.exprPlaceholder') : ''"
               @input="onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
+              @paste="pasteFormulaAsSrc"
               @blur="onInputBlur(expr.id)"
               @keydown.enter.prevent="onEnterPress(expr.id)"
               @keydown.down.prevent="onArrowNav(expr.id, 1)"
@@ -385,6 +386,7 @@ import type { ParamFocus } from '../../../utils/paramFocus'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { autofitExpressions, paramValuesOf } from '../../../utils/graphAutofit'
+import { pasteFormulaAsSrc } from '../../../utils/formulaPaste'
 
 const { t, locale } = useI18n()
 

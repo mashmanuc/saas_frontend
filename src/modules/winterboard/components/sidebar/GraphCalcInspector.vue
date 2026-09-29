@@ -105,6 +105,7 @@
             placeholder="y = ..."
             @focus="editingId = expr.id"
             @input="b.onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
+            @paste="pasteFormulaAsSrc"
             @blur="onInputBlur(expr.id)"
             @keydown.enter.prevent="b.onEnterPress(expr.id)"
             @keydown.down.prevent="b.onArrowNav(expr.id, 1)"
@@ -253,6 +254,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
 import MathQuillField from '../shared/MathQuillField.vue'
+import { pasteFormulaAsSrc } from '../../utils/formulaPaste'
 import { isRenderableAscii } from '../../utils/asciiMathToLatex'
 import { loadMathQuill } from '../../utils/mathquillLoader'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'

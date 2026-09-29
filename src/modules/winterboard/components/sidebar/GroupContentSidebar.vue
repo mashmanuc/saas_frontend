@@ -35,8 +35,15 @@
         >A+</button>
       </div>
 
-      <!-- Зумована обгортка — CSS zoom масштабує весь інспектор -->
-      <div class="insp-zoom-wrap" :style="{ zoom: ZOOM_LEVELS[zoomIdx] }">
+      <!-- Зумована обгортка — CSS zoom масштабує весь інспектор.
+           Власник 2026-09-29: «в перше поле не вводиться формула» — дотик до панелі вмикає «Виділення»
+           (ensureSelectTool), інакше з пером картка відкидала правки з панелі. -->
+      <div
+        class="insp-zoom-wrap"
+        :style="{ zoom: ZOOM_LEVELS[zoomIdx] }"
+        @pointerdown.capture="ensureSelectTool"
+        @focusin="ensureSelectTool"
+      >
         <Nmt3dInspector       v-if="nmt3dUiState.ws" />
         <TrigCircleInspector  v-else-if="trigCircleUiState.bridge" />
         <HelixInspector       v-else-if="helixUiState.bridge" />
@@ -567,6 +574,16 @@ const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,
 })
 const wbStore = useWBStore()
+
+/**
+ * Власник 2026-09-29: «в перше поле не вводиться формула». Картки (калькулятор, похідні/інтеграли й
+ * решта з інспектором тут) приймають правки лише з інструментом «Виділення» (WBCanvas: interactive =
+ * tool 'select' && edit). З пером панель виглядала робочою, а введене мовчки відкидалось. Дотик до панелі
+ * — це намір правити об'єкт: вмикаємо «Виділення» (виділення лишається — setTool його не чіпає).
+ */
+function ensureSelectTool(): void {
+  if (wbStore.currentTool !== 'select') wbStore.setTool('select')
+}
 
 // У кого матеріалів НЕМАЄ, «Матеріали» відкривались порожнім екраном — саме на
 // ньому новий учитель і зупинявся (розбір першої хвилини, 2026-09-24). Тому

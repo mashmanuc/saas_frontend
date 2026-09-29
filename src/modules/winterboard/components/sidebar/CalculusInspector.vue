@@ -71,6 +71,7 @@
           @focus="exprFocused = true"
           @blur="exprFocused = false; onExprCommit()"
           @input="onExprInput"
+          @paste="pasteFormulaAsSrc"
           @keydown.enter.prevent="onExprCommit"
         />
       </div>
@@ -190,6 +191,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
 import MathQuillField from '../shared/MathQuillField.vue'
+import { pasteFormulaAsSrc } from '../../utils/formulaPaste'
 import { isRenderableAscii } from '../../utils/asciiMathToLatex'
 import { loadMathQuill } from '../../utils/mathquillLoader'
 import { calculusUiState } from '../../board/state/calculusUiState'
