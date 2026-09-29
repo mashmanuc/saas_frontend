@@ -93,15 +93,12 @@ export default defineConfig({
           if (id.includes('node_modules/dayjs') || id.includes('node_modules/axios')) return 'vendor-utils'
           if (id.includes('node_modules/vue-i18n')) return 'vendor-i18n'
 
-          // Feature modules — split by domain (only src/ files, not node_modules)
-          if (id.includes('/src/')) {
-            if (id.includes('/modules/winterboard/')) return 'chunk-winterboard'
-            if (id.includes('/modules/chat/') || id.includes('/modules/chat-realtime/') || id.includes('/stores/chatStore')) return 'chunk-chat'
-            if (id.includes('/modules/board/') || id.includes('/stores/boardStore')) return 'chunk-board'
-            if (id.includes('/modules/marketplace/')) return 'chunk-marketplace'
-            if (id.includes('/modules/booking/')) return 'chunk-booking'
-            if (id.includes('/modules/knowledge/')) return 'chunk-knowledge'
-          }
+          // Б-84 (2026-09-29): код із src/ більше НЕ зводиться примусово в доменні чанки
+          // (chunk-winterboard / -booking / -chat / -marketplace / -knowledge / -board). Досить було
+          // одного маленького імпорту з домену на шляху входу (роутер → winterboard/config/featureFlags),
+          // щоб index.html передзавантажував увесь домен: будь-яка сторінка при першому вході тягнула
+          // 5,8 МБ JS (прод, /start). Тепер Rollup ділить код за лінивими маршрутами — сторінка бере
+          // лише те, що справді імпортує. Вендорні чанки вище лишаються (стабільний кеш).
         },
       },
     },
