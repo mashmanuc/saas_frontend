@@ -172,6 +172,31 @@ describe('пульт: Інтегралик текстом', () => {
     expect(cmds()).toHaveLength(0)
   })
 
+  it('ноутбук перезавантажився посеред «думає…» — чесна помилка, поле знову активне', async () => {
+    const w = await connected()
+    const requestId = await ask(w, 'підготуй задачу')
+    await state({ assistantReply: { requestId, status: 'thinking' } })
+    await state({})                                          // той самий ноутбук після F5: відповіді вже немає
+    expect(w.find('[data-testid="remote-ai-reply"]').text()).toBe(A.laptopReloaded)
+    expect((w.find('[data-testid="remote-ai-input"]').element as HTMLInputElement).disabled).toBe(false)
+  })
+
+  it('ноутбук мовчить 10 с (навіть «думає…» не прийшло) — чесна помилка, поле знову активне', async () => {
+    const w = await connected()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      await ask(w, 'підготуй задачу')
+      await state({})                                        // стан без відповіді до «думає…» — ще не збій
+      expect(w.find('.wb-remote__ai-bot--wait').exists()).toBe(true)
+      vi.advanceTimersByTime(10000)
+      await nextTick()
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(w.find('[data-testid="remote-ai-reply"]').text()).toBe(A.noResponse)
+    expect((w.find('[data-testid="remote-ai-input"]').element as HTMLInputElement).disabled).toBe(false)
+  })
+
   it('текст уже набрано, а ноутбук повідомив «думає…» (пульт перезавантажився) — не надсилається', async () => {
     const w = await connected()
     await w.find('[data-testid="remote-ai-input"]').setValue('друге питання')

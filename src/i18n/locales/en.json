@@ -9009,7 +9009,9 @@
         "maxPages": "The board already has 50 pages — no room for another one.",
         "noAnswer": "Integralyk didn’t answer — try saying it differently.",
         "actionFailed": "Couldn’t do this on the board.",
-        "stepFailed": "Step {n} failed: {reason}. Stopping."
+        "stepFailed": "Step {n} failed: {reason}. Stopping.",
+        "noResponse": "The laptop didn’t respond — try again.",
+        "laptopReloaded": "The laptop reloaded — please send it again."
       }
     },
     "youtube": {

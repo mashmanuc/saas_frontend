@@ -624,6 +624,17 @@ const assistantWaiting = computed(() => {
   return !!last && (last.status === 'sent' || last.status === 'thinking')
 })
 
+/** Ноутбук мовчить (навіть «думає…» не прийшло) — поле не лишається вимкненим назавжди. */
+const ASSISTANT_NO_RESPONSE_MS = 10000
+let assistantSentTimer: ReturnType<typeof setTimeout> | null = null
+function failWaitingTurn(key: 'noResponse' | 'laptopReloaded'): void {
+  const turns = assistantTurns.value
+  const last = turns[turns.length - 1]
+  if (!last || (last.status !== 'sent' && last.status !== 'thinking')) return
+  const reply = t(`winterboard.remote.assistant.${key}`)
+  assistantTurns.value = turns.map((x, k) => (k === turns.length - 1 ? { ...x, status: 'error' as const, reply } : x))
+}
+
 function sendAssistant(): void {
   const text = assistantInput.value.trim().slice(0, 300)
   if (!text || !isReady.value || assistantWaiting.value) return
@@ -633,10 +644,22 @@ function sendAssistant(): void {
   const turns = assistantTurns.value.map((t) => (t.status === 'confirm' ? { ...t, status: 'cancelled' as const } : t))
   assistantTurns.value = [...turns, { requestId, text, status: 'sent' as const }].slice(-ASSISTANT_TURNS_MAX)
   assistantInput.value = ''
+  if (assistantSentTimer) clearTimeout(assistantSentTimer)
+  assistantSentTimer = setTimeout(() => {
+    assistantSentTimer = null
+    const last = assistantTurns.value[assistantTurns.value.length - 1]
+    if (last?.requestId === requestId && last.status === 'sent') failWaitingTurn('noResponse')
+  }, ASSISTANT_NO_RESPONSE_MS)
 }
 
 function applyAssistantReply(r: RemoteAssistantReplyDetail | undefined): void {
-  if (!r) return
+  if (!r) {
+    // Ноутбук уже казав «думає…», а тепер шле стан без відповіді — він перезавантажився й розмову
+    // загубив. Інакше поле лишилося б вимкненим до перезавантаження самого пульта.
+    const last = assistantTurns.value[assistantTurns.value.length - 1]
+    if (last?.status === 'thinking') failWaitingTurn('laptopReloaded')
+    return
+  }
   const turns = assistantTurns.value
   const i = turns.findIndex((t) => t.requestId === r.requestId)
   const next: AssistantTurn = {
@@ -1255,6 +1278,7 @@ onBeforeUnmount(() => {
   if (helloTimer) clearInterval(helloTimer)
   if (whyTimer) clearTimeout(whyTimer)
   if (scenarioWhyTimer) clearTimeout(scenarioWhyTimer)
+  if (assistantSentTimer) clearTimeout(assistantSentTimer)
   stopStateWatch()
   try { wakeLock?.release?.() } catch { /* noop */ }
 })
