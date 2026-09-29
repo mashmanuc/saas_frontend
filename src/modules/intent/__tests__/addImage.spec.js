@@ -4,8 +4,9 @@
  * Стереже: (1) без src або без джерела — на дошку НЕ йде (кидає, не мовчить);
  * (2) форма асета = дзеркало useContentDrop (type:'image', src, x, y, w, h,
  * rotation, locked) + data з source/license/author/retrieved_at; (3) розмір
- * вписаний у 480 по ширині зі збереженням пропорцій; (4) під картинкою —
- * текстовий штрих із джерелом і ліцензією.
+ * вписаний у 480 по ширині зі збереженням пропорцій; (4) атрибуція — у даних
+ * картинки, а не штрихом під нею (LAW §9 v1.22, власник 2026-09-29: на дошці лише
+ * кнопка «Джерело» в куті; у PNG/PDF — текстом від сервера, INV-EP-9).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -103,13 +104,18 @@ describe('add_image', () => {
     }
   })
 
-  it('підпис джерела під картинкою — текстовий штрих із ліцензією', async () => {
+  it('підпису-штриха під картинкою немає; повна атрибуція (TASL) — у даних картинки', async () => {
     await runBoardAction({ kind: 'add_image', payload: IMG })
-    expect(strokes).toHaveLength(1)
-    expect(strokes[0].tool).toBe('text')
-    expect(strokes[0].text).toBe('Джерело: Вікіпедія · Public domain')
-    // під картинкою, не над нею
-    expect(strokes[0].points[0].y).toBeGreaterThan(assets[0].y + assets[0].h)
+    expect(strokes).toHaveLength(0)
+    // Без рядка від сервера — з полів: провайдер (файл лежить на Вікісховищі), автор,
+    // адреса файла, ліцензія. Саме його сервер допише текстом під сторінку в PNG/PDF.
+    expect(assets[0].data.attribution_text).toBe(
+      'Джерело: Вікісховище, Godfrey Kneller · https://commons.wikimedia.org/wiki/File:Newton.jpg · Public domain')
+  })
+
+  it('без автора й ліцензії — атрибуція без порожніх місць', async () => {
+    await runBoardAction({ kind: 'add_image', payload: { ...IMG, author: '', license: '' } })
+    expect(assets[0].data.attribution_text).toBe('Джерело: Вікісховище · https://commons.wikimedia.org/wiki/File:Newton.jpg')
   })
 
   it('⛔ без src — кидає, нічого не кладе', async () => {

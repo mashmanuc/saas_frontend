@@ -100,28 +100,33 @@ describe('створення матеріалу з мовою', () => {
     expect(strokes[0]).not.toHaveProperty('data')
   })
 
-  it("рев'ю C0–C4: підпис англійської картинки — серверний рядок атрибуції мовою матеріалу", async () => {
+  it("рев'ю C0–C4: атрибуція англійської картинки — серверний рядок мовою матеріалу (у даних, LAW §9 v1.22)", async () => {
     await runBoardAction({ kind: 'add_image', payload: {
       src: 'https://upload/x.jpg', w: 400, h: 500, caption: 'Ivan Mazepa', source: 'wikimedia_commons',
       source_url: 'https://commons/File:x.jpg', license: 'CC BY-SA 4.0', author: 'Painter',
       attribution_text: 'Source: Wikimedia Commons, Painter · CC BY-SA 4.0',
       corridor: { ...PROVENANCE, content_language: 'en', source_provider: 'wikimedia_commons', author: 'Painter', share_alike: true },
     } })
-    expect(strokes).toHaveLength(1)
-    expect(strokes[0].text).toBe('Source: Wikimedia Commons, Painter · CC BY-SA 4.0')
-    expect(strokes[0].text).not.toMatch(/Джерело|Вікіпед/)
-    expect(strokes[0].data.content_language).toBe('en')
+    // Підпису-штриха під картинкою більше немає (власник 2026-09-29): кнопка «Джерело» в куті.
+    expect(strokes).toHaveLength(0)
+    expect(assets[0].data.attribution_text).toBe('Source: Wikimedia Commons, Painter · CC BY-SA 4.0')
+    expect(assets[0].data.attribution_text).not.toMatch(/Джерело|Вікіпед/)
+    expect(assets[0].data.content_language).toBe('en')
     expect(assets[0].data.provenance).toMatchObject({ author: 'Painter', share_alike: true })
   })
 
-  it('add_image без коридору — підпис як був', async () => {
+  it('add_image без коридору — рядок сервера не береться, атрибуція з полів; мови й провенансу немає', async () => {
+    // Єдина зміна поза гейтом — свідома (власник 2026-09-29): підпис-штрих прибрано для ВСІХ,
+    // тож атрибуція мусить жити в даних картинки, інакше PNG/PDF втратить її.
     await runBoardAction({ kind: 'add_image', payload: {
       src: 'https://upload/x.jpg', w: 400, h: 500, caption: 'Мазепа', source: 'wikimedia_commons',
       source_url: 'https://commons/File:x.jpg', license: 'CC BY-SA 4.0', author: 'Painter',
       attribution_text: 'Source: ignored without corridor',
     } })
-    expect(strokes[0].text).toBe('Джерело: Вікіпедія · CC BY-SA 4.0')
-    expect(strokes[0]).not.toHaveProperty('data')
+    expect(strokes).toHaveLength(0)
+    expect(assets[0].data.attribution_text).toBe('Джерело: Вікісховище, Painter · https://commons/File:x.jpg · CC BY-SA 4.0')
+    expect(assets[0].data).not.toHaveProperty('content_language')
+    expect(assets[0].data).not.toHaveProperty('provenance')
   })
 
   it('add_page з карткою — мова в даних картки', async () => {

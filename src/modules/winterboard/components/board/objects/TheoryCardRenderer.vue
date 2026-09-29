@@ -59,10 +59,12 @@
           class="theory-card__title"
           v-html="renderTextWithLatex(data.title)"
         />
+        <!-- LAW §9 v1.22: TASL-рядок з кінця `body` (атрибуція одного з `sources[]`)
+             показує кнопка «Джерело» внизу, а не текст. Дані ті самі (гейт H0). -->
         <div
-          v-if="data.body"
+          v-if="bodyParts.text"
           class="theory-card__text"
-          v-html="renderTextWithLatex(data.body)"
+          v-html="renderTextWithLatex(bodyParts.text)"
         />
         <div
           v-if="data.hint"
@@ -96,7 +98,7 @@
       <!-- H0: доказові джерела змісту. Службові підписи — мовою МАТЕРІАЛУ
            (data.content_language), а не UI-локалі: англомовна картка не має
            раптом підписуватись українською (ТЗ §2.3, паритет uk/en). -->
-      <div v-if="sources.length" class="theory-card__sources">
+      <div v-if="sources.length || bodyParts.attribution" class="theory-card__sources">
         <button
           type="button"
           class="theory-card__sources-toggle"
@@ -104,8 +106,23 @@
           @click.stop="sourcesOpen = !sourcesOpen"
           @mousedown.stop
           @pointerdown.stop
-        >{{ sourceLabels.sources }}: {{ sources.length }}</button>
-        <ol v-if="sourcesOpen" class="theory-card__sources-list">
+        >{{ sourcesToggleLabel }}</button>
+        <!-- Картка поза гейтом коридорів: `sources[]` немає, є лише рядок «Джерело: Вікіпедія — адреса». -->
+        <ol v-if="sourcesOpen && !sources.length" class="theory-card__sources-list">
+          <li class="theory-card__source">
+            <a
+              class="theory-card__source-title"
+              :href="bodyParts.url"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              @click.stop
+              @mousedown.stop
+              @pointerdown.stop
+            >{{ readableUrl(bodyParts.url) }}</a>
+            <span class="theory-card__source-meta">{{ sourceLabels.wikipedia }}</span>
+          </li>
+        </ol>
+        <ol v-else-if="sourcesOpen" class="theory-card__sources-list">
           <li v-for="(ref, i) in sources" :key="i" class="theory-card__source">
             <!-- Клікабельно лише справжнє веб-посилання: інакше `javascript:`
                  з чужих метаданих став би активним у картці вчителя. Непридатне
@@ -159,6 +176,7 @@ import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { detectCardPreset } from '../../../utils/detectCardPreset'
+import { readableUrl, splitCardAttribution } from '../../../board/materialAttribution'
 import { cardTextScaleStyle, presentationScaleOf } from '../../../board/cardPresentation'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
@@ -223,10 +241,10 @@ const effectivePreset = computed(() =>
 // Через vue-i18n це зробити не можна — він дає локаль ІНТЕРФЕЙСУ, а ТЗ вимагає
 // мову самого матеріалу (англійська картка → `Sources`, навіть коли UI український).
 const SOURCE_LABELS: Record<string, {
-  sources: string; author: string; license: string; revision: string; retrieved: string
+  source: string; sources: string; author: string; license: string; revision: string; retrieved: string; wikipedia: string
 }> = {
-  uk: { sources: 'Джерела', author: 'Автор', license: 'Ліцензія', revision: 'Версія', retrieved: 'Отримано' },
-  en: { sources: 'Sources', author: 'Author', license: 'License', revision: 'Revision', retrieved: 'Retrieved' },
+  uk: { source: 'Джерело', sources: 'Джерела', author: 'Автор', license: 'Ліцензія', revision: 'Версія', retrieved: 'Отримано', wikipedia: 'Вікіпедія' },
+  en: { source: 'Source', sources: 'Sources', author: 'Author', license: 'License', revision: 'Revision', retrieved: 'Retrieved', wikipedia: 'Wikipedia' },
 }
 // Дзеркало `WEB_URL_RE` (boardActions) і `is_web_url` (BE). Друга лінія:
 // санітизація при записі вже відсікає непридатне, але стара картка з дошки
@@ -246,6 +264,13 @@ const sources = computed(() => {
 })
 const sourceLabels = computed(() => SOURCE_LABELS[data.value.content_language === 'en' ? 'en' : 'uk'])
 const sourcesOpen = ref(false)
+// LAW §9 v1.22 (власник 2026-09-29): на дошці — маленька кнопка «Джерело»; одне джерело
+// (чи лише рядок атрибуції старої картки) без лічби, кілька — «Джерела: N». Рядок
+// атрибуції з кінця тексту переїжджає сюди ж — у розгорнутий список.
+const sourcesToggleLabel = computed(() => (sources.value.length > 1
+  ? `${sourceLabels.value.sources}: ${sources.value.length}`
+  : sourceLabels.value.source))
+const bodyParts = computed(() => splitCardAttribution(data.value.body, data.value.sources))
 
 const presetStyle = computed(() => {
   const p = effectivePreset.value

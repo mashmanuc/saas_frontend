@@ -237,6 +237,17 @@ export function corridorData(corridor) {
   return { content_language: lang, provenance }
 }
 
+// Атрибуція картинки, коли рядка від сервера немає (шлях без коридору): повний TASL з
+// полів, формат `attribution_line` на BE. Провайдер — «Вікісховище», а не «Вікіпедія»:
+// файл лежить на Commons, і саме там його автор і ліцензія.
+function _fallbackImageAttribution({ source, author, source_url, license }) {
+  const clean = (v) => (typeof v === 'string' ? v.trim() : '')
+  const provider = source === 'wikimedia_commons' ? 'Вікісховище' : 'зовнішнє джерело'
+  const head = [provider, clean(author)].filter(Boolean).join(', ')
+  const tail = [clean(source_url), clean(license)].filter(Boolean)
+  return `Джерело: ${head}${tail.length ? ` · ${tail.join(' · ')}` : ''}`.slice(0, 300)
+}
+
 // Доказові джерела ЗМІСТУ картки (ТЗ H0 §4.1). Свідомо ОКРЕМЕ поле від
 // `provenance`: той — незмінний конверт походження матеріалу (LAW §9.D,
 // INV-26), а це список джерел, на яких стоїть зміст. Одне не підміняє інше.
@@ -552,9 +563,18 @@ const HANDLERS = {
     } else {
       width = 360; height = 360
     }
-    // + рядок підпису джерела під картинкою
+    // Проміжок 40 під картинкою лишається (колись там був підпис джерела): розкладка
+    // й FOOTPRINT від прибирання підпису не змінюються.
     const { cx, cy } = _center(page, width, height, height + 40)
     const assetId = _uuid()
+    // LAW §9 v1.22 (власник 2026-09-29): атрибуція — у ДАНИХ картинки, а не штрихом під
+    // нею. На дошці її показує маленька кнопка «Джерело» в куті (SourceBadge), у PNG/PDF —
+    // сервер текстом під сторінкою (INV-EP-9, CC BY-SA). Рядок коридору формує сервер
+    // мовою матеріалу; без коридору — повний TASL з полів (провайдер, автор, адреса, ліцензія).
+    const material = corridorData(corridor)
+    const attributionText = material.content_language && typeof attribution_text === 'string' && attribution_text.trim()
+      ? attribution_text.trim().slice(0, 300)
+      : _fallbackImageAttribution({ source, author, source_url, license })
     store.addAsset({
       id: assetId,
       type: 'image',
@@ -575,33 +595,10 @@ const HANDLERS = {
         license: license || '',
         author: author || '',
         retrieved_at: retrieved_at || '',
-        ...corridorData(corridor),
+        attribution_text: attributionText,
+        ...material,
       },
     }, page.id ?? '')
-    // Підпис джерела під картинкою — окремий текстовий штрих (нуль нових
-    // рендерерів): «Джерело: Вікіпедія · Public domain».
-    // Коридор: рядок атрибуції (автор, ліцензія) формує сервер мовою матеріалу —
-    // англійська картинка не отримує українського підпису; штрих несе ту саму мову.
-    const srcLabel = source === 'wikimedia_commons' ? 'Вікіпедія' : 'зовнішнє джерело'
-    const lic = license ? ` · ${license}` : ''
-    const material = corridorData(corridor)
-    const captionText = material.content_language && typeof attribution_text === 'string' && attribution_text
-      ? attribution_text.slice(0, 300)
-      : `Джерело: ${srcLabel}${lic}`
-    store.addStroke({
-      id: _uuid(),
-      tool: 'text',
-      color: '#64748b',
-      size: 13,
-      opacity: 1,
-      text: captionText,
-      points: [{ x: cx + 40, y: cy + Math.round(height / 2) + 6 }],
-      width: Math.max(220, width),
-      fontWeight: 400,
-      fontStyle: 'normal',
-      textAlign: 'left',
-      ...(material.content_language ? { data: material } : {}),
-    }, _strokeOpts(ctx))
     return assetId
   },
 

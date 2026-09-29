@@ -907,6 +907,18 @@
       />
     </div>
 
+    <!-- LAW §9 v1.22 (власник 2026-09-29): «Джерело» в правому нижньому куті картинки
+         Інтегралика — замість підпису під нею. Натиск показує повну атрибуцію; у ops і
+         Replay нічого не пише. У PNG/PDF атрибуцію дописує сервер (INV-EP-9). -->
+    <div
+      v-for="item in itemsWithSource"
+      :key="`source-badge-${item.asset.id}`"
+      class="wb-source-badge-layer"
+      :style="sourceBadgePosition(item.asset)"
+    >
+      <SourceBadge :source="item.source" />
+    </div>
+
     <!-- Object Text: Overlay (opens on badge click) -->
     <div
       v-if="activeTextObjectId && activeTextObject"
@@ -980,6 +992,8 @@ import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
 import TextOverlay from './TextOverlay.vue'
 import LinkBadge from './LinkBadge.vue'
+import SourceBadge from './SourceBadge.vue'
+import { imageSource, type ImageSource } from '../../board/materialAttribution'
 import { audioManager } from '../../utils/audioManager'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
@@ -1932,6 +1946,32 @@ function linkBadgePosition(item: WBStroke | WBAsset) {
   return {
     ...base,
     left: `calc(${base.left} + ${leftOffset}px)`,
+  }
+}
+
+// ── LAW §9 v1.22: джерело картинки Інтегралика — кнопка в куті ─────────────────
+// Лише картинки з веб-адресою джерела в даних (`add_image`); власна картинка вчителя
+// кнопки не має. Правий НИЖНІЙ кут усередині картинки: верхній правий — стос audio|text|link.
+const itemsWithSource = computed(() => {
+  const result: { asset: WBAsset; source: ImageSource }[] = []
+  for (const a of assets.value) {
+    const source = imageSource(a)
+    if (source) result.push({ asset: a, source })
+  }
+  return result
+})
+
+function sourceBadgePosition(asset: WBAsset) {
+  const zoom = props.zoom
+  const offset = wbStore.stageOrigin
+  return {
+    position: 'absolute' as const,
+    left: `${(asset.x + asset.w) * zoom + offset.x - 6}px`,
+    top: `${(asset.y + asset.h) * zoom + offset.y - 6}px`,
+    transform: 'translate(-100%, -100%)',
+    pointerEvents: 'none' as const,
+    // INV I2 (як audioBadgePosition): у replay — над readonly-накладкою.
+    zIndex: wbStore.mode === 'replay' ? 25 : 15,
   }
 }
 
