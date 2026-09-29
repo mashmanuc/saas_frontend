@@ -11,7 +11,8 @@
 //  - злите «літера + змінна» (`Ax`) — коефіцієнт: A*x, а не невідоме `Ax`;
 //  - однолітерні невідомі — повзунки (1; −10…10; 0,1 — як у самого рушія), і
 //    після цього рушій вираз МАЛЮЄ (не `needsParam`);
-//  - інше невідоме (`sinx`, `abx`) — чесна відмова, нічого не пишемо;
+//  - інше невідоме (`abx`) — чесна відмова, нічого не пишемо. `sinx` з 2026-09-29 рушій сам читає
+//    як sin(x) (калькулятор «як у Desmos», FE 9bee2835) — крива без повзунків s, i, n;
 //  - повзунків на графік не більше, ніж пускає BE (`_MAX_GRAPH_PARAMS` = 4).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -89,9 +90,13 @@ describe('план виразу — через сам рушій', () => {
     expect(planGraphSrc('x^2 - x - 6')).toEqual({ src: 'x^2 - x - 6', sliders: [], reject: null })
   })
 
-  it('незрозуміле невідоме — відмова, а не повзунки s, i, n чи пряма', () => {
-    expect(planGraphSrc('sinx + 1').reject).toContain('sinx')
+  it('незрозуміле невідоме — відмова, а не повзунки чи пряма', () => {
     expect(planGraphSrc('abx').reject).toContain('abx')
+    expect(planGraphSrc('abx + 1').reject).toContain('abx')
+  })
+
+  it('sinx — це sin(x), як у Desmos (2026-09-29): крива без повзунків s, i, n і без відмови', () => {
+    expect(planGraphSrc('sinx + 1')).toEqual({ src: 'sinx + 1', sliders: [], reject: null })
   })
 
   it('синтаксична помилка — як і раніше, відмова рушія', () => {
@@ -175,8 +180,8 @@ describe('шляхи запису на дошку', () => {
   })
 
   it('незрозумілий вираз на дошку не лягає', async () => {
-    await expect(runBoardAction({ kind: 'add_graph', payload: { expressions: [{ src: 'sinx + 1' }] } }))
-      .rejects.toThrow(/sinx/)
+    await expect(runBoardAction({ kind: 'add_graph', payload: { expressions: [{ src: 'abx + 1' }] } }))
+      .rejects.toThrow(/abx/)
     expect(assets).toHaveLength(0)
   })
 
