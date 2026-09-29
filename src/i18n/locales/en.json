@@ -6002,9 +6002,11 @@
     "upgradeCta": "Learn more",
     "earlyAccess": {
       "title": "Access to M4SH",
-      "subtitle": "For now M4SH is available at no cost.",
-      "cardTitle": "Early access",
-      "cardText": "Paid plans are not connected yet. Use everything M4SH offers at no cost."
+      "subtitle": "During the beta, M4SH is free.",
+      "cardTitle": "Free beta — at least until December 1, 2026",
+      "cardText": "We'll let you know well in advance before paid plans arrive. Beta participants will get 50% off their paid plan.",
+      "feedbackLead": "Something not working or have an idea? Write to us in",
+      "feedbackTail": "— we read every message."
     }
   },
   "commonExtended": {

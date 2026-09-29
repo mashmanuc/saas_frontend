@@ -140,6 +140,21 @@ describe('екран тарифу, поки продаж вимкнено', () =
     expect(w.find('[data-testid="early-access"]').exists()).toBe(false)
   })
 
+  // Власник 2026-09-29: «Безкоштовна бета — щонайменше до 1 грудня» + знижка 50% учасникам;
+  // і куди писати, якщо щось не так, — той самий пункт, що в меню.
+  it('INV-EA-6: бета з датою й знижкою + посилання «Ідеї та відгуки» на /feedback', async () => {
+    const w = await mountView()
+    const card = w.find('[data-testid="early-access"]')
+    expect(card.text()).toContain('billing.earlyAccess.cardTitle')
+    expect(card.text()).toContain('billing.earlyAccess.cardText')
+    const feedback = w.find('[data-testid="early-access-feedback"]')
+    expect(feedback.text()).toContain('billing.earlyAccess.feedbackLead')
+    // RouterLink у тесті без роутера — елемент з атрибутом `to`; шукаємо саме за ним.
+    const link = feedback.find('[to="/feedback"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('sidebar.item.feedback')
+  })
+
   it('INV-EA-5: продаж увімкнено → платний екран без змін', async () => {
     getPlans.mockResolvedValue({ plans: [PLAN], sales_enabled: true })
     const w = await mountView()
@@ -148,5 +163,22 @@ describe('екран тарифу, поки продаж вимкнено', () =
     expect(w.findComponent({ name: 'PlansList' }).exists()).toBe(true)
     expect(w.findComponent({ name: 'PaymentHistorySection' }).exists()).toBe(true)
     expect(w.text()).toContain('billing.page.title')   // шапка платного екрана на місці
+  })
+})
+
+// Текст — обіцянка людям, тож перевіряємо саме слова (обидві мови), а не лише ключі.
+describe('INV-EA-6 · текст бети', () => {
+  it.each([['uk'], ['en']])('%s: дата 1 грудня 2026, знижка 50%, без FREE; посилання — назва з меню', async (lang) => {
+    const messages = (await import(`../../../../i18n/locales/${lang}.json`)).default as {
+      billing: { earlyAccess: Record<string, string> }; sidebar: { item: Record<string, string> }
+    }
+    const ea = messages.billing.earlyAccess
+    const all = Object.values(ea).join(' ')
+    expect(ea.cardTitle).toMatch(lang === 'uk' ? /1 грудня 2026/ : /December 1, 2026/)
+    expect(ea.cardText).toContain('50%')
+    expect(all).not.toMatch(/FREE/)
+    // Записи уроків не обіцяємо: безкоштовний план видаляє їх за replay_retention_days.
+    expect(all).not.toMatch(lang === 'uk' ? /запис/i : /recording|replay/i)
+    expect(messages.sidebar.item.feedback.length).toBeGreaterThan(3)
   })
 })

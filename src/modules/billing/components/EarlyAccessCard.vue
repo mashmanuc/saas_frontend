@@ -8,6 +8,12 @@
     <Card class="space-y-2">
       <h2 class="text-base font-semibold">{{ $t('billing.earlyAccess.cardTitle') }}</h2>
       <p class="text-sm text-muted-foreground">{{ $t('billing.earlyAccess.cardText') }}</p>
+      <!-- Куди писати, якщо щось не так: той самий пункт, що в меню («Ідеї та відгуки»). -->
+      <p class="text-sm text-muted-foreground" data-testid="early-access-feedback">
+        {{ $t('billing.earlyAccess.feedbackLead') }}
+        <RouterLink to="/feedback" class="font-medium underline underline-offset-2">{{ $t('sidebar.item.feedback') }}</RouterLink>
+        {{ $t('billing.earlyAccess.feedbackTail') }}
+      </p>
     </Card>
   </div>
 </template>
@@ -23,6 +29,11 @@
  *
  * Тут немає ні кнопок оплати, ні слова FREE, ні лімітів: поки платних тарифів
  * не підключено, чесна відповідь одна — користуйся без оплати.
+ *
+ * 2026-09-29 (власник): «Безкоштовна бета — щонайменше до 1 грудня 2026» (дату можна
+ * перенести далі) і знижка 50% на платний тариф для учасників бети. Строку знижки власник
+ * не назвав — у тексті його й немає. Записи уроків тут НЕ обіцяємо зберегти: безкоштовний
+ * план видаляє їх за `replay_retention_days`.
  *
  * ⚠️ Показує його ЛИШЕ `AccountBillingView` і лише коли сервер справді
  * відповів `sales_enabled: false`, а в людини немає ні підписки, ні
