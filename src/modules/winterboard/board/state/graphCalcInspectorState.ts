@@ -26,6 +26,8 @@ export interface GcExprEntry {
   color: string
   hidden: boolean
   isParam: boolean
+  /** Сирий текст помилки рушія (лише для непорожнього недійсного рядка); показ — utils/graphCalcError. */
+  error?: string
 }
 
 export interface GcSlashTemplate {
@@ -68,6 +70,9 @@ export interface GraphCalcInspectorBridge {
   onToggleHidden(id: string): void
   onRemoveExpression(id: string): void
   onAddExpression(): void
+  /** Рядки одразу під `afterId` у заданому порядку (Enter, вставка кількох рядків — як у Desmos);
+   *  повертає id нових рядків. Один знімок стану на всю вставку, не по op-у на рядок. */
+  onInsertExpressions(afterId: string, srcs: string[]): string[]
   onQuickAdd(src: string): void
   applySlashTemplate(exprId: string, tpl: GcSlashTemplate): void
   closeSlashPopup(): void

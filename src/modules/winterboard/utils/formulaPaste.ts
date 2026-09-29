@@ -15,6 +15,26 @@ export function looksLikeLatex(text: string): boolean {
   return LATEX_RE.test(text)
 }
 
+/**
+ * Кілька рядків у буфері → окремі формули, як у Desmos (власник 2026-09-29). Порожні рядки відкидаємо;
+ * рядок LaTeX → ascii так само, як одиночна вставка. Один рядок (чи жодного) — звичайна вставка.
+ */
+export function splitPastedFormulas(text: string): string[] {
+  return text
+    .split(/\r\n|\r|\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      if (!looksLikeLatex(line)) return line
+      try {
+        return latexToSrc(line)
+      } catch (err) {
+        console.warn('[formulaPaste] LaTeX не перетворився — рядок як є:', err)
+        return line
+      }
+    })
+}
+
 /** `@paste` звичайного поля формули: LaTeX із буфера → ascii у позиції курсора + подія `input`. */
 export function pasteFormulaAsSrc(e: ClipboardEvent): void {
   const text = e.clipboardData?.getData('text/plain') ?? ''

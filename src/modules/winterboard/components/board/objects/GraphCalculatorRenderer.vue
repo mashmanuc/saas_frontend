@@ -128,7 +128,8 @@
               :placeholder="idx === 0 ? t('winterboard.widget.graphCalc.exprPlaceholder') : ''"
               @input="onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
               @paste="pasteFormulaAsSrc"
-              @blur="onInputBlur(expr.id)"
+              @focus="cardFocusId = expr.id"
+              @blur="cardFocusId = null; onInputBlur(expr.id)"
               @keydown.enter.prevent="onEnterPress(expr.id)"
               @keydown.down.prevent="onArrowNav(expr.id, 1)"
               @keydown.up.prevent="onArrowNav(expr.id, -1)"
@@ -197,6 +198,13 @@
                 </button>
               </template>
             </div>
+            <!-- «Як у Desmos» (2026-09-29): чому рядок не малюється — видно під ним -->
+            <div
+              v-if="expr.error && cardFocusId !== expr.id"
+              class="gc-expr-err"
+              role="status"
+              data-testid="graph-calc-expr-error"
+            >⚠ {{ errorText(expr.error) }}</div>
           </div>
         </div>
         <button
@@ -387,8 +395,12 @@ import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { autofitExpressions, paramValuesOf } from '../../../utils/graphAutofit'
 import { pasteFormulaAsSrc } from '../../../utils/formulaPaste'
+import { useGraphCalcErrorText } from '../../../utils/graphCalcError'
 
 const { t, locale } = useI18n()
+const errorText = useGraphCalcErrorText()
+// Рядок картки, у якому зараз набирають: помилка під ним чекає коміту (blur), а не блимає на кожен символ.
+const cardFocusId = ref<string | null>(null)
 
 // Кнопки масштабу малює сам рушій (без i18n) — підписи передаємо звідси
 // і оновлюємо при зміні мови. `?.` — тестові моки рушія цього методу не мають.
@@ -490,6 +502,8 @@ interface DisplayExpr extends GraphExpression {
   isParam: boolean
   paramName?: string
   paramValue?: number
+  /** Сирий текст помилки рушія — лише для непорожнього недійсного рядка (показ: utils/graphCalcError). */
+  error?: string
 }
 const displayExpressions = ref<DisplayExpr[]>([])
 
@@ -724,6 +738,7 @@ const _gcBridge = reactive<GraphCalcInspectorBridge>({
   onToggleHidden,
   onRemoveExpression,
   onAddExpression,
+  onInsertExpressions: insertExpressions,
   onQuickAdd,
   applySlashTemplate: bridgeApplySlashTemplate,
   closeSlashPopup,
@@ -1027,6 +1042,9 @@ function refreshDisplayExpressions() {
   displayExpressions.value = exprs.map((e) => {
     const isParam = e.classified?.kind === 'param'
     const paramName: string | undefined = isParam ? e.classified.name : undefined
+    // «Як у Desmos» (2026-09-29): чому рядок не малюється — видно під ним. Порожній рядок рушій
+    // теж вважає недійсним, але це просто місце для нової формули, не помилка.
+    const invalid = e.classified?.kind === 'invalid' && String(e.src ?? '').trim() !== ''
     return {
       id: e.id,
       src: e.src,
@@ -1036,6 +1054,7 @@ function refreshDisplayExpressions() {
       isParam,
       paramName,
       paramValue: paramName ? params[paramName] : undefined,
+      error: invalid ? String(e.classified.error ?? '') : undefined,
     }
   })
 }
@@ -1277,6 +1296,29 @@ function onAddExpression(): string | undefined {
   return id
 }
 
+// «Як у Desmos» (власник 2026-09-29): Enter і вставка кількох рядків додають формули ОДРАЗУ під
+// поточною, а не в кінець списку. Один flush перед вставкою (порядок знімків — як в onAddExpression,
+// inv-21.11) і один debounce-знімок після: вставка десяти рядків — одна op, а не десять.
+function insertExpressions(afterId: string, srcs: string[]): string[] {
+  if (!calc || !props.interactive || srcs.length === 0) return []
+  flushSnapshot()
+  const at = (calc.expressions as Array<{ id: string }>).findIndex((e) => e.id === afterId)
+  const ids: string[] = []
+  srcs.forEach((src, k) => {
+    const id = genId()
+    calc!.addExpression(src, id, at === -1 ? undefined : at + 1 + k)
+    ids.push(id)
+  })
+  // J-1 (як в onAddExpression): відлуння власного знімка не кличе calc.setState — інакше DOM
+  // перебудовується і фокус нового рядка губиться.
+  lastAppliedSignature = snapshotSignature(calc.getState() as GraphCalculatorState)
+  const d = props.asset.data as { meta?: { last_snapshot_seq?: number } } | undefined
+  lastAppliedSeq = (d && d.meta && d.meta.last_snapshot_seq) || lastAppliedSeq
+  // Вставлені формули з параметрами (a, k…) дістають повзунки, як після onQuickAdd.
+  if (srcs.some((s) => s.trim())) scheduleSyncParams()
+  return ids
+}
+
 // «+ add» натиснули, щоб ПИСАТИ — курсор одразу в новому полі. Без цього фокус
 // лишався на кнопці, і набір ішов у нікуди (живий прогін власника 2026-09-21).
 async function onInlineAddExpression(): Promise<void> {
@@ -1355,6 +1397,7 @@ watchEffect(() => {
     color: e.color,
     hidden: e.hidden,
     isParam: e.isParam,
+    error: e.error,
   }))
   _gcBridge.slashPopup = slashPopup.value ? { ...slashPopup.value } : null
   _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((t) => ({
@@ -2075,6 +2118,13 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   flex-wrap: wrap;
   gap: 3px;
   margin-top: 2px;
+}
+.gc-expr-err {
+  grid-column: 2 / -1;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #b91c1c;
+  overflow-wrap: anywhere;
 }
 .gc-hint-btn {
   cursor: pointer;

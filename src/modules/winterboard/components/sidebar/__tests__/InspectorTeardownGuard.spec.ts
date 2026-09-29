@@ -70,7 +70,7 @@ function makeGcBridge(o: Partial<GraphCalcInspectorBridge> = {}): GraphCalcInspe
     displayExpressions: [{ id: 'e1', src: '', color: '#f00', hidden: false, isParam: false }],
     slashPopup: null, slashFilteredTemplates: [],
     onSrcInput: () => {}, onInputBlur: () => {}, onEnterPress: () => {}, onArrowNav: () => {},
-    onToggleHidden: () => {}, onRemoveExpression: () => {}, onAddExpression: () => {},
+    onToggleHidden: () => {}, onRemoveExpression: () => {}, onAddExpression: () => {}, onInsertExpressions: () => [],
     onQuickAdd: () => {}, applySlashTemplate: () => {}, closeSlashPopup: () => {}, setSlashSelectedIdx: () => {},
     isExpanded: false, toggleExpand: () => {},
     ...o,

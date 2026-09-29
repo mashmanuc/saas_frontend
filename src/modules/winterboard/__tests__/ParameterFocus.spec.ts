@@ -141,7 +141,7 @@ function gcBridge(exprs: typeof ACCEPTANCE, pf: ParamFocus | null): GraphCalcIns
     slashPopup: null, slashFilteredTemplates: [],
     onSrcInput: () => {}, onInputBlur: () => {}, onEnterPress: () => {},
     onArrowNav: () => {}, onToggleHidden: () => {}, onRemoveExpression: () => {},
-    onAddExpression: () => {}, onQuickAdd: () => {},
+    onAddExpression: () => {}, onInsertExpressions: () => [], onQuickAdd: () => {},
     applySlashTemplate: () => {}, closeSlashPopup: () => {}, setSlashSelectedIdx: () => {},
     isExpanded: false, toggleExpand: () => {},
   }

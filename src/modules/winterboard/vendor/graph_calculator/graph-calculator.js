@@ -38,12 +38,47 @@ const __GC = (function () {
   const T_EQ    = '=';
   const T_END   = 'END';
 
+  // M4SH 2026-09-29 (власник: калькулятор «як у Desmos»): те, що вчителі пишуть звично, — як і R9,
+  // безпечна нормалізація ВВОДУ до розбору (§4.9). AST-контракт той самий (виклик abs / sin …);
+  // сира «|», що лишилась без пари, як і раніше — «Невідомий символ».
+  //   |x|, |x|+|y|=1, 2|x|, ||x|-1|  → abs(…)
+  //   sin x, sin 2x, sin x^2, sinx   → sin(…)   (як Desmos: функція без дужок бере найближчий операнд)
+  function normalizeAbsBars(src) {
+    if (src.indexOf('|') === -1) return src;
+    let out = '';
+    let depth = 0;
+    let prev = '';   // останній непробільний символ ВИХОДУ
+    for (let i = 0; i < src.length; i++) {
+      const c = src[i];
+      if (c !== '|') { out += c; if (c.trim()) prev = c; continue; }
+      // перед рискою операнд і є відкрита риска → закриває; інакше відкриває
+      if (depth > 0 && /[A-Za-zα-ωА-Яа-яπτ0-9_.)]/.test(prev)) { out += ')'; depth--; prev = ')'; }
+      else { out += 'abs('; depth++; prev = '('; }
+    }
+    return depth === 0 ? out : src;
+  }
+  let _funcArgRes = null;
+  function normalizeFuncArgs(src) {
+    if (!_funcArgRes) {
+      const names = Object.keys(FUNCS).sort((a, b) => b.length - a.length).join('|');
+      _funcArgRes = [
+        // назва + пробіли + операнд без дужок (число/змінна, можливо зі степенем)
+        new RegExp('\\b(' + names + ')\\s+(?!\\()([0-9.]*[A-Za-zα-ωπτ]?[A-Za-z0-9_]*(?:\\^[0-9A-Za-z.]+)?)', 'g'),
+        // назва впритул до x чи y: sinx, cosy (далі не літера/цифра)
+        new RegExp('\\b(' + names + ')([xy])(?![A-Za-z0-9_])', 'g'),
+      ];
+    }
+    src = src.replace(_funcArgRes[0], function (m, fn, arg) { return arg ? fn + '(' + arg + ')' : m; });
+    return src.replace(_funcArgRes[1], '$1($2)');
+  }
+
   function tokenize(src) {
     // R9: normalise pretty math glyphs (optional, safe — §4.9)
     src = src
       .replace(/[·×∙⋅]/g, '*')   // ·×∙⋅ → *
       .replace(/÷/g, '/')                         // ÷ → /
       .replace(/[−–—]/g, '-');          // −–— → -
+    src = normalizeFuncArgs(normalizeAbsBars(src));
 
     const tokens = [];
     let i = 0;
@@ -761,7 +796,9 @@ const __GC = (function () {
     // ---------- Expression API --------------------------------------------
     // Phase G FE-RULE-3: id MUST be provided externally (store assigns UUID).
     // Engine no longer auto-generates IDs — passing undefined throws.
-    addExpression(src, id) {
+    // M4SH 2026-09-29 («як у Desmos»): index — позиція вставки (Enter і вставка кількох рядків
+    // додають формулу одразу під поточною); без index або поза межами — у кінець, як і було.
+    addExpression(src, id, index) {
       if (!id || typeof id !== 'string') {
         throw new Error('graph_calculator.addExpression: id (string) required (FE-RULE-3 / inv-21.6)');
       }
@@ -772,7 +809,8 @@ const __GC = (function () {
         classified: null,
         paramRange: { min: -10, max: 10, step: 0.01 },
       };
-      this.expressions.push(expr);
+      if (Number.isInteger(index) && index >= 0 && index < this.expressions.length) this.expressions.splice(index, 0, expr);
+      else this.expressions.push(expr);
       this._reclassifyAll();
       this._scheduleRender();
       return expr;

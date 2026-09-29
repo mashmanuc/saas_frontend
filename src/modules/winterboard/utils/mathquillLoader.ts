@@ -16,6 +16,8 @@ export interface MQFieldApi {
   latex(v: string): void
   focus(): void
   revert(): void
+  /** Курсор у кінець формули (MathQuill 0.10 API). */
+  moveToRightEnd?(): void
 }
 
 export interface MQInterface {

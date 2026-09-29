@@ -7,12 +7,22 @@
     modelValue (ascii, як у store) → asciiMathToLatex → mq.latex(init, silent)
     typing → handlers.edit → latexToSrc(mq.latex()) → update:modelValue (ascii)
     Enter → emit('enter'); втрата фокуса → emit('blur')
+    «Як у Desmos» (2026-09-29): ↑/↓ з верхнього рівня формули → emit('up'/'down');
+    Backspace у ПОРОЖНЬОМУ полі → emit('backspace-out'); з `split-pasted-lines` вставка ≥2 рядків →
+    emit('paste-lines', text) (MathQuill злив би їх в одну формулу). Одиночну вставку MathQuill
+    обробляє сам, як і раніше.
   Формат зберігання НЕ міняється — ascii завжди (ТЗ §0.1).
   «/» у полі — дріб (рішення owner 2026-07-21); slash-меню шаблонів у
   MQ-режимі відсутнє (шаблони — у quick-add кнопках).
 -->
 <template>
-  <span ref="host" class="wb-mq-field" @focusin="focused = true" @focusout="onFocusOut" />
+  <span
+    ref="host"
+    class="wb-mq-field"
+    @focusin="focused = true"
+    @focusout="onFocusOut"
+    @paste.capture="onPasteCapture"
+  />
 </template>
 
 <script setup lang="ts">
@@ -24,12 +34,19 @@ import { loadMathQuill, type MQFieldApi } from '../../utils/mathquillLoader'
 const props = defineProps<{
   modelValue: string
   autofocus?: boolean
+  /** Вставку ≥2 рядків віддати caller-у (`paste-lines`). Лише там, де є куди класти кілька
+   *  формул (список виразів); інші поля лишають вставку MathQuill-у, як і раніше. */
+  splitPastedLines?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [src: string]
   enter: []
   blur: []
+  up: []
+  down: []
+  'backspace-out': []
+  'paste-lines': [text: string]
   /** MQ не змонтувався (недоступний/помилка) — caller перемикається на input. */
   unavailable: []
 }>()
@@ -59,6 +76,13 @@ onMounted(async () => {
           emit('update:modelValue', src)
         },
         enter: () => emit('enter'),
+        upOutOf: () => emit('up'),
+        downOutOf: () => emit('down'),
+        // dir < 0 — Backspace на лівому краю. Рядок прибираємо лише порожній (як Desmos);
+        // з формулою Backspace на початку нічого не робить.
+        deleteOutOf: (dir: number, mf: MQFieldApi) => {
+          if (dir < 0 && mf.latex().trim() === '') emit('backspace-out')
+        },
       },
     })
     // Init: ascii → LaTeX, silent (щоб edit-handler не стрельнув фантомним апдейтом)
@@ -71,7 +95,11 @@ onMounted(async () => {
       console.warn('[MathQuillField] init latex failed for src:', props.modelValue, err)
     }
     silent = false
-    if (props.autofocus) mqField.focus()
+    if (props.autofocus) {
+      mqField.focus()
+      // ↑/↓ з сусіднього рядка: курсор у кінці формули, як у Desmos
+      mqField.moveToRightEnd?.()
+    }
     focused.value = props.autofocus === true
   } catch (err) {
     console.warn('[MathQuillField] mount failed — falling back to plain input:', err)
@@ -93,6 +121,17 @@ watch(() => props.modelValue, (v) => {
   }
   silent = false
 })
+
+// Capture на корені поля — раніше за textarea MathQuill: кілька рядків віддаємо caller-у
+// (окремі формули), один рядок пропускаємо далі — MathQuill вставить його сам.
+function onPasteCapture(e: ClipboardEvent): void {
+  if (!props.splitPastedLines) return
+  const text = e.clipboardData?.getData('text/plain') ?? ''
+  if (text.split(/\r\n|\r|\n/).filter((l) => l.trim()).length < 2) return
+  e.preventDefault()
+  e.stopPropagation()
+  emit('paste-lines', text)
+}
 
 function onFocusOut(e: FocusEvent): void {
   // focusout спливає з внутрішніх textarea MathQuill; ігноруємо переходи всередині поля

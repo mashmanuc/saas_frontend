@@ -85,7 +85,7 @@ function gcBridge(): GraphCalcInspectorBridge {
     slashPopup: null, slashFilteredTemplates: [],
     onSrcInput: () => {}, onInputBlur: () => {}, onEnterPress: () => {},
     onArrowNav: () => {}, onToggleHidden: () => {}, onRemoveExpression: () => {},
-    onAddExpression: () => {}, onQuickAdd: () => {},
+    onAddExpression: () => {}, onInsertExpressions: () => [], onQuickAdd: () => {},
     applySlashTemplate: () => {}, closeSlashPopup: () => {}, setSlashSelectedIdx: () => {},
     isExpanded: false, toggleExpand: () => {},
   }

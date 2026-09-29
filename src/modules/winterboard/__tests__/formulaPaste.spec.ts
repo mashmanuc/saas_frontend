@@ -69,7 +69,10 @@ describe('вставка у звичайне поле формули', () => {
 
 describe('підключення в полях і панелі', () => {
   it('три звичайні поля формул мають цю вставку', () => {
-    expect(graphInspectorSource).toMatch(/class="gc-insp__expr-input"[\s\S]{0,400}@paste="pasteFormulaAsSrc"/)
+    // Панель виразів: onPaste — кілька рядків стають кількома формулами, один рядок іде в
+    // pasteFormulaAsSrc (поведінка — GraphCalcInspectorDesmosKeys.spec, «один рядок — як і раніше»)
+    expect(graphInspectorSource).toMatch(/class="gc-insp__expr-input"[\s\S]{0,400}@paste="onPaste\(\$event, expr\.id\)"/)
+    expect(graphInspectorSource).toMatch(/if \(lines\.length < 2\) \{\s*pasteFormulaAsSrc\(e\)/)
     expect(graphRendererSource).toMatch(/class="gc-input"[\s\S]{0,500}@paste="pasteFormulaAsSrc"/)
     expect(calculusInspectorSource).toMatch(/class="calc-insp__expr-input"[\s\S]{0,400}@paste="pasteFormulaAsSrc"/)
   })

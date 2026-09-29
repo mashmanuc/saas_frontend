@@ -9341,7 +9341,19 @@
       "params": "Parameters",
       "shiftDragHint": "Shift+drag on the graph controls the parameter",
       "shiftDragOneParam": "Drag-param unavailable: no curve depends on exactly one parameter",
-      "configureRange": "Configure range"
+      "configureRange": "Configure range",
+      "err": {
+        "unknownSymbol": "Unknown symbol “{ch}”",
+        "missing": "Missing “{tok}”",
+        "expectedGot": "Expected “{expected}” but found “{got}”",
+        "incomplete": "The formula is incomplete",
+        "unexpected": "“{tok}” is not allowed here",
+        "doubleEq": "Only one “=” per formula",
+        "pointArity": "A point has exactly two coordinates",
+        "trailing": "Something extra at the end of the formula",
+        "unknownFunc": "Unknown function",
+        "notEquation": "Needs an “=” (an equation) or a point"
+      }
     },
     "trigSolver": {
       "subtitle": "Trigonometric equations / inequalities",

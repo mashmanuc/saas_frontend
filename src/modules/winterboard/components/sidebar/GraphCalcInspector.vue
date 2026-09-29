@@ -44,9 +44,8 @@
       <div class="gc-insp__section-label">{{ t('winterboard.graphCalc.expressions') }}</div>
 
       <div class="gc-insp__expr-list">
+        <template v-for="expr in b.displayExpressions" :key="expr.id">
         <div
-          v-for="expr in b.displayExpressions"
-          :key="expr.id"
           class="gc-insp__expr-row"
           :class="pfRowClass(expr)"
           :data-pf-role="pfRole(expr) ?? undefined"
@@ -82,8 +81,13 @@
             v-else-if="editingId === expr.id && mqEditing"
             :model-value="expr.src"
             autofocus
+            split-pasted-lines
             @update:model-value="(v: string) => b.onSrcInput(expr.id, v)"
-            @enter="b.onEnterPress(expr.id)"
+            @enter="onEnter(expr.id)"
+            @up="onArrow(expr.id, -1)"
+            @down="onArrow(expr.id, 1)"
+            @backspace-out="removeEmptyRow(expr.id)"
+            @paste-lines="(text: string) => onMqPasteLines(expr.id, text)"
             @blur="onInputBlur(expr.id)"
             @unavailable="mqAvailable = false"
           />
@@ -105,11 +109,12 @@
             placeholder="y = ..."
             @focus="editingId = expr.id"
             @input="b.onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
-            @paste="pasteFormulaAsSrc"
+            @paste="onPaste($event, expr.id)"
             @blur="onInputBlur(expr.id)"
-            @keydown.enter.prevent="b.onEnterPress(expr.id)"
-            @keydown.down.prevent="b.onArrowNav(expr.id, 1)"
-            @keydown.up.prevent="b.onArrowNav(expr.id, -1)"
+            @keydown.enter.prevent="onEnter(expr.id)"
+            @keydown.down.prevent="onArrow(expr.id, 1)"
+            @keydown.up.prevent="onArrow(expr.id, -1)"
+            @keydown.backspace="onBackspace($event, expr.id)"
             @keydown.esc="b.closeSlashPopup()"
             @keydown.stop
             @keypress.stop
@@ -153,6 +158,15 @@
             </div>
           </div>
         </div>
+        <!-- «Як у Desmos» (2026-09-29): чому рядок не малюється — під ним. Під час набору
+             не показуємо: проміжний ввід (`y = (x`) недійсний на кожному кроці. -->
+        <div
+          v-if="expr.error && editingId !== expr.id"
+          class="gc-insp__expr-err"
+          role="status"
+          data-testid="gc-insp-expr-error"
+        >⚠ {{ errorText(expr.error) }}</div>
+        </template>
       </div>
 
       <!-- Add expression -->
@@ -254,14 +268,16 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MathExpr from '../shared/MathExpr.vue'
 import MathQuillField from '../shared/MathQuillField.vue'
-import { pasteFormulaAsSrc } from '../../utils/formulaPaste'
+import { pasteFormulaAsSrc, splitPastedFormulas } from '../../utils/formulaPaste'
+import { useGraphCalcErrorText } from '../../utils/graphCalcError'
 import { isRenderableAscii } from '../../utils/asciiMathToLatex'
 import { loadMathQuill } from '../../utils/mathquillLoader'
-import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
+import { graphCalcInspectorState, type GcExprEntry } from '../../board/state/graphCalcInspectorState'
 import { formatParamValue, paramFocusRole } from '../../utils/paramFocus'
 import type { ParamFocusRole } from '../../utils/paramFocus'
 
 const { t } = useI18n()
+const errorText = useGraphCalcErrorText()
 
 // ⚠️ `!` — ТІЛЬКИ для <template>/render-computed'ів (рендер під v-if bridge).
 // ОБРОБНИКИ (@blur/@change) НЕ мають права на b.value.МЕТОД() / inline b.метод() —
@@ -298,19 +314,25 @@ const mqAvailable = ref(false)
 const mqEditing = ref(false)
 let mqChecked = false
 
-async function startEdit(id: string): Promise<void> {
+// caret: 'select' (клік по прев'ю — виділити все) | 'end' (перехід з сусіднього рядка, як у Desmos).
+// src — для рядка, щойно вставленого в рушій: у міст він доходить лише з наступним рендером.
+async function startEdit(id: string, opts: { caret?: 'select' | 'end'; src?: string } = {}): Promise<void> {
   if (!mqChecked) {
     mqChecked = true
     mqAvailable.value = (await loadMathQuill()) !== null
   }
-  const src = b.value.displayExpressions.find((e) => e.id === id)?.src ?? ''
-  mqEditing.value = mqAvailable.value && isRenderableAscii(src)
+  // Міст читаємо напряму (не b.value): після await loadMathQuill картку могли вже зняти з виділення.
+  const src = opts.src ?? graphCalcInspectorState.bridge?.displayExpressions.find((e) => e.id === id)?.src ?? ''
+  // Порожній рядок — завжди plain input (як після «+ вираз»)
+  mqEditing.value = mqAvailable.value && src.trim() !== '' && isRenderableAscii(src)
   editingId.value = id
   nextTick(() => {
-    // plain-input гілка (MQ недоступний або вираз не renderable)
+    // plain-input гілка (MQ недоступний або вираз не renderable); MQ фокусується сам (autofocus)
     const el = rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(id)}"]`)
-    el?.focus()
-    el?.select()
+    if (!el) return
+    el.focus()
+    if (opts.caret === 'end') el.setSelectionRange(el.value.length, el.value.length)
+    else el.select()
   })
 }
 
@@ -320,9 +342,99 @@ async function startEdit(id: string): Promise<void> {
 // bridge НАПРЯМУ (не b.value) з optional chaining — інакше null.<method>()
 // падає в AppErrorBoundary і вбиває всю сторінку дошки.
 function onInputBlur(id: string): void {
-  editingId.value = null   // reset UI-стан завжди, навіть якщо bridge вже null
+  // reset UI-стану — навіть якщо bridge вже null. Але лише СВОГО рядка: Enter/↑/↓ уже перевели
+  // редагування на сусіда, а blur старого поля приходить після — скидання розмонтувало б нове поле.
+  if (editingId.value === id) editingId.value = null
   graphCalcInspectorState.bridge?.onInputBlur(id)
 }
+
+// ── Клавіатура «як у Desmos» (власник 2026-09-29) ─────────────────────────
+// Enter — новий рядок під поточним; ↑/↓ — сусідній рядок; Backspace у порожньому рядку прибирає
+// його; вставка кількох рядків — кілька формул. Відкрите slash-меню має пріоритет (↑/↓/Enter — його).
+function rowIndex(id: string): number {
+  return graphCalcInspectorState.bridge?.displayExpressions.findIndex((e) => e.id === id) ?? -1
+}
+function rowAt(i: number): GcExprEntry | undefined {
+  return i < 0 ? undefined : graphCalcInspectorState.bridge?.displayExpressions[i]
+}
+
+function onEnter(id: string): void {
+  const bridge = graphCalcInspectorState.bridge
+  if (!bridge) return
+  const slash = bridge.slashPopup?.exprId === id
+  bridge.onEnterPress(id) // шаблон зі slash-меню або коміт рядка (повзунки параметрів)
+  if (slash) return
+  const i = rowIndex(id)
+  if (!rowAt(i)?.src.trim()) return // з порожнього рядка ще один порожній не плодимо
+  const next = rowAt(i + 1)
+  if (next && !next.src.trim()) {
+    void startEdit(next.id, { caret: 'end' })
+    return
+  }
+  const [added] = bridge.onInsertExpressions(id, [''])
+  if (added) void startEdit(added, { caret: 'end', src: '' })
+}
+
+function onArrow(id: string, delta: 1 | -1): void {
+  const bridge = graphCalcInspectorState.bridge
+  if (!bridge) return
+  if (bridge.slashPopup?.exprId === id) {
+    bridge.onArrowNav(id, delta)
+    return
+  }
+  const i = rowIndex(id)
+  const target = i === -1 ? undefined : rowAt(i + delta)
+  if (!target) return
+  // Коміт поточного рядка явно: поле, яке зникає з DOM, blur не гарантує
+  bridge.onInputBlur(id)
+  void startEdit(target.id, { caret: 'end' })
+}
+
+function onBackspace(e: KeyboardEvent, id: string): void {
+  if ((e.target as HTMLInputElement).value !== '') return // звичайне стирання символу
+  e.preventDefault()
+  removeEmptyRow(id)
+}
+
+function removeEmptyRow(id: string): void {
+  const bridge = graphCalcInspectorState.bridge
+  if (!bridge || bridge.displayExpressions.length <= 1) return // останній рядок лишаємо: є куди писати
+  const i = rowIndex(id)
+  if (i === -1) return
+  const target = rowAt(i - 1) ?? rowAt(i + 1)
+  bridge.onRemoveExpression(id)
+  if (target) void startEdit(target.id, { caret: 'end' })
+}
+
+function onPaste(e: ClipboardEvent, id: string): void {
+  const lines = splitPastedFormulas(e.clipboardData?.getData('text/plain') ?? '')
+  if (lines.length < 2) {
+    pasteFormulaAsSrc(e)
+    return
+  }
+  e.preventDefault()
+  const input = e.target as HTMLInputElement
+  const start = input.selectionStart ?? input.value.length
+  const end = input.selectionEnd ?? input.value.length
+  // Рядок порожній (або виділено весь) — перша формула йде в нього; інакше всі — новими рядками під ним
+  pasteLines(id, lines, (input.value.slice(0, start) + input.value.slice(end)).trim() === '')
+}
+
+function onMqPasteLines(id: string, text: string): void {
+  pasteLines(id, splitPastedFormulas(text), !rowAt(rowIndex(id))?.src.trim())
+}
+
+function pasteLines(id: string, lines: string[], fillCurrent: boolean): void {
+  const bridge = graphCalcInspectorState.bridge
+  if (!bridge || lines.length === 0) return
+  const rest = fillCurrent ? lines.slice(1) : lines
+  if (fillCurrent) bridge.onSrcInput(id, lines[0])
+  bridge.onInputBlur(id) // коміт поточного рядка
+  const added = bridge.onInsertExpressions(id, rest)
+  const last = added[added.length - 1]
+  if (last) void startEdit(last, { caret: 'end', src: rest[rest.length - 1] })
+}
+
 // «+ вираз» натискають, щоб ПИСАТИ: курсор одразу в новому (порожньому) полі.
 // Без цього фокус лишався на кнопці й набір ішов у нікуди (власник 2026-09-21).
 // Новий рядок шукаємо різницею id — контракт мосту (onAddExpression(): void)
@@ -632,6 +744,15 @@ const QUICK_TEMPLATES = [
   transition: opacity 0.4s ease;
 }
 .gc-insp__expr-row.is-pf-fading .gc-insp__pf-value { opacity: 0; }
+
+/* Помилка рушія під рядком: відступ = кружечок кольору (10px) + gap (4px) — текст під формулою */
+.gc-insp__expr-err {
+  margin: -2px 0 2px 14px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #b91c1c;
+  overflow-wrap: anywhere;
+}
 
 .gc-insp__swatch {
   display: inline-block;
