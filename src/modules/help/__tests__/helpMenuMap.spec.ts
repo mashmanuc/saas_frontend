@@ -12,9 +12,11 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import uk from '../../../i18n/locales/uk.json'
 import en from '../../../i18n/locales/en.json'
+import ru from '../../../i18n/locales/ru.json'
 import { SECTIONED_MENU_BY_ROLE } from '../../../config/menu.js'
 import { HELP_SECTIONS } from '../data/helpArticles'
 import { HELP_SECTIONS_EN } from '../data/helpArticles.en'
+import { HELP_SECTIONS_RU } from '../data/helpArticles.ru'
 
 const push = vi.fn()
 vi.mock('vue-router', () => ({
@@ -44,6 +46,7 @@ const menuRoutes = () => {
 describe.each([
   ['uk', HELP_SECTIONS, uk, 'Що де в меню', 'Три кроки до першого уроку'],
   ['en', HELP_SECTIONS_EN, en, "What's where in the menu", 'Three steps to your first lesson'],
+  ['ru', HELP_SECTIONS_RU, ru, 'Что где в меню', 'Три шага до первого урока'],
 ] as const)('%s · «Що де в меню»', (_lang, sections, locale, heading, steps) => {
   it('назви пунктів — точно як у бічному меню й у тому самому порядку', () => {
     const doc = intro(sections)
@@ -118,6 +121,20 @@ describe('HelpView · перехід з «Що де в меню»', () => {
     link.element.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(false)
     expect(push).not.toHaveBeenCalled()
+    w.unmount()
+  })
+
+  it('ru (власник 2026-09-29) — шапка й статті російською, а не українською', () => {
+    const w = mount(HelpView, {
+      global: {
+        plugins: [createI18n({ legacy: false, locale: 'ru', fallbackLocale: 'uk', messages: { uk, ru } as never })],
+      },
+    })
+    expect(w.text()).toContain('Помощь')
+    expect(w.text()).toContain('Что такое M4SH и как начать')
+    expect(w.find('.help-menu-map a[href="/remote"]').text()).toBe('Пульт для телефона')
+    expect(w.text()).not.toContain('Що таке M4SH і як почати')
+    expect(w.text()).not.toContain('Допомога')
     w.unmount()
   })
 })

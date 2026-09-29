@@ -65,13 +65,18 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { HELP_SECTIONS, DEFAULT_HELP_SLUG } from '../data/helpArticles'
 import { HELP_SECTIONS_EN } from '../data/helpArticles.en'
+import { HELP_SECTIONS_RU } from '../data/helpArticles.ru'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-// slug/key/icon ідентичні в обох локалях — перемикаємо лише контент.
-const sections = computed(() => (locale.value === 'en' ? HELP_SECTIONS_EN : HELP_SECTIONS))
+// slug/key/icon ідентичні в усіх локалях — перемикаємо лише контент.
+const sections = computed(() => {
+  if (locale.value === 'en') return HELP_SECTIONS_EN
+  if (locale.value === 'ru') return HELP_SECTIONS_RU
+  return HELP_SECTIONS
+})
 
 const currentSlug = computed(() => (route.params.slug as string) || DEFAULT_HELP_SLUG)
 
