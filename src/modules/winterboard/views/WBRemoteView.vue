@@ -237,41 +237,10 @@
 
       <!-- LAW §9 v1.20 (власник 2026-09-29, «так»): Інтегралик ТЕКСТОМ — тихо. Розмова лише тут,
            на телефоні; ноутбук вікна не відкриває і кладе матеріал на підготовчу сторінку одразу
-           після поточної, не перемикаючи екран. «Показати» — перейти туди. -->
+           після поточної, не перемикаючи екран. «Показати» — перейти туди.
+           v1.22 (власник після уроку, «так»): тут лише поле й один рядок стану; сама розмова — аркушем
+           «Інтегралик» (на телефоні з панеллю браузера журнал на ~64 px ховав і запит, і відповідь). -->
       <section class="wb-remote__ai" data-testid="remote-ai">
-        <ol v-if="assistantTurns.length" ref="aiLogEl" class="wb-remote__ai-log" aria-live="polite">
-          <li v-for="turn in assistantTurns" :key="turn.requestId" class="wb-remote__ai-turn" data-testid="remote-ai-turn">
-            <p v-if="turn.text" class="wb-remote__ai-me">{{ turn.text }}</p>
-            <p v-if="turn.status === 'sent' || turn.status === 'thinking'" class="wb-remote__ai-bot wb-remote__ai-bot--wait">
-              {{ t('winterboard.remote.assistant.thinking') }}
-            </p>
-            <template v-else>
-              <p
-                v-if="turn.reply"
-                class="wb-remote__ai-bot"
-                :class="{ 'wb-remote__ai-bot--error': turn.status === 'error' }"
-                data-testid="remote-ai-reply"
-              >{{ turn.reply }}</p>
-              <div v-if="turn.status === 'confirm'" class="wb-remote__ai-actions">
-                <button type="button" class="wb-remote__ai-btn" data-testid="remote-ai-yes" :disabled="!isReady" @click="answerAssistant(turn, 'yes')">
-                  {{ t('winterboard.remote.assistant.yes') }}
-                </button>
-                <button type="button" class="wb-remote__ai-btn wb-remote__ai-btn--quiet" data-testid="remote-ai-no" :disabled="!isReady" @click="answerAssistant(turn, 'no')">
-                  {{ t('winterboard.remote.assistant.no') }}
-                </button>
-              </div>
-              <div v-else-if="turn.status === 'done' && turn.pageIndex !== undefined" class="wb-remote__ai-actions">
-                <span class="wb-remote__ai-ready" data-testid="remote-ai-ready">{{ t('winterboard.remote.assistant.ready', { n: turn.pageIndex + 1 }) }}</span>
-                <button type="button" class="wb-remote__ai-btn" data-testid="remote-ai-show" :disabled="!isReady" @click="showPrepared(turn)">
-                  {{ t('winterboard.remote.assistant.show') }}
-                </button>
-              </div>
-              <p v-else-if="turn.status === 'cancelled'" class="wb-remote__ai-bot wb-remote__ai-bot--muted">
-                {{ t('winterboard.remote.assistant.cancelled') }}
-              </p>
-            </template>
-          </li>
-        </ol>
         <form class="wb-remote__ai-row" @submit.prevent="sendAssistant">
           <input
             v-model="assistantInput"
@@ -291,6 +260,26 @@
             :disabled="!isReady || assistantWaiting || !assistantInput.trim()"
           >➤</button>
         </form>
+        <!-- Один рядок стану: тап відкриває розмову; готову сторінку — «Показати» чи «На екрані» тут же -->
+        <div v-if="lastAssistantTurn" class="wb-remote__ai-status" data-testid="remote-ai-status">
+          <button type="button" class="wb-remote__ai-status-text" data-testid="remote-ai-open" @click="openSheet('assistant')">
+            <span class="wb-remote__ai-status-label">{{ assistantStatusText(lastAssistantTurn) }}</span>
+            <span aria-hidden="true">›</span>
+          </button>
+          <template v-if="lastAssistantTurn.status === 'done' && lastAssistantTurn.pageIndex !== undefined">
+            <span v-if="lastAssistantTurn.pageIndex === pageIndex" class="wb-remote__ai-onscreen" data-testid="remote-ai-status-onscreen">
+              {{ t('winterboard.remote.assistant.onScreen') }}
+            </span>
+            <button
+              v-else
+              type="button"
+              class="wb-remote__ai-btn wb-remote__ai-btn--small"
+              data-testid="remote-ai-status-show"
+              :disabled="!isReady"
+              @click="showPrepared(lastAssistantTurn)"
+            >{{ t('winterboard.remote.assistant.show') }}</button>
+          </template>
+        </div>
       </section>
 
       <!-- LAW §9 v1.14 (власник 2026-09-28, погоджено): згорнути вікно Інтегралика на
@@ -467,6 +456,66 @@
         @send="(cmd, args) => sendCmd(cmd as RemoteCmd, args)"
       />
 
+      <!-- LAW §9 v1.22 (власник 2026-09-29, «так»): розмова з Інтеграликом — аркушем. Ваш текст, повна
+           відповідь, «Так / Ні», «Готово — сторінка N» · «Показати» (чи «На екрані»); поле — внизу аркуша. -->
+      <div v-show="sheet === 'assistant'" class="wb-remote__ai-sheet" data-testid="assistant-sheet">
+        <ol ref="aiLogEl" class="wb-remote__ai-log" aria-live="polite">
+          <li v-for="turn in assistantTurns" :key="turn.requestId" class="wb-remote__ai-turn" data-testid="remote-ai-turn">
+            <p v-if="turn.text" class="wb-remote__ai-me">{{ turn.text }}</p>
+            <p v-if="turn.status === 'sent' || turn.status === 'thinking'" class="wb-remote__ai-bot wb-remote__ai-bot--wait">
+              {{ t('winterboard.remote.assistant.thinking') }}
+            </p>
+            <template v-else>
+              <p
+                v-if="turn.reply"
+                class="wb-remote__ai-bot"
+                :class="{ 'wb-remote__ai-bot--error': turn.status === 'error' }"
+                data-testid="remote-ai-reply"
+              >{{ turn.reply }}</p>
+              <div v-if="turn.status === 'confirm'" class="wb-remote__ai-actions">
+                <button type="button" class="wb-remote__ai-btn" data-testid="remote-ai-yes" :disabled="!isReady" @click="answerAssistant(turn, 'yes')">
+                  {{ t('winterboard.remote.assistant.yes') }}
+                </button>
+                <button type="button" class="wb-remote__ai-btn wb-remote__ai-btn--quiet" data-testid="remote-ai-no" :disabled="!isReady" @click="answerAssistant(turn, 'no')">
+                  {{ t('winterboard.remote.assistant.no') }}
+                </button>
+              </div>
+              <div v-else-if="turn.status === 'done' && turn.pageIndex !== undefined" class="wb-remote__ai-actions">
+                <span class="wb-remote__ai-ready" data-testid="remote-ai-ready">{{ t('winterboard.remote.assistant.ready', { n: turn.pageIndex + 1 }) }}</span>
+                <span v-if="turn.pageIndex === pageIndex" class="wb-remote__ai-onscreen" data-testid="remote-ai-onscreen">
+                  {{ t('winterboard.remote.assistant.onScreen') }}
+                </span>
+                <button v-else type="button" class="wb-remote__ai-btn" data-testid="remote-ai-show" :disabled="!isReady" @click="showPrepared(turn)">
+                  {{ t('winterboard.remote.assistant.show') }}
+                </button>
+              </div>
+              <p v-else-if="turn.status === 'cancelled'" class="wb-remote__ai-bot wb-remote__ai-bot--muted">
+                {{ t('winterboard.remote.assistant.cancelled') }}
+              </p>
+            </template>
+          </li>
+        </ol>
+        <form class="wb-remote__ai-row" @submit.prevent="sendAssistant">
+          <input
+            v-model="assistantInput"
+            type="text"
+            class="wb-remote__ai-input"
+            data-testid="remote-ai-sheet-input"
+            maxlength="300"
+            enterkeyhint="send"
+            :placeholder="t('winterboard.remote.assistant.placeholder')"
+            :disabled="!isReady || assistantWaiting"
+          />
+          <button
+            type="submit"
+            class="wb-remote__ai-send"
+            data-testid="remote-ai-sheet-send"
+            :aria-label="t('winterboard.remote.assistant.send')"
+            :disabled="!isReady || assistantWaiting || !assistantInput.trim()"
+          >➤</button>
+        </form>
+      </div>
+
       <!-- Налаштування (ТЗ §4.3): акаунт → предмет і мова → «Оновити» → адреса → «Відключити» -->
       <div v-show="sheet === 'settings'" class="wb-remote__settings" data-testid="settings-sheet">
         <p class="wb-remote__who">
@@ -608,7 +657,8 @@ const lastPhrase = ref('')
 
 // ── v1.20 (LAW §9): Інтегралик текстом — розмова лише тут, на телефоні ──────────
 // Ноутбук шле лише ОСТАННЮ відповідь (`assistant_reply`) — діалог складаємо самі: свій текст +
-// відповіді за request_id. Кілька останніх реплік — екран телефона невеликий.
+// відповіді за request_id. v1.22: розмова — аркушем «Інтегралик», на головному екрані лише поле й
+// рядок стану.
 interface AssistantTurn {
   requestId: string
   text: string
@@ -616,10 +666,10 @@ interface AssistantTurn {
   reply?: string
   pageIndex?: number
 }
-const ASSISTANT_TURNS_MAX = 4
+const ASSISTANT_TURNS_MAX = 10
 const assistantTurns = ref<AssistantTurn[]>([])
 const assistantInput = ref('')
-// Журнал невисокий (кнопки «Говорю» не зсуваємо за край) — тож завжди видно останню репліку
+// Журнал в аркуші тримається на останній репліці
 const aiLogEl = ref<HTMLElement | null>(null)
 function scrollAiLogToEnd(): void {
   if (aiLogEl.value) aiLogEl.value.scrollTop = aiLogEl.value.scrollHeight
@@ -638,6 +688,15 @@ const assistantWaiting = computed(() => {
   const last = assistantTurns.value[assistantTurns.value.length - 1]
   return !!last && (last.status === 'sent' || last.status === 'thinking')
 })
+
+/** v1.22: рядок стану на головному екрані — остання репліка розмови (тап відкриває аркуш). */
+const lastAssistantTurn = computed<AssistantTurn | null>(() => assistantTurns.value[assistantTurns.value.length - 1] ?? null)
+function assistantStatusText(turn: AssistantTurn): string {
+  if (turn.status === 'sent' || turn.status === 'thinking') return t('winterboard.remote.assistant.thinking')
+  if (turn.status === 'done' && turn.pageIndex !== undefined) return t('winterboard.remote.assistant.ready', { n: turn.pageIndex + 1 })
+  if (turn.status === 'cancelled') return t('winterboard.remote.assistant.cancelled')
+  return turn.reply || t('winterboard.remote.assistant.done')
+}
 
 /** Ноутбук мовчить (навіть «думає…» не прийшло) — поле не лишається вимкненим назавжди. */
 const ASSISTANT_NO_RESPONSE_MS = 10000
@@ -659,6 +718,7 @@ function sendAssistant(): void {
   const turns = assistantTurns.value.map((t) => (t.status === 'confirm' ? { ...t, status: 'cancelled' as const } : t))
   assistantTurns.value = [...turns, { requestId, text, status: 'sent' as const }].slice(-ASSISTANT_TURNS_MAX)
   assistantInput.value = ''
+  openSheet('assistant')   // v1.22: розмова — аркушем; ваш текст і відповідь видно цілком
   if (assistantSentTimer) clearTimeout(assistantSentTimer)
   assistantSentTimer = setTimeout(() => {
     assistantSentTimer = null
@@ -1045,7 +1105,7 @@ function whyDisabled(which: 'prev' | 'next' | 'ready'): void {
 }
 
 // ── Аркуші (ТЗ §4): один за раз; «Назад» Android закриває аркуш, а не пульт ──
-type Sheet = 'photo' | 'video' | 'settings' | 'scenario'
+type Sheet = 'photo' | 'video' | 'settings' | 'scenario' | 'assistant'
 const sheet = ref<Sheet | null>(null)
 /** Ми поклали запис в історію заради «Назад» — і маємо самі його зняти при «×» */
 let sheetInHistory = false
@@ -1055,6 +1115,7 @@ const sheetTitle = computed(() => {
     case 'video': return t('winterboard.remote.sheetVideo')
     case 'settings': return t('winterboard.remote.settings')
     case 'scenario': return t('winterboard.remote.scenario.title')
+    case 'assistant': return t('winterboard.remote.assistant.sheetTitle')
     default: return ''
   }
 })
@@ -1070,6 +1131,7 @@ function openSheet(name: Sheet): void {
     } catch { sheetInHistory = false }
   }
   sheet.value = name
+  if (name === 'assistant') void nextTick(scrollAiLogToEnd)   // одразу до останньої репліки
   tel('sheet', { name })
 }
 function closeSheet(): void {
@@ -1432,17 +1494,25 @@ onBeforeUnmount(() => {
 /* v1.20: Інтегралик текстом — одразу над «– Згорнути вікно Інтегралика» (margin-top: auto тепер тут) */
 .wb-remote__ai { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
 .wb-remote__ai + .wb-remote__assistant-min { margin-top: 0; }
+/* v1.22: рядок стану під полем — остання репліка; тап відкриває аркуш «Інтегралик» */
+.wb-remote__ai-status { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.wb-remote__ai-status-text {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 4px 0; border: 0;
+  background: transparent; color: var(--muted); font-size: 14px; text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__ai-status-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.wb-remote__ai-onscreen { flex: none; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.wb-remote__ai-btn--small { flex: none; min-height: 36px; padding: 0 14px; font-size: 14px; }
+/* v1.22: аркуш «Інтегралик» — журнал бере висоту аркуша й прокручується сам, поле внизу */
+.wb-remote__ai-sheet { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .wb-remote__ai-log {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;
-  /* решта пульта займає ≈670 px (виміряно на 360–412 px завширшки): журнал бере залишок екрана, щоб
-     «Говорю» не пішла за нижній край; щонайменше одна бульбашка, щонайбільше 22 % екрана */
-  max-height: min(22vh, max(64px, calc(100dvh - 680px)));
-  overflow-y: auto; user-select: text; -webkit-user-select: text;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; user-select: text; -webkit-user-select: text;
 }
 .wb-remote__ai-turn { display: flex; flex-direction: column; gap: 4px; }
 .wb-remote__ai-me, .wb-remote__ai-bot { margin: 0; padding: 8px 10px; border-radius: 12px; font-size: 15px; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
 .wb-remote__ai-me { align-self: flex-end; max-width: 85%; background: #1e3a8a; }
-.wb-remote__ai-bot { align-self: flex-start; max-width: 92%; background: var(--surface); }
+.wb-remote__ai-bot { align-self: flex-start; max-width: 92%; background: var(--surface-2); }
 .wb-remote__ai-bot--wait, .wb-remote__ai-bot--muted { color: var(--muted); }
 .wb-remote__ai-bot--error { border: 1px solid var(--danger); }
 .wb-remote__ai-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

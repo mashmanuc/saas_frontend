@@ -52,6 +52,34 @@ describe('insertPageAfterCurrent — підготовча сторінка бе�
     expect((ops[0].payload.page as { id: string }).id).toBe(id)
   })
 
+  it('вигляд поточної сторінки — колір, візерунок, клітинка, розмір (біла серед кольорових «виділяється»)', () => {
+    const store = boardWith(['A', 'B'], 0)
+    Object.assign(store.pages[0], {
+      background: 'dots', backgroundColor: '#cfe8f7', width: 1600, height: 1200,
+      grid: { enabled: true, size: 20 },
+    })
+    const ops: Array<{ payload: { page: Record<string, unknown> } }> = []
+    const off = store.onOperation((op) => ops.push(op as never))
+    const id = store.insertPageAfterCurrent()
+    off()
+    const page = store.pages.find((p) => p.id === id)!
+    expect([page.background, page.backgroundColor, page.width, page.height]).toEqual(['dots', '#cfe8f7', 1600, 1200])
+    expect(page.grid).toEqual({ enabled: true, size: 20 })
+    expect(ops[0].payload.page).toMatchObject({ background: 'dots', backgroundColor: '#cfe8f7', width: 1600, height: 1200 })
+  })
+
+  it('фото чи PDF у фоні не копіюються — це вміст, а не вигляд; колір лишається', () => {
+    const store = boardWith(['A', 'B'], 0)
+    Object.assign(store.pages[0], {
+      background: { type: 'image', url: 'https://x/p.jpg', assetId: 'a1' }, backgroundColor: '#f6c9d2', width: 1000, height: 700,
+    })
+    const id = store.insertPageAfterCurrent()
+    const page = store.pages.find((p) => p.id === id)!
+    expect(page.background).toBe('white')
+    expect(page.backgroundColor).toBe('#f6c9d2')
+    expect([page.width, page.height]).toEqual([undefined, undefined])
+  })
+
   it('до історії ↶ не йде; на стелі 50 — порожній id', () => {
     const store = boardWith(['A'], 0)
     const undoBefore = store.undoStack.length

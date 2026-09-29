@@ -2616,13 +2616,20 @@ export const useWBStore = defineStore('wb-board', {
         return ''
       }
       const currentPage = this.pages[this.currentPageIndex]
+      // Вигляд поточної сторінки (власник 2026-09-29: біла «чиста» сторінка серед кольорових сторінок
+      // уроку «помітна і виділяється»): колір, візерунок, клітинка й розмір. Фото чи PDF у фоні — це
+      // вміст сторінки, а не її вигляд: їх не копіюємо, лишається колір.
+      const bg = currentPage?.background
+      const plainLook = typeof bg === 'string' || bg === undefined
       const newPage: WBPage = {
         id: generatePageId(),
         name: opts?.name ?? `Page ${this.pages.length + 1}`,
         strokes: [],
         assets: [],
-        background: 'white',
-        backgroundColor: '#ffffff',
+        background: (typeof bg === 'string' ? bg : 'white') as WBPageBackground,
+        backgroundColor: currentPage?.backgroundColor ?? '#ffffff',
+        width: plainLook ? currentPage?.width : undefined,
+        height: plainLook ? currentPage?.height : undefined,
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
       const insertAt = this.currentPageIndex + 1
@@ -2640,6 +2647,8 @@ export const useWBStore = defineStore('wb-board', {
               name: newPage.name,
               background: newPage.background,
               backgroundColor: newPage.backgroundColor,
+              ...(newPage.width ? { width: newPage.width } : {}),
+              ...(newPage.height ? { height: newPage.height } : {}),
               grid: newPage.grid,
             },
             insertAt,

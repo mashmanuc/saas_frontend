@@ -9,6 +9,7 @@ type Page = { id: string; width: number; height: number; assets: any[]; strokes:
 let pages: Page[] = []
 let current = 0
 const addPageUndoable = vi.fn(() => 'p-new')
+const selectItems = vi.fn()
 
 vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
   useWBStore: () => ({
@@ -22,6 +23,7 @@ vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
       page.strokes.push(stroke)
     },
     addPageUndoable,
+    selectItems,
     updateAsset: vi.fn(),
   }),
 }))
@@ -41,6 +43,7 @@ beforeEach(() => {
   pages = [blank('p-screen'), blank('p-prep')]
   current = 0
   addPageUndoable.mockClear()
+  selectItems.mockClear()
 })
 
 describe('з пульта — на підготовчу сторінку', () => {
@@ -56,10 +59,11 @@ describe('з пульта — на підготовчу сторінку', () =>
     expect(pages[0].strokes).toHaveLength(0)
   })
 
-  it('графік — теж на підготовчу', async () => {
+  it('графік — теж на підготовчу, і не виділяється (виділення вчителя на екрані не підміняємо)', async () => {
     await runBoardAction({ kind: 'add_graph', payload: { expressions: [{ src: 'x^2' }] } }, { pageId: 'p-prep' })
     expect(pages[1].assets.map((a) => a.type)).toEqual(['graph_calculator'])
     expect(pages[0].assets).toHaveLength(0)
+    expect(selectItems).not.toHaveBeenCalled()
   })
 
   it('«нова сторінка з карткою» з пульта — другої сторінки не додає, картка на підготовчій', async () => {
@@ -97,6 +101,11 @@ describe('з пульта — на підготовчу сторінку', () =>
 })
 
 describe('вікно на ноутбуці (без ctx) — як і було', () => {
+  it('графік із вікна — як і було, виділяється (видно, що саме додалось)', async () => {
+    await runBoardAction({ kind: 'add_graph', payload: { expressions: [{ src: 'x^2' }] } })
+    expect(selectItems).toHaveBeenCalledWith([pages[0].assets[0].id])
+  })
+
   it('картка й текст — на поточну сторінку; «нова сторінка» додає сторінку', async () => {
     await runBoardAction({ kind: 'add_card', payload: CARD })
     await runBoardAction({ kind: 'add_text', payload: { text: 'x' } })

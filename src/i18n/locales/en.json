@@ -9011,7 +9011,9 @@
         "actionFailed": "Couldn’t do this on the board.",
         "stepFailed": "Step {n} failed: {reason}. Stopping.",
         "noResponse": "The laptop didn’t respond — try again.",
-        "laptopReloaded": "The laptop reloaded — please send it again."
+        "laptopReloaded": "The laptop reloaded — please send it again.",
+        "sheetTitle": "Integralyk",
+        "onScreen": "On screen"
       }
     },
     "youtube": {

@@ -118,6 +118,76 @@ describe('пошта акаунта — самим верхом пульта (LA
   })
 })
 
+describe('розмова — аркушем «Інтегралик», на головному екрані — поле й рядок стану (LAW §9 v1.22)', () => {
+  it('журнал — лише в аркуші, не на головному екрані', async () => {
+    const w = await connected()
+    const log = w.find('.wb-remote__ai-log').element as HTMLElement
+    expect(log.closest('[data-testid="assistant-sheet"]')).not.toBeNull()
+    expect(log.closest('[data-testid="remote-ai"]')).toBeNull()
+  })
+
+  it('надіслали — відкривається аркуш «Інтегралик» з вашим текстом; під полем — «думає…»', async () => {
+    const w = await connected()
+    await ask(w, 'підготуй задачу на дискримінант')
+    expect(w.find('[data-testid="remote-sheet"]').isVisible()).toBe(true)
+    expect(w.find('.wb-remote__sheet-title').text()).toBe(A.sheetTitle)
+    expect(w.find('[data-testid="assistant-sheet"]').isVisible()).toBe(true)
+    expect(w.find('.wb-remote__ai-me').text()).toBe('підготуй задачу на дискримінант')
+    expect(w.find('[data-testid="remote-ai-status"]').text()).toContain(A.thinking)
+  })
+
+  it('готово: у рядку стану «Готово — сторінка N» і «Показати»; тап по рядку відкриває аркуш', async () => {
+    const w = await connected()
+    const requestId = await ask(w, 'підготуй задачу')
+    await w.find('[data-testid="sheet-close"]').trigger('click')
+    await state({ assistantReply: { requestId, status: 'done', text: 'Поклав задачу.', pageIndex: 3 } })
+    const status = w.find('[data-testid="remote-ai-status"]')
+    expect(status.text()).toContain(A.ready.replace('{n}', '4'))
+    await w.find('[data-testid="remote-ai-status-show"]').trigger('click')
+    expect(lastCmd()).toEqual(expect.objectContaining({ cmd: 'page.goto', args: { index: 3 } }))
+    expect(w.find('[data-testid="remote-sheet"]').isVisible()).toBe(false)
+    await w.find('[data-testid="remote-ai-open"]').trigger('click')
+    expect(w.find('[data-testid="assistant-sheet"]').isVisible()).toBe(true)
+  })
+
+  it('сторінка вже на екрані ноутбука — «На екрані» замість «Показати» (і в рядку, і в аркуші)', async () => {
+    const w = await connected()
+    const requestId = await ask(w, 'підготуй задачу')
+    await state({ pageIndex: 3, assistantReply: { requestId, status: 'done', text: 'Поклав задачу.', pageIndex: 3 } })
+    expect(w.find('[data-testid="remote-ai-status-onscreen"]').text()).toBe(A.onScreen)
+    expect(w.find('[data-testid="remote-ai-status-show"]').exists()).toBe(false)
+    expect(w.find('[data-testid="remote-ai-onscreen"]').text()).toBe(A.onScreen)
+    expect(w.find('[data-testid="remote-ai-show"]').exists()).toBe(false)
+    // ноутбук пішов на іншу сторінку — «Показати» повертається
+    await state({ pageIndex: 1, assistantReply: { requestId, status: 'done', text: 'Поклав задачу.', pageIndex: 3 } })
+    expect(w.find('[data-testid="remote-ai-status-show"]').exists()).toBe(true)
+  })
+
+  it('інший аркуш (налаштування) — розмови в ньому немає; назад в «Інтегралик» — вона на місці', async () => {
+    const w = await connected()
+    await ask(w, 'перше')
+    await w.find('[data-testid="sheet-close"]').trigger('click')
+    await w.find('[data-testid="open-settings"]').trigger('click')
+    expect(w.find('[data-testid="settings-sheet"]').isVisible()).toBe(true)
+    expect(w.find('[data-testid="assistant-sheet"]').isVisible()).toBe(false)
+    await w.find('[data-testid="sheet-close"]').trigger('click')
+    await w.find('[data-testid="remote-ai-open"]').trigger('click')
+    expect(w.find('[data-testid="assistant-sheet"]').isVisible()).toBe(true)
+    expect(w.find('[data-testid="settings-sheet"]').isVisible()).toBe(false)
+    expect(w.find('.wb-remote__ai-me').text()).toBe('перше')
+  })
+
+  it('з аркуша теж можна писати — те саме поле, та сама команда', async () => {
+    const w = await connected()
+    const first = await ask(w, 'перше')
+    await state({ assistantReply: { requestId: first, status: 'reply', text: 'Відповідь.' } })
+    send.mockClear()
+    await w.find('[data-testid="remote-ai-sheet-input"]').setValue('друге з аркуша')
+    await w.find('[data-testid="assistant-sheet"] .wb-remote__ai-row').trigger('submit')
+    expect(lastCmd()).toMatchObject({ cmd: 'assistant.ask', args: { text: 'друге з аркуша' } })
+  })
+})
+
 describe('пульт: Інтегралик текстом', () => {
   it('поле й «➤» — рядком над «– Згорнути вікно Інтегралика»', async () => {
     const w = await connected()
