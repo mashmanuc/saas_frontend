@@ -510,7 +510,8 @@
 
     <!-- ── Main content: Toolbar + Canvas ──────────────────────────────────── -->
     <div class="wb-solo-room__main">
-      <!-- Left Toolbar (AGENT-B: WBToolbar) -->
+      <!-- Left Toolbar (AGENT-B: WBToolbar). Б-115: до 768 px (isSidebarDrawer — той самий поріг,
+           що @media нижче) кімната кладе панель унизу на всю ширину → dock="bottom". -->
       <aside class="wb-solo-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
@@ -522,6 +523,7 @@
           :has-locked-in-selection="hasLockedInSelection"
           :can-clear-page="!isCanvasEmpty"
           :variant="deviceModeState.deviceMode.value"
+          :dock="isSidebarDrawer ? 'bottom' : 'side'"
           @tool-change="handleToolChange"
           @color-change="handleColorChange"
           @size-change="handleSizeChange"

@@ -9,6 +9,7 @@
     class="wb-toolbar"
     :class="[variantClasses, { 'wb-toolbar--expanded': isExpanded }]"
     :data-variant="variant"
+    :data-dock="dock"
     role="toolbar"
     :aria-label="t('winterboard.toolbar.title')"
     @keydown="handleToolbarKeydown"
@@ -203,6 +204,11 @@ interface Props {
   canClearPage?: boolean
   /** Responsive Phase 2 B3: Layout variant (INV-3: one toolbar, not three) */
   variant?: ToolbarVariant
+  /**
+   * Б-115: де кімната поставила панель — збоку (колонка) чи внизу на всю ширину.
+   * Кімната уроку до 768 px кладе її вниз, а варіант «планшет» — від 640 px.
+   */
+  dock?: 'side' | 'bottom'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -215,6 +221,7 @@ const props = withDefaults(defineProps<Props>(), {
   hasLockedInSelection: false,
   canClearPage: false,
   variant: 'desktop',
+  dock: 'side',
 })
 
 // Responsive Phase 2 B3: Variant CSS classes
@@ -571,9 +578,12 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   transition-delay: 0ms;
 }
 
-/* Responsive: compact on mobile (LAW-22: 44px min touch target maintained) */
+/* Responsive: compact on mobile (LAW-22: 44px min touch target maintained)
+   Б-115 (2026-09-29): не для варіанта «планшет» (від 640 px) — той тримав панель вузькою колонкою
+   48–56 px з overflow-x: hidden, і рядок із цих правил показував одну кнопку з сімнадцяти.
+   Планшет: збоку — колонка з прокруткою, внизу — [data-dock="bottom"] нижче. */
 @media (max-width: 768px) {
-  .wb-toolbar {
+  .wb-toolbar:not([data-variant="tablet"]) {
     flex-direction: row;
     width: 100%;
     height: 52px;
@@ -588,13 +598,13 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
     -webkit-overflow-scrolling: touch;
   }
 
-  .wb-toolbar__group {
+  .wb-toolbar:not([data-variant="tablet"]) .wb-toolbar__group {
     flex-direction: row;
     gap: 2px;
     flex-shrink: 0;
   }
 
-  .wb-toolbar__sep {
+  .wb-toolbar:not([data-variant="tablet"]) .wb-toolbar__sep {
     width: 1px;
     height: 32px;
     margin: 6px 4px;
@@ -742,6 +752,39 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 }
 .wb-toolbar[data-variant="tablet"] .wb-toolbar__btn--tooltip::after {
   display: none;
+}
+
+/* Б-115 (2026-09-29): кімната уроку до 768 px ставить панель унизу на всю ширину (WBSoloRoom,
+   той самий поріг), а варіант «планшет» — від 640 px. Унизу планшетна панель — як телефонна:
+   усі інструменти видно одразу, у 2 ряди, без свайпу (палітра до 768 px і так відкривається
+   вгору — WBColorFlyout). Перемикач ширини бічної колонки внизу нічого не робить — ховаємо. */
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"],
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"].wb-toolbar--expanded {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  padding: 4px 6px;
+  row-gap: 4px;
+  overflow: visible;
+  touch-action: manipulation;
+  border-right: none;
+  border-top: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"] .wb-toolbar__group {
+  display: contents;
+}
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"] .wb-toolbar__sep,
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"] .wb-toolbar__subsep,
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"] .wb-toolbar__toggle {
+  display: none;
+}
+.wb-toolbar[data-variant="tablet"][data-dock="bottom"] .wb-toolbar__btn {
+  touch-action: manipulation;
 }
 /* TABLET 1А (2026-09-27): згорнута планшетна панель ховає лише додаткове (YouTube, формула).
    БУЛО: групи 2–4 за позицією — тобто саме «товщина + колір», а коли кольору для інструмента
