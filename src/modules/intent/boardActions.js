@@ -179,13 +179,23 @@ export async function openPageForPlan(name) {
   return id
 }
 
-async function _store() {
+// ctx.pageId — сторінка, якої на екрані немає (LAW §9 v1.20: матеріал Інтегралика з пульта лягає
+// на підготовчу сторінку). Передається ЯВНО в кожну дію, а не глобальним перемикачем: вікно
+// Інтегралика на ноутбуці в той самий час пише, як і раніше, на поточну.
+async function _store(ctx = null) {
   const { useWBStore } = await import('@/modules/winterboard/board/state/boardStore')
   const store = useWBStore()
-  const page = store.currentPage
-  if (!page) throw new Error('Дошка ще не завантажилась — спробуйте за мить.')
+  const page = ctx?.pageId ? store.pages.find((p) => p.id === ctx.pageId) : store.currentPage
+  if (!page) {
+    throw new Error(ctx?.pageId ? 'Підготовчої сторінки вже немає.' : 'Дошка ще не завантажилась — спробуйте за мить.')
+  }
   _viewZoom = Number(store.zoom) || 1
   return { store, page }
+}
+
+// Для addStroke: без ctx — поточна сторінка, як і було.
+function _strokeOpts(ctx) {
+  return ctx?.pageId ? { pageId: ctx.pageId } : undefined
 }
 
 /**
@@ -503,8 +513,8 @@ function materialLang(data) {
 const HANDLERS = {
   // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke.
   // Коридор (LAW §9.D): мова й провенанс — у `stroke.data`, як у картки в `asset.data`.
-  async add_text({ text, corridor }) {
-    const { store, page } = await _store()
+  async add_text({ text, corridor }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 320, 40)
     const material = corridorData(corridor)
     store.addStroke({
@@ -520,7 +530,7 @@ const HANDLERS = {
       fontStyle: 'normal',
       textAlign: 'left',
       ...(material.content_language ? { data: material } : {}),
-    })
+    }, _strokeOpts(ctx))
   },
 
   // 2026-09-06 (Вікіпедія, слово власника): картинка за URL з провенансом.
@@ -529,10 +539,10 @@ const HANDLERS = {
   // на дошку школи; без рядка джерела картинку не кладемо (ТЗ, тиждень 2).
   // Розмір: вписати в 480 по ширині, зберігши пропорції; якщо BE не дав w/h —
   // квадрат 360, канва сама підтягне після завантаження.
-  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at, attribution_text, corridor }) {
+  async add_image({ src, w, h, caption, source, source_url, license, author, retrieved_at, attribution_text, corridor }, ctx) {
     if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
     if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
-    const { store, page } = await _store()
+    const { store, page } = await _store(ctx)
     const MAX_W = 480
     let width = Number(w) || 0
     let height = Number(h) || 0
@@ -591,13 +601,13 @@ const HANDLERS = {
       fontStyle: 'normal',
       textAlign: 'left',
       ...(material.content_language ? { data: material } : {}),
-    })
+    }, _strokeOpts(ctx))
     return assetId
   },
 
   // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру)
-  async add_formula({ latex }) {
-    const { store, page } = await _store()
+  async add_formula({ latex }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 380, 110)
     const assetId = _uuid()
     store.addAsset({
@@ -631,8 +641,8 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status }) {
-    const { store, page } = await _store()
+  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 760, 440)
     const assetId = _uuid()
     store.addAsset({
@@ -655,8 +665,8 @@ const HANDLERS = {
   },
 
   // H3: карта подій. Та сама механіка, що у шкали.
-  async add_map({ title, basemap, markers, routes, regions, knowledge_set_id, corridor, sources, source_status }) {
-    const { store, page } = await _store()
+  async add_map({ title, basemap, markers, routes, regions, knowledge_set_id, corridor, sources, source_status }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 680, 520)
     const assetId = _uuid()
     store.addAsset({
@@ -693,8 +703,8 @@ const HANDLERS = {
    * значень, тож «—» на картці не з'являється за побудовою.
    */
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
-                           corridor, sources, source_status, entity_ref, lead, relation }) {
-    const { store, page } = await _store()
+                           corridor, sources, source_status, entity_ref, lead, relation }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 520, 380, 440)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
     if (!titleValue) return
@@ -735,8 +745,8 @@ const HANDLERS = {
     }, page.id ?? '')
   },
 
-  async add_card({ title, body, badge, preset, corridor, sources, source_status }) {
-    const { store, page } = await _store()
+  async add_card({ title, body, badge, preset, corridor, sources, source_status }, ctx) {
+    const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 520, 380, 440)
     const assetId = _uuid()
     const badgeValue = badge || ''
@@ -757,7 +767,8 @@ const HANDLERS = {
       data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}), ...corridorData(corridor), ...sourcesData(sources, source_status) },
     }, page.id ?? '')
     // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
-    _lastAiCard = { assetId, pageId: page.id ?? '' }
+    // LAW §9 v1.20: картка з пульта — на підготовчій сторінці; «остання картка» вікна — лише з вікна
+    if (!ctx?.pageId) _lastAiCard = { assetId, pageId: page.id ?? '' }
     // N1 Фаза 2 (2026-08-07): запис companion-сцени для AST-експорту.
     // ⚠️ Був відсутній повністю — картка потрапляла на дошку, але НІКОЛИ
     // в AST, тому й у PPTX. Це і була вся суть Фази 2.
@@ -803,12 +814,15 @@ const HANDLERS = {
   // Дзеркало usePageManagement.addPage() → store.addPageUndoable() — та сама дія,
   // що й кнопка «+ Додати сторінку» в сайдбарі. Стелю (50) пильнує сам стор:
   // повертає '' при досягненні — тут просто чесно кажемо про це, а не мовчимо.
-  async add_page({ name, card, corridor }) {
-    const { store } = await _store()
-    const newId = store.addPageUndoable({ name: name || undefined })
-    if (!newId) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
+  async add_page({ name, card, corridor }, ctx) {
+    const { store, page: target } = await _store(ctx)
+    // LAW §9 v1.20: з пульта «нова сторінка» — це вже підготовча сторінка; другу не створюємо
+    if (!ctx?.pageId) {
+      const newId = store.addPageUndoable({ name: name || undefined })
+      if (!newId) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
+    }
     if (card && (card.title || card.body)) {
-      const page = store.currentPage
+      const page = ctx?.pageId ? target : store.currentPage
       const { cx, cy } = _center(page, 520, 380, 440)
       store.addAsset({
         id: _uuid(),
@@ -832,8 +846,8 @@ const HANDLERS = {
   // Зворотна сумісність зі старим payload `{expression}` лишається — на випадок
   // старої вкладки FE проти нового BE (і навпаки: BE теж приймає обидва).
 
-  async add_graph({ expressions, expression, params }) {
-    const { store, page } = await _store()
+  async add_graph({ expressions, expression, params }, ctx) {
+    const { store, page } = await _store(ctx)
     const W = GRAPH_W; const H = GRAPH_H
     const { cx, cy } = _center(page, W, H)
     // «y=sin(x)» → src «sin(x)» (голий вираз рендериться як y=f(x))
@@ -1191,14 +1205,25 @@ HANDLERS.delete_page = async function delete_page({ pageIndex }) {
     }
   }
 
-HANDLERS.add_tool = async function add_tool({ insert_id }) {
+// LAW §9 v1.20: з пульта — на підготовчу сторінку (`pageId`) і лише там, де вставку хтось виконав
+// (`handled` ставить WBSoloRoom). Інакше «Готово» на телефоні було б неправдою.
+function _insertDetail(detail, ctx) {
+  return ctx?.pageId ? { ...detail, pageId: ctx.pageId, handled: false } : detail
+}
+function _checkInserted(detail, ctx) {
+  if (ctx?.pageId && !detail.handled) {
+    throw new Error('Готові інструменти з пульта — лише в уроці, який ви проводите.')
+  }
+}
+
+HANDLERS.add_tool = async function add_tool({ insert_id }, ctx) {
   const items = await _allInserts()
   const e = items.find((x) => x.id === insert_id)
   if (e) {
     // WBSoloRoom слухає й вставляє через addAtPosition (той самий шлях, що click-insert)
-    window.dispatchEvent(new CustomEvent('m4sh:wb-insert', {
-      detail: { mime: e.dragMime, payload: e.payload },
-    }))
+    const detail = _insertDetail({ mime: e.dragMime, payload: e.payload }, ctx)
+    window.dispatchEvent(new CustomEvent('m4sh:wb-insert', { detail }))
+    _checkInserted(detail, ctx)
     return
   }
   // TLV2-06R: готовий рецепт уроку (`tpl.*`) — не інструмент і не окремий список Інтегралика.
@@ -1207,17 +1232,27 @@ HANDLERS.add_tool = async function add_tool({ insert_id }) {
   const recipe = findBoardRecipe(insert_id)
   if (!recipe) throw new Error('Такого інструмента поки немає на дошці.')  // fail-closed
   if (recipe.status === 'gap') throw new Error(`Цей готовий об'єкт поки не підтримується: ${recipe.gapReason}`)
-  window.dispatchEvent(new CustomEvent('m4sh:wb-insert', {
-    detail: { mime: BOARD_RECIPE_MIME, payload: JSON.stringify({ recipeId: recipe.id }) },
-  }))
+  const detail = _insertDetail({ mime: BOARD_RECIPE_MIME, payload: JSON.stringify({ recipeId: recipe.id }) }, ctx)
+  window.dispatchEvent(new CustomEvent('m4sh:wb-insert', { detail }))
+  _checkInserted(detail, ctx)
 }
 
-/** Виконати дію Інтегралика на дошці. Кидає Error з людським повідомленням. */
-export async function runBoardAction(action) {
+/**
+ * Виконати дію Інтегралика на дошці. Кидає Error з людським повідомленням.
+ * `ctx.pageId` — лише для дій, що СТВОРЮЮТЬ матеріал (`PREP_PAGE_KINDS`): кладуть його на цю
+ * сторінку, не на поточну (LAW §9 v1.20, пульт). Решта дій працює з поточною, як і була.
+ */
+export async function runBoardAction(action, ctx = null) {
   const handler = HANDLERS[action?.kind]
   if (!handler) throw new Error('Ця дія на дошці ще не підтримується.')  // fail-closed
-  await handler(action.payload || {})
+  await handler(action.payload || {}, ctx)
 }
+
+/** Дії, що лише створюють новий матеріал, — їх можна класти на підготовчу сторінку (пульт). */
+export const PREP_PAGE_KINDS = Object.freeze([
+  'add_text', 'add_image', 'add_formula', 'add_timeline', 'add_map', 'add_history_card',
+  'add_card', 'add_page', 'add_graph', 'add_tool',
+])
 
 // ── Phase 2.6 «зір»: read-only стан дошки → компактний summary для parse-контексту ──
 // Тільки читання store (жодних мутацій); лише власна відкрита дошка тьютора.

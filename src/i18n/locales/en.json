@@ -8986,7 +8986,31 @@
         "line3": "You can put the phone in your pocket.",
         "ok": "Got it"
       },
-      "exitToBoards": "Lesson Studio"
+      "exitToBoards": "Lesson Studio",
+      "assistant": {
+        "placeholder": "Write to Integralyk…",
+        "send": "Send",
+        "thinking": "Integralyk is thinking…",
+        "yes": "Yes",
+        "no": "No",
+        "ready": "Done — page {n}",
+        "show": "Show",
+        "cancelled": "Cancelled",
+        "done": "Done.",
+        "confirm": "Go ahead?",
+        "busy": "Integralyk is still answering the previous request — please wait.",
+        "onlyNew": "From the remote, Integralyk only prepares new material — on the next page. To change what’s on screen or go elsewhere, use the laptop or voice.",
+        "planOnLaptop": "The lesson plan is in the Integralyk window on the laptop.",
+        "off": "Integralyk is turned off in your profile settings.",
+        "unavailableHere": "Integralyk isn’t available here.",
+        "noAssistant": "Integralyk on the laptop isn’t available right now.",
+        "unavailable": "AI is unavailable right now — try again later.",
+        "limit": "Your plan limit is reached — see the laptop for details.",
+        "maxPages": "The board already has 50 pages — no room for another one.",
+        "noAnswer": "Integralyk didn’t answer — try saying it differently.",
+        "actionFailed": "Couldn’t do this on the board.",
+        "stepFailed": "Step {n} failed: {reason}. Stopping."
+      }
     },
     "youtube": {
       "tapToStart": "Tap the board to start the video",

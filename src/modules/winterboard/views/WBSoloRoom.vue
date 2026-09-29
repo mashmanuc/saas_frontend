@@ -1831,6 +1831,7 @@ const boardRemote = useBoardRemote({
     get pageCount() { return store.pageCount },
     goToPage: (i: number) => store.goToPage(i),
     addPage: () => store.addPage(),
+    pageIndexOf: (id: string) => store.pages.findIndex((p) => p.id === id),   // LAW §9 v1.20
   },
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),
@@ -2403,11 +2404,13 @@ const _thumbnailDropToast = useToast()
 const _folderFallbackToast = useToast()
 
 // ── Content drop: D&D from sidebar onto canvas ──
+// LAW §9 v1.20: Інтегралик з пульта кладе інструмент на підготовчу сторінку (onIntegralykInsert)
+let insertTargetPageId: string | null = null
 const contentDrop = useContentDrop({
   sessionId,
   canDraw: computed(() => true),
   onAssetAdd: (asset: WBAsset) => {
-    store.addAsset(asset, store.currentPageId)
+    store.addAsset(asset, insertTargetPageId ?? store.currentPageId)
   },
   screenToCanvas: (x: number, y: number) => {
     const rect = canvasContainerRef.value?.getBoundingClientRect()
@@ -2450,7 +2453,27 @@ provide(ADD_TOOL_TO_BOARD_KEY, insertToolAtCenter)
 // шлях, що tray "+" (addAtPosition). boardActions резолвить insert_id → mime+payload.
 function onIntegralykInsert(e: Event) {
   const d = (e as CustomEvent).detail
-  if (d?.mime) insertToolAtCenter(d.mime, d.payload ?? '{}')
+  if (!d?.mime) return
+  // LAW §9 v1.20: з пульта — на підготовчу сторінку, у її центр, без переходу. addAtPosition
+  // синхронний, тож ціль діє рівно на цю вставку. `handled` — сигнал boardActions, що вставку
+  // виконано (інакше пульт отримує чесну відмову, а не «Готово»).
+  if (typeof d.pageId === 'string' && d.pageId) {
+    const page = store.pages.find((p) => p.id === d.pageId)
+    if (!page) return
+    const step = (_insertCascade++ % 5) * 28
+    insertTargetPageId = page.id
+    try {
+      contentDrop.addAtPosition(d.mime, d.payload ?? '{}', {
+        x: (page.width ?? 1920) / 2 + step,
+        y: (page.height ?? 1080) / 2 + step,
+      })
+    } finally {
+      insertTargetPageId = null
+    }
+    d.handled = true
+    return
+  }
+  insertToolAtCenter(d.mime, d.payload ?? '{}')
 }
 onMounted(() => window.addEventListener('m4sh:wb-insert', onIntegralykInsert))
 onBeforeUnmount(() => window.removeEventListener('m4sh:wb-insert', onIntegralykInsert))

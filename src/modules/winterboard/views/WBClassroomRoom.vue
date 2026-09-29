@@ -1125,6 +1125,7 @@ const boardRemote = useBoardRemote({
     get pageCount() { return store.pageCount },
     goToPage: (i: number) => store.goToPage(i),
     addPage: () => store.addPage(),
+    pageIndexOf: (id: string) => store.pages.findIndex((p) => p.id === id),   // LAW §9 v1.20
   },
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),

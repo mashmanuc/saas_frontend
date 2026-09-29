@@ -33,8 +33,14 @@
 // доки не почує hello; пульт тепер вітається сам, щойно бачить presence.join дошки. Такий
 // hello може прийти раніше, ніж кімната стала готовою (`enabled`: власник ще не відомий), —
 // його не губимо: одна відповідь, щойно `enabled`. Інші команди до готовності — як і раніше.
+//
+// v1.20 (2026-09-29, власник: «поле вводу для Інтегралика на пульті… тексти з пульта лишати на
+// пультові»): assistant.ask / assistant.answer — намір палітрі на ЦЬОМУ ноутбуці подіями (як
+// m4sh:integralyk-ask); вона веде окрему розмову пульта без вікна й кладе матеріал на підготовчу
+// сторінку. Відповідь — подією назад, на пульт полем `assistant_reply` (лише остання).
 
 import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
+import { i18n } from '@/i18n'
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
@@ -47,6 +53,8 @@ export interface BoardRemoteStore {
   pageCount: number
   goToPage: (index: number) => void
   addPage: () => void
+  /** v1.20: номер сторінки за id — «Показати» на пульті веде на підготовчу сторінку. */
+  pageIndexOf?: (pageId: string) => number
 }
 
 export interface UseBoardRemoteOptions {
@@ -111,12 +119,29 @@ export interface RemoteCommandDetail {
     | 'video.add' | 'video.play' | 'video.pause'
     | 'photo.add' | 'photo.background' | 'photo.background_clear'
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
+    | 'assistant.ask' | 'assistant.answer'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
-    library_asset_id?: number; request_id?: string; page_index?: number
+    library_asset_id?: number; request_id?: string; page_index?: number; choice?: string
   }
 }
+
+/** v1.20 — відповідь Інтегралика на запит із пульта (від палітри; на пульт — `assistant_reply`). */
+export interface RemoteAssistantReply {
+  request_id: string
+  status: 'thinking' | 'reply' | 'confirm' | 'done' | 'error' | 'cancelled'
+  text?: string
+  /** лише в done: підготовча сторінка; на пульт іде її ПОТОЧНИЙ номер */
+  page_id?: string
+}
+
+/** v1.20: події з палітрою (рядки звіряє тест із `intent/CommandPalette.vue`). */
+export const ASSISTANT_ASK_EVENT = 'm4sh:integralyk-remote-ask'
+export const ASSISTANT_ANSWER_EVENT = 'm4sh:integralyk-remote-answer'
+export const ASSISTANT_REPLY_EVENT = 'm4sh:integralyk-remote-reply'
+/** = REMOTE_ASSISTANT_REPLY_TEXT_MAX_LEN на сервері (довше — поле відкидається цілим). */
+export const ASSISTANT_REPLY_TEXT_MAX = 600
 
 /** v1.6 — предмет і мова матеріалу Інтегралика для підпису на пульті (LAW §9). */
 export interface RemoteAssistantState {
@@ -155,6 +180,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const assistantState = ref<RemoteAssistantState | null>(null)
   /** v1.9: результат останньої спроби photo.add — лише в пам'яті вкладки, іде в кожен remote.state */
   const photoResult = ref<RemotePhotoResult | null>(null)
+  /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
+  const assistantReply = ref<RemoteAssistantReply | null>(null)
 
   /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
   const remoteUrl = computed(() => remoteEntryUrl())
@@ -189,6 +216,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.scenario ? ['scenario'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
+    if (assistantReply.value) msg.assistant_reply = wireAssistantReply(assistantReply.value)
     // v1.19: на поточній сторінці фото-фон — телефон показує «Прибрати фон сторінки»
     if (opts.photo) msg.bg_photo = opts.photo.hasBackgroundPhoto()
     const busy = opts.busy?.()
@@ -199,6 +227,31 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   function reportPhoto(result: RemotePhotoResult): void {
     photoResult.value = result
     sendState()
+  }
+
+  // v1.20: номер підготовчої сторінки — на момент надсилання (вставили чи видалили сторінки —
+  // «Показати» все одно веде туди); текст — у стелю сервера, інакше він відкине поле цілим.
+  function wireAssistantReply(r: RemoteAssistantReply): Record<string, unknown> {
+    const out: Record<string, unknown> = { request_id: r.request_id, status: r.status }
+    if (r.text) {
+      out.text = r.text.length > ASSISTANT_REPLY_TEXT_MAX ? `${r.text.slice(0, ASSISTANT_REPLY_TEXT_MAX - 1)}…` : r.text
+    }
+    if (r.status === 'done' && r.page_id) {
+      const index = opts.store.pageIndexOf?.(r.page_id) ?? -1
+      if (index >= 0) out.page_index = index
+    }
+    return out
+  }
+
+  function reportAssistant(reply: RemoteAssistantReply): void {
+    assistantReply.value = reply
+    sendState()
+  }
+
+  function onAssistantReply(e: Event): void {
+    const d = (e as CustomEvent<{ boardId?: string | null; reply?: RemoteAssistantReply }>).detail
+    if (!d || !d.boardId || d.boardId !== opts.sessionId.value || !d.reply?.request_id) return
+    reportAssistant(d.reply)
   }
 
   // Відео на сторінці з'явилось/зникло або змінило стан (грає / пауза / заблоковано)
@@ -501,6 +554,27 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         sendState()   // підтвердити стан і тоді, коли прибирати не було чого
         return
       }
+      case 'assistant.ask': {
+        const requestId = String(d.args?.request_id ?? '')
+        const text = String(d.args?.text ?? '').trim()
+        if (!requestId || !text) return
+        const detail = { boardId: opts.sessionId.value, requestId, text, accepted: false }
+        window.dispatchEvent(new CustomEvent(ASSISTANT_ASK_EVENT, { detail }))
+        // Палітри на цій дошці немає — телефон не чекатиме «…» вічно
+        if (!detail.accepted) {
+          reportAssistant({ request_id: requestId, status: 'error', text: String(i18n.global.t('winterboard.remote.assistant.noAssistant')) })
+        }
+        return
+      }
+      case 'assistant.answer': {
+        const requestId = String(d.args?.request_id ?? '')
+        const choice = d.args?.choice
+        if (!requestId || (choice !== 'yes' && choice !== 'no')) return
+        window.dispatchEvent(new CustomEvent(ASSISTANT_ANSWER_EVENT, {
+          detail: { boardId: opts.sessionId.value, requestId, choice },
+        }))
+        return
+      }
       default:
         if (ASSISTANT_CMDS.has(d.cmd)) {
           // Пульт не пише: намір — палітрі на ЦЬОМУ ноутбуці. Стан повернеться
@@ -515,12 +589,14 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
 
   window.addEventListener('wb:remote-command', onRemoteCommand)
   window.addEventListener(ASSISTANT_STATE_EVENT, onAssistantState)
+  window.addEventListener(ASSISTANT_REPLY_EVENT, onAssistantReply)
   requestAssistantState()
   onUnmounted(() => {
     window.removeEventListener('wb:remote-command', onRemoteCommand)
     window.removeEventListener(ASSISTANT_STATE_EVENT, onAssistantState)
+    window.removeEventListener(ASSISTANT_REPLY_EVENT, onAssistantReply)
     if (stateTimer) clearTimeout(stateTimer)
   })
 
-  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult }
+  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult, assistantReply }
 }

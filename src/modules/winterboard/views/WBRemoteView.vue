@@ -229,6 +229,64 @@
         <p v-if="scenarioWhy" class="wb-remote__why" role="status" data-testid="scenario-why-empty">{{ scenarioWhy }}</p>
       </template>
 
+      <!-- LAW §9 v1.20 (власник 2026-09-29, «так»): Інтегралик ТЕКСТОМ — тихо. Розмова лише тут,
+           на телефоні; ноутбук вікна не відкриває і кладе матеріал на підготовчу сторінку одразу
+           після поточної, не перемикаючи екран. «Показати» — перейти туди. -->
+      <section class="wb-remote__ai" data-testid="remote-ai">
+        <ol v-if="assistantTurns.length" ref="aiLogEl" class="wb-remote__ai-log" aria-live="polite">
+          <li v-for="turn in assistantTurns" :key="turn.requestId" class="wb-remote__ai-turn" data-testid="remote-ai-turn">
+            <p v-if="turn.text" class="wb-remote__ai-me">{{ turn.text }}</p>
+            <p v-if="turn.status === 'sent' || turn.status === 'thinking'" class="wb-remote__ai-bot wb-remote__ai-bot--wait">
+              {{ t('winterboard.remote.assistant.thinking') }}
+            </p>
+            <template v-else>
+              <p
+                v-if="turn.reply"
+                class="wb-remote__ai-bot"
+                :class="{ 'wb-remote__ai-bot--error': turn.status === 'error' }"
+                data-testid="remote-ai-reply"
+              >{{ turn.reply }}</p>
+              <div v-if="turn.status === 'confirm'" class="wb-remote__ai-actions">
+                <button type="button" class="wb-remote__ai-btn" data-testid="remote-ai-yes" :disabled="!isReady" @click="answerAssistant(turn, 'yes')">
+                  {{ t('winterboard.remote.assistant.yes') }}
+                </button>
+                <button type="button" class="wb-remote__ai-btn wb-remote__ai-btn--quiet" data-testid="remote-ai-no" :disabled="!isReady" @click="answerAssistant(turn, 'no')">
+                  {{ t('winterboard.remote.assistant.no') }}
+                </button>
+              </div>
+              <div v-else-if="turn.status === 'done' && turn.pageIndex !== undefined" class="wb-remote__ai-actions">
+                <span class="wb-remote__ai-ready" data-testid="remote-ai-ready">{{ t('winterboard.remote.assistant.ready', { n: turn.pageIndex + 1 }) }}</span>
+                <button type="button" class="wb-remote__ai-btn" data-testid="remote-ai-show" :disabled="!isReady" @click="showPrepared(turn)">
+                  {{ t('winterboard.remote.assistant.show') }}
+                </button>
+              </div>
+              <p v-else-if="turn.status === 'cancelled'" class="wb-remote__ai-bot wb-remote__ai-bot--muted">
+                {{ t('winterboard.remote.assistant.cancelled') }}
+              </p>
+            </template>
+          </li>
+        </ol>
+        <form class="wb-remote__ai-row" @submit.prevent="sendAssistant">
+          <input
+            v-model="assistantInput"
+            type="text"
+            class="wb-remote__ai-input"
+            data-testid="remote-ai-input"
+            maxlength="300"
+            enterkeyhint="send"
+            :placeholder="t('winterboard.remote.assistant.placeholder')"
+            :disabled="!isReady || assistantWaiting"
+          />
+          <button
+            type="submit"
+            class="wb-remote__ai-send"
+            data-testid="remote-ai-send"
+            :aria-label="t('winterboard.remote.assistant.send')"
+            :disabled="!isReady || assistantWaiting || !assistantInput.trim()"
+          >➤</button>
+        </form>
+      </section>
+
       <!-- LAW §9 v1.14 (власник 2026-09-28, погоджено): згорнути вікно Інтегралика на
            ноутбуці — те саме, що «–» у його шапці; розмова лишається. Одразу над «Говорю». -->
       <button
@@ -480,7 +538,7 @@
  * подвійний тап або загублене повідомлення не зсуває на дві сторінки.
  * Канал lossy — загублену команду вчитель тисне ще раз (без retry).
  */
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import authApi from '@/modules/auth/api/authApi'
@@ -494,7 +552,8 @@ import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
 import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
-import type { RemoteStateDetail, RemoteCap } from '../composables/useRemoteChannel'
+import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus } from '../composables/useRemoteChannel'
+import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
@@ -540,6 +599,73 @@ const remoteAddress = computed(() => remoteEntryUrl().replace(/^https?:\/\//, ''
 const pageIndex = ref<number | null>(null)
 const pageCount = ref<number | null>(null)
 const lastPhrase = ref('')
+
+// ── v1.20 (LAW §9): Інтегралик текстом — розмова лише тут, на телефоні ──────────
+// Ноутбук шле лише ОСТАННЮ відповідь (`assistant_reply`) — діалог складаємо самі: свій текст +
+// відповіді за request_id. Кілька останніх реплік — екран телефона невеликий.
+interface AssistantTurn {
+  requestId: string
+  text: string
+  status: RemoteAssistantReplyStatus | 'sent'
+  reply?: string
+  pageIndex?: number
+}
+const ASSISTANT_TURNS_MAX = 4
+const assistantTurns = ref<AssistantTurn[]>([])
+const assistantInput = ref('')
+// Журнал невисокий (кнопки «Говорю» не зсуваємо за край) — тож завжди видно останню репліку
+const aiLogEl = ref<HTMLElement | null>(null)
+watch(assistantTurns, () => {
+  void nextTick(() => { if (aiLogEl.value) aiLogEl.value.scrollTop = aiLogEl.value.scrollHeight })
+}, { deep: true })
+/** Поки попередній запит без відповіді — нового не шлемо (ноутбук відповів би «зачекайте»). */
+const assistantWaiting = computed(() => {
+  const last = assistantTurns.value[assistantTurns.value.length - 1]
+  return !!last && (last.status === 'sent' || last.status === 'thinking')
+})
+
+function sendAssistant(): void {
+  const text = assistantInput.value.trim().slice(0, 300)
+  if (!text || !isReady.value || assistantWaiting.value) return
+  const requestId = newRequestId()
+  if (!sendCmd('assistant.ask', { request_id: requestId, text })) return
+  // Нове питання скасовує підтвердження, що чекає (ноутбук так само) — старі «Так/Ні» гаснуть
+  const turns = assistantTurns.value.map((t) => (t.status === 'confirm' ? { ...t, status: 'cancelled' as const } : t))
+  assistantTurns.value = [...turns, { requestId, text, status: 'sent' as const }].slice(-ASSISTANT_TURNS_MAX)
+  assistantInput.value = ''
+}
+
+function applyAssistantReply(r: RemoteAssistantReplyDetail | undefined): void {
+  if (!r) return
+  const turns = assistantTurns.value
+  const i = turns.findIndex((t) => t.requestId === r.requestId)
+  const next: AssistantTurn = {
+    ...(i === -1 ? { requestId: r.requestId, text: '' } : turns[i]),
+    status: r.status,
+    reply: r.text,
+    pageIndex: r.pageIndex,
+  }
+  if (i !== -1) {
+    const cur = turns[i]
+    if (cur.status === next.status && cur.reply === next.reply && cur.pageIndex === next.pageIndex) return
+    assistantTurns.value = turns.map((t, k) => (k === i ? next : t))
+    return
+  }
+  // Відповідь на запит, якого цей пульт не бачив (перезавантажився) — показати, що є
+  assistantTurns.value = [...turns, next].slice(-ASSISTANT_TURNS_MAX)
+}
+
+function answerAssistant(turn: AssistantTurn, choice: 'yes' | 'no'): void {
+  if (turn.status !== 'confirm' || !isReady.value) return
+  if (!sendCmd('assistant.answer', { request_id: turn.requestId, choice })) return
+  assistantTurns.value = assistantTurns.value.map((t) => (t.requestId === turn.requestId ? { ...t, status: 'thinking' as const } : t))
+}
+
+/** «Показати» — дошка переходить на підготовчу сторінку (той самий page.goto, що ◀/▶). */
+function showPrepared(turn: AssistantTurn): void {
+  if (turn.pageIndex === undefined || !isReady.value) return
+  sendCmd('page.goto', { index: turn.pageIndex })
+}
 /** v1.2 — картки задач на поточній сторінці (з remote.state ноутбука) */
 const cards = ref<{ count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean } | null>(null)
 const hasCards = computed(() => !!cards.value && cards.value.count > 0)
@@ -770,6 +896,7 @@ const channel = useRemoteChannel({
     scenario.value = s.scenario ?? null
     boardBusy.value = s.busy === 'saving_template'
     bgPhoto.value = s.bgPhoto === true
+    applyAssistantReply(s.assistantReply)
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
     reasonKey.value = s.frozen ? 'boardFrozen' : null
@@ -932,6 +1059,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
+  | 'assistant.ask' | 'assistant.answer'
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
@@ -1255,6 +1383,39 @@ onBeforeUnmount(() => {
 
 /* v1.14: «– Згорнути вікно Інтегралика» — другорядна, як «🎙 Сказати тему» в аркуші «Відео»;
    пришпилена знизу разом із «Говорю», одразу над нею (auto-відступ бере вона, а не «Говорю») */
+/* v1.20: Інтегралик текстом — одразу над «– Згорнути вікно Інтегралика» (margin-top: auto тепер тут) */
+.wb-remote__ai { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.wb-remote__ai + .wb-remote__assistant-min { margin-top: 0; }
+.wb-remote__ai-log {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;
+  max-height: 22vh; overflow-y: auto; user-select: text; -webkit-user-select: text;
+}
+.wb-remote__ai-turn { display: flex; flex-direction: column; gap: 4px; }
+.wb-remote__ai-me, .wb-remote__ai-bot { margin: 0; padding: 8px 10px; border-radius: 12px; font-size: 15px; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
+.wb-remote__ai-me { align-self: flex-end; max-width: 85%; background: #1e3a8a; }
+.wb-remote__ai-bot { align-self: flex-start; max-width: 92%; background: var(--surface); }
+.wb-remote__ai-bot--wait, .wb-remote__ai-bot--muted { color: var(--muted); }
+.wb-remote__ai-bot--error { border: 1px solid var(--danger); }
+.wb-remote__ai-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wb-remote__ai-ready { color: var(--muted); font-size: 14px; }
+.wb-remote__ai-btn {
+  min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+  font-size: 15px; font-weight: 600; -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__ai-btn--quiet { background: var(--surface-2); color: var(--text); }
+.wb-remote__ai-btn:disabled { opacity: .5; }
+.wb-remote__ai-row { display: flex; gap: 8px; margin: 0; }
+.wb-remote__ai-input {
+  flex: 1; min-width: 0; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-3);
+  color: var(--text); padding: 0 12px; font-size: 16px; user-select: text; -webkit-user-select: text;
+}
+.wb-remote__ai-input:disabled { opacity: .6; }
+.wb-remote__ai-send {
+  flex: none; width: 52px; min-height: 48px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+  font-size: 18px; -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__ai-send:disabled { opacity: .4; }
+
 .wb-remote__assistant-min {
   margin-top: auto; width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600;

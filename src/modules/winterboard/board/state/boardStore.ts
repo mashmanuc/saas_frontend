@@ -1269,8 +1269,10 @@ export const useWBStore = defineStore('wb-board', {
 
     // ── Stroke Actions ───────────────────────────────────────────────────
 
-    addStroke(stroke: WBStroke, opts?: { skipHistory?: boolean }): void {
-      const pageIndex = this.currentPageIndex
+    addStroke(stroke: WBStroke, opts?: { skipHistory?: boolean; pageId?: string }): void {
+      // pageId — сторінка, якої на екрані немає (LAW §9 v1.20: текст Інтегралика з пульта
+      // лягає на підготовчу сторінку); без нього — поточна, як і було.
+      const pageIndex = opts?.pageId ? this.pages.findIndex((p) => p.id === opts.pageId) : this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) {
         console.error('[WB:Store] addStroke: no page at index', pageIndex)
@@ -1293,8 +1295,9 @@ export const useWBStore = defineStore('wb-board', {
 
       if (!opts?.skipHistory) {
         const _s = { ...stroke }
+        const _pid = opts?.pageId
         const cmd: WBCommand = {
-          apply: () => this.addStroke(_s, { skipHistory: true }),
+          apply: () => this.addStroke(_s, { skipHistory: true, pageId: _pid }),
           revert: () => this.deleteStroke(_s.id, { skipHistory: true }),
         }
         this.undoStack = trimStack([...this.undoStack, cmd])
@@ -2597,6 +2600,90 @@ export const useWBStore = defineStore('wb-board', {
           },
           timestamp: Date.now(),
         })
+      }
+    },
+
+    /**
+     * LAW §9 v1.20 (Інтегралик текстом з пульта): порожня сторінка ОДРАЗУ після поточної,
+     * БЕЗ переходу — екран (проєктор) лишається на своїй сторінці. Штатний `page_add` з
+     * `insertAt` (як «Дублювати сторінку») і `activate: false` — програвач запису теж не
+     * перемикається. До історії ↶ не йде: матеріал з пульта ↶ ноутбука не скасовує.
+     * Повертає id сторінки або '' на стелі (50).
+     */
+    insertPageAfterCurrent(opts?: { name?: string }): string {
+      if (this.pages.length >= 50) {
+        console.warn('[WB:Store] Max 50 pages reached')
+        return ''
+      }
+      const currentPage = this.pages[this.currentPageIndex]
+      const newPage: WBPage = {
+        id: generatePageId(),
+        name: opts?.name ?? `Page ${this.pages.length + 1}`,
+        strokes: [],
+        assets: [],
+        background: 'white',
+        backgroundColor: '#ffffff',
+        grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
+      }
+      const insertAt = this.currentPageIndex + 1
+      const pagesCopy = [...this.pages]
+      pagesCopy.splice(insertAt, 0, newPage)
+      this.pages = pagesCopy
+      this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'page_add',
+          page_id: newPage.id,
+          payload: {
+            page: {
+              id: newPage.id,
+              name: newPage.name,
+              background: newPage.background,
+              backgroundColor: newPage.backgroundColor,
+              grid: newPage.grid,
+            },
+            insertAt,
+            activate: false,
+          },
+          timestamp: Date.now(),
+        })
+      }
+      return newPage.id
+    },
+
+    /**
+     * Програвач запису (`applyReplayOperation`, `page_add`) щойно додав сторінку в кінець
+     * (`addPage` на неї й перейшов). Ставить її туди, куди поставив автор (`insertAt`), і
+     * лишає екран там, де він був у автора: `keepPageId` — сторінка до `page_add`, коли автор
+     * не переходив (`activate: false`); `null` — перейти на нову, як і раніше.
+     */
+    placeReplayedPage(pageId: string, insertAt: number | undefined, keepPageId: string | null): void {
+      const from = this.pages.findIndex((p) => p.id === pageId)
+      if (from === -1) return
+      if (typeof insertAt === 'number' && Number.isInteger(insertAt) && insertAt >= 0 && insertAt < from) {
+        const pagesCopy = [...this.pages]
+        const [page] = pagesCopy.splice(from, 1)
+        pagesCopy.splice(insertAt, 0, page)
+        this.pages = pagesCopy
+      }
+      const target = keepPageId ?? pageId
+      const idx = this.pages.findIndex((p) => p.id === target)
+      if (idx !== -1) this.currentPageIndex = idx
+    },
+
+    /**
+     * LAW §9 v1.20: дії всередині `fn` не лишаються в історії ↶ (матеріал з пульта лежить на
+     * сторінці, якої на екрані немає: `deleteAsset`/`deleteStroke` шукають лише на поточній, і
+     * ↶ учителя «з'їдався б» непомітно). Історія до й redo — як були.
+     */
+    async runWithoutHistory<T>(fn: () => Promise<T>): Promise<T> {
+      const undoBefore = this.undoStack
+      const redoBefore = this.redoStack
+      try {
+        return await fn()
+      } finally {
+        this.undoStack = this.undoStack.filter((cmd) => undoBefore.includes(cmd))
+        this.redoStack = redoBefore
       }
     },
 

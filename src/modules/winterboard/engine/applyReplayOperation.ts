@@ -59,6 +59,8 @@ export interface ReplayStoreApi {
     height?: number
   }) => void
   goToPage: (index: number) => void
+  /** `page_add` з `insertAt` / `activate: false` (LAW §9 v1.20) — boardStore.placeReplayedPage */
+  placeReplayedPage?: (pageId: string, insertAt: number | undefined, keepPageId: string | null) => void
   deletePage: (index: number) => void
   clearPage: () => void
   // Phase 20+ board meta ops
@@ -360,13 +362,18 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         const pageData = payload.page as Record<string, unknown> | undefined
         if (pageData) {
           const originalId = (pageData.id as string) || op.page_id || ''
+          // LAW §9 v1.20: автор додав сторінку, не переходячи на неї (підготовча сторінка
+          // Інтегралика з пульта), — і програвач не перемикає екран.
+          const activate = payload.activate !== false
           if (originalId && ensuredPageIds.has(originalId)) {
             const existingIdx = store.pages.findIndex((p) => p.id === originalId)
-            if (existingIdx >= 0 && existingIdx !== store.currentPageIndex) {
+            if (activate && existingIdx >= 0 && existingIdx !== store.currentPageIndex) {
               store.goToPage(existingIdx)
             }
             break
           }
+          const keepPageId = activate ? null : (store.pages[store.currentPageIndex]?.id ?? null)
+          const countBefore = store.pages.length
           store.addPage({
             name: (pageData.name as string) ?? '',
             background: (pageData.background as WBPageBackground) ?? 'white',
@@ -380,6 +387,12 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
               (lastPage as { id: string }).id = originalId
             }
             ensuredPageIds.add(originalId)
+          }
+          // `insertAt` («Дублювати сторінку», повернення видаленої, v1.20) — туди ж, куди поставив
+          // автор. Досі сторінка лягала в кінець, і перехід за номером (`page_navigate`) далі вів не туди.
+          const added = store.pages.length > countBefore ? store.pages[store.pages.length - 1] : undefined
+          if (added && store.placeReplayedPage && (typeof payload.insertAt === 'number' || !activate)) {
+            store.placeReplayedPage(added.id, payload.insertAt as number | undefined, keepPageId)
           }
         }
         break

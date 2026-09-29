@@ -337,6 +337,7 @@ import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
 import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from './assistantTips'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
+import { createRemoteAssistant } from './remoteAssistant'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { setFloatingObstacle } from '@/modules/winterboard/board/floatingObstacles'
@@ -1944,6 +1945,55 @@ function publishCorridorState() {
 }
 watch(() => JSON.stringify(corridor.remoteSnapshot()), publishCorridorState)
 
+// ── LAW §9 v1.20: Інтегралик ТЕКСТОМ з пульта — окрема розмова, вікно не відкривається ──
+// Пульт → useBoardRemote → подія сюди; відповідь — подією назад (модулі не імпортують
+// один одного, як m4sh:integralyk-ask). Матеріал — на підготовчу сторінку (remoteAssistant.js).
+const REMOTE_ASK_EVENT = 'm4sh:integralyk-remote-ask'
+const REMOTE_ANSWER_EVENT = 'm4sh:integralyk-remote-answer'
+const REMOTE_REPLY_EVENT = 'm4sh:integralyk-remote-reply'
+const remoteAssistant = createRemoteAssistant({
+  boardId: () => currentBoardId.value,
+  locale: () => currentLocale.value,
+  page: () => currentPage(),
+  canUse: () => {
+    if (!enabled.value) return i18n.global.t('winterboard.remote.assistant.unavailableHere')
+    if (!integralykOn.value) return i18n.global.t('winterboard.remote.assistant.off')
+    if (serverAiOff.value) return INTEGRALYK_SERVER_DISABLED_MESSAGE
+    return true
+  },
+  parse: parseAi,
+  buildSummary: buildBoardSummary,
+  buildTools: buildToolCatalog,
+  runAction: runBoardAction,
+  getStore: async () => (await import('@/modules/winterboard/board/state/boardStore')).useWBStore(),
+  applyCorridor: (c) => corridor.applyCorridor(c),
+  newConversationId,
+  isLimitError,
+  isServerDisabled: (e) => {
+    const off = isIntegralykServerDisabled(e)
+    if (off) serverAiOff.value = true
+    return off
+  },
+  serverDisabledText: INTEGRALYK_SERVER_DISABLED_MESSAGE,
+  humanError: (e) => humanErrorMessage(e, ERR_MSG, 'Помилка AI'),
+  errorCode: (e) => errorCodeOf(e?.response?.data),
+  t: (key, params) => i18n.global.t(key, params ?? {}),
+  reply: (reply) => window.dispatchEvent(new CustomEvent(REMOTE_REPLY_EVENT, {
+    detail: { boardId: currentBoardId.value, reply },
+  })),
+})
+function onRemoteAssistantAsk(e) {
+  const d = e?.detail
+  if (!d || !d.boardId || d.boardId !== currentBoardId.value) return
+  d.accepted = true   // useBoardRemote: палітра на цій дошці є — телефон дочекається відповіді
+  void remoteAssistant.ask({ requestId: d.requestId, text: d.text })
+}
+function onRemoteAssistantAnswer(e) {
+  const d = e?.detail
+  if (!d || !d.boardId || d.boardId !== currentBoardId.value) return
+  void remoteAssistant.answer({ requestId: d.requestId, choice: d.choice })
+}
+
 function onIntegralykAsk(e) {
   const text = String(e?.detail?.text ?? '').trim()
   if (!enabled.value || !text) return
@@ -1967,6 +2017,8 @@ function onKeydown(e) {
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   window.addEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.addEventListener(REMOTE_ASK_EVENT, onRemoteAssistantAsk)
+  window.addEventListener(REMOTE_ANSWER_EVENT, onRemoteAssistantAnswer)
   window.addEventListener(EVENT_COMMAND, onCorridorRemoteCommand)
   window.addEventListener(EVENT_STATE_REQUEST, publishCorridorState)
   restoreFabPos()
@@ -1999,6 +2051,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.removeEventListener(REMOTE_ASK_EVENT, onRemoteAssistantAsk)
+  window.removeEventListener(REMOTE_ANSWER_EVENT, onRemoteAssistantAnswer)
+  remoteAssistant.dispose()
   window.removeEventListener(EVENT_COMMAND, onCorridorRemoteCommand)
   window.removeEventListener(EVENT_STATE_REQUEST, publishCorridorState)
   window.removeEventListener('mousemove', onEyesMove)

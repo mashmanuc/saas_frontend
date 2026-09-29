@@ -85,6 +85,30 @@ export interface RemoteStateDetail {
   busy?: 'saving_template'
   /** v1.19 — на поточній сторінці фото-фон: у аркуші «Фото» є «Прибрати фон сторінки» */
   bgPhoto?: boolean
+  /** v1.20 — остання відповідь Інтегралика на запит із пульта (діалог пульт складає сам) */
+  assistantReply?: RemoteAssistantReplyDetail
+}
+
+export type RemoteAssistantReplyStatus = 'thinking' | 'reply' | 'confirm' | 'done' | 'error' | 'cancelled'
+export interface RemoteAssistantReplyDetail {
+  requestId: string
+  status: RemoteAssistantReplyStatus
+  text?: string
+  /** лише в done — куди лягло (поточний номер підготовчої сторінки на ноутбуці) */
+  pageIndex?: number
+}
+
+const ASSISTANT_REPLY_STATUSES: readonly RemoteAssistantReplyStatus[] = ['thinking', 'reply', 'confirm', 'done', 'error', 'cancelled']
+
+/** v1.20: закритий набір, як на сервері; зіпсоване поле відкидаємо цілим, стан лишається валідним. */
+export function parseRemoteAssistantReply(raw: any): RemoteAssistantReplyDetail | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  if (typeof raw.request_id !== 'string' || !raw.request_id) return undefined
+  if (!ASSISTANT_REPLY_STATUSES.includes(raw.status)) return undefined
+  const out: RemoteAssistantReplyDetail = { requestId: raw.request_id, status: raw.status }
+  if (typeof raw.text === 'string' && raw.text) out.text = raw.text
+  if (raw.status === 'done' && Number.isInteger(raw.page_index) && raw.page_index >= 0) out.pageIndex = raw.page_index
+  return out
 }
 
 /** v1.18: закритий набір, як на сервері; інше — поля немає. */
@@ -329,6 +353,8 @@ export function useRemoteChannel(opts: {
         if (busy) detail.busy = busy
         // v1.19: лише справжній boolean, як і на сервері
         if (typeof msg.bg_photo === 'boolean') detail.bgPhoto = msg.bg_photo
+        const assistantReply = parseRemoteAssistantReply(msg.assistant_reply)
+        if (assistantReply) detail.assistantReply = assistantReply
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

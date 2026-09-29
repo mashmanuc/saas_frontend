@@ -503,11 +503,13 @@ describe('INV-SCN-P3 · кнопка «📋 Сценарій» на пульті
     expect(btn(w).exists()).toBe(true)
   })
 
-  it('стоїть одразу під «+ Фото / + Відео» і над «– Згорнути вікно Інтегралика»; ядро не зсунулось', async () => {
+  it('стоїть одразу під «+ Фото / + Відео»; нижче — Інтегралик текстом (v1.20) і «– Згорнути вікно Інтегралика»; ядро не зсунулось', async () => {
     const w = await connected({ caps: CAPS, scenario: scenario() })
     const slot = w.find('[data-testid="scenario-slot"]').element as HTMLElement
     expect(slot.previousElementSibling?.getAttribute('data-testid')).toBe('add-row')
-    expect(slot.nextElementSibling?.getAttribute('data-testid')).toBe('assistant-minimize')
+    // LAW §9 v1.20 (власник 2026-09-29, «так»): поле Інтегралика — рядком над «– Згорнути…»
+    expect(slot.nextElementSibling?.getAttribute('data-testid')).toBe('remote-ai')
+    expect(slot.nextElementSibling?.nextElementSibling?.getAttribute('data-testid')).toBe('assistant-minimize')
     expect(w.findAll('.wb-remote__btn')).toHaveLength(4)         // ◀ ▶ «Нова сторінка» «Відмінити»
     // ядро — вище за нову кнопку в документі, «Говорю» — нижче
     const grid = w.find('.wb-remote__grid').element
