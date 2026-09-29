@@ -51,7 +51,7 @@
           <h2 class="help-article__title">{{ current.article.title }}</h2>
           <p class="help-article__summary">{{ current.article.summary }}</p>
           <!-- eslint-disable-next-line vue/no-v-html -- довірений статичний контент (не user-input) -->
-          <div class="help-article__body" v-html="current.article.body" />
+          <div class="help-article__body" v-html="current.article.body" @click="onBodyClick" />
         </template>
         <p v-else class="help-empty">{{ t('help.page.notFound') }}</p>
       </main>
@@ -94,6 +94,20 @@ function select(slug: string): void {
   mobileNavOpen.value = false
   if (slug === currentSlug.value) return
   router.push({ name: 'help', params: { slug } })
+}
+
+/**
+ * Посилання всередині статті на розділи кабінету («Що де в меню») — переходом роутера,
+ * без перезавантаження сторінки. Ctrl/⌘/Shift-клік (нова вкладка) і зовнішні адреси —
+ * як звичайне посилання.
+ */
+function onBodyClick(e: MouseEvent): void {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  const link = (e.target as HTMLElement | null)?.closest?.('a') as HTMLAnchorElement | null
+  const href = link?.getAttribute('href') ?? ''
+  if (!href.startsWith('/') || href.startsWith('//')) return
+  e.preventDefault()
+  router.push(href)
 }
 </script>
 
@@ -231,6 +245,45 @@ function select(slug: string): void {
 .help-article__body :deep(strong) {
   color: var(--text-primary, #111827);
   font-weight: 600;
+}
+/* «Що де в меню» (власник 2026-09-29): назва пункту меню зліва, що я там роблю — справа.
+   Назви вирівняні в колонку, як у самому меню, — читається за секунди. */
+.help-article__body :deep(.help-menu-map) {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: var(--surface-2, #f8fafc);
+  border-radius: 10px;
+}
+.help-article__body :deep(.help-menu-map dt) {
+  color: var(--text-primary, #111827);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+/* Назва — посилання на розділ: видно, що натискається, але читається як назва з меню. */
+.help-article__body :deep(.help-menu-map dt a) {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.help-article__body :deep(.help-menu-map dt a:hover),
+.help-article__body :deep(.help-menu-map dt a:focus-visible) {
+  color: var(--accent, #0f766e);
+  text-decoration-style: solid;
+}
+.help-article__body :deep(.help-menu-map dd) {
+  margin: 0;
+  color: var(--text-primary, #374151);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+@media (max-width: 420px) {
+  /* На вузькому телефоні — одна колонка: назва, під нею пояснення. */
+  .help-article__body :deep(.help-menu-map) { grid-template-columns: 1fr; gap: 0; }
+  .help-article__body :deep(.help-menu-map dd) { margin-bottom: 8px; }
 }
 
 /* ── Mobile ── */

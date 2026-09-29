@@ -23,6 +23,16 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
         summary: 'A one-minute overview: the board, lessons, students.',
         body: `
 <p>M4SH is an interactive whiteboard for tutors. You prepare a lesson, invite your student via a link, and run the class live: you draw, add objects and materials, and the lesson can be recorded and reviewed later.</p>
+<h3>What's where in the menu</h3>
+<dl class="help-menu-map">
+  <dt><a href="/tutor/schedule">Schedule</a></dt><dd>this is where I keep my lesson schedule</dd>
+  <dt><a href="/knowledge/my-lessons">My Lessons</a></dt><dd>this is where I run lessons and events</dd>
+  <dt><a href="/winterboard/boards">Lesson Studio</a></dt><dd>this is where I prepare for lessons</dd>
+  <dt><a href="/winterboard/replays">My Replays</a></dt><dd>this is where I keep my lesson recordings — they appear when I turn on “Record lesson” during a lesson</dd>
+  <dt><a href="/winterboard/library">Materials</a></dt><dd>this is where I add and store materials</dd>
+  <dt><a href="/remote">Phone remote</a></dt><dd>I open it on my phone to control the lesson — the remote works in a lesson, not in the Studio</dd>
+  <dt><a href="/tutor/students">My Students</a></dt><dd>this is where I invite students and talk with them</dd>
+</dl>
 <h3>Three steps to your first lesson</h3>
 <ol>
   <li><strong>Prepare the lesson</strong> — in "Lesson Studio", open the constructor, draw and add objects and materials (or generate a lesson automatically).</li>
