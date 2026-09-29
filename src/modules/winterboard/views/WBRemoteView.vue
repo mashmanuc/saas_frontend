@@ -1,5 +1,11 @@
 <template>
   <div class="wb-remote" :data-state="channel.state.value" :data-sheet="sheet ?? ''">
+    <!-- LAW §9 v1.21 (власник 2026-09-29): «щоб в пультові зверху писав аккаунт сам… електрична почта.
+         Самого верху» — зайшов не тим акаунтом і думав, що поламалось. Пошта — над шапкою, на всіх
+         екранах пульта (у v2 акаунт був лише за шестернею). -->
+    <p v-if="accountEmail" class="wb-remote__account" data-testid="remote-account">
+      {{ t('winterboard.remote.loggedInAs') }} <strong>{{ accountEmail }}</strong>
+    </p>
     <!-- A. Статус: вихід · зв'язок і назва уроку · «Підключити» / шестерня
          (пульт v2, ТЗ TZ_REMOTE_LAYOUT_V2 §2: акаунт, предмет, мова, «Відключити» — за шестернею) -->
     <header class="wb-remote__top">
@@ -615,9 +621,18 @@ const assistantTurns = ref<AssistantTurn[]>([])
 const assistantInput = ref('')
 // Журнал невисокий (кнопки «Говорю» не зсуваємо за край) — тож завжди видно останню репліку
 const aiLogEl = ref<HTMLElement | null>(null)
-watch(assistantTurns, () => {
-  void nextTick(() => { if (aiLogEl.value) aiLogEl.value.scrollTop = aiLogEl.value.scrollHeight })
-}, { deep: true })
+function scrollAiLogToEnd(): void {
+  if (aiLogEl.value) aiLogEl.value.scrollTop = aiLogEl.value.scrollHeight
+}
+watch(assistantTurns, () => { void nextTick(scrollAiLogToEnd) }, { deep: true })
+// Висота журналу залежить від екрана (відкрилась чи закрилась клавіатура, поворот) — лишаємось на
+// останній репліці, інакше після зміни висоти вона ховається під нижній край журналу
+watch(aiLogEl, (el, _old, onCleanup) => {
+  if (!el || typeof ResizeObserver === 'undefined') return
+  const ro = new ResizeObserver(() => scrollAiLogToEnd())
+  ro.observe(el)
+  onCleanup(() => ro.disconnect())
+})
 /** Поки попередній запит без відповіді — нового не шлемо (ноутбук відповів би «зачекайте»). */
 const assistantWaiting = computed(() => {
   const last = assistantTurns.value[assistantTurns.value.length - 1]
@@ -1297,6 +1312,13 @@ onBeforeUnmount(() => {
   user-select: none; -webkit-user-select: none; touch-action: manipulation;
 }
 
+/* v1.21: пошта акаунта — самим верхом, на всіх екранах пульта; довга — з трикрапкою */
+.wb-remote__account {
+  margin: 0 0 -4px; font-size: 13px; line-height: 1.3; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: text; -webkit-user-select: text;
+}
+.wb-remote__account strong { color: var(--text); font-weight: 600; }
+
 /* A. Статус */
 .wb-remote__top { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .wb-remote__home {
@@ -1412,7 +1434,10 @@ onBeforeUnmount(() => {
 .wb-remote__ai + .wb-remote__assistant-min { margin-top: 0; }
 .wb-remote__ai-log {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;
-  max-height: 22vh; overflow-y: auto; user-select: text; -webkit-user-select: text;
+  /* решта пульта займає ≈670 px (виміряно на 360–412 px завширшки): журнал бере залишок екрана, щоб
+     «Говорю» не пішла за нижній край; щонайменше одна бульбашка, щонайбільше 22 % екрана */
+  max-height: min(22vh, max(64px, calc(100dvh - 680px)));
+  overflow-y: auto; user-select: text; -webkit-user-select: text;
 }
 .wb-remote__ai-turn { display: flex; flex-direction: column; gap: 4px; }
 .wb-remote__ai-me, .wb-remote__ai-bot { margin: 0; padding: 8px 10px; border-radius: 12px; font-size: 15px; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }

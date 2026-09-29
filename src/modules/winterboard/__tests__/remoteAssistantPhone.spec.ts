@@ -98,6 +98,26 @@ describe('розбір assistant_reply — дзеркало сервера', () 
     'зіпсоване відкидається: %s', (_n, raw) => { expect(parseRemoteAssistantReply(raw)).toBeUndefined() })
 })
 
+describe('пошта акаунта — самим верхом пульта (LAW §9 v1.21, власник 2026-09-29)', () => {
+  const R = (uk as any).winterboard.remote
+
+  it('на робочому екрані — перший рядок пульта, над шапкою', async () => {
+    const w = await connected()
+    const root = w.find('.wb-remote').element as HTMLElement
+    const first = root.firstElementChild as HTMLElement
+    expect(first.getAttribute('data-testid')).toBe('remote-account')
+    expect(first.textContent!.replace(/\s+/g, ' ').trim()).toBe(`${R.loggedInAs} t@m4sh.local`)
+    expect(first.nextElementSibling?.classList.contains('wb-remote__top')).toBe(true)
+  })
+
+  it('і до підключення до дошки (там, де «не той акаунт» виглядав як поломка)', async () => {
+    const w = mount(WBRemoteView, { attachTo: document.body, global: { plugins: [i18n()], stubs: { RouterLink: true } } })
+    mounted.push(w)
+    await flushPromises()
+    expect(w.find('[data-testid="remote-account"]').text()).toContain('t@m4sh.local')
+  })
+})
+
 describe('пульт: Інтегралик текстом', () => {
   it('поле й «➤» — рядком над «– Згорнути вікно Інтегралика»', async () => {
     const w = await connected()
