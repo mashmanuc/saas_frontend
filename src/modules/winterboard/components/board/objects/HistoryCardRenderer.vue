@@ -45,23 +45,22 @@
 
     <div ref="bodyEl" class="history-card__body">
       <div ref="flowEl" class="history-card__flow">
-        <!-- 1 · медіа. Немає зображення — зони немає разом із відступом. -->
+        <!-- 1 · медіа. Немає зображення — зони немає разом із відступом.
+             2026-09-30 (власник, «так, роби»): автор і ліцензія — у підвалі «ⓘ», а не рядком
+             під картинкою (там лягало сире поле Вікісховища: «Chess x0145.svg: Betalph
+             derivative work…»). Розміри з даних бронюють місце до завантаження, а `load`/`error`
+             перемірюють картку: без цього висоту міряли до картинки, і вміст ішов під скрол. -->
         <figure v-if="image" class="history-card__media">
           <img
             class="history-card__image"
             :src="image.url"
             :alt="data.title"
+            :width="image.width || undefined"
+            :height="image.height || undefined"
             loading="lazy"
+            @load="onImageSettled"
+            @error="onImageSettled"
           >
-          <figcaption class="history-card__attribution">
-            <button
-              type="button"
-              class="history-card__attribution-toggle"
-              :aria-expanded="attributionOpen"
-              @click.stop="attributionOpen = !attributionOpen"
-            >{{ attributionOpen ? '⌄' : '›' }} {{ shortAuthor }}</button>
-            <span v-if="attributionOpen" class="history-card__attribution-full">{{ image.attribution }}</span>
-          </figcaption>
         </figure>
 
         <!-- 2 · заголовок. Уся зона — перемикач стану. Над ним — чому пов'язана
@@ -154,7 +153,7 @@
         </div>
 
         <!-- 4 · підвал джерел — той самий вигляд, що в theory_card. -->
-        <div v-if="sources.length" class="history-card__sources">
+        <div v-if="sourceCount" class="history-card__sources">
           <button
             type="button"
             class="history-card__sources-toggle"
@@ -162,7 +161,7 @@
             :aria-label="sourceToggleLabel"
             :title="sourceToggleLabel"
             @click.stop="sourcesOpen = !sourcesOpen"
-          ><span aria-hidden="true">ⓘ</span><span>{{ sources.length }}</span></button>
+          ><span aria-hidden="true">ⓘ</span><span>{{ sourceCount }}</span></button>
           <ol v-if="sourcesOpen" class="history-card__sources-list">
             <li v-for="(ref, i) in sources" :key="i" class="history-card__source">
               <!-- Клікабельно лише справжнє веб-посилання: інакше `javascript:`
@@ -177,6 +176,12 @@
                 · {{ labels.retrieved }} {{ retrievedDay(ref.retrieved_at) }}
               </span>
             </li>
+            <li v-if="image" class="history-card__source" data-testid="history-card-image-source">
+              {{ labels.image }}:
+              <a v-if="isWebUrl(image.file_page)" :href="image.file_page" target="_blank" rel="noopener noreferrer">{{ image.author }}</a>
+              <span v-else>{{ image.author }}</span>
+              <span class="history-card__source-meta"> · {{ image.license }}</span>
+            </li>
           </ol>
         </div>
       </div>
@@ -185,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -284,11 +289,11 @@ const VARIANT_STYLES = {
 
 /** Підписи мовою МАТЕРІАЛУ, не UI-локалі — дзеркало theory_card. */
 const LABELS: Record<string, { mixed: string; oldStyle: string; toMap: string; retrieved: string;
-  nextActions: string }> = {
+  nextActions: string; image: string }> = {
   uk: { mixed: 'джерела розходяться', oldStyle: 'за старим стилем', toMap: 'на карту', retrieved: 'отримано',
-        nextActions: 'Що показати далі' },
+        nextActions: 'Що показати далі', image: 'Зображення' },
   en: { mixed: 'sources disagree', oldStyle: 'old style', toMap: 'to map', retrieved: 'retrieved',
-        nextActions: 'What to show next' },
+        nextActions: 'What to show next', image: 'Image' },
 }
 const lang = computed(() => (data.value.content_language === 'en' ? 'en' : 'uk'))
 const labels = computed(() => LABELS[lang.value])
@@ -303,8 +308,6 @@ const image = computed(() => {
   const img = data.value.image
   return img && img.url && img.author && img.license ? img : null
 })
-const attributionOpen = ref(false)
-const shortAuthor = computed(() => image.value?.author ?? '')
 
 // ── стан картки ─────────────────────────────────────────────────────────────
 // Живе в асеті, а не в компоненті: переживає reload, replay і класну кімнату.
@@ -387,15 +390,17 @@ function retrievedDay(value: unknown): string {
   return Number.isNaN(ts) ? '' : new Date(ts).toISOString().slice(0, 10)
 }
 const sources = computed(() => (Array.isArray(data.value.sources) ? data.value.sources : []))
+/** Разом з автором картинки — він тепер у цьому ж підвалі (2026-09-30). */
+const sourceCount = computed(() => sources.value.length + (image.value ? 1 : 0))
 const sourcesOpen = ref(false)
 const sourceToggleLabel = computed(
-  () => `${lang.value === 'en' ? 'Sources' : 'Джерела'}: ${sources.value.length}`,
+  () => `${lang.value === 'en' ? 'Sources' : 'Джерела'}: ${sourceCount.value}`,
 )
 
 // ── подання: спільний масштаб і спільна авто-висота ─────────────────────────
 const textScaleStyle = computed(() => cardTextScaleStyle(props.asset))
 
-useCardContentFit({
+const { requestFit } = useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
@@ -414,7 +419,6 @@ useCardContentFit({
     () => JSON.stringify(data.value.sources ?? []),
     () => isExpanded.value,
     () => sourcesOpen.value,
-    () => attributionOpen.value,
     () => openMixed.value,
     () => openOldStyle.value,
     () => [...fieldsOpen.value].join(','),
@@ -427,6 +431,11 @@ useCardContentFit({
   ],
   emitHeight: (neededPx) => emit('request-height', neededPx),
 })
+
+/** Картинка довантажилась (або не змогла) — висота вмісту змінилась після першого виміру. */
+function onImageSettled() {
+  void nextTick(requestFit)
+}
 
 useExportCapture(
   () => props.asset?.id,
@@ -524,17 +533,6 @@ useExportCapture(
   border-radius: 3px;
   background: #f1f5f9;
 }
-.history-card__attribution {
-  margin-top: 4px;
-  font-size: calc(10px * var(--wb-card-text-scale, 1));
-  line-height: 1.35;
-  color: #64748b;
-}
-.history-card__attribution-toggle {
-  background: none; border: none; padding: 2px 4px; cursor: pointer;
-  font: inherit; color: inherit;
-}
-.history-card__attribution-full { display: block; padding: 2px 4px; }
 
 /* 2 · заголовок — уся зона перемикає стан */
 .history-card__heading {

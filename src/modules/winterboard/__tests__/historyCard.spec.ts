@@ -169,8 +169,82 @@ describe('HistoryCard · порожнє не малюється', () => {
     expect(render({ title: 'X', primary: [] }).find('.history-card__subtitle').exists()).toBe(false)
   })
 
-  it('без джерел підвала немає', () => {
-    expect(render(POLTAVA).find('.history-card__sources').exists()).toBe(false)
+  it('без джерел і без картинки підвала немає', () => {
+    expect(render(KHMELNYTSKY).find('.history-card__sources').exists()).toBe(false)
+  })
+})
+
+describe('HistoryCard · автор картинки — у підвалі «ⓘ», висота — після картинки (2026-09-30)', () => {
+  // Прод, «0»: під картинкою лягало сире поле автора з Вікісховища («Chess x0145.svg: Betalph
+  // derivative work…»), а картка не розгорнулась — висоту міряли до завантаження картинки.
+  const FILE_PAGE = 'https://commons.wikimedia.org/wiki/File:Poltava.jpg'
+  const WITH_PAGE: Partial<HistoryCardData> = { ...POLTAVA, image: { ...POLTAVA.image!, file_page: FILE_PAGE } }
+
+  it('під картинкою рядка автора немає — видно лише «ⓘ» внизу', () => {
+    const w = render(WITH_PAGE)
+    expect(w.find('.history-card__media').text()).toBe('')
+    expect(w.find('.history-card__media').text()).not.toContain('Pierre-Denis Martin')
+    expect(w.find('.history-card__sources-toggle').text()).toContain('1')
+    expect(w.find('[data-testid="history-card-image-source"]').exists()).toBe(false)
+  })
+
+  it('«ⓘ» відкриває автора, ліцензію і сторінку файла', async () => {
+    const w = render(WITH_PAGE)
+    await w.find('.history-card__sources-toggle').trigger('click')
+    const item = w.find('[data-testid="history-card-image-source"]')
+    expect(item.text()).toContain('Зображення')
+    expect(item.text()).toContain('Pierre-Denis Martin')
+    expect(item.text()).toContain('Public domain')
+    expect(item.find('a').attributes('href')).toBe(FILE_PAGE)
+  })
+
+  it('лічильник рахує і джерела, і картинку', () => {
+    const ref = { provider: 'wikidata', title: 'Полтавська битва', url: 'https://www.wikidata.org/wiki/Q152486' }
+    const w = render({ ...WITH_PAGE, sources: [ref, { ...ref, title: 'Друге' }] as HistoryCardData['sources'] })
+    expect(w.find('.history-card__sources-toggle').text()).toContain('3')
+  })
+
+  it('сторінка файла не веб-адреса — автор текстом, без посилання', async () => {
+    const w = render({ ...POLTAVA, image: { ...POLTAVA.image!, file_page: 'javascript:alert(1)' } })
+    await w.find('.history-card__sources-toggle').trigger('click')
+    expect(w.find('[data-testid="history-card-image-source"] a').exists()).toBe(false)
+  })
+
+  it('англійська картка — «Image»', async () => {
+    const w = render({ ...WITH_PAGE, content_language: 'en' })
+    await w.find('.history-card__sources-toggle').trigger('click')
+    expect(w.find('[data-testid="history-card-image-source"]').text()).toContain('Image')
+  })
+
+  it('розміри з даних бронюють місце картинці ще до завантаження', () => {
+    const w = render({ ...POLTAVA, image: { ...POLTAVA.image!, width: 800, height: 600 } })
+    const img = w.find('.history-card__image')
+    expect(img.attributes('width')).toBe('800')
+    expect(img.attributes('height')).toBe('600')
+  })
+
+  it('картинка довантажилась — картка перемірює висоту', async () => {
+    const w = render(POLTAVA)
+    await flushPromises()
+    const before = (w.emitted('request-height') ?? []).length
+    const flow = w.find('.history-card__flow').element as HTMLElement
+    flow.getBoundingClientRect = () => ({ height: 420 } as DOMRect)
+    await w.find('.history-card__image').trigger('load')
+    await flushPromises()
+    const after = w.emitted('request-height') ?? []
+    expect(after.length).toBe(before + 1)
+    expect(after[after.length - 1]?.[0]).toBeGreaterThanOrEqual(420)
+  })
+
+  it('картинка не завантажилась — теж перемір (місце під неї більше не потрібне)', async () => {
+    const w = render(POLTAVA)
+    await flushPromises()
+    const before = (w.emitted('request-height') ?? []).length
+    const flow = w.find('.history-card__flow').element as HTMLElement
+    flow.getBoundingClientRect = () => ({ height: 300 } as DOMRect)
+    await w.find('.history-card__image').trigger('error')
+    await flushPromises()
+    expect((w.emitted('request-height') ?? []).length).toBe(before + 1)
   })
 })
 
