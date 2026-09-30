@@ -37,11 +37,13 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import authApi from '../api/authApi'
 import Card from '../../../ui/Card.vue'
 import Button from '../../../ui/Button.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 
 const loginLink = computed(() => {
@@ -70,7 +72,7 @@ const formatError = (err) => {
   if (status === 429) {
     const retryAfter = err?.response?.headers?.['retry-after']
     return withRequestId(
-      retryAfter ? `Забагато запитів. Спробуйте через ${retryAfter}с.` : 'Забагато запитів. Спробуйте пізніше.'
+      retryAfter ? t('auth.requestErrors.tooManyRetryIn', { seconds: retryAfter }) : t('auth.requestErrors.tooMany')
     )
   }
 
@@ -85,13 +87,13 @@ const formatError = (err) => {
     }
   }
 
-  return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
+  return withRequestId(t('auth.requestErrors.temporary'))
 }
 
 onMounted(async () => {
   const token = typeof route.query?.token === 'string' ? route.query.token : ''
   if (!token) {
-    error.value = 'Відсутній токен підтвердження.'
+    error.value = t('auth.verifyEmail.noToken')
     loading.value = false
     return
   }

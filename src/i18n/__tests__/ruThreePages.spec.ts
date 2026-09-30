@@ -9,6 +9,11 @@
  *
  * 2026-09-30 (власник: «переходь до пульта») — те саме для самого пульта на телефоні
  * (WBRemoteView і його аркуші) та всього простору `winterboard.remote.*`.
+ *
+ * 2026-09-30 (власник: «бери вхід, запрошення і шапку уроку») — сторінки входу й
+ * реєстрації, запрошення учня й «Мої учні», шапка уроку. На сторінках входу помилки
+ * («Забагато запитів…», «Тимчасова помилка…») були зашиті в код українською —
+ * тепер це ключі, і тест стереже, щоб кириличних рядків у їхньому коді не з'явилося знову.
  */
 import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
@@ -41,7 +46,38 @@ const PAGES: Record<string, string[]> = {
     'modules/winterboard/components/remote/RemotePhotoPanel.vue',
     'modules/winterboard/components/remote/RemoteScenarioSheet.vue',
   ],
+  'Вхід і реєстрація': [
+    'modules/auth/views/LoginView.vue',
+    'modules/auth/views/RegisterTutorView.vue',
+    'modules/auth/views/CheckEmailView.vue',
+    'modules/auth/views/VerifyEmailView.vue',
+    'modules/auth/views/ForgotPasswordView.vue',
+    'modules/auth/views/ResetPasswordView.vue',
+    'modules/auth/views/SessionEndedView.vue',
+    'modules/auth/views/LogoutPendingView.vue',
+    'modules/auth/components/GoogleSignInButton.vue',
+    'modules/auth/components/WebAuthnPrompt.vue',
+    'modules/auth/components/UnlockConfirmModal.vue',
+    'modules/auth/components/AuthLayout.vue',
+  ],
+  'Запрошення учня': [
+    'components/invites/InviteAcceptPage.vue',
+    'components/invites/InviteCreateButton.vue',
+    'modules/dashboard/views/TutorStudents.vue',
+    'modules/dashboard/components/StudentContactUnlock.vue',
+    'modules/lessons/views/LessonInviteResolveView.vue',
+  ],
 }
+
+/** Шапка уроку (WBSoloRoom / WBClassroomRoom): ці файли великі, тож звіряємо ключі самої шапки. */
+const HEADER_KEYS = [
+  'winterboard.room.exitToLessons', 'winterboard.room.exitToStudio', 'winterboard.room.syncedViaTeacher',
+  'winterboard.room.writerOffline', 'winterboard.room.clearPhotoBackground', 'winterboard.room.clearPhotoBackgroundTitle',
+  'winterboard.lesson.copy.button', 'winterboard.lesson.copy.title', 'winterboard.lesson.copy.subtitle',
+  'winterboard.lesson.copy.titleLabel', 'winterboard.lesson.copy.save', 'winterboard.lesson.copy.saving',
+  'winterboard.lesson.copy.savingBanner', 'winterboard.lesson.copy.defaultTitle',
+  'winterboard.enrich.reviewButton', 'winterboard.export.aiEnrich', 'winterboard.recording.start',
+]
 
 type Dict = Record<string, unknown>
 
@@ -65,6 +101,8 @@ function keysOf(file: string): string[] {
   for (const m of src.matchAll(/\$?t\(\s*`([a-zA-Z0-9_.-]+)\.\$\{/g)) {
     for (const k of Object.keys(UK)) if (k.startsWith(`${m[1]}.`)) keys.add(k)
   }
+  // ключі, що передаються як рядки (мапи, тернарники, пропси): будь-який рядок у лапках, що є ключем uk
+  for (const m of src.matchAll(/['"]([a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_-]+){1,6})['"]/g)) keys.add(m[1])
   return [...keys].filter((k) => k in UK)
 }
 
@@ -96,4 +134,26 @@ it('ru · пульт: увесь простір winterboard.remote.* є в ru, �
   const placeholders = (v: unknown) => (String(v).match(/\{\w+\}/g) ?? []).sort()
   expect(ukKeys.filter((k) => JSON.stringify(placeholders(RU[k])) !== JSON.stringify(placeholders(UK[k])))).toEqual([])
   expect(ukKeys.filter((k) => /[іїєґІЇЄҐ]/.test(String(RU[k])))).toEqual([])
+})
+
+it('ru · шапка уроку: кнопки й стани шапки — російською', () => {
+  expect(HEADER_KEYS.filter((k) => !(k in UK))).toEqual([])
+  expect(HEADER_KEYS.filter((k) => !(k in RU))).toEqual([])
+  expect(HEADER_KEYS.filter((k) => /[іїєґІЇЄҐ]/.test(String(RU[k])))).toEqual([])
+})
+
+// Помилки на сторінках входу були зашиті в код українською («Забагато запитів…»): у ru/en
+// їх показувало українською. Тепер — ключі auth.requestErrors.* тощо; кирилиці в коді бути не має.
+it.each([
+  'modules/auth/views/CheckEmailView.vue',
+  'modules/auth/views/VerifyEmailView.vue',
+  'modules/auth/views/ForgotPasswordView.vue',
+  'modules/auth/views/ResetPasswordView.vue',
+])('%s — у коді немає рядків кирилицею (лише ключі)', (file) => {
+  const src = fs.readFileSync(path.join(SRC, file), 'utf-8')
+  const code = (src.split('<script')[1] ?? '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').map((l) => l.replace(/(^|\s)\/\/.*$/, '$1')).join('\n')
+  const literals = [...code.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3])
+  expect(literals.filter((s) => /[А-Яа-яІіЇїЄєҐґ]/.test(s))).toEqual([])
 })

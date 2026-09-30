@@ -993,12 +993,14 @@
       "success": "Email sent.",
       "resend": "Resend email",
       "resendLoading": "Sending...",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "noEmail": "Email is not specified."
     },
     "verifyEmail": {
       "loading": "Verifying...",
       "success": "Email verified",
-      "loginCta": "Sign in"
+      "loginCta": "Sign in",
+      "noToken": "The confirmation token is missing."
     },
     "forgot": {
       "title": "Forgot password?",
@@ -1017,7 +1019,15 @@
       "success": "Password updated. You can sign in.",
       "submit": "Change password",
       "loading": "Saving...",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "noToken": "The password reset token is missing."
+    },
+    "requestErrors": {
+      "tooManyRetryIn": "Too many requests. Try again in {seconds}s.",
+      "tooMany": "Too many requests. Please try again later.",
+      "temporary": "Temporary error. Please try again later.",
+      "checkData": "Please check the details.",
+      "noConnection": "No connection to the server. Check your internet and try again."
     },
     "sessionRevoked": {
       "title": "Session revoked",

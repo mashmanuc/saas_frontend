@@ -45,12 +45,14 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
+const { t } = useI18n()
 const route = useRoute()
 const email = computed(() => (typeof route.query?.email === 'string' ? route.query.email : ''))
 const accountType = computed(() => (typeof route.query?.account_type === 'string' ? route.query.account_type : 'student'))
@@ -77,7 +79,7 @@ const formatError = (err) => {
   if (status === 429) {
     const retryAfter = err?.response?.headers?.['retry-after']
     return withRequestId(
-      retryAfter ? `Забагато запитів. Спробуйте через ${retryAfter}с.` : 'Забагато запитів. Спробуйте пізніше.'
+      retryAfter ? t('auth.requestErrors.tooManyRetryIn', { seconds: retryAfter }) : t('auth.requestErrors.tooMany')
     )
   }
 
@@ -92,7 +94,7 @@ const formatError = (err) => {
     }
   }
 
-  return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
+  return withRequestId(t('auth.requestErrors.temporary'))
 }
 
 async function resend() {
@@ -100,7 +102,7 @@ async function resend() {
   success.value = ''
 
   if (!email.value) {
-    error.value = 'Email не вказано.'
+    error.value = t('auth.checkEmail.noEmail')
     return
   }
 

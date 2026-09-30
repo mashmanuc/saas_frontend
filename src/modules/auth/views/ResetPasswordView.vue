@@ -109,7 +109,7 @@ const formatError = (err) => {
   if (status === 429) {
     const retryAfter = err?.response?.headers?.['retry-after']
     return withRequestId(
-      retryAfter ? `Забагато запитів. Спробуйте через ${retryAfter}с.` : 'Забагато запитів. Спробуйте пізніше.'
+      retryAfter ? t('auth.requestErrors.tooManyRetryIn', { seconds: retryAfter }) : t('auth.requestErrors.tooMany')
     )
   }
 
@@ -126,7 +126,7 @@ const formatError = (err) => {
     if (typeof msg === 'string' && msg.trim().length > 0) return withRequestId(msg)
     const summary = Array.isArray(data.summary) ? data.summary : null
     if (summary && summary.length > 0) return withRequestId(String(summary[0]))
-    return withRequestId('Перевірте дані.')
+    return withRequestId(t('auth.requestErrors.checkData'))
   }
 
   if (data && typeof data === 'object') {
@@ -135,10 +135,10 @@ const formatError = (err) => {
   }
 
   if (!err?.response) {
-    return 'Немає зʼєднання з сервером. Перевірте інтернет і спробуйте ще раз.'
+    return t('auth.requestErrors.noConnection')
   }
 
-  return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
+  return withRequestId(t('auth.requestErrors.temporary'))
 }
 
 async function onSubmit() {
@@ -147,7 +147,7 @@ async function onSubmit() {
   fieldMessages.value = null
 
   if (!token.value) {
-    error.value = 'Відсутній токен для скидання пароля.'
+    error.value = t('auth.reset.noToken')
     return
   }
 

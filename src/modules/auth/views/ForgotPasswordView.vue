@@ -45,12 +45,14 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 
+const { t } = useI18n()
 const email = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -74,7 +76,7 @@ const formatError = (err) => {
   if (status === 429) {
     const retryAfter = err?.response?.headers?.['retry-after']
     return withRequestId(
-      retryAfter ? `Забагато запитів. Спробуйте через ${retryAfter}с.` : 'Забагато запитів. Спробуйте пізніше.'
+      retryAfter ? t('auth.requestErrors.tooManyRetryIn', { seconds: retryAfter }) : t('auth.requestErrors.tooMany')
     )
   }
 
@@ -89,7 +91,7 @@ const formatError = (err) => {
     }
   }
 
-  return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
+  return withRequestId(t('auth.requestErrors.temporary'))
 }
 
 async function onSubmit() {
