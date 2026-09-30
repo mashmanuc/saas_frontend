@@ -6,6 +6,9 @@
  * (fallbackLocale) — у російському інтерфейсі сторінки стояли українською. `i18n:check`
  * цього не ловить: він звіряє лише uk ↔ en. Цей тест звіряє ru — рівно для цих сторінок.
  * Статті «Допомоги» — окремим файлом `helpArticles.ru.ts` (див. helpMenuMap.spec + нижче).
+ *
+ * 2026-09-30 (власник: «переходь до пульта») — те саме для самого пульта на телефоні
+ * (WBRemoteView і його аркуші) та всього простору `winterboard.remote.*`.
  */
 import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
@@ -33,6 +36,11 @@ const PAGES: Record<string, string[]> = {
     'modules/billing/components/PaymentHistorySection.vue',
   ],
   'Допомога': ['modules/help/views/HelpView.vue'],
+  'Пульт на телефоні': [
+    'modules/winterboard/views/WBRemoteView.vue',
+    'modules/winterboard/components/remote/RemotePhotoPanel.vue',
+    'modules/winterboard/components/remote/RemoteScenarioSheet.vue',
+  ],
 }
 
 type Dict = Record<string, unknown>
@@ -79,4 +87,13 @@ it('ru · «Допомога» — ті самі розділи й статті,
   // жодної української літери в російських статтях
   const text = JSON.stringify(HELP_SECTIONS_RU)
   expect(text.match(/[іїєґІЇЄҐ]/g) ?? []).toEqual([])
+})
+
+it('ru · пульт: увесь простір winterboard.remote.* є в ru, з тими самими {плейсхолдерами} і без українських літер', () => {
+  const ukKeys = Object.keys(UK).filter((k) => k.startsWith('winterboard.remote.'))
+  expect(ukKeys.length).toBeGreaterThan(200)
+  expect(ukKeys.filter((k) => !(k in RU))).toEqual([])
+  const placeholders = (v: unknown) => (String(v).match(/\{\w+\}/g) ?? []).sort()
+  expect(ukKeys.filter((k) => JSON.stringify(placeholders(RU[k])) !== JSON.stringify(placeholders(UK[k])))).toEqual([])
+  expect(ukKeys.filter((k) => /[іїєґІЇЄҐ]/.test(String(RU[k])))).toEqual([])
 })
