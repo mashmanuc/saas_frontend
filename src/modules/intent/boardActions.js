@@ -16,7 +16,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
-import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
+import { autofitExpressions, graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
@@ -1103,9 +1103,10 @@ HANDLERS.graph_add_expression = async function graph_add_expression({ object_id,
 // тож ні штриха похідної, ні арифметичної помилки в ній бути не може.
 HANDLERS.graph_add_tangent = async function graph_add_tangent({ object_id, src, x0 }) {
   const { store, asset } = await _assetById(object_id)
-  if (asset.type !== 'graph_calculator') throw new Error('Дотичну можна провести лише на графіку.')
   const point = Number(x0)
   if (!Number.isFinite(point)) throw new Error('У якій точці провести дотичну? Назвіть x.')
+  if (asset.type === 'calculus_card') return _calculusTangentPoint(store, asset, point)
+  if (asset.type !== 'graph_calculator') throw new Error('Дотичну можна провести лише на графіку або на картці «Похідна».')
   const data = JSON.parse(JSON.stringify(asset.data || {}))
   if (!data.state) data.state = { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } }
   const exprs = data.state.expressions || []
@@ -1118,7 +1119,11 @@ HANDLERS.graph_add_tangent = async function graph_add_tangent({ object_id, src, 
     const v = Number(cfg && typeof cfg === 'object' ? cfg.value : cfg)
     if (Number.isFinite(v)) params[name] = v
   }
-  const line = tangentLine(src, point, params)   // кидає людську помилку, якщо дотичної немає
+  // Після «До якого графіка провести дотичну?» вибір несе лише графік — криву
+  // модель могла не назвати (BE шле `src: ''`). Тоді: одна видима крива — вона;
+  // кілька — просимо назвати, а не беремо навмання (до 2026-09-30 тут падав рушій).
+  const curve = String(src ?? '').trim() || _onlyVisibleCurve(exprs)
+  const line = tangentLine(curve, point, params)   // кидає людську помилку, якщо дотичної немає
   data.state.expressions = [
     ...exprs,
     {
@@ -1130,6 +1135,55 @@ HANDLERS.graph_add_tangent = async function graph_add_tangent({ object_id, src, 
     },
   ]
   store.updateAsset({ ...asset, data })
+}
+
+function _onlyVisibleCurve(exprs) {
+  const curves = (exprs || []).filter((e) => e && !e.hidden && String(e.src ?? '').trim())
+  if (curves.length === 1) return String(curves[0].src)
+  if (!curves.length) throw new Error('На цьому графіку немає кривої, до якої можна провести дотичну.')
+  throw new Error('На графіку кілька кривих — скажіть, до якої, напр. «дотична до x^2 у точці 2».')
+}
+
+// 2026-09-30, власник («так» на пропозицію): картка «Похідна» — теж адресат. Вона
+// сама малює дотичну в точці P (x₀), тож дія — поставити P у x0 одним штатним
+// `updateAsset`, як перетягування. Точку перевіряє той самий `tangentLine`: рушій
+// і крок похідної ті, що в картці (`vendor/calculus` бере `window.GraphCalc` і
+// `numDeriv` h = 1e-4) — дотичної в x0 немає, то людська відмова й картка та сама.
+function _calculusTangentPoint(store, asset, point) {
+  const d = asset.data || {}
+  if (d.mode === 'integral') throw new Error('На картці первісної дотичної немає — вона показує площу під графіком.')
+  const expr = String(d.expr ?? '').trim()
+  if (!expr) throw new Error('На картці ще немає функції — введіть її, і я поставлю точку дотику.')
+  const { y0 } = tangentLine(expr, point)
+  const data = { ...d, x0: point }
+  // P поза вікном — вікно під функцію разом із x₀, як кнопка «вписати» на картці
+  // (`CalculusRenderer.fitFor`) і як нова картка від Інтегралика (`calculusViewportFor`).
+  if (!_calculusShows(d.viewport, asset, point, y0)) {
+    const fit = autofitExpressions([expr], {}, [point])
+    if (fit) data.viewport = { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, fit }
+  }
+  store.updateAsset({ ...asset, data })
+}
+
+/** Типовий масштаб вікна картки, px на одиницю — `vendor/calculus` CALC_DEFAULT_SCALE. */
+const CALCULUS_DEFAULT_SCALE = 50
+
+/** Чи видно точку (x, y) у вікні картки. Вікно — вписаний діапазон `fit` або центр і
+ *  масштаб; полотно не більше за саму картку, тож беремо 85 % її розміру — щоб P не
+ *  опинилась під самим краєм. */
+function _calculusShows(viewport, asset, x, y) {
+  if (!Number.isFinite(y)) return false
+  const v = viewport && typeof viewport === 'object' ? viewport : { cx: 0, cy: 0, scale: CALCULUS_DEFAULT_SCALE }
+  const f = v.fit
+  if (f && [f.xMin, f.xMax, f.yMin, f.yMax].every(Number.isFinite)) {
+    return x >= f.xMin && x <= f.xMax && y >= f.yMin && y <= f.yMax
+  }
+  const base = Number(v.scale) > 0 ? Number(v.scale) : CALCULUS_DEFAULT_SCALE
+  const sx = Number(v.scaleX) > 0 ? Number(v.scaleX) : base
+  const sy = Number(v.scaleY) > 0 ? Number(v.scaleY) : base
+  const halfX = (0.85 * (Number(asset.w) || 0)) / 2 / sx
+  const halfY = (0.85 * (Number(asset.h) || 0)) / 2 / sy
+  return Math.abs(x - (Number(v.cx) || 0)) <= halfX && Math.abs(y - (Number(v.cy) || 0)) <= halfY
 }
 
 // Phase 1 Block B3 (2026-08-01): перенос об'єкта на іншу сторінку.
