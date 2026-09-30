@@ -282,21 +282,33 @@
     setA(a) {
       a = Math.max(this._aRange()[0], Math.min(this._aRange()[1], a));
       if (this.opts.snapSpecial) a = this._snap(a);
+      const changed = this.opts.a !== a;
       this.opts.a = a;
       this._safeRender();
+      if (changed) this._highlightEquation();
       this.onChange && this.onChange();
     }
     setType(t) {
+      const changed = this.opts.type !== t;
       this.opts.type = t;
       const [lo, hi] = this._aRange();
       this.opts.a = Math.max(lo, Math.min(hi, this.opts.a));
       this._safeRender();
+      if (changed) this._highlightEquation();
       this.onChange && this.onChange();
     }
     setRel(rel) {
+      const changed = this.opts.rel !== rel;
       this.opts.rel = rel;
       this._safeRender();
+      if (changed) this._highlightEquation();
       this.onChange && this.onChange();
+    }
+    _highlightEquation() {
+      this.hud.classList.remove('calc-hud--changed');
+      // Перезапуск CSS-анімації також під час перетягування рівня, без таймерів.
+      void this.hud.offsetWidth;
+      this.hud.classList.add('calc-hud--changed');
     }
     _isIneq() { return this.opts.rel && this.opts.rel !== '='; }
 
@@ -336,6 +348,8 @@
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const r = this.container.getBoundingClientRect();
       const w = Math.max(40, r.width), h = Math.max(40, r.height);
+      const presentationScale = Math.max(0.7, Math.min(1.7, r.width / 750, r.height / 560));
+      this.container.style.setProperty('--trig-presentation-scale', presentationScale.toFixed(3));
       const nw = w * dpr, nh = h * dpr;
       if (this.canvas.width !== nw || this.canvas.height !== nh) {
         this.canvas.width = nw; this.canvas.height = nh;
@@ -350,23 +364,28 @@
       const w = this.canvas.width, h = this.canvas.height;
       const dpr = this._dpr || 1;
       const pad = 24 * dpr;
+      // Розв'язок займає верхній пояс. Залишок висоти віддаємо графікам;
+      // за достатнього місця їхній радіус не змінюється, лише центр опускається.
+      const hudHeight = this.hud.offsetHeight;
+      const hudBottom = (this.hud.offsetTop + hudHeight + 14) * dpr;
+      const top = hudHeight ? Math.min(h * 0.42, Math.max(72 * dpr, hudBottom)) : 0;
+      const bottom = Math.min(24 * dpr, h * 0.08);
+      const plotHeight = Math.max(0, h - top - bottom);
+      const cy = top + plotHeight / 2;
       if (!this.opts.showGraph || w < 600 * dpr) {
-        const size = Math.min(w, h) - pad * 2;
-        // Б-93 (2026-09-27): на крихітній картці (Replay на телефоні) size/2 − 44·dpr < 0,
-        // і ctx.arc кидав IndexSizeError з таймера → екран падіння всієї сторінки.
-        // Той самий запобіжник, що вже стоїть у trig-circle.js.
-        return { dual: false, circle: { cx: w/2, cy: h/2, r: Math.max(1, size/2 - 44*dpr) } };
+        // Б-93: навіть у крихітній картці Replay радіус не буває від'ємним.
+        const r = Math.max(1, Math.min(w / 2 - 68 * dpr, plotHeight / 2 - 44 * dpr));
+        return { dual: false, circle: { cx: w/2, cy, r } };
       }
       const labelMargin = 40 * dpr;
       const circleColW = w * 0.46 - pad * 2;
       const maxR_byWidth  = circleColW / 2 - labelMargin;
-      const maxR_byHeight = h / 2 - pad - 14 * dpr - labelMargin / 2;
-      const cR = Math.max(40 * dpr, Math.min(maxR_byWidth, maxR_byHeight));
+      const maxR_byHeight = plotHeight / 2 - 14 * dpr - labelMargin / 2;
+      const cR = Math.max(1, Math.min(maxR_byWidth, maxR_byHeight));
       const cx = pad + labelMargin + cR;
-      const cy = h / 2;
       const gx0 = cx + cR + labelMargin + 16 * dpr;
       const gx1 = w - pad - 28 * dpr; // leave room for `a` label on right
-      const gMid = h / 2;
+      const gMid = cy;
       const gHalfBox = cR + 14 * dpr;
       return {
         dual: true,
@@ -461,10 +480,10 @@
       this._resize();
       const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
       ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, w, h);
+      this._renderHud();
       const L = this._layout();
       this._drawCircle(L);
       if (L.dual) this._drawGraph(L);
-      this._renderHud();
     }
 
     _fnColor() {
@@ -1165,7 +1184,10 @@
       const lines = [];
       const colorTxt = (txt, col) => `<span style="color:${col}">${txt}</span>`;
 
-      lines.push(`<div class="calc-line key"><span>рівняння:</span> ${fnText}&nbsp;x ${relSym} ${info.aLab}</div>`);
+      const title = rel === '=' ? 'Рівняння' : 'Нерівність';
+      const heading = `<div class="calc-equation"><span>${title}</span><strong>${fnText}&nbsp;x ${relSym} ${info.aLab}</strong></div>`;
+      this.hud.classList.toggle('calc-hud--inequality', rel !== '=');
+      const show = () => { this.hud.innerHTML = `${heading}<div class="calc-hud__details">${lines.join('')}</div>`; };
 
       // ----- INEQUALITY branch -----
       if (rel !== '=') {
@@ -1188,7 +1210,7 @@
           lines.push(`<div class="calc-line">x ∈ ${lBr}${L} + ${ep.period};&nbsp; ${R} + ${ep.period}${rBr}</div>`);
           lines.push(`<div class="calc-line sec">n ∈ ℤ</div>`);
         }
-        this.hud.innerHTML = lines.join('');
+        show();
         return;
       }
 
@@ -1217,7 +1239,7 @@
           lines.push(`<div class="calc-line sec">x = ${colorTxt(alphaTxt, PAL.famA)} + πn,&nbsp; n ∈ ℤ</div>`);
         }
       }
-      this.hud.innerHTML = lines.join('');
+      show();
     }
 
     destroy() {

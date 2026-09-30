@@ -40,7 +40,15 @@ function container(rect: Rect): HTMLElement {
   return el
 }
 
-type TrigEquationCtor = new (el: HTMLElement, opts: Record<string, unknown>) => { destroy?: () => void }
+type TrigEquationInstance = {
+  destroy?: () => void
+  setA: (a: number) => void
+  setRel: (rel: string) => void
+  setType: (type: string) => void
+  hud: HTMLElement
+  _layout: () => { circle: { r: number }; graph?: { y0: number } }
+}
+type TrigEquationCtor = new (el: HTMLElement, opts: Record<string, unknown>) => TrigEquationInstance
 let TrigEquation: TrigEquationCtor
 
 beforeAll(async () => {
@@ -99,6 +107,54 @@ describe('віджет тригонометричних рівнянь на кр
     made.push(w)
     vi.runAllTimers()
     expect(Math.max(...arcRadii)).toBeGreaterThan(40)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('формула й розв’язок лишаються видимими; зміна параметра та знака акцентує саме формулу', () => {
+    const w = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
+    made.push(w)
+    vi.runAllTimers()
+    expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('sin x = ½')
+    expect(w.hud.querySelectorAll('.calc-hud__details .calc-line').length).toBeGreaterThan(2)
+    expect(w.hud.classList.contains('calc-hud--changed')).toBe(false)
+
+    w.setA(1)
+    expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('sin x = 1')
+    expect(w.hud.classList.contains('calc-hud--changed')).toBe(true)
+    w.hud.classList.remove('calc-hud--changed')
+    w.setA(1)
+    expect(w.hud.classList.contains('calc-hud--changed')).toBe(false)
+
+    w.setRel('>=')
+    expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('Нерівність')
+    expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('≥')
+    expect(w.hud.classList.contains('calc-hud--changed')).toBe(true)
+    w.setType('cos')
+    expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('cos')
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('великий верхній пояс не зменшує коло й не перекриває графік на демонстраційній картці', () => {
+    const w = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
+    made.push(w)
+    // jsdom не міряє розміри DOM; підставляємо висоту великого текстового поясу.
+    Object.defineProperty(w.hud, 'offsetHeight', { get: () => 150 })
+    Object.defineProperty(w.hud, 'offsetTop', { get: () => 10 })
+    vi.runAllTimers()
+    const layout = w._layout()
+    expect(layout.circle.r).toBeCloseTo(217)
+    expect(layout.graph?.y0).toBeGreaterThan((10 + 150 + 14) * 2)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('масштаб тексту враховує і ширину, і висоту картки', () => {
+    const large = container({ width: 1200, height: 900 })
+    made.push(new TrigEquation(large, { type: 'sin', a: 0.5 }))
+    const wide = container({ width: 1200, height: 480 })
+    made.push(new TrigEquation(wide, { type: 'sin', a: 0.5 }))
+    vi.runAllTimers()
+    expect(large.style.getPropertyValue('--trig-presentation-scale')).toBe('1.600')
+    expect(wide.style.getPropertyValue('--trig-presentation-scale')).toBe('0.857')
     expect(consoleError).not.toHaveBeenCalled()
   })
 })
