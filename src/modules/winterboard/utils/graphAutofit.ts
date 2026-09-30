@@ -161,6 +161,52 @@ export function autofitExpressions(
 
 const round = (n: number) => Number(n.toPrecision(6))
 
+const INTEGRAL_SAMPLES = 400
+const INTEGRAL_X_MARGIN = 0.15
+const INTEGRAL_MIN_X_PAD = 0.5
+const INTEGRAL_FAR_MARGIN = 0.12    // поле з боку кривої
+const INTEGRAL_AXIS_MARGIN = 0.06   // смужка по той бік осі — щоб підписи осі x не сідали на край
+
+/**
+ * Вікно картки ІНТЕГРАЛА (власник 2026-09-30, «так, роби»): лише [a, b] і по Y від осі.
+ *
+ * `autofitExpressions` для e^x на [0,1; 10,97] брав Y по всьому вікну з полями — до
+ * x ≈ 12,6, де e^x ≈ 300 000, хоча в b лише ~58 000 — і додавав поле нижче нуля: пів
+ * картки порожні, крива до x ≈ 8 злилась з віссю. Площа інтеграла рахується від осі x,
+ * тож нуль у вікні завжди; решта — значення f на самому [a, b] (квантиль — проти вибуху
+ * біля полюса, значення на кінцях — завжди).
+ */
+export function autofitIntegral(src: string, a: number, b: number): GraphFit | null {
+  if (!src || !src.trim() || !Number.isFinite(a) || !Number.isFinite(b)) return null
+  let c: { kind: string; ast?: unknown }
+  try { c = GraphCalc.classify(src, []) as { kind: string; ast?: unknown } } catch { return null }
+  if (c.kind !== 'explicitY' || !c.ast) return null
+  const ast = c.ast
+  const f = safe((x) => GraphCalc.evalAst(ast, { x }) as number)
+
+  const lo = Math.min(a, b)
+  const hi = Math.max(a, b)
+  const span = hi - lo
+  const values: number[] = []
+  for (let i = 0; i <= INTEGRAL_SAMPLES; i++) {
+    const y = f(span ? lo + (span * i) / INTEGRAL_SAMPLES : lo)
+    if (Number.isFinite(y)) values.push(y)
+  }
+  if (!values.length) return null
+  values.sort((p, q) => p - q)
+  const ends = [f(lo), f(hi)].filter((y) => Number.isFinite(y))
+  const yLow = Math.min(0, ...ends, quantile(values, Y_LOW_Q))
+  const yHigh = Math.max(0, ...ends, quantile(values, Y_HIGH_Q))
+  const ySpan = yHigh - yLow || 1
+  const padX = Math.max(span * INTEGRAL_X_MARGIN, INTEGRAL_MIN_X_PAD)
+  return {
+    xMin: round(lo - padX),
+    xMax: round(hi + padX),
+    yMin: round(yLow - ySpan * (yLow < 0 ? INTEGRAL_FAR_MARGIN : INTEGRAL_AXIS_MARGIN)),
+    yMax: round(yHigh + ySpan * (yHigh > 0 ? INTEGRAL_FAR_MARGIN : INTEGRAL_AXIS_MARGIN)),
+  }
+}
+
 /** Значення параметрів зі стану графка: `{a: {value, min, max, step}}` або `{a: 3}`. */
 export function paramValuesOf(params: Record<string, unknown> | null | undefined): Record<string, number> {
   const out: Record<string, number> = {}

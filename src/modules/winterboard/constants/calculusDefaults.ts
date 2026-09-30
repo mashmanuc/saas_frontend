@@ -23,17 +23,32 @@ export const CALCULUS_PRESETS: ReadonlyArray<{ mode: CalculusMode; short: string
   { mode: 'integral', short: '∫ f dx' },
 ])
 
-/** Quick-expression presets, shown у CalculusRenderer toolbar. */
-export const CALCULUS_EXPR_PRESETS: ReadonlyArray<{ label: string; expr: string }> = Object.freeze([
-  { label: 'x²', expr: 'x^2' },
-  { label: 'x³−3x', expr: 'x^3 - 3*x' },
-  { label: 'sin x', expr: 'sin(x)' },
-  { label: 'cos x', expr: 'cos(x)' },
-  { label: 'eˣ', expr: 'exp(x)' },
-  { label: '1/(1+x²)', expr: '1/(1 + x^2)' },
-  { label: '√x', expr: 'sqrt(x)' },
-  { label: '|x|', expr: 'abs(x)' },
-])
+/**
+ * Quick-expression presets, shown у CalculusRenderer toolbar.
+ *
+ * `integral` — межі [a, b], на яких приклад читається в режимі інтеграла (власник 2026-09-30,
+ * «так, роби»): до цього приклад брав a, b від попередньої функції, і eˣ на [0,1; 10,97]
+ * давала вісь Y на сотні тисяч, а криву — пластом уздовж осі.
+ */
+export const CALCULUS_EXPR_PRESETS: ReadonlyArray<{
+  label: string
+  expr: string
+  integral: readonly [number, number]
+}> = Object.freeze([
+  { label: 'x²', expr: 'x^2', integral: [0, 2] },
+  { label: 'x³−3x', expr: 'x^3 - 3*x', integral: [-2, 2] },
+  { label: 'sin x', expr: 'sin(x)', integral: [0, 3.14] },
+  { label: 'cos x', expr: 'cos(x)', integral: [-1.57, 1.57] },
+  { label: 'eˣ', expr: 'exp(x)', integral: [0, 2] },
+  { label: '1/(1+x²)', expr: '1/(1 + x^2)', integral: [-2, 2] },
+  { label: '√x', expr: 'sqrt(x)', integral: [0, 4] },
+  { label: '|x|', expr: 'abs(x)', integral: [-2, 2] },
+] as const)
+
+/** Межі інтеграла для прикладу; не приклад — null (власна функція вчителя межі не змінює). */
+export function calculusPresetInterval(expr: string): readonly [number, number] | null {
+  return CALCULUS_EXPR_PRESETS.find((p) => p.expr === expr)?.integral ?? null
+}
 
 /**
  * Build fresh data envelope для нової картки. Mode-specific defaults

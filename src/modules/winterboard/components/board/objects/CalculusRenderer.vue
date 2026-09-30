@@ -129,7 +129,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect } f
 import { useI18n } from 'vue-i18n'
 import type { CalculusAsset } from '../../../types/calculus'
 import type { CalculusCardInstance, RiemannMode } from '../../../vendor/calculus'
-import { CALCULUS_EXPR_PRESETS } from '../../../constants/calculusDefaults'
+import { CALCULUS_EXPR_PRESETS, calculusPresetInterval } from '../../../constants/calculusDefaults'
 import {
   registerCalculusInspector,
   unregisterCalculusInspector,
@@ -138,7 +138,7 @@ import type { CalculusBridge } from '../../../board/state/calculusUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
-import { autofitExpressions, type GraphFit } from '../../../utils/graphAutofit'
+import { autofitExpressions, autofitIntegral, type GraphFit } from '../../../utils/graphAutofit'
 
 const { t } = useI18n()
 
@@ -296,20 +296,26 @@ function onFitRequest(): void {
   scheduleSnapshot()
 }
 
-/** Вікно під функцію `expr` разом із x₀ (похідна) або a, b (інтеграл). */
-function fitFor(expr: string): GraphFit | null {
+/** Вікно під функцію `expr` разом із x₀ (похідна) або a, b (інтеграл).
+ *  Інтеграл (власник 2026-09-30): лише [a, b] і по Y від осі — `autofitIntegral`.
+ *  `bounds` — нові межі, які ще не дійшли до рушія (приклад ставить свої a, b). */
+function fitFor(expr: string, bounds?: readonly [number, number]): GraphFit | null {
   if (!card) return null
   const o = card.opts
-  const must = o.mode === 'integral' ? [o.a, o.b] : [o.x0]
-  return autofitExpressions([expr], {}, must.filter((v) => Number.isFinite(v)))
+  if (o.mode === 'integral') {
+    const [a, b] = bounds ?? [o.a, o.b]
+    return autofitIntegral(expr, a, b)
+      ?? autofitExpressions([expr], {}, [a, b].filter((v) => Number.isFinite(v)))
+  }
+  return autofitExpressions([expr], {}, [o.x0].filter((v) => Number.isFinite(v)))
 }
 
 /** Вчитель змінив функцію → вікно під нову функцію в ТОМУ САМОМУ оновленні
  *  (рішення власника 2026-09-22: картка похідної в уроці «Похідна» показала
  *  порожню сітку саме після зміни функції). Немає явної функції — вікно не чіпаємо. */
-function exprPatch(expr: string): Partial<CalculusAsset['data']> {
+function exprPatch(expr: string, bounds?: readonly [number, number]): Partial<CalculusAsset['data']> {
   if (!props.interactive) return { expr }
-  const fit = fitFor(expr)
+  const fit = fitFor(expr, bounds)
   if (!fit || !card) return { expr }
   card.setViewportFit(fit)
   return { expr, viewport: card.getViewport() }
@@ -477,7 +483,14 @@ function onExprPreset(expr: string): void {
   // мав delay у який graph не оновлювався поки watch не fired.
   exprDraft.value = expr
   if (card) card.setExpression(expr)
-  if (expr !== props.asset.data.expr) patch(exprPatch(expr))
+  // Інтеграл: приклад ставить і свої межі (власник 2026-09-30) — у ТОМУ САМОМУ оновленні,
+  // що й функцію та вписане під них вікно. Рушій отримає a, b через watch даних.
+  const d = props.asset.data
+  const bounds = props.interactive && (card?.opts.mode ?? d.mode) === 'integral'
+    ? calculusPresetInterval(expr) : null
+  const boundsChange = bounds && (bounds[0] !== d.a || bounds[1] !== d.b)
+  if (expr === d.expr && !boundsChange) return
+  patch({ ...exprPatch(expr, bounds ?? undefined), ...(boundsChange ? { a: bounds[0], b: bounds[1] } : {}) })
 }
 
 function onDelete(): void { emit('delete') }
