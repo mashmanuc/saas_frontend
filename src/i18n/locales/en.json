@@ -1000,7 +1000,9 @@
       "loading": "Verifying...",
       "success": "Email verified",
       "loginCta": "Sign in",
-      "noToken": "The confirmation token is missing."
+      "noToken": "The confirmation token is missing.",
+      "alreadyVerified": "Your email is already confirmed — you can sign in",
+      "linkExpired": "This link has expired"
     },
     "forgot": {
       "title": "Forgot password?",
