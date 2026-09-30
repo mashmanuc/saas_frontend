@@ -537,11 +537,15 @@ const hostWindowControls = useHostWindowControls()
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px 18px;
+  /* Три ряди лишаються і тоді, коли розв'язків немає: координати графіків сталі. */
+  min-height: 4.2em;
+  align-content: start;
   padding-top: 6px;
   border-top: 1px solid rgba(132, 79, 39, 0.17);
 }
 .trig-slv-stage :deep(.calc-hud--inequality .calc-hud__details) {
   grid-template-columns: 1fr;
+  min-height: calc(2.8em + 2px);
 }
 .trig-slv-stage :deep(.calc-hud .calc-line) {
   min-width: 0;
@@ -573,7 +577,16 @@ const hostWindowControls = useHostWindowControls()
 }
 
 @container (max-width: 520px) {
-  .trig-slv-stage :deep(.calc-hud .calc-hud__details) { grid-template-columns: 1fr; }
+  .trig-slv-stage :deep(.calc-hud .calc-equation) {
+    /* Довге a може перенести формулу; цей другий рядок бронюємо заздалегідь. */
+    min-height: 3.5em;
+    align-content: start;
+  }
+  .trig-slv-stage :deep(.calc-hud .calc-hud__details) {
+    grid-template-columns: 1fr;
+    min-height: 9.8em;
+  }
+  .trig-slv-stage :deep(.calc-hud--inequality .calc-hud__details) { min-height: 5.6em; }
   .trig-slv-stage :deep(.calc-hud) { left: 8px; right: 8px; padding: 7px 9px; }
 }
 @container (max-width: 140px) {
