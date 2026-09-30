@@ -117,7 +117,13 @@ function _center(page, w = 520, h = 380, reserveH = h) {
   const { pw, ph } = _pageSize(page)
   const rects = _occupied(page)
   const need = _reserveFor(h, reserveH, ph)
-  const spot = findFreeSpot(rects, w, need, pw, ph) ?? _leastOverlapSpot(rects, w, need, pw, ph)
+  // Місця із запасом на ріст немає — спершу вільне місце за справжнім розміром, і лише
+  // потім найменше перекриття (Б-131, 2026-09-30: «Додай 5 прикладів» на зумі 0.5 —
+  // резерв 880, другий ряд «не влазив», і 4-та й 5-та картки лягли поверх 1-ї та 3-ї,
+  // хоча самі лишились 380, а низ сторінки був порожній).
+  const spot = findFreeSpot(rects, w, need, pw, ph)
+    ?? (need > h ? findFreeSpot(rects, w, h, pw, ph) : null)
+    ?? _leastOverlapSpot(rects, w, need, pw, ph)
   return { cx: Math.round(spot.x + w / 2), cy: Math.round(spot.y + h / 2) }
 }
 

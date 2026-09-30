@@ -80,6 +80,39 @@ describe('вставки лягають поруч, а не одна на одн
     expect(overlaps(fresh, page.assets[0])).toBe(false)
   })
 
+  it('дрібний зум, місця з запасом на ріст немає — картки лягають вільно, а не поверх (Б-131)', async () => {
+    // «Додай 5 прикладів» з пульта (2026-09-30, зум 0.5): резерв 440 / 0.5 = 880, другий ряд
+    // «не влазив», і 4-та й 5-та картки лягали в «найменше перекриття» поверх 1-ї та 3-ї,
+    // хоча самі лишились 380, а низ сторінки був порожній.
+    zoom = 0.5
+    const EXAMPLE = { kind: 'add_card', payload: { title: 'Приклад', body: 'Скоротіть дріб: $\\frac{4}{8}$' } }
+    for (let i = 0; i < 5; i++) await runBoardAction(EXAMPLE)
+    const boxes = page.assets.map((a) => ({ x: a.x, y: a.y, w: a.w, h: a.h }))
+    expect(boxes).toHaveLength(5)
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) expect(overlaps(boxes[i], boxes[j])).toBe(false)
+    }
+    for (const b of boxes) expect(b.y + b.h).toBeLessThanOrEqual(1080)
+  })
+
+  it('запас на ріст — першим: на дрібному зумі картка не стає над сусідом, на якого наросте', async () => {
+    // Справжній розмір — лише коли запасу немає ніде. Тут він є (праворуч), тож картка
+    // не стає над «b»: на зумі 0.4 вона виросте до ~1000 і наляже на нього.
+    zoom = 0.4
+    page.assets.push({ id: 'a', type: 'theory_card', x: 40, y: 40, w: 520, h: 380 })
+    page.assets.push({ id: 'b', type: 'theory_card', x: 600, y: 460, w: 520, h: 380 })
+    await runBoardAction({ kind: 'add_card', payload: { title: 'X', body: 'y' } })
+    expect(page.assets[2].x).toBe(1160)
+  })
+
+  it('місця немає й за справжнім розміром — як і було, найменше перекриття в межах сторінки', async () => {
+    page.assets.push({ id: 'full', type: 'theory_card', x: 0, y: 0, w: 1920, h: 1080 })
+    await runBoardAction({ kind: 'add_card', payload: { title: 'X', body: 'y' } })
+    const fresh = page.assets[1]
+    expect(fresh.x).toBeGreaterThanOrEqual(0)
+    expect(fresh.y + fresh.h).toBeLessThanOrEqual(1080)
+  })
+
   it('картка, що виросла під вміст, враховується реальною висотою', async () => {
     page.assets.push({ id: 'tall', type: 'theory_card', x: 40, y: 40, w: 1840, h: 500 })
     await runBoardAction(CARD)
