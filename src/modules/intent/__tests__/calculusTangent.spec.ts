@@ -66,29 +66,47 @@ describe('картка «Похідна» — точка P у x0', () => {
     expect({ ...saved().data, x0: 1 }).toEqual(calc().data)
   })
 
-  it('P поза вписаним вікном — вікно під функцію разом із x0', async () => {
+  /** Частка ширини/висоти вікна від P до найближчого краю. */
+  const edgeShare = (fit: any, x: number, y: number) => Math.min(
+    (x - fit.xMin) / (fit.xMax - fit.xMin), (fit.xMax - x) / (fit.xMax - fit.xMin),
+    (y - fit.yMin) / (fit.yMax - fit.yMin), (fit.yMax - y) / (fit.yMax - fit.yMin))
+
+  it('P поза вікном — вікно лише розширюється: що вчитель бачив, лишається, P ≥ 15 % від краю', async () => {
     assets = [calc({ viewport: { cx: 0, cy: 2, fit: { xMin: -2, xMax: 2, yMin: -1, yMax: 5 } } })]
-    await tangent({ object_id: 'c1', x0: 4 })
+    await tangent({ object_id: 'c1', x0: 4 })          // P = (4; 16)
 
     const vp = saved().data.viewport
     expect(saved().data.x0).toBe(4)
-    expect(vp.fit.xMin).toBeLessThanOrEqual(4)
-    expect(vp.fit.xMax).toBeGreaterThanOrEqual(4)
-    expect(vp.fit.yMax).toBeGreaterThanOrEqual(16)   // P = (4; 16) видно
+    expect(vp.fit.xMin).toBe(-2)                        // ліва межа та сама
+    expect(vp.fit.yMin).toBe(-1)                        // нижня межа та сама
+    expect(edgeShare(vp.fit, 4, 16)).toBeCloseTo(0.15, 6)
     expect(vp.cx).toBeCloseTo((vp.fit.xMin + vp.fit.xMax) / 2)
     expect(vp.cy).toBeCloseTo((vp.fit.yMin + vp.fit.yMax) / 2)
   })
 
-  it('старе вікно «центр і масштаб» (50 px на одиницю, картка 600×420): P близько — те саме, далеко — вписується', async () => {
+  it('P під самим краєм (як у власника: y = 4 при межі 4,2) — вікно трохи росте догори, решта та сама', async () => {
+    assets = [calc({ viewport: { cx: 0, cy: 0, fit: { xMin: -5.5, xMax: 5.5, yMin: -4.2, yMax: 4.2 } } })]
+    await tangent({ object_id: 'c1', x0: 2 })
+
+    const fit = saved().data.viewport.fit
+    expect([fit.xMin, fit.xMax, fit.yMin]).toEqual([-5.5, 5.5, -4.2])
+    expect(fit.yMax).toBeGreaterThan(4.2)
+    expect(fit.yMax).toBeLessThan(6)                     // трохи, а не «вписати» заново
+    expect(edgeShare(fit, 2, 4)).toBeCloseTo(0.15, 6)
+  })
+
+  it('старе вікно «центр і масштаб» (50 px на одиницю, картка 600×420): P близько — те саме, далеко — розширюється', async () => {
     const old = { cx: 0, cy: 0, scale: 50 }
     assets = [calc({ viewport: old })]
-    await tangent({ object_id: 'c1', x0: 1 })          // (1; 1) — у вікні
+    await tangent({ object_id: 'c1', x0: 1 })          // (1; 1) — у вікні x ±6, y ±4,2
     expect(saved().data.viewport).toEqual(old)
 
     updateAsset.mockClear()
     assets = [calc({ viewport: old })]
     await tangent({ object_id: 'c1', x0: 3 })          // (3; 9) — вище за вікно
-    expect(saved().data.viewport.fit.yMax).toBeGreaterThanOrEqual(9)
+    const fit = saved().data.viewport.fit
+    expect([fit.xMin, fit.xMax, fit.yMin]).toEqual([-6, 6, -4.2])
+    expect(edgeShare(fit, 3, 9)).toBeCloseTo(0.15, 6)
   })
 
   it('картка без збереженого вікна — типове 50 px на одиницю, а не «нічого не видно»', async () => {

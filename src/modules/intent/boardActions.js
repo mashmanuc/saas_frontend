@@ -16,7 +16,7 @@ import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
 import { renderPoly } from '@/modules/winterboard/utils/polyText'
-import { autofitExpressions, graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
+import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 
@@ -1156,34 +1156,61 @@ function _calculusTangentPoint(store, asset, point) {
   if (!expr) throw new Error('На картці ще немає функції — введіть її, і я поставлю точку дотику.')
   const { y0 } = tangentLine(expr, point)
   const data = { ...d, x0: point }
-  // P поза вікном — вікно під функцію разом із x₀, як кнопка «вписати» на картці
-  // (`CalculusRenderer.fitFor`) і як нова картка від Інтегралика (`calculusViewportFor`).
-  if (!_calculusShows(d.viewport, asset, point, y0)) {
-    const fit = autofitExpressions([expr], {}, [point])
-    if (fit) data.viewport = { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, fit }
+  // P біля краю чи поза вікном — вікно лише РОЗШИРЮЄТЬСЯ, доки P не стане ≥ 15 % від
+  // краю: те, що вчитель бачив, лишається. Живий стенд 2026-09-30: «вписати» під
+  // функцію (autofit) перекидало вікно на x ∈ [−0,3; 2,3] — ліва гілка параболи
+  // зникала, а P ставала під кнопки масштабу біля правого краю.
+  const win = _calculusWindow(d.viewport, asset)
+  if (!_calculusShows(win, point, y0)) {
+    const fit = _calculusWindowWith(win, point, y0)
+    data.viewport = { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, fit }
   }
   store.updateAsset({ ...asset, data })
 }
 
 /** Типовий масштаб вікна картки, px на одиницю — `vendor/calculus` CALC_DEFAULT_SCALE. */
 const CALCULUS_DEFAULT_SCALE = 50
+/** Запас від краю вікна: біля країв картки — підпис P і кнопки масштабу. */
+const CALCULUS_EDGE = 0.15
 
-/** Чи видно точку (x, y) у вікні картки. Вікно — вписаний діапазон `fit` або центр і
- *  масштаб; полотно не більше за саму картку, тож беремо 85 % її розміру — щоб P не
- *  опинилась під самим краєм. */
-function _calculusShows(viewport, asset, x, y) {
-  if (!Number.isFinite(y)) return false
+/** Вікно картки, яке бачить учитель: вписаний діапазон `fit` або центр і масштаб
+ *  (px на одиницю, як у рушії картки) на розмір картки. */
+function _calculusWindow(viewport, asset) {
   const v = viewport && typeof viewport === 'object' ? viewport : { cx: 0, cy: 0, scale: CALCULUS_DEFAULT_SCALE }
   const f = v.fit
-  if (f && [f.xMin, f.xMax, f.yMin, f.yMax].every(Number.isFinite)) {
-    return x >= f.xMin && x <= f.xMax && y >= f.yMin && y <= f.yMax
+  if (f && [f.xMin, f.xMax, f.yMin, f.yMax].every(Number.isFinite) && f.xMax > f.xMin && f.yMax > f.yMin) {
+    return { xMin: f.xMin, xMax: f.xMax, yMin: f.yMin, yMax: f.yMax }
   }
   const base = Number(v.scale) > 0 ? Number(v.scale) : CALCULUS_DEFAULT_SCALE
   const sx = Number(v.scaleX) > 0 ? Number(v.scaleX) : base
   const sy = Number(v.scaleY) > 0 ? Number(v.scaleY) : base
-  const halfX = (0.85 * (Number(asset.w) || 0)) / 2 / sx
-  const halfY = (0.85 * (Number(asset.h) || 0)) / 2 / sy
-  return Math.abs(x - (Number(v.cx) || 0)) <= halfX && Math.abs(y - (Number(v.cy) || 0)) <= halfY
+  const cx = Number(v.cx) || 0
+  const cy = Number(v.cy) || 0
+  const halfX = (Number(asset.w) || 0) / 2 / sx
+  const halfY = (Number(asset.h) || 0) / 2 / sy
+  return { xMin: cx - halfX, xMax: cx + halfX, yMin: cy - halfY, yMax: cy + halfY }
+}
+
+/** P у вікні не ближче `CALCULUS_EDGE` від краю. */
+function _calculusShows(win, x, y) {
+  if (!Number.isFinite(y)) return false
+  const mx = CALCULUS_EDGE * (win.xMax - win.xMin)
+  const my = CALCULUS_EDGE * (win.yMax - win.yMin)
+  return x >= win.xMin + mx && x <= win.xMax - mx && y >= win.yMin + my && y <= win.yMax - my
+}
+
+/** Вікно, розширене рівно настільки, щоб P стала на `CALCULUS_EDGE` від краю.
+ *  Для правого краю: v = hi′ − e·(hi′ − lo) ⇒ hi′ = (v − e·lo) / (1 − e); лівий — дзеркально. */
+function _calculusWindowWith(win, x, y) {
+  const e = CALCULUS_EDGE
+  const grow = (lo, hi, v) => {
+    if (v > hi - e * (hi - lo)) return [lo, (v - e * lo) / (1 - e)]
+    if (v < lo + e * (hi - lo)) return [(v - e * hi) / (1 - e), hi]
+    return [lo, hi]
+  }
+  const [xMin, xMax] = grow(win.xMin, win.xMax, x)
+  const [yMin, yMax] = grow(win.yMin, win.yMax, y)
+  return { xMin, xMax, yMin, yMax }
 }
 
 // Phase 1 Block B3 (2026-08-01): перенос об'єкта на іншу сторінку.
