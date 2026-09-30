@@ -168,17 +168,20 @@ describe('екран тарифу, поки продаж вимкнено', () =
 
 // Текст — обіцянка людям, тож перевіряємо саме слова (обидві мови), а не лише ключі.
 describe('INV-EA-6 · текст бети', () => {
-  it.each([['uk'], ['en']])('%s: дата 1 грудня 2026, знижка 50%, без FREE; посилання — назва з меню', async (lang) => {
+  // ru — з 2026-09-29 (власник: «Мій план» у російській стояв українською)
+  const DATE: Record<string, RegExp> = { uk: /1 грудня 2026/, en: /December 1, 2026/, ru: /1 декабря 2026/ }
+  const RECORDINGS: Record<string, RegExp> = { uk: /запис/i, en: /recording|replay/i, ru: /запис/i }
+  it.each([['uk'], ['en'], ['ru']])('%s: дата 1 грудня 2026, знижка 50%, без FREE; посилання — назва з меню', async (lang) => {
     const messages = (await import(`../../../../i18n/locales/${lang}.json`)).default as {
       billing: { earlyAccess: Record<string, string> }; sidebar: { item: Record<string, string> }
     }
     const ea = messages.billing.earlyAccess
     const all = Object.values(ea).join(' ')
-    expect(ea.cardTitle).toMatch(lang === 'uk' ? /1 грудня 2026/ : /December 1, 2026/)
+    expect(ea.cardTitle).toMatch(DATE[lang])
     expect(ea.cardText).toContain('50%')
     expect(all).not.toMatch(/FREE/)
     // Записи уроків не обіцяємо: безкоштовний план видаляє їх за replay_retention_days.
-    expect(all).not.toMatch(lang === 'uk' ? /запис/i : /recording|replay/i)
+    expect(all).not.toMatch(RECORDINGS[lang])
     expect(messages.sidebar.item.feedback.length).toBeGreaterThan(3)
   })
 })
