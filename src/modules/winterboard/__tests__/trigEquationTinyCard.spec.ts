@@ -7,6 +7,8 @@
 // Chromium: arc з від'ємним радіусом кидає IndexSizeError.
 
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
+import { DEFAULT_TRIG_SOLVER_H, DEFAULT_TRIG_SOLVER_W } from '../constants/trigSolverDefaults'
+import { RENDERER_DEFAULTS } from '../services/capabilityRegistry'
 
 type Rect = { width: number; height: number }
 
@@ -198,14 +200,25 @@ describe('віджет тригонометричних рівнянь на кр
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('вузька картка — поріг вищий: 460×560 мала, 460×700 повна', () => {
-    const a = new TrigEquation(container({ width: 460, height: 560 }), { type: 'sin', a: 0.5 })
-    made.push(a)
-    const b = new TrigEquation(container({ width: 460, height: 700 }), { type: 'sin', a: 0.5 })
-    made.push(b)
-    vi.runAllTimers()
-    expect(a.hud.classList.contains('calc-hud--compact')).toBe(true)
-    expect(b.hud.classList.contains('calc-hud--compact')).toBe(false)
+  it('поріг малої картки — з виміру повної шапки; стандартна з панелі лишається повною', () => {
+    // Сцена = картка без рамки (по 1 px з боків). Картка Інтегралика вузька — повна шапка там
+    // закривала коло на 30 px; з панелі — широка, повний розв'язок вміщається (стенд 2026-10-01).
+    const cases: Array<[number, number, boolean]> = [
+      [DEFAULT_TRIG_SOLVER_W - 2, DEFAULT_TRIG_SOLVER_H - 2, false],
+      [RENDERER_DEFAULTS.trig_solver.w - 2, RENDERER_DEFAULTS.trig_solver.h - 2, true],
+      [520, 540, true], // межа вузької включно — як @container (max-width: 520px)
+      [460, 580, false],
+      [640, 480, true], // середня смуга: довгий підпис переноситься, шапка вища
+      [640, 500, false],
+      [760, 390, true],
+      [760, 400, false],
+    ]
+    for (const [width, height, small] of cases) {
+      const w = new TrigEquation(container({ width, height }), { type: 'sin', a: -0.379 })
+      made.push(w)
+      vi.runAllTimers()
+      expect([width, height, w.hud.classList.contains('calc-hud--compact')]).toEqual([width, height, small])
+    }
   })
 
   it('загальна формула позначена і для cos, і для tg', () => {
@@ -230,7 +243,7 @@ describe('віджет тригонометричних рівнянь на кр
     Object.defineProperty(w.hud, 'offsetTop', { get: () => 10 })
     vi.runAllTimers()
     w._layout()
-    el.getBoundingClientRect = () => ({ width: 750, height: 420, x: 0, y: 0, top: 0, left: 0, right: 750, bottom: 420, toJSON: () => ({}) }) as DOMRect
+    el.getBoundingClientRect = () => ({ width: 750, height: 380, x: 0, y: 0, top: 0, left: 0, right: 750, bottom: 380, toJSON: () => ({}) }) as DOMRect
     hudH = 90
     w.setA(0.5)
     expect(w.hud.classList.contains('calc-hud--compact')).toBe(true)

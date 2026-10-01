@@ -352,9 +352,14 @@
       const presentationScale = Math.max(0.7, Math.min(1.7, r.width / 750, r.height / 560));
       this.container.style.setProperty('--trig-presentation-scale', presentationScale.toFixed(3));
       // Мала картка — лише рівняння й загальна формула розв'язку (власник 2026-10-01, «так, роби
-      // малу картку»): повний розв'язок займав більше 42 % висоти й закривав коло. Вузька картка
-      // кладе розв'язок в одну колонку (вищий пояс) — їй поріг вищий.
-      const compact = r.height < 480 || (r.width < 520 && r.height < 600);
+      // малу картку»): повна шапка там сягала нижче 42 % висоти й закривала коло. Пороги — з виміру
+      // повної шапки на стенді (sin/cos, найдовші підписи a < 0):
+      //  • ≤ 520 — розв'язок в одну колонку (той самий @container (max-width: 520px) у
+      //    TrigSolverRenderer), шапка ~207 px: закриває коло до висоти ~550 (картка Інтегралика
+      //    520×480 — на 30 px);
+      //  • < 680 — дві колонки, але довгий підпис переноситься (640×480 — +6 px, 600×440 — +11);
+      //  • ширше — лише коли нижче 400 (380 — +3 px). Стандартна з панелі 700×480 лишається повною (−18).
+      const compact = r.width <= 520 ? r.height < 560 : r.width < 680 ? r.height < 500 : r.height < 400;
       if (compact !== this._compact) {
         this._compact = compact;
         this.hud.classList.toggle('calc-hud--compact', compact);

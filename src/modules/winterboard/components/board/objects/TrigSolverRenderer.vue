@@ -603,7 +603,9 @@ const hostWindowControls = useHostWindowControls()
 /* Мала картка (`calc-hud--compact` ставить рушій за розміром сцени): лише рівняння й загальна
    формула розв'язку — повний розв'язок закривав коло (власник 2026-10-01, «так, роби малу
    картку»). Стоїть ПІСЛЯ контейнерних правил і з подвійним класом — перекриває їхні min-height. */
-.trig-slv-stage :deep(.calc-hud.calc-hud--compact .calc-hud__details) {
+/* Нерівність не чіпаємо: її відповідь і так у рядок-два, а заброньована висота тримає шапку,
+   коли «∅» змінює інтервал. */
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact:not(.calc-hud--inequality) .calc-hud__details) {
   grid-template-columns: 1fr;
   min-height: 0;
 }
