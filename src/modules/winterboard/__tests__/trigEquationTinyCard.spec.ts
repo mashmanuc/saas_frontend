@@ -181,6 +181,63 @@ describe('віджет тригонометричних рівнянь на кр
     expect(consoleError).not.toHaveBeenCalled()
   })
 
+  it('мала картка — лише рівняння й загальна формула (власник 2026-10-01)', () => {
+    const small = new TrigEquation(container({ width: 460, height: 420 }), { type: 'sin', rel: '=', a: 0.379, showGraph: true })
+    made.push(small)
+    const big = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.379, showGraph: true })
+    made.push(big)
+    vi.runAllTimers()
+    expect(small.hud.classList.contains('calc-hud--compact')).toBe(true)
+    expect(big.hud.classList.contains('calc-hud--compact')).toBe(false)
+    const general = small.hud.querySelectorAll('.calc-hud__details .calc-line.general')
+    expect(general.length).toBe(1)
+    expect(general[0].textContent).toContain('(−1)ⁿ')
+    expect(general[0].querySelector('.eq-sign')).not.toBeNull()
+    // Єдиний рядок розв'язку в малій картці закінчується сам: «…, n ∈ ℤ».
+    expect(general[0].querySelector('.calc-nz')?.textContent).toContain('n ∈ ℤ')
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('вузька картка — поріг вищий: 460×560 мала, 460×700 повна', () => {
+    const a = new TrigEquation(container({ width: 460, height: 560 }), { type: 'sin', a: 0.5 })
+    made.push(a)
+    const b = new TrigEquation(container({ width: 460, height: 700 }), { type: 'sin', a: 0.5 })
+    made.push(b)
+    vi.runAllTimers()
+    expect(a.hud.classList.contains('calc-hud--compact')).toBe(true)
+    expect(b.hud.classList.contains('calc-hud--compact')).toBe(false)
+  })
+
+  it('загальна формула позначена і для cos, і для tg', () => {
+    const c = new TrigEquation(container({ width: 460, height: 420 }), { type: 'cos', a: 0.3 })
+    made.push(c)
+    const t = new TrigEquation(container({ width: 460, height: 420 }), { type: 'tan', a: 2 })
+    made.push(t)
+    vi.runAllTimers()
+    expect(c.hud.querySelectorAll('.calc-line.general').length).toBe(1)
+    expect(c.hud.querySelector('.calc-line.general')?.textContent).toContain('±')
+    expect(c.hud.querySelector('.calc-line.general .calc-nz')?.textContent).toContain('n ∈ ℤ')
+    expect(t.hud.querySelectorAll('.calc-line.general').length).toBe(1)
+    expect(t.hud.querySelector('.calc-line.general')?.textContent).toContain('πn')
+  })
+
+  it('картка стала малою — пояс для кола й графіка перераховано під коротку шапку', () => {
+    const el = container({ width: 750, height: 580 })
+    const w = new TrigEquation(el, { type: 'sin', a: 0.5, showGraph: true })
+    made.push(w)
+    let hudH = 160
+    Object.defineProperty(w.hud, 'offsetHeight', { get: () => hudH })
+    Object.defineProperty(w.hud, 'offsetTop', { get: () => 10 })
+    vi.runAllTimers()
+    w._layout()
+    el.getBoundingClientRect = () => ({ width: 750, height: 420, x: 0, y: 0, top: 0, left: 0, right: 750, bottom: 420, toJSON: () => ({}) }) as DOMRect
+    hudH = 90
+    w.setA(0.5)
+    expect(w.hud.classList.contains('calc-hud--compact')).toBe(true)
+    w._layout()
+    expect((w as unknown as { _hudReserve: number })._hudReserve).toBe(90)
+  })
+
   it('масштаб тексту враховує і ширину, і висоту картки', () => {
     const large = container({ width: 1200, height: 900 })
     made.push(new TrigEquation(large, { type: 'sin', a: 0.5 }))

@@ -351,6 +351,14 @@
       const w = Math.max(40, r.width), h = Math.max(40, r.height);
       const presentationScale = Math.max(0.7, Math.min(1.7, r.width / 750, r.height / 560));
       this.container.style.setProperty('--trig-presentation-scale', presentationScale.toFixed(3));
+      // Мала картка — лише рівняння й загальна формула розв'язку (власник 2026-10-01, «так, роби
+      // малу картку»): повний розв'язок займав більше 42 % висоти й закривав коло. Вузька картка
+      // кладе розв'язок в одну колонку (вищий пояс) — їй поріг вищий.
+      const compact = r.height < 480 || (r.width < 520 && r.height < 600);
+      if (compact !== this._compact) {
+        this._compact = compact;
+        this.hud.classList.toggle('calc-hud--compact', compact);
+      }
       const nw = w * dpr, nh = h * dpr;
       if (this.canvas.width !== nw || this.canvas.height !== nh) {
         this.canvas.width = nw; this.canvas.height = nh;
@@ -371,7 +379,7 @@
       // Висота поясу для розкладки — «липка», поки тягнуть a: шапка, що на мить нижча (немає
       // розв'язків, коротший рядок), не тягне за собою коло й графік (власник 2026-10-01:
       // «скаче»). Скидається лише зі зміною функції, знака чи ширини полотна.
-      const hudKey = `${this.opts.type}|${this.opts.rel || '='}|${w}`;
+      const hudKey = `${this.opts.type}|${this.opts.rel || '='}|${w}|${this._compact ? 'c' : 'f'}`;
       if (this._hudKey !== hudKey) { this._hudKey = hudKey; this._hudReserve = 0; }
       this._hudReserve = Math.max(this._hudReserve || 0, hudHeight);
       const hudBottom = (this.hud.offsetTop + this._hudReserve + 14) * dpr;
@@ -1235,15 +1243,15 @@
           lines.push(`<div class="calc-line sec">x = ${colorTxt(second, PAL.famB)} + 2πn,&nbsp; n ∈ ℤ</div>`);
           // Завжди, не лише для табличних a: формула правильна для будь-якого |a| ≤ 1, а рядок,
           // що з'являвся й зникав під час тягання, стрибав шапкою (власник 2026-10-01).
-          lines.push(`<div class="calc-line sub">≡ x = (−1)ⁿ · ${alphaTxt} + πn</div>`);
+          lines.push(`<div class="calc-line sub general"><span class="eq-sign">≡ </span>x = (−1)ⁿ · ${alphaTxt} + πn<span class="calc-nz">,&nbsp; n ∈ ℤ</span></div>`);
         } else if (t === 'cos') {
           lines.push(`<div class="calc-line"><span>x₀ = ±</span>${colorTxt(alphaTxt, PAL.famA)}</div>`);
           lines.push(`<div class="calc-line sec">x = ${colorTxt(alphaTxt, PAL.famA)} + 2πn</div>`);
           lines.push(`<div class="calc-line sec">x = ${colorTxt(this._negLab(alphaTxt), PAL.famB)} + 2πn,&nbsp; n ∈ ℤ</div>`);
-          lines.push(`<div class="calc-line sub">≡ x = ± ${alphaTxt} + 2πn</div>`);
+          lines.push(`<div class="calc-line sub general"><span class="eq-sign">≡ </span>x = ± ${alphaTxt} + 2πn<span class="calc-nz">,&nbsp; n ∈ ℤ</span></div>`);
         } else if (t === 'tan' || t === 'cot') {
           lines.push(`<div class="calc-line"><span>x₀ =</span> ${colorTxt(alphaTxt, PAL.famA)}</div>`);
-          lines.push(`<div class="calc-line sec">x = ${colorTxt(alphaTxt, PAL.famA)} + πn,&nbsp; n ∈ ℤ</div>`);
+          lines.push(`<div class="calc-line sec general">x = ${colorTxt(alphaTxt, PAL.famA)} + πn,&nbsp; n ∈ ℤ</div>`);
         }
       }
       show();

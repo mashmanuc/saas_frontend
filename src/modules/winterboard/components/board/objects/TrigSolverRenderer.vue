@@ -600,6 +600,31 @@ const hostWindowControls = useHostWindowControls()
   .trig-slv-stage :deep(.calc-hud--changed .calc-equation > strong) { animation: none; }
 }
 
+/* Мала картка (`calc-hud--compact` ставить рушій за розміром сцени): лише рівняння й загальна
+   формула розв'язку — повний розв'язок закривав коло (власник 2026-10-01, «так, роби малу
+   картку»). Стоїть ПІСЛЯ контейнерних правил і з подвійним класом — перекриває їхні min-height. */
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact .calc-hud__details) {
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact:not(.calc-hud--inequality) .calc-line:not(.general):not(.err)) {
+  display: none;
+}
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact .calc-line.general) {
+  grid-column: 1 / -1;
+  font-size: 1em;
+  font-style: normal;
+  font-weight: 700;
+  color: #2b2118;
+}
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact .calc-line .eq-sign) { display: none; }
+/* «n ∈ ℤ» у повній картці стоїть рядком вище; у малій загальна формула — єдиний рядок
+   розв'язку, тож закінчується сама. */
+.trig-slv-stage :deep(.calc-hud .calc-line .calc-nz) { display: none; }
+.trig-slv-stage :deep(.calc-hud.calc-hud--compact .calc-line .calc-nz) { display: inline; }
+/* «≡ » у спані лише для того, щоб мала картка могла його сховати; відступ — як до спану. */
+.trig-slv-stage :deep(.calc-hud .calc-line > span.eq-sign:first-child) { margin-right: 0; }
+
 /* ── Toolbar ── */
 .trig-slv-tools {
   flex: 0 0 auto;
