@@ -282,10 +282,11 @@
     setA(a) {
       a = Math.max(this._aRange()[0], Math.min(this._aRange()[1], a));
       if (this.opts.snapSpecial) a = this._snap(a);
-      const changed = this.opts.a !== a;
       this.opts.a = a;
       this._safeRender();
-      if (changed) this._highlightEquation();
+      // Без спалаху: setA кличе повзунок на КОЖЕН рух, і спалах, що перезапускався щокадру,
+      // робив картку мерехтливою, «як старий телевізор» (власник 2026-10-01). Акцент — лише
+      // на дискретні зміни: функція (setType) і знак (setRel).
       this.onChange && this.onChange();
     }
     setType(t) {
@@ -367,7 +368,13 @@
       // Розв'язок займає верхній пояс. Залишок висоти віддаємо графікам;
       // за достатнього місця їхній радіус не змінюється, лише центр опускається.
       const hudHeight = this.hud.offsetHeight;
-      const hudBottom = (this.hud.offsetTop + hudHeight + 14) * dpr;
+      // Висота поясу для розкладки — «липка», поки тягнуть a: шапка, що на мить нижча (немає
+      // розв'язків, коротший рядок), не тягне за собою коло й графік (власник 2026-10-01:
+      // «скаче»). Скидається лише зі зміною функції, знака чи ширини полотна.
+      const hudKey = `${this.opts.type}|${this.opts.rel || '='}|${w}`;
+      if (this._hudKey !== hudKey) { this._hudKey = hudKey; this._hudReserve = 0; }
+      this._hudReserve = Math.max(this._hudReserve || 0, hudHeight);
+      const hudBottom = (this.hud.offsetTop + this._hudReserve + 14) * dpr;
       const top = hudHeight ? Math.min(h * 0.42, Math.max(72 * dpr, hudBottom)) : 0;
       const bottom = Math.min(24 * dpr, h * 0.08);
       const plotHeight = Math.max(0, h - top - bottom);
@@ -1226,9 +1233,9 @@
           lines.push(`<div class="calc-line"><span>x₀ =</span> ${colorTxt(second, PAL.famB)}</div>`);
           lines.push(`<div class="calc-line sec">x = ${colorTxt(alphaTxt, PAL.famA)} + 2πn</div>`);
           lines.push(`<div class="calc-line sec">x = ${colorTxt(second, PAL.famB)} + 2πn,&nbsp; n ∈ ℤ</div>`);
-          if (info.alphaLab) {
-            lines.push(`<div class="calc-line sub">≡ x = (−1)ⁿ · ${alphaTxt} + πn</div>`);
-          }
+          // Завжди, не лише для табличних a: формула правильна для будь-якого |a| ≤ 1, а рядок,
+          // що з'являвся й зникав під час тягання, стрибав шапкою (власник 2026-10-01).
+          lines.push(`<div class="calc-line sub">≡ x = (−1)ⁿ · ${alphaTxt} + πn</div>`);
         } else if (t === 'cos') {
           lines.push(`<div class="calc-line"><span>x₀ = ±</span>${colorTxt(alphaTxt, PAL.famA)}</div>`);
           lines.push(`<div class="calc-line sec">x = ${colorTxt(alphaTxt, PAL.famA)} + 2πn</div>`);

@@ -110,7 +110,7 @@ describe('віджет тригонометричних рівнянь на кр
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('формула й розв’язок лишаються видимими; зміна параметра та знака акцентує саме формулу', () => {
+  it('формула й розв’язок лишаються видимими; спалах — лише на зміну знака чи функції, не на тягання a', () => {
     const w = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
     made.push(w)
     vi.runAllTimers()
@@ -118,11 +118,11 @@ describe('віджет тригонометричних рівнянь на кр
     expect(w.hud.querySelectorAll('.calc-hud__details .calc-line').length).toBeGreaterThan(2)
     expect(w.hud.classList.contains('calc-hud--changed')).toBe(false)
 
+    // Власник 2026-10-01: спалах, що перезапускався на кожен рух повзунка, — «як старий телевізор».
     w.setA(1)
     expect(w.hud.querySelector('.calc-equation')?.textContent).toContain('sin x = 1')
-    expect(w.hud.classList.contains('calc-hud--changed')).toBe(true)
-    w.hud.classList.remove('calc-hud--changed')
-    w.setA(1)
+    expect(w.hud.classList.contains('calc-hud--changed')).toBe(false)
+    w.setA(0.379)
     expect(w.hud.classList.contains('calc-hud--changed')).toBe(false)
 
     w.setRel('>=')
@@ -144,6 +144,40 @@ describe('віджет тригонометричних рівнянь на кр
     const layout = w._layout()
     expect(layout.circle.r).toBeCloseTo(217)
     expect(layout.graph?.y0).toBeGreaterThan((10 + 150 + 14) * 2)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('sin: табличне й звичайне a — та сама кількість рядків розв’язку (шапка не стрибає)', () => {
+    // Власник 2026-10-01: рядок «≡ x = (−1)ⁿ · α + πn» був лише для табличних a — під час тягання
+    // з'являвся й зникав, шапка стрибала. Формула правильна для будь-якого |a| ≤ 1.
+    const w = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
+    made.push(w)
+    vi.runAllTimers()
+    const lines = () => [...w.hud.querySelectorAll('.calc-hud__details .calc-line')].map((n) => n.textContent ?? '')
+    const table = lines()
+    w.setA(0.379)
+    const plain = lines()
+    expect(plain.length).toBe(table.length)
+    expect(plain[plain.length - 1]).toContain('(−1)ⁿ')
+    expect(plain[plain.length - 1]).toContain('arcsin(0,379)')
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('коло й графік не рухаються, коли шапка на мить нижча під час тягання a', () => {
+    const w = new TrigEquation(container({ width: 750, height: 580 }), { type: 'sin', rel: '=', a: 0.5, showGraph: true })
+    made.push(w)
+    let hudH = 150
+    Object.defineProperty(w.hud, 'offsetHeight', { get: () => hudH })
+    Object.defineProperty(w.hud, 'offsetTop', { get: () => 10 })
+    vi.runAllTimers()
+    const before = w._layout()
+    hudH = 90                      // напр. «|a| > 1 → розв'язків немає» — один рядок
+    w.setA(1.3)
+    const during = w._layout()
+    expect(during.circle.r).toBeCloseTo(before.circle.r)
+    expect(during.graph?.y0).toBeCloseTo(before.graph?.y0 ?? NaN)
+    w.setType('cos')               // дискретна зміна — пояс перераховується під нову шапку
+    expect(w._layout().graph?.y0).toBeLessThan(before.graph?.y0 ?? 0)
     expect(consoleError).not.toHaveBeenCalled()
   })
 

@@ -511,11 +511,14 @@ const hostWindowControls = useHostWindowControls()
   color: #2b2118;
   backdrop-filter: blur(4px);
 }
+/* Підпис «Рівняння» ЗАВЖДИ окремим рядком, формула — під ним і без переносу. До 2026-10-01 тут
+   був рядок із переносом: коротке «sin x = ½» ставало поруч із підписом, довге «sin x = 0,379» —
+   під ним, і під час тягання повзунка шапка стрибала (власник: «перескакує формула і знову скаче»). */
 .trig-slv-stage :deep(.calc-hud .calc-equation) {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   margin-bottom: 5px;
 }
 .trig-slv-stage :deep(.calc-hud .calc-equation > span) {
@@ -528,6 +531,7 @@ const hostWindowControls = useHostWindowControls()
 }
 .trig-slv-stage :deep(.calc-hud .calc-equation > strong) {
   display: inline-block;
+  white-space: nowrap;
   border-radius: 5px;
   font-size: clamp(22px, calc(36px * var(--trig-presentation-scale, 1)), 61px);
   font-weight: 750;
