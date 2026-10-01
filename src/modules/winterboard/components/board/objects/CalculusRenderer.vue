@@ -137,6 +137,7 @@ import {
 import type { CalculusBridge } from '../../../board/state/calculusUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
+import { useCardZoomRefresh } from '../../../composables/cardZoom'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { autofitExpressions, autofitIntegral, type GraphFit } from '../../../utils/graphAutofit'
 
@@ -165,6 +166,8 @@ useExportCapture(
 )
 
 let card: CalculusCardInstance | null = null
+// Масштаб дошки змінився — та сама картка з новою роздільністю (composables/cardZoom.ts).
+useCardZoomRefresh(() => card?.refreshResolution())
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null
 const SNAPSHOT_DEBOUNCE_MS = 150

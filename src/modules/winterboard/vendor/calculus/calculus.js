@@ -1,5 +1,7 @@
 // calculus.js — Interactive visualizations for derivative and antiderivative.
 // Reuses the parser/evaluator from graph-calculator.js (window.GraphCalc).
+import { fitCardCanvas, toCanvasPx } from '../cardCanvas.js';
+
 (function () {
   const { parse, evalAst, freeVars, CONSTS } = window.GraphCalc;
   const PALETTE = {
@@ -126,6 +128,8 @@
       c.style.position = 'relative';
       c.style.background = PALETTE.bg;
       this.canvas = document.createElement('canvas');
+      // Логічний розмір до першого _resize — як і раніше, типовий розмір полотна.
+      this._lw = this.canvas.width; this._lh = this.canvas.height;
       this.canvas.style.cssText = 'display:block;position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none;';
       c.appendChild(this.canvas);
       this.ctx = this.canvas.getContext('2d');
@@ -147,8 +151,8 @@
       this._zoomBox = z;
       z.addEventListener('click', (e) => {
         const k = e.target.dataset.z;
-        if (k === 'in')   this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1.4);
-        if (k === 'out')  this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1/1.4);
+        if (k === 'in')   this._zoomAt(this._lw/2, this._lh/2, 1.4);
+        if (k === 'out')  this._zoomAt(this._lw/2, this._lh/2, 1/1.4);
         if (k === 'home') {
           this._fit = null;
           this.viewport = { cx: 0, cy: 0, scaleX: CALC_DEFAULT_SCALE, scaleY: CALC_DEFAULT_SCALE };
@@ -171,19 +175,27 @@
       });
     }
 
+    // Розмір — картки, не екрана (`cardCanvas.js`): на масштабі дошки картка лишається
+    // зменшеною копією самої себе; вікно (`viewport.scale*`) — у тих самих логічних
+    // пікселях, що й раніше на 100 % (власник 2026-10-01).
     _resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const r = this.container.getBoundingClientRect();
-      const w = Math.max(40, r.width), h = Math.max(40, r.height);
-      const newW = w * dpr, newH = h * dpr;
-      if (this.canvas.width !== newW || this.canvas.height !== newH) {
-        this.canvas.width = newW;
-        this.canvas.height = newH;
-      }
-      this.canvas.style.width = w + 'px';
-      this.canvas.style.height = h + 'px';
+      const { dpr, lw, lh } = fitCardCanvas(this.container, this.canvas, this.ctx);
       this._dpr = dpr;
+      this._lw = lw;
+      this._lh = lh;
       this._applyFit();
+    }
+
+    /** Масштаб показу змінився (масштаб дошки) — та сама картка з новою роздільністю. */
+    refreshResolution() {
+      if (this._destroyed) return;
+      this._resize();
+      this._scheduleRender();
+    }
+
+    /** Скільки логічних пікселів полотна в одному екранному. */
+    _screenPx() {
+      return toCanvasPx(this.canvas, this._lw, this._dpr || 1);
     }
 
     /** Вікно зі збережених даних: стара `{cx, cy, scale}`, нова `scaleX/scaleY`
@@ -232,7 +244,7 @@
     _applyFit() {
       const f = this._fit;
       if (!f) return;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       if (!(w > 0 && h > 0)) return;
       this.viewport = {
         cx: (f.xMin + f.xMax) / 2,
@@ -258,7 +270,8 @@
           if (Number.isFinite(ya)) cand.push({ name: 'a', p: this._mathToPx(this.opts.a, ya) });
           if (Number.isFinite(yb)) cand.push({ name: 'b', p: this._mathToPx(this.opts.b, yb) });
         }
-        const tol = 16 * (this._dpr || 1);
+        // Не менше 16 екранних пікселів: на 35 % дошки точку P теж можна схопити.
+        const tol = 16 * Math.max(this._dpr || 1, this._screenPx());
         let best = null, bestD = tol * tol;
         for (const c of cand) {
           const d2 = (c.p.x - px) ** 2 + (c.p.y - py) ** 2;
@@ -269,8 +282,8 @@
 
       this.canvas.addEventListener('pointerdown', (e) => {
         const r = this.canvas.getBoundingClientRect();
-        const px = (e.clientX - r.left) * (this._dpr || 1);
-        const py = (e.clientY - r.top)  * (this._dpr || 1);
+        const px = (e.clientX - r.left) * this._screenPx();
+        const py = (e.clientY - r.top)  * this._screenPx();
         const which = handleHit(px, py);
         dragging = which || 'pan';
         lx = e.clientX; ly = e.clientY;
@@ -282,20 +295,20 @@
         if (!dragging) {
           // cursor hint on hover
           const r = this.canvas.getBoundingClientRect();
-          const px = (e.clientX - r.left) * (this._dpr || 1);
-          const py = (e.clientY - r.top)  * (this._dpr || 1);
+          const px = (e.clientX - r.left) * this._screenPx();
+          const py = (e.clientY - r.top)  * this._screenPx();
           this.canvas.style.cursor = handleHit(px, py) ? 'ew-resize' : 'grab';
           return;
         }
         if (dragging === 'pan') {
-          const dx = (e.clientX - lx) * (this._dpr || 1);
-          const dy = (e.clientY - ly) * (this._dpr || 1);
+          const dx = (e.clientX - lx) * this._screenPx();
+          const dy = (e.clientY - ly) * this._screenPx();
           this._fit = null;
           this.viewport.cx -= dx / this.viewport.scaleX;
           this.viewport.cy += dy / this.viewport.scaleY;
         } else {
           const r = this.canvas.getBoundingClientRect();
-          const px = (e.clientX - r.left) * (this._dpr || 1);
+          const px = (e.clientX - r.left) * this._screenPx();
           const m = this._pxToMath(px, 0);
           // Снап меж інтегрування до 0.01: інфо-бокс показує a/b з 2 знаками,
           // тож «сира» перетягнута межа (2.0069) виглядала як 2, а інтеграл
@@ -324,8 +337,8 @@
       this.canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const r = this.canvas.getBoundingClientRect();
-        const px = (e.clientX - r.left) * (this._dpr || 1);
-        const py = (e.clientY - r.top) * (this._dpr || 1);
+        const px = (e.clientX - r.left) * this._screenPx();
+        const py = (e.clientY - r.top) * this._screenPx();
         this._zoomAt(px, py, Math.exp(-e.deltaY * 0.0015));
       }, { passive: false });
     }
@@ -346,14 +359,14 @@
     }
 
     _pxToMath(px, py) {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       return {
         x: this.viewport.cx + (px - w/2) / this.viewport.scaleX,
         y: this.viewport.cy - (py - h/2) / this.viewport.scaleY,
       };
     }
     _mathToPx(x, y) {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       return {
         x: w/2 + (x - this.viewport.cx) * this.viewport.scaleX,
         y: h/2 - (y - this.viewport.cy) * this.viewport.scaleY,
@@ -377,7 +390,7 @@
       // Make sure canvas bitmap matches container size BEFORE we draw — this
       // is the most robust way to handle initial layout in any host environment.
       this._resize();
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       ctx.fillStyle = PALETTE.bg; ctx.fillRect(0, 0, w, h);
       this._drawGrid();
       this._drawAxes();
@@ -402,7 +415,7 @@
       return nice * Math.pow(10, exp);
     }
     _drawGrid() {
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       const xRange = w / this.viewport.scaleX, yRange = h / this.viewport.scaleY;
       // Крок на кожну вісь за однаковою щільністю в пікселях: при scaleX = scaleY
       // збігаються — старі картки мають ту саму сітку.
@@ -429,7 +442,7 @@
       ctx.stroke();
     }
     _drawAxes() {
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       const o = this._mathToPx(0, 0);
       ctx.strokeStyle = PALETTE.axis; ctx.lineWidth = 1.4 * (this._dpr || 1);
       ctx.beginPath();
@@ -465,7 +478,7 @@
     }
 
     _drawFunction() {
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       ctx.strokeStyle = PALETTE.fn;
       ctx.lineWidth = 2.4 * (this._dpr || 1);
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -490,7 +503,7 @@
       // background overlays before function (none here)
     }
     _renderDerivativeOverlay() {
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       const x0 = this.opts.x0;
       const y0 = this._fnFn(x0);
       if (!Number.isFinite(y0)) return;
@@ -651,7 +664,7 @@
     }
 
     _renderIntegralOverlay() {
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       // Antiderivative curve F(x) (numerical, F(a) = 0)
       if (this.opts.showF) {
         const a = this.opts.a;
@@ -781,6 +794,7 @@
     }
 
     destroy() {
+      this._destroyed = true;
       try { this._ro && this._ro.disconnect(); } catch(_) {}
       if (this._onWinResize) window.removeEventListener('resize', this._onWinResize);
       if (this._raf) cancelAnimationFrame(this._raf);

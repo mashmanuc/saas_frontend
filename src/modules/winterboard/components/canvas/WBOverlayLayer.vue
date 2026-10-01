@@ -32,6 +32,7 @@ import {
   OVERLAY_RENDERERS,
   isOverlayType,
   type OverlayCtx, canMeasureInMode } from './overlayRegistry'
+import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, useCardZoom } from '../../composables/cardZoom'
 // N1 Фаза 3 (2026-08-07): preset shadow для theory-card overlay
 const PRESET_SHADOWS: Record<string, string> = {
   definition:      'rgba(37, 99, 235, 0.35)',
@@ -267,6 +268,14 @@ function wrapperStyle(item: RenderItem): Record<string, string> {
   return props.getOverlayStyle(item.asset)
 }
 
+// Картки з власним полотном (коло, «Похідна/∫», графік) — зменшена копія самої себе
+// на будь-якому масштабі дошки (власник 2026-10-01; composables/cardZoom.ts).
+const cardZoom = useCardZoom()
+function cardZoomLayerStyle(item: RenderItem): Record<string, string> {
+  const expanded = item.entry.expandable && expandedId.value === item.asset.id
+  return cardZoomStyle(cardZoom?.value ?? 1, expanded)
+}
+
 /**
  * INV-OVERLAY-CLICK v2 — центральний select-guard для ВСІХ overlay-типів.
  *
@@ -314,8 +323,21 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
       :style="[wrapperStyle(item), item.asset.type === 'theory_card' ? { '--overlay-shadow': theoryOverlayShadow(item.asset) } : {}]"
       @pointerdown.capture="onWrapperPointerDownCapture(item, $event)"
     >
+      <div
+        v-if="ZOOM_SCALED_CARD_TYPES.has(item.asset.type)"
+        class="wb-card-zoom"
+        data-testid="card-zoom-layer"
+        :style="cardZoomLayerStyle(item)"
+      >
+        <component
+          :is="item.entry.component"
+          v-bind="item.entry.buildProps(item.asset, ctx)"
+          v-on="item.entry.buildEvents(item.asset, ctx)"
+        />
+      </div>
       <component
         :is="item.entry.component"
+        v-else
         v-bind="item.entry.buildProps(item.asset, ctx)"
         v-on="item.entry.buildEvents(item.asset, ctx)"
       />

@@ -392,23 +392,25 @@
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
           : getOverlayStyle(asset)"
       >
-        <GraphCalculatorRenderer
-          :asset="asset"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :disable-animation="wbStore.mode === 'replay'"
-          :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
-          @param-set="(name: string, value: number) => wbStore.graphParamSet(asset.id, name, value)"
-          @param-sync="(names: string[]) => wbStore.graphSyncParams(asset.id, names)"
-          @range-set="(name: string, range: { min: number; max: number; step: number }) => wbStore.graphSetParamRange(asset.id, name, range)"
-          @point-add="(id: string, x: number, y: number, mode: 'free' | 'onCurve', curveExprId?: string) => wbStore.graphPointAdd(asset.id, id, x, y, mode, curveExprId)"
-          @point-set="(id: string, x: number, y: number) => wbStore.graphPointSet(asset.id, id, x, Number.isFinite(y) ? y : undefined)"
-          @point-delete="(id: string) => wbStore.graphPointDelete(asset.id, id)"
-          @point-promote="(id: string, curveExprId: string) => wbStore.graphPointPromote(asset.id, id, curveExprId)"
-          @delete="emit('asset-delete', asset.id)"
-          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-        />
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
+          <GraphCalculatorRenderer
+            :asset="asset"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            :disable-animation="wbStore.mode === 'replay'"
+            :is-expanded="expandedAssetId === asset.id"
+            @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+            @param-set="(name: string, value: number) => wbStore.graphParamSet(asset.id, name, value)"
+            @param-sync="(names: string[]) => wbStore.graphSyncParams(asset.id, names)"
+            @range-set="(name: string, range: { min: number; max: number; step: number }) => wbStore.graphSetParamRange(asset.id, name, range)"
+            @point-add="(id: string, x: number, y: number, mode: 'free' | 'onCurve', curveExprId?: string) => wbStore.graphPointAdd(asset.id, id, x, y, mode, curveExprId)"
+            @point-set="(id: string, x: number, y: number) => wbStore.graphPointSet(asset.id, id, x, Number.isFinite(y) ? y : undefined)"
+            @point-delete="(id: string) => wbStore.graphPointDelete(asset.id, id)"
+            @point-promote="(id: string, curveExprId: string) => wbStore.graphPointPromote(asset.id, id, curveExprId)"
+            @delete="emit('asset-delete', asset.id)"
+            @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
+          />
+        </div>
       </div>
     </template>
 
@@ -445,13 +447,15 @@
         :data-testid="`calculus-overlay-${asset.id}`"
         :style="getOverlayStyle(asset)"
       >
-        <CalculusRenderer
-          :asset="(asset as any)"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
-          @delete="emit('asset-delete', asset.id)"
-        />
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
+          <CalculusRenderer
+            :asset="(asset as any)"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+            @delete="emit('asset-delete', asset.id)"
+          />
+        </div>
       </div>
     </template>
 
@@ -510,15 +514,17 @@
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
           : getOverlayStyle(asset)"
       >
-        <TrigCircleRenderer
-          :asset="(asset as any)"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
-          @delete="emit('asset-delete', asset.id)"
-          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-        />
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
+          <TrigCircleRenderer
+            :asset="(asset as any)"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            :is-expanded="expandedAssetId === asset.id"
+            @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+            @delete="emit('asset-delete', asset.id)"
+            @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
+          />
+        </div>
       </div>
     </template>
 
@@ -972,6 +978,7 @@ import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, i
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
+import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, provideCardZoom } from '../../composables/cardZoom'
 import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -1737,8 +1744,13 @@ onUnmounted(() => windowControlsRo?.disconnect())
 provideHostControlsSlot(computed(() => {
   const t = windowControlsTarget.value
   if (!t || expandedAssetId.value === t.id || !windowControlsWidth.value) return { assetId: null, width: 0 }
-  return { assetId: t.id, width: windowControlsWidth.value + WINDOW_CONTROLS_INSET_PX }
+  const width = windowControlsWidth.value + WINDOW_CONTROLS_INSET_PX
+  // Шапка такої картки — всередині обгортки `scale(zoom)`, а кнопки — в екранних
+  // пікселях: резерв у пікселях картки = екранна ширина / масштаб (cardZoom.ts).
+  return { assetId: t.id, width: ZOOM_SCALED_CARD_TYPES.has(t.type) && props.zoom > 0 ? width / props.zoom : width }
 }))
+// Картки з власним полотном — зменшена копія самої себе на будь-якому масштабі (власник 2026-10-01).
+provideCardZoom(computed(() => props.zoom))
 
 function handleWindowExpand(assetId: string): void {
   // Та сама поведінка, що й ⛶ у картці: перемикач, розгорнута картка виділена.

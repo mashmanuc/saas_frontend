@@ -194,6 +194,7 @@ import type { TrigCircleBridge } from '../../../board/state/trigCircleUiState'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 // INV-EP-8: NO widget business logic — only DOM canvas/svg snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
+import { useCardZoomRefresh } from '../../../composables/cardZoom'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
 const { t } = useI18n()
@@ -224,6 +225,8 @@ useExportCapture(
 )
 
 let trig: TrigCircleInstance | null = null
+// Масштаб дошки змінився — та сама картка з новою роздільністю (composables/cardZoom.ts).
+useCardZoomRefresh(() => trig?.refreshResolution())
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null
 const SNAPSHOT_DEBOUNCE_MS = 300

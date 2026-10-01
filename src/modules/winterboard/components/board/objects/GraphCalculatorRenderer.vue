@@ -392,6 +392,7 @@ import { formatParamValue, paramFocusRole, PARAM_FOCUS_FADE_MS } from '../../../
 import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
 import { useExportCapture } from '../../../composables/useExportCapture'
+import { useCardZoomRefresh } from '../../../composables/cardZoom'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { autofitExpressions, paramValuesOf } from '../../../utils/graphAutofit'
 import { pasteFormulaAsSrc } from '../../../utils/formulaPaste'
@@ -471,6 +472,8 @@ useExportCapture(
 )
 
 let calc: InstanceType<typeof GraphCalculator> | null = null
+// Масштаб дошки змінився — та сама картка з новою роздільністю (composables/cardZoom.ts).
+useCardZoomRefresh(() => calc?.refreshResolution())
 /** Phase G3 hotfix: original engine.setParamValue (pre-monkey-patch). Used
  *  by onParamDrag to bypass monkey-patch (avoids double-emit).
  *  Set у mountEngine. */

@@ -2,6 +2,9 @@
 // Drag the point P on the circle (or scrub angle) — sin(θ), cos(θ) trace out
 // alongside. Optional reference grid of special angles with exact fractional
 // labels (√3/2, √2/2, 1/2, etc.).
+import { fitCardCanvas, toCanvasPx } from '../cardCanvas.js';
+import { fitLabelGroups, firstFittingVariant, textBox } from './labelFit.js';
+
 (function () {
   const PAL = {
     bg:        '#fffaf0',
@@ -154,6 +157,8 @@
       c.style.position = 'relative';
       c.style.background = PAL.bg;
       this.canvas = document.createElement('canvas');
+      // Логічний розмір до першого _resize — як і раніше, типовий розмір полотна.
+      this._lw = this.canvas.width; this._lh = this.canvas.height;
       this.canvas.style.cssText = 'display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none;cursor:grab;';
       c.appendChild(this.canvas);
       this.ctx = this.canvas.getContext('2d');
@@ -167,24 +172,25 @@
       window.addEventListener('resize', this._onWinResize);
     }
 
+    // Розмір — картки, не екрана (`cardCanvas.js`): на масштабі дошки картка лишається
+    // зменшеною копією самої себе (власник 2026-10-01).
     _resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const r = this.container.getBoundingClientRect();
-      const w = Math.max(40, r.width), h = Math.max(40, r.height);
-      const nw = w * dpr, nh = h * dpr;
-      if (this.canvas.width !== nw || this.canvas.height !== nh) {
-        this.canvas.width = nw; this.canvas.height = nh;
-      }
-      this.canvas.style.width = w + 'px';
-      this.canvas.style.height = h + 'px';
+      const { dpr, lw, lh } = fitCardCanvas(this.container, this.canvas, this.ctx);
       this._dpr = dpr;
+      this._lw = lw;
+      this._lh = lh;
+    }
+
+    /** Масштаб показу змінився (масштаб дошки) — перемалювати з новою роздільністю. */
+    refreshResolution() {
+      if (!this._destroyed) this._render();
     }
 
     // ==== layout =========================================================
     // Two panels side-by-side: left = unit circle, right = sin/cos graph
-    // Layout in device pixels (after _resize)
+    // Layout in logical canvas pixels (card px × dpr, after _resize)
     _layout() {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const dpr = this._dpr || 1;
       const pad = 24 * dpr;
       if (!this.opts.showGraphs || w < 600 * dpr) {
@@ -242,9 +248,9 @@
       let dragging = false;
       const setFromXY = (clientX, clientY) => {
         const r = this.canvas.getBoundingClientRect();
-        const dpr = this._dpr || 1;
-        const px = (clientX - r.left) * dpr;
-        const py = (clientY - r.top) * dpr;
+        const k = toCanvasPx(this.canvas, this._lw, this._dpr || 1);
+        const px = (clientX - r.left) * k;
+        const py = (clientY - r.top) * k;
         const L = this._layout();
         // If inside circle area, pick angle by atan2 around its center
         const dxC = px - L.circle.cx, dyC = py - L.circle.cy;
@@ -296,7 +302,7 @@
     // ==== render =========================================================
     _render() {
       this._resize();
-      const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+      const ctx = this.ctx, w = this._lw, h = this._lh;
       ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, w, h);
       const L = this._layout();
       this._drawCircle(L);
@@ -331,28 +337,46 @@
         ];
         ctx.fillStyle = PAL.axisLab;
         ctx.font = `${13*dpr}px JetBrains Mono, monospace`;
+        // Підписи поділок — стільки, скільки поміщається (labelFit.js): «1», далі «½»,
+        // далі «√2/2» і «√3/2». Самі поділки лишаються всі.
+        // Обидві осі — однією чергою (на малому колі «−1» осі x налазить на «−1» осі y біля
+        // центру): x «1» → y «1» → x «½» → y «½» → x решта → y решта.
+        const tickGroups = [[3], [0], [1, 2]];
+        const axes = [
+          { place: (v, s) => ({ x: cx + r * v * s, y: cy + 8*dpr }), align: 'center', baseline: 'top' },
+          { place: (v, s) => ({ x: cx - 8*dpr, y: cy - r * v * s }), align: 'right', baseline: 'middle' },
+        ];
+        const queue = tickGroups.flatMap((g) => axes.map((ax, a) => ({ a, g })));
+        const queueBoxes = queue.map(({ a, g }) => g.flatMap((i) => [-1, 1].map((s) => {
+          const lab = s < 0 ? '−' + ticks[i].lab : ticks[i].lab;
+          const p = axes[a].place(ticks[i].v, s);
+          return textBox(p.x, p.y, ctx.measureText(lab).width, 13 * dpr, axes[a].align, axes[a].baseline);
+        })));
+        const taken = queue.slice(0, fitLabelGroups(queueBoxes, 2 * dpr));
+        const xTicks = new Set(taken.filter((q) => q.a === 0).flatMap((q) => q.g));
+        const yTicks = new Set(taken.filter((q) => q.a === 1).flatMap((q) => q.g));
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        for (const t of ticks) {
+        ticks.forEach((t, i) => {
           for (const s of [-1, 1]) {
             const dx = r * t.v * s;
             ctx.beginPath();
             ctx.moveTo(cx + dx, cy - 4*dpr);
             ctx.lineTo(cx + dx, cy + 4*dpr);
             ctx.stroke();
-            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx + dx, cy + 8*dpr);
+            if (xTicks.has(i)) ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx + dx, cy + 8*dpr);
           }
-        }
+        });
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-        for (const t of ticks) {
+        ticks.forEach((t, i) => {
           for (const s of [-1, 1]) {
             const dy = -r * t.v * s; // up positive
             ctx.beginPath();
             ctx.moveTo(cx - 4*dpr, cy + dy);
             ctx.lineTo(cx + 4*dpr, cy + dy);
             ctx.stroke();
-            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx - 8*dpr, cy + dy);
+            if (yTicks.has(i)) ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx - 8*dpr, cy + dy);
           }
-        }
+        });
         // inscribed shapes (square, hex, equilateral pair) using special angle dots
         this._drawInscribedShapes(cx, cy, r);
       } else if (this.opts.showInscribed) {
@@ -373,35 +397,57 @@
         }
       }
 
-      // special-angle labels (deg / rad)
+      // special-angle labels (deg / rad) — стільки, скільки поміщається (labelFit.js):
+      // усі → без радіан → лише кути, кратні 45° → лише осі. Значення sin/cos — лише
+      // коли кути помістились повністю («спершу радіани й значення», власник 2026-10-01).
+      let valuesFit = true;
       if (this.opts.showDeg || this.opts.showRad) {
-        ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
-        for (const a of SPECIAL_ANGLES) {
-          const off = 22 * dpr;
-          const lx = cx + (r + off) * Math.cos(a.rad);
-          const ly = cy - (r + off) * Math.sin(a.rad);
-          // text-align based on quadrant
-          const cosA = Math.cos(a.rad), sinA = Math.sin(a.rad);
-          ctx.textAlign = cosA > 0.2 ? 'left' : (cosA < -0.2 ? 'right' : 'center');
-          ctx.textBaseline = sinA > 0.2 ? 'bottom' : (sinA < -0.2 ? 'top' : 'middle');
-          const degTxt = a.deg + '°';
-          const radTxt = piFractionLabel(a.num, a.den);
-          // stack lines
-          const lh = 16 * dpr;
-          if (this.opts.showDeg && this.opts.showRad) {
-            ctx.fillStyle = PAL.rad;
-            ctx.fillText(radTxt, lx, ly);
-            ctx.fillStyle = PAL.deg;
-            ctx.fillText(degTxt, lx, ly + (sinA < 0 ? lh : -lh));
-          } else if (this.opts.showDeg) {
-            ctx.fillStyle = PAL.deg;
-            ctx.fillText(degTxt, lx, ly);
-          } else {
-            ctx.fillStyle = PAL.rad;
-            ctx.fillText(radTxt, lx, ly);
+        const fontPx = 14 * dpr;
+        ctx.font = `600 ${fontPx}px JetBrains Mono, monospace`;
+        const both = this.opts.showDeg && this.opts.showRad;
+        const lh = 16 * dpr;
+        const line = (text, x, y, align, baseline, color) => ({
+          text, x, y, align, baseline, color,
+          box: textBox(x, y, ctx.measureText(text).width, fontPx, align, baseline),
+        });
+        const variant = (angles, twoLines) => {
+          const items = [];
+          for (const a of angles) {
+            const off = 22 * dpr;
+            const lx = cx + (r + off) * Math.cos(a.rad);
+            const ly = cy - (r + off) * Math.sin(a.rad);
+            // text-align based on quadrant
+            const cosA = Math.cos(a.rad), sinA = Math.sin(a.rad);
+            const align = cosA > 0.2 ? 'left' : (cosA < -0.2 ? 'right' : 'center');
+            const baseline = sinA > 0.2 ? 'bottom' : (sinA < -0.2 ? 'top' : 'middle');
+            const degTxt = a.deg + '°';
+            const radTxt = piFractionLabel(a.num, a.den);
+            if (twoLines) {
+              // stack lines
+              items.push(line(radTxt, lx, ly, align, baseline, PAL.rad));
+              items.push(line(degTxt, lx, ly + (sinA < 0 ? lh : -lh), align, baseline, PAL.deg));
+            } else if (this.opts.showDeg) {
+              items.push(line(degTxt, lx, ly, align, baseline, PAL.deg));
+            } else {
+              items.push(line(radTxt, lx, ly, align, baseline, PAL.rad));
+            }
           }
+          return { items, boxes: items.map((it) => it.box) };
+        };
+        const variants = [variant(SPECIAL_ANGLES, both)];
+        if (both) variants.push(variant(SPECIAL_ANGLES, false));
+        variants.push(variant(SPECIAL_ANGLES.filter((a) => a.deg % 45 === 0), false));
+        variants.push(variant(SPECIAL_ANGLES.filter((a) => a.deg % 90 === 0), false));
+        const chosen = firstFittingVariant(variants, 2 * dpr);
+        valuesFit = chosen === variants[0];
+        for (const it of chosen.items) {
+          ctx.textAlign = it.align;
+          ctx.textBaseline = it.baseline;
+          ctx.fillStyle = it.color;
+          ctx.fillText(it.text, it.x, it.y);
         }
       }
+      const showValues = this.opts.showRefLabels && valuesFit;
 
       // sweep arc (from 0° to current θ) — angle indicator
       ctx.strokeStyle = PAL.handle;
@@ -422,7 +468,7 @@
         const foot = { x: P.x, y: cy };
         ctx.beginPath(); ctx.moveTo(foot.x, foot.y); ctx.lineTo(P.x, P.y); ctx.stroke();
         // small label
-        if (this.opts.showRefLabels) {
+        if (showValues) {
           const value = Math.sin(theta);
           ctx.fillStyle = PAL.sin;
           ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
@@ -436,7 +482,7 @@
         ctx.strokeStyle = PAL.cos; ctx.lineWidth = 3.5 * dpr;
         const foot = { x: P.x, y: cy };
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(foot.x, foot.y); ctx.stroke();
-        if (this.opts.showRefLabels) {
+        if (showValues) {
           const value = Math.cos(theta);
           ctx.fillStyle = PAL.cos;
           ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
@@ -551,14 +597,21 @@
         { v: Math.sqrt(3)/2, lab: '√3/2' },
         { v: 1, lab: '1' },
       ];
-      for (const t of vals) {
+      // Підписи — стільки, скільки поміщається (labelFit.js): ±1, далі ±½, далі решта.
+      const valGroups = [[3], [0], [1, 2]];
+      const valBoxes = valGroups.map((g) => g.flatMap((i) => [-1, 1].map((s) => {
+        const lab = s < 0 ? '−' + vals[i].lab : vals[i].lab;
+        return textBox(G.x0 - 6 * dpr, mid - s * vals[i].v * half, ctx.measureText(lab).width, 13 * dpr, 'right', 'middle');
+      })));
+      const valShown = new Set(valGroups.slice(0, fitLabelGroups(valBoxes, 2 * dpr)).flat());
+      vals.forEach((t, i) => {
         for (const s of [-1, 1]) {
           const y = mid - s * t.v * half;
           ctx.beginPath(); ctx.moveTo(G.x0, y); ctx.lineTo(G.x1, y); ctx.stroke();
           ctx.fillStyle = PAL.axisLab;
-          ctx.fillText(s < 0 ? '−' + t.lab : t.lab, G.x0 - 6 * dpr, y);
+          if (valShown.has(i)) ctx.fillText(s < 0 ? '−' + t.lab : t.lab, G.x0 - 6 * dpr, y);
         }
-      }
+      });
       // vertical gridlines + π-fraction labels along x
       ctx.font = `${10*dpr}px JetBrains Mono, monospace`;
       const labels = [
@@ -582,11 +635,18 @@
       ];
       ctx.strokeStyle = PAL.gridMinor;
       ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      // Підписи — стільки, скільки поміщається (labelFit.js): кратні π/2, далі π/4,
+      // далі π/6. Вертикальні лінії сітки лишаються всі.
+      const xGroup = (l) => (Math.abs(l.t * 4 - Math.round(l.t * 4)) < 1e-9 ? 0
+        : (Math.abs(l.t * 8 - Math.round(l.t * 8)) < 1e-9 ? 1 : 2));
+      const xBoxes = [0, 1, 2].map((g) => labels.filter((l) => xGroup(l) === g).map((l) =>
+        textBox(G.x0 + l.t * (G.x1 - G.x0), G.y1 + 4 * dpr, ctx.measureText(l.lab).width, 10 * dpr, 'center', 'top')));
+      const xShown = fitLabelGroups(xBoxes, 2 * dpr);
       for (const l of labels) {
         const x = G.x0 + l.t * (G.x1 - G.x0);
         ctx.beginPath(); ctx.moveTo(x, G.y0); ctx.lineTo(x, G.y1); ctx.stroke();
         ctx.fillStyle = PAL.rad;
-        ctx.fillText(l.lab, x, G.y1 + 4 * dpr);
+        if (xGroup(l) < xShown) ctx.fillText(l.lab, x, G.y1 + 4 * dpr);
       }
 
       // sin curve

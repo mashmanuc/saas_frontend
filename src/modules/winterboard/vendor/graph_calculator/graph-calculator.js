@@ -16,6 +16,8 @@
 //
 // LICENSE: внутрішнє використання у m4sh winterboard.
 
+import { fitCardCanvas, toCanvasPx } from '../cardCanvas.js';
+
 const __GC = (function () {
   // ---------- Parser: GraphMASH «CORE-ARITH v1» (adopted 2026-07) --------------
   // Замінює попередній vendored-парсер. ТІЛЬКИ tokenize+parse; evaluator/classify/
@@ -522,6 +524,8 @@ const __GC = (function () {
     _buildDom() {
       this.container.classList.add('gc-root');
       this.canvas = document.createElement('canvas');
+      // Логічний розмір до першого _resize — як і раніше, типовий розмір полотна.
+      this._lw = this.canvas.width; this._lh = this.canvas.height;
       this.canvas.className = 'gc-canvas';
       this.container.appendChild(this.canvas);
       this.ctx = this.canvas.getContext('2d');
@@ -538,8 +542,8 @@ const __GC = (function () {
       this.container.appendChild(this.zoomBox);
       this.zoomBox.addEventListener('click', (e) => {
         const z = e.target.dataset.z;
-        if (z === 'in') this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1.4);
-        else if (z === 'out') this._zoomAt(this.canvas.width/2, this.canvas.height/2, 1/1.4);
+        if (z === 'in') this._zoomAt(this._lw/2, this._lh/2, 1.4);
+        else if (z === 'out') this._zoomAt(this._lw/2, this._lh/2, 1/1.4);
         else if (z === 'home') {
           this._fit = null;
           this.viewport = { cx: 0, cy: 0, scaleX: DEFAULT_SCALE, scaleY: DEFAULT_SCALE };
@@ -566,15 +570,26 @@ const __GC = (function () {
       }
     }
 
+    // Розмір — картки, не екрана (`cardCanvas.js`): на масштабі дошки картка лишається
+    // зменшеною копією самої себе; вікно (`viewport.scale*`) — у тих самих логічних
+    // пікселях, що й раніше на 100 % (власник 2026-10-01).
     _resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const r = this.container.getBoundingClientRect();
-      const w = Math.max(40, r.width), h = Math.max(40, r.height);
-      this.canvas.width = w * dpr; this.canvas.height = h * dpr;
-      this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+      const { dpr, lw, lh } = fitCardCanvas(this.container, this.canvas, this.ctx);
       this._dpr = dpr;
+      this._lw = lw;
+      this._lh = lh;
       this._applyFit();
       this._scheduleRender();
+    }
+
+    /** Масштаб показу змінився (масштаб дошки) — та сама картка з новою роздільністю. */
+    refreshResolution() {
+      if (!this._destroyed) this._resize();
+    }
+
+    /** Скільки логічних пікселів полотна в одному екранному. */
+    _screenPx() {
+      return toCanvasPx(this.canvas, this._lw, this._dpr || 1);
     }
 
     /** Кнопка «вписати» видима лише там, де вікно можна зберегти (вчитель). */
@@ -595,7 +610,7 @@ const __GC = (function () {
     _applyFit() {
       const f = this._fit;
       if (!f) return;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       if (!(w > 0 && h > 0)) return;
       this.viewport = {
         cx: (f.xMin + f.xMax) / 2,
@@ -624,8 +639,8 @@ const __GC = (function () {
           // Phase G3 v1.1 polish: pass cursor coords для activation zone +
           // closest-curve picker (when multiple expressions share param).
           const r0 = this.canvas.getBoundingClientRect();
-          const px0 = (e.clientX - r0.left) * (this._dpr || 1);
-          const py0 = (e.clientY - r0.top) * (this._dpr || 1);
+          const px0 = (e.clientX - r0.left) * this._screenPx();
+          const py0 = (e.clientY - r0.top) * this._screenPx();
           const m0 = this._pxToMath(px0, py0);
           const candidate = this._findParamDragCandidate(m0.x, m0.y);
           if (candidate) {
@@ -650,8 +665,8 @@ const __GC = (function () {
         // Phase G2 review #4: Alt-key forces pan, skipping point hit-test.
         if (!forcePan) {
           const r = this.canvas.getBoundingClientRect();
-          const px = (e.clientX - r.left) * (this._dpr || 1);
-          const py = (e.clientY - r.top) * (this._dpr || 1);
+          const px = (e.clientX - r.left) * this._screenPx();
+          const py = (e.clientY - r.top) * this._screenPx();
           const hitId = this._hitTestPoint(px, py);
           if (hitId) {
             mode = 'point';
@@ -677,8 +692,8 @@ const __GC = (function () {
         // curve) into drag-param would create chaotic feedback loop.
         if (mode === 'param' && paramDragInfo) {
           const r = this.canvas.getBoundingClientRect();
-          const px = (e.clientX - r.left) * (this._dpr || 1);
-          const py = (e.clientY - r.top) * (this._dpr || 1);
+          const px = (e.clientX - r.left) * this._screenPx();
+          const py = (e.clientY - r.top) * this._screenPx();
           const m = this._pxToMath(px, py);
           const cur = this.params[paramDragInfo.paramName];
           const initial = (cur && typeof cur === 'object' && Number.isFinite(cur.value))
@@ -703,8 +718,8 @@ const __GC = (function () {
         }
         if (mode === 'point' && draggingPointId) {
           const r = this.canvas.getBoundingClientRect();
-          const px = (e.clientX - r.left) * (this._dpr || 1);
-          const py = (e.clientY - r.top) * (this._dpr || 1);
+          const px = (e.clientX - r.left) * this._screenPx();
+          const py = (e.clientY - r.top) * this._screenPx();
           const m = this._pxToMath(px, py);
           if (this.onPointDrag) {
             try { this.onPointDrag(draggingPointId, m.x, m.y); } catch (_) {}
@@ -712,8 +727,8 @@ const __GC = (function () {
           return;
         }
         if (mode !== 'pan') return;
-        const dx = (e.clientX - lx) * (this._dpr || 1);
-        const dy = (e.clientY - ly) * (this._dpr || 1);
+        const dx = (e.clientX - lx) * this._screenPx();
+        const dy = (e.clientY - ly) * this._screenPx();
         this._fit = null; // користувач сам рухає вигляд — далі зберігаються масштаби
         this.viewport.cx -= dx / this.viewport.scaleX;
         this.viewport.cy += dy / this.viewport.scaleY;
@@ -730,8 +745,8 @@ const __GC = (function () {
           // Final emit for point release (flush pending throttle).
           if (this.onPointDragEnd) {
             const r = this.canvas.getBoundingClientRect();
-            const px = (e.clientX - r.left) * (this._dpr || 1);
-            const py = (e.clientY - r.top) * (this._dpr || 1);
+            const px = (e.clientX - r.left) * this._screenPx();
+            const py = (e.clientY - r.top) * this._screenPx();
             const m = this._pxToMath(px, py);
             try { this.onPointDragEnd(draggingPointId, m.x, m.y); } catch (_) {}
           }
@@ -752,8 +767,8 @@ const __GC = (function () {
       this.canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const r = this.canvas.getBoundingClientRect();
-        const px = (e.clientX - r.left) * (this._dpr || 1);
-        const py = (e.clientY - r.top) * (this._dpr || 1);
+        const px = (e.clientX - r.left) * this._screenPx();
+        const py = (e.clientY - r.top) * this._screenPx();
         const factor = Math.exp(-e.deltaY * 0.0015);
         this._zoomAt(px, py, factor);
       }, { passive: false });
@@ -779,14 +794,14 @@ const __GC = (function () {
     }
 
     _pxToMath(px, py) {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       return {
         x: this.viewport.cx + (px - w/2) / this.viewport.scaleX,
         y: this.viewport.cy - (py - h/2) / this.viewport.scaleY,
       };
     }
     _mathToPx(x, y) {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       return {
         x: w/2 + (x - this.viewport.cx) * this.viewport.scaleX,
         y: h/2 - (y - this.viewport.cy) * this.viewport.scaleY,
@@ -1075,7 +1090,7 @@ const __GC = (function () {
 
     _render() {
       const ctx = this.ctx;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       ctx.fillStyle = this.opts.bg;
       ctx.fillRect(0, 0, w, h);
       this._drawGrid();
@@ -1137,7 +1152,7 @@ const __GC = (function () {
      * (у кола дві y на кожен x). Явні пари — як і були.
      */
     _intersectionsSignature(env) {
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const { scaleX, scaleY } = this.viewport;
       const minX = (this.viewport.cx - (w / 2) / scaleX).toFixed(2);
       const maxX = (this.viewport.cx + (w / 2) / scaleX).toFixed(2);
@@ -1166,7 +1181,7 @@ const __GC = (function () {
       if (curves.length < 2) {
         return this._computeImplicitPairIntersections(env, 100);
       }
-      const w = this.canvas.width;
+      const w = this._lw;
       const scale = this.viewport.scaleX;
       const dpr = this._dpr || 1;
       const minMathX = this.viewport.cx - (w / 2) / scale;
@@ -1268,7 +1283,7 @@ const __GC = (function () {
         return (x, y) => evalAst(ast, { ...env, x }) - y;
       };
 
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const dpr = this._dpr || 1;
       const { scaleX, scaleY } = this.viewport;
       const cellPx = 12 * dpr;
@@ -1785,7 +1800,8 @@ const __GC = (function () {
     _hitTestPoint(px, py) {
       // Reverse iterate so that visually top-most point wins ties.
       const ids = Object.keys(this.points);
-      const r2 = (10 * (this._dpr || 1)) ** 2; // 10px radius hit area
+      // 10 px картки, але не менше 10 екранних — на 35 % дошки точку теж можна схопити.
+      const r2 = (10 * Math.max(this._dpr || 1, this._screenPx())) ** 2;
       // Build env for onCurve y-derivation.
       const env = { ...CONSTS };
       for (const k of Object.keys(this.params)) {
@@ -1881,7 +1897,7 @@ const __GC = (function () {
 
     _drawGrid() {
       const ctx = this.ctx;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const view = this.viewport;
       const xRange = w / view.scaleX, yRange = h / view.scaleY;
       // Крок за ОДНАКОВОЮ щільністю в пікселях (w / scale): при scaleX = scaleY
@@ -1929,7 +1945,7 @@ const __GC = (function () {
 
     _drawAxes() {
       const ctx = this.ctx;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const o = this._mathToPx(0, 0);
       ctx.strokeStyle = this.opts.axis;
       // P1 (2026-05-08): 1.5*dpr → 1.0*dpr — axis is hierarchy-2, not -1.
@@ -1970,7 +1986,7 @@ const __GC = (function () {
 
     _drawExplicitY(ast, env, color) {
       const ctx = this.ctx;
-      const w = this.canvas.width;
+      const w = this._lw;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2 * (this._dpr || 1);
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -1985,7 +2001,7 @@ const __GC = (function () {
         if (!Number.isFinite(y)) { prev = null; continue; }
         const p = this._mathToPx(m.x, y);
         // Skip wild jumps (e.g., tan asymptote): if dy >> visible height, break
-        if (prev && Math.abs(p.y - prev.y) > this.canvas.height * 0.6) {
+        if (prev && Math.abs(p.y - prev.y) > this._lh * 0.6) {
           ctx.moveTo(p.x, p.y);
         } else if (!prev) {
           ctx.moveTo(p.x, p.y);
@@ -1998,7 +2014,7 @@ const __GC = (function () {
     }
     _drawExplicitX(ast, env, color) {
       const ctx = this.ctx;
-      const h = this.canvas.height;
+      const h = this._lh;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2 * (this._dpr || 1);
       ctx.beginPath();
@@ -2011,7 +2027,7 @@ const __GC = (function () {
         try { x = evalAst(ast, { ...env, y: m.y }); } catch (_) { x = NaN; }
         if (!Number.isFinite(x)) { prev = null; continue; }
         const p = this._mathToPx(x, m.y);
-        if (prev && Math.abs(p.x - prev.x) > this.canvas.width * 0.6) ctx.moveTo(p.x, p.y);
+        if (prev && Math.abs(p.x - prev.x) > this._lw * 0.6) ctx.moveTo(p.x, p.y);
         else if (!prev) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
         prev = p;
@@ -2022,7 +2038,7 @@ const __GC = (function () {
     // Marching squares for f(x,y)=0
     _drawImplicit(lhs, rhs, env, color) {
       const ctx = this.ctx;
-      const w = this.canvas.width, h = this.canvas.height;
+      const w = this._lw, h = this._lh;
       const cellPx = 8 * (this._dpr || 1); // grid cell size in pixels
       const cols = Math.ceil(w / cellPx) + 1;
       const rows = Math.ceil(h / cellPx) + 1;
@@ -2123,6 +2139,7 @@ const __GC = (function () {
     }
 
     destroy() {
+      this._destroyed = true;
       try { this._ro && this._ro.disconnect(); } catch(_) {}
       if (this._raf) cancelAnimationFrame(this._raf);
       // Phase G fix: also cancel animation rAF (memory leak)

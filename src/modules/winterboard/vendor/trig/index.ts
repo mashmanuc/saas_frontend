@@ -38,6 +38,8 @@ export interface TrigCircleInstance {
   opts: Required<TrigCircleOpts>
   setOption<K extends keyof TrigCircleOpts>(key: K, value: TrigCircleOpts[K]): void
   setTheta(theta: number): void
+  /** Масштаб дошки змінився — перемалювати з новою роздільністю (`cardCanvas.js`). */
+  refreshResolution(): void
   destroy(): void
   onChange?: (() => void) | null
 }
