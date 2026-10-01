@@ -24,6 +24,7 @@ import VueKonva from 'vue-konva'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { queryClient } from '@/app/queryClient'
 import { setupQueryBridge, teardownQueryBridge } from '@/services/queryBridge'
+import { trackSiteVisit } from '@/utils/siteVisit'
 
 // Initialize calendar debug module (only in debug mode)
 if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
@@ -104,4 +105,10 @@ setupI18n(getInitialLocale()).then(async () => {
   installLogoutGate(router)
   app.use(router)
   app.mount('#app')
+
+  // Staff «Сьогодні на сайті» (власник 2026-10-01): гість без акаунта — одна позначка на добу, коли вже
+  // відомо, куди він зайшов. Із сесією — не гість.
+  router.isReady()
+    .then(() => { if (!authStore.user) trackSiteVisit(router.currentRoute.value) })
+    .catch(() => { /* телеметрія не ламає старт */ })
 })

@@ -51,6 +51,10 @@
       </div>
       <p v-if="data.guests" class="presence-now__guests">{{ t('staff.presence.now.guests', { n: data.guests }) }}</p>
     </div>
+    <!-- Власник 2026-10-01: «відображати в staff скільки гостей зайшло на сайт» — видно завжди, і в «нікого». -->
+    <p v-if="data?.today" class="presence-now__today" data-testid="presence-today">
+      {{ t('staff.presence.now.today', { guests: data.today.guests, start: data.today.start, registrations: data.today.registrations }) }}
+    </p>
     <p v-if="data?.staff_online?.length" class="presence-now__staff">
       {{ t('staff.presence.now.staffOnline', { names: data.staff_online.map(p => p.name || p.email).join(', ') }) }}
     </p>
@@ -181,5 +185,6 @@ onBeforeUnmount(() => {
 .presence-now__person small { margin-left: 4px; color: var(--text-secondary, #64748b); }
 .presence-now__staff-tag { color: #b45309 !important; }
 .presence-now__guests { margin: 0; font-size: 14px; }
+.presence-now__today { margin: 8px 0 0; font-size: 14px; }
 .presence-now__staff { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary, #64748b); }
 </style>

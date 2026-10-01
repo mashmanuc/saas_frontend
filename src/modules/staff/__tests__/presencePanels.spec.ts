@@ -96,6 +96,32 @@ describe('PresenceNowPanel', () => {
     w.unmount()
   })
 
+  it('«Сьогодні на сайті» видно завжди — і коли нікого; старий бекенд без поля — рядка немає', async () => {
+    vi.useFakeTimers()
+    const today = { since: '2026-10-01T00:00:00+03:00', guests: 37, start: 25, registrations: 2 }
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today })
+    const w = mountWith(PresenceNowPanel)
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(10_000)
+    await flushPromises()
+    expect(w.text()).toContain('Зараз нікого немає — можна пушити')
+    expect(w.get('[data-testid="presence-today"]').text())
+      .toBe('Сьогодні на сайті — гостей: 37 · на /start: 25 · реєстрацій: 2')
+    w.unmount()
+
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_BUSY, today })
+    const busy = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(busy.get('[data-testid="presence-today"]').text()).toContain('гостей: 37')
+    busy.unmount()
+
+    vi.mocked(getPresenceNow).mockResolvedValue(NOW_BUSY)
+    const old = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(old.find('[data-testid="presence-today"]').exists()).toBe(false)
+    old.unmount()
+  })
+
   it('збій після «можна пушити» — одразу «не пуште наосліп», без спаму запитами', async () => {
     vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})

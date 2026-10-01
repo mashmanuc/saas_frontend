@@ -24,6 +24,9 @@ export interface PresenceNow {
   boards: { board_id: string; name: string; members: PresencePerson[] }[]
   recordings: { board_id: string; name: string; owner_id: number }[]
   guests: number
+  /** Сьогодні на сайті (київська доба): гості без акаунта, з них на /start, нові акаунти без staff.
+   *  Необов'язкове — старий бекенд його не має. */
+  today?: { since: string; guests: number; start: number; registrations: number }
   /** Staff онлайн — НЕ рахується в «людях» (панель дивиться саме staff) */
   staff_online: PresencePerson[]
 }
