@@ -19,7 +19,7 @@ export class MathContentError extends Error {
 const fail = (code, path) => { throw new MathContentError(code, path) }
 const escape = (s) => s.replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
 
-export function renderFormula(latex, display = false, path = '') {
+export function renderFormula(latex, display = false, path = '', admission = true) {
   if (katex.version !== KATEX_VERSION) fail('engine_version', path)
   if (typeof latex !== 'string' || !latex.trim() || latex.length > 4000) fail('formula_size', path)
   if (/[\u0000-\u0009\u000b-\u001f\u007f]/.test(latex)) fail('control_character', path)
@@ -32,7 +32,9 @@ export function renderFormula(latex, display = false, path = '') {
     }
     // Правило формул M4SH (власник 2026-10-02): перенос рядка — лише всередині багаторядкових
     // блоків. Їхні `\\` KaTeX розбирає на рядки масиву (вузла cr немає); вузол cr — це перенос
-    // поза блоком, тобто заборонений. Версія рушія зафіксована.
+    // поза блоком, тобто заборонений. Правило діє на ВСТАВЦІ (`admission`). Показ уже збереженого
+    // звіряє лише цілісність і те, що KaTeX його відображає: матеріал, збережений за попереднім
+    // правилом (Б-141, з 02.10 10:04), не ламається заднім числом. Версія рушія зафіксована.
     const inspect = (node) => {
       if (!node || typeof node !== 'object') return
       if (node.type === 'cr') fail('standalone_linebreak', path)
@@ -43,7 +45,7 @@ export function renderFormula(latex, display = false, path = '') {
         }
       }
     }
-    katex.__parse(latex, options).forEach(inspect)
+    if (admission) katex.__parse(latex, options).forEach(inspect)
     const html = katex.renderToString(latex, options)
     if (/class="katex-error"/.test(html)) fail('render_error', path)
     return html
@@ -231,11 +233,11 @@ export function normalizeSource(source, formula = false) {
 }
 
 /** Детермінований адаптер рядка: розділювачі розбираємо, вміст НЕ змінюємо. */
-export function documentFromSource(source, formula = false, path = '') {
+export function documentFromSource(source, formula = false, path = '', admission = true) {
   if (typeof source !== 'string' || source.length > 12000) fail('source_size', path)
   if (/[\u0000-\u0008\u000b-\u001f\u007f]/.test(source)) fail('control_character', path)
   if (formula) {
-    renderFormula(source, true, path)
+    renderFormula(source, true, path, admission)
     return { version: VERSION, source, nodes: [{ type: 'math', latex: source, display: true }] }
   }
   const nodes = []
@@ -266,7 +268,7 @@ export function documentFromSource(source, formula = false, path = '') {
     if (i >= source.length) fail('unclosed_math', path)
     const latex = source.slice(start, i)
     const display = open === '$$' || open === '\\['
-    renderFormula(latex, display, path)
+    renderFormula(latex, display, path, admission)
     nodes.push({ type: 'math', latex, display })
     if (nodes.length > 128) fail('node_limit', path)
     i += close.length
@@ -285,22 +287,23 @@ const canonicalNodes = (nodes) => (Array.isArray(nodes) ? nodes : [null]).map((n
 })
 
 /** Перевірка документа включає відповідність джерелу: не довіряємо прапорцю valid. */
-export function verifyDocument(doc, source, formula = false, path = '') {
+export function verifyDocument(doc, source, formula = false, path = '', admission = true) {
   if (doc?.version !== VERSION || doc.source !== source) fail('document_version_or_source', path)
-  const expected = documentFromSource(source, formula, path)
+  const expected = documentFromSource(source, formula, path, admission)
   if (JSON.stringify(canonicalNodes(doc.nodes)) !== JSON.stringify(canonicalNodes(expected.nodes))) {
     fail('document_mismatch', path)
   }
   return expected
 }
 
+/** Показ: цілісність і відображення, без правил вставки (див. `renderFormula`). */
 export function renderDocument(doc, source, formula = false) {
-  const checked = verifyDocument(doc, source, formula)
+  const checked = verifyDocument(doc, source, formula, '', false)
   const math = []
   // Тимчасові маркери неможливі у джерелі (control_character).
   const text = checked.nodes.map((n) => {
     if (n.type === 'text') return escape(n.text)
-    math.push(renderFormula(n.latex, n.display))
+    math.push(renderFormula(n.latex, n.display, '', false))
     return '\u0001' + (math.length - 1) + '\u0002'
   }).join('')
   const inline = (s) => s.replace(/\\([%$])/g, '$1').replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')

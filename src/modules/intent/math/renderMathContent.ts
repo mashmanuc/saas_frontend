@@ -34,9 +34,10 @@ export function renderMathField(data: any, key: string, source: string, formula 
   }
   try {
     if (contract.version !== 1) throw new Error('Невідома версія математичного матеріалу')
-    const current = verifyDocument(saved, original, formula)
+    // Показ збереженого — без правил вставки: що прийняли вчора, показуємо й сьогодні.
+    const current = verifyDocument(saved, original, formula, '', false)
     // Атрибуція може бути винесена в окремий footer. Збережене поле не змінюємо.
-    const doc = source === original ? current : documentFromSource(source, formula)
+    const doc = source === original ? current : documentFromSource(source, formula, '', false)
     return renderDocument(doc, source, formula)
   } catch (error) {
     // Незмінений матеріал Інтегралика не збігся зі своїм документом — підробка або чужа версія.

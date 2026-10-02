@@ -103,6 +103,20 @@ describe('рендер нового формату', () => {
     p.math_content.fields.body.nodes = [{ type: 'text', text: '$x$' }]
     expect(renderMathField(p, 'body', p.body)).toContain('не вдалося відобразити')
   })
+  it('матеріал, збережений до правила переносу (Б-141 з 02.10 10:04), показується, а вставка такого — відмова', () => {
+    // Старе правило відхиляло лише `\\` + літеру; `\\ ` поза блоком приймало й зберігало.
+    for (const [key, source, formula] of [['latex', 'y = x^2 \\\\ y\' = 2x', true], ['body', 'Маємо $a \\\\ b$.', false]] as const) {
+      const latex = formula ? source : 'a \\\\ b'
+      const nodes = formula
+        ? [{ type: 'math', latex, display: true }]
+        : [{ type: 'text', text: 'Маємо ' }, { type: 'math', latex, display: false }, { type: 'text', text: '.' }]
+      const saved = { [key]: source, math_content: { version: 1, fields: { [key]: { version: 1, source, nodes } } } }
+      const html = renderMathField(saved, key, source, formula)
+      expect(html).toContain('class="katex"')
+      expect(html).not.toContain('не вдалося відобразити')
+      expect(() => documentFromSource(source, formula)).toThrow(expect.objectContaining({ code: 'standalone_linebreak' }))
+    }
+  })
   it('таблиця з формулою, вертикальними рисками і SVG не переписує математику', () => {
     const body = '| Вираз | Значення |\n| --- | --- |\n| $\\left|x\\right|$ | $\\sqrt{x}$ |'
     const html = renderDocument(documentFromSource(body), body)
