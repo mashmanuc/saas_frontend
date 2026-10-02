@@ -1,7 +1,8 @@
 /**
  * Контракт нового матеріалу Інтегралика, v1.
  * Канонічна копія: backend/math_content/contract.mjs.
- * Копії BE/FE звіряє contract-parity.test.mjs. Жодного ремонту LaTeX.
+ * Копії BE/FE звіряє `node math_content/check-parity.mjs <FE-копія>`.
+ * Вгадування немає: відновлюється лише однозначне за правилом формул M4SH (`normalizeSource`).
  */
 import katex from 'katex'
 
@@ -29,12 +30,12 @@ export function renderFormula(latex, display = false, path = '') {
       trust: () => { fail('untrusted_command', path) },
       maxExpand: 200, maxSize: 20, macros: {},
     }
-    // Вузол cr поза масивом — окремий перенос, а не команда \frac.
-    // Масиви/cases/substack KaTeX уже розібрав на рядки; їхні \\ не чіпаємо.
-    // Це контракт обмеженого діалекту, НЕ виправлення. Версія рушія зафіксована.
+    // Правило формул M4SH (власник 2026-10-02): перенос рядка — лише всередині багаторядкових
+    // блоків. Їхні `\\` KaTeX розбирає на рядки масиву (вузла cr немає); вузол cr — це перенос
+    // поза блоком, тобто заборонений. Версія рушія зафіксована.
     const inspect = (node) => {
       if (!node || typeof node !== 'object') return
-      if (node.type === 'cr' && /\\\\[A-Za-z]/.test(latex)) fail('ambiguous_linebreak', path)
+      if (node.type === 'cr') fail('standalone_linebreak', path)
       for (const [key, child] of Object.entries(node)) {
         if (key !== 'loc') {
           if (Array.isArray(child)) child.forEach(inspect)
@@ -50,6 +51,183 @@ export function renderFormula(latex, display = false, path = '') {
     if (e instanceof MathContentError) throw e
     fail('latex_parse', path)
   }
+}
+
+// ── Правило формул M4SH (власник 2026-10-02: «роби») ───────────────────────────────────────────
+// Перенос рядка `\\` — лише всередині багаторядкових блоків (cases, aligned, gathered, split, pmatrix,
+// array…); перенос `\\` поза блоком і Enter у формулі — заборонені. За цим правилом наступне
+// ОДНОЗНАЧНЕ, тож відновлюється до перевірки, і кожне відновлення йде в журнал (`fixes`):
+//  • JSON прочитав одинарний бекслеш як керуючий символ: \b, \f — завжди (у тексті їх не буває);
+//    \t, \r — коли разом із літерами далі дають команду KaTeX (\times, \right); інакше табуляція —
+//    пробіл, CR перед LF — кінець рядка, решта CR — новий рядок;
+//  • у формулі: Enter + літери, що з `n` дають команду KaTeX (\neq, \nu, \nabla) — з'їдений `\n`;
+//    решта Enter у формулі — пробіл (для TeX це і є пробіл);
+//  • у формулі поза блоком: `\\` + назва команди (≥2 літери) — подвоєний бекслеш; `\\begin{` і
+//    `\\end{` — завжди; якщо так подвоєно блок, то й `\\назва` та `\\\\` у ньому — подвоєння;
+//  • у тексті поза формулою: парні `\\(`…`\\)`, `\\[`…`\\]` — подвоєні розділювачі; решта `\\` —
+//    новий рядок (як `.\\` в кінці рядків картки з прода 2026-10-01);
+//  • подвоєний у JSON перенос рядка — буквальні «бекслеш + n» (стенд 02.10, похідна складеної функції):
+//    у тексті, якщо з літерами далі це не команда KaTeX, — новий рядок (команд поза формулою не буває);
+//    у формулі — лише коли далі не літера: пробіл.
+// Решту НЕ вгадуємо: що й після цього не проходить KaTeX — відмова й одна повторна генерація.
+const commandCache = new Map()
+
+/** Чи є `\name` командою KaTeX у формулі. Вирішує сам рушій, а не список, складений руками. */
+export function isMathCommand(name) {
+  if (!/^[A-Za-z]+$/.test(name || '')) return false
+  if (commandCache.has(name)) return commandCache.get(name)
+  let known = true
+  try {
+    katex.__parse('\\' + name + '{x}{y}', { throwOnError: true, strict: 'ignore', maxExpand: 50, macros: {} })
+  } catch (e) {
+    known = !/Undefined control sequence/.test(String(e?.message || ''))
+  }
+  commandCache.set(name, known)
+  return known
+}
+
+const lettersAt = (s, i) => {
+  let j = i
+  while (j < s.length && /[A-Za-z]/.test(s[j])) j++
+  return s.slice(i, j)
+}
+
+function restoreJsonControls(s, fixes) {
+  let out = ''
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (c === '\b' || c === '\f') {
+      out += c === '\b' ? '\\b' : '\\f'
+      fixes.push('json_control')
+    } else if (c === '\t' || c === '\r') {
+      const letter = c === '\t' ? 't' : 'r'
+      const run = lettersAt(s, i + 1)
+      if (run && isMathCommand(letter + run)) {
+        out += '\\' + letter
+        fixes.push('json_control')
+      } else if (c === '\t') out += ' '
+      else if (s[i + 1] !== '\n') out += '\n'
+    } else out += c
+  }
+  return out
+}
+
+function normalizeMath(latex, fixes) {
+  let doubled = false
+  const s = latex.replace(/(^|[^\\])\\\\(begin|end)\{/g, (_, pre, word) => {
+    doubled = true
+    fixes.push('double_backslash_command')
+    return pre + '\\' + word + '{'
+  })
+  let out = ''
+  let depth = 0
+  let i = 0
+  while (i < s.length) {
+    const c = s[i]
+    if (c === '\n') {
+      const run = lettersAt(s, i + 1)
+      if (run && isMathCommand('n' + run)) {
+        out += '\\n' + run
+        fixes.push('json_newline_command')
+        i += 1 + run.length
+      } else {
+        out += ' '
+        i += 1
+      }
+      continue
+    }
+    if (c !== '\\') { out += c; i += 1; continue }
+    let k = 0
+    while (s[i + k] === '\\') k++
+    if (k === 1) {
+      const name = lettersAt(s, i + 1)
+      if (name === 'n') {
+        out += ' '
+        fixes.push('escaped_newline')
+        i += 2
+        continue
+      }
+      if (name === 'begin') depth++
+      else if (name === 'end') depth = Math.max(0, depth - 1)
+      const len = name ? 1 + name.length : 2
+      out += s.slice(i, i + len)
+      i += len
+      continue
+    }
+    if (k === 2) {
+      const name = lettersAt(s, i + 2)
+      if (name.length >= 2 && (depth === 0 || doubled) && isMathCommand(name)) {
+        out += '\\' + name
+        fixes.push('double_backslash_command')
+        i += 2 + name.length
+        continue
+      }
+    }
+    if (k === 4 && depth > 0 && doubled) {
+      out += '\\\\'
+      fixes.push('double_backslash_command')
+      i += 4
+      continue
+    }
+    out += s.slice(i, i + k)
+    i += k
+  }
+  return out
+}
+
+function normalizeText(s, fixes) {
+  let out = ''
+  let i = 0
+  while (i < s.length) {
+    if (s.startsWith('\\$', i) || s.startsWith('\\%', i)) { out += s.slice(i, i + 2); i += 2; continue }
+    if (s.startsWith('\\\\', i) && s[i + 2] !== '\\') {
+      const next = s[i + 2]
+      if (next === '(' || next === '[') {
+        const end = s.indexOf(next === '(' ? '\\\\)' : '\\\\]', i + 3)
+        if (end !== -1) {
+          out += '\\' + next + normalizeMath(s.slice(i + 3, end), fixes) + '\\' + (next === '(' ? ')' : ']')
+          fixes.push('double_backslash_delimiters')
+          i = end + 3
+          continue
+        }
+      }
+      let j = i + 2
+      while (s[j] === ' ' || s[j] === '\t') j++
+      if (j < s.length && s[j] !== '\n') out += '\n'
+      fixes.push('text_linebreak')
+      i = j
+      continue
+    }
+    if (s[i] === '\\' && s[i + 1] === 'n' && !isMathCommand(lettersAt(s, i + 1))) {
+      out += '\n'
+      fixes.push('escaped_newline')
+      i += 2
+      continue
+    }
+    if (s[i] === '$' && /\d/.test(s[i - 1] || '') && !s.includes('$', i + 1)) { out += '$'; i += 1; continue }
+    const open = ['$$', '\\(', '\\[', '$'].find((t) => s.startsWith(t, i))
+    if (!open) { out += s[i]; i += 1; continue }
+    const close = ({ '$$': '$$', '$': '$', '\\(': '\\)', '\\[': '\\]' })[open]
+    const start = i + open.length
+    let j = start
+    while (j < s.length) {
+      if (s[j] === '\\' && !s.startsWith(close, j)) { j += 2; continue }
+      if (s.startsWith(close, j)) break
+      j++
+    }
+    if (j >= s.length) { out += s.slice(i); break }   // незакрита — вирішить перевірка
+    out += open + normalizeMath(s.slice(start, j), fixes) + close
+    i = j + close.length
+  }
+  return out
+}
+
+/** Правило формул M4SH → { text, fixes }. Ідемпотентне: вже нормалізований текст не змінюється. */
+export function normalizeSource(source, formula = false) {
+  const fixes = []
+  if (typeof source !== 'string') return { text: source, fixes }
+  const restored = restoreJsonControls(source, fixes)
+  return { text: formula ? normalizeMath(restored, fixes) : normalizeText(restored, fixes), fixes }
 }
 
 /** Детермінований адаптер рядка: розділювачі розбираємо, вміст НЕ змінюємо. */
@@ -145,10 +323,19 @@ export function renderDocument(doc, source, formula = false) {
   return rendered.join('<br>').replace(/\u0001(\d+)\u0002/g, (_, i) => math[Number(i)])
 }
 
-/** Повний preflight: повертає копії дій; жодних записів або часткового результату. */
-export function prepareActions(actions) {
+/**
+ * Повний preflight: повертає копії дій; жодних записів або часткового результату.
+ * `fixes` — журнал відновлень за правилом формул ({ code, path }), щоб бачити, як часто модель так помиляється.
+ */
+export function prepareActions(actions, fixes = []) {
   if (!Array.isArray(actions) || actions.length > 40) fail('action_limit')
   let count = 0
+  const normalized = (value, formula, path) => {
+    if (typeof value !== 'string') return value
+    const result = normalizeSource(value, formula)
+    for (const code of result.fixes) fixes.push({ code, path })
+    return result.text
+  }
   return actions.map((action, index) => {
     const a = { ...action, payload: { ...(action.payload || {}) } }
     const p = a.payload
@@ -159,7 +346,8 @@ export function prepareActions(actions) {
       const fields = {}
       for (const [key, limit, formula] of specs) {
         if (obj[key] === undefined || obj[key] === null) continue
-        const value = obj[key]
+        const value = normalized(obj[key], formula, index + '.' + key)
+        obj[key] = value
         if (typeof value !== 'string' || value.length > limit) fail('field_size', index + '.' + key)
         const doc = documentFromSource(value, formula, index + '.' + key)
         count += doc.nodes.filter((n) => n.type === 'math').length
@@ -177,6 +365,7 @@ export function prepareActions(actions) {
       p.card = { ...p.card }
       attach(p.card, [['title',120],['body',12000]])
     } else if (a.kind === 'add_text') {
+      p.text = normalized(p.text, false, index + '.text')
       const doc = documentFromSource(p.text, false, index + '.text')
       // Текстовий штрих не вміє KaTeX. Відмова, а не сирі команди на полотні.
       if (doc.nodes.some((n) => n.type === 'math')) fail('math_requires_card')
@@ -203,18 +392,31 @@ export function prepareActions(actions) {
   })
 }
 
-/** Перевірка сирих slots ДО резолверів, які історично обрізали рядки. */
-export function validateSlots(value, depth = 0, path = '') {
+/**
+ * Сирі slots ДО резолверів, які історично обрізали рядки: правило формул M4SH, потім перевірка.
+ * Повертає нормалізовану копію — саме її бачать резолвери; `fixes` — журнал відновлень.
+ */
+export function prepareSlots(value, fixes = [], depth = 0, path = '') {
   if (depth > 12) fail('depth', path)
-  if (value && typeof value === 'object') {
-    for (const [key, child] of Object.entries(value)) {
-      if (key === '_invalid_json') fail('invalid_json', path)
-      if (['body','title','text','latex'].includes(key) && typeof child === 'string') {
-        const max = key === 'title' ? 120 : key === 'latex' ? 4000 : 12000
-        if (child.length > max) fail('field_size', path + '.' + key)
-        const doc = documentFromSource(child, key === 'latex', path + '.' + key)
-        if (key === 'text' && doc.nodes.some((n) => n.type === 'math')) fail('math_requires_card', path + '.' + key)
-      } else if (child && typeof child === 'object') validateSlots(child, depth + 1, path + '.' + key)
-    }
+  if (Array.isArray(value)) return value.map((child, i) => prepareSlots(child, fixes, depth + 1, path + '.' + i))
+  if (!value || typeof value !== 'object') return value
+  const out = {}
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '_invalid_json') fail('invalid_json', path)
+    if (['body', 'title', 'text', 'latex'].includes(key) && typeof child === 'string') {
+      const max = key === 'title' ? 120 : key === 'latex' ? 4000 : 12000
+      const result = normalizeSource(child, key === 'latex')
+      for (const code of result.fixes) fixes.push({ code, path: path + '.' + key })
+      if (result.text.length > max) fail('field_size', path + '.' + key)
+      const doc = documentFromSource(result.text, key === 'latex', path + '.' + key)
+      if (key === 'text' && doc.nodes.some((n) => n.type === 'math')) fail('math_requires_card', path + '.' + key)
+      out[key] = result.text
+    } else out[key] = child && typeof child === 'object' ? prepareSlots(child, fixes, depth + 1, path + '.' + key) : child
   }
+  return out
+}
+
+/** Лише перевірка (без повернення значення) — для сумісності з наявними викликами. */
+export function validateSlots(value) {
+  prepareSlots(value)
 }
