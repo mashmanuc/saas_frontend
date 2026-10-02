@@ -54,7 +54,7 @@
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
+import { renderMathField } from '@/modules/intent/math/renderMathContent'
 import type { FormulaCardAsset } from '../../../types/formulaCard'
 
 const { t } = useI18n()
@@ -81,7 +81,7 @@ const renderedFormula = computed((): string => {
   const formula = props.asset.data?.formula ?? ''
   if (!formula.trim()) return ''
   // Використовуємо display mode ($$) для великого центрованого відображення
-  return renderTextWithLatex(`$$${formula}$$`)
+  return renderMathField(props.asset.data, 'formula', formula, true)
 })
 
 // TLV2-05B.2: у режимі стандарту карток ⛶/× малює спільна група полотна (WBCardWindowControls) — власні кнопки ховаються, щоб не було двох.

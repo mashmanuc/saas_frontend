@@ -644,6 +644,8 @@ export type HistoryCardAsset = WBAsset & { type: 'history_card'; data: HistoryCa
 
 export interface TheoryCardData {
   version: 1
+  /** Контракт нових полів Інтегралика. Старі матеріали не мігруються. */
+  math_content?: { version: 1; fields: Record<string, unknown> }
   title: string
   body: string
   /** Підпис у шапці картки. Порожньо → 'Теорія' (поведінка старих карток). */

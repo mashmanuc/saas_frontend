@@ -165,6 +165,14 @@ describe('з пульта — лише новий матеріал', () => {
 })
 
 describe('план із кількох дій, уточнення, звичайна відповідь', () => {
+  it('Б-141: план із позначкою сервера — зламана остання формула не створює навіть підготовчої сторінки', async () => {
+    const actions = [{ ...GRAPH.action, math_contract: 1 }, { kind: 'add_card', math_contract: 1, payload: { body: '$x' } }]
+    const {ra, store, runAction, replies} = setup({parse: vi.fn(async () => ({status: 'board_action_plan', actions}))})
+    await ra.ask({requestId: REQ(1), text: 'приклади'})
+    expect(store.inserted).toBe(0)
+    expect(runAction).not.toHaveBeenCalled()
+    expect(last(replies).status).toBe('error')
+  })
   it('усі кроки — на одну підготовчу сторінку', async () => {
     const actions = [{ kind: 'add_card', payload: {} }, { kind: 'add_graph', payload: {} }]
     const { ra, store, runAction, replies } = setup({ parse: vi.fn(async () => ({ status: 'board_action_plan', actions, explain: 'Задача і графік' })) })

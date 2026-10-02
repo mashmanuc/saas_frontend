@@ -8,6 +8,8 @@ import type { WBAsset } from './winterboard'
 
 /** Дані формульної картки. version=1 для replay schema migrations. */
 export interface FormulaCardData {
+  /** Незмінний LaTeX + структурований документ нового матеріалу. */
+  math_content?: { version: 1; fields: Record<string, unknown> }
   /** LaTeX рядок БЕЗ $ delimiters. Напр: '\sin^2 x + \cos^2 x = 1' */
   formula: string
   /** Розмір шрифту (px). Default: 22. */

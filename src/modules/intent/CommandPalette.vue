@@ -337,6 +337,7 @@ import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
 import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from './assistantTips'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
+import { mathContentMessage, prepareServerActions } from './math/prepareServerActions'
 import { createRemoteAssistant } from './remoteAssistant'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
@@ -1262,7 +1263,16 @@ async function execBoardAction(r) {
 
 // Phase 2.10: сценарій — виконуємо кроки ПОСЛІДОВНО; будь-який falls → стоп + чесний звіт.
 async function runPlan(r) {
-  const actions = r.actions || []
+  let actions
+  try {
+    actions = prepareServerActions(r.actions || [])
+  } catch (e) {
+    // Б-141: план не пройшов перевірку математики — нічого не виконуємо й кажемо це прямо,
+    // а не загальною «Помилкою AI» з зовнішнього catch.
+    aiPush({ kind: 'bot', text: e?.message || mathContentMessage() })
+    react('sad')
+    return
+  }
   aiPush({ kind: 'bot', text: r.explain })
   for (let i = 0; i < actions.length; i++) {
     try {
@@ -1357,7 +1367,9 @@ function pickAiCandidate(item, c) {
     const extra = { ...(t.extra || {}) }
     const confirm = extra.confirm
     delete extra.confirm
-    const action = { kind: t.board_action, payload: { [t.param]: c.id, ...extra } }
+    // Б-141: позначка сервера їде з дією — фронт перевіряє вибране тим самим контрактом.
+    const action = { kind: t.board_action, payload: { [t.param]: c.id, ...extra },
+      ...(t.math_contract ? { math_contract: t.math_contract } : {}) }
     const resp = { action, explain: `Готово · ${c.label}`, risk: confirm ? 'medium' : 'low' }
     if (confirm) { resp.explain = `Видалю «${c.label}». Скасувати — Ctrl+Z.`; aiPush({ kind: 'confirm', resp, done: false }) }
     else execBoardAction(resp)

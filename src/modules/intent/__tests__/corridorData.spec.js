@@ -69,6 +69,16 @@ describe('створення матеріалу з мовою', () => {
     expect(assets[0].data).toEqual({ version: 1, badge: 'Теорія', title: 'T', body: 'B', formulas: [] })
   })
 
+  it('Б-141: дія з позначкою сервера — картка отримує документ нового матеріалу', async () => {
+    await runBoardAction({ kind: 'add_card', math_contract: 1, payload: { title: 'T', body: 'B', badge: 'Теорія' } })
+    const { math_content, ...rest } = assets[0].data
+    expect(rest).toEqual({ version: 1, badge: 'Теорія', title: 'T', body: 'B', formulas: [] })
+    expect(math_content).toEqual({ version: 1, fields: {
+      title: { version: 1, source: 'T', nodes: [{ type: 'text', text: 'T' }] },
+      body: { version: 1, source: 'B', nodes: [{ type: 'text', text: 'B' }] },
+    } })
+  })
+
   it('add_card з коридором — content_language і provenance у data', async () => {
     await runBoardAction({ kind: 'add_card', payload: { title: 'Photosynthesis', body: 'Plants…', corridor: { ...PROVENANCE, content_language: 'en' } } })
     expect(assets[0].data.content_language).toBe('en')

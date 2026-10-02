@@ -12,6 +12,20 @@
 // Розширення: нова дія на дошці = +1 tool у BE tooling.py + 1 запис у HANDLERS тут.
 
 import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
+import { prepareServerActions } from './math/prepareServerActions'
+
+// Б-141: документ нового матеріалу приходить ЛИШЕ від сервера (поіменний прапорець
+// INTEGRALYK_MATH_CONTENT_USER_IDS). Немає його — старий шлях: дані такі самі, як до Б-141,
+// без порожнього `math_content`. Сервер кладе документ формули під ключем свого поля
+// (`latex` / `value`), картка формули читає його як `formula`.
+function formulaContent(content, key) {
+  const doc = content?.fields?.[key]
+  return doc ? { version: 1, fields: { formula: doc } } : null
+}
+
+function withMathContent(content) {
+  return content ? { math_content: content } : {}
+}
 // Людські назви 3D-шаблонів для підписів у контексті (етап 0 MCL, 0.1/0.3).
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
@@ -609,7 +623,7 @@ const HANDLERS = {
   },
 
   // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру)
-  async add_formula({ latex }, ctx) {
+  async add_formula({ latex, math_content }, ctx) {
     const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 380, 110)
     const assetId = _uuid()
@@ -623,7 +637,7 @@ const HANDLERS = {
       h: 110,
       rotation: 0,
       locked: false,
-      data: { version: 1, formula: latex, fontSize: 22, color: '#1e293b', bg: '#f8fafc' },
+      data: { version: 1, formula: latex, fontSize: 22, color: '#1e293b', bg: '#f8fafc', ...withMathContent(formulaContent(math_content, 'latex')) },
     }, page.id ?? '')
     // N1 Фаза 2: запис companion-сцени для AST-експорту (2026-08-07).
     // ⚠️ Раніше тут стояло `assetId: id` — `id` ніколи не оголошувалась у
@@ -636,7 +650,7 @@ const HANDLERS = {
       sessionId: store.workspaceId,
       kind: 'formula_card',
       assetId,
-      data: { formula: latex },
+      data: { formula: latex, ...withMathContent(formulaContent(math_content, 'latex')) },
     })
   },
 
@@ -748,7 +762,7 @@ const HANDLERS = {
     }, page.id ?? '')
   },
 
-  async add_card({ title, body, badge, preset, corridor, sources, source_status }, ctx) {
+  async add_card({ title, body, badge, preset, corridor, sources, source_status, math_content }, ctx) {
     const { store, page } = await _store(ctx)
     const { cx, cy } = _center(page, 520, 380, 440)
     const assetId = _uuid()
@@ -767,7 +781,7 @@ const HANDLERS = {
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
-      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...(preset ? { preset } : {}), ...corridorData(corridor), ...sourcesData(sources, source_status) },
+      data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...withMathContent(math_content), ...(preset ? { preset } : {}), ...corridorData(corridor), ...sourcesData(sources, source_status) },
     }, page.id ?? '')
     // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
     // LAW §9 v1.20: картка з пульта — на підготовчій сторінці; «остання картка» вікна — лише з вікна
@@ -780,7 +794,7 @@ const HANDLERS = {
       sessionId: store.workspaceId,
       kind: 'theory_card',
       assetId,
-      data: { badge: badgeValue, title: titleValue, body: bodyValue, ...(preset ? { preset } : {}) },
+      data: { badge: badgeValue, title: titleValue, body: bodyValue, ...withMathContent(math_content), ...(preset ? { preset } : {}) },
     })
   },
 
@@ -795,7 +809,7 @@ const HANDLERS = {
    * нічого не робить. Тиха невдача тут була б гіршою за початковий дефект:
    * тьютор почув би «виправив» і побачив стару картку.
    */
-  async update_card({ title, body, badge }) {
+  async update_card({ title, body, badge, math_content }) {
     const { store, page } = await _store()
     if (!_lastAiCard) {
       throw new Error('Я ще не створював тут картки — виправляти нема чого. Скажіть, що додати.')
@@ -808,9 +822,17 @@ const HANDLERS = {
       )
     }
     const data = { ...(asset.data || {}) }
-    if (typeof title === 'string' && title) data.title = title
-    if (typeof body === 'string' && body) data.body = body
+    const changed = []
+    if (typeof title === 'string' && title) { data.title = title; changed.push('title') }
+    if (typeof body === 'string' && body) { data.body = body; changed.push('body') }
     if (typeof badge === 'string' && badge) data.badge = badge
+    // Б-141: новий документ змінених полів — від сервера; без нього (старий шлях) документ зміненого
+    // поля вже не відповідає тексту — знімаємо його, поле рендериться як раніше.
+    const fields = { ...(data.math_content?.fields || {}) }
+    for (const key of changed) delete fields[key]
+    Object.assign(fields, math_content?.fields || {})
+    if (Object.keys(fields).length) data.math_content = { version: 1, fields }
+    else delete data.math_content
     store.updateAsset({ ...asset, data })
   },
 
@@ -837,7 +859,7 @@ const HANDLERS = {
         h: 380,
         rotation: 0,
         locked: false,
-        data: { version: 1, title: card.title || '', body: card.body || '', formulas: [], ...corridorData(corridor) },
+        data: { version: 1, title: card.title || '', body: card.body || '', formulas: [], ...withMathContent(card.math_content), ...corridorData(corridor) },
       }, page.id ?? '')
     }
   },
@@ -982,7 +1004,7 @@ export async function buildToolCatalog() {
 
 // ── Phase 2.8: редагування параметра ІСНУЮЧОГО об'єкта (через updateAsset) ──
 // BE резолвить object_id (Закон C), сюди приходить готовий id + що змінити.
-HANDLERS.set_param = async function set_param({ object_id, type, value, name }) {
+HANDLERS.set_param = async function set_param({ object_id, type, value, name, math_content }) {
   const { store } = await _store()
   const page = store.currentPage
   const asset = (page.assets || []).find((a) => a.id === object_id)
@@ -1036,6 +1058,10 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name }) 
     }
   } else if (type === 'formula') {
     data.formula = String(value)
+    // Б-141: старий документ описував попередню формулу — без нового від сервера знімаємо його.
+    const content = formulaContent(math_content, 'value')
+    if (content) data.math_content = content
+    else delete data.math_content
   } else {
     throw new Error('Цей тип зміни поки не підтримується.')  // fail-closed
   }
@@ -1331,9 +1357,10 @@ HANDLERS.add_tool = async function add_tool({ insert_id }, ctx) {
  * сторінку, не на поточну (LAW §9 v1.20, пульт). Решта дій працює з поточною, як і була.
  */
 export async function runBoardAction(action, ctx = null) {
-  const handler = HANDLERS[action?.kind]
+  const checked = prepareServerActions([action])[0]
+  const handler = HANDLERS[checked?.kind]
   if (!handler) throw new Error('Ця дія на дошці ще не підтримується.')  // fail-closed
-  await handler(action.payload || {}, ctx)
+  await handler(checked.payload || {}, ctx)
 }
 
 /** Дії, що лише створюють новий матеріал, — їх можна класти на підготовчу сторінку (пульт). */

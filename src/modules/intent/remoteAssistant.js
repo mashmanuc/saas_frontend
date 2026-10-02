@@ -13,6 +13,7 @@
  */
 import { watch } from 'vue'
 import { PREP_PAGE_KINDS } from './boardActions'
+import { prepareServerActions } from './math/prepareServerActions'
 
 /** = REMOTE_ASSISTANT_REPLY_TEXT_MAX_LEN на сервері (довше сервер відкине поле цілим). */
 export const REMOTE_REPLY_TEXT_MAX = 600
@@ -72,6 +73,7 @@ export function createRemoteAssistant(deps) {
 
   /** Покласти матеріал на підготовчу сторінку; поза історією ↶ ноутбука. */
   async function place(requestId, actions, explain) {
+    actions = prepareServerActions(actions)
     const { store, pageId } = await prepPage()
     if (!pageId) {
       remember('assistant', deps.t('winterboard.remote.assistant.maxPages'))

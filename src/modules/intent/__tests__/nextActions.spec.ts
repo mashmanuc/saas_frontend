@@ -78,6 +78,30 @@ describe('loadNextActions — список дій питають, а не збе
 })
 
 describe('runNextAction', () => {
+  it('Б-141: план із позначкою сервера, погана формула в останньому кроці — ні дій, ні нової сторінки', async () => {
+    m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
+      { kind: 'add_graph', math_contract: 1, payload: { expression: 'x^2' } },
+      { kind: 'add_card', math_contract: 1, payload: { body: '$x' } },
+    ] })
+    // Не вміщується → без перевірки план відкрив би нову сторінку; її не має бути.
+    m.planFits.mockResolvedValue(false)
+    try {
+      await runNextAction(SOURCE, SIDES)
+      expect(m.runBoardAction).not.toHaveBeenCalled()
+      expect(m.openPage).not.toHaveBeenCalled()
+      expect(m.notifyError).toHaveBeenCalled()
+    } finally {
+      m.planFits.mockResolvedValue(true)
+    }
+  })
+  it('Б-141: план без позначки сервера (акаунт поза прапорцем) — старий шлях, нічого не перевіряємо', async () => {
+    m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
+      { kind: 'add_card', payload: { body: '$x' } },
+    ] })
+    await runNextAction(SOURCE, SIDES)
+    expect(m.runBoardAction).toHaveBeenCalledTimes(1)
+    expect(m.notifyError).not.toHaveBeenCalled()
+  })
   it('план бекенду кладеться тим самим runBoardAction — крок за кроком', async () => {
     m.post.mockResolvedValue({ status: 'board_action_plan', actions: [
       { kind: 'add_history_card', payload: { title: 'Шведська імперія' } },

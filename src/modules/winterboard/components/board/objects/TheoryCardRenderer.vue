@@ -57,14 +57,14 @@
         <h2
           v-if="data.title"
           class="theory-card__title"
-          v-html="renderTextWithLatex(data.title)"
+          v-html="renderMathField(data, 'title', data.title)"
         />
         <!-- LAW §9 v1.22: TASL-рядок з кінця `body` (атрибуція одного з `sources[]`)
              показує кнопка «Джерело» внизу, а не текст. Дані ті самі (гейт H0). -->
         <div
           v-if="bodyParts.text"
           class="theory-card__text"
-          v-html="renderTextWithLatex(bodyParts.text)"
+          v-html="renderMathField(data, 'body', bodyParts.text)"
         />
         <div
           v-if="data.hint"
@@ -172,6 +172,7 @@ import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
+import { renderMathField } from '@/modules/intent/math/renderMathContent'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'

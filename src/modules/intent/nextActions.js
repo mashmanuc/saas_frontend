@@ -12,6 +12,7 @@
  * немає ні кнопок, ні запитів.
  */
 import apiClient from '../../utils/apiClient'
+import { prepareServerActions } from './math/prepareServerActions'
 import { notifyError, notifyInfo, notifyWarning } from '../../utils/notify'
 import {
   openPageForPlan,
@@ -78,7 +79,7 @@ export async function runNextAction(source, action) {
       notifyWarning(plan.explain || 'Для цієї дії зараз немає результату.')
       return
     }
-    const steps = plan.actions || []
+    const steps = prepareServerActions(plan.actions || [])
     // Результат дії кладеться ЦІЛИМ набором: не вміщується на сторінці без
     // перекриттів — іде на нову сторінку, а не лягає на те, що вже є. Якщо й
     // нова заповнилась (картки виросли під вміст) — продовження ще на одній.
