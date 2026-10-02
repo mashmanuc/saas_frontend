@@ -61,8 +61,8 @@
       type="button"
       class="solid-delete"
       data-testid="solid-delete"
-      aria-label="Delete solid"
-      title="Delete"
+      :aria-label="t('winterboard.widget.delete')"
+      :title="t('winterboard.widget.delete')"
       @click="onDelete"
     >
       ×
@@ -77,7 +77,7 @@
         data-testid="solid-toggle-faces"
         @click="toggleField('showFaces')"
       >
-        Faces
+        {{ t('winterboard.solidToolbar.faces') }}
       </button>
       <!-- Phase O PR-O5: autoRotate toggle (default ON per solidDefaults).
            Per SSOT §3.7.1 — autoRotate persists через WBAsset.data.state →
@@ -103,7 +103,7 @@
         data-testid="solid-toggle-edges"
         @click="toggleField('showEdges')"
       >
-        Edges
+        {{ t('winterboard.solidToolbar.edges') }}
       </button>
       <button
         type="button"
@@ -113,7 +113,7 @@
         data-testid="solid-toggle-vertices"
         @click="toggleField('showVertices')"
       >
-        Vertices
+        {{ t('winterboard.solidToolbar.vertices') }}
       </button>
       <button
         type="button"
@@ -123,7 +123,7 @@
         data-testid="solid-toggle-transparent"
         @click="toggleField('transparent')"
       >
-        Transparent
+        {{ t('winterboard.solidToolbar.transparent') }}
       </button>
       <button
         type="button"
@@ -133,7 +133,7 @@
         data-testid="solid-toggle-net"
         @click="toggleNet"
       >
-        Net
+        {{ t('winterboard.solidToolbar.net') }}
       </button>
       <button
         type="button"
@@ -143,7 +143,7 @@
         data-testid="solid-toggle-cut"
         @click="toggleCut"
       >
-        Cut
+        {{ t('winterboard.solidToolbar.cut') }}
       </button>
       <!-- Phase O P0 fix — rotateMode toggle (alternative до ALT key).
            Коли активний → drag без ALT rotates. Local ref, NOT persisted,
@@ -154,10 +154,10 @@
         :class="{ 'is-active': rotateMode }"
         :aria-pressed="rotateMode"
         data-testid="solid-toggle-rotate"
-        title="Rotate (or hold Alt and drag)"
+        :title="t('winterboard.solidToolbar.rotateTitle')"
         @click="toggleRotateMode"
       >
-        ↻ Rotate
+        ↻ {{ t('winterboard.solidToolbar.rotate') }}
       </button>
 
       <input

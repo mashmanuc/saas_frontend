@@ -148,7 +148,7 @@ const autoOrbit = ref(false)
 
 const VIEW_PRESETS = computed(() => [
   { preset: '3d'     as const, label: '3D',   title: t('winterboard.nmt3d.view3d') },
-  { preset: 'iso'    as const, label: 'iso',  title: t('winterboard.nmt3d.viewIso') },
+  { preset: 'iso'    as const, label: t('winterboard.nmt3d.viewIsoShort'), title: t('winterboard.nmt3d.viewIso') },
   { preset: 'front'  as const, label: '↑',    title: t('winterboard.nmt3d.viewFront') },
   { preset: 'side'   as const, label: '→',    title: t('winterboard.nmt3d.viewSide') },
   { preset: 'top'    as const, label: '⊙',    title: t('winterboard.nmt3d.viewTop') },

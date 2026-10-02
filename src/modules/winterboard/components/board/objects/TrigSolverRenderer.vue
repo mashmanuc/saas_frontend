@@ -122,7 +122,7 @@
         @click.stop="toggleOpt('snapSpecial')"
         @mousedown.stop
         @pointerdown.stop
-      >⊙ snap</button>
+      >{{ t('winterboard.widget.trigSolver.snap') }}</button>
 
       <button
         type="button"

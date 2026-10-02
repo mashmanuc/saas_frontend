@@ -7835,7 +7835,7 @@
     },
     "audio": {
       "untitled": "Untitled audio",
-      "listening": "Audio (via Zoom)"
+      "listening": "Audio — sound from the teacher"
     },
     "video": {
       "play": "Play",
@@ -7873,8 +7873,8 @@
         "angles": "Angles",
         "midpoints": "Varignon",
         "circumscribed": "Circumscribed ?",
-        "pitot": "Pitot ?",
-        "incscribed_check": "Pitot ?",
+        "pitot": "Incircle?",
+        "incscribed_check": "Incircle?",
         "angles_opposite": "∠A+∠C",
         "lengths": "Lengths",
         "corresponding": "Corresponding",
@@ -8176,7 +8176,15 @@
       "highlighter_colors": "Highlighter"
     },
     "solidToolbar": {
-      "autoRotate": "Auto rotate"
+      "autoRotate": "Auto rotate",
+      "faces": "Faces",
+      "edges": "Edges",
+      "vertices": "Vertices",
+      "transparent": "Transparent",
+      "net": "Net",
+      "cut": "Cut",
+      "rotate": "Rotate",
+      "rotateTitle": "Rotate (or hold Alt and drag)"
     },
     "lock": {
       "lock": "Lock",
@@ -9382,8 +9390,43 @@
       "addExpression": "+ expression",
       "emptyHint": "Add a parameter to the formula, e.g.",
       "params": "Parameters",
-      "shiftDragHint": "Shift+drag on the graph controls the parameter",
-      "shiftDragOneParam": "Drag-param unavailable: no curve depends on exactly one parameter",
+      "shiftDragHint": "Shift + drag on the graph controls the parameter",
+      "shiftDragChip": "Shift + drag",
+      "shiftDragOneParam": "Dragging unavailable: no curve depends on exactly one parameter",
+      "slash": {
+        "linear": {
+          "name": "linear",
+          "keywords": "line"
+        },
+        "sin": {
+          "name": "sin",
+          "keywords": "sine"
+        },
+        "cos": {
+          "name": "cos",
+          "keywords": "cosine"
+        },
+        "parabola": {
+          "name": "parabola",
+          "keywords": "quadratic"
+        },
+        "cubic": {
+          "name": "cubic",
+          "keywords": "cube"
+        },
+        "sqrt": {
+          "name": "sqrt",
+          "keywords": "square root"
+        },
+        "log": {
+          "name": "log",
+          "keywords": "logarithm"
+        },
+        "circle": {
+          "name": "circle",
+          "keywords": "round"
+        }
+      },
       "configureRange": "Configure range",
       "err": {
         "unknownSymbol": "Unknown symbol “{ch}”",
@@ -9403,7 +9446,7 @@
       "funcLabel": "Function",
       "valueLabel": "Value a",
       "optionsLabel": "Options",
-      "snapTitle": "Snap to special values",
+      "snapTitle": "Snap a to table values (½, √2/2, √3/2…)",
       "graphTitle": "Show graph",
       "graphBtn": "graph",
       "allSolutionsTitle": "Show all solutions",
@@ -9682,6 +9725,7 @@
       "unfold": "▦ Unfold",
       "view3d": "3D view",
       "viewIso": "Isometric",
+      "viewIsoShort": "iso",
       "viewFront": "Front",
       "viewSide": "Side",
       "viewTop": "Top",
@@ -10109,8 +10153,8 @@
         "deletePoint": "Delete point",
         "rangeCollapse": "Collapse",
         "rangeExpand": "Set range",
-        "paramHelp": "{shift}+drag or {icon} — controls the parameter",
-        "paramDragTitle": "Shift+drag on the graph controls the parameter ({names})",
+        "paramHelp": "{shift} + drag or {icon} — controls the parameter",
+        "paramDragTitle": "Shift + drag on the graph controls the parameter ({names})",
         "addPoint": "+ point",
         "quickAddTitle": "Add: {src}",
         "quickCircle": "circle",
@@ -10161,13 +10205,16 @@
         "rotation": "▶ Rotation",
         "speed": "speed",
         "hideValues": "Hide values",
+        "step": "step π/12",
+        "stepTitle": "Angle changes in 15° steps",
         "showValues": "Show values"
       },
       "trigSolver": {
         "sign": "sign:",
         "graph": "~ graph",
         "allSolutions": "∞ all",
-        "snapToTable": "Snap to table values",
+        "snap": "⊙ snap",
+        "snapToTable": "Snap a to table values (½, √2/2, √3/2…)",
         "showGraph": "Show the graph",
         "showAllSolutions": "Show all solutions"
       },

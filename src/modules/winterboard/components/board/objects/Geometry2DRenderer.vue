@@ -41,7 +41,7 @@
         type="button"
         class="geo2dv2-delete"
         data-testid="geometry-2d-v2-delete"
-        aria-label="Delete geometry"
+        :aria-label="t('winterboard.widget.delete')"
         :title="t('winterboard.widget.delete')"
         @click.stop="onDelete"
       >×</button>

@@ -144,10 +144,11 @@
           type="button"
           class="trig-btn"
           :class="{ 'is-active': local.snapPi12 }"
+          :title="t('winterboard.widget.trigCircle.stepTitle')"
           @click.stop="toggle('snapPi12')"
           @mousedown.stop
           @pointerdown.stop
-        >snap π/12</button>
+        >{{ t('winterboard.widget.trigCircle.step') }}</button>
 
         <span class="trig-sep" />
 

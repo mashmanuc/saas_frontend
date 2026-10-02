@@ -32,6 +32,8 @@ export interface GcExprEntry {
 
 export interface GcSlashTemplate {
   id: string
+  /** Назва мовою інтерфейсу — її показує меню «/» (`id` лишається англійським ключем). */
+  name: string
   label: string
   src: string
 }

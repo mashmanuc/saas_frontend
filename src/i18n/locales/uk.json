@@ -7751,7 +7751,15 @@
       "highlighter_colors": "Маркер"
     },
     "solidToolbar": {
-      "autoRotate": "Авто-обертання"
+      "autoRotate": "Авто-обертання",
+      "faces": "Грані",
+      "edges": "Ребра",
+      "vertices": "Вершини",
+      "transparent": "Прозоро",
+      "net": "Розгортка",
+      "cut": "Переріз",
+      "rotate": "Обертати",
+      "rotateTitle": "Обертати (або затисніть Alt і тягніть)"
     },
     "lock": {
       "lock": "Заблокувати",
@@ -8948,7 +8956,7 @@
     },
     "audio": {
       "untitled": "Аудіо без назви",
-      "listening": "Аудіо (через Zoom)"
+      "listening": "Аудіо — звук від учителя"
     },
     "video": {
       "play": "Грати",
@@ -8986,8 +8994,8 @@
         "angles": "Кути",
         "midpoints": "Варіньон",
         "circumscribed": "Описане ?",
-        "pitot": "Pitot ?",
-        "incscribed_check": "Pitot ?",
+        "pitot": "Вписане коло?",
+        "incscribed_check": "Вписане коло?",
         "angles_opposite": "∠A+∠C",
         "lengths": "Довжини",
         "corresponding": "Відповідні",
@@ -9015,7 +9023,7 @@
       "preset": {
         "similar": {
           "full": "Подібні трикутники",
-          "desc": "гомотетія · drag k"
+          "desc": "гомотетія · тягни k"
         },
         "parallels": {
           "full": "Паралельні + січна",
@@ -9023,7 +9031,7 @@
         },
         "trapezium": {
           "full": "Трапеція",
-          "desc": "сер. лінія · висота · cyclic"
+          "desc": "сер. лінія · висота · вписана в коло"
         },
         "euler9": {
           "full": "Ейлер + 9 точок",
@@ -9055,7 +9063,7 @@
         },
         "thales": {
           "full": "Фалес",
-          "desc": "3 паралельні · ratios"
+          "desc": "3 паралельні · відношення"
         },
         "blank": {
           "full": "Порожня площина",
@@ -9515,8 +9523,43 @@
       "addExpression": "+ вираз",
       "emptyHint": "Додай параметр у формулу, напр.",
       "params": "Параметри",
-      "shiftDragHint": "Shift+drag по графіку керує параметром",
-      "shiftDragOneParam": "Drag-параметр недоступний: жодна крива не залежить рівно від одного параметра",
+      "shiftDragHint": "Shift + перетягування по графіку керує параметром",
+      "shiftDragChip": "Shift + тягни",
+      "shiftDragOneParam": "Перетягування недоступне: жодна крива не залежить рівно від одного параметра",
+      "slash": {
+        "linear": {
+          "name": "лінійна",
+          "keywords": "пряма лінійна функція"
+        },
+        "sin": {
+          "name": "синус",
+          "keywords": "синусоїда"
+        },
+        "cos": {
+          "name": "косинус",
+          "keywords": "косинусоїда"
+        },
+        "parabola": {
+          "name": "парабола",
+          "keywords": "квадратична"
+        },
+        "cubic": {
+          "name": "кубічна",
+          "keywords": "куб"
+        },
+        "sqrt": {
+          "name": "корінь",
+          "keywords": "квадратний корінь"
+        },
+        "log": {
+          "name": "логарифм",
+          "keywords": "логарифмічна"
+        },
+        "circle": {
+          "name": "коло",
+          "keywords": "окружність"
+        }
+      },
       "configureRange": "Налаштувати діапазон",
       "err": {
         "unknownSymbol": "Невідомий символ «{ch}»",
@@ -9536,7 +9579,7 @@
       "funcLabel": "Функція",
       "valueLabel": "Значення a",
       "optionsLabel": "Опції",
-      "snapTitle": "Snap до табличних значень",
+      "snapTitle": "Притягувати a до табличних значень (½, √2/2, √3/2…)",
       "graphTitle": "Показати графік",
       "graphBtn": "графік",
       "allSolutionsTitle": "Показати всі розв'язки",
@@ -9770,6 +9813,7 @@
       "unfold": "▦ розгортка",
       "view3d": "3D вигляд",
       "viewIso": "Ізометрія",
+      "viewIsoShort": "ізо",
       "viewFront": "Спереду",
       "viewSide": "Збоку",
       "viewTop": "Зверху",
@@ -10197,8 +10241,8 @@
         "deletePoint": "Видалити точку",
         "rangeCollapse": "Згорнути",
         "rangeExpand": "Налаштувати діапазон",
-        "paramHelp": "{shift}+drag або {icon} — керує параметром",
-        "paramDragTitle": "Shift+drag по графіку керує параметром ({names})",
+        "paramHelp": "{shift} + перетягування або {icon} — керує параметром",
+        "paramDragTitle": "Shift + перетягування по графіку керує параметром ({names})",
         "addPoint": "+ точка",
         "quickAddTitle": "Додати: {src}",
         "quickCircle": "коло",
@@ -10249,13 +10293,16 @@
         "rotation": "▶ Обертання",
         "speed": "швидкість",
         "hideValues": "Приховати значення",
+        "step": "крок π/12",
+        "stepTitle": "Кут змінюється кроком 15°",
         "showValues": "Показати значення"
       },
       "trigSolver": {
         "sign": "знак:",
         "graph": "~ графік",
         "allSolutions": "∞ всі",
-        "snapToTable": "Snap до табличних значень",
+        "snap": "⊙ табличні",
+        "snapToTable": "Притягувати a до табличних значень (½, √2/2, √3/2…)",
         "showGraph": "Показати графік",
         "showAllSolutions": "Показати всі розв'язки"
       },

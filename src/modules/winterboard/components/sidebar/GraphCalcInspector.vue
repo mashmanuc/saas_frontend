@@ -150,7 +150,7 @@
               @click="b.applySlashTemplate(expr.id, tpl)"
               @mouseenter="b.setSlashSelectedIdx(tplIdx)"
             >
-              <span class="gc-insp__slash-key">/{{ tpl.id }}</span>
+              <span class="gc-insp__slash-key">/{{ tpl.name }}</span>
               <span class="gc-insp__slash-label">{{ tpl.label }}</span>
             </div>
             <div v-if="b.slashFilteredTemplates.length === 0" class="gc-insp__slash-empty">
@@ -186,18 +186,18 @@
 
     <!-- Параметри -->
     <div v-if="b.paramEntries.length > 0" class="gc-insp__section">
-      <div class="gc-insp__section-label">
+      <!-- Власник 2026-10-02: як на картці — ярлик лише коли перетягування доступне,
+           інакше пояснення в підказці заголовка (без загадкового «Shift-drag —»). -->
+      <div
+        class="gc-insp__section-label"
+        :title="b.dragParamNames.length ? undefined : t('winterboard.graphCalc.shiftDragOneParam')"
+      >
         {{ t('winterboard.graphCalc.params') }}
         <span
           v-if="b.dragParamNames.length"
           class="gc-insp__hint"
           :title="t('winterboard.graphCalc.shiftDragHint')"
-        >Shift-drag</span>
-        <span
-          v-else
-          class="gc-insp__hint gc-insp__hint--muted"
-          :title="t('winterboard.graphCalc.shiftDragOneParam')"
-        >Shift-drag —</span>
+        >{{ t('winterboard.graphCalc.shiftDragChip') }}</span>
       </div>
 
       <div
@@ -594,11 +594,6 @@ const QUICK_TEMPLATES = [
   padding: 1px 5px;
   border-radius: 3px;
   cursor: help;
-}
-
-.gc-insp__hint--muted {
-  color: #94a3b8;
-  background: rgba(148, 163, 184, 0.1);
 }
 
 /* ── Param row ── */

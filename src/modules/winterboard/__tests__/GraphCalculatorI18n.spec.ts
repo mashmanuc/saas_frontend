@@ -115,8 +115,9 @@ function visibleLiterals(file: string): string[] {
   // Статичні (без `:`) атрибути, які бачить людина.
   for (const m of tpl.matchAll(/\s(title|placeholder|aria-label)="([^"]+)"/g)) out.push(m[2])
   // Слово з 2+ літер будь-якою абеткою — мовний текст. Дозволені: клавіші й
-  // математичні позначення, однакові в усіх мовах.
-  const ALLOWED = new Set(['Shift', 'Shift-drag', 'Shift-drag —', 'f(x)', 'y = ...'])
+  // математичні позначення, однакові в усіх мовах. «Shift-drag» тут більше не
+  // дозволено (власник 2026-10-02: технічна назва) — ярлик іде через t().
+  const ALLOWED = new Set(['Shift', 'f(x)', 'y = ...'])
   return out.filter((s) => /\p{L}{2,}/u.test(s) && !ALLOWED.has(s))
 }
 

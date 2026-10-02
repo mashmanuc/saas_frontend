@@ -165,7 +165,7 @@
                 @click.stop="applySlashTemplate(expr.id, tpl)"
                 @mouseenter="slashPopup && (slashPopup.selectedIdx = tplIdx)"
               >
-                <span class="gc-slash-item-key">/{{ tpl.id }}</span>
+                <span class="gc-slash-item-key">/{{ slashText(tpl.id).name }}</span>
                 <span class="gc-slash-item-label">{{ tpl.label }}</span>
               </div>
               <div v-if="slashFilteredTemplates.length === 0" class="gc-slash-empty">
@@ -271,18 +271,18 @@
              Hidden when isSelected=true: params move to GraphCalcInspector sidebar
              (розгортання авто-виділяє → інспектор у сайтбарі, на оверлеї не дублюємо). -->
         <div v-if="paramEntries.length > 0 && !isSelected" class="gc-params" data-testid="graph-calc-params">
-          <div class="gc-params-header">
+          <!-- Власник 2026-10-02: без технічного «Shift-drag». Ярлик лише коли перетягування
+               доступне; коли ні — замість загадкового «Shift-drag —» пояснення в підказці заголовка. -->
+          <div
+            class="gc-params-header"
+            :title="dragParamNames.length ? undefined : t('winterboard.graphCalc.shiftDragOneParam')"
+          >
             {{ t('winterboard.graphCalc.params') }}
             <span
               v-if="dragParamNames.length"
               class="gc-params-hint"
               :title="t('winterboard.widget.graphCalc.paramDragTitle', { names: dragParamNames.join(', ') })"
-            >Shift-drag</span>
-            <span
-              v-else
-              class="gc-params-hint gc-params-hint--disabled"
-              :title="t('winterboard.graphCalc.shiftDragOneParam')"
-            >Shift-drag —</span>
+            >{{ t('winterboard.graphCalc.shiftDragChip') }}</span>
           </div>
           <div
             v-for="p in paramEntries"
@@ -388,6 +388,12 @@ import { getGraphCalcUi, toggleGraphCalcParamMode, toggleGraphCalcPresenting } f
 // Inspector bridge — param sliders move to GraphCalcInspector sidebar when selected.
 import { registerGraphCalcInspector, unregisterGraphCalcInspector } from '../../../board/state/graphCalcInspectorState'
 import type { GraphCalcInspectorBridge } from '../../../board/state/graphCalcInspectorState'
+import {
+  filterSlashTemplates,
+  type SlashTemplate,
+  type SlashTemplateId,
+  type SlashTemplateText,
+} from '../../../board/graphCalcSlashTemplates'
 import { formatParamValue, paramFocusRole, PARAM_FOCUS_FADE_MS } from '../../../utils/paramFocus'
 import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
@@ -1360,30 +1366,20 @@ function onRemoveExpression(id: string) {
 
 // P2 #9 (2026-05-08): inline slash-command templates. Trigger — input starts
 // with `/`. Filter by query, navigate Up/Down/Enter/Esc, click to apply.
-// Більший набір ніж видимі quick-add chips (8 vs 4) — chips для discoverability,
-// slash для швидкого pro-flow без дотягування миші.
-const SLASH_TEMPLATES = [
-  { id: 'linear',   label: 'a·x',           keyword: 'linear line',          src: 'y = a*x' },
-  { id: 'sin',      label: 'a·sin(x)',      keyword: 'sin sine',             src: 'y = a*sin(x)' },
-  { id: 'cos',      label: 'a·cos(x)',      keyword: 'cos cosine',           src: 'y = a*cos(x)' },
-  { id: 'parabola', label: 'a·x²',          keyword: 'parabola poly2 quad',  src: 'y = a*x^2' },
-  { id: 'cubic',    label: 'a·x³',          keyword: 'cubic poly3',          src: 'y = a*x^3' },
-  { id: 'sqrt',     label: '√x',            keyword: 'sqrt root',            src: 'y = sqrt(x)' },
-  { id: 'log',      label: 'log(x)',        keyword: 'log',                  src: 'y = log(x)' },
-  { id: 'circle',   label: 'x² + y² = r²',  keyword: 'circle',               src: '(x)^2 + (y)^2 = r^2' },
-] as const
-type SlashTemplate = typeof SLASH_TEMPLATES[number]
+// Шаблони й пошук — `board/graphCalcSlashTemplates.ts`; назви й синоніми мовою
+// інтерфейсу (власник 2026-10-02: «/парабола» має знаходити параболу).
+function slashText(id: SlashTemplateId): SlashTemplateText {
+  return {
+    name: t(`winterboard.graphCalc.slash.${id}.name`),
+    keywords: t(`winterboard.graphCalc.slash.${id}.keywords`),
+  }
+}
 
 const slashPopup = ref<{ exprId: string; query: string; selectedIdx: number } | null>(null)
 
 const slashFilteredTemplates = computed<readonly SlashTemplate[]>(() => {
   if (!slashPopup.value) return []
-  const q = slashPopup.value.query.toLowerCase().trim()
-  if (!q) return SLASH_TEMPLATES
-  return SLASH_TEMPLATES.filter((t) =>
-    t.id.toLowerCase().includes(q) ||
-    t.keyword.toLowerCase().includes(q),
-  )
+  return filterSlashTemplates(slashPopup.value.query, slashText)
 })
 
 // Keep bridge state in sync with reactive refs + computeds. Оголошено ПІСЛЯ
@@ -1403,10 +1399,11 @@ watchEffect(() => {
     error: e.error,
   }))
   _gcBridge.slashPopup = slashPopup.value ? { ...slashPopup.value } : null
-  _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((t) => ({
-    id: t.id,
-    label: t.label,
-    src: t.src,
+  _gcBridge.slashFilteredTemplates = slashFilteredTemplates.value.map((tpl) => ({
+    id: tpl.id,
+    name: slashText(tpl.id).name,
+    label: tpl.label,
+    src: tpl.src,
   }))
   _gcBridge.isExpanded = props.isExpanded ?? false
 })
@@ -2283,10 +2280,6 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   padding: 1px 5px;
   border-radius: var(--gc-radius-input, 3px);
   cursor: help;
-}
-.gc-params-hint--disabled {
-  color: var(--gc-mute-fg, #94a3b8);
-  background: var(--gc-mute-bg, rgba(148, 163, 184, 0.1));
 }
 .gc-param-row {
   display: grid;

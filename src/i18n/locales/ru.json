@@ -7303,7 +7303,15 @@
       "highlighter_colors": "Маркер"
     },
     "solidToolbar": {
-      "autoRotate": "Авто-вращение"
+      "autoRotate": "Авто-вращение",
+      "faces": "Грани",
+      "edges": "Рёбра",
+      "vertices": "Вершины",
+      "transparent": "Прозрачно",
+      "net": "Развёртка",
+      "cut": "Сечение",
+      "rotate": "Вращать",
+      "rotateTitle": "Вращать (или зажмите Alt и тяните)"
     },
     "lock": {
       "lock": "Заблокировать",
@@ -7818,7 +7826,7 @@
     },
     "audio": {
       "untitled": "Аудио без названия",
-      "listening": "Аудио (через Zoom)"
+      "listening": "Аудио — звук от учителя"
     },
     "video": {
       "play": "Играть",
@@ -7855,8 +7863,8 @@
         "angles": "Углы",
         "midpoints": "Вариньон",
         "circumscribed": "Описанная ?",
-        "pitot": "Pitot ?",
-        "incscribed_check": "Pitot ?",
+        "pitot": "Вписанная окружность?",
+        "incscribed_check": "Вписанная окружность?",
         "angles_opposite": "∠A+∠C",
         "lengths": "Длины",
         "corresponding": "Соответственные",
@@ -7884,7 +7892,7 @@
       "preset": {
         "similar": {
           "full": "Подобные треугольники",
-          "desc": "гомотетия · drag k"
+          "desc": "гомотетия · тяни k"
         },
         "parallels": {
           "full": "Параллельные + секущая",
@@ -7892,7 +7900,7 @@
         },
         "trapezium": {
           "full": "Трапеция",
-          "desc": "сред. линия · высота · cyclic"
+          "desc": "сред. линия · высота · вписанная"
         },
         "euler9": {
           "full": "Эйлер + 9 точек",
@@ -7924,7 +7932,7 @@
         },
         "thales": {
           "full": "Фалес",
-          "desc": "3 параллельных · ratios"
+          "desc": "3 параллельных · отношения"
         },
         "blank": {
           "full": "Пустая плоскость",
@@ -9010,6 +9018,7 @@
       "unfold": "▦ развёртка",
       "view3d": "3D вид",
       "viewIso": "Изометрия",
+      "viewIsoShort": "изо",
       "viewFront": "Спереди",
       "viewSide": "Сбоку",
       "viewTop": "Сверху",
@@ -9380,8 +9389,8 @@
         "deletePoint": "Удалить точку",
         "rangeCollapse": "Свернуть",
         "rangeExpand": "Настроить диапазон",
-        "paramHelp": "{shift}+drag или {icon} — управляет параметром",
-        "paramDragTitle": "Shift+drag по графику управляет параметром ({names})",
+        "paramHelp": "{shift} + перетаскивание или {icon} — управляет параметром",
+        "paramDragTitle": "Shift + перетаскивание по графику управляет параметром ({names})",
         "addPoint": "+ точка",
         "quickAddTitle": "Добавить: {src}",
         "quickCircle": "окружность",
@@ -9432,13 +9441,16 @@
         "rotation": "▶ Вращение",
         "speed": "скорость",
         "hideValues": "Скрыть значения",
+        "step": "шаг π/12",
+        "stepTitle": "Угол меняется шагом 15°",
         "showValues": "Показать значения"
       },
       "trigSolver": {
         "sign": "знак:",
         "graph": "~ график",
         "allSolutions": "∞ все",
-        "snapToTable": "Snap к табличным значениям",
+        "snap": "⊙ табличные",
+        "snapToTable": "Притягивать a к табличным значениям (½, √2/2, √3/2…)",
         "showGraph": "Показать график",
         "showAllSolutions": "Показать все решения"
       }
@@ -9456,8 +9468,43 @@
       "addExpression": "+ выражение",
       "emptyHint": "Добавьте параметр в формулу, напр.",
       "params": "Параметры",
-      "shiftDragHint": "Shift+drag по графику управляет параметром",
-      "shiftDragOneParam": "Drag-параметр недоступен: ни одна кривая не зависит ровно от одного параметра",
+      "shiftDragHint": "Shift + перетаскивание по графику управляет параметром",
+      "shiftDragChip": "Shift + тяни",
+      "shiftDragOneParam": "Перетаскивание недоступно: ни одна кривая не зависит ровно от одного параметра",
+      "slash": {
+        "linear": {
+          "name": "линейная",
+          "keywords": "прямая"
+        },
+        "sin": {
+          "name": "синус",
+          "keywords": "синусоида"
+        },
+        "cos": {
+          "name": "косинус",
+          "keywords": "косинусоида"
+        },
+        "parabola": {
+          "name": "парабола",
+          "keywords": "квадратичная"
+        },
+        "cubic": {
+          "name": "кубическая",
+          "keywords": "куб"
+        },
+        "sqrt": {
+          "name": "корень",
+          "keywords": "квадратный корень"
+        },
+        "log": {
+          "name": "логарифм",
+          "keywords": "логарифмическая"
+        },
+        "circle": {
+          "name": "окружность",
+          "keywords": "круг"
+        }
+      },
       "configureRange": "Настроить диапазон",
       "err": {
         "unknownSymbol": "Неизвестный символ «{ch}»",

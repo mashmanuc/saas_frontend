@@ -94,7 +94,7 @@
           :class="{ 'is-active': b.local.snapSpecial }"
           :title="t('winterboard.trigSolver.snapTitle')"
           @click="b.toggleOpt('snapSpecial')"
-        >⊙ snap</button>
+        >{{ t('winterboard.widget.trigSolver.snap') }}</button>
         <button
           type="button"
           class="ts-insp__btn"

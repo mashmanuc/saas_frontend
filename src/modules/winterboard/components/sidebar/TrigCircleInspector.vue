@@ -79,8 +79,9 @@
           type="button"
           class="trig-insp__btn"
           :class="{ 'is-active': b.local.snapPi12 }"
+          :title="t('winterboard.widget.trigCircle.stepTitle')"
           @click="b.toggle('snapPi12')"
-        >snap π/12</button>
+        >{{ t('winterboard.widget.trigCircle.step') }}</button>
       </div>
 
       <!-- Швидкість -->
