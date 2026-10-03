@@ -9210,6 +9210,11 @@
       "saveErrorState": "Could not confirm the board state on the server — nothing was saved. Try again.",
       "saveErrorPlan": "Could not save the lesson plan — nothing was saved. Try again.",
       "saveErrorNetwork": "No connection to the server — nothing was saved. Check the connection and try again.",
+      "exitNotice": {
+        "title": "Lesson saved in «Conducted»",
+        "text": "Template «{template}» is unchanged.",
+        "textNoName": "The original template is unchanged."
+      },
       "copy": {
         "button": "Save as a new template",
         "title": "Save as a new template",
@@ -9218,7 +9223,8 @@
         "save": "Save template",
         "saving": "Saving…",
         "savingBanner": "Saving the template…",
-        "defaultTitle": "{title} — copy"
+        "defaultTitle": "{title} — copy",
+        "savedToast": "New template «{title}» is in «My Lessons»."
       },
       "titleLabel": "Lesson title",
       "titlePlaceholder": "E.g. Equations with absolute value",

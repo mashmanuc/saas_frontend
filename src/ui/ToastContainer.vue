@@ -204,21 +204,25 @@ const progressStyle = (item) => {
   margin: 0 0 0.5rem;
 }
 
+/* Кнопка дії — світла з темним текстом: читається на будь-якій кольоровій картці.
+   Було color: var(--toast-accent) — під темну картку; на кольорових (success/info/error/warning)
+   виходив зелений текст на зеленому тощо, кнопки майже не видно (2026-10-03, «Зберегти як новий шаблон»). */
 .toast-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.45rem 0.65rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--toast-accent) 60%, transparent);
-  color: var(--toast-accent);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
 }
 
 .toast-action:hover {
-  background: color-mix(in srgb, var(--toast-accent) 8%, transparent);
+  background: #fff;
 }
 
 .toast-progress {

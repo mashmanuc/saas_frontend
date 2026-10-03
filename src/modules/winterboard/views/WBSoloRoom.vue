@@ -1172,7 +1172,8 @@
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
-import { roomExitTarget } from '../board/roomExit'
+import { roomExitTarget, EXIT_TO_LESSONS } from '../board/roomExit'
+import { shouldShowLessonExitNotice, saveCopyHref, isLessonContentOp } from '../board/lessonExitNotice'
 import { useRouter, useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
@@ -1192,7 +1193,7 @@ import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
-import { notifyError, notifyWarning } from '@/utils/notify'
+import { notifyError, notifyWarning, notifySuccess } from '@/utils/notify'
 import { artifactBarrierReason, type ArtifactBarrierReason } from '../composables/artifactBarrier'
 import { usePresence } from '../composables/usePresence'
 import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
@@ -1324,6 +1325,12 @@ const testStore = useTestStore()
 // Той самий WBSoloRoom — тільки ховає запис/invite, показує badge + «Оновити шаблон».
 const constructorMode = computed(() => !!route.meta.constructorMode)
 const originLessonId = ref<string | null>(null)
+/** Назва шаблону, з якого проведено урок, — для підтвердження після «← Мої уроки». */
+const originLessonTitle = ref<string | null>(null)
+// Підтвердження після «← Мої уроки» (board/lessonExitNotice.ts): чи змінювали урок за цей візит
+// (операції вмісту — не гортання). Оголошено тут, до завантаження дошки: підписку ставить bootstrap.
+let lessonContentChanged = false
+let _unsubExitNoticeOps: (() => void) | null = null
 
 // ── Local Workspace mode (ТЗ 2026-07-15) ────────────────────────────────────
 // Активується на route /workspace (meta.localWorkspace = true). У цьому режимі
@@ -1526,6 +1533,7 @@ function cleanupRecorder(): void {
   _recorderCleaned = true
   console.info('[WB:Recorder] cleanupRecorder — unsubscribing listener + destroying')
   _unsubRecorder?.()
+  _unsubExitNoticeOps?.()
   replayRecorder.destroy()
 }
 
@@ -3804,6 +3812,8 @@ function endTemplateSave(): void {
 }
 
 function handleCopySaved(lesson: { id: string; title: string }): void {
+  // Зміни до цього моменту вже в новому шаблоні — на виході про них не нагадуємо.
+  lessonContentChanged = false
   savedItemTitle.value = lesson.title || ''
   savedItemKind.value = 'copy'
   showSavedSuccessModal.value = true
@@ -3872,7 +3882,36 @@ const exitTarget = computed(() => roomExitTarget({
 
 async function handleExit(): Promise<void> {
   await saveBeforeLeave()
-  router.push(exitTarget.value.path)
+  const target = exitTarget.value
+  // Рішення про підтвердження — до переходу: після нього кімнати вже немає.
+  const notice = lessonExitNotice(target.path)
+  const failure = await router.push(target.path)
+  // Перехід скасовано (useUnsecuredQueueGuard: черга не в безпеці) — підтвердження немає.
+  if (notice && !failure) notice()
+}
+
+/**
+ * «Урок збережено в «Проведених». Шаблон «…» не змінено.» + «Зберегти як новий шаблон»
+ * (власник 2026-10-03; правило — board/lessonExitNotice.ts). Не блокує вихід.
+ */
+function lessonExitNotice(targetPath: string): (() => void) | null {
+  const show = shouldShowLessonExitNotice({
+    canSaveAsNewTemplate: canSaveAsNewTemplate.value,
+    toLessons: targetPath === EXIT_TO_LESSONS.path,
+    contentChanged: lessonContentChanged,
+    allOnServer: opsSync.isSync && opsSync.pendingCount + opsSync.inFlightCount === 0,
+  })
+  if (!show || !sessionId.value) return null
+  const template = originLessonTitle.value
+  const message = template
+    ? t('winterboard.lesson.exitNotice.text', { template })
+    : t('winterboard.lesson.exitNotice.textNoName')
+  const href = saveCopyHref(EXIT_TO_LESSONS.path, sessionId.value, copyDefaultTitle.value)
+  return () => notifySuccess(message, {
+    title: t('winterboard.lesson.exitNotice.title'),
+    timeout: 12000,
+    action: { label: t('winterboard.lesson.copy.button'), href },
+  })
 }
 
 // FIX-6: Navigate with autosave — used by sidebar overlay links
@@ -4399,6 +4438,7 @@ onMounted(async () => {
 
       // Зберігаємо origin_lesson_id для "Оновити шаблон" в constructor-режимі
       originLessonId.value = detail.origin_lesson_id ?? null
+      originLessonTitle.value = detail.origin_lesson_title ?? null
 
       if (detail.state) {
         store.hydrateFromSession({
@@ -4474,6 +4514,10 @@ onMounted(async () => {
       // у BOOTSTRAP mode → record() returns false → drawing produces 0 ops.
       try {
         await opsSync.bootstrap(id)
+        // Лише дії ПІСЛЯ відкриття і лише ті, що змінюють урок (гортання — ні).
+        _unsubExitNoticeOps = store.onOperation((op) => {
+          if (isLessonContentOp(op.op_type)) lessonContentChanged = true
+        })
       } catch (bootErr) {
         console.error('[WBSoloRoom] opsSync.bootstrap failed (non-fatal):', bootErr)
       }

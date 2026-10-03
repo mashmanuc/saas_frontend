@@ -628,6 +628,16 @@
       @saved="onLessonEdited"
     />
 
+    <!-- «Зберегти як новий шаблон» з підтвердження після «← Мої уроки» (власник 2026-10-03):
+         те саме вікно й API, що на дошці уроку; проведення — те, з якого щойно вийшли. -->
+    <WBSaveLessonDialog
+      v-model="showSaveCopyDialog"
+      mode="copy"
+      :session-id="saveCopySessionId"
+      :default-title="saveCopyDefaultTitle"
+      @saved="onCopySaved"
+    />
+
     <!-- Templates: bulk delete confirm dialog -->
     <Teleport to="body">
       <div
@@ -831,6 +841,8 @@ function closeGrantModal(): void {
   quickGrantResult.value = null
 }
 import LessonEditDialog from '../components/LessonEditDialog.vue'
+import WBSaveLessonDialog from '../components/WBSaveLessonDialog.vue'
+import { SAVE_COPY_QUERY, SAVE_COPY_TITLE_QUERY } from '@/modules/winterboard/board/lessonExitNotice'
 import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
@@ -1128,6 +1140,36 @@ watch(
   },
   { immediate: true },
 )
+
+// «Зберегти як новий шаблон» із підтвердження після «← Мої уроки» (?save_copy=<сесія>,
+// winterboard/board/lessonExitNotice.ts). Вікно змонтоване завжди; відкриваємо, коли вже
+// підставлено сесію й назву, — тоді воно саме заповнить поле назви.
+const showSaveCopyDialog = ref(false)
+const saveCopySessionId = ref('')
+const saveCopyDefaultTitle = ref('')
+
+watch(
+  () => route.query[SAVE_COPY_QUERY],
+  async (sid) => {
+    if (typeof sid !== 'string' || !sid) return
+    const title = route.query[SAVE_COPY_TITLE_QUERY]
+    saveCopySessionId.value = sid
+    saveCopyDefaultTitle.value = typeof title === 'string' ? title : ''
+    // Чистимо query одразу — refresh/back не відкриють вікно вдруге
+    await router.replace({ query: { ...route.query, [SAVE_COPY_QUERY]: undefined, [SAVE_COPY_TITLE_QUERY]: undefined } })
+    // Відкриваємо лише ПІСЛЯ await вище: сторінка, що відкрилась одразу з ?save_copy, на цей
+    // момент уже змонтувала вікно, а воно заповнює назву тільки на переході «закрито → відкрито».
+    showSaveCopyDialog.value = true
+  },
+  { immediate: true },
+)
+
+/** Новий шаблон — у вкладці «Уроки»: показуємо її й оновлюємо список. */
+function onCopySaved(lesson: { id: string; title: string }): void {
+  notify.success(t('winterboard.lesson.copy.savedToast', { title: lesson.title }))
+  activeTab.value = 'templates'
+  loadLessons()
+}
 
 async function loadLessons(append = false) {
   if (!append) {
