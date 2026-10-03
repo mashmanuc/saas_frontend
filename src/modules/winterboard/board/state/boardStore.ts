@@ -1804,6 +1804,11 @@ export const useWBStore = defineStore('wb-board', {
       usedNames: ReadonlyArray<string>,
       opts?: { skipEmit?: boolean; defaultValue?: number },
     ): void {
+      // Спершу застосувати відкладений (RAF) знімок картки: рендерер щойно віддав вирази,
+      // а знімок нижче будується з asset у сторі. Інакше «останній виграє» в буфері
+      // перезаписував новий вираз старим — «Швидко додати» і шаблон із меню «/» зникали,
+      // лишався лише параметр (стенд 2026-10-03).
+      flushPendingUpdates()
       let foundAsset: WBAsset | undefined
       let foundPageIndex = -1
       for (let i = 0; i < this.pages.length; i++) {

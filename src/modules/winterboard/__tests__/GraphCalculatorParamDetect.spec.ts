@@ -729,6 +729,21 @@ describe('boardStore.graphSyncParams (HARD SPEC §3 sync algorithm)', () => {
     expect(params).toEqual({ a: { value: 1, min: -10, max: 10, step: 0.1 } })
   })
 
+  it('2026-10-03: відкладений (RAF) знімок рендерера з новим виразом не губиться — «Швидко додати», шаблон «/»', () => {
+    // Рендерер віддає знімок із новим виразом (він у буфері RAF) і одразу param-sync. Знімок
+    // graphSyncParams будується з asset у сторі: без застосування буфера «останній виграє»
+    // затирав новий вираз старим — лишався лише параметр (стенд 2026-10-03).
+    const store = setupStore(makeGraphAsset())
+    const withExpr = makeGraphAsset()
+    ;(withExpr.data as any).state.expressions = [{ id: 'e1', src: 'y = a*x', color: '#c4622a', hidden: false }]
+    store.updateAsset(withExpr)
+    store.graphSyncParams('gc-1', ['a'])
+    flushPendingUpdates()
+    const state = (store.pages[0].assets[0].data as any).state
+    expect(state.expressions.map((e: any) => e.src)).toEqual(['y = a*x'])
+    expect(Object.keys(state.params)).toEqual(['a'])
+  })
+
   it('CASE-2 (DoD): y=x → params={} (всі removed)', () => {
     const start = makeGraphAsset('gc-1', { a: { value: 5, min: -1, max: 1, step: 0.01 } })
     const store = setupStore(start)

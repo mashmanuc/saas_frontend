@@ -99,12 +99,15 @@
                input кнопкою-прев'ю: поле зникало разом із фокусом, далі
                не вводилось нічого (живий прогін 2026-08-10). Фіксуємо
                режим редагування на фокусі — тоді перша умова хибна, поки
-               не станеться blur (він же й скидає editingId). -->
+               не станеться blur (він же й скидає editingId).
+               Поки відкрите меню «/», поле показує набраний запит, а не expr.src:
+               «/…» у рушій не йде, і кожна перерисовка панелі стирала поле — меню
+               не працювало зовсім (прод, власник 2026-10-03). -->
           <input
             v-else
             type="text"
             class="gc-insp__expr-input"
-            :value="expr.src"
+            :value="b.slashPopup?.exprId === expr.id ? '/' + b.slashPopup.query : expr.src"
             :data-expr-id="expr.id"
             placeholder="y = ..."
             @focus="editingId = expr.id"
