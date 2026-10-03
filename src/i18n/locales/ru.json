@@ -8702,8 +8702,33 @@
     },
     "trigCircle": {
       "cardTitle": "Тригонометрический круг",
+      "funcsLabel": "Функции",
+      "labelsLabel": "Подписи",
+      "gridLabel": "Сетка",
+      "motionLabel": "Движение",
+      "sinusoid": "Синусоида",
+      "rotation": "Вращение",
+      "speedLabel": "Скорость",
+      "angleLabel": "Угол θ",
+      "degrees": "градусы",
+      "radians": "радианы",
+      "values": "значения",
+      "exactGrid": "оси ½·√2/2·√3/2",
+      "inscribed": "вписанные фигуры",
+      "specialPoints": "особ. точки",
       "btnLabel": "Тригонометрия",
       "btnTitle": "Единичная окружность ↔ график sin · cos · tg · ctg"
+    },
+    "trigSolver": {
+      "subtitle": "Тригонометрические уравнения / неравенства",
+      "funcLabel": "Функция",
+      "valueLabel": "Значение a",
+      "optionsLabel": "Опции",
+      "snapTitle": "Притягивать a к табличным значениям (½, √2/2, √3/2…)",
+      "graphTitle": "Показать график",
+      "graphBtn": "график",
+      "allSolutionsTitle": "Показать все решения",
+      "allBtn": "все"
     },
     "helix": {
       "cardTitle": "Геликс 3D",
