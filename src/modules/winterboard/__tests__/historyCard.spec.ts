@@ -223,8 +223,13 @@ describe('HistoryCard · автор картинки — у підвалі «ⓘ
     expect(img.attributes('height')).toBe('600')
   })
 
+  // У happy-dom розкладки немає: картці треба дати розміри — без них вона тепер не міряється (Б-142).
+  const laidOut = (w: ReturnType<typeof render>) =>
+    Object.defineProperty(w.find('.history-card').element, 'offsetHeight', { get: () => 360, configurable: true })
+
   it('картинка довантажилась — картка перемірює висоту', async () => {
     const w = render(POLTAVA)
+    laidOut(w)
     await flushPromises()
     const before = (w.emitted('request-height') ?? []).length
     const flow = w.find('.history-card__flow').element as HTMLElement
@@ -238,6 +243,7 @@ describe('HistoryCard · автор картинки — у підвалі «ⓘ
 
   it('картинка не завантажилась — теж перемір (місце під неї більше не потрібне)', async () => {
     const w = render(POLTAVA)
+    laidOut(w)
     await flushPromises()
     const before = (w.emitted('request-height') ?? []).length
     const flow = w.find('.history-card__flow').element as HTMLElement

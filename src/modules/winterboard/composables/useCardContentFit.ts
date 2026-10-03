@@ -10,11 +10,12 @@
  *   • після монтування — після Vue render, KaTeX і `document.fonts.ready`;
  *   • після зміни вмісту чи масштабу (джерела передає картка);
  *   • коли картка знову стала вимірюваною: повернулась із трею, вийшла з fullscreen,
- *     учитель повернувся до інструмента «виділення».
+ *     учитель повернувся до інструмента «виділення»;
+ *   • коли картка, змонтована без розмірів (дошка ще вантажиться), отримала розміри (Б-142).
  * Коли НЕ міряти: розгорнута, згорнута, неінтерактивна (перо, replay, учень) —
  * такі стани не мають породжувати операцій.
  */
-import { nextTick, onMounted, watch, type Ref, type WatchSource } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, watch, type Ref, type WatchSource } from 'vue'
 
 export interface CardContentFitOptions {
   root: Ref<HTMLElement | null>
@@ -51,11 +52,16 @@ export function useCardContentFit(options: CardContentFitOptions): { requestFit:
     const body = options.body.value
     const flow = options.flow.value
     if (!root || !body || !flow) return
+    // Картка ще без розмірів (дошка вантажиться після перезавантаження, сторінка прихована):
+    // замір дав би лише рамку, а свою висоту автопідгонка має право стиснути — так картка
+    // теорії ставала 120 замість 880 і це зберігалось у дошці (Б-142, стенд 2026-10-03).
+    if (root.offsetHeight === 0) return
     const px = measureCardNeededPx(root, body, flow)
     if (px > 0) options.emitHeight(px)
   }
 
   const later = () => { void nextTick(requestFit) }
+  let layoutObserver: ResizeObserver | null = null
 
   onMounted(() => {
     later()
@@ -64,6 +70,23 @@ export function useCardContentFit(options: CardContentFitOptions): { requestFit:
       ? (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts
       : undefined
     void fonts?.ready?.then(later)
+    // Змонтована без розмірів — поміряти, щойно їх отримає. Лише на переході «без розмірів →
+    // з розмірами»: власна зміна висоти картки нового виміру не породжує (без циклу ops).
+    const root = options.root.value
+    if (root && typeof ResizeObserver !== 'undefined') {
+      let laidOut = root.offsetHeight > 0
+      layoutObserver = new ResizeObserver(() => {
+        const now = root.offsetHeight > 0
+        if (now && !laidOut) later()
+        laidOut = now
+      })
+      layoutObserver.observe(root)
+    }
+  })
+
+  onBeforeUnmount(() => {
+    layoutObserver?.disconnect()
+    layoutObserver = null
   })
 
   watch(options.sources, later)

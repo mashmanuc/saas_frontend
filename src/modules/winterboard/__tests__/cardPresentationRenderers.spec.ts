@@ -192,6 +192,42 @@ describe('theory_card · що зупиняє вимір', () => {
     expect((w.emitted('request-height') ?? []).length).toBe(1)
     w.unmount()
   })
+
+  it('Б-142: після перезавантаження картка без розмірів не міряється; отримала розміри — рівно один вимір', async () => {
+    // Стенд 2026-10-03: після reload картка вже в DOM, але корінь має висоту 0 (дошка ще вантажиться).
+    // Замір давав лише рамку → автопідгонка стискала СВОЮ висоту 880 → 120 і писала це в дошку.
+    const resized: Array<() => void> = []
+    const Real = globalThis.ResizeObserver
+    globalThis.ResizeObserver = class {
+      constructor(cb: () => void) { resized.push(cb) }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+    try {
+      const { w, geo } = mountTheory()
+      geo.cardH = 0
+      geo.bodyClientH = 0
+      await flushPromises()
+      expect(w.emitted('request-height')).toBeUndefined()
+
+      // дошка домалювалась — картка отримала розміри
+      geo.cardH = 300
+      geo.bodyClientH = 240
+      resized.forEach((cb) => cb())
+      await flushPromises()
+      expect(w.emitted('request-height')).toHaveLength(1)
+      expect(lastRequest(w)).toBe(300 - 240 + geo.flowAt100)
+
+      // власна зміна розміру картки (автопідгонка поставила висоту) нового виміру не дає
+      resized.forEach((cb) => cb())
+      await flushPromises()
+      expect(w.emitted('request-height')).toHaveLength(1)
+      w.unmount()
+    } finally {
+      globalThis.ResizeObserver = Real
+    }
+  })
 })
 
 // ─── Задача ─────────────────────────────────────────────────────────────────
