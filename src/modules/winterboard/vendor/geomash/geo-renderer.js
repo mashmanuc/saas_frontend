@@ -679,12 +679,12 @@
     DEFAULT_THEME, DEFAULT_FONTS,
   };
 
+  // Як рушій (geo-engine.js, Б-143): у window — завжди, бо прод-збірка загортає файл як CommonJS.
+  global.GeoRenderer = GeoRenderer;
+  global.createGeoRenderer = createGeoRenderer;
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = GeoRenderer;
     module.exports.createGeoRenderer = createGeoRenderer;
-  } else {
-    global.GeoRenderer = GeoRenderer;
-    global.createGeoRenderer = createGeoRenderer;
   }
 
 })(typeof window !== 'undefined' ? window : globalThis);

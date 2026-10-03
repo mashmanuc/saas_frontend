@@ -780,7 +780,10 @@
     construct, move, remove, restyle, toolSpec, canConstruct, getValue,
   };
 
+  // Дошка шукає рушій у window (GeomashRenderer.mount). Прод-збірка загортає цей файл як CommonJS
+  // (Б-143: з 29.09, коли Б-84 виніс рушій в окремий чанк), тож `module` там є, і з `else` window
+  // лишався порожнім — картка біла, без інструментів. Тому у window — завжди.
+  global.GeoEngine = GeoEngine;
   if (typeof module !== 'undefined' && module.exports) module.exports = GeoEngine;
-  else global.GeoEngine = GeoEngine;
 
 })(typeof window !== 'undefined' ? window : globalThis);
