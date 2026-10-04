@@ -1,7 +1,7 @@
 // WB: Unit tests for useClassroomSession + useClassroomRole (Phase 3: A3.1)
 // Tests: session init, role resolution, permissions, lock, error states
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 
 // ── Mock winterboardApi ─────────────────────────────────────────────────
@@ -167,6 +167,91 @@ describe('useClassroomSession', () => {
     expect(session.state.value).toBe('idle')
     expect(session.sessionId.value).toBeNull()
     expect(session.role.value).toBeNull()
+  })
+})
+
+// Б-117 (власник 2026-10-04): учень, що лишився на дошці, бачить «Урок завершено», коли
+// вчитель завершив урок. Сигнал — `lesson_completed` у рядку власника відповіді учасників.
+describe('useClassroomSession — кінець уроку для учня (Б-117)', () => {
+  const OWNER = { user_id: '1', display_name: 'Вчитель', role: 'owner', cursor_color: '', is_online: true }
+  const OWNER_DONE = { ...OWNER, lesson_completed: true }
+  const STUDENT = { user_id: '2', display_name: 'Учень', role: 'student', cursor_color: '', is_online: true }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function readyAs(role: 'owner' | 'host' | 'student') {
+    mockGetClassroomSession.mockResolvedValue({
+      session_id: 'sess-b117',
+      role,
+      permissions: role === 'student' ? STUDENT_PERMISSIONS : TEACHER_PERMISSIONS,
+      is_locked: false,
+      locked_by: null,
+    })
+    const session = useClassroomSession()
+    await session.initClassroomSession('lesson-b117')
+    return session
+  }
+
+  it('учень: позначка в рядку власника → екран «Урок завершено», опитування зупинено', async () => {
+    const session = await readyAs('student')
+    mockGetConnectedUsers.mockResolvedValue([OWNER_DONE, STUDENT])
+    session.startUserPolling()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(session.state.value).toBe('lesson_completed')
+    const calls = mockGetConnectedUsers.mock.calls.length
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(mockGetConnectedUsers.mock.calls.length).toBe(calls)
+  })
+
+  it('учень: урок завершився під час уроку — перемикає наступне опитування (≤ 10 с)', async () => {
+    const session = await readyAs('student')
+    mockGetConnectedUsers.mockResolvedValue([OWNER, STUDENT])
+    session.startUserPolling()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(session.state.value).toBe('ready')
+
+    mockGetConnectedUsers.mockResolvedValue([OWNER_DONE, STUDENT])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(session.state.value).toBe('lesson_completed')
+    session.stopUserPolling()
+  })
+
+  it('учень: урок іде (ключа немає) → дошка лишається, опитування триває', async () => {
+    const session = await readyAs('student')
+    mockGetConnectedUsers.mockResolvedValue([OWNER, STUDENT])
+    session.startUserPolling()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(session.state.value).toBe('ready')
+    expect(mockGetConnectedUsers.mock.calls.length).toBeGreaterThanOrEqual(4)
+    session.stopUserPolling()
+  })
+
+  it('учень: позначка не в рядку власника — не сигнал', async () => {
+    const session = await readyAs('student')
+    mockGetConnectedUsers.mockResolvedValue([OWNER, { ...STUDENT, lesson_completed: true }])
+    session.startUserPolling()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(session.state.value).toBe('ready')
+    session.stopUserPolling()
+  })
+
+  it.each(['owner', 'host'] as const)('учитель (%s): позначка його кімнату не перемикає', async (role) => {
+    const session = await readyAs(role)
+    mockGetConnectedUsers.mockResolvedValue([OWNER_DONE, STUDENT])
+    session.startUserPolling()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(session.state.value).toBe('ready')
+    session.stopUserPolling()
   })
 })
 

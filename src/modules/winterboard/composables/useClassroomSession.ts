@@ -231,7 +231,17 @@ export function useClassroomSession() {
     _fetchUsersInFlight = true
 
     try {
-      connectedUsers.value = await winterboardApi.getConnectedUsers(sid)
+      const users = await winterboardApi.getConnectedUsers(sid)
+      connectedUsers.value = users
+      // Б-117 (рішення власника 2026-10-04): учитель завершив урок → учень замість дошки
+      // бачить «Урок завершено». Сигнал — позначка в рядку власника, без нового
+      // WS-повідомлення. Екран кінцевий, тож і опитування далі не потрібне. Учителя не
+      // чіпаємо: свій вихід він робить сам.
+      if (role.value === 'student' && users.some((u) => u.role === 'owner' && u.lesson_completed === true)) {
+        stopUserPolling()
+        state.value = 'lesson_completed'
+        console.info(`${LOG} Lesson completed by the teacher`, { sessionId: sid })
+      }
     } catch (err) {
       console.warn(`${LOG} fetchConnectedUsers failed`, { err })
     } finally {

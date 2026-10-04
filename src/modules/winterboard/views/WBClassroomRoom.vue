@@ -11,14 +11,19 @@
     </div>
   </div>
 
-  <!-- Lesson already completed — cannot re-enter classroom -->
+  <!-- Lesson already completed — cannot re-enter classroom.
+       Б-117: учень бачить цей екран і тоді, коли вчитель завершив урок, поки учень був на дошці. -->
   <div v-else-if="classroomSession.state.value === 'lesson_completed'" class="wb-waiting-screen">
     <div class="wb-waiting-screen__content">
       <div class="wb-waiting-screen__icon">✅</div>
       <h2 class="wb-waiting-screen__title">{{ t('winterboard.classroom.lessonCompleted') }}</h2>
-      <p class="wb-waiting-screen__text">{{ t('winterboard.classroom.lessonCompletedHint') }}</p>
+      <p class="wb-waiting-screen__text">
+        {{ lessonCompletedForStudent
+          ? t('winterboard.classroom.lessonCompletedByTeacher')
+          : t('winterboard.classroom.lessonCompletedHint') }}
+      </p>
       <button class="wb-waiting-screen__back" @click="router.push(dashboardPath)">
-        {{ t('winterboard.classroom.backToHub') }}
+        {{ lessonCompletedForStudent ? t('winterboard.classroom.toHome') : t('winterboard.classroom.backToHub') }}
       </button>
     </div>
   </div>
@@ -651,7 +656,8 @@ const route = useRoute()
 const store = useWBStore()
 const testStore = useTestStore()
 const { t } = useI18n()
-import { notifyInfo, notifyError, notifyWarning } from '@/utils/notify'
+import { notifyInfo, notifyError, notifyWarning, notifySuccess } from '@/utils/notify'
+import { closeRecordingBeforeEndLesson, type EndLessonRecordingResult } from '../board/endLessonRecording'
 const { announce } = useAnnouncer()
 const { showToast } = useToast()
 
@@ -1105,6 +1111,12 @@ const lessonRuntime = useLessonRuntimeStore()
 // «назад / після завершення» веде на role-aware dashboard замість видаленого
 // /winterboard/classroom-hub.
 const dashboardPath = computed(() => (authStore.userRole === 'tutor' ? '/tutor' : '/student'))
+// Екран «Урок завершено»: учневі — «Учитель завершив урок.» і «На головну» (Б-117), учителю — як
+// було. Роль у класі відома, коли дошку вже відкрито; при вході в завершений урок (410) її ще
+// немає — тоді за роллю акаунта, як і `dashboardPath`.
+const lessonCompletedForStudent = computed(() =>
+  classroomRole.role.value ? classroomRole.isStudent.value : authStore.userRole !== 'tutor',
+)
 
 const presence = usePresence({
   sessionId: resolvedSessionId,
@@ -1821,12 +1833,21 @@ function handleEndSession(): void {
   showEndSessionConfirm.value = true
 }
 
+// Б-116: що сталося із записом під час «Завершити урок». Живе між спробами: якщо сам
+// endSession не вдався, повторна спроба запис уже не закриває, а сповіщення має бути.
+let endLessonRecordingOutcome: EndLessonRecordingResult['outcome'] | null = null
+
 async function confirmEndSession(): Promise<void> {
   if (isEndingSession.value) return
   if (!classroomRole.canEnd.value || !resolvedSessionId.value) return
   isEndingSession.value = true
+  const sid = resolvedSessionId.value
+  // Б-116: відкритий запис спершу закриваємо тим самим шляхом, що «Завершити запис».
+  if (isSessionActive.value && !_finalizeAttemptInFlight.value) {
+    endLessonRecordingOutcome = await finalizeRecordingBeforeEndLesson(sid)
+  }
   try {
-    const res = await winterboardApi.endSession(resolvedSessionId.value)
+    const res = await winterboardApi.endSession(sid)
     // B1: endSession тепер також завершує Lesson (COMPLETED + snapshot)
     const data = (res as any)?.data ?? res
     if (data?.lesson_completed) {
@@ -1834,11 +1855,46 @@ async function confirmEndSession(): Promise<void> {
       lessonRuntime.$reset()
     }
     showEndSessionConfirm.value = false
+    // Сповіщення переживає перехід: учитель читає його вже на головній.
+    if (endLessonRecordingOutcome === 'saved') {
+      notifySuccess(t('winterboard.classroom.endedRecordingSaved'), { timeout: 8000 })
+    } else if (endLessonRecordingOutcome === 'later') {
+      notifyInfo(t('winterboard.classroom.endedRecordingLater'), { timeout: 8000 })
+    }
     router.push(dashboardPath.value)
   } catch (err) {
     console.error('[WB:ClassroomRoom] End session failed', err)
     // Лишаємо модалку відкритою — user може повторити спробу
     isEndingSession.value = false
+  }
+}
+
+// Б-116: board/endLessonRecording.ts — одна спроба, без вікна бар'єра (учитель уже в діалозі
+// «Завершити урок»). Невдача: телеметрія як у «Завершити запис», урок однаково завершуємо —
+// запис закриє сторож, і вчитель про це дізнається зі сповіщення.
+async function finalizeRecordingBeforeEndLesson(sid: string): Promise<EndLessonRecordingResult['outcome']> {
+  _finalizeAttemptInFlight.value = true
+  isRecordingLoading.value = true
+  try {
+    const r = await closeRecordingBeforeEndLesson(sid, {
+      flushAll: () => opsSync.flushAll(),
+      serverSeq: () => opsSync.serverSeq,
+      finalizeWithBarrier: async (s, seq) => (await import('../api/replay')).finalizeWithBarrier(s, seq),
+    })
+    if (r.outcome === 'saved') {
+      recordingState.value = r.result.recording_state  // expect 'finalized'
+      recordingStartedAt.value = null
+      activeReplayId.value = r.result.replay_id
+      console.info('[WBClassroomRoom] finalize-recording before end-session', {
+        state: r.result.recording_state, replay_id: r.result.replay_id, sid,
+      })
+    } else {
+      _handleFinalizeFailureFallback(sid, r.error)
+    }
+    return r.outcome
+  } finally {
+    _finalizeAttemptInFlight.value = false
+    isRecordingLoading.value = false
   }
 }
 
