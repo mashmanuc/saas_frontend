@@ -328,8 +328,11 @@
                 <input
                   type="number"
                   class="gc-range-input"
-                  :value="p.min"
+                  :value="rangeDraft.value(`${p.name}:min`, p.min)"
                   step="any"
+                  @focus="rangeDraft.focus(`${p.name}:min`, p.min)"
+                  @input="rangeDraft.input(`${p.name}:min`, ($event.target as HTMLInputElement).value)"
+                  @blur="rangeDraft.blur(`${p.name}:min`)"
                   @change="onRangeMinChange(p.name, ($event.target as HTMLInputElement).value)"
                   @keydown.stop
                   @keypress.stop
@@ -341,8 +344,11 @@
                 <input
                   type="number"
                   class="gc-range-input"
-                  :value="p.max"
+                  :value="rangeDraft.value(`${p.name}:max`, p.max)"
                   step="any"
+                  @focus="rangeDraft.focus(`${p.name}:max`, p.max)"
+                  @input="rangeDraft.input(`${p.name}:max`, ($event.target as HTMLInputElement).value)"
+                  @blur="rangeDraft.blur(`${p.name}:max`)"
                   @change="onRangeMaxChange(p.name, ($event.target as HTMLInputElement).value)"
                   @keydown.stop
                   @keypress.stop
@@ -354,9 +360,12 @@
                 <input
                   type="number"
                   class="gc-range-input"
-                  :value="p.step"
+                  :value="rangeDraft.value(`${p.name}:step`, p.step)"
                   step="any"
                   min="0"
+                  @focus="rangeDraft.focus(`${p.name}:step`, p.step)"
+                  @input="rangeDraft.input(`${p.name}:step`, ($event.target as HTMLInputElement).value)"
+                  @blur="rangeDraft.blur(`${p.name}:step`)"
                   @change="onRangeStepChange(p.name, ($event.target as HTMLInputElement).value)"
                   @keydown.stop
                   @keypress.stop
@@ -406,6 +415,7 @@ import {
   type SlashTemplateText,
 } from '../../../board/graphCalcSlashTemplates'
 import { createParamPlayer } from '../../../board/graphParamPlay'
+import { useFieldDraft } from '../../../composables/useFieldDraft'
 import { formatParamValue, paramFocusRole, PARAM_FOCUS_FADE_MS } from '../../../utils/paramFocus'
 import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
@@ -556,6 +566,8 @@ const paramExpanded = ref<Record<string, boolean>>({})
 // (`calc.setParamValue` → `graph_param_set` ≤30/с, INV-21 п.13); `onChange` не
 // викликаємо — знімка картки під час руху немає (INV-21 п.5). Математика — board/graphParamPlay.
 const playingParams = ref<string[]>([])
+// Поля «мін / макс / крок»: поки фокус — набране, бо під час руху картка перерисовується ~30/с (власник 04.10).
+const rangeDraft = useFieldDraft()
 const paramPlayer = createParamPlayer({
   read: (name) => {
     const p = paramEntries.value.find((x) => x.name === name)

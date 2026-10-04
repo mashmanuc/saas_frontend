@@ -11,6 +11,7 @@ import GraphCalcInspector from '../components/sidebar/GraphCalcInspector.vue'
 import {
   registerGraphCalcInspector,
   __resetGraphCalcInspectorForTests,
+  graphCalcInspectorState,
   type GraphCalcInspectorBridge,
 } from '../board/state/graphCalcInspectorState'
 import { createParamPlayer, snapToStep, stepParamPlay, PLAY_PERIOD_MS } from '../board/graphParamPlay'
@@ -166,6 +167,31 @@ describe('права панель: ▶ і межі', () => {
   it('учень / Replay / перо (canPlayParams нема) — кнопки немає', () => {
     const { w } = mountPanel({ canPlayParams: false })
     expect(w.find('[data-testid="gc-insp-param-play"]').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('під час руху поле «макс» тримає набране, хоч панель перерисовується (власник 04.10: «заблоковано»)', async () => {
+    const onRangeMaxChange = vi.fn()
+    const { w } = mountPanel({ playingParams: ['a'], onRangeMaxChange })
+    const max = w.findAll('.gc-insp__range-input')[1]
+    const el = max.element as HTMLInputElement
+    await max.trigger('focus')
+    el.value = '3'
+    await max.trigger('input')
+    // параметр біжить — нове значення приходить у панель, вона перерисовується
+    for (const value of [2.5, 3.1, 3.7]) {
+      registerGraphCalcInspector('gc-play', {
+        ...graphCalcInspectorState.bridge!,
+        paramEntries: [{ name: 'a', value, min: -10, max: 10, step: 0.1 }],
+      })
+      await w.vm.$nextTick()
+      expect(el.value).toBe('3')
+    }
+    el.value = '35'
+    await max.trigger('input')
+    await max.trigger('change')
+    expect(onRangeMaxChange).toHaveBeenCalledWith('a', '35')
+    await max.trigger('blur')
     w.unmount()
   })
 

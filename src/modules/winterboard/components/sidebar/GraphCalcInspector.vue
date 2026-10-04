@@ -243,11 +243,15 @@
         <div v-if="!rangeHidden(p.name)" class="gc-insp__range-editor">
           <label class="gc-insp__range-field">
             <span>{{ t('winterboard.widget.graphCalc.rangeMin') }}</span>
+            <!-- Під час ▶ панель перерисовується ~30/с: поки фокус — набране, а не p.min (useFieldDraft). -->
             <input
               type="number"
               class="gc-insp__range-input"
-              :value="p.min"
+              :value="rangeDraft.value(`${p.name}:min`, p.min)"
               step="any"
+              @focus="rangeDraft.focus(`${p.name}:min`, p.min)"
+              @input="rangeDraft.input(`${p.name}:min`, ($event.target as HTMLInputElement).value)"
+              @blur="rangeDraft.blur(`${p.name}:min`)"
               @change="onRangeMinChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
@@ -256,8 +260,11 @@
             <input
               type="number"
               class="gc-insp__range-input"
-              :value="p.max"
+              :value="rangeDraft.value(`${p.name}:max`, p.max)"
               step="any"
+              @focus="rangeDraft.focus(`${p.name}:max`, p.max)"
+              @input="rangeDraft.input(`${p.name}:max`, ($event.target as HTMLInputElement).value)"
+              @blur="rangeDraft.blur(`${p.name}:max`)"
               @change="onRangeMaxChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
@@ -266,9 +273,12 @@
             <input
               type="number"
               class="gc-insp__range-input"
-              :value="p.step"
+              :value="rangeDraft.value(`${p.name}:step`, p.step)"
               step="any"
               min="0"
+              @focus="rangeDraft.focus(`${p.name}:step`, p.step)"
+              @input="rangeDraft.input(`${p.name}:step`, ($event.target as HTMLInputElement).value)"
+              @blur="rangeDraft.blur(`${p.name}:step`)"
               @change="onRangeStepChange(p.name, ($event.target as HTMLInputElement).value)"
             />
           </label>
@@ -290,6 +300,7 @@ import { loadMathQuill } from '../../utils/mathquillLoader'
 import { graphCalcInspectorState, type GcExprEntry } from '../../board/state/graphCalcInspectorState'
 import { formatParamValue, paramFocusRole } from '../../utils/paramFocus'
 import type { ParamFocusRole } from '../../utils/paramFocus'
+import { useFieldDraft } from '../../composables/useFieldDraft'
 
 const { t } = useI18n()
 const errorText = useGraphCalcErrorText()
@@ -469,6 +480,8 @@ async function addExpressionAndFocus(): Promise<void> {
   await nextTick()
   rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(added.id)}"]`)?.focus()
 }
+const rangeDraft = useFieldDraft()
+
 function isPlaying(name: string): boolean {
   return !!graphCalcInspectorState.bridge?.playingParams?.includes(name)
 }
