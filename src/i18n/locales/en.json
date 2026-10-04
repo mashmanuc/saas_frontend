@@ -9399,6 +9399,8 @@
       "shiftDragHint": "Shift + drag on the graph controls the parameter",
       "shiftDragChip": "Shift + drag",
       "shiftDragOneParam": "Dragging unavailable: no curve depends on exactly one parameter",
+      "playStart": "Play: the parameter runs from min to max and back",
+      "playStop": "Stop — the value stays",
       "slash": {
         "linear": {
           "name": "linear",

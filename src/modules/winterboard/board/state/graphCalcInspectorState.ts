@@ -54,6 +54,12 @@ export interface GraphCalcInspectorBridge {
    *  Лише UI живого уроку — див. utils/paramFocus.ts. */
   paramFocus: ParamFocus | null
   paramExpanded: Record<string, boolean>
+  /** ТЗ 2026-10-04: параметри, що зараз біжать кнопкою ▶ (рух — лише в учителя).
+   *  Три поля ▶ необов'язкові: без них панель кнопки не показує (старі моки мосту). */
+  playingParams?: string[]
+  /** Кнопку ▶ показуємо лише вчителю в режимі редагування (`interactive`). */
+  canPlayParams?: boolean
+  toggleParamPlay?(name: string): void
   onSliderInput(name: string, value: number): void
   flushParam(): void
   toggleParamExpand(name: string): void

@@ -203,18 +203,30 @@
         >{{ t('winterboard.graphCalc.shiftDragChip') }}</span>
       </div>
 
+      <!-- ТЗ 2026-10-04: межі й крок видно одразу (раніше — лише після кліку по «a =», і про них
+           не знали); клік по «a =» тепер ховає/показує рядок. ▶ — параметр сам пробігає діапазон. -->
       <div
         v-for="p in b.paramEntries"
         :key="p.name"
         class="gc-insp__param-row"
-        :class="{ 'is-expanded': !!b.paramExpanded[p.name] }"
+        :class="{ 'is-expanded': !rangeHidden(p.name), 'has-play': b.canPlayParams }"
       >
         <button
           type="button"
           class="gc-insp__param-name"
-          :title="b.paramExpanded[p.name] ? t('winterboard.graphCalc.collapse') : t('winterboard.graphCalc.configureRange')"
-          @click="b.toggleParamExpand(p.name)"
+          :title="rangeHidden(p.name) ? t('winterboard.graphCalc.configureRange') : t('winterboard.graphCalc.collapse')"
+          @click="toggleRangeHidden(p.name)"
         >{{ p.name }} =</button>
+        <button
+          v-if="b.canPlayParams"
+          type="button"
+          class="gc-insp__param-play"
+          :class="{ 'is-playing': isPlaying(p.name) }"
+          :aria-pressed="isPlaying(p.name)"
+          :title="isPlaying(p.name) ? t('winterboard.graphCalc.playStop') : t('winterboard.graphCalc.playStart')"
+          data-testid="gc-insp-param-play"
+          @click="b.toggleParamPlay?.(p.name)"
+        >{{ isPlaying(p.name) ? '⏸' : '▶' }}</button>
         <input
           type="range"
           class="gc-insp__slider"
@@ -227,8 +239,8 @@
         />
         <span class="gc-insp__param-value">{{ p.value.toFixed(2) }}</span>
 
-        <!-- Range editor (expanded) -->
-        <div v-if="b.paramExpanded[p.name]" class="gc-insp__range-editor">
+        <!-- Range editor: видно одразу, «a =» ховає -->
+        <div v-if="!rangeHidden(p.name)" class="gc-insp__range-editor">
           <label class="gc-insp__range-field">
             <span>{{ t('winterboard.widget.graphCalc.rangeMin') }}</span>
             <input
@@ -457,6 +469,19 @@ async function addExpressionAndFocus(): Promise<void> {
   await nextTick()
   rootEl.value?.querySelector<HTMLInputElement>(`input[data-expr-id="${CSS.escape(added.id)}"]`)?.focus()
 }
+function isPlaying(name: string): boolean {
+  return !!graphCalcInspectorState.bridge?.playingParams?.includes(name)
+}
+
+// Рядок «Мін / Макс / Крок» видно одразу; «a =» ховає його лише в цій панелі (стан не зберігається).
+const hiddenRanges = ref<Record<string, boolean>>({})
+function rangeHidden(name: string): boolean {
+  return !!hiddenRanges.value[name]
+}
+function toggleRangeHidden(name: string): void {
+  hiddenRanges.value = { ...hiddenRanges.value, [name]: !hiddenRanges.value[name] }
+}
+
 function onRangeMinChange(name: string, value: string): void {
   graphCalcInspectorState.bridge?.onRangeMinChange(name, value)
 }
@@ -608,6 +633,29 @@ const QUICK_TEMPLATES = [
   margin-bottom: 5px;
 }
 
+.gc-insp__param-row.has-play {
+  grid-template-columns: 36px 26px 1fr 40px;
+}
+.gc-insp__param-play {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1;
+  color: #1e3a4a;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.gc-insp__param-play:hover {
+  border-color: #3b7b9b;
+}
+.gc-insp__param-play.is-playing {
+  color: #fff;
+  background: #3b7b9b;
+  border-color: #3b7b9b;
+}
 .gc-insp__param-name {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;

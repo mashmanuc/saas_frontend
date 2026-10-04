@@ -288,7 +288,7 @@
             v-for="p in paramEntries"
             :key="p.name"
             class="gc-param-row"
-            :class="{ 'is-expanded': !!paramExpanded[p.name] }"
+            :class="{ 'is-expanded': !!paramExpanded[p.name], 'has-play': interactive }"
           >
             <button
               type="button"
@@ -296,6 +296,17 @@
               :title="paramExpanded[p.name] ? t('winterboard.widget.graphCalc.rangeCollapse') : t('winterboard.widget.graphCalc.rangeExpand')"
               @click.stop="toggleParamExpand(p.name)"
             >{{ p.name }} =</button>
+            <!-- ТЗ 2026-10-04: ▶ — параметр сам пробігає від мін до макс і назад (лише вчитель). -->
+            <button
+              v-if="interactive"
+              type="button"
+              class="gc-param-play"
+              :class="{ 'is-playing': playingParams.includes(p.name) }"
+              :aria-pressed="playingParams.includes(p.name)"
+              :title="playingParams.includes(p.name) ? t('winterboard.graphCalc.playStop') : t('winterboard.graphCalc.playStart')"
+              data-testid="gc-param-play"
+              @click.stop="toggleParamPlay(p.name)"
+            >{{ playingParams.includes(p.name) ? '⏸' : '▶' }}</button>
             <input
               type="range"
               class="gc-slider"
@@ -394,6 +405,7 @@ import {
   type SlashTemplateId,
   type SlashTemplateText,
 } from '../../../board/graphCalcSlashTemplates'
+import { createParamPlayer } from '../../../board/graphParamPlay'
 import { formatParamValue, paramFocusRole, PARAM_FOCUS_FADE_MS } from '../../../utils/paramFocus'
 import type { ParamFocus } from '../../../utils/paramFocus'
 // EXPORT_PREPARATION_SSOT (Stage 1 PR-2): thin-adapter widget snapshot.
@@ -539,6 +551,29 @@ const paramEntries = computed(() => {
 
 /** Per-param expand state (collapsed by default; click name → reveal range editor). */
 const paramExpanded = ref<Record<string, boolean>>({})
+
+// ТЗ 2026-10-04: ▶ «пробігання параметра». Кадр іде штатним шляхом повзунка
+// (`calc.setParamValue` → `graph_param_set` ≤30/с, INV-21 п.13); `onChange` не
+// викликаємо — знімка картки під час руху немає (INV-21 п.5). Математика — board/graphParamPlay.
+const playingParams = ref<string[]>([])
+const paramPlayer = createParamPlayer({
+  read: (name) => {
+    const p = paramEntries.value.find((x) => x.name === name)
+    return p ? { value: p.value, min: p.min, max: p.max, step: p.step } : null
+  },
+  setValue: (name, value) => { if (calc && props.interactive) calc.setParamValue(name, value) },
+  flush: () => flushParam(),
+  onPlayingChange: (names) => { playingParams.value = names },
+  now: () => performance.now(),
+  requestFrame: (cb) => requestAnimationFrame(cb),
+  cancelFrame: (id) => cancelAnimationFrame(id),
+})
+function toggleParamPlay(name: string) {
+  if (!calc || !props.interactive) return
+  paramPlayer.toggle(name)
+}
+// Перо, Replay, учень — руху немає (зупинити з відправкою останнього значення).
+watch(() => props.interactive, (on) => { if (!on) paramPlayer.stopAll() })
 
 /** Parameter Focus (2026-09-21): який параметр тягнуть + яку криву.
  *  Живе лише в UI живого уроку — не в ops, не в Replay (utils/paramFocus.ts). */
@@ -730,9 +765,12 @@ const _gcBridge = reactive<GraphCalcInspectorBridge>({
   dragParamNames: [],
   paramFocus: null,
   paramExpanded: {},
+  playingParams: [],
+  canPlayParams: false,
   onSliderInput,
   flushParam,
   toggleParamExpand,
+  toggleParamPlay,
   onRangeMinChange,
   onRangeMaxChange,
   onRangeStepChange,
@@ -1390,6 +1428,8 @@ watchEffect(() => {
   _gcBridge.dragParamNames = [...dragParamNames.value]
   _gcBridge.paramFocus = paramFocus.value ? { ...paramFocus.value } : null
   _gcBridge.paramExpanded = { ...paramExpanded.value }
+  _gcBridge.playingParams = [...playingParams.value]
+  _gcBridge.canPlayParams = !!props.interactive
   _gcBridge.displayExpressions = displayExpressions.value.map((e) => ({
     id: e.id,
     src: e.src,
@@ -1521,6 +1561,8 @@ function onToggleHidden(id: string) {
 
 function onSliderInput(name: string, value: number) {
   if (!calc || !props.interactive) return
+  // Учитель схопив повзунок параметра, що біжить, — рух цього параметра стоп (ТЗ 2026-10-04 п.5).
+  if (paramPlayer.isPlaying(name)) paramPlayer.stop(name)
   // setParamValue → goes through our throttle interceptor.
   calc.setParamValue(name, value)
 }
@@ -1584,6 +1626,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (pfFadeTimer) { clearTimeout(pfFadeTimer); pfFadeTimer = null }
+  // Рух параметра — стоп з відправкою останнього значення (ТЗ 2026-10-04 п.7).
+  paramPlayer.stopAll()
   unregisterGraphCalcInspector(props.asset.id)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('beforeunload', onBeforeUnload)
@@ -2287,6 +2331,27 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   gap: 4px;
   align-items: center;
   margin-bottom: 3px;
+}
+.gc-param-row.has-play {
+  grid-template-columns: 32px 22px 1fr 36px;
+}
+.gc-param-play {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--gc-ink, #2b2118);
+  background: transparent;
+  border: 1px solid var(--gc-border, rgba(43, 33, 24, 0.25));
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.gc-param-play.is-playing {
+  color: #fff;
+  background: var(--gc-accent, #3b7b9b);
+  border-color: var(--gc-accent, #3b7b9b);
 }
 .gc-param-name {
   font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
