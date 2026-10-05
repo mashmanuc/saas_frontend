@@ -13,6 +13,11 @@
         <span class="font-medium" style="color: var(--text-primary);">{{ email }}</span>
       </p>
 
+      <!-- Перший лист від нового відправника часто падає в «Спам» — новачок чекав і йшов. -->
+      <p class="text-sm" style="color: var(--text-secondary);" data-testid="check-email-spam-hint">
+        {{ $t('auth.checkEmail.spamHint') }}
+      </p>
+
       <p v-if="success" class="text-sm" style="color: var(--accent);">{{ $t('auth.checkEmail.success') }}</p>
 
       <Button class="w-full" :disabled="loading" @click="resend">

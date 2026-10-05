@@ -984,7 +984,9 @@
       "passwordConfirm": "Confirm password",
       "passwordMismatch": "Passwords do not match",
       "fullName": "Full name",
-      "studentByInviteOnly": "Students do not sign up themselves — the teacher sends them an invite."
+      "studentByInviteOnly": "Students do not sign up themselves — the teacher sends them an invite.",
+      "passwordRules": "At least 8 characters, not only digits",
+      "consentNeeded": "To continue, tick the agreement above"
     },
     "checkEmail": {
       "title": "Check your email",
@@ -994,7 +996,8 @@
       "resend": "Resend email",
       "resendLoading": "Sending...",
       "backToLogin": "Back to login",
-      "noEmail": "Email is not specified."
+      "noEmail": "Email is not specified.",
+      "spamHint": "Can't find the email? Check your Spam folder."
     },
     "verifyEmail": {
       "loading": "Verifying...",
@@ -7268,7 +7271,7 @@
     "title": "Choose Your Role",
     "subtitle": "Select how you want to use M4SH platform",
     "betaBadge": "Beta",
-    "betaNotice": "Currently in closed beta — welcoming our first schools, teachers and tutors",
+    "betaNotice": "Free beta — at least until December 1, 2026. We'll let you know well in advance before paid plans arrive.",
     "nav": {
       "howItWorks": "How It Works",
       "benefits": "Benefits",
@@ -7285,8 +7288,7 @@
       "description": "Run lessons in your own space — at school or privately",
       "feature1": "Invite your own students",
       "feature2": "Manage your schedule",
-      "feature3": "Built-in teaching tools",
-      "cta": "Create your space"
+      "feature3": "Built-in teaching tools"
     },
     "howItWorks": {
       "title": "How It Works",
@@ -9097,7 +9099,11 @@
     },
     "emptyCanvas": {
       "hint": "Start drawing here",
-      "sub": "Or add a graph or a shape from the “Tools” panel on the right"
+      "whatAll": "Graphs, shapes, PDFs and presentations",
+      "whatTools": "Graphs and shapes",
+      "whereOpen": "{what} are in the panel on the right",
+      "whereCollapsed": "{what} are in the panel on the right: click ▶ at the right edge",
+      "whereDrawer": "{what} are in the panel opened by the ⊞ button at the top"
     },
     "documentViewer": {
       "pdf": "PDF",

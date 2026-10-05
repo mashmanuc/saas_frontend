@@ -307,22 +307,6 @@
           <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Висувна панель (≤768 px): відкрити/закрити матеріали й інструменти -->
-        <button
-          v-if="isSidebarDrawer"
-          type="button"
-          class="wb-header-btn wb-header-btn--materials"
-          :title="t('winterboard.room.materials', 'Матеріали')"
-          :aria-pressed="showMaterialsSidebar"
-          @click="_showMaterialsSidebar = !_showMaterialsSidebar"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="9.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="1.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        </button>
         <!-- Local Workspace (ТЗ §4): перемикач мови + [Підключити хмару] замість
              профілю/виходу. Жодних «демо»-плашок. -->
         <WBLanguageSwitcher v-if="isLocalWorkspace" />
@@ -352,6 +336,28 @@
            обрізаною, попри те що sticky «працював». Прямий нащадок скрол-
            контейнера піниться відносно екрана. -->
       <div class="wb-header-auth">
+        <!-- Висувна панель (≤768 px): відкрити/закрити матеріали й інструменти.
+             Стоїть тут, у приліпленому до правого краю блоці, а не в `__actions`:
+             на телефоні шапка прокручується вбік, і з `__actions` кнопка стояла
+             за краєм (390 px: x 482–526) — а саме до неї відсилає підказка на
+             порожньому аркуші (2026-10-05). Той самий прийом і та сама причина,
+             що для «Зберегти як новий шаблон» нижче (ТЗ §4 п. 6). Лише на цій
+             ширині, тож на ноутбуці нічого не змінилось. -->
+        <button
+          v-if="isSidebarDrawer"
+          type="button"
+          class="wb-header-btn wb-header-btn--materials"
+          :title="t('winterboard.room.materials', 'Матеріали')"
+          :aria-pressed="showMaterialsSidebar"
+          @click="_showMaterialsSidebar = !_showMaterialsSidebar"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="9.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="1.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
         <!-- «Зберегти як новий шаблон» на ≤768 px. Шапка тут прокручується вбік, і
              кнопка з `__actions` стояла за краєм (390 px: x 556–600) — ТЗ §4 п. 6
              цього не дозволяє. Тому на цій ширині вона тут, у приліпленому до
@@ -622,7 +628,7 @@
               <path d="M30.5 5.5a2.121 2.121 0 013 3L15 27l-4 1 1-4L30.5 5.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <span class="wb-empty-canvas-hint__text">{{ t('winterboard.emptyCanvas.hint') }}</span>
-            <span class="wb-empty-canvas-hint__sub">{{ t('winterboard.emptyCanvas.sub') }}</span>
+            <span class="wb-empty-canvas-hint__sub">{{ emptyHintSub }}</span>
           </div>
         </Transition>
 
@@ -1174,6 +1180,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
 import { roomExitTarget, EXIT_TO_LESSONS } from '../board/roomExit'
 import { shouldShowLessonExitNotice, saveCopyHref, isLessonContentOp } from '../board/lessonExitNotice'
+import { emptyCanvasHintKeys } from '../board/emptyCanvasHint'
 import { useRouter, useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUnsecuredQueueGuard } from '../composables/useUnsecuredQueueGuard'
@@ -2728,6 +2735,18 @@ const emptyHintStyle = computed(() => {
   const h = Math.min(store.pageHeight * store.zoom, canvasContainerHeight.value || Infinity)
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return undefined
   return { left: `${w / 2}px`, top: `${h / 2}px` }
+})
+
+// Другий рядок підказки — за станом правої панелі: у новачка вона згорнута до ▶,
+// на вузькому екрані висувна (див. board/emptyCanvasHint.ts).
+const emptyHintSub = computed(() => {
+  const keys = emptyCanvasHintKeys({
+    localMode: isLocalWorkspace,
+    drawer: isSidebarDrawer.value,
+    panelShown: showMaterialsSidebar.value,
+    collapsed: sidebarCollapsedBefore.value !== null,
+  })
+  return t(keys.where, { what: t(keys.what) })
 })
 
 // FTUE save-template hint: ненав'язлива inline-підказка під топбаром у конструкторі.

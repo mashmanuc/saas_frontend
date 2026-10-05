@@ -189,6 +189,12 @@ async function changeLanguage(langCode: string) {
         </div>
         
         <button @click="goToLogin" class="nav-link nav-link-login">{{ t('roleSelection.nav.login') }}</button>
+        <!-- 2026-10-05 (власник: «роби пакет до 15-го»): новачок шукав реєстрацію вгорі,
+             а там було лише «Увійти». Шапка закріплена, тож кнопка доступна з будь-якого
+             місця сторінки. Напис — той самий, що в головній кнопці, щоб це читалось
+             як одна дія. На вузькому телефоні не вміщується поруч з «Увійти» — там
+             ховаємо (див. @media нижче): головна кнопка стоїть у першому екрані. -->
+        <button @click="selectTutor" class="nav-link nav-link-signup" data-test="nav-signup">{{ t('roleSelection.hero.ctaTutor') }}</button>
       </div>
     </nav>
 
@@ -270,7 +276,9 @@ async function changeLanguage(langCode: string) {
             </div>
           </div>
           <button class="card-button">
-            {{ t('roleSelection.tutor.cta') }}
+            <!-- Той самий напис, що в головній кнопці й у шапці: раніше тут було
+                 «Створити свій простір», і новачок питав, чи це інша дія. -->
+            {{ t('roleSelection.hero.ctaTutor') }}
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -599,16 +607,37 @@ async function changeLanguage(langCode: string) {
   color: var(--accent);
 }
 
+/* 2026-10-05: поруч з'явилась кнопка реєстрації. Головна — вона (заливка),
+   «Увійти» — обведена, щоб дві однакові зелені кнопки не сперечались. */
 .nav-link-login {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  padding: 0.5rem 1.5rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  padding: 0.5rem 1.25rem;
   border-radius: 0.5rem;
+  white-space: nowrap;
   transition: all 0.3s ease;
 }
 
 .nav-link-login:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  transform: translateY(-2px);
+}
+
+.nav-link-signup {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1.5px solid var(--accent);
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.nav-link-signup:hover {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
   color: var(--accent-contrast);
   transform: translateY(-2px);
 }
@@ -1643,7 +1672,8 @@ async function changeLanguage(langCode: string) {
     display: none;
   }
 
-  .nav-link-login {
+  .nav-link-login,
+  .nav-link-signup {
     min-height: 44px;
     padding: 0.625rem 1rem;
     white-space: nowrap;
@@ -1710,6 +1740,17 @@ async function changeLanguage(langCode: string) {
   .board-features-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+}
+
+/* 2026-10-05: кнопка реєстрації в шапці не вміщується поруч з логотипом, мовою
+   й «Увійти» на вузькому телефоні (виміряно на стенді: влазить з 460 px у uk/en/ru;
+   телефони в портреті — 360–430). Там її ховаємо — головна кнопка стоїть у першому
+   екрані. Поріг 520 — запас на інші шрифти телефонів. «Увійти» не чіпаємо: її
+   обрізання вже було P0 (2026-09-02). */
+@media (max-width: 520px) {
+  .nav-link-signup {
+    display: none;
   }
 }
 

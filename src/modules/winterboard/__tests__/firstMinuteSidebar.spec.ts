@@ -62,8 +62,14 @@ describe('підказки кажуть правду про спосіб', () =>
   })
 
   it('порожня дошка більше не відсилає до панелі, яка в новачка порожня', () => {
-    const sub = UK.winterboard.emptyCanvas.sub
-    expect(sub).not.toContain('матеріали з правої панелі')
-    expect(sub).toContain('Інструменти')
+    // 2026-10-05: другий рядок тепер залежить від стану панелі (emptyCanvasHint.spec.ts).
+    // Перелік починається з того, що в новачка є: без файлів панель відкривається
+    // на «Інструментах», тобто на графіках і фігурах (INV-FIRST-1).
+    const ec = UK.winterboard.emptyCanvas
+    for (const key of ['whereOpen', 'whereCollapsed', 'whereDrawer']) {
+      expect(ec[key]).not.toContain('матеріали з правої панелі')
+    }
+    expect(ec.whatAll.startsWith('Графіки')).toBe(true)
+    expect(ec.whatTools.startsWith('Графіки')).toBe(true)
   })
 })

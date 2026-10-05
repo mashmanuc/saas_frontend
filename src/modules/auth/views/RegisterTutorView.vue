@@ -23,11 +23,14 @@
         autocomplete="email"
       />
 
+      <!-- Вимоги видно одразу, а не лише після відмови сервера (2026-10-05).
+           Текст = правила бекенда: AUTH_PASSWORD_VALIDATORS (довжина 8, не лише цифри). -->
       <Input
         :label="$t('auth.register.password')"
         type="password"
         v-model="form.password"
         :error="fieldError('password')"
+        :help="$t('auth.register.passwordRules')"
         required
         autocomplete="new-password"
       />
@@ -42,6 +45,12 @@
 
       <!-- Legal consent: Terms + Tutor Offer + Privacy -->
       <div class="space-y-2">
+        <!-- Оферта говорить про підписку й списання — новачок боявся, що підписується
+             на платне. Текст той самий, що в «Мому плані» (рішення власника 2026-09-29),
+             тому беремо його ключ, а не копію. -->
+        <p class="text-sm font-medium" style="color: var(--accent);" data-testid="register-beta-free">
+          {{ $t('billing.earlyAccess.subtitle') }}
+        </p>
         <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
           <input v-model="form.privacy_policy_accepted" type="checkbox" required />
           <div class="text-sm">
@@ -60,6 +69,15 @@
         <span v-if="auth.loading">{{ $t('auth.register.loading') }}</span>
         <span v-else>{{ $t('auth.register.submit') }}</span>
       </Button>
+      <!-- Сіра кнопка без пояснення зупиняла новачка: кажемо, чого бракує. -->
+      <p
+        v-if="!auth.loading && !form.privacy_policy_accepted"
+        class="text-center text-xs"
+        style="color: var(--text-secondary);"
+        data-testid="register-consent-needed"
+      >
+        {{ $t('auth.register.consentNeeded') }}
+      </p>
     </form>
 
     <!-- Google OAuth sign-up для тьютора (INV-OAUTH-9 v1.4: role переноситься у register endpoint). -->
