@@ -824,4 +824,9 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 .wb-toolbar[data-variant="display"] .wb-toolbar__sep {
   margin: 8px 6px;
 }
+/* Темна тема (Б-156, фаза 1): напівпрозоре біле тло мобільної панелі → токен; світла без змін */
+[data-theme="dark"] .wb-toolbar[data-variant="mobile"] {
+  background: color-mix(in srgb, var(--color-chrome) 88%, transparent);
+  border-top-color: var(--color-border);
+}
 </style>

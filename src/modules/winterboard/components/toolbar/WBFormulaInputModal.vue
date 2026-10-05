@@ -314,4 +314,31 @@ function handleSubmit(): void {
 :deep(math) {
   font-size: 1em;
 }
+/* Темна тема (Б-156, фаза 1): біле вікно → токени; світла тема без змін.
+   Прев'ю формули — папір (так формула ляже на аркуш): лишається білим з темним текстом. */
+[data-theme="dark"] .wb-formula-modal {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .wb-formula-modal__title { color: var(--color-text); }
+[data-theme="dark"] .wb-formula-modal__close { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-formula-modal__close:hover { background: var(--color-hover); color: var(--color-text); }
+[data-theme="dark"] .wb-formula-modal__label,
+[data-theme="dark"] .wb-formula-modal__preview-label { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-formula-modal__hint { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-formula-modal__textarea {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-formula-modal__textarea:focus { border-color: var(--color-accent); }
+[data-theme="dark"] .wb-formula-modal__textarea::placeholder { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-formula-modal__preview { border-color: var(--color-border); }
+[data-theme="dark"] .wb-formula-modal__btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-formula-modal__btn--secondary:hover { background: var(--color-border-strong); color: var(--color-text); }
+[data-theme="dark"] .wb-formula-modal__btn--primary { background: var(--color-accent); color: var(--color-on-accent); }
+[data-theme="dark"] .wb-formula-modal__btn--primary:hover:not(:disabled) { background: var(--color-accent-hover); }
 </style>

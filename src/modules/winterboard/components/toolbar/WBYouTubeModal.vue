@@ -341,4 +341,27 @@ function handleSubmit(): void {
   transform: scale(0.95);
   opacity: 0;
 }
+/* Темна тема (Б-156, фаза 1): біле вікно → токени; світла тема без змін */
+[data-theme="dark"] .wb-youtube-modal {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .wb-youtube-modal__title { color: var(--color-text); }
+[data-theme="dark"] .wb-youtube-modal__close { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-youtube-modal__close:hover { background: var(--color-hover); color: var(--color-text); }
+[data-theme="dark"] .wb-youtube-modal__label { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-youtube-modal__input {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-youtube-modal__input:focus { border-color: var(--color-accent); }
+[data-theme="dark"] .wb-youtube-modal__input::placeholder { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-youtube-modal__btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-youtube-modal__btn--secondary:hover { background: var(--color-border-strong); color: var(--color-text); }
+[data-theme="dark"] .wb-youtube-modal__btn--primary { background: var(--color-accent); color: var(--color-on-accent); }
+[data-theme="dark"] .wb-youtube-modal__btn--primary:hover:not(:disabled) { background: var(--color-accent-hover); }
 </style>

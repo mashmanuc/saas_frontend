@@ -716,4 +716,34 @@ watch(
   background: #fff;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 }
+
+/* Темна тема (Б-156, фаза 1): біла панель кольорів → токени; світла тема без змін.
+   Самі кольорові кружечки — не тема, їх не чіпаємо. */
+[data-theme="dark"] .wb-color-flyout__panel,
+[data-theme="dark"] .wb-color-flyout__arrow {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-color-flyout__section-label { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-color-flyout__divider { background: var(--color-border); }
+/* Зразки товщини малюються кольором пера: темне перо на темній панелі зникало.
+   Показуємо їх на «папері» — так, як лінія ляже на аркуш. */
+[data-theme="dark"] .wb-color-flyout__stroke-btn { background: #f8fafc; }
+[data-theme="dark"] .wb-color-flyout__stroke-btn:hover { background: #eef2f6; }
+[data-theme="dark"] .wb-color-flyout__stroke-btn--active {
+  background: #ffffff;
+  border-color: var(--color-accent);
+}
+/* Кружечок поточного кольору: темне перо на темній панелі — світле кільце */
+[data-theme="dark"] .wb-color-flyout__swatch { border-color: rgba(255, 255, 255, 0.35); }
+[data-theme="dark"] .wb-color-flyout__hex-row { border-top-color: var(--color-border); }
+[data-theme="dark"] .wb-color-flyout__hex-input {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-color-flyout__hex-input:focus {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+}
 </style>

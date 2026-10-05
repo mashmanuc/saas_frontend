@@ -649,4 +649,30 @@ onUnmounted(() => {
     transition: none;
   }
 }
+/* Темна тема (Б-156, фаза 1): панель мініатюр → токени; світла тема без змін.
+   Полотно мініатюри (.wb-thumbnail__canvas) — папір, лишається білим. */
+[data-theme="dark"] .wb-page-thumbnails {
+  background: var(--color-chrome);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-thumbnail { background: var(--color-surface); }
+[data-theme="dark"] .wb-thumbnail:hover { border-color: var(--color-border-strong); }
+[data-theme="dark"] .wb-thumbnail--active { border-color: var(--color-accent); }
+[data-theme="dark"] .wb-thumbnail--drag-over { border-color: var(--color-accent-hover); }
+[data-theme="dark"] .wb-thumbnail__label { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-thumbnail__duplicate,
+[data-theme="dark"] .wb-thumbnail__delete {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-thumbnail__duplicate:hover { background: var(--color-accent-soft); color: var(--color-accent); }
+[data-theme="dark"] .wb-thumbnail__delete:hover { background: var(--color-danger-soft); color: var(--color-danger); }
+[data-theme="dark"] .wb-thumbnail--add { border-color: var(--color-border-strong); color: var(--color-text-muted); }
+[data-theme="dark"] .wb-thumbnail--add:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .wb-thumbnail--add-disabled { border-color: var(--color-border); }
+[data-theme="dark"] .wb-thumbnail__drop-indicator { background: var(--color-accent); }
 </style>
