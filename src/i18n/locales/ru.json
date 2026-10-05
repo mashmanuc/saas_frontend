@@ -8734,6 +8734,10 @@
       "btnLabel": "Тригонометрия",
       "btnTitle": "Единичная окружность ↔ график sin · cos · tg · ctg"
     },
+    "discussionQuestion": {
+      "show": "Показать ответ",
+      "hide": "Скрыть ответ"
+    },
     "trigSolver": {
       "subtitle": "Тригонометрические уравнения / неравенства",
       "funcLabel": "Функция",
@@ -9744,6 +9748,8 @@
       "scrollDown": "Вниз",
       "showAnswer": "Ответ",
       "hideAnswer": "Скрыть ответ",
+      "showQuestionAnswer": "❓ Показать ответ",
+      "hideQuestionAnswer": "❓ Скрыть ответ",
       "showSolution": "Разбор",
       "hideSolution": "Скрыть разбор",
       "noCards": "На этой странице нет карточек задач",

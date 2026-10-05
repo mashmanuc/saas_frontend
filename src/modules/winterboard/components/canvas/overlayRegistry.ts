@@ -38,6 +38,7 @@ import Nmt3dRenderer from '../board/objects/Nmt3dRenderer.vue'
 import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 import HistoryCardRenderer from '../board/objects/HistoryCardRenderer.vue'
+import DiscussionQuestionRenderer from '../board/objects/DiscussionQuestionRenderer.vue'
 import TimelineCardRenderer from '../board/objects/TimelineCardRenderer.vue'
 import MapCardRenderer from '../board/objects/MapCardRenderer.vue'
 import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
@@ -439,6 +440,21 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     dataAttr: 'data-theory-card-id',
     testidPrefix: 'theory-card-overlay',
     buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  // Питання до обговорення (2026-10-06). Кнопка «Показати відповідь» — лише
+  // вчителю в живому редагуванні й працює з будь-яким інструментом, як кнопки
+  // шкали. У Replay і в учня кнопки немає: відповідь бачать, коли її відкрили.
+  discussion_question: {
+    component: DiscussionQuestionRenderer,
+    wrapperClass: 'wb-discussion-question-overlay',
+    dataAttr: 'data-discussion-question-id',
+    testidPrefix: 'discussion-question-overlay',
+    buildProps: (asset, ctx) => ({
+      ...stdProps(asset, ctx),
+      canReveal: ctx.isTutor && ctx.boardMode === 'edit',
+    }),
     buildEvents: stdEvents,
   },
 

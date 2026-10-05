@@ -74,6 +74,14 @@ export interface RemoteCardsSummary {
 }
 
 export const TASK_ASSET_TYPE = 'nmt_task'
+/** v1.23 (2026-10-06): питання до обговорення — «❓ Показати відповідь» на пульті. */
+export const QUESTION_ASSET_TYPE = 'discussion_question'
+
+export interface RemoteQuestionsSummary {
+  count: number
+  /** Усі відповіді сторінки відкриті (true), усі закриті чи частково (false). */
+  answer: boolean
+}
 export const SCROLL_FRACTION = 0.4
 
 export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteViewOptions = {}) {
@@ -165,6 +173,40 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
       .filter((a) => a && a.type === TASK_ASSET_TYPE)
       .slice()
       .sort((a, b) => (a.y - b.y) || (a.x - b.x))
+  }
+
+  /** v1.23: питання до обговорення поточної сторінки, у яких є що відкривати. */
+  function questionCards(): any[] {
+    const page = store.pages[store.currentPageIndex]
+    if (!page) return []
+    return page.assets.filter((a) => a && a.type === QUESTION_ASSET_TYPE
+      && typeof a.data?.answer === 'string' && a.data.answer.trim() !== '')
+  }
+
+  /**
+   * v1.23 «❓ Показати відповідь»: та сама дія, що кнопка під питанням, — `showAnswer`
+   * штатним `updateAsset` (як `reveal` задач). Одна команда — один стан для всіх питань
+   * сторінки: якщо хоч одне закрите — відкриває всі, інакше закриває всі.
+   * Повертає кількість змінених карток.
+   */
+  function revealQuestions(): number {
+    const cards = questionCards()
+    if (!cards.length) return 0
+    const target = !cards.every((a) => a.data?.showAnswer === true)
+    let changed = 0
+    for (const asset of cards) {
+      if ((asset.data?.showAnswer === true) === target) continue
+      store.updateAsset({ ...asset, data: { ...(asset.data || {}), showAnswer: target } })
+      changed += 1
+    }
+    return changed
+  }
+
+  /** v1.23: для `remote.state.questions`; `null` — питань на сторінці немає (поле не шлемо). */
+  function questionsSummary(): RemoteQuestionsSummary | null {
+    const cards = questionCards()
+    if (!cards.length) return null
+    return { count: cards.length, answer: cards.every((a) => a.data?.showAnswer === true) }
   }
 
   /**
@@ -298,7 +340,10 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     if (savedView || objectFocus) endObjectFocus()
   }
 
-  return { fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId }
+  return {
+    fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId,
+    questionCards, revealQuestions, questionsSummary,
+  }
 }
 
 export type RemoteViewAdapter = ReturnType<typeof createRemoteViewAdapter>

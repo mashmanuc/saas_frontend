@@ -19,6 +19,8 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   // 2026-09-20: довідкова картка історичної сутності — така сама
   // overlay-картка, як theory_card, тож має власний Konva-проксі.
   'history_card',
+  // 2026-10-06: питання до обговорення — така сама overlay-картка з проксі.
+  'discussion_question',
   'geometry_solid',
   'graph_calculator',
   'geometry_2d_v2',
@@ -237,7 +239,7 @@ describe('overlayRegistry · авто-висота не залежить від 
     onDelete: () => {}, onFormulaEdit: () => {}, onSpawnCompanions: () => {},
     onRequestHeight: () => {}, graph: {} as any,
   } as any
-  const HEIGHT_CARDS = ['nmt_task', 'theory_card', 'history_card', 'map_card', 'timeline_card']
+  const HEIGHT_CARDS = ['nmt_task', 'theory_card', 'history_card', 'map_card', 'timeline_card', 'discussion_question']
 
   it('олівець (interactive=false, canFit=true) → картка міряє', () => {
     for (const type of HEIGHT_CARDS) {

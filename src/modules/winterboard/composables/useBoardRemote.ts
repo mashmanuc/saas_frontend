@@ -121,7 +121,7 @@ export interface RemoteCommandDetail {
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
   args: {
-    index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution'; subject?: string; language?: string
+    index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
     library_asset_id?: number; request_id?: string; page_index?: number; choice?: string
   }
@@ -203,6 +203,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       const s = opts.view.summary()
       msg.zoom = s.zoom
       msg.cards = { count: s.count, answer: s.answer, solution: s.solution, presenting: s.presenting }
+      // v1.23: питання до обговорення на сторінці — пульт показує «❓ Показати відповідь».
+      // Лише кількість і стан; текстів у стані пульта немає. Немає питань — поля немає.
+      const q = opts.view.questionsSummary?.()
+      if (q) msg.questions = q
     }
     if (assistantState.value) msg.assistant = assistantState.value
     if (opts.media) msg.videos = opts.media.list()
@@ -451,6 +455,12 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'card.reveal': {
         if (!view) return
         const what = d.args?.what
+        // v1.23: 'question' — відповіді питань до обговорення; 'answer'/'solution' — лише задачі НМТ.
+        if (what === 'question') {
+          view.revealQuestions?.()
+          sendState()
+          return
+        }
         if (what !== 'answer' && what !== 'solution') return
         view.reveal(what)
         sendState()

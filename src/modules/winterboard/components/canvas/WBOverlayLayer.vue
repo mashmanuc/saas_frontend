@@ -546,6 +546,18 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   box-shadow: 0 0 0 2px var(--overlay-shadow, rgba(99, 102, 241, 0.35));
 }
 
+/* Питання до обговорення (2026-10-06) — рядок без рамки, як колишній текст ❓ сцени. */
+.wb-discussion-question-overlay {
+  position: absolute;
+  z-index: 4;
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-discussion-question-overlay--selected {
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.35);
+}
+
 /* TLV2-03 — капсула V-D3.1 як об'єкт дошки (дзеркало в WBCanvas.vue, legacy). */
 .wb-visual-capsule-overlay {
   position: absolute;

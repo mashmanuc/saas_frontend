@@ -100,6 +100,15 @@ describe('етап 0.3 — нові підписи несуть упізнава
       .toBe('порожня')
   })
 
+  it('питання — сам текст питання, без відповіді', () => {
+    const { kind, label } = summarizeAsset({
+      id: 'x', type: 'discussion_question',
+      data: { question: 'Чому Ярослава назвали Мудрим?', answer: 'Закони й школи', showAnswer: true },
+    })
+    expect(kind).toBe('питання')
+    expect(label).toBe('Чому Ярослава назвали Мудрим?')
+  })
+
   it('порожні data не валять підпис жодного типу', () => {
     for (const t of OVERLAY_ASSET_TYPES) {
       expect(() => summarizeAsset({ id: 'x', type: t, data: undefined }), t)

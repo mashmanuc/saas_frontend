@@ -8674,6 +8674,8 @@
       "scrollDown": "Вниз",
       "showAnswer": "Відповідь",
       "hideAnswer": "Сховати відповідь",
+      "showQuestionAnswer": "❓ Показати відповідь",
+      "hideQuestionAnswer": "❓ Сховати відповідь",
       "showSolution": "Розбір",
       "hideSolution": "Сховати розбір",
       "noCards": "На цій сторінці нема карток задач",
@@ -10425,8 +10427,13 @@
         "document_viewer": "Документ",
         "video_player": "Відео",
         "youtube_player": "Відео",
-        "audio_player": "Аудіо"
+        "audio_player": "Аудіо",
+        "discussion_question": "Питання"
       }
+    },
+    "discussionQuestion": {
+      "show": "Показати відповідь",
+      "hide": "Сховати відповідь"
     },
     "boardRecipe": {
       "unknown_recipe": "Готовий об'єкт «{id}» не знайдено — картку не створено",

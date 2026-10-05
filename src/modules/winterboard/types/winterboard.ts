@@ -233,6 +233,10 @@ export interface WBAsset {
      *  Замінює page-level theoryBlock/formulaBlock на повноцінний draggable WBAsset. */
     | 'theory_card'
     | 'history_card'
+    /** DiscussionQuestion (2026-10-06) — питання до обговорення на сцені уроку з
+     *  прихованою відповіддю; учитель відкриває її після обговорення (власник:
+     *  «так, показувати відповідь після обговорення»). Як «Відповідь» у nmt_task. */
+    | 'discussion_question'
     /** TimelineCard (H2, 2026-09-18) — універсальна шкала подій із доказовими
      *  джерелами. Один тип на ВСІ шкали: окремий компонент під конкретну
      *  шкалу заборонений ТЗ (§6.2). */
@@ -353,6 +357,7 @@ export interface WBAsset {
     | import('./formulaCard').FormulaCardData
     | TheoryCardData
     | HistoryCardData
+    | DiscussionQuestionData
     | TimelineCardData
     | MapCardData
     | MashSceneData
@@ -669,6 +674,29 @@ export interface TheoryCardData {
 }
 
 export type TheoryCardAsset = WBAsset & { type: 'theory_card'; data: TheoryCardData }
+
+/**
+ * Питання до обговорення (2026-10-06). Питання бачать усі одразу; відповідь —
+ * лише коли вчитель її відкрив (кнопка під питанням або «Відповідь» на пульті,
+ * `card.reveal`). `showAnswer` живе в даних картки й іде звичайним `asset_update`,
+ * як у `nmt_task`: у записі уроку відповідь з'являється в мить відкриття.
+ * Компроміс прийняв власник: текст відповіді лежить у даних картки з самого
+ * початку (питання до обговорення не оцінюються).
+ */
+export interface DiscussionQuestionData {
+  version: 1
+  /** Текст питання без «❓» — значок малює рендер. */
+  question: string
+  /** Очікувана відповідь (спирається на джерела сцени). */
+  answer: string
+  /** Дослівна цитата-опора одним рядком (кілька — через « … »). */
+  support?: string
+  /** Мова підпису «Відповідь» — мова матеріалу, не інтерфейсу (як у картки теорії). */
+  content_language?: 'uk' | 'en'
+  showAnswer: boolean
+}
+
+export type DiscussionQuestionAsset = WBAsset & { type: 'discussion_question'; data: DiscussionQuestionData }
 
 // ─── Timeline / Map (H2–H3, ТЗ evidence/timeline/map) ──────────────────────
 //

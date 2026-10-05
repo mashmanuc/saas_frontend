@@ -1445,6 +1445,7 @@ export const KIND_LABELS = {
   history_card: 'довідка',
   timeline_card: 'шкала часу',
   map_card: 'карта',
+  discussion_question: 'питання',
   nmt_task: 'NMT-задача',
   calculus_card: 'аналіз функції',
   quadratic_card: 'парабола',
@@ -1571,6 +1572,10 @@ export function summarizeAsset(a) {
     label = d.formula || ''
   } else if (a.type === 'theory_card') {
     label = d.title || String(d.body || '').slice(0, 80)
+  } else if (a.type === 'discussion_question') {
+    // Адреса — сам текст питання. Відповідь сюди НЕ йде: вона для класу
+    // після обговорення, а не підказка в контексті.
+    label = String(d.question || '').slice(0, 120)
   } else if (a.type === 'timeline_card') {
     // Підсумок має дати Інтегралику адресу: назву, активну подію і короткий
     // список решти. Без активної події він не знав би, про що зараз мова.

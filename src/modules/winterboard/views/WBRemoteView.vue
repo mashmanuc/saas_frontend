@@ -107,8 +107,22 @@
            Картки задач: поза показом — «Задача на екран»; у показі вона МІНЯЄТЬСЯ на
            «Уся сторінка» (+ «Наступна задача», коли карток кілька), «Відповідь» і «Розбір».
            Дрібний ряд: A− A+ — завжди, коли є картки; ▲▼ — лише в показі (Б-106).
-           Відео поточної сторінки — ▶/⏸. -->
-      <div v-if="hasCards || videos.length" class="wb-remote__context" data-testid="context">
+           Відео поточної сторінки — ▶/⏸.
+           v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
+           для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
+      <div v-if="hasCards || hasQuestions || videos.length" class="wb-remote__context" data-testid="context">
+        <div v-if="hasQuestions" class="wb-remote__row" data-testid="questions-row">
+          <button
+            type="button"
+            class="wb-remote__mini wb-remote__mini--wide"
+            :class="{ 'is-on': questions?.answer }"
+            :disabled="!isReady"
+            data-testid="questions-reveal"
+            @click="sendCmd('card.reveal', { what: 'question' })"
+          >
+            {{ questions?.answer ? t('winterboard.remote.hideQuestionAnswer') : t('winterboard.remote.showQuestionAnswer') }}
+          </button>
+        </div>
         <template v-if="hasCards">
           <div v-if="!isPresentingTask" class="wb-remote__row">
             <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!isReady" @click="sendCmd('view.fit')">
@@ -767,6 +781,9 @@ function showPrepared(turn: AssistantTurn): void {
 /** v1.2 — картки задач на поточній сторінці (з remote.state ноутбука) */
 const cards = ref<{ count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean } | null>(null)
 const hasCards = computed(() => !!cards.value && cards.value.count > 0)
+/** v1.23 — питання до обговорення на поточній сторінці (з remote.state ноутбука) */
+const questions = ref<{ count: number; answer: boolean | null } | null>(null)
+const hasQuestions = computed(() => !!questions.value && questions.value.count > 0)
 /** У показі задачі блок карток міняє режим: «Уся сторінка», A± ▲▼ і решта. */
 const isPresentingTask = computed(() => !!cards.value?.presenting)
 
@@ -987,6 +1004,7 @@ const channel = useRemoteChannel({
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
     cards.value = s.cards ?? null
+    questions.value = s.questions ?? null
     assistant.value = s.assistant ?? null
     videos.value = s.videos ?? []
     photoResult.value = s.photo ?? null

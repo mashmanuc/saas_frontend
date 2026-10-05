@@ -8944,6 +8944,8 @@
       "scrollDown": "Down",
       "showAnswer": "Answer",
       "hideAnswer": "Hide answer",
+      "showQuestionAnswer": "❓ Show answer",
+      "hideQuestionAnswer": "❓ Hide answer",
       "showSolution": "Solution",
       "hideSolution": "Hide solution",
       "noCards": "No task cards on this page",
@@ -10337,8 +10339,13 @@
         "document_viewer": "Document",
         "video_player": "Video",
         "youtube_player": "Video",
-        "audio_player": "Audio"
+        "audio_player": "Audio",
+        "discussion_question": "Question"
       }
+    },
+    "discussionQuestion": {
+      "show": "Show answer",
+      "hide": "Hide answer"
     },
     "boardRecipe": {
       "unknown_recipe": "Prepared object “{id}” was not found — no card was created",

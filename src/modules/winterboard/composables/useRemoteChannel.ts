@@ -57,6 +57,8 @@ export interface RemoteStateDetail {
   zoom?: number
   /** v1.2 — картки задач поточної сторінки: скільки, чи показано відповідь/розбір усім */
   cards?: { count: number; answer: boolean | null; solution: boolean | null; presenting?: boolean }
+  /** v1.23 — питання до обговорення поточної сторінки: скільки й чи відкрито відповіді */
+  questions?: { count: number; answer: boolean | null }
   /** Дошка з фіналізованим записом: команди дійдуть, але нічого не збережеться */
   frozen?: boolean
   /** Відео з пульта (V1) — YouTube-картки поточної сторінки ноутбука */
@@ -151,6 +153,18 @@ export function parseRemoteCards(raw: any): RemoteStateDetail['cards'] | undefin
     solution: typeof raw.solution === 'boolean' ? raw.solution : null,
     ...(typeof raw.presenting === 'boolean' ? { presenting: raw.presenting } : {}),
   }
+}
+
+/**
+ * v1.23 (2026-10-06): питання до обговорення. Поле живе лише з цілою кількістю > 0 —
+ * зіпсоване чи порожнє не вмикає кнопку «❓ Показати відповідь» (як `presenting` вище:
+ * поганий шматок стану не має ламати решту).
+ */
+export function parseRemoteQuestions(raw: any): RemoteStateDetail['questions'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const count = raw.count
+  if (typeof count !== 'number' || !Number.isInteger(count) || count <= 0) return undefined
+  return { count, answer: typeof raw.answer === 'boolean' ? raw.answer : null }
 }
 
 export type RemoteVideoPlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'ended' | 'blocked' | 'error'
@@ -341,6 +355,8 @@ export function useRemoteChannel(opts: {
         if (assistant) detail.assistant = assistant
         const cards = parseRemoteCards(msg.cards)
         if (cards) detail.cards = cards
+        const questions = parseRemoteQuestions(msg.questions)
+        if (questions) detail.questions = questions
         const videos = parseRemoteVideos(msg.videos)
         if (videos) detail.videos = videos
         const photo = parseRemotePhoto(msg.photo)
