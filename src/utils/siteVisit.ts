@@ -15,7 +15,10 @@ import { flush, trackEvent } from '@/utils/telemetryAgent'
 import { getAnonId } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 
 export const SITE_VISIT_EVENT = 'site.visit'
+// ⚠️ Контракт із бекендом (`presence.REGISTER_OPEN_EVENT`) — див. `trackRegisterOpen` нижче.
+export const REGISTER_OPEN_EVENT = 'site.register_open'
 const DAY_KEY = 'm4sh:visit-day'
+const REGISTER_DAY_KEY = 'm4sh:register-open-day'
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign'] as const
 
 export interface VisitRoute {
@@ -69,6 +72,31 @@ export function trackSiteVisit(route: VisitRoute, now: Date = new Date()): void 
     }
     trackEvent(SITE_VISIT_EVENT, context)
     // Одразу, не за 10 с: гість, що подивився лендінг і пішов, інакше не дійшов би до лічильника.
+    void flush()
+  } catch {
+    // телеметрія не ламає застосунок
+  }
+}
+
+/**
+ * «Гість відкрив форму реєстрації вчителя» — середина воронки для staff «Сьогодні на сайті»
+ * (власник 2026-10-05: «роби подію на відкриття форми реєстрації»). Без неї між «на /start» і
+ * «реєстрацій» не видно, де люди відпадають: на лендінгу чи вже на формі.
+ *
+ * Так само, як візит: одна подія на браузер на київську добу, той самий анонімний id, без PII,
+ * шле одразу (людина, що глянула на форму й закрила вкладку, інакше не дійшла б до лічильника).
+ */
+export function trackRegisterOpen(now: Date = new Date()): void {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return // автоматизація, не людина
+    const day = kyivDay(now)
+    try {
+      if (localStorage.getItem(REGISTER_DAY_KEY) === day) return
+      localStorage.setItem(REGISTER_DAY_KEY, day)
+    } catch {
+      // localStorage недоступний (приватне вікно) — шлемо без дедупу
+    }
+    trackEvent(REGISTER_OPEN_EVENT, { anon_id: getAnonId(), route: '/auth/register/tutor' })
     void flush()
   } catch {
     // телеметрія не ламає застосунок

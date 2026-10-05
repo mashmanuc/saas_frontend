@@ -52,8 +52,15 @@
       <p v-if="data.guests" class="presence-now__guests">{{ t('staff.presence.now.guests', { n: data.guests }) }}</p>
     </div>
     <!-- Власник 2026-10-01: «відображати в staff скільки гостей зайшло на сайт» — видно завжди, і в «нікого». -->
+    <!-- 2026-10-05: між «на /start» і «реєстрацій» — скільки відкрили форму (видно, де відпадають:
+         на лендінгу чи на формі). Бекенд без поля — старий рядок, а не «0», який збрехав би. -->
     <p v-if="data?.today" class="presence-now__today" data-testid="presence-today">
-      {{ t('staff.presence.now.today', { guests: data.today.guests, start: data.today.start, registrations: data.today.registrations }) }}
+      <template v-if="typeof data.today.register_open === 'number'">
+        {{ t('staff.presence.now.todayFunnel', { guests: data.today.guests, start: data.today.start, opened: data.today.register_open, registrations: data.today.registrations }) }}
+      </template>
+      <template v-else>
+        {{ t('staff.presence.now.today', { guests: data.today.guests, start: data.today.start, registrations: data.today.registrations }) }}
+      </template>
     </p>
     <p v-if="data?.staff_online?.length" class="presence-now__staff">
       {{ t('staff.presence.now.staffOnline', { names: data.staff_online.map(p => p.name || p.email).join(', ') }) }}

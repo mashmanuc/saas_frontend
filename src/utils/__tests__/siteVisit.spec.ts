@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn(), flush: vi.fn(() => Promise.resolve()) }))
 
 import { flush, trackEvent } from '@/utils/telemetryAgent'
-import { SITE_VISIT_EVENT, trackSiteVisit } from '../siteVisit'
+import { REGISTER_OPEN_EVENT, SITE_VISIT_EVENT, trackRegisterOpen, trackSiteVisit } from '../siteVisit'
 
 const START = { matched: [{ path: '/start' }], query: {} }
 
@@ -71,5 +71,51 @@ describe('trackSiteVisit', () => {
   it('телеметрія впала — застосунок не падає', () => {
     vi.mocked(trackEvent).mockImplementationOnce(() => { throw new Error('boom') })
     expect(() => trackSiteVisit(START)).not.toThrow()
+  })
+})
+
+/**
+ * «Гість відкрив форму реєстрації» (власник 2026-10-05: «роби подію на відкриття форми реєстрації») —
+ * середина воронки «на /start → відкрили форму → реєстрацій». Той самий анонімний id, що й у візиту,
+ * інакше бекенд не зшив би одного гостя.
+ */
+describe('trackRegisterOpen', () => {
+  it('одна подія з тим самим анонімним id, що й візит; шле одразу', () => {
+    trackSiteVisit(START)
+    trackRegisterOpen()
+
+    expect(trackEvent).toHaveBeenCalledTimes(2)
+    const [visitName, visitCtx] = vi.mocked(trackEvent).mock.calls[0]
+    const [name, ctx] = vi.mocked(trackEvent).mock.calls[1]
+    expect(visitName).toBe(SITE_VISIT_EVENT)
+    expect(name).toBe(REGISTER_OPEN_EVENT)
+    expect(name).toBe('site.register_open') // контракт із бекендом: presence.REGISTER_OPEN_EVENT
+    expect(ctx).toEqual({ anon_id: visitCtx.anon_id, route: '/auth/register/tutor' })
+    expect(flush).toHaveBeenCalledTimes(2)
+  })
+
+  it('раз на київську добу — повторне відкриття того ж дня не рахується вдруге', () => {
+    trackRegisterOpen(new Date('2026-10-01T20:58:00Z')) // 23:58 Київ
+    trackRegisterOpen(new Date('2026-10-01T20:59:30Z'))
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+    trackRegisterOpen(new Date('2026-10-01T21:01:00Z')) // 00:01 Київ, 2 жовтня
+    expect(trackEvent).toHaveBeenCalledTimes(2)
+  })
+
+  it('не залежить від позначки візиту: візит уже був — відкриття форми все одно шле', () => {
+    trackSiteVisit(START)
+    vi.mocked(trackEvent).mockClear()
+    trackRegisterOpen()
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('автоматизація — нічого; телеметрія впала — форма не падає', () => {
+    Object.defineProperty(navigator, 'webdriver', { value: true, configurable: true })
+    trackRegisterOpen()
+    expect(trackEvent).not.toHaveBeenCalled()
+
+    Object.defineProperty(navigator, 'webdriver', { value: false, configurable: true })
+    vi.mocked(trackEvent).mockImplementationOnce(() => { throw new Error('boom') })
+    expect(() => trackRegisterOpen()).not.toThrow()
   })
 })

@@ -25,8 +25,9 @@ export interface PresenceNow {
   recordings: { board_id: string; name: string; owner_id: number }[]
   guests: number
   /** Сьогодні на сайті (київська доба): гості без акаунта, з них на /start, нові акаунти без staff.
-   *  Необов'язкове — старий бекенд його не має. */
-  today?: { since: string; guests: number; start: number; registrations: number }
+   *  Необов'язкове — старий бекенд його не має. `register_open` — скільки браузерів відкрили форму
+   *  реєстрації (2026-10-05); бекенд до цієї версії поля не має. */
+  today?: { since: string; guests: number; start: number; registrations: number; register_open?: number }
   /** Staff онлайн — НЕ рахується в «людях» (панель дивиться саме staff) */
   staff_online: PresencePerson[]
 }

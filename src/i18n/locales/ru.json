@@ -5311,6 +5311,7 @@
         "untitledBoard": "Доска без названия",
         "guests": "Гостей без аккаунта за 30 мин: {n}",
         "today": "Сегодня на сайте — гостей: {guests} · на /start: {start} · регистраций: {registrations}",
+        "todayFunnel": "Сегодня на сайте — гостей: {guests} · на /start: {start} · открыли форму: {opened} · регистраций: {registrations}",
         "confirming": "Похоже, никого — проверяю ещё раз…",
         "stale": "Ответ устарел — нажмите «Обновить», прежде чем пушить",
         "staffOnline": "Staff онлайн (не считается): {names}"

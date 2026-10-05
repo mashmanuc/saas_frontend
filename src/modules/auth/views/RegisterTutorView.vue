@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
@@ -155,6 +155,7 @@ import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 import { useRegisterFieldErrors } from '../composables/useRegisterFieldErrors'
+import { trackRegisterOpen } from '@/utils/siteVisit'
 
 const router = useRouter()
 const route = useRoute()
@@ -192,6 +193,9 @@ function resolvePostAuthTarget() {
 
 const showErrorModal = ref(false)
 const googleErrorMessage = ref('')
+
+// Середина воронки «на /start → відкрили форму → реєстрацій» у staff (власник 2026-10-05).
+onMounted(() => trackRegisterOpen())
 
 // INV-OAUTH-S4 gate: показуємо лише коли env налаштований
 const googleEnabled = computed(() => Boolean(import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID))

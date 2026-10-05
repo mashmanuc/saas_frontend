@@ -5180,6 +5180,7 @@
         "untitledBoard": "Untitled board",
         "guests": "Guests without an account in 30 min: {n}",
         "today": "Today on the site — guests: {guests} · on /start: {start} · sign-ups: {registrations}",
+        "todayFunnel": "Today on the site — guests: {guests} · on /start: {start} · opened the form: {opened} · sign-ups: {registrations}",
         "confirming": "Looks empty — checking once more…",
         "stale": "The answer is stale — press “Refresh” before pushing",
         "staffOnline": "Staff online (not counted): {names}"

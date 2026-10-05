@@ -122,6 +122,31 @@ describe('PresenceNowPanel', () => {
     old.unmount()
   })
 
+  it('«відкрили форму» стоїть між «на /start» і «реєстрацій»; нуль — теж число; без поля — старий рядок', async () => {
+    // Власник 2026-10-05: «роби подію на відкриття форми реєстрації» — видно, де відпадають.
+    const today = { since: '2026-10-05T00:00:00+03:00', guests: 5, start: 4, register_open: 3, registrations: 0 }
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today })
+    const w = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(w.get('[data-testid="presence-today"]').text())
+      .toBe('Сьогодні на сайті — гостей: 5 · на /start: 4 · відкрили форму: 3 · реєстрацій: 0')
+    w.unmount()
+
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today: { ...today, register_open: 0 } })
+    const zero = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(zero.get('[data-testid="presence-today"]').text()).toContain('відкрили форму: 0 ·')
+    zero.unmount()
+
+    const { register_open: _gone, ...oldBackend } = today
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today: oldBackend })
+    const old = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(old.get('[data-testid="presence-today"]').text())
+      .toBe('Сьогодні на сайті — гостей: 5 · на /start: 4 · реєстрацій: 0')
+    old.unmount()
+  })
+
   it('збій після «можна пушити» — одразу «не пуште наосліп», без спаму запитами', async () => {
     vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})

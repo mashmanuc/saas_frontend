@@ -6,7 +6,7 @@
  *   • кнопка «Зареєструватися» сіра, і не сказано чому (бракує галочки згоди);
  *   • після реєстрації — чекав листа, не здогадувався зазирнути в «Спам».
  */
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
@@ -16,6 +16,9 @@ import en from '@/i18n/locales/en.json'
 import ru from '@/i18n/locales/ru.json'
 import RegisterTutorView from '../views/RegisterTutorView.vue'
 import CheckEmailView from '../views/CheckEmailView.vue'
+
+const trackRegisterOpen = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/siteVisit', () => ({ trackRegisterOpen }))
 
 const mounted: VueWrapper[] = []
 afterEach(() => { while (mounted.length) mounted.pop()!.unmount() })
@@ -63,6 +66,18 @@ describe('реєстрація вчителя: перше враження', () 
     await w.find('input[type="checkbox"]').setValue(true)
     expect(w.find('[data-testid="register-consent-needed"]').exists()).toBe(false)
     expect(w.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+  })
+})
+
+describe('подія «відкрили форму» для staff (власник 2026-10-05)', () => {
+  it('відкриття форми реєстрації вчителя — рівно одна подія; екран пошти — жодної', async () => {
+    trackRegisterOpen.mockClear()
+    await mountView(RegisterTutorView, '/auth/register/tutor')
+    expect(trackRegisterOpen).toHaveBeenCalledTimes(1)
+
+    trackRegisterOpen.mockClear()
+    await mountView(CheckEmailView, '/auth/check-email?email=olena%40example.com')
+    expect(trackRegisterOpen).not.toHaveBeenCalled()
   })
 })
 
