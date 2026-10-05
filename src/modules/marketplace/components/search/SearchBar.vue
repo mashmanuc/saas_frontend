@@ -290,14 +290,14 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 
 .submit-btn {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-radius: 8px;
   margin-left: 8px;
 }
 
 .submit-btn:hover {
   background: color-mix(in srgb, var(--accent) 86%, transparent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .submit-btn:disabled {

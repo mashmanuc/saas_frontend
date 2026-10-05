@@ -301,7 +301,7 @@ textarea.form-control {
 
 .duration-btn.active {
   background-color: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--accent);
 }
 

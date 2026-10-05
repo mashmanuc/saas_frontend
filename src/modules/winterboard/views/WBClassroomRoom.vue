@@ -3160,7 +3160,7 @@ onBeforeUnmount(async () => {
   left: 0;
   padding: 8px 16px;
   background: var(--wb-brand, #2563eb);
-  color: white;
+  color: var(--color-on-accent);
   z-index: 100;
   border-radius: 0 0 6px 0;
 }
@@ -3240,7 +3240,7 @@ onBeforeUnmount(async () => {
   right: 16px;
   padding: 10px 20px;
   background: var(--wb-brand, #6366f1);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 10px;
   font-size: 0.875rem;

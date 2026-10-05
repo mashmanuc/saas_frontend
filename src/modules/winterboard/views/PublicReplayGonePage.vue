@@ -76,7 +76,7 @@ function goHome() {
   padding: 10px 24px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 0.9375rem;
   font-weight: 600;
   border-radius: var(--radius-md, 8px);

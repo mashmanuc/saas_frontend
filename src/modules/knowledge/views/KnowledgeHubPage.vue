@@ -523,7 +523,7 @@ onMounted(async () => {
 
 .knowledge-hub__show-all-btn:hover:not(:disabled) {
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .knowledge-hub__show-all-btn:disabled {
@@ -578,7 +578,7 @@ onMounted(async () => {
   gap: 8px;
   padding: 12px 28px;
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   border-radius: 10px;
   text-decoration: none;
   font-size: 15px;
@@ -641,7 +641,7 @@ onMounted(async () => {
   min-width: 32px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 14px;
   font-weight: 800;
 }
@@ -779,7 +779,7 @@ onMounted(async () => {
   border: none;
   border-radius: 8px;
   background: var(--accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
   cursor: pointer;
   transition: all 0.15s ease;
 }

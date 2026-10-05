@@ -1043,7 +1043,7 @@ async function syncBoard() {
   border-color: var(--color-border-subtle);
 }
 .enrich-patches-preview__mic--on {
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-primary);
   border-color: var(--color-primary);
   animation: enrich-mic-pulse 1.2s ease-in-out infinite;
@@ -1060,7 +1060,7 @@ async function syncBoard() {
   border-radius: 999px;
   border: none;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-accent);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1228,7 +1228,7 @@ async function syncBoard() {
 }
 .enrich-patches-preview__badge {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-accent);
   padding: 2px 8px;
   border-radius: 3px;
   font-size: 12px;
@@ -1318,7 +1318,7 @@ async function syncBoard() {
 }
 .enrich-patches-preview__actions button {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 4px;
   padding: 8px 16px;

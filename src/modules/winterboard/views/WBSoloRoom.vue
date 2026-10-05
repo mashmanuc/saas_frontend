@@ -5517,7 +5517,7 @@ watch(() => store.workspaceName, (name) => {
 }
 .wb-page-btn--panel-active {
   background: var(--wb-brand, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
   border-color: var(--wb-brand, #2563eb);
 }
 /* Фото-фон 2026-09-28: кнопка з підписом, а не квадратна іконка 28×28 (інакше текст
@@ -5825,7 +5825,7 @@ watch(() => store.workspaceName, (name) => {
   z-index: 100;
   padding: 8px 16px;
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border-radius: 0 0 8px 8px;
   font-size: 14px;
   font-weight: 600;
@@ -6226,7 +6226,7 @@ watch(() => store.workspaceName, (name) => {
 
 .wb-solo-room__replay-btn {
   background: var(--wb-brand, #6366f1);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   padding: 10px 20px;
   border-radius: 10px;

@@ -188,7 +188,7 @@ onMounted(() => {
 
 .filter-btn.active {
   background-color: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .filter-badge {

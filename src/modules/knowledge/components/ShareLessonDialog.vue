@@ -240,7 +240,7 @@ async function nativeShare() {
 
 .share-dialog__btn--primary {
   background: var(--accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .share-dialog__btn--primary:hover { background: #4f46e5; }
 

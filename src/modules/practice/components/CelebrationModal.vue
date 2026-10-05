@@ -97,7 +97,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .cele__title { position: relative; font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; margin: 12px 0 2px; color: var(--text-primary); }
 .cele__src { position: relative; font-size: 0.8rem; color: var(--text-secondary); margin: 0 0 18px; }
 .cele__close {
-  position: relative; display: inline-flex; align-items: center; gap: 7px; background: var(--accent); color: #fff;
+  position: relative; display: inline-flex; align-items: center; gap: 7px; background: var(--accent); color: var(--color-on-accent);
   border: none; border-radius: 9999px; padding: 10px 18px; font: 600 0.85rem var(--font-sans, sans-serif); cursor: pointer;
 }
 .cele__rays { position: absolute; left: 50%; top: 96px; width: 1px; height: 1px; pointer-events: none; }

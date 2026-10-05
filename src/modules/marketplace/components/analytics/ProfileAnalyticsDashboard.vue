@@ -284,7 +284,7 @@ function exportCSV() {
 
 .range-btn.active {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .metrics-grid {

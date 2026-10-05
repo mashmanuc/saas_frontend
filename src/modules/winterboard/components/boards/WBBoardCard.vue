@@ -281,7 +281,7 @@ function formatTimeAgo(iso: string): string {
 .wb-board-card__checkbox--checked {
   background: var(--wb-brand, #0066ff);
   border-color: var(--wb-brand, #0066ff);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 /* ── Thumbnail ────────────────────────────────────────────────────────── */
@@ -573,4 +573,14 @@ function formatTimeAgo(iso: string): string {
     transition: none;
   }
 }
+
+/* Темна тема (Б-156, фаза 1): жорсткі світлі кольори вище → токени; світла тема без змін */
+[data-theme="dark"] .wb-board-card--selected { background: var(--color-accent-soft); }
+[data-theme="dark"] .wb-board-card__checkbox:not(.wb-board-card__checkbox--checked),
+[data-theme="dark"] .wb-board-card__menu-trigger,
+[data-theme="dark"] .wb-board-card__menu-trigger:hover { background: var(--color-surface-elevated); }
+[data-theme="dark"] .wb-board-card__thumb-placeholder { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-board-card__status-badge--active { color: var(--color-info); background: var(--color-info-soft); }
+[data-theme="dark"] .wb-board-card__status-badge--draft { color: var(--color-text-secondary); background: var(--color-surface-sunken); }
+[data-theme="dark"] .wb-board-card__prep-badge { color: var(--color-info); background: var(--color-info-soft); }
 </style>

@@ -272,7 +272,7 @@ onUnmounted(() => {
 .retry-btn {
   padding: 0.75rem 2rem;
   background: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
   font-size: 0.9375rem;

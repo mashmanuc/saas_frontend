@@ -76,4 +76,11 @@ defineEmits(['select'])
 .similar-fade-leave-to {
   opacity: 0;
 }
+
+/* Темна тема (Б-156, фаза 1): утиліти тексту всередині стають світлими через міст —
+   тло панелі теж має бути темним. Світла тема без змін. */
+[data-theme="dark"] .similar-dropdown {
+  background: var(--color-surface-elevated);
+  border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
 </style>

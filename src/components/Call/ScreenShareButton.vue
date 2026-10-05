@@ -218,7 +218,7 @@ onUnmounted(() => {
 
 .screen-share-btn.is-sharing {
   background: var(--color-success, #10b981);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .screen-share-btn.is-sharing:hover {

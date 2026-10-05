@@ -47,7 +47,7 @@ const { changeLocale } = store
 
 .locale-btn.active {
   background: var(--color-primary, #3b82f6);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--color-primary, #3b82f6);
 }
 </style>

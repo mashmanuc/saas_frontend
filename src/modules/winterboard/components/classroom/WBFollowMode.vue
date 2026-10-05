@@ -355,7 +355,7 @@ onBeforeUnmount(() => {
   background: var(--wb-brand, #2563eb);
   border: none;
   border-radius: 8px;
-  color: white;
+  color: var(--color-on-accent);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;

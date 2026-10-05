@@ -254,4 +254,11 @@ function handleEventClick(eventId: number) {
   font-weight: 500;
 }
 
+/* Темна тема (Б-156, фаза 1): світло-блакитне тло вибраного уроку під світлим текстом
+   теми — ім'я учня зникало. Тут — токени; світла тема без змін. */
+[data-theme="dark"] .sidebar-count { background: var(--color-info-soft); color: var(--color-info); }
+[data-theme="dark"] .sidebar-item--selected { background: var(--color-info-soft); border-color: var(--color-info); }
+[data-theme="dark"] .status--paid { background: var(--color-success-soft); color: var(--color-success); }
+[data-theme="dark"] .status--unpaid { background: var(--color-danger-soft); color: var(--color-danger); }
+
 </style>

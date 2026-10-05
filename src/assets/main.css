@@ -21,6 +21,10 @@
     --accent: #047857;
     --accent-hover: #065f46;
     --accent-contrast: #ffffff;
+    /* Текст на акцентній і статусній заливці. Канонічний токен (контракт темної теми);
+       решту канонічних світла тема отримає у фазі 4 — зараз їхні імена вжиті як фантоми
+       з власним запасним кольором, і оголошення змінило б світлий вигляд. */
+    --color-on-accent: #ffffff;
     --shadow: rgba(5, 150, 105, 0.2);
     --shadow-strong: rgba(5, 150, 105, 0.35);
     --success-bg: #10b981;
@@ -59,44 +63,115 @@
   }
 
   /* ========================================
-     THEME: DARK (темно-синя з бірюзою, з priklad.html)
+     THEME: DARK — «Графіт», нейтральна сіра (рішення власника 2026-10-05:
+     «став тему Графіт, а Ліс запасна і прихована»)
+     Контракт: saas_docs/frontend/design-system/DARK_THEME_CONTRACT_2026-10-05.md
+     Кольори задають ЛИШЕ канонічні токени --color-*; старі імена нижче — псевдоніми
+     на них. Запасна палітра («Нічний ліс», блок нижче) перевизначає тільки канонічні.
+     Контраст (WCAG): текст 12,9 · другорядний 7,7 · приглушений 4,5 · на акценті 8,6.
      ======================================== */
   [data-theme="dark"] {
-    --bg-primary: #0a1929;
-    --bg-gradient: linear-gradient(135deg, #0a1929 0%, #1a237e 100%);
-    --bg-secondary: rgba(30, 41, 59, 0.95);
-    --text-primary: #e0f2fe;
-    --text-secondary: #bae6fd;
-    --border-color: rgba(56, 189, 248, 0.4);
-    --card-bg: rgba(30, 41, 59, 0.95);
-    --nav-bg: rgba(15, 23, 42, 0.98);
-    --toast-bg: rgba(56, 189, 248, 0.95);
-    --toast-text: #0a1929;
-    --accent: #38bdf8;
-    --accent-hover: #0ea5e9;
-    --accent-contrast: #0a1929;
-    --shadow: rgba(56, 189, 248, 0.25);
-    --shadow-strong: rgba(56, 189, 248, 0.4);
-    --success-bg: #4ade80;
-    --warning-bg: #fbbf24;
-    --danger-bg: #f87171;
-    --info-bg: #22d3ee;
-    --dropdown-bg: #1e293b;
-    --bg-hover: rgba(56, 189, 248, 0.1);
+    color-scheme: dark;
 
-    --color-bg-primary: var(--bg-primary);
-    --color-bg-secondary: var(--bg-secondary);
-    --color-text-primary: var(--text-primary);
-    --color-text-secondary: var(--text-secondary);
-    --color-border-subtle: var(--border-color);
-    --color-primary: var(--accent);
+    /* ── Канонічні токени ── */
+    --color-page: #0e1013;
+    --color-chrome: #14171b;
+    --color-surface: #1a1e23;
+    --color-surface-sunken: #22272e;
+    --color-surface-elevated: #1e2228;
+    --color-canvas-area: #0b0d10;
+    --color-hover: rgba(255, 255, 255, 0.05);
+    --color-selected: var(--color-accent-soft);
+    --color-text: #eceef1;
+    --color-text-secondary: #b3bac4;
+    --color-text-muted: #858d99;
+    --color-border: #2a3038;
+    --color-border-strong: #3a414c;
+    --color-accent: #34c77b;
+    --color-accent-hover: #4fd690;
+    --color-accent-soft: rgba(52, 199, 123, 0.16);
+    --color-on-accent: #05150c;
+    --color-link: var(--color-accent);
+    --color-success: #34c77b;
+    --color-success-soft: rgba(52, 199, 123, 0.16);
+    --color-warning: #f2b544;
+    --color-warning-soft: rgba(242, 181, 68, 0.16);
+    --color-danger: #f07171;
+    --color-danger-soft: rgba(240, 113, 113, 0.16);
+    --color-info: #5aa6ff;
+    --color-info-soft: rgba(90, 166, 255, 0.16);
+    --color-scrim: rgba(3, 4, 6, 0.66);
 
-    --subject-tag-bg: #fbbf24;
-    --subject-tag-text: #0a1929;
-    --language-tag-bg: #38bdf8;
-    --language-tag-text: #0a1929;
-    --price-tag-bg: #4ade80;
-    --price-tag-text: #0a1929;
+    /* ── Старі імена → канонічні (перехідний період, контракт §2.1) ── */
+    --bg-primary: var(--color-page);
+    --bg-gradient: var(--color-page);
+    --bg-secondary: var(--color-surface);
+    --text-primary: var(--color-text);
+    --text-secondary: var(--color-text-secondary);
+    --border-color: var(--color-border);
+    --card-bg: var(--color-surface);
+    --nav-bg: var(--color-chrome);
+    --toast-bg: var(--color-accent);
+    --toast-text: var(--color-on-accent);
+    --accent: var(--color-accent);
+    --accent-hover: var(--color-accent-hover);
+    --accent-contrast: var(--color-on-accent);
+    --shadow: rgba(0, 0, 0, 0.35);
+    --shadow-strong: rgba(0, 0, 0, 0.5);
+    --success-bg: var(--color-success);
+    --warning-bg: var(--color-warning);
+    --danger-bg: var(--color-danger);
+    --info-bg: var(--color-info);
+    --dropdown-bg: var(--color-surface-elevated);
+    --bg-hover: var(--color-hover);
+    --color-overlay: var(--color-scrim);
+
+    --color-bg-primary: var(--color-page);
+    --color-bg-secondary: var(--color-surface);
+    --color-text-primary: var(--color-text);
+    --color-border-subtle: var(--color-border);
+    --color-primary: var(--color-accent);
+
+    --subject-tag-bg: var(--color-accent-soft);
+    --subject-tag-text: var(--color-accent);
+    --language-tag-bg: var(--color-info-soft);
+    --language-tag-text: var(--color-info);
+    --price-tag-bg: var(--color-success-soft);
+    --price-tag-text: var(--color-success);
+  }
+
+  /* ========================================
+     THEME: DARK, запасна палітра «Нічний ліс» — ПРИХОВАНА (data-dark-palette="forest").
+     У меню її немає; вмикає themeStore лише з localStorage dark_palette = 'forest'.
+     Решту (старі імена, --wb-*, псевдоніми) бере з блоку темної теми через var().
+     Контраст: текст 12,9 · другорядний 7,9 · приглушений 4,8 · на акценті 10,7.
+     ======================================== */
+  [data-theme="dark"][data-dark-palette="forest"] {
+    --color-page: #08110e;
+    --color-chrome: #0d1814;
+    --color-surface: #12211b;
+    --color-surface-sunken: #192c24;
+    --color-surface-elevated: #152620;
+    --color-canvas-area: #060d0a;
+    --color-hover: rgba(110, 231, 183, 0.06);
+    --color-text: #e6f3ed;
+    --color-text-secondary: #a6c4b8;
+    --color-text-muted: #779a8c;
+    --color-border: #1f3329;
+    --color-border-strong: #2c4739;
+    --color-accent: #3ddc97;
+    --color-accent-hover: #6ee7b7;
+    --color-accent-soft: rgba(61, 220, 151, 0.15);
+    --color-on-accent: #03140c;
+    --color-success: #3ddc97;
+    --color-success-soft: rgba(61, 220, 151, 0.15);
+    --color-warning: #f5c04a;
+    --color-warning-soft: rgba(245, 192, 74, 0.15);
+    --color-danger: #f27a7a;
+    --color-danger-soft: rgba(242, 122, 122, 0.15);
+    --color-info: #67b0ff;
+    --color-info-soft: rgba(103, 176, 255, 0.15);
+    --color-scrim: rgba(2, 8, 6, 0.7);
   }
 
   /* ========================================
@@ -116,6 +191,7 @@
     --accent: #7c3aed;
     --accent-hover: #6d28d9;
     --accent-contrast: #ffffff;
+    --color-on-accent: #ffffff;
     --shadow: rgba(109, 40, 217, 0.15);
     --shadow-strong: rgba(109, 40, 217, 0.3);
     --success-bg: #16a34a;
@@ -567,10 +643,14 @@
     box-shadow: 0 2px 8px color-mix(in srgb, #f59e0b 40%, transparent);
   }
 
-  /* ─── Dark Theme: Native Form Elements ─── */
+  /* ─── Темна тема: поля вводу без власного стилю ───
+     Перехідне правило (контракт, правило 4): поки не всі поля на `.input`/FormField,
+     колір полю дає тема. Підписів (`label`) НЕ фарбуємо — вони успадковують колір
+     свого блоку; примусово світлий підпис зникав на білих островах («Зберегти як урок»). */
   [data-theme="dark"] select,
   [data-theme="dark"] .input,
   [data-theme="dark"] .form-control,
+  [data-theme="dark"] input:not([type]),
   [data-theme="dark"] input[type="text"],
   [data-theme="dark"] input[type="number"],
   [data-theme="dark"] input[type="email"],
@@ -579,25 +659,25 @@
   [data-theme="dark"] input[type="tel"],
   [data-theme="dark"] input[type="search"],
   [data-theme="dark"] textarea {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border-color: var(--border-color);
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
   }
 
   [data-theme="dark"] select option {
-    background-color: #1e293b;
-    color: #e0f2fe;
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text);
   }
 
   [data-theme="dark"] select option:checked {
-    background-color: var(--accent);
-    color: var(--accent-contrast);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
   }
 
   [data-theme="dark"] input::placeholder,
   [data-theme="dark"] textarea::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.7;
+    color: var(--color-text-muted);
+    opacity: 1;
   }
 
   /* Autocomplete dropdown items (city, language pickers) */
@@ -606,18 +686,8 @@
   [data-theme="dark"] .autocomplete-dropdown,
   [data-theme="dark"] .autocomplete-item,
   [data-theme="dark"] datalist {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-  }
-
-  /* Checkboxes and labels in dark theme */
-  [data-theme="dark"] label {
-    color: var(--text-primary);
-  }
-
-  /* Error banner in dark theme */
-  [data-theme="dark"] .bg-red-50 {
-    background-color: rgba(127, 29, 29, 0.3);
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text);
   }
 
   /* ─── Light Theme: Winterboard Variables ─── */
@@ -691,39 +761,42 @@
     --wb-warning-text: #d97706;
   }
 
-  /* ─── Dark Theme: Winterboard Variables ─── */
+  /* ─── Dark Theme: Winterboard Variables ───
+     Дошка — та сама система кольорів, що й решта застосунку (канонічні токени).
+     Аркуш — папір, не тема: його колір задає вчитель, а не ці змінні.
+     --wb-canvas-bg тут — лише тло під мініатюрою дошки в списках. */
   [data-theme="dark"] {
-    --wb-bg: #0f172a;
-    --wb-bg-hover: #1e293b;
-    --wb-bg-secondary: #1e293b;
-    --wb-bg-tertiary: #334155;
-    --wb-border: #334155;
-    --wb-brand: #3b82f6;
-    --wb-brand-hover: #2563eb;
-    --wb-brand-dark: #1d4ed8;
-    --wb-btn-hover: #334155;
-    --wb-canvas-area-bg: #0f172a;
-    --wb-canvas-bg: #1e293b;
+    --wb-bg: var(--color-chrome);
+    --wb-bg-hover: var(--color-hover);
+    --wb-bg-secondary: var(--color-surface);
+    --wb-bg-tertiary: var(--color-surface-sunken);
+    --wb-border: var(--color-border);
+    --wb-brand: var(--color-accent);
+    --wb-brand-hover: var(--color-accent-hover);
+    --wb-brand-dark: var(--color-accent-hover);
+    --wb-btn-hover: var(--color-hover);
+    --wb-canvas-area-bg: var(--color-canvas-area);
+    --wb-canvas-bg: var(--color-surface-sunken);
     --wb-page-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
-    --wb-card-bg: #1e293b;
-    --wb-danger-bg: rgba(239, 68, 68, 0.15);
-    --wb-error: #f87171;
-    --wb-fg: #e2e8f0;
-    --wb-fg-secondary: #94a3b8;
-    --wb-footer-bg: #0f172a;
-    --wb-header-bg: #020617;
-    --wb-primary: #3b82f6;
-    --wb-primary-hover: #2563eb;
-    --wb-surface: #1e293b;
-    --wb-text: #e2e8f0;
-    --wb-text-muted: #94a3b8;
-    --wb-text-primary: #e2e8f0;
-    --wb-text-secondary: #94a3b8;
-    --wb-bg-primary: #0f172a;
-    --wb-toolbar-bg: #0f172a;
-    --wb-toolbar-border: #334155;
-    --wb-warning-bg: rgba(234, 179, 8, 0.15);
-    --wb-warning-text: #fbbf24;
+    --wb-card-bg: var(--color-surface);
+    --wb-danger-bg: var(--color-danger-soft);
+    --wb-error: var(--color-danger);
+    --wb-fg: var(--color-text);
+    --wb-fg-secondary: var(--color-text-secondary);
+    --wb-footer-bg: var(--color-chrome);
+    --wb-header-bg: var(--color-chrome);
+    --wb-primary: var(--color-accent);
+    --wb-primary-hover: var(--color-accent-hover);
+    --wb-surface: var(--color-surface);
+    --wb-text: var(--color-text);
+    --wb-text-muted: var(--color-text-muted);
+    --wb-text-primary: var(--color-text);
+    --wb-text-secondary: var(--color-text-secondary);
+    --wb-bg-primary: var(--color-chrome);
+    --wb-toolbar-bg: var(--color-chrome);
+    --wb-toolbar-border: var(--color-border);
+    --wb-warning-bg: var(--color-warning-soft);
+    --wb-warning-text: var(--color-warning);
   }
 }
 

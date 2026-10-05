@@ -177,7 +177,7 @@ function formatTime(utcTime: string): string {
 .duration-btn.active {
   border-color: var(--accent);
   background-color: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   font-weight: 500;
 }
 

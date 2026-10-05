@@ -162,7 +162,7 @@ onMounted(() => {
   cursor: pointer;
   border: none;
   background: var(--color-accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .lesson-replay-player__board {

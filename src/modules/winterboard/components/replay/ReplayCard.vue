@@ -485,7 +485,7 @@ const vClickOutside = {
 
 .replay-card__btn--primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   border-color: var(--accent);
 }
 

@@ -819,7 +819,7 @@ function handleBackToCalendar() {
   padding: 0.5rem 1rem;
   border-radius: 6px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   cursor: pointer;
   font-weight: 500;

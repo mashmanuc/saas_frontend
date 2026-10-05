@@ -101,4 +101,13 @@ function askTutor() {
 .lesson-cta__btn--secondary:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* Темна тема (Б-156, фаза 1): білий текст на світлому градієнті акценту не читається —
+   у темній темі банер стає карткою з токенами. Світла тема без змін. */
+[data-theme="dark"] .lesson-cta { background: var(--color-surface); border: 1px solid var(--color-border); }
+[data-theme="dark"] .lesson-cta__title { color: var(--color-text); }
+[data-theme="dark"] .lesson-cta__subtitle { color: var(--color-text-secondary); }
+[data-theme="dark"] .lesson-cta__btn--primary { background: var(--color-accent); color: var(--color-on-accent); }
+[data-theme="dark"] .lesson-cta__btn--secondary { color: var(--color-text); border-color: var(--color-border-strong); }
+[data-theme="dark"] .lesson-cta__btn--secondary:hover { background: var(--color-hover); }
 </style>

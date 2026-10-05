@@ -174,7 +174,7 @@ function onDragStart(e: DragEvent): void {
   background: var(--wb-primary, #3b82f6);
   border-radius: 50%;
   border: none;
-  color: white;
+  color: var(--color-on-accent);
   display: flex;
   align-items: center;
   justify-content: center;

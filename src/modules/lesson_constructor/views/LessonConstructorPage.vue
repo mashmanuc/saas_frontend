@@ -717,7 +717,7 @@ async function handleGenerate() {
 .lc-topic-chip--active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .lc-topic-chip--disabled {
@@ -1050,7 +1050,7 @@ async function handleGenerate() {
 
 .lc-btn-generate {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 12px;
   padding: 1rem 2.5rem;
@@ -1102,4 +1102,93 @@ async function handleGenerate() {
 @keyframes lc-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Темна тема (Б-156, фаза 1) ─────────────────────────────────────────────
+   Сторінка намальована жорсткими світлими кольорами (вище) — у темній темі це був
+   білий острів. Тут ті самі елементи отримують токени темної теми; світла тема не
+   змінюється. Стани (наведення, вибране, фокус) повторено, бо базові правила цього
+   блоку сильніші за світлі модифікатори. Фаза 2 переведе кольори вище на токени. */
+[data-theme="dark"] .lc-page { background: var(--color-page); }
+[data-theme="dark"] .lc-section { background: var(--color-surface); border-color: var(--color-border); }
+[data-theme="dark"] .lc-topic-block,
+[data-theme="dark"] .lc-topic-row,
+[data-theme="dark"] .lc-bg-strip,
+[data-theme="dark"] .lc-advanced { border-color: var(--color-border); }
+
+[data-theme="dark"] .lc-page__title,
+[data-theme="dark"] .lc-topic-block__head,
+[data-theme="dark"] .lc-section__title,
+[data-theme="dark"] .lc-theme-card__name { color: var(--color-text); }
+[data-theme="dark"] .lc-page__subtitle,
+[data-theme="dark"] .lc-topic-block__chevron,
+[data-theme="dark"] .lc-topic-row__title,
+[data-theme="dark"] .lc-section__hint,
+[data-theme="dark"] .lc-theme-card__desc,
+[data-theme="dark"] .lc-bg-label,
+[data-theme="dark"] .lc-bg-sat,
+[data-theme="dark"] .lc-label,
+[data-theme="dark"] .lc-radio,
+[data-theme="dark"] .lc-checkbox { color: var(--color-text-secondary); }
+[data-theme="dark"] .lc-checkbox-hint,
+[data-theme="dark"] .lc-preview-sep { color: var(--color-text-muted); }
+[data-theme="dark"] .lc-topic-block__picked { color: var(--color-accent); }
+[data-theme="dark"] .lc-error { color: var(--color-danger); }
+[data-theme="dark"] .lc-notice { background: var(--color-warning-soft); color: var(--color-text); }
+[data-theme="dark"] .lc-badge { background: var(--color-surface-sunken); color: var(--color-text-secondary); }
+
+[data-theme="dark"] .lc-type-chip {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .lc-type-chip:hover { border-color: var(--color-accent); }
+[data-theme="dark"] .lc-type-chip--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+[data-theme="dark"] .lc-topic-chip {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .lc-topic-chip:hover:not(.lc-topic-chip--disabled) {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .lc-topic-chip--active,
+[data-theme="dark"] .lc-topic-chip--active:hover:not(.lc-topic-chip--disabled) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+[data-theme="dark"] .lc-theme-card { background: var(--color-surface-sunken); border-color: var(--color-border); }
+[data-theme="dark"] .lc-theme-card:hover,
+[data-theme="dark"] .lc-theme-card--active { background: var(--color-accent-soft); border-color: var(--color-accent); }
+
+[data-theme="dark"] .lc-preview-box { background: var(--color-surface-sunken); }
+[data-theme="dark"] .lc-preview-item,
+[data-theme="dark"] .lc-preview-total-sep { color: var(--color-text-secondary); }
+[data-theme="dark"] .lc-preview-item--tasks { color: var(--color-accent); }
+[data-theme="dark"] .lc-preview-item--theory { color: var(--color-info); }
+[data-theme="dark"] .lc-preview-item--practice,
+[data-theme="dark"] .lc-preview-item--total { color: var(--color-text); }
+[data-theme="dark"] .lc-preview-item--solution { color: var(--color-success); }
+
+[data-theme="dark"] .lc-bg-swatch { border-color: var(--color-border-strong); }
+[data-theme="dark"] .lc-bg-swatch:hover,
+[data-theme="dark"] .lc-bg-swatch--active { border-color: var(--color-accent); }
+[data-theme="dark"] .lc-bg-mode { background: var(--color-surface-sunken); }
+[data-theme="dark"] .lc-bg-mode__btn { color: var(--color-text-secondary); }
+[data-theme="dark"] .lc-bg-mode__btn--active { background: var(--color-surface-elevated); color: var(--color-accent); }
+
+[data-theme="dark"] .lc-input {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .lc-input:focus { border-color: var(--color-accent); }
 </style>

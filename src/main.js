@@ -10,6 +10,8 @@ import './assets/responsive.css'
 import './modules/winterboard/styles/winterboard-responsive.css'
 import './assets/fullcalendar.css'
 import './styles/m4sh.css'
+// Темна тема: перехідний міст для старого коду (фаза 1, Б-156) — після решти глобального CSS
+import './styles/theme-dark-bridge.css'
 /* assets2/ui-contract/tokens removed — all tokens in src/styles/tokens.css */
 import { notifications as notificationBus } from './utils/notify'
 import { useNotifyStore } from './stores/notifyStore'

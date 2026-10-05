@@ -230,7 +230,7 @@ function handleQuickAddLanguage(langCode: string) {
   padding: 0 0.4rem;
   border-radius: 999px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   font-size: 0.75rem;
   font-weight: 600;
 }

@@ -337,7 +337,7 @@ function formatDate(dateStr: string): string {
   align-items: center;
   justify-content: center;
   background: var(--color-primary, #3b82f6);
-  color: white;
+  color: var(--color-on-accent);
   font-size: 18px;
   font-weight: 600;
   border-radius: 50%;

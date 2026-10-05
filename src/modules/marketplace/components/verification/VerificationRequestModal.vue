@@ -352,13 +352,13 @@ function handleClose() {
 
 .step-item.active .step-number {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--accent);
 }
 
 .step-item.completed .step-number {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--accent);
 }
 
@@ -468,7 +468,7 @@ function handleClose() {
 
 .remove-btn:hover:not(:disabled) {
   background: var(--danger-bg);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .form-group {

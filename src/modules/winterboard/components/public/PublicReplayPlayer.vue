@@ -334,7 +334,7 @@ function handleShareMoment(): void {
   width: var(--wb-replay-btn-play, 36px);
   height: var(--wb-replay-btn-play, 36px);
   background: var(--wb-brand, #047857);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -415,7 +415,7 @@ function handleShareMoment(): void {
 
 .public-replay-player__share-moment:hover {
   background: var(--wb-primary, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .public-replay-player__toast {

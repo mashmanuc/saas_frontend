@@ -102,7 +102,7 @@ function goBack() {
 .stu-asg__back { background: none; border: 0; color: var(--text-secondary, #6b7280); cursor: pointer; padding: 0 0 6px; font-size: 13px; }
 .stu-asg__back:hover { color: var(--accent, #16a34a); }
 .stu-asg__h1 { font-size: 22px; font-weight: 700; color: var(--text-primary, #111827); }
-.stu-asg__new { background: var(--accent, #16a34a); color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.stu-asg__new { background: var(--accent, #16a34a); color: var(--color-on-accent); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .stu-asg__new:hover { filter: brightness(0.95); }
 .stu-asg__hint, .stu-asg__empty { color: var(--text-secondary, #9ca3af); padding: 24px 0; text-align: center; }
 .stu-asg__ul { list-style: none; margin: 0; padding: 0; }

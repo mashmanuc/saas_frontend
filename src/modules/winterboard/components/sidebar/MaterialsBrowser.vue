@@ -237,7 +237,7 @@ onMounted(async () => {
 .materials-browser__empty-upload {
   padding: 8px 16px;
   background: var(--wb-brand, #0066ff);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 13px;

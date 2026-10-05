@@ -279,7 +279,7 @@ onMounted(loadData)
   border: 1px solid var(--color-primary, #3b82f6);
   border-radius: 6px;
   background: var(--color-primary, #3b82f6);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 0.875rem;
   cursor: pointer;
 }
@@ -312,7 +312,7 @@ onMounted(loadData)
   border: none;
   border-radius: 6px;
   background: var(--color-primary, #3b82f6);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 0.875rem;
   cursor: pointer;
 }

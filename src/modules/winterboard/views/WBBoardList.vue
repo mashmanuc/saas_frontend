@@ -1146,7 +1146,7 @@ onMounted(() => {
   display: inline-block;
   padding: 4px 12px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -1253,7 +1253,7 @@ onMounted(() => {
   gap: 6px;
   padding: 9px 18px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -1332,7 +1332,7 @@ onMounted(() => {
 .wb-board-list__tab-count {
   font-size: 11px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border-radius: 10px;
   padding: 1px 7px;
   min-width: 18px;
@@ -1568,7 +1568,7 @@ onMounted(() => {
   gap: 6px;
   padding: 10px 24px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -1741,7 +1741,7 @@ onMounted(() => {
   background: var(--wb-brand, #0066ff);
   border: 1.5px solid var(--wb-brand, #0066ff);
   border-radius: 5px;
-  color: #fff;
+  color: var(--color-on-accent);
   cursor: pointer;
   transition: background 0.1s;
   flex-shrink: 0;

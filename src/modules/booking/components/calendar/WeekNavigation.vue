@@ -204,7 +204,7 @@ function handleShowGuide() {
   gap: 6px;
   padding: 8px 16px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;

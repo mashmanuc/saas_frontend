@@ -161,7 +161,7 @@ useScheduleDeepLink()
 
 .day-header {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover, #764ba2) 100%);
-  color: white;
+  color: var(--color-on-accent);
   padding: 16px;
   text-align: center;
 }

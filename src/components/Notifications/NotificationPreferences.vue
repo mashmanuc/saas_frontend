@@ -307,4 +307,7 @@ onMounted(() => {
     align-self: flex-end;
   }
 }
+
+/* Темна тема (Б-156, фаза 1): колір тексту помилки в темній темі світлий — тло теж токеном */
+[data-theme="dark"] .save-error { background: var(--color-danger-soft); }
 </style>

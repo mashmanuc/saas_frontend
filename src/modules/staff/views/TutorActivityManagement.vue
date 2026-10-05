@@ -376,7 +376,7 @@ onMounted(() => {
 .retry-btn {
   padding: var(--space-xs) var(--space-md);
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);

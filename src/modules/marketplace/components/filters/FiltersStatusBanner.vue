@@ -102,7 +102,7 @@ const timeAgo = computed(() => {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
   font-size: 0.875rem;

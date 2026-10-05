@@ -237,7 +237,7 @@ async function useLessonInSession() {
 
 .lesson-view-page__use-btn--primary {
   background: var(--color-primary, #16a34a);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .lesson-view-page__use-btn--primary:hover {

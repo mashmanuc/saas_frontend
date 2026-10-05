@@ -519,13 +519,13 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 
 .wb-toolbar__btn--active {
   background: var(--wb-brand, #2563eb);
-  color: #ffffff;
+  color: var(--color-on-accent);
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
 }
 
 .wb-toolbar__btn--active:hover:not(:disabled) {
   background: var(--wb-brand-dark, #1d4ed8);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-toolbar__btn--danger:hover:not(:disabled) {

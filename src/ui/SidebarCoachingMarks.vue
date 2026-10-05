@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
 
 .sidebar-coaching-tooltip__btn--next {
   background: var(--accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .sidebar-coaching-tooltip__btn--next:hover {

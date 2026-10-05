@@ -318,7 +318,7 @@ onMounted(() => {
 
 .filter-tab.active {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .count-badge {

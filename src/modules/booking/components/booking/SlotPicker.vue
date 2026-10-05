@@ -156,7 +156,7 @@ function formatSelectedTime(slot: TimeSlot): string {
 
 .clear-btn:hover {
   background: var(--color-success, #10b981);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .no-slots {

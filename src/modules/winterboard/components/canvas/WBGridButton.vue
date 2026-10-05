@@ -186,7 +186,7 @@ function renderPreview(type: GridType) {
 
 .wb-grid-button__trigger--active {
   background: var(--wb-brand, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
   border-color: var(--wb-brand, #2563eb);
 }
 

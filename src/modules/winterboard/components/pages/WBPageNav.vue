@@ -200,7 +200,7 @@ function startRename(_index: number): void {
 
 .wb-page-nav__tab--active .wb-page-nav__tab-index {
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-page-nav__tab-name {

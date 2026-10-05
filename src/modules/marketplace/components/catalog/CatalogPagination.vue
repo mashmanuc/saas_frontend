@@ -164,7 +164,7 @@ function nextPage() {
 .pagination-btn.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .pagination-btn.dots {

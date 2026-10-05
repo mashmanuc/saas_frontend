@@ -242,7 +242,7 @@ function onRetryClick() {
 .wb-finalize-barrier__retry {
   appearance: none;
   background: var(--primary, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
   border: 0;
   padding: 10px 16px;
   border-radius: 8px;

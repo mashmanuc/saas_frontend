@@ -260,7 +260,7 @@ const emit = defineEmits<{
   background: var(--accent);
   border: 3px solid var(--surface-card);
   border-radius: 50%;
-  color: white;
+  color: var(--color-on-accent);
   cursor: pointer;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s;

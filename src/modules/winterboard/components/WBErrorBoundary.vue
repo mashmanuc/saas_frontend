@@ -122,7 +122,7 @@ function handleRetry(): void {
 .wb-error-boundary__retry {
   padding: 10px 24px;
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;

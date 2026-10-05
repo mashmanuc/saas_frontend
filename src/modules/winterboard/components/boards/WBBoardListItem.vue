@@ -193,7 +193,7 @@ function formatTimeAgo(iso: string): string {
 .wb-board-list-item__checkbox--checked {
   background: var(--wb-brand, #0066ff);
   border-color: var(--wb-brand, #0066ff);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 /* ── Thumbnail ────────────────────────────────────────────────────────── */

@@ -323,7 +323,7 @@ defineExpose({
 
 .wb-presence-panel__badge {
   background: var(--wb-brand, #0066FF);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 11px;
   font-weight: 700;
   min-width: 18px;

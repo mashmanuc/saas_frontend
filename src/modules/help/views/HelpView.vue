@@ -194,7 +194,7 @@ function onBodyClick(e: MouseEvent): void {
 }
 .help-nav__link--active {
   background: var(--accent, #10b981);
-  color: #fff;
+  color: var(--color-on-accent);
   font-weight: 600;
 }
 

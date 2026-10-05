@@ -179,7 +179,7 @@ function setTab(tab: TabType) {
 
 .badge {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;
@@ -247,7 +247,7 @@ function setTab(tab: TabType) {
 
 .router-link-primary {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .router-link-primary:hover {

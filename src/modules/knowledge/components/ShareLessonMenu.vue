@@ -77,4 +77,10 @@ void props
 .share-menu__text { display: flex; flex-direction: column; gap: 2px; }
 .share-menu__title { font-size: 13px; font-weight: 600; color: #0f172a; }
 .share-menu__hint { font-size: 11px; color: #64748b; line-height: 1.3; }
+
+/* Темна тема (Б-156, фаза 1): біле спливне меню → токени; світла тема без змін */
+[data-theme="dark"] .share-menu__pop { background: var(--color-surface-elevated); border-color: var(--color-border); }
+[data-theme="dark"] .share-menu__item:hover { background: var(--color-accent-soft); }
+[data-theme="dark"] .share-menu__title { color: var(--color-text); }
+[data-theme="dark"] .share-menu__hint { color: var(--color-text-muted); }
 </style>

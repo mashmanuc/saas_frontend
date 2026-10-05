@@ -265,4 +265,16 @@ function goToList(): void {
 .lesson-saved-dialog__btn--primary:hover {
   background: #115e59;
 }
+
+/* Темна тема (Б-156, фаза 1): тло вікна (bg-white) у темній темі стає темним через міст,
+   тож жорстко темний текст вище зник би. Тут — токени; світла тема без змін. */
+[data-theme="dark"] .lesson-saved-dialog { border: 1px solid var(--color-border); }
+[data-theme="dark"] .lesson-saved-dialog__title,
+[data-theme="dark"] .lesson-saved-dialog__name { color: var(--color-text); }
+[data-theme="dark"] .lesson-saved-dialog__body { color: var(--color-text-secondary); }
+[data-theme="dark"] .lesson-saved-dialog__hint,
+[data-theme="dark"] .lesson-saved-dialog__close { color: var(--color-text-muted); }
+[data-theme="dark"] .lesson-saved-dialog__close:hover { background: var(--color-hover); color: var(--color-text); }
+[data-theme="dark"] .lesson-saved-dialog__btn--ghost { color: var(--color-text-secondary); border-color: var(--color-border-strong); }
+[data-theme="dark"] .lesson-saved-dialog__btn--ghost:hover { background: var(--color-hover); color: var(--color-text); }
 </style>

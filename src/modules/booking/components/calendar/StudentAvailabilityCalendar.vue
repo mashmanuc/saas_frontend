@@ -543,7 +543,7 @@ onUnmounted(() => {
 
 .slot-button.slot-selected {
   background-color: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--primary);
 }
 

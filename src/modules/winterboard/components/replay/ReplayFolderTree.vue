@@ -365,14 +365,14 @@ function onDrop(folderId: string, e: DragEvent): void {
 
 .wb-replay-folder-tree__item--active {
   background: var(--accent, #0066ff);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 /* Active + hover: :hover має вищу специфічність за single class,
    тому без цього правила білий текст стає нечитабельним на світлому фоні. */
 .wb-replay-folder-tree__item--active:hover {
   background: color-mix(in srgb, var(--accent, #0066ff) 88%, #000);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .wb-replay-folder-tree__item--dragover {

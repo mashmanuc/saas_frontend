@@ -258,4 +258,16 @@ if (typeof window !== 'undefined') {
     align-items: stretch;
   }
 }
+
+/* Темна тема (Б-156, фаза 1): світла кнопка «Скасувати» → токени; світла тема без змін */
+[data-theme="dark"] .save-lesson-dialog {
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .save-lesson-dialog__btn--cancel {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .save-lesson-dialog__btn--cancel:hover {
+  background: var(--color-border-strong);
+}
 </style>

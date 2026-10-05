@@ -275,7 +275,7 @@ async function copyLink() {
 .wb-rec-done__copy {
   padding: 7px 14px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;

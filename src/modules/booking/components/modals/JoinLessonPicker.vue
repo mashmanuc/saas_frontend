@@ -200,7 +200,7 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 16px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;

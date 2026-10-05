@@ -871,7 +871,7 @@ onUnmounted(() => {
   width: 100%;
   padding: 10px;
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;

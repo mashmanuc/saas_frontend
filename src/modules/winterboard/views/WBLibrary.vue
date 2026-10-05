@@ -1372,12 +1372,12 @@ onMounted(async () => {
 
 .wb-library__view-btn--active {
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-library__view-btn--active:hover {
   background: var(--wb-brand-hover, #0052cc);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-library__filter-btn {
@@ -1408,7 +1408,7 @@ onMounted(async () => {
   gap: 6px;
   padding: 8px 14px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 7px;
   font-size: 13px;
@@ -1461,7 +1461,7 @@ onMounted(async () => {
 .wb-library__yt-submit {
   padding: 6px 12px;
   background: var(--wb-brand, #6366f1);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 7px;
   font-weight: 700;
@@ -1658,7 +1658,7 @@ onMounted(async () => {
 .wb-library__upload-cta {
   padding: 10px 24px;
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -1807,7 +1807,7 @@ onMounted(async () => {
 
 .wb-dialog__btn--primary {
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-dialog__btn--primary:hover:not(:disabled) { background: var(--wb-brand-hover, #0052cc); }

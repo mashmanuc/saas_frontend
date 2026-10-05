@@ -195,7 +195,7 @@ function viewDetails() {
 
 .action-btn.confirm:hover {
   background: var(--color-success, #10b981);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .action-btn.cancel {
@@ -205,7 +205,7 @@ function viewDetails() {
 
 .action-btn.cancel:hover {
   background: var(--color-danger, #ef4444);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .card-price {

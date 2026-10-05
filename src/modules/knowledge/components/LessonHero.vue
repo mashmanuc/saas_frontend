@@ -97,7 +97,7 @@ defineEmits(['start-replay'])
   align-items: center;
   justify-content: center;
   background: var(--color-accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 1.25rem;
   font-weight: 700;
 }
@@ -178,7 +178,7 @@ defineEmits(['start-replay'])
   cursor: pointer;
   border: none;
   background: var(--color-accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
   transition: all 0.15s ease;
 }
 

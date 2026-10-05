@@ -430,7 +430,7 @@ onMounted(loadData)
   display: inline-flex;
   padding: 10px 20px;
   background: var(--wb-brand, #0066ff);
-  color: white;
+  color: var(--color-on-accent);
   border-radius: 8px;
   text-decoration: none;
   font-size: 14px;

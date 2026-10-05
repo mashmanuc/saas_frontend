@@ -408,7 +408,7 @@ function toLocalDateString(d: Date): string {
 
 .schedule-col-header.is-today .day-number {
   background: var(--accent, #16a34a);
-  color: #fff;
+  color: var(--color-on-accent);
   border-radius: 50%;
   width: 24px;
   height: 24px;

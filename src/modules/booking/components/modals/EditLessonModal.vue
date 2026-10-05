@@ -792,7 +792,7 @@ function handleClose() {
 
 .duration-btn.active {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--accent);
 }
 

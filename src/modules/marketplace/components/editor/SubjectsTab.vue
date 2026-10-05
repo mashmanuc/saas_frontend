@@ -494,7 +494,7 @@ function handleTogglePopularLanguage(langCode: string) {
 
 .mode-option.is-active {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   font-weight: 600;
 }
 

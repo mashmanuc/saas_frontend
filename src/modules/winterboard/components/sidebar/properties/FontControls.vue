@@ -182,7 +182,7 @@ function onAlignChange(value: string) {
 }
 .font-controls__toggle--active {
   background: var(--wb-brand, #0066ff);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--wb-brand, #0066ff);
 }
 .font-controls__align-group {
@@ -210,7 +210,7 @@ function onAlignChange(value: string) {
 }
 .font-controls__align-btn--active {
   background: var(--wb-brand, #0066ff);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--wb-brand, #0066ff);
 }
 .font-controls--locked .font-controls__select,

@@ -902,7 +902,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 
 .nmt-task__option.is-selected .nmt-task__option-letter {
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .nmt-task__option.is-correct .nmt-task__option-letter {

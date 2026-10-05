@@ -443,7 +443,7 @@ function onFolderDrop(folderId: number | null, e: DragEvent): void {
 
 .wb-folder-tree__item--active {
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-folder-tree__item--active:hover {

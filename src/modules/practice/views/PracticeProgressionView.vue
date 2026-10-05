@@ -53,7 +53,7 @@ onMounted(() => store.load())
 .prog__title { font-size: 22px; font-weight: 500; margin-bottom: 12px; }
 .prog__tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .prog__tab { padding: 8px 14px; border: 1px solid var(--border-color, rgba(0,0,0,0.12)); border-radius: 8px; background: transparent; cursor: pointer; font-size: 14px; color: var(--text-secondary, #555); }
-.prog__tab.is-active { background: var(--accent, #047857); color: #fff; border-color: var(--accent, #047857); }
+.prog__tab.is-active { background: var(--accent, #047857); color: var(--color-on-accent); border-color: var(--accent, #047857); }
 .prog__msg { padding: 24px 0; color: var(--text-secondary, #555); }
 .prog__msg--err { color: #a02d2d; }
 </style>

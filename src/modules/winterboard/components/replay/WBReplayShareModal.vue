@@ -346,7 +346,7 @@ async function onRotate() {
 }
 .wb-share-modal__cta {
   width: 100%; padding: 12px 20px;
-  background: var(--accent); color: white;
+  background: var(--accent); color: var(--color-on-accent);
   border: none; border-radius: 8px; cursor: pointer;
   font-size: 14px; font-weight: 600;
   transition: background 0.15s;
@@ -421,7 +421,7 @@ async function onRotate() {
 }
 .wb-share-modal__copy {
   padding: 8px 14px;
-  background: var(--accent); color: white;
+  background: var(--accent); color: var(--color-on-accent);
   border: none; border-radius: 6px; cursor: pointer;
   font-size: 12px; font-weight: 600;
   white-space: nowrap;

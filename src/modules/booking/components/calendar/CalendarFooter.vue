@@ -243,7 +243,7 @@ const copyBackupLink = async () => {
   gap: 8px;
   padding: 10px 16px;
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-size: 14px;

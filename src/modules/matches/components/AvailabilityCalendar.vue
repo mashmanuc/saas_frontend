@@ -218,7 +218,7 @@ onMounted(() => {
 .slot.selected {
   background: var(--primary);
   border-color: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .slot:hover {

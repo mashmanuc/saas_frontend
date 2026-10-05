@@ -260,7 +260,7 @@ function onColorChange(event: Event) {
 
 .text-properties__tool-btn--active {
   background: var(--wb-brand, #0066ff) !important;
-  color: #ffffff !important;
+  color: var(--color-on-accent) !important;
 }
 
 .text-properties__tool-btn:disabled {

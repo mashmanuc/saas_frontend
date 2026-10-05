@@ -192,7 +192,7 @@ onMounted(() => {
 
 .message.tutor .message-content {
   background: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .message-content p {
@@ -280,7 +280,7 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   background: var(--primary);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
   cursor: pointer;

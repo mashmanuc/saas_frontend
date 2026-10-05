@@ -222,7 +222,7 @@ function getHourCellStyle(hour: number) {
   align-items: center;
   justify-content: center;
   background: var(--color-primary, #3b82f6);
-  color: white;
+  color: var(--color-on-accent);
   border-radius: 50%;
 }
 

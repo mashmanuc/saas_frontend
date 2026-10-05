@@ -927,7 +927,7 @@ onBeforeUnmount(() => {
   margin-top: 1rem;
   padding: 0.5rem 1.25rem;
   background: var(--wb-brand, #047857);
-  color: #fff;
+  color: var(--color-on-accent);
   border-radius: 6px;
   text-decoration: none;
   font-size: 0.875rem;
@@ -1063,7 +1063,7 @@ onBeforeUnmount(() => {
 .wb-download-btn {
   padding: 0.375rem 1rem;
   background: var(--wb-primary, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 0.8125rem;
@@ -1079,7 +1079,7 @@ onBeforeUnmount(() => {
 .wb-replay-toggle-btn {
   padding: 0.375rem 1rem;
   background: var(--wb-primary, #2563eb);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 0.8125rem;

@@ -284,7 +284,7 @@ async function preflightCheck(cta: PrimaryCta): Promise<boolean> {
 
 .dashboard-hero__btn--low {
   background: var(--accent, #10b981);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .dashboard-hero__btn--low:hover {
   background: color-mix(in srgb, var(--accent, #10b981) 88%, #000);

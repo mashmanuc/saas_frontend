@@ -271,7 +271,7 @@ onMounted(fetchStudents)
 
 .wb-student-card__action:hover {
   background: var(--wb-brand, #0066ff);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .wb-skeleton-pulse {

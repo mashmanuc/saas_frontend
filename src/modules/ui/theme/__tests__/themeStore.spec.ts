@@ -28,6 +28,7 @@ describe('themeStore (consolidated)', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     document.documentElement.removeAttribute('data-theme')
+    document.documentElement.removeAttribute('data-dark-palette')
     document.documentElement.classList.remove('dark')
   })
 
@@ -79,6 +80,51 @@ describe('themeStore (consolidated)', () => {
       store.setTheme('light')
 
       expect(document.documentElement.classList.contains('dark')).toBe(false)
+    })
+  })
+
+  // Рішення власника 2026-10-05: «став тему Графіт, а Ліс запасна і прихована».
+  // «Графіт» — значення самої темної теми; «Нічний ліс» вмикається лише з localStorage.
+  describe('прихована запасна палітра темної теми', () => {
+    it('без прапорця темна тема — без data-dark-palette («Графіт»)', () => {
+      const store = useThemeStore()
+      store.setTheme('dark')
+
+      expect(document.documentElement.hasAttribute('data-dark-palette')).toBe(false)
+    })
+
+    it('dark_palette=forest вмикає «Нічний ліс» поверх темної теми', () => {
+      localStorageMock['dark_palette'] = 'forest'
+      const store = useThemeStore()
+      store.setTheme('dark')
+
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+      expect(document.documentElement.getAttribute('data-dark-palette')).toBe('forest')
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+    })
+
+    it('невідома палітра ігнорується', () => {
+      localStorageMock['dark_palette'] = 'neon'
+      const store = useThemeStore()
+      store.setTheme('dark')
+
+      expect(document.documentElement.hasAttribute('data-dark-palette')).toBe(false)
+    })
+
+    it('світла тема знімає палітру, навіть якщо прапорець лишився', () => {
+      localStorageMock['dark_palette'] = 'forest'
+      const store = useThemeStore()
+      store.setTheme('dark')
+      store.setTheme('light')
+
+      expect(document.documentElement.hasAttribute('data-dark-palette')).toBe(false)
+    })
+
+    it('у меню тем «Нічного лісу» немає', () => {
+      const store = useThemeStore()
+      store.setTheme('forest' as any)
+
+      expect(store.theme).toBe('light')
     })
   })
 

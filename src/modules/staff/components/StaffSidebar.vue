@@ -364,7 +364,7 @@ const route = useRoute()
 
 .nav-badge.danger {
   background: var(--danger-bg, #ef4444);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .sidebar-footer {

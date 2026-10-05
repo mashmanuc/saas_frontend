@@ -572,7 +572,7 @@ onMounted(loadPlans)
   gap: var(--space-xs);
   padding: var(--space-sm) var(--space-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -587,7 +587,7 @@ onMounted(loadPlans)
 .btn-retry {
   padding: var(--space-xs) var(--space-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -982,7 +982,7 @@ onMounted(loadPlans)
 .btn-submit {
   padding: var(--space-xs) var(--space-lg);
   background: var(--accent);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);

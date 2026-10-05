@@ -176,7 +176,7 @@ function handleDayClick(day: CalendarDay | null) {
 
 .day-cell.is-selected {
   background: var(--color-primary, #3b82f6);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .day-cell.is-selected .day-number {
@@ -208,12 +208,12 @@ function handleDayClick(day: CalendarDay | null) {
 
 .indicator.available {
   background: var(--color-success, #10b981);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .indicator.booked {
   background: var(--color-primary, #3b82f6);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 @media (max-width: 640px) {

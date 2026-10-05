@@ -211,7 +211,7 @@ onMounted(() => {
 
 .wb-text-overlay__btn--save {
   background: var(--color-primary, #2563eb);
-  color: white;
+  color: var(--color-on-accent);
   font-weight: 600;
   margin-left: auto;
 }

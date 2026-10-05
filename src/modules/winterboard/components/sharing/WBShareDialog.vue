@@ -669,7 +669,7 @@ onMounted(() => {
 .wb-share-dialog__copy-btn {
   padding: 8px 16px;
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 13px;
@@ -853,7 +853,7 @@ onMounted(() => {
   width: 100%;
   padding: 10px;
   background: var(--wb-brand, #0066FF);
-  color: #ffffff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -972,4 +972,16 @@ onMounted(() => {
     transition: none;
   }
 }
+
+/* Темна тема (Б-156, фаза 1): біле тло діалогу при світлому тексті теми — підписи
+   зникали. Тут — токени темної теми; світла тема не змінюється. */
+[data-theme="dark"] .wb-share-dialog {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .wb-share-dialog__select { background: var(--color-surface-sunken); }
+[data-theme="dark"] .wb-share-dialog__btn--cancel:hover { background: var(--color-border-strong); }
+[data-theme="dark"] .wb-share-badge--active { background: var(--color-success-soft); color: var(--color-success); }
+[data-theme="dark"] .wb-share-badge--expired { background: var(--color-warning-soft); color: var(--color-warning); }
+[data-theme="dark"] .wb-share-badge--revoked { background: var(--color-danger-soft); color: var(--color-danger); }
 </style>

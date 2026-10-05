@@ -307,7 +307,7 @@ const handleRefreshFilters = async () => {
 
 .btn-filters-toggle .badge {
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;

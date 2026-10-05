@@ -129,7 +129,7 @@ function goHome() {
   transition: all 0.15s ease;
   border: none;
   background: var(--color-accent, #6366f1);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .lesson-error-page__btn:hover {

@@ -1402,7 +1402,7 @@ onBeforeUnmount(() => {
   background: transparent; color: #cbd5e1; font-size: 20px; -webkit-tap-highlight-color: transparent;
 }
 .wb-remote__exit { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-size: 14px; min-height: 44px; }
-.wb-remote__exit--primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wb-remote__exit--primary { background: var(--accent); color: var(--color-on-accent); border-color: var(--accent); }
 .wb-remote__exit--danger { color: #fff; background: var(--danger); border-color: var(--danger); min-height: 52px; font-weight: 600; }
 
 /* Причина / підказка */
@@ -1518,7 +1518,7 @@ onBeforeUnmount(() => {
 .wb-remote__ai-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .wb-remote__ai-ready { color: var(--muted); font-size: 14px; }
 .wb-remote__ai-btn {
-  min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+  min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: var(--color-on-accent);
   font-size: 15px; font-weight: 600; -webkit-tap-highlight-color: transparent;
 }
 .wb-remote__ai-btn--quiet { background: var(--surface-2); color: var(--text); }
@@ -1530,7 +1530,7 @@ onBeforeUnmount(() => {
 }
 .wb-remote__ai-input:disabled { opacity: .6; }
 .wb-remote__ai-send {
-  flex: none; width: 52px; min-height: 48px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+  flex: none; width: 52px; min-height: 48px; border: 0; border-radius: 12px; background: var(--accent); color: var(--color-on-accent);
   font-size: 18px; -webkit-tap-highlight-color: transparent;
 }
 .wb-remote__ai-send:disabled { opacity: .4; }
@@ -1547,7 +1547,7 @@ onBeforeUnmount(() => {
 /* F. Говорю */
 .wb-remote__talk {
   margin-top: auto; min-height: 72px; border: 0; border-radius: 20px;
-  background: var(--accent); color: #fff; font-size: 18px; font-weight: 600;
+  background: var(--accent); color: var(--color-on-accent); font-size: 18px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; gap: 10px;
   -webkit-tap-highlight-color: transparent; touch-action: none;
 }

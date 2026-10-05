@@ -1,0 +1,196 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Темна тема — ПЕРЕХІДНИЙ МІСТ (фаза 1 контракту, Б-156, 2026-10-05).
+   Контракт: saas_docs/frontend/design-system/DARK_THEME_CONTRACT_2026-10-05.md
+
+   Що тут: усе, що змушує старий код малюватися токенами темної теми, поки компоненти
+   не переведено на канонічні --color-* (фази 2–4). Діє ЛИШЕ в темних темах —
+   світла й класична цього файлу не бачать.
+
+     1. Фантомні токени (вжиті компонентами, не оголошені в жодній темі) → канонічні.
+        Світла тема й далі бере їхній запасний колір — тому вони тут, а не в main.css.
+     2. Світлі утиліти Tailwind (bg-white, text-gray-*, статусні плашки) → токени.
+        Специфічність html[data-theme] + клас перекриває і утиліту, і її `dark:`-варіант:
+        одна палітра замість двох.
+     3. Типовий колір рамки (preflight Tailwind) → токен.
+
+   Новий код сюди НЕ додає — пише токенами. Файл зменшується з кожною фазою й зникає.
+   Чого НЕ чіпаємо: аркуш дошки та його вміст (папір), --ink* і --gc-* вендорних віджетів.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Фантомні токени → канонічні ── */
+html[data-theme="dark"] {
+  /* Поверхні */
+  --bg-card: var(--color-surface);
+  --bg-tertiary: var(--color-surface-sunken);
+  --cmdp-btn-bg: var(--color-surface-sunken);
+  --color-background: var(--color-page);
+  --color-background-mute: var(--color-surface-sunken);
+  --color-background-soft: var(--color-surface-sunken);
+  --color-skeleton: var(--color-surface-sunken);
+  --color-surface-alt: var(--color-surface-sunken);
+  --color-surface-hover: var(--color-hover);
+  --color-surface-secondary: var(--color-surface-sunken);
+  --color-surface-soft: var(--color-surface-sunken);
+  --hover-bg: var(--color-hover);
+  --skeleton-color: var(--color-surface-sunken);
+  --surface-1: var(--color-chrome);
+  --surface-2: var(--color-surface-sunken);
+  --surface-3: var(--color-surface-sunken);
+  --surface-base: var(--color-surface);
+  --surface-calendar: var(--color-surface);
+  --surface-hover: var(--color-hover);
+  --surface-input: var(--color-surface-sunken);
+  --surface-muted: var(--color-surface-sunken);
+  --surface-secondary: var(--color-surface-sunken);
+  --surface-subtle: var(--color-surface-sunken);
+  --wb-hover-bg: var(--color-hover);
+  --wb-panel-bg: var(--color-surface);
+  --wb-sidebar-bg: var(--color-chrome);
+  --wb-skeleton-from: var(--color-surface-sunken);
+  --wb-surface-alt: var(--color-surface-sunken);
+  /* Текст */
+  --color-text-body: var(--color-text);
+  --text-tertiary: var(--color-text-muted);
+  --wb-fg-muted: var(--color-text-muted);
+  --wb-text-tertiary: var(--color-text-muted);
+  /* Рамки */
+  --border: var(--color-border);
+  --border-secondary: var(--color-border);
+  --cmdp-border: var(--color-border);
+  --color-border-default: var(--color-border);
+  --color-border-hover: var(--color-border-strong);
+  --color-border-light: var(--color-border);
+  --color-border-soft: var(--color-border);
+  --lc-border: var(--color-border);
+  --wb-border-color: var(--color-border);
+  --wb-border-strong: var(--color-border-strong);
+  --wb-skeleton-to: var(--color-border-strong);
+  /* Акцент */
+  --accent-bg: var(--color-accent-soft);
+  --accent-bg-hover: var(--color-accent-soft);
+  --accent-subtle: var(--color-accent-soft);
+  --bg-brand: var(--color-accent);
+  --brand-primary: var(--color-accent);
+  --calendar-first-lesson-bg: var(--color-accent-soft);
+  --color-accent-light: var(--color-accent-soft);
+  --color-primary-dark: var(--color-accent-hover);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-subtle: var(--color-accent-soft);
+  --color-primary-text: var(--color-accent);
+  --primary: var(--color-accent);
+  --primary-bg: var(--color-accent-soft);
+  --primary-color: var(--color-accent);
+  --primary-hover: var(--color-accent-hover);
+  --wb-accent: var(--color-accent);
+  --wb-active-bg: var(--color-accent-soft);
+  --wb-brand-active: var(--color-accent-hover);
+  --wb-brand-light: var(--color-accent-soft);
+  /* Статуси */
+  --cmdp-error: var(--color-danger);
+  --color-danger-border: var(--color-danger);
+  --color-danger-dark: var(--color-danger);
+  --color-error-border: var(--color-danger);
+  --color-error-dark: var(--color-danger);
+  --color-error-text: var(--color-danger);
+  --color-info-border: var(--color-info);
+  --color-info-dark: var(--color-info);
+  --color-info-text: var(--color-info);
+  --color-success-border: var(--color-success);
+  --color-success-dark: var(--color-success);
+  --color-success-hover: var(--color-success);
+  --color-success-text: var(--color-success);
+  --color-warning-dark: var(--color-warning);
+  --color-warning-text: var(--color-warning);
+  --danger-border: var(--color-danger);
+  --danger-text: var(--color-danger);
+  --error: var(--color-danger);
+  --error-border: var(--color-danger);
+  --error-color: var(--color-danger);
+  --error-text: var(--color-danger);
+  --info: var(--color-info);
+  --info-border: var(--color-info);
+  --info-text: var(--color-info);
+  --success-hover: var(--color-success);
+  --success-text: var(--color-success);
+  --warning: var(--color-warning);
+  --warning-border: var(--color-warning);
+  --warning-dark: var(--color-warning);
+  --warning-hover: var(--color-warning);
+  --warning-text: var(--color-warning);
+  --wb-danger: var(--color-danger);
+  --wb-error-hover: var(--color-danger);
+  --wb-info-border: var(--color-info);
+  --wb-info-text: var(--color-info);
+  --wb-success: var(--color-success);
+  --wb-warning: var(--color-warning);
+  /* Статуси: тло */
+  --cmdp-notice-bg: var(--color-warning-soft);
+  --color-danger-light: var(--color-danger-soft);
+  --color-error-bg: var(--color-danger-soft);
+  --color-error-subtle: var(--color-danger-soft);
+  --color-info-bg: var(--color-info-soft);
+  --color-info-subtle: var(--color-info-soft);
+  --color-success-bg: var(--color-success-soft);
+  --color-success-subtle: var(--color-success-soft);
+  --color-warning-bg: var(--color-warning-soft);
+  --color-warning-lighter: var(--color-warning-soft);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-warning-subtle: var(--color-warning-soft);
+  --error-bg: var(--color-danger-soft);
+  --wb-error-bg: var(--color-danger-soft);
+  --wb-info-bg: var(--color-info-soft);
+  --wb-success-bg: var(--color-success-soft);
+}
+
+/* ── 2. Світлі утиліти Tailwind → токени ── */
+html[data-theme="dark"] .bg-white { background-color: var(--color-surface); }
+html[data-theme="dark"] :is(.bg-gray-50, .bg-slate-50) { background-color: var(--color-chrome); }
+html[data-theme="dark"] :is(.bg-gray-100, .bg-slate-100, .bg-gray-200, .bg-slate-200) { background-color: var(--color-surface-sunken); }
+html[data-theme="dark"] :is(.hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-slate-50, .hover\:bg-slate-100):hover { background-color: var(--color-hover); }
+html[data-theme="dark"] :is(.text-gray-900, .text-gray-800, .text-slate-900, .text-slate-800, .text-black) { color: var(--color-text); }
+html[data-theme="dark"] :is(.text-gray-700, .text-gray-600, .text-slate-700, .text-slate-600) { color: var(--color-text-secondary); }
+html[data-theme="dark"] :is(.text-gray-500, .text-gray-400, .text-gray-300, .text-slate-500, .text-slate-400) { color: var(--color-text-muted); }
+html[data-theme="dark"] :is(.border-gray-100, .border-gray-200, .border-gray-300, .border-slate-200, .border-slate-300) { border-color: var(--color-border); }
+html[data-theme="dark"] :is(.divide-gray-100, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border); }
+
+/* Статусні плашки: тло, текст і рамка однієї родини — завжди парою, щоб текст не зник */
+html[data-theme="dark"] :is(.bg-red-50, .bg-red-100) { background-color: var(--color-danger-soft); }
+html[data-theme="dark"] :is(.hover\:bg-red-50, .hover\:bg-red-100):hover { background-color: var(--color-danger-soft); }
+html[data-theme="dark"] :is(.text-red-600, .text-red-700, .text-red-800, .text-red-900) { color: var(--color-danger); }
+html[data-theme="dark"] :is(.border-red-100, .border-red-200, .border-red-300) { border-color: color-mix(in srgb, var(--color-danger) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-green-50, .bg-green-100) { background-color: var(--color-success-soft); }
+html[data-theme="dark"] :is(.hover\:bg-green-50, .hover\:bg-green-100):hover { background-color: var(--color-success-soft); }
+html[data-theme="dark"] :is(.text-green-600, .text-green-700, .text-green-800, .text-green-900) { color: var(--color-success); }
+html[data-theme="dark"] :is(.border-green-100, .border-green-200, .border-green-300) { border-color: color-mix(in srgb, var(--color-success) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-emerald-50, .bg-emerald-100) { background-color: var(--color-success-soft); }
+html[data-theme="dark"] :is(.hover\:bg-emerald-50, .hover\:bg-emerald-100):hover { background-color: var(--color-success-soft); }
+html[data-theme="dark"] :is(.text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900) { color: var(--color-success); }
+html[data-theme="dark"] :is(.border-emerald-100, .border-emerald-200, .border-emerald-300) { border-color: color-mix(in srgb, var(--color-success) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-yellow-50, .bg-yellow-100) { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.hover\:bg-yellow-50, .hover\:bg-yellow-100):hover { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.text-yellow-600, .text-yellow-700, .text-yellow-800, .text-yellow-900) { color: var(--color-warning); }
+html[data-theme="dark"] :is(.border-yellow-100, .border-yellow-200, .border-yellow-300) { border-color: color-mix(in srgb, var(--color-warning) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-amber-50, .bg-amber-100) { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.hover\:bg-amber-50, .hover\:bg-amber-100):hover { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900) { color: var(--color-warning); }
+html[data-theme="dark"] :is(.border-amber-100, .border-amber-200, .border-amber-300) { border-color: color-mix(in srgb, var(--color-warning) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-orange-50, .bg-orange-100) { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.hover\:bg-orange-50, .hover\:bg-orange-100):hover { background-color: var(--color-warning-soft); }
+html[data-theme="dark"] :is(.text-orange-600, .text-orange-700, .text-orange-800, .text-orange-900) { color: var(--color-warning); }
+html[data-theme="dark"] :is(.border-orange-100, .border-orange-200, .border-orange-300) { border-color: color-mix(in srgb, var(--color-warning) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-blue-50, .bg-blue-100) { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.hover\:bg-blue-50, .hover\:bg-blue-100):hover { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900) { color: var(--color-info); }
+html[data-theme="dark"] :is(.border-blue-100, .border-blue-200, .border-blue-300) { border-color: color-mix(in srgb, var(--color-info) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-sky-50, .bg-sky-100) { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.hover\:bg-sky-50, .hover\:bg-sky-100):hover { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.text-sky-600, .text-sky-700, .text-sky-800, .text-sky-900) { color: var(--color-info); }
+html[data-theme="dark"] :is(.border-sky-100, .border-sky-200, .border-sky-300) { border-color: color-mix(in srgb, var(--color-info) 35%, transparent); }
+html[data-theme="dark"] :is(.bg-indigo-50, .bg-indigo-100) { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.hover\:bg-indigo-50, .hover\:bg-indigo-100):hover { background-color: var(--color-info-soft); }
+html[data-theme="dark"] :is(.text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900) { color: var(--color-info); }
+html[data-theme="dark"] :is(.border-indigo-100, .border-indigo-200, .border-indigo-300) { border-color: color-mix(in srgb, var(--color-info) 35%, transparent); }
+
+/* ── 3. Типовий колір рамки (Tailwind preflight дає світло-сірий) ──
+   :where() — нульова специфічність: будь-який border-* чи колір компонента сильніший. */
+:where(html[data-theme="dark"]) :where(*, ::before, ::after) { border-color: var(--color-border); }

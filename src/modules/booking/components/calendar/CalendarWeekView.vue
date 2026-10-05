@@ -1058,7 +1058,7 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 .toggle-btn.active {
   border-color: var(--accent);
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .calendar-v055-layout {

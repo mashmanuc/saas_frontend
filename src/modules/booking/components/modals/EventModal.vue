@@ -579,7 +579,7 @@ function cancelDelete() {
 .duration-btn.active {
   border-color: var(--accent);
   background: var(--accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .field-readonly {

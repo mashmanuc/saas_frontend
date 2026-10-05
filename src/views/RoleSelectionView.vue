@@ -577,7 +577,7 @@ async function changeLanguage(langCode: string) {
 .beta-badge {
   font-size: 0.65rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--accent);
   border-radius: 4px;
   padding: 2px 7px;
@@ -1073,7 +1073,7 @@ async function changeLanguage(langCode: string) {
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
-  color: white;
+  color: var(--color-on-accent);
   transition: transform 0.3s ease;
 }
 
@@ -1291,7 +1291,7 @@ async function changeLanguage(langCode: string) {
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, var(--accent), var(--info-bg));
-  color: white;
+  color: var(--color-on-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1347,7 +1347,7 @@ async function changeLanguage(langCode: string) {
   align-items: center;
   justify-content: center;
   margin: 0 auto 1.5rem;
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .benefit-title {
@@ -1630,7 +1630,7 @@ async function changeLanguage(langCode: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--color-on-accent);
   margin-bottom: 1rem;
 }
 

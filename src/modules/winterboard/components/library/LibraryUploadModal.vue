@@ -508,7 +508,7 @@ function statusLabel(status: UploadStatus): string {
 
 .wb-upload-modal__btn--upload {
   background: var(--wb-brand, #0066ff);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .wb-upload-modal__btn--upload:hover:not(:disabled) {

@@ -175,4 +175,20 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
 @media (max-width: 720px) {
   .wb-remote-connect__body { grid-template-columns: 1fr; }
 }
+
+/* Темна тема (Б-156, фаза 1): сторінка намальована жорсткими світлими кольорами —
+   заголовок і підписи зливалися з темним тлом. Тут — токени темної теми; світла
+   тема не змінюється. Картка з QR лишається білою: код сканує камера телефона. */
+[data-theme="dark"] .wb-remote-connect { color: var(--color-text); }
+[data-theme="dark"] .wb-remote-connect__back,
+[data-theme="dark"] .wb-remote-connect__lead,
+[data-theme="dark"] .wb-remote-connect__board--none { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-remote-connect__during,
+[data-theme="dark"] .wb-remote-connect__here,
+[data-theme="dark"] .wb-remote-connect__board--checking { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-remote-connect__card { background: var(--color-surface); border-color: var(--color-border); }
+[data-theme="dark"] .wb-remote-connect__card--qr { background: #fff; color: #0f172a; }
+[data-theme="dark"] .wb-remote-connect__board--active { color: var(--color-success); }
+[data-theme="dark"] .wb-remote-connect__board--error { color: var(--color-danger); }
+[data-theme="dark"] .wb-remote-connect__lessons { background: var(--color-accent); color: var(--color-on-accent); }
 </style>
