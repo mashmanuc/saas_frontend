@@ -123,6 +123,52 @@ function _leastOverlapSpot(rects, w, h, pw, ph) {
   return best
 }
 
+// Розмір картинки на дошці: вписати в 480 по ширині, зберігши пропорції; без розмірів —
+// квадрат 360, канва сама підтягне після завантаження. Спільне для `add_image` і місця,
+// яке їй лишає довідка (Б-146): обидва мусять дати той самий розмір.
+const IMAGE_MAX_W = 480
+function _imageBoardSize(w, h) {
+  const width = Number(w) || 0
+  const height = Number(h) || 0
+  if (width > 0 && height > 0) {
+    const k = Math.min(1, IMAGE_MAX_W / width)
+    return { width: Math.round(width * k), height: Math.round(height * k) }
+  }
+  return { width: 360, height: 360 }
+}
+
+const CARD_W = 520
+
+/**
+ * Б-146 (власник 2026-10-05: «картинку ліворуч, текст праворуч»): довідка з картинкою.
+ * Шукаємо вільну смугу під картинку й картку щонайменше звичайної ширини; картка бере всю
+ * вільну ширину праворуч від картинки — до краю аркуша чи найближчого об'єкта в її смузі.
+ * Смуги немає — `null`, і картка лягає як завжди (без пари).
+ */
+function _imageLeftLayout(page, image) {
+  const { pw, ph } = _pageSize(page)
+  const rects = _occupied(page)
+  const img = _imageBoardSize(image?.w, image?.h)
+  // Під картинкою — той самий проміжок 40, що лишає `add_image`; картка — звичайний резерв.
+  const need = Math.max(img.height + PLACE_GAP, _reserveFor(380, 440, ph))
+  const spot = findFreeSpot(rects, img.width + PLACE_GAP + CARD_W, need, pw, ph)
+  if (!spot) return null
+  const cardX = spot.x + img.width + PLACE_GAP
+  let right = pw - PLACE_MARGIN
+  for (const r of rects) {
+    const inBand = r.y < spot.y + need + PLACE_GAP / 2 && r.y + r.h > spot.y - PLACE_GAP / 2
+    if (inBand && r.x >= cardX) right = Math.min(right, r.x - PLACE_GAP / 2)
+  }
+  return {
+    image: { x: spot.x, y: spot.y, w: img.width, h: img.height },
+    card: { x: cardX, y: spot.y, w: Math.max(CARD_W, Math.round(right - cardX)) },
+  }
+}
+
+// Б-146: місце, яке картка довідки лишила картинці. Живе рівно до наступної дії — картинку
+// кладе наступний крок того самого плану (сервер шле [add_card, add_image]).
+let _imageLeftSlot = null
+
 /**
  * Центр для нового об'єкта `w`×`h` (усі обробники рахують x/y від центру).
  * `reserveH` — скільки він займе після підгонки під вміст.
@@ -574,18 +620,16 @@ const HANDLERS = {
     if (!src || typeof src !== 'string') throw new Error('Немає адреси картинки.')
     if (!source_url) throw new Error('Картинка без джерела на дошку не йде.')
     const { store, page } = await _store(ctx)
-    const MAX_W = 480
-    let width = Number(w) || 0
-    let height = Number(h) || 0
-    if (width > 0 && height > 0) {
-      const k = Math.min(1, MAX_W / width)
-      width = Math.round(width * k); height = Math.round(height * k)
-    } else {
-      width = 360; height = 360
-    }
+    const { width, height } = _imageBoardSize(w, h)
+    // Б-146: картка довідки (попередній крок) лишила місце ліворуч від себе — саме цій картинці.
+    const slot = _imageLeftSlot
+    _imageLeftSlot = null
+    const inSlot = slot && slot.pageId === (page.id ?? '') && slot.w === width && slot.h === height
     // Проміжок 40 під картинкою лишається (колись там був підпис джерела): розкладка
     // й FOOTPRINT від прибирання підпису не змінюються.
-    const { cx, cy } = _center(page, width, height, height + 40)
+    const { cx, cy } = inSlot
+      ? { cx: slot.x + Math.round(width / 2), cy: slot.y + Math.round(height / 2) }
+      : _center(page, width, height, height + 40)
     const assetId = _uuid()
     // LAW §9 v1.22 (власник 2026-09-29): атрибуція — у ДАНИХ картинки, а не штрихом під
     // нею. На дошці її показує маленька кнопка «Джерело» в куті (SourceBadge), у PNG/PDF —
@@ -762,9 +806,15 @@ const HANDLERS = {
     }, page.id ?? '')
   },
 
-  async add_card({ title, body, badge, preset, corridor, sources, source_status, math_content }, ctx) {
+  async add_card({ title, body, badge, preset, corridor, sources, source_status, math_content, image_left }, ctx) {
     const { store, page } = await _store(ctx)
-    const { cx, cy } = _center(page, 520, 380, 440)
+    // Б-146: довідка з Вікіпедії з картинкою (`image_left` — її розмір): картка праворуч на всю
+    // вільну ширину, картинці — місце ліворуч. Місця для пари немає — звичайна картка.
+    const pair = image_left ? _imageLeftLayout(page, image_left) : null
+    const { cx, cy } = pair
+      ? { cx: pair.card.x + pair.card.w / 2, cy: pair.card.y + 190 }
+      : _center(page, CARD_W, 380, 440)
+    const cardW = pair ? pair.card.w : CARD_W
     const assetId = _uuid()
     const badgeValue = badge || ''
     const titleValue = title || ''
@@ -773,9 +823,9 @@ const HANDLERS = {
       id: assetId,
       type: 'theory_card',
       src: '',
-      x: cx - 260,
+      x: Math.round(cx - cardW / 2),
       y: cy - 190,
-      w: 520,
+      w: cardW,
       h: 380,
       rotation: 0,
       locked: false,
@@ -783,6 +833,8 @@ const HANDLERS = {
       // шляху: модель кладе сюди переважно розв'язки, а не теорію.
       data: { version: 1, badge: badgeValue, title: titleValue, body: bodyValue, formulas: [], ...withMathContent(math_content), ...(preset ? { preset } : {}), ...corridorData(corridor), ...sourcesData(sources, source_status) },
     }, page.id ?? '')
+    // Б-146: картинці довідки (наступний крок плану) — місце ліворуч від картки.
+    _imageLeftSlot = pair ? { pageId: page.id ?? '', ...pair.image } : null
     // E2: запам'ятовуємо ВЛАСНУ картку — саме її дозволено виправляти.
     // LAW §9 v1.20: картка з пульта — на підготовчій сторінці; «остання картка» вікна — лише з вікна
     if (!ctx?.pageId) _lastAiCard = { assetId, pageId: page.id ?? '' }
@@ -1360,6 +1412,8 @@ export async function runBoardAction(action, ctx = null) {
   const checked = prepareServerActions([action])[0]
   const handler = HANDLERS[checked?.kind]
   if (!handler) throw new Error('Ця дія на дошці ще не підтримується.')  // fail-closed
+  // Б-146: місце, яке картка довідки лишила картинці, — лише для НАСТУПНОЇ дії.
+  if (checked.kind !== 'add_image') _imageLeftSlot = null
   await handler(checked.payload || {}, ctx)
 }
 
