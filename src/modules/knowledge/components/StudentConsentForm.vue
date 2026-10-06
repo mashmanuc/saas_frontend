@@ -1,11 +1,11 @@
 <template>
-  <div class="border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 bg-yellow-50 dark:bg-yellow-900/20">
-    <h4 class="font-semibold mb-3 flex items-center gap-2 text-yellow-800 dark:text-yellow-200 text-sm">
+  <div class="border border-yellow-300 rounded-lg p-4 bg-yellow-50">
+    <h4 class="font-semibold mb-3 flex items-center gap-2 text-yellow-800 text-sm">
       <Shield :size="16" />
       {{ t('knowledge.publish.consent.title') }}
     </h4>
 
-    <label class="flex items-center gap-2 mb-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+    <label class="flex items-center gap-2 mb-2 text-sm text-gray-700 cursor-pointer">
       <input
         type="checkbox"
         :checked="modelValue.hasStudentData"
@@ -16,7 +16,7 @@
     </label>
 
     <div v-if="modelValue.hasStudentData" class="ml-6 space-y-2 mt-2">
-      <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+      <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
         <input
           type="checkbox"
           :checked="modelValue.studentConsented"
@@ -25,7 +25,7 @@
         />
         {{ t('knowledge.publish.consent.studentConsented') }}
       </label>
-      <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+      <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
         <input
           type="checkbox"
           :checked="modelValue.anonymize"
@@ -36,7 +36,7 @@
       </label>
       <p
         v-if="modelValue.hasStudentData && !modelValue.studentConsented && !modelValue.anonymize"
-        class="text-red-500 dark:text-red-400 text-sm flex items-center gap-1"
+        class="text-red-500 text-sm flex items-center gap-1"
         role="alert"
       >
         <AlertTriangle :size="14" />

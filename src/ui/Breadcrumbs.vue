@@ -2,7 +2,7 @@
   <nav
     v-if="items.length > 0"
     aria-label="Breadcrumb"
-    class="text-sm text-gray-500 dark:text-gray-400 mb-4"
+    class="text-sm text-gray-500 mb-4"
   >
     <ol class="flex items-center gap-1 flex-wrap">
       <li
@@ -13,19 +13,19 @@
         <ChevronRight
           v-if="index > 0"
           :size="14"
-          class="text-gray-400 dark:text-gray-500"
+          class="text-gray-400"
           aria-hidden="true"
         />
         <router-link
           v-if="item.to"
           :to="item.to"
-          class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          class="hover:text-gray-700 transition-colors"
         >
           {{ item.label }}
         </router-link>
         <span
           v-else
-          class="text-gray-700 dark:text-gray-200 font-medium"
+          class="text-gray-700 font-medium"
           aria-current="page"
         >
           {{ item.label }}

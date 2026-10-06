@@ -34,11 +34,11 @@
           
           <!-- Phase 1 v0.87: Contact Info Fields (якщо немає в профілі) -->
           <div v-if="!hasContactInfo" class="contact-info-section mb-4">
-            <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30 mb-4">
-              <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">
+            <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
+              <h4 class="text-sm font-semibold text-blue-900 mb-1">
                 {{ $t('inquiry.contactInfo.title') }}
               </h4>
-              <p class="text-sm text-blue-800 dark:text-blue-300">
+              <p class="text-sm text-blue-800">
                 {{ $t('inquiry.contactInfo.description') }}
               </p>
             </div>

@@ -1,24 +1,24 @@
 <template>
   <div
     v-if="!isDismissed"
-    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 transition-opacity duration-200"
+    class="bg-blue-50 border border-blue-200 rounded-lg p-4 transition-opacity duration-200"
     role="complementary"
     :aria-label="t('knowledge.terms.title')"
   >
     <div class="flex justify-between items-start">
-      <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-1.5">
-        <Lightbulb :size="16" class="text-blue-600 dark:text-blue-400" />
+      <h3 class="font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+        <Lightbulb :size="16" class="text-blue-600" />
         {{ t('knowledge.terms.title') }}
       </h3>
       <button
         @click="dismiss"
-        class="text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 p-0.5 rounded transition-colors"
+        class="text-blue-400 hover:text-blue-600 p-0.5 rounded transition-colors"
         :aria-label="t('knowledge.terms.hide')"
       >
         <X :size="16" />
       </button>
     </div>
-    <ul class="space-y-1.5 text-sm text-blue-700 dark:text-blue-300">
+    <ul class="space-y-1.5 text-sm text-blue-700">
       <li class="flex gap-2">
         <BookOpen :size="14" class="flex-shrink-0 mt-0.5" />
         <span>{{ t('knowledge.terms.lesson') }}</span>

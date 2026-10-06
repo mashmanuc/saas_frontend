@@ -77,7 +77,7 @@
       <p>{{ $t('users.avatar.maxSize') }}: 5MB</p>
     </div>
 
-    <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
+    <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700">
       {{ errorMessage }}
     </div>
   </div>

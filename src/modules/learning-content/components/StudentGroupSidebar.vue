@@ -27,10 +27,10 @@ function selectGroup(groupId: string) {
 </script>
 
 <template>
-  <aside class="student-group-sidebar w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full overflow-y-auto">
+  <aside class="student-group-sidebar w-64 border-r border-gray-200 bg-white h-full overflow-y-auto">
     <!-- Header -->
-    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+    <div class="px-4 py-3 border-b border-gray-200">
+      <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">
         {{ t('learningContent.groups.sidebarTitle') }}
       </h3>
     </div>
@@ -43,7 +43,7 @@ function selectGroup(groupId: string) {
     <template v-else>
       <!-- ── Учні (Implicit Groups) ──────────────────────── -->
       <div v-if="store.implicitGroups.length > 0" class="py-2">
-        <p class="px-4 py-1 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <p class="px-4 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
           {{ t('learningContent.groups.sidebarStudents') }}
         </p>
         <button
@@ -51,8 +51,8 @@ function selectGroup(groupId: string) {
           :key="group.id"
           class="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors"
           :class="modelValue === group.id
-            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-r-2 border-indigo-600'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+            ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600'
+            : 'text-gray-700 hover:bg-gray-50'"
           @click="selectGroup(group.id)"
         >
           <!-- Avatar placeholder -->
@@ -71,7 +71,7 @@ function selectGroup(groupId: string) {
 
       <!-- ── Групи (Explicit Groups) ────────────────────── -->
       <div class="py-2">
-        <p class="px-4 py-1 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <p class="px-4 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
           {{ t('learningContent.groups.sidebarGroups') }}
         </p>
         <button
@@ -79,8 +79,8 @@ function selectGroup(groupId: string) {
           :key="group.id"
           class="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors"
           :class="modelValue === group.id
-            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-r-2 border-indigo-600'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+            ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600'
+            : 'text-gray-700 hover:bg-gray-50'"
           @click="selectGroup(group.id)"
         >
           <!-- Group icon -->
@@ -98,10 +98,10 @@ function selectGroup(groupId: string) {
 
         <!-- + Create group -->
         <button
-          class="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
           @click="emit('create-group')"
         >
-          <span class="flex-shrink-0 w-8 h-8 rounded-full border-2 border-dashed border-indigo-300 dark:border-indigo-600 flex items-center justify-center">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full border-2 border-dashed border-indigo-300 flex items-center justify-center">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>

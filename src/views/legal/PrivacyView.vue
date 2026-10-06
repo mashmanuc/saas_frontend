@@ -8,7 +8,7 @@
         </p>
       </div>
 
-      <div class="prose prose-slate max-w-none dark:prose-invert">
+      <div class="prose prose-slate max-w-none">
         <section v-for="s in sections" :key="s">
           <h2>{{ $t(`legal.privacy.${s}.title`) }}</h2>
           <!-- $tm = сирий рядок (legal-HTML з '@' ламав vue-i18n compiler у прод → blank) -->

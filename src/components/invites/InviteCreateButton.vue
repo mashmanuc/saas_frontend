@@ -27,7 +27,7 @@
         <div class="absolute inset-0 bg-black/50" @click="closeModal" />
 
         <!-- Modal -->
-        <div class="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-surface-dark">
+        <div class="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
           <!-- Header -->
           <div class="mb-5 flex items-center justify-between">
             <h3 class="text-lg font-bold text-body">{{ $t('invites.shareTitle') }}</h3>
@@ -60,8 +60,8 @@
                 type="button"
                 class="flex items-center gap-1.5 rounded-r-lg border px-3 text-sm font-medium transition"
                 :class="copied
-                  ? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/30 dark:text-green-400'
-                  : 'border-border-subtle bg-white text-muted hover:bg-surface-soft hover:text-body dark:bg-surface-dark'"
+                  ? 'border-green-400 bg-green-50 text-green-700'
+                  : 'border-border-subtle bg-white text-muted hover:bg-surface-soft hover:text-body'"
                 @click="copyToClipboard"
               >
                 <!-- Checkmark icon (copied) -->

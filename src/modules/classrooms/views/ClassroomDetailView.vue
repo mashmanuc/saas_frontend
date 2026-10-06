@@ -38,7 +38,7 @@
               </svg>
             </button>
           </h1>
-          <p v-if="classroom?.classroom_type" class="text-gray-500 text-sm dark:text-gray-400">
+          <p v-if="classroom?.classroom_type" class="text-gray-500 text-sm">
             {{ typeLabel }}
           </p>
         </div>
@@ -47,7 +47,7 @@
           v-if="classroom && !classroom.is_default"
           variant="ghost"
           size="sm"
-          class="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+          class="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
           :disabled="deleting"
           :loading="deleting"
           @click="confirmDeleteClassroom"
@@ -59,7 +59,7 @@
 
     <!-- Список учнів -->
     <Card>
-      <div v-if="loading" class="text-sm text-gray-500 dark:text-gray-400">
+      <div v-if="loading" class="text-sm text-gray-500">
         {{ $t('loader.loading') }}
       </div>
 
@@ -89,14 +89,14 @@
               <Avatar :text="student.display_name || student.name || student.email" size="sm" />
               <div class="flex flex-col">
                 <span class="text-sm font-medium text-foreground">{{ student.display_name || student.name }}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ student.email }}</span>
+                <span class="text-xs text-gray-500">{{ student.email }}</span>
               </div>
             </div>
 
             <Button
               variant="ghost"
               size="sm"
-              class="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              class="text-red-500 hover:text-red-700 hover:bg-red-50"
               :disabled="removingId === student.id"
               :loading="removingId === student.id"
               @click="confirmRemoveStudent(student)"
@@ -106,7 +106,7 @@
           </li>
         </ul>
 
-        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+        <p v-else class="text-sm text-gray-500">
           {{ $t('classroom.detail.empty') }}
         </p>
       </div>

@@ -29,11 +29,11 @@
         </Button>
       </div>
 
-      <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
-        <h4 class="font-medium text-red-900 dark:text-red-100">
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+        <h4 class="font-medium text-red-900">
           {{ $t('users.settings.privacy.dangerZone') }}
         </h4>
-        <p class="mt-1 text-sm text-red-800 dark:text-red-200">
+        <p class="mt-1 text-sm text-red-800">
           {{ $t('users.settings.privacy.dangerZoneDescription') }}
         </p>
         <Button

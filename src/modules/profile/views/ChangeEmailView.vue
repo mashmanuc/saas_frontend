@@ -5,11 +5,11 @@
       <p class="text-sm text-muted-foreground">{{ $t('userProfile.changeEmail.subtitle') }}</p>
     </Card>
 
-    <Card v-if="error" class="border-red-200 bg-red-50 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+    <Card v-if="error" class="border-red-200 bg-red-50 text-sm text-red-700">
       {{ error }}
     </Card>
 
-    <Card v-if="success" class="border-green-200 bg-green-50 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-200">
+    <Card v-if="success" class="border-green-200 bg-green-50 text-sm text-green-700">
       {{ success }}
     </Card>
 

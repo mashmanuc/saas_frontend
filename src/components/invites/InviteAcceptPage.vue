@@ -9,19 +9,19 @@
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center dark:border-red-800 dark:bg-red-900/20">
-      <p class="text-sm font-medium text-red-800 dark:text-red-300">
+    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center">
+      <p class="text-sm font-medium text-red-800">
         {{ $t(`invites.errors.${error.toLowerCase()}`, $t('invites.errors.unknown')) }}
       </p>
       <!-- Той самий глухий кут, що й у неактивного запрошення: сказати, що робити. -->
-      <p class="mt-1 text-xs text-red-700 opacity-90 dark:text-red-400">
+      <p class="mt-1 text-xs text-red-700 opacity-90">
         {{ $t('invites.detail.askNewHint') }}
       </p>
     </div>
 
     <!-- Success (existing student bond) -->
-    <div v-else-if="acceptResult" class="rounded-2xl border border-border-subtle bg-white p-8 text-center shadow-lg dark:bg-surface-dark">
-      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30">
+    <div v-else-if="acceptResult" class="rounded-2xl border border-border-subtle bg-white p-8 text-center shadow-lg">
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Invite details (before accept) -->
-    <div v-else-if="invite" class="rounded-2xl border border-border-subtle bg-white p-6 shadow-lg dark:bg-surface-dark">
+    <div v-else-if="invite" class="rounded-2xl border border-border-subtle bg-white p-6 shadow-lg">
       <!-- Tutor info -->
       <div class="mb-6 text-center">
         <img
@@ -68,7 +68,7 @@
       <!-- Status warnings (inactive invite) -->
       <div
         v-if="!invite.is_active"
-        class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+        class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800"
       >
         <p class="font-medium">
           <template v-if="invite.status === 'expired'">{{ $t('invites.detail.expired') }}</template>
@@ -109,13 +109,13 @@
         <!-- Authenticated non-student (напр. репетитор) → пояснення, бонд як учень неможливий -->
         <div
           v-else-if="auth.user"
-          class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-center dark:border-amber-800 dark:bg-amber-900/20"
+          class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-center"
         >
-          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">{{ $t('invites.detail.notStudentTitle') }}</p>
-          <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">{{ $t('invites.detail.notStudentHint', { email: auth.user.email }) }}</p>
+          <p class="text-sm font-semibold text-amber-800">{{ $t('invites.detail.notStudentTitle') }}</p>
+          <p class="mt-1 text-xs text-amber-700">{{ $t('invites.detail.notStudentHint', { email: auth.user.email }) }}</p>
           <button
             type="button"
-            class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-amber-400 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/40"
+            class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-amber-400 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
             @click="handleSwitchAccount"
           >
             {{ $t('invites.detail.switchAccount') }}
@@ -130,7 +130,7 @@
             <input
               v-model="form.email" type="email" autocomplete="email" required
               :placeholder="$t('invites.register.email')"
-              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark"
+              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
             <p v-if="fieldErrors?.email" class="mt-1 text-xs text-red-600">{{ fieldErrors.email[0] }}</p>
           </div>
@@ -139,13 +139,13 @@
             <input
               v-model="form.password" type="password" autocomplete="new-password" required
               :placeholder="$t('invites.register.password')"
-              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark"
+              class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
             <p v-if="fieldErrors?.password" class="mt-1 text-xs text-red-600">{{ fieldErrors.password[0] }}</p>
           </div>
 
           <input v-model="form.full_name" :placeholder="$t('invites.register.fullName')" autocomplete="name"
-            class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none dark:bg-surface-dark" />
+            class="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm focus:border-accent focus:outline-none" />
 
           <!-- Consents (INV-INVITE-4 — обов'язкові) -->
           <div class="flex flex-col gap-1.5 pt-1">

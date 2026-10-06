@@ -2,13 +2,13 @@
   <div class="space-y-4">
     <Card class="space-y-2">
       <h1 class="text-2xl font-semibold">{{ $t('classroom.list.title') }}</h1>
-      <p class="text-gray-500 text-sm dark:text-gray-400">
+      <p class="text-gray-500 text-sm">
         <!-- Опис можна розширити пізніше -->
       </p>
     </Card>
 
     <Card>
-      <div v-if="loading" class="text-sm text-gray-500 dark:text-gray-400">
+      <div v-if="loading" class="text-sm text-gray-500">
         {{ $t('loader.loading') }}
       </div>
 
@@ -19,7 +19,7 @@
       <div v-else>
         <table v-if="classrooms.length" class="min-w-full text-sm">
           <thead>
-            <tr class="border-b border-border-subtle text-left text-xs uppercase text-gray-500 dark:text-gray-400">
+            <tr class="border-b border-border-subtle text-left text-xs uppercase text-gray-500">
               <th class="py-2 pr-4">{{ $t('classroom.list.name') }}</th>
               <th class="py-2 pr-4">{{ $t('classroom.list.studentsCount') }}</th>
               <th class="py-2 pr-4"></th>
@@ -34,7 +34,7 @@
               <td class="py-2 pr-4 font-medium text-foreground">
                 {{ classroom.name || classroom.title || `#${classroom.id}` }}
               </td>
-              <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
+              <td class="py-2 pr-4 text-gray-600">
                 {{ classroom.students_count ?? classroom.studentsCount ?? 0 }}
               </td>
               <td class="py-2 pr-4 text-right">
@@ -46,7 +46,7 @@
           </tbody>
         </table>
 
-        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+        <p v-else class="text-sm text-gray-500">
           {{ $t('classroom.list.empty') }}
         </p>
       </div>

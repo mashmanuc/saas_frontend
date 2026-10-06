@@ -46,7 +46,7 @@
       </div>
     </Card>
 
-    <Card v-if="errorMessage" class="border-red-200 bg-red-50 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+    <Card v-if="errorMessage" class="border-red-200 bg-red-50 text-sm text-red-700">
       {{ errorMessage }}
     </Card>
 
@@ -156,7 +156,7 @@ const autosaveBadgeClass = computed(() => {
     case 'saving':
       return 'border-accent text-accent bg-accent/10'
     case 'error':
-      return 'border-red-400 text-red-500 bg-red-100 dark:bg-red-500/10'
+      return 'border-red-400 text-red-500 bg-red-100'
     case 'restored':
       return 'border-emerald-400 text-emerald-500 bg-emerald-500/10'
     case 'rate_limited':

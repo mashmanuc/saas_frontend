@@ -7,7 +7,7 @@
     <h3 class="text-base font-semibold text-foreground truncate w-full">
       {{ title || `#${id}` }}
     </h3>
-    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+    <p class="mt-2 text-sm text-gray-500">
       {{ studentsCount }} {{ $t('classroom.card.students') }}
     </p>
   </button>

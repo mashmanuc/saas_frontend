@@ -54,7 +54,7 @@
       </Button>
     </div>
 
-    <div v-else class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+    <div v-else class="flex items-center gap-2 text-sm text-green-600">
       <span class="text-lg">✓</span>
       <span>{{ $t('users.profile.completeness.complete') }}</span>
     </div>

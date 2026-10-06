@@ -6,7 +6,7 @@
       <Avatar :text="displayName || email" size="sm" />
       <div class="flex flex-col">
         <span class="text-sm font-medium text-foreground">{{ displayName }}</span>
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ email }}</span>
+        <span class="text-xs text-gray-500">{{ email }}</span>
       </div>
     </div>
 

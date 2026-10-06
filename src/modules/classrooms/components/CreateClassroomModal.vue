@@ -2,7 +2,7 @@
   <Modal :open="modelValue" :title="$t('classroom.create.title')" @close="handleCancel">
     <div class="space-y-4">
       <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400" for="classroom-name">
+        <label class="block text-xs font-medium text-gray-600" for="classroom-name">
           {{ $t('classroom.create.nameLabel') }}
         </label>
         <input
@@ -18,7 +18,7 @@
       </div>
 
       <div class="space-y-1">
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400" for="classroom-type">
+        <label class="block text-xs font-medium text-gray-600" for="classroom-type">
           {{ $t('classroom.create.typeLabel') }}
         </label>
         <select

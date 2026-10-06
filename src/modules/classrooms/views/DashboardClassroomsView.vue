@@ -6,7 +6,7 @@
           <h1 class="text-2xl font-semibold">
             {{ $t('classroom.dashboard.title') }}
           </h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-sm text-gray-500">
             {{ $t('classroom.dashboard.subtitle') }}
           </p>
         </div>
@@ -49,7 +49,7 @@
 
         <p
           v-if="!classrooms.length && !error"
-          class="text-sm text-gray-500 dark:text-gray-400 col-span-full"
+          class="text-sm text-gray-500 col-span-full"
         >
           {{ $t('classroom.dashboard.empty') }}
         </p>

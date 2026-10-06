@@ -41,7 +41,7 @@
     </div>
 
     <div v-else-if="billingStore.lastError && !billingStore.me" class="space-y-4">
-      <Card class="border-red-200 bg-red-50 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+      <Card class="border-red-200 bg-red-50 text-sm text-red-700">
         <div class="space-y-2">
           <p class="font-semibold">{{ $t('billing.errors.loadFailed') }}</p>
           <p>{{ billingStore.lastError.message }}</p>

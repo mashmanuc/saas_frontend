@@ -137,13 +137,13 @@ const statusMessage = computed(() => {
 
 function getStatusClass(status: string | undefined): string {
   const classes = {
-    none: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+    none: 'bg-gray-100 text-gray-800',
     active: 'bg-success-light text-success-dark',
     past_due: 'bg-danger-light text-danger',
     canceled: 'bg-warning-light text-warning-dark',
-    expired: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+    expired: 'bg-gray-100 text-gray-800',
     incomplete: 'bg-warning-light text-warning-dark',
-    trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    trialing: 'bg-blue-100 text-blue-800',
     unpaid: 'bg-danger-light text-danger'
   }
   return classes[status as keyof typeof classes] || classes.none

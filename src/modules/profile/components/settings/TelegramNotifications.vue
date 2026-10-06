@@ -22,14 +22,14 @@
 
     <!-- State: Connected -->
     <template v-else-if="status?.connected">
-      <div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
+      <div class="rounded-lg border border-green-200 bg-green-50 p-4">
         <div class="flex items-center gap-2">
-          <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium text-green-700 dark:text-green-300">{{ t('users.settings.telegram.connected') }}</span>
+          <span class="font-medium text-green-700">{{ t('users.settings.telegram.connected') }}</span>
         </div>
-        <p v-if="status?.connected_at" class="mt-1 text-sm text-green-600 dark:text-green-400">
+        <p v-if="status?.connected_at" class="mt-1 text-sm text-green-600">
           {{ t('users.settings.telegram.connectedAt', { date: formatDate(status.connected_at) }) }}
         </p>
       </div>
@@ -123,7 +123,7 @@
     </template>
 
     <!-- Error -->
-    <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
+    <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700">
       {{ errorMessage }}
     </div>
   </div>

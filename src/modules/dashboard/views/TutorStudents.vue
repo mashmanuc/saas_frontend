@@ -124,7 +124,7 @@
                   </span>
                   <span
                     v-if="relation.status === 'active'"
-                    class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                    class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
                     :data-test="`relation-status-${getRelationId(relation)}`"
                   >
                     <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
@@ -139,13 +139,13 @@
                   </span>
                   <span
                     v-if="relation.student?.is_demo"
-                    class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                    class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800"
                   >
                     {{ $t('student.demoBadge') }}
                   </span>
                   <span
                     v-if="relation.student?.is_deleted"
-                    class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                    class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600"
                   >
                     {{ $t('dashboard.tutor.accountDeleted') }}
                   </span>

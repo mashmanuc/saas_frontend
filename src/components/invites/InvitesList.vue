@@ -31,7 +31,7 @@
       <div
         v-for="inv in invites"
         :key="inv.public_id"
-        class="rounded-xl border border-border-subtle bg-white p-4 transition hover:shadow-sm dark:bg-surface-dark"
+        class="rounded-xl border border-border-subtle bg-white p-4 transition hover:shadow-sm"
       >
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0 flex-1 space-y-1.5">
@@ -69,7 +69,7 @@
               type="button"
               class="rounded-lg p-2 transition"
               :class="copiedId === inv.public_id
-                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                ? 'bg-green-50 text-green-600'
                 : 'text-muted hover:bg-surface-soft hover:text-body'"
               :title="copiedId === inv.public_id ? $t('invites.copiedToClipboard') : $t('invites.shareCopy')"
               @click="copyToClipboard(inv)"
@@ -89,7 +89,7 @@
             <button
               v-if="inv.status === 'active'"
               type="button"
-              class="rounded-lg p-2 text-danger transition hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
+              class="rounded-lg p-2 text-danger transition hover:bg-red-50 disabled:opacity-50"
               :disabled="cancellingId === inv.public_id"
               :title="$t('invites.list.cancel')"
               @click="handleCancel(inv)"
@@ -167,10 +167,10 @@ async function copyToClipboard(inv: InviteDTO) {
 
 function statusBadgeClass(status: string): string {
   switch (status) {
-    case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-    case 'used': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-    case 'expired': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-    case 'cancelled': return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    case 'active': return 'bg-green-100 text-green-800'
+    case 'used': return 'bg-blue-100 text-blue-800'
+    case 'expired': return 'bg-amber-100 text-amber-800'
+    case 'cancelled': return 'bg-gray-100 text-gray-600'
     default: return 'bg-gray-100 text-gray-600'
   }
 }

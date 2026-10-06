@@ -23,7 +23,7 @@ const selectedId = computed({
 
 <template>
   <div class="group-selector">
-    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+    <label class="text-sm font-medium text-gray-700">
       {{ t('learningContent.groups.selectGroup') }}
     </label>
 
@@ -37,8 +37,8 @@ const selectedId = computed({
         :key="group.id"
         class="block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
         :class="selectedId === group.id
-          ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
-          : 'hover:bg-gray-100 dark:hover:bg-gray-800'"
+          ? 'bg-indigo-100 text-indigo-700'
+          : 'hover:bg-gray-100'"
         @click="selectedId = group.id"
       >
         {{ group.title }}
@@ -58,8 +58,8 @@ const selectedId = computed({
         :key="group.id"
         class="block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
         :class="selectedId === group.id
-          ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
-          : 'hover:bg-gray-100 dark:hover:bg-gray-800'"
+          ? 'bg-indigo-100 text-indigo-700'
+          : 'hover:bg-gray-100'"
         @click="selectedId = group.id"
       >
         {{ group.title }}

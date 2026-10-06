@@ -228,10 +228,10 @@ function goToChat(tutor: AssignedTutor) {
 
 function getStatusBadgeClass(status: string): string {
   const classes: Record<string, string> = {
-    active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    invited: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    archived: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+    active: 'bg-green-100 text-green-800',
+    invited: 'bg-blue-100 text-blue-800',
+    paused: 'bg-yellow-100 text-yellow-800',
+    archived: 'bg-gray-100 text-gray-800',
   }
   return classes[status] || classes.active
 }

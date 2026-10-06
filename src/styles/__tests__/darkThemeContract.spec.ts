@@ -214,6 +214,68 @@ describe('Темна тема: фаза 2 (дошка, уроки, Розкла�
   })
 })
 
+describe('Темна тема: фаза 3 — одна система замість трьох', () => {
+  // Tailwind `dark:` дублював тему третьою системою кольорів (контракт, правило 2). Темну тему
+  // дають токени й міст; новий `dark:`-клас — червоний тест.
+  const sources = (dir: string, out: string[] = []): string[] => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) {
+        if (name !== '__tests__') sources(p, out)
+      } else if (/\.(vue|ts|js)$/.test(name)) out.push(p)
+    }
+    return out
+  }
+
+  it('жодного Tailwind dark:-класу в коді', () => {
+    const found = sources(SRC)
+      .filter((p) => /\bdark:[a-zA-Z]/.test(readFileSync(p, 'utf8')))
+      .map((p) => relative(SRC, p))
+    expect(found).toEqual([])
+  })
+})
+
+describe('Темна тема: нових фантомних токенів немає', () => {
+  // Фантом — var(--x), де --x ніде не оголошено: колір тоді береться із запасного значення й не
+  // перемикається з темою (головна причина «невидимого тексту», контракт §1). База 2026-10-06 — назви,
+  // що лишилися свідомо: папір віджетів аркуша, вимкнений маркетплейс, нетематичні розміри й відступи,
+  // запасні кольори з суфіксом -dark. Нова назва поза базою — червоний тест; база лише зменшується.
+  const BASELINE = new Set(
+    ('--accent-muted --accent-rgb --bg-hover-dark --bg-secondary-dark --border-color-dark --calendar-first-lesson ' +
+      '--calendar-no-show --calendar-regular-lesson --calendar-slot-label --color-error-bg-dark ' +
+      '--color-error-border-dark --color-info-bg-dark --disabled --font-mono --font-size-2xl --font-size-base ' +
+      '--font-size-lg --font-size-sm --font-size-xs --font-subtitle --formula-bg --gc-border --gc-pf-accent ' +
+      '--gc-pf-tint --green --green-dark --green-light --green-mid --ink --ink-2 --ink-3 --line-2 --paper ' +
+      '--radius-2xl --shadow-1 --shadow-2 --space-1 --space-10 --space-2 --space-3 --space-4 --space-6 ' +
+      '--spacing-lg --spacing-md --spacing-sm --spacing-xl --spacing-xs --text-3xl --text-primary-dark ' +
+      '--wb-card-text-scale --wb-z-page-nav --white').split(' '),
+  )
+  const sources = (dir: string, out: string[] = []): string[] => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) {
+        if (name !== '__tests__') sources(p, out)
+      } else if (/\.(vue|css|scss|ts|js)$/.test(name)) out.push(p)
+    }
+    return out
+  }
+
+  it('кожна var(--x) у коді має оголошення (або є в базі)', () => {
+    const used = new Set<string>()
+    const declared = new Set<string>()
+    for (const path of sources(SRC)) {
+      const text = readFileSync(path, 'utf8')
+      for (const m of text.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)) used.add(m[1])
+      for (const m of text.matchAll(/(?<![A-Za-z0-9_-])(--[A-Za-z0-9_-]+)\s*:/g)) declared.add(m[1])
+      for (const m of text.matchAll(/setProperty\(\s*['"`](--[A-Za-z0-9_-]+)|['"](--[A-Za-z0-9_-]+)['"]\s*:/g)) {
+        declared.add(m[1] ?? m[2])
+      }
+    }
+    const fresh = [...used].filter((n) => !declared.has(n) && !BASELINE.has(n)).sort()
+    expect(fresh).toEqual([])
+  })
+})
+
 describe('Темна тема: текст на акцентній заливці', () => {
   const ACCENTISH = /var\(\s*--(accent|primary|color-primary|color-accent|wb-brand|wb-primary|success-bg|danger-bg|info-bg|color-success|color-danger|color-info|primary-color|brand-primary)(?:-hover|-dark)?\s*[,)]/
   const WHITE = /^\s*(white|#fff|#ffffff)\s*(!important)?\s*$/i

@@ -1,11 +1,11 @@
 <template>
   <Modal :open="modelValue" :title="$t('classroom.invite.title')" @close="handleCancel">
-    <p class="text-sm text-gray-600 dark:text-gray-300">
+    <p class="text-sm text-gray-600">
       {{ $t('classroom.invite.description') }}
     </p>
 
     <div class="space-y-1 mt-3">
-      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400" for="invite-email">
+      <label class="block text-xs font-medium text-gray-600" for="invite-email">
         {{ $t('classroom.invite.emailLabel') }}
       </label>
       <input

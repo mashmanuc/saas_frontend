@@ -101,7 +101,7 @@ function cancelDelete() {
   <div class="group-materials-manager space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      <h2 class="text-lg font-semibold text-gray-900">
         {{ t('learningContent.groups.manager') }}
       </h2>
       <button
@@ -118,23 +118,23 @@ function cancelDelete() {
     <!-- Selected Group Panel -->
     <template v-if="groupStore.selectedGroup && selectedGroupId">
       <!-- Materials List -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div class="bg-white rounded-lg border border-gray-200">
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-medium text-gray-700">
             {{ t('learningContent.groups.materials') }}
             <span class="text-gray-400 ml-1">({{ groupStore.materials.length }})</span>
           </h3>
         </div>
 
         <!-- Materials -->
-        <div v-if="groupStore.materials.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+        <div v-if="groupStore.materials.length > 0" class="divide-y divide-gray-100">
           <div
             v-for="material in groupStore.materials"
             :key="material.id"
             class="flex items-center justify-between px-4 py-3"
           >
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p class="text-sm font-medium text-gray-900 truncate">
                 {{ material.content_title }}
               </p>
               <p class="text-xs text-gray-500">
@@ -143,7 +143,7 @@ function cancelDelete() {
             </div>
             <!-- Inline delete confirmation -->
             <div v-if="pendingDeleteId === material.id" class="flex items-center gap-2 ml-2">
-              <span class="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">
+              <span class="text-xs text-red-600 font-medium whitespace-nowrap">
                 Видалити з класу?
               </span>
               <button
@@ -156,7 +156,7 @@ function cancelDelete() {
               </button>
               <button
                 type="button"
-                class="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                class="px-2 py-1 text-xs font-medium text-gray-600 border border-gray-300 hover:bg-gray-100 rounded transition-colors"
                 title="Скасувати видалення"
                 @click="cancelDelete"
               >
@@ -198,13 +198,13 @@ function cancelDelete() {
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         @click.self="showCreateModal = false"
       >
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
             {{ t('learningContent.groups.createGroup') }}
           </h3>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               {{ t('learningContent.groups.groupTitle') }}
             </label>
             <input
@@ -212,7 +212,7 @@ function cancelDelete() {
               type="text"
               maxlength="200"
               autofocus
-              class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+              class="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
               :placeholder="t('learningContent.groups.titlePlaceholder')"
               @keydown.enter="createGroup"
             />
@@ -220,7 +220,7 @@ function cancelDelete() {
 
           <div class="flex justify-end gap-3 mt-6">
             <button
-              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               @click="showCreateModal = false"
             >
               {{ t('common.cancel') }}
