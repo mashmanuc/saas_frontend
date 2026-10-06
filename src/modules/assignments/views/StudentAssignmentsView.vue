@@ -112,4 +112,19 @@ function goBack() {
 .stu-asg__status { font-size: 13px; color: #555; background: #f1f1f1; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
 .stu-asg__status[data-s="graded"] { background: #dcfce7; color: #166534; }
 .stu-asg__status[data-s="submitted"] { background: #fef9c3; color: #854d0e; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .stu-asg__status {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .stu-asg__status[data-s="graded"] {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .stu-asg__status[data-s="submitted"] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
 </style>

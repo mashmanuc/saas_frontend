@@ -203,4 +203,23 @@ function handleBlockClick(slotId: number) {
 .action-btn--delete:hover {
   background: var(--danger-bg, #fee2e2);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .availability-block {
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .availability-block:hover {
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .availability-block__label {
+  color: var(--color-warning);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .action-btn {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .action-btn--delete {
+  color: var(--color-danger);
+}
 </style>

@@ -331,4 +331,9 @@ const cancellationPolicies = [
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .hint {
+  color: var(--color-text-muted);
+}
 </style>

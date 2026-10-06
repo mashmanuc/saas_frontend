@@ -114,4 +114,10 @@ function findCellsInBox(box: { left: number; top: number; right: number; bottom:
   pointer-events: none;
   z-index: 1000;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .selection-box {
+  border-color: var(--color-accent);
+}
 </style>

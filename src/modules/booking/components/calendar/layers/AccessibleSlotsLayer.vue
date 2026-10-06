@@ -124,4 +124,16 @@ const getSlotStyle = (slot: AccessibleSlot) => {
 .slot-recurring {
   font-size: 10px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .accessible-slot {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .accessible-slot:hover {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .slot-label {
+  color: var(--color-success);
+}
 </style>

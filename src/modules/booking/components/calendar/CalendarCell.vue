@@ -128,4 +128,28 @@ function handleMouseLeave() {
   padding: 4px;
   font-size: 12px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .calendar-cell {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .calendar-cell--empty {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .calendar-cell--available {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .calendar-cell--booked {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .calendar-cell--blocked {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .calendar-cell--notAllow {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .calendar-cell--hovered {
+  background: var(--color-accent-soft);
+}
 </style>

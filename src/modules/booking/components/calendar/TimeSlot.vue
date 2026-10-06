@@ -89,4 +89,16 @@ const isClickable = computed(() => {
   text-transform: capitalize;
   opacity: 0.8;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .time-slot.status-available {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .time-slot.status-booked {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .time-slot.status-blocked {
+  background: var(--color-border);
+}
 </style>

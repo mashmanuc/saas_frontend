@@ -213,4 +213,10 @@ function handleClick() {
 .btn-locked:hover:not(:disabled) {
   filter: brightness(1.1);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .btn-secondary:hover:not(:disabled) {
+  background: var(--color-border);
+}
 </style>

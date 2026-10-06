@@ -115,4 +115,13 @@ function handleClose() {
   font-size: var(--text-sm);
   color: var(--danger, #991b1b);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .error-banner {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .error-banner p {
+  color: var(--color-danger);
+}
 </style>

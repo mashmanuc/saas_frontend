@@ -168,4 +168,11 @@ function handleClick() {
 .optimistic-update {
   opacity: 0.7;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .event-block {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
 </style>

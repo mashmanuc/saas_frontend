@@ -189,4 +189,10 @@ function formatSelectedTime(slot: TimeSlot): string {
   opacity: 0;
   transform: translateY(-20px);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .selected-slot-info {
+  background: var(--color-success-soft);
+}
 </style>

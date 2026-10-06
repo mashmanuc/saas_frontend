@@ -128,4 +128,13 @@ defineProps<{
     display: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .breadcrumb-nav__text {
+  color: var(--color-text);
+}
+[data-theme="dark"] .breadcrumb-nav__item--current .breadcrumb-nav__text {
+  color: var(--color-text);
+}
 </style>

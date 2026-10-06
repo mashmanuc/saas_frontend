@@ -385,4 +385,47 @@ function handleClose() {
     justify-content: center;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .close-button {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .close-button:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-border);
+}
+[data-theme="dark"] .success-icon {
+  color: var(--color-success);
+}
+[data-theme="dark"] .form-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .required {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-textarea:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .form-select:disabled,
+[data-theme="dark"] .form-textarea:disabled {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .char-count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .error-message {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-border);
+}
 </style>

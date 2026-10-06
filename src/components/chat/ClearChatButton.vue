@@ -71,4 +71,14 @@ async function handleClearChat() {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .clear-chat-btn {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .clear-chat-btn:hover:not(:disabled) {
+  background: var(--color-danger);
+}
 </style>

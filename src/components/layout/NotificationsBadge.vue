@@ -85,4 +85,19 @@ onUnmounted(() => {
   justify-content: center;
   border: 2px solid white;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .notifications-btn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .notifications-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .badge {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+  border-color: var(--color-border);
+}
 </style>

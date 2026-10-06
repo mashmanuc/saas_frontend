@@ -157,4 +157,26 @@ function trackAcceptanceViewed() {
 .accept-badge:hover .badge-tooltip {
   display: block;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .badge-green {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .badge-yellow {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .badge-red {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .badge-loading {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .badge-tooltip {
+  background: var(--color-surface-elevated);
+}
 </style>

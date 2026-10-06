@@ -203,4 +203,16 @@ function handleDismiss() {
   color: #b91c1c;
   font-size: 13px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .ta-icon-wrap {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .ta-bullet svg {
+  color: var(--color-success);
+}
+[data-theme="dark"] .ta-error {
+  color: var(--color-danger);
+}
 </style>

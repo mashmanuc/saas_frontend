@@ -73,4 +73,9 @@ const isPublic = computed({
     color: #666;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): плашки приватності міста — токенами теми.
+   Написано вручну (SCSS із вкладеністю генератор не бере); світла й класична не змінюються. ── */
+[data-theme="dark"] .notice.public { background: var(--color-info-soft); color: var(--color-info); }
+[data-theme="dark"] .notice.private { background: var(--color-surface-sunken); color: var(--color-text-secondary); }
 </style>

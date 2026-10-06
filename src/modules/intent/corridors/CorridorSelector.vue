@@ -196,4 +196,28 @@ defineExpose({ AUTO })
 .corridor-selector__menu button:hover { background: #f3f4f6; }
 .corridor-selector__error { flex-basis: 100%; margin: 0; color: #b91c1c; }
 .corridor-selector--compact { padding: 4px 0; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .corridor-selector__chip {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .corridor-selector__name {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .corridor-selector__menu {
+  border-color: var(--color-border);
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .corridor-selector__menu button[aria-checked='true'] {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .corridor-selector__menu button:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .corridor-selector__error {
+  color: var(--color-danger);
+}
 </style>

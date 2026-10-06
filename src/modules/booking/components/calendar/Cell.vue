@@ -186,4 +186,15 @@ function handleClick() {
   opacity: 1;
 }
 
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .calendar-cell--available .cell-status-indicator {
+  background: var(--color-success);
+}
+[data-theme="dark"] .calendar-cell--blocked .cell-status-indicator {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .cell-tooltip {
+  background: var(--color-surface-elevated);
+}
 </style>

@@ -2317,4 +2317,170 @@ onBeforeUnmount(() => {
   .cmdp-tip { max-width: min(230px, 74vw); }
   .cmdp-fab-wrap { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: 14px; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .cmdp-fab-hide {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .cmdp-fab-hide:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .cmdp-fab-badge {
+  background: var(--color-success);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .cmdp-tip {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+  color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-tip::after {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .cmdp-tip.tail-right::after {
+  border-top-color: var(--color-border-strong);
+  border-right-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-tip.tail-left::after {
+  border-bottom-color: var(--color-border-strong);
+  border-left-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-tip:hover {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-panel {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .cmdp-input {
+  border-bottom-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-head {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .cmdp-back {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .cmdp-brand {
+  background: var(--color-success);
+}
+[data-theme="dark"] .cmdp-newchat {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .cmdp-newchat:hover:not(:disabled) {
+  background: var(--color-border);
+  color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-pin {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .cmdp-pin.on {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .cmdp-min {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .cmdp-min:hover {
+  background: var(--color-border);
+  color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-pin--brand.on {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .cmdp-dlabel {
+  color: var(--color-text);
+}
+[data-theme="dark"] .cmdp-dialog .cmdp-input {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-item.active {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-item:hover {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .cmdp-board:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .cmdp-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .cmdp-actions button:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .cmdp-empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .cmdp-ai-explain {
+  color: var(--color-text);
+}
+[data-theme="dark"] .cmdp-ai-danger {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .ai-msg--user {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .ai-msg--bot {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .ai-msg--done {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .ai-msg--bot :deep(th),
+[data-theme="dark"] .ai-msg--bot :deep(td) {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .ai-typing span {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-mic {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .cmdp-mic:hover {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .cmdp-mic.listening {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .cmdp-ai-inputrow {
+  border-top-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-input--ai {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .cmdp-btn {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .cmdp-btn--danger {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .cmdp-status {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .cmdp-error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .cmdp-hint {
+  border-top-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+@media (hover: none) and (pointer: coarse) {
+  [data-theme="dark"] .cmdp-mic {
+    border-color: var(--color-success);
+    background: var(--color-success-soft);
+  }
+}
 </style>

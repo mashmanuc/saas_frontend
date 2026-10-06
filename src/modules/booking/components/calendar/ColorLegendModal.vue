@@ -90,4 +90,13 @@ const close = () => {
   font-size: 14px;
   color: var(--text-primary);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .color-box.first {
+  background: var(--color-info);
+}
+[data-theme="dark"] .color-box.regular {
+  background: var(--color-success);
+}
 </style>

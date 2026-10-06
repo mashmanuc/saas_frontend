@@ -50,4 +50,17 @@ function goToStart() {
   width: 100%; padding: 10px 14px; border: none; border-radius: 10px;
   background: #0f172a; color: #fff; font-weight: 600; cursor: pointer;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .session-ended {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .session-ended__card {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .session-ended__text {
+  color: var(--color-text);
+}
 </style>

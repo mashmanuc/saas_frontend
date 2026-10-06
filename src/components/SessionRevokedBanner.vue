@@ -150,4 +150,13 @@ function handleRelogin() {
 .banner-leave-to .banner-content {
   transform: scale(0.9);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .banner-content {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .banner-icon {
+  color: var(--color-danger);
+}
 </style>

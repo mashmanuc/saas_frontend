@@ -150,4 +150,13 @@ const emit = defineEmits(['fallback'])
   justify-content: center;
   flex-wrap: wrap;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .chat-error-boundary {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .error-icon {
+  color: var(--color-danger);
+}
 </style>

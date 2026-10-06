@@ -104,4 +104,22 @@ const config = computed(() => statusConfig[props.status] || statusConfig.pending
   background: var(--color-info-light, #e0f2fe);
   color: var(--color-info-dark, #075985);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .status-pending {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .status-confirmed {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .status-completed {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .status-no-show {
+  background: var(--color-border);
+}
+[data-theme="dark"] .status-rescheduled {
+  background: var(--color-accent-soft);
+}
 </style>

@@ -392,4 +392,22 @@ onUnmounted(() => {
   }
 }
 
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .auth-brand--inverse .auth-brand-mark {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+[data-theme="dark"] .auth-banner-kicker {
+  color: var(--color-success);
+}
+[data-theme="dark"] .auth-banner-static-curve {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .auth-banner-static-point {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .auth-banner-points span {
+  color: var(--color-success);
+}
 </style>

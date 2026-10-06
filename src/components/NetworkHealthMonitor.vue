@@ -421,4 +421,62 @@ const wsStatusLabel = computed(() => {
     color: #fef3c7;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .indicator-excellent .status-dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .indicator-good .status-dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .indicator-fair .status-dot {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .indicator-poor .status-dot {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .status-excellent {
+  color: var(--color-success);
+}
+[data-theme="dark"] .status-good {
+  color: var(--color-success);
+}
+[data-theme="dark"] .status-fair {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .status-poor {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .status-offline {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .stat-value.warning {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .warning-item {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .ws-open {
+  color: var(--color-success);
+}
+[data-theme="dark"] .ws-connecting,
+[data-theme="dark"] .ws-reconnecting {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .ws-closed {
+  color: var(--color-danger);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .network-health-monitor {
+    border-color: var(--color-border-strong);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .warning-item {
+    background: var(--color-warning);
+    color: var(--color-on-accent);
+  }
+}
 </style>

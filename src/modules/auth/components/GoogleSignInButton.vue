@@ -215,4 +215,10 @@ onMounted(() => {
   border: 1px solid var(--border-color, #cbd5e1);
   font-size: 13px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .google-embedded-note__btn {
+  background: var(--color-surface);
+}
 </style>

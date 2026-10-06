@@ -157,4 +157,26 @@ const handleRetry = () => {
   color: #fee2e2;
   background: rgba(0, 0, 0, 0.3);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .connection-status-bar--reconnecting {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .connection-status-bar--failed {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .connection-status-bar--disconnected {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .retry-btn {
+  color: var(--color-danger);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .retry-btn:hover {
+  background: var(--color-border);
+}
 </style>

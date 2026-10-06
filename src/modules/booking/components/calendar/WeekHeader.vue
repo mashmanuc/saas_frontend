@@ -98,4 +98,14 @@ const weekDays = computed((): DayInfo[] => {
   color: white;
   border-radius: 50%;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .day-header.is-today {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .day-header.is-today .day-number {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
 </style>

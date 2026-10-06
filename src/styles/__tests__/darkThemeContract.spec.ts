@@ -130,15 +130,19 @@ describe('Темна тема: світла й класична не зміню�
   })
 })
 
-describe('Темна тема: фаза 2 (дошка, уроки й записи)', () => {
+describe('Темна тема: фаза 2 (дошка, уроки, Розклад і спільне)', () => {
   // Розділи, які фаза 2 уже пройшла; наступні пакети додають сюди свої.
-  const ROOTS = ['modules/winterboard', 'modules/knowledge', 'modules/lesson_constructor', 'modules/lessons'].map(
-    (r) => join(SRC, r),
-  )
+  const ROOTS = [
+    'modules/winterboard', 'modules/knowledge', 'modules/lesson_constructor', 'modules/lessons',
+    'modules/booking', 'components', 'modules/assignments', 'modules/auth', 'modules/intent', 'modules/billing',
+    'modules/chat', 'modules/platform-feedback', 'modules/people', 'views', 'ui',
+  ].map((r) => join(SRC, r))
   // «Папір»: аркуш і все, що на ньому малюється, від теми не залежить (контракт, розділ 2),
-  // а пульт телефона має власну палітру. Ці файли тема не чіпає.
+  // а пульт телефона має власну палітру. Ці файли тема не чіпає. Свідомо поза фазою 2:
+  // налагоджувальні панелі Розкладу, сторінка Lighthouse, запити маркетплейсу (вимкнено).
   const PAPER = new RegExp(
-    '/(vendor|components/board/objects|components/remote|components/test/elements)/|' +
+    '/(booking/debug|__lighthouse__|components/inquiries)/|' +
+      '/(vendor|components/board/objects|components/remote|components/test/elements)/|' +
       '/(WBRemoteView|WBRemoteEntry|WBStickyNote|WBGridOverlay|WBLaserDot|WBSpotlightOverlay|' +
       'DocumentViewerAsset|WBPreviewCanvas|AudioBadge|LinkBadge|SourceBadge|TextBadge|TextOverlay|' +
       'WBCanvas|WBOverlayLayer|WBTheoryOverlay|WBTestElement|WBTestOverlay)\\.vue$',

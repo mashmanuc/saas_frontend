@@ -400,4 +400,29 @@ const getHoverStyle = () => {
 .availability-hover-indicator.can-remove .hover-icon {
   color: #f44336;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .preview-slot {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .preview-label {
+  color: var(--color-success);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .availability-hover-indicator.can-add {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .availability-hover-indicator.can-remove {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .hover-icon {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .availability-hover-indicator.can-add .hover-icon {
+  color: var(--color-success);
+}
+[data-theme="dark"] .availability-hover-indicator.can-remove .hover-icon {
+  color: var(--color-danger);
+}
 </style>

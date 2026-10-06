@@ -75,4 +75,14 @@ const getRangeStyle = (range: BlockedRange) => {
   border-radius: 4px;
   pointer-events: auto;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .blocked-range {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .blocked-label {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
 </style>

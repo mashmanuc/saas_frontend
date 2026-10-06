@@ -270,4 +270,29 @@ onUnmounted(() => {
   border-top: 1px solid var(--border-color);
 }
 
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .close-btn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .close-btn:hover {
+  color: var(--color-text);
+}
+[data-theme="dark"] .edit-textarea {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .edit-textarea:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .time-remaining {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .time-expired {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .error-message {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
 </style>

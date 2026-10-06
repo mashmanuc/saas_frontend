@@ -126,4 +126,39 @@ async function doGrade() {
 .asg-grade { margin-top: 8px; color: #166534; }
 .asg-btn { background: #16a34a; color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
 .asg-btn:disabled { opacity: .5; cursor: default; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .asg-back {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .asg-status {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .asg-status[data-s="graded"] {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .asg-status[data-s="submitted"] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .asg-block {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .asg-input {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .asg-sub-text {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .asg-grade {
+  color: var(--color-success);
+}
+[data-theme="dark"] .asg-btn {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
 </style>

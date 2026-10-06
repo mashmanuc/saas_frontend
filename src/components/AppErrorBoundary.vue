@@ -150,4 +150,34 @@ function goHome() {
 @media (prefers-reduced-motion: reduce) {
   .aeb__mascot, .aeb__mascot :deep(.itg-body), .aeb__mascot :deep(.itg-eye) { animation: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .aeb {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .aeb__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .aeb__text {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .aeb__btn--primary {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .aeb__btn--primary:hover {
+  background: var(--color-success);
+}
+[data-theme="dark"] .aeb__btn--ghost {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .aeb__btn--ghost:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .aeb__note {
+  color: var(--color-text-muted);
+}
 </style>

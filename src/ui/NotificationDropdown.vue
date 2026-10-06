@@ -574,4 +574,26 @@ defineExpose({ close })
   white-space: nowrap;
   border: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .badge {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .notif-avatar {
+  color: var(--color-text);
+}
+[data-theme="dark"] .notif-item--tone-success {
+  border-left-color: var(--color-success);
+}
+[data-theme="dark"] .notif-item--tone-warning {
+  border-left-color: var(--color-warning);
+}
+[data-theme="dark"] .notif-item--tone-danger {
+  border-left-color: var(--color-danger);
+}
+[data-theme="dark"] .notif-item--tone-info {
+  border-left-color: var(--color-accent);
+}
 </style>

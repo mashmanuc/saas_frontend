@@ -361,4 +361,27 @@ onUnmounted(() => {
     border-color: var(--color-error-border-dark, #7f1d1d);
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .error-toast {
+  color: var(--color-danger);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .screen-share-btn {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .teacher-sharing-indicator {
+    background: var(--color-accent);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .error-toast {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+}
 </style>

@@ -338,4 +338,13 @@ async function handleApplyResolutions() {
     justify-content: center;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .conflict-item.severity-error {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .conflict-item.severity-warning {
+  background: var(--color-warning-soft);
+}
 </style>

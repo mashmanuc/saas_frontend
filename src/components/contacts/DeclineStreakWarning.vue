@@ -89,4 +89,25 @@ const message = computed(() => {
   font-size: 0.875rem;
   color: #374151;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .warning-banner.info {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .warning-banner.warning {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .warning-banner.danger {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .warning-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .warning-message {
+  color: var(--color-text);
+}
 </style>

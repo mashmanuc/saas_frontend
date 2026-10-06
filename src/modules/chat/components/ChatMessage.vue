@@ -209,4 +209,22 @@ onMounted(() => {
 .retry-link:hover {
   opacity: 0.8;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .text-danger {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .message-status {
+  color: var(--color-text);
+}
+[data-theme="dark"] .status-pill--delivered {
+  color: var(--color-success);
+}
+[data-theme="dark"] .status-pill--error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .retry-link {
+  color: var(--color-danger);
+}
 </style>

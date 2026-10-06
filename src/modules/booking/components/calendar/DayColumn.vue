@@ -70,4 +70,10 @@ function handleSlotClick(slot: TimeSlot) {
 .hour-cell:last-child {
   border-bottom: none;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .day-column.is-today {
+  background: var(--color-accent-soft);
+}
 </style>

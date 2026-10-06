@@ -119,4 +119,22 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 .gal-banner__btn:hover { background: #dc2626; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .gal-banner {
+  background: var(--color-danger-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .gal-banner__pulse {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .gal-banner__btn {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .gal-banner__btn:hover {
+  background: var(--color-danger);
+}
 </style>

@@ -302,4 +302,19 @@ function getHourCellStyle(hour: number) {
 .edit-mode .hour-cell:hover {
   background: var(--color-primary-light, #eff6ff);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .day-header.is-today {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .loading-overlay {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .hour-cell.in-selection {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .edit-mode .hour-cell:hover {
+  background: var(--color-accent-soft);
+}
 </style>

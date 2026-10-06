@@ -67,4 +67,10 @@ onUnmounted(() => {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lnmt-wrap {
+  background: var(--color-warning-soft);
+}
 </style>

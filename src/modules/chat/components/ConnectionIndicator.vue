@@ -193,4 +193,41 @@ function handleRetry() {
   font-size: 10px;
   font-weight: 600;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .status-connected {
+  color: var(--color-success);
+}
+[data-theme="dark"] .status-connected .indicator-dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .status-connecting {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .status-connecting .indicator-dot {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .status-reconnecting {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .status-reconnecting .indicator-dot {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .status-polling {
+  color: var(--color-info);
+}
+[data-theme="dark"] .status-polling .indicator-dot {
+  background: var(--color-info);
+}
+[data-theme="dark"] .status-offline {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .status-offline .indicator-dot {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .queue-badge {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
 </style>

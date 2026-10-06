@@ -161,4 +161,23 @@ const formatTimeRange = (event: CalendarEvent): string => {
   opacity: 0.95;
 }
 
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .event-card {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .event-card.is-no-show {
+  background: var(--color-border-strong);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .event-card.is-cancelled {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .event-student {
+  color: var(--color-text);
+}
 </style>

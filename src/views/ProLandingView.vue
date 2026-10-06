@@ -366,4 +366,10 @@ main {
   color: var(--text-secondary, #4b5b53);
   font-size: 0.9375rem;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .pro-price {
+  background: var(--color-surface);
+}
 </style>

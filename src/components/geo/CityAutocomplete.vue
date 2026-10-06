@@ -336,4 +336,21 @@ watch(() => props.modelValue, async (code, oldCode) => {
   border-radius: 4px;
   border: 1px solid #fcd34d;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі елементи, що вище, — кольори токенами теми.
+   Написано вручну (SCSS із вкладеністю генератор не бере); світла й класична не змінюються. ── */
+[data-theme="dark"] .input-spinner { border-color: var(--color-border-strong); border-top-color: var(--color-success); }
+[data-theme="dark"] .clear-btn { color: var(--color-text-muted); }
+[data-theme="dark"] .clear-btn:hover { color: var(--color-text-secondary); }
+[data-theme="dark"] .dropdown-item:hover { background: var(--color-border); }
+[data-theme="dark"] .dropdown-item:active { background: var(--color-border-strong); }
+[data-theme="dark"] .dropdown-item.no-results { color: var(--color-text-muted); }
+[data-theme="dark"] .country-badge { color: var(--color-text-secondary); background: var(--color-surface-sunken); }
+[data-theme="dark"] .selected-hint { color: var(--color-text-secondary); }
+[data-theme="dark"] .hint-value { color: var(--color-text); }
+[data-theme="dark"] .unmatched-warning {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
 </style>

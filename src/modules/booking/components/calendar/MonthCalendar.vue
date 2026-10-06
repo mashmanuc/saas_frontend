@@ -229,4 +229,10 @@ function handleDayClick(day: CalendarDay | null) {
     display: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .day-cell.has-slots:not(.is-selected) {
+  background: var(--color-success-soft);
+}
 </style>

@@ -273,4 +273,37 @@ async function discardAndLogout() {
   color: #b91c1c; cursor: pointer;
 }
 .logout-unsent__discard:disabled { opacity: 0.6; cursor: default; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .logout-unsent {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .logout-unsent__lead {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .logout-unsent__item {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .logout-unsent__count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .logout-unsent__open,
+[data-theme="dark"] .logout-unsent__download,
+[data-theme="dark"] .logout-unsent__cancel {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .logout-unsent__status {
+  color: var(--color-text);
+}
+[data-theme="dark"] .logout-unsent__warning {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .logout-unsent__discard {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
 </style>

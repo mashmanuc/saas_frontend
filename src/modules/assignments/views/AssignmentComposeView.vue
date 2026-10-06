@@ -116,4 +116,24 @@ async function assign() {
 .asg-btn { background: #16a34a; color: #fff; border: 0; border-radius: 8px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
 .asg-btn:disabled { opacity: .5; cursor: default; }
 .asg-btn--ghost { background: #f3f3f3; color: #111; margin-top: 4px; padding: 8px 14px; font-size: 14px; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .asg-input {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .asg-x {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .asg-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .asg-btn {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .asg-btn--ghost {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
 </style>

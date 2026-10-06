@@ -703,4 +703,37 @@ function formatTime(timestamp: number): string {
     min-width: auto;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .stat-icon {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .stat-icon.success {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .stat-icon.warning {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .stat-icon.error {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .activity-icon.edit {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .activity-icon.batch {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .activity-icon.conflict {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .activity-status.success {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .activity-status.error {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .activity-status.warning {
+  background: var(--color-warning-soft);
+}
 </style>

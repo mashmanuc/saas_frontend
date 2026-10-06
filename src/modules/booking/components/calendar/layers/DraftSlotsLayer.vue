@@ -103,4 +103,22 @@ const getSlotStyle = (slot: DraftSlot) => {
 .draft-slot.draft-remove .draft-label {
   color: #f44336;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .draft-slot.draft-add {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .draft-slot.draft-remove {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .draft-label {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .draft-slot.draft-add .draft-label {
+  color: var(--color-success);
+}
+[data-theme="dark"] .draft-slot.draft-remove .draft-label {
+  color: var(--color-danger);
+}
 </style>

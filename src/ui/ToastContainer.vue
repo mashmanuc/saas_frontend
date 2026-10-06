@@ -274,4 +274,21 @@ const progressStyle = (item) => {
   opacity: 0;
   transform: translateY(-12px) scale(0.95);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .toast-card {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .toast-action {
+  border-color: var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+[data-theme="dark"] .toast-action:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .toast-progress__fill {
+  background: var(--color-surface-elevated);
+}
 </style>

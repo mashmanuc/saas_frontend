@@ -229,4 +229,30 @@
 .tip-list li:last-child {
   margin-bottom: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .legend-color.available {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .legend-color.draft-add {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .legend-color.draft-remove {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .legend-color.event {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .legend-color.blocked {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .action-icon.add {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .action-icon.remove {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
 </style>

@@ -100,4 +100,26 @@ onBeforeUnmount(() => {
 .logout-pending__failed { margin: 10px 0 0; font-size: 14px; color: #b91c1c; }
 .logout-pending__phone { margin: 16px 0 12px; font-size: 14px; color: #475569; }
 .logout-pending__switch { font-size: 14px; color: #0f766e; text-decoration: underline; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .logout-pending {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .logout-pending__card {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .logout-pending__text {
+  color: var(--color-text);
+}
+[data-theme="dark"] .logout-pending__failed {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .logout-pending__phone {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .logout-pending__switch {
+  color: var(--color-accent);
+}
 </style>

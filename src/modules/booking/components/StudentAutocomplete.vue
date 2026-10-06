@@ -580,4 +580,75 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateY(-8px);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .autocomplete-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .required-mark {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .autocomplete-input {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .autocomplete-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .autocomplete-input--error {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .autocomplete-spinner {
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .autocomplete-error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .avatar-placeholder {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .selected-student__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .selected-student__email {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .selected-student__clear {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .selected-student__clear:hover {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .autocomplete-dropdown {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .dropdown-loading,
+[data-theme="dark"] .dropdown-empty,
+[data-theme="dark"] .dropdown-hint {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item--focused {
+  background: var(--color-border);
+}
+[data-theme="dark"] .dropdown-item__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .dropdown-item__email {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .invite-cta {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .invite-cta:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .demo-badge {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
 </style>

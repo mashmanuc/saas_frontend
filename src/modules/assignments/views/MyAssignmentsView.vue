@@ -64,4 +64,32 @@ onMounted(async () => {
 .asg-status[data-s="graded"] { background: #dcfce7; color: #166534; }
 .asg-status[data-s="submitted"] { background: #fef9c3; color: #854d0e; }
 .asg-btn { background: #16a34a; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .asg-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .asg-row {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .asg-row:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .asg-status {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .asg-status[data-s="graded"] {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .asg-status[data-s="submitted"] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .asg-btn {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
 </style>

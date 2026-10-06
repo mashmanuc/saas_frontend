@@ -201,4 +201,16 @@ function onCancel() {
   padding: 8px 12px;
 }
 .role-picker-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .role-picker-card {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .role-picker-option {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .role-picker-error {
+  color: var(--color-danger);
+}
 </style>

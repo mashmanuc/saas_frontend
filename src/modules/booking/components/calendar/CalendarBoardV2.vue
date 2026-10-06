@@ -417,4 +417,10 @@ const handleDragEnd = async () => {
 .calendar-board-v2::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .day-header-chip.is-today {
+  border-color: var(--color-success);
+}
 </style>

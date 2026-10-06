@@ -488,4 +488,10 @@ const copyBackupLink = async () => {
     min-width: auto;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .provider-badge--custom {
+  color: var(--color-info);
+}
 </style>
