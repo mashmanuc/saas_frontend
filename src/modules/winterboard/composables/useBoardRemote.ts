@@ -47,6 +47,7 @@ import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContrac
 import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
+import { floatingObstacles } from '../board/floatingObstacles'
 
 export interface BoardRemoteStore {
   currentPageIndex: number
@@ -161,6 +162,21 @@ const ASSISTANT_CMDS = new Set(['subject.set', 'subject.auto', 'language.set', '
 /** Мінімальна пауза між remote.state при швидкому гортанні (сервер: 10/с). */
 export const REMOTE_STATE_THROTTLE_MS = 150
 
+/**
+ * v1.26: ключ, під яким вікно Інтегралика саме повідомляє, де стоїть (`setFloatingObstacle`
+ * у `intent/CommandPalette.vue`; тест звіряє рядок). Модулі не імпортують одне одного.
+ */
+export const ASSISTANT_WINDOW_OBSTACLE = 'integralyk'
+
+/**
+ * v1.26: чи відкрите вікно Інтегралика на ЦЬОМУ екрані. Вікно кладе свій прямокутник у
+ * `floatingObstacles`, поки воно відкрите (у будь-якому вигляді), і прибирає, коли згорнуте
+ * чи зникло. Той самий спільний стан, що вже читає полотно; лише відображення, без ops.
+ */
+export function isAssistantWindowOpen(): boolean {
+  return !!floatingObstacles[ASSISTANT_WINDOW_OBSTACLE]
+}
+
 function randomClientId(): string {
   try {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
@@ -209,6 +225,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       if (q) msg.questions = q
     }
     if (assistantState.value) msg.assistant = assistantState.value
+    // v1.26: вікно Інтегралика відкрите — на пульті «– Згорнути вікно Інтегралика»; ні — кнопки немає
+    msg.assistant_open = isAssistantWindowOpen()
     if (opts.media) msg.videos = opts.media.list()
     if (opts.scenario) msg.scenario = opts.scenario.state()
     // v1.12 (пульт v2): що ця кімната вміє понад навігацію — телефон за цим показує або
@@ -285,6 +303,13 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
+
+  // v1.26: вікно Інтегралика відкрилось чи згорнулось — пульт одразу показує чи ховає
+  // «– Згорнути вікно Інтегралика». Стежимо лише за так/ні: перетягування вікна стану не шле.
+  watch(
+    isAssistantWindowOpen,
+    () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+  )
 
   function sendState(): void {
     const since = Date.now() - lastStateSentAt

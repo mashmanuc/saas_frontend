@@ -147,6 +147,34 @@ describe('LAW §9 v1.14 · «– Згорнути вікно Інтеграли�
     await nextTick()
     expect(minBtn(w).attributes('disabled')).toBeDefined()
   })
+
+  // v1.26 (власник 2026-10-06, «так на пропозицію Салют»): лише коли вікно відкрите на ноутбуці
+  it('v1.26: вікно на ноутбуці згорнуте — кнопки немає, «Говорю» одразу під полем Інтегралика', async () => {
+    const w = await connected({ assistantOpen: false })
+    expect(minBtn(w).exists()).toBe(false)
+    const next = (w.find('[data-testid="remote-ai"]').element as HTMLElement).nextElementSibling as HTMLElement | null
+    expect(next?.classList.contains('wb-remote__talk')).toBe(true)
+  })
+
+  it('v1.26: вікно відкрилось — кнопка з’являється й шле той самий намір; згорнулось — зникає', async () => {
+    const w = await connected({ assistantOpen: false })
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 3, assistantOpen: true })
+    await nextTick()
+    expect(minBtn(w).exists()).toBe(true)
+    send.mockClear()
+    await minBtn(w).trigger('click')
+    expect(lastCmd()).toMatchObject({ type: 'remote.command', pair: PAIR, cmd: 'assistant.minimize', args: {} })
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 3, assistantOpen: false })
+    await nextTick()
+    expect(minBtn(w).exists()).toBe(false)
+  })
+
+  it('v1.26: старий ноутбук поля не шле — кнопка стоїть, як до v1.26', async () => {
+    const w = await connected({ assistantOpen: true })
+    onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 1, pageCount: 3 })
+    await nextTick()
+    expect(minBtn(w).exists()).toBe(true)
+  })
 })
 
 describe('LAW §9 v1.18 · ноутбук зберігає шаблон (busy)', () => {

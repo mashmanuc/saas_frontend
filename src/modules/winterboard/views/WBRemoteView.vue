@@ -297,8 +297,11 @@
       </section>
 
       <!-- LAW §9 v1.14 (власник 2026-09-28, погоджено): згорнути вікно Інтегралика на
-           ноутбуці — те саме, що «–» у його шапці; розмова лишається. Одразу над «Говорю». -->
+           ноутбуці — те саме, що «–» у його шапці; розмова лишається. Одразу над «Говорю».
+           v1.26 (власник 2026-10-06, «так»): лише коли вікно відкрите на ноутбуці; старий
+           ноутбук поля не шле — кнопка стоїть, як до v1.26. -->
       <button
+        v-if="assistantOpen !== false"
         type="button"
         class="wb-remote__assistant-min"
         data-testid="assistant-minimize"
@@ -821,6 +824,8 @@ const videos = ref<NonNullable<RemoteStateDetail['videos']>>([])
 const photoResult = ref<RemotePhotoResult | null>(null)
 /** v1.19: на поточній сторінці ноутбука фото-фон */
 const bgPhoto = ref(false)
+/** v1.26: вікно Інтегралика на ноутбуці відкрите / згорнуте; null — старий ноутбук поля не шле */
+const assistantOpen = ref<boolean | null>(null)
 /** Фаза панелі фото — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
 const photoPhase = ref('idle')
 const photoBadge = computed<{ text: string; tone: 'busy' | 'ok' | 'warn' } | null>(() => {
@@ -1012,6 +1017,7 @@ const channel = useRemoteChannel({
     scenario.value = s.scenario ?? null
     boardBusy.value = s.busy === 'saving_template'
     bgPhoto.value = s.bgPhoto === true
+    assistantOpen.value = typeof s.assistantOpen === 'boolean' ? s.assistantOpen : null
     applyAssistantReply(s.assistantReply)
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
@@ -1561,6 +1567,9 @@ onBeforeUnmount(() => {
 }
 .wb-remote__assistant-min:disabled { opacity: .5; }
 .wb-remote__assistant-min + .wb-remote__talk { margin-top: 0; }
+/* v1.26: вікно Інтегралика згорнуте — «Згорнути» немає, і «Говорю» йде одразу під полем.
+   Без цього два auto-відступи (поле й «Говорю») ділили б вільне місце, і поле висіло б посередині. */
+.wb-remote__ai + .wb-remote__talk { margin-top: 0; }
 
 /* F. Говорю */
 .wb-remote__talk {

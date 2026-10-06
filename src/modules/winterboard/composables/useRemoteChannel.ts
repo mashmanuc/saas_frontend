@@ -87,6 +87,11 @@ export interface RemoteStateDetail {
   busy?: 'saving_template'
   /** v1.19 — на поточній сторінці фото-фон: у аркуші «Фото» є «Прибрати фон сторінки» */
   bgPhoto?: boolean
+  /**
+   * v1.26 — вікно Інтегралика відкрите на ноутбуці: лише тоді на пульті «– Згорнути вікно
+   * Інтегралика». Немає поля (старий ноутбук у кеші) — кнопка стоїть, як до v1.26.
+   */
+  assistantOpen?: boolean
   /** v1.20 — остання відповідь Інтегралика на запит із пульта (діалог пульт складає сам) */
   assistantReply?: RemoteAssistantReplyDetail
 }
@@ -116,6 +121,11 @@ export function parseRemoteAssistantReply(raw: any): RemoteAssistantReplyDetail 
 /** v1.18: закритий набір, як на сервері; інше — поля немає. */
 export function parseRemoteBusy(raw: unknown): 'saving_template' | undefined {
   return raw === 'saving_template' ? 'saving_template' : undefined
+}
+
+/** v1.26: вікно Інтегралика на ноутбуці — лише справжній boolean (як на сервері). */
+export function parseRemoteAssistantOpen(raw: unknown): boolean | undefined {
+  return typeof raw === 'boolean' ? raw : undefined
 }
 
 /** v1.6: закритий набір полів; зіпсоване поле відкидаємо, стан лишається валідним. */
@@ -371,6 +381,9 @@ export function useRemoteChannel(opts: {
         if (busy) detail.busy = busy
         // v1.19: лише справжній boolean, як і на сервері
         if (typeof msg.bg_photo === 'boolean') detail.bgPhoto = msg.bg_photo
+        // v1.26: так само — лише справжній boolean
+        const assistantOpen = parseRemoteAssistantOpen(msg.assistant_open)
+        if (assistantOpen !== undefined) detail.assistantOpen = assistantOpen
         const assistantReply = parseRemoteAssistantReply(msg.assistant_reply)
         if (assistantReply) detail.assistantReply = assistantReply
         opts.onState(detail)
