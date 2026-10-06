@@ -619,7 +619,7 @@ import { winterboardApi, type VideoCandidate } from '../api/winterboardApi'
 import { matchVideoSearchPhrase } from '../remote/videoSearchPhrase'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
-import { matchRemotePhrase } from '../remote/remoteGrammar'
+import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
 import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
@@ -1215,6 +1215,22 @@ function goRel(delta: 1 | -1) {
   sendCmd('page.goto', { index: target })
 }
 
+/**
+ * v1.27 (власник 2026-10-06: «роби голосові команди»): голос робить те, що видима кнопка.
+ * «Відповідь» на сторінці з питанням до обговорення (і без задачі на весь екран) відкриває
+ * відповідь питання — до цього голос знав лише задачі НМТ і тут мовчав. Команда на ноутбуці —
+ * перемикач, тож шлемо її, лише коли стан інший, ніж просять: «покажи» не ховає, «сховай» не показує.
+ */
+function voiceReveal(what: 'answer' | 'solution', text: string): void {
+  const show = !wantsHide(text)
+  if (what === 'answer' && hasQuestions.value && !isPresentingTask.value) {
+    if ((questions.value?.answer === true) !== show) sendCmd('card.reveal', { what: 'question' })
+    return
+  }
+  const shown = what === 'answer' ? cards.value?.answer : cards.value?.solution
+  if ((shown === true) !== show) sendCmd('card.reveal', { what })
+}
+
 // ── Голос: коротка граматика → команда; інакше → фраза Інтегралику на ноутбуці
 const videoVoiceActive = ref(false)
 function startVideoVoice(): void {
@@ -1259,8 +1275,8 @@ const ptt = usePushToTalk({
     if (cmd === 'view.zoom.out') return void sendCmd('view.zoom', { delta: -1 })
     if (cmd === 'view.scroll.up') return void sendCmd('view.scroll', { dir: -1 })
     if (cmd === 'view.scroll.down') return void sendCmd('view.scroll', { dir: 1 })
-    if (cmd === 'card.answer') return void sendCmd('card.reveal', { what: 'answer' })
-    if (cmd === 'card.solution') return void sendCmd('card.reveal', { what: 'solution' })
+    if (cmd === 'card.answer') return voiceReveal('answer', text)
+    if (cmd === 'card.solution') return voiceReveal('solution', text)
     sendCmd('phrase', { text })
   },
 })

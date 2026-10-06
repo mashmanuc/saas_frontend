@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchRemotePhrase, REMOTE_GRAMMAR_MAX_LEN } from '../remote/remoteGrammar'
+import { matchRemotePhrase, REMOTE_GRAMMAR_MAX_LEN, wantsHide } from '../remote/remoteGrammar'
 
 describe('remoteGrammar — голосові команди пульта', () => {
   it.each([
@@ -70,6 +70,26 @@ describe('remoteGrammar — голосові команди пульта', () =>
     ['покажи розв\'язання', 'card.solution'],
   ])('«%s» → %s (v1.2)', (phrase, cmd) => {
     expect(matchRemotePhrase(phrase)).toBe(cmd)
+  })
+
+  // v1.27: «відповідь» — команда лише сама або з дієсловом показу; питання — Інтегралику
+  it.each([
+    ['яка тут відповідь?', null],
+    ['підкажи відповідь', null],
+    ['скажи відповідь на питання', null],
+    ['дай відповідь', null],
+    ['відкрий відповідь', 'card.answer'],
+    ['відповіді', 'card.answer'],
+    ['закрий відповідь', 'card.answer'],
+  ])('v1.27: «%s» → %s', (phrase, cmd) => {
+    expect(matchRemotePhrase(phrase)).toBe(cmd)
+  })
+
+  it('v1.27: wantsHide — «сховай / приховай / прибери / закрий» проти «покажи» і самого слова', () => {
+    for (const p of ['сховай відповідь', 'приховай розбір', 'прибери відповідь', 'закрий відповідь'])
+      expect(wantsHide(p), p).toBe(true)
+    for (const p of ['покажи відповідь', 'відповідь', 'відкрий відповідь', 'покажи розбір'])
+      expect(wantsHide(p), p).toBe(false)
   })
 
   it('«відповідь» перемагає «покажи задачу»; «наступна сторінка» не стає скролом', () => {

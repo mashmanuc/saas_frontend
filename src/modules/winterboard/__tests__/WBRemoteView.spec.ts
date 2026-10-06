@@ -295,6 +295,57 @@ describe('WBRemoteView v1.1', () => {
     expect(lastCmd()).toMatchObject({ cmd: 'phrase', args: { text: 'додай завдання по числовій нерівності' } })
   })
 
+  // v1.27 (власник 2026-10-06: «роби голосові команди»): голос робить те, що видима кнопка
+  describe('v1.27: голосом «відповідь»', () => {
+    async function ready(state: Record<string, unknown>) {
+      mountView()
+      await flushPromises()
+      onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 3, ...state })
+      await nextTick()
+      send.mockClear()
+    }
+    const Q_CLOSED = { questions: { count: 1, answer: false } }
+    const Q_OPEN = { questions: { count: 1, answer: true } }
+
+    it('питання до обговорення на сторінці → відповідь питання (до цього голос тут мовчав)', async () => {
+      await ready(Q_CLOSED)
+      onFinalCb?.('покажи відповідь')
+      expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'question' } })
+    })
+
+    it('«покажи» не ховає відкриту, «сховай» — ховає', async () => {
+      await ready(Q_OPEN)
+      onFinalCb?.('покажи відповідь')
+      onFinalCb?.('відповідь')
+      expect(send).not.toHaveBeenCalled()
+      onFinalCb?.('сховай відповідь')
+      expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'question' } })
+    })
+
+    it('задача на весь екран — відповідь задачі, а не питання', async () => {
+      await ready({ ...Q_CLOSED, cards: { count: 1, answer: false, solution: false, presenting: true } })
+      onFinalCb?.('відповідь')
+      expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
+    })
+
+    it('задачі без питань — як і було; відкриту відповідь задачі «покажи» теж не ховає', async () => {
+      await ready({ cards: { count: 2, answer: false, solution: true, presenting: false } })
+      onFinalCb?.('покажи відповідь')
+      expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'answer' } })
+      send.mockClear()
+      onFinalCb?.('покажи розбір')
+      expect(send).not.toHaveBeenCalled()
+      onFinalCb?.('сховай розбір')
+      expect(lastCmd()).toMatchObject({ cmd: 'card.reveal', args: { what: 'solution' } })
+    })
+
+    it('«яка тут відповідь?» — питання Інтегралику, не відкриття на екрані класу', async () => {
+      await ready(Q_CLOSED)
+      onFinalCb?.('яка тут відповідь?')
+      expect(lastCmd()).toMatchObject({ cmd: 'phrase', args: { text: 'яка тут відповідь?' } })
+    })
+  })
+
   // Кнопки задач — за підписом (текст або aria-label): поза блоком задач є інші `.wb-remote__mini`.
   const TASK_BUTTONS = [MSG.fitTask, MSG.fontDown, MSG.fontUp, MSG.scrollUp, MSG.scrollDown, MSG.showAnswer, MSG.showSolution]
   const findBtn = (w: any, label: string) =>
