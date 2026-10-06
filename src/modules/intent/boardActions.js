@@ -1580,9 +1580,13 @@ export function summarizeAsset(a) {
     // «Не бачу вмісту карти». Самої картинки модель не бачить — підпис і є те, що вона про неї знає.
     label = String(d.caption || d.title || '').replace(/\s+/g, ' ').trim().slice(0, 160)
   } else if (a.type === 'discussion_question') {
-    // Адреса — сам текст питання. Відповідь сюди НЕ йде: вона для класу
-    // після обговорення, а не підказка в контексті.
+    // Адреса — сам текст питання. Відповідь і опора — окремими полями (`sceneExtras`),
+    // не в label: за label модель адресує об'єкти.
     label = String(d.question || '').slice(0, 120)
+  } else if (a.type === 'history_card') {
+    // 2026-10-06: до цього довідка йшла без назви — «довідка», «довідка», «довідка»:
+    // модель не знала, про кого вони, і не могла адресувати жодну.
+    label = String(d.title || '').replace(/\s+/g, ' ').trim().slice(0, 120)
   } else if (a.type === 'timeline_card') {
     // Підсумок має дати Інтегралику адресу: назву, активну подію і короткий
     // список решти. Без активної події він не знав би, про що зараз мова.
@@ -1644,6 +1648,42 @@ export function summarizeAsset(a) {
 /** LaTeX/HTML → плоский текст для контексту моделі. */
 function flatten(v, cap) {
   return String(v ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, cap)
+}
+
+/**
+ * «Інтегралик знає сцену» (власник 2026-10-06): матеріал сторінки — окремими полями, як `answer` у
+ * задачах НМТ, щоб на «дай підказку» чи «поясни простіше» модель відповідала з нього, з цитатою.
+ *   • discussion_question — відповідь і опора (цитата з джерела). Бачить лише вчитель: Інтегралик
+ *     говорить тільки з ним (палітра, пульт), учневі в стан нічого з цього не йде.
+ *   • theory_card / history_card — дослівні цитати-опори джерел (`sources[].evidence`) і назви джерел;
+ *     довідка — ще «хто/що це» (lead) і факти картки.
+ * BE ріже власним бюджетом і друкує як ВІДПОВІДЬ / ОПОРА / ДЖЕРЕЛА / ТЕКСТ.
+ */
+export function sceneExtras(a) {
+  const d = a?.data || {}
+  const flat = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
+  const out = {}
+  if (a?.type === 'discussion_question') {
+    if (flat(d.answer, 240)) out.answer = flat(d.answer, 240)
+    if (flat(d.support, 240)) out.quote = flat(d.support, 240)
+    return out
+  }
+  if (a?.type !== 'theory_card' && a?.type !== 'history_card') return out
+  const sources = Array.isArray(d.sources) ? d.sources : []
+  const quotes = [...new Set(sources.map((s) => flat(s?.evidence, 200)).filter(Boolean))]
+  if (quotes.length) out.quote = quotes.slice(0, 2).join(' … ')
+  const names = [...new Set(sources.map((s) => flat(s?.title, 80)).filter(Boolean))]
+  if (names.length) out.sources = names.slice(0, 3).join('; ')
+  if (a.type === 'history_card') {
+    const facts = (Array.isArray(d.primary) ? d.primary : [])
+      .map((f) => [flat(f?.label, 40), (Array.isArray(f?.values) ? f.values : [])
+        .map((v) => flat(v?.label, 60)).filter(Boolean).join(', ')])
+      .filter(([label, values]) => label && values)
+      .map(([label, values]) => `${label}: ${values}`)
+    const text = [flat(d.lead, 300), facts.join('; ')].filter(Boolean).join(' ')
+    if (text) out.text = text.slice(0, 400)
+  }
+  return out
 }
 
 /**
@@ -1736,7 +1776,7 @@ export async function buildBoardSummary() {
       const cardText = a.type === 'theory_card'
         ? { text: String((a.data || {}).body || '').replace(/\s+/g, ' ').trim().slice(0, 400) }
         : {}
-      const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : cardText
+      const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : { ...cardText, ...sceneExtras(a) }
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
                    ...extras, ...materialLang(a.data) })
