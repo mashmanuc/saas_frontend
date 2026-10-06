@@ -8,22 +8,25 @@
   >
     <div class="sidebar-header">
       <router-link to="/" class="sidebar-logo">
+        <!-- Знак бренду «M4» — той самий, що в іконці вкладки (public/favicon.svg). Колір не тематичний. -->
         <svg
           class="logo-icon-svg"
           width="22"
           height="22"
           viewBox="0 0 24 24"
-          fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
         >
-          <rect width="24" height="24" rx="6" fill="currentColor" />
-          <path
-            d="M6 17V7l4 5 4-5v10M18 7v10"
-            stroke="var(--card-bg, #fff)"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+          <rect width="24" height="24" rx="6" fill="#22c55e" />
+          <text
+            x="12"
+            y="16.1"
+            text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="11.5"
+            font-weight="700"
+            fill="#fff"
+          >M4</text>
         </svg>
         <span v-if="!layout.sidebar.isCollapsed" class="logo-text">M4SH</span>
       </router-link>
