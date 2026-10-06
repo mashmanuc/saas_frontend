@@ -438,7 +438,8 @@ describe('HistoryCard · що показати далі (Next Actions V1)', () =
     const load = loader()
     const w = render(CARD, true, { loadActions: load })
     await flushPromises()
-    expect(load).toHaveBeenCalledWith({ provider: 'wikidata', id: 'Q152486' })
+    // 2026-10-06: другим аргументом — вид картки (бекенд «Територію» за даними не впізнає)
+    expect(load).toHaveBeenCalledWith({ provider: 'wikidata', id: 'Q152486' }, 'event')
     expect(w.findAll('.history-card__action').map(b => b.text()))
       .toEqual(['Передумови й наслідки', 'Сторони битви', 'Де це сталося'])
   })
@@ -496,5 +497,33 @@ describe('HistoryCard · що показати далі (Next Actions V1)', () =
     await flushPromises()
     expect(w.find('.history-card__actions').exists()).toBe(false)
     expect(w.find('.history-card__action[disabled]').exists()).toBe(false)
+  })
+})
+
+describe('HistoryCard · вид «Територія» (2026-10-06)', () => {
+  const VILNA: Partial<HistoryCardData> = {
+    variant: 'territory',
+    title: 'Віленське воєводство',
+    primary: [
+      { label: 'Роки існування', status: 'verified', total: 1, values: [{ label: '1413 — 1795' }] },
+      { label: 'Центр', status: 'verified', total: 1, values: [{ label: 'Вільнюс' }] },
+    ],
+    relation: { label: 'Складові', of: 'Велике князівство Литовське' },
+    entity_ref: { provider: 'wikidata', id: 'Q2347932' },
+    content_language: 'uk',
+  }
+
+  it('у шапці — «Територія» (не «Особа»: санітайзер її пропускає), англійською — «Territory»', () => {
+    expect(render(VILNA).find('.history-card__badge').text()).toBe('Територія')
+    expect(render({ ...VILNA, content_language: 'en' }).find('.history-card__badge').text()).toBe('Territory')
+    expect(HISTORY_VARIANTS).toContain('territory')
+  })
+
+  it('дії питає з видом картки — бекенд сам «Територію» не впізнає', async () => {
+    const load = vi.fn(async () => [{ id: 'history.related', label: 'Складові' }])
+    const w = render(VILNA, true, { loadActions: load })
+    await flushPromises()
+    expect(load).toHaveBeenCalledWith({ provider: 'wikidata', id: 'Q2347932' }, 'territory')
+    expect(w.findAll('.history-card__action').map((b) => b.text())).toEqual(['Складові'])
   })
 })

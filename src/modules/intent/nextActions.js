@@ -36,14 +36,19 @@ function currentBoardId() {
     })
 }
 
-export function loadNextActions(ref) {
+/** Вид картки, який бекенд за даними не впізнає: «Територію» дав зв'язок «Складові» (2026-10-06). */
+const territoryHint = (variant) => (variant === 'territory' ? { variant: 'territory' } : {})
+
+export function loadNextActions(ref, variant) {
   if (!ref?.provider || !ref?.id) return Promise.resolve([])
-  const key = `${ref.provider}:${ref.id}`
+  const hint = territoryHint(variant)
+  const key = `${ref.provider}:${ref.id}:${hint.variant || ''}`
   if (!available.has(key)) {
     const request = currentBoardId()
       .then((boardId) => apiClient.post('/v1/intents/next-actions/available/', {
         board_id: boardId,
         entity_ref: { provider: ref.provider, id: ref.id },
+        ...hint,
       }))
       .then((res) => sanitizeTeachingActions((res?.actions ? res : (res?.data ?? {})).actions))
       .catch((e) => {
@@ -73,6 +78,7 @@ export async function runNextAction(source, action) {
       board_id: await currentBoardId(),
       entity_ref: ref,
       action_id: action.id,
+      ...territoryHint(source?.data?.variant),
     })
     const plan = res?.status ? res : (res?.data ?? {})
     if (plan.status !== 'board_action_plan') {

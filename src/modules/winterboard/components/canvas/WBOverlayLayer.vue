@@ -147,9 +147,9 @@ function runTeachingAction(source: WBAsset, action: WBTeachingAction): void {
     .then(({ runNextAction }) => runNextAction(source, action))
     .catch((e) => console.error('[WBOverlayLayer] next action failed', e))
 }
-function loadTeachingActions(entityRef: EntityRef): Promise<WBTeachingAction[]> {
+function loadTeachingActions(entityRef: EntityRef, variant?: string): Promise<WBTeachingAction[]> {
   return import('@/modules/intent/nextActions')
-    .then(({ loadNextActions }) => loadNextActions(entityRef))
+    .then(({ loadNextActions }) => loadNextActions(entityRef, variant))
     .catch((e) => {
       console.error('[WBOverlayLayer] next actions unavailable', e)
       return []

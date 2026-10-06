@@ -100,6 +100,17 @@ describe('етап 0.3 — нові підписи несуть упізнава
       .toBe('порожня')
   })
 
+  it('картинка — підпис: Інтегралик знає, що на ній (саму картинку модель не бачить)', () => {
+    const { kind, label } = summarizeAsset({
+      id: 'x', type: 'image',
+      data: { caption: 'Річ Посполита в кордонах 1619 року;   пунктир — сучасні кордони', source: 'wikimedia_commons' },
+    })
+    expect(kind).toBe('зображення')
+    expect(label).toBe('Річ Посполита в кордонах 1619 року; пунктир — сучасні кордони')
+    expect(summarizeAsset({ id: 'y', type: 'image', data: { caption: 'к'.repeat(300) } }).label).toHaveLength(160)
+    expect(summarizeAsset({ id: 'z', type: 'image', data: {} }).label).toBe('')
+  })
+
   it('питання — сам текст питання, без відповіді', () => {
     const { kind, label } = summarizeAsset({
       id: 'x', type: 'discussion_question',

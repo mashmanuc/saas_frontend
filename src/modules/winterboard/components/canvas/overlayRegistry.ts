@@ -126,7 +126,7 @@ export interface OverlayCtx {
   /** Next Actions V1: обидва є лише в живому редагуванні тьютора. Немає →
    *  ні кнопок, ні запиту за ними (Replay, учень). */
   onRunAction?: (source: WBAsset, action: WBTeachingAction) => void
-  loadActions?: (ref: EntityRef) => Promise<WBTeachingAction[]>
+  loadActions?: (ref: EntityRef, variant?: string) => Promise<WBTeachingAction[]>
   /** Шпилька на карту дошки. Картка кличе його лише коли координата справді
    *  є місцем події, а не центроїдом країни. */
   onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void

@@ -226,7 +226,7 @@ const props = withDefaults(
     canPinToMap?: boolean
     /** Хто скаже, які дії «що далі» є в цієї сутності. Є лише в живому
      *  редагуванні тьютора — у Replay і в учня немає, тож і запиту немає. */
-    loadActions?: (ref: EntityRef) => Promise<WBTeachingAction[]>
+    loadActions?: (ref: EntityRef, variant?: string) => Promise<WBTeachingAction[]>
   }>(),
   { isSelected: false, interactive: true, canFit: true, canOpenEntity: false, canPinToMap: false,
     loadActions: undefined },
@@ -272,7 +272,8 @@ watch([canLoadActions, entityKey], ([can, key], previous) => {
   const ref0 = data.value.entity_ref
   const load = props.loadActions
   if (!can || typeof load !== 'function' || !key || !ref0) return
-  load(ref0).then((list) => {
+  // Вид — із самої картки: «Територію» бекенд за даними не впізнає (її дав зв'язок «Складові»)
+  load(ref0, data.value.variant).then((list) => {
     if (ticket === actionsRequest) loadedActions.value = Array.isArray(list) ? list : []
   })
 }, { immediate: true })
@@ -285,6 +286,7 @@ const VARIANT_STYLES = {
   event:    { icon: '◈', accent: '#b45309', border: '#fde68a', badge_uk: 'Подія',   badge_en: 'Event' },
   monument: { icon: '▣', accent: '#047857', border: '#a7f3d0', badge_uk: "Пам'ятка", badge_en: 'Monument' },
   polity:   { icon: '⬢', accent: '#9f1239', border: '#fecdd3', badge_uk: 'Держава', badge_en: 'State' },
+  territory: { icon: '▦', accent: '#0e7490', border: '#a5f3fc', badge_uk: 'Територія', badge_en: 'Territory' },
 } as const
 
 /** Підписи мовою МАТЕРІАЛУ, не UI-локалі — дзеркало theory_card. */

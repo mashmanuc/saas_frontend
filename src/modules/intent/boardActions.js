@@ -383,7 +383,8 @@ export function sanitizeSourceList(raw) {
 // Кожен вид тут МУСИТЬ мати стиль у `HistoryCardRenderer` (тест
 // `historyCard.spec.ts`): невідомий вид падає в 'person', і держава показалась
 // би як «Особа».
-export const HISTORY_VARIANTS = ['person', 'event', 'monument', 'polity']
+// `territory` (2026-10-06) — воєводство, провінція, повіт; лише з «Складових» (адмінподіл).
+export const HISTORY_VARIANTS = ['person', 'event', 'monument', 'polity', 'territory']
 const HISTORY_STATUSES = ['verified', 'mixed']
 
 /**
@@ -1574,6 +1575,10 @@ export function summarizeAsset(a) {
     label = d.formula || ''
   } else if (a.type === 'theory_card') {
     label = d.title || String(d.body || '').slice(0, 80)
+  } else if (a.type === 'image') {
+    // Власник 2026-10-06 (скрін уроку): «на даній сторінці є карта, які там є країни» →
+    // «Не бачу вмісту карти». Самої картинки модель не бачить — підпис і є те, що вона про неї знає.
+    label = String(d.caption || d.title || '').replace(/\s+/g, ' ').trim().slice(0, 160)
   } else if (a.type === 'discussion_question') {
     // Адреса — сам текст питання. Відповідь сюди НЕ йде: вона для класу
     // після обговорення, а не підказка в контексті.

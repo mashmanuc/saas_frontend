@@ -549,7 +549,9 @@ export type WBSourceStatus = 'verified' | 'mixed' | 'teacher_provided'
  */
 // `polity` — державне утворення (Гетьманщина, Київська Русь, Річ Посполита, Україна).
 // Внутрішня назва ширша за «держава», щоб не звузити контракт до сучасних держав.
-export type HistoryCardVariant = 'person' | 'event' | 'monument' | 'polity'
+// `territory` (власник 2026-10-06) — адмінодиниця держави (воєводство, провінція, повіт). Вид дає
+// зв'язок «Складові» (адмінподіл), не класифікатор: така картка з'являється лише звідти.
+export type HistoryCardVariant = 'person' | 'event' | 'monument' | 'polity' | 'territory'
 
 /** `mixed` — джерела розходяться; картка показує це бейджем, не помилкою. */
 export type HistoryFieldStatus = 'verified' | 'mixed'

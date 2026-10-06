@@ -206,3 +206,28 @@ describe('Replay не резолвить дії', () => {
     expect(src).not.toMatch(/next_actions/)
   })
 })
+
+describe('«Територія» (2026-10-06): вид із самої картки — лише territory', () => {
+  const REF = { provider: 'wikidata', id: 'Q2347932' }
+
+  it('картка території питає з variant; без нього — як було; кеш окремий', async () => {
+    m.post.mockResolvedValue({ actions: [{ id: 'history.related', label: 'Складові' }] })
+    await loadNextActions(REF, 'territory')
+    await loadNextActions(REF)
+    await loadNextActions(REF, 'polity')           // інший вид не підказуємо — бекенд рахує сам
+    expect(m.post.mock.calls.map((c) => c[1])).toEqual([
+      { board_id: 'board-1', entity_ref: REF, variant: 'territory' },
+      { board_id: 'board-1', entity_ref: REF },
+    ])
+  })
+
+  it('«Складові» картки території — з variant; держави — без', async () => {
+    m.post.mockResolvedValue({ status: 'none', explain: 'немає' })
+    const territory = { id: 'card-t', data: { variant: 'territory', entity_ref: REF } }
+    const polity = { id: 'card-p', data: { variant: 'polity', entity_ref: { provider: 'wikidata', id: 'Q49683' } } }
+    await runNextAction(territory, { id: 'history.related', label: 'Складові' })
+    await runNextAction(polity, { id: 'history.related', label: 'Складові' })
+    expect(m.post.mock.calls[0][1]).toMatchObject({ variant: 'territory', action_id: 'history.related' })
+    expect(m.post.mock.calls[1][1]).not.toHaveProperty('variant')
+  })
+})
