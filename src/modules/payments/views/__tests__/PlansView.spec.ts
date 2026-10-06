@@ -74,6 +74,24 @@ describe('PlansView (PR-1)', () => {
     expect(w.text()).toContain('billing.errors.salesDisabled')
   })
 
+  it('відмова сервера «діє доступ від команди» — пояснення людині, не загальна помилка (пакет білінгу 10-07)', async () => {
+    const w = mountView()
+    const store = useBillingStore()
+    vi.spyOn(store, 'startCheckout').mockRejectedValue({
+      code: 'active_staff_grant', message: '', details: { until: '2027-01-15T10:00:00+00:00' },
+    })
+    store.plans = [PRO_USD, BUSINESS] as any
+    store.salesEnabled = true
+    store.isLoadingPlans = false
+    store.lastError = null
+    await w.vm.$nextTick()
+
+    await (w.vm as any).buyPlan(BUSINESS)
+    await w.vm.$nextTick()
+    expect(w.text()).toContain('billing.errors.activeStaffGrant')
+    expect(w.text()).not.toContain('billing.plans.checkoutError')
+  })
+
   it('продаж увімкнено, entitlement PRO: PRO-USD = «ваш поточний план», BUSINESS — оплата', async () => {
     const w = mountView()
     const store = useBillingStore()

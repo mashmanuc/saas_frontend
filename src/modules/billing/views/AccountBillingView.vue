@@ -109,6 +109,7 @@ import PlansList from '../components/PlansList.vue'
 import EarlyAccessCard from '../components/EarlyAccessCard.vue'
 import { getPaymentHistory } from '../api/billingApi'
 import { isSameTier } from '../utils/planCode'
+import { checkoutErrorText } from '../utils/checkoutErrors'
 
 const billingStore = useBillingStore()
 const { t } = useI18n()
@@ -224,14 +225,7 @@ async function handleSelectPlan(planCode) {
   } catch (error) {
     console.error('Checkout failed:', error)
     const { notifyError } = await import('@/utils/notify')
-    const code = String(error?.code || '').toLowerCase()
-    if (code === 'sales_disabled') {
-      notifyError(t('billing.errors.salesDisabled'))
-    } else if (code === 'already_subscribed_same_tier') {
-      notifyError(t('billing.errors.sameTierAlready'))
-    } else {
-      notifyError(error?.message || 'Помилка при створенні checkout сесії')
-    }
+    notifyError(checkoutErrorText(error, t) || error?.message || 'Помилка при створенні checkout сесії')
   }
 }
 

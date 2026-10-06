@@ -6041,6 +6041,10 @@
       "pendingAlready": "Payment for this plan is already awaiting confirmation — no second invoice is needed.",
       "salesDisabled": "Plan sales are currently disabled — a payment cannot be created.",
       "sameTierAlready": "You already have this access tier in another currency — no second payment is needed.",
+      "activeStaffGrant": "You have access from the M4SH team until {date}. You can pay after that date.",
+      "activeStaffGrantNoDate": "You have access from the M4SH team. You can pay once it ends.",
+      "renewalCapExceeded": "Your subscription is already paid until {date}. You can renew at most 12 months ahead.",
+      "renewalCapExceededNoDate": "Your subscription is already paid ahead. You can renew at most 12 months ahead.",
       "plansLoadFailed": "Failed to load plans"
     },
     "retryButton": "Try Again",

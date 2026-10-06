@@ -17,6 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { Sparkles, Check, Star } from 'lucide-vue-next'
 import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { isSameTier } from '@/modules/billing/utils/planCode'
+import { checkoutErrorText } from '@/modules/billing/utils/checkoutErrors'
 import { buildPlanFeatures, type TranslateFn } from '@/modules/payments/planLimitFeatures'
 import type { PlanDto } from '@/modules/billing/api/dto'
 import Card from '@/ui/Card.vue'
@@ -87,11 +88,8 @@ async function buyPlan(plan: PlanDto): Promise<void> {
   try {
     await billingStore.startCheckout(plan.code)
   } catch (err: any) {
-    const code = String(err?.code || '').toLowerCase()
-    checkoutError.value =
-      code === 'sales_disabled' ? t('billing.errors.salesDisabled')
-      : code === 'already_subscribed_same_tier' ? t('billing.errors.sameTierAlready')
-      : err?.response?.data?.error?.detail || err?.message || t('billing.plans.checkoutError')
+    checkoutError.value = checkoutErrorText(err, t)
+      || err?.response?.data?.error?.detail || err?.message || t('billing.plans.checkoutError')
   } finally {
     checkoutLoading.value = null
   }

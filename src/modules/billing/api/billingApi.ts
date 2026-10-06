@@ -57,8 +57,16 @@ export { BillingErrorCodes } from './dto'
  * Parse domain error from API response
  */
 function parseDomainError(error: any): DomainError {
-  if (error.response?.data?.error) {
-    return error.response.data.error
+  const data = error?.response?.data
+  // Вкладена форма (обробник винятків): { error: { code, message, … } }.
+  if (data?.error && typeof data.error === 'object') {
+    return data.error
+  }
+  // Пласка форма (ручний Response у view): { error: '<службовий текст англійською>', code, …meta }.
+  // Раніше тут повертався сам рядок — і код відмови губився (вітрини не могли пояснити людині,
+  // що сталося). Службовий текст людині не показуємо: `message` порожній, вітрина бере свій.
+  if (data && (typeof data.code === 'string' || typeof data.error === 'string')) {
+    return { code: typeof data.code === 'string' ? data.code : 'unknown_error', message: '', details: data }
   }
   return {
     code: 'unknown_error',

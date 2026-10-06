@@ -437,6 +437,34 @@ describe('AccountBillingView', () => {
       await wrapper.findComponent({ name: 'PlansList' }).vm.$emit('select', 'pro')
       expect(startCheckoutSpy).toHaveBeenCalledWith('pro')
     })
+
+    it('відмова «продовження далі ніж на 12 місяців» — пояснення людині, не загальна помилка (пакет білінгу 10-07)', async () => {
+      const notify = await import('@/utils/notify')
+      const notifySpy = vi.spyOn(notify, 'notifyError')
+      const wrapper = mountView()
+      const billingStore = useBillingStore()
+      vi.spyOn(billingStore, 'startCheckout').mockRejectedValue({
+        code: 'renewal_cap_exceeded', message: '', details: { until: '2027-03-01T00:00:00+00:00' },
+      })
+      billingStore.me = makeBillingMeDto({
+        subscription: { status: 'none', provider: null, current_period_end: null, cancel_at_period_end: false, canceled_at: null },
+        entitlement: { plan_code: 'FREE', features: [], expires_at: null },
+        display_plan_code: 'FREE',
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
+      billingStore.plans = []
+      billingStore.isLoading = false
+      billingStore.salesEnabled = true
+      await wrapper.vm.$nextTick()
+
+      await (wrapper.vm as any).handleSelectPlan('pro')
+      expect(notifySpy).toHaveBeenCalledTimes(1)
+      expect(String(notifySpy.mock.calls[0][0])).toContain('billing.errors.renewalCapExceeded')
+      notifySpy.mockRestore()
+    })
   })
 
   it('НЕ має cancel-флоу (2026-07-28): кнопку прибрано — Plata без recurring', () => {
