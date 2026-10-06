@@ -109,4 +109,59 @@ onMounted(() => {
 .collections-list-page__empty-text { font-size: 14px; color: #64748b; margin: 0; }
 @media (max-width: 640px) { .collections-list-page__container { padding: 20px 16px 48px; } .collections-list-page__title { font-size: 22px; } .collections-list-page__grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .collections-list-page__skeleton-bar { animation: none; } }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .collections-list-page {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .collections-list-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collections-list-page__subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collections-list-page__card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .collections-list-page__card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .collections-list-page__card-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collections-list-page__card-desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collections-list-page__card-footer {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .collections-list-page__card-count {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .collections-list-page__card-featured {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .collections-list-page__skeleton {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .collections-list-page__skeleton-bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .collections-list-page__error {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collections-list-page__retry-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .collections-list-page__empty-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collections-list-page__empty-text {
+  color: var(--color-text-muted);
+}
 </style>

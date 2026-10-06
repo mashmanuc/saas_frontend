@@ -2367,4 +2367,19 @@ function getTypeIcon(type: string): string {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .knowledge-page__demo-badge {
+  color: var(--color-info);
+}
+[data-theme="dark"] .kct-problem {
+  color: var(--color-info);
+}
+[data-theme="dark"] .kct-video {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .kct-audio {
+  color: var(--color-info);
+}
 </style>

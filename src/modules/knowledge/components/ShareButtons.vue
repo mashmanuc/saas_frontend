@@ -507,4 +507,51 @@ function generateQrSvg(text: string): string {
     font-size: 12px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .share-buttons__btn {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .share-buttons__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .share-buttons__btn--telegram:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .share-buttons__btn--linkedin:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .share-buttons__btn--twitter:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .share-buttons__btn--viber:hover {
+  background: var(--color-info-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .share-buttons__btn--facebook:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .share-buttons__btn--whatsapp:hover {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+[data-theme="dark"] .share-buttons__toast {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
 </style>

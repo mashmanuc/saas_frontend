@@ -374,4 +374,65 @@ onMounted(async () => {
 @media (prefers-reduced-motion: reduce) {
   .collection-page__spinner { animation: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .collection-page {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .collection-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .collection-page__loading-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collection-page__error-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collection-page__error-message {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collection-page__error-link {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .collection-page__error-link:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .collection-page__back {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .collection-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collection-page__description {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .collection-page__badge {
+  background: var(--color-accent-soft);
+  color: var(--color-info);
+}
+[data-theme="dark"] .collection-page__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collection-page__card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .collection-page__card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .collection-page__card-img-wrap {
+  background: var(--color-border);
+}
+[data-theme="dark"] .collection-page__card-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .collection-page__card-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .collection-page__card-subject {
+  background: var(--color-surface-sunken);
+}
 </style>

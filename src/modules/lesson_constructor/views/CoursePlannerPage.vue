@@ -190,4 +190,13 @@ function openSession(sessionId: string): void {
 .course-planner__saved { display: flex; gap: 0.6em; align-items: center;
   padding: 0.5em 0.8em; border-left: 3px solid #197c4b; background: rgba(25,124,75,0.07); }
 .course-planner__to-list { background: none; border: 0; text-decoration: underline; cursor: pointer; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .course-planner__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .course-planner__saved {
+  border-left-color: var(--color-success);
+}
 </style>

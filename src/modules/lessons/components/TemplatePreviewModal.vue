@@ -416,4 +416,16 @@ async function onUseTemplate() {
   color: var(--text-primary);
 }
 .mp-btn-secondary:hover { background: var(--border-color); }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .mp-meta-type {
+  color: var(--color-info);
+}
+[data-theme="dark"] .mp-mat-problem {
+  color: var(--color-info);
+}
+[data-theme="dark"] .mp-mat-video {
+  color: var(--color-danger);
+}
 </style>

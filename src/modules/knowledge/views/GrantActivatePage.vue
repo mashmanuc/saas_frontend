@@ -161,4 +161,39 @@ async function onActivate() {
   text-decoration: none; border: none; cursor: pointer;
 }
 .grant-page__primary--btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .grant-page__card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .grant-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-page__seller {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-page__muted {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-page__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .grant-page__lesson {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .grant-page__lesson-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-page__lesson-tag {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-page__primary {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .grant-page__primary--btn:disabled {
+  background: var(--color-border-strong);
+}
 </style>

@@ -74,4 +74,16 @@ const isEmpty = computed(() =>
 .materialize-report__block h5 { margin: 0 0 0.3em; font-size: 0.9em; }
 .materialize-report__detail { display: block; font-size: 0.8em; opacity: 0.75; }
 .materialize-report__open { margin-left: 0.5em; cursor: pointer; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .materialize-report__block--failed {
+  border-left-color: var(--color-danger);
+}
+[data-theme="dark"] .materialize-report__block--created {
+  border-left-color: var(--color-success);
+}
+[data-theme="dark"] .materialize-report__block--skipped {
+  border-left-color: var(--color-border-strong);
+}
 </style>

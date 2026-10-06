@@ -517,4 +517,11 @@ async function confirmClone() {
 @keyframes cll-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .cll-spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-border);
+}
 </style>

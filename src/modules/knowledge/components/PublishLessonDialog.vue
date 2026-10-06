@@ -494,4 +494,87 @@ async function copyLink() {
     max-height: 90dvh;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .publish-dialog {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .publish-dialog__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .publish-dialog__close {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .publish-dialog__close:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .publish-dialog__desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .publish-dialog__label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .publish-dialog__input,
+[data-theme="dark"] .publish-dialog__textarea,
+[data-theme="dark"] .publish-dialog__select {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .publish-dialog__input:focus,
+[data-theme="dark"] .publish-dialog__textarea:focus,
+[data-theme="dark"] .publish-dialog__select:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .publish-dialog__radio-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .publish-dialog__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .publish-dialog__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .publish-dialog__btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .publish-dialog__btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .publish-dialog__btn--secondary:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .publish-dialog__success-text {
+  color: var(--color-text);
+}
+[data-theme="dark"] .publish-dialog__share-prompt {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .publish-dialog__share-btn {
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .publish-dialog__share-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .publish-dialog__share-btn--telegram:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .publish-dialog__share-btn--whatsapp:hover {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+[data-theme="dark"] .publish-dialog__share-btn--viber:hover {
+  background: var(--color-info-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
 </style>

@@ -262,4 +262,15 @@ function truncate(str: string, max: number): string {
   .knowledge-graph__empty { color: #64748b; }
   .knowledge-graph__title { color: #f1f5f9; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .knowledge-graph__empty {
+  color: var(--color-text-muted);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="dark"] .knowledge-graph__empty {
+    color: var(--color-text-muted);
+  }
+}
 </style>

@@ -588,4 +588,101 @@ onMounted(() => {
     opacity: 1;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lesson-library__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-library__search-input {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-library__search-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-library__tag {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .lesson-library__tag:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-library__tag--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .lesson-library__filter-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-library__select {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .lesson-library__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .lesson-library__retry-btn {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-library__card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .lesson-library__card-thumb {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .lesson-library__card-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-library__card-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-library__card-tag {
+  background: var(--color-accent-soft);
+  color: var(--color-info);
+}
+[data-theme="dark"] .lesson-library__card-stat {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .dot--filled {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .dot--empty {
+  background: var(--color-border);
+}
+[data-theme="dark"] .lesson-library__clone-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .lesson-library__clone-btn:hover {
+  background: var(--color-accent-hover);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-library__skeleton {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .lesson-library__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-library__loadmore-btn {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-library__loadmore-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-library__total {
+  color: var(--color-text-muted);
+}
 </style>

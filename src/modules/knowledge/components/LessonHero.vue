@@ -206,4 +206,14 @@ defineEmits(['start-replay'])
   color: var(--color-text-secondary, #555);
   font-size: 0.9375rem;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lesson-hero__tutor-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-hero__badge--public {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
 </style>

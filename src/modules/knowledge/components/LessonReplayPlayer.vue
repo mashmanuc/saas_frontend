@@ -170,4 +170,16 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lesson-replay-player {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .lesson-replay-player__controls {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .lesson-replay-player__exit-btn {
+  background: var(--color-surface);
+}
 </style>

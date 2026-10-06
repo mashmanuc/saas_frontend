@@ -1284,4 +1284,224 @@ onMounted(async () => {
 
   .catalog-page__sidebar { transition: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .catalog-page {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .catalog-page__header {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__search-icon {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__search-input {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .catalog-page__search-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__sidebar {
+  border-right-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__sidebar-title {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__sidebar-close {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__cat-skeleton {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .catalog-page__cat-empty-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__cat-item {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__cat-item:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__cat-item--active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__cat-section-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__cat-toggle {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__cat-toggle:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__cat-count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__mobile-cat-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__active-filter {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__clear-filter {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__clear-filter:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__filter-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__select {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .catalog-page__select:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__star-btn--active {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .catalog-page__star-btn:hover {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .catalog-page__error {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__retry-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .catalog-page__empty-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__empty-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__empty-icon {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__empty-btn {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__empty-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__empty-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__empty-btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .catalog-page__reset-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .catalog-page__reset-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .catalog-page__card-img-wrap {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__card-letter {
+  color: var(--color-success);
+}
+[data-theme="dark"] .catalog-page__card-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__card-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__card-author--link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__card-author--link:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__card-category {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .catalog-page__card-stars {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .catalog-page__card-rating-count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__card-views {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__card-skeleton {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__card-skeleton-img {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__card-skeleton-text {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__load-more-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .catalog-page__load-more-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .catalog-page__collections {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__collections-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__collection-card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .catalog-page__collection-card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .catalog-page__collection-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .catalog-page__collection-desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .catalog-page__collection-count {
+  color: var(--color-accent);
+}
+@media (max-width: 768px) {
+  [data-theme="dark"] .catalog-page__sidebar {
+    background: var(--color-surface);
+  }
+}
 </style>

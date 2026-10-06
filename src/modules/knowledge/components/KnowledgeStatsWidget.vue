@@ -135,4 +135,30 @@ onMounted(async () => {
 @media (prefers-reduced-motion: reduce) {
   .knowledge-stats-widget__skeleton { animation: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .knowledge-stats-widget {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .knowledge-stats-widget__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .knowledge-stats-widget__link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .knowledge-stats-widget__skeleton {
+  background: var(--color-border);
+}
+[data-theme="dark"] .knowledge-stats-widget__stat {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .knowledge-stats-widget__stat-value {
+  color: var(--color-text);
+}
+[data-theme="dark"] .knowledge-stats-widget__stat-label {
+  color: var(--color-text-muted);
+}
 </style>

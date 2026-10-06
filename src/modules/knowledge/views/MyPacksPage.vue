@@ -683,4 +683,128 @@ onMounted(loadPacks)
 @media (prefers-reduced-motion: reduce) {
   .my-packs-page__spinner { animation: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .my-packs-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__create-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .my-packs-page__create-btn:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .my-packs-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .my-packs-page__error {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__retry-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .my-packs-page__empty-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__empty-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .my-packs-page__card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .my-packs-page__card-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__card-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__card-count {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .my-packs-page__card-status--draft {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .my-packs-page__card-status--public {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .my-packs-page__card-status--hidden {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__card-action {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__card-action:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__card-action--danger:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .my-packs-page__card-desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .my-packs-page__dialog {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .my-packs-page__dialog-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__dialog-text {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .my-packs-page__label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .my-packs-page__input,
+[data-theme="dark"] .my-packs-page__textarea,
+[data-theme="dark"] .my-packs-page__select {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .my-packs-page__input:focus,
+[data-theme="dark"] .my-packs-page__textarea:focus,
+[data-theme="dark"] .my-packs-page__select:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .my-packs-page__dialog-error {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .my-packs-page__dialog-cancel {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .my-packs-page__dialog-cancel:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .my-packs-page__dialog-save {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .my-packs-page__dialog-save:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .my-packs-page__dialog-save--danger {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .my-packs-page__dialog-save--danger:hover:not(:disabled) {
+  background: var(--color-danger);
+}
 </style>

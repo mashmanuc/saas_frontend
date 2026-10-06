@@ -546,4 +546,99 @@ onMounted(loadAll)
   .analytics-page__spinner { animation: none; }
   .analytics-page__bar { transition: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .analytics-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .analytics-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .analytics-page__error {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__retry-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .analytics-page__kpi {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__kpi-value {
+  color: var(--color-text);
+}
+[data-theme="dark"] .analytics-page__kpi-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__section-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .analytics-page__period-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__period-btn--active {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .analytics-page__chart-empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__chart {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__bar {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .analytics-page__bar-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__top-table {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__top-head {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__top-row {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__top-row:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__top-col--name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .analytics-page__ach-card {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__ach-card:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .analytics-page__ach-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .analytics-page__ach-desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__ach-date {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .analytics-page__ach-progress-bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .analytics-page__ach-progress-fill {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .analytics-page__ach-progress-text {
+  color: var(--color-text-muted);
+}
 </style>

@@ -540,4 +540,83 @@ onMounted(async () => {
     animation: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lesson-pack-page {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .lesson-pack-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-pack-page__loading-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__error-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-pack-page__error-message {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__error-link {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .lesson-pack-page__error-link:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .lesson-pack-page__badge {
+  background: var(--color-accent-soft);
+  color: var(--color-info);
+}
+[data-theme="dark"] .lesson-pack-page__author {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__author-link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-pack-page__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-pack-page__description {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .lesson-pack-page__empty-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__item-link {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .lesson-pack-page__item-link:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .lesson-pack-page__item-number {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .lesson-pack-page__item-thumb {
+  background: var(--color-border);
+}
+[data-theme="dark"] .lesson-pack-page__item-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .lesson-pack-page__item-meta {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__item-subject {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .lesson-pack-page__item-arrow {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .lesson-pack-page__cta-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .lesson-pack-page__cta-btn:hover {
+  background: var(--color-accent-hover);
+}
 </style>

@@ -237,4 +237,16 @@ defineExpose({ load, open, builtOf })
 .course-list__lessons { width: 100%; border-collapse: collapse; }
 .course-list__error { color: #dc3545; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .course-list__ready-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .course-list__ready-go {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .course-list__error {
+  color: var(--color-danger);
+}
 </style>

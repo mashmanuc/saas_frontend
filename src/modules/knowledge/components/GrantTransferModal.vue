@@ -378,4 +378,129 @@ void emit
 }
 .grant-modal__mini--danger { color: #dc2626; border-color: #fca5a5; }
 .grant-modal__grant-revoked { font-size: 12px; color: #dc2626; font-weight: 600; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .grant-modal {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .grant-modal__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__close {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__tabs {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .grant-modal__tab {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__tab.is-active {
+  color: var(--color-success);
+  border-bottom-color: var(--color-success);
+}
+[data-theme="dark"] .grant-modal__steps {
+  background: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+[data-theme="dark"] .grant-modal__step {
+  color: var(--color-success);
+}
+[data-theme="dark"] .grant-modal__step-num {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .grant-modal__muted {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__lesson:hover {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .grant-modal__lesson-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__badge {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__badge--ok {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .grant-modal__drafts-hint {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .grant-modal__adv-toggle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__opt {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__opt select {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .grant-modal__opt-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .grant-modal__primary {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .grant-modal__primary:disabled {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .grant-modal__secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__result-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__code {
+  color: var(--color-success);
+}
+[data-theme="dark"] .grant-modal__copy {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .grant-modal__how {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .grant-modal__how-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__how-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__grant {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .grant-modal__grant-code {
+  color: var(--color-success);
+}
+[data-theme="dark"] .grant-modal__grant-uses {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__grant-lessons {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grant-modal__mini {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+[data-theme="dark"] .grant-modal__mini--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .grant-modal__grant-revoked {
+  color: var(--color-danger);
+}
 </style>

@@ -130,4 +130,10 @@ const orderingAfter = computed(() => {
 .course-lesson-row__built { color: #197c4b; font-weight: 600; }
 .course-lesson-row__planned { opacity: 0.6; }
 .course-lesson-row__btn { padding: 0.25em 0.7em; cursor: pointer; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .course-lesson-row__built {
+  color: var(--color-success);
+}
 </style>

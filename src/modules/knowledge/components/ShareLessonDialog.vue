@@ -331,4 +331,25 @@ async function nativeShare() {
     border-radius: 16px 16px 0 0;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .share-dialog__btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .share-dialog__social-btn--telegram:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .share-dialog__social-btn--whatsapp:hover {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+[data-theme="dark"] .share-dialog__social-btn--viber:hover {
+  background: var(--color-info-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
 </style>

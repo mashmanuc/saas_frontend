@@ -130,8 +130,11 @@ describe('Темна тема: світла й класична не зміню�
   })
 })
 
-describe('Темна тема: дошка (фаза 2)', () => {
-  const BOARD = join(SRC, 'modules/winterboard')
+describe('Темна тема: фаза 2 (дошка, уроки й записи)', () => {
+  // Розділи, які фаза 2 уже пройшла; наступні пакети додають сюди свої.
+  const ROOTS = ['modules/winterboard', 'modules/knowledge', 'modules/lesson_constructor', 'modules/lessons'].map(
+    (r) => join(SRC, r),
+  )
   // «Папір»: аркуш і все, що на ньому малюється, від теми не залежить (контракт, розділ 2),
   // а пульт телефона має власну палітру. Ці файли тема не чіпає.
   const PAPER = new RegExp(
@@ -177,7 +180,7 @@ describe('Темна тема: дошка (фаза 2)', () => {
 
   it('правила фази 2 діють лише в темній темі', () => {
     const leaking: string[] = []
-    for (const path of vueFiles(BOARD)) {
+    for (const path of ROOTS.flatMap((r) => vueFiles(r))) {
       const text = readFileSync(path, 'utf8')
       for (const block of text.split('Б-156, фаза 2').slice(1)) {
         const css = block.slice(block.indexOf('*/') + 2, block.indexOf('</style>')).replace(/\/\*[\s\S]*?\*\//g, '')
@@ -193,8 +196,8 @@ describe('Темна тема: дошка (фаза 2)', () => {
     expect(leaking).toEqual([])
   })
 
-  it('компонент дошки з жорстко світлим тлом має темні правила', () => {
-    const missing = vueFiles(BOARD)
+  it('компонент пройденого розділу з жорстко світлим тлом має темні правила', () => {
+    const missing = ROOTS.flatMap((r) => vueFiles(r))
       .filter((p) => !PAPER.test(p.replace(/\\/g, '/')))
       .filter((p) => {
         const css = styles(p)

@@ -211,4 +211,29 @@ const formattedDate = computed(() => {
   font-size: 12px;
   color: #94a3b8;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .demo-lesson-card {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .demo-lesson-card:hover {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .demo-lesson-card__thumbnail {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .demo-lesson-card__placeholder {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .demo-lesson-card__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .demo-lesson-card__subject {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .demo-lesson-card__date {
+  color: var(--color-text-muted);
+}
 </style>

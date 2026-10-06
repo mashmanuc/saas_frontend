@@ -794,4 +794,13 @@ onBeforeUnmount(() => {
   border-color: var(--color-success-border, #bbf7d0);
   color: var(--color-success-dark, #15803d);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lesson-calendar :deep(.lesson-event.lesson-scheduled) {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .lesson-calendar :deep(.lesson-event.lesson-completed) {
+  background: var(--color-success-soft);
+}
 </style>

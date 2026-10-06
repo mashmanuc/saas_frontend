@@ -114,4 +114,10 @@ const densityRows = computed(() =>
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .course-plan-preview__warnings {
+  border-left-color: var(--color-warning);
+}
 </style>

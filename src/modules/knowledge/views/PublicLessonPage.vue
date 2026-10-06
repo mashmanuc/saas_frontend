@@ -970,4 +970,117 @@ onUnmounted(() => {
     justify-content: center;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-lesson-page {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .public-lesson-page__spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__loading-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-lesson-page__error-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-page__error-message {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-lesson-page__error-link {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .public-lesson-page__error-link:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .public-lesson-page__board-section {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .public-lesson-page__fork-btn {
+  background: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+  color: var(--color-success);
+}
+[data-theme="dark"] .public-lesson-page__fork-btn:hover:not(:disabled) {
+  background: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+[data-theme="dark"] .public-lesson-page__fork-btn--login {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-lesson-page__fork-btn--login:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-lesson-page__pack-banner {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__pack-link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__related-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-page__related-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-lesson-page__related-card:hover {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__related-thumb {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .public-lesson-page__related-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-page__related-tag {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-lesson-page__share-btn {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-lesson-page__share-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-lesson-page__stat {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-lesson-page__deep-link-badge {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__cta-banner {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .public-lesson-page__cta-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-page__cta-text {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-page__cta-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .public-lesson-page__cta-btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .public-lesson-page__cta-btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .public-lesson-page__cta-btn--secondary:hover {
+  background: var(--color-border);
+}
 </style>

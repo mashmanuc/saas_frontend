@@ -743,4 +743,36 @@ watch(() => props.boardState, () => {
     bottom: 8px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-board-viewer {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .public-board-viewer__zoom-controls {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-board-viewer__zoom-btn {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-board-viewer__zoom-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-board-viewer__zoom-level {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-board-viewer__page-nav {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-board-viewer__page-btn {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-board-viewer__page-btn:hover:not(:disabled) {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-board-viewer__page-indicator {
+  color: var(--color-text-muted);
+}
 </style>

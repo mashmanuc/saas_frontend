@@ -133,4 +133,10 @@ const statusClass = computed(() => {
 .klc-status--draft { background: var(--bg-secondary); color: var(--text-secondary); }
 .klc-status--cancelled { background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg)); color: var(--danger-bg); }
 .klc-demo-badge { background: color-mix(in srgb, #7c3aed 12%, var(--card-bg)); color: #7c3aed; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .klc-demo-badge {
+  color: var(--color-info);
+}
 </style>

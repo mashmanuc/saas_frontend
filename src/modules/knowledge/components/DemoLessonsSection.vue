@@ -139,4 +139,19 @@ watch(() => props.tutorSlug, (newSlug) => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .demo-lessons-section__view-all {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .demo-lessons-section__view-all:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .demo-lessons-section__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .demo-lessons-section__subtitle {
+  color: var(--color-text-muted);
+}
 </style>
