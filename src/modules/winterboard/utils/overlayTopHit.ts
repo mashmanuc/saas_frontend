@@ -61,3 +61,55 @@ export function topmostForeignOverlayAssetId(
   }
   return best ? assetIdOf(best) : null
 }
+
+// ── Б-147: коліщатко над карткою з прокруткою ────────────────────────────────
+// Власник 2026-10-06: «при роботі це реальна проблема». Коліщатко над карткою спершу гортає
+// її текст, а коли текст дійшов до кінця — далі аркуш. Тіло картки з олівцем прозоре для
+// подій (чорнило лягає поверх), тож картку під курсором шукаємо так само геометрично.
+
+function inside(el: Element, clientX: number, clientY: number): boolean {
+  const r = el.getBoundingClientRect()
+  return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom
+}
+
+/** Чи може елемент прокрутитися в бік коліщатка (лише власна прокрутка: overflow auto/scroll). */
+export function canScrollToward(el: Element, dx: number, dy: number): boolean {
+  if (dy !== 0 && el.scrollHeight > el.clientHeight + 1) {
+    const oy = getComputedStyle(el).overflowY
+    const room = dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0
+    if ((oy === 'auto' || oy === 'scroll') && room) return true
+  }
+  if (dx !== 0 && el.scrollWidth > el.clientWidth + 1) {
+    const ox = getComputedStyle(el).overflowX
+    const room = dx > 0 ? el.scrollLeft + el.clientWidth < el.scrollWidth - 1 : el.scrollLeft > 0
+    if ((ox === 'auto' || ox === 'scroll') && room) return true
+  }
+  return false
+}
+
+/** Подія коліщатка прийшла з елемента (до `stop`, не включно), що сам може прокрутитися. */
+export function hasOwnScrollToward(target: EventTarget | null, stop: Element, dx: number, dy: number): boolean {
+  for (let el = target instanceof Element ? target : null; el && el !== stop; el = el.parentElement) {
+    if (canScrollToward(el, dx, dy)) return true
+  }
+  return false
+}
+
+/**
+ * Найглибший елемент картки, намальованої найвище в точці, що може прокрутитися в бік
+ * коліщатка; інакше null. Лише верхня картка: що під нею — користувач не бачить.
+ */
+export function cardScrollerAt(root: ParentNode, clientX: number, clientY: number, dx: number, dy: number): HTMLElement | null {
+  let top: HTMLElement | null = null
+  for (const wrap of root.querySelectorAll<HTMLElement>('div[class*="-overlay"]')) {
+    if (!assetIdOf(wrap) || !inside(wrap, clientX, clientY)) continue
+    if (!top || isPaintedAbove(wrap, top)) top = wrap
+  }
+  if (!top) return null
+  let found: HTMLElement | null = null
+  for (const el of top.querySelectorAll<HTMLElement>('*')) {
+    // документний порядок: з вкладених — пізніший глибший
+    if (canScrollToward(el, dx, dy) && inside(el, clientX, clientY)) found = el
+  }
+  return found
+}

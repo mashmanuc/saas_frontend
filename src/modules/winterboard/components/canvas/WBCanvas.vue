@@ -1076,6 +1076,7 @@ import {
 } from '../../engine/zoomPan'
 import { notifyWarning } from '@/utils/notify'
 import { autofitExpressions, graphViewportFor } from '../../utils/graphAutofit'
+import { cardScrollerAt, hasOwnScrollToward } from '../../utils/overlayTopHit'
 import { extractX0 } from '../../utils/taskPoint'
 
 // A3.3: Performance benchmark flag — set to true in dev to see console.time markers
@@ -5430,7 +5431,32 @@ const stageOffsetVars = computed(() => ({
   '--wb-stage-oy': `${wbStore.stageOrigin.y}px`,
 }))
 
+/**
+ * Б-147 (власник 2026-10-06): коліщатко над карткою з прокруткою спершу гортає її текст, а коли
+ * текст дійшов до кінця — далі аркуш. Лише звичайне коліщатко: Ctrl+коліщатко — масштаб.
+ * true — коліщатко забрала картка.
+ *
+ * Стоїть ДО блоку пера (`isZoomBlocked`): той боронить від синтетичного Ctrl+коліщатка з
+ * планшета, а перо над планшетом постійно шле події — інакше вчитель із пером ніколи б не
+ * прогорнув картку.
+ */
+function scrollCardTextFirst(e: WheelEvent): boolean {
+  const root = containerRef.value
+  if (!root) return false
+  // Подія з самого тіла картки (стрілка): гортає браузер — лише не заважаємо.
+  if (hasOwnScrollToward(e.target, root, e.deltaX, e.deltaY)) return true
+  // Олівець, гумка тощо: тіла карток прозорі для подій, щоб чорнило лягало поверх, —
+  // картку під курсором шукаємо геометрично й гортаємо її самі (локально, не стан дошки).
+  const el = cardScrollerAt(root, e.clientX, e.clientY, e.deltaX, e.deltaY)
+  if (!el) return false
+  e.preventDefault()
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1
+  el.scrollBy({ left: e.deltaX * k, top: e.deltaY * k })
+  return true
+}
+
 function handleWheel(e: WheelEvent): void {
+  if (!e.ctrlKey && !e.metaKey && scrollCardTextFirst(e)) return
   // BUG-1 FIX: Block zoom during drawing or recent pen activity
   if (isZoomBlocked()) return
 
