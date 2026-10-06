@@ -240,7 +240,9 @@ export async function planFitsCurrentPage(actions) {
  */
 export async function openPageForPlan(name) {
   const { store } = await _store()
-  const id = store.addPageUndoable({ name: name ? String(name).slice(0, 80) : undefined })
+  // Власник 2026-10-06: «Складові» лягли на останню сторінку уроку, «а мали б на наступній» —
+  // нова сторінка одразу після поточної (з переходом і ↶), а не в кінець.
+  const id = store.addPageUndoable({ name: name ? String(name).slice(0, 80) : undefined, afterCurrent: true })
   if (!id) throw new Error('Дошка вже має максимум сторінок (50) — більше додати не можу.')
   return id
 }

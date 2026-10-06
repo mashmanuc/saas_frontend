@@ -2860,8 +2860,12 @@ export const useWBStore = defineStore('wb-board', {
     /**
      * Add a new empty page with undo support.
      * Navigates to the new page.
+     *
+     * `afterCurrent` (власник 2026-10-06: «складові появилися… на останній сторінці. А мали б на
+     * наступній»): сторінка одразу ПІСЛЯ поточної — штатний `page_add` з `insertAt`, як
+     * «Дублювати сторінку». Без прапорця — як було: у кінець, `page_add` без `insertAt`.
      */
-    addPageUndoable(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string }): string {
+    addPageUndoable(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string; afterCurrent?: boolean }): string {
       if (this.pages.length >= 50) {
         console.warn('[WB:Store] Max 50 pages reached')
         return ''
@@ -2880,17 +2884,24 @@ export const useWBStore = defineStore('wb-board', {
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
 
-      this.pages = [...this.pages, newPage]
-      this.currentPageIndex = this.pages.length - 1
+      const afterCurrent = opts?.afterCurrent === true
+      const insertAt = afterCurrent ? this.currentPageIndex + 1 : this.pages.length
+      const placed = [...this.pages]
+      placed.splice(insertAt, 0, newPage)
+      this.pages = placed
+      this.currentPageIndex = insertAt
 
       const _page = { ...newPage }
       const _pageId = newPage.id
 
       const cmd: WBCommand = {
         apply: () => {
-          // Re-add the page
-          this.pages = [...this.pages, _page]
-          this.currentPageIndex = this.pages.length - 1
+          // Re-add the page — на те саме місце (без afterCurrent — у кінець, як було)
+          const at = afterCurrent ? Math.min(insertAt, this.pages.length) : this.pages.length
+          const copy = [...this.pages]
+          copy.splice(at, 0, _page)
+          this.pages = copy
+          this.currentPageIndex = at
           this.markDirty()
           _emitOperation({
             op_type: 'page_add',
@@ -2903,6 +2914,7 @@ export const useWBStore = defineStore('wb-board', {
                 width: _page.width,
                 height: _page.height,
               },
+              ...(afterCurrent ? { insertAt: at } : {}),
             },
           })
         },
@@ -2911,7 +2923,10 @@ export const useWBStore = defineStore('wb-board', {
           const idx = this.pages.findIndex((p) => p.id === _pageId)
           if (idx === -1) return
           this.pages = this.pages.filter((_, i) => i !== idx)
-          if (this.currentPageIndex >= this.pages.length) {
+          if (afterCurrent && idx <= this.currentPageIndex) {
+            // сторінка стояла посередині: повертаємо вчителя на ту, з якої її відкрили
+            this.currentPageIndex = Math.max(0, this.currentPageIndex - 1)
+          } else if (this.currentPageIndex >= this.pages.length) {
             this.currentPageIndex = Math.max(0, this.pages.length - 1)
           }
           this.markDirty()
@@ -2939,6 +2954,7 @@ export const useWBStore = defineStore('wb-board', {
               width: newPage.width,
               height: newPage.height,
             },
+            ...(afterCurrent ? { insertAt } : {}),
           },
           timestamp: Date.now(),
         })
