@@ -463,4 +463,48 @@ const toolbarPosition = computed(() => {
   background: #e5e7eb;
   margin: 0 2px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-selection-quick-actions {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-selection-quick-actions--recording {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-selection-quick-actions--uploading {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .quick-action-btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .quick-action-btn--danger:hover {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .limit-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .recording-indicator--pulse {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .recording-indicator--warning {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .upload-indicator {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .upload-progress-bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .upload-progress-bar__fill {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .audio-duration {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quick-action-sep {
+  background: var(--color-border);
+}
 </style>

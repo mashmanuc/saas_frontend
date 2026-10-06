@@ -222,4 +222,13 @@ async function onUnclear(): Promise<void> {
   text-decoration: underline;
 }
 .wb-tutor__unclear:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-tutor__note--err {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-tutor__mic.is-on {
+  border-color: var(--color-danger);
+}
 </style>

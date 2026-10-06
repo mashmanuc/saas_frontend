@@ -113,4 +113,15 @@ onMounted(async () => {
   opacity: 0.7; font-size: 12px;
   color: var(--color-text-muted, #64748b);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-replay-public__stage,
+[data-theme="dark"] .wb-replay-public__loading,
+[data-theme="dark"] .wb-replay-public__error {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-replay-public__error {
+  color: var(--color-danger);
+}
 </style>

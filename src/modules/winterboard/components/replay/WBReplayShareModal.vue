@@ -443,4 +443,13 @@ async function onRotate() {
   color: var(--color-error, #dc2626);
   font-size: 12px; margin: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-share-modal__revoke-btn {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .wb-share-modal__error {
+  color: var(--color-danger);
+}
 </style>

@@ -297,4 +297,10 @@ function toggleLock() {
 .common-properties__lock-btn:hover {
   background: var(--wb-bg-secondary, #f3f4f6);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .common-properties__lock--locked {
+  border-color: var(--color-warning);
+}
 </style>

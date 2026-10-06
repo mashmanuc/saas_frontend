@@ -732,4 +732,51 @@ async function handleUpdateTemplate(): Promise<void> {
 .wb-save-indicator--saved .wb-save-indicator__dot   { background: #22c55e; }
 .wb-save-indicator--saving .wb-save-indicator__dot  { background: #f59e0b; }
 .wb-save-indicator--error .wb-save-indicator__dot   { background: #ef4444; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-constructor-room__header {
+  border-bottom-color: var(--color-warning);
+}
+[data-theme="dark"] .wb-constructor-room__back {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-constructor-room__back:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-constructor-room__badge {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-constructor-room__icon-btn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-constructor-room__icon-btn:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-constructor-room__btn--secondary {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-constructor-room__btn--primary {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-constructor-room__sidebar {
+  border-left-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-save-indicator {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-save-indicator--saved .wb-save-indicator__dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-save-indicator--saving .wb-save-indicator__dot {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-save-indicator--error .wb-save-indicator__dot {
+  background: var(--color-danger);
+}
 </style>

@@ -59,4 +59,11 @@ const indicatorStyle = computed(() => {
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-lock-indicator {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
 </style>

@@ -107,4 +107,24 @@ function onDragStart(e: DragEvent): void {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .insert-tile {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .insert-tile:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .insert-tile__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .insert-tile__label {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .insert-tile__sub {
+  color: var(--color-text-muted);
+}
 </style>

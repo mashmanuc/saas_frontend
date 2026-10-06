@@ -535,4 +535,18 @@ function statusLabel(status: UploadStatus): string {
   .wb-upload-modal__dropzone,
   .wb-upload-modal__btn { transition: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-upload-modal__file-item--done {
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-upload-modal__file-item--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-upload-modal__error {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
 </style>

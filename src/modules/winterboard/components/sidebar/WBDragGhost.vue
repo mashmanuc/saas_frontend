@@ -237,4 +237,17 @@ onUnmounted(() => {
     transform: scale(1.08);
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-drag-ghost__card {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-drag-ghost__label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-drag-ghost__ring {
+  border-color: var(--color-accent);
+}
 </style>

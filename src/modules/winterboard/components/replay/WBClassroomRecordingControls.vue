@@ -269,4 +269,48 @@ const formattedDuration = computed(() => {
 :root[data-theme='dark'] .wb-classroom-recording__btn--start:hover:not(:disabled) {
   background: #374151;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-classroom-recording__btn--start {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-classroom-recording__btn--start:hover:not(:disabled) {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-classroom-recording__btn--pause {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .wb-classroom-recording__btn--resume {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .wb-classroom-recording__btn--finalize {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .wb-classroom-recording__dot--idle {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-classroom-recording__dot--active {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-classroom-recording__dot--paused {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-classroom-recording__stop-icon {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-classroom-recording__text {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-classroom-recording__text--paused {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-classroom-recording__timer {
+  color: var(--color-danger);
+}
 </style>

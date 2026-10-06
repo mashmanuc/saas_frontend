@@ -206,4 +206,27 @@ function handleAction(toast: WBToastItem): void {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-toast--success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  border-left-color: var(--color-success);
+}
+[data-theme="dark"] .wb-toast--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-left-color: var(--color-danger);
+}
+[data-theme="dark"] .wb-toast--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border-left-color: var(--color-warning);
+}
+[data-theme="dark"] .wb-toast--info {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+}
 </style>

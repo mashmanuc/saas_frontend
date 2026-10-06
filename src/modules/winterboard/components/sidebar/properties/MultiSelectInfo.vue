@@ -190,4 +190,11 @@ function unlockAll() {
   font-style: italic;
   text-align: center;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .multi-select-info__btn--delete {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
 </style>

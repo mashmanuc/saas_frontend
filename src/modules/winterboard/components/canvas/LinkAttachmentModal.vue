@@ -288,4 +288,71 @@ function onRemove(): void {
   background: #fee2e2;
   border-color: #f87171;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-link-modal {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .wb-link-modal__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-link-modal__label {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-link-modal__optional {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-link-modal__input {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-link-modal__input:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-link-modal__input--invalid {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-link-modal__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-link-modal__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-link-modal__hint--ok {
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-link-modal__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-link-modal__btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-link-modal__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-link-modal__btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-link-modal__btn--primary:disabled {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-link-modal__btn--danger {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-link-modal__btn--danger:hover {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
 </style>

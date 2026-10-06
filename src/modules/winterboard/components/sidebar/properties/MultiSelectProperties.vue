@@ -326,4 +326,14 @@ function unlockAll() {
   background: rgba(239, 68, 68, 0.08);
   border-color: #ef4444;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .msp__btn--delete {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .msp__btn--delete:hover:not(:disabled) {
+  border-color: var(--color-danger);
+}
 </style>

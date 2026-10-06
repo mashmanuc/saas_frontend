@@ -342,4 +342,45 @@ function fmt(n: number): string {
   color: #fff; background: #2d70b3; border-radius: 7px; padding: 6px 14px; text-decoration: none;
 }
 .gm3d-inspector__edit:hover { background: #22597f; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .gm3d-inspector__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__count {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__src-input {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .gm3d-inspector__src-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__add {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__act:hover:not(:disabled) {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__act--del:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .gm3d-inspector__cam-btn {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .gm3d-inspector__play {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__play.is-playing {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .gm3d-inspector__edit {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+[data-theme="dark"] .gm3d-inspector__edit:hover {
+  background: var(--color-accent-hover);
+}
 </style>

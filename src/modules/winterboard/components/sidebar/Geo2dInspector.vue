@@ -114,4 +114,26 @@ watchEffect(() => {
 .g2d-insp__host :deep(.tool-label) {
   font-size: 12px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .g2d-insp__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .g2d-insp__subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .g2d-insp__host :deep(button.tool) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .g2d-insp__host :deep(button.tool:hover) {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .g2d-insp__host :deep(button.tool.active) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
 </style>

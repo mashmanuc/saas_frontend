@@ -144,4 +144,31 @@ const HelixIcon: FunctionalComponent = () => {
   color: #94a3b8;
   padding: 0 2px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .helix-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .helix-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .helix-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .helix-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .helix-tray__icon {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .helix-tray__sublabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .helix-tray__hint {
+  color: var(--color-text-muted);
+}
 </style>

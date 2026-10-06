@@ -288,4 +288,10 @@ onBeforeUnmount(() => {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-conflict-indicators__toast {
+  background: var(--color-surface-elevated);
+}
 </style>

@@ -1314,4 +1314,26 @@ onBeforeUnmount(() => {
   opacity: 0.9;
   margin: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-public-view__to-list {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-download-icon-btn {
+  border-color: var(--color-border) !important;
+}
+[data-theme="dark"] .wb-public-view__end-actions {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-public-view__end-btn {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-public-view__end-btn:hover,
+[data-theme="dark"] .wb-public-view__end-btn:focus-visible {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-public-view__end-toast {
+  background: var(--color-surface-elevated);
+}
 </style>

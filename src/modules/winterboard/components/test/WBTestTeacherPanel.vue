@@ -281,4 +281,66 @@ function handleEnd() {
 .wb-test-teacher-panel__btn--danger:hover:not(:disabled) {
   background: #dc2626;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-test-teacher-panel {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-test-teacher-panel__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-test-teacher-panel__phase-badge--edit {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-test-teacher-panel__phase-badge--live {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-test-teacher-panel__phase-badge--review {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-teacher-panel__stat {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-test-teacher-panel__stat-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-test-teacher-panel__stat-value {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-test-teacher-panel__subtitle {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-test-teacher-panel__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-test-teacher-panel__student {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-test-teacher-panel__student-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-test-teacher-panel__student-progress {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-test-teacher-panel__progress-bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-test-teacher-panel__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-test-teacher-panel__btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .wb-test-teacher-panel__btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-test-teacher-panel__btn--danger:hover:not(:disabled) {
+  background: var(--color-danger);
+}
 </style>

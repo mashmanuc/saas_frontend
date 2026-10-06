@@ -488,4 +488,36 @@ function handleShareMoment(): void {
     font-size: 16px; /* prevent iOS zoom */
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-replay-player {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-replay-player__timeline {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-replay-player__playhead {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-replay-player__marker-dot {
+  background: var(--color-warning);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-replay-player__step-btn {
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-replay-player__time {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-replay-player__lesson-duration {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-replay-player__speed {
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+}
 </style>

@@ -143,4 +143,16 @@ defineExpose({ policy, taskCount })
 .material-lesson__rejected { margin-top: 0.8em; font-size: 0.9em; }
 .material-lesson__numbers { opacity: 0.7; }
 .material-lesson__error { color: #dc3545; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .material-lesson__ok {
+  color: var(--color-success);
+}
+[data-theme="dark"] .material-lesson__shortfall {
+  border-left-color: var(--color-warning);
+}
+[data-theme="dark"] .material-lesson__error {
+  color: var(--color-danger);
+}
 </style>

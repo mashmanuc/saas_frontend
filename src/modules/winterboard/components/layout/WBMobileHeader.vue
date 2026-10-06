@@ -221,4 +221,16 @@ const saveLabel = computed(() => {
     animation: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-mobile-header__save-dot--saved {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-mobile-header__save-dot--saving {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-mobile-header__save-dot--error {
+  background: var(--color-danger);
+}
 </style>

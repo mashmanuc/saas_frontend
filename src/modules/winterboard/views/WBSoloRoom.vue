@@ -6466,4 +6466,175 @@ watch(() => store.workspaceName, (name) => {
   color: #fff;
   border-color: #6366f1;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-constructor-badge {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-solo-room__context-dot {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .wb-solo-room__context-label {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-save-indicator__dot {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-save-indicator--saved .wb-save-indicator__dot {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .wb-save-indicator--syncing .wb-save-indicator__dot {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-save-indicator--error .wb-save-indicator__dot {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-save-indicator--offline .wb-save-indicator__dot {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .wb-follow-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-follow-btn:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .wb-follow-indicator {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-indicator__dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-stop-btn:hover {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-header-btn--cloud {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-header-btn--cloud:hover {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-solo-room__resize-handle:hover,
+[data-theme="dark"] .wb-solo-room__resize-handle:active {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-solo-room__resize-grip {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-solo-room__resize-handle:hover .wb-solo-room__resize-grip,
+[data-theme="dark"] .wb-solo-room__resize-handle:active .wb-solo-room__resize-grip {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-solo-room__resize-handle--collapsed {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-solo-room__resize-handle--collapsed .wb-solo-room__resize-grip {
+  border-left-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-solo-room__resize-handle--collapsed:hover .wb-solo-room__resize-grip {
+  border-left-color: var(--color-border);
+}
+[data-theme="dark"] .wb-page-btn--panel-active:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-page-jump-input {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-confirm-dialog__btn--delete {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-confirm-dialog__btn--delete:hover {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-confirm-dialog__btn--delete:active {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-solo-room__recording-done {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-solo-room__recording-done-share {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-solo-room__recording-done-share:hover {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-solo-room__recording-done-later {
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-solo-room__recording-done-later:hover {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .wb-solo-room__recording-broken {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-solo-room__recording-broken-dismiss {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-test-bar {
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .wb-test-bar__btn {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-test-bar__btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .wb-test-bar__btn--active {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-test-bar__btn--grade {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-bar__btn--grade:hover {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-test-bar__btn--exit {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-test-bar__btn--exit:hover {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-test-bar__sep {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .wb-test-bar__phase-label--live {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-bar__phase-label--review {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-test-bar__btn--launch {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-test-bar__btn--launch:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .wb-page-btn--active {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
 </style>

@@ -273,4 +273,41 @@ function onDragStart(e: DragEvent, preset: string, name: string): void {
     font-size: 13px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .geo2dv2-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .geo2dv2-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .geo2dv2-tray__loading {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .geo2dv2-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .geo2dv2-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .geo2dv2-tray__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .geo2dv2-tray__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

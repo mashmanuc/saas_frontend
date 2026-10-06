@@ -231,4 +231,41 @@ function contentTypeIcon(ct: string): string {
 .public-materials__link:hover {
   background: #ede9fe;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-materials__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-materials__count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-materials__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-materials__item {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-materials__item:hover {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .public-materials__restricted {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .public-materials__icon {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .public-materials__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-materials__type {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-materials__link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-materials__link:hover {
+  background: var(--color-accent-soft);
+}
 </style>

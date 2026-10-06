@@ -200,4 +200,57 @@ function getLabel(objectId: string, index: number): string {
   cursor: pointer;
 }
 .grade-modal__btn:hover { background: #1f2937; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .grade-modal {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .grade-modal__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grade-modal__close {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grade-modal--good {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .grade-modal--good .grade-modal__bar-fill {
+  background: var(--color-success);
+}
+[data-theme="dark"] .grade-modal--ok {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .grade-modal--ok .grade-modal__bar-fill {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .grade-modal--bad {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .grade-modal--bad .grade-modal__bar-fill {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .grade-modal__bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .grade-modal__item--correct {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .grade-modal__item--wrong {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .grade-modal__item-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .grade-modal__item-pts {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .grade-modal__btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
 </style>

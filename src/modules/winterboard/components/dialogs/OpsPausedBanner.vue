@@ -143,4 +143,25 @@ const autoRetrySeconds = Math.round(opsSync.PAUSE_AUTO_RETRY_MS / 1000)
   transform: translateY(-100%);
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-paused-banner__warn {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-paused-banner {
+  background: var(--color-warning-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-paused-banner__hint {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-paused-banner__btn {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-paused-banner__btn:hover:not(:disabled) {
+  background: var(--color-warning);
+}
 </style>

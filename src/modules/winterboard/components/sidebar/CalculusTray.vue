@@ -330,4 +330,51 @@ function onDragStartGraph(e: DragEvent): void {
     font-size: 12px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .calculus-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .calculus-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .calculus-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .calculus-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .calculus-tray__btn--graph {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .calculus-tray__btn--graph:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .calculus-tray__icon {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .calculus-tray__icon--graph {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .calculus-tray__sublabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .calculus-tray__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

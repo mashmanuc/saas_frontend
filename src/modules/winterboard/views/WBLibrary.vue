@@ -2069,4 +2069,70 @@ onMounted(async () => {
 .wb-library__restore-btn:hover {
   background: #ede9fe;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-library__quota--low {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-library__filter-btn--active {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .wb-library__yt-btn:hover {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-library__list-badge {
+  background: var(--color-surface-sunken);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-library__list-fav {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-library__list-rename-input {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-library__list-action--active {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-library__list-action--danger:hover {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-library__storage-label--paste {
+  color: var(--color-info);
+}
+[data-theme="dark"] .wb-library__storage-fill--upload {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .wb-library__storage-fill--paste {
+  background: var(--color-info);
+}
+[data-theme="dark"] .wb-library__action-btn {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-library__action-btn--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-library__action-btn--danger:hover {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-library__modal {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .library-asset-card__meta {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .library-asset-card--archived .library-asset-card__meta {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-library__restore-btn {
+  border-color: var(--color-info);
+  background: var(--color-surface);
+  color: var(--color-info);
+}
+[data-theme="dark"] .wb-library__restore-btn:hover {
+  background: var(--color-accent-soft);
+}
 </style>

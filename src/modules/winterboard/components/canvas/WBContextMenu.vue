@@ -515,4 +515,43 @@ onUnmounted(() => {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-context-menu {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-context-menu__section + .wb-context-menu__section {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .wb-context-menu__sublabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-context-menu__item:hover,
+[data-theme="dark"] .wb-context-menu__item:focus-visible {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-context-menu__item--danger {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-context-menu__item--danger:hover,
+[data-theme="dark"] .wb-context-menu__item--danger:focus-visible {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-context-menu__kbd {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-context-menu__align-btn {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-context-menu__align-btn:hover,
+[data-theme="dark"] .wb-context-menu__align-btn:focus-visible {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
 </style>

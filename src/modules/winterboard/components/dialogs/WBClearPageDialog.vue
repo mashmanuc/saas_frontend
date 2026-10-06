@@ -251,4 +251,37 @@ function cancel(): void {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-dialog {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .wb-dialog__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-dialog__message {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-dialog__note {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+  border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+[data-theme="dark"] .wb-dialog__btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-dialog__btn--secondary:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-dialog__btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .wb-dialog__btn--danger:hover {
+  background: var(--color-danger);
+}
 </style>

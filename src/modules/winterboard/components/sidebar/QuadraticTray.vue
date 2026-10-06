@@ -203,4 +203,44 @@ function onDragStart(e: DragEvent): void {
   }
   .quad-tray__btn { min-height: 44px; padding: 9px 11px; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .quad-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .quad-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .quad-tray__btn {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .quad-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .quad-tray__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .quad-tray__label {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .quad-tray__sublabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-tray__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

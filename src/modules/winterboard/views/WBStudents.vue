@@ -301,4 +301,16 @@ onMounted(fetchStudents)
   .wb-student-card { flex-wrap: wrap; }
   .wb-student-card__action { width: 100%; text-align: center; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-students__error {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-students__retry {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
 </style>

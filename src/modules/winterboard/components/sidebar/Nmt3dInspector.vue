@@ -424,4 +424,79 @@ function toggleAllAux(): void {
 .nmt3d-inspector__unfold-btn:hover {
   background: #d6c8b2;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .nmt3d-inspector {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .nmt3d-inspector__header {
+  border-bottom-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .nmt3d-inspector__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .nmt3d-inspector__section {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .nmt3d-inspector__section-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .nmt3d-inspector__param-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__param-value {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .nmt3d-inspector__view-btn {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__view-btn:hover {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .nmt3d-inspector__view-btn--reset {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .nmt3d-inspector__orbit-btn {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .nmt3d-inspector__orbit-btn.is-active {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .nmt3d-inspector__orbit-btn:hover:not(.is-active) {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .nmt3d-inspector__aux-all {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__aux-all:hover {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .nmt3d-inspector__aux-label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__unfold-btn {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-inspector__unfold-btn:hover {
+  background: var(--color-border-strong);
+}
 </style>

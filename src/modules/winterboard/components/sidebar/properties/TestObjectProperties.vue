@@ -490,4 +490,70 @@ function removeMatchingPair(index: number) {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .test-props__header {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .test-props__type-badge {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .test-props__label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .test-props__input {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .test-props__input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .test-props__input:disabled {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .test-props__select {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .test-props__textarea {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .test-props__textarea:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .test-props__check {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .test-props__gap-num {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .test-props__btn-add {
+  border-color: var(--color-border-strong);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .test-props__btn-add:hover {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .test-props__btn-remove:hover {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .test-props__divider {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .test-props__action-btn {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .test-props__action-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .test-props__action-btn--delete:hover {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
 </style>

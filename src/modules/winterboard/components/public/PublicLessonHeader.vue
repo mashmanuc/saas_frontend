@@ -288,4 +288,40 @@ const formattedDate = computed(() => {
     gap: 8px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-lesson-header {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .public-lesson-header__brand {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-header__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-header__duration {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-lesson-header__avatar--placeholder {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .public-lesson-header__tutor-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-lesson-header__subject-badge {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-header__tutor-link {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-header__tutor-link:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-lesson-header__date {
+  color: var(--color-text-muted);
+}
 </style>

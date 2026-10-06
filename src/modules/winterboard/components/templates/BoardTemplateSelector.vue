@@ -181,4 +181,57 @@ function applyAndClose(id: string) {
 .template-fade-leave-active { transition: opacity 0.15s ease-in; }
 .template-fade-enter-from,
 .template-fade-leave-to { opacity: 0; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .template-selector {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .template-selector__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .template-selector__close {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .template-selector__close:hover {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .template-card {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .template-card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .template-card--selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .template-card__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .template-card__desc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .template-selector__footer {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .template-selector__btn--secondary {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .template-selector__btn--secondary:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .template-selector__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .template-selector__btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .template-selector__btn--primary:disabled {
+  background: var(--color-border-strong);
+}
 </style>

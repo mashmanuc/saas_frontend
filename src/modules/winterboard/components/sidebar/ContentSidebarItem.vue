@@ -403,4 +403,50 @@ function onDragEnd() {
 .sidebar-item__pdf-inline {
   display: block;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .sidebar-item {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .sidebar-item:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .sidebar-item--failed {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .sidebar-item__icon {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .sidebar-item__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .sidebar-item__badge--pending {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .sidebar-item__badge--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .sidebar-item__drag-hint {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .sidebar-item__play-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .sidebar-item__play-btn:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .sidebar-item__add-btn {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .sidebar-item__add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

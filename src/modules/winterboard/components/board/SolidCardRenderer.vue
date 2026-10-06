@@ -661,4 +661,24 @@ const hostWindowControls = useHostWindowControls()
   background: #dc2626;
   border-color: #f87171;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .solid-toolbar__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .solid-toolbar__btn.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .solid-delete {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .solid-delete:hover {
+  background: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
 </style>

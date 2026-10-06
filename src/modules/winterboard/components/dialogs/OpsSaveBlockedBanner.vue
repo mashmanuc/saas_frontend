@@ -212,4 +212,35 @@ async function onDiscard(): Promise<void> {
   .wb-save-blocked { flex-wrap: wrap; }
   .wb-save-blocked__actions { width: 100%; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-save-blocked {
+  background: var(--color-danger-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked__hint,
+[data-theme="dark"] .wb-save-blocked__count {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked__warn {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked__result {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked__btn {
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-save-blocked__btn--primary {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked__btn--danger {
+  color: var(--color-danger);
+}
 </style>

@@ -133,4 +133,16 @@ defineExpose({ expanded })
   overflow-y: auto; background: rgba(0,0,0,0.03); padding: 0.6em; margin: 0.4em 0; }
 .material-page__confirm { display: flex; gap: 0.6em; align-items: center; }
 .material-page__hint { font-size: 0.8em; opacity: 0.7; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .material-page__ok {
+  color: var(--color-success);
+}
+[data-theme="dark"] .material-page__warning {
+  border-left-color: var(--color-warning);
+}
+[data-theme="dark"] .material-page__failed {
+  color: var(--color-danger);
+}
 </style>

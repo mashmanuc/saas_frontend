@@ -348,4 +348,18 @@ function formatTimeAgo(iso: string): string {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-board-list-item--selected {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .wb-board-list-item__prep {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-board-list-item__action-btn--danger:hover {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
 </style>

@@ -289,4 +289,16 @@ function handleKeydown(event: KeyboardEvent): void {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-quick-palette__btn--active {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-quick-palette__btn--white {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-quick-palette__btn--white.wb-quick-palette__btn--active {
+  border-color: var(--color-border);
+}
 </style>

@@ -514,4 +514,16 @@ onMounted(loadData)
 @media (max-width: 640px) {
   .wb-lesson-detail { padding: 20px 12px; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-lesson-detail__error {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-lesson-detail__retry {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
 </style>

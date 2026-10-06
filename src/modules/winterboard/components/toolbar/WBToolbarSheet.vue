@@ -270,4 +270,14 @@ watch(() => props.isOpen, async (open) => {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-toolbar-sheet__action-btn--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .wb-toolbar-sheet__action-btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+}
 </style>

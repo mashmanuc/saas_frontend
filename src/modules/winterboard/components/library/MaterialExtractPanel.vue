@@ -204,4 +204,16 @@ defineExpose({ load, pages, cost, running, disabled })
 .material-panel__message { font-size: 0.86em; border-left: 3px solid #d97706;
   padding-left: 0.6em; }
 .material-panel__empty { font-size: 0.9em; opacity: 0.75; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .material-panel__cost {
+  border-left-color: var(--color-accent);
+}
+[data-theme="dark"] .material-panel__error {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .material-panel__message {
+  border-left-color: var(--color-warning);
+}
 </style>

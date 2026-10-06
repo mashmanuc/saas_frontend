@@ -185,4 +185,37 @@ function onDragStart(e: DragEvent): void {
     font-size: 13px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .gc-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .gc-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .gc-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .gc-tray__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-tray__label {
+  color: var(--color-text);
+}
 </style>

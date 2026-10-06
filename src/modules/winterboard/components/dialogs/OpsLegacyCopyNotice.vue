@@ -86,4 +86,17 @@ function onDismiss(): void {
   cursor: pointer;
 }
 .wb-legacy-copy__btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-legacy-copy {
+  background: var(--color-accent-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-legacy-copy__btn {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
 </style>

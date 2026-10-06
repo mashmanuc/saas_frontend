@@ -130,6 +130,83 @@ describe('Темна тема: світла й класична не зміню�
   })
 })
 
+describe('Темна тема: дошка (фаза 2)', () => {
+  const BOARD = join(SRC, 'modules/winterboard')
+  // «Папір»: аркуш і все, що на ньому малюється, від теми не залежить (контракт, розділ 2),
+  // а пульт телефона має власну палітру. Ці файли тема не чіпає.
+  const PAPER = new RegExp(
+    '/(vendor|components/board/objects|components/remote|components/test/elements)/|' +
+      '/(WBRemoteView|WBRemoteEntry|WBStickyNote|WBGridOverlay|WBLaserDot|WBSpotlightOverlay|' +
+      'DocumentViewerAsset|WBPreviewCanvas|AudioBadge|LinkBadge|SourceBadge|TextBadge|TextOverlay|' +
+      'WBCanvas|WBOverlayLayer|WBTheoryOverlay|WBTestElement|WBTestOverlay)\\.vue$',
+  )
+  const vueFiles = (dir: string, out: string[] = []): string[] => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name)
+      if (statSync(p).isDirectory()) {
+        if (name !== '__tests__') vueFiles(p, out)
+      } else if (name.endsWith('.vue')) out.push(p)
+    }
+    return out
+  }
+  const styles = (path: string) =>
+    [...readFileSync(path, 'utf8').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+      .map((m) => m[1])
+      .join('\n')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+
+  function isLight(value: string): boolean {
+    let rgb: number[]
+    let alpha = 1
+    const v = value.toLowerCase()
+    if (v === 'white') rgb = [1, 1, 1]
+    else if (v.startsWith('#')) {
+      let h = v.slice(1)
+      if (h.length <= 4) h = [...h].map((c) => c + c).join('')
+      rgb = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+      if (h.length === 8) alpha = parseInt(h.slice(6, 8), 16) / 255
+    } else {
+      const n = (v.match(/[\d.]+/g) ?? []).map(Number)
+      rgb = n.slice(0, 3).map((x) => x / 255)
+      if (n.length > 3) alpha = n[3]
+    }
+    if (alpha < 0.6) return false
+    const lin = rgb.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2] > 0.75
+  }
+
+  it('правила фази 2 діють лише в темній темі', () => {
+    const leaking: string[] = []
+    for (const path of vueFiles(BOARD)) {
+      const text = readFileSync(path, 'utf8')
+      for (const block of text.split('Б-156, фаза 2').slice(1)) {
+        const css = block.slice(block.indexOf('*/') + 2, block.indexOf('</style>')).replace(/\/\*[\s\S]*?\*\//g, '')
+        for (const m of css.matchAll(/([^{};]+)\{/g)) {
+          const head = m[1].trim()
+          if (head.startsWith('@')) continue
+          for (const sel of head.split(',')) {
+            if (!sel.trim().startsWith('[data-theme="dark"]')) leaking.push(`${relative(SRC, path)} :: ${sel.trim()}`)
+          }
+        }
+      }
+    }
+    expect(leaking).toEqual([])
+  })
+
+  it('компонент дошки з жорстко світлим тлом має темні правила', () => {
+    const missing = vueFiles(BOARD)
+      .filter((p) => !PAPER.test(p.replace(/\\/g, '/')))
+      .filter((p) => {
+        const css = styles(p)
+        const light = [...css.matchAll(/(?<![\w-])background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,8}\b|white\b|rgba?\([^)]*\))/g)]
+          .some((m) => isLight(m[1]))
+        return light && !css.includes('[data-theme="dark"]')
+      })
+      .map((p) => relative(SRC, p))
+    expect(missing).toEqual([])
+  })
+})
+
 describe('Темна тема: текст на акцентній заливці', () => {
   const ACCENTISH = /var\(\s*--(accent|primary|color-primary|color-accent|wb-brand|wb-primary|success-bg|danger-bg|info-bg|color-success|color-danger|color-info|primary-color|brand-primary)(?:-hover|-dark)?\s*[,)]/
   const WHITE = /^\s*(white|#fff|#ffffff)\s*(!important)?\s*$/i

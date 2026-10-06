@@ -280,4 +280,43 @@ function onSpeedInput(e: Event): void {
   text-align: right;
   white-space: nowrap;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .trig-insp {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .trig-insp__header {
+  border-bottom-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .trig-insp__title {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .trig-insp__section {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .trig-insp__section-label {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .trig-insp__btn {
+  border-color: var(--color-danger);
+  background: var(--color-warning-soft);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .trig-insp__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .trig-insp__btn.is-active {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .trig-insp__speed-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .trig-insp__speed-val {
+  color: var(--color-danger);
+}
 </style>

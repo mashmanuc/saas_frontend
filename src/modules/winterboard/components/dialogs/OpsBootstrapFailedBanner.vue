@@ -53,4 +53,17 @@ function reload(): void {
   cursor: pointer;
 }
 .wb-boot-failed__btn:focus-visible { outline: 2px solid #f87171; outline-offset: 2px; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-boot-failed {
+  background: var(--color-danger-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-boot-failed__btn {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
 </style>

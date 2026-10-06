@@ -404,4 +404,30 @@ function onDragStart(e: DragEvent): void {
 @media (prefers-reduced-motion: reduce) {
   .library-asset-card { transition: none; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .library-asset-card__rename-input {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .library-asset-card__source--upload {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .library-asset-card__source--lesson {
+  background: var(--color-surface-sunken);
+  color: var(--color-success);
+}
+[data-theme="dark"] .library-asset-card__source--youtube {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .library-asset-card__source--pasted {
+  background: var(--color-surface-sunken);
+  color: var(--color-info);
+}
+[data-theme="dark"] .library-asset-card__fav {
+  background: var(--color-surface);
+  color: var(--color-warning);
+}
 </style>

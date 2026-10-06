@@ -221,4 +221,29 @@ function formatTime(sec: number): string {
     padding: 10px 8px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .public-markers__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .public-markers__count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .public-markers__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .public-markers__item:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .public-markers__item--active {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .public-markers__time {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .public-markers__label {
+  color: var(--color-text);
+}
 </style>

@@ -257,4 +257,50 @@ const bookUrl = computed(() => {
   margin: 0;
   line-height: 1.4;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .tutor-cta {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .tutor-cta__avatar--placeholder {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .tutor-cta__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .tutor-cta__subject-chip {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .tutor-cta__rating-value {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .tutor-cta__rating-count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tutor-cta__price {
+  color: var(--color-text);
+  border-top-color: var(--color-border);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .tutor-cta__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .tutor-cta__btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .tutor-cta__btn--outline {
+  color: var(--color-accent);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .tutor-cta__btn--outline:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .tutor-cta__hint {
+  color: var(--color-text-muted);
+}
 </style>

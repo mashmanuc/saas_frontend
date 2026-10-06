@@ -281,4 +281,59 @@ const isUploading = audio.isUploading
   display: flex;
   gap: 6px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .audio-annotation-panel {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .audio-annotation-panel__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .audio-annotation-panel__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .audio-annotation-panel__limit-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .audio-annotation-panel__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .audio-annotation-panel__btn:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .audio-annotation-panel__btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .audio-annotation-panel__btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .audio-annotation-panel__btn--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+[data-theme="dark"] .audio-annotation-panel__btn--danger:hover {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .audio-annotation-panel__timer {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .audio-annotation-panel__timer--warning {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .audio-annotation-panel__uploading {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .audio-annotation-panel__progress {
+  background: var(--color-border);
+}
+[data-theme="dark"] .audio-annotation-panel__progress-fill {
+  background: var(--color-accent);
+}
+[data-theme="dark"] .audio-annotation-panel__duration {
+  color: var(--color-text-muted);
+}
 </style>

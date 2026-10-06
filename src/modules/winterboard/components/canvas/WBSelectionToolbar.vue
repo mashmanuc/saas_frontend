@@ -1008,4 +1008,29 @@ const positionStyle = computed(() => {
 .wb-sel-toolbar-leave-to {
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-selection-toolbar__btn--active {
+  background: var(--color-accent) !important;
+  color: var(--color-on-accent) !important;
+}
+[data-theme="dark"] .wb-selection-toolbar__btn--stop {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-selection-toolbar__rec-indicator {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-selection-toolbar__rec-indicator--warn {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-selection-toolbar__audio-duration {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-send-to-page__num {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-send-to-page__current {
+  color: var(--color-text-muted);
+}
 </style>

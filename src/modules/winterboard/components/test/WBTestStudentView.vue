@@ -177,4 +177,45 @@ const gradeResult = computed(() => {
   color: #1e40af;
   line-height: 1.5;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-test-student-view {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-test-student-view__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-test-student-view__phase-badge--live {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-test-student-view__phase-badge--review {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-student-view__progress-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-test-student-view__progress-bar {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-test-student-view__result {
+  background: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+[data-theme="dark"] .wb-test-student-view__score-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-test-student-view__score-value {
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-student-view__score-percent {
+  color: var(--color-success);
+}
+[data-theme="dark"] .wb-test-student-view__hint {
+  background: var(--color-accent-soft);
+  border-left-color: var(--color-accent);
+  color: var(--color-accent);
+}
 </style>

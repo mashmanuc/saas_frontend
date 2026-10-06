@@ -535,4 +535,10 @@ function onDrop(folderId: string, e: DragEvent): void {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-replay-folder-tree__action-btn--danger:hover {
+  color: var(--color-danger);
+}
 </style>

@@ -133,4 +133,19 @@ async function pick(code: string): Promise<void> {
   font-weight: 600;
   color: #17a34a;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-lang__menu {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .wb-lang__option {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-lang__option:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-lang__option--active {
+  color: var(--color-success);
+}
 </style>

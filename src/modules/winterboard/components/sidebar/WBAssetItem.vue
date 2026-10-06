@@ -232,4 +232,23 @@ function onDragStart(e: DragEvent): void {
   width: 36px;
   height: 36px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-asset-item:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-asset-item__thumb {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-asset-item__name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-asset-item__drag-handle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-asset-item__drag-handle:hover {
+  color: var(--color-text-muted);
+  background: var(--color-border);
+}
 </style>

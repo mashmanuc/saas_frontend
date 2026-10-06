@@ -981,4 +981,156 @@ const QUICK_TEMPLATES = [
   background: #d4e8f0;
   border-color: #3b7b9b;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .gc-insp {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .gc-insp__header {
+  border-bottom-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .gc-insp__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .gc-insp__subtitle {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__expand-btn {
+  border-color: var(--color-accent);
+  background: var(--color-warning-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__expand-btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__expand-btn.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .gc-insp__empty {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .gc-insp__empty code {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__section {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .gc-insp__section-label {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__hint {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__param-play {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .gc-insp__param-play:hover {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__param-play.is-playing {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__param-name {
+  color: var(--color-text);
+}
+[data-theme="dark"] .gc-insp__param-name:hover {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__param-row.is-expanded .gc-insp__param-name {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__param-value {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .gc-insp__range-field {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .gc-insp__range-input {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .gc-insp__expr-row.is-pf-target .gc-insp__expr-preview,
+[data-theme="dark"] .gc-insp__expr-row.is-pf-target .gc-insp__expr-input {
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .gc-insp__expr-row.is-pf-target.is-pf-fading .gc-insp__expr-preview,
+[data-theme="dark"] .gc-insp__expr-row.is-pf-target.is-pf-fading .gc-insp__expr-input {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .gc-insp__expr-row :deep(.wb-pf-sym) {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .gc-insp__pf-value {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .gc-insp__expr-err {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .gc-insp__expr-input {
+  border-color: var(--color-accent);
+  background: var(--color-warning-soft);
+  color: var(--color-text);
+}
+[data-theme="dark"] .gc-insp__expr-preview {
+  background: var(--color-warning-soft);
+  color: var(--color-text);
+}
+[data-theme="dark"] .gc-insp__expr-preview:hover {
+  border-color: var(--color-accent);
+  background: var(--color-border);
+}
+[data-theme="dark"] .gc-insp__expr-input:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .gc-insp__row-del {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .gc-insp__row-del:hover {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .gc-insp__slash-popup {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__slash-item {
+  color: var(--color-text);
+}
+[data-theme="dark"] .gc-insp__slash-item:hover,
+[data-theme="dark"] .gc-insp__slash-item.is-selected {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .gc-insp__slash-key {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__slash-empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .gc-insp__add-btn {
+  border-color: var(--color-accent);
+  background: var(--color-warning-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__add-btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__quick-btn {
+  background: var(--color-surface-sunken);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .gc-insp__quick-btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
 </style>

@@ -147,4 +147,36 @@ const { t } = useI18n()
 .cloud-upsell-fade-leave-to {
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .cloud-upsell__dialog {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .cloud-upsell__icon {
+  background: var(--color-surface-sunken);
+  color: var(--color-success);
+}
+[data-theme="dark"] .cloud-upsell__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .cloud-upsell__message {
+  color: var(--color-text);
+}
+[data-theme="dark"] .cloud-upsell__note {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .cloud-upsell__btn--primary {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .cloud-upsell__btn--primary:hover {
+  background: var(--color-success);
+}
+[data-theme="dark"] .cloud-upsell__btn--ghost {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .cloud-upsell__btn--ghost:hover {
+  color: var(--color-text);
+}
 </style>

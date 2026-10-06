@@ -381,4 +381,59 @@ function onDragEnd() {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .pdf-selector {
+  background: var(--color-surface-sunken);
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .pdf-selector__header {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .pdf-selector__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .pdf-selector__count {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .pdf-selector__close {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .pdf-selector__close:hover {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .pdf-selector__full {
+  border-bottom-color: var(--color-border);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .pdf-selector__full:hover {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .pdf-selector__page:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .pdf-selector__add-btn {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .pdf-selector__add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .pdf-selector__page-thumb {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .pdf-selector__page-num {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .pdf-selector__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .pdf-selector__empty--loading {
+  color: var(--color-text-muted);
+}
 </style>

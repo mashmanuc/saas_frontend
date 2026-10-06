@@ -191,4 +191,25 @@ const { t } = useI18n({ useScope: 'global' })
   background: #fee2e2;
   color: #dc2626;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-card-window-controls {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-card-window-controls__btn {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-card-window-controls__btn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-card-window-controls__divider {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-card-window-controls__btn--delete:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
 </style>

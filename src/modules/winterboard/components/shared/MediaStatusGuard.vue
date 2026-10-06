@@ -83,4 +83,22 @@ const isFailed = computed(() =>
 .media-guard__retry:hover {
   background: #fef2f2;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .media-guard--processing {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .media-guard--failed {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .media-guard__retry {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .media-guard__retry:hover {
+  background: var(--color-danger-soft);
+}
 </style>

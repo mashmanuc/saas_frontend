@@ -651,4 +651,16 @@ const vClickOutside = {
     padding-top: 4px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .replay-card__thumb-img {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .replay-card__badge--trashed {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .replay-card__menu .menu-danger {
+  color: var(--color-danger);
+}
 </style>

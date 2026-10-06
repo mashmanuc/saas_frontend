@@ -443,4 +443,22 @@ onBeforeUnmount(() => {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-follow-banner {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-banner--disconnected {
+  border-color: var(--color-danger);
+}
+[data-theme="dark"] .wb-follow-banner__pulse {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-return:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .wb-follow-toast {
+  background: var(--color-surface-elevated);
+}
 </style>

@@ -280,4 +280,43 @@ function onSpeedInput(e: Event): void {
   text-align: right;
   white-space: nowrap;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .helix-insp {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .helix-insp__header {
+  border-bottom-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .helix-insp__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .helix-insp__section {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .helix-insp__section-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .helix-insp__btn {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .helix-insp__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .helix-insp__btn.is-active {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .helix-insp__speed-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .helix-insp__speed-val {
+  color: var(--color-warning);
+}
 </style>

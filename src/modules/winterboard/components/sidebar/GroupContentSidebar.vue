@@ -1336,4 +1336,203 @@ function onDrop(e: DragEvent) {
 .content-sidebar__doc-pages :deep(.slide-selector__grid) {
   grid-template-columns: repeat(auto-fill, minmax(var(--wb-doc-thumb, 88px), 1fr));
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .content-sidebar__tabs {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .content-sidebar__tab {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__tab:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-border);
+}
+[data-theme="dark"] .content-sidebar__tab--active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+[data-theme="dark"] .content-sidebar--dragover {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .content-sidebar__drop-overlay {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .content-sidebar__empty-title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .content-sidebar__empty-lead {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__empty-cta {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .tools-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__upload-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .content-sidebar__upload-btn:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .content-sidebar__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .content-sidebar__count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .content-sidebar__search {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .content-sidebar__search:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .filter-chip {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .filter-chip:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .filter-chip--active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .filter-chip--paste {
+  background: var(--color-warning-soft);
+  border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .filter-chip--paste:hover {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .filter-chip--paste.filter-chip--active {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .content-sidebar__loading,
+[data-theme="dark"] .content-sidebar__empty {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__error {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .content-sidebar__retry {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .content-sidebar__group-header {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .content-sidebar__group-count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .content-sidebar__group-header--collapsible {
+  background: var(--color-surface-sunken);
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .content-sidebar__group-header--collapsible:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .content-sidebar__group-header-chevron {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tools-search-wrap {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tools-search {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tools-search:focus {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tools-card {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tools-card:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tools-card__icon {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .tools-card__label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .tools-card__count {
+  color: var(--color-text-muted);
+  background: var(--color-border);
+}
+[data-theme="dark"] .tools-crumb {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .tools-crumb__back {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .tools-crumb__back:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tools-crumb__label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .tools-subhead {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .tools-section {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .tools-section__sum {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .tools-section__sum:hover {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .insp-zoom-bar {
+  background: var(--color-surface-sunken);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .insp-zoom-btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .insp-zoom-btn:hover:not(:disabled) {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+[data-theme="dark"] .insp-zoom-label {
+  color: var(--color-text-muted);
+}
 </style>

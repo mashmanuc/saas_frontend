@@ -168,6 +168,16 @@ defineExpose({ close })
   outline: 2px solid var(--wb-brand, #0f766e);
   outline-offset: 1px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lib-asset-menu__trigger {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .lib-asset-menu__trigger:hover,
+[data-theme="dark"] .lib-asset-menu__trigger--open {
+  background: var(--color-border);
+}
 </style>
 
 <style>
@@ -208,5 +218,14 @@ defineExpose({ close })
 }
 @media (hover: none) {
   .lib-asset-menu__item { padding: 11px 12px; font-size: 14px; }
+}
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .lib-asset-menu {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .lib-asset-menu__item--danger {
+  color: var(--color-danger);
 }
 </style>

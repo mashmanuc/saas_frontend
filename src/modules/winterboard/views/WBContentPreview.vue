@@ -411,4 +411,37 @@ function onContentDragStart(_payload: ContentDragPayload): void {
 .wb-fade-leave-to {
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-content-preview {
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .wb-content-preview__sidebar {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .wb-resize-handle {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-resize-handle:hover,
+[data-theme="dark"] .wb-resize-handle:active {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-resize-handle__grip {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-resize-handle:hover .wb-resize-handle__grip,
+[data-theme="dark"] .wb-resize-handle:active .wb-resize-handle__grip {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-content-preview__toolbar {
+  background: var(--color-surface-sunken);
+  border-right-color: var(--color-border);
+}
+[data-theme="dark"] .wb-drop-hint__text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-drop-hint__sub {
+  color: var(--color-text-muted);
+}
 </style>

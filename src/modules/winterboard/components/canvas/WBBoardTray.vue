@@ -535,4 +535,58 @@ watch(
   font-size: 11.5px;
   line-height: 1.3;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-board-tray {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-board-tray__card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-board-tray__restore {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-board-tray__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-board-tray__kind {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-board-tray__menu-btn {
+  border-left-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-board-tray__menu-btn:hover,
+[data-theme="dark"] .wb-board-tray__menu-btn[aria-expanded='true'] {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-board-tray-menu {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-board-tray-menu__item {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-board-tray-menu__item:hover:not(:disabled) {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-board-tray-menu__item--danger {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-board-tray-menu__item--danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-board-tray-menu__item:disabled {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-board-tray-menu__separator {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-board-tray-menu__hint {
+  color: var(--color-text-muted);
+}
 </style>

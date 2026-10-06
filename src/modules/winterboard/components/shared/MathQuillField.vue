@@ -168,4 +168,11 @@ onBeforeUnmount(() => {
   background: #fff;
   font-size: 13px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-mq-field :deep(.mq-editable-field) {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+}
 </style>

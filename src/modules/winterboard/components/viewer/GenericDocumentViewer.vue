@@ -454,4 +454,25 @@ onUnmounted(() => {
 .doc-slide-leave-to {
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .doc-viewer {
+  border-right-color: var(--color-border-strong);
+}
+[data-theme="dark"] .doc-viewer__counter {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .doc-viewer__btn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .doc-viewer__thumb--active {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .doc-viewer__thumb-num {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .doc-viewer__strip-gap {
+  color: var(--color-text-secondary);
+}
 </style>

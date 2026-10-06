@@ -373,4 +373,61 @@ const HelixIcon: FunctionalComponent = () =>
     font-size: 11px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .trig-circle-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .trig-circle-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .trig-circle-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .trig-circle-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .trig-circle-tray__btn--helix {
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__btn--helix:hover {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__btn--solver {
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__btn--solver:hover {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__icon--solver {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__icon {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .trig-circle-tray__icon--helix {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .trig-circle-tray__sublabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .trig-circle-tray__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

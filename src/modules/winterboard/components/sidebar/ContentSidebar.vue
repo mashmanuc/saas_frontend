@@ -496,4 +496,83 @@ function onDrop(e: DragEvent) {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .content-sidebar--dragover {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .content-sidebar__drop-overlay {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .content-sidebar__back-btn {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .content-sidebar__back-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .content-sidebar__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .content-sidebar__count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .content-sidebar__loading {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__error {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .content-sidebar__retry {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .content-sidebar__empty-text {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .content-sidebar__add-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .content-sidebar__add-btn--primary:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .content-sidebar__add-btn--secondary {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .content-sidebar__add-btn--secondary:hover {
+  background: var(--color-accent-soft);
+}
+[data-theme="dark"] .content-sidebar__group-header {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .content-sidebar__group-count {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .content-sidebar__yt-btn {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+  color: var(--color-danger);
+}
+[data-theme="dark"] .content-sidebar__yt-btn:hover {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .content-sidebar__yt-input {
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .content-sidebar__yt-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .content-sidebar__yt-submit {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
 </style>

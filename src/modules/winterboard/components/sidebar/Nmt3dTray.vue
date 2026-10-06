@@ -268,4 +268,41 @@ onMounted(async () => {
     font-size: 13px;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .nmt3d-tray {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .nmt3d-tray__header {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .nmt3d-tray__loading {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .nmt3d-tray__btn {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+[data-theme="dark"] .nmt3d-tray__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .nmt3d-tray__icon {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .nmt3d-tray__hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tray-add-btn {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .tray-add-btn:hover {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
 </style>

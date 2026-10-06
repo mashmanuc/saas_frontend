@@ -120,4 +120,12 @@ function onTrackDown(e: PointerEvent, axis: 'x' | 'y'): void {
 .wb-sheet-scroll__thumb:hover,
 .wb-sheet-scroll__thumb:active { background: rgba(15, 23, 42, 0.5); }
 .wb-sheet-scroll:hover { background: rgba(15, 23, 42, 0.1); }
+
+/* Темна тема (Б-156, фаза 2): темні напівпрозорі смуги на темному полі довкола аркуша не видно —
+   у темній темі вони світлі. Світла й класична не змінюються. */
+[data-theme="dark"] .wb-sheet-scroll { background: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] .wb-sheet-scroll__thumb { background: rgba(255, 255, 255, 0.28); }
+[data-theme="dark"] .wb-sheet-scroll__thumb:hover,
+[data-theme="dark"] .wb-sheet-scroll__thumb:active { background: rgba(255, 255, 255, 0.45); }
+[data-theme="dark"] .wb-sheet-scroll:hover { background: rgba(255, 255, 255, 0.1); }
 </style>

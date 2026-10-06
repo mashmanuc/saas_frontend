@@ -178,4 +178,23 @@ function reload(): void {
 .wb-protocol-modal-fade-leave-to {
   opacity: 0;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-protocol-modal__dialog {
+  background: var(--color-surface-elevated);
+}
+[data-theme="dark"] .wb-protocol-modal__title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-protocol-modal__body {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-protocol-modal__btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-protocol-modal__btn:hover {
+  background: var(--color-accent-hover);
+}
 </style>

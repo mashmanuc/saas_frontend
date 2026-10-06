@@ -1915,4 +1915,31 @@ onMounted(() => {
     transition: none;
   }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-dialog__btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-dialog__btn--danger:hover {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-bulk-bar {
+  background: var(--color-accent-soft);
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+[data-theme="dark"] .wb-bulk-bar__all-checkbox:not(.wb-bulk-bar__all-checkbox--checked) {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-bulk-bar__btn--ghost:hover {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-bulk-bar__btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-bulk-bar__btn--danger:hover:not(:disabled) {
+  background: var(--color-danger);
+}
 </style>

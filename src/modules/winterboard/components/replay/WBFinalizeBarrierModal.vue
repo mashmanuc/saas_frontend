@@ -262,4 +262,14 @@ function onRetryClick() {
   color: var(--text-secondary, #666);
   text-align: center;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-finalize-barrier {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-finalize-barrier__retry:disabled {
+  background: var(--color-border-strong);
+}
 </style>

@@ -487,4 +487,101 @@ function onCChange(e: Event): void {
   color: #1e3a4a;
   word-break: break-all;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .quad-insp {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .quad-insp__header {
+  border-bottom-color: var(--color-border-strong);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .quad-insp__title {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .quad-insp__sign {
+  color: var(--color-warning);
+}
+[data-theme="dark"] .quad-insp__subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-insp__section {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .quad-insp__section-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-insp__sign-btn {
+  border-color: var(--color-accent);
+  background: var(--color-warning-soft);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .quad-insp__sign-btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .quad-insp__sign-btn.is-active {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .quad-insp__btn {
+  border-color: var(--color-accent);
+  background: var(--color-warning-soft);
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .quad-insp__btn:hover {
+  background: var(--color-border);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .quad-insp__btn.is-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .quad-insp__num-label {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .quad-insp__num-input {
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .quad-insp__num-input:focus {
+  border-color: var(--color-accent);
+}
+[data-theme="dark"] .quad-insp__num-hint {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-insp__disc-label {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .disc-pos {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .disc-zero {
+  color: var(--color-success);
+}
+[data-theme="dark"] .disc-neg {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .root-pos {
+  color: var(--color-accent);
+}
+[data-theme="dark"] .root-zero {
+  color: var(--color-success);
+}
+[data-theme="dark"] .root-neg {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .quad-insp__vertex-row {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-insp__sol-label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .quad-insp__sol-val {
+  color: var(--color-text);
+}
 </style>

@@ -136,4 +136,10 @@ function hashCode(s: string): number {
 .wb-step__btn:disabled { opacity: 0.4; cursor: default; }
 .wb-step__saved { font-size: 11px; opacity: 0.7; }
 .wb-step__failed { font-size: 11px; color: #b23; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-step__failed {
+  color: var(--color-danger);
+}
 </style>

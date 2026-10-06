@@ -390,4 +390,33 @@ const sortedMarkers = computed(() =>
   background: var(--wb-info-border, #93c5fd);
   color: #fff;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-lesson-map__header {
+  border-bottom-color: var(--color-border-strong);
+}
+[data-theme="dark"] .wb-lesson-map__chevron {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-lesson-map__add {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wb-lesson-map__item--active {
+  border-left-color: var(--color-accent);
+}
+[data-theme="dark"] .wb-lesson-map__thumb-placeholder {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-lesson-map__delete {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-lesson-map__delete:hover {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-lesson-map__empty {
+  color: var(--color-text-muted);
+}
 </style>

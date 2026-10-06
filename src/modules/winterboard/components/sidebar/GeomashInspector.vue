@@ -350,4 +350,68 @@ function selectRow(o: GeoObject) {
   .geo-item__color { width: 26px; height: 26px; }
   .geo-inspector__item { padding: 6px 4px; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .geo-inspector__icon {
+  color: var(--color-success);
+}
+[data-theme="dark"] .geo-inspector__count {
+  color: var(--color-success);
+}
+[data-theme="dark"] .geo-select-btn {
+  border-color: var(--color-success);
+  background: var(--color-surface-sunken);
+  color: var(--color-success);
+}
+[data-theme="dark"] .geo-select-btn.is-active {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .geo-selbar {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .geo-tile {
+  background: var(--color-surface);
+  color: var(--color-success);
+}
+[data-theme="dark"] .geo-tile:hover {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .geo-tile.is-active {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .geo-active__cancel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .geo-active__cancel:hover {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .geo-active__hint {
+  color: var(--color-success);
+}
+[data-theme="dark"] .geo-active__add {
+  color: var(--color-on-accent);
+  background: var(--color-success);
+}
+[data-theme="dark"] .geo-active__add:disabled {
+  background: var(--color-border-strong);
+}
+[data-theme="dark"] .geo-field__ctl {
+  border-color: var(--color-success);
+  background: var(--color-surface-sunken);
+}
+[data-theme="dark"] .geo-item__btn--del {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .geo-item__btn--del:hover {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .geo-inspector__edit {
+  color: var(--color-on-accent);
+  background: var(--color-success);
+}
 </style>

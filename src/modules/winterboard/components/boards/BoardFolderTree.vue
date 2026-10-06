@@ -600,4 +600,10 @@ function onDrop(folderId: number) {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-folder-tree__action--danger:hover {
+  color: var(--color-danger);
+}
 </style>

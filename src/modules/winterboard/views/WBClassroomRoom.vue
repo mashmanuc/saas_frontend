@@ -3330,4 +3330,76 @@ onBeforeUnmount(async () => {
   line-height: 1;
   margin-bottom: 8px;
 }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-classroom-room--locked {
+  --wb-canvas-area-bg: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-rec-indicator {
+  color: var(--color-danger);
+}
+[data-theme="dark"] .wb-rec-indicator__dot {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-rec-indicator--paused {
+  color: var(--color-text-secondary);
+}
+[data-theme="dark"] .wb-save-indicator__dot {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-save-indicator--saved .wb-save-indicator__dot {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .wb-save-indicator--syncing .wb-save-indicator__dot {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-save-indicator--error .wb-save-indicator__dot {
+  background: var(--color-danger-soft);
+}
+[data-theme="dark"] .wb-save-indicator--offline .wb-save-indicator__dot {
+  background: var(--color-warning-soft);
+}
+[data-theme="dark"] .wb-follow-btn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-follow-btn:hover {
+  background: var(--color-accent-hover);
+}
+[data-theme="dark"] .wb-follow-indicator {
+  border-color: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-indicator__dot {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-follow-stop-btn:hover {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-student-badge__dot--online {
+  background: var(--color-success-soft);
+}
+[data-theme="dark"] .wb-student-badge__dot--offline {
+  background: var(--color-border);
+}
+[data-theme="dark"] .wb-header-btn--danger:hover {
+  background: var(--color-danger);
+}
+[data-theme="dark"] .wb-lesson-action-btn--start {
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-lesson-action-btn--start:hover:not(:disabled) {
+  background: var(--color-success);
+}
+[data-theme="dark"] .wb-lesson-action-btn--complete {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .wb-lesson-action-btn--complete:hover:not(:disabled) {
+  background: var(--color-warning);
+}
+[data-theme="dark"] .wb-lesson-status--ARCHIVED {
+  color: var(--color-text-muted);
+}
 </style>

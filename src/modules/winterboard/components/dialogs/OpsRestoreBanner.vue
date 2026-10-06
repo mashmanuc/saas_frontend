@@ -59,4 +59,22 @@ function reload(): void {
   cursor: pointer;
 }
 .wb-restore__btn:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-restore--info {
+  background: var(--color-accent-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  color: var(--color-accent);
+}
+[data-theme="dark"] .wb-restore--problem {
+  background: var(--color-warning-soft);
+  border-bottom-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+  color: var(--color-warning);
+}
+[data-theme="dark"] .wb-restore__btn {
+  border-color: var(--color-warning);
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
 </style>
