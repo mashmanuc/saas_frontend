@@ -3,8 +3,8 @@ import { defineStore } from 'pinia'
 const STORAGE_KEY = 'theme'
 const DEFAULT_THEME = 'light'
 
-// Теми: light (зелена), dark («Графіт», нейтральна сіра), classic (світла з фіолетовим
-// акцентом). Кольори — у `assets/main.css`, контракт —
+// Теми: light (зелена), dark («Графіт», нейтральна сіра), classic («Біла класика»: білий і
+// нейтральний сірий, акцент — зелений бренду). Кольори — у `assets/main.css`, контракт —
 // saas_docs/frontend/design-system/DARK_THEME_CONTRACT_2026-10-05.md.
 export const THEME_OPTIONS = Object.freeze(['light', 'dark', 'classic'])
 

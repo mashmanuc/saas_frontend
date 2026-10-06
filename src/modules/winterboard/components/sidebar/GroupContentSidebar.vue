@@ -1337,6 +1337,24 @@ function onDrop(e: DragEvent) {
   grid-template-columns: repeat(auto-fill, minmax(var(--wb-doc-thumb, 88px), 1fr));
 }
 
+/* Класична тема («Біла класика», 2026-10-06): сині акценти панелі (задані тут жорстко) → акцент
+   теми, зелений бренду. Світла й темна теми не змінюються. */
+[data-theme="classic"] .content-sidebar__tab--active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+[data-theme="classic"] .content-sidebar--dragover { outline-color: var(--color-accent); background: var(--color-accent-soft); }
+[data-theme="classic"] .content-sidebar__drop-overlay { background: var(--color-accent-soft); color: var(--color-accent); }
+[data-theme="classic"] .content-sidebar__upload-btn { background: var(--color-accent); }
+[data-theme="classic"] .content-sidebar__upload-btn:hover { background: var(--color-accent-hover); }
+[data-theme="classic"] .content-sidebar__search:focus,
+[data-theme="classic"] .tools-search:focus { border-color: var(--color-accent); }
+[data-theme="classic"] .filter-chip:hover,
+[data-theme="classic"] .tools-card:hover,
+[data-theme="classic"] .tools-crumb__back:hover { background: var(--color-accent-soft); border-color: var(--color-accent); }
+[data-theme="classic"] .filter-chip:hover,
+[data-theme="classic"] .filter-chip--active { color: var(--color-accent); }
+[data-theme="classic"] .filter-chip--active { background: var(--color-accent-soft); border-color: var(--color-accent); }
+[data-theme="classic"] .content-sidebar__group-header--collapsible:focus-visible { outline-color: var(--color-accent); }
+[data-theme="classic"] .tools-card__icon { color: var(--color-accent); }
+
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
    Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
 [data-theme="dark"] .content-sidebar__tabs {

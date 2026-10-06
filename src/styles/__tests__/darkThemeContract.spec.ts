@@ -101,13 +101,38 @@ describe('Темна тема: палітри', () => {
   }
 })
 
+describe('Класична тема «Біла класика» (рішення власника 2026-10-06)', () => {
+  const resolve = (name: string, depth = 0): string => {
+    const v = (classic[name] ?? '').trim()
+    const ref = v.match(/^var\((--[\w-]+)\)$/)
+    return ref && depth < 5 ? resolve(ref[1], depth + 1) : v
+  }
+
+  it('оголошує всі канонічні токени (ті самі імена, що в темній)', () => {
+    expect(CANONICAL.filter((t) => !(t in classic))).toEqual([])
+  })
+
+  it('контраст тексту на всіх поверхнях не нижчий за контракт', () => {
+    const low: string[] = []
+    for (const s of ['page', 'surface', 'surface-sunken', 'surface-elevated']) {
+      for (const [fg, min] of [['text', 7], ['text-secondary', 4.5], ['text-muted', 3], ['accent', 4.5], ['danger', 4.5]] as const) {
+        const c = contrast(resolve(`--color-${fg}`), resolve(`--color-${s}`))
+        if (c < min) low.push(`${fg} на ${s}: ${c.toFixed(2)} < ${min}`)
+      }
+    }
+    expect(low).toEqual([])
+    expect(contrast(resolve('--color-on-accent'), resolve('--color-accent'))).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('Темна тема: світла й класична не змінюються', () => {
   // Канонічні імена, які компоненти вже вживають як фантоми (`var(--color-border, #e5e7eb)`).
   const usedAsPhantoms = ['surface', 'surface-elevated', 'text', 'text-muted', 'border', 'accent',
     'success', 'warning', 'danger', 'info', 'warning-soft'].map((n) => `--color-${n}`)
 
-  it('світла й класична не оголошують канонічних імен-фантомів', () => {
-    expect(usedAsPhantoms.filter((t) => t in light || t in classic)).toEqual([])
+  it('світла не оголошує канонічних імен-фантомів', () => {
+    // Класична з 2026-10-06 («Біла класика») свідомо на канонічних токенах — див. окремий блок нижче.
+    expect(usedAsPhantoms.filter((t) => t in light)).toEqual([])
   })
 
   it('текст на акценті у світлій і класичній — білий, як і був', () => {

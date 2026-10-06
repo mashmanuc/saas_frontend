@@ -175,31 +175,63 @@
   }
 
   /* ========================================
-     THEME: CLASSIC (фіолетово-академічна)
+     THEME: CLASSIC — «Біла класика» (рішення власника 2026-10-06: «роби Білу класику»)
+     Білий і нейтральний сірий, акцент — зелений бренду (як логотип і знак «M4»); світла
+     пара до темного «Графіту». Прототип і контраст: saas_docs/frontend/design-system/
+     classic-theme-prototype/. Контраст (WCAG): текст 17,6 · другорядний 7,4 · білий на кнопці 5,0.
      ======================================== */
   [data-theme="classic"] {
-    --bg-primary: #f8f7fd;
-    --bg-gradient: #f8f7fd;
+    --bg-primary: #f5f6f7;
+    --bg-gradient: #f5f6f7;
     --bg-secondary: #ffffff;
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-    --border-color: #d1d5db;
+    --text-primary: #16191d;
+    --text-secondary: #4f5661;
+    --border-color: #dfe2e6;
     --card-bg: #ffffff;
-    --nav-bg: rgba(255, 255, 255, 0.98);
-    --toast-bg: rgba(109, 40, 217, 0.95);
+    --nav-bg: #ffffff;
+    --toast-bg: #15803d;
     --toast-text: #ffffff;
-    --accent: #7c3aed;
-    --accent-hover: #6d28d9;
+    --accent: #15803d;
+    --accent-hover: #116932;
     --accent-contrast: #ffffff;
     --color-on-accent: #ffffff;
-    --shadow: rgba(109, 40, 217, 0.15);
-    --shadow-strong: rgba(109, 40, 217, 0.3);
-    --success-bg: #16a34a;
-    --warning-bg: #f59e0b;
-    --danger-bg: #dc2626;
-    --info-bg: #0ea5e9;
+    --shadow: rgba(16, 24, 40, 0.08);
+    --shadow-strong: rgba(16, 24, 40, 0.16);
+    --success-bg: #15803d;
+    --warning-bg: #b45309;
+    --danger-bg: #b91c1c;
+    --info-bg: #1d4ed8;
     --dropdown-bg: #ffffff;
-    --bg-hover: rgba(124, 58, 237, 0.08);
+    --bg-hover: rgba(21, 128, 61, 0.08);
+
+    /* Канонічні токени «Білої класики» — ті самі імена, що в темній темі (контракт кольорів).
+       Компоненти, що кличуть кольори канонічними назвами, у класичній беруть палітру теми,
+       а не свої запасні кольори (індиго, сині відтінки). --color-text-secondary — нижче. */
+    --color-page: #f5f6f7;
+    --color-chrome: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-sunken: #f3f4f6;
+    --color-surface-elevated: #ffffff;
+    --color-canvas-area: #e7e9ec;
+    --color-hover: rgba(16, 24, 40, 0.05);
+    --color-selected: var(--color-accent-soft);
+    --color-text: #16191d;
+    --color-text-muted: #6b7280;
+    --color-border: #dfe2e6;
+    --color-border-strong: #c9ced5;
+    --color-accent: #15803d;
+    --color-accent-hover: #116932;
+    --color-accent-soft: rgba(21, 128, 61, 0.1);
+    --color-link: var(--color-accent);
+    --color-success: #15803d;
+    --color-success-soft: rgba(21, 128, 61, 0.1);
+    --color-warning: #b45309;
+    --color-warning-soft: rgba(180, 83, 9, 0.1);
+    --color-danger: #b91c1c;
+    --color-danger-soft: rgba(185, 28, 28, 0.08);
+    --color-info: #1d4ed8;
+    --color-info-soft: rgba(29, 78, 216, 0.08);
+    --color-scrim: rgba(16, 24, 40, 0.45);
 
     --color-bg-primary: var(--bg-primary);
     --color-bg-secondary: var(--bg-secondary);
@@ -726,39 +758,40 @@
     --wb-warning-text: #d97706;
   }
 
-  /* ─── Classic Theme: Winterboard Variables ─── */
+  /* ─── Classic Theme: Winterboard Variables («Біла класика») ───
+     Шапка дошки — графітова смуга: її текст і кнопки жорстко білі (WBSoloRoom). */
   [data-theme="classic"] {
     --wb-bg: #ffffff;
-    --wb-bg-hover: rgba(124, 58, 237, 0.08);
-    --wb-bg-secondary: #f8f7fd;
-    --wb-bg-tertiary: #f3f0ff;
+    --wb-bg-hover: rgba(21, 128, 61, 0.08);
+    --wb-bg-secondary: #f5f6f7;
+    --wb-bg-tertiary: #f5f6f7;
     --wb-bg-primary: #ffffff;
-    --wb-border: #d1d5db;
-    --wb-brand: #7c3aed;
-    --wb-brand-hover: #6d28d9;
-    --wb-brand-dark: #5b21b6;
-    --wb-btn-hover: rgba(124, 58, 237, 0.08);
-    --wb-canvas-area-bg: #ddd8ec;
+    --wb-border: #dfe2e6;
+    --wb-brand: #15803d;
+    --wb-brand-hover: #116932;
+    --wb-brand-dark: #116932;
+    --wb-btn-hover: rgba(21, 128, 61, 0.08);
+    --wb-canvas-area-bg: #e7e9ec;
     --wb-canvas-bg: #ffffff;
     --wb-page-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     --wb-card-bg: #ffffff;
-    --wb-danger-bg: rgba(220, 38, 38, 0.1);
-    --wb-error: #dc2626;
-    --wb-fg: #1f2937;
-    --wb-fg-secondary: #6b7280;
-    --wb-footer-bg: #f8f7fd;
-    --wb-header-bg: #7c3aed;
-    --wb-primary: #7c3aed;
-    --wb-primary-hover: #6d28d9;
+    --wb-danger-bg: rgba(185, 28, 28, 0.1);
+    --wb-error: #b91c1c;
+    --wb-fg: #16191d;
+    --wb-fg-secondary: #4f5661;
+    --wb-footer-bg: #f5f6f7;
+    --wb-header-bg: #1f2328;
+    --wb-primary: #15803d;
+    --wb-primary-hover: #116932;
     --wb-surface: #ffffff;
-    --wb-text: #1f2937;
-    --wb-text-muted: #6b7280;
-    --wb-text-primary: #1f2937;
-    --wb-text-secondary: #6b7280;
+    --wb-text: #16191d;
+    --wb-text-muted: #4f5661;
+    --wb-text-primary: #16191d;
+    --wb-text-secondary: #4f5661;
     --wb-toolbar-bg: #ffffff;
-    --wb-toolbar-border: #d1d5db;
-    --wb-warning-bg: rgba(234, 179, 8, 0.1);
-    --wb-warning-text: #d97706;
+    --wb-toolbar-border: #dfe2e6;
+    --wb-warning-bg: rgba(180, 83, 9, 0.1);
+    --wb-warning-text: #b45309;
   }
 
   /* ─── Dark Theme: Winterboard Variables ───

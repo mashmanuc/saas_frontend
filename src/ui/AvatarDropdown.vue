@@ -212,8 +212,8 @@ const themeOptions = [
 
 /**
  * Підпис у tooltip. «Класична» — третій варіант, назва якого нічого не пояснює
- * (візуальний огляд 2026-09-22, п.17): це світла тема з фіолетовим акцентом
- * замість зеленого (`[data-theme="classic"]` у `assets/main.css`).
+ * (візуальний огляд 2026-09-22, п.17). З 2026-10-06 це «Біла класика»: білий і нейтральний
+ * сірий, акцент — зелений бренду (`[data-theme="classic"]` у `assets/main.css`).
  */
 function themeTitle(option: { value: string; labelKey: string }): string {
   const name = t(option.labelKey)
