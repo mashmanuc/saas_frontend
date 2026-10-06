@@ -60,7 +60,7 @@ const timeAgo = computed(() => {
   gap: 1rem;
   padding: 0.75rem 1rem;
   background: var(--warning-bg, #fff3cd);
-  border: 1px solid var(--warning-border, #ffc107);
+  border: 1px solid var(--color-warning, #ffc107);
   border-radius: var(--radius-md, 8px);
   margin-bottom: 1rem;
 }
@@ -73,7 +73,7 @@ const timeAgo = computed(() => {
 }
 
 .icon-warning {
-  color: var(--warning, #ff9800);
+  color: var(--color-warning, #ff9800);
   flex-shrink: 0;
 }
 
@@ -101,7 +101,7 @@ const timeAgo = computed(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--primary);
+  background: var(--color-accent);
   color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
@@ -113,7 +113,7 @@ const timeAgo = computed(() => {
 }
 
 .refresh-btn:hover {
-  background: var(--primary-hover);
+  background: var(--color-accent-hover);
 }
 
 .refresh-btn:active {

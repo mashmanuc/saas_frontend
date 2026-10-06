@@ -28,7 +28,7 @@ const { t } = useI18n()
 <style scoped>
 .trust-strip {
   background: var(--white, #ffffff);
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 14px;
   padding: 14px 24px;
   margin-bottom: 24px;

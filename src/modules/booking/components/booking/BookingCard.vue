@@ -199,7 +199,7 @@ function viewDetails() {
 }
 
 .action-btn.cancel {
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
   color: var(--color-danger, #ef4444);
 }
 

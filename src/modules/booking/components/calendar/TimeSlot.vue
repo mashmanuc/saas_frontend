@@ -63,14 +63,14 @@ const isClickable = computed(() => {
 .time-slot.status-available {
   background: var(--color-success-light, #d1fae5);
   border: 1px solid var(--color-success, #10b981);
-  color: var(--color-success-dark, #065f46);
+  color: var(--color-success, #065f46);
 }
 
 /* Booked */
 .time-slot.status-booked {
   background: var(--color-primary-light, #dbeafe);
   border: 1px solid var(--color-primary, #3b82f6);
-  color: var(--color-primary-dark, #1e40af);
+  color: var(--color-accent-hover, #1e40af);
   cursor: default;
 }
 

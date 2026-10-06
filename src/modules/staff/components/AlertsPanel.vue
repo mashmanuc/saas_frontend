@@ -343,7 +343,7 @@ onMounted(() => {
 
 .alert-meta-item {
   font-size: var(--text-xs);
-  color: var(--text-tertiary, var(--text-secondary));
+  color: var(--color-text-muted, var(--text-secondary));
 }
 
 .alert-actions {

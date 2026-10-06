@@ -80,7 +80,7 @@ function closeOrBack() {
 }
 
 .prose a:hover {
-  color: var(--color-primary-dark);
+  color: var(--color-accent-hover);
 }
 
 .prose strong {

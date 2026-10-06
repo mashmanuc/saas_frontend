@@ -278,8 +278,8 @@ function getChipClass(tagCode: string): Record<string, boolean> {
   display: flex;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: color-mix(in srgb, var(--warning, #f59e0b) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 30%, transparent);
+  background: color-mix(in srgb, var(--color-warning, #f59e0b) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 30%, transparent);
   border-radius: var(--radius-md);
   width: 100%;
 }

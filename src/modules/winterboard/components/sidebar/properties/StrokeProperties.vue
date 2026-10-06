@@ -107,7 +107,7 @@ function onSizeChange(event: Event) {
 .stroke-properties__color-group input[type="color"] {
   width: 48px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
 }

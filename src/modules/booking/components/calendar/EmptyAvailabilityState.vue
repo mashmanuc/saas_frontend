@@ -23,7 +23,7 @@ const { t } = useI18n()
   justify-content: center;
   padding: 0.75rem 1rem;
   margin: 0.5rem 0;
-  background: var(--color-surface-secondary, #f3f4f6);
+  background: var(--color-surface-sunken, #f3f4f6);
   border-radius: 8px;
   border: 1px dashed var(--color-border, #d1d5db);
 }

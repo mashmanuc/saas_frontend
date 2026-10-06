@@ -238,7 +238,7 @@ function unlockAll() {
 }
 .msp__locked {
   font-size: 12px;
-  color: var(--wb-warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
   font-weight: 500;
 }
 
@@ -273,7 +273,7 @@ function unlockAll() {
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--wb-border-color, #e5e7eb);
+  background: var(--color-border, #e5e7eb);
   border-radius: 2px;
   outline: none;
 }
@@ -300,7 +300,7 @@ function unlockAll() {
 }
 .msp__btn {
   padding: 8px 12px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   background: var(--wb-bg-primary, #ffffff);
   color: var(--wb-text-primary, #111827);

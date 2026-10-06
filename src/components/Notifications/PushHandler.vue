@@ -425,11 +425,11 @@ defineExpose({
   flex-shrink: 0;
 }
 
-.toast-message .toast-icon-wrapper { background: var(--color-info-bg, #dbeafe); color: var(--color-info, #2563eb); }
-.toast-lesson .toast-icon-wrapper { background: var(--color-success-bg, #dcfce7); color: var(--color-success, #16a34a); }
-.toast-user .toast-icon-wrapper { background: var(--color-warning-bg, #fef3c7); color: var(--color-warning, #d97706); }
-.toast-success .toast-icon-wrapper { background: var(--color-success-bg, #dcfce7); color: var(--color-success, #16a34a); }
-.toast-error .toast-icon-wrapper { background: var(--color-error-bg, #fee2e2); color: var(--color-error, #dc2626); }
+.toast-message .toast-icon-wrapper { background: var(--color-info-soft, #dbeafe); color: var(--color-info, #2563eb); }
+.toast-lesson .toast-icon-wrapper { background: var(--color-success-soft, #dcfce7); color: var(--color-success, #16a34a); }
+.toast-user .toast-icon-wrapper { background: var(--color-warning-soft, #fef3c7); color: var(--color-warning, #d97706); }
+.toast-success .toast-icon-wrapper { background: var(--color-success-soft, #dcfce7); color: var(--color-success, #16a34a); }
+.toast-error .toast-icon-wrapper { background: var(--color-danger-soft, #fee2e2); color: var(--color-error, #dc2626); }
 .toast-default .toast-icon-wrapper { background: var(--color-bg-secondary, #f3f4f6); color: var(--text-secondary, #6b7280); }
 
 .toast-icon {

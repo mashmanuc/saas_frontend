@@ -139,7 +139,7 @@ function updateCertification(index: number, field: string, value: any) {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.9375rem;
-  background: var(--surface-input);
+  background: var(--color-surface-sunken);
   color: var(--text-primary);
 }
 

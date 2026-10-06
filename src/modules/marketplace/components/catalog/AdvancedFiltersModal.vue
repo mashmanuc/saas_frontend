@@ -220,7 +220,7 @@ function handleClose() {
 }
 
 .close-btn:hover {
-  background: var(--surface-hover, #f3f4f6);
+  background: var(--color-hover, #f3f4f6);
 }
 
 .modal-body {

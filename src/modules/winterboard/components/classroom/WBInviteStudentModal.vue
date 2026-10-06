@@ -284,7 +284,7 @@ async function handleConfirm(): Promise<void> {
 }
 .wb-invite-modal__select:focus,
 .wb-invite-modal__input:focus {
-  border-color: var(--wb-accent, #6366f1);
+  border-color: var(--color-accent, #6366f1);
 }
 .wb-invite-modal__select:disabled,
 .wb-invite-modal__input:disabled {
@@ -301,7 +301,7 @@ async function handleConfirm(): Promise<void> {
   width: 20px;
   height: 20px;
   border: 2px solid var(--wb-border, #334155);
-  border-top-color: var(--wb-accent, #6366f1);
+  border-top-color: var(--color-accent, #6366f1);
   border-radius: 50%;
   animation: wb-spin 0.7s linear infinite;
 }
@@ -317,7 +317,7 @@ async function handleConfirm(): Promise<void> {
 
 .wb-invite-modal__error {
   font-size: 13px;
-  color: var(--wb-danger, #ef4444);
+  color: var(--color-danger, #ef4444);
   margin: 0;
 }
 
@@ -352,8 +352,8 @@ async function handleConfirm(): Promise<void> {
 }
 
 .wb-invite-modal__btn--confirm {
-  background: var(--wb-accent, #6366f1);
-  color: #fff;
+  background: var(--color-accent, #6366f1);
+  color: var(--color-on-accent);
 }
 .wb-invite-modal__btn--confirm:not(:disabled):hover {
   opacity: 0.85;

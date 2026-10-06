@@ -297,7 +297,7 @@ onUnmounted(() => {
 }
 
 .wb-size-slider__preset--active {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border-color: var(--wb-brand, #0066FF);
 }
 

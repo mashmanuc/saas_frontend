@@ -10,14 +10,14 @@
       <div v-if="!isRolePreselected" class="space-y-2">
         <p class="text-sm font-medium" style="color: var(--text-primary);">{{ $t('auth.register.accountType') }}</p>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'student' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'student' ? 'border-[var(--accent)]' : 'border-[var(--color-border)]'">
             <input v-model="form.account_type" type="radio" value="student" name="account_type" />
             <div>
               <div class="text-sm font-medium">{{ $t('auth.register.accountTypeStudent') }}</div>
               <div class="text-xs" style="color: var(--text-secondary);">{{ $t('auth.register.accountTypeStudentHint') }}</div>
             </div>
           </label>
-          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'tutor' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'tutor' ? 'border-[var(--accent)]' : 'border-[var(--color-border)]'">
             <input v-model="form.account_type" type="radio" value="tutor" name="account_type" />
             <div>
               <div class="text-sm font-medium">{{ $t('auth.register.accountTypeTutor') }}</div>
@@ -72,7 +72,7 @@
 
       <!-- Privacy Policy Checkbox -->
       <div class="space-y-2">
-        <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+        <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--color-border)]'">
           <input v-model="form.privacy_policy_accepted" type="checkbox" required />
           <div class="text-sm">
             <span style="color: var(--text-primary);">{{ $t('auth.register.privacyPolicyText') }}</span>
@@ -92,11 +92,11 @@
          кнопку показуємо ЛИШЕ для student-flow. Tutor-onboarding — окрема воронка. -->
     <div v-if="googleEnabled && form.account_type === 'student'" class="space-y-3">
       <div class="relative flex items-center" aria-hidden="true">
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
         <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
           {{ $t('auth.login.orContinueWith') }}
         </span>
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
       </div>
       <GoogleSignInButton
         mode="signup"

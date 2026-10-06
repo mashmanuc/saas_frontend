@@ -203,17 +203,17 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 .wb-save-status--saved {
-  color: var(--wb-success, #16a34a);
+  color: var(--color-success, #16a34a);
 }
 
 .wb-save-status--error {
   color: var(--wb-error, #dc2626);
-  background: var(--wb-error-bg, #fef2f2);
+  background: var(--color-danger-soft, #fef2f2);
   border-radius: 6px;
 }
 
 .wb-save-status--offline {
-  color: var(--wb-warning, #d97706);
+  color: var(--color-warning, #d97706);
   background: var(--wb-warning-bg, #fffbeb);
   border-radius: 6px;
 }
@@ -254,7 +254,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 .wb-save-status__retry:hover {
-  color: var(--wb-error-hover, #b91c1c);
+  color: var(--color-danger, #b91c1c);
 }
 
 .wb-save-status__retry:focus-visible {

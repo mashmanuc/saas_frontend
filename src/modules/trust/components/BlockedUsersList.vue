@@ -121,7 +121,7 @@ async function unblock(blockId) {
 .count-badge {
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--color-primary);
-  color: var(--color-primary-text);
+  color: var(--color-accent);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-full);
@@ -138,7 +138,7 @@ async function unblock(blockId) {
 
 .skeleton-item {
   height: 64px;
-  background: var(--color-skeleton);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-md);
   animation: pulse 1.5s infinite;
 }
@@ -168,7 +168,7 @@ async function unblock(blockId) {
 }
 
 .blocked-user-card:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
 }
 
 .user-info {

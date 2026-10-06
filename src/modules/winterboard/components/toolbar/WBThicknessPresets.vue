@@ -182,12 +182,12 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 .wb-thickness-btn--active {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border-color: var(--wb-brand, #2563eb);
 }
 
 .wb-thickness-btn--active:hover {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
 }
 
 .wb-thickness-dot {

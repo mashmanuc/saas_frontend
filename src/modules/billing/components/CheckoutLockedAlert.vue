@@ -139,7 +139,7 @@ function handleClose() {
 }
 
 .existing-info {
-  background: var(--color-background);
+  background: var(--color-page);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 16px;
@@ -153,7 +153,7 @@ function handleClose() {
 }
 
 .info-row:not(:last-child) {
-  border-bottom: 1px solid var(--color-border-soft);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .info-label {

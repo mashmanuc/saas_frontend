@@ -284,7 +284,7 @@ onMounted(async () => {
   padding: var(--space-md, 12px) var(--space-lg, 16px);
   border-radius: var(--radius-md, 8px);
   background: var(--danger-bg, rgba(220, 38, 38, 0.08));
-  color: var(--danger-text, var(--color-danger, #b91c1c));
+  color: var(--color-danger, var(--color-danger, #b91c1c));
 }
 
 .staff-billing {

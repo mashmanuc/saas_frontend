@@ -78,7 +78,7 @@ const isVisible = computed<boolean>(() => {
 
 <style scoped>
 .tutor-journey-panel {
-  background: var(--bg-card, #fff);
+  background: var(--color-surface, #fff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: var(--radius-lg, 12px);
   padding: var(--space-lg, 20px);

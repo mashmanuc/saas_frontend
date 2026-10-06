@@ -120,7 +120,7 @@ watch(() => props.userId, load)
 .state--error { color: var(--danger, #dc2626); }
 .block + .block { margin-top: 16px; }
 .block-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin: 0 0 8px; }
-.count { font-weight: 500; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-muted, #f1f5f9); }
+.count { font-weight: 500; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--color-surface-sunken, #f1f5f9); }
 .err-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .err-item { padding: 10px 12px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; }
 .err-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }

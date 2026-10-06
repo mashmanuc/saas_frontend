@@ -256,7 +256,7 @@ function dismiss() {
 
 .skeleton-card {
   height: 64px;
-  background: var(--color-skeleton);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-md);
   animation: pulse 1.5s infinite;
 }
@@ -286,7 +286,7 @@ function dismiss() {
 
 .tutor-card:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  background: var(--color-accent-soft);
 }
 
 .tutor-avatar {
@@ -363,7 +363,7 @@ function dismiss() {
 
 .btn-view:hover {
   background: var(--color-primary);
-  color: var(--color-primary-text);
+  color: var(--color-accent);
 }
 
 .empty-state {
@@ -396,6 +396,6 @@ function dismiss() {
 }
 
 .btn-link:hover {
-  color: var(--color-primary-hover);
+  color: var(--color-accent-hover);
 }
 </style>

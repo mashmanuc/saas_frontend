@@ -177,7 +177,7 @@ onMounted(() => {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--surface-muted, #f8fafc);
+  background: var(--color-surface-sunken, #f8fafc);
 }
 .google-embedded-note__text {
   margin: 0 0 8px;

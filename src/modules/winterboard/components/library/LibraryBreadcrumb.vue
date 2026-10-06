@@ -60,7 +60,7 @@ const emit = defineEmits<{
   padding: 8px 12px;
   font-size: 12px;
   color: var(--wb-text-secondary, #6b7280);
-  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
   overflow-x: auto;
   white-space: nowrap;
   flex-shrink: 0;
@@ -78,7 +78,7 @@ const emit = defineEmits<{
 }
 
 .library-breadcrumb__item:hover {
-  background: var(--wb-hover-bg, #f3f4f6);
+  background: var(--color-hover, #f3f4f6);
   color: var(--wb-text-primary, #111827);
 }
 

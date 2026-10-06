@@ -247,7 +247,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 1rem;
-  background: var(--surface-input);
+  background: var(--color-surface-sunken);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 6px);
 }
@@ -292,7 +292,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.9375rem;
-  background: var(--surface-input);
+  background: var(--color-surface-sunken);
   color: var(--text-primary);
   width: 100%;
 }
@@ -346,7 +346,7 @@ onMounted(() => {
 }
 
 .tutor-card:hover {
-  border-color: var(--primary);
+  border-color: var(--color-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -389,7 +389,7 @@ onMounted(() => {
 
 .meta span {
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--color-text-muted);
 }
 
 .availability span {

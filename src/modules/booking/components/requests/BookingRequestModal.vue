@@ -128,7 +128,7 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background-color: var(--accent-bg, #eff6ff);
+  background-color: var(--color-accent-soft, #eff6ff);
   border-radius: var(--radius-md);
 }
 
@@ -171,7 +171,7 @@ function formatTime(utcTime: string): string {
 
 .duration-btn:hover {
   border-color: var(--accent);
-  background-color: var(--accent-bg, #eff6ff);
+  background-color: var(--color-accent-soft, #eff6ff);
 }
 
 .duration-btn.active {

@@ -5430,7 +5430,7 @@ watch(() => store.workspaceName, (name) => {
 /* Phase 35 B5: Grid size select */
 .wb-grid-size-label {
   font-size: 12px;
-  color: var(--wb-fg-muted, #64748b);
+  color: var(--color-text-muted, #64748b);
   white-space: nowrap;
 }
 
@@ -6240,7 +6240,7 @@ watch(() => store.workspaceName, (name) => {
 }
 
 .wb-solo-room__replay-btn:hover {
-  background: var(--primary-hover, #4f46e5);
+  background: var(--color-accent-hover, #4f46e5);
   transform: translateY(-1px);
 }
 

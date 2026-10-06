@@ -122,7 +122,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--wb-sidebar-bg, #ffffff);
+  background: var(--color-chrome, #ffffff);
   overflow: hidden;
 }
 
@@ -134,7 +134,7 @@ onMounted(async () => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
   padding: 8px 0;
 }
 
@@ -146,8 +146,8 @@ onMounted(async () => {
   gap: 6px;
   padding: 8px 12px;
   border: none;
-  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
-  background: var(--wb-sidebar-bg, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-chrome, #ffffff);
   color: var(--wb-text-secondary, #6b7280);
   font-size: 13px;
   font-weight: 500;
@@ -156,12 +156,12 @@ onMounted(async () => {
 }
 
 .materials-browser__toggle:hover {
-  background: var(--wb-hover-bg, #f3f4f6);
+  background: var(--color-hover, #f3f4f6);
   color: var(--wb-text-primary, #111827);
 }
 
 .materials-browser__toggle:active {
-  background: var(--wb-active-bg, #e5e7eb);
+  background: var(--color-accent-soft, #e5e7eb);
 }
 
 /* ─── Assets list ────────────────────────────────────────────────────────── */
@@ -189,9 +189,9 @@ onMounted(async () => {
   aspect-ratio: 1;
   background: linear-gradient(
     90deg,
-    var(--wb-skeleton-from, #f3f4f6) 0%,
-    var(--wb-skeleton-to, #e5e7eb) 50%,
-    var(--wb-skeleton-from, #f3f4f6) 100%
+    var(--color-surface-sunken, #f3f4f6) 0%,
+    var(--color-border-strong, #e5e7eb) 50%,
+    var(--color-surface-sunken, #f3f4f6) 100%
   );
   background-size: 200% 100%;
   border-radius: 8px;
@@ -251,7 +251,7 @@ onMounted(async () => {
 }
 
 .materials-browser__empty-upload:active {
-  background: var(--wb-brand-active, #003d99);
+  background: var(--color-accent-hover, #003d99);
 }
 
 /* ─── Responsive (narrow sidebar) ───────────────────────────────────────── */

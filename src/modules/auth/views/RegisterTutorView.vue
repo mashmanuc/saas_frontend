@@ -51,7 +51,7 @@
         <p class="text-sm font-medium" style="color: var(--accent);" data-testid="register-beta-free">
           {{ $t('billing.earlyAccess.subtitle') }}
         </p>
-        <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+        <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--color-border)]'">
           <input v-model="form.privacy_policy_accepted" type="checkbox" required />
           <div class="text-sm">
             <span style="color: var(--text-primary);">{{ $t('auth.register.privacyPolicyText') }}</span>
@@ -83,11 +83,11 @@
     <!-- Google OAuth sign-up для тьютора (INV-OAUTH-9 v1.4: role переноситься у register endpoint). -->
     <div v-if="googleEnabled" class="space-y-3">
       <div class="relative flex items-center" aria-hidden="true">
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
         <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
           {{ $t('auth.login.orContinueWith') }}
         </span>
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
       </div>
       <GoogleSignInButton
         mode="signup"

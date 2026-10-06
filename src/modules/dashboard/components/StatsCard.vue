@@ -71,7 +71,7 @@ const displayValue = computed(() => {
   gap: var(--space-md, 12px);
   padding: var(--space-sm, 12px);
   background: var(--card-bg, var(--color-surface));
-  border: 1px solid var(--border-color, var(--color-border-default));
+  border: 1px solid var(--border-color, var(--color-border));
   border-radius: var(--radius-xl, 16px);
   text-decoration: none;
   color: inherit;
@@ -118,7 +118,7 @@ const displayValue = computed(() => {
   font-size: var(--text-xl, 1.25rem);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--text-primary, var(--color-text-body));
+  color: var(--text-primary, var(--color-text));
 }
 
 /* Tablet+: larger value text */

@@ -146,7 +146,7 @@ onMounted(() => {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border: none;
   border-radius: var(--radius-sm, 6px);
   color: var(--text-primary);
@@ -155,7 +155,7 @@ onMounted(() => {
 }
 
 .nav-btn:hover {
-  background: var(--surface-hover);
+  background: var(--color-hover);
 }
 
 .calendar-grid {
@@ -175,7 +175,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 0.75rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-sm, 6px);
 }
 
@@ -200,7 +200,7 @@ onMounted(() => {
 
 .slot {
   padding: 0.5rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 4px);
   font-size: 0.8125rem;
@@ -216,8 +216,8 @@ onMounted(() => {
 }
 
 .slot.selected {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: var(--color-on-accent);
 }
 
@@ -229,7 +229,7 @@ onMounted(() => {
 .no-slots {
   padding: 1rem 0.5rem;
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--color-text-muted);
   text-align: center;
 }
 
@@ -240,7 +240,7 @@ onMounted(() => {
   margin-top: 1.5rem;
   padding: 0.75rem 1rem;
   background: var(--info-bg, #dbeafe);
-  color: var(--info, #3b82f6);
+  color: var(--color-info, #3b82f6);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.875rem;
 }

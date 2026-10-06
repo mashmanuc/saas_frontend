@@ -632,7 +632,7 @@ async function handleGenerate() {
 .lc-type-chip {
   display: flex; flex-direction: column; gap: 2px; text-align: left;
   padding: 8px 14px; border-radius: 12px; cursor: pointer;
-  border: 1px solid var(--lc-border, #d7dde5); background: #fff; font: inherit;
+  border: 1px solid var(--color-border, #d7dde5); background: #fff; font: inherit;
 }
 .lc-type-chip:hover { border-color: #0f766e; }
 .lc-type-chip--active { border-color: #0f766e; background: #0f766e; color: #fff; }

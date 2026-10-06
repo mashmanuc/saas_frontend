@@ -188,7 +188,7 @@ function formatTime(ts: number): string {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--wb-panel-bg, rgba(255, 255, 255, 0.92));
+  background: var(--color-surface, rgba(255, 255, 255, 0.92));
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
   font-size: 13px;
   max-width: 320px;

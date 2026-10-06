@@ -257,7 +257,7 @@ useScheduleDeepLink()
   display: inline-block;
   padding: 2px 8px;
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning-text, #92400e);
+  color: var(--color-warning, #92400e);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;

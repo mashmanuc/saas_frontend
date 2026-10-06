@@ -27,7 +27,7 @@ defineProps<{
 
 <style scoped>
 .inquiry-card-skeleton {
-  background: var(--bg-card, #fff);
+  background: var(--color-surface, #fff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: var(--radius-lg, 12px);
   padding: var(--space-lg, 20px);
@@ -65,7 +65,7 @@ defineProps<{
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--skeleton-color, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   flex-shrink: 0;
 }
 
@@ -73,20 +73,20 @@ defineProps<{
   width: 72px;
   height: 24px;
   border-radius: 12px;
-  background: var(--skeleton-color, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
 }
 
 .skeleton-btn {
   width: 80px;
   height: 34px;
   border-radius: var(--radius-sm, 6px);
-  background: var(--skeleton-color, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
 }
 
 .skeleton-line {
   height: 14px;
   border-radius: 4px;
-  background: var(--skeleton-color, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
 }
 
 .skeleton-name { width: 55%; }

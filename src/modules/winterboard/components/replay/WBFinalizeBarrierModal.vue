@@ -220,8 +220,8 @@ function onRetryClick() {
 .wb-finalize-barrier__spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--border, #e0e0e0);
-  border-top-color: var(--primary, #2563eb);
+  border: 3px solid var(--color-border, #e0e0e0);
+  border-top-color: var(--color-accent, #2563eb);
   border-radius: 50%;
   animation: wb-finalize-barrier-spin 0.8s linear infinite;
   margin: 16px auto 0;
@@ -241,7 +241,7 @@ function onRetryClick() {
 
 .wb-finalize-barrier__retry {
   appearance: none;
-  background: var(--primary, #2563eb);
+  background: var(--color-accent, #2563eb);
   color: var(--color-on-accent);
   border: 0;
   padding: 10px 16px;

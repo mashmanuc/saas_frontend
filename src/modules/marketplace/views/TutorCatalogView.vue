@@ -302,7 +302,7 @@ watch(
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;

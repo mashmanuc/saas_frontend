@@ -455,7 +455,7 @@ function toLocalDateString(d: Date): string {
   font-weight: 500;
   color: var(--text-primary, #374151);
   text-align: center;
-  background: var(--surface-subtle, #f9fafb);
+  background: var(--color-surface-sunken, #f9fafb);
   border: 1px solid var(--border-color, #e5e7eb);
   cursor: default;
   transition: background-color 0.15s, border-color 0.15s;

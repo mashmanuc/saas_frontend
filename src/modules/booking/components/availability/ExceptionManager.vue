@@ -223,7 +223,7 @@ async function handleDelete(exception: DateException) {
 }
 
 .add-btn:hover {
-  background: var(--color-primary-dark, #2563eb);
+  background: var(--color-accent-hover, #2563eb);
 }
 
 /* Form */
@@ -360,7 +360,7 @@ async function handleDelete(exception: DateException) {
 }
 
 .delete-btn:hover {
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
   color: var(--color-danger, #ef4444);
 }
 

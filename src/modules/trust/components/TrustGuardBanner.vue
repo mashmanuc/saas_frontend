@@ -131,17 +131,17 @@ function dismiss() {
 
 .severity-error {
   background: var(--color-error);
-  color: var(--color-error-text);
+  color: var(--color-danger);
 }
 
 .severity-warning {
   background: var(--color-warning);
-  color: var(--color-warning-text);
+  color: var(--color-warning);
 }
 
 .severity-info {
   background: var(--color-info);
-  color: var(--color-info-text);
+  color: var(--color-info);
 }
 
 .banner-icon {

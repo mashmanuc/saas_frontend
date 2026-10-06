@@ -168,17 +168,17 @@ function handleReject() {
 
 .status-pending {
   background-color: var(--warning-bg, #fef3c7);
-  color: var(--warning-text, #92400e);
+  color: var(--color-warning, #92400e);
 }
 
 .status-accepted {
   background-color: var(--success-bg, #d1fae5);
-  color: var(--success-text, #065f46);
+  color: var(--color-success, #065f46);
 }
 
 .status-rejected {
   background-color: var(--danger-bg, #fee2e2);
-  color: var(--danger-text, #991b1b);
+  color: var(--color-danger, #991b1b);
 }
 
 .status-cancelled {

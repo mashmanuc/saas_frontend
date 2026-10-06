@@ -275,7 +275,7 @@ defineExpose({
 .wb-presence-panel {
   display: flex;
   flex-direction: column;
-  background: var(--wb-panel-bg, #ffffff);
+  background: var(--color-surface, #ffffff);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 10px;
   overflow: hidden;

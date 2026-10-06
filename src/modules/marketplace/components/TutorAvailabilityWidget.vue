@@ -241,7 +241,7 @@ onMounted(() => {
 }
 
 .error-state {
-  color: var(--error-text);
+  color: var(--color-danger);
 }
 
 .animate-spin {
@@ -264,7 +264,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
   border-radius: 0.5rem;
 }
 
@@ -307,7 +307,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 0.75rem 0.5rem;
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
   border-radius: 0.5rem;
   text-align: center;
 }
@@ -321,7 +321,7 @@ onMounted(() => {
 .slots-count {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--color-accent);
 }
 
 .slots-label {
@@ -334,9 +334,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
-  background-color: var(--primary-bg);
+  background-color: var(--color-accent-soft);
   border-radius: 0.5rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
   font-weight: 500;
 }
 
@@ -434,7 +434,7 @@ onMounted(() => {
 }
 
 .close-button:hover {
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
 }
 
 .stats-row {
@@ -449,7 +449,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 1rem;
-  background: var(--surface-muted);
+  background: var(--color-surface-sunken);
   border-radius: 0.5rem;
   gap: 0.5rem;
 }
@@ -457,7 +457,7 @@ onMounted(() => {
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--color-accent);
 }
 
 .stat-label {
@@ -482,7 +482,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: var(--surface-muted);
+  background: var(--color-surface-sunken);
   border-radius: 0.375rem;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;

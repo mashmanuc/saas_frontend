@@ -1623,11 +1623,11 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 }
 
 .autosave-saved {
-  color: var(--success-text, #10b981);
+  color: var(--color-success, #10b981);
 }
 
 .autosave-restored {
-  color: var(--warning-text, #f59e0b);
+  color: var(--color-warning, #f59e0b);
 }
 
 @keyframes pulse {
@@ -1735,7 +1735,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  background: var(--surface-base);
+  background: var(--color-surface);
 }
 
 .availability-hint {
@@ -1977,7 +1977,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   padding: var(--space-sm);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--surface-base);
+  background: var(--color-surface);
 }
 
 .teaching-language-item .language-name {

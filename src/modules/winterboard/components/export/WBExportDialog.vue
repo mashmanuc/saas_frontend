@@ -831,7 +831,7 @@ onUnmounted(() => {
 
 .wb-export-format--selected {
   border-color: var(--wb-brand, #0066FF);
-  background: var(--accent-bg, #eff6ff);
+  background: var(--color-accent-soft, #eff6ff);
 }
 
 .wb-export-format__radio {

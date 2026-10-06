@@ -350,7 +350,7 @@ onMounted(loadData)
   text-transform: uppercase; letter-spacing: 0.025em;
   color: var(--color-text-secondary, #6b7280); white-space: nowrap;
 }
-.exp-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border-light, #f3f4f6); vertical-align: middle; }
+.exp-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border, #f3f4f6); vertical-align: middle; }
 .exp-table tbody tr:hover { background: var(--color-bg-hover, #f9fafb); }
 .text-right { text-align: right; }
 

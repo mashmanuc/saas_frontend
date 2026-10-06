@@ -6,140 +6,22 @@
    не переведено на канонічні --color-* (фази 2–4). Діє ЛИШЕ в темних темах —
    світла й класична цього файлу не бачать.
 
-     1. Фантомні токени (вжиті компонентами, не оголошені в жодній темі) → канонічні.
-        Світла тема й далі бере їхній запасний колір — тому вони тут, а не в main.css.
-     2. Світлі утиліти Tailwind (bg-white, text-gray-*, статусні плашки) → токени.
-        Специфічність html[data-theme] + клас перекриває і утиліту, і її `dark:`-варіант:
-        одна палітра замість двох.
+     1. Псевдоніми двох назв, які сторінка пульта (WBRemoteView) оголошує сама. Решту
+        фантомних назв фаза 4 (2026-10-06) перейменувала в коді на канонічні --color-*
+        із тими самими запасними кольорами — світла тема бере їх, темна — токени.
+     2. Світлі утиліти Tailwind (bg-white, text-gray-*, статусні плашки, суцільні сині й
+        бурштинові кнопки) → токени. Специфічність html[data-theme] + клас перекриває утиліту.
      3. Типовий колір рамки (preflight Tailwind) → токен.
 
-   Новий код сюди НЕ додає — пише токенами. Файл зменшується з кожною фазою й зникає.
-   Чого НЕ чіпаємо: аркуш дошки та його вміст (папір), --ink* і --gc-* вендорних віджетів.
+   Новий код сюди НЕ додає — пише канонічними --color-*. Чого НЕ чіпаємо: аркуш дошки та
+   його вміст (папір), --ink* і --gc-* вендорних віджетів.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. Фантомні токени → канонічні ── */
+/* ── 1. Псевдоніми, що ще вжиті (сторінка пульта) ── */
 html[data-theme="dark"] {
   /* Поверхні */
-  --bg-card: var(--color-surface);
-  --bg-tertiary: var(--color-surface-sunken);
-  --cmdp-btn-bg: var(--color-surface-sunken);
-  --color-background: var(--color-page);
-  --color-background-mute: var(--color-surface-sunken);
-  --color-background-soft: var(--color-surface-sunken);
-  --color-skeleton: var(--color-surface-sunken);
-  --color-surface-alt: var(--color-surface-sunken);
-  --color-surface-hover: var(--color-hover);
-  --color-surface-secondary: var(--color-surface-sunken);
-  --color-surface-soft: var(--color-surface-sunken);
-  --hover-bg: var(--color-hover);
-  --skeleton-color: var(--color-surface-sunken);
-  --surface-1: var(--color-chrome);
   --surface-2: var(--color-surface-sunken);
   --surface-3: var(--color-surface-sunken);
-  --surface-base: var(--color-surface);
-  --surface-calendar: var(--color-surface);
-  --surface-hover: var(--color-hover);
-  --surface-input: var(--color-surface-sunken);
-  --surface-muted: var(--color-surface-sunken);
-  --surface-secondary: var(--color-surface-sunken);
-  --surface-subtle: var(--color-surface-sunken);
-  --wb-hover-bg: var(--color-hover);
-  --wb-panel-bg: var(--color-surface);
-  --wb-sidebar-bg: var(--color-chrome);
-  --wb-skeleton-from: var(--color-surface-sunken);
-  --wb-surface-alt: var(--color-surface-sunken);
-  /* Текст */
-  --color-text-body: var(--color-text);
-  --text-tertiary: var(--color-text-muted);
-  --wb-fg-muted: var(--color-text-muted);
-  --wb-text-tertiary: var(--color-text-muted);
-  /* Рамки */
-  --border: var(--color-border);
-  --border-secondary: var(--color-border);
-  --cmdp-border: var(--color-border);
-  --color-border-default: var(--color-border);
-  --color-border-hover: var(--color-border-strong);
-  --color-border-light: var(--color-border);
-  --color-border-soft: var(--color-border);
-  --lc-border: var(--color-border);
-  --wb-border-color: var(--color-border);
-  --wb-border-strong: var(--color-border-strong);
-  --wb-skeleton-to: var(--color-border-strong);
-  /* Акцент */
-  --accent-bg: var(--color-accent-soft);
-  --accent-bg-hover: var(--color-accent-soft);
-  --accent-subtle: var(--color-accent-soft);
-  --bg-brand: var(--color-accent);
-  --brand-primary: var(--color-accent);
-  --calendar-first-lesson-bg: var(--color-accent-soft);
-  --color-accent-light: var(--color-accent-soft);
-  --color-primary-dark: var(--color-accent-hover);
-  --color-primary-hover: var(--color-accent-hover);
-  --color-primary-subtle: var(--color-accent-soft);
-  --color-primary-text: var(--color-accent);
-  --primary: var(--color-accent);
-  --primary-bg: var(--color-accent-soft);
-  --primary-color: var(--color-accent);
-  --primary-hover: var(--color-accent-hover);
-  --wb-accent: var(--color-accent);
-  --wb-active-bg: var(--color-accent-soft);
-  --wb-brand-active: var(--color-accent-hover);
-  --wb-brand-light: var(--color-accent-soft);
-  /* Статуси */
-  --cmdp-error: var(--color-danger);
-  --color-danger-border: var(--color-danger);
-  --color-danger-dark: var(--color-danger);
-  --color-error-border: var(--color-danger);
-  --color-error-dark: var(--color-danger);
-  --color-error-text: var(--color-danger);
-  --color-info-border: var(--color-info);
-  --color-info-dark: var(--color-info);
-  --color-info-text: var(--color-info);
-  --color-success-border: var(--color-success);
-  --color-success-dark: var(--color-success);
-  --color-success-hover: var(--color-success);
-  --color-success-text: var(--color-success);
-  --color-warning-dark: var(--color-warning);
-  --color-warning-text: var(--color-warning);
-  --danger-border: var(--color-danger);
-  --danger-text: var(--color-danger);
-  --error: var(--color-danger);
-  --error-border: var(--color-danger);
-  --error-color: var(--color-danger);
-  --error-text: var(--color-danger);
-  --info: var(--color-info);
-  --info-border: var(--color-info);
-  --info-text: var(--color-info);
-  --success-hover: var(--color-success);
-  --success-text: var(--color-success);
-  --warning: var(--color-warning);
-  --warning-border: var(--color-warning);
-  --warning-dark: var(--color-warning);
-  --warning-hover: var(--color-warning);
-  --warning-text: var(--color-warning);
-  --wb-danger: var(--color-danger);
-  --wb-error-hover: var(--color-danger);
-  --wb-info-border: var(--color-info);
-  --wb-info-text: var(--color-info);
-  --wb-success: var(--color-success);
-  --wb-warning: var(--color-warning);
-  /* Статуси: тло */
-  --cmdp-notice-bg: var(--color-warning-soft);
-  --color-danger-light: var(--color-danger-soft);
-  --color-error-bg: var(--color-danger-soft);
-  --color-error-subtle: var(--color-danger-soft);
-  --color-info-bg: var(--color-info-soft);
-  --color-info-subtle: var(--color-info-soft);
-  --color-success-bg: var(--color-success-soft);
-  --color-success-subtle: var(--color-success-soft);
-  --color-warning-bg: var(--color-warning-soft);
-  --color-warning-lighter: var(--color-warning-soft);
-  --color-warning-soft: var(--color-warning-soft);
-  --color-warning-subtle: var(--color-warning-soft);
-  --error-bg: var(--color-danger-soft);
-  --wb-error-bg: var(--color-danger-soft);
-  --wb-info-bg: var(--color-info-soft);
-  --wb-success-bg: var(--color-success-soft);
 }
 
 /* ── 2. Світлі утиліти Tailwind → токени ── */

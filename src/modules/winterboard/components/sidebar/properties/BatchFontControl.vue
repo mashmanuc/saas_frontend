@@ -125,7 +125,7 @@ function onSizeChange(e: Event) {
   flex: 1;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -136,7 +136,7 @@ function onSizeChange(e: Event) {
   width: 80px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);

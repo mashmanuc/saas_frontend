@@ -179,7 +179,7 @@ function startRename(_index: number): void {
 }
 
 .wb-page-nav__tab--active {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   color: var(--wb-brand, #0066FF);
   font-weight: 600;
   border-bottom: 2px solid var(--wb-brand, #0066FF);
@@ -226,7 +226,7 @@ function startRename(_index: number): void {
 }
 
 .wb-page-nav__add:hover:not(:disabled) {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border-color: var(--wb-brand, #0066FF);
   color: var(--wb-brand, #0066FF);
 }

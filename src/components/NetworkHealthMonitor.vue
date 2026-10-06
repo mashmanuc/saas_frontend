@@ -315,7 +315,7 @@ const wsStatusLabel = computed(() => {
 
 .graph-container {
   position: relative;
-  background: var(--bg-tertiary, #f3f4f6);
+  background: var(--color-surface-sunken, #f3f4f6);
   border-radius: 4px;
   padding: 4px;
 }

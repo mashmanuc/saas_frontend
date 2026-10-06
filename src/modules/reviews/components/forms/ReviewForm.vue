@@ -205,7 +205,7 @@ function handleSubmit() {
 }
 
 .toggle-detailed:hover {
-  color: var(--color-primary-dark, #2563eb);
+  color: var(--color-accent-hover, #2563eb);
 }
 
 /* Inputs */

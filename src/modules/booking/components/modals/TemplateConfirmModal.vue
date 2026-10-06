@@ -111,7 +111,7 @@ function formatTime(utcTime: string): string {
   gap: 16px;
   text-align: center;
   padding: 16px;
-  background-color: var(--accent-bg, #eff6ff);
+  background-color: var(--color-accent-soft, #eff6ff);
   border-radius: var(--radius-md);
 }
 
@@ -193,13 +193,13 @@ function formatTime(utcTime: string): string {
   gap: 12px;
   padding: 12px;
   background-color: var(--warning-bg, #fffbeb);
-  border: 1px solid var(--warning, #fbbf24);
+  border: 1px solid var(--color-warning, #fbbf24);
   border-radius: var(--radius-md);
 }
 
 .warning-text {
   font-size: 13px;
-  color: var(--warning);
+  color: var(--color-warning);
   line-height: 1.5;
 }
 

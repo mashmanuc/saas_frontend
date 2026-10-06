@@ -222,7 +222,7 @@ onUnmounted(() => {
 }
 
 .screen-share-btn.is-sharing:hover {
-  background: var(--color-success-hover, #059669);
+  background: var(--color-success, #059669);
 }
 
 .screen-share-btn.is-disabled {
@@ -257,7 +257,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--color-info-bg, #dbeafe);
+  background: var(--color-info-soft, #dbeafe);
   color: var(--color-info, #1d4ed8);
   border-radius: 6px;
   font-size: 12px;
@@ -289,9 +289,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: var(--color-error-bg, #fef2f2);
+  background: var(--color-danger-soft, #fef2f2);
   color: var(--color-error, #dc2626);
-  border: 1px solid var(--color-error-border, #fecaca);
+  border: 1px solid var(--color-danger, #fecaca);
   border-radius: 8px;
   font-size: 13px;
   white-space: nowrap;
@@ -352,12 +352,12 @@ onUnmounted(() => {
   
   .teacher-sharing-indicator {
     background: var(--color-info-bg-dark, #1e3a5f);
-    color: var(--color-info-dark, #60a5fa);
+    color: var(--color-info, #60a5fa);
   }
   
   .error-toast {
     background: var(--color-error-bg-dark, #450a0a);
-    color: var(--color-error-dark, #fca5a5);
+    color: var(--color-danger, #fca5a5);
     border-color: var(--color-error-border-dark, #7f1d1d);
   }
 }

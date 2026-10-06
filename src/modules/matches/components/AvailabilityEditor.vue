@@ -351,7 +351,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.9375rem;
-  background: var(--surface-input);
+  background: var(--color-surface-sunken);
   color: var(--text-primary);
 }
 
@@ -388,9 +388,9 @@ onMounted(() => {
 .pending-changes {
   padding: 0.75rem;
   background: var(--warning-bg, #fef3c7);
-  border: 1px solid var(--warning, #f59e0b);
+  border: 1px solid var(--color-warning, #f59e0b);
   border-radius: 0.375rem;
-  color: var(--warning-text, #92400e);
+  color: var(--color-warning, #92400e);
   font-size: 0.875rem;
   margin-bottom: 1rem;
 }
@@ -398,7 +398,7 @@ onMounted(() => {
 .preview-grid {
   margin-top: 1rem;
   padding: 1rem;
-  background: var(--surface-muted, #f9fafb);
+  background: var(--color-surface-sunken, #f9fafb);
   border-radius: 0.5rem;
 }
 
@@ -437,9 +437,9 @@ onMounted(() => {
 
 .preview-slot {
   padding: 0.25rem 0.5rem;
-  background: var(--primary-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  color: var(--primary, #3b82f6);
+  color: var(--color-accent, #3b82f6);
 }
 </style>

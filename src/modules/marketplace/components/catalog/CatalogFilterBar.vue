@@ -201,7 +201,7 @@ function handleClear() {
 /* Mobile-first: compact padding */
 .filters-wrap {
   background: var(--white, #ffffff);
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 14px;
   padding: 16px;
   margin-bottom: 16px;
@@ -280,7 +280,7 @@ function handleClear() {
 /* Mobile-first: 16px font to prevent iOS zoom */
 .filter-select,
 .filter-input {
-  border: 1.5px solid var(--border, #e0ece5);
+  border: 1.5px solid var(--color-border, #e0ece5);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 16px;
@@ -347,7 +347,7 @@ function handleClear() {
 .btn-reset {
   background: transparent;
   color: var(--muted, #7a9186);
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 10px;
   padding: 10px 16px;
   font-size: 13px;
@@ -370,7 +370,7 @@ function handleClear() {
   align-items: center;
   justify-content: center;
   padding: 10px;
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 10px;
   background: var(--bg, #f5f7f6);
   color: var(--muted, #7a9186);

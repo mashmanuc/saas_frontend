@@ -154,7 +154,7 @@ function onTextColorChange(event: Event) {
 
 .sticky-properties__textarea {
   padding: 8px 10px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
@@ -166,7 +166,7 @@ function onTextColorChange(event: Event) {
 
 .sticky-properties__textarea:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -233,7 +233,7 @@ function onTextColorChange(event: Event) {
 .sticky-properties__input-group input {
   width: 80px;
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -242,7 +242,7 @@ function onTextColorChange(event: Event) {
 
 .sticky-properties__input-group input:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -262,7 +262,7 @@ function onTextColorChange(event: Event) {
 .sticky-properties__color-group input[type="color"] {
   width: 48px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
 }

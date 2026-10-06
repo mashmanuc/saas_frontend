@@ -199,7 +199,7 @@ function handleClose() {
 }
 
 .close-btn:hover {
-  background: var(--surface-hover);
+  background: var(--color-hover);
   color: var(--text-primary);
 }
 
@@ -219,7 +219,7 @@ function handleClose() {
 
 .merged-summary {
   padding: 1rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-md, 8px);
   border: 1px solid var(--border-color);
 }
@@ -285,7 +285,7 @@ function handleClose() {
   font-size: 0.875rem;
   background: var(--danger-bg, #fee2e2);
   color: var(--danger, #dc2626);
-  border: 1px solid var(--danger-border, #fca5a5);
+  border: 1px solid var(--color-danger, #fca5a5);
 }
 
 .error-box p {

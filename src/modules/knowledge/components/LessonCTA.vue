@@ -43,7 +43,7 @@ function askTutor() {
   margin-top: 2.5rem;
   padding: 2rem 1.5rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-accent-light, #e0e7ff) 0%, var(--color-accent, #6366f1) 100%);
+  background: linear-gradient(135deg, var(--color-accent-soft, #e0e7ff) 0%, var(--color-accent, #6366f1) 100%);
   text-align: center;
 }
 

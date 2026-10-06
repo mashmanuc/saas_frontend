@@ -102,7 +102,7 @@ function handleToday() {
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: var(--bg-tertiary, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   transform: translateY(-1px);
 }
 
@@ -127,7 +127,7 @@ function handleToday() {
 .today-btn {
   padding: 4px 12px;
   border-radius: 9999px;
-  background: var(--accent-bg, #e0f2fe);
+  background: var(--color-accent-soft, #e0f2fe);
   color: var(--accent);
   border: none;
   font-size: 12px;
@@ -137,6 +137,6 @@ function handleToday() {
 }
 
 .today-btn:hover {
-  background: var(--accent-bg-hover, #bae6fd);
+  background: var(--color-accent-soft, #bae6fd);
 }
 </style>

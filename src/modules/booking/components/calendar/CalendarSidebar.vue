@@ -195,7 +195,7 @@ function handleEventClick(eventId: number) {
 }
 
 .sidebar-item:hover {
-  background: var(--bg-tertiary, #f3f4f6);
+  background: var(--color-surface-sunken, #f3f4f6);
   border-color: var(--border-color);
   transform: translateX(-2px);
 }

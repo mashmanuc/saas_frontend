@@ -696,7 +696,7 @@ function handleBackToCalendar() {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: var(--color-danger-light, #fef2f2);
+  background: var(--color-danger-soft, #fef2f2);
   border: 1px solid var(--color-danger, #ef4444);
   border-radius: 8px;
   color: var(--color-danger, #ef4444);
@@ -757,7 +757,7 @@ function handleBackToCalendar() {
 .status-pending,
 .status-running {
   border-color: var(--accent);
-  background: var(--accent-bg, #eff6ff);
+  background: var(--color-accent-soft, #eff6ff);
 }
 
 .status-success {

@@ -158,7 +158,7 @@ const canDistribute = align.canDistribute
 .alignment-tools__sep {
   width: 1px;
   height: 20px;
-  background: var(--wb-border-color, #e5e7eb);
+  background: var(--color-border, #e5e7eb);
   margin: 0 2px;
   flex-shrink: 0;
 }
@@ -169,7 +169,7 @@ const canDistribute = align.canDistribute
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   background: var(--wb-bg-primary, #ffffff);
   color: var(--wb-text-secondary, #6b7280);

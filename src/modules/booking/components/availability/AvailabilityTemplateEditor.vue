@@ -490,7 +490,7 @@ function handleCancel() {
 }
 
 .btn-add-slot:hover {
-  background-color: var(--accent-bg, #eff6ff);
+  background-color: var(--color-accent-soft, #eff6ff);
 }
 
 .editor-actions {

@@ -132,7 +132,7 @@ const formatTime = (isoString: string) => {
 }
 
 .conflict-item.conflict-event_overlap {
-  border-color: var(--warning, #ff9800);
+  border-color: var(--color-warning, #ff9800);
   background: var(--warning-bg, #fff3e0);
 }
 
@@ -143,7 +143,7 @@ const formatTime = (isoString: string) => {
 
 .conflict-item.conflict-slot_overlap {
   border-color: var(--calendar-first-lesson, #9c27b0);
-  background: var(--calendar-first-lesson-bg, #f3e5f5);
+  background: var(--color-accent-soft, #f3e5f5);
 }
 
 .conflict-icon {

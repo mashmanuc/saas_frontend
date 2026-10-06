@@ -167,7 +167,7 @@ function onCancel() {
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   background: var(--surface, #fff);
   cursor: pointer;

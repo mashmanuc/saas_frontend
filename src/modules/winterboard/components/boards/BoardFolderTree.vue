@@ -443,17 +443,17 @@ function onDrop(folderId: number) {
 }
 
 .wb-folder-tree__item--active {
-  background: var(--wb-brand-light, #eff6ff);
+  background: var(--color-accent-soft, #eff6ff);
   color: var(--wb-brand, #0066ff);
   font-weight: 600;
 }
 
 .wb-folder-tree__item--active:hover {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
 }
 
 .wb-folder-tree__item--drop {
-  background: var(--wb-brand-light, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   outline: 2px dashed var(--wb-brand, #0066ff);
   outline-offset: -2px;
 }

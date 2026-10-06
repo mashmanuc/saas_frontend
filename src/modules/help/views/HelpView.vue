@@ -190,7 +190,7 @@ function onBodyClick(e: MouseEvent): void {
   transition: background 0.12s, color 0.12s;
 }
 .help-nav__link:hover {
-  background: var(--hover-bg, #f3f4f6);
+  background: var(--color-hover, #f3f4f6);
 }
 .help-nav__link--active {
   background: var(--accent, #10b981);
@@ -259,7 +259,7 @@ function onBodyClick(e: MouseEvent): void {
   gap: 6px 14px;
   margin: 0 0 12px;
   padding: 12px 14px;
-  background: var(--surface-2, #f8fafc);
+  background: var(--color-surface-sunken, #f8fafc);
   border-radius: 10px;
 }
 .help-article__body :deep(.help-menu-map dt) {

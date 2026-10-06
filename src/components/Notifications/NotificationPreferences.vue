@@ -193,7 +193,7 @@ onMounted(() => {
 
 .error-text {
   margin: 0 0 1rem;
-  color: var(--danger-text, #dc2626);
+  color: var(--color-danger, #dc2626);
 }
 
 .retry-btn {
@@ -288,7 +288,7 @@ onMounted(() => {
   padding: 0.75rem;
   border-radius: 6px;
   background: #fee;
-  color: var(--danger-text, #dc2626);
+  color: var(--color-danger, #dc2626);
   font-size: 0.9rem;
   text-align: center;
 }

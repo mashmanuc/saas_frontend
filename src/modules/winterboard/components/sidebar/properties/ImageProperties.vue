@@ -183,7 +183,7 @@ function onBorderRadiusInput(e: Event) {
 .image-properties__input-group input {
   width: 100px;
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -192,7 +192,7 @@ function onBorderRadiusInput(e: Event) {
 
 .image-properties__input-group input:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -248,7 +248,7 @@ function onBorderRadiusInput(e: Event) {
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--wb-border-color, #e5e7eb);
+  background: var(--color-border, #e5e7eb);
   border-radius: 2px;
   outline: none;
 }

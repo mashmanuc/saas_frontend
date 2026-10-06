@@ -778,21 +778,21 @@ onBeforeUnmount(() => {
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-cancelled) {
-  background-color: var(--color-danger-light, #fee2e2);
-  border-color: var(--color-danger-border, #fecdd3);
-  color: var(--color-danger-dark, #b91c1c);
+  background-color: var(--color-danger-soft, #fee2e2);
+  border-color: var(--color-danger, #fecdd3);
+  color: var(--color-danger, #b91c1c);
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-scheduled) {
   background-color: var(--color-info-light, #e0f2fe);
-  border-color: var(--color-info-border, #bae6fd);
-  color: var(--color-info-dark, #0369a1);
+  border-color: var(--color-info, #bae6fd);
+  color: var(--color-info, #0369a1);
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-completed) {
   background-color: var(--color-success-light, #dcfce7);
-  border-color: var(--color-success-border, #bbf7d0);
-  color: var(--color-success-dark, #15803d);
+  border-color: var(--color-success, #bbf7d0);
+  color: var(--color-success, #15803d);
 }
 
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.

@@ -90,7 +90,7 @@ const displayedInquiries = computed(() =>
   gap: var(--space-sm, 8px);
   padding: var(--space-sm, 8px) var(--space-md, 12px);
   border-radius: var(--radius-lg, 12px);
-  border: 1px solid var(--border-color, var(--color-border-default));
+  border: 1px solid var(--border-color, var(--color-border));
   background: var(--card-bg, var(--color-surface));
 }
 
@@ -127,7 +127,7 @@ const displayedInquiries = computed(() =>
   min-width: 44px;
   min-height: 44px;
   border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--border-color, var(--color-border-default));
+  border: 1px solid var(--border-color, var(--color-border));
   background: transparent;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s, color 0.15s;

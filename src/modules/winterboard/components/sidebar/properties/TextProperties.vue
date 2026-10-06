@@ -206,7 +206,7 @@ function onColorChange(event: Event) {
 
 .text-properties__textarea {
   padding: 8px 10px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
@@ -218,7 +218,7 @@ function onColorChange(event: Event) {
 
 .text-properties__textarea:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -233,7 +233,7 @@ function onColorChange(event: Event) {
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   background: var(--wb-bg-secondary, #f9fafb);
 }
@@ -271,7 +271,7 @@ function onColorChange(event: Event) {
 .text-properties__divider {
   width: 1px;
   height: 20px;
-  background: var(--wb-border-color, #e5e7eb);
+  background: var(--color-border, #e5e7eb);
   margin: 0 2px;
 }
 
@@ -279,7 +279,7 @@ function onColorChange(event: Event) {
 .text-properties__select {
   width: 90px;
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -289,7 +289,7 @@ function onColorChange(event: Event) {
 
 .text-properties__select:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -302,7 +302,7 @@ function onColorChange(event: Event) {
 .text-properties__number-input {
   width: 80px;
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -311,7 +311,7 @@ function onColorChange(event: Event) {
 
 .text-properties__number-input:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -339,7 +339,7 @@ function onColorChange(event: Event) {
 .text-properties__color-group input[type="color"] {
   width: 48px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
 }

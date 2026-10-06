@@ -766,7 +766,7 @@ function onDrop(e: DragEvent) {
   flex-shrink: 0;
   max-height: 35%;
   overflow-y: auto;
-  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
   padding: 8px 0;
 }
 .content-sidebar__folders-toggle {
@@ -775,8 +775,8 @@ function onDrop(e: DragEvent) {
   gap: 6px;
   padding: 8px 12px;
   border: none;
-  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
-  background: var(--wb-sidebar-bg, #ffffff);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-chrome, #ffffff);
   color: var(--wb-text-secondary, #6b7280);
   font-size: 13px;
   font-weight: 500;
@@ -786,7 +786,7 @@ function onDrop(e: DragEvent) {
   text-align: left;
 }
 .content-sidebar__folders-toggle:hover {
-  background: var(--wb-hover-bg, #f3f4f6);
+  background: var(--color-hover, #f3f4f6);
   color: var(--wb-text-primary, #111827);
 }
 

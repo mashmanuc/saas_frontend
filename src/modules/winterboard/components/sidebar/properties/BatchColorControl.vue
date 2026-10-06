@@ -80,7 +80,7 @@ function onColorChange(e: Event) {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
   background: none;

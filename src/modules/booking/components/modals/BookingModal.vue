@@ -334,7 +334,7 @@ watch(() => props.show, (newVal) => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
   border-radius: 0.5rem;
 }
 
@@ -372,8 +372,8 @@ watch(() => props.show, (newVal) => {
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-bg);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
 .form-group select:disabled,
@@ -390,7 +390,7 @@ watch(() => props.show, (newVal) => {
 
 .error-text {
   font-size: 0.75rem;
-  color: var(--error-text);
+  color: var(--color-danger);
 }
 
 .info-box {
@@ -399,9 +399,9 @@ watch(() => props.show, (newVal) => {
   gap: 0.5rem;
   padding: 0.75rem;
   background-color: var(--info-bg);
-  color: var(--info-text);
+  color: var(--color-info);
   border-radius: 0.5rem;
-  border: 1px solid var(--info-border);
+  border: 1px solid var(--color-info);
   font-size: 0.875rem;
 }
 
@@ -411,17 +411,17 @@ watch(() => props.show, (newVal) => {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background-color: var(--error-bg);
-  color: var(--error-text);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
   border-radius: 0.5rem;
-  border: 1px solid var(--error-border);
+  border: 1px solid var(--color-danger);
   margin-top: 1rem;
 }
 
 .conflict-warning {
   background-color: var(--warning-bg);
-  color: var(--warning-text);
-  border-color: var(--warning-border);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
   flex-direction: column;
 }
 

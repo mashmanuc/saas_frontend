@@ -109,7 +109,7 @@ function goToToday() {
 }
 
 .week-nav__btn:hover:not(:disabled) {
-  background: var(--bg-tertiary, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   transform: scale(1.05);
 }
 
@@ -136,7 +136,7 @@ function goToToday() {
   padding: 4px 12px;
   border-radius: 20px;
   border: none;
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   color: var(--accent);
   font-size: 12px;
   font-weight: 600;
@@ -145,7 +145,7 @@ function goToToday() {
 }
 
 .week-nav__today:hover:not(:disabled) {
-  background: var(--accent-bg-hover, #bfdbfe);
+  background: var(--color-accent-soft, #bfdbfe);
 }
 
 .week-nav__today:disabled {

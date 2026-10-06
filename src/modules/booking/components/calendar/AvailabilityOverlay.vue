@@ -185,11 +185,11 @@ function handleBlockClick(slotId: number) {
 }
 
 .action-btn--edit:hover {
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
 }
 
 .action-btn--block {
-  color: var(--warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
 }
 
 .action-btn--block:hover {

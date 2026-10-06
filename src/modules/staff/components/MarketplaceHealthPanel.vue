@@ -318,7 +318,7 @@ onMounted(loadData)
 
 .mph-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border-light, #f3f4f6);
+  border-bottom: 1px solid var(--color-border, #f3f4f6);
   vertical-align: middle;
 }
 

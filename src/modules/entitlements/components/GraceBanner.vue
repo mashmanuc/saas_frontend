@@ -53,8 +53,8 @@ function onDismiss() {
 
 <style scoped>
 .grace-banner {
-  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
-  color: var(--color-warning-text);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning) 100%);
+  color: var(--color-warning);
   padding: var(--spacing-md) var(--spacing-lg);
   position: relative;
   display: flex;
@@ -105,7 +105,7 @@ function onDismiss() {
 }
 
 .btn-text {
-  color: var(--color-warning-text);
+  color: var(--color-warning);
   text-decoration: underline;
   opacity: 0.8;
 }
@@ -115,7 +115,7 @@ function onDismiss() {
 }
 
 .btn-close {
-  color: var(--color-warning-text);
+  color: var(--color-warning);
   opacity: 0.6;
   flex-shrink: 0;
 }

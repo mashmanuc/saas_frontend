@@ -176,7 +176,7 @@ async function onUnclear(): Promise<void> {
   padding: 10px;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  background: var(--wb-panel-bg, #fff);
+  background: var(--color-surface, #fff);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   font-size: 13px;
   z-index: 40;

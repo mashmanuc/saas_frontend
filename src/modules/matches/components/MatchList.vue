@@ -134,8 +134,8 @@ onMounted(() => {
 }
 
 .tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
 }
 
 .loading,
@@ -168,7 +168,7 @@ onMounted(() => {
 }
 
 .match-card:hover {
-  border-color: var(--primary);
+  border-color: var(--color-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -187,7 +187,7 @@ onMounted(() => {
 
 .activity {
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--color-text-muted);
   margin: 0;
 }
 </style>

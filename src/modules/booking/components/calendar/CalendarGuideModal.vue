@@ -174,7 +174,7 @@ const { t } = useI18n()
 }
 
 .dot.yellow {
-  background: var(--warning, #fbbf24);
+  background: var(--color-warning, #fbbf24);
 }
 
 .dot.green {

@@ -52,6 +52,6 @@ function closeOrBack() {
 .prose ul, .prose ol { margin-top: 0.5rem; margin-bottom: 1rem; padding-left: 1.5rem; }
 .prose li { margin-bottom: 0.5rem; }
 .prose a { color: var(--color-primary); text-decoration: underline; }
-.prose a:hover { color: var(--color-primary-dark); }
+.prose a:hover { color: var(--color-accent-hover); }
 .prose strong { color: var(--color-text-primary); }
 </style>

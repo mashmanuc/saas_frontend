@@ -394,7 +394,7 @@ function validateCustomText(text: string): string | null {
 }
 
 .btn-remove {
-  color: var(--error-color, #dc2626);
+  color: var(--color-danger, #dc2626);
 }
 
 .subject-details {
@@ -499,7 +499,7 @@ function validateCustomText(text: string): string | null {
 }
 
 .field-error {
-  color: var(--error-color, #dc2626);
+  color: var(--color-danger, #dc2626);
   font-size: 0.875rem;
 }
 </style>

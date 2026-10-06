@@ -129,7 +129,7 @@ function handleShowGuide() {
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: var(--bg-tertiary, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   transform: translateY(-1px);
 }
 
@@ -154,7 +154,7 @@ function handleShowGuide() {
 .today-btn {
   padding: 4px 12px;
   border-radius: 9999px;
-  background: var(--accent-bg, #e0f2fe);
+  background: var(--color-accent-soft, #e0f2fe);
   color: var(--accent);
   border: none;
   font-size: 12px;
@@ -164,7 +164,7 @@ function handleShowGuide() {
 }
 
 .today-btn:hover {
-  background: var(--accent-bg-hover, #bae6fd);
+  background: var(--color-accent-soft, #bae6fd);
 }
 
 /* Довідка стоїть у куті смуги, щоб не зсувати стрілки з центру. */
@@ -182,7 +182,7 @@ function handleShowGuide() {
   padding: 6px 12px;
   border-radius: 8px;
   border: none;
-  background: var(--accent-bg, #e0f2fe);
+  background: var(--color-accent-soft, #e0f2fe);
   color: var(--accent);
   font-weight: 600;
   cursor: pointer;
@@ -190,7 +190,7 @@ function handleShowGuide() {
 }
 
 .scroll-available-btn:hover:not(:disabled) {
-  background: var(--accent-bg-hover, #bae6fd);
+  background: var(--color-accent-soft, #bae6fd);
 }
 
 .scroll-available-btn:disabled {
@@ -229,7 +229,7 @@ function handleShowGuide() {
 }
 
 .edit-availability-btn:hover {
-  background: var(--success-hover, #059669);
+  background: var(--color-success, #059669);
   transform: translateY(-1px);
 }
 
@@ -248,7 +248,7 @@ function handleShowGuide() {
 }
 
 .help-btn:hover {
-  background: var(--bg-tertiary, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   color: var(--text-primary);
   transform: scale(1.05);
 }

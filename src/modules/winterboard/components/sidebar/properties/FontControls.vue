@@ -144,7 +144,7 @@ function onAlignChange(value: string) {
 .font-controls__select {
   flex: 1;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   padding: 0 8px;
   font-size: 13px;
@@ -154,7 +154,7 @@ function onAlignChange(value: string) {
 .font-controls__number {
   width: 56px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   padding: 0 6px;
   font-size: 13px;
@@ -166,7 +166,7 @@ function onAlignChange(value: string) {
   width: 32px;
   height: 32px;
   min-width: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   background: var(--wb-bg-primary, #fff);
   color: var(--wb-text-primary, #111827);
@@ -192,7 +192,7 @@ function onAlignChange(value: string) {
 .font-controls__align-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   background: var(--wb-bg-primary, #fff);
   color: var(--wb-text-primary, #111827);
   cursor: pointer;

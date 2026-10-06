@@ -116,7 +116,7 @@ function handleSubmit() {
 
 .report-btn:hover {
   color: var(--color-danger, #ef4444);
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
 }
 
 .form-group {

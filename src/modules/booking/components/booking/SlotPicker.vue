@@ -127,7 +127,7 @@ function formatSelectedTime(slot: TimeSlot): string {
   margin: 0 0 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-success-dark, #065f46);
+  color: var(--color-success, #065f46);
 }
 
 .selected-time {
@@ -149,7 +149,7 @@ function formatSelectedTime(slot: TimeSlot): string {
   border: 1px solid var(--color-success, #10b981);
   border-radius: 6px;
   font-size: 13px;
-  color: var(--color-success-dark, #065f46);
+  color: var(--color-success, #065f46);
   cursor: pointer;
   transition: all 0.15s;
 }

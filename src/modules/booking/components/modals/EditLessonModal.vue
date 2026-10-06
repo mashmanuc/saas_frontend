@@ -805,11 +805,11 @@ function handleClose() {
 
 .warning-box {
   background: var(--warning-bg, #fef3c7);
-  border: 1px solid var(--warning, #fbbf24);
+  border: 1px solid var(--color-warning, #fbbf24);
 }
 
 .info-box {
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border: 1px solid var(--accent);
 }
 
@@ -897,7 +897,7 @@ function handleClose() {
 
 .suggestion-item:hover {
   border-color: var(--accent);
-  background: var(--accent-bg, #eff6ff);
+  background: var(--color-accent-soft, #eff6ff);
 }
 
 .error-message {

@@ -124,7 +124,7 @@ async function handleBookingConfirmed(booking: Booking): Promise<void> {
 }
 
 .tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
 }
 </style>

@@ -296,7 +296,7 @@ function handleClose() {
 }
 
 .close-btn:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background: var(--color-hover);
   color: var(--text-primary);
 }
 
@@ -343,7 +343,7 @@ function handleClose() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.875rem;
@@ -409,7 +409,7 @@ function handleClose() {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
-  background: var(--surface-hover);
+  background: var(--color-hover);
 }
 
 .upload-label:hover {
@@ -437,7 +437,7 @@ function handleClose() {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
 }

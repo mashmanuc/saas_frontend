@@ -71,7 +71,7 @@ const iconComponent = computed(() => ICON_MAP[props.icon || ''] || Search)
 .empty-title {
   font-size: var(--text-lg, 1.125rem);
   font-weight: 600;
-  color: var(--text-primary, var(--color-text-body));
+  color: var(--text-primary, var(--color-text));
 }
 
 .empty-description {

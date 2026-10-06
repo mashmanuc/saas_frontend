@@ -62,7 +62,7 @@ const displayedDescription = computed(() => props.description || t('ui.emptyStat
 .empty-state {
   width: 100%;
   border-radius: var(--radius-lg, 20px);
-  background: var(--surface-muted, #f7f8fb);
+  background: var(--color-surface-sunken, #f7f8fb);
   border: 1px dashed rgba(82, 94, 113, 0.2);
   padding: 2.25rem 1.75rem;
   text-align: center;
@@ -93,7 +93,7 @@ const displayedDescription = computed(() => props.description || t('ui.emptyStat
   width: 2.5rem;
   height: 2.5rem;
   display: block;
-  color: var(--brand-primary, #2f54eb);
+  color: var(--color-accent, #2f54eb);
 }
 
 .empty-state__title {

@@ -388,22 +388,22 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background-color: var(--error-bg);
-  color: var(--error-text);
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
   border-radius: 0.5rem;
-  border: 1px solid var(--error-border);
+  border: 1px solid var(--color-danger);
 }
 
 .ws-banner {
   background-color: var(--warning-bg);
-  color: var(--warning-text);
-  border-color: var(--warning-border);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
 }
 
 .cache-banner {
   background-color: var(--info-bg);
-  color: var(--info-text);
-  border-color: var(--info-border);
+  color: var(--color-info);
+  border-color: var(--color-info);
 }
 
 .calendar-header {
@@ -498,7 +498,7 @@ onUnmounted(() => {
 
 .day-header {
   padding: 0.75rem;
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
   border-bottom: 1px solid var(--border-color);
   text-align: center;
 }
@@ -529,7 +529,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 0.5rem;
-  background-color: var(--surface-muted);
+  background-color: var(--color-surface-sunken);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   cursor: pointer;
@@ -537,14 +537,14 @@ onUnmounted(() => {
 }
 
 .slot-button.slot-available:hover {
-  background-color: var(--primary-bg);
-  border-color: var(--primary);
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 
 .slot-button.slot-selected {
-  background-color: var(--primary);
+  background-color: var(--color-accent);
   color: var(--color-on-accent);
-  border-color: var(--primary);
+  border-color: var(--color-accent);
 }
 
 .slot-button:disabled {
@@ -580,7 +580,7 @@ onUnmounted(() => {
   padding: 1rem;
   background-color: var(--surface);
   border-radius: 0.5rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
 }
 
 .slot-details {

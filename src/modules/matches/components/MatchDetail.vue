@@ -150,7 +150,7 @@ onMounted(() => {
 
 .status-badge.invited {
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
 }
 
 .status-badge.active {
@@ -159,7 +159,7 @@ onMounted(() => {
 }
 
 .status-badge.archived {
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   color: var(--text-secondary);
 }
 

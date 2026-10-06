@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
 
 .wb-touch-ctx-menu__item:active,
 .wb-touch-ctx-menu__item:hover {
-  background: var(--color-surface-hover, #f1f5f9);
+  background: var(--color-hover, #f1f5f9);
 }
 
 .wb-touch-ctx-menu__item:disabled {

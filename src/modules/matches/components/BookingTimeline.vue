@@ -168,14 +168,14 @@ onMounted(() => {
 
 .timestamp {
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--color-text-muted);
   margin: 0 0 0.25rem 0;
 }
 
 .request-id {
   font-size: 0.75rem;
   font-family: monospace;
-  color: var(--text-tertiary);
+  color: var(--color-text-muted);
   margin: 0;
 }
 </style>

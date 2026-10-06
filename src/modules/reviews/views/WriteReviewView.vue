@@ -364,7 +364,7 @@ function formatDate(dateStr: string): string {
 .error-message {
   margin-top: 16px;
   padding: 12px;
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
   color: var(--color-danger, #ef4444);
   border-radius: 8px;
   font-size: 14px;

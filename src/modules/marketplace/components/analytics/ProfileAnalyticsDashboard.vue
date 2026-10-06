@@ -261,7 +261,7 @@ function exportCSV() {
 .date-range-selector {
   display: flex;
   gap: 0.5rem;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   padding: 0.25rem;
   border-radius: var(--radius-md);
 }
@@ -295,7 +295,7 @@ function exportCSV() {
 }
 
 .metric-card {
-  background: var(--surface-hover);
+  background: var(--color-hover);
   padding: 1.5rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
@@ -334,7 +334,7 @@ function exportCSV() {
   gap: 4px;
   height: 200px;
   padding: 1rem;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   border-radius: var(--radius-md);
 }
 
@@ -372,7 +372,7 @@ function exportCSV() {
 
 .subject-bar-container {
   height: 24px;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -407,7 +407,7 @@ function exportCSV() {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: var(--surface-hover);
+  background: var(--color-hover);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
 }

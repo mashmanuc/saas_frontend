@@ -293,22 +293,22 @@ const copyBackupLink = async () => {
 }
 
 .provider-badge--platform {
-  background: var(--accent-bg, #e0f2fe);
+  background: var(--color-accent-soft, #e0f2fe);
   color: var(--accent);
 }
 
 .provider-badge--zoom {
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   color: var(--accent);
 }
 
 .provider-badge--meet {
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning);
+  color: var(--color-warning);
 }
 
 .provider-badge--custom {
-  background: var(--calendar-first-lesson-bg, #f3e8ff);
+  background: var(--color-accent-soft, #f3e8ff);
   color: var(--calendar-first-lesson, #6b21a8);
 }
 

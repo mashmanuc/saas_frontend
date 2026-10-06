@@ -120,7 +120,7 @@ function handleClose() {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-md, 8px);
 }
 
@@ -143,7 +143,7 @@ function handleClose() {
   gap: 0.75rem;
   padding: 0.75rem;
   background: var(--info-bg, #dbeafe);
-  color: var(--info, #3b82f6);
+  color: var(--color-info, #3b82f6);
   border-radius: var(--radius-md, 8px);
   font-size: 0.875rem;
 }

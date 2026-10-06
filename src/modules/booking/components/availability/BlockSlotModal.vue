@@ -316,17 +316,17 @@ function handleCancel() {
 
 .status-badge--available {
   background: var(--color-success-light, #d1fae5);
-  color: var(--color-success-dark, #065f46);
+  color: var(--color-success, #065f46);
 }
 
 .status-badge--booked {
   background: var(--color-warning-light, #fef3c7);
-  color: var(--color-warning-dark, #92400e);
+  color: var(--color-warning, #92400e);
 }
 
 .status-badge--blocked {
   background: var(--color-error-light, #fee2e2);
-  color: var(--color-error-dark, #991b1b);
+  color: var(--color-danger, #991b1b);
 }
 
 .reason-section {
@@ -386,7 +386,7 @@ function handleCancel() {
 
 .warning-text {
   font-size: 13px;
-  color: var(--color-warning-dark, #92400e);
+  color: var(--color-warning, #92400e);
   margin: 0;
   line-height: 1.5;
 }

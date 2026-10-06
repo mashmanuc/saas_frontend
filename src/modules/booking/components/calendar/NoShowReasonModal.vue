@@ -124,7 +124,7 @@ const confirm = () => {
 
 .reason-item.selected {
   border-color: var(--accent);
-  background: var(--accent-bg, #E3F2FD);
+  background: var(--color-accent-soft, #E3F2FD);
 }
 
 .reason-item input[type="radio"] {

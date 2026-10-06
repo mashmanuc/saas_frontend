@@ -91,7 +91,7 @@ const remainingClass = computed(() => {
 <style scoped>
 .subscription-period {
   padding: 12px 16px;
-  background: var(--color-background-soft);
+  background: var(--color-surface-sunken);
   border-radius: 8px;
   border: 1px solid var(--color-border);
 }
@@ -120,7 +120,7 @@ const remainingClass = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding-top: 8px;
-  border-top: 1px solid var(--color-border-soft);
+  border-top: 1px solid var(--color-border);
 }
 
 .remaining-label {

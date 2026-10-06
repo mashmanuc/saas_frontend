@@ -29,7 +29,7 @@ const statusColor = computed(() => {
     case 'connected':
       return 'var(--success, #10b981)'
     case 'connecting':
-      return 'var(--warning, #f59e0b)'
+      return 'var(--color-warning, #f59e0b)'
     case 'disconnected':
     case 'error':
     case 'offline':
@@ -151,7 +151,7 @@ async function handleReconnect() {
 }
 
 .reconnect-btn:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background: var(--color-hover);
 }
 
 .reconnect-btn:disabled {

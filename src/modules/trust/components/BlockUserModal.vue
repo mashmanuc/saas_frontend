@@ -225,7 +225,7 @@ function submit() {
   display: flex;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: var(--color-info-subtle);
+  background: var(--color-info-soft);
   border: 1px solid var(--color-info);
   border-radius: var(--radius-md);
   color: var(--color-info);
@@ -247,13 +247,13 @@ function submit() {
 }
 
 .alert-error {
-  background: var(--color-error-subtle);
+  background: var(--color-danger-soft);
   color: var(--color-error);
   border: 1px solid var(--color-error);
 }
 
 .alert-info {
-  background: var(--color-info-subtle);
+  background: var(--color-info-soft);
   color: var(--color-info);
   border: 1px solid var(--color-info);
 }

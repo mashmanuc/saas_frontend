@@ -72,9 +72,9 @@ const actions = [
   gap: var(--space-xs, 8px);
   padding: var(--space-xs, 8px) var(--space-md, 16px);
   border-radius: var(--radius-xl, 12px);
-  border: 1px solid var(--border-color, var(--color-border-default));
+  border: 1px solid var(--border-color, var(--color-border));
   background: var(--card-bg, var(--color-surface));
-  color: var(--text-primary, var(--color-text-body));
+  color: var(--text-primary, var(--color-text));
   font-size: var(--text-sm, 0.875rem);
   font-weight: 500;
   text-decoration: none;
@@ -94,7 +94,7 @@ const actions = [
 }
 
 .quick-action-btn:hover {
-  background: var(--bg-secondary, var(--color-surface-soft));
+  background: var(--bg-secondary, var(--color-surface-sunken));
   border-color: var(--accent, var(--color-accent));
 }
 

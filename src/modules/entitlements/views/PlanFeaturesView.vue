@@ -144,17 +144,17 @@ function goToBilling() {
 }
 
 .status-active {
-  background: var(--color-success-subtle);
+  background: var(--color-success-soft);
   color: var(--color-success);
 }
 
 .status-trial {
-  background: var(--color-primary-subtle);
+  background: var(--color-accent-soft);
   color: var(--color-primary);
 }
 
 .status-grace {
-  background: var(--color-warning-subtle);
+  background: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
@@ -173,12 +173,12 @@ function goToBilling() {
 }
 
 .status-alert.grace {
-  background: var(--color-warning-subtle);
+  background: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
 .status-alert.trial {
-  background: var(--color-primary-subtle);
+  background: var(--color-accent-soft);
   color: var(--color-primary);
 }
 
@@ -201,7 +201,7 @@ function goToBilling() {
 
 .feature-card.granted {
   border-color: var(--color-success);
-  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-success-subtle) 100%);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-success-soft) 100%);
 }
 
 .feature-card.locked {
@@ -210,7 +210,7 @@ function goToBilling() {
 
 .feature-card.locked:hover {
   opacity: 1;
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong);
 }
 
 .feature-icon {
@@ -227,7 +227,7 @@ function goToBilling() {
 
 .feature-card.granted .feature-icon {
   background: var(--color-success);
-  color: var(--color-success-text);
+  color: var(--color-success);
 }
 
 .feature-content {
@@ -268,7 +268,7 @@ function goToBilling() {
 }
 
 .status-badge.granted {
-  background: var(--color-success-subtle);
+  background: var(--color-success-soft);
   color: var(--color-success);
 }
 

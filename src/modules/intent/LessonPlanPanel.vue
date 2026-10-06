@@ -253,7 +253,7 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
 </template>
 
 <style scoped>
-.lpp { margin: 4px 8px 6px; padding: 6px 8px; border: 1px solid var(--cmdp-border, #e3e6ea); border-radius: 8px; font-size: 12px; line-height: 1.35; }
+.lpp { margin: 4px 8px 6px; padding: 6px 8px; border: 1px solid var(--color-border, #e3e6ea); border-radius: 8px; font-size: 12px; line-height: 1.35; }
 .lpp-title { font-weight: 600; }
 .lpp-objective { opacity: .85; }
 .lpp-row { display: flex; gap: 6px; align-items: baseline; }
@@ -267,21 +267,21 @@ const nextLabel = computed(() => props.lp.nextStageId ? 'Наступний →'
 .lpp-stage--skipped { text-decoration: line-through; }
 .lpp-mark { width: 1em; text-align: center; }
 .lpp-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-.lpp-btn { font: inherit; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--cmdp-border, #cfd4da); background: var(--cmdp-btn-bg, #fff); cursor: pointer; }
+.lpp-btn { font: inherit; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--color-border, #cfd4da); background: var(--color-surface-sunken, #fff); cursor: pointer; }
 .lpp-btn:disabled { opacity: .45; cursor: default; }
 .lpp-btn--primary { font-weight: 600; }
 .lpp-empty { display: flex; justify-content: space-between; align-items: center; }
-.lpp-notice { margin: 0 0 4px; padding: 3px 6px; border-radius: 6px; background: var(--cmdp-notice-bg, #fff6db); }
-.lpp-error { margin: 0 0 4px; color: var(--cmdp-error, #b42318); }
+.lpp-notice { margin: 0 0 4px; padding: 3px 6px; border-radius: 6px; background: var(--color-warning-soft, #fff6db); }
+.lpp-error { margin: 0 0 4px; color: var(--color-danger, #b42318); }
 .lpp-done { margin: 2px 0; opacity: .8; }
-.lpp-input { font: inherit; width: 100%; box-sizing: border-box; padding: 3px 6px; border: 1px solid var(--cmdp-border, #cfd4da); border-radius: 6px; margin: 2px 0; }
+.lpp-input { font: inherit; width: 100%; box-sizing: border-box; padding: 3px 6px; border: 1px solid var(--color-border, #cfd4da); border-radius: 6px; margin: 2px 0; }
 .lpp-form-stage { display: grid; grid-template-columns: 1em 1fr 1fr auto; gap: 4px; align-items: center; }
 .lpp-x { border: 0; background: transparent; cursor: pointer; opacity: .6; }
 .lpp-x:disabled { opacity: .2; cursor: default; }
 .lpp-stages--draft li { margin: 1px 0; }
 .lpp-kinds { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
-.lpp-kind { font: inherit; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--cmdp-border, #cfd4da); background: var(--cmdp-btn-bg, #fff); cursor: pointer; }
+.lpp-kind { font: inherit; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--color-border, #cfd4da); background: var(--color-surface-sunken, #fff); cursor: pointer; }
 .lpp-kind--on { font-weight: 600; border-color: currentColor; }
 .lpp-kind:disabled { opacity: .45; cursor: default; }
-.lpp-kind-badge { padding: 0 6px; border-radius: 999px; border: 1px solid var(--cmdp-border, #cfd4da); opacity: .85; white-space: nowrap; }
+.lpp-kind-badge { padding: 0 6px; border-radius: 999px; border: 1px solid var(--color-border, #cfd4da); opacity: .85; white-space: nowrap; }
 </style>

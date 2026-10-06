@@ -136,7 +136,7 @@ onMounted(async () => {
   height: 28px;
   margin: 0 auto 1rem;
   border: 3px solid var(--border-color, #e2e8f0);
-  border-top-color: var(--primary-color, #7c3aed);
+  border-top-color: var(--color-accent, #7c3aed);
   border-radius: 50%;
   animation: mi-spin 0.8s linear infinite;
 }
@@ -146,6 +146,6 @@ onMounted(async () => {
 .mi-link {
   display: inline-block;
   margin-top: 0.75rem;
-  color: var(--primary-color, #7c3aed);
+  color: var(--color-accent, #7c3aed);
 }
 </style>

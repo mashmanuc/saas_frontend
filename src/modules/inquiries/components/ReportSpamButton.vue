@@ -48,7 +48,7 @@ function onClick() {
 }
 
 .report-spam-button:hover:not(:disabled) {
-  background: var(--color-error-subtle);
+  background: var(--color-danger-soft);
   border-color: var(--color-error);
   color: var(--color-error);
 }
@@ -59,7 +59,7 @@ function onClick() {
 }
 
 .report-spam-button.reported {
-  background: var(--color-success-subtle);
+  background: var(--color-success-soft);
   border-color: var(--color-success);
   color: var(--color-success);
   cursor: default;

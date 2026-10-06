@@ -1056,9 +1056,9 @@ onBeforeUnmount(() => {
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .wb-download-icon-btn:hover {
-  background: var(--wb-surface-alt, #f1f5f9);
+  background: var(--color-surface-sunken, #f1f5f9);
   color: var(--wb-text, #0f172a);
-  border-color: var(--wb-border-strong, #cbd5e1);
+  border-color: var(--color-border-strong, #cbd5e1);
 }
 .wb-download-btn {
   padding: 0.375rem 1rem;

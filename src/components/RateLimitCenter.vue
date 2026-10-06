@@ -183,7 +183,7 @@ onUnmounted(() => {
   width: 64px;
   height: 64px;
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
   border-radius: 50%;
 }
 
@@ -222,13 +222,13 @@ onUnmounted(() => {
 
 .countdown-bg {
   fill: none;
-  stroke: var(--surface-secondary);
+  stroke: var(--color-surface-sunken);
   stroke-width: 8;
 }
 
 .countdown-progress {
   fill: none;
-  stroke: var(--primary);
+  stroke: var(--color-accent);
   stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 283;
@@ -249,7 +249,7 @@ onUnmounted(() => {
 .countdown-number {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--color-accent);
   line-height: 1;
 }
 
@@ -271,7 +271,7 @@ onUnmounted(() => {
 
 .retry-btn {
   padding: 0.75rem 2rem;
-  background: var(--primary);
+  background: var(--color-accent);
   color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
@@ -282,7 +282,7 @@ onUnmounted(() => {
 }
 
 .retry-btn:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--color-accent-hover);
 }
 
 .retry-btn:disabled {

@@ -80,7 +80,7 @@ onMounted(async () => {
 .wb-replay-public {
   display: flex; flex-direction: column;
   min-height: 100vh; min-height: 100dvh;
-  background: var(--color-surface-alt, #f8fafc);
+  background: var(--color-surface-sunken, #f8fafc);
   color: var(--color-text, #0f172a);
 }
 .wb-replay-public__header {

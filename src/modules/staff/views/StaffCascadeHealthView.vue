@@ -355,7 +355,7 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-md, 12px);
   padding: var(--space-lg, 16px);
-  color: var(--danger-text, var(--color-danger, #b91c1c));
+  color: var(--color-danger, var(--color-danger, #b91c1c));
 }
 
 .cascade-health {
@@ -384,7 +384,7 @@ onUnmounted(() => {
 
 .time-btn {
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--border-secondary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
   cursor: pointer;
@@ -393,9 +393,9 @@ onUnmounted(() => {
 }
 
 .time-btn.active {
-  background: var(--bg-brand);
-  color: #fff;
-  border-color: var(--bg-brand);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
 }
 
 .status-banner {
@@ -475,7 +475,7 @@ onUnmounted(() => {
   font-size: 0.75rem;
   line-height: 1.4;
   color: var(--text-secondary);
-  border-left: 1px solid var(--border-secondary);
+  border-left: 1px solid var(--color-border);
   padding-left: var(--space-3);
 }
 
@@ -527,7 +527,7 @@ onUnmounted(() => {
 
 .stat-ok { color: #16a34a; font-weight: 600; }
 .stat-fail { color: #dc2626; font-weight: 600; }
-.stat-muted { color: var(--text-tertiary); }
+.stat-muted { color: var(--color-text-muted); }
 
 @media (max-width: 768px) {
   .charts-grid {

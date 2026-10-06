@@ -127,7 +127,7 @@ onUnmounted(() => {
   right: 0;
   z-index: 9998;
   background: var(--warning-bg, #fef3c7);
-  border-bottom: 2px solid var(--warning-border, #fcd34d);
+  border-bottom: 2px solid var(--color-warning, #fcd34d);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
@@ -146,7 +146,7 @@ onUnmounted(() => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: var(--warning, #f59e0b);
+  background: var(--color-warning, #f59e0b);
   color: white;
   border-radius: 50%;
   flex-shrink: 0;
@@ -160,20 +160,20 @@ onUnmounted(() => {
 .banner-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--warning-dark, #d97706);
+  color: var(--color-warning, #d97706);
   margin: 0 0 0.25rem 0;
 }
 
 .banner-message {
   font-size: 0.8125rem;
-  color: var(--warning-dark, #d97706);
+  color: var(--color-warning, #d97706);
   margin: 0;
   opacity: 0.9;
 }
 
 .last-sync {
   font-size: 0.75rem;
-  color: var(--warning-dark, #d97706);
+  color: var(--color-warning, #d97706);
   margin: 0.25rem 0 0 0;
   opacity: 0.8;
   font-style: italic;
@@ -184,7 +184,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--warning, #f59e0b);
+  background: var(--color-warning, #f59e0b);
   color: white;
   border: none;
   border-radius: var(--radius-sm, 6px);
@@ -196,7 +196,7 @@ onUnmounted(() => {
 }
 
 .retry-btn:hover:not(:disabled) {
-  background: var(--warning-dark, #d97706);
+  background: var(--color-warning, #d97706);
 }
 
 .retry-btn:disabled {

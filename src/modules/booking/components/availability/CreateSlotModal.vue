@@ -511,7 +511,7 @@ function handleCancel() {
 
 .validation-error .error-text {
   font-size: 14px;
-  color: var(--color-error-dark, #991b1b);
+  color: var(--color-danger, #991b1b);
   margin: 0;
 }
 
@@ -537,7 +537,7 @@ function handleCancel() {
 .warning-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-warning-dark, #d97706);
+  color: var(--color-warning, #d97706);
   margin: 0 0 8px 0;
 }
 

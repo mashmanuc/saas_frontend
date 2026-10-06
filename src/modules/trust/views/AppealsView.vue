@@ -208,7 +208,7 @@ async function submitAppeal() {
 
 .skeleton-card {
   height: 120px;
-  background: var(--color-skeleton);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-lg);
   animation: pulse 1.5s infinite;
 }
@@ -231,7 +231,7 @@ async function submitAppeal() {
 
 .ban-card {
   padding: var(--spacing-md);
-  background: var(--color-error-subtle);
+  background: var(--color-danger-soft);
   border: 1px solid var(--color-error);
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-md);
@@ -251,7 +251,7 @@ async function submitAppeal() {
 
 .ban-permanent {
   background: var(--color-error);
-  color: var(--color-error-text);
+  color: var(--color-danger);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
@@ -290,17 +290,17 @@ async function submitAppeal() {
 }
 
 .status-badge.pending {
-  background: var(--color-warning-subtle);
+  background: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
 .status-badge.approved {
-  background: var(--color-success-subtle);
+  background: var(--color-success-soft);
   color: var(--color-success);
 }
 
 .status-badge.rejected {
-  background: var(--color-error-subtle);
+  background: var(--color-danger-soft);
   color: var(--color-error);
 }
 
@@ -366,7 +366,7 @@ async function submitAppeal() {
 }
 
 .alert-error {
-  background: var(--color-error-subtle);
+  background: var(--color-danger-soft);
   color: var(--color-error);
   border: 1px solid var(--color-error);
 }

@@ -504,7 +504,7 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text-secondary);
   padding: 2px 8px;
-  background: var(--bg-tertiary);
+  background: var(--color-surface-sunken);
   border-radius: 10px;
 }
 
@@ -551,7 +551,7 @@ onMounted(async () => {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--bg-tertiary);
+  background: var(--color-surface-sunken);
   border: 1px solid var(--border-color);
   color: var(--accent);
   margin-bottom: 16px;
@@ -797,7 +797,7 @@ onMounted(async () => {
 
 .knowledge-hub__use-lesson-error {
   font-size: 11px;
-  color: var(--error, #ef4444);
+  color: var(--color-danger, #ef4444);
   margin: 4px 0 0;
 }
 
@@ -819,11 +819,11 @@ onMounted(async () => {
 
 .knowledge-hub__lesson-status--public {
   background: var(--success-bg, #dcfce7);
-  color: var(--success-text, #166534);
+  color: var(--color-success, #166534);
 }
 
 .knowledge-hub__lesson-status--draft {
-  background: var(--bg-tertiary);
+  background: var(--color-surface-sunken);
   color: var(--text-secondary);
 }
 
@@ -887,9 +887,9 @@ onMounted(async () => {
 }
 
 .knowledge-hub__delete-btn:hover:not(:disabled) {
-  border-color: var(--error, #ef4444);
-  color: var(--error, #ef4444);
-  background: color-mix(in srgb, var(--error, #ef4444) 8%, var(--bg-secondary));
+  border-color: var(--color-danger, #ef4444);
+  color: var(--color-danger, #ef4444);
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, var(--bg-secondary));
 }
 
 .knowledge-hub__delete-btn:disabled {
@@ -953,14 +953,14 @@ onMounted(async () => {
   font-weight: 600;
   border: none;
   border-radius: 8px;
-  background: var(--error, #ef4444);
-  color: #fff;
+  background: var(--color-danger, #ef4444);
+  color: var(--color-on-accent);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .knowledge-hub__confirm-delete:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--error, #ef4444) 85%, #000);
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 85%, #000);
 }
 
 .knowledge-hub__confirm-delete:disabled {
@@ -990,7 +990,7 @@ onMounted(async () => {
 
 .knowledge-hub__lesson-tag {
   padding: 1px 6px;
-  background: var(--bg-tertiary);
+  background: var(--color-surface-sunken);
   border-radius: 4px;
 }
 

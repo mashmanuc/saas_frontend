@@ -115,7 +115,7 @@ function handleClose() {
   width: 64px;
   height: 64px;
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
   border-radius: 50%;
 }
 
@@ -149,8 +149,8 @@ function handleClose() {
   border-radius: var(--radius-md, 8px);
   font-size: 0.875rem;
   background: var(--warning-bg, #fef3c7);
-  color: var(--warning, #f59e0b);
-  border: 1px solid var(--warning-border, #fcd34d);
+  color: var(--color-warning, #f59e0b);
+  border: 1px solid var(--color-warning, #fcd34d);
 }
 
 .warning-box p {
@@ -169,7 +169,7 @@ function handleClose() {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-sm, 4px);
   border: 1px solid var(--border-color);
 }
@@ -180,7 +180,7 @@ function handleClose() {
   justify-content: center;
   width: 24px;
   height: 24px;
-  background: var(--primary);
+  background: var(--color-accent);
   color: var(--color-on-accent);
   border-radius: 50%;
   font-size: 0.75rem;

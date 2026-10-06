@@ -155,7 +155,7 @@ const getSlotClass = (slot: BlockedSlot) => {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
   border: 1px solid var(--color-danger, #ef4444);
   border-radius: 6px;
   font-size: 12px;
@@ -227,7 +227,7 @@ const getSlotClass = (slot: BlockedSlot) => {
 }
 
 .remove-btn:hover:not(:disabled) {
-  background: var(--color-danger-light, #fee2e2);
+  background: var(--color-danger-soft, #fee2e2);
   color: var(--color-danger, #ef4444);
 }
 

@@ -139,7 +139,7 @@ function unlockAll() {
 
 .multi-select-info__locked {
   font-size: 12px;
-  color: var(--wb-warning, #f59e0b);
+  color: var(--color-warning, #f59e0b);
   font-weight: 500;
 }
 
@@ -151,7 +151,7 @@ function unlockAll() {
 
 .multi-select-info__btn {
   padding: 10px 12px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   background: var(--wb-bg-primary, #ffffff);
   color: var(--wb-text-primary, #111827);

@@ -78,11 +78,11 @@
          і тільки якщо VITE_GOOGLE_OAUTH_CLIENT_ID сконфігуровано. -->
     <div v-if="step === 'password' && googleEnabled" class="space-y-3">
       <div class="relative flex items-center" aria-hidden="true">
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
         <span class="mx-3 text-xs uppercase tracking-wider" style="color: var(--text-secondary);">
           {{ $t('auth.login.orContinueWith') }}
         </span>
-        <div class="flex-grow border-t" style="border-color: var(--border, #e5e7eb);" />
+        <div class="flex-grow border-t" style="border-color: var(--color-border, #e5e7eb);" />
       </div>
       <GoogleSignInButton
         mode="signin"

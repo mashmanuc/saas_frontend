@@ -217,7 +217,7 @@ onMounted(() => {
 }
 
 .wb-text-overlay__btn--save:hover {
-  background: var(--color-primary-hover, #1d4ed8);
+  background: var(--color-accent-hover, #1d4ed8);
 }
 
 .wb-text-overlay__btn--save:disabled {

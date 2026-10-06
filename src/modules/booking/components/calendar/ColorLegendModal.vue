@@ -75,8 +75,8 @@ const close = () => {
     45deg,
     var(--bg-secondary, #fafafa),
     var(--bg-secondary, #fafafa) 5px,
-    var(--bg-tertiary, #f0f0f0) 5px,
-    var(--bg-tertiary, #f0f0f0) 10px
+    var(--color-surface-sunken, #f0f0f0) 5px,
+    var(--color-surface-sunken, #f0f0f0) 10px
   );
   border: 1px dashed var(--border-color);
 }

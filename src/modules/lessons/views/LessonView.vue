@@ -363,16 +363,16 @@ function isOnline(userId) {
   color: var(--color-primary, #4f46e5);
 }
 .border-border-subtle {
-  border-color: var(--color-border-soft, rgba(7, 15, 30, 0.05));
+  border-color: var(--color-border, rgba(7, 15, 30, 0.05));
 }
 .bg-surface-soft {
-  background-color: var(--color-background-soft, rgba(7, 15, 30, 0.04));
+  background-color: var(--color-surface-sunken, rgba(7, 15, 30, 0.04));
 }
 .detail-block {
   padding: 1rem;
   border-radius: 1rem;
-  border: 1px solid var(--color-border-soft, rgba(7, 15, 30, 0.05));
-  background: var(--color-background-mute, rgba(7, 15, 30, 0.02));
+  border: 1px solid var(--color-border, rgba(7, 15, 30, 0.05));
+  background: var(--color-surface-sunken, rgba(7, 15, 30, 0.02));
 }
 .detail-label {
   font-size: 0.75rem;

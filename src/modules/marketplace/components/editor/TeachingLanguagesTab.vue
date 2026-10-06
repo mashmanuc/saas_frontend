@@ -280,7 +280,7 @@ function handleQuickAddLanguage(langCode: string) {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 0.9375rem;
-  background: var(--surface-base);
+  background: var(--color-surface);
 }
 
 .language-select:focus,
@@ -325,7 +325,7 @@ function handleQuickAddLanguage(langCode: string) {
   padding: var(--space-md);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--surface-base);
+  background: var(--color-surface);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -391,8 +391,8 @@ function handleQuickAddLanguage(langCode: string) {
 /* Field error */
 .field-error {
   padding: var(--space-sm) var(--space-md);
-  background: var(--error-bg, #fef2f2);
-  color: var(--error-text, #dc2626);
+  background: var(--color-danger-soft, #fef2f2);
+  color: var(--color-danger, #dc2626);
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
 }

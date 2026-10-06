@@ -310,7 +310,7 @@ onMounted(() => {
 .toggle-slider {
   position: absolute;
   inset: 0;
-  background: var(--bg-tertiary, #ccc);
+  background: var(--color-surface-sunken, #ccc);
   border-radius: 24px;
   transition: background 0.2s;
 }

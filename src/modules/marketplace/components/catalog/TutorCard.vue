@@ -164,7 +164,7 @@ function getFormatTags(subject: any) {
 /* Mobile-first: 2-col card (avatar + info), CTA below */
 .tutor-card {
   background: var(--white, #ffffff);
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 14px;
   padding: 16px;
   margin-bottom: 12px;
@@ -297,7 +297,7 @@ function getFormatTags(subject: any) {
   font-weight: 700;
   color: var(--muted, #7a9186);
   background: var(--bg, #f5f7f6);
-  border: 1px solid var(--border, #e0ece5);
+  border: 1px solid var(--color-border, #e0ece5);
   border-radius: 20px;
   padding: 3px 9px;
   display: inline-flex;

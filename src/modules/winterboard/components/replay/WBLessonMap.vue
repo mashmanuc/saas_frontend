@@ -363,11 +363,11 @@ const sortedMarkers = computed(() =>
 .wb-lesson-map__hint {
   margin: 0.75rem;
   padding: 0.75rem;
-  background: var(--wb-info-bg, #dbeafe);
-  border: 1px solid var(--wb-info-border, #93c5fd);
+  background: var(--color-info-soft, #dbeafe);
+  border: 1px solid var(--color-info, #93c5fd);
   border-radius: 8px;
   font-size: 0.8125rem;
-  color: var(--wb-info-text, #1e40af);
+  color: var(--color-info, #1e40af);
 }
 
 .wb-lesson-map__hint p {
@@ -379,16 +379,16 @@ const sortedMarkers = computed(() =>
   margin-top: 0.5rem;
   padding: 0.25rem 0.75rem;
   background: transparent;
-  border: 1px solid var(--wb-info-border, #93c5fd);
+  border: 1px solid var(--color-info, #93c5fd);
   border-radius: 4px;
-  color: var(--wb-info-text, #1e40af);
+  color: var(--color-info, #1e40af);
   font-size: 0.75rem;
   cursor: pointer;
 }
 
 .wb-lesson-map__hint-dismiss:hover {
-  background: var(--wb-info-border, #93c5fd);
-  color: #fff;
+  background: var(--color-info, #93c5fd);
+  color: var(--color-on-accent);
 }
 
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.

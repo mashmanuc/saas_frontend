@@ -3253,7 +3253,7 @@ onBeforeUnmount(async () => {
 }
 
 .wb-classroom-room__replay-btn:hover {
-  background: var(--primary-hover, #4f46e5);
+  background: var(--color-accent-hover, #4f46e5);
   transform: translateY(-1px);
 }
 

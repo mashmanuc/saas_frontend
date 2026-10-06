@@ -406,7 +406,7 @@ function handleShareMoment(): void {
   height: 36px;
   border: none;
   border-radius: 6px;
-  background: var(--wb-surface-alt, #f3f4f6);
+  background: var(--color-surface-sunken, #f3f4f6);
   color: var(--wb-text-muted, #6b7280);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -424,7 +424,7 @@ function handleShareMoment(): void {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.375rem 0.75rem;
-  background: var(--wb-success-bg, #065f46);
+  background: var(--color-success-soft, #065f46);
   color: #fff;
   border-radius: 6px;
   font-size: 0.75rem;

@@ -89,7 +89,7 @@ function handleDiscard() {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: linear-gradient(to right, var(--color-warning-light), var(--color-warning-lighter));
+  background: linear-gradient(to right, var(--color-warning-light), var(--color-warning-soft));
   border-bottom: 2px solid var(--color-warning);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 1rem 1.5rem;

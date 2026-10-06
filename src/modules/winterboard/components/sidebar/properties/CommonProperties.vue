@@ -207,7 +207,7 @@ function toggleLock() {
 
 .common-properties__input-group input {
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   font-size: 13px;
   background: var(--wb-bg-primary, #ffffff);
@@ -216,7 +216,7 @@ function toggleLock() {
 
 .common-properties__input-group input:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -234,7 +234,7 @@ function toggleLock() {
 
 .common-properties__z-btn {
   padding: 6px 8px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   background: var(--wb-bg-primary, #ffffff);
   color: var(--wb-text-primary, #111827);
@@ -250,7 +250,7 @@ function toggleLock() {
 
 .common-properties__z-btn:disabled {
   background: var(--wb-bg-secondary, #f3f4f6);
-  color: var(--wb-text-tertiary, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -261,7 +261,7 @@ function toggleLock() {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 8px;
   background: var(--wb-bg-primary, #ffffff);
 }
@@ -284,7 +284,7 @@ function toggleLock() {
 
 .common-properties__lock-btn {
   padding: 4px 12px;
-  border: 1px solid var(--wb-border-color, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 6px;
   background: var(--wb-bg-primary, #ffffff);
   color: var(--wb-text-primary, #111827);

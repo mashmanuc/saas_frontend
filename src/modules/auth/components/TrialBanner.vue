@@ -100,14 +100,14 @@ function handleDismiss() {
 
 .trial-banner-info {
   background: var(--info-bg, #dbeafe);
-  border: 1px solid var(--info-border, #93c5fd);
-  color: var(--info, #1e40af);
+  border: 1px solid var(--color-info, #93c5fd);
+  color: var(--color-info, #1e40af);
 }
 
 .trial-banner-warning {
   background: var(--warning-bg, #fef3c7);
-  border: 1px solid var(--warning-border, #fcd34d);
-  color: var(--warning, #b45309);
+  border: 1px solid var(--color-warning, #fcd34d);
+  color: var(--color-warning, #b45309);
 }
 
 .trial-banner-content {

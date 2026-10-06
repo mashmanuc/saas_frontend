@@ -147,7 +147,7 @@ function statusClass(status: string): string {
   align-items: center;
   gap: 1rem;
   padding: 0.625rem 0;
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
   flex-wrap: wrap;
 }
 .payment-history__row:last-child {

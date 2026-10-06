@@ -153,8 +153,8 @@ onMounted(() => {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   background: var(--info-bg, #dbeafe);
-  color: var(--info, #3b82f6);
-  border-bottom: 1px solid var(--info-border, #93c5fd);
+  color: var(--color-info, #3b82f6);
+  border-bottom: 1px solid var(--color-info, #93c5fd);
 }
 
 .banner p {
@@ -187,11 +187,11 @@ onMounted(() => {
 .message-content {
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md, 8px);
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
 }
 
 .message.tutor .message-content {
-  background: var(--primary);
+  background: var(--color-accent);
   color: var(--color-on-accent);
 }
 
@@ -232,7 +232,7 @@ onMounted(() => {
 
 .file {
   padding: 0.25rem 0.5rem;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-sm, 4px);
   font-size: 0.8125rem;
 }
@@ -249,14 +249,14 @@ onMounted(() => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: var(--surface-secondary);
+  background: var(--color-surface-sunken);
   border-radius: var(--radius-sm, 6px);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .attach-btn:hover {
-  background: var(--surface-hover);
+  background: var(--color-hover);
 }
 
 .attach-btn input {
@@ -269,7 +269,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm, 6px);
   font-size: 0.9375rem;
-  background: var(--surface-input);
+  background: var(--color-surface-sunken);
   color: var(--text-primary);
 }
 
@@ -279,7 +279,7 @@ onMounted(() => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: var(--primary);
+  background: var(--color-accent);
   color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-sm, 6px);
@@ -288,7 +288,7 @@ onMounted(() => {
 }
 
 .send-btn:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--color-accent-hover);
 }
 
 .send-btn:disabled {

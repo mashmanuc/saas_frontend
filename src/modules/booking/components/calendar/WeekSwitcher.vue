@@ -109,7 +109,7 @@ function onToday() {
 }
 
 .week-switcher__btn:hover:not(:disabled) {
-  background: var(--bg-tertiary, #e5e7eb);
+  background: var(--color-surface-sunken, #e5e7eb);
   transform: scale(1.05);
 }
 
@@ -136,7 +136,7 @@ function onToday() {
   padding: 6px 16px;
   border-radius: 20px;
   border: none;
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   color: var(--accent);
   font-size: 13px;
   font-weight: 600;
@@ -145,7 +145,7 @@ function onToday() {
 }
 
 .week-switcher__today:hover:not(:disabled) {
-  background: var(--accent-bg-hover, #bfdbfe);
+  background: var(--color-accent-soft, #bfdbfe);
 }
 
 .week-switcher__today:disabled {

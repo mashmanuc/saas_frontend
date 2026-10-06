@@ -539,7 +539,7 @@ function handleTogglePopularLanguage(langCode: string) {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 0.9375rem;
-  background: var(--surface-base);
+  background: var(--color-surface);
 }
 
 .subject-picker-row button {

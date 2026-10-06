@@ -46,7 +46,7 @@ const formattedDate = computed(() => {
 .greeting-title {
   font-size: var(--text-xl, 1.25rem);
   font-weight: 600;
-  color: var(--text-primary, var(--color-text-body));
+  color: var(--text-primary, var(--color-text));
   line-height: 1.3;
 }
 

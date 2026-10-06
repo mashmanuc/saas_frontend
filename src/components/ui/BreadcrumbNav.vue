@@ -80,18 +80,18 @@ defineProps<{
 }
 
 .breadcrumb-nav__link {
-  color: var(--primary, #10b981);
+  color: var(--color-accent, #10b981);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .breadcrumb-nav__link:hover {
-  color: var(--primary-hover, #059669);
+  color: var(--color-accent-hover, #059669);
   text-decoration: underline;
 }
 
 .breadcrumb-nav__link:focus-visible {
-  outline: 2px solid var(--primary, #10b981);
+  outline: 2px solid var(--color-accent, #10b981);
   outline-offset: 2px;
   border-radius: 2px;
 }

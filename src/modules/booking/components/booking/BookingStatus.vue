@@ -77,22 +77,22 @@ const config = computed(() => statusConfig[props.status] || statusConfig.pending
 
 .status-pending {
   background: var(--color-warning-light, #fef3c7);
-  color: var(--color-warning-dark, #92400e);
+  color: var(--color-warning, #92400e);
 }
 
 .status-confirmed {
   background: var(--color-success-light, #d1fae5);
-  color: var(--color-success-dark, #065f46);
+  color: var(--color-success, #065f46);
 }
 
 .status-cancelled {
-  background: var(--color-danger-light, #fee2e2);
-  color: var(--color-danger-dark, #991b1b);
+  background: var(--color-danger-soft, #fee2e2);
+  color: var(--color-danger, #991b1b);
 }
 
 .status-completed {
   background: var(--color-primary-light, #dbeafe);
-  color: var(--color-primary-dark, #1e40af);
+  color: var(--color-accent-hover, #1e40af);
 }
 
 .status-no-show {
@@ -102,7 +102,7 @@ const config = computed(() => statusConfig[props.status] || statusConfig.pending
 
 .status-rescheduled {
   background: var(--color-info-light, #e0f2fe);
-  color: var(--color-info-dark, #075985);
+  color: var(--color-info, #075985);
 }
 
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.

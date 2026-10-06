@@ -811,9 +811,9 @@ function handleClose() {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--accent-bg, #eff6ff);
+  background: var(--color-accent-soft, #eff6ff);
   border-radius: var(--radius-md);
-  border: 1px solid var(--accent-bg, #dbeafe);
+  border: 1px solid var(--color-accent-soft, #dbeafe);
 }
 
 .time-label {
@@ -893,9 +893,9 @@ function handleClose() {
   gap: 8px;
   padding: 12px;
   background: var(--warning-bg, #fef3c7);
-  border: 1px solid var(--warning, #fde68a);
+  border: 1px solid var(--color-warning, #fde68a);
   border-radius: var(--radius-md);
-  color: var(--warning);
+  color: var(--color-warning);
   font-size: 14px;
 }
 
@@ -986,7 +986,7 @@ function handleClose() {
 
 .balance-badge {
   padding: 2px 8px;
-  background: var(--accent-bg, #dbeafe);
+  background: var(--color-accent-soft, #dbeafe);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
@@ -1004,7 +1004,7 @@ function handleClose() {
 .conflict-warning {
   padding: 16px;
   background: var(--warning-bg, #fef3c7);
-  border: 2px solid var(--warning, #fbbf24);
+  border: 2px solid var(--color-warning, #fbbf24);
   border-radius: var(--radius-md);
   margin-top: 12px;
 }
@@ -1020,7 +1020,7 @@ function handleClose() {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--warning);
+  color: var(--color-warning);
 }
 
 .conflict-list {
@@ -1034,7 +1034,7 @@ function handleClose() {
   padding: 8px;
   background: var(--card-bg);
   border-radius: var(--radius-md);
-  border: 1px solid var(--warning, #fde68a);
+  border: 1px solid var(--color-warning, #fde68a);
 }
 
 .conflict-student {
@@ -1052,7 +1052,7 @@ function handleClose() {
 
 .conflict-reason {
   font-size: 12px;
-  color: var(--warning);
+  color: var(--color-warning);
   margin: 0;
 }
 
@@ -1067,7 +1067,7 @@ function handleClose() {
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  background: var(--warning, #f59e0b);
+  background: var(--color-warning, #f59e0b);
   color: white;
   border: none;
   cursor: pointer;
@@ -1075,6 +1075,6 @@ function handleClose() {
 }
 
 .btn-warning:hover {
-  background: var(--warning-hover, #d97706);
+  background: var(--color-warning, #d97706);
 }
 </style>

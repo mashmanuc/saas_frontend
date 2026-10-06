@@ -207,7 +207,7 @@ function formatTime(sec: number): string {
 
 .public-markers__item--highlighted {
   animation: marker-pulse 1s ease-in-out 3;
-  border-color: var(--primary, #10b981);
+  border-color: var(--color-accent, #10b981);
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
 }
 

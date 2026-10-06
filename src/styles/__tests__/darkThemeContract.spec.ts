@@ -125,6 +125,20 @@ describe('Темна тема: світла й класична не зміню�
     expect(leaking).toEqual([])
   })
 
+  it('міст не перевизначає канонічних токенів палітри', () => {
+    // 2026-10-06: міст оголошував `--color-warning-soft: var(--color-warning-soft)` — самопосилання робило
+    // токен недійсним, і бурштинові плашки в темній темі мали прозоре тло (на проді з фази 1).
+    const declaredInBridge = [...bridgeCss.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1])
+    expect(declaredInBridge.filter((n) => CANONICAL.includes(n))).toEqual([])
+  })
+
+  it('жодна змінна не посилається сама на себе', () => {
+    const selfRefs = [...`${mainCss}\n${bridgeCss}`.matchAll(/(--[\w-]+)\s*:\s*var\(\s*(--[\w-]+)\s*[,)]/g)]
+      .filter((m) => m[1] === m[2])
+      .map((m) => m[1])
+    expect(selfRefs).toEqual([])
+  })
+
   it('немає глобального правила, що фарбує всі підписи темної теми', () => {
     expect(mainCss).not.toMatch(/\[data-theme="dark"\]\s+label\s*[,{]/)
   })
