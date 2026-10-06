@@ -8694,7 +8694,9 @@
           "audio": "Аудіо {n}",
           "presentation": "Презентація {n}",
           "pdf": "PDF {n}",
-          "document": "Документ {n}"
+          "document": "Документ {n}",
+          "card": "Картка {n}",
+          "image": "Картинка {n}"
         },
         "volume": "гучність {v} %",
         "play": "Грати",

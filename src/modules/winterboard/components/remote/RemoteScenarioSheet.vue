@@ -125,7 +125,7 @@
             </div>
           </template>
 
-          <!-- Презентація, PDF, документ -->
+          <!-- Презентація, PDF, документ; v1.25 — картинка (⛶ і «Згорнути») і картка (лише «Згорнути») -->
           <template v-else>
             <div v-if="it.docPages" class="wb-scn__row wb-scn__row--pager">
               <div class="wb-scn__slot" @click="why(it, 'docPrev')">
@@ -136,13 +136,16 @@
                 <button type="button" class="wb-scn__btn" data-testid="scenario-doc-next" :disabled="!canDocNext(it)" :aria-label="t('winterboard.remote.scenario.docNext')" @click="send('doc.page', { object_id: it.objectId, dir: 1 })">▶</button>
               </div>
             </div>
-            <div class="wb-scn__row">
-              <button v-if="focusId === it.objectId" type="button" class="wb-scn__btn" data-testid="scenario-whole-page" :disabled="!ready" @click="send('view.page', {})">
-                ▭ {{ t('winterboard.remote.fitPage') }}
-              </button>
-              <button v-else type="button" class="wb-scn__btn" data-testid="scenario-focus" :disabled="!ready" @click="send('view.focus', { object_id: it.objectId })">
-                ⛶ {{ t('winterboard.remote.scenario.fullscreen') }}
-              </button>
+            <div class="wb-scn__row" :class="{ 'wb-scn__row--one': it.kind === 'card' }">
+              <!-- Картка «на весь екран» не має сенсу: текст не росте з полотном (§9.C) -->
+              <template v-if="it.kind !== 'card'">
+                <button v-if="focusId === it.objectId" type="button" class="wb-scn__btn" data-testid="scenario-whole-page" :disabled="!ready" @click="send('view.page', {})">
+                  ▭ {{ t('winterboard.remote.fitPage') }}
+                </button>
+                <button v-else type="button" class="wb-scn__btn" data-testid="scenario-focus" :disabled="!ready" @click="send('view.focus', { object_id: it.objectId })">
+                  ⛶ {{ t('winterboard.remote.scenario.fullscreen') }}
+                </button>
+              </template>
               <button type="button" class="wb-scn__btn" data-testid="scenario-minimize" :disabled="!ready" @click="send('card.minimize', { object_id: it.objectId })">
                 — {{ t('winterboard.remote.scenario.minimize') }}
               </button>
@@ -178,7 +181,7 @@ const emit = defineEmits<{ send: [cmd: string, args: Record<string, unknown>] }>
 const { t } = useI18n()
 
 const ICONS: Record<RemoteScenarioKind, string> = {
-  video: '🎬', audio: '🎵', presentation: '📊', pdf: '📄', document: '📄',
+  video: '🎬', audio: '🎵', presentation: '📊', pdf: '📄', document: '📄', card: '📘', image: '🖼',
 }
 
 const focusId = computed(() => props.scenario?.focusId ?? null)

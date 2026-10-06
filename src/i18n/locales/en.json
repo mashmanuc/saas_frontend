@@ -8964,7 +8964,9 @@
           "audio": "Audio {n}",
           "presentation": "Presentation {n}",
           "pdf": "PDF {n}",
-          "document": "Document {n}"
+          "document": "Document {n}",
+          "card": "Card {n}",
+          "image": "Image {n}"
         },
         "volume": "volume {v}%",
         "play": "Play",

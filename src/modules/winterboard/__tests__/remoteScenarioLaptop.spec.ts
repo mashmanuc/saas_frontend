@@ -88,16 +88,20 @@ describe('INV-SCN-1 · список сценарію', () => {
     for (const t of ['image', 'nmt_task', 'theory_card', 'sticky']) expect(scenarioKind({ type: t }), t).toBeNull()
   })
 
-  it('порядок: сторінки, у сторінці згори вниз і зліва направо; інші картки не потрапляють', () => {
+  // v1.25 (2026-10-06): раніше тут стверджувалось «інші картки не потрапляють» — тепер картинка
+  // й картка ПОТОЧНОЇ сторінки в списку є (власник: «згортати, розгортати з пульта»); задача НМТ
+  // і картки інших сторінок — як і раніше, ні.
+  it('порядок: сторінки, у сторінці згори вниз і зліва направо; картка й картинка — лише поточної', () => {
     const { adapter } = scenarioSetup([
-      [asset('p0-late', 'audio_player', 500, 400), asset('img', 'image', 0, 0), asset('p0-first', 'youtube_player', 900, 10)],
+      [asset('p0-late', 'audio_player', 500, 400), asset('img', 'image', 0, 0), asset('p0-first', 'youtube_player', 900, 10),
+        asset('task0', TASK_ASSET_TYPE, 0, 600)],
       [],
       [asset('p2-b', 'document_viewer', 400, 100, { content_ref: { content_type: 'pdf' } }),
-        asset('p2-a', 'video_player', 100, 100), asset('task', TASK_ASSET_TYPE, 0, 0)],
+        asset('p2-a', 'video_player', 100, 100), asset('task', TASK_ASSET_TYPE, 0, 0), asset('img2', 'image', 0, 50)],
     ])
     const { items } = adapter.state()
     expect(items.map((i) => [i.object_id, i.page_index, i.kind])).toEqual([
-      ['p0-first', 0, 'video'], ['p0-late', 0, 'audio'], ['p2-a', 2, 'video'], ['p2-b', 2, 'pdf'],
+      ['img', 0, 'image'], ['p0-first', 0, 'video'], ['p0-late', 0, 'audio'], ['p2-a', 2, 'video'], ['p2-b', 2, 'pdf'],
     ])
   })
 
@@ -166,12 +170,14 @@ describe('INV-SCN-3 · команда — лише для об\'єкта пот�
     expect(players.changeMediaVolume).toHaveBeenCalledWith('aud-1', -1)
   })
 
-  it('об\'єкт іншої сторінки, невідомий id чи не медіа — команди ігноруються', () => {
+  // v1.25: картинка поточної сторінки тепер у списку й керується (INV-SCN-7) — тут лишились
+  // об'єкт іншої сторінки, невідомий id і задача НМТ.
+  it('об\'єкт іншої сторінки, невідомий id чи задача НМТ — команди ігноруються', () => {
     const { adapter, updateAsset, view } = scenarioSetup([
-      [asset('img', 'image', 0, 0), asset('task', TASK_ASSET_TYPE, 0, 0)],
-      [asset('vid-far', 'video_player', 0, 0)],
+      [asset('task', TASK_ASSET_TYPE, 0, 0)],
+      [asset('vid-far', 'video_player', 0, 0), asset('img-far', 'image', 0, 0)],
     ])
-    for (const id of ['vid-far', 'nope', 'img', 'task']) {
+    for (const id of ['vid-far', 'img-far', 'nope', 'task']) {
       adapter.play(id); adapter.pause(id); adapter.volume(id, 1); adapter.focus(id)
       adapter.minimize(id); adapter.restore(id); adapter.docPage(id, 1)
     }
@@ -480,5 +486,70 @@ describe('INV-SCN-6 · caps і поле scenario — лише з адаптер�
       fire('card.minimize', { object_id: 'yt-1' })
       fire('view.focus', { object_id: 'yt-1' })
     }).not.toThrow()
+  })
+})
+
+// ── INV-SCN-7 · v1.25 картки й картинки поточної сторінки ─────────────────────
+
+describe('INV-SCN-7 · картки й картинки — лише сторінки, що на екрані (v1.25)', () => {
+  const lessonPage = () => [
+    asset('pic', 'image', 0, 0, { data: { caption: 'Річ Посполита в кордонах 1619 року' } }),
+    asset('theory', 'theory_card', 960, 0, { data: { title: 'Держава, якої вже немає', body: 'Подивись на карту…' } }),
+    asset('q', 'discussion_question', 0, 780, { data: { question: 'У складі якої держави була більша частина земель?' } }),
+    asset('hist', 'history_card', 960, 400, { data: { title: 'Річ Посполита' } }),
+    asset('task', TASK_ASSET_TYPE, 0, 900),
+  ]
+
+  it('вид і назва: картинка — підпис, картка — заголовок, питання — текст питання; задачі НМТ немає', () => {
+    const { adapter } = scenarioSetup([lessonPage()])
+    expect(adapter.state().items.map((i) => [i.object_id, i.kind, i.title])).toEqual([
+      ['pic', 'image', 'Річ Посполита в кордонах 1619 року'],
+      ['theory', 'card', 'Держава, якої вже немає'],
+      ['hist', 'card', 'Річ Посполита'],
+      ['q', 'card', 'У складі якої держави була більша частина земель?'],
+    ])
+  })
+
+  it('картки й картинки інших сторінок у списку немає (медіа — є)', () => {
+    const { adapter } = scenarioSetup([[asset('v', 'video_player', 0, 0)], lessonPage()], { current: 0 })
+    expect(adapter.state().items.map((i) => i.object_id)).toEqual(['v'])
+  })
+
+  it('картка без заголовка — перші слова тексту; без нічого — порожньо (пульт: «Картка N»)', () => {
+    const { adapter } = scenarioSetup([[
+      asset('t1', 'theory_card', 0, 0, { data: { body: '  Перший   рядок тексту ' } }),
+      asset('t2', 'theory_card', 0, 10, { data: {} }),
+    ]])
+    expect(adapter.state().items.map((i) => i.title)).toEqual(['Перший рядок тексту', ''])
+  })
+
+  it('«Згорнути» / «Повернути» — той самий asset_update, що й кнопки на дошці', () => {
+    const { adapter, updateAsset, state } = scenarioSetup([lessonPage()])
+    adapter.minimize('theory')
+    expect(updateAsset).toHaveBeenCalledTimes(1)
+    expect(updateAsset.mock.calls[0][0]).toMatchObject({ id: 'theory', minimized: true })
+    expect(state.pages[0].assets.find((a) => a.id === 'theory')?.minimized).toBe(true)
+    expect(adapter.state().items.find((i) => i.object_id === 'theory')?.minimized).toBe(true)
+    adapter.restore('theory')
+    expect(updateAsset.mock.calls[1][0]).toMatchObject({ id: 'theory', minimized: false })
+    adapter.minimize('pic')
+    expect(updateAsset.mock.calls[2][0]).toMatchObject({ id: 'pic', minimized: true })
+  })
+
+  it('«На весь екран»: картинка — так, картка — ні (текст не росте з полотном)', () => {
+    const { adapter, view } = scenarioSetup([lessonPage()])
+    adapter.focus('pic')
+    adapter.focus('theory')
+    expect(view.focusObject).toHaveBeenCalledTimes(1)
+    expect(view.focusObject).toHaveBeenCalledWith('pic')
+  })
+
+  it('картка іншої сторінки чи задача НМТ — команди ігноруються', () => {
+    const { adapter, updateAsset } = scenarioSetup([[asset('v', 'video_player', 0, 0)], lessonPage()], { current: 0 })
+    adapter.minimize('theory')
+    const other = scenarioSetup([lessonPage()])
+    other.adapter.minimize('task')
+    expect(updateAsset).not.toHaveBeenCalled()
+    expect(other.updateAsset).not.toHaveBeenCalled()
   })
 })

@@ -30,8 +30,8 @@ export type RemoteCap = 'photo' | 'video' | 'scenario'
 export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario']
 const REMOTE_CAPS_MAX = 8
 
-/** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). */
-export type RemoteScenarioKind = 'video' | 'audio' | 'presentation' | 'pdf' | 'document'
+/** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). v1.25: + картка й картинка (лише сторінка на екрані). */
+export type RemoteScenarioKind = 'video' | 'audio' | 'presentation' | 'pdf' | 'document' | 'card' | 'image'
 export interface RemoteScenarioItem {
   objectId: string
   kind: RemoteScenarioKind
@@ -187,7 +187,7 @@ export function parseRemoteVideos(raw: any): RemoteStateDetail['videos'] | undef
   return out
 }
 
-const SCENARIO_KINDS = new Set<RemoteScenarioKind>(['video', 'audio', 'presentation', 'pdf', 'document'])
+const SCENARIO_KINDS = new Set<RemoteScenarioKind>(['video', 'audio', 'presentation', 'pdf', 'document', 'card', 'image'])
 const SCENARIO_ITEMS_MAX = 50
 const SCENARIO_ID_MAX = 64
 const SCENARIO_TITLE_MAX = 200
@@ -234,6 +234,8 @@ export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | u
       }
     } else {
       if (state != null || error != null || volume != null) return undefined
+      // v1.25: у картки й картинки сторінок документа немає
+      if ((kind === 'card' || kind === 'image') && (docPage != null || docPages != null)) return undefined
       if (docPage != null || docPages != null) {
         if (!isInt(docPage) || !isInt(docPages)) return undefined
         if (docPages < 1 || docPages > SCENARIO_DOC_PAGES_MAX || docPage < 0 || docPage >= docPages) return undefined

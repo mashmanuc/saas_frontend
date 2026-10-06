@@ -588,3 +588,50 @@ describe('INV-SCN-P3 · кнопка «📋 Сценарій» на пульті
     expect(w.find('[data-testid="remote-sheet"]').isVisible()).toBe(false)
   })
 })
+
+// ═════════════════════════════════════════════════════════════════════════════
+describe('INV-SCN-P4 · v1.25 картки й картинки сторінки на екрані', () => {
+  const CARD = { object_id: 'theory', kind: 'card', title: 'Держава, якої вже немає', page_index: 0, minimized: false }
+  const IMAGE = { object_id: 'pic', kind: 'image', title: 'Річ Посполита в кордонах 1619 року', page_index: 0, minimized: false }
+  const sheet = (items: Array<Record<string, unknown>>) => mount(RemoteScenarioSheet, {
+    props: { scenario: parseRemoteScenario({ focus_id: null, items })!, pageIndex: 0, ready: true, open: false },
+    global: { plugins: [i18n()] },
+  })
+  const buttons = (w: any, id: string) => w.find(`[data-testid="scenario-item-${id}"]`)
+    .findAll('.wb-scn__btn').map((b: any) => b.attributes('data-testid'))
+
+  it('розбір: картка й картинка приходять; сторінки документа чи стан відтворення в них — поле відкинуто цілим', () => {
+    const out = parseRemoteScenario({ focus_id: null, items: [CARD, IMAGE] })!
+    expect(out.items).toEqual([
+      { objectId: 'theory', kind: 'card', title: 'Держава, якої вже немає', pageIndex: 0, minimized: false },
+      { objectId: 'pic', kind: 'image', title: 'Річ Посполита в кордонах 1619 року', pageIndex: 0, minimized: false },
+    ])
+    expect(parseRemoteScenario({ focus_id: null, items: [{ ...CARD, doc_page: 0, doc_pages: 2 }] })).toBeUndefined()
+    expect(parseRemoteScenario({ focus_id: null, items: [{ ...IMAGE, state: 'playing' }] })).toBeUndefined()
+    expect(parseRemoteScenario({ focus_id: null, items: [{ ...IMAGE, kind: 'sticker' }] })).toBeUndefined()
+  })
+
+  it('картка — лише «— Згорнути» (без «На весь екран»); картинка — ⛶ і «— Згорнути»', () => {
+    const w = sheet([CARD, IMAGE])
+    expect(buttons(w, 'theory')).toEqual(['scenario-minimize'])
+    expect(buttons(w, 'pic')).toEqual(['scenario-focus', 'scenario-minimize'])
+  })
+
+  it('кнопки шлють наявні команди: card.minimize / card.restore / view.focus для свого об\'єкта', async () => {
+    const w = sheet([CARD, { ...IMAGE, minimized: true }])
+    await w.find('[data-testid="scenario-item-theory"] [data-testid="scenario-minimize"]').trigger('click')
+    expect(buttons(w, 'pic')).toEqual(['scenario-restore'])
+    await w.find('[data-testid="scenario-item-pic"] [data-testid="scenario-restore"]').trigger('click')
+    expect(w.emitted('send')).toEqual([
+      ['card.minimize', { object_id: 'theory' }],
+      ['card.restore', { object_id: 'pic' }],
+    ])
+  })
+
+  it('без назви — «Картка 1», «Картинка 1»; значки 📘 і 🖼', () => {
+    const w = sheet([{ ...CARD, title: '' }, { ...IMAGE, title: '' }])
+    const text = (id: string) => w.find(`[data-testid="scenario-item-${id}"] .wb-scn__name`).text()
+    expect(text('theory')).toBe(`📘${fill(S.kind.card, { n: 1 })}`)
+    expect(text('pic')).toBe(`🖼${fill(S.kind.image, { n: 1 })}`)
+  })
+})
