@@ -52,7 +52,9 @@ async function resendRedirect(w: VueWrapper): Promise<string | null> {
   const btn = w.findAll('button').find((b) => b.text().includes(uk.auth.checkEmail.resend))!
   await btn.trigger('click')
   await flushPromises()
-  const payload = api.resendVerifyEmail.mock.calls.at(-1)?.[0] as { verify_url: string }
+  // Без `.at(-1)`: lib проєкту — до es2022 (vue-tsc, 2026-10-07).
+  const calls = api.resendVerifyEmail.mock.calls as unknown[][]
+  const payload = calls[calls.length - 1]?.[0] as { verify_url: string }
   return new URL(payload.verify_url.replace('{token}', 'T')).searchParams.get('redirect')
 }
 
