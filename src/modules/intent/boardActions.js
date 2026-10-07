@@ -1704,6 +1704,28 @@ export function selectedFullText(a) {
 }
 
 /**
+ * Виділена задача НМТ (власник 2026-10-07: «роби для математики варіанти і перевірку підказки і повне
+ * розвязання теж»). Варіанти — усі (досі модель бачила лише правильний і не знала, що написано в «Б»);
+ * розбір — повністю й навіть не відкритий на картці: учитель питає приватно, відповідь бачить лише він.
+ * ⚠️ Чому це можна: до Інтегралика учень не має доступу (BE `IsIntegralykUser` — 403). Відкриється учням —
+ * правило «розбір лише за відкритим» (nmtTaskExtras) треба повернути й сюди.
+ * Невиділені задачі — як і було: правильна відповідь і розбір лише за відкритим, 400 символів.
+ */
+export function selectedTaskExtras(d) {
+  const out = {}
+  if (Array.isArray(d?.options) && d.options.length) {
+    out.options = d.options.map((o) => `${o?.letter ?? ''}) ${flatten(o?.text, 150)}`.trim()).join('; ').slice(0, 600)
+  } else if (Array.isArray(d?.pairs) && d.pairs.length) {
+    const left = d.pairs.map((p, i) => `${i + 1}) ${flatten(p?.left, 100)}`).join('; ')
+    const right = d.pairs.map((p) => flatten(p?.right, 100)).join('; ')
+    out.options = `Ліва колонка: ${left}. Права колонка: ${right}`.slice(0, 600)
+  }
+  const solution = flatten(d?.solution, 1000)
+  if (solution) out.full_solution = solution
+  return out
+}
+
+/**
  * «Інтегралик знає сцену» (власник 2026-10-06): матеріал сторінки — окремими полями, як `answer` у
  * задачах НМТ, щоб на «дай підказку» чи «поясни простіше» модель відповідала з нього, з цитатою.
  *   • discussion_question — відповідь і опора (цитата з джерела). Бачить лише вчитель: Інтегралик
@@ -1833,11 +1855,13 @@ export async function buildBoardSummary() {
         : {}
       const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : { ...cardText, ...sceneExtras(a) }
       const fullText = a.id === selectedId ? selectedFullText(a) : ''
+      const taskMore = a.id === selectedId && a.type === 'nmt_task' ? selectedTaskExtras(a.data || {}) : {}
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
                    ...extras, ...materialLang(a.data),
                    ...(a.id === selectedId ? { selected: true } : {}),
-                   ...(fullText ? { full_text: fullText } : {}) })
+                   ...(fullText ? { full_text: fullText } : {}),
+                   ...taskMore })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
