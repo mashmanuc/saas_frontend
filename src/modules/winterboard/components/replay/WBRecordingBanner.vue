@@ -90,6 +90,9 @@
         <span>{{ t('winterboard.recording.finalize') }}</span>
       </button>
     </template>
+
+    <!-- Порожній запис не збережено (2026-10-07) — повідомлення під кнопкою -->
+    <WBRecordingEmptyNotice v-if="emptyNotice" @dismiss="$emit('dismiss-empty-notice')" />
   </div>
 </template>
 
@@ -97,6 +100,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { RecordingState } from '../../api/replay'
+import WBRecordingEmptyNotice from './WBRecordingEmptyNotice.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -104,6 +108,8 @@ const props = defineProps<{
   recordingState: RecordingState
   isLoading?: boolean
   recordingStartedAt?: string | null
+  /** Сервер не зберіг порожній запис — показати «Запис не збережено» під кнопкою. */
+  emptyNotice?: boolean
 }>()
 
 defineEmits<{
@@ -113,8 +119,10 @@ defineEmits<{
   pause: []
   /** paused → recording (same cycle, no Replay created) */
   resume: []
-  /** recording | paused → finalized (Replay created/finalized) */
+  /** recording | paused → finalized (Replay created/finalized; порожній — не створюється) */
   finalize: []
+  /** × на повідомленні «Запис не збережено» */
+  'dismiss-empty-notice': []
 }>()
 
 // ── Timer (running під час recording, freezed на pause) ──
@@ -172,6 +180,7 @@ const formattedDuration = computed(() => {
 
 <style scoped>
 .wb-recording-banner {
+  position: relative; /* якір для «Запис не збережено» */
   display: flex;
   align-items: center;
   gap: 8px;

@@ -193,10 +193,12 @@
           :recording-state="recordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
+          :empty-notice="showRecordingEmptyNotice"
           @start="handleStartRecording"
           @pause="handlePauseRecording"
           @resume="handleResumeRecording"
           @finalize="handleFinalizeRecording"
+          @dismiss-empty-notice="hideRecordingEmptyNotice"
         />
         <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
              самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
@@ -774,6 +776,22 @@ const isSessionActive = computed(
 const activeReplayId = ref<string | null>(null)
 const showRecordingDonePrompt = ref(false)
 let _recordingDoneTimer: number | null = null
+// Рішення власника 2026-10-07: порожній запис сервер не зберігає — під кнопкою
+// запису «Запис не збережено» замість віконця «Запис готовий!».
+const showRecordingEmptyNotice = ref(false)
+let _recordingEmptyTimer: number | null = null
+function hideRecordingEmptyNotice(): void {
+  showRecordingEmptyNotice.value = false
+  if (_recordingEmptyTimer) { clearTimeout(_recordingEmptyTimer); _recordingEmptyTimer = null }
+}
+function flashRecordingEmptyNotice(): void {
+  hideRecordingEmptyNotice()
+  showRecordingEmptyNotice.value = true
+  _recordingEmptyTimer = window.setTimeout(() => {
+    showRecordingEmptyNotice.value = false
+    _recordingEmptyTimer = null
+  }, 12000)
+}
 
 // На auth death — reset UI state.
 const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
@@ -850,6 +868,7 @@ async function handleStartRecording(): Promise<void> {
     activeReplayId.value = null
     showRecordingDonePrompt.value = false
     if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
+    hideRecordingEmptyNotice()
     console.info('[WBClassroomRoom] start-recording', { status: result.status, state: result.recording_state, sid })
   } catch (e) {
     console.error('[WBClassroomRoom] Failed to start recording:', e)
@@ -916,6 +935,7 @@ onBeforeUnmount(() => {
   finalizeBarrierCurrentSeq.value = null
   finalizeBarrierRetryAfterMs.value = 0
   _finalizeAttemptInFlight.value = false
+  hideRecordingEmptyNotice()
 })
 
 async function handleFinalizeRecording(): Promise<void> {
@@ -966,14 +986,20 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
       const result = await replayApi.finalizeWithBarrier(sid, flushed_last_seq)
       if (!_isFinalizeMounted.value) return
       finalizeBarrierState.value = 'closed'
-      recordingState.value = result.recording_state  // expect 'finalized'
+      recordingState.value = result.recording_state  // 'finalized'; порожній — стан до старту
       recordingStartedAt.value = null
-      activeReplayId.value = result.replay_id
-
-      if (activeReplayId.value) {
-        showRecordingDonePrompt.value = true
-        if (_recordingDoneTimer) clearTimeout(_recordingDoneTimer)
-        _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+      if (result.recording_empty) {
+        // Рішення власника 2026-10-07: між «Записати урок» і «Завершити запис» нічого
+        // не змінилось — сервер запису не створив. «Поділитися» — найновіший наявний.
+        activeReplayId.value = result.latest_replay_id ?? null
+        flashRecordingEmptyNotice()
+      } else {
+        activeReplayId.value = result.replay_id
+        if (activeReplayId.value) {
+          showRecordingDonePrompt.value = true
+          if (_recordingDoneTimer) clearTimeout(_recordingDoneTimer)
+          _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+        }
       }
       console.info('[WBClassroomRoom] finalize-recording', {
         state: result.recording_state, replay_id: result.replay_id, sid,
@@ -1858,6 +1884,8 @@ async function confirmEndSession(): Promise<void> {
     // Сповіщення переживає перехід: учитель читає його вже на головній.
     if (endLessonRecordingOutcome === 'saved') {
       notifySuccess(t('winterboard.classroom.endedRecordingSaved'), { timeout: 8000 })
+    } else if (endLessonRecordingOutcome === 'empty') {
+      notifyInfo(t('winterboard.classroom.endedRecordingEmpty'), { timeout: 8000 })
     } else if (endLessonRecordingOutcome === 'later') {
       notifyInfo(t('winterboard.classroom.endedRecordingLater'), { timeout: 8000 })
     }
@@ -1881,10 +1909,12 @@ async function finalizeRecordingBeforeEndLesson(sid: string): Promise<EndLessonR
       serverSeq: () => opsSync.serverSeq,
       finalizeWithBarrier: async (s, seq) => (await import('../api/replay')).finalizeWithBarrier(s, seq),
     })
-    if (r.outcome === 'saved') {
-      recordingState.value = r.result.recording_state  // expect 'finalized'
+    if (r.outcome === 'saved' || r.outcome === 'empty') {
+      recordingState.value = r.result.recording_state  // 'finalized'; порожній — стан до старту
       recordingStartedAt.value = null
-      activeReplayId.value = r.result.replay_id
+      activeReplayId.value = r.outcome === 'empty'
+        ? (r.result.latest_replay_id ?? null)
+        : r.result.replay_id
       console.info('[WBClassroomRoom] finalize-recording before end-session', {
         state: r.result.recording_state, replay_id: r.result.replay_id, sid,
       })

@@ -39,6 +39,20 @@ describe('closeRecordingBeforeEndLesson', () => {
     expect(r).toEqual({ outcome: 'later', error: boom })
   })
 
+  it('порожній запис сервер не зберіг (recording_empty) → «порожній», а не «запис — у Моїх записах»', async () => {
+    // Рішення власника 2026-10-07: «роби порожній запис не зберігати».
+    const EMPTY = {
+      status: 'discarded', recording_state: 'idle', replay_id: null,
+      recording_empty: true, latest_replay_id: null,
+    } as unknown as FinalizeRecordingResult
+    const r = await closeRecordingBeforeEndLesson('sess-1', {
+      flushAll: async () => {},
+      serverSeq: () => 5,
+      finalizeWithBarrier: async () => EMPTY,
+    })
+    expect(r).toEqual({ outcome: 'empty', result: EMPTY })
+  })
+
   it('finalize не вдався (бар’єр, мережа) → «згодом», одна спроба без повторів', async () => {
     const timeout = new Error('FINALIZE_BARRIER_TIMEOUT')
     const finalize = vi.fn(async () => { throw timeout })
@@ -76,16 +90,26 @@ describe('сторож обв’язки в WBClassroomRoom', () => {
   it('сповіщення про запис — після успішного endSession і до переходу на головну', () => {
     const endAt = body.indexOf('winterboardApi.endSession(sid)')
     const savedAt = body.indexOf("t('winterboard.classroom.endedRecordingSaved')")
+    const emptyAt = body.indexOf("t('winterboard.classroom.endedRecordingEmpty')")
     const laterAt = body.indexOf("t('winterboard.classroom.endedRecordingLater')")
     const pushAt = body.indexOf('router.push(dashboardPath.value)')
     expect(savedAt).toBeGreaterThan(endAt)
+    expect(emptyAt).toBeGreaterThan(endAt)
     expect(laterAt).toBeGreaterThan(endAt)
-    expect(pushAt).toBeGreaterThan(Math.max(savedAt, laterAt))
+    expect(pushAt).toBeGreaterThan(Math.max(savedAt, emptyAt, laterAt))
+  })
+
+  it('порожній запис — своє сповіщення, а не «запис — у Моїх записах»', () => {
+    expect(body).toMatch(
+      /endLessonRecordingOutcome === 'empty'\) \{\s*notifyInfo\(t\('winterboard\.classroom\.endedRecordingEmpty'\)/,
+    )
   })
 })
 
 describe('тексти Б-116/Б-117 є в усіх мовах', () => {
-  const KEYS = ['endedRecordingSaved', 'endedRecordingLater', 'lessonCompletedByTeacher', 'toHome']
+  const KEYS = [
+    'endedRecordingSaved', 'endedRecordingLater', 'endedRecordingEmpty', 'lessonCompletedByTeacher', 'toHome',
+  ]
   for (const loc of ['uk', 'en', 'ru']) {
     it(loc, () => {
       const json = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../../../i18n/locales/${loc}.json`), 'utf-8'))

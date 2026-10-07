@@ -25,6 +25,8 @@ export interface EndLessonRecordingDeps {
 
 export type EndLessonRecordingResult =
   | { outcome: 'saved'; result: FinalizeRecordingResult }
+  /** Порожній запис (жодної дії після «Записати урок») сервер не зберіг — рішення власника 2026-10-07. */
+  | { outcome: 'empty'; result: FinalizeRecordingResult }
   | { outcome: 'later'; error: unknown }
 
 /** Закрити запис перед «Завершити урок». Не кидає: невдачу повертає, щоб кімната сказала про неї. */
@@ -35,7 +37,8 @@ export async function closeRecordingBeforeEndLesson(
   try {
     await deps.flushAll()
     const result = await deps.finalizeWithBarrier(sessionId, deps.serverSeq())
-    return { outcome: 'saved', result }
+    // «Запис — у Моїх записах» про порожній запис було б неправдою.
+    return result.recording_empty ? { outcome: 'empty', result } : { outcome: 'saved', result }
   } catch (error) {
     return { outcome: 'later', error }
   }

@@ -150,10 +150,12 @@
           :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
+          :empty-notice="showRecordingEmptyNotice"
           @start="handleStartRecording"
           @pause="handlePauseRecording"
           @resume="handleResumeRecording"
           @finalize="handleFinalizeRecording"
+          @dismiss-empty-notice="hideRecordingEmptyNotice"
         />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
@@ -1474,6 +1476,22 @@ const isRecordingLoading = ref(false)
 const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
+// Рішення власника 2026-10-07: порожній запис сервер не зберігає — під кнопкою
+// запису «Запис не збережено» замість віконця «Запис готовий!».
+const showRecordingEmptyNotice = ref(false)
+let _recordingEmptyTimer: number | null = null
+function hideRecordingEmptyNotice(): void {
+  showRecordingEmptyNotice.value = false
+  if (_recordingEmptyTimer) { clearTimeout(_recordingEmptyTimer); _recordingEmptyTimer = null }
+}
+function flashRecordingEmptyNotice(): void {
+  hideRecordingEmptyNotice()
+  showRecordingEmptyNotice.value = true
+  _recordingEmptyTimer = window.setTimeout(() => {
+    showRecordingEmptyNotice.value = false
+    _recordingEmptyTimer = null
+  }, 12000)
+}
 
 // Solo recording lifecycle — 4 states (UX semantics cleanup):
 //   idle      — нічого не записується, можна start
@@ -1573,6 +1591,7 @@ async function handleStartRecording(): Promise<void> {
     activeReplayId.value = null
     showRecordingDonePrompt.value = false
     if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
+    hideRecordingEmptyNotice()
     // Time-based pipeline health check видалений: false-positive коли юзер
     // не малює у перші 2с після REC. Behavior-based warnings лишаються:
     // (1) handleFinalizeRecording catch — реальна помилка stop API;
@@ -1714,10 +1733,18 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
       isManualRecording.value = false
       recordingStartedAt.value = null
       isReplayFrozen.value = result.is_replay_frozen
-      activeReplayId.value = result.replay_id ?? null
       recordingBrokenWarning.value = false
-      showRecordingDonePrompt.value = true
-      _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+      if (result.recording_empty) {
+        // Рішення власника 2026-10-07: між «Записати урок» і «Завершити запис» нічого
+        // не змінилось — сервер запису не створив, дошка в стані до старту. Віконця
+        // «Запис готовий!» немає; «Поділитися» — найновіший наявний запис дошки.
+        activeReplayId.value = result.latest_replay_id ?? null
+        flashRecordingEmptyNotice()
+      } else {
+        activeReplayId.value = result.replay_id ?? null
+        showRecordingDonePrompt.value = true
+        _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+      }
     } catch (err: unknown) {
       if (!_isFinalizeMounted.value) return
       if (err instanceof replayApi.FinalizeBarrierTimeoutError) {
@@ -4668,6 +4695,7 @@ onBeforeUnmount(async () => {
     document.removeEventListener('visibilitychange', _handleLocalVisibility)
   }
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
+  hideRecordingEmptyNotice()
   _unregisterRecordingAuthDeath()
   // INV I6: Stop audio on unmount
   audioManager.stop()

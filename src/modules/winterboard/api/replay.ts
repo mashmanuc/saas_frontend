@@ -292,12 +292,19 @@ export async function resumeRecording(
  * which supplies `flushed_last_seq` to gate against apply-pipeline lag.
  */
 export interface FinalizeRecordingResult {
-  status: 'finalized'
+  /** 'discarded' — порожній запис (жодної дії між стартом і завершенням) не збережено. */
+  status: 'finalized' | 'discarded'
+  /** Після порожнього запису — стан дошки до старту: 'idle' або 'finalized' попереднього запису. */
   recording_state: RecordingState
   recording_stopped_at: string | null
-  recording_stopped_seq: number
+  recording_stopped_seq: number | null
   is_replay_frozen: boolean
-  replay_id: string
+  /** null — Replay не створено (порожній запис). */
+  replay_id: string | null
+  /** Рішення власника 2026-10-07: порожній запис не зберігається. Старий сервер поля не має. */
+  recording_empty?: boolean
+  /** Найновіший наявний запис дошки — для «Поділитися» (null, якщо записів немає). */
+  latest_replay_id?: string | null
 }
 
 export async function finalizeRecording(
