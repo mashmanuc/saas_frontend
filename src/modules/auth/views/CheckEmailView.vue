@@ -25,7 +25,7 @@
         <span v-else>{{ $t('auth.checkEmail.resend') }}</span>
       </Button>
 
-      <RouterLink to="/auth/login" class="block text-center text-sm hover:underline" style="color: var(--accent);">
+      <RouterLink :to="loginLink" class="block text-center text-sm hover:underline" style="color: var(--accent);">
         {{ $t('auth.checkEmail.backToLogin') }}
       </RouterLink>
     </div>
@@ -61,6 +61,16 @@ const { t } = useI18n()
 const route = useRoute()
 const email = computed(() => (typeof route.query?.email === 'string' ? route.query.email : ''))
 const accountType = computed(() => (typeof route.query?.account_type === 'string' ? route.query.account_type : 'student'))
+
+// Б-154: куди людина йшла, коли почала реєстрацію (?redirect передає RegisterTutorView). Лише
+// внутрішні шляхи — захист від open-redirect, як у RegisterTutorView. Без нього — як і було: для
+// тьютора роль-дім `/tutor` (легасі `/tutor/profile` лише редіректить туди ж).
+const returnTo = computed(() => {
+  const target = route.query?.redirect
+  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') ? target : ''
+})
+const loginLink = computed(() =>
+  returnTo.value ? `/auth/login?redirect=${encodeURIComponent(returnTo.value)}` : '/auth/login')
 
 const loading = ref(false)
 const error = ref('')
@@ -114,7 +124,7 @@ async function resend() {
   loading.value = true
   try {
     const origin = getCanonicalOrigin()
-    const redirect = accountType.value === 'tutor' ? '/tutor/profile' : ''
+    const redirect = returnTo.value || (accountType.value === 'tutor' ? '/tutor' : '')
     const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
 

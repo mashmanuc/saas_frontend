@@ -249,7 +249,9 @@ async function onSubmit() {
     await auth.register({ ...rest, ...splitFullName(full_name), verify_url })
     router.push({
       name: 'auth-check-email',
-      query: { email: form.email, account_type: form.account_type },
+      // Б-154: адреса повернення — і на «Перевірте email»: звідти «Надіслати повторно» й «Увійти».
+      // Без неї повторний лист вів у кабінет, а не туди, звідки людина прийшла реєструватися.
+      query: { email: form.email, account_type: form.account_type, redirect },
     })
   } catch (error) {
     // помилка вже міститься у auth.error
