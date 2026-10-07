@@ -1650,6 +1650,59 @@ function flatten(v, cap) {
   return String(v ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, cap)
 }
 
+/** Стеля повного тексту виділеного: BE друкує його в тому самому бюджеті опису дошки (3000 симв.). */
+export const SELECTED_TEXT_MAX = 1500
+
+/**
+ * «Ця картка» (власник 2026-10-07: «роби виділене без зайвих токенів»). Виділений учителем об'єкт поточної
+ * сторінки — рівно один; без виділення — задача, розгорнута «Задача на екран». Кілька виділених —
+ * неоднозначно: позначки немає, як і було (BE тоді бере найновіший). Виділення нічого не запускає —
+ * воно лише позначає об'єкт у описі дошки, який іде разом із питанням учителя.
+ */
+export function selectedAssetId(store) {
+  const page = (store?.pages || [])[store?.currentPageIndex ?? 0]
+  const onPage = new Set(((page && page.assets) || []).map((x) => x && x.id).filter(Boolean))
+  const picked = (store?.selectedIds || []).filter((id) => onPage.has(id))
+  if (picked.length === 1) return picked[0]
+  if (picked.length === 0 && store?.expandedAssetId && onPage.has(store.expandedAssetId)) return store.expandedAssetId
+  return null
+}
+
+/**
+ * Повний текст виділеного об'єкта — з даних, які вже є на дошці (не розпізнавання). Замість звичайних
+ * 400 символів: учитель питає саме про нього, тож модель має бачити все, а не початок.
+ * Картинка — лише підпис: самого зображення текстова модель не бачить (зір — окремим кроком).
+ */
+export function selectedFullText(a) {
+  const d = a?.data || {}
+  const date = (x) => (x && x.year != null ? String(x.year) : '')
+  let text = ''
+  if (a?.type === 'theory_card') {
+    text = [d.title, d.body].filter(Boolean).join('. ')
+  } else if (a?.type === 'history_card') {
+    const facts = [...(Array.isArray(d.primary) ? d.primary : []), ...(Array.isArray(d.secondary) ? d.secondary : [])]
+      .map((f) => [f?.label, (Array.isArray(f?.values) ? f.values : []).map((v) => v?.label).filter(Boolean).join(', ')])
+      .filter(([label, values]) => label && values)
+      .map(([label, values]) => `${label}: ${values}`)
+    text = [d.title, d.lead, facts.join('; ')].filter(Boolean).join('. ')
+  } else if (a?.type === 'discussion_question' || a?.type === 'nmt_task') {
+    text = d.question || ''
+  } else if (a?.type === 'formula_card') {
+    text = [d.title, d.formula].filter(Boolean).join(': ')
+  } else if (a?.type === 'timeline_card') {
+    const evs = (Array.isArray(d.events) ? d.events : [])
+      .map((e) => [date(e?.date_start), e?.label, e?.description].filter(Boolean).join(' — '))
+    text = [d.title, evs.join('; ')].filter(Boolean).join('. ')
+  } else if (a?.type === 'map_card') {
+    const ms = (Array.isArray(d.markers) ? d.markers : [])
+      .map((m) => [m?.label, m?.date_label, m?.description].filter(Boolean).join(' — '))
+    text = [d.title, ms.join('; ')].filter(Boolean).join('. ')
+  } else if (a?.type === 'image') {
+    text = d.caption || d.title || ''
+  }
+  return flatten(text, SELECTED_TEXT_MAX)
+}
+
 /**
  * «Інтегралик знає сцену» (власник 2026-10-06): матеріал сторінки — окремими полями, як `answer` у
  * задачах НМТ, щоб на «дай підказку» чи «поясни простіше» модель відповідала з нього, з цитатою.
@@ -1743,6 +1796,8 @@ export async function buildBoardSummary() {
   // ⚠️ Read-only спостереження: сервер за ним лише ЧИТАЄ свою мапу прив'язок.
   // Невідомий або порожній id → сторінка нейтральна. Нічого не пишемо.
   const currentPageId = pages[store.currentPageIndex ?? 0]?.id ?? null
+  // Виділене вчителем — «ця картка» для Інтегралика (позначка + повний текст, бюджет той самий).
+  const selectedId = selectedAssetId(store)
   const items = []
   pages.forEach((page, idx) => {
     const p = idx + 1
@@ -1777,9 +1832,12 @@ export async function buildBoardSummary() {
         ? { text: String((a.data || {}).body || '').replace(/\s+/g, ' ').trim().slice(0, 400) }
         : {}
       const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : { ...cardText, ...sceneExtras(a) }
+      const fullText = a.id === selectedId ? selectedFullText(a) : ''
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
-                   ...extras, ...materialLang(a.data) })
+                   ...extras, ...materialLang(a.data),
+                   ...(a.id === selectedId ? { selected: true } : {}),
+                   ...(fullText ? { full_text: fullText } : {}) })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
