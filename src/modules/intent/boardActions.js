@@ -1654,6 +1654,18 @@ function flatten(v, cap) {
 export const SELECTED_TEXT_MAX = 1500
 
 /**
+ * Усі цитати-опори джерел виділеної картки, а не дві перші (власник 2026-10-07: «цитати-джерела теж»).
+ * Живий випадок з проду: «розкажи тут детальніше» про «Чому Литві знадобився союзник» — деталі (Чернігово-
+ * Сіверщина, Смоленськ, Лівонська війна) лежали в 3-й і 4-й цитатах, модель їх не бачила й добудувала від себе.
+ */
+export function selectedQuotes(a) {
+  if (a?.type !== 'theory_card' && a?.type !== 'history_card') return ''
+  const flat = (v) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 400)
+  const sources = Array.isArray(a.data?.sources) ? a.data.sources : []
+  return [...new Set(sources.map((s) => flat(s?.evidence)).filter(Boolean))].join(' … ').slice(0, 1200)
+}
+
+/**
  * «Ця картка» (власник 2026-10-07: «роби виділене без зайвих токенів»). Виділений учителем об'єкт поточної
  * сторінки — рівно один; без виділення — задача, розгорнута «Задача на екран». Кілька виділених —
  * неоднозначно: позначки немає, як і було (BE тоді бере найновіший). Виділення нічого не запускає —
@@ -1856,12 +1868,14 @@ export async function buildBoardSummary() {
       const extras = a.type === 'nmt_task' ? nmtTaskExtras(a.data || {}) : { ...cardText, ...sceneExtras(a) }
       const fullText = a.id === selectedId ? selectedFullText(a) : ''
       const taskMore = a.id === selectedId && a.type === 'nmt_task' ? selectedTaskExtras(a.data || {}) : {}
+      const allQuotes = a.id === selectedId ? selectedQuotes(a) : ''
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
                    ...extras, ...materialLang(a.data),
                    ...(a.id === selectedId ? { selected: true } : {}),
                    ...(fullText ? { full_text: fullText } : {}),
-                   ...taskMore })
+                   ...taskMore,
+                   ...(allQuotes ? { all_quotes: allQuotes } : {}) })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
