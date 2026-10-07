@@ -976,6 +976,7 @@ import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaSho
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
+import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
 import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, provideCardZoom } from '../../composables/cardZoom'
@@ -3240,6 +3241,28 @@ function getPointerPosition(): WBPoint | null {
     t: Date.now(),
     pressure,
   }
+}
+
+// Б-166: від'єднання невидимої картинки під правим кліком (onMounted → onUnmounted).
+let detachImageContextMenuProxy: (() => void) | null = null
+
+/**
+ * Завантажений елемент картинки, яку дошка малює під точкою події (верхня за шарами), або
+ * null. Точка — тим самим шляхом, що й `getPointerPosition`: Konva → мінус зсув сцени → / zoom.
+ */
+function imageElementUnderEvent(e: MouseEvent): HTMLImageElement | null {
+  const stage = stageRef.value?.getStage()
+  if (!stage) return null
+  stage.setPointersPositions(e)
+  const pos = stage.getPointerPosition()
+  if (!pos) return null
+  const asset = topImageAssetAt(
+    konvaAssets.value,
+    (pos.x - stage.x()) / props.zoom,
+    (pos.y - stage.y()) / props.zoom,
+  )
+  if (!asset) return null
+  return loadedImages.get(normalizeAssetUrl(assetEffectiveSrc(asset))) ?? null
 }
 
 /** Convert perfect-freehand output to SVG path */
@@ -5636,6 +5659,10 @@ onMounted(async () => {
     // Store refs for cleanup
     ;(container as unknown as Record<string, unknown>).__wbPointerCapture = capturePointer
 
+    // Б-166: «Копіювати зображення» браузера по картинці бере саму картинку, а не прозорий
+    // верхній шар Konva (board/imageContextMenuProxy.ts).
+    detachImageContextMenuProxy = attachImageContextMenuProxy(container, imageElementUnderEvent)
+
     // PR4 (2026-05-04): wheel listener вручну з {passive: false} —
     // дозволяє conditional preventDefault у handleWheel (тільки при ctrl/meta).
     // Без manual options Vue `@wheel.prevent` створював non-passive listener
@@ -5724,6 +5751,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  detachImageContextMenuProxy?.()
+  detachImageContextMenuProxy = null
   // Remote laser cleanup
   window.removeEventListener('wb:remote-laser', onRemoteLaser)
   // BUG-3 FIX: Remove global mouseup listeners
