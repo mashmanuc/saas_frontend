@@ -1654,6 +1654,17 @@ function flatten(v, cap) {
 export const SELECTED_TEXT_MAX = 1500
 
 /**
+ * Адреса виділеної картинки для зору Інтегралика (власник 2026-10-07: «роби всі три кроки»). Лише https:
+ * blob: (ще вантажиться) і data: (локальний рендер) модель забрати не може. Яким хостам довіряти, вирішує
+ * BE (`vision.allowed_image_url`) — браузер тут лише не шле зайвого.
+ */
+export function selectedImageUrl(a) {
+  if (a?.type !== 'image') return ''
+  const src = String(a.src || '').trim()
+  return /^https:\/\//.test(src) && src.length <= 500 ? src : ''
+}
+
+/**
  * Усі цитати-опори джерел виділеної картки, а не дві перші (власник 2026-10-07: «цитати-джерела теж»).
  * Живий випадок з проду: «розкажи тут детальніше» про «Чому Литві знадобився союзник» — деталі (Чернігово-
  * Сіверщина, Смоленськ, Лівонська війна) лежали в 3-й і 4-й цитатах, модель їх не бачила й добудувала від себе.
@@ -1683,7 +1694,7 @@ export function selectedAssetId(store) {
 /**
  * Повний текст виділеного об'єкта — з даних, які вже є на дошці (не розпізнавання). Замість звичайних
  * 400 символів: учитель питає саме про нього, тож модель має бачити все, а не початок.
- * Картинка — лише підпис: самого зображення текстова модель не бачить (зір — окремим кроком).
+ * Картинка — лише підпис; що на самому зображенні, читає зір на BE за адресою (`selectedImageUrl`).
  */
 export function selectedFullText(a) {
   const d = a?.data || {}
@@ -1869,13 +1880,15 @@ export async function buildBoardSummary() {
       const fullText = a.id === selectedId ? selectedFullText(a) : ''
       const taskMore = a.id === selectedId && a.type === 'nmt_task' ? selectedTaskExtras(a.data || {}) : {}
       const allQuotes = a.id === selectedId ? selectedQuotes(a) : ''
+      const imageUrl = a.id === selectedId ? selectedImageUrl(a) : ''
       items.push({ page: p, kind, label, id: a.id,
                    ...(Object.keys(params).length ? { params } : {}),
                    ...extras, ...materialLang(a.data),
                    ...(a.id === selectedId ? { selected: true } : {}),
                    ...(fullText ? { full_text: fullText } : {}),
                    ...taskMore,
-                   ...(allQuotes ? { all_quotes: allQuotes } : {}) })
+                   ...(allQuotes ? { all_quotes: allQuotes } : {}),
+                   ...(imageUrl ? { image_url: imageUrl } : {}) })
     }
     for (const t of page.testObjects || []) {
       // Умова задачі (label, LaTeX/HTML → плоский текст) + відповідь: Інтегралик
