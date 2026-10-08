@@ -94,6 +94,11 @@ export interface GeoEngineApi {
   canConstruct(objects: Objs, cmd: GeoCmd): { ok: true } | { ok: false; reason: string }
   /** Текстове значення об'єкта для алгебра-рядка (опційно). */
   getValue(objects: Objs, id: string): string
+  /** Копія об'єктів разом із їхніми залежностями зі зсувом вільних точок; нові id — з «′». */
+  cloneClosure(objects: Objs, ids: string[], offset?: { dx: number; dy: number }): {
+    entries: Array<[string, GeoObject]>
+    map: Record<string, string>
+  }
   [k: string]: unknown
 }
 

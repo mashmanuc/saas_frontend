@@ -16,7 +16,7 @@
   <div
     ref="rootEl"
     class="geomash-card"
-    :class="{ 'is-selected': isSelected, 'is-expanded': isExpanded }"
+    :class="{ 'is-selected': isSelected, 'is-expanded': isExpanded, 'is-ink-through': inkThrough }"
     :data-testid="`geomash-${asset.id}`"
   >
     <header class="gm-header">
@@ -64,6 +64,7 @@
         <label class="gm-ctx__row">Колір
           <input type="color" :value="ctxMenuColor" @input="ctxSetColor" />
         </label>
+        <button type="button" class="gm-ctx__copy" data-testid="geomash-ctx-copy" @click="ctxCopy">Копіювати</button>
         <button type="button" class="gm-ctx__del" @click="ctxDelete">{{ t('winterboard.widget.delete') }}</button>
       </div>
     </div>
@@ -82,6 +83,9 @@ import { geomashToolState, clearGeomashPicks, resetGeomashTool, enterSelectMode 
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import { topmostForeignOverlayAssetId } from '../../../utils/overlayTopHit'
+import {
+  DRAG_FINISH_PX, duplicateObjects, geomashHint, lineEndpoints, nextRoleTakesPoint, snapDelta, translateLine,
+} from '../../../board/geomashGestures'
 
 const { t } = useI18n()
 
@@ -201,34 +205,18 @@ const stageCursor = computed(() => {
   if (geomashToolState.activeEntry) return hoverId.value ? 'pointer' : 'crosshair'
   if (geomashToolState.selectMode) {
     if (dragging.value) return 'grabbing'
-    if (hoverId.value) return objects.get(hoverId.value)?.type === 'point' ? 'grab' : 'pointer'
+    if (hoverId.value) {
+      const draggable = objects.get(hoverId.value)?.type === 'point' || !!lineEndpoints(objects, hoverId.value)
+      return draggable ? 'grab' : 'pointer'
+    }
     return 'default'
   }
   return 'default'
 })
 
-const toolHint = computed<string>(() => {
-  const ts = geomashToolState
-  const e = ts.activeEntry
-  if (!e) return ts.selectMode
-    ? (ts.selectedGeoId ? 'Обрано · тягніть точку щоб посунути' : 'Клікніть об\'єкт щоб виділити')
-    : ''
-  const multi = e.inputs.find((i) => i.multi)
-  if (multi) return `Клікайте точки (${geomashToolState.poly.length}) · подвійний клік — завершити`
-  if (e.inputs.length === 0) return e.op === 'point' ? 'Клікніть — нова точка' : e.op === 'slider' ? 'Клікніть — повзунок' : ''
-  const next = e.inputs.filter((i) => !i.multi).find((i) => !geomashToolState.picks[i.role])
-  if (!next) return 'Готово'
-  const acc = next.accepts
-  const hasPt = acc.includes('point')
-  const hasLine = acc.some((t) => ['line', 'segment', 'ray', 'vector', 'dline'].includes(t))
-  const hasCirc = acc.some((t) => ['circle', 'circle3'].includes(t))
-  const target = hasPt ? 'точку (або порожнє місце)'
-    : hasLine && hasCirc ? 'лінію або коло'
-    : hasCirc ? 'коло' : hasLine ? 'пряму/відрізок' : 'об\'єкт'
-  if (hasPt) return `Клікніть ${target}`
-  const nth = Object.keys(geomashToolState.picks).length ? 'наступну' : 'першу'
-  return `Клікніть ${nth} ${target}`
-})
+// Б-169: після першої точки підказка каже, що далі («Клікніть кінець»); Б-168: у виборі — про копію.
+const toolHint = computed<string>(() =>
+  geomashHint(geomashToolState, !!lineEndpoints(objects, geomashToolState.selectedGeoId)))
 
 function keyOfEntry(e: { labelKey: string }): string { return e.labelKey.split('.').pop() || '' }
 
@@ -352,6 +340,134 @@ function onDragUp() {
   dragging.value = false
 }
 
+/* ── Б-168: перетяг лінії цілком (вектор/відрізок/промінь/пряма з вільними кінцями) ── */
+// Той самий batching, що в точки: локальний перерахунок на ходу, ОДИН asset_update на mouseup.
+let _lineDrag: { ends: [string, string]; start: Record<string, { wx: number; wy: number }>; wx: number; wy: number } | null = null
+let _lineDragMap: Map<string, GeoObject> | null = null
+function gridStep(): number {
+  const sc = currentView().sc
+  return sc >= 100 ? 0.5 : sc >= 30 ? 1 : sc >= 12 ? 2 : 5
+}
+function startLineDrag(ends: [string, string], at: { wx: number; wy: number }) {
+  const start: Record<string, { wx: number; wy: number }> = {}
+  for (const id of ends) {
+    const p = objects.get(id)
+    start[id] = { wx: p?.wx as number, wy: p?.wy as number }
+  }
+  _lineDrag = { ends, start, wx: at.wx, wy: at.wy }
+  _lineDragMap = null
+  dragging.value = true
+  window.addEventListener('pointermove', onLineDragMove)
+  window.addEventListener('pointerup', onLineDragUp)
+}
+function onLineDragMove(ev: PointerEvent) {
+  const eng = window.GeoEngine
+  if (!_lineDrag || !eng) return
+  const { wx, wy } = worldFromEvent(ev)
+  const st = gridStep()
+  const next = translateLine(eng, curObjs(), curScene().cs, _lineDrag.ends, _lineDrag.start,
+    snapDelta(wx - _lineDrag.wx, st), snapDelta(wy - _lineDrag.wy, st))
+  if (!next) return
+  _lineDragMap = next
+  objects = next
+  redraw()
+}
+function onLineDragUp() {
+  window.removeEventListener('pointermove', onLineDragMove)
+  window.removeEventListener('pointerup', onLineDragUp)
+  if (_lineDragMap) emitObjects(_lineDragMap) // ОДИН asset_update на mouseup
+  _lineDrag = null
+  _lineDragMap = null
+  dragging.value = false
+}
+
+/* ── Б-168: копія виділеного об'єкта разом з його точками (поруч, нові імена з «′») ── */
+const _copyCount = new Map<string, number>()
+function duplicateGeo(ids: string[]): string | null {
+  const eng = window.GeoEngine
+  if (!eng || !ids.length) return null
+  const key = ids.join(',')
+  const n = (_copyCount.get(key) ?? 0) + 1 // кожна наступна копія — далі, щоб не лягали одна на одну
+  const res = duplicateObjects(eng, curObjs(), ids, n)
+  if (!res) return null
+  _copyCount.set(key, n)
+  emitObjects(res.objects) // ОДИН asset_update
+  if (res.firstId) { geomashToolState.selectedGeoId = res.firstId; redraw() }
+  return res.firstId
+}
+
+/* ── Б-169: протягування від точки до кінця добудовує інструмент ── */
+// Перший дотик заповнює роль (як і був); якщо перо далі пройшло > DRAG_FINISH_PX і відпущено на
+// полотні — точка відпускання заповнює НАСТУПНУ роль тим самим шляхом, що другий дотик.
+// Звичайний дотик без руху — нічого нового: чекаємо другий дотик, як і раніше.
+let _finish: { pointerId: number; x: number; y: number; moved: boolean } | null = null
+let _finishRaf = 0
+let _finishPreview: Map<string, GeoObject> | null = null
+function armDragFinish(ev: PointerEvent) {
+  _finish = { pointerId: ev.pointerId, x: ev.clientX, y: ev.clientY, moved: false }
+  window.addEventListener('pointermove', onFinishMove)
+  window.addEventListener('pointerup', onFinishUp)
+  window.addEventListener('pointercancel', disarmDragFinish)
+}
+function disarmDragFinish() {
+  window.removeEventListener('pointermove', onFinishMove)
+  window.removeEventListener('pointerup', onFinishUp)
+  window.removeEventListener('pointercancel', disarmDragFinish)
+  if (_finishRaf) { cancelAnimationFrame(_finishRaf); _finishRaf = 0 }
+  _finish = null
+  if (_finishPreview) { _finishPreview = null; redraw() }
+}
+function onFinishMove(ev: PointerEvent) {
+  if (!_finish || ev.pointerId !== _finish.pointerId) return
+  if (!_finish.moved && Math.hypot(ev.clientX - _finish.x, ev.clientY - _finish.y) < DRAG_FINISH_PX) return
+  _finish.moved = true
+  if (_finishRaf) return
+  const { clientX, clientY } = ev
+  _finishRaf = requestAnimationFrame(() => {
+    _finishRaf = 0
+    _finishPreview = previewNextRoleAt(clientX, clientY)
+    redraw()
+  })
+}
+function onFinishUp(ev: PointerEvent) {
+  const f = _finish
+  if (!f || ev.pointerId !== f.pointerId) return
+  disarmDragFinish()
+  const entry = geomashToolState.activeEntry
+  if (!f.moved || !entry || !insideStage(ev.clientX, ev.clientY)) return
+  const { wx, wy, sx, sy } = worldFromEvent(ev)
+  fillNextRole(entry, sx, sy, wx, wy)
+}
+function insideStage(x: number, y: number): boolean {
+  const r = stageEl.value?.getBoundingClientRect()
+  return !!r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
+}
+/** Попередній вигляд під пером: тимчасова точка + об'єкт інструмента, нічого не пишемо. */
+function previewNextRoleAt(clientX: number, clientY: number): Map<string, GeoObject> | null {
+  const eng = window.GeoEngine
+  const entry = geomashToolState.activeEntry
+  if (!eng || !entry) return null
+  const { wx, wy } = worldFromEvent({ clientX, clientY } as PointerEvent)
+  const s = snapAt(wx, wy)
+  let m = curObjs()
+  let pid = s.snapId
+  if (!pid) {
+    const r = eng.construct(m, curScene().cs, { op: 'point', wx: s.wx, wy: s.wy } as GeoCmd)
+    if ('error' in r) return null
+    m = r.objects; pid = r.created[0] ?? null
+  }
+  const next = entry.inputs.find((i) => !i.multi && !geomashToolState.picks[i.role])
+  if (!pid || !next) return null
+  const picks = { ...geomashToolState.picks, [next.role]: pid }
+  const filled = entry.inputs.filter((i) => !i.multi).every((i) => picks[i.role])
+  if (!filled) return m
+  const cmd: Record<string, unknown> = { op: entry.op, ...picks }
+  if (keyOfEntry(entry) === 'CIRCLER') cmd.r = geomashToolState.extra.r
+  if (entry.op === 'polygon-reg') cmd.n = geomashToolState.extra.n
+  const r = eng.construct(m, curScene().cs, cmd as GeoCmd)
+  return 'error' in r ? m : r.objects
+}
+
 /** Hover-підсвітка об'єкта під курсором (миша/перо; на тачі нема hover).
  *  rAF-тротл: hitTest+redraw максимум раз на кадр (сцена може мати десятки об'єктів). */
 let _hoverRaf = 0
@@ -388,6 +504,13 @@ function onStageContextMenu(ev: MouseEvent) {
   ctxMenu.value = { x: ev.clientX - (rect?.left ?? 0), y: ev.clientY - (rect?.top ?? 0), id: hit }
   redraw()
 }
+/** Б-168: «Копіювати» в меню правої кнопки — копія з'являється поруч і стає виділеною. */
+function ctxCopy() {
+  if (!ctxMenu.value) return
+  const id = ctxMenu.value.id
+  ctxMenu.value = null
+  duplicateGeo([id])
+}
 function ctxDelete() {
   if (!ctxMenu.value) return
   const id = ctxMenu.value.id
@@ -421,7 +544,10 @@ function onStagePointerDown(ev: PointerEvent) {
     const hit = hitTestAt(p.sx, p.sy)
     geomashToolState.selectedGeoId = hit
     redraw()
-    if (hit && typeOfId(hit) === 'point') startPointDrag(hit)
+    if (hit && typeOfId(hit) === 'point') { startPointDrag(hit); return }
+    // Б-168: вектор/відрізок/промінь/пряму з вільними кінцями тягнемо за саму лінію — цілком
+    const ends = lineEndpoints(objects, hit)
+    if (ends && ev.button === 0) startLineDrag(ends, p) // права кнопка / кнопка пера — лише меню
     return
   }
 
@@ -451,24 +577,39 @@ function onStagePointerDown(ev: PointerEvent) {
     return
   }
   // об'єктні інструменти — заповнюємо ролі по порядку (auto-create точок)
+  const filledPoint = fillNextRole(entry, sx, sy, wx, wy)
+  // Б-169: точку взято, інструмент чекає ще точку — протягування пером її заповнить
+  if (filledPoint && geomashToolState.activeEntry === entry && nextRoleTakesPoint(entry, geomashToolState.picks)) {
+    armDragFinish(ev)
+  }
+}
+
+/**
+ * Заповнити наступну роль інструмента в точці полотна: дотик АБО відпускання протягування
+ * (Б-169) — один шлях. Повертає true, якщо роль прийняла ТОЧКУ (після цього можна тягнути далі).
+ */
+function fillNextRole(entry: GeoToolSpecEntry, sx: number, sy: number, wx: number, wy: number): boolean {
+  const s = snapAt(wx, wy)
   const nextInput = entry.inputs.find((i) => !i.multi && !geomashToolState.picks[i.role])
-  if (!nextInput) return
+  if (!nextInput) return false
   const hit = hitTestAt(sx, sy)
   const hitType = typeOfId(hit)
   let assignId: string | null
   if (hit && hitType && nextInput.accepts.includes(hitType)) assignId = hit               // клікнули валідний об'єкт
   else if (nextInput.accepts.includes('point')) assignId = resolvePointAt(sx, sy, wx, wy)  // авто-точка
-  else return                                                                              // роль потребує лінію/коло — промах
-  if (!assignId) return
+  else return false                                                                        // роль потребує лінію/коло — промах
+  if (!assignId) return false
   geomashToolState.picks[nextInput.role] = assignId
   geomashToolState.pickCoords[nextInput.role] = { wx: s.wx, wy: s.wy }
   if (objectRolesFilled(entry)) {
     const key = keyOfEntry(entry)
-    if (key === 'CIRCLER' && !(geomashToolState.extra.r > 0)) return
-    if (entry.op === 'polygon-reg' && !(geomashToolState.extra.n >= 3)) return
+    if (key === 'CIRCLER' && !(geomashToolState.extra.r > 0)) return false
+    if (entry.op === 'polygon-reg' && !(geomashToolState.extra.n >= 3)) return false
     bridgeConstruct(buildCmdFromState(entry, { wx: s.wx, wy: s.wy }))
     clearGeomashPicks()
+    return false
   }
+  return typeOfId(assignId) === 'point'
 }
 function onStageDblClick(ev: MouseEvent) {
   const entry = geomashToolState.activeEntry
@@ -499,6 +640,22 @@ function currentView(): GeoView {
   return { ox: w / 2, oy: h / 2, sc, w, h, dpr: 1 }
 }
 
+/*
+ * Б-170: коли на дошці вибрано не стрілку (перо, маркер, гумка…), картка прозора — як картка
+ * теорії (`is-readonly`): чорнило дошки лежить ПІД карткою, і з білим фоном його не було видно.
+ * Рушій заливає фон кольором теми без очищення, тож прозорий колір лишав би сліди кадрів —
+ * перед малюванням полотно чистимо самі.
+ */
+const OPAQUE_BG = '#ffffff'
+const inkThrough = computed(() => props.interactive === false)
+let _bgTransparent = false
+function applyInkThrough() {
+  if (!rr || inkThrough.value === _bgTransparent) return
+  rr.setTheme({ bg: inkThrough.value ? 'rgba(0,0,0,0)' : OPAQUE_BG })
+  _bgTransparent = inkThrough.value
+}
+watch(inkThrough, () => { applyInkThrough(); redraw() })
+
 function redraw() {
   if (!rr || !canvasEl.value) return
   const ts = geomashToolState
@@ -507,8 +664,14 @@ function redraw() {
   // ⚠️ рендерер очікує Set (paintObj: ui.selection.has(id)), НЕ масив
   const selection = sel && ts.selectedGeoId ? new Set([ts.selectedGeoId]) : undefined
   const hover = sel ? (hoverId.value ?? undefined) : undefined
+  if (_bgTransparent) {
+    const c = canvasEl.value.getContext('2d')
+    if (c) { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, canvasEl.value.width, canvasEl.value.height) }
+  }
+  // Б-169: під час протягування малюємо попередній вигляд (нічого не записано)
+  const shown = _finishPreview ?? objects
   try {
-    rr.draw({ objects }, currentView(), { showGrid: true, gridMode: 'lines', pendingIds, selection, hover })
+    rr.draw({ objects: shown }, currentView(), { showGrid: true, gridMode: 'lines', pendingIds, selection, hover })
   } catch (err) {
     console.warn('[geomash] draw failed', err)
   }
@@ -536,6 +699,7 @@ async function mount() {
   objects = engine.deserialize(scene.value as never).objects
   try { _bridge.toolSpec = engine.toolSpec() } catch { /* старий движок без конструктора */ }
   rr = make(canvasEl.value, { engine })
+  applyInkThrough()
   requestAnimationFrame(() => { sizeCanvas(); requestAnimationFrame(sizeCanvas) })
   if (typeof ResizeObserver !== 'undefined' && stageEl.value) {
     ro = new ResizeObserver(() => sizeCanvas())
@@ -574,7 +738,39 @@ watch(() => [geomashToolState.selectedGeoId, geomashToolState.poly.length, JSON.
 // Розгортання на цілу дошку — переміряти canvas після зміни розміру контейнера
 watch(() => props.isExpanded, () => { requestAnimationFrame(() => { sizeCanvas(); requestAnimationFrame(sizeCanvas) }) })
 
-if (typeof window !== 'undefined') window.addEventListener('keydown', onEsc)
+/* ── Б-168: Ctrl+C / Ctrl+V для об'єкта, виділеного ВСЕРЕДИНІ картки ── */
+// Фаза захоплення на window — раніше за обробник дошки (document, спливання), який інакше
+// скопіював би всю картку. Усередині нічого не виділено — копіює дошка, як і було. Ctrl+V
+// вставляє лише в ту саму картку (з іншої — нічого не перехоплюємо).
+let _geoClipboard: string[] | null = null
+function isEditableKeyTarget(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
+}
+function onGeoCopyPaste(e: KeyboardEvent) {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.repeat) return
+  if (e.code !== 'KeyC' && e.code !== 'KeyV') return
+  if (!props.isSelected || props.asset.locked || props.interactive === false) return
+  if (isEditableKeyTarget(e.target)) return
+  if (e.code === 'KeyC') {
+    const id = geomashToolState.selectedGeoId
+    if (!id || !objects.has(id)) return
+    _geoClipboard = [id]
+  } else {
+    if (!_geoClipboard) return
+    duplicateGeo(_geoClipboard)
+  }
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// Пішли з картки — буфер GeoMASH забуваємо: Ctrl+V поза нею знову вставляє об'єкт дошки.
+watch(() => props.isSelected, (sel) => { if (!sel) _geoClipboard = null })
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', onEsc)
+  window.addEventListener('keydown', onGeoCopyPaste, true)
+}
 
 onBeforeUnmount(() => {
   const wasMine = geomashInspectorState.assetId === props.asset.id
@@ -582,9 +778,13 @@ onBeforeUnmount(() => {
   if (wasMine) resetGeomashTool()
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', onEsc)
+    window.removeEventListener('keydown', onGeoCopyPaste, true)
     window.removeEventListener('pointermove', onDragMove)
     window.removeEventListener('pointerup', onDragUp)
+    window.removeEventListener('pointermove', onLineDragMove)
+    window.removeEventListener('pointerup', onLineDragUp)
   }
+  disarmDragFinish()
   if (_hoverRaf) { cancelAnimationFrame(_hoverRaf); _hoverRaf = 0 }
   try { ro?.disconnect() } catch { /* noop */ }
   ro = null
@@ -612,6 +812,8 @@ const hostWindowControls = useHostWindowControls()
   box-shadow: 0 2px 10px rgba(26, 92, 56, 0.12);
 }
 .geomash-card.is-selected { border-color: #1a5c38; }
+/* Б-170: перо/маркер/гумка дошки — картка прозора, чорнило під нею видно (як картка теорії). */
+.geomash-card.is-ink-through { background: transparent; }
 .gm-header {
   display: flex;
   align-items: center;
@@ -663,6 +865,8 @@ const hostWindowControls = useHostWindowControls()
 }
 .gm-ctx__val { font-weight: 600; color: #1a5c38; padding: 2px 4px 6px; border-bottom: 1px solid rgba(26, 92, 56, 0.12); margin-bottom: 4px; }
 .gm-ctx__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px; }
+.gm-ctx__copy { border: none; background: none; cursor: pointer; color: #1a5c38; font-weight: 600; text-align: left; padding: 5px 4px; width: 100%; border-radius: 5px; }
+.gm-ctx__copy:hover { background: rgba(26, 92, 56, 0.08); }
 .gm-ctx__del { border: none; background: none; cursor: pointer; color: #ef4444; font-weight: 600; text-align: left; padding: 5px 4px; width: 100%; border-radius: 5px; }
 .gm-ctx__del:hover { background: rgba(239, 68, 68, 0.08); }
 /* тач: більші таргети */
@@ -672,6 +876,6 @@ const hostWindowControls = useHostWindowControls()
   .gm-hint { font-size: 13px; padding: 5px 12px; }
   .gm-ctx { min-width: 168px; font-size: 14px; }
   .gm-ctx__row { padding: 9px 4px; }
-  .gm-ctx__del { padding: 11px 6px; }
+  .gm-ctx__copy, .gm-ctx__del { padding: 11px 6px; }
 }
 </style>
