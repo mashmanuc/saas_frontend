@@ -312,3 +312,72 @@ describe('useKeyboard', () => {
     })
   })
 })
+
+// ─── Б-167: виділений на сторінці текст копіює браузер ───────────────────────
+// Власник 2026-10-08: текст відповіді Інтегралика не копіювався Ctrl+C — слухач дошки на
+// `document` скасовував копіювання браузера й віддавав його дошці. Стенд: виділення мишею →
+// фокус на body → `preventDefault` з `useKeyboard.handleKeydown` → буфер без змін.
+
+describe('Б-167: виділений текст на сторінці — Ctrl+C / Ctrl+X лишаються браузеру', () => {
+  let callbacks: UseKeyboardCallbacks & Record<string, ReturnType<typeof vi.fn>>
+  let handler: (e: KeyboardEvent) => void
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.getSelection()?.removeAllRanges()
+    callbacks = { onCopy: vi.fn(), onCut: vi.fn() }
+    handler = useKeyboard(callbacks)._handleKeydown
+  })
+
+  function selectText(text: string): HTMLElement {
+    const p = document.createElement('p')
+    p.textContent = text
+    document.body.appendChild(p)
+    const range = document.createRange()
+    range.selectNodeContents(p)
+    window.getSelection()!.addRange(range)
+    return p
+  }
+
+  function fromCanvas(event: KeyboardEvent): KeyboardEvent {
+    const canvas = document.createElement('div')
+    canvas.className = 'wb-canvas'
+    const inner = document.createElement('div')
+    canvas.appendChild(inner)
+    document.body.appendChild(canvas)
+    Object.defineProperty(event, 'target', { value: inner, writable: false })
+    return event
+  }
+
+  it('текст відповіді виділено → Ctrl+C копіює браузер, дошка не чіпає', () => {
+    selectText('Відповідь Інтегралика: x = 2')
+    const event = ctrlKey('KeyC', { key: 'c' })
+    handler(event)
+    expect(callbacks.onCopy).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('текст виділено → Ctrl+X не вирізає об’єкти дошки', () => {
+    selectText('Відповідь Інтегралика: x = 2')
+    const event = ctrlKey('KeyX', { key: 'x' })
+    handler(event)
+    expect(callbacks.onCut).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('клавіша з полотна (клік по дошці) — копіює дошка, навіть якщо десь лишилось старе виділення', () => {
+    selectText('старе виділення')
+    const event = fromCanvas(ctrlKey('KeyC', { key: 'c' }))
+    handler(event)
+    expect(callbacks.onCopy).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('порожнє або пробільне виділення — копіює дошка, як і раніше', () => {
+    selectText('   ')
+    const event = ctrlKey('KeyC', { key: 'c' })
+    handler(event)
+    expect(callbacks.onCopy).toHaveBeenCalledOnce()
+    expect(event.defaultPrevented).toBe(true)
+  })
+})

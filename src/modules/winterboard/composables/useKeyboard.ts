@@ -75,6 +75,20 @@ function isEditableTarget(event: KeyboardEvent): boolean {
   return false
 }
 
+/**
+ * Б-167 (власник 2026-10-08): виділений на сторінці текст — відповідь Інтегралика, підказка —
+ * копіює БРАУЗЕР. Слухач дошки висить на `document`, і раніше Ctrl+C поза полем вводу завжди
+ * скасовував копіювання браузера й віддавав його дошці: виділений мишею текст не потрапляв у
+ * буфер. Дошка забирає Ctrl+C / Ctrl+X лише коли клавіша прийшла з полотна (`.wb-canvas`,
+ * фокусується кліком) або тексту не виділено.
+ */
+function isPageTextCopy(event: KeyboardEvent): boolean {
+  const target = event.target as HTMLElement | null
+  if (target?.closest?.('.wb-canvas')) return false
+  const selection = typeof window !== 'undefined' ? window.getSelection?.() : null
+  return !!selection && !selection.isCollapsed && selection.toString().trim().length > 0
+}
+
 // ─── Composable ─────────────────────────────────────────────────────────────
 
 export function useKeyboard(
@@ -126,7 +140,7 @@ export function useKeyboard(
     // Copy: Ctrl+C — preventDefault to stop browser default copy.
     // copySelected() writes MARKER synchronously via execCommand; native copy
     // event would otherwise copy empty selection and clobber the marker.
-    if (ctrl && !shift && code === 'KeyC' && !isEditableTarget(event)) {
+    if (ctrl && !shift && code === 'KeyC' && !isEditableTarget(event) && !isPageTextCopy(event)) {
       event.preventDefault()
       callbacks.onCopy?.()
       return
@@ -138,7 +152,7 @@ export function useKeyboard(
     // onPaste callback (if passed) kept for backwards compat but unused.
 
     // Cut: Ctrl+X — preventDefault to stop browser from clearing system clipboard.
-    if (ctrl && !shift && code === 'KeyX' && !isEditableTarget(event)) {
+    if (ctrl && !shift && code === 'KeyX' && !isEditableTarget(event) && !isPageTextCopy(event)) {
       event.preventDefault()
       callbacks.onCut?.()
       return
