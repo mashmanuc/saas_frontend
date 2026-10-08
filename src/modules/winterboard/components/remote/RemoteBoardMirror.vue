@@ -186,6 +186,12 @@ let decider = createMirrorDecider()
 let consecutiveFails = 0
 let dims = ''
 let sampleCanvas: HTMLCanvasElement | null = null
+/**
+ * Полотна знімка — постійні, не нове на кожен знімок: Safari на iPhone звільняє пам'ять полотен
+ * ліниво, і сотня полотен 1920×1080 за урок впирається в його ліміт. При закритті — розмір 0.
+ */
+let fullCanvas: HTMLCanvasElement | null = null
+let outCanvas: HTMLCanvasElement | null = null
 let resizeObs: ResizeObserver | null = null
 let unmounted = false
 /** Відправка, що чекає відповіді ноутбука */
@@ -465,13 +471,13 @@ async function snapshot(): Promise<{ file: File; warpMs: number } | null> {
   const t0 = performance.now()
   const vw = v.videoWidth
   const vh = v.videoHeight
-  const full = document.createElement('canvas')
-  full.width = vw
-  full.height = vh
+  fullCanvas ??= document.createElement('canvas')
+  outCanvas ??= document.createElement('canvas')
+  const full = fullCanvas
+  const out = outCanvas
+  if (full.width !== vw || full.height !== vh) { full.width = vw; full.height = vh }
+  if (out.width !== OUT_W || out.height !== OUT_H) { out.width = OUT_W; out.height = OUT_H }
   const fctx = full.getContext('2d', { willReadFrequently: true })
-  const out = document.createElement('canvas')
-  out.width = OUT_W
-  out.height = OUT_H
   const octx = out.getContext('2d')
   if (!fctx || !octx) return null
   fctx.drawImage(v, 0, 0, vw, vh)
@@ -736,6 +742,8 @@ onBeforeUnmount(() => {
   finishWait()
   releaseScreen()
   stopTracks()
+  for (const c of [sampleCanvas, fullCanvas, outCanvas]) if (c) { c.width = 0; c.height = 0 }
+  sampleCanvas = fullCanvas = outCanvas = null
 })
 </script>
 
