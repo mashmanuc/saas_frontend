@@ -917,6 +917,17 @@ const routes = [
               requiresStaff: true
             },
           },
+          // 2026-10-08: облік витрат на ШІ — оцінка за прайсом, звірка з рахунком OpenAI, тривоги
+          {
+            path: 'ai-costs',
+            name: 'staff-ai-costs',
+            component: () => import('../modules/staff/views/StaffAiCostsView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
         ],
       },
       // Phase 16: Knowledge domain routes (inside PageShell for sidebar + header)

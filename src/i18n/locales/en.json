@@ -4660,7 +4660,92 @@
       "subscriptionPlans": "Subscription Plans",
       "analytics": "Analytics",
       "platformSettings": "Settings",
-      "realtime": "Realtime"
+      "realtime": "Realtime",
+      "aiCosts": "AI costs"
+    },
+    "aiCosts": {
+      "title": "AI costs",
+      "helpText": "The journal total is an estimate from the price list in code, not the provider bill. The OpenAI bill and the difference are shown next to it. Your tests are counted separately from teachers.",
+      "periods": {
+        "today": "Today",
+        "week": "7 days",
+        "month": "This month",
+        "custom": "Custom"
+      },
+      "from": "from",
+      "to": "to",
+      "utcNote": "Days are in UTC, as in the OpenAI bill",
+      "estimateTeachers": "Price-list estimate (not a bill)",
+      "teachersCalls": "teachers · calls: {n}",
+      "calls": "calls: {n}",
+      "ownerTests": "Your tests",
+      "noOwner": "No owner",
+      "unknownCost": "Unknown cost",
+      "unknownCostHint": "calls without a price-list rate or without usage",
+      "openaiBill": "OpenAI bill",
+      "billDays": "days with a bill: {n}",
+      "noAdminKey": "no OpenAI Admin key — no reconciliation",
+      "difference": "Difference",
+      "differenceHint": "bill minus journal, for days with a bill",
+      "teacherStats": "Teachers",
+      "activeTeachers": "active: {n}",
+      "avg": "average per teacher",
+      "byPurpose": "By action",
+      "byModel": "By model",
+      "reconciliation": "Reconciliation with the OpenAI bill",
+      "reconciliationHelp": "M4SH journal (price-list estimate) against the actual OpenAI bill per day. The difference is not spread over teachers: it may be tests, scripts or journal losses. Highlighted: difference over 20% and over 50 cents.",
+      "daily": "By day",
+      "empty": "No data for the period",
+      "errorLoad": "Failed to load AI costs",
+      "priceNote": "Price list {version}, verified {date}.",
+      "cachedUpperBound": "Cached input is charged at the full input rate — an upper estimate.",
+      "cols": {
+        "teacher": "Teacher",
+        "estimate": "Estimate",
+        "calls": "Calls",
+        "unknown": "Unknown",
+        "purpose": "Action",
+        "model": "Model",
+        "ownerTests": "Your tests",
+        "date": "Day (UTC)",
+        "journal": "Journal (estimate)",
+        "teachers": "Teachers",
+        "total": "Total"
+      },
+      "alerts": {
+        "spike": {
+          "title": "Sharp cost increase",
+          "text": "Last 24 hours: {last} — at least 3× the average of the previous 7 days ({avg} per day)."
+        },
+        "unknown_cost": {
+          "title": "Calls with unknown cost",
+          "text": "{count} call(s) in the period without a price-list rate or usage — the journal total is understated."
+        },
+        "reconciliation_mismatch": {
+          "title": "Journal differs from the OpenAI bill",
+          "text": "Difference over 20% and over 50 cents on {days} day(s)."
+        }
+      },
+      "purposes": {
+        "chat": "Integralyk chat",
+        "chat_redo_quote": "Redo: quote",
+        "chat_redo_hint": "Redo: hint",
+        "chat_redo_board_hint": "Redo: board hint",
+        "chat_redo_language": "Redo: board language",
+        "chat_math_regen": "Retry: math content",
+        "memory_summary": "Conversation memory summary",
+        "vision_read": "Picture reading",
+        "vision_solve": "Solving a task from a picture",
+        "vision_check": "Checking a solution",
+        "enrich": "✨ Enrichment",
+        "enrich_genre": "✨ Instruction genre",
+        "review": "🔎 Lesson review",
+        "tutor_hint": "Tutor: hint to a student",
+        "course_plan": "Course plan",
+        "material_vision": "Material extraction: vision",
+        "material_ocr": "Material extraction: OCR",
+        "cli_theory": "Theory generation (CLI)"
+      }
     },
     "platformSettings": {
       "title": "Platform Settings",

@@ -98,6 +98,16 @@
           <CreditCard class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.billing') }}</span>
         </router-link>
+        <!-- 2026-10-08: облік витрат на ШІ (оцінка за прайсом + звірка з рахунком OpenAI) -->
+        <router-link
+          to="/staff/ai-costs"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/ai-costs') }"
+          :title="collapsed ? $t('staff.sidebar.aiCosts') : undefined"
+        >
+          <Coins class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.aiCosts') }}</span>
+        </router-link>
         <!-- 2026-09-26: виплати тьюторам — спадок marketplace (у v1 ми тьюторам не платимо). -->
         <router-link
           v-if="PAYOUTS_VISIBLE"
@@ -202,6 +212,7 @@ import {
   Activity,
   Lightbulb,
   CreditCard,
+  Coins,
   Banknote,
   HeartPulse,
   PackageOpen,

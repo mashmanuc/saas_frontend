@@ -22,9 +22,11 @@ const TLV2_BLOCK = /^[ \t]*\/\/ >>> TLV2-01[\s\S]*?^[ \t]*\/\/ <<< TLV2-01[^\n]*
  * `router/index.js` — на `0312b841` (V-D3.1): прод `cd6bdde7` + лише DEV-маршрут лабораторії
  * капсули `...devOnlyRoutes(import.meta.env.DEV)`, перенесений у TLV2-03 за словом власника.
  * У production-збірці цей масив порожній. Було `6ea9478c…` (чистий `cd6bdde7`).
+ * 2026-10-08: + staff-маршрут `ai-costs` (облік витрат на ШІ) — нова сторінка staff, маршрути V1 не змінено.
+ * Було `75ab5701…`.
  */
 const V1_BASELINE = {
-  'router/index.js': '75ab57010e0118403e95be4e4e89d70d3c28fdb6603a5ebe0d2de589cfa7b07d',
+  'router/index.js': '923ffd5d33564c847681802de84d206c8a6d9b75b6a7f77d8e41fcba9c7d0321',
   'modules/winterboard/router.ts': 'c7d76cc77cf08df8d50244920480e742e7fdeebdf368e0b3be45424884de7b62',
 }
 
