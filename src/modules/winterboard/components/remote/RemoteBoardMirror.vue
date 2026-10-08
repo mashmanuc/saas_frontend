@@ -142,6 +142,9 @@ type SendWhy = 'first' | 'change' | 'after_wait' | 'manual'
 /** Скільки чекати відповіді ноутбука (як у «Фото на дошку») */
 const ACK_TIMEOUT_MS = 15_000
 const MAX_FAILS = 3
+/** Рух у кадрі не вщухає: стільки — і рядок стану каже це словами; стільки — і запис у журнал */
+const MOTION_NOTE_MS = 20_000
+const MOTION_LOG_MS = 60_000
 const SAMPLE_W = 640
 const QUAD_KEY = 'wb.mirror.quad'
 const LOG_MAX = 300
@@ -161,6 +164,11 @@ const copied = ref(false)
 const mirrorPage = ref<number | null>(null)
 /** Перед дошкою, схоже, людина — чекаємо */
 const personNow = ref(false)
+/** У кадрі давно не тихо (люди, голови учнів, мерехтіння ламп) — знімка немає, кажемо чому */
+const motionLong = ref(false)
+let movingSince: number | null = null
+let movingMax = 0
+let motionLogged = false
 /** Що заважає відправці зараз: немає зв'язку / ноутбук на іншій сторінці */
 const blockedBy = computed<'' | 'offline' | 'page'>(() => {
   if (phase.value !== 'running') return ''
@@ -395,6 +403,8 @@ async function start(): Promise<void> {
     batteryEnd: null, lastPlacedAt: null,
   })
   personNow.value = false
+  motionLong.value = false
+  movingSince = null
   phase.value = 'running'
   stats.batteryStart = await battery()
   await holdScreen()
@@ -457,6 +467,21 @@ function tick(): void {
       tel('skip', { why: 'person', change: dec.change })
     }
     return
+  }
+  if (dec.kind === 'moving') {
+    movingSince ??= now
+    movingMax = Math.max(movingMax, dec.cells)
+    if (now - movingSince >= MOTION_NOTE_MS) motionLong.value = true
+    if (!motionLogged && now - movingSince >= MOTION_LOG_MS) {
+      motionLogged = true
+      add('motion', t('winterboard.remote.mirror.log.motion', { sec: Math.round((now - movingSince) / 1000), cells: movingMax }))
+      tel('motion', { ms: now - movingSince, max_cells: movingMax })
+    }
+  } else if (dec.kind !== 'settling') {
+    movingSince = null
+    movingMax = 0
+    motionLogged = false
+    motionLong.value = false
   }
   if (dec.kind !== 'settling') personNow.value = false
   if (dec.kind === 'wait' && dec.why === 'cap') { void stop('cap'); return }
@@ -657,7 +682,7 @@ async function copyLog(): Promise<void> {
 // ── Стан словами ─────────────────────────────────────────────────────────────────
 const statusTone = computed<'ok' | 'warn' | 'busy' | 'idle'>(() => {
   switch (phase.value) {
-    case 'running': return blockedBy.value || personNow.value ? 'warn' : 'ok'
+    case 'running': return blockedBy.value || personNow.value || motionLong.value ? 'warn' : 'ok'
     case 'camera_error': return 'warn'
     case 'stopped': return stopReason.value === 'user' ? 'idle' : 'warn'
     case 'starting': return 'busy'
@@ -676,6 +701,7 @@ const statusText = computed(() => {
       if (blockedBy.value === 'page') return t('winterboard.remote.mirror.status.waitPage', { page: pageNo() })
       if (blockedBy.value === 'offline') return t('winterboard.remote.mirror.status.waitOnline')
       if (personNow.value) return t('winterboard.remote.mirror.status.person')
+      if (motionLong.value) return t('winterboard.remote.mirror.status.motion')
       return stats.lastPlacedAt
         ? t('winterboard.remote.mirror.status.running', { n: stats.placed, time: hms(stats.lastPlacedAt), page: pageNo() })
         : t('winterboard.remote.mirror.status.runningFirst', { page: pageNo() })

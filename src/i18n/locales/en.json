@@ -8922,6 +8922,7 @@
           "waitPage": "The laptop is on another page — the snapshot will land when you return to page {page}",
           "waitOnline": "No connection to the board — waiting",
           "person": "Someone is standing in front of the board — waiting",
+          "motion": "Constant movement in the frame — the snapshot comes as soon as it is still in front of the board",
           "running": "● Mirror is on · snapshots on the board: {n} · last at {time} · page {page}",
           "runningFirst": "● Mirror is on · the first snapshot will land on page {page} as soon as the board is still"
         },
@@ -8945,6 +8946,7 @@
           "cameraBack": "The camera is back on",
           "rotated": "The phone was rotated — set the corners again",
           "person": "Skipped: person in front of the board? · changed {change}%",
+          "motion": "Movement in the frame for {sec} s (up to {cells} of 512 cells) — no snapshot",
           "waitPage": "The laptop moved to another page — waiting for page {page}",
           "waitOnline": "Lost connection to the board — waiting",
           "unblocked": "Snapshots can land again",
