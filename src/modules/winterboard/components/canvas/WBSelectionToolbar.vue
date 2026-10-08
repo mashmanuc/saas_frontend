@@ -179,6 +179,16 @@
         </svg>
       </button>
 
+      <!-- Коректор розпізнаного (ТЗ 2026-10-08 §5): «Що прочитав Інтегралик» — лише одна
+           картинка й лише коли кімната передала `imageReading`; хто бачить — сама кнопка -->
+      <WBImageReadingButton
+        v-if="imageReadingForSelection"
+        :board-id="imageReadingForSelection.boardId"
+        :board-owner-id="imageReadingForSelection.boardOwnerId"
+        :object-id="imageReadingForSelection.objectId"
+        :image-src="imageReadingForSelection.imageSrc"
+      />
+
       <!-- Lock / Unlock -->
       <button
         v-if="isLocked"
@@ -437,7 +447,9 @@ import { useI18n } from 'vue-i18n'
 import { useDeviceMode } from '../../composables/useDeviceMode'
 import { useObjectAudio, formatTime, isRecordingSupported } from '../../composables/useObjectAudio'
 import LinkAttachmentModal from './LinkAttachmentModal.vue'
+import WBImageReadingButton from './WBImageReadingButton.vue'
 import type { WBStroke, WBAsset } from '../../types/winterboard'
+import type { ImageReadingTarget } from '../../board/imageReadingTarget'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -483,6 +495,11 @@ const props = defineProps<{
    * вмикає, лише коли вона сама обробляє `make-background`; інакше кнопки немає.
    */
   canMakeBackground?: boolean
+  /**
+   * Коректор розпізнаного (ТЗ TZ_IMAGE_READING_CORRECTOR_2026-10-08 §5): кімната передає дані
+   * виділеної картинки, лише коли сама підтримує «Що прочитав Інтегралик»; без них кнопки немає.
+   */
+  imageReading?: ImageReadingTarget | null
 }>()
 
 const emit = defineEmits<{
@@ -634,6 +651,15 @@ const audio = useObjectAudio({
   onAudioDeleted: () => {
     emit('audio-deleted', audioObjectId.value)
   },
+})
+
+// ─── Коректор розпізнаного ──────────────────────────────────────────────────
+
+/** Дані кімнати — лише для рівно однієї виділеної картинки, і саме тієї, що виділена. */
+const imageReadingForSelection = computed<ImageReadingTarget | null>(() => {
+  const target = props.imageReading
+  if (!target || props.selectedIds.length !== 1) return null
+  return target.objectId === props.selectedIds[0] ? target : null
 })
 
 // ─── Visibility ─────────────────────────────────────────────────────────────

@@ -1096,6 +1096,7 @@
       @link-removed="handleLinkRemoved"
       :can-make-background="!!selectedImageForBackground"
       @make-background="handleMakeBackground"
+      :image-reading="selectedImageForReading"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -1272,6 +1273,7 @@ import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPro
 import LessonFullscreenPrompt from '../components/remote/LessonFullscreenPrompt.vue'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import { isImageBackground, isSafeBackgroundUrl, withImageBackground, withoutImageBackground } from '../board/pageBackground'
+import { imageReadingTarget } from '../board/imageReadingTarget'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
 import { fetchAsset as fetchLibraryAsset } from '../api/library'
@@ -3064,6 +3066,16 @@ function handleMakeBackground(): void {
   store.clearSelection()
   store.imageToPageBackground(asset.id, withImageBackground(store.currentPage?.background, { url: asset.src, assetId: asset.id }))
 }
+
+// ── Коректор розпізнаного (ТЗ TZ_IMAGE_READING_CORRECTOR_2026-10-08 §5) ──────
+/** «Що прочитав Інтегралик» у тулбарі: одна виділена картинка у власника дошки; стан дошки не змінюється. */
+const selectedImageForReading = computed(() => imageReadingTarget({
+  enabled: isSessionOwner.value && !isLocalWorkspace,
+  boardId: store.workspaceId,
+  boardOwnerId: store.ownerId,
+  selectedIds: store.selectedIds,
+  assets: store.currentPage?.assets,
+}))
 
 const currentPageHasPhotoBackground = computed(() => isImageBackground(store.currentPage?.background))
 

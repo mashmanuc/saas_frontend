@@ -9658,6 +9658,37 @@
       "textColor": "Text color",
       "width": "Width"
     },
+    "imageReading": {
+      "title": "Integralyk read",
+      "open": "What Integralyk read",
+      "loading": "Loading…",
+      "notRead": "This image hasn't been read yet.",
+      "emptyText": "No text found in the image.",
+      "notOnBoard": "This image isn't saved on the board yet — select it again in a moment.",
+      "hint": "Click a formula or text to correct it.",
+      "reading": "Integralyk is reading the image…",
+      "read": "Read",
+      "reread": "Read again",
+      "confirm": "Confirm",
+      "revert": "Remove correction",
+      "editFormula": "Correct formula",
+      "editText": "Correct text",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved — Integralyk sees the correction",
+      "formulaInvalid": "The formula doesn't render — not saved:",
+      "forbidden": "You don't have permission for this action.",
+      "rateLimited": "Too many requests — try again a bit later.",
+      "failed": "Something went wrong — please try again.",
+      "cannotRead": "Integralyk can't read this image.",
+      "notAccepted": "The server didn't accept the change.",
+      "status": {
+        "model": "read by Integralyk",
+        "corrected": "corrected by you",
+        "confirmed": "confirmed by you",
+        "stale": "image changed — read it again"
+      }
+    },
     "test": {
       "testMode": "Test Mode",
       "input": "Input",
