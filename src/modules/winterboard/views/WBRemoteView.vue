@@ -365,6 +365,7 @@
         :tel="tel"
         @phase="photoPhase = $event"
         @done="closeSheet"
+        @mirror="openMirror"
       />
 
       <!-- Відео (v1.8): пошук → вибір → підтвердження → картку ставить ноутбук -->
@@ -583,6 +584,17 @@
         >{{ t('winterboard.remote.disconnect') }}</button>
       </div>
     </section>
+
+    <!-- «Операція Дзеркало»: на весь екран поверх пульта; зв'язок і сторінка — ті самі, що в пульта -->
+    <RemoteBoardMirror
+      v-if="mirrorOpen && pair"
+      :ready="isReady"
+      :page-index="pageIndex"
+      :result="photoResult"
+      :send-background="sendPhotoBackground"
+      :tel="tel"
+      @close="mirrorOpen = false"
+    />
   </div>
 </template>
 
@@ -627,6 +639,7 @@ import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
+import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
 
@@ -1200,6 +1213,18 @@ function sendPhoto(args: { library_asset_id: number; request_id: string; page_in
 /** v1.19 (власник 2026-09-28): те саме фото — фоном сторінки; перевіряє й пише ноутбук. */
 function sendPhotoBackground(args: { library_asset_id: number; request_id: string; page_index: number }): boolean {
   return sendCmd('photo.background', args)
+}
+
+/**
+ * «Операція Дзеркало» (проба 2026-10-09): камера телефона дивиться на шкільну дошку, знімки
+ * лягають фоном сторінки тією самою командою photo.background. Дзеркало — на весь екран поверх
+ * пульта; закрили — камера вимикається.
+ */
+const mirrorOpen = ref(false)
+function openMirror(): void {
+  closeSheet()
+  mirrorOpen.value = true
+  tel('mirror_open')
 }
 
 /** v1.19: прибрати фото-фон зі сторінки, яку бачить учитель. */

@@ -8898,6 +8898,81 @@
       }
     },
     "remote": {
+      "mirror": {
+        "open": "Board mirror",
+        "title": "Board mirror",
+        "noWakeLock": "This phone cannot keep the screen on: if the screen turns off, snapshots stop until it is back on.",
+        "corner": "Corner {n}",
+        "calibrateHint": "Place the phone so the whole board is visible and drag circles 1–4 onto the board corners (1 is top left, then clockwise). Snapshots will become the background of page {page}.",
+        "badQuad": "The corners are mixed up or the board is too small — put the circles on the board corners in order.",
+        "start": "Start",
+        "saveNow": "Save now",
+        "pause": "Pause",
+        "resume": "Resume",
+        "corners": "Corners",
+        "stop": "Stop",
+        "again": "Start again",
+        "journal": "Log",
+        "copyLog": "Copy log",
+        "copied": "Copied",
+        "status": {
+          "starting": "Turning on the camera…",
+          "calibrate": "Set the board corners",
+          "paused": "Paused — no snapshots are sent",
+          "waitPage": "The laptop is on another page — the snapshot will land when you return to page {page}",
+          "waitOnline": "No connection to the board — waiting",
+          "person": "Someone is standing in front of the board — waiting",
+          "running": "● Mirror is on · snapshots on the board: {n} · last at {time} · page {page}",
+          "runningFirst": "● Mirror is on · the first snapshot will land on page {page} as soon as the board is still"
+        },
+        "cameraError": {
+          "denied": "No camera permission. Allow the camera for this site in the browser settings and tap “Try again”.",
+          "none": "No camera found on this device.",
+          "insecure": "The camera only works on a secure address (https).",
+          "failed": "Could not turn on the camera. Close other apps using the camera and tap “Try again”."
+        },
+        "stopReason": {
+          "user": "Mirror stopped",
+          "camera": "Stopped: the camera turned off (screen went dark?)",
+          "failures": "Stopped: three snapshots in a row did not land on the board — see the log",
+          "quota": "Stopped: Materials storage is full",
+          "cap": "Stopped: snapshot limit for one session reached"
+        },
+        "summary": "Duration: {min} min\nSnapshots sent: {sent}, on the board: {placed}, failed: {failed}\nSkipped “person in front of the board”: {person}\nAverage time from the board going still to the snapshot on the board: {avg} s\nBattery: {battery}",
+        "log": {
+          "start": "Started · page {page} · battery {battery} · camera {size}",
+          "cameraEnded": "The camera turned off",
+          "cameraBack": "The camera is back on",
+          "rotated": "The phone was rotated — set the corners again",
+          "person": "Skipped: person in front of the board? · changed {change}%",
+          "waitPage": "The laptop moved to another page — waiting for page {page}",
+          "waitOnline": "Lost connection to the board — waiting",
+          "unblocked": "Snapshots can land again",
+          "snapshotFailed": "Could not take a snapshot",
+          "uploadFailed": "Upload failed: {reason}",
+          "sent": {
+            "first": "Sent the first snapshot · {kb} KB · {ms} ms",
+            "change": "Sent: changed {change}% · {kb} KB · {ms} ms",
+            "after_wait": "Sent after a long still period (large change {change}% — board erased?) · {kb} KB · {ms} ms",
+            "manual": "Sent manually · {kb} KB · {ms} ms"
+          },
+          "notSent": "No connection to the board — snapshot not sent",
+          "unconfirmed": "The laptop did not answer within 15 s — the snapshot is in Materials, check the board",
+          "placed": "On the board · {sec} s after the board went still",
+          "rejected": "The laptop did not place it: {reason}",
+          "pause": "Paused",
+          "resume": "Resumed",
+          "hidden": "The screen went dark or the remote went to the background",
+          "visible": "The screen is back on",
+          "stop": {
+            "user": "Stopped by the teacher · battery {battery}",
+            "camera": "Stopped: the camera turned off · battery {battery}",
+            "failures": "Stopped: three failures in a row · battery {battery}",
+            "quota": "Stopped: Materials storage is full · battery {battery}",
+            "cap": "Stopped: snapshot limit · battery {battery}"
+          }
+        }
+      },
       "fullscreenPrompt": {
         "title": "Remote connected",
         "hint": "So videos from the remote fill the whole monitor. Or press F11 — stays on for the whole lesson, even after F5",

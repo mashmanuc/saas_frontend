@@ -618,10 +618,11 @@
           @blur="pageJumpAssetId = null"
         />
 
-        <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
+        <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets.
+             Фото-фон (v1.19, «Дзеркало дошки») — сторінка не порожня для ока: підказка не лягає на знімок. -->
         <Transition name="wb-fade">
           <div
-            v-if="!isLoading && isCanvasEmpty"
+            v-if="!isLoading && isCanvasEmpty && !isImageBackground(store.currentPage?.background)"
             class="wb-empty-canvas-hint"
             :style="emptyHintStyle"
             aria-hidden="true"

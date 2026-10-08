@@ -45,6 +45,7 @@ const PAGES: Record<string, string[]> = {
     'modules/winterboard/views/WBRemoteView.vue',
     'modules/winterboard/components/remote/RemotePhotoPanel.vue',
     'modules/winterboard/components/remote/RemoteScenarioSheet.vue',
+    'modules/winterboard/components/remote/RemoteBoardMirror.vue',
   ],
   'Вхід і реєстрація': [
     'modules/auth/views/LoginView.vue',

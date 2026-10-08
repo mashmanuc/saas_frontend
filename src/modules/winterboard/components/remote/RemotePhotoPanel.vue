@@ -22,6 +22,16 @@
       :disabled="!ready"
       @click="emit('clear-background')"
     >✕ {{ t('winterboard.remote.photo.clearBackground') }}</button>
+    <!-- «Операція Дзеркало» (проба 2026-10-09): телефон дивиться на шкільну дошку й сам кладе її
+         знімки фоном сторінки — тим самим photo.background (v1.19). Без фону-фото — кнопки немає. -->
+    <button
+      v-if="phase === 'idle' && sendBackground"
+      type="button"
+      class="wb-remote-photo__btn"
+      data-testid="photo-mirror"
+      :disabled="!ready"
+      @click="emit('mirror')"
+    >🪞 {{ t('winterboard.remote.mirror.open') }}</button>
     <!-- capture — лише побажання браузеру (задня камера); галерея — окремою дією -->
     <input ref="cameraInput" class="wb-remote-photo__input" type="file" accept="image/*" capture="environment" data-testid="photo-camera-input" @change="onFile">
     <input ref="galleryInput" class="wb-remote-photo__input" type="file" accept="image/*" data-testid="photo-gallery-input" @change="onFile">
@@ -133,6 +143,8 @@ const emit = defineEmits<{
   (e: 'phase', phase: Phase): void
   /** v1.19: «Прибрати фон сторінки» */
   (e: 'clear-background'): void
+  /** «Дзеркало дошки» — батько закриває аркуш і відкриває дзеркало на весь екран */
+  (e: 'mirror'): void
 }>()
 
 /** Скільки чекати відповіді ноутбука, перш ніж чесно сказати «не підтверджено» */
