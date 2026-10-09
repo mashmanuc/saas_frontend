@@ -41,6 +41,18 @@
           ← {{ t('winterboard.replayList.title') }}
         </router-link>
         <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
+        <!-- «Дзеркало уроку», пілот (ТЗ TZ_LESSON_MIRROR_VIDEO_PILOT_2026-10-09 §2, §4): лише свій
+             завершений запис контрольних акаунтів, де є сторінка з ≥ 2 фото-фонами. Публічне
+             посилання — без змін. -->
+        <button
+          v-if="canOfferMirrorClip"
+          type="button"
+          class="wb-public-view__to-list wb-public-view__mirror-clip"
+          data-testid="mirror-clip-open"
+          @click="openMirrorClip"
+        >
+          {{ t('winterboard.mirrorClip.open') }}
+        </button>
         <span v-if="ownerName" class="wb-public-view__author">{{ ownerName }}</span>
       </header>
 
@@ -154,16 +166,27 @@
           &rarr;
         </button>
       </footer>
+
+      <LessonMirrorExportDialog
+        v-if="showMirrorClip && canOfferMirrorClip"
+        :pages="mirrorPhotoPages"
+        :lesson-title="displayTitle"
+        @close="showMirrorClip = false"
+      />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { winterboardApi } from '../api/winterboardApi'
-import { getReplay } from '../api/replayLifecycleApi'
+import { getReplay, type Replay } from '../api/replayLifecycleApi'
+import { collectMirrorPhotoPages } from '../composables/replayPhotoStates'
+import type { MirrorPhotoPage } from '../engine/lessonMirror/types'
+import type { BoardOperation } from '../types/replay'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { useReplayV2 } from '../composables/useReplayV2'
@@ -183,12 +206,28 @@ import type { WBSession } from '../types/winterboard'
 import type { ReplaySpeed } from '../engine/WBReplayEngine'
 import { activeLocale } from '@/utils/i18nDate'
 
+// Діалог відеофрагмента вантажиться лише після натискання — решті переглядів він не потрібен.
+const LessonMirrorExportDialog = defineAsyncComponent(() => import('../components/replay/LessonMirrorExportDialog.vue'))
+
+/** Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4). */
+const MIRROR_CLIP_PILOT_USER_IDS: ReadonlySet<number> = new Set([40, 220])
+
 const { t } = useI18n()
 const route = useRoute()
 /** Свій запис (маршрут `/winterboard/replay/:replayId`), а не публічне посилання. */
 const isOwnerView = computed(() => route.name === 'winterboard-replay-owner')
 const router = useRouter()
 const store = useWBStore()
+const authStore = useAuthStore()
+
+// ── «Дзеркало уроку»: сторінки запису з ≥ 2 фото-фонами (добір — composables/replayPhotoStates) ──
+/** Сам запис (межі start_seq…end_seq) — лише на маршруті власника. */
+const ownerReplayMeta = ref<Replay | null>(null)
+const mirrorPhotoPages = ref<MirrorPhotoPage[]>([])
+const showMirrorClip = ref(false)
+const isMirrorClipPilotUser = computed(() => MIRROR_CLIP_PILOT_USER_IDS.has(Number(authStore.user?.id)))
+const canOfferMirrorClip = computed(() =>
+  isOwnerView.value && isMirrorClipPilotUser.value && mirrorPhotoPages.value.length > 0)
 
 // ── UI state (NOT board state — board lives in store) ──
 const isLoading = ref(true)
@@ -439,6 +478,8 @@ async function enterReplayMode(): Promise<void> {
     return
   }
 
+  refreshMirrorPhotoPages()
+
   // Fallback: derive duration from operation timestamps if lesson_time_seconds was missing
   // HIGH 21: minimum 1s to prevent division by zero in seek calculations
   const v2 = viewApi()
@@ -612,6 +653,38 @@ async function shareReplay(): Promise<void> {
   setTimeout(() => { showLinkCopied.value = false }, 2500)
 }
 
+/**
+ * Фото-стани для «Створити відеофрагмент»: той самий запис, що програє плеєр (start_state +
+ * ops у межах start_seq…end_seq). Лише свій запис і лише пілотні акаунти — іншим нічого не рахуємо.
+ */
+function refreshMirrorPhotoPages(): void {
+  mirrorPhotoPages.value = []
+  const meta = ownerReplayMeta.value
+  if (!isOwnerView.value || !isMirrorClipPilotUser.value || !meta || !replay) return
+  const operations: BoardOperation[] = []
+  for (let i = 0; i < replay.totalOperations.value; i++) {
+    const op = replay.getOperationAt(i)
+    if (op) operations.push(op)
+  }
+  try {
+    mirrorPhotoPages.value = collectMirrorPhotoPages({
+      start_state: replayStartState,
+      operations,
+      start_seq: meta.start_seq,
+      end_seq: meta.end_seq,
+    })
+  } catch (err) {
+    // Додаток до плеєра: його збій лишає звичайний Replay без кнопки, а не ламає перегляд (ТЗ §3).
+    console.warn('[WB:PublicView] не вдалося добрати фото-стани запису:', err)
+  }
+}
+
+function openMirrorClip(): void {
+  // Діалог закриває дошку — відтворення під ним не має йти далі.
+  replay?.pause()
+  showMirrorClip.value = true
+}
+
 // NOTE: watch for replay.state → showHeroOverlay is set up inside enterReplayMode()
 // (after `replay` object is created) — see FIX comment there.
 
@@ -782,6 +855,7 @@ onMounted(async () => {
     // Private replay іде тільки авторизованим owner route. Публічний token
     // як і раніше не несе cookie/Authorization і лишається CDN-cacheable.
     const replayMeta = ownerReplayId ? await getReplay(ownerReplayId) : null
+    ownerReplayMeta.value = replayMeta
     const data = ownerReplayId
       ? await winterboardApi.getSession(replayMeta!.source_session!) as unknown as WBSession
       : await winterboardApi.getPublicSession(token!) as unknown as WBSession
@@ -953,6 +1027,18 @@ onBeforeUnmount(() => {
 
 .wb-public-view__to-list:hover {
   background: rgba(255, 255, 255, 0.15);
+}
+
+/* «Створити відеофрагмент» — та сама біла «таблетка», що й «← Мої записи», але це кнопка. */
+.wb-public-view__mirror-clip {
+  margin-right: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+.wb-public-view__mirror-clip:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .wb-public-view__header {
