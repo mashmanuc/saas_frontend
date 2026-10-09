@@ -593,7 +593,7 @@
       :result="photoResult"
       :send-background="sendPhotoBackground"
       :tel="tel"
-      @close="mirrorOpen = false"
+      @close="closeMirror"
     />
   </div>
 </template>
@@ -640,6 +640,7 @@ import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAs
 import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
+import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
 
@@ -1221,11 +1222,23 @@ function sendPhotoBackground(args: { library_asset_id: number; request_id: strin
  * пульта; закрили — камера вимикається.
  */
 const mirrorOpen = ref(false)
+/**
+ * Дзеркало — на весь екран браузера (ТЗ «зручні кути» 2026-10-09 §3: Android Chrome ховає смугу
+ * адреси, кадр камери більший). Вхід — лише тут, на дотик учителя; вихід — коли Дзеркало закрилось.
+ */
+const mirrorFs = createMirrorFullscreen(document, (step, name) => tel('mirror_fullscreen_failed', { step, name }))
 function openMirror(): void {
   closeSheet()
   mirrorOpen.value = true
+  mirrorFs.enter()
   tel('mirror_open')
 }
+function closeMirror(): void {
+  mirrorOpen.value = false
+  mirrorFs.leave()
+}
+// Дзеркало зникло не через «✕» (зв'язок із дошкою скинуто — немає пари) — з повного екрана теж виходимо
+watch(() => mirrorOpen.value && !!pair.value, (shown) => { if (!shown) mirrorFs.leave() })
 
 /** v1.19: прибрати фото-фон зі сторінки, яку бачить учитель. */
 function clearPhotoBackground(): void {
@@ -1422,6 +1435,7 @@ onBeforeUnmount(() => {
   if (scenarioWhyTimer) clearTimeout(scenarioWhyTimer)
   if (assistantSentTimer) clearTimeout(assistantSentTimer)
   stopStateWatch()
+  mirrorFs.leave()
   try { wakeLock?.release?.() } catch { /* noop */ }
 })
 </script>

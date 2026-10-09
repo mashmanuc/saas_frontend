@@ -1,128 +1,185 @@
 <template>
   <!-- «Дзеркало дошки» (проба 2026-10-09): телефон стоїть і дивиться на шкільну дошку; коли перед
        дошкою ніхто не рухається і написане змінилось — вирівняний знімок лягає фоном сторінки
-       наявною командою photo.background (LAW §9 v1.19). Учитель лише ставить телефон і 4 кути. -->
+       наявною командою photo.background (LAW §9 v1.19). Учитель лише ставить телефон і 4 кути.
+       Екран (ТЗ «швидше, без учителя, зручні кути» 2026-10-09 §3): кадр камери — на весь екран, крім
+       вузької колонки кнопок (праворуч горизонтально, знизу вертикально), тож кнопки не лягають на кути;
+       стан і підказки — однією напівпрозорою смужкою поверх кадру. -->
   <div class="wb-mirror" data-testid="board-mirror" :data-phase="phase">
-    <header class="wb-mirror__top">
-      <span class="wb-mirror__title">🪞 {{ t('winterboard.remote.mirror.title') }}</span>
-      <button type="button" class="wb-mirror__close" data-testid="mirror-close" :aria-label="t('winterboard.remote.close')" @click="close">×</button>
-    </header>
+    <div ref="stageEl" class="wb-mirror__stage" data-testid="mirror-stage">
+      <video ref="videoEl" class="wb-mirror__video" playsinline muted autoplay data-testid="mirror-video" @loadedmetadata="measure" @resize="measure" />
+      <svg v-if="box" class="wb-mirror__quad" :viewBox="`0 0 ${box.cw} ${box.ch}`" aria-hidden="true">
+        <polygon :points="polyPoints" :class="{ 'is-bad': !usable }" />
+        <!-- Боки дошки за кадром — червоним (урок 2, 09.10: верх обрізано, а рамка виглядала добре) -->
+        <line
+          v-for="e in clippedEdges"
+          :key="e.side"
+          class="is-clipped"
+          :data-testid="`mirror-edge-${e.side}`"
+          :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
+        />
+      </svg>
 
-    <p class="wb-mirror__status" :class="`is-${statusTone}`" role="status" data-testid="mirror-status">{{ statusText }}</p>
-    <p v-if="phase === 'running' && !wakeLockOk" class="wb-mirror__note" data-testid="mirror-no-wakelock">
-      {{ t('winterboard.remote.mirror.noWakeLock') }}
-    </p>
-
-    <!-- Телефон на підставці під широку дошку стоїть горизонтально: тоді кадр ліворуч, кнопки праворуч -->
-    <div class="wb-mirror__body">
-      <div ref="stageEl" class="wb-mirror__stage" :class="{ 'is-running': phase === 'running' || phase === 'paused' }">
-        <video ref="videoEl" class="wb-mirror__video" playsinline muted autoplay data-testid="mirror-video" @loadedmetadata="measure" @resize="measure" />
-        <svg v-if="box" class="wb-mirror__quad" :viewBox="`0 0 ${box.cw} ${box.ch}`" aria-hidden="true">
-          <polygon :points="polyPoints" :class="{ 'is-bad': !usable }" />
-          <!-- Боки дошки за кадром — червоним (урок 2, 09.10: верх обрізано, а рамка виглядала добре) -->
-          <line
-            v-for="e in clippedEdges"
-            :key="e.side"
-            class="is-clipped"
-            :data-testid="`mirror-edge-${e.side}`"
-            :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-          />
-        </svg>
-        <template v-if="phase === 'calibrate' && box">
-          <button
-            v-for="(_, i) in corners"
-            :key="i"
-            type="button"
-            class="wb-mirror__handle"
-            :data-testid="`mirror-corner-${i}`"
-            :style="handleStyle(i)"
-            :aria-label="t('winterboard.remote.mirror.corner', { n: i + 1 })"
-            @pointerdown="onHandleDown(i, $event)"
-            @pointermove="onHandleMove(i, $event)"
-            @pointerup="onHandleUp(i, $event)"
-            @pointercancel="onHandleUp(i, $event)"
-          >{{ i + 1 }}</button>
+      <!-- Одна смужка поверх кадру: стан і коротке попередження. Торкання проходять крізь неї до кутів. -->
+      <div class="wb-mirror__strip" role="status" data-testid="mirror-strip">
+        <template v-if="phase === 'calibrate'">
+          <!-- Поки ставлять кути — одне найважливіше: переплутано → бік за кадром → що знайшла → «Поставте кути» -->
+          <p v-if="!usable" class="wb-mirror__line is-warn" data-testid="mirror-bad-quad">{{ t('winterboard.remote.mirror.badQuad') }}</p>
+          <template v-else-if="clipped.length">
+            <p v-for="s in clipped" :key="s" class="wb-mirror__line is-warn" :data-testid="`mirror-clipped-${s}`">
+              {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
+            </p>
+          </template>
+          <p v-else-if="findNote" class="wb-mirror__line" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
+            {{ t(`winterboard.remote.mirror.find.${findNote}`) }}
+          </p>
+          <p v-else class="wb-mirror__line" data-testid="mirror-status">{{ statusText }}</p>
+        </template>
+        <template v-else>
+          <p class="wb-mirror__line" :class="`is-${statusTone}`" data-testid="mirror-status">{{ statusText }}</p>
+          <template v-if="phase === 'running' || phase === 'paused'">
+            <p v-if="saveWaiting" class="wb-mirror__line" data-testid="mirror-save-waiting">{{ t('winterboard.remote.mirror.saveWaiting') }}</p>
+            <p v-if="boardLost" class="wb-mirror__line is-warn" data-testid="mirror-save-lost">{{ t('winterboard.remote.mirror.saveLost') }}</p>
+            <!-- Кути переїхали на дошку, що впирається в край кадру, — бік словами -->
+            <p v-for="s in clipped" :key="s" class="wb-mirror__line is-warn" :data-testid="`mirror-clipped-${s}`">
+              {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
+            </p>
+            <p v-if="phase === 'running' && !wakeLockOk" class="wb-mirror__line is-note" data-testid="mirror-no-wakelock">
+              {{ t('winterboard.remote.mirror.noWakeLock') }}
+            </p>
+          </template>
         </template>
       </div>
 
-      <div class="wb-mirror__side">
-        <div v-if="phase === 'calibrate'" class="wb-mirror__panel">
-          <p class="wb-mirror__hint">{{ t('winterboard.remote.mirror.calibrateHint', { page: (pageIndex ?? 0) + 1 }) }}</p>
-          <!-- «Не вся в кадрі» загальними словами — лише коли бік не названо нижче -->
-          <p v-if="findNote && !(findNote === 'clipped' && clipped.length)" class="wb-mirror__note" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
-            {{ t(`winterboard.remote.mirror.find.${findNote}`) }}
-          </p>
-          <p v-for="s in clipped" :key="s" class="wb-mirror__warn" :data-testid="`mirror-clipped-${s}`">
-            {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
-          </p>
-          <p v-if="!usable" class="wb-mirror__warn" data-testid="mirror-bad-quad">{{ t('winterboard.remote.mirror.badQuad') }}</p>
-          <!-- «Почати» — першою: на горизонтальному телефоні бічна колонка низька, передперегляд нижче -->
-          <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-start" :disabled="!usable || !ready" @click="start">
-            {{ t('winterboard.remote.mirror.start') }}
-          </button>
-          <button type="button" class="wb-mirror__btn" data-testid="mirror-find" :disabled="!ready" @click="findBoard">
-            🔍 {{ t('winterboard.remote.mirror.find.button') }}
-          </button>
-          <figure class="wb-mirror__preview">
-            <canvas ref="previewEl" :width="PREVIEW_W" :height="PREVIEW_H" data-testid="mirror-preview" />
-            <figcaption>{{ t('winterboard.remote.mirror.preview') }}</figcaption>
-          </figure>
-        </div>
+      <template v-if="phase === 'calibrate' && box">
+        <!-- Передперегляд «так побачить ноутбук» — маленьке вікно в тому куті кадру, де немає кружечків;
+             торкнутись — сховати (кадр дошки видно цілком), «👁» — показати знову -->
+        <figure
+          v-show="previewShown"
+          class="wb-mirror__preview"
+          :style="previewStyle"
+          role="button"
+          tabindex="0"
+          data-testid="mirror-preview-box"
+          @click="previewShown = false"
+          @keydown.enter="previewShown = false"
+        >
+          <canvas ref="previewEl" :width="PREVIEW_W" :height="PREVIEW_H" data-testid="mirror-preview" />
+          <figcaption>{{ t('winterboard.remote.mirror.preview') }}</figcaption>
+        </figure>
+        <button
+          v-if="!previewShown"
+          type="button"
+          class="wb-mirror__preview-show"
+          :style="previewStyle"
+          data-testid="mirror-preview-show"
+          :aria-label="t('winterboard.remote.mirror.preview')"
+          @click="previewShown = true"
+        >👁</button>
 
-        <div v-else-if="phase === 'running' || phase === 'paused'" class="wb-mirror__panel">
-          <div class="wb-mirror__row">
-            <button
-              type="button" class="wb-mirror__btn is-on" data-testid="mirror-save-now"
-              :disabled="saving || saveWaiting || boardLost || !ready" @click="saveNow"
-            >
-              {{ saveWaiting ? t('winterboard.remote.mirror.saveWaiting') : t('winterboard.remote.mirror.saveNow') }}
-            </button>
-            <button type="button" class="wb-mirror__btn" data-testid="mirror-pause" @click="togglePause">
-              {{ phase === 'paused' ? t('winterboard.remote.mirror.resume') : t('winterboard.remote.mirror.pause') }}
-            </button>
-          </div>
-          <div class="wb-mirror__row">
-            <button type="button" class="wb-mirror__btn" data-testid="mirror-recalibrate" @click="recalibrate">
-              {{ t('winterboard.remote.mirror.corners') }}
-            </button>
-            <button type="button" class="wb-mirror__btn" data-testid="mirror-stop" @click="stop('user')">
-              {{ t('winterboard.remote.mirror.stop') }}
-            </button>
-          </div>
-          <p v-if="boardLost" class="wb-mirror__warn" data-testid="mirror-save-lost">{{ t('winterboard.remote.mirror.saveLost') }}</p>
-          <!-- Кути переїхали на дошку, що впирається в край кадру, — бік словами (пункт 1) -->
-          <p v-for="s in clipped" :key="s" class="wb-mirror__warn" :data-testid="`mirror-clipped-${s}`">
-            {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
-          </p>
-        </div>
+        <button
+          v-for="(_, i) in corners"
+          :key="i"
+          type="button"
+          class="wb-mirror__handle"
+          :class="{ 'is-drag': dragIdx === i }"
+          :data-testid="`mirror-corner-${i}`"
+          :style="handleStyle(i)"
+          :aria-label="t('winterboard.remote.mirror.corner', { n: i + 1 })"
+          @pointerdown="onHandleDown(i, $event)"
+          @pointermove="onHandleMove(i, $event)"
+          @pointerup="onHandleUp(i, $event)"
+          @pointercancel="onHandleUp(i, $event)"
+        >{{ i + 1 }}</button>
+      </template>
 
-        <div v-else-if="phase === 'stopped'" class="wb-mirror__panel" data-testid="mirror-summary">
-          <p class="wb-mirror__summary">{{ summaryText }}</p>
-          <div class="wb-mirror__row">
-            <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-again" @click="again">{{ t('winterboard.remote.mirror.again') }}</button>
-            <button type="button" class="wb-mirror__btn" @click="close">{{ t('winterboard.remote.photo.done') }}</button>
-          </div>
-        </div>
-
-        <div v-else-if="phase === 'camera_error'" class="wb-mirror__panel">
-          <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-camera-retry" @click="openCamera">{{ t('winterboard.remote.photo.retry') }}</button>
-        </div>
-
-        <section v-if="log.length" class="wb-mirror__journal">
-          <div class="wb-mirror__journal-top">
-            <span>{{ t('winterboard.remote.mirror.journal') }}</span>
-            <button type="button" class="wb-mirror__copy" data-testid="mirror-copy-log" @click="copyLog">
-              {{ copied ? t('winterboard.remote.mirror.copied') : t('winterboard.remote.mirror.copyLog') }}
-            </button>
-          </div>
-          <ol class="wb-mirror__log" data-testid="mirror-log">
-            <li v-for="e in shownLog" :key="e.n" :data-kind="e.kind">
-              <span class="wb-mirror__time">{{ hms(e.at) }}</span> {{ e.text }}
-            </li>
-          </ol>
-        </section>
+      <!-- Лупа над пальцем, поки тягнуть кружечок: місце під КУТОМ ×2,5 з перехрестям — палець кут не закриває -->
+      <div v-if="phase === 'calibrate'" v-show="loupe" class="wb-mirror__loupe" :style="loupeStyle" data-testid="mirror-loupe" aria-hidden="true">
+        <canvas ref="loupeEl" :width="LOUPE_RES" :height="LOUPE_RES" />
       </div>
+
+      <!-- Довга підказка — лише за «?» -->
+      <div v-if="phase === 'calibrate' && helpOpen" class="wb-mirror__card" data-testid="mirror-help" @click="helpOpen = false">
+        <p class="wb-mirror__hint">{{ t('winterboard.remote.mirror.calibrateHint', { page: (pageIndex ?? 0) + 1 }) }}</p>
+      </div>
+
+      <div v-if="phase === 'stopped'" class="wb-mirror__card" data-testid="mirror-summary">
+        <p class="wb-mirror__summary">{{ summaryText }}</p>
+      </div>
+
+      <!-- Журнал — висувна панель за кнопкою «Журнал»; v-show: записи не губляться, поки панель закрита -->
+      <section v-show="journalOpen" class="wb-mirror__journal" data-testid="mirror-journal">
+        <div class="wb-mirror__journal-top">
+          <span>{{ t('winterboard.remote.mirror.journal') }}</span>
+          <button type="button" class="wb-mirror__copy" data-testid="mirror-copy-log" @click="copyLog">
+            {{ copied ? t('winterboard.remote.mirror.copied') : t('winterboard.remote.mirror.copyLog') }}
+          </button>
+          <button type="button" class="wb-mirror__copy" data-testid="mirror-journal-close" :aria-label="t('winterboard.remote.close')" @click="journalOpen = false">✕</button>
+        </div>
+        <ol class="wb-mirror__log" data-testid="mirror-log">
+          <li v-for="e in shownLog" :key="e.n" :data-kind="e.kind">
+            <span class="wb-mirror__time">{{ hms(e.at) }}</span> {{ e.text }}
+          </li>
+        </ol>
+      </section>
     </div>
+
+    <!-- Колонка кнопок — поза кадром: кути лежать лише на кадрі, тож кнопки їх не закривають -->
+    <nav class="wb-mirror__rail" data-testid="mirror-rail" :aria-label="t('winterboard.remote.mirror.title')">
+      <template v-if="phase === 'calibrate'">
+        <!-- «Почати» — перша й найбільша -->
+        <button type="button" class="wb-mirror__btn is-on is-main" data-testid="mirror-start" :disabled="!usable || !ready" @click="start">
+          <span class="wb-mirror__ic" aria-hidden="true">▶</span><span>{{ t('winterboard.remote.mirror.start') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-find" :disabled="!ready" @click="findBoard">
+          <span class="wb-mirror__ic" aria-hidden="true">🔍</span><span>{{ t('winterboard.remote.mirror.find.button') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-help-toggle" :aria-expanded="helpOpen" @click="helpOpen = !helpOpen">
+          <span class="wb-mirror__ic" aria-hidden="true">?</span><span>{{ t('winterboard.remote.mirror.help') }}</span>
+        </button>
+      </template>
+
+      <template v-else-if="phase === 'running' || phase === 'paused'">
+        <button
+          type="button" class="wb-mirror__btn is-on" data-testid="mirror-save-now"
+          :disabled="saving || saveWaiting || boardLost || !ready" @click="saveNow"
+        >
+          <span class="wb-mirror__ic" aria-hidden="true">📸</span><span>{{ t('winterboard.remote.mirror.saveNow') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-pause" @click="togglePause">
+          <span class="wb-mirror__ic" aria-hidden="true">{{ phase === 'paused' ? '▶' : '⏸' }}</span>
+          <span>{{ phase === 'paused' ? t('winterboard.remote.mirror.resume') : t('winterboard.remote.mirror.pause') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-recalibrate" @click="recalibrate">
+          <span class="wb-mirror__ic" aria-hidden="true">⌖</span><span>{{ t('winterboard.remote.mirror.corners') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-journal-toggle" :aria-expanded="journalOpen" @click="journalOpen = !journalOpen">
+          <span class="wb-mirror__ic" aria-hidden="true">📋</span><span>{{ t('winterboard.remote.mirror.journal') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-stop" @click="stop('user')">
+          <span class="wb-mirror__ic" aria-hidden="true">⏹</span><span>{{ t('winterboard.remote.mirror.stop') }}</span>
+        </button>
+      </template>
+
+      <template v-else-if="phase === 'stopped'">
+        <button type="button" class="wb-mirror__btn is-on is-main" data-testid="mirror-again" @click="again">
+          <span class="wb-mirror__ic" aria-hidden="true">↻</span><span>{{ t('winterboard.remote.mirror.again') }}</span>
+        </button>
+        <button type="button" class="wb-mirror__btn" data-testid="mirror-journal-toggle" :aria-expanded="journalOpen" @click="journalOpen = !journalOpen">
+          <span class="wb-mirror__ic" aria-hidden="true">📋</span><span>{{ t('winterboard.remote.mirror.journal') }}</span>
+        </button>
+      </template>
+
+      <template v-else-if="phase === 'camera_error'">
+        <button type="button" class="wb-mirror__btn is-on is-main" data-testid="mirror-camera-retry" @click="openCamera">
+          <span class="wb-mirror__ic" aria-hidden="true">↻</span><span>{{ t('winterboard.remote.photo.retry') }}</span>
+        </button>
+      </template>
+
+      <button type="button" class="wb-mirror__btn is-close" data-testid="mirror-close" :aria-label="t('winterboard.remote.close')" @click="close">
+        <span class="wb-mirror__ic" aria-hidden="true">✕</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -132,15 +189,17 @@
  *
  * Що робить телефон (ноутбук і протокол — без змін, LAW §9 v1.19 `photo.background`):
  *  1. камера (задня) → учитель ставить 4 кути дошки на кадрі (кути запам'ятовуються на пристрої);
- *  2. ~2,5 рази на секунду — зменшений сірий кадр дошки, пошук змін (`boardMirror.ts`);
- *  3. дошка завмерла ≥ 1,2 с і написане змінилось → знімок 1600×900 (дошка вписана з полями) →
+ *  2. 4 рази на секунду — зменшений сірий кадр дошки, пошук змін (`boardMirror.ts`);
+ *  3. дошка завмерла ≥ 0,8 с і написане змінилось → знімок 1600×900 (дошка вписана з полями) →
  *     «Матеріали» (REST, `purpose=remote_photo`) → `photo.background` на сторінку, з якої почали;
+ *     перед дошкою людина, а нове — поза нею → знімок одразу, закрите людиною — з попереднього
+ *     знімка («склейка», ТЗ «швидше, без учителя» 2026-10-09 §2);
  *  4. одна спроба на одну зміну: не вдалося — наступна лише з наступною зміною чи «Зберегти зараз»;
  *     три невдачі поспіль, скінчилось місце чи стеля знімків — зупинка з причиною словами;
  *  5. телефон зрушив (урок 2, 09.10) — кути самі переїжджають разом із дошкою; дошки не видно —
  *     нічого не надсилається, доки її не знайде знову (`createShiftWatch`).
  *
- * Журнал на екрані (і «Копіювати журнал») — для порівняння після уроку: кожна відправка й
+ * Журнал (кнопка «Журнал», «Копіювати журнал») — для порівняння після уроку: кожна відправка й
  * кожне відкидання з часом, причиною й часткою змін; та сама подія — у телеметрію пульта.
  */
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
@@ -151,8 +210,8 @@ import { photoUploadError } from '../../remote/photoUploadError'
 import {
   DETECT_W, MIRROR_TUNING, OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
   analyzeFrame, boardAspect, boardFill, clippedSides, createMirrorDecider, createShiftWatch, defaultQuad,
-  detectBoardQuad, fitRect, parseQuad, quadToPixels, quadUsable, sideEdge, warpBoard,
-  type MirrorFrame, type Pixels, type Quad, type ShiftWatch,
+  detectBoardQuad, fitRect, parseQuad, patchCovered, quadToPixels, quadUsable, sideEdge, warpBoard,
+  type MirrorFrame, type Pixels, type Pt, type Quad, type ShiftWatch,
 } from '../../remote/boardMirror'
 
 const props = defineProps<{
@@ -171,7 +230,9 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 type Phase = 'starting' | 'camera_error' | 'calibrate' | 'running' | 'paused' | 'stopped'
 type StopReason = 'user' | 'camera' | 'failures' | 'quota' | 'cap'
 type CameraError = 'denied' | 'none' | 'insecure' | 'failed'
-type SendWhy = 'first' | 'change' | 'after_wait' | 'manual'
+type SendWhy = 'first' | 'change' | 'after_wait' | 'covered' | 'manual'
+/** Що відправити: причина, частка змін, коли нове помітили; склейка — які клітинки з попереднього знімка */
+interface SendArgs { why: SendWhy; change: number; since: number; cover?: Uint8Array; covered?: number }
 
 /** Скільки чекати відповіді ноутбука (як у «Фото на дошку») */
 const ACK_TIMEOUT_MS = 15_000
@@ -188,6 +249,20 @@ const LOG_MAX = 300
 const PREVIEW_W = 320
 const PREVIEW_H = 180
 const PREVIEW_MS = 500
+/** На екрані передперегляд — віконце 160×90 у куті кадру (ТЗ §3), відступ від країв кадру */
+const PREVIEW_CSS_W = 160
+const PREVIEW_CSS_H = 90
+const PREVIEW_GAP = 8
+/** Смужка стану вгорі кадру (приблизно): передперегляд згори кладемо нижче за неї */
+const STRIP_H = 44
+/** Кружечок кута — радіус із запасом: передперегляд не має лягати на нього */
+const HANDLE_R = 26
+/** Лупа (ТЗ §3): кругле вікно ~110 px, ×2,5 до кадру на екрані; полотно — удвічі щільніше, щоб не мило */
+const LOUPE_PX = 110
+const LOUPE_ZOOM = 2.5
+const LOUPE_RES = 220
+/** Лупа — над пальцем на такій відстані (палець і ніготь її не закривають) */
+const LOUPE_GAP = 36
 /** «Зберегти зараз» чекає тихого кадру (рука прибрана, телефон заспокоївся) не довше за це */
 const SAVE_WAIT_MS = 3000
 
@@ -204,6 +279,9 @@ const clipped = computed(() => clippedSides(corners.value))
 const wakeLockOk = ref(true)
 const saving = ref(false)
 const copied = ref(false)
+/** Довга підказка (за «?») і журнал (за «Журнал») — поверх кадру, лише коли попросили */
+const helpOpen = ref(false)
+const journalOpen = ref(false)
 /** Сторінка, на яку кладе дзеркало: та, що була на ноутбуці при «Почати» */
 const mirrorPage = ref<number | null>(null)
 /** Перед дошкою, схоже, людина — чекаємо */
@@ -255,6 +333,15 @@ let sampleCanvas: HTMLCanvasElement | null = null
  */
 let fullCanvas: HTMLCanvasElement | null = null
 let outCanvas: HTMLCanvasElement | null = null
+/**
+ * Склейка (ТЗ «без учителя» §2): пікселі останнього надісланого знімка 1600×900 (≈5,8 МБ) — закрите
+ * людиною береться звідси; `prevShotKey` — геометрія, з якою його зроблено (кути й розмір кадру).
+ * Другий буфер — робочий, щоб кожен знімок не виділяв ще 5,8 МБ. Обидва відпускаються при зупинці,
+ * закритті й нових кутах: геометрія інша — склеювати нема з чим.
+ */
+let prevShot: ImageData | null = null
+let workShot: ImageData | null = null
+let prevShotKey = ''
 let resizeObs: ResizeObserver | null = null
 let unmounted = false
 /** Відправка, що чекає відповіді ноутбука */
@@ -380,7 +467,7 @@ function onTrackEnded(): void {
 }
 
 // ── Кути на кадрі ────────────────────────────────────────────────────────────────
-/** Де саме на елементі видно кадр (object-fit: contain) */
+/** Де саме на сцені видно кадр (object-fit: contain) */
 const box = ref<{ cw: number; ch: number; ox: number; oy: number; dw: number; dh: number } | null>(null)
 
 function measure(): void {
@@ -404,10 +491,15 @@ function measure(): void {
   }
 }
 
+/** Кут (частки кадру) → точка на сцені */
+function toStage(p: Pt): Pt {
+  const b = box.value!
+  return { x: b.ox + p.x * b.dw, y: b.oy + p.y * b.dh }
+}
+
 const polyPoints = computed(() => {
-  const b = box.value
-  if (!b) return ''
-  return corners.value.map((p) => `${b.ox + p.x * b.dw},${b.oy + p.y * b.dh}`).join(' ')
+  if (!box.value) return ''
+  return corners.value.map((p) => { const s = toStage(p); return `${s.x},${s.y}` }).join(' ')
 })
 
 /** Сторони рамки при краях кадру — червоні поверх рамки (поки ставлять кути і в роботі) */
@@ -417,39 +509,83 @@ const clippedEdges = computed(() => {
   const q = corners.value
   return clipped.value.map((side) => {
     const i = sideEdge(q, side)
-    const p1 = q[i]
-    const p2 = q[(i + 1) % 4]
-    return { side, x1: b.ox + p1.x * b.dw, y1: b.oy + p1.y * b.dh, x2: b.ox + p2.x * b.dw, y2: b.oy + p2.y * b.dh }
+    const p1 = toStage(q[i])
+    const p2 = toStage(q[(i + 1) % 4])
+    return { side, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y }
   })
 })
 
 function handleStyle(i: number): Record<string, string> {
-  const b = box.value
-  const p = corners.value[i]
-  if (!b) return {}
-  return { left: `${b.ox + p.x * b.dw}px`, top: `${b.oy + p.y * b.dh}px` }
+  if (!box.value) return {}
+  const s = toStage(corners.value[i])
+  return { left: `${s.x}px`, top: `${s.y}px` }
 }
 
-let dragging: number | null = null
+/**
+ * Перетягування кута (ТЗ §3): кружечок не стрибає під палець — кут рухається на стільки, на скільки
+ * зрушив палець від місця, де кружечок узяли. Поки тягнуть — лупа над пальцем.
+ */
+const dragIdx = ref<number | null>(null)
+let dragFrom: { px: number; py: number; start: Pt } | null = null
+
 function onHandleDown(i: number, e: PointerEvent): void {
-  dragging = i
+  dragIdx.value = i
+  dragFrom = { px: e.clientX, py: e.clientY, start: { ...corners.value[i] } }
   ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
   e.preventDefault()
+  showLoupe(i, e)
 }
 function onHandleMove(i: number, e: PointerEvent): void {
-  if (dragging !== i || !box.value || !stageEl.value) return
-  const r = stageEl.value.getBoundingClientRect()
   const b = box.value
-  const x = Math.min(1, Math.max(0, (e.clientX - r.left - b.ox) / b.dw))
-  const y = Math.min(1, Math.max(0, (e.clientY - r.top - b.oy) / b.dh))
+  if (dragIdx.value !== i || !dragFrom || !b || !b.dw || !b.dh) return
+  const x = Math.min(1, Math.max(0, dragFrom.start.x + (e.clientX - dragFrom.px) / b.dw))
+  const y = Math.min(1, Math.max(0, dragFrom.start.y + (e.clientY - dragFrom.py) / b.dh))
   const next = corners.value.slice() as Quad
   next[i] = { x, y }
   corners.value = next
+  showLoupe(i, e)
 }
 function onHandleUp(i: number, _e: PointerEvent): void {
-  if (dragging !== i) return
-  dragging = null
+  if (dragIdx.value !== i) return
+  dragIdx.value = null
+  dragFrom = null
+  loupe.value = null
   saveQuad()
+}
+
+// ── Лупа над пальцем ───────────────────────────────────────────────────────────────
+const loupeEl = ref<HTMLCanvasElement | null>(null)
+/** Центр лупи на сцені; null — сховано (кружечок відпустили) */
+const loupe = ref<Pt | null>(null)
+const loupeStyle = computed(() => (loupe.value
+  ? { left: `${loupe.value.x - LOUPE_PX / 2}px`, top: `${loupe.value.y - LOUPE_PX / 2}px`, width: `${LOUPE_PX}px`, height: `${LOUPE_PX}px` }
+  : {}))
+
+/**
+ * Лупа: над пальцем (згори бракує місця — під ним), у межах сцени; у ній — копія кадру з відео навколо
+ * КУТА `i` (не пальця), збільшена ×LOUPE_ZOOM проти кадру на екрані, перехрестя — стилем поверх.
+ */
+function showLoupe(i: number, e: PointerEvent): void {
+  const b = box.value
+  const v = videoEl.value
+  const st = stageEl.value
+  if (!b || !v || !st || !v.videoWidth || !b.dw) return
+  const r = st.getBoundingClientRect()
+  const fx = e.clientX - r.left
+  const fy = e.clientY - r.top
+  const half = LOUPE_PX / 2
+  let y = fy - LOUPE_GAP - half
+  if (y - half < 0) y = fy + LOUPE_GAP + half
+  const x = Math.min(Math.max(fx, half), Math.max(half, b.cw - half))
+  loupe.value = { x, y }
+  const ctx = loupeEl.value?.getContext('2d')
+  if (!ctx) return
+  const p = corners.value[i]
+  // Скільки пікселів кадру камери видно в лупі: LOUPE_PX екранних пікселів ÷ збільшення ÷ (екранних пікселів на піксель кадру)
+  const src = LOUPE_PX / LOUPE_ZOOM / (b.dw / v.videoWidth)
+  ctx.clearRect(0, 0, LOUPE_RES, LOUPE_RES)
+  // Частина вікна за краєм кадру — браузер обрізає джерело й ціль пропорційно; там лишається чорне тло лупи
+  ctx.drawImage(v, p.x * v.videoWidth - src / 2, p.y * v.videoHeight - src / 2, src, src, 0, 0, LOUPE_RES, LOUPE_RES)
 }
 
 // ── Робота ───────────────────────────────────────────────────────────────────────
@@ -478,6 +614,7 @@ async function start(): Promise<void> {
   dims = videoDims()   // точка відліку повороту — кадр саме зараз, коли тиснуть «Почати»
   mirrorPage.value = props.pageIndex
   decider = createMirrorDecider()
+  dropShots()
   consecutiveFails = 0
   Object.assign(stats, {
     startedAt: Date.now(), stoppedAt: 0, sends: 0, placed: 0, failed: 0, person: 0, delaySum: 0, moved: 0, lost: 0,
@@ -486,6 +623,7 @@ async function start(): Promise<void> {
   personNow.value = false
   motionLong.value = false
   movingSince = null
+  helpOpen.value = false
   // Сторож зсуву: де дошка зараз (свіжий пошук — кути могли підтягнути вже після автопошуку, а
   // телефон — поправити) і скільки кольору дошки в кутах. Не знайшла — кути вчителя самі по собі.
   const px = grabDetect()
@@ -541,11 +679,46 @@ const previewEl = ref<HTMLCanvasElement | null>(null)
 let previewTimer: ReturnType<typeof setInterval> | null = null
 /** Пікселі передперегляду — одні на весь час, а не нові двічі на секунду */
 let previewImg: ImageData | null = null
+/** Віконце передперегляду показане; торкнулись — сховане (кадр видно цілком) */
+const previewShown = ref(true)
+/** Де віконце: у куті кадру, де немає кружечків (рахується, коли кути не тягнуть — не стрибає під пальцем) */
+const previewAt = ref<Pt | null>(null)
+const previewStyle = computed(() => (previewAt.value ? { left: `${previewAt.value.x}px`, top: `${previewAt.value.y}px` } : {}))
+
+/**
+ * Де віконце передперегляду: кут кадру, де не лежить жоден кружечок (спершу нижні — згори смужка
+ * стану). Дошка на весь кадр — кружечки біля всіх чотирьох кутів кадру: тоді посередині нижнього чи
+ * верхнього краю (там бік дошки, а не кут), а якщо й там тісно — де до найближчого кружечка найдалі.
+ */
+function placePreview(): void {
+  const b = box.value
+  if (!b) { previewAt.value = null; return }
+  const pts = corners.value.map(toStage)
+  const left = b.ox + PREVIEW_GAP
+  const right = b.ox + b.dw - PREVIEW_GAP - PREVIEW_CSS_W
+  const mid = b.ox + (b.dw - PREVIEW_CSS_W) / 2
+  const top = Math.max(b.oy + PREVIEW_GAP, STRIP_H)
+  const bottom = b.oy + b.dh - PREVIEW_GAP - PREVIEW_CSS_H
+  const spots: Pt[] = [
+    { x: left, y: bottom }, { x: right, y: bottom }, { x: left, y: top }, { x: right, y: top },
+    { x: mid, y: bottom }, { x: mid, y: top },
+  ]
+  /** Відстань від кружечка до віконця (0 — кружечок на ньому) */
+  const gap = (s: Pt, p: Pt) => Math.hypot(
+    Math.max(s.x - p.x, 0, p.x - (s.x + PREVIEW_CSS_W)),
+    Math.max(s.y - p.y, 0, p.y - (s.y + PREVIEW_CSS_H)),
+  )
+  const room = (s: Pt) => Math.min(...pts.map((p) => gap(s, p)))
+  previewAt.value = spots.find((s) => room(s) > HANDLE_R)
+    ?? spots.reduce((best, s) => (room(s) > room(best) ? s : best))
+}
+
+watch([box, corners, dragIdx], () => { if (dragIdx.value === null) placePreview() })
 
 /** Вирівняна дошка з кадру аналізу (не з повної роздільності), вписана з полями, як у знімку */
 function drawPreview(): void {
   const c = previewEl.value
-  if (unmounted || phase.value !== 'calibrate' || !c) return
+  if (unmounted || phase.value !== 'calibrate' || !c || !previewShown.value) return
   const img = grabSample()
   if (!img) return
   const ctx = c.getContext('2d')
@@ -580,6 +753,22 @@ watch(blockedBy, (b, was) => {
   else if (was && phase.value === 'running') add('hold', t('winterboard.remote.mirror.log.unblocked'))
 })
 
+// ── Склейка: геометрія попереднього знімка ──────────────────────────────────────────
+/** Кути й розмір кадру — склеювати можна лише знімки, зроблені з тією самою геометрією */
+function geomKey(): string {
+  return `${videoDims()}|${corners.value.map((p) => `${p.x.toFixed(5)},${p.y.toFixed(5)}`).join(';')}`
+}
+/** Пульт тримає попередній знімок тієї самої геометрії — склейка можлива */
+function canPatch(): boolean {
+  return prevShot !== null && prevShotKey === geomKey()
+}
+/** Відпустити пікселі знімків (≈2 × 5,8 МБ): зупинка, закриття, нові кути */
+function dropShots(): void {
+  prevShot = null
+  workShot = null
+  prevShotKey = ''
+}
+
 function tick(): void {
   const forSave = saveWaiting.value
   if (phase.value !== 'running' && !(phase.value === 'paused' && forSave)) return
@@ -596,7 +785,7 @@ function tick(): void {
   const frame = sampleFrame()
   if (!frame) return
   const now = Date.now()
-  const dec = decider.step(frame, now)
+  const dec = decider.step(frame, now, canPatch())
   // Телефон не зрушив? Лише на тихому кадрі (SHIFT_TUNING — чому рідко); перед відправкою — свіжа перевірка
   const still = dec.kind !== 'moving' && dec.kind !== 'settling'
   const hold = still && watchShift(now, forSave || (dec.kind === 'send' && !blockedBy.value))
@@ -637,11 +826,14 @@ function tick(): void {
   } else if (dec.kind === 'send') lightLogged = false
   if (dec.kind === 'wait' && dec.why === 'cap') { void stop('cap'); return }
   if (dec.kind !== 'send' || blockedBy.value) return
-  void commit(frame, dec.why, dec.change, dec.since)
+  void commit(frame, dec)
 }
 
-/** Повнорозмірний вирівняний знімок → JPEG */
-async function snapshot(): Promise<{ file: File; warpMs: number } | null> {
+/**
+ * Повнорозмірний вирівняний знімок → JPEG. `cover` — склейка: ці клітинки з попереднього знімка
+ * (геометрію звірено перед викликом, `canPatch`). Знімок стає новим «попереднім».
+ */
+async function snapshot(cover: Uint8Array | null): Promise<{ file: File; warpMs: number } | null> {
   const v = videoEl.value
   if (!v || !v.videoWidth) return null
   const t0 = performance.now()
@@ -658,9 +850,17 @@ async function snapshot(): Promise<{ file: File; warpMs: number } | null> {
   if (!fctx || !octx) return null
   fctx.drawImage(v, 0, 0, vw, vh)
   const quadPx = quadToPixels(corners.value, vw, vh)
-  const img = octx.createImageData(OUT_W, OUT_H)
-  if (!warpBoard(fctx.getImageData(0, 0, vw, vh), quadPx, img, fitRect(boardAspect(quadPx), OUT_W, OUT_H))) return null
+  const rect = fitRect(boardAspect(quadPx), OUT_W, OUT_H)
+  const key = geomKey()
+  const img = workShot ?? octx.createImageData(OUT_W, OUT_H)
+  workShot = null
+  if (!warpBoard(fctx.getImageData(0, 0, vw, vh), quadPx, img, rect)) { dropShots(); return null }
+  if (cover && prevShot && prevShotKey === key) patchCovered(img, prevShot, rect, cover)
   octx.putImageData(img, 0, 0)
+  // Цей знімок — новий «попередній» для наступної склейки; старий попередній — робочий буфер наступного
+  workShot = prevShot
+  prevShot = img
+  prevShotKey = key
   const blob = await new Promise<Blob | null>((res) => out.toBlob(res, 'image/jpeg', OUT_JPEG_QUALITY))
   if (!blob) return null
   const p = (n: number) => String(n).padStart(2, '0')
@@ -677,14 +877,18 @@ function failed(kind: string, text: string, ctx: Record<string, unknown>): void 
   if (consecutiveFails >= MAX_FAILS) void stop('failures')
 }
 
-async function commit(frame: MirrorFrame, why: SendWhy, change: number, since: number): Promise<void> {
+async function commit(frame: MirrorFrame, s: SendArgs): Promise<void> {
   const page = mirrorPage.value
   if (page === null || saving.value) return
-  decider.sent(frame, Date.now())
+  // Склейка — лише з тим попереднім знімком, що лежить зараз (та сама геометрія); ні — кадр цілком.
+  // Рішення тут, до `sent`: точка відліку й знімок мають показувати те саме.
+  const cover = s.cover && canPatch() ? s.cover : null
+  const why: SendWhy = s.why === 'covered' && !cover ? 'change' : s.why
+  decider.sent(frame, Date.now(), cover)
   saving.value = true
   stats.sends++
   try {
-    const shot = await snapshot()
+    const shot = await snapshot(cover)
     if (!shot) { failed('snapshot', t('winterboard.remote.mirror.log.snapshotFailed'), {}); return }
     const tUp = performance.now()
     let assetId: number
@@ -702,11 +906,16 @@ async function commit(frame: MirrorFrame, why: SendWhy, change: number, since: n
     const uploadMs = Math.round(performance.now() - tUp)
     const kb = Math.round(shot.file.size / 1024)
     const rid = newRequestId()
+    const covered = cover ? s.covered ?? 0 : 0
     add('sent', t(`winterboard.remote.mirror.log.sent.${why}`, {
-      change: pct(change), kb, ms: shot.warpMs + uploadMs, sec: Math.round(MIRROR_TUNING.personAcceptMs / 1000),
+      change: pct(s.change), covered: pct(covered), kb, ms: shot.warpMs + uploadMs,
+      sec: Math.round(MIRROR_TUNING.personAcceptMs / 1000),
     }))
-    tel('send', { why, change, kb, warp_ms: shot.warpMs, upload_ms: uploadMs, n: stats.sends })
-    pending = { rid, since, sentAt: Date.now() }
+    tel('send', {
+      why, change: s.change, kb, warp_ms: shot.warpMs, upload_ms: uploadMs, n: stats.sends,
+      ...(cover ? { covered: Math.round(covered * 1000) / 1000 } : {}),
+    })
+    pending = { rid, since: s.since, sentAt: Date.now() }
     if (!props.sendBackground({ library_asset_id: assetId, request_id: rid, page_index: page })) {
       pending = null
       failed('not_sent', t('winterboard.remote.mirror.log.notSent'), {})
@@ -801,6 +1010,7 @@ function watchShift(now: number, beforeSend: boolean): boolean {
       corners.value = r.quad
       saveQuad()
       decider.reset()   // кути нові — порівнювати з нуля, перший тихий кадр піде знімком
+      dropShots()       // і склеювати нема з чим: попередній знімок — з іншими кутами
       boardLost.value = false
       movedNote.value = true
       stats.moved++
@@ -831,7 +1041,7 @@ function cancelSave(): void {
 function finishSave(frame: MirrorFrame): void {
   cancelSave()
   if (blockedBy.value) return   // за ці секунди зник зв'язок чи ноутбук пішов на іншу сторінку
-  void commit(frame, 'manual', 0, Date.now())
+  void commit(frame, { why: 'manual', change: 0, since: Date.now() })
 }
 
 function togglePause(): void {
@@ -906,6 +1116,8 @@ function recalibrate(): void {
   stopTimer()
   dropWatch()
   decider.reset()
+  dropShots()
+  journalOpen.value = false
   phase.value = 'calibrate'
 }
 
@@ -914,6 +1126,7 @@ async function stop(reason: StopReason): Promise<void> {
   const wasActive = phase.value === 'running' || phase.value === 'paused'
   stopTimer()
   dropWatch()
+  dropShots()
   releaseScreen()
   stopTracks()   // зупинено — камера не гріє телефон; «Почати знову» вмикає її знову
   stopReason.value = reason
@@ -931,6 +1144,7 @@ async function stop(reason: StopReason): Promise<void> {
 }
 
 function again(): void {
+  journalOpen.value = false
   void openCamera()
 }
 
@@ -1016,11 +1230,12 @@ async function onVisibility(): Promise<void> {
     return
   }
   decider.reset()
+  dropShots()   // кадр камери після перезапуску може бути іншого розміру — склеювати не з чим
   add('camera', t('winterboard.remote.mirror.log.cameraBack'))
   tel('camera_back')
 }
 
-// Кадр на екрані змінив розмір (поворот, панель «працює» менша) — кути перемалювати
+// Кадр на екрані змінив розмір (поворот, панелі) — кути перемалювати
 watch(phase, () => { void nextTick(measure) })
 
 onMounted(() => {
@@ -1043,61 +1258,97 @@ onBeforeUnmount(() => {
   if (findTimer) { clearTimeout(findTimer); findTimer = null }
   releaseScreen()
   stopTracks()
-  for (const c of [sampleCanvas, fullCanvas, outCanvas, detectCanvas, previewEl.value]) if (c) { c.width = 0; c.height = 0 }
+  for (const c of [sampleCanvas, fullCanvas, outCanvas, detectCanvas, previewEl.value, loupeEl.value]) if (c) { c.width = 0; c.height = 0 }
   sampleCanvas = fullCanvas = outCanvas = detectCanvas = null
   previewImg = null
+  dropShots()
 })
 </script>
 
 <style scoped>
+/* Кадр — на весь екран; кнопки — вузькою колонкою поза кадром: знизу вертикально, праворуч горизонтально */
 .wb-mirror {
-  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; gap: 10px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); overflow-y: auto;
-  background: #020617; color: #f8fafc;
+  position: fixed; inset: 0; z-index: 60; display: grid;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
+  background: #000; color: #f8fafc;
 }
-.wb-mirror__top { display: flex; align-items: center; justify-content: space-between; }
-.wb-mirror__title { font-size: 17px; font-weight: 700; }
-.wb-mirror__close { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #1e293b; color: #f8fafc; font-size: 24px; }
-.wb-mirror__status { margin: 0; padding: 12px; border-radius: 12px; background: #1e293b; font-size: 16px; font-weight: 600; text-align: center; }
-.wb-mirror__status.is-ok { background: #064e3b; color: #ecfdf5; }
-.wb-mirror__status.is-warn { background: #451a03; color: #fef3c7; border: 1px solid #f59e0b; }
-.wb-mirror__note { margin: 0; font-size: 13px; color: #fcd34d; text-align: center; }
-.wb-mirror__note.is-ok { color: #6ee7b7; }
-.wb-mirror__body { display: flex; flex-direction: column; gap: 10px; }
-.wb-mirror__side { display: flex; flex-direction: column; gap: 10px; }
-.wb-mirror__stage { position: relative; width: 100%; height: 56vh; min-height: 200px; border-radius: 12px; overflow: hidden; background: #000; touch-action: none; }
-.wb-mirror__stage.is-running { height: 30vh; }
-@media (orientation: landscape) and (max-height: 600px) {
-  .wb-mirror__body { flex-direction: row; align-items: flex-start; }
-  .wb-mirror__stage, .wb-mirror__stage.is-running { flex: 1; height: calc(100dvh - 140px); min-height: 160px; }
-  .wb-mirror__side { width: 280px; flex-shrink: 0; max-height: calc(100dvh - 140px); overflow-y: auto; }
+.wb-mirror__stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #000; touch-action: none; }
+.wb-mirror__rail {
+  display: flex; flex-direction: row; gap: 6px; box-sizing: border-box; height: calc(76px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: #0b1220;
+}
+@media (orientation: landscape) {
+  .wb-mirror { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); }
+  .wb-mirror__rail {
+    flex-direction: column; height: auto; width: calc(76px + env(safe-area-inset-right));
+    padding: calc(6px + env(safe-area-inset-top)) calc(6px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) 6px;
+  }
 }
 .wb-mirror__video { width: 100%; height: 100%; object-fit: contain; display: block; }
-.wb-mirror__quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.wb-mirror__quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 .wb-mirror__quad polygon { fill: rgba(16, 185, 129, .12); stroke: #10b981; stroke-width: 3; }
 .wb-mirror__quad polygon.is-bad { fill: rgba(239, 68, 68, .15); stroke: #ef4444; }
 .wb-mirror__quad line.is-clipped { stroke: #ef4444; stroke-width: 6; stroke-linecap: round; }
-.wb-mirror__preview { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.wb-mirror__preview canvas { width: 100%; max-width: 320px; aspect-ratio: 16 / 9; height: auto; border-radius: 8px; background: #0f172a; }
-.wb-mirror__preview figcaption { font-size: 13px; color: #94a3b8; }
+
+/* Смужка стану — поверх кадру, торкання проходять крізь неї до кружечків */
+.wb-mirror__strip {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2; pointer-events: none;
+  padding: calc(6px + env(safe-area-inset-top)) 12px 6px; background: rgba(2, 6, 23, .6);
+  display: flex; flex-direction: column; gap: 2px; text-align: center;
+}
+.wb-mirror__line { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
+.wb-mirror__line.is-ok { color: #6ee7b7; }
+.wb-mirror__line.is-warn { color: #fcd34d; }
+.wb-mirror__line.is-note { font-size: 12px; font-weight: 500; color: #fcd34d; }
+
+.wb-mirror__preview {
+  position: absolute; z-index: 3; margin: 0; width: 160px; border: 2px solid rgba(255, 255, 255, .75); border-radius: 8px;
+  overflow: hidden; background: #0f172a; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.wb-mirror__preview canvas { display: block; width: 160px; height: 90px; }
+.wb-mirror__preview figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 4px; font-size: 10px; text-align: center;
+  color: #e2e8f0; background: rgba(2, 6, 23, .6);
+}
+.wb-mirror__preview-show {
+  position: absolute; z-index: 3; width: 40px; height: 40px; border: 0; border-radius: 10px;
+  background: rgba(2, 6, 23, .7); color: #f8fafc; font-size: 18px;
+}
+
 .wb-mirror__handle {
-  position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 3px solid #fff; border-radius: 50%;
+  position: absolute; z-index: 4; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 3px solid #fff; border-radius: 50%;
   background: rgba(16, 185, 129, .85); color: #fff; font-weight: 800; font-size: 16px; touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.wb-mirror__panel { display: flex; flex-direction: column; gap: 8px; }
-.wb-mirror__hint { margin: 0; font-size: 15px; line-height: 1.4; }
-.wb-mirror__warn { margin: 0; color: #fca5a5; font-size: 14px; }
-.wb-mirror__summary { margin: 0; padding: 12px; border-radius: 12px; background: #1e293b; font-size: 15px; line-height: 1.5; white-space: pre-line; }
-.wb-mirror__row { display: flex; gap: 10px; }
-.wb-mirror__btn {
-  flex: 1; min-height: 52px; border: 0; border-radius: 14px; background: #1e293b; color: #f8fafc;
-  font-size: 15px; font-weight: 600; -webkit-tap-highlight-color: transparent;
+/* Поки тягнуть — кружечок прозорий: видно кадр під ним (точне місце — у лупі) */
+.wb-mirror__handle.is-drag { background: rgba(16, 185, 129, .25); }
+
+.wb-mirror__loupe {
+  position: absolute; z-index: 5; pointer-events: none; box-sizing: border-box; border-radius: 50%; overflow: hidden;
+  border: 3px solid #fff; box-shadow: 0 2px 12px rgba(0, 0, 0, .6); background: #000;
 }
-.wb-mirror__btn.is-on { background: #0f766e; }
-.wb-mirror__btn:disabled { opacity: .35; }
-.wb-mirror__journal { display: flex; flex-direction: column; gap: 6px; }
-.wb-mirror__journal-top { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #94a3b8; }
+.wb-mirror__loupe canvas { display: block; width: 100%; height: 100%; }
+/* Перехрестя — точно в центрі лупи, де кут */
+.wb-mirror__loupe::before, .wb-mirror__loupe::after { content: ''; position: absolute; background: #f43f5e; }
+.wb-mirror__loupe::before { left: 50%; top: 18%; bottom: 18%; width: 2px; margin-left: -1px; }
+.wb-mirror__loupe::after { top: 50%; left: 18%; right: 18%; height: 2px; margin-top: -1px; }
+
+.wb-mirror__card {
+  position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 32px));
+  max-height: calc(100% - 32px); overflow-y: auto; padding: 14px; border-radius: 14px; background: rgba(15, 23, 42, .94);
+}
+.wb-mirror__hint { margin: 0; font-size: 15px; line-height: 1.45; }
+.wb-mirror__summary { margin: 0; font-size: 15px; line-height: 1.5; white-space: pre-line; }
+
+.wb-mirror__journal {
+  position: absolute; z-index: 6; top: 0; right: 0; bottom: 0; width: min(380px, 88%); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 6px; padding: 10px; overflow-y: auto; background: rgba(2, 6, 23, .94);
+}
+@media (orientation: portrait) {
+  .wb-mirror__journal { top: auto; left: 0; width: auto; height: 62%; }
+}
+.wb-mirror__journal-top { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; }
+.wb-mirror__journal-top > span { flex: 1; }
 .wb-mirror__copy { border: 0; border-radius: 10px; padding: 8px 12px; background: #1e293b; color: #e2e8f0; font-size: 13px; }
 .wb-mirror__log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.35; color: #cbd5e1; }
 .wb-mirror__log li[data-kind="placed"] { color: #6ee7b7; }
@@ -1105,4 +1356,16 @@ onBeforeUnmount(() => {
 .wb-mirror__log li[data-kind="unconfirmed"], .wb-mirror__log li[data-kind="not_sent"],
 .wb-mirror__log li[data-kind="lost"], .wb-mirror__log li[data-kind="moved"] { color: #fcd34d; }
 .wb-mirror__time { color: #64748b; font-variant-numeric: tabular-nums; }
+
+/* Кнопки колонки: значок і коротке слово; «Почати» — удвічі більша, «✕» — найменша */
+.wb-mirror__btn {
+  flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 4px 2px; border: 0; border-radius: 12px; background: #1e293b; color: #f8fafc;
+  font-size: 11px; font-weight: 600; line-height: 1.15; text-align: center; overflow: hidden; -webkit-tap-highlight-color: transparent;
+}
+.wb-mirror__ic { font-size: 20px; line-height: 1; }
+.wb-mirror__btn.is-main { flex-grow: 2; font-size: 14px; }
+.wb-mirror__btn.is-on { background: #0f766e; }
+.wb-mirror__btn.is-close { flex: 0 0 48px; background: #334155; }
+.wb-mirror__btn:disabled { opacity: .35; }
 </style>

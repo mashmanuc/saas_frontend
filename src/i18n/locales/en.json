@@ -8905,7 +8905,7 @@
         "corner": "Corner {n}",
         "calibrateHint": "Place the phone so the whole board is visible and drag circles 1–4 onto the board corners (1 is top left, then clockwise). Snapshots will become the background of page {page}.",
         "find": {
-          "button": "Find the board again",
+          "button": "Find board",
           "found": "Board found — check the corners and press “Start”",
           "clipped": "The board is not fully in the frame — move the phone back or set the corners by hand",
           "notFound": "Board not found — set the corners by hand"
@@ -8930,6 +8930,7 @@
         "journal": "Log",
         "copyLog": "Copy log",
         "copied": "Copied",
+        "help": "Help",
         "status": {
           "starting": "Turning on the camera…",
           "calibrate": "Set the board corners",
@@ -8976,7 +8977,8 @@
             "first": "Sent the first snapshot · {kb} KB · {ms} ms",
             "change": "Sent: changed {change}% · {kb} KB · {ms} ms",
             "after_wait": "Sent after waiting {sec} s · changed {change}% · {kb} KB · {ms} ms",
-            "manual": "Sent manually · {kb} KB · {ms} ms"
+            "manual": "Sent manually · {kb} KB · {ms} ms",
+            "covered": "Sent without the teacher · {covered}% of the board was covered — it will update when you step away · {kb} KB · {ms} ms"
           },
           "notSent": "No connection to the board — snapshot not sent",
           "unconfirmed": "The laptop did not answer within 15 s — the snapshot is in Materials, check the board",

@@ -9,11 +9,12 @@
  *
  * Чисті функції (кадр — масив пікселів), щоб їх ловили тести: камери в тестах немає.
  *
- *   - пошук змін — на зменшеному сірому кадрі (2–3 рази на секунду), яскравість кадру
+ *   - пошук змін — на зменшеному сірому кадрі (4 рази на секунду), яскравість кадру
  *     нормалізується (автоекспозиція телефона «дихає»), рішення — за ЧАСТКОЮ змінених клітинок;
  *   - велика суцільна зміна, що заходить з краю дошки (тіло збоку чи знизу), — «людина?»:
- *     не відправляємо, поки вона не простоїть нерухомо довше за PERSON_ACCEPT_MS (тоді це
- *     найпевніше стерта дошка, а не людина);
+ *     нове поза нею — знімок одразу, а клітинки під людиною беруться з попереднього знімка
+ *     («склейка», ТЗ 2026-10-09 «швидше, без учителя» §2); нове лише під нею — чекаємо
+ *     personAcceptMs (тоді це найпевніше стерта дошка, а не людина);
  *   - повна роздільність і перспектива — лише в момент відправки.
  */
 
@@ -43,13 +44,16 @@ export interface MirrorTuning {
   motionCells: number
   /** Скільки клітинок проти останнього знімка — це нове на дошці */
   changeCells: number
-  /** Скільки має бути тихо, щоб кадр вважати стабільним */
+  /** Скільки має бути тихо, щоб кадр вважати стабільним (крок — SAMPLE_MS: спрацьовує на першому кадрі після) */
   stableMs: number
   /** Найменший проміжок між відправками */
   minIntervalMs: number
   /** Стеля відправок за одне ввімкнення */
   maxSends: number
-  /** Скільки «людина?» має простояти нерухомо, щоб усе ж відправити (стерли дошку) */
+  /**
+   * Скільки «людина?» має простояти нерухомо, щоб усе ж відправити кадр цілком (стерли дошку).
+   * Чекає лише нове ПІД людиною: нове поза нею йде склейкою одразу (ТЗ «без учителя» §2).
+   */
   personAcceptMs: number
   /** Межі «людини»: частка площі, частка висоти, заповнення рамки */
   personArea: number
@@ -72,13 +76,21 @@ export interface MirrorTuning {
   inkSteadyFrames: number
 }
 
+/**
+ * Пороги часу — ТЗ `TZ_MIRROR_FASTER_NO_TEACHER_CALIBRATION_2026-10-09.md` §1 (власник після двох уроків:
+ * «частіше оновлювалася… коли вчитель відходить»): тиша 1,2 → 0,8 с, між знімками 5 → 2 с, «людина?»
+ * 10 → 4 с (лише для закритого людиною — решта йде склейкою одразу). Стеля 150 — без змін.
+ */
 export const MIRROR_TUNING: MirrorTuning = {
   cellThr: 0.2,
   motionCells: 3,
   changeCells: 2,
-  stableMs: 1200,
-  minIntervalMs: 5000,
+  stableMs: 800,
+  minIntervalMs: 2000,
   maxSends: 150,
+  // 10 с, як на уроках 09.10 (жодного знімка з учителем): склейка (send/covered) уже оновлює вільну частину
+  // одразу, тож довге чекання лишається лише для кадру цілком — щоб учитель, що 4 с пояснює біля дошки, не
+  // потрапляв у знімок (на стенді з 4 с — потрапляв). Рішення Феї 2026-10-09 на рев'ю.
   personAcceptMs: 10_000,
   personArea: 0.06,
   personHeight: 0.35,
@@ -93,16 +105,20 @@ export const MIRROR_TUNING: MirrorTuning = {
   eraseCells: 20,
   lightCells: 10,
   // Урок 2 (09.10): 5 повторів «людина? → 10 с → надіслано» — крейда «змінилась» у 2–4 клітинках
-  // одного кадру (шум камери), а на парах знімків три з них — +0. 3 кадри × SAMPLE_MS ≈ 1,2 с —
-  // стільки ж, скільки дошка й так «завмирає» (stableMs), тож звичайний знімок не запізнюється.
+  // одного кадру (шум камери), а на парах знімків три з них — +0. Лічба — у КАДРАХ (шум стрибає
+  // з кадру на кадр): 3 кадри × SAMPLE_MS 250 = 0,75 с (ТЗ §1: «стійкість 3 кадри = 0,75 с замість
+  // 1,2 с») — не довше за stableMs 0,8 с, тож звичайний знімок через стійкість не запізнюється.
   inkSteadyFrames: 3,
 }
 
 /** Півсторона вікна місцевого тла для «карти крейди» (пікселі кадру аналізу): штрих ≪ вікна ≪ пляма світла. */
 export const INK_RADIUS = 6
 
-/** Скільки разів на секунду дивимось на кадр (≈2,5 — менше нагріву й батареї). */
-export const SAMPLE_MS = 400
+/**
+ * Як часто дивимось на кадр: 4 рази на секунду (ТЗ «швидше» §1; було 400 мс). Ціна — ~+60 % часу
+ * аналізу проти 2,5 разу на секунду; сторож зсуву (SHIFT_TUNING) рахує в мілісекундах і не частішає.
+ */
+export const SAMPLE_MS = 250
 
 // ── Геометрія ─────────────────────────────────────────────────────────────────────
 
@@ -347,16 +363,17 @@ export function changedCells(a: Float32Array, b: Float32Array, thr: number): { m
 
 export interface Blob { area: number; touchesEdge: boolean; heightFrac: number; fill: number }
 
-/** Зв'язні плями змінених клітинок (4-сусідство). Край — лівий, правий або нижній. */
-export function blobs(mask: Uint8Array, gx = GX, gy = GY): Blob[] {
-  const seen = new Uint8Array(mask.length)
-  const out: Blob[] = []
+/** Плями з номерами клітинок: `label[i]` — номер плями клітинки i (з 1), 0 — клітинка не змінена. */
+function labelBlobs(mask: Uint8Array, gx: number, gy: number): { list: Blob[]; label: Int32Array } {
+  const label = new Int32Array(mask.length)
+  const list: Blob[] = []
   const stack: number[] = []
   for (let start = 0; start < mask.length; start++) {
-    if (!mask[start] || seen[start]) continue
+    if (!mask[start] || label[start]) continue
+    const id = list.length + 1
     let area = 0
     let x0 = gx, x1 = -1, y0 = gy, y1 = -1
-    seen[start] = 1
+    label[start] = id
     stack.push(start)
     while (stack.length) {
       const i = stack.pop()!
@@ -366,25 +383,147 @@ export function blobs(mask: Uint8Array, gx = GX, gy = GY): Blob[] {
       if (x < x0) x0 = x; if (x > x1) x1 = x
       if (y < y0) y0 = y; if (y > y1) y1 = y
       const nb = [x > 0 ? i - 1 : -1, x < gx - 1 ? i + 1 : -1, y > 0 ? i - gx : -1, y < gy - 1 ? i + gx : -1]
-      for (const j of nb) if (j >= 0 && mask[j] && !seen[j]) { seen[j] = 1; stack.push(j) }
+      for (const j of nb) if (j >= 0 && mask[j] && !label[j]) { label[j] = id; stack.push(j) }
     }
     const bw = x1 - x0 + 1
     const bh = y1 - y0 + 1
-    out.push({
+    list.push({
       area,
       touchesEdge: x0 === 0 || x1 === gx - 1 || y1 === gy - 1,
       heightFrac: bh / gy,
       fill: area / (bw * bh),
     })
   }
+  return { list, label }
+}
+
+/** Зв'язні плями змінених клітинок (4-сусідство). Край — лівий, правий або нижній. */
+export function blobs(mask: Uint8Array, gx = GX, gy = GY): Blob[] {
+  return labelBlobs(mask, gx, gy).list
+}
+
+function isPersonBlob(b: Blob, t: MirrorTuning, total: number): boolean {
+  return b.touchesEdge && b.area / total >= t.personArea && b.heightFrac >= t.personHeight && b.fill >= t.personFill
+}
+
+/**
+ * Клітинки плям, схожих на людину перед дошкою (велика суцільна пляма, що заходить з краю);
+ * немає таких — null. Саме ці клітинки склейка бере з попереднього знімка.
+ */
+export function personCells(mask: Uint8Array, t: MirrorTuning = MIRROR_TUNING, gx = GX, gy = GY): Uint8Array | null {
+  const { list, label } = labelBlobs(mask, gx, gy)
+  const total = gx * gy
+  const ids = list.map((b, k) => (isPersonBlob(b, t, total) ? k + 1 : 0)).filter((id) => id > 0)
+  if (!ids.length) return null
+  const out = new Uint8Array(mask.length)
+  for (let i = 0; i < label.length; i++) if (label[i] && ids.includes(label[i])) out[i] = 1
   return out
 }
 
 /** Чи схожа зміна на людину перед дошкою: велика суцільна пляма, що заходить з краю. */
 export function looksLikePerson(mask: Uint8Array, t: MirrorTuning = MIRROR_TUNING, gx = GX, gy = GY): boolean {
-  const total = gx * gy
-  return blobs(mask, gx, gy).some((b) => b.touchesEdge && b.area / total >= t.personArea
-    && b.heightFrac >= t.personHeight && b.fill >= t.personFill)
+  return personCells(mask, t, gx, gy) !== null
+}
+
+/**
+ * Розширити маску на 1 клітинку в усі боки, і навскіс теж (ТЗ «без учителя» §2: плече, тінь,
+ * розмитий край тіла — зміна яскравості там слабша за поріг, а в знімку людину видно).
+ */
+export function dilateCells(mask: Uint8Array, gx = GX, gy = GY): Uint8Array {
+  const out = new Uint8Array(mask.length)
+  for (let i = 0; i < mask.length; i++) {
+    if (!mask[i]) continue
+    const x = i % gx
+    const y = (i - x) / gx
+    for (let dy = -1; dy <= 1; dy++) {
+      const yy = y + dy
+      if (yy < 0 || yy >= gy) continue
+      for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx
+        if (xx >= 0 && xx < gx) out[yy * gx + xx] = 1
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * Маска «людини?» за яскравістю проти знімка — без зсуву всієї дошки. `tone` нормалізується на кадр
+ * (середнє й σ кадру), тож коли на ЧИСТІЙ дошці (σ — лише шум) з'являються напис і людина, σ кадру
+ * зростає в рази й усі клітинки дошки «зсуваються» за поріг: уся дошка — одна пляма «людини» (стенд
+ * 2026-10-09: на порожній дошці після першого рядка склейки не було, лише «людина?» → 4 с). Зсув
+ * спільний для всіх незмінених клітинок, тож він дорівнює медіані різниць — але лише коли незмінених
+ * явна більшість (≥ PERSON_SHIFT_AGREE); інакше (людина на пів дошки) — без поправки, як до 2026-10-09.
+ */
+export function personToneMask(a: Float32Array, b: Float32Array, thr: number): Uint8Array {
+  const d = new Float32Array(a.length)
+  for (let i = 0; i < a.length; i++) d[i] = b[i] - a[i]
+  const sorted = Float32Array.from(d).sort()
+  let shift = sorted[Math.floor(sorted.length / 2)]
+  let agree = 0
+  for (let i = 0; i < d.length; i++) if (Math.abs(d[i] - shift) <= thr) agree++
+  if (agree < PERSON_SHIFT_AGREE * d.length) shift = 0
+  const mask = new Uint8Array(a.length)
+  for (let i = 0; i < a.length; i++) if (Math.abs(d[i] - shift) > thr) mask[i] = 1
+  return mask
+}
+
+/** Частка клітинок, що мають «погодитись» на спільний зсув яскравості, щоб його знімати */
+export const PERSON_SHIFT_AGREE = 0.6
+
+/**
+ * Людина перед дошкою і що закрити склейкою (ТЗ «без учителя» §2: пляма людини, розширена на 1 клітинку —
+ * плече, тінь); не людина — null. `mask` — `personToneMask`, `runs` — лічба стійкої крейди (`steadyInk`).
+ *
+ * Новий напис поруч з учителем зливається з ним в одну пляму яскравості — стенд 2026-10-09: учитель дописав
+ * рядок і став біля його кінця (голова на рядку): пляма «учитель + рядок» на всю ширину вже не схожа на
+ * людину (заповнення), і знімок ішов цілком — з учителем. Сам учитель крейди не додає (одяг рівний, крейду
+ * він закриває), тож людину шукаємо серед змінених клітинок БЕЗ стійкої нової крейди (`runs` ≥ k). Край тіла
+ * на темній дошці теж дає «крейду» (світліший за тло), тож знайдене тіло нарощується на 1 клітинку в межах
+ * зміненого (повернути край; від напису забирається лише клітинка впритул). Голову від тулуба відділяє та
+ * сама «крейда» (шия, край напису) — голова окремою малою плямою не «людина» і лишалась на знімку; а стоячий
+ * учитель закриває смугу дошки над собою, тож у кожному стовпці тіла закрито від верху дошки до тіла. Далі —
+ * кільце ТЗ. Без клітинок крейди людини не видно (світлий одяг, рука в крейді) — уся змінена пляма з кільцем,
+ * як до 2026-10-09.
+ */
+export function personCover(mask: Uint8Array, runs: Int16Array, t: MirrorTuning = MIRROR_TUNING): Uint8Array | null {
+  const peeled = new Uint8Array(mask.length)
+  for (let i = 0; i < mask.length; i++) if (mask[i] && runs[i] < t.inkSteadyFrames) peeled[i] = 1
+  const core = personCells(peeled, t)
+  if (core) {
+    const body = dilateCells(core)
+    for (let i = 0; i < body.length; i++) body[i] &= mask[i]
+    for (let x = 0; x < GX; x++) {
+      let low = -1
+      for (let y = GY - 1; y >= 0 && low < 0; y--) if (body[y * GX + x]) low = y
+      for (let y = 0; y < low; y++) body[y * GX + x] = 1
+    }
+    return dilateCells(body)
+  }
+  const whole = personCells(mask, t)
+  return whole ? dilateCells(whole) : null
+}
+
+/** Скільки клітинок маски (частка всієї дошки) */
+export function maskFrac(mask: Uint8Array): number {
+  let n = 0
+  for (let i = 0; i < mask.length; i++) n += mask[i]
+  return n / mask.length
+}
+
+/**
+ * Стійка зміна крейди лише ПОЗА маскою `cover` — за лічильниками `runs`, які `steadyInk` уже оновив
+ * цим кадром. Нове поза людиною → склейка; нове лише під нею → чекати.
+ */
+export function steadyOutside(runs: Int16Array, k: number, cover: Uint8Array): { count: number; added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (let i = 0; i < runs.length; i++) {
+    if (cover[i]) continue
+    if (runs[i] >= k) added++
+    else if (runs[i] <= -k) removed++
+  }
+  return { count: added + removed, added, removed }
 }
 
 // ── Рішення: відправити чи ні ─────────────────────────────────────────────────────
@@ -396,6 +535,12 @@ export type MirrorDecision =
   | { kind: 'person'; change: number; first: boolean }
   | { kind: 'wait'; why: 'interval' | 'busy' | 'cap'; change: number }
   | { kind: 'send'; why: 'first' | 'change' | 'after_wait'; change: number; since: number }
+  /**
+   * Склейка (ТЗ «без учителя» §2): перед дошкою людина, а нове — поза нею. `cover` — клітинки під
+   * людиною (`personCover`), у знімку вони з попереднього знімка; `covered` — їх частка дошки;
+   * `change` — частка клітинок, де нове поза людиною.
+   */
+  | { kind: 'send'; why: 'covered'; change: number; since: number; cover: Uint8Array; covered: number }
 
 /**
  * Стан дзеркала між кадрами. `step` — на кожен кадр аналізу; `sent` — коли пішла відправка
@@ -411,6 +556,14 @@ export type MirrorDecision =
  * поспіль) — і для «нового», і для «людини?». Лічба йде з першого кадру без руху, тобто ще поки
  * дошка «завмирає»: звичайний знімок не запізнюється, а напис, що з'явився без руху в кадрі, —
  * щонайбільше на (inkSteadyFrames − 1) кадрів.
+ *
+ * «Людина?» (ТЗ «швидше, без учителя» 2026-10-09 §2): пляма — за яскравістю без зсуву всієї дошки
+ * (`personToneMask`); стійке нове ПОЗА нею (`personCover`: без нового напису, що зливається з учителем, і з
+ * кільцем 1 клітинка) → склейка одразу (`why: 'covered'`); нове лише під плямою → чекати personAcceptMs від
+ * початку тиші, потім кадр цілком (`after_wait`, людина стоїть так довго — найпевніше стерта дошка).
+ * Склейка можлива, лише коли пульт тримає попередній знімок тієї самої геометрії (`canPatch`);
+ * немає — як раніше, чекати. Після склейки точка відліку в закритих клітинках — СТАРІ `tone`/`ink`:
+ * людина відійде — зміна там буде помічена, і піде новий знімок.
  */
 export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
   let prev: MirrorFrame | null = null
@@ -424,7 +577,8 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
   /** Скільки кадрів без руху поспіль кожна клітинка змінена проти знімка (знак — бік зміни) */
   const runs = new Int16Array(GX * GY)
 
-  function step(frame: MirrorFrame, now: number): MirrorDecision {
+  /** `canPatch` — пульт тримає попередній знімок тієї самої геометрії, склейка можлива */
+  function step(frame: MirrorFrame, now: number, canPatch = true): MirrorDecision {
     if (prev) {
       const { count } = changedCells(prev.tone, frame.tone, t.cellThr)
       prev = frame
@@ -442,6 +596,7 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
     if (now - stableSince < t.stableMs) return { kind: 'settling' }
     let why: 'first' | 'change' | 'after_wait' = 'first'
     let change = 1
+    let cover: Uint8Array | null = null
     if (ref && ink) {
       change = ink.count / frame.ink.length
       if (!inkIsNew(ink, t)) {
@@ -450,31 +605,52 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
       }
       if (newSince === null) newSince = now
       why = 'change'
-      if (looksLikePerson(changedCells(ref.tone, frame.tone, t.cellThr).mask, t)) {
+      const c = personCover(personToneMask(ref.tone, frame.tone, t.cellThr), runs, t)
+      if (c) {
         if (now - stableSince < t.personAcceptMs) {
-          const first = !personNoted
-          personNoted = true
-          return { kind: 'person', change, first }
+          const outside = canPatch ? steadyOutside(runs, t.inkSteadyFrames, c) : null
+          if (!outside || !inkIsNew(outside, t)) {
+            const first = !personNoted
+            personNoted = true
+            return { kind: 'person', change, first }
+          }
+          cover = c
+          change = outside.count / frame.ink.length
+        } else {
+          why = 'after_wait'
         }
-        why = 'after_wait'
       }
     }
     if (newSince === null) newSince = now
     if (busy) return { kind: 'wait', why: 'busy', change }
     if (sends >= t.maxSends) return { kind: 'wait', why: 'cap', change }
     if (now - lastSendAt < t.minIntervalMs) return { kind: 'wait', why: 'interval', change }
+    if (cover) return { kind: 'send', why: 'covered', change, since: newSince, cover, covered: maskFrac(cover) }
     return { kind: 'send', why, change, since: newSince }
   }
 
   return {
     step,
-    /** Пішла відправка цього кадру (і автоматична, і «Зберегти зараз») */
-    sent(frame: MirrorFrame, now: number): void {
-      ref = frame
+    /**
+     * Пішла відправка цього кадру (і автоматична, і «Зберегти зараз»). `cover` — склейка: у цих
+     * клітинках знімок показує попередній знімок, тож і точка відліку там лишається старою.
+     */
+    sent(frame: MirrorFrame, now: number, cover: Uint8Array | null = null): void {
+      if (cover && ref) {
+        const tone = Float32Array.from(frame.tone)
+        const ink = Float32Array.from(frame.ink)
+        for (let i = 0; i < cover.length; i++) {
+          if (cover[i]) { tone[i] = ref.tone[i]; ink[i] = ref.ink[i] }
+        }
+        ref = { tone, ink }
+        personNoted = true   // людина ще стоїть — «Відкинуто: людина?» вдруге в журнал не пишемо
+      } else {
+        ref = frame
+        personNoted = false
+      }
       lastSendAt = now
       sends++
       busy = true
-      personNoted = false
       newSince = null
       runs.fill(0)
     },
@@ -488,6 +664,45 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
 }
 
 export type MirrorDecider = ReturnType<typeof createMirrorDecider>
+
+// ── Склейка: закрите людиною — з попереднього знімка (ТЗ «без учителя» §2) ──────────────
+
+/**
+ * Прямокутник клітинки `i` сітки gx×gy у знімку: дошка у знімку лежить у `rect` (fitRect), і та сама
+ * гомографія «прямокутник → кути» ділить її так само, як кадр аналізу AN_W×AN_H — клітинка (cx, cy)
+ * займає частки [cx/gx, (cx+1)/gx) × [cy/gy, (cy+1)/gy) обох. Межі округлено однаково для сусідів,
+ * тож клітинки лягають без щілин і накладок.
+ */
+export function cellRect(rect: Rect, i: number, gx = GX, gy = GY): Rect {
+  const cx = i % gx
+  const cy = (i - cx) / gx
+  const x0 = rect.x + Math.round((cx * rect.w) / gx)
+  const x1 = rect.x + Math.round(((cx + 1) * rect.w) / gx)
+  const y0 = rect.y + Math.round((cy * rect.h) / gy)
+  const y1 = rect.y + Math.round(((cy + 1) * rect.h) / gy)
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
+}
+
+/**
+ * Склейка: у знімку `out` клітинки маски `cover` замінити пікселями попереднього знімка `prev` (той
+ * самий розмір і `rect` — геометрію звіряє пульт). Решта `out` — свіжа. Повертає кількість замінених
+ * клітинок; розміри різні — 0, нічого не чіпає.
+ */
+export function patchCovered(out: Pixels, prev: Pixels, rect: Rect, cover: Uint8Array, gx = GX, gy = GY): number {
+  if (out.width !== prev.width || out.height !== prev.height) return 0
+  const W = out.width
+  let n = 0
+  for (let i = 0; i < cover.length; i++) {
+    if (!cover[i]) continue
+    const r = cellRect(rect, i, gx, gy)
+    for (let y = r.y; y < r.y + r.h; y++) {
+      const o = (y * W + r.x) * 4
+      out.data.set(prev.data.subarray(o, o + r.w * 4), o)
+    }
+    n++
+  }
+  return n
+}
 
 // ── Знімок на дошку ───────────────────────────────────────────────────────────────
 
@@ -805,9 +1020,11 @@ export interface ShiftTuning {
 /**
  * Чому так рідко: пошук дошки на кадрі 512 px на телефоні — 130–200 мс (телеметрія `find` 09.10:
  * 129, 156, 200 мс). Раз на 2,5 с — це 5–8 % часу одного ядра, і лише на тихому кадрі (коли перед
- * дошкою рух, перевірки немає зовсім). Щокадру (2,5 рази на секунду) було б 35–50 % — батарея й
+ * дошкою рух, перевірки немає зовсім). Щокадру (4 рази на секунду з 2026-10-09) було б 50–80 % — батарея й
  * нагрів телефона на підставці за урок. Перед кожною відправкою — ще одна перевірка, якщо остання
- * старша за 1 с: зсунутий знімок не має піти на проектор, поки чекаємо планової.
+ * старша за 1 с: зсунутий знімок не має піти на проектор, поки чекаємо планової. Усі пороги тут — у
+ * мілісекундах, а не в кадрах: частіший аналіз (SAMPLE_MS 400 → 250) перевірок не частішає; підтвердження
+ * (confirmMs 800) припадає на перший кадр після 800 мс — тепер це 1000 мс, а не 800.
  */
 export const SHIFT_TUNING: ShiftTuning = {
   checkMs: 2500,
