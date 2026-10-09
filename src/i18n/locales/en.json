@@ -7473,7 +7473,27 @@
   "winterboard": {
     "mirrorClip": {
       "open": "Create video clip",
-      "title": "Video clip from the recording"
+      "title": "Video clip from the recording",
+      "page": "Recording page",
+      "pageN": "Page {n}",
+      "shots": "shots: {n}",
+      "from": "From shot",
+      "to": "To shot",
+      "shotN": "Shot {n} of {total}",
+      "tooMany": "Too many shots in the range ({n}). Choose at most {max}.",
+      "prepare": "Prepare",
+      "analyzing": "Analysing shots: {done} of {total}",
+      "summary": "Steps with writing: {real} · light only, skipped: {light} · length ≈ {dur}",
+      "tooLong": "The clip would be longer than {max} min — choose a shorter range.",
+      "create": "Create video",
+      "exporting": "Creating video: {pct}%",
+      "checkBeforeSharing": "Before sharing, check that the writing is correct and that no people are in the frame. The file stays on your device — the site does not store it.",
+      "download": "Download MP4",
+      "again": "Another range",
+      "cancel": "Cancel",
+      "unsupported": "This browser cannot create MP4. Open the recording in Chrome or Edge on a computer.",
+      "loadFailed": "Could not load shot {n} — the video was not created.",
+      "failed": "Could not create the video."
     },
     "localWorkspace": {
       "title": "My workspace",
