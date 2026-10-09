@@ -4744,7 +4744,8 @@
         "course_plan": "Course plan",
         "material_vision": "Material extraction: vision",
         "material_ocr": "Material extraction: OCR",
-        "cli_theory": "Theory generation (CLI)"
+        "cli_theory": "Theory generation (CLI)",
+        "history_lesson": "History lesson: generation"
       }
     },
     "platformSettings": {
@@ -10725,6 +10726,40 @@
     "deleteConfirm": "Delete template?"
   },
   "knowledge": {
+    "historyGen": {
+      "headerBtn": "Generate a history lesson",
+      "title": "Generate a history lesson",
+      "subtitle": "A scenario lesson for a curriculum item: 5 scenes, Wikipedia sources, every card sentence checked against a quote.",
+      "grade": "Grade",
+      "section": "Curriculum section",
+      "item": "Content item",
+      "topic": "Lesson topic (optional)",
+      "topicPlaceholder": "E.g.: Battle of Berestechko",
+      "topicHint": "Narrow it down if the curriculum item is broad.",
+      "howItWorks": "1–3 minutes. The lesson will appear in My lessons.",
+      "generate": "Generate",
+      "forItem": "Preparing a lesson:",
+      "steps": {
+        "sources": "Choosing Wikipedia articles for the topic",
+        "writing": "Writing the lesson scenario",
+        "checking": "Checking every sentence against a quote",
+        "rewriting": "Fixing what was not confirmed",
+        "saving": "Saving to My lessons"
+      },
+      "elapsed": "{s} s elapsed",
+      "ready": "Done: a {n}-scene lesson is in My lessons.",
+      "sources": "Sources",
+      "toList": "Back to lessons",
+      "conduct": "Teach now",
+      "refused": "Could not build an honest lesson on this topic.",
+      "failed": "The lesson did not pass the check and was not saved.",
+      "again": "Try again",
+      "close": "Close",
+      "busy": "The previous lesson is still being generated — please wait.",
+      "limit": "Enough generations for today — try tomorrow.",
+      "startError": "Could not start the generation. Please try again.",
+      "timeout": "Generation is not responding. Check My lessons a bit later."
+    },
     "title": "Lessons",
     "savedSuccess": {
       "titleLesson": "Lesson saved",

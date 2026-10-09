@@ -5034,7 +5034,8 @@
         "course_plan": "План курса",
         "material_vision": "Извлечение материала: зрение",
         "material_ocr": "Извлечение материала: OCR",
-        "cli_theory": "Генерация теории (CLI)"
+        "cli_theory": "Генерация теории (CLI)",
+        "history_lesson": "Урок истории: генерация"
       }
     },
     "breadcrumbs": {

@@ -9,17 +9,36 @@
       <!-- Підпис у tooltip: сама назва «Передати уроки» не пояснює, кому й що
            саме (візуальний огляд 2026-09-22, п.3). Текст той самий, що перший
            крок у модалці. -->
-      <button
-        type="button"
-        class="px-4 py-2 text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
-        :title="$t('knowledge.grants.headerBtnHint')"
-        @click="showGrantModal = true"
-      >
-        🎁 {{ $t('knowledge.grants.headerBtn') }}
-      </button>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <!-- «Згенерувати урок історії» (2026-10-09): кнопка існує, лише коли бекенд віддав програму (allowlist). -->
+        <button
+          v-if="historyProgram"
+          type="button"
+          class="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          :title="$t('knowledge.historyGen.subtitle')"
+          @click="showHistoryGen = true"
+        >
+          ✨ {{ $t('knowledge.historyGen.headerBtn') }}
+        </button>
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+          :title="$t('knowledge.grants.headerBtnHint')"
+          @click="showGrantModal = true"
+        >
+          🎁 {{ $t('knowledge.grants.headerBtn') }}
+        </button>
+      </div>
     </div>
 
     <GrantTransferModal v-if="showGrantModal" :initial-grant="quickGrantResult" @close="closeGrantModal" />
+    <HistoryGenerateModal
+      v-if="showHistoryGen && historyProgram"
+      :program="historyProgram"
+      @close="showHistoryGen = false"
+      @created="onHistoryLessonCreated"
+      @conduct="onHistoryLessonConduct"
+    />
 
     <!-- Tabs: Шаблони | Проведені уроки -->
     <div class="flex border-b border-gray-200 mb-6">
@@ -811,6 +830,29 @@ import WBLessonFolders from '../components/WBLessonFolders.vue'
 import GrantTransferModal from '../components/GrantTransferModal.vue'
 import ShareLessonMenu from '../components/ShareLessonMenu.vue'
 import { grantsApi, type LessonGrant } from '../api/grantsApi'
+import HistoryGenerateModal from '../components/HistoryGenerateModal.vue'
+import { fetchHistoryProgram, type HistoryProgram } from '../api/historyGeneratorApi'
+
+// «Згенерувати урок історії» (2026-10-09): програма МОН з бекенду; null — генерації для вчителя «не існує».
+const historyProgram = ref<HistoryProgram | null>(null)
+const showHistoryGen = ref(false)
+
+async function loadHistoryProgram(): Promise<void> {
+  try {
+    historyProgram.value = await fetchHistoryProgram()
+  } catch (err) {
+    console.error('[WBMyLessonsPage] history program failed', err)   // кнопки просто немає
+  }
+}
+
+function onHistoryLessonCreated(): void {
+  if (activeTab.value === 'templates') loadLessons()
+}
+
+function onHistoryLessonConduct(lessonId: string): void {
+  showHistoryGen.value = false
+  openLesson({ id: lessonId } as MyLesson)
+}
 
 // LessonGrant (2026-07): модалка «Передати уроки»
 const showGrantModal = ref(false)
@@ -1097,6 +1139,7 @@ function formatDuration(seconds: number | null): string {
 
 onMounted(() => {
   loadLessons()
+  loadHistoryProgram()
   document.addEventListener('click', onDocumentClick)
   document.addEventListener('keydown', onDocumentKeydown)
 })

@@ -137,7 +137,7 @@ describe('ключі перекладу «Витрати на ШІ»', () => {
 
   it('перевірка змістовна', () => {
     expect(keys.size).toBeGreaterThan(50)
-    expect(purposes.length).toBe(18)
+    expect(purposes.length).toBe(19)     // + history_lesson (генерація уроку історії, 2026-10-09)
   })
 
   it.each([['uk', uk], ['en', en], ['ru', ru]])('%s: усі ключі є і це рядки', (_loc, messages) => {

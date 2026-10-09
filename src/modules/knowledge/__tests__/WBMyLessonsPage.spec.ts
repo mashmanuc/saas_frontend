@@ -49,6 +49,15 @@ vi.mock('../api/lessonViewApi', () => ({
   },
 }))
 
+// «Згенерувати урок історії» (2026-10-09): поза allowlist бекенд віддає 404 → null → кнопки немає.
+vi.mock('../api/historyGeneratorApi', () => ({
+  fetchHistoryProgram: vi.fn().mockResolvedValue(null),
+  startHistoryGeneration: vi.fn(),
+  fetchHistoryJob: vi.fn(),
+  httpStatusOf: () => null,
+  FINAL_STATUSES: ['ready', 'refused', 'failed'],
+}))
+
 // Mock apiClient
 vi.mock('@/utils/apiClient', () => ({
   default: {
@@ -59,6 +68,7 @@ vi.mock('@/utils/apiClient', () => ({
 
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
+import { fetchHistoryProgram } from '../api/historyGeneratorApi'
 
 const MOCK_LESSONS = [
   {
@@ -332,5 +342,37 @@ describe('WBMyLessonsPage', () => {
       name: 'winterboard-solo',
       params: { id: 'session-conducted-1' },
     })
+  })
+})
+
+// «Згенерувати урок історії» (2026-10-09): кнопку вирішує бекенд, FE-прапорця немає.
+describe('WBMyLessonsPage — кнопка генерації уроку історії', () => {
+  const PROGRAM = { grades: [{ grade: 8, sections: [{ id: 's', title: 'Розділ 1', items: [{ id: 'i', text: 'Пункт' }] }] }] }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(lessonSaveApi.getFolders).mockResolvedValue([])
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue({ lessons: [], total: 0, has_more: false } as never)
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue({ sessions: [], has_more: false, total: 0 } as never)
+  })
+
+  it('немає кнопки, коли програми для вчителя «не існує» (404 → null)', async () => {
+    vi.mocked(fetchHistoryProgram).mockResolvedValue(null)
+    const wrapper = createWrapper()
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('knowledge.historyGen.headerBtn')
+  })
+
+  it('кнопка є й відкриває вікно вибору теми, коли бекенд віддав програму', async () => {
+    vi.mocked(fetchHistoryProgram).mockResolvedValue(PROGRAM as never)
+    const wrapper = createWrapper()
+    await flushPromises()
+    const btn = wrapper.findAll('button').find((b) => b.text().includes('knowledge.historyGen.headerBtn'))
+    expect(btn).toBeTruthy()
+    await btn!.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('knowledge.historyGen.item')
+    expect(wrapper.find('select option[value="i"]').exists()).toBe(true)
   })
 })

@@ -48,6 +48,15 @@ vi.mock('../api/lessonViewApi', () => ({
 
 vi.mock('@/utils/apiClient', () => ({ default: { patch: vi.fn(), delete: vi.fn() } }))
 
+// «Згенерувати урок історії» (2026-10-09): поза allowlist бекенд віддає 404 → null → кнопки немає.
+vi.mock('../api/historyGeneratorApi', () => ({
+  fetchHistoryProgram: vi.fn().mockResolvedValue(null),
+  startHistoryGeneration: vi.fn(),
+  fetchHistoryJob: vi.fn(),
+  httpStatusOf: () => null,
+  FINAL_STATUSES: ['ready', 'refused', 'failed'],
+}))
+
 import WBMyLessonsPage from '../views/WBMyLessonsPage.vue'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
