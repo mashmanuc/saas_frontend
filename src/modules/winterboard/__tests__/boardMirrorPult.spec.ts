@@ -9,10 +9,13 @@ import { createI18n } from 'vue-i18n'
 import fs from 'node:fs'
 import path from 'node:path'
 import uk from '../../../i18n/locales/uk.json'
+import en from '../../../i18n/locales/en.json'
+import ru from '../../../i18n/locales/ru.json'
 
 vi.mock('../api/library', () => ({ uploadAsset: vi.fn() }))
 
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
+import { uploadAsset } from '../api/library'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
@@ -123,22 +126,30 @@ describe('дзеркало: камера і кути', () => {
     w.unmount()
   })
 
-  /** Полотно повертає синтетичний кадр 512×288: сіра стіна, зелена дошка (або без неї) */
-  function fakeCanvas(board: boolean) {
+  /**
+   * Полотно повертає синтетичний кадр 512×288: сіра стіна, зелена дошка (або без неї; `top` — верхній
+   * край дошки на кадрі). `put` — що намальовано на полотні (передперегляд).
+   */
+  function fakeCanvas(board: boolean, top = 60) {
     const W = 512
     const H = 288
     const data = new Uint8ClampedArray(W * H * 4)
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        const inBoard = board && x >= 100 && x < 420 && y >= 60 && y < 230
+        const inBoard = board && x >= 100 && x < 420 && y >= top && y < 230
         const c = inBoard ? [30, 72, 44] : [128, 128, 120]
         data.set([c[0], c[1], c[2], 255], (y * W + x) * 4)
       }
     }
-    return vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    const put = vi.fn()
+    const spy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: vi.fn(),
       getImageData: () => ({ data, width: W, height: H }),
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }),
+      putImageData: put,
+      clearRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D)
+    return Object.assign(spy, { put })
   }
   const afterFind = () => new Promise((r) => setTimeout(r, 650))
   const findText = (k: string) => (M.find as Record<string, string>)[k]
@@ -177,6 +188,254 @@ describe('дзеркало: камера і кути', () => {
     spy2.mockRestore()
   })
 
+  const clippedText = (k: string) => (M.clipped as Record<string, string>)[k]
+
+  it('кути при верхньому краї кадру (поставлені рукою) — верхня сторона рамки червона, «Верх дошки поза кадром…»; «Почати» не вимкнена', async () => {
+    localStorage.setItem('wb.mirror.quad', JSON.stringify([{ x: 0.1, y: 0.005 }, { x: 0.9, y: 0.01 }, { x: 0.9, y: 0.85 }, { x: 0.1, y: 0.85 }]))
+    const w = mirror()
+    await cameraReady(w)
+    expect(w.find('[data-testid="mirror-edge-top"]').classes()).toContain('is-clipped')
+    expect(w.findAll('line.is-clipped')).toHaveLength(1)
+    expect(w.find('[data-testid="mirror-clipped-top"]').text()).toBe(clippedText('top'))
+    expect(w.find('[data-testid="mirror-clipped-bottom"]').exists()).toBe(false)
+    expect(w.find('[data-testid="mirror-start"]').attributes('disabled')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('кути всередині кадру — ні червоних сторін, ні тексту про обрізаний бік', async () => {
+    const w = mirror()
+    await cameraReady(w)
+    expect(w.findAll('line.is-clipped')).toHaveLength(0)
+    expect(w.findAll('[data-testid^="mirror-clipped-"]')).toHaveLength(0)
+    w.unmount()
+  })
+
+  it('знайдена дошка впирається у верх кадру — бік названо словами, загальне «не вся в кадрі» не дублюється', async () => {
+    const spy = fakeCanvas(true, 0)
+    const w = mirror()
+    await cameraReady(w)
+    await afterFind()
+    expect(w.find('[data-testid="mirror-clipped-top"]').text()).toBe(clippedText('top'))
+    expect(w.find('[data-testid="mirror-edge-top"]').exists()).toBe(true)
+    expect(w.find('[data-testid="mirror-find-note"]').exists()).toBe(false)
+    expect(w.find('[data-testid="mirror-log"]').text()).toContain(findText('clipped'))
+    w.unmount()
+    spy.mockRestore()
+  })
+
+  it('поки ставлять кути — живий передперегляд «так побачить ноутбук»; поза кутами й після закриття таймера немає', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    const spy = fakeCanvas(true)
+    try {
+      const w = mirror()
+      await cameraReady(w)
+      const v = w.find('[data-testid="mirror-video"]').element as HTMLVideoElement
+      Object.defineProperty(v, 'readyState', { value: 4, configurable: true })
+      await afterFind()
+      expect(w.find('.wb-mirror__preview figcaption').text()).toBe(M.preview)
+      expect(vi.getTimerCount()).toBe(1)
+      vi.advanceTimersByTime(500)
+      expect(spy.put).toHaveBeenCalledTimes(1)
+      // вирівняна дошка 320×180: посередині — зелена дошка, у куті — біле поле (як у знімку)
+      const img = spy.put.mock.calls[0][0] as { data: Uint8ClampedArray; width: number; height: number }
+      expect([img.width, img.height]).toEqual([320, 180])
+      const px = (x: number, y: number) => Array.from(img.data.slice((y * 320 + x) * 4, (y * 320 + x) * 4 + 3))
+      expect(px(160, 90)).toEqual([30, 72, 44])
+      expect(px(0, 0)).toEqual([255, 255, 255])
+      vi.advanceTimersByTime(500)
+      expect(spy.put).toHaveBeenCalledTimes(2)
+
+      // «Почати» — передперегляду немає, лишається тільки таймер аналізу
+      await w.find('[data-testid="mirror-start"]').trigger('click')
+      await flushPromises()
+      expect(w.find('[data-testid="board-mirror"]').attributes('data-phase')).toBe('running')
+      expect(w.find('[data-testid="mirror-preview"]').exists()).toBe(false)
+      expect(vi.getTimerCount()).toBe(1)
+
+      // «Кути» — знову передперегляд, аналіз зупинено
+      await w.find('[data-testid="mirror-recalibrate"]').trigger('click')
+      await flushPromises()
+      expect(vi.getTimerCount()).toBe(1)
+      vi.advanceTimersByTime(500)
+      expect(spy.put).toHaveBeenCalledTimes(3)
+
+      // закрили, поки ставлять кути — ні таймерів, ні полотна
+      const cv = w.find('[data-testid="mirror-preview"]').element as HTMLCanvasElement
+      w.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+      expect([cv.width, cv.height]).toEqual([0, 0])
+    } finally {
+      spy.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  describe('телефон зрушив / дошки не видно (урок 2, 09.10)', () => {
+    const W = 512
+    const H = 288
+    type Box = { x0: number; x1: number; y0: number; y1: number }
+    const A: Box = { x0: 100, x1: 420, y0: 60, y1: 230 }
+    /** Та сама дошка — телефон зрушив: на кадрі вона лівіше й нижче */
+    const B: Box = { x0: 60, x1: 380, y0: 80, y1: 250 }
+    const ST = M.status as Record<string, string>
+    const LOG = M.log as unknown as Record<string, string>
+
+    /**
+     * Сцена, що змінюється: дошка `board` (або стіна), `moving` — щокадру аналізу хтось то є, то немає
+     * перед дошкою. `draws` — ширини кадрів, що брались з камери (640 — аналіз, 512 — пошук дошки).
+     */
+    function stage() {
+      const st = { board: A as Box | null, moving: false, person: false, draws: [] as number[] }
+      let data = new Uint8ClampedArray(W * H * 4)
+      const paint = () => {
+        data = new Uint8ClampedArray(W * H * 4)
+        const b = st.board
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            let c = b && x >= b.x0 && x < b.x1 && y >= b.y0 && y < b.y1 ? [30, 72, 44] : [128, 128, 120]
+            if (st.person && x >= 150 && x < 300 && y >= 100) c = [70, 50, 90]
+            data.set([c[0], c[1], c[2], 255], (y * W + x) * 4)
+          }
+        }
+      }
+      paint()
+      const spy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+        drawImage: (_v: unknown, _x: number, _y: number, w: number) => {
+          st.draws.push(w)
+          if (w === 640 && st.moving) { st.person = !st.person; paint() }
+        },
+        getImageData: () => ({ data, width: W, height: H }),
+        createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }),
+        putImageData: vi.fn(),
+        clearRect: vi.fn(),
+      } as unknown as CanvasRenderingContext2D)
+      const blob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb: BlobCallback) {
+        cb(new Blob(['x'], { type: 'image/jpeg' }))
+      })
+      const set = (o: Partial<Pick<typeof st, 'board' | 'moving'>>) => { Object.assign(st, o); st.person = false; paint() }
+      return { st, set, blob, restore: () => { spy.mockRestore(); blob.mockRestore() } }
+    }
+
+    /** Кадри йдуть щоSAMPLE_MS (400 мс) — фальшивий годинник */
+    async function advance(ms: number) {
+      for (let t = 0; t < ms; t += 400) {
+        vi.advanceTimersByTime(400)
+        await flushPromises()
+      }
+    }
+
+    async function running(w: ReturnType<typeof mirror>) {
+      await cameraReady(w)
+      Object.defineProperty(w.find('[data-testid="mirror-video"]').element, 'readyState', { value: 4, configurable: true })
+      await afterFind()
+      await w.find('[data-testid="mirror-start"]').trigger('click')
+      await flushPromises()
+      expect(w.find('[data-testid="board-mirror"]').attributes('data-phase')).toBe('running')
+    }
+
+    const status = (w: ReturnType<typeof mirror>) => w.find('[data-testid="mirror-status"]').text()
+    const logText = (w: ReturnType<typeof mirror>) => w.find('[data-testid="mirror-log"]').text()
+    const count = (text: string, part: string) => text.split(part).length - 1
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
+      vi.mocked(uploadAsset).mockReset()
+      vi.mocked(uploadAsset).mockResolvedValue({ id: 7 } as never)
+    })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('дошки не видно — нічого не надсилається, «Не бачу дошки — поправте телефон», «Зберегти зараз» недоступне з причиною; повернули — продовжує', async () => {
+      const sc = stage()
+      const send = vi.fn(() => true)
+      const w = mirror({ sendBackground: send })
+      try {
+        await running(w)
+        sc.set({ board: null })                      // телефон упав — у кадрі стіна
+        await advance(8000)
+        expect(status(w)).toBe(ST.lost)
+        expect(w.find('[data-testid="mirror-save-now"]').attributes('disabled')).toBeDefined()
+        expect(w.find('[data-testid="mirror-save-lost"]').text()).toBe(M.saveLost)
+        expect(count(logText(w), LOG.lost)).toBe(1)  // у журнал — один раз на проміжок
+        expect(sc.blob).not.toHaveBeenCalled()
+        expect(uploadAsset).not.toHaveBeenCalled()
+        expect(send).not.toHaveBeenCalled()
+
+        sc.set({ board: A })                         // поставили як було
+        await advance(6000)
+        expect(status(w)).not.toBe(ST.lost)
+        expect(logText(w)).toContain(LOG.boardBack)
+        expect(send).toHaveBeenCalledTimes(1)
+      } finally {
+        w.unmount()
+        sc.restore()
+      }
+    })
+
+    it('телефон зрушив — кути самі переїхали на дошку, «Телефон зрушив — кути поставлено заново», наступний знімок — як перший', async () => {
+      const sc = stage()
+      const send = vi.fn((_a: { request_id: string }) => true)
+      const w = mirror({ sendBackground: send })
+      try {
+        await running(w)
+        await advance(2000)
+        expect(send).toHaveBeenCalledTimes(1)
+        await w.setProps({ result: { request_id: send.mock.calls[0][0].request_id, status: 'placed' } })
+        await flushPromises()
+
+        sc.set({ board: B })
+        await advance(8000)
+        expect(status(w)).toBe(ST.moved)
+        expect(logText(w)).toContain(LOG.moved.split(' · ')[0])
+        const q = JSON.parse(localStorage.getItem('wb.mirror.quad') || 'null') as { x: number; y: number }[]
+        expect(q[0].x).toBeCloseTo(B.x0 / W, 1)
+        expect(q[0].y).toBeCloseTo(B.y0 / H, 1)
+        expect(q[2].x).toBeCloseTo(B.x1 / W, 1)
+        expect(q[2].y).toBeCloseTo(B.y1 / H, 1)
+        // порівняння з нуля: знімок дошки на новому місці пішов «першим»
+        expect(send).toHaveBeenCalledTimes(2)
+        expect(count(logText(w), (M.log as unknown as { sent: Record<string, string> }).sent.first.split(' · ')[0])).toBe(2)
+      } finally {
+        w.unmount()
+        sc.restore()
+      }
+    })
+
+    it('«Зберегти зараз» — не одразу, а щойно кадр тихий; перед дошкою весь час рух — не довше 3 с; пошук дошки — лише на тихому кадрі', async () => {
+      const sc = stage()
+      const send = vi.fn((_a: { request_id: string }) => true)
+      const w = mirror({ sendBackground: send })
+      try {
+        sc.set({ board: A, moving: true })
+        await running(w)
+        const detectsAtStart = sc.st.draws.filter((x) => x === 512).length
+        await advance(4000)
+        expect(sc.blob).not.toHaveBeenCalled()       // рух — автоматичного знімка немає
+        expect(sc.st.draws.filter((x) => x === 512).length).toBe(detectsAtStart)   // і пошуку дошки теж
+
+        await w.find('[data-testid="mirror-save-now"]').trigger('click')
+        expect(w.find('[data-testid="mirror-save-now"]').text()).toBe(M.saveWaiting)
+        await advance(2400)
+        expect(sc.blob).not.toHaveBeenCalled()
+        await advance(1200)
+        expect(sc.blob).toHaveBeenCalledTimes(1)     // 3 с минуло — знімок усе одно
+        await w.setProps({ result: { request_id: send.mock.calls[0][0].request_id, status: 'placed' } })
+        await flushPromises()
+
+        sc.blob.mockClear()
+        await advance(6000)
+        sc.set({ moving: false })
+        await w.find('[data-testid="mirror-save-now"]').trigger('click')
+        await advance(400)
+        expect(sc.blob).not.toHaveBeenCalled()       // кадр ще не тихий
+        await advance(1600)
+        expect(sc.blob).toHaveBeenCalledTimes(1)     // тихо — знімок (раніше за 3 с)
+      } finally {
+        w.unmount()
+        sc.restore()
+      }
+    })
+  })
+
   it('«×» — камеру вимкнено, дзеркало закривається', async () => {
     const w = mirror()
     await cameraReady(w)
@@ -189,6 +448,20 @@ describe('дзеркало: камера і кути', () => {
 
 describe('пульт: обв\'язка', () => {
   const read = (rel: string) => fs.readFileSync(path.resolve(__dirname, '..', rel), 'utf-8')
+
+  it('«після очікування» — нейтрально, скільки чекали й скільки змінилось, без «стерли дошку?» (урок 2: дошку не стирали)', () => {
+    type Loc = { winterboard: { remote: { mirror: { log: { sent: Record<string, string> } } } } }
+    for (const loc of [uk, en, ru] as unknown as Loc[]) {
+      const s = loc.winterboard.remote.mirror.log.sent.after_wait
+      expect(s).toContain('{sec}')
+      expect(s).toContain('{change}')
+      expect(s).not.toMatch(/стерли|стёрли|erased|\?/)
+    }
+    const tr = (i18n() as unknown as { global: { t: (key: string, params: Record<string, unknown>) => string } }).global.t
+    expect(tr('winterboard.remote.mirror.log.sent.after_wait', { sec: 10, change: '0.6', kb: 90, ms: 600 }))
+      .toBe('Надіслано після 10 с очікування · змінилось 0.6% · 90 КБ · 600 мс')
+    expect(read('components/remote/RemoteBoardMirror.vue')).toMatch(/sec: Math\.round\(MIRROR_TUNING\.personAcceptMs \/ 1000\)/)
+  })
 
   it('дзеркало кладе знімок тією ж командою photo.background (v1.19), нових команд немає', () => {
     const view = read('views/WBRemoteView.vue')

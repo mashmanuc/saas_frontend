@@ -19,6 +19,14 @@
         <video ref="videoEl" class="wb-mirror__video" playsinline muted autoplay data-testid="mirror-video" @loadedmetadata="measure" @resize="measure" />
         <svg v-if="box" class="wb-mirror__quad" :viewBox="`0 0 ${box.cw} ${box.ch}`" aria-hidden="true">
           <polygon :points="polyPoints" :class="{ 'is-bad': !usable }" />
+          <!-- Боки дошки за кадром — червоним (урок 2, 09.10: верх обрізано, а рамка виглядала добре) -->
+          <line
+            v-for="e in clippedEdges"
+            :key="e.side"
+            class="is-clipped"
+            :data-testid="`mirror-edge-${e.side}`"
+            :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
+          />
         </svg>
         <template v-if="phase === 'calibrate' && box">
           <button
@@ -40,22 +48,34 @@
       <div class="wb-mirror__side">
         <div v-if="phase === 'calibrate'" class="wb-mirror__panel">
           <p class="wb-mirror__hint">{{ t('winterboard.remote.mirror.calibrateHint', { page: (pageIndex ?? 0) + 1 }) }}</p>
-          <p v-if="findNote" class="wb-mirror__note" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
+          <!-- «Не вся в кадрі» загальними словами — лише коли бік не названо нижче -->
+          <p v-if="findNote && !(findNote === 'clipped' && clipped.length)" class="wb-mirror__note" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
             {{ t(`winterboard.remote.mirror.find.${findNote}`) }}
           </p>
+          <p v-for="s in clipped" :key="s" class="wb-mirror__warn" :data-testid="`mirror-clipped-${s}`">
+            {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
+          </p>
           <p v-if="!usable" class="wb-mirror__warn" data-testid="mirror-bad-quad">{{ t('winterboard.remote.mirror.badQuad') }}</p>
-          <button type="button" class="wb-mirror__btn" data-testid="mirror-find" :disabled="!ready" @click="findBoard">
-            🔍 {{ t('winterboard.remote.mirror.find.button') }}
-          </button>
+          <!-- «Почати» — першою: на горизонтальному телефоні бічна колонка низька, передперегляд нижче -->
           <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-start" :disabled="!usable || !ready" @click="start">
             {{ t('winterboard.remote.mirror.start') }}
           </button>
+          <button type="button" class="wb-mirror__btn" data-testid="mirror-find" :disabled="!ready" @click="findBoard">
+            🔍 {{ t('winterboard.remote.mirror.find.button') }}
+          </button>
+          <figure class="wb-mirror__preview">
+            <canvas ref="previewEl" :width="PREVIEW_W" :height="PREVIEW_H" data-testid="mirror-preview" />
+            <figcaption>{{ t('winterboard.remote.mirror.preview') }}</figcaption>
+          </figure>
         </div>
 
         <div v-else-if="phase === 'running' || phase === 'paused'" class="wb-mirror__panel">
           <div class="wb-mirror__row">
-            <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-save-now" :disabled="saving || !ready" @click="saveNow">
-              {{ t('winterboard.remote.mirror.saveNow') }}
+            <button
+              type="button" class="wb-mirror__btn is-on" data-testid="mirror-save-now"
+              :disabled="saving || saveWaiting || boardLost || !ready" @click="saveNow"
+            >
+              {{ saveWaiting ? t('winterboard.remote.mirror.saveWaiting') : t('winterboard.remote.mirror.saveNow') }}
             </button>
             <button type="button" class="wb-mirror__btn" data-testid="mirror-pause" @click="togglePause">
               {{ phase === 'paused' ? t('winterboard.remote.mirror.resume') : t('winterboard.remote.mirror.pause') }}
@@ -69,6 +89,11 @@
               {{ t('winterboard.remote.mirror.stop') }}
             </button>
           </div>
+          <p v-if="boardLost" class="wb-mirror__warn" data-testid="mirror-save-lost">{{ t('winterboard.remote.mirror.saveLost') }}</p>
+          <!-- Кути переїхали на дошку, що впирається в край кадру, — бік словами (пункт 1) -->
+          <p v-for="s in clipped" :key="s" class="wb-mirror__warn" :data-testid="`mirror-clipped-${s}`">
+            {{ t(`winterboard.remote.mirror.clipped.${s}`) }}
+          </p>
         </div>
 
         <div v-else-if="phase === 'stopped'" class="wb-mirror__panel" data-testid="mirror-summary">
@@ -111,7 +136,9 @@
  *  3. дошка завмерла ≥ 1,2 с і написане змінилось → знімок 1600×900 (дошка вписана з полями) →
  *     «Матеріали» (REST, `purpose=remote_photo`) → `photo.background` на сторінку, з якої почали;
  *  4. одна спроба на одну зміну: не вдалося — наступна лише з наступною зміною чи «Зберегти зараз»;
- *     три невдачі поспіль, скінчилось місце чи стеля знімків — зупинка з причиною словами.
+ *     три невдачі поспіль, скінчилось місце чи стеля знімків — зупинка з причиною словами;
+ *  5. телефон зрушив (урок 2, 09.10) — кути самі переїжджають разом із дошкою; дошки не видно —
+ *     нічого не надсилається, доки її не знайде знову (`createShiftWatch`).
  *
  * Журнал на екрані (і «Копіювати журнал») — для порівняння після уроку: кожна відправка й
  * кожне відкидання з часом, причиною й часткою змін; та сама подія — у телеметрію пульта.
@@ -122,9 +149,10 @@ import { uploadAsset } from '../../api/library'
 import { PHOTO_UPLOAD_PURPOSE, newRequestId, type RemotePhotoResult } from '../../remote/photoContract'
 import { photoUploadError } from '../../remote/photoUploadError'
 import {
-  DETECT_W, OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
-  analyzeFrame, boardAspect, createMirrorDecider, defaultQuad, detectBoardQuad, fitRect, parseQuad, quadToPixels,
-  quadUsable, warpBoard, type MirrorFrame, type Quad,
+  DETECT_W, MIRROR_TUNING, OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
+  analyzeFrame, boardAspect, boardFill, clippedSides, createMirrorDecider, createShiftWatch, defaultQuad,
+  detectBoardQuad, fitRect, parseQuad, quadToPixels, quadUsable, sideEdge, warpBoard,
+  type MirrorFrame, type Pixels, type Quad, type ShiftWatch,
 } from '../../remote/boardMirror'
 
 const props = defineProps<{
@@ -156,6 +184,12 @@ const SAMPLE_W = 640
 const FIND_DELAY_MS = 500
 const QUAD_KEY = 'wb.mirror.quad'
 const LOG_MAX = 300
+/** Передперегляд «так побачить ноутбук» поки ставлять кути: пропорції знімка (16:9), ~2 рази на секунду */
+const PREVIEW_W = 320
+const PREVIEW_H = 180
+const PREVIEW_MS = 500
+/** «Зберегти зараз» чекає тихого кадру (рука прибрана, телефон заспокоївся) не довше за це */
+const SAVE_WAIT_MS = 3000
 
 const { t } = useI18n()
 const phase = ref<Phase>('starting')
@@ -165,6 +199,8 @@ const videoEl = ref<HTMLVideoElement | null>(null)
 const stageEl = ref<HTMLElement | null>(null)
 const corners = ref<Quad>(loadQuad())
 const usable = computed(() => quadUsable(corners.value))
+/** Боки дошки за кадром — за поточними кутами (і знайденими, і поставленими рукою) */
+const clipped = computed(() => clippedSides(corners.value))
 const wakeLockOk = ref(true)
 const saving = ref(false)
 const copied = ref(false)
@@ -179,6 +215,15 @@ let movingMax = 0
 let motionLogged = false
 /** «Змінилось світло — не надсилаю» вже в журналі для цього проміжку */
 let lightLogged = false
+/** Сторож зсуву телефона — з «Почати» до зупинки / нових кутів */
+let shiftWatch: ShiftWatch | null = null
+/** Дошки не видно — нічого не надсилаємо, доки не знайдеться */
+const boardLost = ref(false)
+/** Кути щойно переставились самі — у рядку стану до наступного знімка на дошці */
+const movedNote = ref(false)
+/** «Зберегти зараз» натиснуто — знімок на першому тихому кадрі */
+const saveWaiting = ref(false)
+let saveAskedAt = 0
 /** Що заважає відправці зараз: немає зв'язку / ноутбук на іншій сторінці */
 const blockedBy = computed<'' | 'offline' | 'page'>(() => {
   if (phase.value !== 'running') return ''
@@ -192,7 +237,7 @@ const shownLog = computed(() => [...log.value].reverse())
 let logN = 0
 
 const stats = reactive({
-  startedAt: 0, stoppedAt: 0, sends: 0, placed: 0, failed: 0, person: 0, delaySum: 0,
+  startedAt: 0, stoppedAt: 0, sends: 0, placed: 0, failed: 0, person: 0, delaySum: 0, moved: 0, lost: 0,
   batteryStart: null as number | null, batteryEnd: null as number | null, lastPlacedAt: null as number | null,
 })
 
@@ -356,6 +401,19 @@ const polyPoints = computed(() => {
   return corners.value.map((p) => `${b.ox + p.x * b.dw},${b.oy + p.y * b.dh}`).join(' ')
 })
 
+/** Сторони рамки при краях кадру — червоні поверх рамки (поки ставлять кути і в роботі) */
+const clippedEdges = computed(() => {
+  const b = box.value
+  if (!b || (phase.value !== 'calibrate' && phase.value !== 'running' && phase.value !== 'paused')) return []
+  const q = corners.value
+  return clipped.value.map((side) => {
+    const i = sideEdge(q, side)
+    const p1 = q[i]
+    const p2 = q[(i + 1) % 4]
+    return { side, x1: b.ox + p1.x * b.dw, y1: b.oy + p1.y * b.dh, x2: b.ox + p2.x * b.dw, y2: b.oy + p2.y * b.dh }
+  })
+})
+
 function handleStyle(i: number): Record<string, string> {
   const b = box.value
   const p = corners.value[i]
@@ -412,19 +470,31 @@ async function start(): Promise<void> {
   decider = createMirrorDecider()
   consecutiveFails = 0
   Object.assign(stats, {
-    startedAt: Date.now(), stoppedAt: 0, sends: 0, placed: 0, failed: 0, person: 0, delaySum: 0,
+    startedAt: Date.now(), stoppedAt: 0, sends: 0, placed: 0, failed: 0, person: 0, delaySum: 0, moved: 0, lost: 0,
     batteryEnd: null, lastPlacedAt: null,
   })
   personNow.value = false
   motionLong.value = false
   movingSince = null
+  // Сторож зсуву: де дошка зараз (свіжий пошук — кути могли підтягнути вже після автопошуку, а
+  // телефон — поправити) і скільки кольору дошки в кутах. Не знайшла — кути вчителя самі по собі.
+  const px = grabDetect()
+  const found = px ? detectBoardQuad(px) : null
+  const base = px ? boardFill(px, corners.value) : 0
+  shiftWatch = createShiftWatch({ base, found: found?.quad ?? null })
+  boardLost.value = false
+  movedNote.value = false
+  saveWaiting.value = false
   phase.value = 'running'
   stats.batteryStart = await battery()
   await holdScreen()
   add('start', t('winterboard.remote.mirror.log.start', {
     page: pageNo(), battery: batteryText(stats.batteryStart), size: videoDims(),
   }))
-  tel('start', { page: mirrorPage.value, battery: stats.batteryStart, size: videoDims(), wake_lock: wakeLockOk.value })
+  tel('start', {
+    page: mirrorPage.value, battery: stats.batteryStart, size: videoDims(), wake_lock: wakeLockOk.value,
+    board_found: !!found, board_fill: Math.round(base * 100) / 100,
+  })
   startTimer()
 }
 
@@ -436,8 +506,8 @@ function stopTimer(): void {
   if (timer) { clearInterval(timer); timer = null }
 }
 
-/** Зменшений кадр для аналізу */
-function sampleFrame(): MirrorFrame | null {
+/** Кадр камери, зменшений до SAMPLE_W, — для аналізу й для передперегляду */
+function grabSample(): Pixels | null {
   const v = videoEl.value
   if (!v || !v.videoWidth || !v.videoHeight || v.readyState < 2) return null
   const sw = SAMPLE_W
@@ -447,8 +517,51 @@ function sampleFrame(): MirrorFrame | null {
   const ctx = sampleCanvas.getContext('2d', { willReadFrequently: true })
   if (!ctx) return null
   ctx.drawImage(v, 0, 0, sw, sh)
-  return analyzeFrame(ctx.getImageData(0, 0, sw, sh), quadToPixels(corners.value, sw, sh))
+  return ctx.getImageData(0, 0, sw, sh)
 }
+
+/** Зменшений кадр для аналізу */
+function sampleFrame(): MirrorFrame | null {
+  const img = grabSample()
+  return img ? analyzeFrame(img, quadToPixels(corners.value, img.width, img.height)) : null
+}
+
+// ── Передперегляд «так побачить ноутбук» (урок 2, 09.10: верх дошки обрізано — не помітили) ──
+const previewEl = ref<HTMLCanvasElement | null>(null)
+let previewTimer: ReturnType<typeof setInterval> | null = null
+/** Пікселі передперегляду — одні на весь час, а не нові двічі на секунду */
+let previewImg: ImageData | null = null
+
+/** Вирівняна дошка з кадру аналізу (не з повної роздільності), вписана з полями, як у знімку */
+function drawPreview(): void {
+  const c = previewEl.value
+  if (unmounted || phase.value !== 'calibrate' || !c) return
+  const img = grabSample()
+  if (!img) return
+  const ctx = c.getContext('2d')
+  if (!ctx) return
+  const quadPx = quadToPixels(corners.value, img.width, img.height)
+  previewImg ??= ctx.createImageData(PREVIEW_W, PREVIEW_H)
+  if (usable.value && warpBoard(img, quadPx, previewImg, fitRect(boardAspect(quadPx), PREVIEW_W, PREVIEW_H))) {
+    ctx.putImageData(previewImg, 0, 0)
+  } else {
+    ctx.clearRect(0, 0, PREVIEW_W, PREVIEW_H)   // кути переплутані — ноутбук такого знімка не отримає
+  }
+}
+
+function startPreview(): void {
+  stopPreview()
+  previewTimer = setInterval(drawPreview, PREVIEW_MS)
+}
+function stopPreview(): void {
+  if (previewTimer) { clearInterval(previewTimer); previewTimer = null }
+}
+
+// Передперегляд живе лише поки ставлять кути: поза ними — ні таймера, ні читання кадру
+watch(phase, (p) => {
+  if (p === 'calibrate') startPreview()
+  else stopPreview()
+})
 
 // Зв'язок і сторінка — у журнал лише зміни стану, не кожен кадр
 watch(blockedBy, (b, was) => {
@@ -458,7 +571,8 @@ watch(blockedBy, (b, was) => {
 })
 
 function tick(): void {
-  if (phase.value !== 'running') return
+  const forSave = saveWaiting.value
+  if (phase.value !== 'running' && !(phase.value === 'paused' && forSave)) return
   // Телефон повернули — кути вже не там
   const d = videoDims()
   if (d && dims && d !== dims) {
@@ -473,6 +587,15 @@ function tick(): void {
   if (!frame) return
   const now = Date.now()
   const dec = decider.step(frame, now)
+  // Телефон не зрушив? Лише на тихому кадрі (SHIFT_TUNING — чому рідко); перед відправкою — свіжа перевірка
+  const still = dec.kind !== 'moving' && dec.kind !== 'settling'
+  const hold = still && watchShift(now, forSave || (dec.kind === 'send' && !blockedBy.value))
+  if (forSave) {
+    // Чекаю тихого кадру — через той самий tick, не довше SAVE_WAIT_MS; кути переїхали — наступним кадром
+    if (!hold && !boardLost.value && (still || now - saveAskedAt >= SAVE_WAIT_MS)) finishSave(frame)
+    return
+  }
+  if (hold) return   // дошки не видно / кути щойно переїхали / підозра — цей кадр не знімаємо
   if (dec.kind === 'person') {
     personNow.value = true
     if (dec.first) {
@@ -569,7 +692,9 @@ async function commit(frame: MirrorFrame, why: SendWhy, change: number, since: n
     const uploadMs = Math.round(performance.now() - tUp)
     const kb = Math.round(shot.file.size / 1024)
     const rid = newRequestId()
-    add('sent', t(`winterboard.remote.mirror.log.sent.${why}`, { change: pct(change), kb, ms: shot.warpMs + uploadMs }))
+    add('sent', t(`winterboard.remote.mirror.log.sent.${why}`, {
+      change: pct(change), kb, ms: shot.warpMs + uploadMs, sec: Math.round(MIRROR_TUNING.personAcceptMs / 1000),
+    }))
     tel('send', { why, change, kb, warp_ms: shot.warpMs, upload_ms: uploadMs, n: stats.sends })
     pending = { rid, since, sentAt: Date.now() }
     if (!props.sendBackground({ library_asset_id: assetId, request_id: rid, page_index: page })) {
@@ -619,6 +744,7 @@ watch(() => props.result, (r) => {
     const delay = (now - p.since) / 1000
     stats.delaySum += delay
     stats.lastPlacedAt = now
+    movedNote.value = false
     add('placed', t('winterboard.remote.mirror.log.placed', { sec: delay.toFixed(1) }))
     tel('placed', { delay_ms: now - p.since, ack_ms: now - p.sentAt })
   } else {
@@ -629,15 +755,77 @@ watch(() => props.result, (r) => {
   finishWait()
 })
 
-/** «Зберегти зараз» — поточний кадр, без чекання тиші й без порогу змін */
+/**
+ * Сторож зсуву на тихому кадрі. true — цей кадр не знімати: дошки не видно, кути щойно переїхали
+ * (порівнювати з нуля) або підозра чекає другої перевірки.
+ */
+function watchShift(now: number, beforeSend: boolean): boolean {
+  const w = shiftWatch
+  if (!w) return false
+  if (!w.due(now, beforeSend)) return w.lost || w.pending
+  const px = grabDetect()
+  if (!px) return w.lost || w.pending
+  const r = w.check(px, corners.value, now)
+  const fill = Math.round(r.fill * 100) / 100
+  switch (r.kind) {
+    case 'ok':
+      return false
+    case 'pending':
+      return true
+    case 'back':
+      boardLost.value = false
+      add('back', t('winterboard.remote.mirror.log.boardBack'))
+      tel('board_back', { fill })
+      return false
+    case 'lost':
+      if (r.first) {
+        boardLost.value = true
+        movedNote.value = false
+        stats.lost++
+        cancelSave()
+        add('lost', t('winterboard.remote.mirror.log.lost'))
+        tel('board_lost', { fill })
+      }
+      return true
+    case 'moved':
+      corners.value = r.quad
+      saveQuad()
+      decider.reset()   // кути нові — порівнювати з нуля, перший тихий кадр піде знімком
+      boardLost.value = false
+      movedNote.value = true
+      stats.moved++
+      add('moved', t('winterboard.remote.mirror.log.moved', { shift: pct(r.shift) }))
+      tel('moved', { shift: Math.round(r.shift * 1000) / 1000, by_ref: r.byRef, clipped: r.clipped, fill })
+      return true
+  }
+}
+
+/**
+ * «Зберегти зараз» — без порогу змін, але не одразу: щойно кадр знову тихий (рука, що натиснула,
+ * прибрана, телефон заспокоївся), не довше SAVE_WAIT_MS; зрушив телефон — спершу кути.
+ */
 function saveNow(): void {
-  if (saving.value || blockedBy.value || (phase.value !== 'running' && phase.value !== 'paused')) return
-  const frame = sampleFrame()
-  if (!frame) return
+  if (saving.value || saveWaiting.value || boardLost.value || blockedBy.value) return
+  if (phase.value !== 'running' && phase.value !== 'paused') return
+  saveWaiting.value = true
+  saveAskedAt = Date.now()
+  if (phase.value === 'paused') startTimer()   // на паузі кадри не аналізуються — лише на час чекання
+}
+
+function cancelSave(): void {
+  if (!saveWaiting.value) return
+  saveWaiting.value = false
+  if (phase.value === 'paused') stopTimer()
+}
+
+function finishSave(frame: MirrorFrame): void {
+  cancelSave()
+  if (blockedBy.value) return   // за ці секунди зник зв'язок чи ноутбук пішов на іншу сторінку
   void commit(frame, 'manual', 0, Date.now())
 }
 
 function togglePause(): void {
+  cancelSave()
   if (phase.value === 'paused') {
     phase.value = 'running'
     decider.reset()   // за паузу дошка могла змінитись — перший стабільний кадр піде знімком
@@ -664,19 +852,27 @@ function findBoardSoon(): void {
   findTimer = setTimeout(() => { findTimer = null; findBoard() }, FIND_DELAY_MS)
 }
 
-/** Один кадр → кути дошки. Не знайшла — кути лишаються ті, що були (з минулого разу чи стандартні). */
-function findBoard(): void {
+/** Кадр для пошуку дошки (DETECT_W px) — і для автопошуку, і для сторожа зсуву */
+function grabDetect(): Pixels | null {
   const v = videoEl.value
-  if (unmounted || phase.value !== 'calibrate' || !v || !v.videoWidth || !v.videoHeight) return
+  if (unmounted || !v || !v.videoWidth || !v.videoHeight) return null
   const w = DETECT_W
   const h = Math.round((DETECT_W * v.videoHeight) / v.videoWidth)
   detectCanvas ??= document.createElement('canvas')
   if (detectCanvas.width !== w || detectCanvas.height !== h) { detectCanvas.width = w; detectCanvas.height = h }
   const ctx = detectCanvas.getContext('2d', { willReadFrequently: true })
-  if (!ctx) return
+  if (!ctx) return null
   ctx.drawImage(v, 0, 0, w, h)
+  return ctx.getImageData(0, 0, w, h)
+}
+
+/** Один кадр → кути дошки. Не знайшла — кути лишаються ті, що були (з минулого разу чи стандартні). */
+function findBoard(): void {
+  if (phase.value !== 'calibrate') return
+  const px = grabDetect()
+  if (!px) return
   const t0 = performance.now()
-  const found = detectBoardQuad(ctx.getImageData(0, 0, w, h))
+  const found = detectBoardQuad(px)
   const ms = Math.round(performance.now() - t0)
   if (found) {
     corners.value = found.quad
@@ -688,8 +884,17 @@ function findBoard(): void {
   tel('find', { result: findNote.value, ms, size: videoDims() })
 }
 
+/** Сторож зсуву й «Зберегти зараз» — до нових кутів / зупинки */
+function dropWatch(): void {
+  cancelSave()
+  shiftWatch = null
+  boardLost.value = false
+  movedNote.value = false
+}
+
 function recalibrate(): void {
   stopTimer()
+  dropWatch()
   decider.reset()
   phase.value = 'calibrate'
 }
@@ -698,6 +903,7 @@ async function stop(reason: StopReason): Promise<void> {
   if (phase.value === 'stopped') return
   const wasActive = phase.value === 'running' || phase.value === 'paused'
   stopTimer()
+  dropWatch()
   releaseScreen()
   stopTracks()   // зупинено — камера не гріє телефон; «Почати знову» вмикає її знову
   stopReason.value = reason
@@ -708,7 +914,8 @@ async function stop(reason: StopReason): Promise<void> {
   add('stop', t(`winterboard.remote.mirror.log.stop.${reason}`, { battery: batteryText(stats.batteryEnd) }))
   tel('stop', {
     reason, min: Math.round((stats.stoppedAt - stats.startedAt) / 60000), sends: stats.sends, placed: stats.placed,
-    failed: stats.failed, person: stats.person, battery_start: stats.batteryStart, battery_end: stats.batteryEnd,
+    failed: stats.failed, person: stats.person, moved: stats.moved, lost: stats.lost,
+    battery_start: stats.batteryStart, battery_end: stats.batteryEnd,
     avg_delay_ms: stats.placed ? Math.round((stats.delaySum / stats.placed) * 1000) : null,
   })
 }
@@ -736,7 +943,7 @@ async function copyLog(): Promise<void> {
 // ── Стан словами ─────────────────────────────────────────────────────────────────
 const statusTone = computed<'ok' | 'warn' | 'busy' | 'idle'>(() => {
   switch (phase.value) {
-    case 'running': return blockedBy.value || personNow.value || motionLong.value ? 'warn' : 'ok'
+    case 'running': return blockedBy.value || boardLost.value || movedNote.value || personNow.value || motionLong.value ? 'warn' : 'ok'
     case 'camera_error': return 'warn'
     case 'stopped': return stopReason.value === 'user' ? 'idle' : 'warn'
     case 'starting': return 'busy'
@@ -754,6 +961,8 @@ const statusText = computed(() => {
     case 'running':
       if (blockedBy.value === 'page') return t('winterboard.remote.mirror.status.waitPage', { page: pageNo() })
       if (blockedBy.value === 'offline') return t('winterboard.remote.mirror.status.waitOnline')
+      if (boardLost.value) return t('winterboard.remote.mirror.status.lost')
+      if (movedNote.value) return t('winterboard.remote.mirror.status.moved')
       if (personNow.value) return t('winterboard.remote.mirror.status.person')
       if (motionLong.value) return t('winterboard.remote.mirror.status.motion')
       return stats.lastPlacedAt
@@ -818,13 +1027,15 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibility)
   resizeObs?.disconnect()
   stopTimer()
+  stopPreview()
   clearAck()
   finishWait()
   if (findTimer) { clearTimeout(findTimer); findTimer = null }
   releaseScreen()
   stopTracks()
-  for (const c of [sampleCanvas, fullCanvas, outCanvas, detectCanvas]) if (c) { c.width = 0; c.height = 0 }
+  for (const c of [sampleCanvas, fullCanvas, outCanvas, detectCanvas, previewEl.value]) if (c) { c.width = 0; c.height = 0 }
   sampleCanvas = fullCanvas = outCanvas = detectCanvas = null
+  previewImg = null
 })
 </script>
 
@@ -855,6 +1066,10 @@ onBeforeUnmount(() => {
 .wb-mirror__quad { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .wb-mirror__quad polygon { fill: rgba(16, 185, 129, .12); stroke: #10b981; stroke-width: 3; }
 .wb-mirror__quad polygon.is-bad { fill: rgba(239, 68, 68, .15); stroke: #ef4444; }
+.wb-mirror__quad line.is-clipped { stroke: #ef4444; stroke-width: 6; stroke-linecap: round; }
+.wb-mirror__preview { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.wb-mirror__preview canvas { width: 100%; max-width: 320px; aspect-ratio: 16 / 9; height: auto; border-radius: 8px; background: #0f172a; }
+.wb-mirror__preview figcaption { font-size: 13px; color: #94a3b8; }
 .wb-mirror__handle {
   position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 3px solid #fff; border-radius: 50%;
   background: rgba(16, 185, 129, .85); color: #fff; font-weight: 800; font-size: 16px; touch-action: none;
@@ -877,6 +1092,7 @@ onBeforeUnmount(() => {
 .wb-mirror__log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.35; color: #cbd5e1; }
 .wb-mirror__log li[data-kind="placed"] { color: #6ee7b7; }
 .wb-mirror__log li[data-kind="person"], .wb-mirror__log li[data-kind="rejected"], .wb-mirror__log li[data-kind="upload_error"],
-.wb-mirror__log li[data-kind="unconfirmed"], .wb-mirror__log li[data-kind="not_sent"] { color: #fcd34d; }
+.wb-mirror__log li[data-kind="unconfirmed"], .wb-mirror__log li[data-kind="not_sent"],
+.wb-mirror__log li[data-kind="lost"], .wb-mirror__log li[data-kind="moved"] { color: #fcd34d; }
 .wb-mirror__time { color: #64748b; font-variant-numeric: tabular-nums; }
 </style>

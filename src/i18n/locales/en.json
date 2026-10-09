@@ -8911,8 +8911,17 @@
           "notFound": "Board not found — set the corners by hand"
         },
         "badQuad": "The corners are mixed up or the board is too small — put the circles on the board corners in order.",
+        "preview": "This is what the laptop will see",
+        "clipped": {
+          "top": "The top of the board is out of the frame — move the phone back or raise it",
+          "bottom": "The bottom of the board is out of the frame — move the phone back or lower it",
+          "left": "The left edge of the board is out of the frame — move the phone back or turn it left",
+          "right": "The right edge of the board is out of the frame — move the phone back or turn it right"
+        },
         "start": "Start",
         "saveNow": "Save now",
+        "saveWaiting": "Will save as soon as the frame is still…",
+        "saveLost": "“Save now” is unavailable: the board is not visible",
         "pause": "Pause",
         "resume": "Resume",
         "corners": "Corners",
@@ -8927,6 +8936,8 @@
           "paused": "Paused — no snapshots are sent",
           "waitPage": "The laptop is on another page — the snapshot will land when you return to page {page}",
           "waitOnline": "No connection to the board — waiting",
+          "lost": "Can't see the board — adjust the phone",
+          "moved": "The phone moved — corners set again",
           "person": "Someone is standing in front of the board — waiting",
           "motion": "Constant movement in the frame — the snapshot comes as soon as it is still in front of the board",
           "running": "● Mirror is on · snapshots on the board: {n} · last at {time} · page {page}",
@@ -8956,12 +8967,15 @@
           "waitPage": "The laptop moved to another page — waiting for page {page}",
           "waitOnline": "Lost connection to the board — waiting",
           "unblocked": "Snapshots can land again",
+          "moved": "The phone moved — corners set again · shift {shift}%",
+          "lost": "Can't see the board — no snapshots until the phone is adjusted",
+          "boardBack": "The board is visible again — continuing",
           "snapshotFailed": "Could not take a snapshot",
           "uploadFailed": "Upload failed: {reason}",
           "sent": {
             "first": "Sent the first snapshot · {kb} KB · {ms} ms",
             "change": "Sent: changed {change}% · {kb} KB · {ms} ms",
-            "after_wait": "Sent after a long still period (large change {change}% — board erased?) · {kb} KB · {ms} ms",
+            "after_wait": "Sent after waiting {sec} s · changed {change}% · {kb} KB · {ms} ms",
             "manual": "Sent manually · {kb} KB · {ms} ms"
           },
           "notSent": "No connection to the board — snapshot not sent",

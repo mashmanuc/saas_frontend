@@ -65,6 +65,11 @@ export interface MirrorTuning {
   eraseCells: number
   /** Скільки клітинок `tone` проти останнього знімка — це «змінилось світло» (лише для журналу) */
   lightCells: number
+  /**
+   * Стійкість нової крейди (урок 2, 09.10): клітинка рахується зміненою, лише якщо вона змінена
+   * з тим самим знаком стільки кадрів аналізу поспіль без руху (мерехтіння 2–4 клітинок — ні).
+   */
+  inkSteadyFrames: number
 }
 
 export const MIRROR_TUNING: MirrorTuning = {
@@ -87,6 +92,10 @@ export const MIRROR_TUNING: MirrorTuning = {
   inkCellRel: 0.5,
   eraseCells: 20,
   lightCells: 10,
+  // Урок 2 (09.10): 5 повторів «людина? → 10 с → надіслано» — крейда «змінилась» у 2–4 клітинках
+  // одного кадру (шум камери), а на парах знімків три з них — +0. 3 кадри × SAMPLE_MS ≈ 1,2 с —
+  // стільки ж, скільки дошка й так «завмирає» (stableMs), тож звичайний знімок не запізнюється.
+  inkSteadyFrames: 3,
 }
 
 /** Півсторона вікна місцевого тла для «карти крейди» (пікселі кадру аналізу): штрих ≪ вікна ≪ пляма світла. */
@@ -271,9 +280,12 @@ function inkCells(gray: Float32Array, t: MirrorTuning): Float32Array {
  * множник (фокус, різкість, експозиція роблять усі штрихи товщими чи тоншими разом) — медіана
  * відношень у клітинках, де крейда є в обох; лише потім клітинка «змінилась», якщо різниця
  * більша за max(inkCellAbs, inkCellRel × більшої з двох часток). `added` — крейди стало більше
- * (новий напис), `removed` — менше (стерли, або відблиск «з'їв» штрихи).
+ * (новий напис), `removed` — менше (стерли, або відблиск «з'їв» штрихи). `sign` — знак зміни
+ * кожної клітинки: +1 з'явилась крейда, −1 зникла, 0 без змін.
  */
-export function inkChangedCells(a: Float32Array, b: Float32Array, t: MirrorTuning = MIRROR_TUNING): { mask: Uint8Array; count: number; added: number; removed: number } {
+export interface InkChange { mask: Uint8Array; sign: Int8Array; count: number; added: number; removed: number }
+
+export function inkChangedCells(a: Float32Array, b: Float32Array, t: MirrorTuning = MIRROR_TUNING): InkChange {
   const ratios: number[] = []
   for (let i = 0; i < a.length; i++) if (a[i] >= 0.04 && b[i] >= 0.04) ratios.push(b[i] / a[i])
   let m = 1
@@ -282,16 +294,40 @@ export function inkChangedCells(a: Float32Array, b: Float32Array, t: MirrorTunin
     m = Math.min(2, Math.max(0.5, ratios[Math.floor(ratios.length / 2)]))
   }
   const mask = new Uint8Array(a.length)
+  const sign = new Int8Array(a.length)
   let added = 0
   let removed = 0
   for (let i = 0; i < a.length; i++) {
     const bs = b[i] / m
     if (Math.abs(bs - a[i]) > Math.max(t.inkCellAbs, t.inkCellRel * Math.max(a[i], bs))) {
       mask[i] = 1
-      if (bs > a[i]) added++; else removed++
+      if (bs > a[i]) { added++; sign[i] = 1 } else { removed++; sign[i] = -1 }
     }
   }
-  return { mask, count: added + removed, added, removed }
+  return { mask, sign, count: added + removed, added, removed }
+}
+
+/** Стеля лічильника стійкості: далі рахувати немає сенсу, а Int16 не переповнюється за урок. */
+const RUN_CAP = 1000
+
+/**
+ * Стійка зміна крейди (урок 2, 09.10: повтори від мерехтіння 2–4 клітинок у випадкових місцях).
+ * `runs` — для кожної клітинки, скільки кадрів без руху поспіль вона змінена з ТИМ САМИМ знаком
+ * (+n — n кадрів з'являється крейда, −n — n кадрів зникає); оновлюється на місці цим кадром `c`.
+ * Повертає лише клітинки, змінені вже `k` кадрів поспіль: шум, що стрибає з місця на місце чи
+ * міняє знак, сюди не потрапляє, а справжній напис тримається.
+ */
+export function steadyInk(runs: Int16Array, c: InkChange, k: number): { count: number; added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (let i = 0; i < runs.length; i++) {
+    const s = c.sign[i]
+    const r = runs[i]
+    runs[i] = s > 0 ? (r > 0 ? Math.min(r + 1, RUN_CAP) : 1) : s < 0 ? (r < 0 ? Math.max(r - 1, -RUN_CAP) : -1) : 0
+    if (runs[i] >= k) added++
+    else if (runs[i] <= -k) removed++
+  }
+  return { count: added + removed, added, removed }
 }
 
 /** Чи є на дошці нове проти останнього знімка: з'явилась крейда — або стерли багато. */
@@ -370,6 +406,11 @@ export type MirrorDecision =
  * ТЗ 2026-10-09 §1): зміна лише світла — «те саме». `since` у рішенні «send» — коли нове вперше
  * помітили після останнього знімка (Б-175: раніше бралось начало тиші, і затримка в журналі
  * росла на інтервал між знімками).
+ *
+ * Крейда проти знімка рахується лише СТІЙКА (`steadyInk`, `inkSteadyFrames` кадрів без руху
+ * поспіль) — і для «нового», і для «людини?». Лічба йде з першого кадру без руху, тобто ще поки
+ * дошка «завмирає»: звичайний знімок не запізнюється, а напис, що з'явився без руху в кадрі, —
+ * щонайбільше на (inkSteadyFrames − 1) кадрів.
  */
 export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
   let prev: MirrorFrame | null = null
@@ -380,6 +421,8 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
   let sends = 0
   let busy = false
   let personNoted = false
+  /** Скільки кадрів без руху поспіль кожна клітинка змінена проти знімка (знак — бік зміни) */
+  const runs = new Int16Array(GX * GY)
 
   function step(frame: MirrorFrame, now: number): MirrorDecision {
     if (prev) {
@@ -388,17 +431,18 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
       if (count >= t.motionCells) {
         stableSince = null
         personNoted = false
+        runs.fill(0)   // «поспіль» — лише кадри без руху: рух перериває лічбу
         return { kind: 'moving', cells: count }
       }
     } else {
       prev = frame
     }
     if (stableSince === null) stableSince = now
+    const ink = ref ? steadyInk(runs, inkChangedCells(ref.ink, frame.ink, t), t.inkSteadyFrames) : null
     if (now - stableSince < t.stableMs) return { kind: 'settling' }
     let why: 'first' | 'change' | 'after_wait' = 'first'
     let change = 1
-    if (ref) {
-      const ink = inkChangedCells(ref.ink, frame.ink, t)
+    if (ref && ink) {
       change = ink.count / frame.ink.length
       if (!inkIsNew(ink, t)) {
         newSince = null
@@ -432,11 +476,12 @@ export function createMirrorDecider(t: MirrorTuning = MIRROR_TUNING) {
       busy = true
       personNoted = false
       newSince = null
+      runs.fill(0)
     },
     /** Відправка закінчилась (успіх чи ні) — можна наступну */
     settled(): void { busy = false },
     /** Нові кути / телефон повернули — порівнювати з нуля */
-    reset(): void { prev = null; ref = null; stableSince = null; newSince = null; personNoted = false },
+    reset(): void { prev = null; ref = null; stableSince = null; newSince = null; personNoted = false; runs.fill(0) },
     get sends() { return sends },
     get busy() { return busy },
   }
@@ -685,6 +730,260 @@ export function detectBoardQuad(px: Pixels): FoundBoard | null {
   const clipped = q.some((p) => p.x <= mx || p.y <= my || p.x >= w - mx || p.y >= h - my)
   return { quad: q.map((p) => ({ x: p.x / w, y: p.y / h })) as Quad, clipped }
 }
+
+// ── Дошка не вся в кадрі (урок 2, 09.10: верх обрізано на всіх знімках, а рамка «виглядала добре») ──
+
+export type BoardSide = 'top' | 'bottom' | 'left' | 'right'
+/** Кут ближче за цю частку кадру до його краю — той бік дошки, найпевніше, за кадром */
+export const EDGE_MARGIN = 0.02
+
+/**
+ * Які боки дошки поза кадром — за поточними кутами (частки кадру 0..1), хоч знайденими, хоч
+ * поставленими рукою. Орієнтир — краї КАДРУ: телефон стоїть горизонтально з автоповоротом, тож
+ * верх кадру = верх дошки. Порядок сталий: верх, низ, лівий, правий.
+ */
+export function clippedSides(q: Quad, margin = EDGE_MARGIN): BoardSide[] {
+  const out: BoardSide[] = []
+  if (q.some((p) => p.y <= margin)) out.push('top')
+  if (q.some((p) => p.y >= 1 - margin)) out.push('bottom')
+  if (q.some((p) => p.x <= margin)) out.push('left')
+  if (q.some((p) => p.x >= 1 - margin)) out.push('right')
+  return out
+}
+
+/**
+ * Сторона чотирикутника (від кута i до кута i+1), що лежить при цьому краї кадру: її середина
+ * найближча до нього. Не залежить від того, в якому порядку поставили кружечки.
+ */
+export function sideEdge(q: Quad, side: BoardSide): number {
+  let best = 0
+  let bestV = Infinity
+  for (let i = 0; i < 4; i++) {
+    const a = q[i]
+    const b = q[(i + 1) % 4]
+    const mx = (a.x + b.x) / 2
+    const my = (a.y + b.y) / 2
+    const v = side === 'top' ? my : side === 'bottom' ? -my : side === 'left' ? mx : -mx
+    if (v < bestV) { bestV = v; best = i }
+  }
+  return best
+}
+
+// ── Телефон зрушив: кути переїжджають разом із дошкою (урок 2, 09.10; власник погодив без підтвердження) ──
+//
+// Учитель поставив телефон і пішов працювати — на екран не дивиться, біду побачить лише з проектора.
+// Тож телефон сам помічає, що дошка «поїхала» з-під кутів, і переносить кути; дошки не видно взагалі —
+// не надсилає нічого, доки її не знайде знову.
+
+export interface ShiftTuning {
+  /** Як часто перевіряти, чи телефон не зрушив (лише на тихому кадрі) */
+  checkMs: number
+  /** Підозра — друга перевірка на іншому кадрі через стільки, перш ніж щось робити */
+  confirmMs: number
+  /** Дошки не видно — шукати знову не частіше за це */
+  lostCheckMs: number
+  /** Перед відправкою перевірити ще раз, якщо остання перевірка старша за це */
+  sendFreshMs: number
+  /** Частка кольору дошки в кутах упала нижче цієї частки від початкової — дошка «поїхала» */
+  fillDrop: number
+  /** Початкова частка менша — дошка не зелена (маркерна, кути на чомусь іншому): за кольором не судимо */
+  minBaseFill: number
+  /** Знайдена дошка зсунулась більше ніж на цю частку діагоналі — телефон зрушив */
+  shiftFrac: number
+  /** Дві перевірки поспіль бачать ту саму нову дошку — в межах цієї частки діагоналі */
+  confirmFrac: number
+  /** Площа знайденої дошки проти запам'ятованої — у цих межах (інакше це не зсув, а хтось заступив частину) */
+  areaMin: number
+  areaMax: number
+  /**
+   * Телефон зрушив — зсунулась уся картинка: КОЖЕН кут дошки не на краю кадру зсунувся хоч на цю частку
+   * діагоналі. Учитель, що стоїть біля дошки й закриває нижній кут, «зсуває» лише один-два кути.
+   */
+  cornerMoveFrac: number
+}
+
+/**
+ * Чому так рідко: пошук дошки на кадрі 512 px на телефоні — 130–200 мс (телеметрія `find` 09.10:
+ * 129, 156, 200 мс). Раз на 2,5 с — це 5–8 % часу одного ядра, і лише на тихому кадрі (коли перед
+ * дошкою рух, перевірки немає зовсім). Щокадру (2,5 рази на секунду) було б 35–50 % — батарея й
+ * нагрів телефона на підставці за урок. Перед кожною відправкою — ще одна перевірка, якщо остання
+ * старша за 1 с: зсунутий знімок не має піти на проектор, поки чекаємо планової.
+ */
+export const SHIFT_TUNING: ShiftTuning = {
+  checkMs: 2500,
+  confirmMs: 800,
+  lostCheckMs: 3000,
+  sendFreshMs: 1000,
+  fillDrop: 0.6,
+  minBaseFill: 0.5,
+  shiftFrac: 0.03,
+  confirmFrac: 0.015,
+  areaMin: 0.75,
+  areaMax: 1.33,
+  cornerMoveFrac: 0.015,
+}
+
+/** Частка пікселів кольору дошки (`isBoardColor`) усередині опуклого чотирикутника `q` (частки кадру). */
+export function boardFill(px: Pixels, q: Quad): number {
+  const { data, width: w, height: h } = px
+  const p = quadToPixels(q, w, h)
+  const orient = cross(p[0], p[1], p[2]) < 0 ? -1 : 1
+  const x0 = Math.max(0, Math.floor(Math.min(p[0].x, p[1].x, p[2].x, p[3].x)))
+  const x1 = Math.min(w - 1, Math.ceil(Math.max(p[0].x, p[1].x, p[2].x, p[3].x)))
+  const y0 = Math.max(0, Math.floor(Math.min(p[0].y, p[1].y, p[2].y, p[3].y)))
+  const y1 = Math.min(h - 1, Math.ceil(Math.max(p[0].y, p[1].y, p[2].y, p[3].y)))
+  let inside = 0
+  let board = 0
+  for (let y = y0; y <= y1; y++) {
+    const cy = y + 0.5
+    for (let x = x0; x <= x1; x++) {
+      const cx = x + 0.5
+      let ok = true
+      for (let i = 0; i < 4 && ok; i++) {
+        const a = p[i]
+        const b = p[(i + 1) % 4]
+        if (((b.x - a.x) * (cy - a.y) - (b.y - a.y) * (cx - a.x)) * orient < 0) ok = false
+      }
+      if (!ok) continue
+      inside++
+      const k = (y * w + x) * 4
+      if (isBoardColor(data[k], data[k + 1], data[k + 2])) board++
+    }
+  }
+  return inside ? board / inside : 0
+}
+
+/** Найбільший зсув кута `b` проти `a` — у частках діагоналі `a` (у пікселях кадру w×h). */
+export function quadShift(a: Quad, b: Quad, w: number, h: number): number {
+  const pa = quadToPixels(a, w, h)
+  const pb = quadToPixels(b, w, h)
+  const diag = Math.max(dist(pa[0], pa[2]), dist(pa[1], pa[3]), 1)
+  return Math.max(...pa.map((p, i) => dist(p, pb[i]))) / diag
+}
+
+/**
+ * Чи зсунулась уся дошка, а не її частина: кожен кут, що не лежить на краю кадру (ні в `a`, ні в `b`),
+ * зсунувся щонайменше на `minFrac` діагоналі `a`. Кути на краю кадру — це межа обрізаної дошки, а не
+ * її справжній кут (урок 2: верх обрізано) — за ними не судимо. Таких «вільних» кутів менше двох — не
+ * судимо зовсім (false).
+ */
+export function wholeBoardMoved(a: Quad, b: Quad, w: number, h: number, minFrac: number, margin = EDGE_MARGIN): boolean {
+  const onEdge = (p: Pt) => p.x <= margin || p.y <= margin || p.x >= 1 - margin || p.y >= 1 - margin
+  const pa = quadToPixels(a, w, h)
+  const pb = quadToPixels(b, w, h)
+  const diag = Math.max(dist(pa[0], pa[2]), dist(pa[1], pa[3]), 1)
+  let free = 0
+  for (let i = 0; i < 4; i++) {
+    if (onEdge(a[i]) || onEdge(b[i])) continue
+    free++
+    if (dist(pa[i], pb[i]) / diag < minFrac) return false
+  }
+  return free >= 2
+}
+
+/**
+ * Перенести кути вчителя разом із дошкою: гомографія «стара знайдена дошка → нова знайдена»,
+ * застосована до ПОТОЧНИХ кутів (ручні правки — напр. лише середня частина дошки — зберігаються).
+ * Кути поза кадром притискаються до краю (тоді видно обрізаний бік). Не вийшло — null.
+ */
+export function transferCorners(corners: Quad, from: Quad, to: Quad): Quad | null {
+  const h = homography(from, to)
+  if (!h) return null
+  const q = corners.map((p) => {
+    const r = applyH(h, p.x, p.y)
+    return { x: Math.min(1, Math.max(0, r.x)), y: Math.min(1, Math.max(0, r.y)) }
+  }) as Quad
+  return q.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)) && quadUsable(q) ? q : null
+}
+
+export type ShiftResult =
+  | { kind: 'ok'; fill: number }
+  /** Щось не так — дія лише після другої перевірки на іншому кадрі; поки що не знімаємо */
+  | { kind: 'pending'; fill: number; why: 'move' | 'lost' }
+  /** Телефон зрушив: нові кути; `byRef` — перенесено гомографією від запам'ятованої дошки */
+  | { kind: 'moved'; quad: Quad; shift: number; clipped: boolean; fill: number; byRef: boolean }
+  /** Дошки не видно; `first` — перша перевірка цього проміжку (для журналу — один раз) */
+  | { kind: 'lost'; first: boolean; fill: number }
+  /** Дошку знову видно на тому самому місці */
+  | { kind: 'back'; fill: number }
+
+/**
+ * Сторож зсуву телефона. `base` — частка кольору дошки в кутах при «Почати»; `found` — дошка, знайдена
+ * пошуком при «Почати» (null — пошук її не знайшов, кути вчителя самі по собі).
+ *
+ * Ознаки (будь-яка): у кутах кольору дошки стало < fillDrop від початкового — АБО пошук знаходить
+ * дошку, зсунуту від запам'ятованої більше ніж на shiftFrac діагоналі, і зсунулась уся дошка (площа
+ * схожа, кожен кут не на краю кадру зсунувся — `wholeBoardMoved`). Без цього учитель, що нерухомо
+ * стоїть біля дошки й закриває нижній кут, «зсував» знайдений чотирикутник: на синтетиці 5 з 6 таких
+ * поз давали хибне «телефон зрушив». Дія — лише коли друга перевірка на іншому кадрі підтвердила те саме.
+ */
+export function createShiftWatch(init: { base: number; found: Quad | null }, t: ShiftTuning = SHIFT_TUNING) {
+  let base = init.base
+  let ref = init.found
+  let lost = false
+  let cand: { why: 'move' | 'lost'; found: Quad | null } | null = null
+  let lastAt = -Infinity
+
+  function check(px: Pixels, corners: Quad, now: number): ShiftResult {
+    lastAt = now
+    const fill = boardFill(px, corners)
+    const dropped = base >= t.minBaseFill && fill < t.fillDrop * base
+    const found = detectBoardQuad(px)
+    let to: Quad | null = null
+    let shift = 0
+    let byRef = false
+    if (found && ref) {
+      shift = quadShift(ref, found.quad, px.width, px.height)
+      const area = quadArea(found.quad) / Math.max(quadArea(ref), 1e-9)
+      const whole = area >= t.areaMin && area <= t.areaMax
+        && wholeBoardMoved(ref, found.quad, px.width, px.height, t.cornerMoveFrac)
+      if (shift > t.shiftFrac && (dropped || whole)) {
+        to = transferCorners(corners, ref, found.quad) ?? found.quad
+        byRef = true
+      }
+    } else if (found && dropped) {
+      to = found.quad
+    }
+    const why: 'move' | 'lost' | null = to ? 'move' : !found && dropped ? 'lost' : null
+    if (!why) {
+      cand = null
+      if (lost) { lost = false; return { kind: 'back', fill } }
+      return { kind: 'ok', fill }
+    }
+    if (why === 'lost' && lost) return { kind: 'lost', first: false, fill }
+    const same = !!cand && cand.why === why
+      && (why === 'lost' || (!!cand.found && !!found && quadShift(cand.found, found.quad, px.width, px.height) <= t.confirmFrac))
+    if (!same) {
+      cand = { why, found: found?.quad ?? null }
+      return { kind: 'pending', fill, why }
+    }
+    cand = null
+    if (why === 'lost') { lost = true; return { kind: 'lost', first: true, fill } }
+    const q = to as Quad
+    ref = found!.quad
+    lost = false
+    base = boardFill(px, q)
+    return { kind: 'moved', quad: q, shift, clipped: found!.clipped || clippedSides(q).length > 0, fill, byRef }
+  }
+
+  return {
+    check,
+    /**
+     * Чи час перевіряти (кадр уже тихий): рідко; підозра — швидше підтвердити; дошки не видно —
+     * раз на lostCheckMs; перед відправкою — якщо остання перевірка старша за sendFreshMs.
+     */
+    due(now: number, beforeSend = false): boolean {
+      const gap = cand ? t.confirmMs : lost ? t.lostCheckMs : beforeSend ? Math.min(t.sendFreshMs, t.checkMs) : t.checkMs
+      return now - lastAt >= gap
+    },
+    /** Дошки не видно — нічого не надсилати */
+    get lost() { return lost },
+    /** Підозра чекає другої перевірки — поки не знімати */
+    get pending() { return cand !== null },
+  }
+}
+
+export type ShiftWatch = ReturnType<typeof createShiftWatch>
 
 /** Кути за замовчуванням — відступ 12 % від країв кадру. */
 export function defaultQuad(): Quad {
