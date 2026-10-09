@@ -7471,6 +7471,10 @@
     }
   },
   "winterboard": {
+    "mirrorClip": {
+      "open": "Create video clip",
+      "title": "Video clip from the recording"
+    },
     "localWorkspace": {
       "title": "My workspace",
       "seedTitle": "This is your workspace 👋",
