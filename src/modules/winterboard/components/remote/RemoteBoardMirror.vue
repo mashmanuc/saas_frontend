@@ -393,6 +393,15 @@ function measure(): void {
   const dw = v.videoWidth * s
   const dh = v.videoHeight * s
   box.value = { cw, ch, ox: (cw - dw) / 2, oy: (ch - dh) / 2, dw, dh }
+  // Телефон повернули, поки ставлять кути: новий розмір кадру — одразу «свій» і дошку шукаємо
+  // під нову орієнтацію. Інакше перший tick після «Почати» бачив старий розмір, вирішував
+  // «телефон повернули» і повертав до кутів — «Почати» доводилось тиснути двічі (уроки 09.10).
+  const d = videoDims()
+  if (d && d !== dims && (phase.value === 'calibrate' || phase.value === 'starting')) {
+    const wasKnown = dims !== ''
+    dims = d
+    if (wasKnown && phase.value === 'calibrate') findBoardSoon()
+  }
 }
 
 const polyPoints = computed(() => {
@@ -466,6 +475,7 @@ function releaseScreen(): void {
 async function start(): Promise<void> {
   if (!usable.value || props.pageIndex === null) return
   saveQuad()
+  dims = videoDims()   // точка відліку повороту — кадр саме зараз, коли тиснуть «Почати»
   mirrorPage.value = props.pageIndex
   decider = createMirrorDecider()
   consecutiveFails = 0

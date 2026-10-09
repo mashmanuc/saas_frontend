@@ -436,6 +436,35 @@ describe('дзеркало: камера і кути', () => {
     })
   })
 
+  it('телефон повернули, поки ставили кути — «Почати» з першого разу, без «Телефон повернули» (уроки 09.10)', async () => {
+    let spy = fakeCanvas(false)                                                          // вертикально дошки не видно
+    const w = mirror()
+    await flushPromises()
+    const v = w.find('[data-testid="mirror-video"]').element as HTMLVideoElement
+    // камера ввімкнулась, поки телефон стояв вертикально
+    Object.defineProperty(v, 'videoWidth', { value: 720, configurable: true })
+    Object.defineProperty(v, 'videoHeight', { value: 1280, configurable: true })
+    v.dispatchEvent(new Event('loadedmetadata'))
+    await flushPromises()
+    await afterFind()
+    expect(w.find('[data-testid="mirror-find-note"]').text()).toBe(findText('notFound'))
+    spy.mockRestore()
+    spy = fakeCanvas(true)
+    // повернули горизонтально — кадр змінив розмір
+    Object.defineProperty(v, 'videoWidth', { value: 1280, configurable: true })
+    Object.defineProperty(v, 'videoHeight', { value: 720, configurable: true })
+    v.dispatchEvent(new Event('resize'))
+    await afterFind()
+    expect(w.find('[data-testid="mirror-find-note"]').text()).toBe(findText('found'))   // дошку знайдено під нову орієнтацію
+    await w.find('[data-testid="mirror-start"]').trigger('click')
+    await flushPromises()
+    await new Promise((r) => setTimeout(r, 900))                                         // кілька tick-ів
+    expect(w.find('[data-testid="board-mirror"]').attributes('data-phase')).toBe('running')
+    expect(w.find('[data-testid="mirror-log"]').text()).not.toContain((M.log as Record<string, string>).rotated)
+    w.unmount()
+    spy.mockRestore()
+  })
+
   it('«×» — камеру вимкнено, дзеркало закривається', async () => {
     const w = mirror()
     await cameraReady(w)
