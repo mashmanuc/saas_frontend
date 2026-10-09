@@ -40,7 +40,13 @@
       <div class="wb-mirror__side">
         <div v-if="phase === 'calibrate'" class="wb-mirror__panel">
           <p class="wb-mirror__hint">{{ t('winterboard.remote.mirror.calibrateHint', { page: (pageIndex ?? 0) + 1 }) }}</p>
+          <p v-if="findNote" class="wb-mirror__note" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
+            {{ t(`winterboard.remote.mirror.find.${findNote}`) }}
+          </p>
           <p v-if="!usable" class="wb-mirror__warn" data-testid="mirror-bad-quad">{{ t('winterboard.remote.mirror.badQuad') }}</p>
+          <button type="button" class="wb-mirror__btn" data-testid="mirror-find" :disabled="!ready" @click="findBoard">
+            🔍 {{ t('winterboard.remote.mirror.find.button') }}
+          </button>
           <button type="button" class="wb-mirror__btn is-on" data-testid="mirror-start" :disabled="!usable || !ready" @click="start">
             {{ t('winterboard.remote.mirror.start') }}
           </button>
@@ -116,9 +122,9 @@ import { uploadAsset } from '../../api/library'
 import { PHOTO_UPLOAD_PURPOSE, newRequestId, type RemotePhotoResult } from '../../remote/photoContract'
 import { photoUploadError } from '../../remote/photoUploadError'
 import {
-  OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
-  analyzeFrame, boardAspect, createMirrorDecider, defaultQuad, fitRect, parseQuad, quadToPixels,
-  quadUsable, warpBoard, type Quad,
+  DETECT_W, OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
+  analyzeFrame, boardAspect, createMirrorDecider, defaultQuad, detectBoardQuad, fitRect, parseQuad, quadToPixels,
+  quadUsable, warpBoard, type MirrorFrame, type Quad,
 } from '../../remote/boardMirror'
 
 const props = defineProps<{
@@ -146,6 +152,8 @@ const MAX_FAILS = 3
 const MOTION_NOTE_MS = 20_000
 const MOTION_LOG_MS = 60_000
 const SAMPLE_W = 640
+/** Пошук дошки — через стільки після ввімкнення камери (експозиція встигає вирівнятись) */
+const FIND_DELAY_MS = 500
 const QUAD_KEY = 'wb.mirror.quad'
 const LOG_MAX = 300
 
@@ -169,6 +177,8 @@ const motionLong = ref(false)
 let movingSince: number | null = null
 let movingMax = 0
 let motionLogged = false
+/** «Змінилось світло — не надсилаю» вже в журналі для цього проміжку */
+let lightLogged = false
 /** Що заважає відправці зараз: немає зв'язку / ноутбук на іншій сторінці */
 const blockedBy = computed<'' | 'offline' | 'page'>(() => {
   if (phase.value !== 'running') return ''
@@ -203,7 +213,7 @@ let outCanvas: HTMLCanvasElement | null = null
 let resizeObs: ResizeObserver | null = null
 let unmounted = false
 /** Відправка, що чекає відповіді ноутбука */
-let pending: { rid: string; stableSince: number; sentAt: number } | null = null
+let pending: { rid: string; since: number; sentAt: number } | null = null
 
 function tel(event: string, ctx: Record<string, unknown> = {}): void {
   props.tel?.(`mirror_${event}`, ctx)
@@ -288,7 +298,10 @@ async function openCamera(): Promise<void> {
     phase.value = 'camera_error'
     return
   }
-  if (phase.value === 'starting') phase.value = 'calibrate'
+  if (phase.value === 'starting') {
+    phase.value = 'calibrate'
+    findBoardSoon()
+  }
 }
 
 function waitForDims(v: HTMLVideoElement): Promise<void> {
@@ -424,7 +437,7 @@ function stopTimer(): void {
 }
 
 /** Зменшений кадр для аналізу */
-function sampleFrame(): Float32Array | null {
+function sampleFrame(): MirrorFrame | null {
   const v = videoEl.value
   if (!v || !v.videoWidth || !v.videoHeight || v.readyState < 2) return null
   const sw = SAMPLE_W
@@ -453,6 +466,7 @@ function tick(): void {
     add('rotated', t('winterboard.remote.mirror.log.rotated'))
     tel('rotated', { size: d })
     recalibrate()
+    findBoardSoon()
     return
   }
   const frame = sampleFrame()
@@ -484,9 +498,13 @@ function tick(): void {
     motionLong.value = false
   }
   if (dec.kind !== 'settling') personNow.value = false
+  // Світло змінилось, а крейда ні (Б-176) — один рядок у журнал на кожен такий проміжок
+  if (dec.kind === 'same' && dec.light) {
+    if (!lightLogged) { lightLogged = true; add('light', t('winterboard.remote.mirror.log.light')); tel('skip', { why: 'light' }) }
+  } else if (dec.kind === 'send') lightLogged = false
   if (dec.kind === 'wait' && dec.why === 'cap') { void stop('cap'); return }
   if (dec.kind !== 'send' || blockedBy.value) return
-  void commit(frame, dec.why, dec.change, dec.stableSince)
+  void commit(frame, dec.why, dec.change, dec.since)
 }
 
 /** Повнорозмірний вирівняний знімок → JPEG */
@@ -526,7 +544,7 @@ function failed(kind: string, text: string, ctx: Record<string, unknown>): void 
   if (consecutiveFails >= MAX_FAILS) void stop('failures')
 }
 
-async function commit(frame: Float32Array, why: SendWhy, change: number, stableSince: number): Promise<void> {
+async function commit(frame: MirrorFrame, why: SendWhy, change: number, since: number): Promise<void> {
   const page = mirrorPage.value
   if (page === null || saving.value) return
   decider.sent(frame, Date.now())
@@ -553,7 +571,7 @@ async function commit(frame: Float32Array, why: SendWhy, change: number, stableS
     const rid = newRequestId()
     add('sent', t(`winterboard.remote.mirror.log.sent.${why}`, { change: pct(change), kb, ms: shot.warpMs + uploadMs }))
     tel('send', { why, change, kb, warp_ms: shot.warpMs, upload_ms: uploadMs, n: stats.sends })
-    pending = { rid, stableSince, sentAt: Date.now() }
+    pending = { rid, since, sentAt: Date.now() }
     if (!props.sendBackground({ library_asset_id: assetId, request_id: rid, page_index: page })) {
       pending = null
       failed('not_sent', t('winterboard.remote.mirror.log.notSent'), {})
@@ -598,11 +616,11 @@ watch(() => props.result, (r) => {
     consecutiveFails = 0
     stats.placed++
     const now = Date.now()
-    const delay = (now - p.stableSince) / 1000
+    const delay = (now - p.since) / 1000
     stats.delaySum += delay
     stats.lastPlacedAt = now
     add('placed', t('winterboard.remote.mirror.log.placed', { sec: delay.toFixed(1) }))
-    tel('placed', { delay_ms: now - p.stableSince, ack_ms: now - p.sentAt })
+    tel('placed', { delay_ms: now - p.since, ack_ms: now - p.sentAt })
   } else {
     failed('rejected', t('winterboard.remote.mirror.log.rejected', {
       reason: t(`winterboard.remote.photo.reason.${r.reason}`, { page: pageNo() }),
@@ -632,6 +650,42 @@ function togglePause(): void {
     add('pause', t('winterboard.remote.mirror.log.pause'))
     tel('pause')
   }
+}
+
+// ── Сама знаходить дошку (ТЗ 2026-10-09 §2) ─────────────────────────────────────────
+/** Що сказати над кадром після пошуку: знайшла / не вся в кадрі / не знайшла */
+const findNote = ref<'' | 'found' | 'clipped' | 'notFound'>('')
+let detectCanvas: HTMLCanvasElement | null = null
+let findTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Пошук за пів секунди — камера встигає виставити експозицію */
+function findBoardSoon(): void {
+  if (findTimer) clearTimeout(findTimer)
+  findTimer = setTimeout(() => { findTimer = null; findBoard() }, FIND_DELAY_MS)
+}
+
+/** Один кадр → кути дошки. Не знайшла — кути лишаються ті, що були (з минулого разу чи стандартні). */
+function findBoard(): void {
+  const v = videoEl.value
+  if (unmounted || phase.value !== 'calibrate' || !v || !v.videoWidth || !v.videoHeight) return
+  const w = DETECT_W
+  const h = Math.round((DETECT_W * v.videoHeight) / v.videoWidth)
+  detectCanvas ??= document.createElement('canvas')
+  if (detectCanvas.width !== w || detectCanvas.height !== h) { detectCanvas.width = w; detectCanvas.height = h }
+  const ctx = detectCanvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return
+  ctx.drawImage(v, 0, 0, w, h)
+  const t0 = performance.now()
+  const found = detectBoardQuad(ctx.getImageData(0, 0, w, h))
+  const ms = Math.round(performance.now() - t0)
+  if (found) {
+    corners.value = found.quad
+    findNote.value = found.clipped ? 'clipped' : 'found'
+  } else {
+    findNote.value = 'notFound'
+  }
+  add('find', t(`winterboard.remote.mirror.find.${findNote.value}`))
+  tel('find', { result: findNote.value, ms, size: videoDims() })
 }
 
 function recalibrate(): void {
@@ -766,10 +820,11 @@ onBeforeUnmount(() => {
   stopTimer()
   clearAck()
   finishWait()
+  if (findTimer) { clearTimeout(findTimer); findTimer = null }
   releaseScreen()
   stopTracks()
-  for (const c of [sampleCanvas, fullCanvas, outCanvas]) if (c) { c.width = 0; c.height = 0 }
-  sampleCanvas = fullCanvas = outCanvas = null
+  for (const c of [sampleCanvas, fullCanvas, outCanvas, detectCanvas]) if (c) { c.width = 0; c.height = 0 }
+  sampleCanvas = fullCanvas = outCanvas = detectCanvas = null
 })
 </script>
 
@@ -786,6 +841,7 @@ onBeforeUnmount(() => {
 .wb-mirror__status.is-ok { background: #064e3b; color: #ecfdf5; }
 .wb-mirror__status.is-warn { background: #451a03; color: #fef3c7; border: 1px solid #f59e0b; }
 .wb-mirror__note { margin: 0; font-size: 13px; color: #fcd34d; text-align: center; }
+.wb-mirror__note.is-ok { color: #6ee7b7; }
 .wb-mirror__body { display: flex; flex-direction: column; gap: 10px; }
 .wb-mirror__side { display: flex; flex-direction: column; gap: 10px; }
 .wb-mirror__stage { position: relative; width: 100%; height: 56vh; min-height: 200px; border-radius: 12px; overflow: hidden; background: #000; touch-action: none; }

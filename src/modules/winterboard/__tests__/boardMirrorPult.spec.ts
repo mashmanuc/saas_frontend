@@ -123,6 +123,60 @@ describe('дзеркало: камера і кути', () => {
     w.unmount()
   })
 
+  /** Полотно повертає синтетичний кадр 512×288: сіра стіна, зелена дошка (або без неї) */
+  function fakeCanvas(board: boolean) {
+    const W = 512
+    const H = 288
+    const data = new Uint8ClampedArray(W * H * 4)
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const inBoard = board && x >= 100 && x < 420 && y >= 60 && y < 230
+        const c = inBoard ? [30, 72, 44] : [128, 128, 120]
+        data.set([c[0], c[1], c[2], 255], (y * W + x) * 4)
+      }
+    }
+    return vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: () => ({ data, width: W, height: H }),
+    } as unknown as CanvasRenderingContext2D)
+  }
+  const afterFind = () => new Promise((r) => setTimeout(r, 650))
+  const findText = (k: string) => (M.find as Record<string, string>)[k]
+
+  it('камера є — за пів секунди кути самі стають на дошку, підказка «Знайшла дошку»', async () => {
+    const spy = fakeCanvas(true)
+    const w = mirror()
+    await cameraReady(w)
+    await afterFind()
+    expect(w.find('[data-testid="mirror-find-note"]').text()).toBe(findText('found'))
+    expect(w.find('[data-testid="mirror-log"]').text()).toContain(findText('found'))
+    expect(w.find('[data-testid="mirror-start"]').attributes('disabled')).toBeUndefined()
+    // «Почати» зберігає кути — це кути знайденої дошки (100..420 × 60..230 на кадрі 512×288)
+    await w.find('[data-testid="mirror-start"]').trigger('click')
+    const q = JSON.parse(localStorage.getItem('wb.mirror.quad') || 'null') as { x: number; y: number }[]
+    expect(q[0].x).toBeCloseTo(100 / 512, 1)
+    expect(q[0].y).toBeCloseTo(60 / 288, 1)
+    expect(q[2].x).toBeCloseTo(420 / 512, 1)
+    expect(q[2].y).toBeCloseTo(230 / 288, 1)
+    w.unmount()
+    spy.mockRestore()
+  })
+
+  it('дошки в кадрі немає — «Не знайшла дошку», кути лишаються, «Знайти дошку ще раз» шукає знову', async () => {
+    const spy = fakeCanvas(false)
+    const w = mirror()
+    await cameraReady(w)
+    await afterFind()
+    expect(w.find('[data-testid="mirror-find-note"]').text()).toBe(findText('notFound'))
+    expect(w.findAll('[data-testid^="mirror-corner-"]')).toHaveLength(4)
+    spy.mockRestore()
+    const spy2 = fakeCanvas(true)
+    await w.find('[data-testid="mirror-find"]').trigger('click')
+    expect(w.find('[data-testid="mirror-find-note"]').text()).toBe(findText('found'))
+    w.unmount()
+    spy2.mockRestore()
+  })
+
   it('«×» — камеру вимкнено, дзеркало закривається', async () => {
     const w = mirror()
     await cameraReady(w)

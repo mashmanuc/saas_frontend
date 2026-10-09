@@ -8904,6 +8904,12 @@
         "noWakeLock": "This phone cannot keep the screen on: if the screen turns off, snapshots stop until it is back on.",
         "corner": "Corner {n}",
         "calibrateHint": "Place the phone so the whole board is visible and drag circles 1–4 onto the board corners (1 is top left, then clockwise). Snapshots will become the background of page {page}.",
+        "find": {
+          "button": "Find the board again",
+          "found": "Board found — check the corners and press “Start”",
+          "clipped": "The board is not fully in the frame — move the phone back or set the corners by hand",
+          "notFound": "Board not found — set the corners by hand"
+        },
         "badQuad": "The corners are mixed up or the board is too small — put the circles on the board corners in order.",
         "start": "Start",
         "saveNow": "Save now",
@@ -8960,7 +8966,8 @@
           },
           "notSent": "No connection to the board — snapshot not sent",
           "unconfirmed": "The laptop did not answer within 15 s — the snapshot is in Materials, check the board",
-          "placed": "On the board · {sec} s after the board went still",
+          "placed": "On the board · {sec} s after something new appeared",
+          "light": "The light changed but the writing did not — not sending",
           "rejected": "The laptop did not place it: {reason}",
           "pause": "Paused",
           "resume": "Resumed",
