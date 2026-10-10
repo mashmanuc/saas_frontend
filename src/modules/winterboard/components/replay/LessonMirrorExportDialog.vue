@@ -12,11 +12,18 @@
         {{ t('winterboard.mirrorClip.unsupported') }}
       </p>
 
+      <p v-if="phase === 'loading'" class="wb-mclip__status" role="status" data-testid="mirror-clip-loading">
+        {{ t('winterboard.mirrorClip.loadingRecord') }}
+      </p>
+      <p v-if="phase === 'empty'" class="wb-mclip__problem" role="status" data-testid="mirror-clip-empty">
+        {{ t('winterboard.mirrorClip.noPhotos') }}
+      </p>
+
       <template v-if="phase === 'choose' || phase === 'ready'">
-        <label v-if="pages.length > 1" class="wb-mclip__field">
+        <label v-if="allPages.length > 1" class="wb-mclip__field">
           <span>{{ t('winterboard.mirrorClip.page') }}</span>
           <select v-model.number="pageIdx" data-testid="mirror-clip-page">
-            <option v-for="(p, i) in pages" :key="p.pageId" :value="i">{{ pageLabel(p, i) }} · {{ t('winterboard.mirrorClip.shots', { n: p.states.length }) }}</option>
+            <option v-for="(p, i) in allPages" :key="p.pageId" :value="i">{{ pageLabel(p, i) }} · {{ t('winterboard.mirrorClip.shots', { n: p.states.length }) }}</option>
           </select>
         </label>
         <div class="wb-mclip__range">
@@ -81,7 +88,7 @@
           class="wb-mclip__btn is-on" data-testid="mirror-clip-download" :href="videoUrl" :download="fileName"
         >{{ t('winterboard.mirrorClip.download') }}</a>
         <button
-          v-if="phase === 'done' || phase === 'error' || phase === 'ready'"
+          v-if="(phase === 'done' || phase === 'error' || phase === 'ready') && allPages.length"
           type="button" class="wb-mclip__btn" data-testid="mirror-clip-again" @click="reset"
         >{{ t('winterboard.mirrorClip.again') }}</button>
         <button v-if="phase === 'analyzing' || phase === 'exporting'" type="button" class="wb-mclip__btn" data-testid="mirror-clip-cancel" @click="reset">
@@ -102,18 +109,24 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { useI18n } from 'vue-i18n'
 import { analyzeRange, clipExportSupport, exportClip, CLIP, type ClipAnalysis } from '../../engine/lessonMirror'
 import type { MirrorPhotoPage } from '../../engine/lessonMirror/types'
+import { loadReplayMirrorPages } from '../../composables/replayMirrorPages'
 
 const props = defineProps<{
-  /** Сторінки запису з ≥ 2 фото-фонами (добирає плеєр) */
-  pages: MirrorPhotoPage[]
+  /** Сторінки запису з ≥ 2 фото-фонами (добрав плеєр) — або порожньо, тоді вікно завантажує запис саме */
+  pages?: MirrorPhotoPage[]
+  /** Зі списку «Мої записи»: id свого завершеного запису — вікно саме завантажить і добере знімки */
+  replayId?: string
   /** Назва уроку — для імені файла */
   lessonTitle?: string
 }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 const { t } = useI18n()
 
-type Phase = 'choose' | 'analyzing' | 'ready' | 'exporting' | 'done' | 'error'
+type Phase = 'loading' | 'empty' | 'choose' | 'analyzing' | 'ready' | 'exporting' | 'done' | 'error'
 const phase = ref<Phase>('choose')
+/** Сторінки, добрані самим вікном (відкрите зі списку) */
+const loadedPages = shallowRef<MirrorPhotoPage[]>([])
+const allPages = computed<MirrorPhotoPage[]>(() => (props.pages?.length ? props.pages : loadedPages.value))
 const pageIdx = ref(0)
 const fromIdx = ref(0)
 const toIdx = ref(0)
@@ -124,7 +137,7 @@ const videoUrl = ref('')
 const errorText = ref('')
 let ctrl: AbortController | null = null
 
-const states = computed(() => props.pages[pageIdx.value]?.states ?? [])
+const states = computed(() => allPages.value[pageIdx.value]?.states ?? [])
 const rangeUrls = computed(() => states.value.slice(fromIdx.value, toIdx.value + 1).map((s) => s.url))
 const tooMany = computed(() => rangeUrls.value.length > CLIP.maxSources)
 const tooLong = computed(() => (analysis.value?.estimatedMs ?? 0) > CLIP.maxMs)
@@ -135,7 +148,8 @@ function pageLabel(p: MirrorPhotoPage, i: number): string {
 
 const fileName = computed(() => {
   const base = (props.lessonTitle || 'm4sh').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'm4sh'
-  return `${base} — ${pageLabel(props.pages[pageIdx.value], pageIdx.value)}, ${fromIdx.value + 1}–${toIdx.value + 1}.mp4`
+  const page = allPages.value[pageIdx.value]
+  return `${base} — ${page ? pageLabel(page, pageIdx.value) : ''}, ${fromIdx.value + 1}–${toIdx.value + 1}.mp4`
 })
 
 function fmtDur(ms: number): string {
@@ -225,9 +239,23 @@ function onKey(e: KeyboardEvent): void {
 }
 
 onMounted(async () => {
-  defaultRange()
   window.addEventListener('keydown', onKey)
-  support.value = await clipExportSupport()
+  const supportP = clipExportSupport()
+  if (!props.pages?.length && props.replayId) {
+    // Зі списку: записи в списку без журналу дій — перевіряємо знімки вже тут і кажемо словами, якщо їх немає
+    phase.value = 'loading'
+    ctrl = new AbortController()
+    try {
+      loadedPages.value = await loadReplayMirrorPages(props.replayId, ctrl.signal)
+      phase.value = loadedPages.value.length ? 'choose' : 'empty'
+    } catch (err) {
+      if ((err as { name?: string })?.name === 'AbortError') return
+      errorText.value = t('winterboard.mirrorClip.loadRecordFailed')
+      phase.value = 'error'
+    }
+  }
+  defaultRange()
+  support.value = await supportP
 })
 
 onBeforeUnmount(() => {

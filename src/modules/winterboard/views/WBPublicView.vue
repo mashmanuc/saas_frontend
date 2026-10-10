@@ -185,6 +185,8 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import { winterboardApi } from '../api/winterboardApi'
 import { getReplay, type Replay } from '../api/replayLifecycleApi'
 import { collectMirrorPhotoPages } from '../composables/replayPhotoStates'
+// Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4); список спільний зі «Мої записи»
+import { isMirrorClipPilotUser as isMirrorClipPilotUser_ } from '../engine/lessonMirror/pilot'
 import type { MirrorPhotoPage } from '../engine/lessonMirror/types'
 import type { BoardOperation } from '../types/replay'
 import { useWBStore } from '../board/state/boardStore'
@@ -209,8 +211,6 @@ import { activeLocale } from '@/utils/i18nDate'
 // Діалог відеофрагмента вантажиться лише після натискання — решті переглядів він не потрібен.
 const LessonMirrorExportDialog = defineAsyncComponent(() => import('../components/replay/LessonMirrorExportDialog.vue'))
 
-/** Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4). */
-const MIRROR_CLIP_PILOT_USER_IDS: ReadonlySet<number> = new Set([40, 220])
 
 const { t } = useI18n()
 const route = useRoute()
@@ -225,7 +225,7 @@ const authStore = useAuthStore()
 const ownerReplayMeta = ref<Replay | null>(null)
 const mirrorPhotoPages = ref<MirrorPhotoPage[]>([])
 const showMirrorClip = ref(false)
-const isMirrorClipPilotUser = computed(() => MIRROR_CLIP_PILOT_USER_IDS.has(Number(authStore.user?.id)))
+const isMirrorClipPilotUser = computed(() => isMirrorClipPilotUser_(authStore.user?.id))
 const canOfferMirrorClip = computed(() =>
   isOwnerView.value && isMirrorClipPilotUser.value && mirrorPhotoPages.value.length > 0)
 

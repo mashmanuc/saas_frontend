@@ -83,6 +83,16 @@
         >
           ▶ {{ t('winterboard.replayList.actions.watch') }}
         </button>
+        <!-- «Дзеркало уроку» (пілот): відеофрагмент одразу зі списку, без відкриття плеєра -->
+        <button
+          v-if="canMakeClip && replay.status !== 'trashed'"
+          type="button"
+          class="replay-card__btn"
+          data-testid="replay-card-clip"
+          @click="emit('clip', replay)"
+        >
+          🎬 {{ t('winterboard.mirrorClip.video') }}
+        </button>
         <button
           v-if="replay.visibility !== 'private' && replay.public_token && replay.status !== 'trashed'"
           type="button"
@@ -171,6 +181,8 @@ interface Props {
   viewMode: 'grid' | 'list'
   menuOpen: boolean
   copied: boolean
+  /** «Дзеркало уроку» (пілот): показати «🎬 Відео» */
+  canMakeClip?: boolean
 }
 
 const props = defineProps<Props>()
@@ -178,6 +190,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   open: [replay: Replay]
   share: [replay: Replay]
+  clip: [replay: Replay]
   rename: [replay: Replay]
   visibility: [replay: Replay, visibility: ReplayVisibility]
   archive: [replay: Replay]

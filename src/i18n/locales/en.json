@@ -7493,7 +7493,11 @@
       "cancel": "Cancel",
       "unsupported": "This browser cannot create MP4. Open the recording in Chrome or Edge on a computer.",
       "loadFailed": "Could not load shot {n} — the video was not created.",
-      "failed": "Could not create the video."
+      "failed": "Could not create the video.",
+      "video": "Video",
+      "loadingRecord": "Loading the recording…",
+      "noPhotos": "This recording has no two board snapshots on one page. The video is made from Mirror snapshots (or page photo backgrounds) — at least two on a page.",
+      "loadRecordFailed": "Could not load the recording. Please try again."
     },
     "localWorkspace": {
       "title": "My workspace",

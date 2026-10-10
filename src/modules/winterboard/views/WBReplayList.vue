@@ -151,6 +151,8 @@
             :view-mode="viewMode"
             :menu-open="openMenuId === replay.id"
             :copied="copiedId === replay.id"
+            :can-make-clip="canMakeClip"
+            @clip="openClip"
             @open="handleOpen"
             @share="handleShare"
             @rename="handleRename"
@@ -215,11 +217,19 @@
         </Button>
       </template>
     </Modal>
+
+    <!-- «Дзеркало уроку» (пілот): відеофрагмент зі списку; вікно саме завантажує запис і добирає знімки -->
+    <LessonMirrorExportDialog
+      v-if="clipReplay"
+      :replay-id="clipReplay.id"
+      :lesson-title="clipReplay.title"
+      @close="clipReplay = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplayStore } from '../stores/replayStore'
 import type { Replay, ReplayStatus, ReplayVisibility } from '../api/replayLifecycleApi'
@@ -232,6 +242,19 @@ import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Input from '@/ui/Input.vue'
 import { notifyError } from '@/utils/notify'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { isMirrorClipPilotUser } from '../engine/lessonMirror/pilot'
+
+// «Дзеркало уроку» (пілот, ТЗ §2): «🎬 Відео» біля кожного свого запису — без відкриття плеєра (власник
+// 2026-10-10: «функція глибоко зашита»). Діалог — лінивий: рушій вантажиться лише на натискання.
+const LessonMirrorExportDialog = defineAsyncComponent(() => import('../components/replay/LessonMirrorExportDialog.vue'))
+const authStore = useAuthStore()
+const canMakeClip = computed(() => isMirrorClipPilotUser(authStore.user?.id))
+const clipReplay = ref<Replay | null>(null)
+function openClip(replay: Replay): void {
+  openMenuId.value = null
+  clipReplay.value = replay
+}
 
 const props = defineProps<{
   initialStatus?: ReplayStatus
