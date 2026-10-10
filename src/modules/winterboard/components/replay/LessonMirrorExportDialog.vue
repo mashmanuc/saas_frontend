@@ -1,6 +1,10 @@
 <template>
-  <!-- «Створити відеофрагмент» (ТЗ «Дзеркало уроку», пілот): сторінка й діапазон знімків → прогноз → відео в
-       браузері → перегляд того самого файла → завантаження. Файл лишається на пристрої; сайт його не зберігає. -->
+  <!-- «Створити відеофрагмент» (ТЗ «Дзеркало уроку», пілот): сторінка й діапазон знімків → «Створити відео» (одна дія:
+       аналіз і кодування з однією смужкою) → перегляд того самого файла → завантаження → «Ще один фрагмент» з того ж
+       запису (власник 2026-10-10: «вибір початок кінець залишив… кілька роликів з великого запису»). Файл лишається
+       на пристрої; сайт його не зберігає. -->
+  <!-- Над усім застосунком (бічне меню на вузькому екрані лежить вище за звичайні шари) — як ui/Modal -->
+  <Teleport to="body">
   <div class="wb-mclip__scrim" data-testid="mirror-clip-dialog" @click.self="close">
     <section class="wb-mclip" role="dialog" aria-modal="true" :aria-label="t('winterboard.mirrorClip.title')">
       <header class="wb-mclip__top">
@@ -19,7 +23,7 @@
         {{ t('winterboard.mirrorClip.noPhotos') }}
       </p>
 
-      <template v-if="phase === 'choose' || phase === 'ready'">
+      <template v-if="phase === 'choose'">
         <label v-if="allPages.length > 1" class="wb-mclip__field">
           <span>{{ t('winterboard.mirrorClip.page') }}</span>
           <select v-model.number="pageIdx" data-testid="mirror-clip-page">
@@ -45,28 +49,24 @@
         <p v-if="tooMany" class="wb-mclip__problem" data-testid="mirror-clip-too-many">
           {{ t('winterboard.mirrorClip.tooMany', { n: rangeUrls.length, max: CLIP.maxSources }) }}
         </p>
-      </template>
-
-      <p v-if="phase === 'analyzing'" class="wb-mclip__status" role="status" data-testid="mirror-clip-analyzing">
-        {{ t('winterboard.mirrorClip.analyzing', { done: progress[0], total: progress[1] }) }}
-      </p>
-
-      <template v-if="phase === 'ready' && analysis">
-        <p class="wb-mclip__summary" data-testid="mirror-clip-summary">
-          {{ t('winterboard.mirrorClip.summary', { real: analysis.realSteps, light: analysis.lightOnly, dur: fmtDur(analysis.estimatedMs) }) }}
-        </p>
-        <p v-if="tooLong" class="wb-mclip__problem" data-testid="mirror-clip-too-long">
+        <!-- задовгий діапазон видно лише після аналізу — кажемо словами й лишаємо вибір -->
+        <p v-if="tooLongMs" class="wb-mclip__problem" data-testid="mirror-clip-too-long">
           {{ t('winterboard.mirrorClip.tooLong', { max: CLIP.maxMs / 60000 }) }}
         </p>
       </template>
 
-      <div v-if="phase === 'exporting'" class="wb-mclip__status" role="status" data-testid="mirror-clip-exporting">
-        <p>{{ t('winterboard.mirrorClip.exporting', { pct: Math.round((progress[0] / Math.max(1, progress[1])) * 100) }) }}</p>
-        <progress :value="progress[0]" :max="Math.max(1, progress[1])" />
+      <div v-if="phase === 'working'" class="wb-mclip__status" role="status" data-testid="mirror-clip-working">
+        <p>{{ stage === 'analyze'
+          ? t('winterboard.mirrorClip.analyzing', { done: progress[0], total: progress[1] })
+          : t('winterboard.mirrorClip.exporting', { pct: Math.round((progress[0] / Math.max(1, progress[1])) * 100) }) }}</p>
+        <progress :value="overall" max="1" />
       </div>
 
       <template v-if="phase === 'done' && videoUrl">
         <video :src="videoUrl" class="wb-mclip__video" controls playsinline data-testid="mirror-clip-video" />
+        <p v-if="analysis" class="wb-mclip__summary" data-testid="mirror-clip-summary">
+          {{ t('winterboard.mirrorClip.summary', { real: analysis.realSteps, light: analysis.lightOnly, dur: fmtDur(analysis.estimatedMs) }) }}
+        </p>
         <p class="wb-mclip__hint">{{ t('winterboard.mirrorClip.checkBeforeSharing') }}</p>
       </template>
 
@@ -75,35 +75,32 @@
       <footer class="wb-mclip__actions">
         <button
           v-if="phase === 'choose'"
-          type="button" class="wb-mclip__btn is-on" data-testid="mirror-clip-prepare"
-          :disabled="tooMany || rangeUrls.length < 2" @click="prepare"
-        >{{ t('winterboard.mirrorClip.prepare') }}</button>
-        <button
-          v-if="phase === 'ready'"
           type="button" class="wb-mclip__btn is-on" data-testid="mirror-clip-create"
-          :disabled="tooLong || !support?.ok" @click="create"
+          :disabled="tooMany || rangeUrls.length < 2 || !support?.ok" @click="create"
         >{{ t('winterboard.mirrorClip.create') }}</button>
         <a
           v-if="phase === 'done' && videoUrl"
           class="wb-mclip__btn is-on" data-testid="mirror-clip-download" :href="videoUrl" :download="fileName"
         >{{ t('winterboard.mirrorClip.download') }}</a>
         <button
-          v-if="(phase === 'done' || phase === 'error' || phase === 'ready') && allPages.length"
+          v-if="(phase === 'done' || phase === 'error') && allPages.length"
           type="button" class="wb-mclip__btn" data-testid="mirror-clip-again" @click="reset"
         >{{ t('winterboard.mirrorClip.again') }}</button>
-        <button v-if="phase === 'analyzing' || phase === 'exporting'" type="button" class="wb-mclip__btn" data-testid="mirror-clip-cancel" @click="reset">
+        <button v-if="phase === 'working'" type="button" class="wb-mclip__btn" data-testid="mirror-clip-cancel" @click="reset">
           {{ t('winterboard.mirrorClip.cancel') }}
         </button>
       </footer>
     </section>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 /**
  * Діалог відеофрагмента (ТЗ «Дзеркало уроку» §2 п. 3, §4). Рушій — `engine/lessonMirror`: той самий аналіз
  * пари, що й для плеєра. Передперегляд — сам готовий файл (не друга відмальовка), тож що вчитель бачить,
- * те й завантажує. Нічого не надсилається на сервер.
+ * те й завантажує. Окремого кроку «Підготувати» немає (власник 2026-10-10: «нахуя користувачу бачити
+ * підготовку?»): аналіз і кодування — одна дія, стеля 5 хв перевіряється між ними. Нічого не надсилається на сервер.
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -122,7 +119,7 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'close'): void }>()
 const { t } = useI18n()
 
-type Phase = 'loading' | 'empty' | 'choose' | 'analyzing' | 'ready' | 'exporting' | 'done' | 'error'
+type Phase = 'loading' | 'empty' | 'choose' | 'working' | 'done' | 'error'
 const phase = ref<Phase>('choose')
 /** Сторінки, добрані самим вікном (відкрите зі списку) */
 const loadedPages = shallowRef<MirrorPhotoPage[]>([])
@@ -131,6 +128,15 @@ const pageIdx = ref(0)
 const fromIdx = ref(0)
 const toIdx = ref(0)
 const progress = ref<[number, number]>([0, 0])
+/** Одна дія «Створити відео»: спершу аналіз пар, потім кодування — одна смужка на обидва */
+const stage = ref<'analyze' | 'encode'>('analyze')
+const ANALYZE_SHARE = 0.3
+const overall = computed(() => {
+  const f = progress.value[0] / Math.max(1, progress.value[1])
+  return stage.value === 'analyze' ? f * ANALYZE_SHARE : ANALYZE_SHARE + f * (1 - ANALYZE_SHARE)
+})
+/** Останній діапазон вийшов задовгим (тривалість, мс); 0 — ні */
+const tooLongMs = ref(0)
 const analysis = shallowRef<ClipAnalysis | null>(null)
 const support = ref<{ ok: boolean; codec?: string } | null>(null)
 const videoUrl = ref('')
@@ -140,7 +146,6 @@ let ctrl: AbortController | null = null
 const states = computed(() => allPages.value[pageIdx.value]?.states ?? [])
 const rangeUrls = computed(() => states.value.slice(fromIdx.value, toIdx.value + 1).map((s) => s.url))
 const tooMany = computed(() => rangeUrls.value.length > CLIP.maxSources)
-const tooLong = computed(() => (analysis.value?.estimatedMs ?? 0) > CLIP.maxMs)
 
 function pageLabel(p: MirrorPhotoPage, i: number): string {
   return /^\d+$/.test(p.label) ? t('winterboard.mirrorClip.pageN', { n: p.label }) : (p.label || t('winterboard.mirrorClip.pageN', { n: i + 1 }))
@@ -167,6 +172,8 @@ function revokeVideo(): void {
   videoUrl.value = ''
 }
 
+/** «Ще один фрагмент» / «Скасувати»: назад до вибору — сторінка й діапазон лишаються, щоб із великого запису
+ *  зробити кілька роликів поспіль */
 function reset(): void {
   ctrl?.abort()
   ctrl = null
@@ -176,9 +183,9 @@ function reset(): void {
   phase.value = 'choose'
 }
 
-/** Діапазон змінився — прогноз уже не про нього */
+/** Діапазон змінився — попередження «задовгий» було про інший діапазон */
 function invalidate(): void {
-  if (phase.value === 'ready') { analysis.value = null; phase.value = 'choose' }
+  tooLongMs.value = 0
 }
 
 // Інша сторінка — діапазон на всю нову сторінку (стежимо за значенням, а не за подією: порядок
@@ -195,29 +202,28 @@ function failText(err: unknown): string {
   return t('winterboard.mirrorClip.failed')
 }
 
-async function prepare(): Promise<void> {
+async function create(): Promise<void> {
+  const codec = support.value?.codec
+  if (!codec) return
   ctrl?.abort()
-  ctrl = new AbortController()
-  phase.value = 'analyzing'
+  const c = new AbortController()
+  ctrl = c
+  tooLongMs.value = 0
+  phase.value = 'working'
+  stage.value = 'analyze'
   progress.value = [0, rangeUrls.value.length - 1]
   try {
-    analysis.value = await analyzeRange(rangeUrls.value, (d, tot) => { progress.value = [d, tot] }, ctrl.signal)
-    phase.value = 'ready'
-  } catch (err) {
-    if ((err as { name?: string })?.name === 'AbortError') return
-    errorText.value = failText(err)
-    phase.value = 'error'
-  }
-}
-
-async function create(): Promise<void> {
-  if (!analysis.value || !support.value?.codec) return
-  ctrl?.abort()
-  ctrl = new AbortController()
-  phase.value = 'exporting'
-  progress.value = [0, 1]
-  try {
-    const blob = await exportClip(rangeUrls.value, analysis.value, support.value.codec, (d, tot) => { progress.value = [d, tot] }, ctrl.signal)
+    const an = await analyzeRange(rangeUrls.value, (d, tot) => { progress.value = [d, tot] }, c.signal)
+    if (an.estimatedMs > CLIP.maxMs) {
+      // стеля пілота: не кодуємо й не обрізаємо мовчки — назад до вибору з причиною
+      tooLongMs.value = an.estimatedMs
+      phase.value = 'choose'
+      return
+    }
+    analysis.value = an
+    stage.value = 'encode'
+    progress.value = [0, 1]
+    const blob = await exportClip(rangeUrls.value, an, codec, (d, tot) => { progress.value = [d, tot] }, c.signal)
     revokeVideo()
     videoUrl.value = URL.createObjectURL(blob)
     phase.value = 'done'
@@ -269,7 +275,7 @@ defineExpose({ phase })
 
 <style scoped>
 .wb-mclip__scrim {
-  position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: var(--z-modal, 210); display: flex; align-items: center; justify-content: center;
   padding: 16px; background: rgba(2, 6, 23, .55);
 }
 .wb-mclip {

@@ -14,9 +14,11 @@ import type { Replay } from '../api/replayLifecycleApi'
 const loadReplayMirrorPages = vi.fn()
 vi.mock('../composables/replayMirrorPages', () => ({ loadReplayMirrorPages: (...a: unknown[]) => loadReplayMirrorPages(...a) }))
 const analyzeRange = vi.fn()
+const exportClip = vi.fn()
 vi.mock('../engine/lessonMirror', async (orig) => ({
   ...(await orig<typeof import('../engine/lessonMirror')>()),
   analyzeRange: (...a: unknown[]) => analyzeRange(...a),
+  exportClip: (...a: unknown[]) => exportClip(...a),
   clipExportSupport: () => Promise.resolve({ ok: true, codec: 'avc1.640028' }),
 }))
 
@@ -29,7 +31,7 @@ const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk
 
 describe('вікно зі списку (за id запису)', () => {
   beforeEach(() => { loadReplayMirrorPages.mockReset(); analyzeRange.mockReset() })
-  const open = () => mount(LessonMirrorExportDialog, { props: { replayId: 'r-1', lessonTitle: 'Урок' }, global: { plugins: [i18n()] } })
+  const open = () => mount(LessonMirrorExportDialog, { props: { replayId: 'r-1', lessonTitle: 'Урок' }, global: { plugins: [i18n()], stubs: { teleport: true } } })
 
   it('знімків немає — причина словами, нічого вибирати', async () => {
     loadReplayMirrorPages.mockResolvedValue([])
@@ -37,15 +39,17 @@ describe('вікно зі списку (за id запису)', () => {
     await flushPromises()
     expect(loadReplayMirrorPages.mock.calls[0][0]).toBe('r-1')
     expect(w.find('[data-testid="mirror-clip-empty"]').text()).toBe(M.noPhotos)
-    expect(w.find('[data-testid="mirror-clip-prepare"]').exists()).toBe(false)
+    expect(w.find('[data-testid="mirror-clip-create"]').exists()).toBe(false)
   })
 
-  it('знімки є — вибір сторінки й діапазону, «Підготувати» бере знімки запису', async () => {
+  it('знімки є — вибір сторінки й діапазону, «Створити відео» бере знімки запису', async () => {
     loadReplayMirrorPages.mockResolvedValue([{ pageId: 'p', label: '2', states: [{ seq: 1, url: 'u1' }, { seq: 2, url: 'u2' }, { seq: 3, url: 'u3' }] }])
     analyzeRange.mockResolvedValue({ steps: [], realSteps: 2, lightOnly: 0, estimatedMs: 5000, crop: { x: 0, y: 0, w: 10, h: 10 } })
     const w = open()
     await flushPromises()
-    await w.find('[data-testid="mirror-clip-prepare"]').trigger('click')
+    exportClip.mockResolvedValue(new Blob(['x'], { type: 'video/mp4' }))
+    ;(URL as unknown as { createObjectURL: unknown }).createObjectURL = () => 'blob:clip'
+    await w.find('[data-testid="mirror-clip-create"]').trigger('click')
     await flushPromises()
     expect(analyzeRange.mock.calls[0][0]).toEqual(['u1', 'u2', 'u3'])
   })
@@ -65,10 +69,12 @@ describe('кнопка «🎬 Відео» в картці запису', () => 
     global: { plugins: [i18n()], directives: { clickOutside: {} } },
   })
 
-  it('пілот — є, тисне — подія з записом', async () => {
+  it('пілот — є (у плитках значок із підписом «Відео»), тисне — подія з записом', async () => {
     const w = card(true)
     const b = w.find('[data-testid="replay-card-clip"]')
-    expect(b.text()).toContain(M.video)
+    expect(b.attributes('aria-label')).toBe(M.video)
+    expect(b.attributes('title')).toBe(M.video)
+    expect(b.text()).toContain('🎬')
     await b.trigger('click')
     expect(w.emitted('clip')?.[0]?.[0]).toMatchObject({ id: 'r-1' })
   })

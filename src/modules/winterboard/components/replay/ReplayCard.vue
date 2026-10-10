@@ -3,6 +3,7 @@
     class="replay-card"
     :class="{
       'replay-card--list': viewMode === 'list',
+      'replay-card--with-clip': canMakeClip && replay.status !== 'trashed',
       'replay-card--draggable': replay.status === 'active',
     }"
     :data-testid="`replay-card-${replay.id}`"
@@ -87,11 +88,13 @@
         <button
           v-if="canMakeClip && replay.status !== 'trashed'"
           type="button"
-          class="replay-card__btn"
+          class="replay-card__btn replay-card__btn--clip"
           data-testid="replay-card-clip"
+          :aria-label="t('winterboard.mirrorClip.video')"
+          :title="t('winterboard.mirrorClip.video')"
           @click="emit('clip', replay)"
         >
-          🎬 {{ t('winterboard.mirrorClip.video') }}
+          <span aria-hidden="true">🎬</span><span class="replay-card__btn-label"> {{ t('winterboard.mirrorClip.video') }}</span>
         </button>
         <button
           v-if="replay.visibility !== 'private' && replay.public_token && replay.status !== 'trashed'"
@@ -496,6 +499,23 @@ const vClickOutside = {
   background: var(--bg-secondary);
 }
 
+/* «🎬 Відео» (пілот «Дзеркала уроку»): у плитках — значок (підпис у title/aria-label), у списку — з текстом.
+   Якщо кнопки плитки однаково не вміщаються (вузька картка, є «Скопіювати») — переносяться на другий рядок,
+   а не обрізаються до «Ско…» (власник 2026-10-10, скрін). Коли все вміщається — вигляд той самий. */
+.replay-card:not(.replay-card--list) .replay-card__btn--clip {
+  flex: 0 0 auto;
+  min-width: 40px;
+}
+.replay-card:not(.replay-card--list) .replay-card__btn--clip .replay-card__btn-label {
+  display: none;
+}
+.replay-card:not(.replay-card--list) .replay-card__actions {
+  flex-wrap: wrap;
+}
+.replay-card:not(.replay-card--list) .replay-card__btn:not(.replay-card__btn--icon):not(.replay-card__btn--clip) {
+  flex: 1 0 auto;
+}
+
 .replay-card__btn--primary {
   background: var(--accent);
   color: var(--color-on-accent);
@@ -645,6 +665,35 @@ const vClickOutside = {
 .replay-card--list .replay-card__btn:not(.replay-card__btn--icon) {
   padding: 6px 12px;
   flex: 0 0 auto;
+}
+
+/* Вузька картка-рядок (вузьке вікно, бічне меню відкрите): кнопки під назвою, а не за правим краєм картки —
+   те саме, що робить правило ≤ 640 px нижче, але за шириною самої картки (власник 2026-10-10: кнопки обрізані). */
+.replay-card--list {
+  container-type: inline-size;
+}
+@container (max-width: 620px) {
+  .replay-card--list .replay-card__body {
+    grid-template-columns: 1fr auto;
+  }
+  .replay-card--list .replay-card__actions {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    padding-top: 4px;
+    flex-wrap: wrap;
+  }
+}
+/* З «🎬 Відео» ряд ширший на одну кнопку — під назву переносимо раніше (лише такі картки; решта як була) */
+@container (max-width: 860px) {
+  .replay-card--list.replay-card--with-clip .replay-card__body {
+    grid-template-columns: 1fr auto;
+  }
+  .replay-card--list.replay-card--with-clip .replay-card__actions {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    padding-top: 4px;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 640px) {
