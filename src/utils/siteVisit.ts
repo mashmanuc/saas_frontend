@@ -17,8 +17,11 @@ import { getAnonId } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 export const SITE_VISIT_EVENT = 'site.visit'
 // ⚠️ Контракт із бекендом (`presence.REGISTER_OPEN_EVENT`) — див. `trackRegisterOpen` нижче.
 export const REGISTER_OPEN_EVENT = 'site.register_open'
+// Подія без пари на бекенді (поки власник не скаже рахувати її в «Сьогодні на сайті») — див. `trackIntegralykTap`.
+export const INTEGRALYK_TAP_EVENT = 'site.integralyk_tap'
 const DAY_KEY = 'm4sh:visit-day'
 const REGISTER_DAY_KEY = 'm4sh:register-open-day'
+const INTEGRALYK_TAP_DAY_KEY = 'm4sh:integralyk-tap-day'
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign'] as const
 
 export interface VisitRoute {
@@ -100,5 +103,31 @@ export function trackRegisterOpen(now: Date = new Date()): void {
     void flush()
   } catch {
     // телеметрія не ламає застосунок
+  }
+}
+
+/**
+ * «Гість торкнувся Інтегралика на лендінгу /start» (ТЗ TZ_START_INTEGRALYK_HINTS_2026-10-11 §4):
+ * персонаж на лендінгу — точка входу у воронку, і без цієї позначки не видно, чи його взагалі
+ * помічають. Так само, як візит і відкриття форми: одна подія на браузер на київську добу, той
+ * самий анонімний id (бекенд зшиє гостя), без PII, автоматизацію пропускає, шле одразу.
+ *
+ * Бекенд подію лише зберігає (прийом приймає будь-яке ім'я); окремим числом у staff «Сьогодні на
+ * сайті» вона стане тільки за словом власника — тоді ім'я стане контрактом, як `site.visit`.
+ */
+export function trackIntegralykTap(now: Date = new Date()): void {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return // автоматизація, не людина
+    const day = kyivDay(now)
+    try {
+      if (localStorage.getItem(INTEGRALYK_TAP_DAY_KEY) === day) return
+      localStorage.setItem(INTEGRALYK_TAP_DAY_KEY, day)
+    } catch {
+      // localStorage недоступний (приватне вікно) — шлемо без дедупу
+    }
+    trackEvent(INTEGRALYK_TAP_EVENT, { anon_id: getAnonId(), route: '/start' })
+    void flush()
+  } catch {
+    // телеметрія не ламає лендінг
   }
 }

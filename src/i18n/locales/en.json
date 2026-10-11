@@ -7468,6 +7468,16 @@
       "invited": "Invited by a teacher? Open the link from your invitation.",
       "lost": "Lost it — ask them to send it again.",
       "haveAccount": "Already have an account? Sign in"
+    },
+    "integralykHint": {
+      "phrase": "I build on the board whatever you say",
+      "example1": "A right triangle with labelled sides and angles — in a second",
+      "example2": "A circle around the triangle and the rule for it — right beside it on the board",
+      "example3": "Checking a solution from a photo of a notebook",
+      "note": "Integralyk works on the teacher's board",
+      "openLabel": "Integralyk — what it can do",
+      "hideLabel": "Hide Integralyk",
+      "closeLabel": "Close"
     }
   },
   "winterboard": {

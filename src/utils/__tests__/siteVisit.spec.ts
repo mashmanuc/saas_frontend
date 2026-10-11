@@ -7,7 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn(), flush: vi.fn(() => Promise.resolve()) }))
 
 import { flush, trackEvent } from '@/utils/telemetryAgent'
-import { REGISTER_OPEN_EVENT, SITE_VISIT_EVENT, trackRegisterOpen, trackSiteVisit } from '../siteVisit'
+import {
+  INTEGRALYK_TAP_EVENT, REGISTER_OPEN_EVENT, SITE_VISIT_EVENT, trackIntegralykTap, trackRegisterOpen, trackSiteVisit,
+} from '../siteVisit'
 
 const START = { matched: [{ path: '/start' }], query: {} }
 
@@ -117,5 +119,44 @@ describe('trackRegisterOpen', () => {
     Object.defineProperty(navigator, 'webdriver', { value: false, configurable: true })
     vi.mocked(trackEvent).mockImplementationOnce(() => { throw new Error('boom') })
     expect(() => trackRegisterOpen()).not.toThrow()
+  })
+})
+
+/**
+ * «Гість торкнувся Інтегралика на /start» (ТЗ TZ_START_INTEGRALYK_HINTS_2026-10-11 §4): той самий
+ * анонімний id, що й у візиту та відкриття форми, — один раз на добу на браузер.
+ */
+describe('trackIntegralykTap', () => {
+  it('одна подія з тим самим анонімним id, що й візит; шле одразу', () => {
+    trackSiteVisit(START)
+    trackIntegralykTap()
+
+    expect(trackEvent).toHaveBeenCalledTimes(2)
+    const [, visitCtx] = vi.mocked(trackEvent).mock.calls[0]
+    const [name, ctx] = vi.mocked(trackEvent).mock.calls[1]
+    expect(name).toBe(INTEGRALYK_TAP_EVENT)
+    expect(name).toBe('site.integralyk_tap')
+    expect(ctx).toEqual({ anon_id: visitCtx.anon_id, route: '/start' })
+    expect(flush).toHaveBeenCalledTimes(2)
+  })
+
+  it('раз на київську добу; не залежить від позначок візиту й форми', () => {
+    trackRegisterOpen(new Date('2026-10-01T20:58:00Z'))
+    vi.mocked(trackEvent).mockClear()
+    trackIntegralykTap(new Date('2026-10-01T20:58:00Z')) // 23:58 Київ
+    trackIntegralykTap(new Date('2026-10-01T20:59:30Z'))
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+    trackIntegralykTap(new Date('2026-10-01T21:01:00Z')) // 00:01 Київ, 2 жовтня
+    expect(trackEvent).toHaveBeenCalledTimes(2)
+  })
+
+  it('автоматизація — нічого; телеметрія впала — лендінг не падає', () => {
+    Object.defineProperty(navigator, 'webdriver', { value: true, configurable: true })
+    trackIntegralykTap()
+    expect(trackEvent).not.toHaveBeenCalled()
+
+    Object.defineProperty(navigator, 'webdriver', { value: false, configurable: true })
+    vi.mocked(trackEvent).mockImplementationOnce(() => { throw new Error('boom') })
+    expect(() => trackIntegralykTap()).not.toThrow()
   })
 })

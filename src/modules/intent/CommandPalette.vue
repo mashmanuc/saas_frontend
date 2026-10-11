@@ -339,6 +339,7 @@ import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from '
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { mathContentMessage, prepareServerActions } from './math/prepareServerActions'
 import { createRemoteAssistant } from './remoteAssistant'
+import { INTEGRALYK_SVG } from './integralykMascotSvg'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { setFloatingObstacle } from '@/modules/winterboard/board/floatingObstacles'
@@ -1005,18 +1006,9 @@ function retargetVoice() {
 // БЕЗ РОТА (дизайнерське рішення): вираз через очі/кліпання, руку (.itg-arm), слоти
 // настрою (.itg-mood: сльоза/сон) й аксесуара (.itg-accessory) — скіни за часом доби.
 // КЛАСИ (не id), бо маскот рендериться двічі (fab + шапка). Дихання/кліпання — у стилях.
-const MASCOT_SVG =
-  '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#d6f1ed" stroke="#0d9488" stroke-width="3"></circle>'
-  + '<g class="itg-mood"></g>'
-  + '<g class="itg-body">'
-  + '<path d="M60 22 C55 12, 42 14, 42 27 C42 42, 58 52, 58 70 C58 85, 45 92, 40 82" fill="none" stroke="#0f5f57" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>'
-  + '<path d="M37 24 Q43 23 48 26" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
-  + '<path d="M51 29 Q56 28 61 31" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
-  + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="43" cy="34" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle class="itg-pupil" cx="55" cy="40" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<path class="itg-arm" d="M68 58 Q76 52 74 42" fill="none" stroke="#0f5f57" stroke-width="6" stroke-linecap="round"></path>'
-  + '<g class="itg-accessory"></g>'
-  + '</g></svg>'
+// Сам малюнок — спільний модуль (`integralykMascotSvg.ts`): той самий персонаж, що на екрані
+// помилки й на лендінгу /start, без копій рядка.
+const MASCOT_SVG = INTEGRALYK_SVG
 
 // Настрої / аксесуари (з integral4 assistant-icon.js). Рота НЕМАЄ.
 const ITG_MOODS = {

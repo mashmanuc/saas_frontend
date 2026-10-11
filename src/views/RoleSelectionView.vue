@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 import LandingTrigCircle from './LandingTrigCircle.vue'
 import LandingNmt3d from './LandingNmt3d.vue'
+import LandingIntegralykHint from './LandingIntegralykHint.vue'
 import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 import api from '@/api/client'
 
@@ -536,6 +537,7 @@ async function changeLanguage(langCode: string) {
         </div>
       </div>
     </footer>
+    <LandingIntegralykHint guard-selector=".hero-cta-primary, .hero-cta-ghost, .landing-footer-links" @register="selectTutor" />
   </div>
 </template>
 
