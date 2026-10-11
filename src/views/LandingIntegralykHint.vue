@@ -1,30 +1,38 @@
 <!--
   LandingIntegralykHint — Інтегралик на лендінгу /start.
-  ТЗ: saas_docs/frontend/design-system/TZ_START_INTEGRALYK_HINTS_2026-10-11.md (§1–§2 після рев'ю Лови:
-  «персонаж як ненав'язлива точка входу — так; автоматична карусель команд — ні»).
+  ТЗ: saas_docs/frontend/design-system/TZ_START_INTEGRALYK_HINTS_2026-10-11.md — §1–§6 і §7 (рішення власника
+  2026-10-11 після перегляду: «Інтегралик через певну кількість секунд мав би видавати нове повідомлення про свої
+  можливості… І так циклічно»; «його не можна рухати — він прив'язаний… треба як в коді»).
 
   Що бачить гість:
-    • через ~2 с у правому нижньому куті — той самий персонаж, що в застосунку (спільний SVG), і ОДНА
-      фраза, що не змінюється; фраза ховається через ~8 с або після прокрутки, фігурка лишається;
-    • торкнувся фігурки чи фрази → панелька з трьома прикладами результату й кнопкою реєстрації.
-      Кнопка — та сама дія, що в головної кнопки лендінгу: батько передає свою через `@register`,
-      тож куди веде (і з яким `redirect`) вирішує одне місце, а не копія тут;
-    • ✕ на панельці закриває панельку; ✕ на фігурці ховає її до кінця сеансу вкладки.
+    • через ~2 с у правому нижньому куті — той самий персонаж, що в застосунку (спільний SVG);
+    • підказки ПО КОЛУ без кінця: бульбашка ~6 с, пауза ~6 с, наступна (5 текстів). Пауза, коли відкрита
+      панелька, коли вкладку сховано, коли фігурку тягнуть. Прокрутка ховає поточну бульбашку раніше —
+      коло йде далі;
+    • фігурку можна перетягнути пальцем, пером чи мишею — як кнопку Інтегралика на дошці (та сама логіка,
+      повторена в `useDraggableFab`); місце запам'ятовується, не виходить за край, після повороту екрана повертається
+      в межі. Бульбашка й панелька їдуть з фігуркою і стають з того боку, де є місце;
+    • короткий дотик без руху → панелька з трьома прикладами результату й кнопкою реєстрації. Кнопка — та
+      сама дія, що в головної кнопки лендінгу: батько передає свою через `@register`;
+    • ✕ на панельці закриває панельку; ✕ на фігурці ховає її до кінця сеансу вкладки;
+    • на комп'ютері зіниці Інтегралика стежать за курсором — як у палітри на дошці (власник 2026-10-11:
+      «на комп'ютері очі Інтегралика бігають за курсором миші»). Палець — ні; reduced-motion — ні.
 
   Чого тут немає НАВМИСНО (§2): живих викликів моделі, діалогу, імітації чату — лише тексти i18n.
 
-  Розташування (§3): батько передає `guard-selector` — що не можна закривати (головна кнопка, нижні
-  посилання). Фігурка, що лягла б на такий елемент, відступає (ховається), доки не розійдуться;
-  фраза, що лягла б на нього, з'являється лише після прокрутки нижче першого екрана.
+  Розташування (§3): батько передає `guard-selector` — що не можна закривати (кнопки першого екрана, нижні
+  посилання). На ТИПОВОМУ місці фігурка, що лягла б на такий елемент, відступає (ховається), а бульбашка,
+  що лягла б на кнопку, у першому екрані не показується. Куди людина перетягнула сама — її вибір (§7).
 -->
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDraggableFab } from '@/composables/useDraggableFab'
 import { INTEGRALYK_SVG_STANDALONE } from '@/modules/intent/integralykMascotSvg'
 import { trackIntegralykTap } from '@/utils/siteVisit'
 
 const props = withDefaults(defineProps<{
-  /** CSS-селектор елементів, які фігурка й фраза не мають закривати. */
+  /** CSS-селектор елементів, які фігурка й бульбашка на типовому місці не мають закривати. */
   guardSelector?: string
 }>(), { guardSelector: '' })
 
@@ -34,21 +42,49 @@ const { t } = useI18n()
 
 /** «Через ~2 с з'являється» (§1.1). */
 const APPEAR_DELAY_MS = 2000
-/** «Через ~8 с бульбашка ховається» (§1.2). */
-const BUBBLE_VISIBLE_MS = 8000
-/** Прокрутка, після якої фраза ховається: менше — це тремтіння пальця, а не «прогорнув». */
+/** Бульбашка тримається ~6 с (§7). */
+const HINT_SHOW_MS = 6000
+/** …і ховається на ~6 с перед наступною (§7). */
+const HINT_REST_MS = 6000
+/** Прокрутка, після якої поточна бульбашка ховається раніше: менше — тремтіння пальця. */
 const SCROLL_HIDE_PX = 120
-/** Запас довкола охоронюваних елементів, щоб фраза не лягала впритул до кнопки. */
+/** Запас довкола охоронюваних елементів, щоб бульбашка не лягала впритул до кнопки. */
 const GUARD_GAP_PX = 8
+/** Між фігуркою й бульбашкою/панелькою: запас під ✕ фігурки, що виступає над нею на 6 px. */
+const POP_GAP_PX = 14
+/** Бульбашка й панелька — не ближче до краю екрана. */
+const POP_EDGE_PX = 8
+/** Фігурка — не ближче до краю екрана: ✕ на ній виступає на 6 px. */
+const FIGURE_EDGE_PX = 10
 /** ✕ на фігурці — «до кінця сеансу вкладки» (§1.4). */
 const HIDDEN_KEY = 'm4sh:landing-integralyk-hidden'
+/** Куди людина перетягнула фігурку (§7: «свій ключ для лендінгу»; дошка — `m4sh_integralyk_pos`). */
+const POS_KEY = 'm4sh:landing-integralyk-pos'
+/** На скільки зіниця відходить від центру ока до курсора — як у палітри на дошці для кнопки 64 px. */
+const PUPIL_SHIFT = 2.6
 
 const MASCOT_SVG = INTEGRALYK_SVG_STANDALONE
 const panelId = useId()
 const titleId = useId()
 
-// Текст — computed від t(): змінили мову в шапці — фраза й панелька одразу новою мовою (§2).
-const phrase = computed(() => t('roleSelection.integralykHint.phrase'))
+// Тексти — computed від t(): змінили мову в шапці — підказки й панелька одразу новою мовою (§2).
+// Тексти підказок — від власника (2026-10-11, через Фею: «менше математики»). Підказки 1–2: помітніший
+// перший рядок (`lead`) + приклад звичайним. `hintCards` — окремим ключем; відео в ньому немає навмисно:
+// Інтегралик його не вставляє (відео — лише з пульта).
+interface Hint { lead: string; text: string }
+const hints = computed<Hint[]>(() => {
+  const lead = t('roleSelection.integralykHint.hintLead')
+  return [
+    { lead, text: t('roleSelection.integralykHint.hintTriangle') },
+    { lead, text: t('roleSelection.integralykHint.hintCircle') },
+    { lead: '', text: t('roleSelection.integralykHint.hintCards') },
+    { lead: '', text: t('roleSelection.integralykHint.hintPhotoCheck') },
+    { lead: '', text: t('roleSelection.integralykHint.hintHelper') },
+  ]
+})
+const hintIndex = ref(0)
+const hint = computed(() => hints.value[hintIndex.value % hints.value.length])
+const panelTitle = computed(() => t('roleSelection.integralykHint.hintLead'))
 const examples = computed(() => [
   t('roleSelection.integralykHint.example1'),
   t('roleSelection.integralykHint.example2'),
@@ -77,24 +113,58 @@ function writeHidden(): void {
 const dismissed = ref(readHidden())
 const figureShown = ref(false)
 /**
- * Фраза: `idle` — ще не час; `measuring` — намальована невидимо, щоб виміряти, чи не ляже на
- * охоронюваний елемент; `shown`; `deferred` — лягла б, чекає прокрутки нижче першого екрана;
- * `gone` — показали й сховали (більше не з'являється).
+ * Бульбашка: `idle` — ще не час; `measuring` — намальована невидимо, щоб поставити її з вільного боку й
+ * перевірити, чи не ляже на кнопку; `shown`; `resting` — пауза між підказками; `deferred` — на типовому
+ * місці лягла б на кнопку, чекає прокрутки нижче першого екрана (або перетягування фігурки).
  */
-type BubbleState = 'idle' | 'measuring' | 'shown' | 'deferred' | 'gone'
+type BubbleState = 'idle' | 'measuring' | 'shown' | 'resting' | 'deferred'
 const bubble = ref<BubbleState>('idle')
 const panelOpen = ref(false)
-/** Фігурка відступила: зараз лягла б на охоронюваний елемент. */
+/** Фігурка відступила: на типовому місці лягла б на охоронюваний елемент. */
 const aside = ref(false)
-/** prefers-reduced-motion: без анімації появи/дихання, фраза змінюється без переходу (§3). */
+/** prefers-reduced-motion: без анімацій, але підказки змінюються (§7). */
 const still = ref(false)
+/**
+ * Читалка вже почула всі підказки — далі коло йде мовчки: інакше вона говорила б кожні 12 с без кінця.
+ * Бульбашка лишається в живій області (§3 `aria-live="polite"`), лише область вимикається.
+ */
+const announcedAll = ref(false)
 
+/** Де стоять бульбашка/панелька відносно фігурки: зверху чи знизу, вирівняні по її правому чи лівому краю. */
+const popStyle = ref<Record<string, string>>({})
+const popUp = ref(true)
+const popAlignRight = ref(true)
+
+const rootEl = ref<HTMLElement | null>(null)
 const bubbleEl = ref<HTMLElement | null>(null)
-const figureWrapEl = ref<HTMLElement | null>(null)
+const panelEl = ref<HTMLElement | null>(null)
 const figureBtnEl = ref<HTMLButtonElement | null>(null)
 let bubbleShownAtY = 0
 
-// ── Таймери на паузі, поки вкладку сховано (§3: «таймер підказок на паузі») ──
+// ── Перетягування: та сама логіка, що в кнопки Інтегралика на дошці ──
+const fab = useDraggableFab({
+  storageKey: POS_KEY,
+  // Розмір фігурки — з CSS (56 на телефоні, 64 ширше); корінь має рівно її розмір.
+  size: () => rootEl.value?.getBoundingClientRect().width || 64,
+  margin: FIGURE_EDGE_PX,
+  // Типове місце задане right/bottom; переставлена — лише left/top.
+  positionedStyle: { bottom: 'auto' },
+  // Нове місце потрапляє в DOM лише після оновлення Vue — міряти фігурку раніше означало б ставити
+  // бульбашку за позицією на крок позаду (на телефоні вона йшла вгору під шапку).
+  onMove: () => { void nextTick(placePop) },
+})
+const fabStyle = fab.style
+const fabDragging = fab.dragging
+const onFigurePointerDown = fab.onPointerDown
+const onFigurePointerMove = fab.onPointerMove
+const onFigurePointerUp = fab.onPointerUp
+
+/** Фігурка на типовому місці (не переставлена) — лише тоді діє охорона кнопок (§7). */
+function atDefaultPlace(): boolean {
+  return fab.pos.value === null
+}
+
+// ── Таймери на паузі (§3, §7): вкладку сховано, відкрита панелька, фігурку тягнуть ──
 interface PausableTimer { run(): void; pause(): void; cancel(): void }
 
 function pausableTimeout(fn: () => void, ms: number): PausableTimer {
@@ -127,28 +197,35 @@ function pausableTimeout(fn: () => void, ms: number): PausableTimer {
 }
 
 let appearTimer: PausableTimer | null = null
-let bubbleTimer: PausableTimer | null = null
+let cycleTimer: PausableTimer | null = null
 
 function tabHidden(): boolean {
   return document.visibilityState === 'hidden'
 }
 
-function startTimer(timer: PausableTimer): PausableTimer {
-  if (!tabHidden()) timer.run()
-  return timer
+function cyclePaused(): boolean {
+  return tabHidden() || panelOpen.value || fabDragging.value
 }
 
-function onVisibilityChange(): void {
-  if (tabHidden()) {
-    appearTimer?.pause()
-    bubbleTimer?.pause()
-  } else {
-    appearTimer?.run()
-    bubbleTimer?.run()
-  }
+function startCycleTimer(fn: () => void, ms: number): void {
+  cycleTimer?.cancel()
+  cycleTimer = pausableTimeout(fn, ms)
+  if (!cyclePaused()) cycleTimer.run()
 }
 
-// ── Охоронювані елементи (§3: не перекривати головну кнопку й нижні посилання) ──
+function stopCycleTimer(): void {
+  cycleTimer?.cancel()
+  cycleTimer = null
+}
+
+function syncTimers(): void {
+  if (tabHidden()) appearTimer?.pause()
+  else appearTimer?.run()
+  if (cyclePaused()) cycleTimer?.pause()
+  else cycleTimer?.run()
+}
+
+// ── Охоронювані елементи (§3: не перекривати кнопки першого екрана й нижні посилання) ──
 function hitsGuard(el: Element | null): boolean {
   if (!el || !props.guardSelector) return false
   const r = el.getBoundingClientRect()
@@ -163,33 +240,67 @@ function hitsGuard(el: Element | null): boolean {
 }
 
 function checkAside(): void {
-  // Відкриту панельку людина відкрила сама — фігурку під нею не ховаємо.
-  aside.value = figureShown.value && !panelOpen.value && hitsGuard(figureWrapEl.value)
+  // Відкриту панельку людина відкрила сама, а переставлену фігурку — сама поставила: тоді не ховаємо.
+  aside.value = figureShown.value && !panelOpen.value && atDefaultPlace() && hitsGuard(rootEl.value)
 }
 
-// ── Фраза ──
-function placeBubble(): void {
+// ── Бульбашка/панелька з того боку, де є місце (§7) ──
+function placePop(): void {
+  const root = rootEl.value
+  const pop = panelEl.value ?? bubbleEl.value
+  if (!root || !pop) return
+  const r = root.getBoundingClientRect()
+  const p = pop.getBoundingClientRect()
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const roomAbove = r.top - POP_GAP_PX - POP_EDGE_PX
+  const roomBelow = vh - r.bottom - POP_GAP_PX - POP_EDGE_PX
+  // З того боку, де більше місця: фігурка вгорі — бульбашка під нею (а не над, де шапка сторінки).
+  const up = roomAbove >= roomBelow
+  // Вирівнюємо по краю фігурки, що ближчий до середини екрана, і тримаємо в межах екрана.
+  const alignRight = r.left + r.width / 2 >= vw / 2
+  const preferred = alignRight ? r.right - p.width : r.left
+  const left = Math.min(Math.max(POP_EDGE_PX, preferred), Math.max(POP_EDGE_PX, vw - POP_EDGE_PX - p.width))
+  popUp.value = up
+  popAlignRight.value = alignRight
+  popStyle.value = {
+    left: `${Math.round(left - r.left)}px`,
+    top: `${Math.round(up ? -(POP_GAP_PX + p.height) : r.height + POP_GAP_PX)}px`,
+  }
+}
+
+// ── Коло підказок (§7) ──
+function showHint(): void {
+  stopCycleTimer()
+  bubble.value = 'measuring'
+  // Спершу бульбашка має з'явитися в DOM (невидимо), потім стати з вільного боку, і лише ПІСЛЯ того, як
+  // це місце застосовано, — перевірка, чи не лягла на кнопку (інакше міряли б старе місце).
+  void nextTick(() => {
+    placePop()
+    void nextTick(decideHint)
+  })
+}
+
+function decideHint(): void {
   if (bubble.value !== 'measuring') return
-  if (aside.value || hitsGuard(bubbleEl.value)) {
+  if (atDefaultPlace() && (aside.value || hitsGuard(bubbleEl.value))) {
     bubble.value = 'deferred'
     return
   }
   bubble.value = 'shown'
   bubbleShownAtY = window.scrollY
-  bubbleTimer = startTimer(pausableTimeout(() => {
-    if (bubble.value === 'shown') bubble.value = 'gone'
-  }, BUBBLE_VISIBLE_MS))
+  startCycleTimer(restHint, HINT_SHOW_MS)
 }
 
-function measureBubble(): void {
-  bubble.value = 'measuring'
-  void nextTick(placeBubble)
+function restHint(): void {
+  if (bubble.value === 'shown' && hintIndex.value === hints.value.length - 1) announcedAll.value = true
+  bubble.value = 'resting'
+  startCycleTimer(nextHint, HINT_REST_MS)
 }
 
-function hideBubble(): void {
-  bubbleTimer?.cancel()
-  bubbleTimer = null
-  if (bubble.value !== 'idle') bubble.value = 'gone'
+function nextHint(): void {
+  hintIndex.value = (hintIndex.value + 1) % hints.value.length
+  showHint()
 }
 
 function appear(): void {
@@ -197,7 +308,7 @@ function appear(): void {
   figureShown.value = true
   void nextTick(() => {
     checkAside()
-    measureBubble()
+    showHint()
   })
 }
 
@@ -205,19 +316,47 @@ function onScroll(): void {
   checkAside()
   const y = window.scrollY
   if (bubble.value === 'shown' && Math.abs(y - bubbleShownAtY) >= SCROLL_HIDE_PX) {
-    hideBubble()
+    restHint()
   } else if (bubble.value === 'deferred' && y >= window.innerHeight) {
-    measureBubble()
+    showHint()
   }
 }
+
+function onResize(): void {
+  fab.reclamp()
+  // Міряємо після того, як нове (повернуте в межі) місце застосовано.
+  void nextTick(() => {
+    checkAside()
+    placePop()
+  })
+}
+
+// Пауза/продовження кола — коли відкрили/закрили панельку або почали/закінчили тягнути.
+watch([panelOpen, fabDragging], syncTimers)
+watch(fabDragging, (now) => {
+  if (now) return
+  void nextTick(() => {
+    checkAside()
+    placePop()
+    // Відклали через кнопку на типовому місці, а людина переставила фігурку — показуємо.
+    if (bubble.value === 'deferred') showHint()
+  })
+})
+// Інша мова — інша ширина тексту: переставити бульбашку з вільного боку.
+watch(hint, () => { void nextTick(placePop) })
 
 // ── Панелька ──
 function openPanel(): void {
   if (panelOpen.value) return
   panelOpen.value = true
   aside.value = false
-  hideBubble()
+  // Бульбашку замінює панелька; коло продовжиться паузою після її закриття.
+  if (bubble.value !== 'idle') {
+    bubble.value = 'resting'
+    startCycleTimer(nextHint, HINT_REST_MS)
+  }
   trackIntegralykTap()
+  void nextTick(placePop)
 }
 
 function closePanel(): void {
@@ -234,6 +373,12 @@ function togglePanel(): void {
   else openPanel()
 }
 
+function onFigureClick(): void {
+  // Після перетягування браузер усе одно шле click — це не дотик, панельку не відкриваємо.
+  if (fab.consumeDragClick()) return
+  togglePanel()
+}
+
 function onKeydown(e: KeyboardEvent): void {
   if (e.key === 'Escape' && panelOpen.value) closePanel()
 }
@@ -242,16 +387,47 @@ function register(): void {
   emit('register')
 }
 
+// ── Зіниці стежать за курсором (як у палітри на дошці: `CommandPalette.vue`, `onEyesMove`) ──
+// Лише курсор на комп'ютері — миша або перо графічного планшета. Палець — ні: після торкання браузер шле ще
+// й «мишачий» mousemove у точку дотику, і на телефоні зіниці смикались би за кожним тапом. Тому слухаємо
+// `pointermove` і пропускаємо `touch`. Скільки б не було рухів — один кадр (rAF); поки фігурку тягнуть,
+// зіниці стоять; reduced-motion — слухача немає взагалі (onMounted).
+let pupilFrame = 0
+let cursorX = 0
+let cursorY = 0
+
+function onEyesMove(e: PointerEvent): void {
+  if (e.pointerType === 'touch') return
+  cursorX = e.clientX
+  cursorY = e.clientY
+  if (pupilFrame) return
+  pupilFrame = window.requestAnimationFrame(lookAtCursor)
+}
+
+function lookAtCursor(): void {
+  pupilFrame = 0
+  const host = figureBtnEl.value
+  if (!host || fabDragging.value) return
+  const r = host.getBoundingClientRect()
+  const angle = Math.atan2(cursorY - (r.top + r.height / 2), cursorX - (r.left + r.width / 2))
+  const dx = (Math.cos(angle) * PUPIL_SHIFT).toFixed(2)
+  const dy = (Math.sin(angle) * PUPIL_SHIFT).toFixed(2)
+  host.querySelectorAll<SVGElement>('.itg-pupil').forEach((p) => { p.style.transform = `translate(${dx}px, ${dy}px)` })
+}
+
 // ── Життєвий цикл ──
 function teardown(): void {
   appearTimer?.cancel()
   appearTimer = null
-  bubbleTimer?.cancel()
-  bubbleTimer = null
-  document.removeEventListener('visibilitychange', onVisibilityChange)
+  stopCycleTimer()
+  document.removeEventListener('visibilitychange', syncTimers)
   window.removeEventListener('scroll', onScroll)
-  window.removeEventListener('resize', checkAside)
+  window.removeEventListener('resize', onResize)
+  window.removeEventListener('orientationchange', onResize)
   document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('pointermove', onEyesMove)
+  if (pupilFrame) window.cancelAnimationFrame(pupilFrame)
+  pupilFrame = 0
 }
 
 function hideForSession(): void {
@@ -264,11 +440,16 @@ function hideForSession(): void {
 onMounted(() => {
   if (dismissed.value) return
   still.value = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
-  document.addEventListener('visibilitychange', onVisibilityChange)
+  fab.restore()
+  document.addEventListener('visibilitychange', syncTimers)
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', checkAside)
+  window.addEventListener('resize', onResize)
+  window.addEventListener('orientationchange', onResize)
   document.addEventListener('keydown', onKeydown)
-  appearTimer = startTimer(pausableTimeout(appear, APPEAR_DELAY_MS))
+  // Менше руху — зіниці дивляться прямо: слухача курсора не ставимо.
+  if (!still.value) window.addEventListener('pointermove', onEyesMove, { passive: true })
+  appearTimer = pausableTimeout(appear, APPEAR_DELAY_MS)
+  if (!tabHidden()) appearTimer.run()
 })
 
 onBeforeUnmount(teardown)
@@ -277,8 +458,18 @@ onBeforeUnmount(teardown)
 <template>
   <div
     v-if="!dismissed"
+    ref="rootEl"
     class="lih"
-    :class="{ 'lih--still': still, 'lih--aside': aside }"
+    :class="{
+      'lih--still': still,
+      'lih--aside': aside,
+      'lih--dragging': fabDragging,
+      'lih--up': popUp,
+      'lih--down': !popUp,
+      'lih--right': popAlignRight,
+      'lih--left': !popAlignRight,
+    }"
+    :style="fabStyle"
     :data-motion="still ? 'reduce' : 'full'"
     data-test="landing-integralyk"
   >
@@ -286,12 +477,14 @@ onBeforeUnmount(teardown)
       <section
         v-if="panelOpen"
         :id="panelId"
+        ref="panelEl"
         class="lih-panel"
+        :style="popStyle"
         :aria-labelledby="titleId"
         data-test="integralyk-panel"
       >
         <div class="lih-panel-head">
-          <p :id="titleId" class="lih-panel-title">{{ phrase }}</p>
+          <p :id="titleId" class="lih-panel-title">{{ panelTitle }}</p>
           <button
             type="button"
             class="lih-x lih-x--panel"
@@ -311,22 +504,26 @@ onBeforeUnmount(teardown)
       </section>
     </Transition>
 
-    <!-- aria-live живе з першого кадру: читалка оголошує фразу, коли вона з'являється всередині. -->
-    <div class="lih-live" aria-live="polite">
+    <!-- aria-live живе з першого кадру: читалка оголошує підказку, коли вона з'являється всередині. -->
+    <div class="lih-live" :aria-live="announcedAll ? 'off' : 'polite'" data-test="integralyk-live">
       <Transition name="lih-fade" :css="!still">
         <p
           v-if="bubble === 'measuring' || bubble === 'shown'"
           ref="bubbleEl"
           class="lih-bubble"
           :class="{ 'lih-bubble--measuring': bubble === 'measuring' }"
+          :style="popStyle"
           data-test="integralyk-bubble"
           @click="openPanel"
-        >{{ phrase }}</p>
+        >
+          <strong v-if="hint.lead" class="lih-bubble-lead">{{ hint.lead }}</strong>
+          <span class="lih-bubble-text">{{ hint.text }}</span>
+        </p>
       </Transition>
     </div>
 
     <Transition name="lih-pop" :css="!still">
-      <div v-if="figureShown" ref="figureWrapEl" class="lih-figure-wrap" data-test="integralyk-figure-wrap">
+      <div v-if="figureShown" class="lih-figure-wrap" data-test="integralyk-figure-wrap">
         <button
           ref="figureBtnEl"
           type="button"
@@ -335,7 +532,11 @@ onBeforeUnmount(teardown)
           :aria-expanded="panelOpen ? 'true' : 'false'"
           :aria-controls="panelOpen ? panelId : undefined"
           data-test="integralyk-figure"
-          @click="togglePanel"
+          @pointerdown="onFigurePointerDown"
+          @pointermove="onFigurePointerMove"
+          @pointerup="onFigurePointerUp"
+          @pointercancel="onFigurePointerUp"
+          @click="onFigureClick"
         >
           <span class="lih-mascot" aria-hidden="true" v-html="MASCOT_SVG"></span>
         </button>
@@ -353,18 +554,19 @@ onBeforeUnmount(teardown)
 
 <style scoped>
 /* Кольори — лише токени теми (світла, класична, темна): --card-bg, --text-*, --border-color, --accent*. */
+
+/* Корінь — рівно розміром із фігурку: його переставляє перетягування (left/top), а бульбашка й панелька
+   стоять відносно нього з того боку, де є місце (placePop). */
 .lih {
   position: fixed;
   right: 24px;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  /* Нижче шапки лендінгу (z-index 100) і її меню мов. */
-  z-index: 90;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  /* Запас під ✕ фігурки, що виступає над нею на 6 px. */
-  gap: 14px;
-  /* Порожній кут не ловить кліків — лише самі елементи. */
+  /* Над шапкою лендінгу (z-index 100): фігурку можна перетягнути будь-куди, і під шапкою вона б
+     зникла назавжди — місце запам'ятовується, а схопити її крізь шапку не можна. */
+  z-index: 101;
+  width: 64px;
+  height: 64px;
+  /* Сам корінь кліків не ловить — лише фігурка, бульбашка й панелька. */
   pointer-events: none;
 }
 .lih-panel,
@@ -376,8 +578,8 @@ onBeforeUnmount(teardown)
 /* ── Фігурка ── */
 .lih-figure-wrap {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 100%;
+  height: 100%;
 }
 .lih-figure {
   display: block;
@@ -387,9 +589,14 @@ onBeforeUnmount(teardown)
   border: none;
   border-radius: 50%;
   background: none;
-  cursor: pointer;
+  cursor: grab;
+  /* Тягнуть пальцем/пером — не прокручувати сторінку (як на дошці). */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   filter: drop-shadow(0 6px 14px var(--shadow-strong));
 }
+.lih--dragging .lih-figure { cursor: grabbing; }
 .lih-figure:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
@@ -398,6 +605,7 @@ onBeforeUnmount(teardown)
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 .lih-mascot :deep(svg) {
   display: block;
@@ -411,6 +619,8 @@ onBeforeUnmount(teardown)
 .lih-mascot :deep(.itg-e2) { animation-delay: 0.05s; }
 @keyframes lih-breath { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.4px) scale(1.012); } }
 @keyframes lih-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+/* Зіниці плавно тягнуться за курсором (transform ставить lookAtCursor) — як у палітри. */
+.lih-mascot :deep(.itg-pupil) { transition: transform 0.18s ease; }
 
 /* ✕ — і на фігурці, і на панельці. */
 .lih-x {
@@ -447,13 +657,25 @@ onBeforeUnmount(teardown)
   height: 28px;
 }
 
-/* ── Фраза ── */
+/* ── Бульбашка ── */
+/* Точка відліку бульбашки — верхній лівий кут фігурки (як і в панельки). */
+.lih-live {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+}
 .lih-bubble {
+  position: absolute;
+  box-sizing: border-box;
   margin: 0;
-  max-width: min(70vw, 260px);
+  width: max-content;
+  /* На телефоні ≤ 70 % екрана (§3); ширше — до 300 px, щоб жирний перший рядок не ламався. */
+  max-width: min(70vw, 300px);
   padding: 10px 14px;
   border: 1px solid var(--border-color);
-  border-radius: 14px 14px 4px 14px;
+  border-radius: 14px;
   background: var(--card-bg);
   color: var(--text-primary);
   font-size: 0.95rem;
@@ -461,11 +683,26 @@ onBeforeUnmount(teardown)
   box-shadow: 0 6px 20px var(--shadow-strong);
   cursor: pointer;
 }
+/* Підказки 1–2: перший рядок помітніший, другий — приклад звичайним (власник 2026-10-11). */
+.lih-bubble-lead {
+  display: block;
+  font-weight: 600;
+}
+.lih-bubble-lead + .lih-bubble-text {
+  display: block;
+  margin-top: 2px;
+}
+/* «Хвостик» — гострий кут бульбашки дивиться на фігурку. */
+.lih--up.lih--right .lih-bubble { border-bottom-right-radius: 4px; }
+.lih--up.lih--left .lih-bubble { border-bottom-left-radius: 4px; }
+.lih--down.lih--right .lih-bubble { border-top-right-radius: 4px; }
+.lih--down.lih--left .lih-bubble { border-top-left-radius: 4px; }
 /* Вимір перед показом: місце займає, але не видно. */
 .lih-bubble--measuring { visibility: hidden; }
 
 /* ── Панелька ── */
 .lih-panel {
+  position: absolute;
   box-sizing: border-box;
   width: min(320px, calc(100vw - 32px));
   padding: 16px;
@@ -534,7 +771,7 @@ onBeforeUnmount(teardown)
   text-align: center;
 }
 
-/* ── Відступ: фігурка лягла б на охоронюваний елемент ── */
+/* ── Відступ: на типовому місці фігурка лягла б на охоронюваний елемент ── */
 .lih-figure-wrap,
 .lih-live {
   transition: opacity 0.2s ease, visibility 0.2s;
@@ -554,11 +791,11 @@ onBeforeUnmount(teardown)
 .lih-fade-enter-from,
 .lih-fade-leave-to { opacity: 0; }
 .lih-panel-enter-active,
-.lih-panel-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.lih-panel-leave-active { transition: opacity 0.18s ease; }
 .lih-panel-enter-from,
-.lih-panel-leave-to { opacity: 0; transform: translateY(6px); }
+.lih-panel-leave-to { opacity: 0; }
 
-/* ── Менше руху: без появи, дихання й переходів ── */
+/* ── Менше руху: без появи, дихання й переходів (підказки однаково змінюються) ── */
 .lih--still .lih-mascot :deep(.itg-body),
 .lih--still .lih-mascot :deep(.itg-eye) { animation: none; }
 .lih--still .lih-figure-wrap,
@@ -577,8 +814,6 @@ onBeforeUnmount(teardown)
   .lih {
     right: 16px;
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  }
-  .lih-figure-wrap {
     width: 56px;
     height: 56px;
   }

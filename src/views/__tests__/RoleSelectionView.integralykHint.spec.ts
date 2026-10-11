@@ -12,6 +12,7 @@ import { createI18n } from 'vue-i18n'
 import { defineComponent, h, nextTick } from 'vue'
 import uk from '@/i18n/locales/uk.json'
 import landingSource from '../RoleSelectionView.vue?raw'
+import hintSource from '../LandingIntegralykHint.vue?raw'
 
 const push = vi.hoisted(() => vi.fn())
 const route = vi.hoisted(() => ({ query: { redirect: '/workspace' } as Record<string, unknown> }))
@@ -105,6 +106,16 @@ describe('Інтегралик на сторінці /start', () => {
     await settle()
     await w.find('[data-test="integralyk-figure"]').trigger('click')
     expect(w.find('[data-test="integralyk-cta"]').text()).toBe(w.find('.hero-cta-primary').text())
+  })
+
+  it('фігурка над шапкою сторінки: перетягнута під шапку, вона б зникла (місце запам\'ятовується)', () => {
+    const zOf = (src: string, selector: string) => {
+      const block = src.slice(src.indexOf(`${selector} {`))
+      return Number(block.slice(0, block.indexOf('}')).match(/z-index:\s*(\d+)/)?.[1])
+    }
+    const header = zOf(landingSource, '.nav-header')
+    expect(header).toBeGreaterThan(0)
+    expect(zOf(hintSource, '.lih')).toBeGreaterThan(header)
   })
 
   it('підключено одним рядком; охорона вказує на справжню головну кнопку й нижні посилання', async () => {

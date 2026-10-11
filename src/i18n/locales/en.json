@@ -7470,7 +7470,12 @@
       "haveAccount": "Already have an account? Sign in"
     },
     "integralykHint": {
-      "phrase": "I build on the board whatever you say",
+      "hintLead": "I build on the board whatever you say",
+      "hintTriangle": "A right triangle with labels — in a second",
+      "hintCircle": "A circle around the triangle and the rule for it — right beside it",
+      "hintCards": "I can add cards, tables, graphs and photos to the board — on request",
+      "hintPhotoCheck": "I'll check a solution from a photo of a notebook",
+      "hintHelper": "Would you like me to be your assistant in lessons?",
       "example1": "A right triangle with labelled sides and angles — in a second",
       "example2": "A circle around the triangle and the rule for it — right beside it on the board",
       "example3": "Checking a solution from a photo of a notebook",
