@@ -17,6 +17,13 @@ export interface SettingChange {
 
 const BASE = '/v1/staff/platform-settings'
 
+/** Налаштування лендінгу в staff (2026-10-11: + відео блоку «Дзеркало» і його постер). */
+export interface LandingConfigFields {
+  replay_demo_url: string
+  mirror_video_url: string
+  mirror_video_poster_url: string
+}
+
 export default {
   async getAll(): Promise<PlatformSetting[]> {
     const { data } = await api.get(`${BASE}/`)
@@ -28,16 +35,17 @@ export default {
     return data
   },
 
-  // Landing config (реплей для демо-секції лендінгу) — окремий endpoint
-  async getLandingConfig(): Promise<{ replay_demo_url: string }> {
+  // Landing config (реплей для демо-секції + відео Дзеркала) — окремий endpoint
+  async getLandingConfig(): Promise<LandingConfigFields> {
     // apiClient-interceptor вже повертає тіло (res.data); BE віддає flat
-    // {replay_demo_url} → повертаємо тіло як є (НЕ .data — його тут немає).
+    // {replay_demo_url, mirror_video_url, …} → повертаємо тіло як є (НЕ .data — його тут немає).
     const body: any = await api.get('/v1/staff/landing-config/')
     return body
   },
 
-  async updateLandingConfig(replayDemoUrl: string): Promise<{ replay_demo_url: string }> {
-    const body: any = await api.patch('/v1/staff/landing-config/', { replay_demo_url: replayDemoUrl })
+  /** Лише передані поля: поле, якого немає в запиті, сервер не чіпає. */
+  async updateLandingConfig(patch: Partial<LandingConfigFields>): Promise<LandingConfigFields> {
+    const body: any = await api.patch('/v1/staff/landing-config/', patch)
     return body
   },
 }

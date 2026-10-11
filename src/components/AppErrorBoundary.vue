@@ -5,8 +5,8 @@
   давав ПОРОЖНІЙ екран (репорт власника після churn-у чанків). Тепер юзер бачить
   спокійну брендовану сторінку з Інтегралчиком і кнопкою «Онови», а не білу пустку.
 
-  САМОДОСТАТНІЙ: inline маскот-SVG + scoped-стилі, БЕЗ імпортів дизайн-системи /
-  сторів — щоб рендеритись навіть якщо крашнулось саме воно. Reload — ручний
+  САМОДОСТАТНІЙ: маскот-SVG (спільний модуль-рядок без залежностей) + scoped-стилі,
+  БЕЗ імпортів дизайн-системи / сторів — щоб рендеритись навіть якщо крашнулось саме воно. Reload — ручний
   (кнопка), тож без auto-loop. Chunk-nav помилки окремо auto-reload-яться у
   router.onError (router/index.js).
 -->
@@ -35,23 +35,16 @@
 
 <script setup>
 import { computed, ref, onErrorCaptured, getCurrentInstance } from 'vue'
-// Єдина залежність (умисно): крихітний ref-прапорець без власних залежностей —
+// Залежність (умисно): крихітний ref-прапорець без власних залежностей —
 // див. коментар про самодостатність вище. Через нього router.onError повідомляє
 // про stale-chunk, який `onErrorCaptured` не бачить (chunk падає ДО монтування).
 import { appFatalError } from '../core/errors/appFatalError'
+// Спільний малюнок Інтегралика — модуль без імпортів, лише рядки (див. його шапку).
+import { INTEGRALYK_SVG_SORRY } from '../modules/intent/integralykMascotSvg'
 
 // Той самий Інтегралик, що в CommandPalette — дихає/кліпає (класи в стилях).
-// Легка сльозинка (#7fc8ff) — трохи винуватий, що підвів. Рота немає (за дизайном).
-const MASCOT_SVG =
-  '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#d6f1ed" stroke="#0d9488" stroke-width="3"></circle>'
-  + '<g class="itg-body">'
-  + '<path d="M60 22 C55 12, 42 14, 42 27 C42 42, 58 52, 58 70 C58 85, 45 92, 40 82" fill="none" stroke="#0f5f57" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>'
-  + '<path d="M37 25 Q43 27 48 25" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
-  + '<path d="M51 30 Q56 32 61 30" fill="none" stroke="#0f5f57" stroke-width="2" stroke-linecap="round"></path>'
-  + '<g class="itg-eye" style="transform-origin:43px 34px;"><circle cx="43" cy="34" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="43" cy="35.5" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<g class="itg-eye itg-e2" style="transform-origin:55px 40px;"><circle cx="55" cy="40" r="7" fill="#fff" stroke="#0f5f57" stroke-width="2"></circle><circle cx="55" cy="41.5" r="3.5" fill="#0f5f57"></circle></g>'
-  + '<path d="M40 44 Q37 51 40 55 Q43 51 40 44 Z" fill="#7fc8ff" stroke="#3b9fe0" stroke-width="1"></path>'
-  + '</g></svg>'
+// Легка сльозинка — трохи винуватий, що підвів. Рота немає (за дизайном).
+const MASCOT_SVG = INTEGRALYK_SVG_SORRY
 
 // Локальний краш (компонент упав під час рендеру).
 const localError = ref(false)

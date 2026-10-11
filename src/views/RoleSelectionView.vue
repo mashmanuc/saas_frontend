@@ -5,8 +5,10 @@ import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 import LandingTrigCircle from './LandingTrigCircle.vue'
 import LandingNmt3d from './LandingNmt3d.vue'
+import LandingIntegralykHint from './LandingIntegralykHint.vue'
 import ProjectSupportLink from '@/ui/ProjectSupportLink.vue'
 import api from '@/api/client'
+import LandingMirrorBlock from './LandingMirrorBlock.vue'
 
 // Те саме око, що на стартовому екрані реплею. Вантажиться лише тоді, коли адмін
 // задав реальний урок (рамка-посилання), — першому екрану лендингу воно не потрібне.
@@ -236,6 +238,7 @@ async function changeLanguage(langCode: string) {
           </div>
         </div>
       </section>
+      <LandingMirrorBlock />
 
       <div class="cards-container">
         <!-- Tutor Card -->
@@ -536,6 +539,7 @@ async function changeLanguage(langCode: string) {
         </div>
       </div>
     </footer>
+    <LandingIntegralykHint guard-selector=".hero-cta-primary, .hero-cta-ghost, .landing-footer-links" @register="selectTutor" />
   </div>
 </template>
 
