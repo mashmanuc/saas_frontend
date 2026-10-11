@@ -183,3 +183,71 @@ describe('нотатка: форматування на панелі виділ�
     expect(sizeLabel(w).exists()).toBe(false)
   })
 })
+
+describe('нотатка: колір тла на панелі виділення (власник 2026-10-11: «роби кольори нотатки»)', () => {
+  async function mountToolbar(selectedObject: unknown, extra: Record<string, unknown> = {}) {
+    setActivePinia(createPinia())
+    const WBSelectionToolbar = (await import('../components/canvas/WBSelectionToolbar.vue')).default
+    return mount(WBSelectionToolbar, {
+      props: {
+        selectedIds: ['n1'], zoom: 1,
+        canvasRect: { left: 0, top: 0, right: 1200, bottom: 800, width: 1200, height: 800 } as DOMRect,
+        mode: 'edit', isLocked: false, bbox: { x: 300, y: 300, w: 200, h: 120 },
+        selectedObject: selectedObject as never, sessionId: 's1', isTutor: true, ...extra,
+      },
+      global: { stubs: { LinkAttachmentModal: true, Teleport: true } },
+    })
+  }
+  const btn = (w: Awaited<ReturnType<typeof mountToolbar>>) => w.find('[data-test="sticky-color-btn"]')
+  /** Колір зі style у hex: браузер віддає rgb(), happy-dom — як записали. */
+  const hex = (css: string) => {
+    const m = css.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+    if (!m) return (css.match(/#[0-9a-f]{6}/i)?.[0] ?? css).toLowerCase()
+    return '#' + m.slice(1, 4).map((n) => Number(n).toString(16).padStart(2, '0')).join('')
+  }
+  const dot = (w: Awaited<ReturnType<typeof mountToolbar>>) =>
+    hex((btn(w).find('.wb-selection-toolbar__color-dot').element as HTMLElement).style.background)
+
+  it('кружечок показує поточний колір нотатки', async () => {
+    const w = await mountToolbar({ ...STICKY, bgColor: '#93c5fd' })
+    expect(dot(w)).toBe('#93c5fd')
+  })
+
+  it('без поля bgColor — типовий жовтий, з яким нотатку малюють', async () => {
+    const w = await mountToolbar({ ...STICKY, bgColor: undefined })
+    expect(dot(w)).toBe('#fde047')
+  })
+
+  it('клік → сітка з 6 кольорів палітри; вибір пише bgColor і закриває сітку', async () => {
+    const w = await mountToolbar(STICKY)
+    expect(w.find('.wb-sticky-picker').exists()).toBe(false)
+    await btn(w).trigger('click')
+    const swatches = w.findAll('.wb-sticky-picker__swatch')
+    expect(swatches).toHaveLength(6)
+    // активний — поточний колір нотатки
+    expect(hex(w.find('.wb-sticky-picker__swatch--active').attributes('style') ?? '')).toBe('#fde047')
+    await swatches[1].trigger('click') // зелений
+    expect(w.emitted('text-format')?.[0]).toEqual([{ bgColor: '#86efac' }])
+    expect(w.find('.wb-sticky-picker').exists()).toBe(false)
+  })
+
+  it('виділили інший обʼєкт — відкрита сітка закривається', async () => {
+    const w = await mountToolbar(STICKY)
+    await btn(w).trigger('click')
+    expect(w.find('.wb-sticky-picker').exists()).toBe(true)
+    await w.setProps({ selectedIds: ['n2'] })
+    expect(w.find('.wb-sticky-picker').exists()).toBe(false)
+  })
+
+  it('заблокована нотатка — кнопка кольору неактивна', async () => {
+    const w = await mountToolbar(STICKY, { isLocked: true })
+    expect(btn(w).attributes('disabled')).toBeDefined()
+  })
+
+  it('текст і картинка — кнопки кольору нотатки немає', async () => {
+    const t = await mountToolbar({ id: 't1', tool: 'text', size: 16, points: [], color: '#000', opacity: 1 })
+    expect(btn(t).exists()).toBe(false)
+    const i = await mountToolbar({ id: 'i1', type: 'image', src: 'x', x: 0, y: 0, w: 10, h: 10, rotation: 0 })
+    expect(btn(i).exists()).toBe(false)
+  })
+})

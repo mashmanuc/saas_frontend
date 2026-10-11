@@ -104,6 +104,25 @@
         <span class="wb-selection-toolbar__divider" />
       </template>
 
+      <!-- ── Колір тла нотатки (власник 2026-10-11: «роби кольори нотатки») ──
+           Кружечок поточного кольору → сітка тієї ж палітри, з якою нотатку створюють (STICKY_COLORS). -->
+      <template v-if="isStickySelected">
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :disabled="isLocked"
+          :title="t('winterboard.sticky.change_color')"
+          :aria-label="t('winterboard.sticky.change_color')"
+          aria-haspopup="menu"
+          :aria-expanded="colorPicker.open"
+          data-test="sticky-color-btn"
+          @click="openColorPicker"
+        >
+          <span class="wb-selection-toolbar__color-dot" :style="{ background: currentStickyColor }" aria-hidden="true" />
+        </button>
+        <span class="wb-selection-toolbar__divider" />
+      </template>
+
       <!-- ── Common actions ── -->
 
       <!-- Bring to Front -->
@@ -401,6 +420,16 @@
     @cancel="linkModalOpen = false"
   />
 
+  <!-- Сітка кольорів нотатки (сама телепортується в body, закривається Escape і кліком повз) -->
+  <WBStickyColorPicker
+    :visible="colorPicker.open"
+    :x="colorPicker.x"
+    :y="colorPicker.y"
+    :current-color="currentStickyColor"
+    @select-color="onPickStickyColor"
+    @close="colorPicker.open = false"
+  />
+
   <!-- ── Send-to-page popup (teleported to body for z-index safety) ── -->
   <Teleport to="body">
     <Transition name="wb-picker-fade">
@@ -447,8 +476,10 @@ import { useI18n } from 'vue-i18n'
 import { useDeviceMode } from '../../composables/useDeviceMode'
 import { useObjectAudio, formatTime, isRecordingSupported } from '../../composables/useObjectAudio'
 import LinkAttachmentModal from './LinkAttachmentModal.vue'
+import WBStickyColorPicker from './WBStickyColorPicker.vue'
 import WBImageReadingButton from './WBImageReadingButton.vue'
 import type { WBStroke, WBAsset } from '../../types/winterboard'
+import { STICKY_DEFAULTS } from '../../types/winterboard'
 import type { ImageReadingTarget } from '../../board/imageReadingTarget'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -565,6 +596,41 @@ const isTextSelected = computed(() =>
   props.selectedIds.length === 1 &&
   (props.selectedObject?.tool === 'text' || isStickySelected.value),
 )
+
+/** Поточний колір тла нотатки; без поля — той, з яким нотатку створюють і малюють. */
+const currentStickyColor = computed(() => {
+  const sticky = (props.selectedAsset ?? props.selectedObject) as { bgColor?: string } | null | undefined
+  return sticky?.bgColor || STICKY_DEFAULTS.bgColor
+})
+
+/** Сітка кольорів (WBStickyColorPicker, position: fixed): під кнопкою, а біля низу екрана — над нею. */
+const PICKER_W = 124
+const PICKER_H = 86
+const colorPicker = ref({ open: false, x: 0, y: 0 })
+
+function openColorPicker(e: MouseEvent): void {
+  const btn = e.currentTarget as HTMLElement | null
+  const r = btn?.getBoundingClientRect()
+  if (!r) return
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  const x = Math.max(8, Math.min(r.left, vw - PICKER_W - 8))
+  const below = r.bottom + 6
+  const y = below + PICKER_H > vh - 8 ? Math.max(8, r.top - PICKER_H - 6) : below
+  colorPicker.value = { open: true, x, y }
+}
+
+/**
+ * Колір пишемо тим самим шляхом, що й форматування тексту: кімната кладе зміну в об'єкт
+ * (`handleTextFormat` → `store.updateObject`) — одна операція, з undo.
+ */
+function onPickStickyColor(color: string): void {
+  colorPicker.value.open = false
+  emit('text-format', { bgColor: color })
+}
+
+// Виділили інше — сітка від старої нотатки не лишається.
+watch(() => props.selectedIds.join('|'), () => { colorPicker.value.open = false })
 
 /** Типовий розмір шрифту нотатки — той самий, що малює WBStickyNote. */
 const STICKY_DEFAULT_FONT_SIZE = 14
@@ -806,6 +872,15 @@ const positionStyle = computed(() => {
 </script>
 
 <style scoped>
+.wb-selection-toolbar__color-dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
 .wb-selection-toolbar {
   display: flex;
   align-items: center;
