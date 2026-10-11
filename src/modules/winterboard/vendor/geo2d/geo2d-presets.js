@@ -1579,8 +1579,12 @@
           if (on) {
             const C = '#2563eb';
             add(con, G.circumcircle('circ_rt', 'A', 'B', 'C', { color: C }), 'circumcircle');
-            add(con, G.circumcenter('O_rt', 'A', 'B', 'C', { label: 'O', color: C }), 'circumcircle');
-            add(con, G.midpoint('M_hyp', 'B', 'C', { size: 5, color: C, label: 'M' }), 'circumcircle');
+            // O і середина гіпотенузи M — одна точка. Раніше обидві мали підпис зі зсувом
+            // за замовчуванням (вгору-праворуч) і лягали одна на одну й на «c=…» гіпотенузи —
+            // темна пляма замість букв (рев'ю лендінгу 2026-10-11). Підпис — один, «O»,
+            // усередині трикутника (до прямого кута A); M лишається точкою без підпису.
+            add(con, G.circumcenter('O_rt', 'A', 'B', 'C', { label: 'O', labelOffset: { x: -20, y: 18 }, color: C }), 'circumcircle');
+            add(con, G.midpoint('M_hyp', 'B', 'C', { size: 5, color: C }), 'circumcircle');
             add(con, G.segment('OM_c', 'O_rt', 'B', { style: 'dashed', width: 1.2, color: C }), 'circumcircle');
           }
         }},
