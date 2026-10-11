@@ -222,6 +222,8 @@ const props = defineProps<{
   result: RemotePhotoResult | null
   /** Надіслати photo.background; false — канал не відправив */
   sendBackground: (args: { library_asset_id: number; request_id: string; page_index: number }) => boolean
+  /** Дошка, на яку шлемо знімки (для групи в «Мої файли») */
+  boardId: string
   tel?: (event: string, ctx?: Record<string, unknown>) => void
 }>()
 
@@ -302,6 +304,12 @@ const movedNote = ref(false)
 /** «Зберегти зараз» натиснуто — знімок на першому тихому кадрі */
 const saveWaiting = ref(false)
 let saveAskedAt = 0
+/**
+ * Один запуск «Дзеркала» = одна група знімків у «Мої файли» (TZ_MIRROR_SNAPSHOTS_GROUPING §2.1):
+ * від відкриття до «×»; «Пауза», «Кути», «Почати знову» — той самий запуск. Інша дошка — новий.
+ */
+let mirrorRun = newRequestId()
+watch(() => props.boardId, () => { mirrorRun = newRequestId() })
 /** Що заважає відправці зараз: немає зв'язку / ноутбук на іншій сторінці */
 const blockedBy = computed<'' | 'offline' | 'page'>(() => {
   if (phase.value !== 'running') return ''
@@ -893,7 +901,9 @@ async function commit(frame: MirrorFrame, s: SendArgs): Promise<void> {
     const tUp = performance.now()
     let assetId: number
     try {
-      assetId = (await uploadAsset(shot.file, null, { purpose: PHOTO_UPLOAD_PURPOSE })).id
+      assetId = (await uploadAsset(shot.file, null, {
+        purpose: PHOTO_UPLOAD_PURPOSE, mirror: { board: props.boardId, run: mirrorRun },
+      })).id
     } catch (err) {
       const info = photoUploadError(err)
       failed('upload_error', t('winterboard.remote.mirror.log.uploadFailed', {

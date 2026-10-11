@@ -67,7 +67,7 @@ describe('дзеркало: камера і кути', () => {
 
   function mirror(over: Record<string, unknown> = {}) {
     return mount(RemoteBoardMirror, {
-      props: { ready: true, pageIndex: 1, result: null, sendBackground: vi.fn(() => true), ...over },
+      props: { ready: true, pageIndex: 1, result: null, sendBackground: vi.fn(() => true), boardId: 'board-A', ...over },
       global: { plugins: [i18n()] },
       attachTo: document.body,
     })
@@ -399,6 +399,40 @@ describe('дзеркало: камера і кути', () => {
         // порівняння з нуля: знімок дошки на новому місці пішов «першим»
         expect(send).toHaveBeenCalledTimes(2)
         expect(count(logText(w), (M.log as unknown as { sent: Record<string, string> }).sent.first.split(' · ')[0])).toBe(2)
+      } finally {
+        w.unmount()
+        sc.restore()
+      }
+    })
+
+    it('знімки одного запуску — одна група: дошка й mirror_run ті самі; інша дошка — новий запуск', async () => {
+      const sc = stage()
+      const send = vi.fn((_a: { request_id: string }) => true)
+      const w = mirror({ sendBackground: send })
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      try {
+        await running(w)
+        await advance(2000)
+        await w.setProps({ result: { request_id: send.mock.calls[0][0].request_id, status: 'placed' } })
+        await flushPromises()
+        sc.set({ board: B })
+        await advance(8000)
+        expect(send).toHaveBeenCalledTimes(2)
+        const opts = () => vi.mocked(uploadAsset).mock.calls.map((c) => c[2]!)
+        const [o1, o2] = opts()
+        expect(o1.purpose).toBe('remote_photo')
+        expect(o1.mirror).toEqual({ board: 'board-A', run: expect.stringMatching(UUID) })
+        expect(o2.mirror).toEqual(o1.mirror)
+
+        await w.setProps({ boardId: 'board-B', result: { request_id: send.mock.calls[1][0].request_id, status: 'placed' } })
+        await flushPromises()
+        sc.set({ board: A })
+        await advance(8000)
+        expect(send).toHaveBeenCalledTimes(3)
+        const o3 = opts()[2]
+        expect(o3.mirror!.board).toBe('board-B')
+        expect(o3.mirror!.run).toMatch(UUID)
+        expect(o3.mirror!.run).not.toBe(o1.mirror!.run)
       } finally {
         w.unmount()
         sc.restore()

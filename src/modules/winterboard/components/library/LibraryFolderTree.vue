@@ -187,7 +187,18 @@
             :title="t('winterboard.library.renameFolder')"
             @click.stop="startRename(folder)"
           >✏️</button>
+          <!-- Теки «Дзеркала» системні: свої теки в них не кладуть, зате є «Прибрати зайві» -->
           <button
+            v-if="folder.system_kind"
+            type="button"
+            class="wb-folder-tree__action-btn"
+            :title="t('winterboard.library.mirror.tidy')"
+            :aria-label="t('winterboard.library.mirror.tidy')"
+            :data-testid="`folder-tidy-${folder.id}`"
+            @click.stop="emit('tidy', folder.id, folder.name)"
+          >🧹</button>
+          <button
+            v-else
             type="button"
             class="wb-folder-tree__action-btn"
             :title="t('winterboard.library.createChild')"
@@ -285,6 +296,8 @@ const emit = defineEmits<{
   rename: [id: number, newName: string]
   delete: [id: number, name: string]
   drop: [data: { assetId: number; folderId: number | null }]
+  /** «Прибрати зайві» в системній теці «Дзеркала» */
+  tidy: [id: number, name: string]
 }>()
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────

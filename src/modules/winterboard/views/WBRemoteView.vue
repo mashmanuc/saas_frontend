@@ -592,6 +592,7 @@
       :page-index="pageIndex"
       :result="photoResult"
       :send-background="sendPhotoBackground"
+      :board-id="boardId!"
       :tel="tel"
       @close="closeMirror"
     />

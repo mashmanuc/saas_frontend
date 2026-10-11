@@ -14,6 +14,7 @@ import type {
   LibraryAssetUpdateRequest,
   LibraryAssetConfirmRequest,
   LibraryAssetsQuery,
+  MirrorCleanupResult,
 } from '../types/library'
 
 const BASE = '/v1/winterboard/library'
@@ -61,6 +62,13 @@ export async function deleteFolder(id: number): Promise<void> {
   await apiClient.delete(`${BASE}/folders/${id}/`)
 }
 
+/** «Прибрати зайві» в теці «🪞 Дзеркало» чи групі: `dryRun` лише рахує, інакше незадіяні — в Архів. */
+export async function mirrorCleanup(folderId: number, dryRun: boolean): Promise<MirrorCleanupResult> {
+  return apiClient.post<MirrorCleanupResult>(
+    `${BASE}/folders/${folderId}/mirror-cleanup/`, null, { params: dryRun ? { dry_run: 1 } : {} },
+  )
+}
+
 // ─── Assets ────────────────────────────────────────────────────────────────
 
 export async function fetchAssets(query?: LibraryAssetsQuery): Promise<LibraryAssetListResponse> {
@@ -83,7 +91,7 @@ export async function createAsset(data: LibraryAssetCreateRequest): Promise<Libr
 export async function uploadAsset(
   file: File,
   folderId?: number | null,
-  opts?: { purpose?: 'remote_photo' },
+  opts?: { purpose?: 'remote_photo'; mirror?: { board: string; run: string } },
 ): Promise<LibraryAsset> {
   const formData = new FormData()
   formData.append('file', file)
@@ -93,6 +101,12 @@ export async function uploadAsset(
   // LAW §9 v1.9: фото з телефона — сервер приймає лише перевірені JPEG/PNG/WebP
   if (opts?.purpose) {
     formData.append('purpose', opts.purpose)
+  }
+  // Правка LAW §9 v1.9 (2026-10-11): знімок «Дзеркала» — дошка й запуск; сервер кладе його в групу запуску
+  if (opts?.mirror) {
+    formData.append('origin', 'board_mirror')
+    formData.append('board', opts.mirror.board)
+    formData.append('mirror_run', opts.mirror.run)
   }
   // IMPORTANT: do NOT set Content-Type manually — axios must auto-detect
   // multipart/form-data with boundary from FormData object.

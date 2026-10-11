@@ -13,10 +13,14 @@ export interface LibraryTag {
 
 // ─── Library Folder (flat mode) ────────────────────────────────────────────
 
+/** Системні теки «Дзеркала» (TZ_MIRROR_SNAPSHOTS_GROUPING): «🪞 Дзеркало» і група одного запуску. */
+export type LibrarySystemKind = '' | 'mirror_root' | 'mirror_run'
+
 export interface LibraryFolder {
   id: number           // int PK
   name: string
   parent: number | null  // FK int, НЕ parent_id
+  system_kind?: LibrarySystemKind
   children_count: number
   assets_count: number   // НЕ asset_count
   created_at: string
@@ -29,6 +33,7 @@ export interface LibraryFolderTree {
   id: number
   name: string
   parent: number | null
+  system_kind?: LibrarySystemKind
   children: LibraryFolderTree[]  // recursive
   assets_count: number
 }
@@ -58,6 +63,28 @@ export interface LibraryAsset {
   slide_count?: number | null
   /** PDF/DOCX page count (from ContentItem). */
   page_count?: number | null
+  /** Походження: `board_mirror` — знімок «Дзеркала дошки». */
+  origin?: '' | 'board_mirror'
+}
+
+/** «Прибрати зайві»: хто тримає знімок (лише свої дошки й записи). */
+export interface MirrorUsageHolder {
+  kind: 'board' | 'replay' | 'template'
+  id: string
+  title: string
+}
+
+export interface MirrorCleanupResult {
+  total: number
+  total_bytes: number
+  /** id знімків, на які ніщо не посилається */
+  free: number[]
+  free_bytes: number
+  used: { id: number; where: string; holders: MirrorUsageHolder[] }[]
+  /** Облік не вдалося зібрати — нічого не прибрано */
+  usage_unknown: boolean
+  dry_run: boolean
+  archived: number
 }
 
 // ─── Paginated list response (GET /library/assets/) ───────────────────────

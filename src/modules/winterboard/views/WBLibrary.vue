@@ -22,6 +22,7 @@
         @create="handleCreateFolder"
         @rename="handleRenameFolder"
         @delete="handleDeleteFolder"
+        @tidy="(id: number, name: string) => { tidyFolder = { id, name } }"
         @drop="handleFolderDrop"
       />
     </aside>
@@ -507,6 +508,14 @@
     />
 
     <!-- Phase 32: folder CRUD now inline in LibraryFolderTree (editable prop) -->
+
+    <MirrorTidyDialog
+      v-if="tidyFolder"
+      :folder-id="tidyFolder.id"
+      :folder-name="tidyFolder.name"
+      @done="onTidyDone"
+      @close="tidyFolder = null"
+    />
   </div>
 </template>
 
@@ -525,6 +534,7 @@ import MaterialLessonDialog, { type LessonResult }
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
 import LibraryBreadcrumb from '../components/library/LibraryBreadcrumb.vue'
 import MoveAssetDropdown from '../components/library/MoveAssetDropdown.vue'
+import MirrorTidyDialog from '../components/library/MirrorTidyDialog.vue'
 import {
   fetchFoldersTree,
   fetchAssets,
@@ -1057,8 +1067,20 @@ async function handleDeleteFolder(id: number, name: string): Promise<void> {
     showToast(t('winterboard.library.folderDeleted'), 'success')
   } catch (err) {
     console.error('[WB:Library] Delete folder failed', err)
-    showToast(t('winterboard.library.folderError'), 'error')
+    // Тека «Дзеркала» зі знімками не видаляється (409) — пояснюємо, що робити
+    const resp = (err as { response?: { status?: number; data?: { error?: string } } } | null)?.response
+    const notEmpty = resp?.status === 409 && resp.data?.error === 'folder_not_empty'
+    showToast(t(notEmpty ? 'winterboard.library.mirror.folderNotEmpty' : 'winterboard.library.folderError'), 'error')
   }
+}
+
+// ─── «Прибрати зайві» (теки «Дзеркала») ──────────────────────────────────────
+
+const tidyFolder = ref<{ id: number; name: string } | null>(null)
+
+async function onTidyDone(): Promise<void> {
+  await loadFolders()
+  await loadAssets()
 }
 
 // ─── List view inline rename ──────────────────────────────────────────────────
