@@ -47,6 +47,12 @@
         </button>
       </div>
 
+      <!-- Відмова сервера на дію сторінки (голос, підписка, видалення, модерація) — повідомленням тут,
+           а не падінням усього застосунку в «Щось пішло не так» (скарга тестувальника 2026-10-11). -->
+      <p v-if="actionError" class="mt-3 text-sm text-rose-600" role="alert" data-test="thread-action-error">
+        {{ $t(actionError) }}
+      </p>
+
       <!-- Duplicate banner -->
       <div v-if="thread.status === 'duplicate' && thread.duplicate_of" class="mt-4 p-3 bg-amber-50 border border-amber-300 rounded-lg">
         {{ $t('feedback.detail.duplicateOf') }}
@@ -114,7 +120,7 @@
       <CommentList
         :thread="thread"
         :comments="store.commentsFor(thread.id)"
-        @submit="onCreateComment"
+        :send="sendComment"
         @delete="onDeleteComment"
       />
     </div>
@@ -122,7 +128,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useFeedbackStore } from '../stores/feedbackStore'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -141,6 +147,21 @@ const store = useFeedbackStore()
 
 const thread = computed(() => store.threadById(Number(route.params.id)))
 const staffForm = reactive({ status: 'planned', staff_response: '', duplicate_of_id: null })
+/** Ключ перекладу останньої невдалої дії сторінки; порожньо — помилки немає. */
+const actionError = ref('')
+
+/**
+ * Дія сторінки з обробленою відмовою. Раніше обробники кидали помилку сервера далі — Vue передавав
+ * її в onErrorCaptured AppErrorBoundary, і весь застосунок замінювався екраном «Щось пішло не так».
+ */
+async function runAction(fn, errorKey = () => 'feedback.detail.errors.generic') {
+  actionError.value = ''
+  try {
+    await fn()
+  } catch (err) {
+    actionError.value = errorKey(err)
+  }
+}
 
 watch(
   () => route.params.id,
@@ -153,6 +174,8 @@ watch(
         staffForm.status = t.status
         staffForm.staff_response = t.staff_response || ''
       }
+    }).catch(() => {
+      // Причину вже записано в store.detailError — сторінка показує її замість теми.
     })
     store.loadComments(tid).catch(() => {})
   },
@@ -161,30 +184,26 @@ watch(
 
 async function onVote() {
   if (!thread.value) return
-  try {
-    await store.toggleVote(thread.value.id)
-  } catch (err) {
-    console.error(err)
-  }
+  // Причину store вже переклав у voteError (закрито / забагато голосів…).
+  await runAction(() => store.toggleVote(thread.value.id), () => store.voteError || 'feedback.vote.errors.generic')
 }
 
 async function toggleSubscribe() {
   if (!thread.value) return
-  if (thread.value.subscribed_by_me) {
-    await store.unsubscribe(thread.value.id)
-  } else {
-    await store.subscribe(thread.value.id)
-  }
+  const id = thread.value.id
+  await runAction(() => (thread.value.subscribed_by_me ? store.unsubscribe(id) : store.subscribe(id)))
 }
 
-async function onCreateComment(content) {
+/** Для форми коментаря: помилку сервера кидає далі — форма показує її сама й лишає текст. */
+async function sendComment(content) {
   if (!thread.value) return
+  actionError.value = ''
   await store.createComment(thread.value.id, content)
 }
 
 async function onDeleteComment(commentId) {
   if (!thread.value) return
-  await store.deleteComment(commentId, thread.value.id)
+  await runAction(() => store.deleteComment(commentId, thread.value.id))
 }
 
 async function applyStaffChange() {
@@ -193,17 +212,17 @@ async function applyStaffChange() {
   if (staffForm.status === 'duplicate' && staffForm.duplicate_of_id) {
     payload.duplicate_of_id = staffForm.duplicate_of_id
   }
-  await store.changeStatus(thread.value.id, payload)
+  await runAction(() => store.changeStatus(thread.value.id, payload))
 }
 
 async function onToggleLock() {
   if (!thread.value) return
-  await store.toggleLock(thread.value.id)
+  await runAction(() => store.toggleLock(thread.value.id))
 }
 
 async function onToggleHide() {
   if (!thread.value) return
-  await store.toggleHide(thread.value.id)
+  await runAction(() => store.toggleHide(thread.value.id))
 }
 
 function formatDate(iso) {

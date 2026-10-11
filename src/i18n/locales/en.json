@@ -11760,7 +11760,10 @@
       "lock": "Lock",
       "unlock": "Unlock",
       "hide": "Hide",
-      "unhide": "Unhide"
+      "unhide": "Unhide",
+      "errors": {
+        "generic": "Couldn't complete the action. Try again."
+      }
     },
     "comments": {
       "title": "Comments",
@@ -11770,7 +11773,14 @@
       "empty": "No comments yet. Be the first!",
       "locked": "Comments are closed by moderator.",
       "terminal": "Discussion is closed — no new comments.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "minLengthHint": "at least 2 characters",
+      "errors": {
+        "tooShort": "The comment is too short — write at least 2 characters.",
+        "rateLimit": "You've posted too many comments today. Try again tomorrow.",
+        "notFound": "This discussion no longer exists.",
+        "generic": "Couldn't send the comment. Your text is kept — try again."
+      }
     },
     "roadmap": {
       "title": "Roadmap",

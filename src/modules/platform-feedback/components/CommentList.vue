@@ -14,14 +14,22 @@
         rows="3"
         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
         :placeholder="$t('feedback.comments.placeholder')"
-        maxlength="2000"
+        :maxlength="COMMENT_MAX_LENGTH"
+        data-test="comment-input"
+        @input="error = ''"
       />
+      <!-- Відмова сервера — тут, біля форми; текст коментаря лишається в полі. -->
+      <p v-if="error" class="text-sm text-rose-600" role="alert" data-test="comment-error">{{ $t(error) }}</p>
       <div class="flex items-center justify-between">
-        <span class="text-xs text-slate-500">{{ draft.length }}/2000</span>
+        <span class="text-xs text-slate-500">
+          {{ draft.length }}/{{ COMMENT_MAX_LENGTH }}
+          <span v-if="tooShort" class="ml-2" data-test="comment-min-hint">· {{ $t('feedback.comments.minLengthHint') }}</span>
+        </span>
         <button
           type="submit"
-          :disabled="!draft.trim() || submitting"
+          :disabled="!canSubmit"
           class="px-4 py-1.5 bg-blue-600 text-white rounded-lg disabled:opacity-50 hover:bg-blue-700 transition"
+          data-test="comment-send"
         >
           {{ submitting ? $t('feedback.comments.sending') : $t('feedback.comments.send') }}
         </button>
@@ -62,26 +70,43 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { activeLocale } from '@/utils/i18nDate'
+import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH, commentErrorKey, commentLength } from '../feedbackErrors'
 
 const props = defineProps({
   thread: { type: Object, required: true },
   comments: { type: Array, default: () => [] },
+  /**
+   * Надіслати коментар: async (content) => void, кидає помилку сервера.
+   * Функцією, а не подією: `await emit(...)` нічого не чекає — відмова сервера пролітала повз
+   * форму до AppErrorBoundary («Щось пішло не так»), а поле очищувалось і при помилці.
+   */
+  send: { type: Function, required: true },
 })
-const emit = defineEmits(['submit', 'delete'])
+defineEmits(['delete'])
 
 const auth = useAuthStore()
 const draft = ref('')
 const submitting = ref(false)
+/** Ключ перекладу причини відмови; порожньо — помилки немає. */
+const error = ref('')
+
+const length = computed(() => commentLength(draft.value))
+// Підказка — лише коли людина вже почала писати: порожнє поле не сварить.
+const tooShort = computed(() => length.value > 0 && length.value < COMMENT_MIN_LENGTH)
+const canSubmit = computed(() => !submitting.value && length.value >= COMMENT_MIN_LENGTH)
 
 async function submit() {
-  if (!draft.value.trim()) return
+  if (!canSubmit.value) return
   submitting.value = true
+  error.value = ''
   try {
-    await emit('submit', draft.value.trim())
+    await props.send(draft.value.trim())
     draft.value = ''
+  } catch (err) {
+    error.value = commentErrorKey(err)
   } finally {
     submitting.value = false
   }
