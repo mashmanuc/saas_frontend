@@ -75,8 +75,10 @@ export function useStickyNotes(store: WBStore) {
 
   /**
    * Update sticky dimensions. Clamped 50-800.
+   * x/y — нова позиція після трансформера (тягнули лівий чи верхній кут): розмір і зсув — одна
+   * операція, щоб скасування повертало нотатку цілою.
    */
-  function updateDimensions(id: string, w: number, h: number): void {
+  function updateDimensions(id: string, w: number, h: number, x?: number, y?: number): void {
     const page = store.currentPage
     if (!page) return
     const asset = page.assets.find((a) => a.id === id)
@@ -84,7 +86,13 @@ export function useStickyNotes(store: WBStore) {
     if (asset.locked) return
     const clampedW = Math.max(50, Math.min(800, w))
     const clampedH = Math.max(50, Math.min(800, h))
-    store.updateAsset({ ...asset, w: clampedW, h: clampedH })
+    store.updateAsset({
+      ...asset,
+      w: clampedW,
+      h: clampedH,
+      ...(typeof x === 'number' && Number.isFinite(x) ? { x } : {}),
+      ...(typeof y === 'number' && Number.isFinite(y) ? { y } : {}),
+    })
   }
 
   /**

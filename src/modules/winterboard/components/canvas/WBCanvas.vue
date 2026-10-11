@@ -2679,7 +2679,8 @@ const transformerConfig = computed(() => ({
   anchorShadowBlur: 6,
   anchorShadowOffsetX: 0,
   anchorShadowOffsetY: 1,
-  rotateEnabled: true,
+  // Нотатка обертання не малює й не зберігає (WBStickyNote) — ручки обертання для неї немає.
+  rotateEnabled: selectedNode.value?.name?.() !== 'sticky',
   keepRatio: true,
   enabledAnchors: [
     'top-left', 'top-center', 'top-right',
@@ -3105,14 +3106,46 @@ function finishStickyTextEdit(): void {
 
 function handleStickySelect(id: string): void {
   wbStore.selectItems([id])
+
+  // Скарга тестувальника 2026-10-11 «не можу збільшити нотатку»: виділення нотатки не чіпляло
+  // трансформер (рамка з ручками з'являється лише за `selectedNode`), тож ручок розміру не було.
+  // Робимо те саме, що для документа (`handleDocViewerSelect`). Заблоковану — без ручок.
+  const asset = wbStore.currentPage?.assets.find((a) => a.id === id)
+  if (!asset || asset.locked) return
+  const layer = assetsLayerRef.value?.getNode?.()
+  const node = layer?.findOne(`#${id}`) ?? null
+  if (!node) return
+  selectedNode.value = node
+  nextTick(() => {
+    nextTick(() => {
+      const transformer = transformerRef.value?.getNode()
+      if (transformer && node) transformer.nodes([node])
+    })
+  })
 }
+
+// Рамка трансформера групи рахується з її дітей (прямокутник і текст нотатки), а вони отримують
+// новий розмір лише після перерендеру — без цього ручки лишались на старому розмірі. Перераховуємо
+// рамку, щойно змінились позиція чи розмір виділеної нотатки (ручки, скасування, інший учасник).
+watch(
+  () => {
+    const node = selectedNode.value
+    if (!node || node.name() !== 'sticky') return null
+    const a = wbStore.currentPage?.assets.find((x) => x.id === node.id())
+    return a ? `${a.x}|${a.y}|${a.w}|${a.h}` : null
+  },
+  (sig) => {
+    if (sig) transformerRef.value?.getNode()?.forceUpdate()
+  },
+  { flush: 'post' },
+)
 
 function handleStickyDragEnd(id: string, x: number, y: number): void {
   stickyNotes.updatePosition(id, x, y)
 }
 
-function handleStickyTransformEnd(id: string, w: number, h: number): void {
-  stickyNotes.updateDimensions(id, w, h)
+function handleStickyTransformEnd(id: string, w: number, h: number, x: number, y: number): void {
+  stickyNotes.updateDimensions(id, w, h, x, y)
 }
 
 // ─── PLAN_v4: Document Viewer handlers ──────────────────────────────────────

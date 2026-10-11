@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   select: [id: string]
   dragEnd: [id: string, x: number, y: number]
-  transformEnd: [id: string, w: number, h: number]
+  transformEnd: [id: string, w: number, h: number, x: number, y: number]
   editText: [id: string]
 }>()
 
@@ -133,10 +133,27 @@ function handleDragEnd(e: { target: { x: () => number; y: () => number } }): voi
   emit('dragEnd', props.sticky.id, e.target.x(), e.target.y())
 }
 
-function handleTransformEnd(e: { target: { width: () => number; height: () => number; scaleX: () => number; scaleY: () => number } }): void {
+/** Межі розміру нотатки — ті самі, що перевіряє `useStickyNotes.updateDimensions`. */
+const MIN_SIDE = 50
+const MAX_SIDE = 800
+
+/**
+ * Кінець зміни розміру ручками трансформера. Konva міняє не width/height, а масштаб вузла —
+ * переводимо його в розмір і скидаємо масштаб на 1 (як текст, `WBCanvas.handleTextTransformEnd`),
+ * інакше збережений розмір множився б на масштаб, що лишився на вузлі. Позицію віддаємо теж:
+ * тягнучи лівий чи верхній кут, нотатка зсувається.
+ */
+function handleTransformEnd(e: {
+  target: {
+    width: () => number; height: () => number; scaleX: (v?: number) => number; scaleY: (v?: number) => number
+    x: () => number; y: () => number
+  }
+}): void {
   const node = e.target
-  const w = Math.max(50, Math.min(800, node.width() * node.scaleX()))
-  const h = Math.max(50, Math.min(800, node.height() * node.scaleY()))
-  emit('transformEnd', props.sticky.id, w, h)
+  const w = Math.max(MIN_SIDE, Math.min(MAX_SIDE, node.width() * node.scaleX()))
+  const h = Math.max(MIN_SIDE, Math.min(MAX_SIDE, node.height() * node.scaleY()))
+  node.scaleX(1)
+  node.scaleY(1)
+  emit('transformEnd', props.sticky.id, w, h, node.x(), node.y())
 }
 </script>

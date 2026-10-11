@@ -529,16 +529,53 @@ const { deviceMode } = useDeviceMode()
 
 const toolbarRef = ref<HTMLElement | null>(null)
 
+/**
+ * Справжня ширина тулбара: з форматуванням тексту чи нотатки він ~600 px, а межу краю полотна
+ * рахували під ~160 px (`rect.left + 80`) — біля лівого краю половина кнопок (зокрема «Жирний»)
+ * виходила за екран (живий огляд нотатки 2026-10-11). Стежимо за шириною, поки тулбар на екрані.
+ */
+const toolbarWidth = ref(160)
+let toolbarResize: ResizeObserver | null = null
+watch(toolbarRef, (el) => {
+  toolbarResize?.disconnect()
+  toolbarResize = null
+  if (!el) return
+  toolbarWidth.value = el.offsetWidth || toolbarWidth.value
+  if (typeof ResizeObserver === 'undefined') return
+  toolbarResize = new ResizeObserver(() => { toolbarWidth.value = el.offsetWidth || toolbarWidth.value })
+  toolbarResize.observe(el)
+})
+onUnmounted(() => { toolbarResize?.disconnect() })
+
 // ─── Text detection ─────────────────────────────────────────────────────────
+
+/**
+ * Нотатка (asset `sticky`) — теж текст: жирний, курсив, вирівнювання лежать у тих самих полях
+ * (`fontWeight`, `fontStyle`, `textAlign`), а розмір — у `fontSize` (у тексту — `size`).
+ * Скарга тестувальника 2026-10-11 «не можу … видозмінити нотатку»: панель властивостей нотатки
+ * з кімнати прибрано, а форматування тут показувалось лише для тексту — нотатку не було чим змінити.
+ */
+const isStickySelected = computed(() => {
+  if (props.selectedIds.length !== 1) return false
+  const obj = (props.selectedAsset ?? props.selectedObject) as { type?: string } | null | undefined
+  return obj?.type === 'sticky'
+})
 
 const isTextSelected = computed(() =>
   props.selectedIds.length === 1 &&
-  props.selectedObject?.tool === 'text',
+  (props.selectedObject?.tool === 'text' || isStickySelected.value),
 )
 
-const currentFontSize = computed(() =>
-  props.selectedObject?.size || 16,
-)
+/** Типовий розмір шрифту нотатки — той самий, що малює WBStickyNote. */
+const STICKY_DEFAULT_FONT_SIZE = 14
+
+const currentFontSize = computed(() => {
+  if (isStickySelected.value) {
+    const sticky = (props.selectedAsset ?? props.selectedObject) as { fontSize?: number } | null | undefined
+    return sticky?.fontSize || STICKY_DEFAULT_FONT_SIZE
+  }
+  return props.selectedObject?.size || 16
+})
 
 function changeFontSize(direction: 1 | -1) {
   const current = currentFontSize.value
@@ -557,7 +594,7 @@ function changeFontSize(direction: 1 | -1) {
     newSize = FONT_SIZES[newIdx]
   }
 
-  emit('text-format', { size: newSize })
+  emit('text-format', isStickySelected.value ? { fontSize: newSize } : { size: newSize })
 }
 
 // ─── Audio ──────────────────────────────────────────────────────────────────
@@ -751,9 +788,12 @@ const positionStyle = computed(() => {
     top = screenBottomY + TOOLBAR_GAP
   }
 
-  // Clamp to canvas bounds
+  // Clamp to canvas bounds (центр тулбара — щонайменше пів його ширини від країв)
   top = Math.max(rect.top, Math.min(top, rect.bottom - TOOLBAR_HEIGHT))
-  left = Math.max(rect.left + 80, Math.min(left, rect.right - 80))
+  const half = Math.max(80, toolbarWidth.value / 2 + 8)
+  left = rect.right - rect.left > half * 2
+    ? Math.max(rect.left + half, Math.min(left, rect.right - half))
+    : rect.left + (rect.right - rect.left) / 2
 
   return {
     position: 'fixed' as const,
