@@ -10469,7 +10469,30 @@
         "selectN": "Select {n} correct answers",
         "solutionZoomIn": "Enlarge the solution text",
         "solutionZoomOut": "Shrink the solution text",
-        "solutionZoomReset": "Default size"
+        "solutionZoomReset": "Default size",
+        "showAnswer": "Show answer",
+        "hideAnswer": "Hide answer",
+        "showSolution": "Show solution",
+        "hideSolution": "Hide solution",
+        "build": "Visualize",
+        "type": {
+          "singleChoice": "Single choice",
+          "multipleSelect": "Multiple answers",
+          "matching": "Matching",
+          "openAnswer": "Open answer",
+          "task": "Task"
+        },
+        "topic": {
+          "button": "✎ topic",
+          "loading": "loading…",
+          "current": "now: {label}",
+          "other": "other…",
+          "reject": "bad task — remove",
+          "removed": "task removed from collections",
+          "loadFailed": "Couldn't load the topic list",
+          "saveFailed": "Couldn't save the topic",
+          "rejectFailed": "Couldn't remove the task"
+        }
       },
       "trigCircle": {
         "functions": "functions:",
@@ -10493,7 +10516,10 @@
         "showGraph": "Show the graph",
         "showAllSolutions": "Show all solutions"
       },
-      "visualCapsule": "Animation"
+      "visualCapsule": "Animation",
+      "theoryCard": {
+        "defaultBadge": "Theory"
+      }
     },
     "visualCapsule": {
       "unknown": "Unknown visual capsule {id} v{version}: the scene is not shown.",

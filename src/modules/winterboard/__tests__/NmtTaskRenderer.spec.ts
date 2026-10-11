@@ -23,6 +23,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
+import { createI18n } from 'vue-i18n'
+import uk from '@/i18n/locales/uk.json'
 import Renderer from '../components/board/objects/NmtTaskRenderer.vue'
 import { resetNmtPresentationScales, setNmtPresentationScale } from '../composables/useNmtPresentationScale'
 
@@ -47,8 +49,6 @@ vi.mock('../composables/useTaskTopicFix', () => ({
   }),
 }))
 
-const t = (key: string, params?: Record<string, unknown>) =>
-  params ? `${key}:${JSON.stringify(params)}` : key
 
 function makeAsset(data: Record<string, unknown>) {
   return {
@@ -66,7 +66,12 @@ function mountTask(data: Record<string, unknown>, isTutor = true, isSelected = f
       interactive: true,
       isTutor,
     },
-    global: { mocks: { t }, stubs: { teleport: true } },
+    // Б-179: підписи картки — з перекладів (раніше були рядками в коді). Справжні українські тексти,
+    // щоб перевірки «учень не бачить „Показати відповідь“» не проходили порожньо на ключах.
+    global: {
+      stubs: { teleport: true },
+      plugins: [createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk }, missingWarn: false })],
+    },
   })
 }
 

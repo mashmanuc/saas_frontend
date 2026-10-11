@@ -10557,7 +10557,30 @@
         "selectN": "Виберіть {n} правильні відповіді",
         "solutionZoomIn": "Збільшити текст розбору",
         "solutionZoomOut": "Зменшити текст розбору",
-        "solutionZoomReset": "Звичайний розмір"
+        "solutionZoomReset": "Звичайний розмір",
+        "showAnswer": "Показати відповідь",
+        "hideAnswer": "Сховати відповідь",
+        "showSolution": "Показати розбір",
+        "hideSolution": "Сховати розбір",
+        "build": "Побудувати",
+        "type": {
+          "singleChoice": "Вибір відповіді",
+          "multipleSelect": "Кілька відповідей",
+          "matching": "Відповідність",
+          "openAnswer": "Відкрита відповідь",
+          "task": "Завдання"
+        },
+        "topic": {
+          "button": "✎ тема",
+          "loading": "завантаження…",
+          "current": "зараз: {label}",
+          "other": "інша…",
+          "reject": "задача погана — прибрати",
+          "removed": "задачу прибрано з добірок",
+          "loadFailed": "Не вдалося отримати список тем",
+          "saveFailed": "Не вдалося зберегти тему",
+          "rejectFailed": "Не вдалося прибрати задачу"
+        }
       },
       "trigCircle": {
         "functions": "функції:",
@@ -10581,7 +10604,10 @@
         "showGraph": "Показати графік",
         "showAllSolutions": "Показати всі розв'язки"
       },
-      "visualCapsule": "Анімація"
+      "visualCapsule": "Анімація",
+      "theoryCard": {
+        "defaultBadge": "Теорія"
+      }
     },
     "visualCapsule": {
       "unknown": "Невідома візуальна капсула {id} v{version}: сцену не показано.",

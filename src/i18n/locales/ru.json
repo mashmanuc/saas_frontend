@@ -9632,7 +9632,30 @@
         "selectN": "Выберите {n} правильных ответа",
         "solutionZoomIn": "Увеличить текст разбора",
         "solutionZoomOut": "Уменьшить текст разбора",
-        "solutionZoomReset": "Обычный размер"
+        "solutionZoomReset": "Обычный размер",
+        "showAnswer": "Показать ответ",
+        "hideAnswer": "Скрыть ответ",
+        "showSolution": "Показать разбор",
+        "hideSolution": "Скрыть разбор",
+        "build": "Построить",
+        "type": {
+          "singleChoice": "Выбор ответа",
+          "multipleSelect": "Несколько ответов",
+          "matching": "Соответствие",
+          "openAnswer": "Открытый ответ",
+          "task": "Задание"
+        },
+        "topic": {
+          "button": "✎ тема",
+          "loading": "загрузка…",
+          "current": "сейчас: {label}",
+          "other": "другая…",
+          "reject": "плохая задача — убрать",
+          "removed": "задача убрана из подборок",
+          "loadFailed": "Не удалось получить список тем",
+          "saveFailed": "Не удалось сохранить тему",
+          "rejectFailed": "Не удалось убрать задачу"
+        }
       },
       "trigCircle": {
         "functions": "функции:",
@@ -9655,6 +9678,9 @@
         "snapToTable": "Притягивать a к табличным значениям (½, √2/2, √3/2…)",
         "showGraph": "Показать график",
         "showAllSolutions": "Показать все решения"
+      },
+      "theoryCard": {
+        "defaultBadge": "Теория"
       }
     },
     "graphCalc": {

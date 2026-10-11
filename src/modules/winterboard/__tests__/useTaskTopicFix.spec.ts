@@ -94,6 +94,21 @@ describe('useTaskTopicFix', () => {
     expect(post).toHaveBeenCalledWith(
       '/v1/lesson-constructor/problems/legacy-a-1/retag/',
       { action: 'reject' })
+    // Б-179: позначку «прибрано» картка показує мовою інтерфейсу — тут лише прапорець, не фраза
+    expect(fix.rejected.value).toBe(true)
+    expect(fix.done.value).toBe('')
+  })
+
+  it('Б-179: помилка — ключ перекладу, а не фраза українською', async () => {
+    post.mockRejectedValue(new Error('500'))
+    const fix = useTaskTopicFix(() => 'legacy-a-1')
+    await fix.apply('areas.triangle')
+    expect(fix.error.value).toBe('winterboard.widget.nmtTask.topic.saveFailed')
+    await fix.reject()
+    expect(fix.error.value).toBe('winterboard.widget.nmtTask.topic.rejectFailed')
+    get.mockRejectedValue(new Error('500'))
+    await fix.load().catch(() => {})
+    expect(fix.error.value).toBe('winterboard.widget.nmtTask.topic.loadFailed')
   })
 
   it('INV-FIX-3: помилка збереження видима, а не проковтнута', async () => {

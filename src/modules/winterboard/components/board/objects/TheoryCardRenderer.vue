@@ -37,7 +37,7 @@
 
     <header class="theory-card__header" :style="{ background: presetStyle.accent + '10' }">
       <span class="theory-card__icon">{{ presetStyle.icon }}</span>
-      <span class="theory-card__badge" :style="{ color: presetStyle.badge }">{{ data.badge || 'Теорія' }}</span>
+      <span class="theory-card__badge" :style="{ color: presetStyle.badge }">{{ data.badge || t('winterboard.widget.theoryCard.defaultBadge') }}</span>
       <button
         v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"

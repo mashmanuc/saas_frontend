@@ -48,8 +48,12 @@ export function useTaskTopicFix(externalId: () => string) {
   const suggestions = ref<TopicOption[]>([])
   const allTopics = ref<TopicOption[]>([])
   const showAll = ref(false)
-  /** Локальна мітка: задачу вже виправлено в цій сесії. */
+  /** Локальна мітка: задачу вже виправлено в цій сесії (назва теми — дані банку). */
   const done = ref('')
+  /** Задачу прибрано з добірок у цій сесії — підпис показує картка мовою інтерфейсу. */
+  const rejected = ref(false)
+  // Б-179 (2026-10-11): error — ключ перекладу (картка показує `t(error)`), а не фраза українською.
+  const ERR = 'winterboard.widget.nmtTask.topic'
 
   // ⚠️ Префікс `/v1/` обов'язковий: `apiClient.baseURL` закінчується на
   // `/api`, а маршрути живуть під `/api/v1/…`. Без нього запит іде на
@@ -70,7 +74,7 @@ export function useTaskTopicFix(externalId: () => string) {
     } catch (e: unknown) {
       // Мовчазне ковтання тут було б найгіршим: тьютор клікнув і не знає,
       // чи щось сталося. Кажемо прямо.
-      error.value = 'Не вдалося отримати список тем'
+      error.value = `${ERR}.loadFailed`
       throw e
     } finally {
       loading.value = false
@@ -97,7 +101,7 @@ export function useTaskTopicFix(externalId: () => string) {
       open.value = false
       return true
     } catch {
-      error.value = 'Не вдалося зберегти тему'
+      error.value = `${ERR}.saveFailed`
       return false
     } finally {
       saving.value = false
@@ -109,11 +113,11 @@ export function useTaskTopicFix(externalId: () => string) {
     error.value = ''
     try {
       await apiClient.post(`${base()}/retag/`, { action: 'reject' })
-      done.value = 'задачу прибрано з добірок'
+      rejected.value = true
       open.value = false
       return true
     } catch {
-      error.value = 'Не вдалося прибрати задачу'
+      error.value = `${ERR}.rejectFailed`
       return false
     } finally {
       saving.value = false
@@ -122,7 +126,7 @@ export function useTaskTopicFix(externalId: () => string) {
 
   return {
     canFix, open, loading, saving, error,
-    current, suggestions, allTopics, showAll, done,
+    current, suggestions, allTopics, showAll, done, rejected,
     toggle, apply, reject, load,
   }
 }

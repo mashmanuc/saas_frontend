@@ -167,15 +167,16 @@
           @click.stop="topicFix.toggle()"
           @mousedown.stop
           @pointerdown.stop
-        >{{ topicFix.done.value ? `✓ ${topicFix.done.value}` : '✎ тема' }}</button>
+        >{{ topicFix.rejected.value ? `✓ ${t('winterboard.widget.nmtTask.topic.removed')}`
+          : topicFix.done.value ? `✓ ${topicFix.done.value}` : t('winterboard.widget.nmtTask.topic.button') }}</button>
 
         <div v-if="topicFix.open.value" class="nmt-task__topic-menu" @click.stop>
           <div v-if="topicFix.loading.value" class="nmt-task__topic-note">
-            завантаження…
+            {{ t('winterboard.widget.nmtTask.topic.loading') }}
           </div>
           <template v-else>
             <div v-if="topicFix.current.value" class="nmt-task__topic-note">
-              зараз: {{ topicFix.current.value.label }}
+              {{ t('winterboard.widget.nmtTask.topic.current', { label: topicFix.current.value.label }) }}
             </div>
             <button
               v-for="opt in (topicFix.showAll.value
@@ -192,17 +193,17 @@
               type="button"
               class="nmt-task__topic-item nmt-task__topic-item--muted"
               @click.stop="topicFix.showAll.value = true"
-            >інша…</button>
+            >{{ t('winterboard.widget.nmtTask.topic.other') }}</button>
 
             <button
               type="button"
               class="nmt-task__topic-item nmt-task__topic-item--danger"
               :disabled="topicFix.saving.value"
               @click.stop="topicFix.reject()"
-            >задача погана — прибрати</button>
+            >{{ t('winterboard.widget.nmtTask.topic.reject') }}</button>
 
             <div v-if="topicFix.error.value" class="nmt-task__topic-error">
-              {{ topicFix.error.value }}
+              {{ t(topicFix.error.value) }}
             </div>
           </template>
         </div>
@@ -219,7 +220,7 @@
           @mousedown.stop
           @pointerdown.stop
         >
-          {{ data.showAnswer ? 'Сховати відповідь' : 'Показати відповідь' }}
+          {{ data.showAnswer ? t('winterboard.widget.nmtTask.hideAnswer') : t('winterboard.widget.nmtTask.showAnswer') }}
         </button>
         <button
           v-if="data.solution && revealControlsAllowed"
@@ -230,7 +231,7 @@
           @mousedown.stop
           @pointerdown.stop
         >
-          {{ data.showSolution ? 'Сховати розбір' : 'Показати розбір' }}
+          {{ data.showSolution ? t('winterboard.widget.nmtTask.hideSolution') : t('winterboard.widget.nmtTask.showSolution') }}
         </button>
         <!-- Кнопка "Побудувати" — тільки якщо задача має semantic intents
              і CapabilityRegistry може resolve хоча б один renderer -->
@@ -242,7 +243,7 @@
           @mousedown.stop
           @pointerdown.stop
         >
-          🔗 Побудувати
+          🔗 {{ t('winterboard.widget.nmtTask.build') }}
         </button>
       </div>
 
@@ -463,11 +464,12 @@ function optionImage(index: number): string {
 
 const typeBadge = computed(() => {
   switch (data.value.taskType) {
-    case 'single_choice': return 'Вибір відповіді'
-    case 'multiple_select': return 'Кілька відповідей'
-    case 'matching':      return 'Відповідність'
-    case 'open_answer':   return 'Відкрита відповідь'
-    default:              return 'Завдання'
+    // Б-179 (2026-10-11): підписи картки — мовою інтерфейсу; текст задачі й літери А/Б/В/Г — матеріал НМТ.
+    case 'single_choice': return t('winterboard.widget.nmtTask.type.singleChoice')
+    case 'multiple_select': return t('winterboard.widget.nmtTask.type.multipleSelect')
+    case 'matching':      return t('winterboard.widget.nmtTask.type.matching')
+    case 'open_answer':   return t('winterboard.widget.nmtTask.type.openAnswer')
+    default:              return t('winterboard.widget.nmtTask.type.task')
   }
 })
 
