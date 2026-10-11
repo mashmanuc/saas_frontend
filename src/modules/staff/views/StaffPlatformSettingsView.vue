@@ -75,6 +75,43 @@
             </button>
           </div>
         </div>
+        <!-- 2026-10-11 (власник: «роби відео Дзеркала, але так, щоб я міг змінити потім, як кращі
+             зніму»): відео блоку «Дзеркало» на /start. Порожнє — типове вбудоване відео. -->
+        <div class="setting-card" data-testid="landing-mirror-setting">
+          <div class="setting-info">
+            <div class="setting-label">{{ $t('staff.platformSettings.landing.mirrorLabel') }}</div>
+            <div class="setting-description">{{ $t('staff.platformSettings.landing.mirrorDescription') }}</div>
+            <label class="landing-field">
+              <span class="landing-field-label">{{ $t('staff.platformSettings.landing.mirrorVideoLabel') }}</span>
+              <input
+                v-model="mirrorVideoUrl"
+                type="url"
+                class="landing-input"
+                placeholder="https://images.m4sh.org/....mp4"
+                :disabled="mirrorSaving"
+                data-testid="landing-mirror-video-input"
+              />
+            </label>
+            <label class="landing-field">
+              <span class="landing-field-label">{{ $t('staff.platformSettings.landing.mirrorPosterLabel') }}</span>
+              <input
+                v-model="mirrorPosterUrl"
+                type="url"
+                class="landing-input"
+                placeholder="https://images.m4sh.org/....jpg"
+                :disabled="mirrorSaving"
+                data-testid="landing-mirror-poster-input"
+              />
+            </label>
+            <p v-if="mirrorError" class="landing-msg landing-msg--error" data-testid="landing-mirror-error">{{ mirrorError }}</p>
+            <p v-else-if="mirrorSaved" class="landing-msg landing-msg--ok">{{ $t('staff.platformSettings.landing.saved') }}</p>
+          </div>
+          <div class="setting-control">
+            <button class="btn btn-sm" :disabled="mirrorSaving" data-testid="landing-mirror-save" @click="saveMirrorVideo">
+              {{ mirrorSaving ? '…' : $t('common.save') }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 2026-09-26: «Налаштувань немає» прибрано — блок лендингу є завжди, тож сторінка не порожня -->
@@ -85,6 +122,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { AlertTriangle } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import platformSettingsApi, { type PlatformSetting } from '../api/platformSettingsApi'
 
@@ -98,6 +136,20 @@ const landingReplayUrl = ref('')
 const landingSaving = ref(false)
 const landingError = ref('')
 const landingSaved = ref(false)
+
+// Відео блоку «Дзеркало» на /start — той самий endpoint, окрема кнопка «Зберегти»
+const { t } = useI18n()
+const mirrorVideoUrl = ref('')
+const mirrorPosterUrl = ref('')
+const mirrorSaving = ref(false)
+const mirrorError = ref('')
+const mirrorSaved = ref(false)
+// Код відмови бекенду → людський текст (detail від сервера — англійською)
+function mirrorErrorText(code: unknown): string {
+  if (code === 'invalid_mirror_video_url') return t('staff.platformSettings.landing.mirrorInvalidVideo')
+  if (code === 'invalid_mirror_poster_url') return t('staff.platformSettings.landing.mirrorInvalidPoster')
+  return ''
+}
 
 // 2026-09-26 (аудит адмінки, «сховати, не видаляти»): перемикач, що ні на що не впливає.
 // MARKETPLACE_AUTO_APPROVE_PROFILES пише FeatureToggle, а читачі (у вимкненому marketplace)
@@ -153,6 +205,8 @@ async function loadLandingConfig() {
   try {
     const data = await platformSettingsApi.getLandingConfig()
     landingReplayUrl.value = data.replay_demo_url || ''
+    mirrorVideoUrl.value = data.mirror_video_url || ''
+    mirrorPosterUrl.value = data.mirror_video_poster_url || ''
   } catch {
     /* graceful — лишаємо порожнім */
   }
@@ -163,7 +217,7 @@ async function saveLandingConfig() {
   landingError.value = ''
   landingSaved.value = false
   try {
-    const data = await platformSettingsApi.updateLandingConfig(landingReplayUrl.value.trim())
+    const data = await platformSettingsApi.updateLandingConfig({ replay_demo_url: landingReplayUrl.value.trim() })
     landingReplayUrl.value = data.replay_demo_url || ''
     landingSaved.value = true
     setTimeout(() => { landingSaved.value = false }, 2500)
@@ -171,6 +225,29 @@ async function saveLandingConfig() {
     landingError.value = e?.response?.data?.detail || 'Не вдалося зберегти'
   } finally {
     landingSaving.value = false
+  }
+}
+
+async function saveMirrorVideo() {
+  mirrorSaving.value = true
+  mirrorError.value = ''
+  mirrorSaved.value = false
+  try {
+    const data = await platformSettingsApi.updateLandingConfig({
+      mirror_video_url: mirrorVideoUrl.value.trim(),
+      mirror_video_poster_url: mirrorPosterUrl.value.trim(),
+    })
+    mirrorVideoUrl.value = data.mirror_video_url || ''
+    mirrorPosterUrl.value = data.mirror_video_poster_url || ''
+    mirrorSaved.value = true
+    setTimeout(() => { mirrorSaved.value = false }, 2500)
+  } catch (e: any) {
+    const body = e?.response?.data
+    mirrorError.value = mirrorErrorText(body?.error)
+      || body?.detail
+      || t('staff.platformSettings.landing.mirrorSaveFailed')
+  } finally {
+    mirrorSaving.value = false
   }
 }
 
@@ -349,6 +426,22 @@ onMounted(() => {
   background: var(--bg-secondary, var(--card-bg));
   color: var(--text-primary);
   font-size: var(--text-sm);
+}
+
+.landing-field {
+  display: block;
+  margin-top: var(--space-sm);
+}
+
+.landing-field-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.landing-field .landing-input {
+  margin-top: var(--space-xs);
 }
 
 .landing-input:focus {

@@ -4756,6 +4756,13 @@
         "group": "Landing",
         "replayLabel": "Replay for the landing demo section",
         "replayDescription": "Public URL of a real replay for the “See how a lesson went” section. Leave empty to show the placeholder animation.",
+        "mirrorLabel": "Video for the “Mirror” block on the landing page",
+        "mirrorDescription": "A short silent video of a chalkboard (16:9, ideally under 5 MB). Paste a direct https link to the .mp4 or .webm file itself and, optionally, to a poster image (.jpg, .png, .webp) shown before the video starts. A file on images.m4sh.org is the most reliable. If the video does not open, the landing page shows the default one. Leave empty for the default video from the 9 October lesson.",
+        "mirrorVideoLabel": "Mirror video (mp4/webm, https)",
+        "mirrorPosterLabel": "Mirror video poster",
+        "mirrorInvalidVideo": "Use an https link to a .mp4 or .webm file (not to a video page).",
+        "mirrorInvalidPoster": "The poster must be an https link to a .jpg, .jpeg, .png or .webp image.",
+        "mirrorSaveFailed": "Could not save",
         "saved": "Saved ✓"
       }
     },
@@ -7463,6 +7470,14 @@
       "title": "3D Solids with Broad Parameters",
       "body": "Cubes, prisms, pyramids, solids of revolution — each shape with its own parameters. Adjust height, base, viewing angle — the solid updates instantly.",
       "pyramidCaption": "Trapezoid-base pyramid SABCD — auto-rotation"
+    },
+    "mirror": {
+      "title": "A regular chalkboard joins your M4SH lesson too",
+      "body": "A phone watches the board, and new writing shows up on the lesson page by itself.",
+      "caption": "A real lesson · 9 October 2026",
+      "videoLabel": "Video: a chalkboard during a lesson",
+      "play": "Play video",
+      "pause": "Pause"
     },
     "studentNote": {
       "invited": "Invited by a teacher? Open the link from your invitation.",

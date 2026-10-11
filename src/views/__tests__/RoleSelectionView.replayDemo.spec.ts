@@ -66,7 +66,10 @@ async function mountLanding() {
   const w = mount(RoleSelectionView, {
     global: {
       plugins: [i18n],
-      stubs: { 'router-link': RouterLinkStub, LandingTrigCircle: true, LandingNmt3d: true, ProjectSupportLink: true },
+      // Блок «Дзеркало» (2026-10-11) — власний тест (LandingMirrorBlock.spec.ts). Він сам просить
+      // той самий landing-config і має свій IntersectionObserver; у мережі запит один (apiClient
+      // склеює однакові GET у польоті), а тут лічимо виклики сторінки і її око — тому заглушка.
+      stubs: { 'router-link': RouterLinkStub, LandingTrigCircle: true, LandingNmt3d: true, ProjectSupportLink: true, LandingMirrorBlock: true },
     },
   })
   await flushPromises()
