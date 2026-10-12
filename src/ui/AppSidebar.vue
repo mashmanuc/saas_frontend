@@ -72,7 +72,7 @@
     <SidebarCoachingMarks />
 
     <div class="sidebar-footer" v-if="!layout.sidebar.isCollapsed">
-      <span class="sidebar-version">v0.89</span>
+      <span class="sidebar-version">Beta</span>
     </div>
   </aside>
 
