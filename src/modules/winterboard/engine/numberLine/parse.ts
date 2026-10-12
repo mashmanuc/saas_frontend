@@ -1,7 +1,8 @@
 /**
  * Строга граматика нерівностей і чисел для числової прямої (ТЗ §2.2 `parse`).
  *
- * Рядок — одна умова:  `x > 3`, `3 < x`, `x ≤ -2`, `-3 < x ≤ 5`, `x ≠ 1`, `x = 3`.
+ * Рядок — одна умова:  `x > 3`, `3 < x`, `x ≤ -2`, `-3 < x ≤ 5`, `x ≠ 1`, `x = 3`,
+ * або лінійна нерівність (`2x + 3 > 7`, `-1 < 2x + 1 ≤ 5`) — її розвʼязує `linear.ts`.
  * Числа: цілі, десяткові з комою чи крапкою (`2,5`), дроби (`-1/3`).
  * Помилка — кодом і з місцем, без жодного «приблизно» (інваріант 3).
  */
@@ -12,6 +13,7 @@ import type {
   NumberLineOp,
 } from './types'
 import { isRangeCondition } from './types'
+import { parseLinear } from './linear'
 
 type ErrorWithoutLine = Omit<NumberLineError, 'line'>
 
@@ -116,9 +118,22 @@ function checkNumber(tok: Token): ParsedNumber {
   return parseNumber(tok.text, tok.start)
 }
 
-/** Один рядок учителя → умова контракту. */
+/** Помилки лінійного розбору, які точніші за помилку простого запису. */
+const LINEAR_FIRST: ReadonlySet<NumberLineError['code']> = new Set([
+  'not_linear', 'unbalanced_paren', 'always_true', 'never_true', 'division_by_zero', 'roots_not_supported',
+])
+
+/** Один рядок учителя → умова контракту. Простий запис — як є; інакше — лінійна нерівність. */
 export function parseLine(line: string): ParsedLine {
   if (!line.trim()) return { ok: false, error: { index: 0, code: 'empty' } }
+  const simple = parseSimple(line)
+  if (simple.ok) return simple
+  const linear = parseLinear(line)
+  if (linear.ok) return linear
+  return 'error' in linear && LINEAR_FIRST.has(linear.error.code) ? linear : simple
+}
+
+function parseSimple(line: string): ParsedLine {
   const t = tokenize(line)
   if ('error' in t) return { ok: false, error: t.error }
   const toks = t.tokens
@@ -214,6 +229,7 @@ export function parseLines(lines: string[]):
 
 /** Умова контракту → текст рядка для поля вводу (зворотне до `parseLine`). */
 export function conditionToText(c: NumberLineCondition, variable: string): string {
+  if (c.source) return c.source
   if (isRangeCondition(c)) {
     return `${c.from} ${c.fromIncluded ? '≤' : '<'} ${variable} ${c.toIncluded ? '≤' : '<'} ${c.to}`
   }

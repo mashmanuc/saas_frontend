@@ -49,6 +49,7 @@
         <HelixInspector       v-else-if="helixUiState.bridge" />
         <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
         <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
+        <NumberLineInspector  v-else-if="numberLineUiState.bridge" />
         <CalculusInspector    v-else-if="calculusUiState.bridge" />
         <QuadraticInspector   v-else-if="quadUiState.bridge" />
         <GeomashInspector     v-else-if="geomashInspectorState.bridge" />
@@ -389,6 +390,7 @@ import TrigCircleInspector from './TrigCircleInspector.vue'
 import HelixInspector from './HelixInspector.vue'
 import GraphCalcInspector from './GraphCalcInspector.vue'
 import TrigSolverInspector from './TrigSolverInspector.vue'
+import NumberLineInspector from './NumberLineInspector.vue'
 import CalculusInspector from './CalculusInspector.vue'
 import QuadraticInspector from './QuadraticInspector.vue'
 import QuadraticTray from './QuadraticTray.vue'
@@ -399,6 +401,7 @@ import { trigCircleUiState } from '../../board/state/trigCircleUiState'
 import { helixUiState } from '../../board/state/helixUiState'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
 import { trigSolverUiState } from '../../board/state/trigSolverUiState'
+import { numberLineUiState } from '../../board/state/numberLineUiState'
 import { calculusUiState } from '../../board/state/calculusUiState'
 import { quadUiState } from '../../board/state/quadUiState'
 import { geomashInspectorState } from '../../board/state/geomashInspectorState'
@@ -492,7 +495,7 @@ function zoomOut(): void {
 
 const hasActiveInspector = computed(() =>
   !!(nmt3dUiState.ws || trigCircleUiState.bridge || helixUiState.bridge ||
-     graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge ||
+     graphCalcInspectorState.bridge || trigSolverUiState.bridge || numberLineUiState.bridge || calculusUiState.bridge ||
      quadUiState.bridge || geomashInspectorState.bridge || graphmash3dInspectorState.bridge ||
      geo2dInspectorState.bridge),
 )

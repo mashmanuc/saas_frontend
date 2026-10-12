@@ -48,3 +48,33 @@ export function compare(a: Rational, b: Rational): -1 | 0 | 1 {
 export function equals(a: Rational, b: Rational): boolean {
   return compare(a, b) === 0
 }
+
+export function add(a: Rational, b: Rational): Rational {
+  return rational(a.n * b.d + b.n * a.d, a.d * b.d)
+}
+
+export function neg(a: Rational): Rational {
+  return { n: -a.n, d: a.d }
+}
+
+export function sub(a: Rational, b: Rational): Rational {
+  return add(a, neg(b))
+}
+
+export function mul(a: Rational, b: Rational): Rational {
+  return rational(a.n * b.n, a.d * b.d)
+}
+
+/** b ≠ 0 — перевіряє викликач. */
+export function div(a: Rational, b: Rational): Rational {
+  return rational(a.n * b.d, a.d * b.n)
+}
+
+export function isZero(a: Rational): boolean {
+  return a.n === 0n
+}
+
+/** Канонічний запис для контракту: `3`, `-1/3` (такий читає parseNumber). */
+export function toLabel(a: Rational): string {
+  return a.d === 1n ? `${a.n}` : `${a.n}/${a.d}`
+}

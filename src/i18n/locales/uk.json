@@ -10457,6 +10457,12 @@
     },
     "numberLine": {
       "title": "Числова пряма",
+      "subtitle": "Нерівності, системи й сукупності на числовій прямій",
+      "conditionsLabel": "Умови",
+      "combineLabel": "Поєднання",
+      "kindInequality": "Нерівність",
+      "kindSystem": "Система",
+      "kindUnion": "Сукупність",
       "sublabel": "нерівності · системи · сукупності",
       "family": "Нерівності",
       "placeholder": "x > 3   або   -3 < x ≤ 5",
@@ -10479,6 +10485,10 @@
         "line": "числова пряма"
       },
       "errors": {
+        "notLinear": "Це не лінійна нерівність: {variable} множиться чи ділиться на {variable}. Такі — в методі інтервалів (наступний етап)",
+        "unbalancedParen": "Дужки не до пари",
+        "alwaysTrue": "{variable} скоротився: {text} — правильно для будь-якого {variable}",
+        "neverTrue": "{variable} скоротився: {text} — розвʼязків немає",
         "empty": "Порожній рядок",
         "unexpectedChar": "Не розумію символ «{char}»",
         "badNumber": "Не зрозумів число «{text}»",

@@ -10369,6 +10369,12 @@
     },
     "numberLine": {
       "title": "Number line",
+      "subtitle": "Inequalities, systems and unions on a number line",
+      "conditionsLabel": "Conditions",
+      "combineLabel": "Combine",
+      "kindInequality": "Inequality",
+      "kindSystem": "System",
+      "kindUnion": "Union",
       "sublabel": "inequalities · systems · unions",
       "family": "Inequalities",
       "placeholder": "x > 3   or   -3 < x ≤ 5",
@@ -10391,6 +10397,10 @@
         "line": "whole line"
       },
       "errors": {
+        "notLinear": "Not a linear inequality: {variable} is multiplied or divided by {variable}. Those come with the interval method (next stage)",
+        "unbalancedParen": "Unbalanced parentheses",
+        "alwaysTrue": "{variable} cancels out: {text} — true for every {variable}",
+        "neverTrue": "{variable} cancels out: {text} — no solutions",
         "empty": "Empty line",
         "unexpectedChar": "Unknown character “{char}”",
         "badNumber": "Not a number: “{text}”",

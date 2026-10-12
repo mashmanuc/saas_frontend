@@ -10,6 +10,8 @@ export type NumberLineOp = '<' | '<=' | '>' | '>=' | '!=' | '='
 export interface NumberLineSimpleCondition {
   op: NumberLineOp
   value: string
+  /** Лінійна нерівність, як її записав учитель (`2x + 3 > 7`); `op`/`value` — розвʼязок. */
+  source?: string
 }
 
 /** Подвійна нерівність `from ⋚ x ⋚ to`. */
@@ -18,6 +20,8 @@ export interface NumberLineRangeCondition {
   fromIncluded: boolean
   to: string
   toIncluded: boolean
+  /** Подвійна лінійна нерівність, як записав учитель (`-1 < 2x + 1 ≤ 5`). */
+  source?: string
 }
 
 export type NumberLineCondition = NumberLineSimpleCondition | NumberLineRangeCondition
@@ -59,6 +63,10 @@ export interface NumberLineError {
     | 'eq_in_range'
     | 'trailing'
     | 'too_many_conditions'
+    | 'not_linear'
+    | 'unbalanced_paren'
+    | 'always_true'
+    | 'never_true'
   params?: Record<string, string>
 }
 
