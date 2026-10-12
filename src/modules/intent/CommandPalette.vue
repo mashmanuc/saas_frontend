@@ -324,6 +324,10 @@
         <div v-if="loading" class="cmdp-status">Виконую…</div>
         <div v-if="notice" class="cmdp-status">✓ {{ notice }}</div>
         <div v-if="error" class="cmdp-error">{{ error }}</div>
+        <!-- Власник 2026-10-12: «знизу Інтегралика треба вписувати, що він може припускатись помилки…
+             як у всіх нормальних моделях». Один рядок унизу вікна (і в командах, і в розмові), не в
+             кожній відповіді — відповіді лишаються без службових слів (2026-10-08). -->
+        <p v-if="showAI" class="cmdp-ai-disclaimer" data-testid="ai-disclaimer">{{ uiText.mistakesNote }}</p>
         <div class="cmdp-hint">{{ uiText.keyboardHint }}<span v-if="showAI">{{ uiText.aiHint }}</span></div>
       </div>
     </div>
@@ -945,6 +949,7 @@ const uiText = computed(() => {
       voiceInput: 'Voice input',
       keyboardHint: 'Ctrl+Shift+K (or Ctrl/⌘+K) — open · ↑↓/Enter — commands · Esc — back/close',
       aiHint: ` · ∫ ${nameEn.value.nom}: ask about M4SH`,
+      mistakesNote: `${nameEn.value.nom} can make mistakes. Check important facts.`,
     }
   }
   return {
@@ -974,6 +979,7 @@ const uiText = computed(() => {
     voiceInput: 'Голосовий ввід',
     keyboardHint: 'Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити',
     aiHint: ` · ∫ ${nameUk.value.nom}: просто опишіть дію словами`,
+    mistakesNote: `${nameUk.value.nom} може помилятися. Важливі факти перевіряйте.`,
   }
 })
 
@@ -2296,6 +2302,7 @@ onBeforeUnmount(() => {
 .cmdp-status { padding: 8px 16px; color: #555; }
 .cmdp-error { padding: 8px 16px; color: #c00; }
 .cmdp-hint { padding: 8px 16px; border-top: 1px solid #eee; color: #999; font-size: 12px; }
+.cmdp-ai-disclaimer { margin: 0; padding: 6px 16px; border-top: 1px solid #eee; color: #8a8a8a; font-size: 11px; line-height: 1.3; text-align: center; }
 
 /* ═══════════ ДОТИК (планшет + телефон) ═══════════ */
 /* На дотику hover не існує → × «сховати» завжди видимий (інакше приховати неможливо),
@@ -2491,6 +2498,7 @@ onBeforeUnmount(() => {
   border-top-color: var(--color-border);
   color: var(--color-text-muted);
 }
+[data-theme="dark"] .cmdp-ai-disclaimer { border-top-color: var(--color-border); color: var(--color-text-muted); }
 @media (hover: none) and (pointer: coarse) {
   [data-theme="dark"] .cmdp-mic {
     border-color: var(--color-success);
