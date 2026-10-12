@@ -122,7 +122,7 @@ const { t } = useI18n()
 // Non-null — component shown only when bridge is registered
 const b = computed(() => numberLineUiState.bridge!)
 
-const KEYS = ['<', '≤', '>', '≥', '≠', '=']
+const KEYS = ['<', '≤', '>', '≥', '≠', '=', '√']
 
 const focused = ref(0)
 const inputs: Array<HTMLInputElement | null> = []

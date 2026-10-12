@@ -51,7 +51,7 @@ describe('add_number_line', () => {
 
   it('невалідні дані — людська помилка й нуль обʼєктів', async () => {
     await expect(runBoardAction({ kind: 'add_number_line', payload: {
-      conditions: [{ op: '>', value: '√3' }] } })).rejects.toThrow('Не зрозумів нерівність')
+      conditions: [{ op: '>', value: '1+√2' }] } })).rejects.toThrow('Не зрозумів нерівність')
     await expect(runBoardAction({ kind: 'add_number_line', payload: { conditions: [] } })).rejects.toThrow()
     expect(page.assets).toHaveLength(0)
   })

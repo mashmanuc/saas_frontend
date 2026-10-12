@@ -4,7 +4,7 @@
  * для дошки, PDF-знімка й опису для Інтегралика. Окремо нічого не зберігається.
  */
 import { parseNumber } from './parse'
-import { compare, type Rational } from './rational'
+import { compareReal as compare, type Real } from './real'
 import { ALL, contains, EMPTY, intersect, normalize, union, type Interval, type NumberSet, type Point } from './sets'
 import {
   isConstCondition,
@@ -56,7 +56,7 @@ export type NumberLineEvaluation =
 
 /** Типографський мінус для підписів і відповіді. */
 export function displayNumber(label: string): string {
-  return label.replace(/^-/, '−')
+  return label.replace(/^-/, '−').replace(/sqrt\s*\(?\s*(\d+)\s*\)?/gi, '√$1').replace(/\*/g, '·')
 }
 
 interface ResolvedCondition {
@@ -162,7 +162,7 @@ export function evaluate(data: NumberLineData): NumberLineEvaluation {
 function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]): NumberLineLayout {
   const sorted = [...points].sort((a, b) => compare(a.value, b.value))
   const n = sorted.length
-  const xOf = (v: Rational): number => {
+  const xOf = (v: Real): number => {
     const i = sorted.findIndex((p) => compare(p.value, v) === 0)
     return n === 1 ? 0.5 : MARGIN + ((1 - 2 * MARGIN) * i) / (n - 1)
   }
@@ -170,7 +170,7 @@ function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]):
     from: iv.lo ? xOf(iv.lo.value) : 0,
     to: iv.hi ? xOf(iv.hi.value) : 1,
   })
-  const isEndOfResult = (v: Rational) =>
+  const isEndOfResult = (v: Real) =>
     set.some((iv) => (iv.lo && compare(iv.lo.value, v) === 0) || (iv.hi && compare(iv.hi.value, v) === 0))
 
   const layoutPoints: LayoutPoint[] = sorted.map((p) => {

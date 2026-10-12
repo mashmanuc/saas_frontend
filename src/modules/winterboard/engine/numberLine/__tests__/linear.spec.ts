@@ -77,7 +77,7 @@ describe('відмови словами', () => {
   it('дужки, ділення на нуль, корені', () => {
     expect(err('2(x + 1 > 3').code).toBe('unbalanced_paren')
     expect(err('x/0 > 1').code).toBe('division_by_zero')
-    expect(err('2x > √3').code).toBe('roots_not_supported')
+    expect(err('x + 1 > √2').code).toBe('root_sum')
   })
 
   it('зламаний простий запис лишає свою помилку', () => {

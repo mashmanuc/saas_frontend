@@ -78,6 +78,17 @@ export interface NumberLineError {
     | 'trailing'
     | 'too_many_conditions'
     | 'not_linear'
+    | 'root_sum'
+    | 'root_form'
+    | 'sum_with_fraction'
+    | 'too_complex'
+    | 'bad_power'
+    | 'rhs_not_zero'
+    | 'cannot_factor'
+    | 'not_inequality'
+    | 'duplicate_point'
+    | 'signs_count'
+    | 'no_points'
     | 'unbalanced_paren'
   params?: Record<string, string>
 }

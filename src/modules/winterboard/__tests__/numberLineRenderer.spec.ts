@@ -153,12 +153,17 @@ describe('ввід: одне правило (ТЗ §2.3)', () => {
     expect(w.find('[data-testid="number-line-answer"]').text()).toBe(answerBefore)
   })
 
-  it('корені поки не вміє — словами', async () => {
+  it('корені a·√n — так, 1 + √2 — відмова словами (етап 1б)', async () => {
     const w = await mountIt(asset())
-    await w.find('[data-testid="number-line-input-0"]').setValue('x > √3')
+    await w.find('[data-testid="number-line-input-0"]').setValue('x > 1 + √2')
     await w.find('[data-testid="number-line-apply"]').trigger('click')
     expect(updates(w)).toHaveLength(0)
-    expect(w.find('[data-testid="number-line-error-0"]').text()).toBe('Корені поки не вмію')
+    expect(w.find('[data-testid="number-line-error-0"]').text()).toContain('1 + √2 поки не вмію')
+    await w.find('[data-testid="number-line-input-0"]').setValue('x > √12')
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    expect(updates(w)).toHaveLength(1)
+    await w.setProps({ asset: updates(w)[0][0] })
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (√12; +∞) — відкритий промінь')
   })
 
   it('Esc повертає застосоване', async () => {

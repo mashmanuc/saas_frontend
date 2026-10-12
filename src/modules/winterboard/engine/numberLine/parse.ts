@@ -6,7 +6,8 @@
  * Числа: цілі, десяткові з комою чи крапкою (`2,5`), дроби (`-1/3`).
  * Помилка — кодом і з місцем, без жодного «приблизно» (інваріант 3).
  */
-import { rational, type Rational } from './rational'
+import { rational } from './rational'
+import { real, type Real } from './real'
 import type {
   NumberLineCondition,
   NumberLineError,
@@ -17,30 +18,49 @@ import { parseLinear } from './linear'
 
 type ErrorWithoutLine = Omit<NumberLineError, 'line'>
 
-export type ParsedNumber = { ok: true; value: Rational; label: string } | { ok: false; error: ErrorWithoutLine }
+export type ParsedNumber = { ok: true; value: Real; label: string } | { ok: false; error: ErrorWithoutLine }
 
 const MINUS = /[−–—]/g
 
-/** Число з тексту вчителя → точне значення. `label` — як записано (з нормалізованим мінусом). */
+/** Корінь (етап 1б): `[коефіцієнт][·]√n[/d]` або `sqrt(n)`; коефіцієнт — ціле, десяткове чи дріб. */
+const ROOT = /^([+-]?)(?:(\d+)(?:[.,](\d+))?|(\d+)\/(\d+))?[·*]?(?:√|sqrt)(?:\((\d+)\)|(\d+))(?:\/(\d+))?$/i
+const PLAIN = /^([+-]?)(?:(\d+)(?:[.,](\d+))?|(\d+)\/(\d+))$/
+/** Підкореневе — до 9 цифр (розклад на множники миттєвий). */
+const MAX_RADICAND_DIGITS = 9
+
+/**
+ * Число з тексту вчителя → точне значення. `label` — як записано (з нормалізованим мінусом).
+ * Цілі, десяткові з комою чи крапкою, дроби; етап 1б — корені `a·√n` (`√12` = `2√3`).
+ */
 export function parseNumber(raw: string, index = 0): ParsedNumber {
   const text = raw.replace(MINUS, '-').replace(/\s+/g, '')
-  if (/√|sqrt/i.test(text)) {
-    return { ok: false, error: { index, code: 'roots_not_supported' } }
-  }
-  const m = /^([+-]?)(?:(\d+)(?:[.,](\d+))?|(\d+)\/(\d+))$/.exec(text)
+  const bad = (): ParsedNumber => ({ ok: false, error: { index, code: 'bad_number', params: { text: raw.trim() } } })
+  const zeroDiv = (): ParsedNumber => ({ ok: false, error: { index, code: 'division_by_zero', params: { text: raw.trim() } } })
+  const isRoot = /√|sqrt/i.test(text)
+  const m = (isRoot ? ROOT : PLAIN).exec(text)
   if (!m) {
-    return { ok: false, error: { index, code: 'bad_number', params: { text: raw.trim() } } }
+    // `√-3`, `√x`, `1+√2` у полі числа — не корінь виду a·√n.
+    return isRoot ? { ok: false, error: { index, code: 'root_form', params: { text: raw.trim() } } } : bad()
   }
   const sign = m[1] === '-' ? -1n : 1n
-  let value: Rational
+  let coef = rational(sign)
   if (m[4] !== undefined) {
     const den = BigInt(m[5])
-    if (den === 0n) return { ok: false, error: { index, code: 'division_by_zero', params: { text: raw.trim() } } }
-    value = rational(sign * BigInt(m[4]), den)
-  } else {
-    const intPart = m[2]
+    if (den === 0n) return zeroDiv()
+    coef = rational(sign * BigInt(m[4]), den)
+  } else if (m[2] !== undefined) {
     const frac = m[3] ?? ''
-    value = rational(sign * BigInt(intPart + frac), 10n ** BigInt(frac.length))
+    coef = rational(sign * BigInt(m[2] + frac), 10n ** BigInt(frac.length))
+  } else if (!isRoot) {
+    return bad()
+  }
+  let value: Real = real(coef)
+  if (isRoot) {
+    const radicand = m[6] ?? m[7]
+    if (radicand.length > MAX_RADICAND_DIGITS) return bad()
+    const den = m[8] !== undefined ? BigInt(m[8]) : 1n
+    if (den === 0n) return zeroDiv()
+    value = real(rational(coef.n, coef.d * den), BigInt(radicand))
   }
   return { ok: true, value, label: text.replace(/^\+/, '') }
 }
@@ -69,8 +89,11 @@ function tokenize(line: string): { tokens: Token[] } | { error: ErrorWithoutLine
       i += op[0].length
       continue
     }
-    if (/^sqrt/i.test(line.slice(i))) {
-      return { error: { index: i, code: 'roots_not_supported' } }
+    const rootNum = /^[+\-−–—]?\s*(?:\d+(?:[.,]\d+)?|\d+\/\d+)?\s*[·*]?\s*(?:√|sqrt)\s*(?:\(\s*\d+\s*\)|\d+)(?:\s*\/\s*\d+)?/i.exec(line.slice(i))
+    if (rootNum) {
+      tokens.push({ kind: 'num', text: rootNum[0], start: i })
+      i += rootNum[0].length
+      continue
     }
     if (/[a-zA-Z]/.test(ch)) {
       tokens.push({ kind: 'var', name: ch, start: i })
@@ -82,12 +105,10 @@ function tokenize(line: string): { tokens: Token[] } | { error: ErrorWithoutLine
     }
     if (/[0-9+\-−–—.,/√]/.test(ch)) {
       const rest = line.slice(i)
-      // Корені — окремий етап (1б): рядок із √ відхиляється словами.
-      if (/^[+\-−–—]?\s*[0-9.,/]*\s*√/.test(rest)) {
-        return { error: { index: i, code: 'roots_not_supported' } }
-      }
       // Число: знак, цифри, кома/крапка, дріб. Перевірка форми — у parseNumber.
       const text = (/^[+\-−–—]?\s*[0-9.,/]*/.exec(rest) as RegExpExecArray)[0]
+      // Порожній збіг (напр., `√-3`) — інакше цикл не зрушив би з місця.
+      if (!text.trim()) return { error: { index: i, code: 'root_form', params: { text: line.slice(i).trim() } } }
       tokens.push({ kind: 'num', text, start: i })
       i += text.length
       continue
@@ -120,7 +141,7 @@ function checkNumber(tok: Token): ParsedNumber {
 
 /** Помилки лінійного розбору, які точніші за помилку простого запису. */
 const LINEAR_FIRST: ReadonlySet<NumberLineError['code']> = new Set([
-  'not_linear', 'unbalanced_paren', 'division_by_zero', 'roots_not_supported',
+  'not_linear', 'unbalanced_paren', 'division_by_zero', 'root_sum', 'root_form',
 ])
 
 /** Один рядок учителя → умова контракту. Простий запис — як є; інакше — лінійна нерівність. */

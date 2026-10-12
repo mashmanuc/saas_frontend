@@ -10437,6 +10437,17 @@
         "line": "whole line"
       },
       "errors": {
+        "rootSum": "Expressions like 1 + √2 are not supported yet: only roots of the form a·√n (√3, 2√5, √3/2)",
+        "rootForm": "A root only of a natural number: √3, 2√5, √(12), sqrt(7)",
+        "sumWithFraction": "Cannot add a fraction with the variable in the denominator: use a common denominator",
+        "tooComplex": "The power is too high (more than {max})",
+        "badPower": "A power must be a whole number from 0 to {max}",
+        "rhsNotZero": "Move everything to the left-hand side: the right-hand side must be 0",
+        "cannotFactor": "Could not factor it — write it as a product of linear and quadratic factors",
+        "notInequality": "An inequality with <, ≤, > or ≥ is needed",
+        "duplicatePoint": "Point {text} is already there",
+        "signsCount": "There must be one more sign than points",
+        "noPoints": "Add at least one point",
         "notLinear": "Not a linear inequality: {variable} is multiplied or divided by {variable}. Those come with the interval method (next stage)",
         "unbalancedParen": "Unbalanced parentheses",
         "empty": "Empty line",

@@ -296,9 +296,9 @@ function hatchLines(condition: number, segments: LayoutSegment[]) {
   return out
 }
 
-/** `−1/3` → чисельник над знаменником (як у зошиті). */
+/** `−1/3`, `√3/2` → чисельник над знаменником (як у зошиті). */
 function fraction(label: string): { num: string; den: string } | null {
-  const m = /^([−-]?)(\d+)\/(\d+)$/.exec(label)
+  const m = /^([−-]?)(\d*√\d+|\d+)\/(\d+)$/.exec(label)
   return m ? { num: `${m[1]}${m[2]}`, den: m[3] } : null
 }
 
@@ -375,6 +375,17 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   too_many_conditions: 'tooMany',
   not_linear: 'notLinear',
   unbalanced_paren: 'unbalancedParen',
+  root_sum: 'rootSum',
+  root_form: 'rootForm',
+  sum_with_fraction: 'sumWithFraction',
+  too_complex: 'tooComplex',
+  bad_power: 'badPower',
+  rhs_not_zero: 'rhsNotZero',
+  cannot_factor: 'cannotFactor',
+  not_inequality: 'notInequality',
+  duplicate_point: 'duplicatePoint',
+  signs_count: 'signsCount',
+  no_points: 'noPoints',
 }
 
 function errorFor(i: number): string {
