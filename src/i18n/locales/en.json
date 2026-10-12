@@ -10367,6 +10367,46 @@
         }
       }
     },
+    "numberLine": {
+      "title": "Number line",
+      "sublabel": "inequalities · systems · unions",
+      "family": "Inequalities",
+      "placeholder": "x > 3   or   -3 < x ≤ 5",
+      "addCondition": "+ condition",
+      "apply": "Apply",
+      "revert": "Discard changes",
+      "notApplied": "not applied",
+      "showAnswer": "Answer",
+      "combineAnd": "system (and)",
+      "combineOr": "union (or)",
+      "answerEmpty": "no solutions (∅)",
+      "emptyHint": "Select the card and type an inequality",
+      "storedInvalid": "The line data has an error — open it and apply again",
+      "names": {
+        "segment": "closed interval",
+        "interval": "open interval",
+        "half_interval": "half-open interval",
+        "ray": "closed ray",
+        "open_ray": "open ray",
+        "line": "whole line"
+      },
+      "errors": {
+        "empty": "Empty line",
+        "unexpectedChar": "Unknown character “{char}”",
+        "badNumber": "Not a number: “{text}”",
+        "divisionByZero": "Division by zero in “{text}”",
+        "rootsNotSupported": "Roots are not supported yet",
+        "expectNumberAfter": "A number is expected after “{op}”",
+        "expectOp": "Expected a sign: <, ≤, >, ≥, ≠ or =",
+        "noVariable": "No variable (for example, x)",
+        "variableTwice": "Use one variable, once",
+        "otherVariable": "Different variable: {first} in the first line, {here} here",
+        "mixedDirection": "Both signs of a double inequality must point the same way",
+        "eqInRange": "= and ≠ are not allowed in a double inequality",
+        "trailing": "Too many signs: one condition per line",
+        "tooMany": "At most {max} conditions"
+      }
+    },
     "quadratic": {
       "trayHeader": "Quadratic Equation",
       "coefATitle": "Coefficient a (a ≠ 0)",

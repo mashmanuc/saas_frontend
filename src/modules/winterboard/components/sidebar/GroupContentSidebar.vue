@@ -324,6 +324,11 @@
             <template v-if="catalogFamily === '2d'">
               <CalculusTray />
               <QuadraticTray />
+              <!-- Б-184: Нерівності → Числова пряма (плитка: клік і перетягування) -->
+              <div class="tools-subhead" data-testid="tools-inequalities">{{ t('winterboard.numberLine.family') }}</div>
+              <div class="tools-results">
+                <InsertResultTile v-for="e in inequalityEntries" :key="e.id" :entry="e" />
+              </div>
               <TrigCircleTray />
             </template>
 
@@ -567,6 +572,7 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
+const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))
 const contentEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))
 

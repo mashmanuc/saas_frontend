@@ -257,6 +257,9 @@ export interface WBAsset {
     /** VisualCapsule (TLV2-03) — анімована капсула V-D3.1 як об'єкт дошки.
      *  data = { version, visual_id, capsule_version, mode }. Хід програвання — локальний. */
     | 'visual_capsule'
+    /** NumberLine (Б-184, 2026-10-12) — числова пряма: нерівності, системи, сукупності.
+     *  data = NumberLineData (лише застосований вхід учителя; відповідь рахує рушій). */
+    | 'number_line'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -363,6 +366,7 @@ export interface WBAsset {
     | MashSceneData
     | GeomashSceneData
     | VisualCapsuleAssetData
+    | import('../engine/numberLine/types').NumberLineData
 }
 
 /**

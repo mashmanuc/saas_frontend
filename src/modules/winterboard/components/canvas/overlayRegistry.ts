@@ -30,6 +30,7 @@ import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vu
 import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
 import CalculusRenderer from '../board/objects/CalculusRenderer.vue'
 import QuadraticRenderer from '../board/objects/QuadraticRenderer.vue'
+import NumberLineRenderer from '../board/objects/NumberLineRenderer.vue'
 import FormulaCardRenderer from '../board/objects/FormulaCardRenderer.vue'
 import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
 import HelixRenderer from '../board/objects/HelixRenderer.vue'
@@ -274,6 +275,16 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     wrapperClass: 'wb-quad-overlay',
     dataAttr: 'data-quad-id',
     testidPrefix: 'quad-overlay',
+    buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  // Б-184: числова пряма. Лише реєстровий шлях (VITE_UNIFIED_ZORDER), як discussion_question.
+  number_line: {
+    component: NumberLineRenderer,
+    wrapperClass: 'wb-number-line-overlay',
+    dataAttr: 'data-number-line-id',
+    testidPrefix: 'number-line-overlay',
     buildProps: stdProps,
     buildEvents: stdEvents,
   },

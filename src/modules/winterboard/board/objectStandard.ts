@@ -173,6 +173,8 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   graphmash_3d: card('overlay', { fullscreen: true }),
   // TLV2-05A: капсула — така сама картка, як решта; власної механіки не має.
   visual_capsule: card('overlay', { fullscreen: true }),
+  // Б-184: числова пряма — звичайна картка-оверлей (як quadratic_card).
+  number_line: card('overlay'),
 
   // ── Нативні Konva-вузли ───────────────────────────────────────────────────
   image: card('konva'),

@@ -361,6 +361,18 @@ function evidenceIcon(kind: string): VNode {
   ])
 }
 
+/** Числова пряма (Б-184): пряма зі стрілкою, виколота й зафарбована точки, штрихування. */
+function numberLineIcon(): VNode {
+  const b = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' }
+  return h('svg', b, [
+    h('line', { x1: 2, y1: 14, x2: 21, y2: 14 }),
+    h('path', { d: 'M19 12l2.5 2-2.5 2', 'stroke-linejoin': 'round' }),
+    h('circle', { cx: 7, cy: 14, r: 2, fill: 'none' }),
+    h('circle', { cx: 15, cy: 14, r: 2, fill: CUR, stroke: 'none' }),
+    h('path', { d: 'M9 11l2-3M12 11l2-3' }),
+  ])
+}
+
 /**
  * Спільна іконка вставки. `family` + `iconKey`:
  *   stereo → tplKey · planimetry → preset type · analysis → mode|graphCalc
@@ -376,6 +388,7 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case '3d': return threeDIcon(props.iconKey)
     case 'geomash': return geomashIcon()
     case 'evidence': return evidenceIcon(props.iconKey)
+    case 'inequalities': return numberLineIcon()
     default:
       return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' },
         [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 })])

@@ -434,6 +434,21 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   box-shadow: 0 0 0 1px rgba(59, 123, 155, 0.4);
 }
 
+/* Б-184: числова пряма */
+.wb-number-line-overlay {
+  position: absolute;
+  z-index: 4;
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-number-line-overlay--selected {
+  border-color: rgba(37, 99, 235, 0.6);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4);
+}
+
 .wb-trig-circle-overlay {
   position: absolute;
   z-index: 4;
