@@ -55,7 +55,8 @@ export function _getDedupeKey(config) {
 }
 
 let isRefreshingToken = false
-let isRefreshingCsrf = false
+// Б-161: один запит нового CSRF-токена на всі одночасні відмови (див. гілку повтору нижче).
+let csrfRefreshPromise = null
 const refreshQueue = []
 
 // PR2 (2026-04-26) → Phase 2 (2026-04-27 SSOT §7 + AUTH MODEL CORRECTION):
@@ -150,11 +151,16 @@ export function resetCircuitBreaker() {
 
 /**
  * Detect backend csrf:missing / csrf:invalid validation error.
- * Backend returns 400 with body like {"csrf": ["missing"]} or {"csrf": ["invalid"]}.
+ *
+ * Б-161 (2026-10-12): `/api/v1/auth/*` і `/api/v1/me*` (`VAuthAPIView`, `secure_endpoint`)
+ * відповідають 422 `{"error": "validation_failed", "fields": {"csrf": ["missing"]}}`; старий
+ * формат — 400 `{"csrf": ["missing"]}`. Доки тут пропускали лише 400, повтор із новим токеном
+ * не спрацьовував ніколи — зокрема й для `/auth/refresh/`, 422 від якого authStore вважає
+ * мертвою сесією.
  */
 const isCsrfError = (error) => {
   const status = error?.response?.status
-  if (status !== 400) return false
+  if (status !== 400 && status !== 422) return false
   const data = error?.response?.data
   if (!data || typeof data !== 'object') return false
   const csrfField = data.csrf || data.fields?.csrf
@@ -414,11 +420,14 @@ api.interceptors.response.use(
     if (isCsrfError(error) && !original._csrfRetry) {
       original._csrfRetry = true
       try {
-        if (!isRefreshingCsrf) {
-          isRefreshingCsrf = true
-          await store.ensureCsrfToken()
-          isRefreshingCsrf = false
+        // Б-161: одночасні відмови чекають той самий запит токена. Раніше прапорець пропускав
+        // другу без очікування — вона повторювалась ще зі старим токеном і падала вдруге.
+        if (!csrfRefreshPromise) {
+          csrfRefreshPromise = Promise.resolve(store.ensureCsrfToken()).finally(() => {
+            csrfRefreshPromise = null
+          })
         }
+        await csrfRefreshPromise
         // Re-attach fresh CSRF token
         const freshCsrf = getCookie('csrf') || getCookie('csrftoken') || store.csrfToken
         if (freshCsrf) {
@@ -429,7 +438,6 @@ api.interceptors.response.use(
         original.meta.skipLoader = true
         return api(original)
       } catch (csrfErr) {
-        isRefreshingCsrf = false
         // CSRF refresh failed — fall through to normal error handling
       }
     }
