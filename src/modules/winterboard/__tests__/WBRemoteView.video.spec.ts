@@ -108,6 +108,20 @@ describe('WBRemoteView — відео (V1)', () => {
     expect(lastCmd()).toMatchObject({ type: 'remote.command', pair: PAIR, cmd: 'video.add', args: { ref: { provider: 'youtube', id: 'EaN-JbyA348' }, title: 'Теорема Піфагора' } })
   })
 
+  it('сервер віддав 20 (для вікна ноутбука) — телефон показує лише перші 5, без «Показати ще»', async () => {
+    const twenty = Array.from({ length: 20 }, (_, i) => cand(`vid${String(i + 1).padStart(8, '0')}`, `Відео ${i + 1}`))
+    searchVideos.mockResolvedValue({ items: twenty, dropped: {}, pool: 50, took_ms: 1 })
+    const w = await ready()
+    await w.find('.wb-remote__video-search input').setValue('дроби')
+    await w.find('.wb-remote__video-search').trigger('submit')
+    await flushPromises()
+    const items = w.findAll('.wb-remote__video-results .wb-remote__video-item')
+    expect(items).toHaveLength(5)
+    expect(items.map((i) => i.text()).join('|')).toContain('Відео 5')
+    expect(items.map((i) => i.text()).join('|')).not.toContain('Відео 6')
+    expect(searchVideos).toHaveBeenCalledTimes(1)
+  })
+
   it('вичерпано пошук → радимо вставити посилання', async () => {
     searchVideos.mockRejectedValue(httpError(429, 'video_search_quota'))
     const w = await ready()

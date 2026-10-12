@@ -9463,6 +9463,8 @@
         "failed": "Video search failed. Please try again.",
         "quota": "Video search is used up for today. Paste a link below.",
         "userLimit": "Too many searches in a row. Try again in a minute or paste a link.",
+        "showMore": "Show {n} more",
+        "tryOtherWords": "Try other words",
         "linkTitle": "Or paste a YouTube video link",
         "paste": "Paste from clipboard",
         "pasteDenied": "Could not read the clipboard. Click the field and press Ctrl+V.",

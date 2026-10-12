@@ -874,6 +874,8 @@ const videoQuery = ref('')
 const videoSearching = ref(false)
 const videoError = ref('')
 const videoResults = ref<VideoCandidate[]>([])
+/** Скільки результатів пошуку показує телефон (сервер може віддати більше — до 20) */
+const REMOTE_VIDEO_RESULTS = 5
 /** Обране, але ще не підтверджене — дошка до «Додати» не змінюється */
 const videoPick = ref<VideoCandidate | null>(null)
 /** Сервер сказав, що пошук не налаштовано: на цю сесію лишаємо лише посилання (ТЗ §4.2) */
@@ -897,7 +899,9 @@ async function runVideoSearch(q?: string): Promise<void> {
   tel('video_search', { len: query.length })
   try {
     const res = await winterboardApi.searchVideos(query)
-    videoResults.value = res.items ?? []
+    // Сервер з 2026-10-12 віддає до 20 (для «Показати ще 5» у вікні ноутбука);
+    // телефон, як і раніше, показує лише перші 5. Протокол пульта не змінюється.
+    videoResults.value = (res.items ?? []).slice(0, REMOTE_VIDEO_RESULTS)
     if (!videoResults.value.length) videoError.value = t('winterboard.remote.video.empty')
     tel('video_results', { n: videoResults.value.length, pool: res.pool, took: res.took_ms, dropped: res.dropped })
   } catch (e: any) {

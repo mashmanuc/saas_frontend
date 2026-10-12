@@ -130,7 +130,7 @@
                 <p v-else class="wb-youtube-modal__note" data-testid="yt-search-off">{{ t('winterboard.youtube.picker.searchOff') }}</p>
                 <p v-if="searchMessage" class="wb-youtube-modal__note" role="status">{{ searchMessage }}</p>
                 <ul v-if="results.length" class="wb-youtube-modal__list" data-testid="yt-search-results">
-                  <li v-for="r in results" :key="r.ref.id">
+                  <li v-for="r in shownResults" :key="r.ref.id">
                     <VideoListRow
                       interactive
                       :title="r.title"
@@ -142,6 +142,20 @@
                     />
                   </li>
                 </ul>
+                <!-- Власник 2026-10-12: «Показати ще 5» — наступні з УЖЕ отриманих, без нового
+                     запиту й без витрати квоти. Показано все — кнопки немає, лише підказка. -->
+                <button
+                  v-if="moreCount > 0"
+                  type="button"
+                  class="wb-youtube-modal__btn wb-youtube-modal__btn--secondary wb-youtube-modal__more"
+                  data-testid="yt-search-more"
+                  @click="showMoreResults"
+                >
+                  {{ t('winterboard.youtube.picker.showMore', { n: moreCount }) }}
+                </button>
+                <p v-else-if="results.length" class="wb-youtube-modal__hint" data-testid="yt-search-all-shown">
+                  {{ t('winterboard.youtube.picker.tryOtherWords') }}
+                </p>
               </section>
 
               <h4 class="wb-youtube-modal__section-title">{{ t('winterboard.youtube.picker.linkTitle') }}</h4>
@@ -309,6 +323,15 @@ const searchQuery = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const searching = ref(false)
 const results = ref<VideoCandidate[]>([])
+/**
+ * Сервер віддає до 20 за один пошук (рішення власника 2026-10-12); показуємо по 5.
+ * «Показати ще» лише розкриває вже отримане — нового запиту й квоти не витрачає.
+ */
+const RESULTS_STEP = 5
+const shownCount = ref(RESULTS_STEP)
+const shownResults = computed(() => results.value.slice(0, shownCount.value))
+/** Скільки розкриє наступне «Показати ще» (останній крок може бути меншим за 5) */
+const moreCount = computed(() => Math.max(0, Math.min(RESULTS_STEP, results.value.length - shownCount.value)))
 const searchMessage = ref('')
 /** Сервер сказав, що пошук не налаштовано: на цю сесію лишаємо посилання (як у пульті) */
 const searchOff = ref(false)
@@ -329,6 +352,7 @@ watch(() => props.visible, async (v) => {
     titleValue.value = ''
     pick.value = null
     results.value = []
+    shownCount.value = RESULTS_STEP
     searchMessage.value = ''
     searchQuery.value = ''
     pasteError.value = ''
@@ -392,6 +416,7 @@ async function runSearch(): Promise<void> {
   searching.value = true
   searchMessage.value = ''
   results.value = []
+  shownCount.value = RESULTS_STEP   // новий пошук — знову з перших 5
   try {
     const res = await winterboardApi.searchVideos(query)
     results.value = res.items ?? []
@@ -410,6 +435,10 @@ async function runSearch(): Promise<void> {
   } finally {
     searching.value = false
   }
+}
+
+function showMoreResults(): void {
+  shownCount.value = Math.min(results.value.length, shownCount.value + RESULTS_STEP)
 }
 
 function pickCandidate(r: VideoCandidate): void {
@@ -534,6 +563,7 @@ function handleSubmit(): void {
 .wb-youtube-modal__note { margin: 0; font-size: 0.8125rem; color: #64748b; }
 .wb-youtube-modal__hint { margin: 0; font-size: 0.75rem; color: #94a3b8; }
 .wb-youtube-modal__paste { align-self: flex-start; margin-top: 4px; }
+.wb-youtube-modal__more { align-self: flex-start; }
 .wb-youtube-modal__confirm { display: flex; flex-direction: column; gap: 10px; }
 .wb-youtube-modal__confirm-text { margin: 0; font-size: 0.9375rem; line-height: 1.35; color: #0f172a; }
 
