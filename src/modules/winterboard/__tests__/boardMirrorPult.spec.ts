@@ -793,13 +793,18 @@ describe('пульт: обв\'язка', () => {
     expect(read('components/remote/RemoteBoardMirror.vue')).toMatch(/sec: Math\.round\(MIRROR_TUNING\.personAcceptMs \/ 1000\)/)
   })
 
-  it('дзеркало кладе знімок тією ж командою photo.background (v1.19), нових команд немає', () => {
+  it('дзеркало кладе знімок тією ж командою photo.background (v1.19); запис уроку — лише recording.* через пульт (v1.28)', () => {
     const view = read('views/WBRemoteView.vue')
     expect(view).toMatch(/<RemoteBoardMirror[\s\S]*?:send-background="sendPhotoBackground"/)
+    expect(view).toMatch(/<RemoteBoardMirror[\s\S]*?:send-recording="sendRecording"/)
     expect(view).toMatch(/function openMirror\(\): void \{\s*closeSheet\(\)/)
     const mirror = read('components/remote/RemoteBoardMirror.vue')
     expect(mirror).toContain('PHOTO_UPLOAD_PURPOSE')
+    // сокета Дзеркало не має: знімок — sendBackground, запис — sendRecording (LAW §9 v1.28), інших команд немає
     expect(mirror).not.toMatch(/sendCmd|photo\.add/)
+    expect(mirror.match(/props\.sendRecording\('recording\.(start|stop)'/g)).toEqual([
+      "props.sendRecording('recording.start'", "props.sendRecording('recording.stop'",
+    ])
   })
 
   it('повний екран — лише на дотик учителя (відкриття Дзеркала з пульта), вихід — коли Дзеркало закрилось', () => {

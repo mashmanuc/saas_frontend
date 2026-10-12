@@ -38,6 +38,8 @@
         <template v-else>
           <p class="wb-mirror__line" :class="`is-${statusTone}`" data-testid="mirror-status">{{ statusText }}</p>
           <template v-if="phase === 'running' || phase === 'paused'">
+            <!-- LAW §9 v1.28: запис уроку на ноутбуці — вмикає «Почати», завершує «Зупинити» -->
+            <p v-if="recLine" class="wb-mirror__line" :class="`is-${recLine.tone}`" data-testid="mirror-rec">{{ recLine.text }}</p>
             <p v-if="saveWaiting" class="wb-mirror__line" data-testid="mirror-save-waiting">{{ t('winterboard.remote.mirror.saveWaiting') }}</p>
             <p v-if="boardLost" class="wb-mirror__line is-warn" data-testid="mirror-save-lost">{{ t('winterboard.remote.mirror.saveLost') }}</p>
             <!-- Кути переїхали на дошку, що впирається в край кадру, — бік словами -->
@@ -104,6 +106,8 @@
       </div>
 
       <div v-if="phase === 'stopped'" class="wb-mirror__card" data-testid="mirror-summary">
+        <!-- LAW §9 v1.28: що сталося із записом уроку — першим рядком («Урок збережено…» лише при saved) -->
+        <p v-if="recSummary" class="wb-mirror__summary wb-mirror__summary--rec" data-testid="mirror-rec-summary">{{ recSummary }}</p>
         <p class="wb-mirror__summary">{{ summaryText }}</p>
       </div>
 
@@ -201,11 +205,18 @@
  *
  * Журнал (кнопка «Журнал», «Копіювати журнал») — для порівняння після уроку: кожна відправка й
  * кожне відкидання з часом, причиною й часткою змін; та сама подія — у телеметрію пульта.
+ *
+ * Запис уроку (LAW §9 v1.28, 2026-10-12, власник: «Роби»): «Почати» шле `recording.start`, «Зупинити» і «×» —
+ * `recording.stop`, лише коли запис увімкнув саме цей запуск. Вмикає й завершує ноутбук тими самими кнопками
+ * запису; не вийшло — Дзеркало працює далі, причина — словами в смужці, журналі й підсумку.
  */
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { uploadAsset } from '../../api/library'
 import { PHOTO_UPLOAD_PURPOSE, newRequestId, type RemotePhotoResult } from '../../remote/photoContract'
+import type {
+  RecordingRefusalReason, RemoteRecordingCmd, RemoteRecordingInfo, RemoteRecordingResult,
+} from '../../remote/recordingContract'
 import { photoUploadError } from '../../remote/photoUploadError'
 import {
   DETECT_W, MIRROR_TUNING, OUT_W, OUT_H, OUT_JPEG_QUALITY, SAMPLE_MS,
@@ -225,6 +236,12 @@ const props = defineProps<{
   /** Дошка, на яку шлемо знімки (для групи в «Мої файли») */
   boardId: string
   tel?: (event: string, ctx?: Record<string, unknown>) => void
+  /** LAW §9 v1.28: запис уроку на ноутбуці з останнього `remote.state`; null — старий ноутбук (поля немає) */
+  recording?: RemoteRecordingInfo | null
+  /** LAW §9 v1.28: відповідь ноутбука на останню команду запису */
+  recordingResult?: RemoteRecordingResult | null
+  /** LAW §9 v1.28: надіслати recording.start / recording.stop; false — канал не відправив. Немає — без запису */
+  sendRecording?: (cmd: RemoteRecordingCmd, mirrorRun: string) => boolean
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -308,8 +325,8 @@ let saveAskedAt = 0
  * Один запуск «Дзеркала» = одна група знімків у «Мої файли» (TZ_MIRROR_SNAPSHOTS_GROUPING §2.1):
  * від відкриття до «×»; «Пауза», «Кути», «Почати знову» — той самий запуск. Інша дошка — новий.
  */
-let mirrorRun = newRequestId()
-watch(() => props.boardId, () => { mirrorRun = newRequestId() })
+const mirrorRun = ref(newRequestId())
+watch(() => props.boardId, () => { mirrorRun.value = newRequestId(); resetRecording() })
 /** Що заважає відправці зараз: немає зв'язку / ноутбук на іншій сторінці */
 const blockedBy = computed<'' | 'offline' | 'page'>(() => {
   if (phase.value !== 'running') return ''
@@ -354,6 +371,194 @@ let resizeObs: ResizeObserver | null = null
 let unmounted = false
 /** Відправка, що чекає відповіді ноутбука */
 let pending: { rid: string; since: number; sentAt: number } | null = null
+
+// ── Запис уроку (LAW §9 v1.28, 2026-10-12; ТЗ TZ_MIRROR_AUTO_RECORDING) ───────────────────────────────
+// «Почати» шле recording.start (одна команда на натиск), «Зупинити» і «×» — recording.stop, лише коли запис
+// увімкнув саме цей запуск. Вирішує й пише ноутбук тими самими кнопками запису; тут — лише намір і стан
+// словами. Повторів кодом немає (§12): не відповів за 15 с — кажемо це, і все.
+
+/** Причина словами: відмова ноутбука або те, що бачить телефон (не надіслано, не відповів) */
+type RecReason = RecordingRefusalReason | 'not_sent' | 'no_answer'
+/** Команда запису, на яку чекаємо відповіді */
+const recAwait = ref<'start' | 'stop' | null>(null)
+let recTimer: ReturnType<typeof setTimeout> | null = null
+/** «Почати» цього запуску запису не ввімкнула — причина, доки запис не піде */
+const recRefusal = ref<RecReason | null>(null)
+/** Чим скінчилось «Зупинити»; null — «Зупинити» запису не чіпало (не наш або ще не тиснули) */
+const recStop = ref<'saved' | 'empty' | 'skipped' | RecReason | null>(null)
+/** Запис цього запуску був — щоб сказати «Запис завершено на ноутбуці», коли той закінчився не з пульта */
+const recOwned = ref(false)
+const recEndedOnLaptop = ref(false)
+/** Уже оброблена відповідь ноутбука: той самий результат приходить у кожному стані */
+let recLastResult = ''
+
+const recSupported = computed(() => !!props.sendRecording)
+/** Запис іде (чи на паузі) і його ввімкнув саме цей запуск (власник циклу — хто ввімкнув) */
+const recOurs = computed(() => {
+  const r = props.recording
+  return !!r && (r.state === 'recording' || r.state === 'paused') && r.byMirrorRun === mirrorRun.value
+})
+
+const recReasonText = (r: RecReason) => t(`winterboard.remote.mirror.rec.reason.${r}`)
+
+function clearRecAwait(): void {
+  recAwait.value = null
+  if (recTimer) { clearTimeout(recTimer); recTimer = null }
+}
+
+function resetRecording(): void {
+  clearRecAwait()
+  recRefusal.value = null
+  recStop.value = null
+  recOwned.value = false
+  recEndedOnLaptop.value = false
+  recLastResult = ''
+}
+
+/** Одна відповідь на одну команду; немає за 15 с — словами, без повтору */
+function awaitRecording(cmd: 'start' | 'stop'): void {
+  clearRecAwait()
+  recAwait.value = cmd
+  recTimer = setTimeout(() => {
+    recTimer = null
+    if (recAwait.value !== cmd) return
+    recAwait.value = null
+    if (cmd === 'start') {
+      recRefusal.value = 'no_answer'
+      add('rec', t('winterboard.remote.mirror.log.rec.refused', { reason: recReasonText('no_answer') }))
+    } else {
+      recStop.value = 'no_answer'
+      add('rec', t('winterboard.remote.mirror.log.rec.stopRefused', { reason: recReasonText('no_answer') }))
+    }
+    tel('rec_no_answer', { cmd })
+  }, ACK_TIMEOUT_MS)
+}
+
+/** «Почати»: ноутбук сам вирішує — увімкнути, продовжити паузу чи нічого (запис уже йде) */
+function requestRecordingStart(): void {
+  if (!props.sendRecording) return
+  clearRecAwait()
+  recRefusal.value = null
+  recStop.value = null
+  recEndedOnLaptop.value = false
+  if (!props.recording) {
+    // Старий ноутбук у кеші: команди запису він не знає — не шлемо, підказуємо оновити сторінку
+    add('rec', t('winterboard.remote.mirror.log.rec.oldLaptop'))
+    tel('rec_old_laptop')
+    return
+  }
+  if (props.recording.state === 'unavailable') {
+    // Дошка не урок «Провести»: запису тут немає (INV-LESSON-PLAY) — не просимо, кажемо, де він є
+    add('rec', t('winterboard.remote.mirror.log.rec.notLesson'))
+    tel('rec_not_lesson')
+    return
+  }
+  const sent = props.sendRecording('recording.start', mirrorRun.value)
+  tel('rec_start', { sent, state: props.recording.state })
+  if (!sent) {
+    recRefusal.value = 'not_sent'
+    add('rec', t('winterboard.remote.mirror.log.rec.refused', { reason: recReasonText('not_sent') }))
+    return
+  }
+  awaitRecording('start')
+}
+
+/** «Зупинити» / «×»: лише запис, який увімкнув цей запуск; чужий чи порожній — команди немає */
+function requestRecordingStop(): void {
+  if (!props.sendRecording || !recOurs.value || recAwait.value === 'stop') return
+  const sent = props.sendRecording('recording.stop', mirrorRun.value)
+  tel('rec_stop', { sent })
+  if (!sent) {
+    recStop.value = 'not_sent'
+    add('rec', t('winterboard.remote.mirror.log.rec.stopRefused', { reason: recReasonText('not_sent') }))
+    return
+  }
+  recStop.value = null
+  awaitRecording('stop')
+}
+
+function onRecordingResult(r: RemoteRecordingResult): void {
+  if (r.cmd === 'start') {
+    if (recAwait.value === 'start') clearRecAwait()
+    if (r.status === 'rejected') {
+      recRefusal.value = r.reason
+      add('rec', t('winterboard.remote.mirror.log.rec.refused', { reason: recReasonText(r.reason) }))
+    } else {
+      recRefusal.value = null
+      // Продовжив чи застав запис, який увімкнув не цей запуск, — він не наш і «Зупинити» його не завершить.
+      // «Почати» після «Кути» на власному записі — нічого нового, у журнал не пишемо.
+      const ours = props.recording?.byMirrorRun === mirrorRun.value
+      if (r.status === 'started') add('rec', t('winterboard.remote.mirror.log.rec.started'))
+      else if (r.status === 'resumed') add('rec', t(`winterboard.remote.mirror.log.rec.${ours ? 'resumed' : 'resumedForeign'}`))
+      else if (!ours) add('rec', t('winterboard.remote.mirror.log.rec.alreadyForeign'))
+    }
+    tel('rec_result', { cmd: r.cmd, status: r.status, reason: r.status === 'rejected' ? r.reason : undefined })
+    return
+  }
+  if (recAwait.value === 'stop') clearRecAwait()
+  if (r.status === 'rejected') {
+    recStop.value = r.reason
+    add('rec', t('winterboard.remote.mirror.log.rec.stopRefused', { reason: recReasonText(r.reason) }))
+  } else {
+    recStop.value = r.status
+    if (r.status !== 'skipped') recOwned.value = false
+    add('rec', t(`winterboard.remote.mirror.log.rec.${r.status === 'skipped' ? 'endedOnLaptop' : r.status}`))
+  }
+  tel('rec_result', { cmd: r.cmd, status: r.status, reason: r.status === 'rejected' ? r.reason : undefined })
+}
+
+watch(() => props.recordingResult, (r) => {
+  if (!recSupported.value) return
+  if (!r || r.mirror_run !== mirrorRun.value) { recLastResult = ''; return }
+  const key = JSON.stringify(r)
+  if (key === recLastResult) return
+  recLastResult = key
+  onRecordingResult(r)
+})
+
+// Запис цього запуску закінчився не з «Зупинити» (кнопкою на ноутбуці, сторожем сервера) — кажемо це, і
+// «Зупинити» вже нічого не завершує (команди немає: запис не наш).
+watch(recOurs, (ours) => {
+  if (!recSupported.value) return
+  if (ours) { recOwned.value = true; recEndedOnLaptop.value = false; return }
+  if (!recOwned.value || recAwait.value === 'stop' || recStop.value !== null) return
+  recOwned.value = false
+  recEndedOnLaptop.value = true
+  add('rec', t('winterboard.remote.mirror.log.rec.endedOnLaptop'))
+  tel('rec_ended_on_laptop')
+})
+
+/** Рядок про запис у смужці стану (працює / пауза) */
+const recLine = computed<{ key: string; text: string; tone: 'ok' | 'warn' | 'idle' } | null>(() => {
+  if (!recSupported.value) return null
+  const line = (key: string, tone: 'ok' | 'warn' | 'idle', params: Record<string, unknown> = {}) =>
+    ({ key, tone, text: t(`winterboard.remote.mirror.rec.${key}`, params) })
+  const r = props.recording
+  if (!r) return line('oldLaptop', 'warn')
+  if (r.state === 'unavailable') return line('notLesson', 'warn')
+  if (recAwait.value === 'start') return line('starting', 'idle')
+  if (recOurs.value && r.state === 'recording') return line('on', 'ok')
+  if (r.state === 'paused') return line('paused', 'warn')
+  if (r.state === 'recording') return line('onForeign', 'idle')
+  if (recRefusal.value) return line('refused', 'warn', { reason: recReasonText(recRefusal.value) })
+  if (recEndedOnLaptop.value) return line('endedOnLaptop', 'idle')
+  return line('idle', 'warn')
+})
+
+/** Підсумок про запис після зупинки: «Урок збережено в «Моїх записах»» — лише коли ноутбук сказав saved */
+const recSummary = computed(() => {
+  if (!recSupported.value) return ''
+  if (recAwait.value === 'stop') return t('winterboard.remote.mirror.rec.stopping')
+  const s = recStop.value
+  if (s === 'saved') return t('winterboard.remote.mirror.rec.saved')
+  if (s === 'empty') return t('winterboard.remote.mirror.rec.empty')
+  if (s === 'skipped') return t('winterboard.remote.mirror.rec.endedOnLaptop')
+  if (s) return t('winterboard.remote.mirror.rec.stopRefused', { reason: recReasonText(s) })
+  // «Зупинити» запису не чіпало: Дзеркало спинилось з причини або запис не цього запуску
+  if (recOurs.value) return t('winterboard.remote.mirror.rec.goesOn')
+  const line = recLine.value
+  return line && line.key !== 'idle' ? line.text : ''
+})
 
 function tel(event: string, ctx: Record<string, unknown> = {}): void {
   props.tel?.(`mirror_${event}`, ctx)
@@ -651,6 +856,8 @@ async function start(): Promise<void> {
     page: mirrorPage.value, battery: stats.batteryStart, size: videoDims(), wake_lock: wakeLockOk.value,
     board_found: !!found, board_fill: Math.round(base * 100) / 100,
   })
+  // LAW §9 v1.28: «Почати» — і запис уроку на ноутбуці (одна команда на натиск)
+  requestRecordingStart()
   startTimer()
 }
 
@@ -902,7 +1109,7 @@ async function commit(frame: MirrorFrame, s: SendArgs): Promise<void> {
     let assetId: number
     try {
       assetId = (await uploadAsset(shot.file, null, {
-        purpose: PHOTO_UPLOAD_PURPOSE, mirror: { board: props.boardId, run: mirrorRun },
+        purpose: PHOTO_UPLOAD_PURPOSE, mirror: { board: props.boardId, run: mirrorRun.value },
       })).id
     } catch (err) {
       const info = photoUploadError(err)
@@ -1133,6 +1340,8 @@ function recalibrate(): void {
 
 async function stop(reason: StopReason): Promise<void> {
   if (phase.value === 'stopped') return
+  // LAW §9 v1.28: «Зупинити» (і «×») завершує запис, який увімкнув цей запуск; зупинка з причини — ні
+  if (reason === 'user') requestRecordingStop()
   const wasActive = phase.value === 'running' || phase.value === 'paused'
   stopTimer()
   dropWatch()
@@ -1159,6 +1368,8 @@ function again(): void {
 }
 
 function close(): void {
+  // Дзеркало вже спинилось з причини (камера, невдачі…), а запис цього запуску ще йде — «×» його завершує
+  if (phase.value === 'stopped') requestRecordingStop()
   void stop('user')
   emit('close')
 }
@@ -1265,6 +1476,7 @@ onBeforeUnmount(() => {
   stopPreview()
   clearAck()
   finishWait()
+  clearRecAwait()   // LAW §9 v1.28: відповідь про запис чекати вже нікому
   if (findTimer) { clearTimeout(findTimer); findTimer = null }
   releaseScreen()
   stopTracks()

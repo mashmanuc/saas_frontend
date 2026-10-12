@@ -592,6 +592,9 @@
       :page-index="pageIndex"
       :result="photoResult"
       :send-background="sendPhotoBackground"
+      :recording="recording"
+      :recording-result="recordingResult"
+      :send-recording="sendRecording"
       :board-id="boardId!"
       :tel="tel"
       @close="closeMirror"
@@ -644,6 +647,7 @@ import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
+import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
 
 const props = defineProps<{ id?: string }>()
 const { t, locale } = useI18n()
@@ -841,6 +845,10 @@ const photoResult = ref<RemotePhotoResult | null>(null)
 const bgPhoto = ref(false)
 /** v1.26: вікно Інтегралика на ноутбуці відкрите / згорнуте; null — старий ноутбук поля не шле */
 const assistantOpen = ref<boolean | null>(null)
+/** v1.28: запис уроку на ноутбуці для Дзеркала; null — старий ноутбук поля не шле */
+const recording = ref<RemoteRecordingInfo | null>(null)
+/** v1.28: відповідь ноутбука на останню команду запису від Дзеркала */
+const recordingResult = ref<RemoteRecordingResult | null>(null)
 /** Фаза панелі фото — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
 const photoPhase = ref('idle')
 const photoBadge = computed<{ text: string; tone: 'busy' | 'ok' | 'warn' } | null>(() => {
@@ -1033,6 +1041,8 @@ const channel = useRemoteChannel({
     boardBusy.value = s.busy === 'saving_template'
     bgPhoto.value = s.bgPhoto === true
     assistantOpen.value = typeof s.assistantOpen === 'boolean' ? s.assistantOpen : null
+    recording.value = s.recording ?? null
+    recordingResult.value = s.recordingResult ?? null
     applyAssistantReply(s.assistantReply)
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
@@ -1199,6 +1209,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   | 'assistant.ask' | 'assistant.answer'
+  | RemoteRecordingCmd
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
   const ok = channel.send({ type: 'remote.command', pair: pair.value, client_id: clientId, cmd, args })
@@ -1215,6 +1226,14 @@ function sendPhoto(args: { library_asset_id: number; request_id: string; page_in
 /** v1.19 (власник 2026-09-28): те саме фото — фоном сторінки; перевіряє й пише ноутбук. */
 function sendPhotoBackground(args: { library_asset_id: number; request_id: string; page_index: number }): boolean {
   return sendCmd('photo.background', args)
+}
+
+/**
+ * LAW §9 v1.28 (2026-10-12): запис уроку вмикає й завершує лише Дзеркало (загальної кнопки запису на
+ * пульті немає) — тут лише намір із запуском Дзеркала; виконує ноутбук тими самими кнопками запису.
+ */
+function sendRecording(cmd: RemoteRecordingCmd, mirrorRun: string): boolean {
+  return sendCmd(cmd, { source: RECORDING_SOURCE, mirror_run: mirrorRun })
 }
 
 /**

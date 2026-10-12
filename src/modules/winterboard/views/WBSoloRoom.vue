@@ -1277,6 +1277,8 @@ import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import { isImageBackground, isSafeBackgroundUrl, withImageBackground, withoutImageBackground } from '../board/pageBackground'
 import { imageReadingTarget } from '../board/imageReadingTarget'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
+import { createRemoteRecordingAdapter } from '../remote/remoteRecordingAdapter'
+import type { RecordingRefusalReason } from '../remote/recordingContract'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
 import { fetchAsset as fetchLibraryAsset, rememberBoardVideo } from '../api/library'
 import { createBoardVideoRemember } from '../board/boardVideoLibrary'
@@ -1577,15 +1579,30 @@ const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
   recordingStartedAt.value = null
 })
 
-async function handleStartRecording(): Promise<void> {
+/**
+ * LAW §9 v1.28: відмова REST запису для пульта — без відповіді сервера `network`, інакше `server`.
+ * Лише назва причини для телефона; тост і поведінка кімнати — ті самі, що від кнопки.
+ */
+function recordingRequestFailure(e: unknown): RecordingRefusalReason {
+  return (e as { response?: unknown } | null)?.response ? 'server' : 'network'
+}
+
+// LAW §9 v1.28 (2026-10-12): цей самий обробник кличе й «Дзеркало дошки» з пульта (адаптер запису
+// нижче) — тому він повертає причину відмови (null — запис іде). Кнопка значення не читає.
+async function handleStartRecording(): Promise<RecordingRefusalReason | null> {
   const sid = sessionId.value
-  if (!sid || isManualRecording.value) return
+  if (!sid || isManualRecording.value) return 'busy'
   isRecordingLoading.value = true
   try {
     // INV-T fix: усі ops на сервері ДО того, як backend зробить deepcopy у
     // recording_start_state. SAVE_BLOCKED / непорожня черга → запис не стартує
-    // з неповної дошки (LAW §5 «Остаточні відмови»).
-    if (!(await ensureBoardSavedForArtifact())) return
+    // з неповної дошки (LAW §5 «Остаточні відмови»). Той самий бар'єр і тост, що
+    // ensureBoardSavedForArtifact, — лише з причиною, яку бере пульт.
+    const blocked = await artifactBarrier()
+    if (blocked) {
+      notifyError(barrierText(blocked))
+      return blocked
+    }
     const result = await import('../api/replay').then(m => m.startRecording(sid))
     isManualRecording.value = true
     isPausedRecording.value = false
@@ -1601,8 +1618,10 @@ async function handleStartRecording(): Promise<void> {
     // не малює у перші 2с після REC. Behavior-based warnings лишаються:
     // (1) handleFinalizeRecording catch — реальна помилка stop API;
     // (2) onMounted stoppedLocally — recording перервано network death.
+    return null
   } catch (e) {
     console.error('[WBSoloRoom] Failed to start recording:', e)
+    return recordingRequestFailure(e)
   } finally {
     isRecordingLoading.value = false
   }
@@ -1624,17 +1643,20 @@ async function handlePauseRecording(): Promise<void> {
   }
 }
 
-// Resume: paused → recording (same cycle)
-async function handleResumeRecording(): Promise<void> {
+// Resume: paused → recording (same cycle). LAW §9 v1.28: «Почати» Дзеркала на паузі кличе
+// цей самий обробник — він повертає причину відмови (null — запис іде).
+async function handleResumeRecording(): Promise<RecordingRefusalReason | null> {
   const sid = sessionId.value
-  if (!sid || !isManualRecording.value || !isPausedRecording.value) return
-  if (isRecordingLoading.value) return
+  if (!sid || !isManualRecording.value || !isPausedRecording.value) return 'busy'
+  if (isRecordingLoading.value) return 'busy'
   isRecordingLoading.value = true
   try {
     await import('../api/replay').then(m => m.resumeRecording(sid))
     isPausedRecording.value = false
+    return null
   } catch (e) {
     console.error('[WBSoloRoom] Failed to resume recording:', e)
+    return recordingRequestFailure(e)
   } finally {
     isRecordingLoading.value = false
   }
@@ -1675,17 +1697,23 @@ onBeforeUnmount(() => {
   _finalizeAttemptInFlight.value = false
 })
 
+/**
+ * Чим скінчилась спроба завершити запис (LAW §9 v1.28 — «Зупинити» Дзеркала кличе той самий обробник):
+ * 'saved' — Replay створено; 'empty' — порожній запис не збережено (SSOT §23.15); інакше причина.
+ */
+type RecordingFinalizeOutcome = 'saved' | 'empty' | RecordingRefusalReason
+
 // Finalize: recording | paused → finalized (Replay created).
-async function handleFinalizeRecording(): Promise<void> {
+async function handleFinalizeRecording(): Promise<RecordingFinalizeOutcome> {
   const sid = sessionId.value
-  if (!sid || !isManualRecording.value) return
+  if (!sid || !isManualRecording.value) return 'busy'
   // FE-local single-flight: BEFORE network. 429 from BE remains the
   // defense-in-depth safety net per §22.2.
-  if (_finalizeAttemptInFlight.value) return
-  if (isRecordingLoading.value) return
+  if (_finalizeAttemptInFlight.value) return 'busy'
+  if (isRecordingLoading.value) return 'busy'
   isRecordingLoading.value = true
   finalizeBarrierState.value = 'waiting'
-  await _attemptFinalizeWithBarrier(sid)
+  return _attemptFinalizeWithBarrier(sid)
 }
 
 /**
@@ -1698,8 +1726,8 @@ async function handleFinalizeRecording(): Promise<void> {
  * immediately. Mount state checked у every async chain step before touching
  * refs (post-unmount safety per §22.7 lifecycle cleanup).
  */
-async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
-  if (_finalizeAttemptInFlight.value) return
+async function _attemptFinalizeWithBarrier(sid: string): Promise<RecordingFinalizeOutcome> {
+  if (_finalizeAttemptInFlight.value) return 'busy'
   _finalizeAttemptInFlight.value = true
   try {
     // INV-22 §22.3 + 2026-05-08 hotfix: pre-flush ensures ALL drawn ops reach BE
@@ -1719,21 +1747,21 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
     try {
       await opsSync.flushAll()
     } catch (flushErr) {
-      if (!_isFinalizeMounted.value) return
+      if (!_isFinalizeMounted.value) return 'unconfirmed'
       // Per INV-22 §22.7 + LAW §12: NO silent swallow of flush errors.
       finalizeBarrierState.value = 'closed'
       _handleFinalizeFailureFallback(sid, flushErr)
       isRecordingLoading.value = false
-      return
+      return 'unconfirmed'
     }
 
-    if (!_isFinalizeMounted.value) return  // unmounted during flush
+    if (!_isFinalizeMounted.value) return 'unconfirmed'  // unmounted during flush
     const flushed_last_seq = opsSync.serverSeq
     const replayApi = await import('../api/replay')
-    if (!_isFinalizeMounted.value) return  // unmounted during dynamic import
+    if (!_isFinalizeMounted.value) return 'unconfirmed'  // unmounted during dynamic import
     try {
       const result = await replayApi.finalizeWithBarrier(sid, flushed_last_seq)
-      if (!_isFinalizeMounted.value) return  // unmounted during await
+      if (!_isFinalizeMounted.value) return 'unconfirmed'  // unmounted during await
       finalizeBarrierState.value = 'closed'
       isManualRecording.value = false
       recordingStartedAt.value = null
@@ -1745,20 +1773,22 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
         // «Запис готовий!» немає; «Поділитися» — найновіший наявний запис дошки.
         activeReplayId.value = result.latest_replay_id ?? null
         flashRecordingEmptyNotice()
+        return 'empty'
       } else {
         activeReplayId.value = result.replay_id ?? null
         showRecordingDonePrompt.value = true
         _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+        return 'saved'
       }
     } catch (err: unknown) {
-      if (!_isFinalizeMounted.value) return
+      if (!_isFinalizeMounted.value) return 'unconfirmed'
       if (err instanceof replayApi.FinalizeBarrierTimeoutError) {
         // 504 — apply pipeline lagging. Show retry modal. NO auto retry.
         finalizeBarrierExpectedSeq.value = err.expected_seq
         finalizeBarrierCurrentSeq.value = err.current_seq
         finalizeBarrierRetryAfterMs.value = 0
         finalizeBarrierState.value = 'timeout'
-        return
+        return 'timeout'
       }
       if (err instanceof replayApi.FinalizeBarrierContentionError) {
         // 429 — concurrent finalize active. Same modal, retry disabled briefly.
@@ -1766,7 +1796,7 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
         finalizeBarrierCurrentSeq.value = null
         finalizeBarrierRetryAfterMs.value = err.retry_after_ms
         finalizeBarrierState.value = 'contention'
-        return
+        return 'contention'
       }
       if (err instanceof replayApi.FinalizeBarrierNetworkError) {
         // 2026-05-09 (Option C Part B): CORS-shadowed 504 OR genuine network
@@ -1780,13 +1810,14 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
         finalizeBarrierCurrentSeq.value = null
         finalizeBarrierRetryAfterMs.value = 0
         finalizeBarrierState.value = 'timeout'  // reuse timeout modal — same UX
-        return
+        return 'network'
       }
       if (err instanceof replayApi.FinalizeBarrierContractError) {
         console.error('[WBSoloRoom] FINALIZE_CONTRACT_ERROR:', err)
       }
       finalizeBarrierState.value = 'closed'
       _handleFinalizeFailureFallback(sid, err)
+      return 'server'
     } finally {
       if (_isFinalizeMounted.value && finalizeBarrierState.value === 'closed') {
         isRecordingLoading.value = false
@@ -1945,6 +1976,19 @@ const boardRemote = useBoardRemote({
     canWrite: () => !(opsSync.inputLocked || opsSync.mode === 'DESYNC' || opsSync.mode === 'BOOTSTRAP'),
     updateAsset: (asset) => handleAssetUpdate(asset),
     view: remoteView,
+  }),
+  // LAW §9 v1.28 (власник 2026-10-12: «Роби»): «Дзеркало дошки» саме вмикає й завершує запис уроку —
+  // тими самими обробниками, що кнопки запису (бар'єр, REST, тост, вікно бар'єра — ті самі).
+  // Лише урок «Провести» — та сама умова, що й у панелі запису (INV-LESSON-PLAY): на звичайній дошці запису
+  // немає, тож Дзеркало його не вмикає (стенд 2026-10-12: запис ішов на сервері, а на ноутбуці — ні REC, ні «Завершити»).
+  recording: createRemoteRecordingAdapter({
+    state: () => soloRecordingState.value,
+    boardId: () => sessionId.value,
+    available: () => isLessonPlay.value,
+    busy: () => isRecordingLoading.value || _finalizeAttemptInFlight.value,
+    start: () => handleStartRecording(),
+    resume: () => handleResumeRecording(),
+    finalize: () => handleFinalizeRecording(),
   }),
 })
 

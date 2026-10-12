@@ -38,6 +38,10 @@
 // пультові»): assistant.ask / assistant.answer — намір палітрі на ЦЬОМУ ноутбуці подіями (як
 // m4sh:integralyk-ask); вона веде окрему розмову пульта без вікна й кладе матеріал на підготовчу
 // сторінку. Відповідь — подією назад, на пульт полем `assistant_reply` (лише остання).
+//
+// v1.28 (2026-10-12, власник: «Роби» — ТЗ TZ_MIRROR_AUTO_RECORDING): recording.start / recording.stop лише
+// від «Дзеркала дошки» — адаптер `recording` кличе ті самі обробники, що кнопки запису кімнати. У стані —
+// `recording`, `recording_by_mirror_run` і відповідь на останню команду запису (`recording_result`).
 
 import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
 import { i18n } from '@/i18n'
@@ -46,6 +50,8 @@ import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
 import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
+import type { RemoteRecordingAdapter } from '../remote/remoteRecordingAdapter'
+import { readRecordingRequest, type RemoteRecordingResult } from '../remote/recordingContract'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 import { floatingObstacles } from '../board/floatingObstacles'
 
@@ -86,6 +92,11 @@ export interface UseBoardRemoteOptions {
    * чекають і виконуються одразу після: не губляться, але в шаблон не потрапляють.
    */
   busy?: () => RemoteBusy | null
+  /**
+   * v1.28 «Дзеркало вмикає запис» (LAW §9). Є адаптер — у кожному стані `recording` і
+   * `recording_by_mirror_run`; без нього (класна кімната) команди запису — `rejected: unsupported`.
+   */
+  recording?: RemoteRecordingAdapter
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -121,10 +132,12 @@ export interface RemoteCommandDetail {
     | 'photo.add' | 'photo.background' | 'photo.background_clear'
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
+    | 'recording.start' | 'recording.stop'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
     library_asset_id?: number; request_id?: string; page_index?: number; choice?: string
+    source?: string; mirror_run?: string
   }
 }
 
@@ -198,6 +211,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const photoResult = ref<RemotePhotoResult | null>(null)
   /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
   const assistantReply = ref<RemoteAssistantReply | null>(null)
+  /** v1.28: відповідь на останню команду запису від Дзеркала — лише в пам'яті вкладки, іде в кожен remote.state */
+  const recordingResult = ref<RemoteRecordingResult | null>(null)
 
   /** Універсальна адреса пульта: без id, без коду — сам знайде активну дошку */
   const remoteUrl = computed(() => remoteEntryUrl())
@@ -241,6 +256,9 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (assistantReply.value) msg.assistant_reply = wireAssistantReply(assistantReply.value)
     // v1.19: на поточній сторінці фото-фон — телефон показує «Прибрати фон сторінки»
     if (opts.photo) msg.bg_photo = opts.photo.hasBackgroundPhoto()
+    // v1.28: запис на ноутбуці й чий це запуск Дзеркала — телефон знає, чи «Зупинити» завершує запис
+    if (opts.recording) Object.assign(msg, opts.recording.state())
+    if (recordingResult.value) msg.recording_result = recordingResult.value
     const busy = opts.busy?.()
     if (busy) msg.busy = busy
     opts.sendMessage(msg)
@@ -263,6 +281,11 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       if (index >= 0) out.page_index = index
     }
     return out
+  }
+
+  function reportRecording(result: RemoteRecordingResult): void {
+    recordingResult.value = result
+    sendState()
   }
 
   function reportAssistant(reply: RemoteAssistantReply): void {
@@ -300,6 +323,16 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const photo = opts.photo
     watch(
       () => photo.hasBackgroundPhoto(),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
+  }
+
+  // v1.28: запис почався, став на паузу чи закінчився (і з ноутбука) — телефон бачить одразу:
+  // «Запис завершено на ноутбуці», і «Зупинити» вже нічого не завершує
+  if (opts.recording) {
+    const recording = opts.recording
+    watch(
+      () => JSON.stringify(recording.state()),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
@@ -589,6 +622,32 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         sendState()   // підтвердити стан і тоді, коли прибирати не було чого
         return
       }
+      // v1.28: лише від «Дзеркала дошки»; вирішує й виконує адаптер запису тими самими обробниками,
+      // що кнопки запису на ноутбуці. Одна команда — одна дія, повторів кодом немає (§12).
+      case 'recording.start':
+      case 'recording.stop': {
+        const req = readRecordingRequest(d.args as Record<string, unknown>)
+        if (!req) return
+        const cmd = d.cmd === 'recording.start' ? 'start' : 'stop'
+        // Старий результат — геть зі станів ОДРАЗУ окремим станом: телефон відкидає вже бачену відповідь,
+        // тож нова з тим самим змістом без цього стану здалася б йому старою.
+        recordingResult.value = null
+        if (!opts.recording) {
+          reportRecording({ mirror_run: req.mirrorRun, cmd, status: 'rejected', reason: 'unsupported' })
+          return
+        }
+        sendStateNow()
+        const recording = opts.recording
+        const run = cmd === 'start' ? recording.start(req.mirrorRun) : recording.stop(req.mirrorRun)
+        run.then(
+          (result) => reportRecording(result),
+          (err) => {
+            console.warn(`[WB:remote] ${d.cmd} failed:`, err)
+            reportRecording({ mirror_run: req.mirrorRun, cmd, status: 'rejected', reason: 'server' })
+          },
+        )
+        return
+      }
       case 'assistant.ask': {
         const requestId = String(d.args?.request_id ?? '')
         const text = String(d.args?.text ?? '').trim()
@@ -633,5 +692,5 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (stateTimer) clearTimeout(stateTimer)
   })
 
-  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult, assistantReply }
+  return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult, assistantReply, recordingResult }
 }

@@ -19,6 +19,9 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { getWsBaseUrl, isPresenceAvailable, _getFreshTokenAsync } from './usePresence'
 import { parseRemotePhoto, type RemotePhotoResult } from '../remote/photoContract'
+import {
+  parseRemoteRecording, parseRemoteRecordingResult, type RemoteRecordingInfo, type RemoteRecordingResult,
+} from '../remote/recordingContract'
 
 export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'unavailable'
 
@@ -94,6 +97,13 @@ export interface RemoteStateDetail {
   assistantOpen?: boolean
   /** v1.20 — остання відповідь Інтегралика на запит із пульта (діалог пульт складає сам) */
   assistantReply?: RemoteAssistantReplyDetail
+  /**
+   * v1.28 — запис уроку на ноутбуці й чий це запуск Дзеркала. Немає поля (старий ноутбук у кеші) —
+   * Дзеркало команд запису не шле й підказує оновити сторінку дошки.
+   */
+  recording?: RemoteRecordingInfo
+  /** v1.28 — відповідь на останню команду запису від Дзеркала */
+  recordingResult?: RemoteRecordingResult
 }
 
 export type RemoteAssistantReplyStatus = 'thinking' | 'reply' | 'confirm' | 'done' | 'error' | 'cancelled'
@@ -386,6 +396,11 @@ export function useRemoteChannel(opts: {
         if (assistantOpen !== undefined) detail.assistantOpen = assistantOpen
         const assistantReply = parseRemoteAssistantReply(msg.assistant_reply)
         if (assistantReply) detail.assistantReply = assistantReply
+        // v1.28: закриті набори, як на сервері; зіпсоване поле — поля немає
+        const recording = parseRemoteRecording(msg)
+        if (recording) detail.recording = recording
+        const recordingResult = parseRemoteRecordingResult(msg.recording_result)
+        if (recordingResult) detail.recordingResult = recordingResult
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати
