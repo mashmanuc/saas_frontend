@@ -8,7 +8,7 @@ import type { NumberLineAsset } from '../types/numberLine'
 export { NUMBER_LINE_DRAG_MIME } from '../types/numberLine'
 
 export const DEFAULT_NUMBER_LINE_W = 560
-export const DEFAULT_NUMBER_LINE_H = 300
+export const DEFAULT_NUMBER_LINE_H = 440
 
 /** Новий асет з центром у `pos`. `data` — уже перевірені умови (Інтегралик) або порожньо. */
 export function buildNumberLineAsset(

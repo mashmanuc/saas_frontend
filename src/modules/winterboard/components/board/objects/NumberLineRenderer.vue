@@ -472,7 +472,8 @@ const hostWindowControls = useHostWindowControls()
 
 .nl-stage {
   flex: 1 1 auto;
-  min-height: 0;
+  /* Рисунок не стискається в смужку, коли відкритий редактор. */
+  min-height: 45%;
 }
 
 .nl-delete {
@@ -495,7 +496,7 @@ const hostWindowControls = useHostWindowControls()
 
 .nl-editor {
   flex: 0 0 auto;
-  max-height: 55%;
+  max-height: 50%;
   overflow-y: auto;
   padding: 6px 8px 8px;
   border-top: 1px solid #e5e7eb;
