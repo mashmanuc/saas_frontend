@@ -628,6 +628,7 @@
  */
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { loadAssistantSettings, useAssistantT } from '@/modules/intent/assistantLook'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import authApi from '@/modules/auth/api/authApi'
 import { trackEvent } from '@/utils/telemetryAgent'
@@ -650,7 +651,10 @@ import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
 
 const props = defineProps<{ id?: string }>()
-const { t, locale } = useI18n()
+const { locale } = useI18n()
+// Рядки про помічника — у вигляді, який обрав учитель («Інтегралка прочитала» тощо):
+// ключ із варіантом `…Integralka` перемикається, решта — як були.
+const { at: t } = useAssistantT()
 const authStore = useAuthStore()
 
 const accountEmail = computed(() => authStore.user?.email ?? '')
@@ -994,6 +998,8 @@ function onRemoteLanguage(value: string) {
   if (value === 'auto') sendCmd('language.auto')
   else sendCmd('language.set', { language: value })
 }
+// Вигляд помічника — налаштування акаунта; на телефоні їх ще ніхто не завантажив.
+onMounted(() => { void loadAssistantSettings() })
 onMounted(() => {
   // 404 — коридори цьому акаунту не ввімкнено: селектора на пульті немає.
   fetchCorridorRegistry(locale.value === 'en' ? 'en' : 'uk')

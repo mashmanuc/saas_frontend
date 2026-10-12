@@ -43,8 +43,8 @@
 // від «Дзеркала дошки» — адаптер `recording` кличе ті самі обробники, що кнопки запису кімнати. У стані —
 // `recording`, `recording_by_mirror_run` і відповідь на останню команду запису (`recording_result`).
 
+import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue'
-import { i18n } from '@/i18n'
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
@@ -656,7 +656,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         window.dispatchEvent(new CustomEvent(ASSISTANT_ASK_EVENT, { detail }))
         // Палітри на цій дошці немає — телефон не чекатиме «…» вічно
         if (!detail.accepted) {
-          reportAssistant({ request_id: requestId, status: 'error', text: String(i18n.global.t('winterboard.remote.assistant.noAssistant')) })
+          reportAssistant({ request_id: requestId, status: 'error', text: tAssistantGlobal('winterboard.remote.assistant.noAssistant') })
         }
         return
       }

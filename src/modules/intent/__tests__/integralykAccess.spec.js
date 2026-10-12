@@ -85,7 +85,7 @@ describe('TLV2-RC1 · палітра без build-прапорців Інтег�
   it('404 kill-switch: AI-тред і команди показують причину, AI ховається до reload', () => {
     const askStart = palette.indexOf('async function askAi')
     const ask = palette.slice(askStart, palette.indexOf('function continueAi', askStart))
-    expect(ask).toMatch(/if \(isIntegralykServerDisabled\(e\)\) \{\s*serverAiOff\.value = true\s*aiPush\(\{ kind: 'bot', text: INTEGRALYK_SERVER_DISABLED_MESSAGE \}\)/)
+    expect(ask).toMatch(/if \(isIntegralykServerDisabled\(e\)\) \{\s*serverAiOff\.value = true\s*aiPush\(\{ kind: 'bot', text: serverDisabledMsg\.value \}\)/)
     const run = palette.slice(palette.indexOf('async function run('), palette.indexOf('// ════════════ COMMAND DIALOG ENGINE'))
     expect(run).toContain('isIntegralykServerDisabled(e)')
   })

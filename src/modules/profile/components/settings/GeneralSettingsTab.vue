@@ -63,12 +63,25 @@
         />
         <label for="integralyk" class="text-sm">
           <span class="block font-medium text-foreground">
-            {{ $t('users.settings.general.integralyk') }}
+            {{ at('users.settings.general.integralyk') }}
           </span>
           <span class="block text-muted-foreground">
-            {{ $t('users.settings.general.integralykHint') }}
+            {{ at('users.settings.general.integralykHint') }}
           </span>
         </label>
+      </div>
+
+      <!-- Вигляд помічника (ТЗ TZ_INTEGRALYK_INTEGRALKA_VARIANT, 2026-10-12): той самий помічник —
+           лише бантик, колір і назва. Незалежний від вимикача вище (прихований помічник не губить
+           вибір) і зберігається одразу, як і перемикач у панелі помічника — одне налаштування. -->
+      <div class="pt-2" data-testid="assistant-look-setting">
+        <span class="block text-sm font-medium text-foreground">
+          {{ $t('users.settings.general.assistantLook.title') }}
+        </span>
+        <span class="block text-sm text-muted-foreground mb-2">
+          {{ $t('users.settings.general.assistantLook.hint') }}
+        </span>
+        <AssistantLookPicker variant="full" />
       </div>
 
       <!-- Мої предмети — ВИДИМІСТЬ і дефолт Інтегралика, не дозвіл (рішення
@@ -79,7 +92,7 @@
           {{ $t('users.settings.general.subjects') }}
         </legend>
         <p class="text-sm text-muted-foreground">
-          {{ $t('users.settings.general.subjectsHint') }}
+          {{ at('users.settings.general.subjectsHint') }}
         </p>
         <label class="mt-2 flex items-center gap-3 text-sm">
           <input
@@ -158,6 +171,8 @@ import { notifySuccess, notifyError } from '@/utils/notify'
 // взагалі, тож застосунок ніколи його й не вантажив.
 import { i18n, setLocale } from '@/i18n'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
+import AssistantLookPicker from '@/modules/intent/AssistantLookPicker.vue'
+import { useAssistantT } from '@/modules/intent/assistantLook'
 
 const profileStore = useProfileStore()
 
@@ -171,6 +186,9 @@ const profileStore = useProfileStore()
 function normalizeTz(tz: string | null | undefined): string {
   return tz === 'Europe/Kiev' ? 'Europe/Kyiv' : (tz || '')
 }
+
+// Підписи про помічника — у вигляді, який обрав користувач («Помічниця Інтегралка» тощо).
+const { at } = useAssistantT()
 
 const formData = ref({
   ui_language: 'uk',

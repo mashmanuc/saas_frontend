@@ -95,8 +95,10 @@ describe('2 · мова не стрибає', () => {
 describe('3 · підпис помічника перекладається', () => {
   it('🔴 у розмітці ключ, а не вшитий текст', async () => {
     const src = await readSrc(TAB)
-    expect(src).toContain("$t('users.settings.general.integralyk')")
-    expect(src).toContain("$t('users.settings.general.integralykHint')")
+    // З 2026-10-12 — `at()` (useAssistantT): той самий ключ, але з урахуванням вигляду помічника
+    // («Помічниця Інтегралка» — сусідній ключ `integralykIntegralka`).
+    expect(src).toContain("at('users.settings.general.integralyk')")
+    expect(src).toContain("at('users.settings.general.integralykHint')")
     expect(src).not.toContain('>Помічник Інтегралик<')
   })
 

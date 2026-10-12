@@ -44,3 +44,8 @@ export function isIntegralykServerDisabled(err) {
 
 /** Людське повідомлення для вимкненого на сервері Інтегралика. */
 export const INTEGRALYK_SERVER_DISABLED_MESSAGE = 'Інтегралик вимкнено на цьому сервері.'
+
+/** Те саме повідомлення у вигляді, який обрав користувач («Інтегралку вимкнено…»). */
+export function integralykServerDisabledMessage(look) {
+  return look === 'integralka' ? 'Інтегралку вимкнено на цьому сервері.' : INTEGRALYK_SERVER_DISABLED_MESSAGE
+}

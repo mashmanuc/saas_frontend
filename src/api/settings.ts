@@ -31,6 +31,10 @@ export interface UserSettings {
   interface_language: string          // Interface language ("uk" or "en")
   languages: LanguageOption[]         // Available languages (read-only)
   dark_mode: 'system' | 'light' | 'dark' // Dark mode preference
+
+  // ==================== ASSISTANT ====================
+  integralyk_enabled: boolean         // Show the assistant (personal opt-out)
+  integralyk_appearance: 'integralyk' | 'integralka' // Assistant look — same assistant (2026-10-12)
   
   // ==================== NOTIFICATIONS ====================
   notifications_enabled: boolean      // Enable notifications

@@ -173,6 +173,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAssistantT } from '@/modules/intent/assistantLook'
 import { useRoute } from 'vue-router'
 import 'katex/dist/katex.min.css'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -222,7 +223,9 @@ const emit = defineEmits<{
   unavailable: []
 }>()
 
-const { t } = useI18n()
+// Рядки про помічника — у вигляді, який обрав учитель («Інтегралка прочитала» тощо):
+// ключ із варіантом `…Integralka` перемикається, решта — як були.
+const { at: t } = useAssistantT()
 const auth = useAuthStore()
 const profile = useProfileStore()
 const route = useRoute()

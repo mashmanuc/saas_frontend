@@ -40,11 +40,22 @@ import { computed, ref, onErrorCaptured, getCurrentInstance } from 'vue'
 // про stale-chunk, який `onErrorCaptured` не бачить (chunk падає ДО монтування).
 import { appFatalError } from '../core/errors/appFatalError'
 // Спільний малюнок Інтегралика — модуль без імпортів, лише рядки (див. його шапку).
-import { INTEGRALYK_SVG_SORRY } from '../modules/intent/integralykMascotSvg'
+import { INTEGRALYK_SVG_SORRY, INTEGRALKA_SVG_SORRY } from '../modules/intent/integralykMascotSvg'
 
 // Той самий Інтегралик, що в CommandPalette — дихає/кліпає (класи в стилях).
 // Легка сльозинка — трохи винуватий, що підвів. Рота немає (за дизайном).
-const MASCOT_SVG = INTEGRALYK_SVG_SORRY
+// Вигляд помічника (ТЗ Інтегралки, 2026-10-12) — з УЖЕ завантаженого профілю, без імпорту стору:
+// екран помилки мусить намалюватись, навіть коли впало все інше. Не знає користувача — дефолт.
+const appInstance = getCurrentInstance()
+const MASCOT_SVG = computed(() => {
+  let look
+  try {
+    look = appInstance?.appContext.config.globalProperties.$pinia?.state.value.profile?.settings?.integralyk_appearance
+  } catch {
+    look = undefined   // стан недоступний — лишаємо чинного Інтегралика
+  }
+  return look === 'integralka' ? INTEGRALKA_SVG_SORRY : INTEGRALYK_SVG_SORRY
+})
 
 // Локальний краш (компонент упав під час рендеру).
 const localError = ref(false)

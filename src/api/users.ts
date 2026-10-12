@@ -49,6 +49,10 @@ export interface UserSettings {
   dark_mode?: boolean
   email_notifications?: boolean
   sms_notifications?: boolean
+  /** Показувати помічника (персональний вимикач). */
+  integralyk_enabled?: boolean
+  /** Вигляд помічника: той самий Інтегралик, лише бантик, колір і назва (2026-10-12). */
+  integralyk_appearance?: 'integralyk' | 'integralka'
 }
 
 export interface ProfileResponse {

@@ -956,6 +956,7 @@
 </template>
 
 <script setup lang="ts">
+import { assistantNameUk } from '@/modules/intent/assistantLook'
 // WB: WBCanvas — main Konva canvas component for Winterboard
 // Ref: ARCHITECTURE.md ADR-01, BoardCanvas.vue (classroom reference)
 // Stripped of: classroom session linking, stealth autosave, save window guards, presence cursors
@@ -1299,7 +1300,7 @@ function handleSpawnCompanions(payload: {
       notifyWarning(
         'Не можу побудувати ілюстрацію до цієї задачі: у її умові не '
         + 'розпізнано фігуру, яку вмію намалювати. Спробуйте попросити '
-        + 'Інтегралика конкретно — напр. «додай трикутник ABC».',
+        + `${assistantNameUk().acc} конкретно — напр. «додай трикутник ABC».`,
       )
       continue
     }

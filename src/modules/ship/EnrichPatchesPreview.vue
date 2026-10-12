@@ -312,13 +312,17 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAssistantT } from '@/modules/intent/assistantLook'
 import { shipApi, type EnrichApplyResponse, type EnrichProgress, type EnrichSkip } from './shipApi'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { useOpsSyncStore } from '@/modules/winterboard/stores/opsSyncStore'
 import { useWBStore } from '@/modules/winterboard/board/state/boardStore'
 import { useVoiceDictation } from '@/composables/useVoiceDictation'
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
+// Рядки про помічника — у вигляді, який обрав учитель («Інтегралка прочитала» тощо):
+// ключ із варіантом `…Integralka` перемикається, решта — як були.
+const { at: t } = useAssistantT()
 // Enrich пише на дошку СЕРВЕРНИМ шляхом (ops → OpsApplyService), тобто повз
 // цю вкладку: її localSeq відстає, а полотно не знає про нові картки —
 // тьютор бачив порожню дошку і думав, що нічого не сталось (живий прогін

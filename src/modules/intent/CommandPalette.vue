@@ -90,6 +90,8 @@
               <span class="cmdp-title">{{ uiText.assistantName }}</span>
               <span class="cmdp-subtitle">{{ uiText.assistantRole }}</span>
             </div>
+            <!-- Вигляд помічника — те саме налаштування, що в профілі (ТЗ Інтегралки) -->
+            <AssistantLookPicker variant="compact" @error="onLookError" />
             <!-- 0b: pin — щоб дошка лишалась клікабельною під час роботи з палітрою -->
             <button
               v-if="canPin" class="cmdp-pin cmdp-pin--brand" :class="{ on: isPinned }"
@@ -193,6 +195,7 @@
             <button class="cmdp-back" @click="toCommands">{{ uiText.backToCommands }}</button>
             <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
             <span class="cmdp-title">{{ uiText.assistantName }}</span>
+            <AssistantLookPicker variant="compact" @error="onLookError" />
             <!-- 0a: розмова живе між відкриттями → потрібен явний спосіб почати з чистого -->
             <button
               v-if="aiThread.length" class="cmdp-newchat" :disabled="aiBusy"
@@ -339,7 +342,9 @@ import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from '
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { mathContentMessage, prepareServerActions } from './math/prepareServerActions'
 import { createRemoteAssistant } from './remoteAssistant'
-import { INTEGRALYK_SVG } from './integralykMascotSvg'
+import { paletteMascotSvg } from './integralykMascotSvg'
+import { ASSISTANT_NAMES, assistantKey, useAssistantLook } from './assistantLook'
+import AssistantLookPicker from './AssistantLookPicker.vue'
 import { sceneMetricFromAction } from './sceneMetric'
 import { trackScene } from '@/modules/winterboard/local/localWorkspaceTelemetry'
 import { setFloatingObstacle } from '@/modules/winterboard/board/floatingObstacles'
@@ -352,7 +357,7 @@ import { humanErrorMessage, errorCodeOf } from './errorMessage'
 import { resolveBoardId, isAuthoringRoute } from './boardRoute'
 import {
   canUseIntegralyk,
-  INTEGRALYK_SERVER_DISABLED_MESSAGE,
+  integralykServerDisabledMessage,
   isIntegralykOn,
   isIntegralykServerDisabled,
 } from './integralykAccess'
@@ -509,7 +514,7 @@ async function run(fn, onOk) {
     // interceptor'ом; не дублюємо власним inline-повідомленням (finally скине loading).
     if (isLimitError(e)) return
     error.value = isIntegralykServerDisabled(e)
-      ? INTEGRALYK_SERVER_DISABLED_MESSAGE
+      ? serverDisabledMsg.value
       : humanErrorMessage(e, ERR_MSG)
   } finally { loading.value = false }
 }
@@ -752,15 +757,15 @@ const filtered = computed(() => {
   const list = q ? commands.value.filter(c => c.label.toLowerCase().includes(q)) : [...commands.value]
   // Онбординг: провідник у списку. Тільки для uk локалі (Варіант A: не перекладаємо, ховаємо).
   if (showAI.value && currentLocale.value === 'uk' && (!q || 'провідник з чого почати навчи покажи проведи мене'.includes(q))) {
-    const gi = { id: '__guide__', label: `${guided.value ? '🧭 Провідник Інтегралика' : '✨ Новенький? Провідник Інтегралика'}`, run: () => startGuide() }
+    const gi = { id: '__guide__', label: guided.value ? `🧭 Провідник ${nameUk.value.gen}` : `✨ Новенький? Провідник ${nameUk.value.gen}`, run: () => startGuide() }
     guided.value ? list.push(gi) : list.unshift(gi)
   }
   // AI-Producer: будь-яку фразу можна віддати AI — останній пункт списку (і єдиний, якщо збігів нема)
   if (showAI.value && query.value.trim().length >= 3) {
     const phrase = query.value.trim()
     const label = isEnglishGuide.value
-      ? `∫ Ask Integralyk: “${phrase}”`
-      : `∫ Спитати Інтегралика: «${phrase}»`
+      ? `∫ Ask ${nameEn.value.nom}: “${phrase}”`
+      : `∫ Спитати ${nameUk.value.acc}: «${phrase}»`
     list.push({ id: '__ai__', label, run: () => askAi(phrase) })
   }
   return list
@@ -865,13 +870,16 @@ async function loadIntegralykPref() {
     profileStore.settings = await getUserSettings()
   } catch { /* нема даних — дефолт (показувати) */ }
 }
+// Вигляд не зберігся: перемикач уже повернув попередній — показуємо причину в панелі.
+function onLookError(message) { notice.value = message }
+
 // Приховати Інтегралика (× на маскоті) — синхронно в акаунт + миттєво в UI
 async function hideIntegralyk() {
   // На дотику × завжди видимий (hover немає) → легко зачепити випадково; підтвердимо,
   // бо ввімкнути назад — лише в Налаштуваннях. На desktop (hover) — без зайвого кроку.
   try {
     if (window.matchMedia && window.matchMedia('(hover: none)').matches &&
-        !window.confirm('Приховати Інтегралика? Увімкнути назад — у Налаштуваннях.')) return
+        !window.confirm(`Приховати ${nameUk.value.acc}? Увімкнути назад — у Налаштуваннях.`)) return
   } catch { /* matchMedia недоступний — ховаємо без підтвердження */ }
   close()
   if (profileStore.settings) profileStore.settings = { ...profileStore.settings, integralyk_enabled: false }
@@ -913,11 +921,11 @@ const currentProfile = computed(() => {
 const uiText = computed(() => {
   if (isEnglishGuide.value) {
     return {
-      assistantName: 'Integralyk',
+      assistantName: nameEn.value.nom,
       assistantRole: 'English Guide',
-      fabTitle: 'Integralyk — English Guide (Ctrl+Shift+K). Drag to move.',
-      openAssistant: 'Open Integralyk — English Guide',
-      hideAssistant: 'Hide Integralyk',
+      fabTitle: `${nameEn.value.nom} — English Guide (Ctrl+Shift+K). Drag to move.`,
+      openAssistant: `Open ${nameEn.value.nom} — English Guide`,
+      hideAssistant: `Hide ${nameEn.value.nom}`,
       paletteAria: 'English Guide',
       listening: 'Listening… speak now',
       commandPlaceholder: 'Find a section or ask about M4SH…',
@@ -931,19 +939,19 @@ const uiText = computed(() => {
       closeTitle: 'Close (Esc)',
       backToCommands: '← Commands',
       newChat: 'Start a new conversation',
-      minimizeTitle: 'Minimise to Integralyk (conversation is kept) · Esc',
+      minimizeTitle: `Minimise to ${nameEn.value.nom} (conversation is kept) · Esc`,
       minimizeLabel: 'Minimise panel',
       stopListening: 'Stop listening',
       voiceInput: 'Voice input',
       keyboardHint: 'Ctrl+Shift+K (or Ctrl/⌘+K) — open · ↑↓/Enter — commands · Esc — back/close',
-      aiHint: ' · ∫ Integralyk: ask about M4SH',
+      aiHint: ` · ∫ ${nameEn.value.nom}: ask about M4SH`,
     }
   }
   return {
-    assistantName: 'Інтегралик',
-    assistantRole: 'AI-помічник',
-    fabTitle: 'Інтегралик — AI-помічник (Ctrl+Shift+K). Перетягніть, куди зручно',
-    openAssistant: 'Відкрити Інтегралика — AI-помічника',
+    assistantName: nameUk.value.nom,
+    assistantRole: nameUk.value.role,
+    fabTitle: `${nameUk.value.nom} — ${nameUk.value.role} (Ctrl+Shift+K). Перетягніть, куди зручно`,
+    openAssistant: `Відкрити ${nameUk.value.acc} — ${nameUk.value.roleAcc}`,
     hideAssistant: 'Приховати помічника (увімкнути назад — у Налаштуваннях)',
     paletteAria: 'Командна палітра',
     listening: 'Слухаю… говоріть',
@@ -960,12 +968,12 @@ const uiText = computed(() => {
     closeTitle: 'Закрити (Esc)',
     backToCommands: '← Команди',
     newChat: 'Почати новий діалог',
-    minimizeTitle: 'Згорнути в Інтегралика (розмова збережеться) · Esc',
+    minimizeTitle: `Згорнути в ${nameUk.value.acc} (розмова збережеться) · Esc`,
     minimizeLabel: 'Згорнути панель',
     stopListening: 'Зупинити',
     voiceInput: 'Голосовий ввід',
     keyboardHint: 'Ctrl+Shift+K (або Ctrl/⌘+K) — відкрити · ↑↓/Enter — команди · Esc — назад/закрити',
-    aiHint: ' · ∫ Інтегралик: просто опишіть дію словами',
+    aiHint: ` · ∫ ${nameUk.value.nom}: просто опишіть дію словами`,
   }
 })
 
@@ -1008,7 +1016,18 @@ function retargetVoice() {
 // КЛАСИ (не id), бо маскот рендериться двічі (fab + шапка). Дихання/кліпання — у стилях.
 // Сам малюнок — спільний модуль (`integralykMascotSvg.ts`): той самий персонаж, що на екрані
 // помилки й на лендінгу /start, без копій рядка.
-const MASCOT_SVG = INTEGRALYK_SVG
+// Вигляд помічника — налаштування акаунта (ТЗ TZ_INTEGRALYK_INTEGRALKA_VARIANT, 2026-10-12): малюнок,
+// назви й повідомлення читаються реактивно з profileStore; перемикання не закриває розмову.
+const { look: assistantLook } = useAssistantLook()
+const MASCOT_SVG = computed(() => paletteMascotSvg(assistantLook.value))
+const nameUk = computed(() => ASSISTANT_NAMES[assistantLook.value].uk)
+const nameEn = computed(() => ASSISTANT_NAMES[assistantLook.value].en)
+const serverDisabledMsg = computed(() => integralykServerDisabledMessage(assistantLook.value))
+// `t` для рядків про помічника (пульт, повідомлення): варіант «Інтегралки», якщо він є.
+const tAssistant = (key, params) => i18n.global.t(
+  assistantKey(key, assistantLook.value, (k, l) => (l ? i18n.global.te(k, l) : i18n.global.te(k))), params ?? {})
+// v-html малює новий SVG із порожніми слотами — повертаємо скін часу доби (капелюх, кава…).
+watch(assistantLook, () => nextTick(() => applyItgSkin()))
 
 // Настрої / аксесуари (з integral4 assistant-icon.js). Рота НЕМАЄ.
 const ITG_MOODS = {
@@ -1198,7 +1217,7 @@ async function askAi(phrase) {
     if (isLimitError(e)) return
     if (isIntegralykServerDisabled(e)) {
       serverAiOff.value = true
-      aiPush({ kind: 'bot', text: INTEGRALYK_SERVER_DISABLED_MESSAGE })
+      aiPush({ kind: 'bot', text: serverDisabledMsg.value })
       return
     }
     const d = e?.response?.data
@@ -1308,7 +1327,8 @@ function dismissAi(item) { item.done = true; aiPush({ kind: 'bot', text: 'Ска
 const GUIDE_KEY = 'm4sh_integralyk_guided'
 const guided = ref((() => { try { return localStorage.getItem(GUIDE_KEY) === '1' } catch { return false } })())
 const GUIDE_STEPS = [
-  { say: 'Привіт! Я Інтегралик 👋 За кілька кроків покажу, що вмію — прямо на цій дошці. Поїхали?', cta: 'Почнемо' },
+  // Ім'я — у вигляді, який зараз обрано (крок читається в момент показу).
+  { get say() { return `Привіт! Я ${nameUk.value.nom} 👋 За кілька кроків покажу, що вмію — прямо на цій дошці. Поїхали?` }, cta: 'Почнемо' },
   { run: () => runBoardAction({ kind: 'add_graph', payload: { expression: 'sin(x)' } }),
     say: 'Крок 1 — я будую графіки функцій. Ось y = sin(x) вже на дошці 📈', cta: 'Далі' },
   { run: () => runBoardAction({ kind: 'add_card', payload: { title: 'Приклад картки', body: 'Пояснення з формулами: похідна $(\\sin x)\' = \\cos x$.' } }),
@@ -1322,7 +1342,7 @@ function startGuide() {
   conversationId.value = newConversationId()   // знайомство — теж нова розмова
   retargetVoice()   // той самий перехід commands→ai, той самий ре-таргет
   if (!currentBoardId.value) {
-    aiPush({ kind: 'bot', text: 'Привіт! Я Інтегралик 👋 Найкраще показати все прямо на дошці. Створю нову — і проведу тебе?' })
+    aiPush({ kind: 'bot', text: `Привіт! Я ${nameUk.value.nom} 👋 Найкраще показати все прямо на дошці. Створю нову — і проведу тебе?` })
     aiPush({ kind: 'guidecreate', label: 'Створити дошку і почати' })
     react('wave')
     return
@@ -1964,9 +1984,9 @@ const remoteAssistant = createRemoteAssistant({
   locale: () => currentLocale.value,
   page: () => currentPage(),
   canUse: () => {
-    if (!enabled.value) return i18n.global.t('winterboard.remote.assistant.unavailableHere')
-    if (!integralykOn.value) return i18n.global.t('winterboard.remote.assistant.off')
-    if (serverAiOff.value) return INTEGRALYK_SERVER_DISABLED_MESSAGE
+    if (!enabled.value) return tAssistant('winterboard.remote.assistant.unavailableHere')
+    if (!integralykOn.value) return tAssistant('winterboard.remote.assistant.off')
+    if (serverAiOff.value) return serverDisabledMsg.value
     return true
   },
   parse: parseAi,
@@ -1982,10 +2002,12 @@ const remoteAssistant = createRemoteAssistant({
     if (off) serverAiOff.value = true
     return off
   },
-  serverDisabledText: INTEGRALYK_SERVER_DISABLED_MESSAGE,
+  // Геттер: текст читається в момент відповіді — у вигляді, обраному зараз.
+  get serverDisabledText() { return serverDisabledMsg.value },
   humanError: (e) => humanErrorMessage(e, ERR_MSG, 'Помилка AI'),
   errorCode: (e) => errorCodeOf(e?.response?.data),
-  t: (key, params) => i18n.global.t(key, params ?? {}),
+  // Відповіді пульту складає ноутбук — назва помічника у вигляді, який обрав учитель.
+  t: (key, params) => tAssistant(key, params),
   reply: (reply) => window.dispatchEvent(new CustomEvent(REMOTE_REPLY_EVENT, {
     detail: { boardId: currentBoardId.value, reply },
   })),
@@ -2008,7 +2030,7 @@ function onIntegralykAsk(e) {
   if (!open.value) openPalette()
   if (!showAI.value) {
     mode.value = 'commands'
-    notice.value = 'Інтегралик вимкнено в налаштуваннях профілю — увімкніть, щоб ставити питання словами.'
+    notice.value = `${assistantLook.value === 'integralka' ? 'Інтегралку' : 'Інтегралик'} вимкнено в налаштуваннях профілю — увімкніть, щоб ставити питання словами.`
     return
   }
   askAi(text)
