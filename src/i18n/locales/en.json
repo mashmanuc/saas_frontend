@@ -9448,6 +9448,9 @@
       "close": "Close",
       "invalidUrl": "Invalid YouTube URL",
       "picker": {
+        "voice": "Search by voice",
+        "voiceStop": "Stop and search",
+        "listening": "Listening… speak now",
         "myVideos": "My videos",
         "myVideosEmpty": "Videos you put on a board or add to Materials will appear here.",
         "myVideosOldNote": "Videos from boards before October 11 have not been moved here yet.",

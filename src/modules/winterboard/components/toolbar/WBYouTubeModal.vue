@@ -99,11 +99,25 @@
                     v-model="searchQuery"
                     type="search"
                     class="wb-youtube-modal__input"
-                    :placeholder="t('winterboard.youtube.picker.placeholder')"
+                    :placeholder="voiceListening ? t('winterboard.youtube.picker.listening') : t('winterboard.youtube.picker.placeholder')"
                     :aria-label="t('winterboard.youtube.picker.placeholder')"
                     autocomplete="off"
                     data-testid="yt-search-input"
                   />
+                  <!-- Власник 2026-10-12: «в те відео пошук. Додати мікрофона. Щоб можна було голосом
+                       шукати» — без Інтегралика (розпізнавання в браузері, моделі не кличемо). -->
+                  <button
+                    v-if="voiceSupported"
+                    type="button"
+                    class="wb-youtube-modal__mic"
+                    :class="{ 'is-listening': voiceListening }"
+                    :title="voiceListening ? t('winterboard.youtube.picker.voiceStop') : t('winterboard.youtube.picker.voice')"
+                    :aria-label="voiceListening ? t('winterboard.youtube.picker.voiceStop') : t('winterboard.youtube.picker.voice')"
+                    :aria-pressed="voiceListening"
+                    :disabled="searching"
+                    data-testid="yt-search-mic"
+                    @click="toggleVoiceSearch"
+                  >🎤</button>
                   <button
                     type="submit"
                     class="wb-youtube-modal__btn wb-youtube-modal__btn--primary"
@@ -229,6 +243,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { parseYouTubeVideoId, getYouTubeThumbnail, videoRefToWatchUrl } from '../../utils/youtubeParser'
 import VideoListRow from '../video/VideoListRow.vue'
+import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { winterboardApi, type VideoCandidate } from '../../api/winterboardApi'
 import { fetchVideos } from '../../api/library'
 import type { LibraryAsset } from '../../types/library'
@@ -251,7 +266,23 @@ const emit = defineEmits<{
   submit: [payload: { url: string; title?: string }]
 }>()
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
+
+// Голосовий пошук: той самий спільний рушій, що в Інтегралика й чаті (Web Speech у браузері).
+// Перший дотик — слухає й пише в поле пошуку; другий — зупиняє й одразу шукає сказане.
+const voice = useVoiceDictation({
+  get lang() {
+    return locale.value === 'en' ? 'en-US' : locale.value === 'ru' ? 'ru-RU' : 'uk-UA'
+  },
+})
+const voiceSupported = voice.supported
+const voiceListening = voice.listening
+
+function toggleVoiceSearch(): void {
+  const wasListening = voiceListening.value
+  voice.toggle(searchQuery)
+  if (wasListening && searchQuery.value.trim()) void runSearch()
+}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -305,6 +336,9 @@ watch(() => props.visible, async (v) => {
     await nextTick()
     if (props.library) searchInputRef.value?.focus()
     else urlInputRef.value?.focus()
+  } else if (voiceListening.value) {
+    // Вікно закрили під час диктовки — мікрофон не лишається увімкненим.
+    voice.stop()
   }
 })
 
@@ -351,6 +385,8 @@ function errorCode(e: unknown): string {
 }
 
 async function runSearch(): Promise<void> {
+  // «Знайти» під час диктовки — спершу зупинити мікрофон, щоб він не дописував у поле після пошуку.
+  if (voiceListening.value) voice.stop()
   const query = searchQuery.value.trim()
   if (!query || searching.value) return
   searching.value = true
@@ -488,6 +524,12 @@ function handleSubmit(): void {
 .wb-youtube-modal__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .wb-youtube-modal__list--mine { max-height: 230px; overflow-y: auto; }
 .wb-youtube-modal__search { display: flex; gap: 8px; }
+.wb-youtube-modal__mic {
+  flex: 0 0 auto; width: 40px; border: 1px solid var(--color-border, #ddd); border-radius: 8px;
+  background: var(--color-surface, #fff); cursor: pointer; font-size: 16px;
+}
+.wb-youtube-modal__mic.is-listening { border-color: var(--color-danger, #dc2626); background: #fee2e2; }
+.wb-youtube-modal__mic:disabled { opacity: 0.5; cursor: default; }
 .wb-youtube-modal__search .wb-youtube-modal__input { flex: 1; min-width: 0; }
 .wb-youtube-modal__note { margin: 0; font-size: 0.8125rem; color: #64748b; }
 .wb-youtube-modal__hint { margin: 0; font-size: 0.75rem; color: #94a3b8; }
