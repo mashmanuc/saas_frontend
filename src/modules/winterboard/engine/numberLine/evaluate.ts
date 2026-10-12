@@ -4,6 +4,7 @@
  * для дошки, PDF-знімка й опису для Інтегралика. Окремо нічого не зберігається.
  */
 import { parseNumber } from './parse'
+import { solveIntervals } from './intervals'
 import { compareReal as compare, type Real } from './real'
 import { ALL, contains, EMPTY, intersect, normalize, union, type Interval, type NumberSet, type Point } from './sets'
 import {
@@ -43,11 +44,20 @@ export interface LayoutHatch {
   segments: LayoutSegment[]
 }
 
+/** Метод інтервалів: знак виразу на проміжку між сусідніми точками (0..1, як відрізки). */
+export interface LayoutSign {
+  from: number
+  to: number
+  sign: '+' | '-'
+}
+
 export interface NumberLineLayout {
   points: LayoutPoint[]
   hatches: LayoutHatch[]
   /** Результат (виділено кольором); точки результату — серед `points`. */
   result: LayoutSegment[]
+  /** Лише метод інтервалів. */
+  signs?: LayoutSign[]
 }
 
 export type NumberLineEvaluation =
@@ -126,6 +136,7 @@ export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer
 const MARGIN = 0.18
 
 export function evaluate(data: NumberLineData): NumberLineEvaluation {
+  if (data.mode === 'intervals') return evaluateIntervals(data)
   const errors: NumberLineError[] = []
   if (data.conditions.length > NUMBER_LINE_MAX_CONDITIONS) {
     return { ok: false, errors: [{ line: NUMBER_LINE_MAX_CONDITIONS, index: 0, code: 'too_many_conditions', params: { max: String(NUMBER_LINE_MAX_CONDITIONS) } }] }
@@ -196,9 +207,50 @@ function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]):
   return { points: layoutPoints, hatches, result }
 }
 
+const OP_TEXT: Record<string, string> = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
+
+/** Формула методу інтервалів так, як її бачить учитель: `(x-1)(x+3)/(x-2) ≥ 0`. */
+export function intervalsFormula(data: NumberLineData): string {
+  const op = OP_TEXT[data.op ?? '>']
+  if (data.expression && data.expression.trim()) return `${data.expression} ${op} ${data.rhs ?? '0'}`
+  return `f(${data.variable || 'x'}) ${op} 0`
+}
+
+/** Метод інтервалів: точки рівномірно в порядку значень, знаки над проміжками. */
+function evaluateIntervals(data: NumberLineData): NumberLineEvaluation {
+  const r = solveIntervals(data)
+  if ('errors' in r) return { ok: false, errors: r.errors }
+  const n = r.points.length
+  const xs = r.points.map((_, i) => (n === 1 ? 0.5 : MARGIN + ((1 - 2 * MARGIN) * i) / (n - 1)))
+  const xOf = (v: Real): number => xs[r.points.findIndex((p) => compare(p.point.value, v) === 0)]
+  const seg = (iv: Interval): LayoutSegment => ({ from: iv.lo ? xOf(iv.lo.value) : 0, to: iv.hi ? xOf(iv.hi.value) : 1 })
+  const result = r.set
+    .filter((iv) => !(iv.lo && iv.hi && compare(iv.lo.value, iv.hi.value) === 0))
+    .map(seg)
+  const bounds = [0, ...xs, 1]
+  return {
+    ok: true,
+    set: r.set,
+    answer: formatAnswer(r.set, r.variable),
+    layout: {
+      points: r.points.map((p, i) => ({ label: displayNumber(p.point.label), x: xs[i], filled: p.filled })),
+      hatches: [{ condition: 0, segments: result }],
+      result,
+      signs: r.signs.map((sign, i) => ({ from: bounds[i], to: bounds[i + 1], sign })),
+    },
+  }
+}
+
 /** Опис для Інтегралика («що на прямій»): умови й відповідь з того самого обчислення. */
 export function describeNumberLine(data: NumberLineData, conditionTexts: string[]): string {
   const ev = evaluate(data)
+  if (data.mode === 'intervals') {
+    const what = intervalsFormula(data)
+    if (!('answer' in ev)) return `числова пряма — метод інтервалів: ${what} (є помилка у вводі)`
+    const ans = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
+    const sg = ev.layout.signs?.map((s) => s.sign).join(' ') ?? ''
+    return `числова пряма — метод інтервалів: ${what}; знаки на проміжках: ${sg}; відповідь: ${ans}`
+  }
   const joiner = data.combine === 'or' ? ' або ' : ' і '
   const conds = conditionTexts.join(joiner) || 'умов немає'
   if (!('answer' in ev)) return `числова пряма: ${conds} (є помилка у вводі)`
