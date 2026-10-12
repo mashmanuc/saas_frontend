@@ -7,6 +7,7 @@ import { parseNumber } from './parse'
 import { compare, type Rational } from './rational'
 import { ALL, contains, EMPTY, intersect, normalize, union, type Interval, type NumberSet, type Point } from './sets'
 import {
+  isConstCondition,
   isRangeCondition,
   NUMBER_LINE_MAX_CONDITIONS,
   type NumberLineCondition,
@@ -66,6 +67,7 @@ interface ResolvedCondition {
 
 function resolve(c: NumberLineCondition, canon: (raw: string, line: number) => Point | NumberLineError, line: number):
   ResolvedCondition | NumberLineError {
+  if (isConstCondition(c)) return { set: c.holds ? ALL : EMPTY, bounds: [] }
   if (isRangeCondition(c)) {
     const a = canon(c.from, line)
     if (!('value' in a)) return a

@@ -12,7 +12,7 @@ import type {
   NumberLineError,
   NumberLineOp,
 } from './types'
-import { isRangeCondition } from './types'
+import { isConstCondition, isRangeCondition } from './types'
 import { parseLinear } from './linear'
 
 type ErrorWithoutLine = Omit<NumberLineError, 'line'>
@@ -120,7 +120,7 @@ function checkNumber(tok: Token): ParsedNumber {
 
 /** Помилки лінійного розбору, які точніші за помилку простого запису. */
 const LINEAR_FIRST: ReadonlySet<NumberLineError['code']> = new Set([
-  'not_linear', 'unbalanced_paren', 'always_true', 'never_true', 'division_by_zero', 'roots_not_supported',
+  'not_linear', 'unbalanced_paren', 'division_by_zero', 'roots_not_supported',
 ])
 
 /** Один рядок учителя → умова контракту. Простий запис — як є; інакше — лінійна нерівність. */
@@ -229,6 +229,7 @@ export function parseLines(lines: string[]):
 
 /** Умова контракту → текст рядка для поля вводу (зворотне до `parseLine`). */
 export function conditionToText(c: NumberLineCondition, variable: string): string {
+  if (isConstCondition(c)) return c.source
   if (c.source) return c.source
   if (isRangeCondition(c)) {
     return `${c.from} ${c.fromIncluded ? '≤' : '<'} ${variable} ${c.toIncluded ? '≤' : '<'} ${c.to}`

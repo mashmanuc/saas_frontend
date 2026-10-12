@@ -10,6 +10,7 @@
  */
 import {
   add,
+  compare,
   div,
   isZero,
   mul,
@@ -228,16 +229,16 @@ function side(toks: Tok[], from: number, to: number, endIndex: number): { lin: L
   return { lin: s.parse(), variable: s.variable }
 }
 
-function holds(op: NumberLineOp, c: Rational): boolean {
-  // 0 ⋚ c
-  const sign = c.n === 0n ? 0 : c.n > 0n ? 1 : -1
+/** Числова нерівність `l ⋚ r` — правильна чи ні. */
+function holds(l: Rational, op: NumberLineOp, r: Rational): boolean {
+  const c = compare(l, r)
   switch (op) {
-    case '<': return 0 < sign
-    case '<=': return 0 <= sign
-    case '>': return 0 > sign
-    case '>=': return 0 >= sign
-    case '!=': return sign !== 0
-    case '=': return sign === 0
+    case '<': return c < 0
+    case '<=': return c <= 0
+    case '>': return c > 0
+    case '>=': return c >= 0
+    case '!=': return c !== 0
+    case '=': return c === 0
   }
 }
 
@@ -291,9 +292,13 @@ export function parseLinear(line: string): LinearResult {
       // (aL − aR)·x ⋚ bR − bL
       const a = sub(left.lin.a, right.lin.a)
       const c = sub(right.lin.b, left.lin.b)
+      // Коефіцієнт 0: 0·x = 0 при будь-якому x → лишається числова нерівність 0 ⋚ c.
       if (isZero(a)) {
-        const text = `0 ${DISPLAY[op]} ${toLabel(c)}`
-        fail(0, holds(op, c) ? 'always_true' : 'never_true', { text, variable })
+        return {
+          ok: true,
+          variable,
+          condition: { holds: holds(ZERO, op, c), reduced: `0 ${DISPLAY[op]} ${label(c)}`, source },
+        }
       }
       const r = isolate(a, op, c)
       return { ok: true, variable, condition: { op: r.op, value: label(r.value), source } }
@@ -314,7 +319,19 @@ export function parseLinear(line: string): LinearResult {
     const R = side(toks, k2 + 1, toks.length, nextStart(k2 + 1))
     if (L.variable || R.variable) fail(toks[k1].start, 'variable_twice')
     if (!M.variable) fail(toks[k1].start, 'no_variable')
-    if (isZero(M.lin.a)) fail(toks[k1].start, 'no_variable')
+    // Коефіцієнт 0 посередині: L ⋚ b ⋚ R — числова подвійна нерівність.
+    if (isZero(M.lin.a)) {
+      const b = M.lin.b
+      return {
+        ok: true,
+        variable: M.variable,
+        condition: {
+          holds: holds(L.lin.b, op1, b) && holds(b, op2, R.lin.b),
+          reduced: `${label(L.lin.b)} ${DISPLAY[op1]} ${label(b)} ${DISPLAY[op2]} ${label(R.lin.b)}`,
+          source,
+        },
+      }
+    }
     // L ⋚ a·x + b ⋚ R → (L − b)/a ⋚ x ⋚ (R − b)/a; для a < 0 межі міняються місцями.
     let lo = div(sub(L.lin.b, M.lin.b), M.lin.a)
     let hi = div(sub(R.lin.b, M.lin.b), M.lin.a)

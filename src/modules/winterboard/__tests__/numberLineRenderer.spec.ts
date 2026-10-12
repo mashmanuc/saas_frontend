@@ -244,6 +244,19 @@ describe('лінійні нерівності', () => {
     expect((w.find('[data-testid="number-line-input-0"]').element as HTMLInputElement).value).toBe('2x + 3 > 7')
   })
 
+  it('коефіцієнт 0 — відповідь на прямій і міркування словами', async () => {
+    const w = await mountIt(asset())
+    await w.find('[data-testid="number-line-input-0"]').setValue('0x > -1')
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    const u = updates(w)
+    expect(u).toHaveLength(1)
+    await w.setProps({ asset: u[0][0] })
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (−∞; +∞) — числова пряма')
+    expect(w.find('[data-testid="number-line-zero-note"]').text()).toBe(
+      'Коефіцієнт при x дорівнює 0: 0·x = 0 при будь-якому x, а 0 > −1 — правильно, тож x — будь-яке число')
+    expect(w.findAll('[data-testid="number-line-result"]')).toHaveLength(1)
+  })
+
   it('нелінійне — пояснення словами, нічого не пишеться', async () => {
     const w = await mountIt(asset())
     await w.find('[data-testid="number-line-input-0"]').setValue('x·x > 4')

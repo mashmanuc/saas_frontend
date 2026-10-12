@@ -57,7 +57,7 @@
         <rect x="0" y="0" :width="VB_W" :height="VB_H" :fill="C.bg" />
 
         <!-- HUD: вид · формула · відповідь (як у тригонометричних нерівностей) -->
-        <rect x="14" y="10" :width="VB_W - 28" height="112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
+        <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
         <text x="30" y="34" font-size="12" font-weight="700" letter-spacing="1" :fill="C.kind" data-testid="number-line-kind">{{ kindLabel }}</text>
         <text
           x="30" y="72"
@@ -77,6 +77,15 @@
           :fill="C.ink"
           data-testid="number-line-answer"
         >{{ answerLine }}</text>
+        <!-- Коефіцієнт 0: міркування словами (0·x = 0 при будь-якому x → лишається числова нерівність) -->
+        <text
+          v-if="zeroNote"
+          x="30" y="134"
+          :font-size="fitFont(zeroNote, 13)"
+          font-style="italic"
+          :fill="C.muted"
+          data-testid="number-line-zero-note"
+        >{{ zeroNote }}</text>
         <text v-else-if="!layout" x="30" y="110" font-size="14" :fill="C.error">{{ t('winterboard.numberLine.storedInvalid') }}</text>
         <text v-else-if="!asset.data.conditions.length" x="30" y="110" font-size="14" :fill="C.muted">{{ t('winterboard.numberLine.emptyHint') }}</text>
 
@@ -157,6 +166,7 @@ import { snapshotElement } from '../../../utils/snapshotElement'
 import {
   conditionToText,
   evaluate,
+  isConstCondition,
   parseLines,
   type LayoutSegment,
   type NumberLineData,
@@ -237,6 +247,20 @@ const answerLine = computed(() => {
   if (ev.answer.kind === 'empty') return t('winterboard.numberLine.answerEmpty')
   const name = ev.answer.name ? ` — ${t(`winterboard.numberLine.names.${ev.answer.name}`)}` : ''
   return `${ev.answer.text}${name}`
+})
+
+/** Умови з коефіцієнтом 0 при змінній — пояснення, чому відповідь «усі числа» чи «∅». */
+const zeroNote = computed(() => {
+  const d = props.asset.data
+  const v = d.variable || 'x'
+  return d.conditions
+    .filter(isConstCondition)
+    .map((c) => t('winterboard.numberLine.zeroCoef', {
+      variable: v,
+      reduced: c.reduced.replace(/-/g, '−'),
+      verdict: t(c.holds ? 'winterboard.numberLine.zeroTrue' : 'winterboard.numberLine.zeroFalse', { variable: v }),
+    }))
+    .join('; ')
 })
 
 /** Довгий рядок зменшується, щоб влізти в HUD (моноширинний ≈ 0,6 em на символ). */
@@ -351,8 +375,6 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   too_many_conditions: 'tooMany',
   not_linear: 'notLinear',
   unbalanced_paren: 'unbalancedParen',
-  always_true: 'alwaysTrue',
-  never_true: 'neverTrue',
 }
 
 function errorFor(i: number): string {

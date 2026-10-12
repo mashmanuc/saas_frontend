@@ -74,11 +74,6 @@ describe('відмови словами', () => {
     expect(err('x·x > 1').params).toMatchObject({ variable: 'x' })
   })
 
-  it('змінна скоротилась', () => {
-    expect(err('2x > 2x - 1')).toMatchObject({ code: 'always_true', params: { text: '0 > -1' } })
-    expect(err('2x > 2x + 1')).toMatchObject({ code: 'never_true', params: { text: '0 > 1' } })
-  })
-
   it('дужки, ділення на нуль, корені', () => {
     expect(err('2(x + 1 > 3').code).toBe('unbalanced_paren')
     expect(err('x/0 > 1').code).toBe('division_by_zero')
@@ -87,6 +82,61 @@ describe('відмови словами', () => {
 
   it('зламаний простий запис лишає свою помилку', () => {
     expect(err('x <').code).toBe('expect_number_after')
+  })
+})
+
+describe('коефіцієнт при x дорівнює 0: 0·x = 0 при будь-якому x', () => {
+  const data = (lines: string[], combine: 'and' | 'or' = 'and') => {
+    const p = parseLines(lines)
+    if ('errors' in p) throw new Error(JSON.stringify(p.errors))
+    return { version: 1 as const, mode: 'set' as const, variable: p.variable, conditions: p.conditions, combine, showAnswer: true, showHatching: true }
+  }
+  const answer = (lines: string[], combine: 'and' | 'or' = 'and') => {
+    const ev = evaluate(data(lines, combine))
+    if (!('answer' in ev)) throw new Error('eval')
+    return ev.answer
+  }
+
+  it.each([
+    ['0x > -1', true, '0 > -1'],
+    ['0x ≥ 0', true, '0 ≥ 0'],
+    ['0x > 0', false, '0 > 0'],
+    ['0x < 0', false, '0 < 0'],
+    ['0x ≤ 0', true, '0 ≤ 0'],
+    ['0x = 0', true, '0 = 0'],
+    ['0x = 5', false, '0 = 5'],
+    ['0x ≠ 0', false, '0 ≠ 0'],
+    ['0x ≠ 5', true, '0 ≠ 5'],
+    ['2x > 2x - 1', true, '0 > -1'],
+    ['2x > 2x + 1', false, '0 > 1'],
+    ['3(x + 1) ≤ 3x + 3', true, '0 ≤ 0'],
+    ['3(x + 1) < 3x + 3', false, '0 < 0'],
+  ])('%s → %s (%s)', (line, holds, reduced) => {
+    expect(cond(line)).toEqual({ holds, reduced, source: line })
+  })
+
+  it('правильна — усі числа, неправильна — ∅', () => {
+    expect(answer(['0x ≥ 0'])).toMatchObject({ kind: 'all', text: 'x ∈ (−∞; +∞)' })
+    expect(answer(['0x > 0'])).toMatchObject({ kind: 'empty' })
+  })
+
+  it('система: «ніколи» робить усю систему ∅, «завжди» не заважає іншим', () => {
+    expect(answer(['0x > 0', 'x > 2'])).toMatchObject({ kind: 'empty' })
+    expect(answer(['0x > -1', 'x > 2']).text).toBe('x ∈ (2; +∞)')
+  })
+
+  it('сукупність: «завжди» дає всі числа, «ніколи» не заважає іншим', () => {
+    expect(answer(['0x ≥ 0', 'x > 2'], 'or')).toMatchObject({ kind: 'all' })
+    expect(answer(['0x > 0', 'x > 2'], 'or').text).toBe('x ∈ (2; +∞)')
+  })
+
+  it('подвійна з нулем посередині — числова подвійна нерівність', () => {
+    expect(cond('-1 < 0x + 2 < 3')).toEqual({ holds: true, reduced: '-1 < 2 < 3', source: '-1 < 0x + 2 < 3' })
+    expect(cond('3 < 0x + 2 ≤ 5')).toMatchObject({ holds: false })
+  })
+
+  it('у полі вводу — запис учителя', () => {
+    expect(conditionToText(cond('0x > -1'), 'x')).toBe('0x > -1')
   })
 })
 

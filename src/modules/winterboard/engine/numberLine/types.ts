@@ -24,7 +24,17 @@ export interface NumberLineRangeCondition {
   source?: string
 }
 
-export type NumberLineCondition = NumberLineSimpleCondition | NumberLineRangeCondition
+/**
+ * Коефіцієнт при змінній дорівнює 0 (`0x > −1`, `2x > 2x − 1`): 0·x = 0 при будь-якому x,
+ * тож умова — числова нерівність `reduced` (`0 > -1`). Правильна → усі числа, ні → ∅.
+ */
+export interface NumberLineConstCondition {
+  holds: boolean
+  reduced: string
+  source: string
+}
+
+export type NumberLineCondition = NumberLineSimpleCondition | NumberLineRangeCondition | NumberLineConstCondition
 
 export interface NumberLineData {
   version: 1
@@ -40,6 +50,10 @@ export interface NumberLineData {
 
 export function isRangeCondition(c: NumberLineCondition): c is NumberLineRangeCondition {
   return 'from' in c
+}
+
+export function isConstCondition(c: NumberLineCondition): c is NumberLineConstCondition {
+  return 'holds' in c
 }
 
 /** Помилка вводу: код для i18n + параметри + позиція в рядку (для підказки біля нього). */
@@ -65,8 +79,6 @@ export interface NumberLineError {
     | 'too_many_conditions'
     | 'not_linear'
     | 'unbalanced_paren'
-    | 'always_true'
-    | 'never_true'
   params?: Record<string, string>
 }
 

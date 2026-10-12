@@ -10457,6 +10457,9 @@
     },
     "numberLine": {
       "title": "Числова пряма",
+      "zeroCoef": "Коефіцієнт при {variable} дорівнює 0: 0·{variable} = 0 при будь-якому {variable}, а {reduced} — {verdict}",
+      "zeroTrue": "правильно, тож {variable} — будь-яке число",
+      "zeroFalse": "неправильно, тож розвʼязків немає",
       "subtitle": "Нерівності, системи й сукупності на числовій прямій",
       "conditionsLabel": "Умови",
       "combineLabel": "Поєднання",
@@ -10487,8 +10490,6 @@
       "errors": {
         "notLinear": "Це не лінійна нерівність: {variable} множиться чи ділиться на {variable}. Такі — в методі інтервалів (наступний етап)",
         "unbalancedParen": "Дужки не до пари",
-        "alwaysTrue": "{variable} скоротився: {text} — правильно для будь-якого {variable}",
-        "neverTrue": "{variable} скоротився: {text} — розвʼязків немає",
         "empty": "Порожній рядок",
         "unexpectedChar": "Не розумію символ «{char}»",
         "badNumber": "Не зрозумів число «{text}»",
