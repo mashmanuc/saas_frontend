@@ -231,7 +231,7 @@ const layout = computed(() => ('layout' in evaluation.value ? evaluation.value.l
 /** «x > 1 і x ≤ 4» — те саме, що бачить Інтегралик. */
 const formula = computed(() => {
   const d = props.asset.data
-  const joiner = d.combine === 'or' ? ' або ' : ' і '
+  const joiner = ` ${t(d.combine === 'or' ? 'winterboard.numberLine.joinOr' : 'winterboard.numberLine.joinAnd')} `
   return d.conditions.map((c) => conditionToText(c, d.variable || 'x')).join(joiner)
 })
 

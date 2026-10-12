@@ -10457,6 +10457,8 @@
     },
     "numberLine": {
       "title": "Числова пряма",
+      "joinAnd": "і",
+      "joinOr": "або",
       "zeroCoef": "Коефіцієнт при {variable} дорівнює 0: 0·{variable} = 0 при будь-якому {variable}, а {reduced} — {verdict}",
       "zeroTrue": "правильно, тож {variable} — будь-яке число",
       "zeroFalse": "неправильно, тож розвʼязків немає",

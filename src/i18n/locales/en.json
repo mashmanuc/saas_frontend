@@ -10369,6 +10369,8 @@
     },
     "numberLine": {
       "title": "Number line",
+      "joinAnd": "and",
+      "joinOr": "or",
       "zeroCoef": "The coefficient of {variable} is 0: 0·{variable} = 0 for any {variable}, and {reduced} is {verdict}",
       "zeroTrue": "true, so {variable} can be any number",
       "zeroFalse": "false, so there are no solutions",
