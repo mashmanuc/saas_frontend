@@ -8774,6 +8774,31 @@
       "groups": {
         "thisWeek": "This week",
         "documents": "Documents & collections"
+      },
+      "videos": {
+        "tab": "Videos",
+        "count": "Videos: {count}",
+        "mine": "My videos",
+        "archive": "Video archive",
+        "addByLink": "Add by link",
+        "linkPlaceholder": "https://youtube.com/watch?v=...",
+        "added": "Video added",
+        "alreadyHere": "This video is already in \"My videos\"",
+        "inArchive": "This video is archived — bring it back with \"Back to my videos\"",
+        "insertHint": "To put it on a board: on the board, YouTube button → \"My videos\". Videos you put on a board land here automatically.",
+        "archiveHint": "The video archive has no time limit: videos stay out of \"My videos\" and can be brought back any time.",
+        "empty": "No videos yet. Add one by link or put a video on a board.",
+        "archiveEmpty": "No archived videos.",
+        "loadError": "Could not load videos",
+        "actionError": "Could not complete the video action",
+        "archiveAction": "Archive",
+        "archived": "Video archived",
+        "unarchiveAction": "Back to my videos",
+        "unarchived": "Video is back in \"My videos\"",
+        "deleteAction": "Delete",
+        "deleteConfirmTitle": "Delete video?",
+        "deleteConfirmText": "\"{name}\" goes to the Materials bin for 90 days, like files. It stays on boards and in recordings.",
+        "deleted": "Video moved to the bin (Archive tab, 90 days)"
       }
     },
     "materials": {
@@ -9336,7 +9361,29 @@
       "cancel": "Cancel",
       "add": "Add to board",
       "close": "Close",
-      "invalidUrl": "Invalid YouTube URL"
+      "invalidUrl": "Invalid YouTube URL",
+      "picker": {
+        "myVideos": "My videos",
+        "myVideosEmpty": "Videos you put on a board or add to Materials will appear here.",
+        "myVideosOldNote": "Videos from boards before October 11 have not been moved here yet.",
+        "myVideosError": "Could not load \"My videos\".",
+        "searchTitle": "Search YouTube",
+        "placeholder": "Find a video about…",
+        "search": "Search",
+        "searchOff": "Search is off — paste a video link.",
+        "empty": "Nothing found. Try other words or paste a link.",
+        "failed": "Video search failed. Please try again.",
+        "quota": "Video search is used up for today. Paste a link below.",
+        "userLimit": "Too many searches in a row. Try again in a minute or paste a link.",
+        "linkTitle": "Or paste a YouTube video link",
+        "paste": "Paste from clipboard",
+        "pasteDenied": "Could not read the clipboard. Click the field and press Ctrl+V.",
+        "confirm": "Add to the current board page: \"{title}\"?",
+        "add": "Add",
+        "back": "Cancel",
+        "langUnknown": "language not specified",
+        "untitled": "Untitled video"
+      }
     },
     "lessonMap": {
       "title": "Lesson Map",

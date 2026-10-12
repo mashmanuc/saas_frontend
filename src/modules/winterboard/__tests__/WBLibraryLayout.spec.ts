@@ -84,7 +84,8 @@ describe('WBLibrary — один режим перегляду за раз', () 
   it('як у «Записах»: папки — колонка ліворуч, вкладки зверху — лише фільтри', async () => {
     const w = await mountLibrary()
     const tabs = w.findAll('.wb-library__tab').map((b) => b.text())
-    expect(tabs).toEqual(['Усі', 'Вибране', 'Нещодавні', 'Скопійовані', 'Архів'])
+    // «Відео» — окрема вкладка (ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY_2026-10-11 §1 п.4); «Архів» лишається останньою
+    expect(tabs).toEqual(['Усі', 'Вибране', 'Нещодавні', 'Скопійовані', 'Відео', 'Архів'])
     const tree = w.find('.wb-library__sidebar .wb-folder-tree')
     expect(tree.exists()).toBe(true)
     expect(tree.text()).toContain('N_22')

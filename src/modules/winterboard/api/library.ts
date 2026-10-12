@@ -147,6 +147,46 @@ export async function addYouTubeAsset(youtubeUrl: string, folderId?: number | nu
   })
 }
 
+// ─── Відео в «Матеріалах» (ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY_2026-10-11) ─────
+
+/** Тип матеріалу-відео; один запис на пару (учитель, відео) — стежить сервер. */
+export const VIDEO_CONTENT_TYPE = 'youtube_link'
+
+/**
+ * Відео щойно стало на дошку → у «Матеріали» цього вчителя, без дублів.
+ * `added_from: 'board'` — сервер лише створює запис, якого ще немає; архівоване чи
+ * видалене сам не повертає (рішення власника 2026-10-11, §6).
+ * ⚠️ НЕ `origin`: це поле знімків «Дзеркала» (Б-177), сервер відхиляє інші його значення.
+ */
+export async function rememberBoardVideo(youtubeUrl: string, title?: string): Promise<LibraryAsset> {
+  const name = (title ?? '').trim()
+  return apiClient.post<LibraryAsset>(`${BASE}/assets/`, {
+    youtube_url: youtubeUrl,
+    added_from: 'board',
+    ...(name ? { title: name.slice(0, 200) } : {}),
+  })
+}
+
+/** «Мої відео» (archived=false) або архів відео (archived=true); кошик не входить. */
+export async function fetchVideos(opts: { archived?: boolean; limit?: number; offset?: number } = {}): Promise<LibraryAssetListResponse> {
+  return fetchAssets({
+    content_type: VIDEO_CONTENT_TYPE,
+    limit: opts.limit ?? 100,
+    offset: opts.offset ?? 0,
+    ...(opts.archived ? { archived: 'only' as const } : {}),
+  })
+}
+
+/** Архівувати відео: зникає з «Моїх відео», без строку; картки на дошках лишаються. */
+export async function archiveVideo(id: number): Promise<LibraryAsset> {
+  return apiClient.post<LibraryAsset>(`${BASE}/assets/${id}/archive/`, {})
+}
+
+/** «Повернути до моїх відео» — єдиний шлях з архіву назад у список. */
+export async function unarchiveVideo(id: number): Promise<LibraryAsset> {
+  return apiClient.post<LibraryAsset>(`${BASE}/assets/${id}/unarchive/`, {})
+}
+
 export async function fetchRecentAssets(): Promise<LibraryAsset[]> {
   return apiClient.get<LibraryAsset[]>(`${BASE}/recent/`)
 }

@@ -51,8 +51,8 @@
         </div>
       </header>
 
-      <!-- Toolbar -->
-      <div class="wb-library__toolbar">
+      <!-- Toolbar. На вкладці «Відео» — своя панель (додати посиланням, архів). -->
+      <div v-if="selectedFolderId !== VIDEOS_ID" class="wb-library__toolbar">
         <input
           v-model="searchQuery"
           type="search"
@@ -245,8 +245,14 @@
         </div>
       </div>
 
+      <!-- Вкладка «Відео» (ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY_2026-10-11 §1 п.4) -->
+      <LibraryVideosPanel
+        v-if="selectedFolderId === VIDEOS_ID"
+        @count="videosCount = $event"
+      />
+
       <!-- Loading -->
-      <div v-if="loading" class="wb-library__grid" aria-busy="true">
+      <div v-else-if="loading" class="wb-library__grid" aria-busy="true">
         <div
           v-for="i in 12"
           :key="i"
@@ -527,6 +533,7 @@ import LibraryAssetMenu from '../components/library/LibraryAssetMenu.vue'
 import { groupAssets } from '../utils/libraryGroups'
 import apiClient from '@/utils/apiClient'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
+import LibraryVideosPanel from '../components/library/LibraryVideosPanel.vue'
 import MaterialExtractPanel from '../components/library/MaterialExtractPanel.vue'
 import materialsApi from '../api/materials'
 import MaterialLessonDialog, { type LessonResult }
@@ -561,6 +568,8 @@ import { useAssetMove } from '../composables/useAssetMove'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LIMIT = 24
+/** Вкладка «Відео» — віртуальний розділ, як FAVORITES/RECENT/PASTED/ARCHIVED (дерево папок її не знає). */
+const VIDEOS_ID = -5
 
 // ─── Composables ──────────────────────────────────────────────────────────────
 
@@ -651,6 +660,7 @@ const filterTabs = computed(() => [
   { id: FAVORITES_ID, label: t('winterboard.library.favorites') },
   { id: RECENT_ID, label: t('winterboard.library.recent') },
   { id: PASTED_ID, label: t('winterboard.library.storage.pasted') },
+  { id: VIDEOS_ID, label: t('winterboard.library.videos.tab') },
   { id: ARCHIVED_ID, label: t('winterboard.library.archive.title') },
 ] as Array<{ id: number | null; label: string }>)
 const activeTabId = computed<number | null>(() =>
@@ -663,7 +673,10 @@ function onSelectTab(id: number | null): void {
 function countFolders(nodes: FolderTree[]): number {
   return nodes.reduce((n, f) => n + 1 + countFolders(f.children), 0)
 }
-const summaryLine = computed(() => [
+const videosCount = ref(0)
+const summaryLine = computed(() => selectedFolderId.value === VIDEOS_ID
+  ? t('winterboard.library.videos.count', { count: videosCount.value })
+  : [
   t('winterboard.library.filesCount', { count: total.value }),
   t('winterboard.library.foldersCount', { count: countFolders(foldersTree.value) }),
 ].join(' · '))
@@ -765,7 +778,7 @@ const listRenameInputRef = ref<HTMLInputElement | null>(null)
 
 // activeFolderId: only real folder IDs (not virtual FAVORITES/RECENT)
 const activeFolderId = computed<number | null>(() => {
-  if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID || selectedFolderId.value === PASTED_ID || selectedFolderId.value === ARCHIVED_ID) return null
+  if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID || selectedFolderId.value === PASTED_ID || selectedFolderId.value === ARCHIVED_ID || selectedFolderId.value === VIDEOS_ID) return null
   return selectedFolderId.value
 })
 
@@ -868,6 +881,12 @@ async function loadFolders(): Promise<void> {
 }
 
 async function loadAssets(): Promise<void> {
+  if (selectedFolderId.value === VIDEOS_ID) {
+    // «Відео» вантажить і веде сама панель (LibraryVideosPanel)
+    assets.value = []
+    total.value = 0
+    return
+  }
   loading.value = true
   try {
     if (selectedFolderId.value === ARCHIVED_ID) {

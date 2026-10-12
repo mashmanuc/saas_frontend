@@ -956,6 +956,7 @@
     <!-- P3: YouTube insert modal -->
     <WBYouTubeModal
       :visible="showYouTubeModal"
+      :library="videoLibraryEnabled"
       @close="showYouTubeModal = false"
       @submit="handleYouTubeSubmit"
     />
@@ -1277,7 +1278,8 @@ import { isImageBackground, isSafeBackgroundUrl, withImageBackground, withoutIma
 import { imageReadingTarget } from '../board/imageReadingTarget'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import { buildPlacedImageAsset, loadImageDimensions, placementFrame, type ResolvedImage } from '../board/placeImage'
-import { fetchAsset as fetchLibraryAsset } from '../api/library'
+import { fetchAsset as fetchLibraryAsset, rememberBoardVideo } from '../api/library'
+import { createBoardVideoRemember } from '../board/boardVideoLibrary'
 import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
 import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
 import { DEFAULT_BOARD_SIZES } from '../types/boardDrop'
@@ -2947,6 +2949,7 @@ const boardClipboard = useBoardClipboard({
   onAssetAdd: (asset: WBAsset) => {
     store.addAsset(asset, store.currentPageId)
     recordBoardImage(asset)
+    rememberBoardVideoAsset(asset)   // Ctrl+V посилання YouTube → «Мої відео»
   },
 })
 
@@ -3030,9 +3033,22 @@ function recordBoardImage(asset: WBAsset): void {
   recordImage({ sessionId: store.workspaceId ?? '', assetId: asset.id })
 }
 
+/**
+ * ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY_2026-10-11 §1 п.3: відео, яке вчитель
+ * САМ поставив на дошку (вікно YouTube, Ctrl+V, пульт), — у його «Матеріали».
+ * Той самий точковий підхід, що `recordBoardImage`; деталі — `board/boardVideoLibrary.ts`.
+ * Лише власник хмарної дошки: «Мої відео» — бібліотека того, хто веде урок.
+ */
+const videoLibraryEnabled = computed(() => isSessionOwner.value && !!sessionId.value && !isLocalWorkspace)
+const rememberBoardVideoAsset = createBoardVideoRemember({
+  enabled: () => videoLibraryEnabled.value,
+  remember: (url, title) => rememberBoardVideo(url, title),
+})
+
 function handleAssetAdd(asset: WBAsset): void {
   store.addAsset(asset, store.currentPageId)
   recordBoardImage(asset)
+  rememberBoardVideoAsset(asset)   // відео з пульта (addRemoteVideo) → «Мої відео»
 
   // A4.3: Record in history for undo/redo (non-critical)
   const page = store.currentPage
@@ -3328,6 +3344,7 @@ function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
     zIndex: page.assets.length,
   }
   store.addAsset(asset as any, page.id ?? '')
+  rememberBoardVideoAsset(asset)   // вікно YouTube → «Мої відео»
 }
 
 // ─── Handlers: Tool / Color / Size ──────────────────────────────────────────

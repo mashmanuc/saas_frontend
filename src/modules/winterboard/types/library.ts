@@ -48,7 +48,8 @@ export interface LibraryAsset {
   thumbnail_url: string
   content_type: string // 'image/png', 'application/pdf', etc.
   size_bytes: number
-  status: 'pending' | 'active' | 'deleted'
+  /** 'archived' — архів відео (сховано зі списку, без строку; ≠ кошик). */
+  status: 'pending' | 'active' | 'deleted' | 'archived'
   folder: number | null  // FK int, НЕ folder_id
   is_favorite: boolean
   last_used_at: string | null
@@ -136,6 +137,8 @@ export interface LibraryAssetsQuery {
    * - 'all' → upload + paste (legacy behavior)
    */
   source?: 'upload' | 'paste' | 'all'
+  /** 'only' — лише архів відео (без нього архівовані відео в переліки не потрапляють). */
+  archived?: 'only'
   limit?: number         // default 50, max 100
   offset?: number
 }
