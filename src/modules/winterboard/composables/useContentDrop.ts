@@ -26,6 +26,7 @@ import {
   buildBlankMapAsset,
   buildBlankTimelineAsset,
 } from '../constants/evidenceCardDefaults'
+import { NUMBER_LINE_DRAG_MIME, buildNumberLineAsset } from '../constants/numberLineDefaults'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
@@ -329,6 +330,12 @@ export function useContentDrop(options: UseContentDropOptions) {
     const geomashRaw = event.dataTransfer?.getData(GEOMASH_DRAG_MIME)
     if (geomashRaw) {
       addAtPosition(GEOMASH_DRAG_MIME, geomashRaw, screenToCanvas(event.clientX, event.clientY))
+      return
+    }
+    // Б-184: числова пряма — той самий builder, що й клік (addAtPosition).
+    const numberLineRaw = event.dataTransfer?.getData(NUMBER_LINE_DRAG_MIME)
+    if (numberLineRaw) {
+      addAtPosition(NUMBER_LINE_DRAG_MIME, numberLineRaw, screenToCanvas(event.clientX, event.clientY))
       return
     }
 
@@ -1081,6 +1088,12 @@ export function useContentDrop(options: UseContentDropOptions) {
       asset.x = pos.x - asset.w / 2
       asset.y = pos.y - asset.h / 2
       onAssetAdd(asset)
+      return
+    }
+
+    // Б-184: числова пряма — порожня картка (умови пише вчитель). 1 вставка = 1 asset_add.
+    if (mime === NUMBER_LINE_DRAG_MIME) {
+      onAssetAdd(buildNumberLineAsset(pos) as unknown as WBAsset)
       return
     }
 

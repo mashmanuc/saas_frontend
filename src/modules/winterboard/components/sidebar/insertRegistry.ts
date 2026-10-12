@@ -31,6 +31,7 @@ import { HELIX_DRAG_MIME } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
 import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
+import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -40,6 +41,7 @@ export type MashFamily =
   | 'planimetry'  // Планіметрія (geometry_2d_v2) — рантайм
   | 'analysis'    // Аналіз функцій (graph_calculator + calculus_card)
   | 'quadratic'   // Квадратне рівняння
+  | 'inequalities' // Нерівності: числова пряма (Б-184)
   | 'trig'        // Тригонометрія (trig_circle + helix + trig_solver)
   | 'evidence'    // Універсальні доказові об'єкти: шкала й карта
   | '2d' | '3d' | 'geomash' | 'other'
@@ -157,6 +159,24 @@ const QUADRATIC_INSERTS: InsertEntry[] = [
   },
 ]
 
+// ── inequalities (number_line, Б-184) ─────────────────────────────────────────
+const INEQUALITY_INSERTS: InsertEntry[] = [
+  {
+    id: 'inequalities.number_line',
+    family: 'inequalities',
+    category: 'inequalities',
+    dragMime: NUMBER_LINE_DRAG_MIME,
+    payload: '{}',
+    labelKey: 'winterboard.numberLine.title',
+    labelFallback: 'Числова пряма',
+    iconKey: 'numberLine',
+    sublabelKey: 'winterboard.numberLine.sublabel',
+    sublabel: 'нерівності · системи · сукупності',
+    keywords: kw('числова пряма', 'числовий промінь', 'нерівність', 'нерівності', 'система', 'сукупність',
+      'проміжок', 'інтервал', 'number line', 'inequality'),
+  },
+]
+
 // ── trig (trig_circle + helix + trig_solver) ──────────────────────────────────
 const TRIG_INSERTS: InsertEntry[] = [
   {
@@ -255,6 +275,7 @@ export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...STEREO_INSERTS,
   ...ANALYSIS_INSERTS,
   ...QUADRATIC_INSERTS,
+  ...INEQUALITY_INSERTS,
   ...TRIG_INSERTS,
   ...GRAPHMASH3D_INSERTS,
   ...GEOMASH_INSERTS,
@@ -332,7 +353,7 @@ export type MashApp = '2d' | '3d' | 'geometry' | 'stereo' | 'content'
 
 /** family → 4-картка (analysis+quadratic+trig→2d; planimetry+geomash→geometry). */
 const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
-  analysis: '2d', quadratic: '2d', trig: '2d',
+  analysis: '2d', quadratic: '2d', trig: '2d', inequalities: '2d',
   '3d': '3d',
   planimetry: 'geometry', geomash: 'geometry',
   stereo: 'stereo',

@@ -49,6 +49,7 @@
         <HelixInspector       v-else-if="helixUiState.bridge" />
         <GraphCalcInspector   v-else-if="graphCalcInspectorState.bridge" />
         <TrigSolverInspector  v-else-if="trigSolverUiState.bridge" />
+        <NumberLineInspector  v-else-if="numberLineUiState.bridge" />
         <CalculusInspector    v-else-if="calculusUiState.bridge" />
         <QuadraticInspector   v-else-if="quadUiState.bridge" />
         <GeomashInspector     v-else-if="geomashInspectorState.bridge" />
@@ -324,6 +325,11 @@
             <template v-if="catalogFamily === '2d'">
               <CalculusTray />
               <QuadraticTray />
+              <!-- Б-184: Нерівності → Числова пряма (плитка: клік і перетягування) -->
+              <div class="tools-subhead" data-testid="tools-inequalities">{{ t('winterboard.numberLine.family') }}</div>
+              <div class="tools-results">
+                <InsertResultTile v-for="e in inequalityEntries" :key="e.id" :entry="e" />
+              </div>
               <TrigCircleTray />
             </template>
 
@@ -384,6 +390,7 @@ import TrigCircleInspector from './TrigCircleInspector.vue'
 import HelixInspector from './HelixInspector.vue'
 import GraphCalcInspector from './GraphCalcInspector.vue'
 import TrigSolverInspector from './TrigSolverInspector.vue'
+import NumberLineInspector from './NumberLineInspector.vue'
 import CalculusInspector from './CalculusInspector.vue'
 import QuadraticInspector from './QuadraticInspector.vue'
 import QuadraticTray from './QuadraticTray.vue'
@@ -394,6 +401,7 @@ import { trigCircleUiState } from '../../board/state/trigCircleUiState'
 import { helixUiState } from '../../board/state/helixUiState'
 import { graphCalcInspectorState } from '../../board/state/graphCalcInspectorState'
 import { trigSolverUiState } from '../../board/state/trigSolverUiState'
+import { numberLineUiState } from '../../board/state/numberLineUiState'
 import { calculusUiState } from '../../board/state/calculusUiState'
 import { quadUiState } from '../../board/state/quadUiState'
 import { geomashInspectorState } from '../../board/state/geomashInspectorState'
@@ -487,7 +495,7 @@ function zoomOut(): void {
 
 const hasActiveInspector = computed(() =>
   !!(nmt3dUiState.ws || trigCircleUiState.bridge || helixUiState.bridge ||
-     graphCalcInspectorState.bridge || trigSolverUiState.bridge || calculusUiState.bridge ||
+     graphCalcInspectorState.bridge || trigSolverUiState.bridge || numberLineUiState.bridge || calculusUiState.bridge ||
      quadUiState.bridge || geomashInspectorState.bridge || graphmash3dInspectorState.bridge ||
      geo2dInspectorState.bridge),
 )
@@ -567,6 +575,7 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
+const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))
 const contentEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))
 

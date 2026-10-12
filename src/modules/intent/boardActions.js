@@ -33,6 +33,12 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
+import { conditionToText, evaluate as evaluateNumberLine } from '@/modules/winterboard/engine/numberLine'
+import {
+  buildNumberLineAsset,
+  DEFAULT_NUMBER_LINE_W,
+  DEFAULT_NUMBER_LINE_H,
+} from '@/modules/winterboard/constants/numberLineDefaults'
 
 function _uuid() {
   return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
@@ -209,6 +215,7 @@ const FOOTPRINT = {
   add_timeline: [760, 440],
   add_formula: [380, 110],
   add_graph: [GRAPH_W, GRAPH_H],
+  add_number_line: [DEFAULT_NUMBER_LINE_W, DEFAULT_NUMBER_LINE_H],
   add_image: [480, 400],
   add_text: [320, 40],
 }
@@ -1059,6 +1066,30 @@ export async function buildToolCatalog() {
 
 // ── Phase 2.8: редагування параметра ІСНУЮЧОГО об'єкта (через updateAsset) ──
 // BE резолвить object_id (Закон C), сюди приходить готовий id + що змінити.
+// Б-184: числова пряма від Інтегралика — той самий будівник, що й «Інструменти».
+// Сервер уже перевірив умови тією самою граматикою (parser._r_board_add_number_line);
+// тут — та сама перевірка рушієм ще раз: обʼєкт зʼявляється лише з валідних даних
+// (інваріант 4), невалідне — людська помилка, а не «приблизна» пряма.
+HANDLERS.add_number_line = async function add_number_line({ conditions, combine, variable }, ctx) {
+  const data = {
+    conditions: Array.isArray(conditions) ? conditions : [],
+    combine: combine === 'or' ? 'or' : 'and',
+    variable: typeof variable === 'string' && /^[a-zA-Z]$/.test(variable) ? variable : 'x',
+  }
+  const asset = buildNumberLineAsset({ x: 0, y: 0 }, data, `numline-${_uuid()}`)
+  if (!data.conditions.length || !evaluateNumberLine(asset.data).ok) {
+    throw new Error('Не зрозумів нерівність для числової прямої.')
+  }
+  const { store, page } = await _store(ctx)
+  const { cx, cy } = _center(page, asset.w, asset.h)
+  asset.x = cx - asset.w / 2
+  asset.y = cy - asset.h / 2
+  store.addAsset(asset, page.id ?? '')
+  if (!ctx?.pageId) {
+    try { store.selectItems?.([asset.id]) } catch { /* підсвітка не критична */ }
+  }
+}
+
 HANDLERS.set_param = async function set_param({ object_id, type, value, name, math_content }) {
   const { store } = await _store()
   const page = store.currentPage
@@ -1423,7 +1454,7 @@ export async function runBoardAction(action, ctx = null) {
 /** Дії, що лише створюють новий матеріал, — їх можна класти на підготовчу сторінку (пульт). */
 export const PREP_PAGE_KINDS = Object.freeze([
   'add_text', 'add_image', 'add_formula', 'add_timeline', 'add_map', 'add_history_card',
-  'add_card', 'add_page', 'add_graph', 'add_tool',
+  'add_card', 'add_page', 'add_graph', 'add_tool', 'add_number_line',
 ])
 
 // ── Phase 2.6 «зір»: read-only стан дошки → компактний summary для parse-контексту ──
@@ -1459,6 +1490,7 @@ export const KIND_LABELS = {
   graphmash_3d: '3D-графік',
   mash_scene: 'MASH-сцена',
   visual_capsule: 'анімація',   // TLV2-03 — капсула V-D3.1 як об'єкт дошки
+  number_line: 'числова пряма', // Б-184
 }
 
 /**
@@ -1560,6 +1592,8 @@ export function assetParams(a) {
     }
     case 'formula_card':
       return clean({ formula: d.formula })
+    case 'number_line':
+      return clean({ combine: (d.conditions || []).length > 1 ? d.combine : undefined })
     default:
       return {}
   }
@@ -1626,6 +1660,9 @@ export function summarizeAsset(a) {
     ])}`
   } else if (a.type === 'trig_solver') {
     label = `${d.type || 'sin'}(x) ${d.rel || '='} ${d.a ?? ''}`
+  } else if (a.type === 'number_line') {
+    // Адреса — самі умови («x > 1 і x ≤ 4»); відповідь — окремим полем (sceneExtras).
+    label = numberLineConditionsText(d)
   } else if (a.type === 'geomash_scene') {
     const n = (d.scene?.objects || []).length
     label = n ? `${n} об'єктів` : 'порожня'
@@ -1757,10 +1794,26 @@ export function selectedTaskExtras(d) {
  *     довідка — ще «хто/що це» (lead) і факти картки.
  * BE ріже власним бюджетом і друкує як ВІДПОВІДЬ / ОПОРА / ДЖЕРЕЛА / ТЕКСТ.
  */
+/** Умови прямої словами для контексту Інтегралика: «x > 1 і x ≤ 4». */
+function numberLineConditionsText(d) {
+  const variable = d?.variable || 'x'
+  const texts = (Array.isArray(d?.conditions) ? d.conditions : []).map((c) => conditionToText(c, variable))
+  return texts.join(d?.combine === 'or' ? ' або ' : ' і ')
+}
+
 export function sceneExtras(a) {
   const d = a?.data || {}
   const flat = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
   const out = {}
+  if (a?.type === 'number_line') {
+    // Відповідь — з того самого обчислення, що й рисунок (інваріант 1).
+    const conds = Array.isArray(d.conditions) ? d.conditions : []
+    if (!conds.length) return out
+    const ev = evaluateNumberLine({ version: 1, mode: 'set', variable: d.variable || 'x', conditions: conds,
+      combine: d.combine === 'or' ? 'or' : 'and', showAnswer: true, showHatching: true })
+    if (ev.ok) out.answer = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
+    return out
+  }
   if (a?.type === 'discussion_question') {
     if (flat(d.answer, 240)) out.answer = flat(d.answer, 240)
     if (flat(d.support, 240)) out.quote = flat(d.support, 240)

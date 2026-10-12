@@ -23,6 +23,7 @@ import { NMT3D_DRAG_MIME, NMT3D_TEMPLATE_ORDER } from '../../../constants/nmt3dD
 import { CALCULUS_DRAG_MIME, CALCULUS_PRESETS } from '../../../constants/calculusDefaults'
 import { GRAPH_CALCULATOR_MIME } from '../../../constants/graphCalculatorDefaults'
 import { QUAD_DRAG_MIME } from '../../../constants/quadDefaults'
+import { NUMBER_LINE_DRAG_MIME } from '../../../constants/numberLineDefaults'
 import { TRIG_CIRCLE_DRAG_MIME } from '../../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../../constants/trigSolverDefaults'
@@ -51,6 +52,7 @@ const RESOLVER_MIMES = new Set<string>([
   GEOMASH_DRAG_MIME,       // geomash_scene (Ф3.1)
   TIMELINE_CARD_DRAG_MIME, // timeline_card
   MAP_CARD_DRAG_MIME,      // map_card
+  NUMBER_LINE_DRAG_MIME,   // number_line (Б-184)
 ])
 
 function ids(entries: readonly InsertEntry[]): string[] {

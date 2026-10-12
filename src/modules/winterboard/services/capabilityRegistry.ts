@@ -103,6 +103,9 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
   trig_circle:      { w: 640, h: 360 },
   trig_solver:      { w: 520, h: 480 },
   quadratic_card:   { w: 480, h: 380 },
+  // Б-184: числова пряма (DEFAULT_NUMBER_LINE_*). З намірами задач не повʼязана —
+  // у AVAILABLE_RENDERERS її немає; розмір тут, щоб перелік розмірів був повний.
+  number_line:      { w: 560, h: 300 },
 }
 
 // ── Core function ─────────────────────────────────────────────────────────────

@@ -30,6 +30,8 @@ export const NON_SCENE_INSERT_IDS = [
   // не жива математична сцена — не роздувати метрику «задача → сцена».
   'evidence.timeline',
   'evidence.map',
+  // Б-184 (2026-10-12): числова пряма — віджет-рисунок, як quadratic.card, не жива сцена.
+  'inequalities.number_line',
 ]
 
 export function sceneMetricFromAction(action) {
