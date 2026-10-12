@@ -4,6 +4,8 @@
   прев'ю обох варіантів; `compact` — одна кнопка в шапці відкритої панелі помічника (не на
   плаваючій кнопці: випадкове натискання чи перетягування не має перемикати вигляд).
   Зберігається одразу (`setAssistantLook`); відмова сервера — попередній вибір і повідомлення.
+  З `v-model` (форма налаштувань, власник 2026-10-12: «після зміни треба активувати кнопку
+  "зберегти"») — нічого не зберігає сам: лише змінює чернетку форми, зберігає «Зберегти».
   SVG у v-html — лише з нашого генератора, без даних користувача.
 -->
 <template>
@@ -47,11 +49,20 @@ import { useI18n } from 'vue-i18n'
 import { ASSISTANT_LOOKS, setAssistantLook, useAssistantLook, type IntegralykLook } from './assistantLook'
 import { previewMascotSvg } from './integralykMascotSvg'
 
-withDefaults(defineProps<{ variant?: 'full' | 'compact' }>(), { variant: 'full' })
-const emit = defineEmits<{ (e: 'error', message: string): void }>()
+const props = withDefaults(defineProps<{ variant?: 'full' | 'compact'; modelValue?: IntegralykLook | null }>(), {
+  variant: 'full',
+  modelValue: null,
+})
+const emit = defineEmits<{
+  (e: 'error', message: string): void
+  (e: 'update:modelValue', value: IntegralykLook): void
+}>()
 
 const { t } = useI18n()
-const { look } = useAssistantLook()
+const { look: savedLook } = useAssistantLook()
+// Керований (`v-model`) — показуємо чернетку форми; інакше — збережене в акаунті.
+const controlled = computed(() => props.modelValue != null)
+const look = computed<IntegralykLook>(() => (controlled.value ? (props.modelValue as IntegralykLook) : savedLook.value))
 const other = computed<IntegralykLook>(() => (look.value === 'integralka' ? 'integralyk' : 'integralka'))
 const switchLabel = computed(() => t('users.settings.general.assistantLook.switchTo', {
   name: t(`users.settings.general.assistantLook.${other.value}`),
@@ -62,6 +73,10 @@ const error = ref('')
 
 async function choose(next: IntegralykLook) {
   if (busy.value || next === look.value) return
+  if (controlled.value) {
+    emit('update:modelValue', next)   // збереже форма — кнопкою «Зберегти»
+    return
+  }
   busy.value = true
   error.value = ''
   try {

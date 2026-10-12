@@ -73,6 +73,20 @@ describe('вибір вигляду в профілі', () => {
   })
 })
 
+describe('у формі (v-model): лише чернетка, зберігає форма', () => {
+  it('вибір змінює чернетку й нічого не зберігає', async () => {
+    const w = mount(AssistantLookPicker, {
+      props: { variant: 'full', modelValue: 'integralyk' },
+      global: { plugins: [pinia, i18n] },
+    })
+    await w.find('[data-testid="assistant-look-integralka"]').trigger('click')
+    await flushPromises()
+    expect(w.emitted('update:modelValue')).toEqual([['integralka']])
+    expect(api.updateUserSettings).not.toHaveBeenCalled()
+    expect(useProfileStore().settings.integralyk_appearance).toBe('integralyk')
+  })
+})
+
 describe('перемикач у панелі й синхронізація', () => {
   it('компактна кнопка показує ІНШИЙ вигляд і перемикає на нього', async () => {
     const w = mountPicker('compact')

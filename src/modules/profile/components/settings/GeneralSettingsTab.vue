@@ -76,7 +76,9 @@
 
       <!-- Вигляд помічника (ТЗ TZ_INTEGRALYK_INTEGRALKA_VARIANT, 2026-10-12): той самий помічник —
            лише бантик, колір і назва. Незалежний від вимикача вище (прихований помічник не губить
-           вибір) і зберігається одразу, як і перемикач у панелі помічника — одне налаштування. -->
+           вибір). Тут — частина форми (власник 2026-10-12: «після зміни треба активувати кнопку
+           "зберегти"»): зміна вмикає «Зберегти», «Скинути» повертає; перемикач у панелі помічника
+           зберігає одразу — те саме налаштування акаунта. -->
       <div class="pt-2" data-testid="assistant-look-setting">
         <span class="block text-sm font-medium text-foreground">
           {{ $t('users.settings.general.assistantLook.title') }}
@@ -84,7 +86,11 @@
         <span class="block text-sm text-muted-foreground mb-2">
           {{ $t('users.settings.general.assistantLook.hint') }}
         </span>
-        <AssistantLookPicker variant="full" />
+        <AssistantLookPicker
+          v-model="formData.integralyk_appearance"
+          variant="full"
+          @update:model-value="handleChange"
+        />
       </div>
       </template>
 
@@ -161,6 +167,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from '@/ui/Button.vue'
 import { useProfileStore } from '../../store/profileStore'
 import { getUserSettings, updateUserSettings } from '@/api/users'
@@ -176,7 +183,7 @@ import { notifySuccess, notifyError } from '@/utils/notify'
 import { i18n, setLocale } from '@/i18n'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import AssistantLookPicker from '@/modules/intent/AssistantLookPicker.vue'
-import { useAssistantT } from '@/modules/intent/assistantLook'
+import { assistantLookOf, useAssistantT, type IntegralykLook } from '@/modules/intent/assistantLook'
 import { isIntegralykRole } from '@/modules/intent/integralykAccess'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
@@ -203,6 +210,7 @@ const formData = ref({
   ui_language: 'uk',
   timezone: 'UTC',
   integralyk_enabled: true,
+  integralyk_appearance: 'integralyk' as IntegralykLook,
   // [] = «Усі предмети» — так само, як на сервері.
   teaching_subjects: [] as string[]
 })
@@ -297,11 +305,22 @@ onMounted(async () => {
       // де встигло зберегтись `Europe/Kiev`.
       timezone: normalizeTz(settings.timezone) || 'UTC',
       integralyk_enabled: settings.integralyk_enabled !== false,
+      integralyk_appearance: assistantLookOf(settings),
       teaching_subjects: Array.isArray(settings.teaching_subjects) ? [...settings.teaching_subjects] : []
     }
     initialData.value = { ...formData.value }
   }
 })
+
+// «Зберегти» закриває налаштування (власник 2026-10-12: «щоб вікно закривалось» → «Зберегти й
+// повернутися назад»): назад — на сторінку, з якої прийшли; прийшли з іншої вкладки налаштувань
+// чи відкрили посиланням — на головну.
+const router = useRouter()
+function leaveSettings() {
+  const back = (window.history.state as { back?: unknown } | null)?.back
+  if (typeof back === 'string' && back && !back.startsWith('/settings')) router.back()
+  else router.push('/')
+}
 
 function handleChange() {
   errorMessage.value = ''
@@ -340,6 +359,7 @@ async function handleSubmit() {
       setLocale(formData.value.ui_language)
     }
     notifySuccess(i18n.global.t('users.settings.saveSuccess'))
+    leaveSettings()
   } catch (error: any) {
     errorMessage.value = error?.response?.data?.detail || i18n.global.t('users.settings.saveError')
     notifyError(errorMessage.value)
