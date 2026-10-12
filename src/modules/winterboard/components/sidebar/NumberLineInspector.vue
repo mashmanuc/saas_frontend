@@ -21,6 +21,28 @@
       <span class="nl-insp__subtitle">{{ t('winterboard.numberLine.subtitle') }}</span>
     </div>
 
+    <!-- Режим -->
+    <div class="nl-insp__section">
+      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.modeLabel') }}</div>
+      <div class="nl-insp__btn-row">
+        <button
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.mode === 'set' }"
+          data-testid="number-line-mode-set"
+          @click="b.setMode('set')"
+        >{{ t('winterboard.numberLine.modeSet') }}</button>
+        <button
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.mode === 'intervals' }"
+          data-testid="number-line-mode-intervals"
+          @click="b.setMode('intervals')"
+        >{{ t('winterboard.numberLine.modeIntervals') }}</button>
+      </div>
+    </div>
+
+    <template v-if="b.mode === 'set'">
     <!-- Умови -->
     <div class="nl-insp__section">
       <div class="nl-insp__section-label">{{ t('winterboard.numberLine.conditionsLabel') }}</div>
@@ -85,6 +107,119 @@
       </div>
     </div>
 
+    </template>
+
+    <!-- Метод інтервалів -->
+    <template v-else>
+      <div class="nl-insp__section">
+        <div class="nl-insp__section-label">{{ t('winterboard.numberLine.ivInputLabel') }}</div>
+        <div class="nl-insp__btn-row">
+          <button
+            type="button"
+            class="nl-insp__btn"
+            :class="{ 'is-active': b.ivInput === 'expression' }"
+            data-testid="number-line-iv-expression"
+            @click="b.setIvInput('expression')"
+          >{{ t('winterboard.numberLine.ivExpression') }}</button>
+          <button
+            type="button"
+            class="nl-insp__btn"
+            :class="{ 'is-active': b.ivInput === 'manual' }"
+            data-testid="number-line-iv-manual"
+            @click="b.setIvInput('manual')"
+          >{{ t('winterboard.numberLine.ivManual') }}</button>
+        </div>
+      </div>
+
+      <!-- Вираз -->
+      <div v-if="b.ivInput === 'expression'" class="nl-insp__section">
+        <input
+          ref="exprInput"
+          class="nl-insp__input"
+          :class="{ 'has-error': b.intervalsError }"
+          :value="b.expressionLine"
+          :placeholder="t('winterboard.numberLine.expressionPlaceholder')"
+          data-testid="number-line-expression"
+          spellcheck="false"
+          autocomplete="off"
+          @input="b.setExpressionLine(($event.target as HTMLInputElement).value)"
+          @keydown="onExprKeydown"
+        />
+        <div v-if="b.intervalsError" class="nl-insp__error" data-testid="number-line-iv-error">{{ b.intervalsError }}</div>
+        <div class="nl-insp__btn-row nl-insp__keys">
+          <button
+            v-for="k in EXPR_KEYS"
+            :key="k"
+            type="button"
+            class="nl-insp__btn nl-insp__btn--rel"
+            @mousedown.prevent
+            @click="insertIntoExpression(k)"
+          >{{ k }}</button>
+        </div>
+      </div>
+
+      <!-- Вручну -->
+      <template v-else>
+        <div class="nl-insp__section">
+          <div class="nl-insp__section-label">{{ t('winterboard.numberLine.pointsLabel') }}</div>
+          <input
+            class="nl-insp__input"
+            :class="{ 'has-error': b.intervalsError }"
+            :value="b.pointsText"
+            :placeholder="t('winterboard.numberLine.pointsPlaceholder')"
+            data-testid="number-line-points"
+            spellcheck="false"
+            autocomplete="off"
+            @input="b.setPointsText(($event.target as HTMLInputElement).value)"
+            @keydown="onExprKeydown"
+          />
+          <div v-if="b.intervalsError" class="nl-insp__error" data-testid="number-line-iv-error">{{ b.intervalsError }}</div>
+          <div v-if="b.manualPoints.length" class="nl-insp__btn-row nl-insp__keys">
+            <button
+              v-for="(p, i) in b.manualPoints"
+              :key="p.label"
+              type="button"
+              class="nl-insp__btn nl-insp__point"
+              :title="t('winterboard.numberLine.pointsHint')"
+              :data-testid="`number-line-point-chip-${i}`"
+              @click="b.togglePoint(i)"
+            ><span class="nl-insp__dot" :class="{ 'is-filled': p.included }" />{{ p.display }}</button>
+          </div>
+        </div>
+
+        <div v-if="b.manualPoints.length" class="nl-insp__section">
+          <div class="nl-insp__section-label">{{ t('winterboard.numberLine.signsLabel') }}</div>
+          <div class="nl-insp__btn-row nl-insp__signs">
+            <template v-for="(sg, i) in b.manualSigns" :key="i">
+              <button
+                type="button"
+                class="nl-insp__btn nl-insp__btn--rel"
+                :class="{ 'is-plus': sg === '+', 'is-minus': sg === '-' }"
+                :data-testid="`number-line-sign-btn-${i}`"
+                @click="b.toggleSign(i)"
+              >{{ sg === '+' ? '+' : '−' }}</button>
+              <span v-if="i < b.manualPoints.length" class="nl-insp__between">{{ b.manualPoints[i].display }}</span>
+            </template>
+          </div>
+        </div>
+
+        <div class="nl-insp__section">
+          <div class="nl-insp__section-label">{{ t('winterboard.numberLine.opLabel') }}</div>
+          <div class="nl-insp__btn-row">
+            <button
+              v-for="o in IV_OPS"
+              :key="o.v"
+              type="button"
+              class="nl-insp__btn nl-insp__btn--rel"
+              :class="{ 'is-active': b.manualOp === o.v }"
+              :data-testid="`number-line-op-${o.v}`"
+              @click="b.setManualOp(o.v)"
+            >{{ o.lab }} 0</button>
+          </div>
+        </div>
+      </template>
+    </template>
+
     <!-- Опції -->
     <div class="nl-insp__section">
       <div class="nl-insp__section-label">{{ t('winterboard.trigSolver.optionsLabel') }}</div>
@@ -123,6 +258,39 @@ const { t } = useI18n()
 const b = computed(() => numberLineUiState.bridge!)
 
 const KEYS = ['<', '≤', '>', '≥', '≠', '=', '√']
+
+const EXPR_KEYS = ['<', '≤', '>', '≥', '(', ')', '²', '√']
+const IV_OPS: Array<{ v: '<' | '<=' | '>' | '>='; lab: string }> = [
+  { v: '<', lab: '<' }, { v: '<=', lab: '≤' }, { v: '>', lab: '>' }, { v: '>=', lab: '≥' },
+]
+const exprInput = ref<HTMLInputElement | null>(null)
+
+/** Вираз — один рядок: Enter / Ctrl+Enter застосовують, Esc — повертає застосоване. */
+function onExprKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    b.value.apply()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    b.value.revert()
+  }
+}
+
+function insertIntoExpression(text: string): void {
+  const el = exprInput.value
+  const value = b.value.expressionLine
+  const start = el?.selectionStart ?? value.length
+  const end = el?.selectionEnd ?? value.length
+  const piece = ['(', ')', '²', '√'].includes(text) ? text : ` ${text} `
+  const next = `${value.slice(0, start)}${piece}${value.slice(end)}`.replace(/\s{2,}/g, ' ')
+  b.value.setExpressionLine(next)
+  void nextTick(() => {
+    if (!el) return
+    el.focus()
+    const caret = Math.min(next.length, start + piece.length)
+    el.setSelectionRange(caret, caret)
+  })
+}
 
 const focused = ref(0)
 const inputs: Array<HTMLInputElement | null> = []
@@ -291,6 +459,23 @@ function onKeydown(e: KeyboardEvent, i: number): void {
 }
 
 .nl-insp__btn--add { margin-top: 2px; }
+
+/* ── Метод інтервалів ── */
+.nl-insp__keys { margin-top: 6px; }
+.nl-insp__point { display: inline-flex; align-items: center; gap: 4px; }
+.nl-insp__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.6px solid #c4622a;
+  background: #fffaf0;
+  box-sizing: border-box;
+}
+.nl-insp__dot.is-filled { background: #c4622a; }
+.nl-insp__signs { align-items: center; }
+.nl-insp__between { font: 10px 'JetBrains Mono', monospace; color: #9a8674; }
+.nl-insp__btn.is-plus { color: #c4622a; font-weight: 700; }
+.nl-insp__btn.is-minus { color: #3a6ea5; font-weight: 700; }
 
 /* ── Actions ── */
 .nl-insp__actions {

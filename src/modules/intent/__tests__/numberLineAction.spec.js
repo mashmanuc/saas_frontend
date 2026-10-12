@@ -83,3 +83,29 @@ describe('Інтегралик бачить, що на прямій', () => {
     expect(summarizeAsset({ ...asset, data: { ...asset.data, combine: 'or' } }).label).toBe('x > 1 або x ≤ 4')
   })
 })
+
+describe('метод інтервалів від Інтегралика (етап 2)', () => {
+  it('expression + op → обʼєкт у режимі intervals', async () => {
+    await runBoardAction({ kind: 'add_number_line', payload: { expression: '(x-1)(x+3)/(x-2)', op: '>=' } })
+    expect(page.assets).toHaveLength(1)
+    expect(page.assets[0].data).toMatchObject({ mode: 'intervals', expression: '(x-1)(x+3)/(x-2)', rhs: '0', op: '>=' })
+  })
+
+  it('ненульова права частина для многочлена', async () => {
+    await runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^2', op: '>', rhs: '4' } })
+    expect(page.assets[0].data).toMatchObject({ mode: 'intervals', expression: 'x^2', rhs: '4', op: '>' })
+  })
+
+  it('невалідний вираз чи знак — людська помилка й нуль обʼєктів', async () => {
+    await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^3 - 2', op: '>' } })).rejects.toThrow('методу інтервалів')
+    await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: '(x-1)', op: '=' } })).rejects.toThrow('методу інтервалів')
+    expect(page.assets).toHaveLength(0)
+  })
+
+  it('Інтегралик бачить вираз, відповідь і знаки', () => {
+    const a = { id: 'iv', type: 'number_line', data: { version: 1, mode: 'intervals', variable: 'x', conditions: [], combine: 'and',
+      expression: '(x-1)(x+3)/(x-2)', rhs: '0', op: '>=', showAnswer: true, showHatching: true } }
+    expect(summarizeAsset(a)).toEqual({ kind: 'числова пряма', label: '(x-1)(x+3)/(x-2) ≥ 0' })
+    expect(sceneExtras(a)).toEqual({ answer: 'x ∈ [−3; 1] ∪ (2; +∞)', quote: 'знаки: − + − +' })
+  })
+})
