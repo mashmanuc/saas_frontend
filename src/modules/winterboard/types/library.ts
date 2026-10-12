@@ -142,3 +142,32 @@ export interface LibraryAssetsQuery {
   limit?: number         // default 50, max 100
   offset?: number
 }
+
+// ─── Вкладка «Відео» (GET /library/videos/, ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY §7) ───
+
+/** Джерело відео: усе, лише YouTube-посилання чи лише власні відеофайли. */
+export type LibraryVideoKind = 'all' | 'youtube' | 'file'
+
+/** Порядок: спершу нові · спершу старі · за назвою. */
+export type LibraryVideoOrdering = '-created_at' | 'created_at' | 'name'
+
+export interface LibraryVideosQuery {
+  kind: LibraryVideoKind
+  ordering: LibraryVideoOrdering
+  /** 'only' — архів відео (лише YouTube: у файлів архіву немає). */
+  archived?: 'only'
+  limit?: number         // default 100, max 100
+  offset?: number
+}
+
+/** Рядок вкладки: матеріал + наша семантика джерела й прев'ю. */
+export interface LibraryVideo extends LibraryAsset {
+  video_kind: 'youtube' | 'file'
+  /** Прев'ю: власне або кадр відеофайла; '' — показуємо значок відео. */
+  poster_url: string
+}
+
+export interface LibraryVideoListResponse {
+  count: number
+  results: LibraryVideo[]
+}

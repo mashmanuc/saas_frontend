@@ -14,6 +14,8 @@ import type {
   LibraryAssetUpdateRequest,
   LibraryAssetConfirmRequest,
   LibraryAssetsQuery,
+  LibraryVideoListResponse,
+  LibraryVideosQuery,
   MirrorCleanupResult,
 } from '../types/library'
 
@@ -174,6 +176,17 @@ export async function fetchVideos(opts: { archived?: boolean; limit?: number; of
     limit: opts.limit ?? 100,
     offset: opts.offset ?? 0,
     ...(opts.archived ? { archived: 'only' as const } : {}),
+  })
+}
+
+/**
+ * Вкладка «Відео» в «Матеріалах» (етап 2, ТЗ §7): YouTube-посилання і власні відеофайли
+ * поруч, з фільтром джерела й порядком. Вікно YouTube на дошці цим НЕ користується —
+ * його «Мої відео» й далі читає `fetchVideos()` (лише YouTube).
+ */
+export async function fetchLibraryVideos(query: LibraryVideosQuery): Promise<LibraryVideoListResponse> {
+  return apiClient.get<LibraryVideoListResponse>(`${BASE}/videos/`, {
+    params: { limit: 100, offset: 0, ...query },
   })
 }
 

@@ -18,6 +18,8 @@
       <span class="wb-video-row__title">{{ title || t('winterboard.youtube.picker.untitled') }}</span>
       <span v-if="channel" class="wb-video-row__channel">{{ channel }}</span>
       <span v-if="langText" class="wb-video-row__lang">{{ langText }}</span>
+      <!-- Додатковий рядок (позначка джерела, розмір) — лише «Матеріали»; без слота нічого не малюється -->
+      <span v-if="$slots.meta" class="wb-video-row__extra"><slot name="meta" /></span>
     </span>
     <span v-if="$slots.actions" class="wb-video-row__actions" @click.stop>
       <slot name="actions" />
@@ -119,6 +121,7 @@ const langText = computed(() => {
   background: #475569;
   color: #fff;
 }
+.wb-video-row__extra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .wb-video-row__actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; align-self: center; }
 
 /* Темна тема — ті самі токени, що у вікні YouTube (Б-156) */
