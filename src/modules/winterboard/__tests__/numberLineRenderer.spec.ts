@@ -317,6 +317,45 @@ describe('«Знаки інтервалів» (пілот) і стара пря�
     expect((input0(w).element as HTMLInputElement).value).toBe('x - 1 > 0')
   })
 
+  it('«Знаки», рушій інтервалів не бере — примітка видна й після власного запису (рев\'ю етапу А, блокер)', async () => {
+    auth.user = { id: 40 }
+    api.solveNumberLine.mockResolvedValue({ ok: true, intervals: [{ from: { latex: '2', approx: 2, exact: true, closed: true, text: '2' }, to: null }],
+      points: [], domain: 'x ≥ 2', answer: 'x ∈ [2; +∞)', solver: 'sympy-1.13.3' })
+    const w = await mountIt(asset())
+    await input0(w).setValue('√(x-2) ≥ 0')
+    await w.find('[data-testid="number-line-signs"]').trigger('click')
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await flushPromises()
+    const u = updates(w)
+    expect(u).toHaveLength(1)
+    expect(u[0][0].data.mode).toBe('solved')
+    // Стор повертає записане назад у props — примітка не зникає.
+    await w.setProps({ asset: u[0][0] })
+    await flushPromises()
+    const NOTE = 'Знаки — лише для добутків і дробів'
+    expect(w.find('[data-testid="number-line-note"]').text()).toBe(NOTE)
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [2; +∞) — промінь')
+    // Учитель змінив рядок — примітку прибрано.
+    await input0(w).setValue('√(x-2) ≥ 1')
+    expect(w.find('[data-testid="number-line-note"]').exists()).toBe(false)
+  })
+
+  it('примітку прибирає зміна ззовні (інший учасник, «Скасувати», Інтегралик)', async () => {
+    auth.user = { id: 40 }
+    const w = await mountIt(asset())
+    await input0(w).setValue('-1 < 2x + 1 ≤ 5')
+    await w.find('[data-testid="number-line-signs"]').trigger('click')
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await flushPromises()
+    await w.setProps({ asset: updates(w)[0][0] })
+    await flushPromises()
+    expect(w.find('[data-testid="number-line-note"]').exists()).toBe(true)
+    await w.setProps({ asset: asset([{ op: '>', value: '3' }]) })
+    await flushPromises()
+    expect(w.find('[data-testid="number-line-note"]').exists()).toBe(false)
+    expect((input0(w).element as HTMLInputElement).value).toBe('x > 3')
+  })
+
   it('увімкнути «Знаки» без «Застосувати» — нічого не пише, позначка «не застосовано»', async () => {
     auth.user = { id: 40 }
     const w = await mountIt(asset([{ op: '>', value: '3' }]))

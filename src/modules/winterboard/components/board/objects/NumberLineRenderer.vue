@@ -500,13 +500,19 @@ const dirty = computed(() => snapshot() !== synced.value)
 
 // Застосоване змінилось ззовні (інший учасник, «скасувати», Інтегралик): чернетки немає —
 // показуємо нове застосоване; є незастосована чернетка — не стираємо її.
+// Власний запис (commit) повертається сюди ж через стор — чернетку з нього вже завантажено,
+// тож не перезавантажуємо: інакше зникла б примітка під рядком (рев'ю етапу А 13.10, блокер).
+const appliedKey = (d: NumberLineData) =>
+  JSON.stringify([d.mode, d.conditions, d.combine, d.variable, d.expression, d.rhs, d.op, d.points, d.signs, d.inequality, d.result])
+/** Відбиток даних, які щойно записала сама картка; null — чекати нічого. */
+let ownCommit: string | null = null
 watch(
-  () => {
-    const d = props.asset.data
-    return [d.mode, d.conditions, d.combine, d.variable, d.expression, d.rhs, d.op, d.points, d.signs, d.inequality, d.result]
+  () => appliedKey(props.asset.data),
+  (key) => {
+    if (key === ownCommit) return
+    ownCommit = null
+    if (!dirty.value) revert()
   },
-  () => { if (!dirty.value) revert() },
-  { deep: true },
 )
 loadFrom(props.asset.data)
 
@@ -576,6 +582,7 @@ function errorFor(i: number): string {
 
 /** Застосувати дані: один update:asset, чернетка — тепер застосоване. */
 function commit(data: NumberLineData): void {
+  ownCommit = appliedKey(data)
   emit('update:asset', { ...props.asset, data })
   loadFrom(data)
 }

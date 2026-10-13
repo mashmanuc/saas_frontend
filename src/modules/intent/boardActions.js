@@ -1082,8 +1082,7 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
     const line = `${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`
     // ТЗ «один рядок» §2: той самий вибирач, що й «Застосувати» в інспекторі (метод інтервалів —
     // зі знаками; не розбирає — точний розвʼязок; сервер лише для пілота, гейт у вибирачі й на сервері).
-    let pilot = false
-    try { pilot = isIntervalsPilotUser(useAuthStore().user?.id) } catch { /* без store — не пілот */ }
+    const pilot = isIntervalsPilotUser(useAuthStore().user?.id)
     const out = await chooseNumberLine({ lines: [line], combine: 'and', signs: true, pilot },
       defaultNumberLineData(), (q) => winterboardApi.solveNumberLine(q))
     if (!out.ok) {
