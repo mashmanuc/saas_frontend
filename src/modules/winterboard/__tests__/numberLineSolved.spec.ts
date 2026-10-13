@@ -152,11 +152,44 @@ describe('«Розвʼязати» в інспекторі', () => {
   })
 })
 
+describe('правдива причина невдачі (рев\'ю 13.10, п. 4)', () => {
+  it.each([
+    ['network', 'Немає звʼязку з сервером — перевірте інтернет і спробуйте ще раз'],
+    ['server_error', 'Сервер не відповів як слід — спробуйте ще раз'],
+  ])('%s — свій текст, не «сервер зайнятий», і нуль записів', async (reason, text) => {
+    api.solveNumberLine.mockResolvedValue({ ok: false, reason, detail: 'x' })
+    const w = await mountIt(solvedAsset(ROOT_RESULT))
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="number-line-solve-error"]').text()).toBe(text)
+    expect(updates(w)).toHaveLength(0)
+  })
+})
+
 describe('лише пілот (§5.4)', () => {
   it('не пілот — режиму «Розвʼязати» в інспекторі немає', async () => {
     auth.user = { id: 7 }
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
     expect(w.find('[data-testid="number-line-mode-solved"]').exists()).toBe(false)
+  })
+
+  it('не пілот у збереженій пілотом прямій — лише перегляд: ні поля, ні «Розвʼязати» (рев\'ю 13.10, п. 1)', async () => {
+    auth.user = { id: 7 }
+    const w = await mountIt(solvedAsset(ROOT_RESULT))
+    const ro = w.find('[data-testid="number-line-solve-readonly"]')
+    expect(ro.exists()).toBe(true)
+    expect(ro.text()).toContain('√(x+1) > x − 1')
+    expect(ro.text()).toContain('лише перегляд')
+    expect(w.find('[data-testid="number-line-solve-input"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-apply"]').exists()).toBe(false)
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+  })
+
+  it('пілот у тій самій прямій — поле й «Розвʼязати» на місці', async () => {
+    const w = await mountIt(solvedAsset(ROOT_RESULT))
+    expect(w.find('[data-testid="number-line-solve-readonly"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-solve-input"]').exists()).toBe(true)
+    expect(w.find('[data-testid="number-line-apply"]').exists()).toBe(true)
   })
 
   it('збережений розвʼязок не пілот бачить (рисунок зі збереженого, без запитів)', async () => {

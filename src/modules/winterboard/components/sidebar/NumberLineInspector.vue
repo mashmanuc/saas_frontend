@@ -118,7 +118,12 @@
 
     </template>
 
-    <!-- «Розвʼязати»: уся нерівність, розвʼязує сервер (пілот) -->
+    <!-- «Розвʼязати»: уся нерівність, розвʼязує сервер (пілот). Не пілот бачить збережену
+         пілотом пряму лише для читання: сервер усе одно відмовив би 403 (рев'ю 13.10, п. 1). -->
+    <div v-else-if="b.mode === 'solved' && !showModeSwitch" class="nl-insp__section" data-testid="number-line-solve-readonly">
+      <div class="nl-insp__input" aria-readonly="true">{{ b.solveLine }}</div>
+      <span class="nl-insp__subtitle">{{ t('winterboard.numberLine.solveReadOnly') }}</span>
+    </div>
     <div v-else-if="b.mode === 'solved'" class="nl-insp__section">
       <input
         ref="solveInput"
@@ -279,7 +284,14 @@
       <button v-if="b.dirty" type="button" class="nl-insp__btn" data-testid="number-line-revert" @click="b.revert()">
         {{ t('winterboard.numberLine.revert') }}
       </button>
-      <button type="button" class="nl-insp__btn is-active nl-insp__apply" data-testid="number-line-apply" :disabled="b.solving" @click="b.apply()">
+      <button
+        v-if="!(b.mode === 'solved' && !showModeSwitch)"
+        type="button"
+        class="nl-insp__btn is-active nl-insp__apply"
+        data-testid="number-line-apply"
+        :disabled="b.solving"
+        @click="b.apply()"
+      >
         {{ b.mode === 'solved'
           ? t(b.solving ? 'winterboard.numberLine.solving' : 'winterboard.numberLine.solveButton')
           : t('winterboard.numberLine.apply') }}

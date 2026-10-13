@@ -10448,8 +10448,11 @@
         "timeout": "Did not solve in time — simplify the inequality",
         "unsolvable": "Cannot be solved exactly",
         "busy": "The server is busy — try again in a minute",
-        "not_pilot": "Solving inequalities is a pilot feature for now"
+        "not_pilot": "Solving inequalities is a pilot feature for now",
+        "network": "No connection to the server — check the internet and try again",
+        "server_error": "The server did not respond properly — try again"
       },
+      "solveReadOnly": "Solving inequalities is a pilot feature for now — view only.",
       "kindIntervals": "Interval method",
       "modeLabel": "Mode",
       "modeSet": "Inequalities",
