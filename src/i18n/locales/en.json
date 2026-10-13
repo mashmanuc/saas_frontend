@@ -9526,8 +9526,11 @@
       "whereDrawer": "{what} are in the panel opened by the ⊞ button at the top"
     },
     "pdfFragment": {
-      "button": "Take a fragment",
-      "title": "Take a fragment",
+      "button": "Cut a fragment",
+      "title": "Cut a fragment",
+        "quick": "Quick fragment cut",
+        "quickHint": "⚡ Frame the task on the page · Esc to cancel",
+        "quickCutting": "Cutting…",
       "untitled": "PDF",
       "page": "p. {n} / {total}",
       "prev": "Previous page",

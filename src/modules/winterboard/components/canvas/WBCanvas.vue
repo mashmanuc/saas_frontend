@@ -88,7 +88,9 @@
             @page-jump="(id: string) => emit('doc-viewer-page-jump', id)"
             @expand="handleDocViewerExpand"
             :can-cut="props.isTutor !== false && wbStore.mode === 'edit'"
+            :cutting="quickCutBusy.includes(asset.id)"
             @cut="openPdfFragment"
+            @quick-cut="onQuickCut"
           />
           <!-- ASSET_LIFECYCLE_SSOT Phase 2B: провалена картинка (INV-ASSET-3/8).
                Автор бачить ⚠ placeholder; учень/replay — нічого (наступна гілка). -->
@@ -1013,9 +1015,13 @@ import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
 import DocumentViewerAsset from './DocumentViewerAsset.vue'
-import PdfFragmentDialog, { type FragmentContext } from '../library/PdfFragmentDialog.vue'
-import { CUT_CONTENT_TYPES, fragmentPlacement, nextStackY, sameSpot, type FragRect } from '../library/pdfFragmentRect'
-import type { PdfFragmentResult } from '../../api/library'
+import PdfFragmentDialog from '../library/PdfFragmentDialog.vue'
+import {
+  CUT_CONTENT_TYPES, fragmentPlacement, nextStackY, sameSpot, type FragRect, type FragmentContext,
+} from '../library/pdfFragmentRect'
+import { runQuickCut } from '../library/pdfFragmentFlow'
+import { cutPdfFragment, type PdfFragmentResult } from '../../api/library'
+import { notifyError } from '@/utils/notify'
 import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
 import TextOverlay from './TextOverlay.vue'
@@ -3249,14 +3255,15 @@ function handleDocViewerPageChange(id: string, page: number): void {
 const pdfFragment = ref<{
   contentItemId: number; contentType: string; title: string; totalPages: number; startPage: number; viewerId: string
 } | null>(null)
-/** Скільки вже зайнято стовпчиком під фрагментами цього вікна (у межах одного відкриття) */
-let pdfFragmentStackY = 0
+/** Скільки вже зайнято стовпчиком під фрагментами кожного вікна документа (обидві вирізки — один стовпчик) */
+const pdfFragmentStackY = new Map<string, number>()
+/** Вікна документа, з яких зараз іде швидка вирізка (у шапці — «Вирізаю…») */
+const quickCutBusy = ref<string[]>([])
 
 function openPdfFragment(asset: WBAsset): void {
   const contentId = asset.content_ref?.content_id
   const contentType = asset.content_ref?.content_type ?? ''
   if (!contentId || !CUT_CONTENT_TYPES.includes(contentType)) return
-  pdfFragmentStackY = 0
   pdfFragment.value = {
     contentItemId: contentId,
     contentType,
@@ -3267,11 +3274,33 @@ function openPdfFragment(asset: WBAsset): void {
   }
 }
 
-function pdfFragmentSnapshot(): FragmentContext {
+function pdfFragmentSnapshot(viewerId?: string): FragmentContext {
   return {
     boardId: String(wbStore.workspaceId ?? ''),
     pageId: String(wbStore.currentPage?.id ?? ''),
-    viewerId: pdfFragment.value?.viewerId ?? '',
+    viewerId: viewerId ?? pdfFragment.value?.viewerId ?? '',
+  }
+}
+
+/**
+ * «⚡ Швидка вирізка фрагмента» (власник 2026-10-13): рамку обвели на самому вікні документа — фрагмент одразу
+ * на дошці, без вікна й підтверджень. Той самий сервер, місце й охорона «та сама сторінка», що й у «Вирізці».
+ */
+async function onQuickCut(asset: WBAsset, pageIndex: number, rect: FragRect): Promise<void> {
+  const contentId = asset.content_ref?.content_id
+  if (!contentId || quickCutBusy.value.includes(asset.id)) return
+  quickCutBusy.value = [...quickCutBusy.value, asset.id]
+  try {
+    await runQuickCut({
+      cut: cutPdfFragment,
+      snapshot: () => pdfFragmentSnapshot(asset.id),
+      place: placePdfFragment,
+      notify: (kind, detail) => notifyError(kind === 'cut_failed'
+        ? t('winterboard.pdfFragment.cutFailed', { reason: t(`winterboard.pdfFragment.err.${detail.reasonKey ?? 'failed'}`) })
+        : t('winterboard.pdfFragment.notPlaced', { name: detail.name ?? '' })),
+    }, { contentItem: contentId, page: pageIndex + 1, rect, viewer: asset.id })
+  } finally {
+    quickCutBusy.value = quickCutBusy.value.filter((id) => id !== asset.id)
   }
 }
 
@@ -3283,8 +3312,9 @@ function placePdfFragment(ctx: FragmentContext, res: PdfFragmentResult, rect: Fr
   const viewer = assets.value.find((a) => a.id === ctx.viewerId)
   const now = { boardId: String(wbStore.workspaceId ?? ''), pageId: String(wbStore.currentPage?.id ?? '') }
   if (!viewer || !res.cdn_url || !sameSpot(ctx, now, true)) return 'not_placed'
-  const place = fragmentPlacement(viewer, rect, res.width, res.height, props.width ?? PAGE_WIDTH, pdfFragmentStackY)
-  pdfFragmentStackY = nextStackY(pdfFragmentStackY, place)
+  const stackY = pdfFragmentStackY.get(viewer.id) ?? 0
+  const place = fragmentPlacement(viewer, rect, res.width, res.height, props.width ?? PAGE_WIDTH, stackY)
+  pdfFragmentStackY.set(viewer.id, nextStackY(stackY, place))
   emit('asset-add', {
     id: `pdffrag-${res.id}-${Date.now()}`,
     type: 'image',

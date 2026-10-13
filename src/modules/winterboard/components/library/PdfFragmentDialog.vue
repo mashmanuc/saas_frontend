@@ -70,10 +70,9 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cutPdfFragment, type PdfFragmentResult } from '../../api/library'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
-import { MIN_SIDE, normRect, type FragRect } from './pdfFragmentRect'
+import { MIN_SIDE, fragmentErrorKey, normRect, type FragRect, type FragmentContext } from './pdfFragmentRect'
 
-/** Що треба запамʼятати в момент «Додати», щоб не поставити результат на іншу сторінку (ТЗ §2.2). */
-export interface FragmentContext { boardId: string; pageId: string; viewerId: string }
+export type { FragmentContext }
 
 const props = withDefaults(defineProps<{
   contentItemId: number
@@ -195,17 +194,8 @@ function onUp(): void { drag = null }
 
 // ─── Додати на дошку ─────────────────────────────────────────────────────────
 
-const ERR_KEYS: Record<string, string> = {
-  bad_rect: 'rect', bad_page: 'page', not_pdf: 'notPdf', forbidden: 'forbidden', not_found: 'forbidden',
-  board_not_found: 'forbidden', viewer_not_on_board: 'viewerGone', bad_viewer: 'viewerGone', quota_exceeded: 'quota',
-  not_ready: 'notReady',
-}
-
 function errorText(err: unknown): string {
-  const resp = (err as { response?: { status?: number; data?: { error?: string } } } | null)?.response
-  if (!resp || typeof resp.status !== 'number') return t('winterboard.pdfFragment.err.offline')
-  const key = resp.status === 507 ? 'quota' : ERR_KEYS[resp.data?.error ?? ''] ?? 'failed'
-  return t(`winterboard.pdfFragment.err.${key}`)
+  return t(`winterboard.pdfFragment.err.${fragmentErrorKey(err)}`)
 }
 
 async function add(): Promise<void> {

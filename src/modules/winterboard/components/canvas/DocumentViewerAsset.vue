@@ -6,6 +6,9 @@
     @dragend="handleDragEnd"
     @transformend="handleTransformEnd"
     @wheel="handleWheel"
+    @pointerdown="onQuickDown"
+    @mousedown="onQuickGuard"
+    @touchstart="onQuickGuard"
   >
     <!-- Background frame -->
     <v-rect :config="frameConfig" />
@@ -35,11 +38,17 @@
     <v-rect :config="nextBtnConfig" />
     <v-text :config="nextBtnTextConfig" />
 
-    <!-- «✂️ Взяти фрагмент» (TZ_PDF_FRAGMENT_2026-10-13): лише PDF і лише той, хто редагує -->
+    <!-- «✂️ Вирізка фрагмента» (TZ_PDF_FRAGMENT_2026-10-13): документ із хмари, лише той, хто редагує -->
     <template v-if="showCut">
-      <v-rect :config="cutBtnConfig" />
+      <v-rect :config="cutBtnConfig" @mouseenter="hoverHint = 'cut'" @mouseleave="hoverHint = null" />
       <v-text :config="cutBtnTextConfig" />
     </template>
+    <!-- «⚡ Швидка вирізка фрагмента»: обвели на сторінці — одразу на дошці, без вікна й підтверджень -->
+    <template v-if="showQuick">
+      <v-rect :config="quickBtnConfig" @mouseenter="hoverHint = 'quick'" @mouseleave="hoverHint = null" />
+      <v-text :config="quickBtnTextConfig" />
+    </template>
+    <v-rect v-if="quickSel" :config="quickSelConfig" />
 
     <!-- Lock indicator -->
     <v-text v-if="asset.locked" :config="lockConfig" />
@@ -55,13 +64,15 @@
  *   P2: Preloads ONLY ±1 neighbor (browser cache, not rendered)
  *   P3: pages[] NOT sent via WS
  */
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAsset } from '../../types/winterboard'
 import { documentHeaderText } from '../../board/documentTitle'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
-import { CUT_CONTENT_TYPES } from '../library/pdfFragmentRect'
+import {
+  CUT_CONTENT_TYPES, QUICK_MIN_VIEWER_W, quickRect, viewerPointToPage, type FragRect,
+} from '../library/pdfFragmentRect'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -73,8 +84,10 @@ interface Props {
    *  pointer, щоб штрих малювався ПОВЕРХ документа, а не тягнув його (дзеркало
    *  KONVA_PROXY_TYPES: draggable/listening лише в select-режимі). */
   interactive?: boolean
-  /** Показати «✂️ Взяти фрагмент» (вчитель, режим редагування) */
+  /** Показати «✂️ Вирізка фрагмента» і «⚡ Швидка вирізка» (вчитель, режим редагування) */
   canCut?: boolean
+  /** Сервер саме вирізає швидкий фрагмент з цього вікна — у шапці «Вирізаю…» */
+  cutting?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -82,6 +95,7 @@ const props = withDefaults(defineProps<Props>(), {
   scale: 1,
   interactive: true,
   canCut: false,
+  cutting: false,
 })
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
@@ -94,6 +108,8 @@ const emit = defineEmits<{
   expand: [asset: WBAsset]
   pageJump: [id: string]
   cut: [asset: WBAsset]
+  /** Швидка вирізка: сторінка (з 0) і рамка в частках сторінки */
+  quickCut: [asset: WBAsset, pageIndex: number, rect: FragRect]
 }>()
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -208,7 +224,8 @@ const groupConfig = computed(() => ({
   y: props.asset.y,
   width: props.asset.w,
   height: props.asset.h,
-  draggable: props.interactive && !props.asset.locked,
+  // «⚡ Швидка вирізка»: поки обводять рамку, вікно не тягнеться
+  draggable: props.interactive && !props.asset.locked && !quickMode.value,
   // Лівий/верхній край аркуша — межа й під час руху (власник 2026-09-24).
   dragBoundFunc: keepInsideTopLeft,
   // не select-інструмент → listening:false: pointerdown падає на stage-handler
@@ -256,7 +273,7 @@ const headerTextConfig = computed(() => {
     x: 8,
     y: 6,
     width: Math.max(0, props.asset.w - 16 - HEADER_RIGHT_RESERVE),
-    text: documentHeaderText(props.asset, t),
+    text: headerText.value,
     fontSize: 12,
     fontFamily: 'Inter, sans-serif',
     fontStyle: 'bold',
@@ -316,6 +333,155 @@ const showCut = computed(() =>
   && Boolean(props.asset.content_ref?.content_id) && props.asset.w >= 200,
 )
 const cutX = computed(() => props.asset.w - 8 - BTN_W - CUT_GAP - CUT_W)
+
+// ─── «⚡ Швидка вирізка фрагмента» ────────────────────────────────────────────
+// Натиснули ⚡ → режим рамки (хрестик, вікно не тягнеться) → обвели на сторінці → відпустили → `quickCut`.
+// Замалий клік нічого не вирізає й режим не знімає; Esc чи ще раз ⚡ — вихід.
+
+const showQuick = computed(() => showCut.value && props.asset.w >= QUICK_MIN_VIEWER_W)
+const quickX = computed(() => cutX.value - CUT_GAP - CUT_W)
+const quickMode = ref(false)
+/** Рамка, що її зараз тягнуть, — у частках сторінки */
+const quickSel = ref<FragRect | null>(null)
+const hoverHint = ref<'cut' | 'quick' | null>(null)
+let quickStart: { x: number; y: number } | null = null
+let quickStage: any = null
+let quickGroup: any = null
+/** Клік, що завершує рамку (Konva шле його після pointerup), — не виділяє вікно й не відкриває його сторінки */
+let swallowClick = false
+
+const headerText = computed(() => {
+  if (props.cutting) return t('winterboard.pdfFragment.quickCutting')
+  if (quickMode.value) return t('winterboard.pdfFragment.quickHint')
+  if (hoverHint.value === 'cut') return t('winterboard.pdfFragment.title')
+  if (hoverHint.value === 'quick') return t('winterboard.pdfFragment.quick')
+  return documentHeaderText(props.asset, t)
+})
+
+const quickBtnConfig = computed(() => ({
+  x: quickX.value,
+  y: props.asset.h - FOOTER_H + 4,
+  width: CUT_W,
+  height: BTN_H,
+  fill: quickMode.value ? '#047857' : '#fef3c7',
+  stroke: quickMode.value ? '#047857' : '#b45309',
+  strokeWidth: 1,
+  cornerRadius: 3,
+  listening: true,
+  name: 'doc-viewer-quick-cut',
+}))
+
+const quickBtnTextConfig = computed(() => ({
+  x: quickX.value,
+  y: props.asset.h - FOOTER_H + 4,
+  width: CUT_W,
+  height: BTN_H,
+  text: '⚡',
+  fontSize: 13,
+  align: 'center',
+  verticalAlign: 'middle',
+  listening: false,
+}))
+
+const quickSelConfig = computed(() => {
+  const r = quickSel.value ?? { x: 0, y: 0, w: 0, h: 0 }
+  const pw = props.asset.w - 2
+  return {
+    x: 1 + r.x * pw,
+    y: HEADER_H + r.y * contentH.value,
+    width: r.w * pw,
+    height: r.h * contentH.value,
+    stroke: '#047857',
+    strokeWidth: 2,
+    dash: [6, 4],
+    fill: 'rgba(4, 120, 87, 0.08)',
+    listening: false,
+  }
+})
+
+/** Вказівник у координатах групи вікна (група — з події натискання, не пошук за id) */
+function localPoint(stage: any, group: any): { x: number; y: number } | null {
+  const pointer = stage?.getPointerPosition?.()
+  if (!pointer || !group) return null
+  return group.getAbsoluteTransform().copy().invert().point(pointer)
+}
+
+function inPageArea(p: { x: number; y: number }): boolean {
+  return p.y >= HEADER_H && p.y <= props.asset.h - FOOTER_H
+}
+
+/** Поки обводять рамку, звичні mousedown/touchstart дошки (виділення, рамка вибору) сюди не доходять */
+function onQuickGuard(e: any): void {
+  if (!quickMode.value) return
+  const p = localPoint(e.target?.getStage?.(), e.currentTarget)
+  if (p && inPageArea(p)) e.cancelBubble = true
+}
+
+function onKeyQuick(e: KeyboardEvent): void {
+  if (e.key === 'Escape') exitQuick()
+}
+
+function enterQuick(stage: any): void {
+  quickMode.value = true
+  quickSel.value = null
+  quickStage = stage
+  const container = stage?.container?.()
+  if (container) container.style.cursor = 'crosshair'
+  window.addEventListener('keydown', onKeyQuick)
+}
+
+function stopQuickDrag(): void {
+  quickStage?.off?.('pointermove.wbquick pointerup.wbquick')
+  quickStart = null
+  quickGroup = null
+}
+
+function exitQuick(): void {
+  stopQuickDrag()
+  quickMode.value = false
+  quickSel.value = null
+  const container = quickStage?.container?.()
+  if (container) container.style.cursor = ''
+  quickStage = null
+  window.removeEventListener('keydown', onKeyQuick)
+}
+
+function onQuickDown(e: any): void {
+  swallowClick = false
+  if (!quickMode.value) return
+  const stage = e.target?.getStage?.()
+  const group = e.currentTarget
+  const p = localPoint(stage, group)
+  if (!p) return
+  // Лише по сторінці: шапка й футер (там ⚡, ◀ ▶) працюють як завжди
+  if (!inPageArea(p)) return
+  e.cancelBubble = true
+  quickGroup = group
+  quickStart = viewerPointToPage(p.x, p.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H)
+  quickSel.value = { x: quickStart.x, y: quickStart.y, w: 0, h: 0 }
+  stage.on('pointermove.wbquick', () => {
+    const q = localPoint(stage, quickGroup)
+    if (!q || !quickStart) return
+    const b = viewerPointToPage(q.x, q.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H)
+    quickSel.value = {
+      x: Math.min(quickStart.x, b.x), y: Math.min(quickStart.y, b.y),
+      w: Math.abs(b.x - quickStart.x), h: Math.abs(b.y - quickStart.y),
+    }
+  })
+  stage.on('pointerup.wbquick', () => {
+    const q = localPoint(stage, quickGroup)
+    const a = quickStart
+    stopQuickDrag()
+    swallowClick = true
+    if (!q || !a) { quickSel.value = null; return }
+    const rect = quickRect(a, viewerPointToPage(q.x, q.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H))
+    if (!rect) { quickSel.value = null; return } // випадковий клік — нічого не вирізаємо, режим лишається
+    emit('quickCut', props.asset, props.asset.currentPage ?? 0, rect)
+    exitQuick()
+  })
+}
+
+onBeforeUnmount(exitQuick)
 
 const cutBtnConfig = computed(() => ({
   x: cutX.value,
@@ -415,6 +581,7 @@ const lockConfig = computed(() => ({
 // ─── Event handlers ─────────────────────────────────────────────────────────
 
 function handleClick(e: any): void {
+  if (swallowClick) { swallowClick = false; e.cancelBubble = true; return }
   const node = e.target
   const stage = node.getStage()
   if (!stage) { emit('select', props.asset.id); return }
@@ -445,13 +612,25 @@ function handleClick(e: any): void {
       return
     }
 
-    // «✂️ Взяти фрагмент»
+    // «⚡ Швидка вирізка» — увімкнути / вимкнути режим рамки
+    if (showQuick.value && localPos.x >= quickX.value && localPos.x <= quickX.value + CUT_W) {
+      e.cancelBubble = true
+      if (quickMode.value) exitQuick()
+      else enterQuick(stage)
+      return
+    }
+
+    // «✂️ Вирізка фрагмента»
     if (showCut.value && localPos.x >= cutX.value && localPos.x <= cutX.value + CUT_W) {
       e.cancelBubble = true
+      exitQuick()
       emit('cut', props.asset)
       return
     }
   }
+
+  // Поки обводять рамку, клік по сторінці — це рамка, а не виділення вікна
+  if (quickMode.value) { e.cancelBubble = true; return }
 
   // Default: select
   emit('select', props.asset.id)

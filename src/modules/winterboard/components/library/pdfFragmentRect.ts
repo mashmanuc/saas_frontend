@@ -13,6 +13,44 @@ export interface FragRect { x: number; y: number; w: number; h: number }
 /** Сторона рамки — не менше 1 % сторінки (те саме правило на сервері). */
 export const MIN_SIDE = 0.01
 
+/** Що запамʼятати в момент «Додати», щоб не поставити результат на іншу сторінку (ТЗ §2.2). */
+export interface FragmentContext { boardId: string; pageId: string; viewerId: string }
+
+/** «⚡ Швидка вирізка» — лише на вікні документа, де кнопки футера не налазять на лічильник сторінок. */
+export const QUICK_MIN_VIEWER_W = 280
+
+/**
+ * Точка у вікні документа (координати групи Konva) → частки сторінки 0…1.
+ * Сторінка у вікні — від 1 px зліва до w−1 і від шапки до футера (DocumentViewerAsset).
+ */
+export function viewerPointToPage(
+  lx: number, ly: number, w: number, h: number, headerH: number, footerH: number,
+): { x: number; y: number } {
+  const pw = Math.max(1, w - 2)
+  const ph = Math.max(1, h - headerH - footerH)
+  return { x: clamp01((lx - 1) / pw), y: clamp01((ly - headerH) / ph) }
+}
+
+/** Рамка швидкої вирізки з двох точок; замала (випадковий клік) — null, нічого не вирізаємо. */
+export function quickRect(a: { x: number; y: number }, b: { x: number; y: number }): FragRect | null {
+  const r = normRect(a.x, a.y, b.x, b.y)
+  return r.w >= MIN_SIDE && r.h >= MIN_SIDE ? r : null
+}
+
+/** Відмова сервера / мережі → ключ тексту `winterboard.pdfFragment.err.*` (один для обох вирізок). */
+export function fragmentErrorKey(err: unknown): string {
+  const resp = (err as { response?: { status?: number; data?: { error?: string } } } | null)?.response
+  if (!resp || typeof resp.status !== 'number') return 'offline'
+  if (resp.status === 507) return 'quota'
+  const code = resp.data?.error ?? ''
+  const map: Record<string, string> = {
+    bad_rect: 'rect', bad_page: 'page', not_pdf: 'notPdf', forbidden: 'forbidden', not_found: 'forbidden',
+    board_not_found: 'forbidden', viewer_not_on_board: 'viewerGone', bad_viewer: 'viewerGone',
+    quota_exceeded: 'quota', not_ready: 'notReady',
+  }
+  return map[code] ?? 'failed'
+}
+
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 /** Два кути в будь-якому порядку → рамка в межах сторінки. */
