@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it, vi } from 'vitest'
-import { EXPORT_MATH_CLASS, FONT_PROBE_STYLE_ATTR, HTML2CANVAS_PROBE_SRC, domExportScale, fitExportRows, fixFontProbe, settleMathJaxSvg, snapshotBranch, snapshotElement } from '../utils/snapshotElement'
+import { EXPORT_MATH_CLASS, FONT_PROBE_STYLE_ATTR, HTML2CANVAS_PROBE_SRC, domExportScale, fitExportRows, fitMathToContainers, fixFontProbe, settleMathJaxSvg, snapshotBranch, snapshotElement } from '../utils/snapshotElement'
 
 // html2canvas у happy-dom не малює — підміняємо: запамʼятовуємо, що було в документі в момент виклику.
 const h2c = vi.hoisted(() => ({ calls: [] as Array<{ probe: boolean; scale: number }> }))
@@ -140,6 +140,71 @@ describe('fitExportRows — рядок формули у PDF не виходит
     expect((host.querySelector('mjx-container > svg') as SVGSVGElement).style.display).toBe('inline')
     expect((host.querySelector('mjx-container > svg') as SVGSVGElement).getAttribute('width')).toBe('1.4455em')
     expect(r.style.transform).toBe('scale(0.5)')
+  })
+})
+
+describe('fitMathToContainers — формула у PDF не ширша за свою клітинку (рев\'ю Феї, задача НМТ)', () => {
+  // happy-dom не верстає: прямокутники — як у знімку (формула MathJax одним SVG, без переносу).
+  const rect = (left: number, width: number) => ({ width, height: 20, top: 0, left, right: left + width, bottom: 20, x: left, y: 0, toJSON() {} }) as DOMRect
+  /** Клітинка варіанта (cellW, відступ праворуч pad, масштаб дошки zoom) → текст варіанта → формула. */
+  function cell(cellW: number, mathLeft: number, mathW: number, opts: { pad?: number; zoom?: number; fitRow?: boolean } = {}) {
+    const zoom = opts.zoom ?? 1
+    const root = document.createElement('div')
+    document.body.append(root) // обчислені стилі (відступ) — лише в документі
+    root.innerHTML = `<div class="cell"><span class="text"${opts.fitRow ? ' data-export-fit-width="540"' : ''}><span class="${EXPORT_MATH_CLASS}"><mjx-container><svg width="10em" height="1.2em" style="vertical-align: -0.2em"></svg></mjx-container></span></span></div>`
+    const c = root.querySelector('.cell') as HTMLElement
+    const text = root.querySelector('.text') as HTMLElement
+    const host = root.querySelector(`.${EXPORT_MATH_CLASS}`) as HTMLElement
+    if (opts.pad) c.style.paddingRight = `${opts.pad}px`
+    Object.defineProperty(c, 'offsetWidth', { value: cellW })
+    root.getBoundingClientRect = () => rect(0, 1000 * zoom)
+    c.getBoundingClientRect = () => rect(0, cellW * zoom)
+    // Текст варіанта росте разом із формулою — межі не дає.
+    text.getBoundingClientRect = () => rect(mathLeft * zoom, mathW * zoom)
+    host.getBoundingClientRect = () => rect(mathLeft * zoom, mathW * zoom)
+    return { root, svg: host.querySelector('svg') as SVGSVGElement }
+  }
+
+  it('варіант `x ∈ [1; 50)` ширший за клітинку → стиснуто рівно до клітинки', () => {
+    const { root, svg } = cell(120, 10, 160)
+    fitMathToContainers(root)
+    expect(svg.getAttribute('width')).toBe(`${10 * (110 / 160)}em`)
+    expect(svg.getAttribute('height')).toBe(`${1.2 * (110 / 160)}em`)
+    expect(svg.style.verticalAlign).toBe(`${-0.2 * (110 / 160)}em`)
+  })
+
+  it('відступ клітинки й масштаб дошки враховано', () => {
+    const { root, svg } = cell(120, 10, 160, { pad: 10, zoom: 0.5 })
+    fitMathToContainers(root)
+    expect(svg.getAttribute('width')).toBe(`${10 * (100 / 160)}em`)
+  })
+
+  it('формула, що вміщується, — без змін', () => {
+    const { root, svg } = cell(200, 10, 160)
+    fitMathToContainers(root)
+    expect(svg.getAttribute('width')).toBe('10em')
+  })
+
+  it('рядок із власною підгонкою (data-export-fit-width) не чіпаємо — його стискає fitExportRows', () => {
+    const { root, svg } = cell(120, 10, 160, { fitRow: true })
+    fitMathToContainers(root)
+    expect(svg.getAttribute('width')).toBe('10em')
+  })
+
+  it('snapshotElement: формула отримує колір живого рядка (у картинці currentColor інакше чорний) і підгонку за клітинкою', async () => {
+    const root = document.createElement('div')
+    document.body.append(root) // колір береться з обчисленого стилю живої формули
+    root.innerHTML = '<div class="cell"><span class="katex" style="color: rgb(140, 120, 100)"><annotation encoding="application/x-tex">x \\in [1; 50)</annotation></span></div>'
+    root.getBoundingClientRect = () => rect(0, 300)
+    const c = root.querySelector('.cell') as HTMLElement
+    c.getBoundingClientRect = () => rect(0, 120)
+    const host = root.querySelector('.katex') as HTMLElement
+    host.getBoundingClientRect = () => rect(10, 160)
+    const res = await snapshotElement(root, new AbortController().signal)
+    expect(res).not.toBeNull()
+    const svg = host.querySelector('mjx-container > svg') as SVGSVGElement
+    expect(svg.style.color).toBe('rgb(140, 120, 100)')
+    expect(svg.getAttribute('width')).toBe(`${1.4455 * (110 / 160)}em`)
   })
 })
 

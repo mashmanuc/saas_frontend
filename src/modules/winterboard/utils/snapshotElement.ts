@@ -112,6 +112,51 @@ export function fitExportRows(root: ParentNode): void {
   })
 }
 
+/** Помножити розмір svg (`width`/`height` і зсув базової лінії) на k, хоч би в чому він був заданий. */
+function scaleSvgSize(svg: SVGSVGElement, k: number): void {
+  const mul = (v: string | null) => {
+    const m = /^(-?[\d.]+)([a-z%]*)$/i.exec((v ?? '').trim())
+    return m ? `${Number(m[1]) * k}${m[2]}` : null
+  }
+  for (const attr of ['width', 'height']) {
+    const v = mul(svg.getAttribute(attr))
+    if (v) svg.setAttribute(attr, v)
+  }
+  const va = mul(svg.style.verticalAlign)
+  if (va) svg.style.verticalAlign = va
+}
+
+/**
+ * Формула в знімку не ширша за місце, яке їй дає верстка (клітинка варіанта, рядок, сам віджет).
+ *
+ * На екрані KaTeX переносить довгу формулу на другий рядок; у знімку формула — один SVG MathJax,
+ * перенести його не можна. У вузькій клітинці (варіант задачі НМТ `x ∈ [1; 50)`) він виходив за
+ * межу й обрізався — у PDF губився зміст (рев'ю Феї 2026-10-13). Межа — найближчий правий край
+ * вмісту серед предків до кореня знімка: предки, що ростуть разом із формулою, межі не дають.
+ * Рядки з власною підгонкою (`data-export-fit-width`, fitExportRows) не чіпаємо.
+ */
+export function fitMathToContainers(root: HTMLElement): void {
+  root.querySelectorAll<HTMLElement>(`.${EXPORT_MATH_CLASS}`).forEach((host) => {
+    if (host.closest(`[${EXPORT_FIT_WIDTH_ATTR}]`)) return
+    const box = host.getBoundingClientRect()
+    if (box.width <= 0) return
+    let limit = Infinity
+    for (let a: HTMLElement | null = host.parentElement; a; a = a === root ? null : a.parentElement) {
+      const r = a.getBoundingClientRect()
+      if (r.width <= 0) continue
+      const cs = getComputedStyle(a)
+      // Відступи — у CSS px, прямокутник — з урахуванням transform предків (масштаб дошки).
+      const sx = a.offsetWidth > 0 ? r.width / a.offsetWidth : 1
+      const inset = (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)
+      limit = Math.min(limit, r.right - inset * sx)
+    }
+    const room = limit - box.left
+    if (!(room > 0) || box.width <= room + 0.5) return
+    const k = room / box.width
+    host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach((svg) => scaleSvgSize(svg, k))
+  })
+}
+
 /** Яку гілку знімка взяти для кореня (без побічних дій — і для тестів). */
 export function snapshotBranch(rootEl: HTMLElement): 'canvas' | 'svg' | 'dom' {
   if (rootEl.hasAttribute(EXPORT_DOM_ATTR)) return 'dom'
@@ -459,11 +504,18 @@ async function snapshotDom(
             host.innerHTML = svg
             // MathML для читачів екрана — на картинці зайвий (без CSS MathJax займав місце).
             host.querySelectorAll('mjx-assistive-mml').forEach((el) => el.remove())
-            host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach(settleMathJaxSvg)
+            host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach((svg) => {
+              settleMathJaxSvg(svg)
+              // html2canvas малює svg окремою картинкою, де `currentColor` не успадковує колір
+              // рядка й стає чорним (у PDF сірий рядок ОДЗ виходив чорним) — колір явно, з живої формули.
+              svg.style.color = cs.color
+            })
           }
         }
 
-        // 3) Рядки з позначкою — у свою рамку за розміром MathJax (не KaTeX з екрана).
+        // 3) Формула не ширша за свою клітинку (варіант задачі НМТ): у знімку її не перенести.
+        fitMathToContainers(clonedEl)
+        // 4) Рядки з позначкою — у свою рамку за розміром MathJax (не KaTeX з екрана).
         fitExportRows(clonedEl)
       },
     })
