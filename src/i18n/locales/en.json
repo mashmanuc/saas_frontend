@@ -7701,6 +7701,7 @@
       "beaconUnsupported": "Couldn't save changes before page closed."
     },
     "replayList": {
+      "clipHint": "You can turn a recording into a short video: press “🎬 Video”, choose a page and a fragment — and save it.",
       "title": "My Replays",
       "subtitle": "Recordings of your lessons and boards: watch, share a link",
       "countLabel": "Replays: {count}",
@@ -9037,6 +9038,7 @@
     },
     "remote": {
       "mirror": {
+        "recHint": "The lesson will be recorded automatically. After “Stop” it will appear in “My Replays”.",
         "open": "Board mirror",
         "title": "Board mirror",
         "noWakeLock": "This phone cannot keep the screen on: if the screen turns off, snapshots stop until it is back on.",

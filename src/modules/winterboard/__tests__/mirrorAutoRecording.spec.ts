@@ -400,3 +400,40 @@ describe('контракт і тексти', () => {
     expect(view.match(/sendRecording\(/g)).toHaveLength(1)
   })
 })
+
+// Власник 2026-10-13: «нехай буде як є автозапис — тільки мʼяке пояснення для користувача».
+describe('мʼяке пояснення перед «Почати»', () => {
+  async function calibrate(over: Record<string, unknown> = {}) {
+    const { w } = mirror(over)
+    await flushPromises()
+    const v = w.find('[data-testid="mirror-video"]').element as HTMLVideoElement
+    Object.defineProperty(v, 'videoWidth', { value: 1280, configurable: true })
+    Object.defineProperty(v, 'videoHeight', { value: 720, configurable: true })
+    v.dispatchEvent(new Event('loadedmetadata'))
+    await flushPromises()
+    return w
+  }
+  const hint = (w: ReturnType<typeof mirror>['w']) => w.find('[data-testid="mirror-rec-hint"]')
+
+  it('урок, запис ще не йде — «Урок запишеться сам…»', async () => {
+    const w = await calibrate()
+    expect(hint(w).exists()).toBe(true)
+    expect(hint(w).text()).toContain('Урок запишеться сам')
+    w.unmount()
+  })
+
+  it('не урок «Провести», старий ноутбук чи запис уже йде — без пояснення', async () => {
+    for (const recording of [{ state: 'unavailable', byMirrorRun: null }, null, { state: 'recording', byMirrorRun: null }]) {
+      const w = await calibrate({ recording })
+      expect(hint(w).exists()).toBe(false)
+      w.unmount()
+    }
+  })
+
+  it('після «Почати» пояснення зникає (далі — рядок стану запису)', async () => {
+    const { w } = mirror()
+    await start(w)
+    expect(hint(w).exists()).toBe(false)
+    w.unmount()
+  })
+})

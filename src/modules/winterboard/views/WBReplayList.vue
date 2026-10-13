@@ -6,6 +6,10 @@
         <p class="replay-list__subtitle">
           {{ t('winterboard.replayList.subtitle') }}
         </p>
+        <!-- Власник 2026-10-13: «треба просто пояснення… як робиться відео» — мʼяко, не технічно -->
+        <p v-if="canMakeClip" class="replay-list__hint" data-testid="replay-clip-hint">
+          {{ t('winterboard.replayList.clipHint') }}
+        </p>
       </div>
       <!-- 2026-09-22 (огляд, п.5): був самотній бейдж «5» без підпису —
            незрозуміло, що саме 5. Тепер із назвою. -->
@@ -659,6 +663,11 @@ async function onTabDrop(tab: ReplayStatus, e: DragEvent) {
 .replay-list__subtitle {
   margin: 0;
   font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+.replay-list__hint {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 

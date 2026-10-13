@@ -33,7 +33,11 @@
           <p v-else-if="findNote" class="wb-mirror__line" :class="findNote === 'found' ? 'is-ok' : 'is-warn'" data-testid="mirror-find-note">
             {{ t(`winterboard.remote.mirror.find.${findNote}`) }}
           </p>
-          <p v-else class="wb-mirror__line" data-testid="mirror-status">{{ statusText }}</p>
+          <template v-else>
+            <p class="wb-mirror__line" data-testid="mirror-status">{{ statusText }}</p>
+            <!-- Власник 2026-10-13: «нехай буде як є автозапис — тільки мʼяке пояснення для користувача» -->
+            <p v-if="recWillStart" class="wb-mirror__line is-note" data-testid="mirror-rec-hint">{{ t('winterboard.remote.mirror.recHint') }}</p>
+          </template>
         </template>
         <template v-else>
           <p class="wb-mirror__line" :class="`is-${statusTone}`" data-testid="mirror-status">{{ statusText }}</p>
@@ -393,6 +397,9 @@ const recEndedOnLaptop = ref(false)
 let recLastResult = ''
 
 const recSupported = computed(() => !!props.sendRecording)
+/** Перед «Почати»: урок запишеться сам (ноутбук уміє запис, дошка — урок, запис ще не йде) */
+const recWillStart = computed(() => recSupported.value && !!props.recording
+  && ['idle', 'finalized', 'paused'].includes(props.recording.state as string))
 /** Запис іде (чи на паузі) і його ввімкнув саме цей запуск (власник циклу — хто ввімкнув) */
 const recOurs = computed(() => {
   const r = props.recording
