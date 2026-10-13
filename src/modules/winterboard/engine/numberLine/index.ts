@@ -2,6 +2,7 @@
 export * from './types'
 export { parseLine, parseLines, parseNumber, conditionToText, displayOp } from './parse'
 export { parseIntervalsLine, solveIntervals, denominatorHoles, type ParsedIntervalsLine } from './intervals'
+export { inequalityLatex, numberLatex, setLatex, statementLatex } from './latex'
 export { chooseNumberLine, type ChooseInput, type ChooseOutcome, type ChosenFields, type SolveFn } from './choose'
 export {
   evaluate,
@@ -12,6 +13,8 @@ export {
   type NumberLineKind,
   describeNumberLine,
   solverBoundLabel,
+  solverBoundTex,
+  formulaParts,
   intervalsFormula,
   displayNumber,
   type IntervalName,

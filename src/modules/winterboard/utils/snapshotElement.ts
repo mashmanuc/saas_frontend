@@ -46,6 +46,135 @@ export const EXPORT_HIDE_SELECTOR = [
 ].join(',')
 
 /**
+ * Позначка кореня віджета: знімати гілкою DOM (html2canvas + MathJax v2 замість KaTeX), навіть
+ * якщо всередині великий SVG — для віджетів, де формули KaTeX (HTML) лежать поверх рисунка SVG.
+ * Гілка SVG їх би загубила, а foreignObject на KaTeX ламається мовчки (перевірено 2026-05-25).
+ * Як і `[data-export-hide]`, — загальна позначка: новий віджет ставить атрибут, цей файл не правиться.
+ */
+export const EXPORT_DOM_ATTR = 'data-export-dom'
+/**
+ * Бажана ширина знімка гілки DOM (логічна ширина віджета, px): знімок не дрібніє разом із масштабом
+ * дошки. Масштаб html2canvas — не менше 1 і не більше 4, межа MAX_DIMENSION — як для решти гілок.
+ */
+export const EXPORT_WIDTH_ATTR = 'data-export-width'
+
+/**
+ * Рядок, який у знімку має вміститись у свою рамку (логічні px): `data-export-fit-width` /
+ * `data-export-fit-height`. У знімку формули малює MathJax — його гліфи трохи ширші й вищі за
+ * KaTeX, тож рядок, підігнаний на екрані впритул, у PDF вилазив би. Підганяємо в КЛОНІ, після
+ * підстановки MathJax (fitExportRows). Загальна позначка, як `[data-export-hide]`.
+ */
+export const EXPORT_FIT_WIDTH_ATTR = 'data-export-fit-width'
+export const EXPORT_FIT_HEIGHT_ATTR = 'data-export-fit-height'
+/** Клас, яким у клоні замінюємо `.katex` навколо MathJax (без CSS KaTeX). */
+export const EXPORT_MATH_CLASS = 'wb-export-math'
+
+/**
+ * SVG MathJax у знімку — як задумав MathJax, незалежно від CSS сторінки:
+ *  - розміри в `ex` → в `em` (MathJax рахує 1ex = 0,5em; справжній ex шрифту різний — у KaTeX_Main
+ *    0,43em, у системних інший — і формула виходила то дрібнішою, то більшою за свій рядок);
+ *  - рядковий svg (глобальний preflight `svg { display: block }` ставив формулу вгору контейнера,
+ *    вище за текст рядка), зсув базової лінії — один раз.
+ */
+export function settleMathJaxSvg(svg: SVGSVGElement): void {
+  const em = (v: string | null) => {
+    const m = /^(-?[\d.]+)ex$/.exec((v ?? '').trim())
+    return m ? `${Number(m[1]) / 2}em` : null
+  }
+  for (const attr of ['width', 'height']) {
+    const v = em(svg.getAttribute(attr))
+    if (v) svg.setAttribute(attr, v)
+  }
+  const va = em(svg.style.verticalAlign)
+  if (va) svg.style.verticalAlign = va
+  // Зсув базової лінії — лише на svg, як у MathJax: копія на контейнері (renderLatexToSvgV2)
+  // опускала формулу вдвічі, і текст рядка стояв вище за неї.
+  if (svg.parentElement) svg.parentElement.style.verticalAlign = ''
+  svg.style.display = 'inline'
+}
+
+/** Стискає (transform: scale) кожен позначений рядок до його рамки за фактичним розміром. */
+export function fitExportRows(root: ParentNode): void {
+  root.querySelectorAll<HTMLElement>(`[${EXPORT_FIT_WIDTH_ATTR}]`).forEach((el) => {
+    const maxW = Number(el.getAttribute(EXPORT_FIT_WIDTH_ATTR))
+    const maxH = Number(el.getAttribute(EXPORT_FIT_HEIGHT_ATTR))
+    el.style.transform = 'none'
+    const w = el.offsetWidth
+    // Висота математики — за самим SVG MathJax (контейнер ще й висота рядка); у клоні предки ще
+    // з transform, тож ділимо на їхній масштаб. Залишки KaTeX — за strut.
+    const rectW = el.getBoundingClientRect().width
+    const k0 = w > 0 && rectW > 0 ? rectW / w : 1
+    let h = 0
+    el.querySelectorAll('mjx-container > svg').forEach((m) => { h = Math.max(h, m.getBoundingClientRect().height / k0) })
+    el.querySelectorAll<HTMLElement>('.katex-html .strut').forEach((m) => { h = Math.max(h, m.offsetHeight) })
+    const k = Math.min(1, w > 0 && maxW > 0 ? maxW / w : 1, h > 0 && maxH > 0 ? maxH / h : 1)
+    if (k < 1) el.style.transform = `scale(${k})`
+  })
+}
+
+/** Помножити розмір svg (`width`/`height` і зсув базової лінії) на k, хоч би в чому він був заданий. */
+function scaleSvgSize(svg: SVGSVGElement, k: number): void {
+  const mul = (v: string | null) => {
+    const m = /^(-?[\d.]+)([a-z%]*)$/i.exec((v ?? '').trim())
+    return m ? `${Number(m[1]) * k}${m[2]}` : null
+  }
+  for (const attr of ['width', 'height']) {
+    const v = mul(svg.getAttribute(attr))
+    if (v) svg.setAttribute(attr, v)
+  }
+  const va = mul(svg.style.verticalAlign)
+  if (va) svg.style.verticalAlign = va
+}
+
+/**
+ * Формула в знімку не ширша за місце, яке їй дає верстка (клітинка варіанта, рядок, сам віджет).
+ *
+ * На екрані KaTeX переносить довгу формулу на другий рядок; у знімку формула — один SVG MathJax,
+ * перенести його не можна. У вузькій клітинці (варіант задачі НМТ `x ∈ [1; 50)`) він виходив за
+ * межу й обрізався — у PDF губився зміст (рев'ю Феї 2026-10-13). Межа — найближчий правий край
+ * вмісту серед предків до кореня знімка: предки, що ростуть разом із формулою, межі не дають.
+ * Рядки з власною підгонкою (`data-export-fit-width`, fitExportRows) не чіпаємо.
+ */
+export function fitMathToContainers(root: HTMLElement): void {
+  root.querySelectorAll<HTMLElement>(`.${EXPORT_MATH_CLASS}`).forEach((host) => {
+    if (host.closest(`[${EXPORT_FIT_WIDTH_ATTR}]`)) return
+    const box = host.getBoundingClientRect()
+    if (box.width <= 0) return
+    let limit = Infinity
+    for (let a: HTMLElement | null = host.parentElement; a; a = a === root ? null : a.parentElement) {
+      const r = a.getBoundingClientRect()
+      if (r.width <= 0) continue
+      const cs = getComputedStyle(a)
+      // Відступи — у CSS px, прямокутник — з урахуванням transform предків (масштаб дошки).
+      const sx = a.offsetWidth > 0 ? r.width / a.offsetWidth : 1
+      const inset = (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)
+      limit = Math.min(limit, r.right - inset * sx)
+    }
+    const room = limit - box.left
+    if (!(room > 0) || box.width <= room + 0.5) return
+    const k = room / box.width
+    host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach((svg) => scaleSvgSize(svg, k))
+  })
+}
+
+/** Яку гілку знімка взяти для кореня (без побічних дій — і для тестів). */
+export function snapshotBranch(rootEl: HTMLElement): 'canvas' | 'svg' | 'dom' {
+  if (rootEl.hasAttribute(EXPORT_DOM_ATTR)) return 'dom'
+  const canvas = rootEl.querySelector('canvas') as HTMLCanvasElement | null
+  if (canvas && isPrimaryElement(canvas, rootEl)) return 'canvas'
+  const svg = rootEl.querySelector('svg') as SVGSVGElement | null
+  if (svg && isPrimaryElement(svg, rootEl)) return 'svg'
+  return 'dom'
+}
+
+/** Масштаб html2canvas для бажаної ширини: [1; 4]; без атрибута — 1. */
+export function domExportScale(rootEl: HTMLElement, onScreenWidth: number): number {
+  const want = Number(rootEl.getAttribute(EXPORT_WIDTH_ATTR))
+  if (!Number.isFinite(want) || want <= 0 || onScreenWidth <= 0) return 1
+  return Math.min(4, Math.max(1, want / onScreenWidth))
+}
+
+/**
  * Знімає PNG snapshot першого canvas/svg всередині rootEl.
  *
  * @returns Blob+розмір або null при failure/abort/нечого знімати
@@ -57,26 +186,20 @@ export async function snapshotElement(
   if (!rootEl) return null
   if (signal.aborted) return null
 
+  // 0. Явна позначка [data-export-dom] — одразу DOM (формули KaTeX поверх рисунка SVG).
   // 1. Native canvas — only if it's the primary visual (covers >=50% rootEl).
   //    Без перевірки розміру: dom-widgets з нестандартним child canvas
   //    (наприклад, audio player thumbnail) ловилися б замість DOM rasterize.
-  const canvas = rootEl.querySelector('canvas') as HTMLCanvasElement | null
-  if (canvas && isPrimaryElement(canvas, rootEl)) {
-    return snapshotCanvas(canvas, signal)
-  }
-
   // 2. SVG — only if primary (cover ≥50% rootEl).
   //    Inline KaTeX SVG (sqrt vinculum, viewBox 400000em) — крихітні відносно
   //    nmt_task rootEl → відфільтрується тут → fall through до snapshotDom.
   //    Geometry 2D / NMT3D: JSXGraph / NMT engine рендерять svg що заповнює
   //    stageRef → проходить.
-  const svg = rootEl.querySelector('svg') as SVGSVGElement | null
-  if (svg && isPrimaryElement(svg, rootEl)) {
-    return snapshotSvg(svg, signal)
-  }
-
   // 3. DOM rasterize fallback — для HTML widgets (nmt_task, future theory
   //    blocks). html2canvas + MathJax v2 SVG injection у onclone.
+  const branch = snapshotBranch(rootEl)
+  if (branch === 'canvas') return snapshotCanvas(rootEl.querySelector('canvas') as HTMLCanvasElement, signal)
+  if (branch === 'svg') return snapshotSvg(rootEl.querySelector('svg') as SVGSVGElement, signal)
   return snapshotDom(rootEl, signal)
 }
 
@@ -215,6 +338,25 @@ async function snapshotSvg(
   }
 }
 
+/**
+ * html2canvas міряє базову лінію шрифту в ЖИВОМУ документі: рядок тексту + картинка 1×1 з
+ * `vertical-align: baseline` (FontMetrics.parseMetrics). Глобальний preflight (`src/assets/main.css`:
+ * `img { display: block }`) зносить ту картинку на наступний рядок — базова лінія виходить на
+ * ~пів рядка нижчою, і ВЕСЬ текст DOM-знімка малюється на ~7 px нижче, ніж на екрані (поруч
+ * із формулами MathJax, які стоять правильно, це видно одразу). На час знімка повертаємо саме
+ * цій картинці (її data-URI з html2canvas) рядкову поведінку; більше нічого не чіпаємо.
+ */
+export const HTML2CANVAS_PROBE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+export const FONT_PROBE_STYLE_ATTR = 'data-snapshot-font-probe'
+
+export function fixFontProbe(doc: Document = document): () => void {
+  const style = doc.createElement('style')
+  style.setAttribute(FONT_PROBE_STYLE_ATTR, '')
+  style.textContent = `img[src="${HTML2CANVAS_PROBE_SRC}"] { display: inline !important; }`
+  doc.head.appendChild(style)
+  return () => style.remove()
+}
+
 // ── DOM rasterize (html2canvas) ─────────────────────────────────────────
 //
 // Для HTML widgets без власного canvas/svg (nmt_task, future theory/formula
@@ -247,6 +389,8 @@ async function snapshotDom(
     console.warn('[WB:snapshot] dom_too_large', { width: w, height: h, max: MAX_DIMENSION })
     return null
   }
+  // Бажана ширина знімка ([data-export-width]) — у межах MAX_DIMENSION.
+  const scale = Math.min(domExportScale(rootEl, w), MAX_DIMENSION / w, MAX_DIMENSION / h)
 
   // PRE-PHASE: render all KaTeX math у source DOM through MathJax v2 → SVG.
   // Why: KaTeX HTML uses inline-SVG with viewBox=400000em (sqrt vinculum,
@@ -306,12 +450,14 @@ async function snapshotDom(
   if (signal.aborted) return null
 
   let canvas: HTMLCanvasElement
+  const restoreProbe = fixFontProbe(rootEl.ownerDocument)
   try {
     canvas = await html2canvas(rootEl, {
       backgroundColor: '#ffffff',
       // pixelRatio>1 покращує текст, але збільшує blob.size; 1 безпечно
-      // тримається у 2 MB cap для типового nmt_task (~800×400).
-      scale: 1,
+      // тримається у 2 MB cap для типового nmt_task (~800×400). Більше — лише
+      // на прохання віджета ([data-export-width]).
+      scale,
       // Не пробуємо завантажувати cross-origin зображення (CORS-протекція
       // блокує canvas tainting — toBlob потім кине SecurityError).
       useCORS: false,
@@ -339,21 +485,45 @@ async function snapshotDom(
         // 2) Replace each cloned .katex span з pre-rendered MathJax SVG.
         //    Walk source + clone у parallel по індексу (cloneNode preserves
         //    DOM order, querySelectorAll is document-order).
-        if (mathReplacements.size === 0) return
-        const sourceKatex = Array.from(rootEl.querySelectorAll('.katex'))
-        const clonedKatex = Array.from(clonedEl.querySelectorAll('.katex'))
-        const len = Math.min(sourceKatex.length, clonedKatex.length)
-        for (let i = 0; i < len; i++) {
-          const svg = mathReplacements.get(sourceKatex[i])
-          if (svg) {
-            clonedKatex[i].innerHTML = svg
+        //    MathJax кладемо НЕ всередину `.katex`: CSS KaTeX (`.katex svg { position: absolute;
+        //    width: 100%; height: inherit }`) стискав і зсував його SVG (у PDF «−3» дрібніше за «1»,
+        //    формула вища за текст рядка). Клас знімаємо, розмір шрифту переносимо з живого `.katex`.
+        if (mathReplacements.size > 0) {
+          const sourceKatex = Array.from(rootEl.querySelectorAll<HTMLElement>('.katex'))
+          const clonedKatex = Array.from(clonedEl.querySelectorAll<HTMLElement>('.katex'))
+          const len = Math.min(sourceKatex.length, clonedKatex.length)
+          for (let i = 0; i < len; i++) {
+            const svg = mathReplacements.get(sourceKatex[i])
+            if (!svg) continue
+            const host = clonedKatex[i]
+            const cs = getComputedStyle(sourceKatex[i])
+            host.className = EXPORT_MATH_CLASS
+            host.style.fontSize = cs.fontSize
+            host.style.lineHeight = cs.lineHeight
+            host.style.whiteSpace = 'nowrap'
+            host.innerHTML = svg
+            // MathML для читачів екрана — на картинці зайвий (без CSS MathJax займав місце).
+            host.querySelectorAll('mjx-assistive-mml').forEach((el) => el.remove())
+            host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach((svg) => {
+              settleMathJaxSvg(svg)
+              // html2canvas малює svg окремою картинкою, де `currentColor` не успадковує колір
+              // рядка й стає чорним (у PDF сірий рядок ОДЗ виходив чорним) — колір явно, з живої формули.
+              svg.style.color = cs.color
+            })
           }
         }
+
+        // 3) Формула не ширша за свою клітинку (варіант задачі НМТ): у знімку її не перенести.
+        fitMathToContainers(clonedEl)
+        // 4) Рядки з позначкою — у свою рамку за розміром MathJax (не KaTeX з екрана).
+        fitExportRows(clonedEl)
       },
     })
   } catch (err) {
     console.warn('[WB:snapshot] dom_html2canvas_failed', err)
     return null
+  } finally {
+    restoreProbe()
   }
   if (signal.aborted) return null
 
@@ -364,7 +534,7 @@ async function snapshotDom(
           resolve(null)
           return
         }
-        resolve({ blob, width: w, height: h })
+        resolve({ blob, width: canvas.width, height: canvas.height })
       }, 'image/png')
     } catch (err) {
       console.warn('[WB:snapshot] dom_toBlob_failed', err)

@@ -32,8 +32,13 @@ import 'katex/dist/katex.min.css'
 import { asciiMathToLatex, PARAM_FOCUS_SYM_CLASS } from '../../utils/asciiMathToLatex'
 
 const props = defineProps<{
-  /** ascii-вираз зі store (напр. "x^2" або "y = 3x^2-4x+1"). */
+  /** ascii-вираз зі store (напр. "x^2" або "y = 3x^2-4x+1"); з `latex` — текст на випадок помилки. */
   expr: string
+  /**
+   * Готовий LaTeX (будівник віджета, напр. числової прямої) — без ascii-конвертації.
+   * Невалідний → той самий fallback: `expr` звичайним текстом.
+   */
+  latex?: string
   /** Display-режим KaTeX (блочний, більший). Default: inline. */
   display?: boolean
   /** Parameter Focus: ідентифікатор, який обгорнути в `.wb-pf-sym`. */
@@ -52,10 +57,12 @@ const warned = new Set<string>()
 
 const html = computed<string | null>(() => {
   const src = (props.expr ?? '').trim()
-  if (!src) return null
+  if (!src && !props.latex) return null
   try {
     const hl = props.highlightIdent || undefined
-    const latex = toKatexCompatible(asciiMathToLatex(src, { highlightIdent: hl }))
+    const latex = props.latex
+      ? toKatexCompatible(props.latex)
+      : toKatexCompatible(asciiMathToLatex(src, { highlightIdent: hl }))
     return katex.renderToString(latex, {
       output: 'htmlAndMathml',
       displayMode: props.display === true,
