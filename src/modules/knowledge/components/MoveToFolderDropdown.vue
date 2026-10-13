@@ -35,7 +35,8 @@
         <button
           type="button"
           class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
-          :class="currentFolder === null ? 'text-primary-600 font-medium' : 'text-gray-700'"
+          :class="currentFolder === null ? 'wb-move-current' : 'text-gray-700'"
+          :disabled="isMoving"
           @click="moveTo(null)"
         >
           {{ $t('knowledge.folder.unfiled') }}
@@ -47,8 +48,9 @@
           :key="folder.id"
           type="button"
           class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors truncate"
-          :class="currentFolder === folder.id ? 'text-primary-600 font-medium' : 'text-gray-700'"
+          :class="currentFolder === folder.id ? 'wb-move-current' : 'text-gray-700'"
           :style="{ paddingLeft: `${12 + folder._depth * 16}px` }"
+          :disabled="isMoving"
           @click="moveTo(folder.id)"
         >
           📁 {{ folder.name }}
@@ -70,8 +72,14 @@ import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { LessonFolder } from '../api/lessonSaveApi'
 
 const props = defineProps<{
-  lessonId: string
-  currentFolder: string | null
+  /** Один урок (меню «⋯» картки) … */
+  lessonId?: string
+  /** … або кілька (панель «Обрано: N», 2026-10-13). */
+  lessonIds?: string[]
+  /** Папка уроку; `undefined` — у вибраних різні папки, позначки й пропуску немає. */
+  currentFolder?: string | null
+  /** Перелік папок від сторінки (бічна панель уже має його) — без запиту при кожному відкритті меню. */
+  folders?: LessonFolder[]
 }>()
 
 const emit = defineEmits<{
@@ -94,7 +102,7 @@ const sortedFolders = computed<FolderWithDepth[]>(() => {
   const result: FolderWithDepth[] = []
 
   function addLevel(parentId: string | null, depth: number) {
-    const children = folders.value.filter(f => f.parent === parentId)
+    const children = (props.folders ?? folders.value).filter(f => f.parent === parentId)
     for (const child of children) {
       result.push({ ...child, _depth: depth })
       addLevel(child.id, depth + 1)
@@ -116,7 +124,7 @@ onBeforeUnmount(() => {
 })
 
 async function ensureFolders() {
-  if (_foldersLoaded) return
+  if (props.folders || _foldersLoaded) return
   _foldersLoaded = true
   try {
     folders.value = await lessonSaveApi.getFolders()
@@ -150,7 +158,9 @@ function handleOutsideClick(e: MouseEvent) {
 }
 
 async function moveTo(folderId: string | null) {
-  if (folderId === props.currentFolder) {
+  if (isMoving.value) return
+  const ids = props.lessonIds ?? (props.lessonId ? [props.lessonId] : [])
+  if (!ids.length || (props.currentFolder !== undefined && folderId === props.currentFolder)) {
     isOpen.value = false
     return
   }
@@ -159,7 +169,7 @@ async function moveTo(folderId: string | null) {
   try {
     // INVARIANT: folder change ≠ ownership change (RISK #7)
     // bulk-move only changes folder_id, backend verifies tutor ownership
-    await lessonSaveApi.bulkMove([props.lessonId], folderId)
+    await lessonSaveApi.bulkMove(ids, folderId)
     emit('moved', folderId)
     isOpen.value = false
   } catch (err) {
@@ -169,3 +179,11 @@ async function moveTo(folderId: string | null) {
   }
 }
 </script>
+
+<style scoped>
+/* Поточна папка уроку: text-primary-600 у темі не існує — позначка була невидима (2026-10-13). */
+.wb-move-current {
+  color: var(--accent);
+  font-weight: 600;
+}
+</style>

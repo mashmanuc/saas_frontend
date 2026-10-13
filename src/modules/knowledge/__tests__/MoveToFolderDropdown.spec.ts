@@ -41,3 +41,31 @@ describe('MoveToFolderDropdown', () => {
     w.unmount()
   })
 })
+
+describe('MoveToFolderDropdown — кілька уроків і готовий перелік папок (2026-10-13)', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('переносить усі вибрані одним запитом і не тягне папки, якщо сторінка їх дала', async () => {
+    vi.mocked(lessonSaveApi.getFolders).mockClear()
+    vi.mocked(lessonSaveApi.bulkMove).mockClear()
+    const w = mount(MoveToFolderDropdown, {
+      props: {
+        lessonIds: ['L1', 'L2', 'L3'],
+        folders: [{ id: 'f-hist', name: 'Історія', parent: null, order: 0, lesson_count: 5, children_count: 0,
+          created_at: '2026-10-13T00:00:00Z', updated_at: '2026-10-13T00:00:00Z' }],
+      },
+      attachTo: document.body,
+      global: { mocks: { $t: (k: string) => k } },
+    })
+    await w.find('button').trigger('click')
+    await flushPromises()
+    expect(lessonSaveApi.getFolders).not.toHaveBeenCalled()           // жодного запиту при відкритті
+    const item = [...document.body.querySelectorAll('button')].find(b => b.textContent?.includes('Історія'))
+    item!.click()
+    await flushPromises()
+    expect(lessonSaveApi.bulkMove).toHaveBeenCalledTimes(1)
+    expect(lessonSaveApi.bulkMove).toHaveBeenCalledWith(['L1', 'L2', 'L3'], 'f-hist')
+    expect(w.emitted('moved')?.[0]).toEqual(['f-hist'])
+    w.unmount()
+  })
+})

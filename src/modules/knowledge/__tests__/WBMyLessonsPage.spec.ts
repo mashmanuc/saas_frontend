@@ -405,3 +405,36 @@ describe('WBMyLessonsPage — відкрита папка', () => {
     expect(wrapper.find('.stub-folders').attributes('total-count')).toBe('7')        // не 1 з відкритої папки
   })
 })
+
+// «📂 Перемістити вибрані» (2026-10-13): кілька уроків в одну папку; з «Без папки» вони зникають, вибір знімається.
+describe('WBMyLessonsPage — переміщення вибраних', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(lessonSaveApi.getFolders).mockResolvedValue([])
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue({ sessions: [], has_more: false, total: 0 } as never)
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(
+      { lessons: MOCK_LESSONS.map(l => ({ ...l, folder: null })), total: MOCK_LESSONS.length, has_more: false } as never)
+  })
+
+  it('після переміщення з «Без папки» вибрані зникають зі списку, вибір знято', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+    const vm = wrapper.vm as unknown as {
+      onFolderSelect: (id: string) => void
+      onBulkMoved: (folderId: string | null) => void
+      templateSelectedIds: string[]
+      lessons: Array<{ id: string; folder: string | null }>
+    }
+    vm.onFolderSelect('root')
+    await flushPromises()
+    const picked = vm.lessons.slice(0, 2).map(l => l.id)
+    vm.templateSelectedIds = picked
+    await flushPromises()
+    vm.onBulkMoved('f-hist')
+    await flushPromises()
+    expect(vm.lessons.map(l => l.id)).not.toContain(picked[0])
+    expect(vm.lessons.map(l => l.id)).not.toContain(picked[1])
+    expect(vm.templateSelectedIds).toEqual([])
+  })
+})

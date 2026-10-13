@@ -11467,7 +11467,8 @@
         "moveToFolder": "Move to folder",
         "selectFolder": "Select folder",
         "moving": "Moving...",
-        "moved": "Lesson moved"
+        "moved": "Lesson moved",
+        "moveSelected": "Move selected ({n})"
       },
       "moreActions": "More actions"
     },

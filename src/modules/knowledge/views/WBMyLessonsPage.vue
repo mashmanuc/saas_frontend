@@ -211,6 +211,23 @@
               >
                 {{ $t('knowledge.lesson.bulkDelete.deselectAll') }}
               </button>
+              <!-- Кілька уроків в одну папку (2026-10-13): раніше — лише по одному через «⋯» -->
+              <MoveToFolderDropdown
+                :lesson-ids="templateSelectedIds"
+                :folders="sidebarFolders"
+                @moved="onBulkMoved"
+              >
+                <template #trigger="{ toggle }">
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-white transition-colors"
+                    data-test="bulk-move"
+                    @click="toggle"
+                  >
+                    📂 {{ $t('knowledge.lesson.move.moveSelected', { n: templateSelectedIds.length }) }}
+                  </button>
+                </template>
+              </MoveToFolderDropdown>
               <button
                 type="button"
                 class="px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors inline-flex items-center gap-1.5"
@@ -369,6 +386,7 @@
                       <MoveToFolderDropdown
                         :lesson-id="lesson.id"
                         :current-folder="lesson.folder"
+                        :folders="sidebarFolders"
                         @moved="onLessonMoved(lesson, $event)"
                       >
                         <template #trigger="{ toggle }">
@@ -826,7 +844,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
-import type { MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
+import type { LessonFolder, MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
 import type { ConductedLessonItem } from '../api/lessonViewApi'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
@@ -915,6 +933,30 @@ const activeFolder = ref<string | null>(null)
 const mobileFoldersOpen = ref(false)
 const activeStatus = ref<string | null>(null)
 const total = ref(0)
+// Перелік папок бічної панелі — для меню переміщення (без окремого запиту при кожному відкритті).
+const sidebarFolders = computed<LessonFolder[] | undefined>(
+  () => (folderSidebar.value ? (folderSidebar.value.folders as LessonFolder[]) : undefined))
+
+// Чи лишається урок у відкритому списку після переміщення в `folderId`.
+function staysInView(folderId: string | null): boolean {
+  return activeFolder.value === null
+    || (activeFolder.value === 'root' ? folderId === null : activeFolder.value === folderId)
+}
+
+function onBulkMoved(folderId: string | null): void {
+  const ids = new Set(templateSelectedIds.value)
+  for (const l of lessons.value) {
+    if (ids.has(l.id)) l.folder = folderId
+  }
+  if (!staysInView(folderId)) {
+    lessons.value = lessons.value.filter(l => !ids.has(l.id))
+    total.value = Math.max(0, total.value - ids.size)
+    hasMore.value = lessons.value.length < total.value
+  }
+  templateSelectedIds.value = []
+  folderSidebar.value?.loadFolders?.()
+}
+
 // «Всі уроки (N)» — усі уроки вчителя, а не кількість у відкритій папці чи пошуку (2026-10-13).
 const allTotal = ref<number | null>(null)
 const activeFolderLabel = computed<string | null>(() => {
@@ -935,7 +977,7 @@ async function refreshAllTotal(): Promise<void> {
 // Урок видалено: загальна кількість і лічильник його папки змінились.
 function onLessonsRemoved(count: number): void {
   if (allTotal.value !== null) allTotal.value = Math.max(0, allTotal.value - count)
-  folderSidebar.value?.loadFolders()
+  folderSidebar.value?.loadFolders?.()
 }
 const hasMore = ref(false)
 const folderSidebar = ref<InstanceType<typeof WBLessonFolders> | null>(null)
@@ -1511,9 +1553,7 @@ function onLessonMoved(lesson: MyLesson, folderId: string | null): void {
   lesson.folder = folderId
   folderSidebar.value?.loadFolders()
   // Урок вийшов із відкритого списку — прибрати з екрана (і з «Без папки», коли його поклали в папку)
-  const stillHere = activeFolder.value === null
-    || (activeFolder.value === 'root' ? folderId === null : activeFolder.value === folderId)
-  if (!stillHere) {
+  if (!staysInView(folderId)) {
     lessons.value = lessons.value.filter(l => l.id !== lesson.id)
     total.value = Math.max(0, total.value - 1)
     hasMore.value = lessons.value.length < total.value

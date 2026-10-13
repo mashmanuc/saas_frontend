@@ -106,9 +106,10 @@ export const lessonSaveApi = {
     return res.data ?? res
   },
 
-  /** Phase 24: Get folders */
+  /** Phase 24: Get folders. Тихо (без загального «Завантаження…», 2026-10-13): перелік папок — фонове
+   *  оновлення бічної панелі й меню переміщення; затемнення всієї сторінки на 50 мс читалось як блимання. */
   async getFolders(): Promise<LessonFolder[]> {
-    const res = await apiClient.get('/v1/knowledge/folders/')
+    const res = await apiClient.get('/v1/knowledge/folders/', { meta: { skipLoader: true } })
     const data = res.data ?? res
     return data.folders ?? []
   },
@@ -134,10 +135,11 @@ export const lessonSaveApi = {
 
   /** Phase 25 BUG-4: Move lessons to folder (or root) */
   async bulkMove(lessonIds: string[], folderId: string | null): Promise<{ moved_count: number }> {
+    // Тихо: стан переміщення показує саме меню («Переміщення…»), а не затемнення всієї сторінки.
     const res = await apiClient.post('/v1/knowledge/my-lessons/bulk-move/', {
       lesson_ids: lessonIds,
       folder_id: folderId,
-    })
+    }, { meta: { skipLoader: true } })
     return res.data ?? res
   },
 
