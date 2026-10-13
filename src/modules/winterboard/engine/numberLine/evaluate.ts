@@ -139,8 +139,9 @@ const MARGIN = 0.18
 
 export function evaluate(input: NumberLineData): NumberLineEvaluation {
   if (input.mode === 'intervals') return evaluateIntervals(input)
-  // Дані з дошки / від Інтегралика — форму не гарантовано.
-  const data = Array.isArray(input.conditions) ? input : { ...input, conditions: [] }
+  // Дані з дошки / від Інтегралика — форму не гарантовано: зіпсоване — помилка, а не мовчазне ∅.
+  if (!Array.isArray(input.conditions)) return { ok: false, errors: [{ line: 0, index: 0, code: 'bad_data' }] }
+  const data = input
   const errors: NumberLineError[] = []
   if (data.conditions.length > NUMBER_LINE_MAX_CONDITIONS) {
     return { ok: false, errors: [{ line: NUMBER_LINE_MAX_CONDITIONS, index: 0, code: 'too_many_conditions', params: { max: String(NUMBER_LINE_MAX_CONDITIONS) } }] }

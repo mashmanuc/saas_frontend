@@ -51,6 +51,11 @@ describe('п. 3: великі числа не вішають вкладку', ()
     expect(Date.now() - t0).toBeLessThan(1500)
   })
 
+  it('залишок — повний квадрат великого простого: 3·10000019² → 10000019√3', () => {
+    // 10000019 > 10⁵ — пробне ділення його не бачить; ловить лише перевірка «залишок — квадрат».
+    expect(ivAnswer('x^2 < 300001140001083')).toBe('x ∈ (−10000019√3; 10000019√3)')
+  })
+
   it('велике просте під коренем — відмова словами, а не хвилина розкладу', () => {
     const t0 = Date.now()
     expect(ivErr('x^2 < 2305843009213693951')).toBe('too_large') // 2⁶¹ − 1, просте
@@ -68,6 +73,7 @@ describe('п. 4: зламані дані не валять рушій', () => {
     expect(bad({ points: 'abc' as never, signs: ['+'], op: '>' })).toBe('no_points')
     expect(bad({ points: [{ value: '1', included: true }], signs: 'x' as never, op: '>' })).toBe('signs_count')
     expect(bad({ points: [{ value: undefined as never, included: true }], signs: ['+', '-'], op: '>' })).toBe('bad_number')
+    expect(bad({ points: [{ value: '1', included: true }], signs: ['+', 'x' as never], op: '>' })).toBe('bad_data')
   })
 
   it('нерівності: невідомий знак, умови не масив, умова не обʼєкт', () => {
@@ -76,7 +82,7 @@ describe('п. 4: зламані дані не валять рушій', () => {
       return 'errors' in ev ? ev.errors[0].code : ev.answer.text
     }
     expect(set({ conditions: [{ op: '=>' as never, value: '1' }] })).toBe('expect_op')
-    expect(set({ conditions: undefined as never })).toBe('∅')
+    expect(set({ conditions: undefined as never })).toBe('bad_data')
     expect(set({ conditions: [null as never] })).toBe('bad_number')
     expect(set({ conditions: [{ op: '>', value: undefined as never }] })).toBe('bad_number')
   })
@@ -104,5 +110,12 @@ describe('п. 7: довгий і глибокий ввід — словами, �
     expect('error' in deep && deep.error.code).toBe('too_long')
     expect(ivErr(`${'('.repeat(25)}x${')'.repeat(25)} > 0`)).toBe('too_deep')
     expect(ivErr(`${'('.repeat(10)}x${')'.repeat(10)} > 0`)).toBe('ok')
+  })
+})
+
+describe('повторне рев’ю: «−0»', () => {
+  it('нуль, записаний як −0, — це 0', () => {
+    const r = parseLine('x > -0')
+    expect('condition' in r && r.condition).toMatchObject({ op: '>', value: '0' })
   })
 })

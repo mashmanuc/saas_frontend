@@ -10450,6 +10450,7 @@
         "line": "whole line"
       },
       "errors": {
+        "badData": "The line data is corrupted — open it and apply again",
         "ambiguousDenominator": "Unclear what the denominator is: put it in brackets, e.g. (x − 1)/((x − 2)(x + 3))",
         "tooLarge": "The numbers are too large to compute exactly — use smaller ones",
         "tooLong": "The line is too long (more than {max} characters)",

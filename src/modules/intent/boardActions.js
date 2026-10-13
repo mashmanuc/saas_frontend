@@ -1833,7 +1833,8 @@ export function sceneExtras(a) {
           showAnswer: true, showHatching: true }
       : { version: 1, mode: 'set', variable: d.variable || 'x', conditions: conds,
           combine: d.combine === 'or' ? 'or' : 'and', showAnswer: true, showHatching: true })
-    } catch {
+    } catch (err) {
+      console.warn('[intent] sceneExtras: числову пряму не вдалося обчислити', a?.id, err)
       return out
     }
     if (ev.ok) {

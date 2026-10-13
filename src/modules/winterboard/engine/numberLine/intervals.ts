@@ -398,7 +398,9 @@ export function solveIntervals(data: NumberLineData): IntervalsResult | { errors
   }
   if (data.points !== undefined && !Array.isArray(data.points)) return { errors: [{ line: 0, index: 0, code: 'no_points' }] }
   if (data.signs !== undefined && !Array.isArray(data.signs)) return { errors: [{ line: 0, index: 0, code: 'signs_count' }] }
-  const signs = (data.signs ?? []).map((x) => (x === '-' ? '-' : '+')) as Array<'+' | '-'>
+  // Зіпсований знак — помилка, а не мовчазний «+» (повторне рев'ю 2026-10-13).
+  if ((data.signs ?? []).some((x) => x !== '+' && x !== '-')) return { errors: [{ line: 0, index: 0, code: 'bad_data' }] }
+  const signs = [...(data.signs ?? [])] as Array<'+' | '-'>
   const points = (data.points ?? []).map((p) => ({ value: String(p?.value ?? ''), included: p?.included === true }))
   try {
     return solveManual(points, signs, op, data.variable || 'x')

@@ -391,7 +391,8 @@ export function parseExpr(toks: Tok[], from: number, to: number, endIndex: numbe
 export function rethrowAsExpr(e: unknown, at: number): never {
   if (e instanceof RootSumError) fail(at, 'root_sum')
   if (e instanceof TooLargeError) fail(at, 'too_large')
-  if (e instanceof RangeError) fail(at, 'too_deep', { max: String(MAX_DEPTH) })
+  // Лише переповнення стеку — «забагато дужок»; інші RangeError — справжні вади, не ховаємо.
+  if (e instanceof RangeError && /call stack/i.test(e.message)) fail(at, 'too_deep', { max: String(MAX_DEPTH) })
   throw e
 }
 

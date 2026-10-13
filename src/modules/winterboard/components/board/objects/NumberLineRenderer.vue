@@ -519,6 +519,7 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   too_large: 'tooLarge',
   too_long: 'tooLong',
   too_deep: 'tooDeep',
+  bad_data: 'badData',
 }
 
 function errorFor(i: number): string {

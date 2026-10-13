@@ -114,6 +114,7 @@ export interface NumberLineError {
     | 'too_large'
     | 'too_long'
     | 'too_deep'
+    | 'bad_data'
     | 'unbalanced_paren'
   params?: Record<string, string>
 }

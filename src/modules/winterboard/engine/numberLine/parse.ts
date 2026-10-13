@@ -64,7 +64,8 @@ export function parseNumber(input: string, index = 0): ParsedNumber {
     if (den === 0n) return zeroDiv()
     value = real(rational(coef.n, coef.d * den), BigInt(radicand))
   }
-  return { ok: true, value, label: text.replace(/^\+/, '') }
+  // «−0» учителеві ні до чого: нуль — це 0.
+  return { ok: true, value, label: value.q.n === 0n ? '0' : text.replace(/^\+/, '') }
 }
 
 type Token =
