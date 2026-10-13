@@ -55,6 +55,18 @@ export function useMaterialsBrowser() {
   const isFoldersPanelOpen = ref(true)
   const error = ref<string | null>(null)
 
+  // «Показати ще» (2026-10-13): бібліотека — порціями по PAGE_SIZE, наступна порція тієї самої теки.
+  const PAGE_SIZE = 50
+  /** Скільки файлів у поточній теці на сервері (лише для звичайного переліку бібліотеки) */
+  const totalAssets = ref(0)
+  const pagedQuery = ref<LibraryAssetsQuery | null>(null)
+  const isLoadingMore = ref(false)
+  const moreError = ref(false)
+  /** Нова тека — новий номер; запізніла відповідь старої відкидається */
+  let loadSeq = 0
+  const hasMore = computed(() => pagedQuery.value !== null && rawAssets.value.length < totalAssets.value)
+  const remainingAssets = computed(() => Math.max(0, totalAssets.value - rawAssets.value.length))
+
   // Mapped assets for WBAssetItem consumption
   const assets = computed<SidebarAsset[]>(() => rawAssets.value.map(toSidebarAsset))
 
@@ -74,7 +86,11 @@ export function useMaterialsBrowser() {
   // ─── Load assets (folder-routed) ──────────────────────────────────────────
 
   async function loadAssets(): Promise<void> {
+    const seq = ++loadSeq
     isLoadingAssets.value = true
+    isLoadingMore.value = false
+    moreError.value = false
+    pagedQuery.value = null
     error.value = null
     try {
       const folderId = selectedFolderId.value
@@ -82,6 +98,7 @@ export function useMaterialsBrowser() {
       if (folderId === PASTED_ID) {
         // Virtual "Pasted" folder → dedicated endpoint (Phase AM-2)
         const res = await fetchPastedItems({ limit: 50 })
+        if (seq !== loadSeq) return
         rawAssets.value = res.results.map((p) => ({
           id: p.id,
           name: p.filename,
@@ -100,10 +117,11 @@ export function useMaterialsBrowser() {
       } else if (folderId === RECENT_ID) {
         // Virtual "Recent" folder → dedicated endpoint
         const recent = await fetchRecentAssets()
+        if (seq !== loadSeq) return
         rawAssets.value = recent
       } else {
         // Build query based on folder type
-        const query: LibraryAssetsQuery = { limit: 50 }
+        const query: LibraryAssetsQuery = { limit: PAGE_SIZE }
 
         if (folderId === FAVORITES_ID) {
           // Virtual "Favorites" folder → favorite filter
@@ -115,14 +133,39 @@ export function useMaterialsBrowser() {
         // folderId === null → no folder param → all files
 
         const res = await fetchAssets(query)
+        if (seq !== loadSeq) return
         rawAssets.value = res.results
+        totalAssets.value = res.count ?? res.results.length
+        pagedQuery.value = query
       }
     } catch (err) {
+      if (seq !== loadSeq) return
       console.error('[WB:MaterialsBrowser] Failed to load assets', err)
       error.value = 'load_failed'
       rawAssets.value = []
     } finally {
-      isLoadingAssets.value = false
+      if (seq === loadSeq) isLoadingAssets.value = false
+    }
+  }
+
+  /** «Показати ще»: наступна порція тієї самої теки. Один запит, без автоповторів. */
+  async function loadMoreAssets(): Promise<void> {
+    if (!hasMore.value || isLoadingMore.value || isLoadingAssets.value || !pagedQuery.value) return
+    const seq = loadSeq
+    isLoadingMore.value = true
+    moreError.value = false
+    try {
+      const res = await fetchAssets({ ...pagedQuery.value, offset: rawAssets.value.length })
+      if (seq !== loadSeq) return
+      const known = new Set(rawAssets.value.map((a) => a.id))
+      rawAssets.value = [...rawAssets.value, ...res.results.filter((a) => !known.has(a.id))]
+      totalAssets.value = res.count ?? totalAssets.value
+    } catch (err) {
+      if (seq !== loadSeq) return
+      console.warn('[WB:MaterialsBrowser] load more failed', err)
+      moreError.value = true
+    } finally {
+      if (seq === loadSeq) isLoadingMore.value = false
     }
   }
 
@@ -164,9 +207,15 @@ export function useMaterialsBrowser() {
     isFoldersPanelOpen,
     error,
     breadcrumb,
+    // «Показати ще»
+    hasMore,
+    remainingAssets,
+    isLoadingMore,
+    moreError,
     // Actions
     loadFolders,
     loadAssets,
+    loadMoreAssets,
     selectFolder,
     toggleFoldersPanel,
     moveAsset,

@@ -147,7 +147,7 @@
       <span class="content-sidebar__title">
         {{ t('winterboard.contentSidebar.listTitle') }}
       </span>
-      <span class="content-sidebar__count">{{ filteredCount }}</span>
+      <span class="content-sidebar__count">{{ headerCount }}</span>
       <label v-if="isTutor" class="content-sidebar__upload-btn" :title="t('winterboard.contentSidebar.upload')">
         <input
           type="file"
@@ -253,17 +253,35 @@
         <div v-if="categoryItems.length > 0" class="content-sidebar__group">
           <div class="content-sidebar__group-header">
             {{ t(`winterboard.contentSidebar.category.${category}`) }}
-            <span class="content-sidebar__group-count">{{ categoryItems.length }}</span>
+            <span class="content-sidebar__group-count">{{ groupCountLabel(String(category), categoryItems.length) }}</span>
           </div>
           <ContentSidebarItem
             v-for="item in categoryItems"
-            :key="item.id || item.content_item_id"
+            :key="item.library_asset_id ? `la-${item.library_asset_id}` : `ci-${item.id || item.content_item_id}`"
             :item="item"
             :is-tutor="isTutor"
             @place="emit('place', $event)"
           />
         </div>
       </template>
+
+      <!-- «Показати ще» (2026-10-13): наступна порція саме цього переліку — тип, пошук, тека -->
+      <div v-if="sidebar.hasMore.value" class="content-sidebar__more">
+        <button
+          type="button"
+          class="content-sidebar__more-btn"
+          data-testid="sidebar-show-more"
+          :disabled="sidebar.isLoadingMore.value"
+          @click="sidebar.loadMore()"
+        >
+          {{ sidebar.isLoadingMore.value
+            ? t('winterboard.contentSidebar.loadingMore')
+            : t('winterboard.contentSidebar.showMore', { left: remainingCount }) }}
+        </button>
+        <p v-if="sidebar.moreError.value" class="content-sidebar__more-error" role="status">
+          {{ t('winterboard.contentSidebar.moreFailed') }}
+        </p>
+      </div>
     </template>
 
     </template><!-- /materials tab -->
@@ -579,8 +597,14 @@ const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e =>
 const contentEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))
 
+// ── Filter + Search state (у бібліотеці — на сервері, щоб «Показати ще» йшло по всіх файлах) ──
+const activeFilter = ref<string>('all')
+const searchQuery = ref('')
+
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId, {
   enabled: () => !props.localMode,
+  category: activeFilter,
+  search: searchQuery,
 })
 const wbStore = useWBStore()
 
@@ -647,9 +671,6 @@ async function loadFolders() {
   }
 }
 
-// ── Filter + Search state ──
-const activeFilter = ref<string>('all')
-const searchQuery = ref('')
 
 // 2026-04-16: paste filter handlers.
 // Чіпся «📋» toggle'ає paste-only view; інші chip'и повертають до default.
@@ -666,11 +687,16 @@ function onFilterPaste() {
   activeFilter.value = 'all'  // у paste-only режимі category chips не активні
 }
 
-/** Categories that actually have items — shown as chips */
+/** Categories that actually have items — shown as chips (бібліотека — за лічильниками сервера, а не завантаженим) */
 const availableCategories = computed<string[]>(() => {
   const cats = new Set<string>()
-  for (const item of sidebar.items.value) {
-    if (item.asset_category) cats.add(item.asset_category)
+  const counts = sidebar.categoryCounts.value
+  if (counts) {
+    for (const [cat, n] of Object.entries(counts)) if (n > 0) cats.add(cat)
+  } else {
+    for (const item of sidebar.items.value) {
+      if (item.asset_category) cats.add(item.asset_category)
+    }
   }
   // Return in consistent display order
   return ['problem', 'image', 'pdf', 'document', 'audio', 'video', 'youtube', 'presentation'].filter(c => cats.has(c))
@@ -698,6 +724,15 @@ const filteredGrouped = computed<Record<string, typeof filteredItems.value>>(() 
 })
 
 const filteredCount = computed(() => filteredItems.value.length)
+/** У шапці — скільки в поточному переліку всього (бібліотека — з сервера, не лише завантажене) */
+const headerCount = computed(() => (sidebar.libraryPaged.value ? sidebar.listCount.value : filteredCount.value))
+/** «N з M» у заголовку групи, коли завантажено ще не всі файли цього типу */
+function groupCountLabel(category: string, loaded: number): string {
+  const total = sidebar.categoryCounts.value?.[category]
+  return total && total > loaded && !searchQuery.value.trim() ? t('winterboard.contentSidebar.ofTotal', { n: loaded, total }) : String(loaded)
+}
+/** Скільки ще лишилось у поточному переліку */
+const remainingCount = computed(() => Math.max(0, sidebar.listCount.value - sidebar.items.value.length))
 
 // ── Storage quota (кешується на module level щоб не дублювати запит при remount) ──
 const storageQuota = ref<StorageQuota | null>(_quotaCache)
@@ -955,6 +990,15 @@ function onDrop(e: DragEvent) {
   border-color: #3b82f6;
   background: #fff;
 }
+
+/* ── «Показати ще» ── */
+.content-sidebar__more { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px 12px; }
+.content-sidebar__more-btn {
+  min-height: 34px; padding: 0 12px; border: 1px solid var(--wb-border, #cbd5e1); border-radius: 8px;
+  background: var(--wb-surface, #fff); color: var(--wb-text, #0f172a); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.content-sidebar__more-btn:disabled { opacity: .6; cursor: default; }
+.content-sidebar__more-error { margin: 0; font-size: 12px; color: #b45309; }
 
 /* ── Filter chips ── */
 .content-sidebar__filters {

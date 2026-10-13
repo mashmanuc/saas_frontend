@@ -51,6 +51,23 @@
           :asset="asset"
           @click="emit('select', asset)"
         />
+        <!-- «Показати ще» (2026-10-13): наступна порція тієї самої теки -->
+        <div v-if="hasMore" class="materials-browser__more">
+          <button
+            type="button"
+            class="materials-browser__more-btn"
+            data-testid="materials-show-more"
+            :disabled="isLoadingMore"
+            @click="loadMoreAssets"
+          >
+            {{ isLoadingMore
+              ? t('winterboard.contentSidebar.loadingMore')
+              : t('winterboard.contentSidebar.showMore', { left: remainingAssets }) }}
+          </button>
+          <p v-if="moreError" class="materials-browser__more-error" role="status">
+            {{ t('winterboard.contentSidebar.moreFailed') }}
+          </p>
+        </div>
       </template>
     </div>
   </div>
@@ -104,6 +121,11 @@ const {
   loadAssets,
   selectFolder,
   toggleFoldersPanel,
+  hasMore,
+  remainingAssets,
+  isLoadingMore,
+  moreError,
+  loadMoreAssets,
 } = useMaterialsBrowser()
 
 // ─── Lifecycle ───────────────────────────────────────────────────────────────
@@ -263,4 +285,13 @@ onMounted(async () => {
     padding: 8px;
   }
 }
+
+/* «Показати ще» (2026-10-13) */
+.materials-browser__more { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; padding: 8px 0; }
+.materials-browser__more-btn {
+  min-height: 34px; padding: 0 12px; border: 1px solid var(--wb-border, #cbd5e1); border-radius: 8px;
+  background: var(--wb-surface, #fff); color: var(--wb-text, #0f172a); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.materials-browser__more-btn:disabled { opacity: .6; cursor: default; }
+.materials-browser__more-error { margin: 0; font-size: 12px; color: #b45309; }
 </style>

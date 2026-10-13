@@ -9586,6 +9586,10 @@
       "filterAll": "Всі",
       "pasteFilterTitle": "Показати лише вставлені з буферу",
       "noResults": "Нічого не знайдено",
+      "showMore": "Показати ще · лишилось {left}",
+      "loadingMore": "Завантажую…",
+      "moreFailed": "Не вдалося завантажити — натисніть ще раз.",
+      "ofTotal": "{n} з {total}",
       "upload": "Завантажити",
       "category": {
         "problem": "Задачі",

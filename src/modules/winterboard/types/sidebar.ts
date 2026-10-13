@@ -5,6 +5,11 @@
 export interface AllowedContentItem {
   id: number
   content_item_id: number | null  // null для старих LibraryAsset без ContentItem FK
+  /**
+   * id самого файла бібліотеки (LibraryAsset) — унікальний у списку «Мої файли». `id` вище — ContentItem,
+   * а без нього LibraryAsset: номери з двох різних таблиць можуть збігтися (порції «Показати ще», ключі рядків).
+   */
+  library_asset_id?: number
   content_type: string
   title: string
   asset_category: string    // problem | image | pdf | audio | video | presentation | link

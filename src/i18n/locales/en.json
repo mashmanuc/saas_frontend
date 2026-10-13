@@ -8176,6 +8176,10 @@
       "filterAll": "All",
       "pasteFilterTitle": "Show clipboard-pasted items only",
       "noResults": "Nothing found",
+      "showMore": "Show more · {left} left",
+      "loadingMore": "Loading…",
+      "moreFailed": "Couldn't load — press again.",
+      "ofTotal": "{n} of {total}",
       "upload": "Upload",
       "category": {
         "problem": "Problems",

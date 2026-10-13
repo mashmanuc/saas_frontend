@@ -34,7 +34,13 @@ export function useGroupSidebar(
   // Local Workspace (ТЗ 2026-07-15): enabled=false → жодних API-викликів
   // (library/materials недоступні без auth). Optional — існуючі callsites
   // не змінюються (default: enabled).
-  options?: { enabled?: () => boolean },
+  options?: {
+    enabled?: () => boolean
+    /** Тип файлів («all» | image | pdf | …) — у бібліотеці фільтрує сервер, щоб «Показати ще» йшло по всіх */
+    category?: Ref<string>
+    /** Пошук за назвою — у бібліотеці теж на сервері */
+    search?: Ref<string>
+  },
 ) {
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
@@ -51,6 +57,25 @@ export function useGroupSidebar(
   // матеріали. Чіпся «📋 Вставлене» вмикає paste-only view.
   const showPasteOnly = ref(false)
   const pasteCount = ref(0)
+
+  // ── «Показати ще» (власник 2026-10-13) ─────────────────────────────────────
+  // Бібліотека вчителя приходить порціями по PAGE_SIZE; фільтр типу й пошук рахує сервер, тож наступна
+  // порція — саме того, що вибрано («Всі», «Відео», пошук, тека). Один механізм для всіх типів файлів.
+  const PAGE_SIZE = 50
+  /** Список — бібліотека порціями (не матеріали групи й не «Нещодавні») */
+  const libraryPaged = ref(false)
+  /** Скільки файлів у поточному переліку на сервері (з фільтром типу й пошуком) */
+  const serverTotal = ref(0)
+  /** Скільки файлів кожного типу в теці (без пошуку) — для кнопок типів */
+  const categoryCounts = ref<Record<string, number> | null>(null)
+  const isLoadingMore = ref(false)
+  /** Наступну порцію взяти не вдалося — кнопка лишається, повтор лише рукою */
+  const moreError = ref(false)
+  /** Кожне нове завантаження — новий номер; відповідь старого запиту відкидається */
+  let loadSeq = 0
+  /** Скільки рядків сервера вже взято (зсув наступної порції) — не довжина списку: дублікати не рахуються двічі */
+  let libraryLoaded = 0
+  const libraryLoadedRef = ref(0)
 
   // ── Живий статус обробки: WS-подія + опитування як запасний шлях ───────────
   //
@@ -191,28 +216,76 @@ export function useGroupSidebar(
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
-  /** Phase 38: guard проти дублювання запитів */
-  let loadInFlight = false
-  let lastLoadedGroupId: string | null | undefined = undefined
-  let lastLoadedFolderId: number | null | undefined = undefined
+  /** Phase 38: guard проти дублювання запитів — той самий перелік (група, тека, вставлене, тип, пошук) не вантажимо вдруге */
+  let lastLoadedKey: string | undefined = undefined
+
+  function listKey(curFolder: number | null): string {
+    return JSON.stringify([
+      groupId.value, curFolder, showPasteOnly.value,
+      options?.category?.value ?? 'all', (options?.search?.value ?? '').trim(),
+    ])
+  }
+
+  function libraryQuery(curFolder: number | null, offset: number): Record<string, unknown> {
+    const query: Record<string, unknown> = { limit: PAGE_SIZE }
+    if (offset > 0) query.offset = offset
+    if (curFolder && curFolder > 0) query.folder = curFolder
+    if (curFolder === -1) query.favorite = true
+    // 2026-04-16: paste-spam filter.
+    // false (default) → BE returns upload-only (backend default: exclude paste).
+    // true → BE returns paste-only (source=paste).
+    if (showPasteOnly.value) query.source = 'paste'
+    const category = options?.category?.value
+    if (category && category !== 'all') query.category = category
+    const search = (options?.search?.value ?? '').trim()
+    if (search) query.search = search
+    return query
+  }
+
+  function mapLibraryAsset(a: LibraryAsset): AllowedContentItem {
+    // Phase 9: content_item_id = null для старих активів без ContentItem FK.
+    // НЕ підставляємо a.id як fallback — це LibraryAsset.id, не ContentItem.id,
+    // і resolve-drop шукав би неправильний ContentItem → 404.
+    const ciId = a.content_item_id ?? null
+    // Fallback URL для старих активів (cdn_url або /media/ + storage_key)
+    const fallbackUrl = a.cdn_url || (a.storage_key ? `/media/${a.storage_key}` : null)
+    return {
+      id: ciId ?? a.id,
+      library_asset_id: a.id,
+      content_item_id: ciId,
+      content_type: mimeToCategory(a.content_type),
+      title: a.name,
+      asset_category: mimeToCategory(a.content_type),
+      thumbnail_url: a.thumbnail_url || a.cdn_url || null,
+      processing_status: a.processing_status || (a.status === 'active' ? 'ready' : 'pending'),
+      slide_count: a.slide_count ?? undefined,
+      page_count: a.page_count ?? undefined,
+      cdn_url: fallbackUrl,
+    } as AllowedContentItem
+  }
 
   async function load() {
     // Local Workspace: sidebar-фетчі вимкнено — стіл живе без бекенду.
     if (options?.enabled && !options.enabled()) return
     // Dedup: не перевантажувати якщо groupId+folderId не змінились і дані вже є
     const curFolder = folderId?.value ?? null
-    if (loadInFlight) return
-    if (groupId.value === lastLoadedGroupId && curFolder === lastLoadedFolderId && items.value.length > 0) return
+    const key = listKey(curFolder)
+    if (key === lastLoadedKey && items.value.length > 0) return
 
-    loadInFlight = true
-    lastLoadedGroupId = groupId.value
-    lastLoadedFolderId = curFolder
+    // Новий перелік (інший тип, пошук, тека) — новий запит; старий, якщо ще летить, відкидається
+    const seq = ++loadSeq
+    lastLoadedKey = key
     isLoading.value = true
+    isLoadingMore.value = false
+    moreError.value = false
     error.value = null
     try {
       if (groupId.value) {
         // Group mode: load materials assigned to this class/group
         const materials = await learningGroupApi.listMaterials(groupId.value) as unknown as Record<string, unknown>[]
+        if (seq !== loadSeq) return
+        libraryPaged.value = false
+        categoryCounts.value = null
         items.value = materials.map((m: Record<string, unknown>) => ({
           id: (m.content_item as number) ?? 0,
           content_item_id: (m.content_item as number) ?? 0,
@@ -233,60 +306,75 @@ export function useGroupSidebar(
         if (curFolder === -2) {
           // Recent assets (virtual folder)
           res = { results: await fetchRecentAssets(), count: 0 }
+          if (seq !== loadSeq) return
+          libraryPaged.value = false
+          categoryCounts.value = null
         } else {
-          const query: Record<string, unknown> = { limit: 100 }
-          if (curFolder && curFolder > 0) query.folder = curFolder
-          if (curFolder === -1) query.favorite = true
-          // 2026-04-16: paste-spam filter.
-          // false (default) → BE returns upload-only (backend default: exclude paste).
-          // true → BE returns paste-only (source=paste).
-          if (showPasteOnly.value) query.source = 'paste'
-          res = await fetchAssets(query as import('../types/library').LibraryAssetsQuery)
+          res = await fetchAssets(libraryQuery(curFolder, 0) as import('../types/library').LibraryAssetsQuery)
+          if (seq !== loadSeq) return
+          libraryPaged.value = true
+          libraryLoaded = (res.results ?? []).length
+          libraryLoadedRef.value = libraryLoaded
+          serverTotal.value = res.count ?? 0
+          categoryCounts.value = res.category_counts ?? null
           // paste_count з BE — для UI chip badge, незалежно від активного filter.
           if (typeof res.paste_count === 'number') {
             pasteCount.value = res.paste_count
           }
         }
-        items.value = (res.results ?? []).map((a: LibraryAsset) => {
-          // Phase 9: content_item_id = null для старих активів без ContentItem FK.
-          // НЕ підставляємо a.id як fallback — це LibraryAsset.id, не ContentItem.id,
-          // і resolve-drop шукав би неправильний ContentItem → 404.
-          const ciId = a.content_item_id ?? null
-          // Fallback URL для старих активів (cdn_url або /media/ + storage_key)
-          const fallbackUrl = a.cdn_url || (a.storage_key ? `/media/${a.storage_key}` : null)
-          return {
-            id: ciId ?? a.id,
-            content_item_id: ciId,
-            content_type: mimeToCategory(a.content_type),
-            title: a.name,
-            asset_category: mimeToCategory(a.content_type),
-            thumbnail_url: a.thumbnail_url || a.cdn_url || null,
-            processing_status: a.processing_status || (a.status === 'active' ? 'ready' : 'pending'),
-            slide_count: a.slide_count ?? undefined,
-            page_count: a.page_count ?? undefined,
-            cdn_url: fallbackUrl,
-          }
-        })
+        items.value = (res.results ?? []).map(mapLibraryAsset)
         startPolling()  // poll processing status for library items too
       }
     } catch {
+      if (seq !== loadSeq) return
       setError('load_failed')
       items.value = []
     } finally {
-      isLoading.value = false
-      loadInFlight = false
+      if (seq === loadSeq) isLoading.value = false
+    }
+  }
+
+  const hasMore = computed(() => libraryPaged.value && items.value.length < serverTotal.value
+    && libraryLoadedRef.value < serverTotal.value)
+
+  /** «Показати ще»: наступна порція того самого переліку (тип, пошук, тека). Один запит, без повторів. */
+  async function loadMore() {
+    if (!hasMore.value || isLoadingMore.value || isLoading.value) return
+    const seq = loadSeq
+    const curFolder = folderId?.value ?? null
+    isLoadingMore.value = true
+    moreError.value = false
+    try {
+      const res = await fetchAssets(
+        libraryQuery(curFolder, libraryLoaded) as import('../types/library').LibraryAssetsQuery,
+      )
+      if (seq !== loadSeq) return
+      libraryLoaded += (res.results ?? []).length
+      libraryLoadedRef.value = libraryLoaded
+      // Дублікати — за id файла бібліотеки (рядок міг зсунутись, якщо між порціями додали файл)
+      const known = new Set(items.value.map(i => i.library_asset_id ?? -i.id))
+      items.value = [...items.value, ...(res.results ?? []).map(mapLibraryAsset)
+        .filter(i => !known.has(i.library_asset_id ?? -i.id))]
+      serverTotal.value = res.count ?? serverTotal.value
+      if (res.category_counts) categoryCounts.value = res.category_counts
+      startPolling()
+    } catch (e) {
+      if (seq !== loadSeq) return
+      console.warn('[GroupSidebar] load more failed', e)
+      moreError.value = true
+    } finally {
+      if (seq === loadSeq) isLoadingMore.value = false
     }
   }
 
   /** Примусове перезавантаження (наприклад після upload) */
   function reload() {
-    lastLoadedGroupId = undefined
-    lastLoadedFolderId = undefined
+    lastLoadedKey = undefined
     return load()
   }
 
   watch(groupId, () => {
-    lastLoadedGroupId = undefined // groupId змінився — дозволити load
+    lastLoadedKey = undefined // groupId змінився — дозволити load
     load()
   }, { immediate: true })
 
@@ -294,8 +382,7 @@ export function useGroupSidebar(
   if (folderId) {
     watch(folderId, () => {
       if (!groupId.value) {
-        lastLoadedFolderId = undefined
-        lastLoadedGroupId = undefined
+        lastLoadedKey = undefined
         load()
       }
     })
@@ -304,11 +391,27 @@ export function useGroupSidebar(
   // Paste-filter toggle: reload коли user клацає chip «📋 Вставлене».
   watch(showPasteOnly, () => {
     if (!groupId.value) {
-      lastLoadedFolderId = undefined
-      lastLoadedGroupId = undefined
+      lastLoadedKey = undefined
       load()
     }
   })
+
+  // Тип файлів і пошук — у бібліотеці рахує сервер: змінились — новий перелік з першої порції.
+  // Пошук — після паузи в наборі (300 мс), щоб не слати запит на кожну літеру.
+  if (options?.category) {
+    watch(options.category, () => {
+      if (!groupId.value) { lastLoadedKey = undefined; load() }
+    })
+  }
+  if (options?.search) {
+    let searchTimer: ReturnType<typeof setTimeout> | null = null
+    watch(options.search, () => {
+      if (groupId.value) return
+      if (searchTimer) clearTimeout(searchTimer)
+      searchTimer = setTimeout(() => { lastLoadedKey = undefined; load() }, 300)
+    })
+    onUnmounted(() => { if (searchTimer) clearTimeout(searchTimer) })
+  }
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {
@@ -330,7 +433,12 @@ export function useGroupSidebar(
     return groups
   })
 
-  const totalCount = computed(() => items.value.length)
+  /** Скільки матеріалів тут узагалі (бібліотека — сума типів із сервера, без пошуку) */
+  const totalCount = computed(() => (libraryPaged.value && categoryCounts.value
+    ? Object.values(categoryCounts.value).reduce((a, b) => a + b, 0)
+    : items.value.length))
+  /** Скільки в поточному переліку (з типом і пошуком) */
+  const listCount = computed(() => (libraryPaged.value ? serverTotal.value : items.value.length))
 
   function mimeToCategory(mime: string): string {
     if (!mime) return 'image'
@@ -482,5 +590,13 @@ export function useGroupSidebar(
     // Paste-filter (2026-04-16)
     showPasteOnly,
     pasteCount,
+    // «Показати ще» (2026-10-13)
+    libraryPaged,
+    listCount,
+    categoryCounts,
+    hasMore,
+    isLoadingMore,
+    moreError,
+    loadMore,
   }
 }

@@ -95,6 +95,8 @@ export interface LibraryAssetListResponse {
   /** Total paste-sourced assets (незалежно від поточного source filter) — для UI chip. */
   paste_count?: number
   results: LibraryAsset[]
+  /** Скільки файлів кожного типу в цьому переліку без пошуку й без фільтра типу (кнопки типів у панелі) */
+  category_counts?: Record<string, number>
 }
 
 // ─── Create asset request ──────────────────────────────────────────────────
@@ -141,6 +143,10 @@ export interface LibraryAssetsQuery {
   archived?: 'only'
   limit?: number         // default 50, max 100
   offset?: number
+  /** Тип файлів за класифікацією бічної панелі: image | pdf | document | audio | video | youtube | presentation */
+  category?: string
+  /** Пошук за назвою */
+  search?: string
 }
 
 // ─── Вкладка «Відео» (GET /library/videos/, ТЗ TZ_BOARD_VIDEO_PICKER_AND_LIBRARY §7) ───
