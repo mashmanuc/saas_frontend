@@ -33,7 +33,7 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
-import { conditionToText, evaluate as evaluateNumberLine } from '@/modules/winterboard/engine/numberLine'
+import { conditionToText, evaluate as evaluateNumberLine, intervalsFormula, parseIntervalsLine } from '@/modules/winterboard/engine/numberLine'
 import {
   buildNumberLineAsset,
   DEFAULT_NUMBER_LINE_W,
@@ -1070,15 +1070,27 @@ export async function buildToolCatalog() {
 // Сервер уже перевірив умови тією самою граматикою (parser._r_board_add_number_line);
 // тут — та сама перевірка рушієм ще раз: обʼєкт зʼявляється лише з валідних даних
 // (інваріант 4), невалідне — людська помилка, а не «приблизна» пряма.
-HANDLERS.add_number_line = async function add_number_line({ conditions, combine, variable }, ctx) {
-  const data = {
-    conditions: Array.isArray(conditions) ? conditions : [],
-    combine: combine === 'or' ? 'or' : 'and',
-    variable: typeof variable === 'string' && /^[a-zA-Z]$/.test(variable) ? variable : 'x',
+// Етап 2: `expression` + `op` (± `rhs`) — метод інтервалів; перевірка — тим самим рушієм.
+HANDLERS.add_number_line = async function add_number_line({ conditions, combine, variable, expression, op, rhs }, ctx) {
+  let data
+  if (typeof expression === 'string' && expression.trim()) {
+    const OPS = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
+    const parsed = OPS[op] ? parseIntervalsLine(`${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`) : null
+    if (!parsed || !parsed.ok) throw new Error('Не зрозумів нерівність для методу інтервалів.')
+    data = { mode: 'intervals', conditions: [], expression: parsed.expression, rhs: parsed.rhs, op: parsed.op, variable: parsed.variable }
+  } else {
+    data = {
+      conditions: Array.isArray(conditions) ? conditions : [],
+      combine: combine === 'or' ? 'or' : 'and',
+      variable: typeof variable === 'string' && /^[a-zA-Z]$/.test(variable) ? variable : 'x',
+    }
   }
   const asset = buildNumberLineAsset({ x: 0, y: 0 }, data, `numline-${_uuid()}`)
-  if (!data.conditions.length || !evaluateNumberLine(asset.data).ok) {
-    throw new Error('Не зрозумів нерівність для числової прямої.')
+  const empty = asset.data.mode === 'intervals' ? false : !asset.data.conditions.length
+  if (empty || !evaluateNumberLine(asset.data).ok) {
+    throw new Error(asset.data.mode === 'intervals'
+      ? 'Не зрозумів нерівність для методу інтервалів.'
+      : 'Не зрозумів нерівність для числової прямої.')
   }
   const { store, page } = await _store(ctx)
   const { cx, cy } = _center(page, asset.w, asset.h)
@@ -1593,6 +1605,7 @@ export function assetParams(a) {
     case 'formula_card':
       return clean({ formula: d.formula })
     case 'number_line':
+      if (d.mode === 'intervals') return clean({ mode: 'метод інтервалів' })
       return clean({ combine: (d.conditions || []).length > 1 ? d.combine : undefined })
     default:
       return {}
@@ -1796,6 +1809,7 @@ export function selectedTaskExtras(d) {
  */
 /** Умови прямої словами для контексту Інтегралика: «x > 1 і x ≤ 4». */
 function numberLineConditionsText(d) {
+  if (d?.mode === 'intervals') return intervalsFormula(d)
   const variable = d?.variable || 'x'
   const texts = (Array.isArray(d?.conditions) ? d.conditions : []).map((c) => conditionToText(c, variable))
   return texts.join(d?.combine === 'or' ? ' або ' : ' і ')
@@ -1808,10 +1822,25 @@ export function sceneExtras(a) {
   if (a?.type === 'number_line') {
     // Відповідь — з того самого обчислення, що й рисунок (інваріант 1).
     const conds = Array.isArray(d.conditions) ? d.conditions : []
-    if (!conds.length) return out
-    const ev = evaluateNumberLine({ version: 1, mode: 'set', variable: d.variable || 'x', conditions: conds,
-      combine: d.combine === 'or' ? 'or' : 'and', showAnswer: true, showHatching: true })
-    if (ev.ok) out.answer = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
+    const intervals = d.mode === 'intervals'
+    if (!intervals && !conds.length) return out
+    // Дані з дошки не гарантовані: зламана пряма не має валити опис усієї сцени (рев'ю 2026-10-13, п. 4).
+    let ev
+    try {
+      ev = evaluateNumberLine(intervals
+      ? { version: 1, mode: 'intervals', variable: d.variable || 'x', conditions: [], combine: 'and',
+          expression: d.expression, rhs: d.rhs, op: d.op, points: d.points, signs: d.signs,
+          showAnswer: true, showHatching: true }
+      : { version: 1, mode: 'set', variable: d.variable || 'x', conditions: conds,
+          combine: d.combine === 'or' ? 'or' : 'and', showAnswer: true, showHatching: true })
+    } catch {
+      return out
+    }
+    if (ev.ok) {
+      out.answer = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
+      // Метод інтервалів: знаки на проміжках — щоб Інтегралик міг пояснити, звідки відповідь.
+      if (intervals && ev.layout.signs?.length) out.quote = `знаки: ${ev.layout.signs.map((x) => (x.sign === '+' ? '+' : '−')).join(' ')}`
+    }
     return out
   }
   if (a?.type === 'discussion_question') {

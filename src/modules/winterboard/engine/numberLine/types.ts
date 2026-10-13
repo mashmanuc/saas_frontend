@@ -36,14 +36,35 @@ export interface NumberLineConstCondition {
 
 export type NumberLineCondition = NumberLineSimpleCondition | NumberLineRangeCondition | NumberLineConstCondition
 
+/** Знак методу інтервалів (ТЗ §2.1): лише нерівності. */
+export type IntervalsOp = '<' | '<=' | '>' | '>='
+
+export interface IntervalsPoint {
+  /** Число в нашому записі (`-3`, `2,5`, `√3`). */
+  value: string
+  /** Зафарбована (входить у відповідь) чи виколота. */
+  included: boolean
+}
+
 export interface NumberLineData {
   version: 1
-  /** Етап 1 — лише 'set'. 'intervals' (метод інтервалів) і 'ray' — наступні етапи. */
-  mode: 'set'
+  /** 'set' — нерівності, системи, сукупності (етап 1); 'intervals' — метод інтервалів (етап 2). */
+  mode: 'set' | 'intervals'
   variable: string
+  /** set: кожна умова — одна нерівність. */
   conditions: NumberLineCondition[]
   /** 'and' — система, 'or' — сукупність. */
   combine: 'and' | 'or'
+  /** intervals · вираз: ліва частина як записав учитель — `(x-1)(x+3)/(x-2)`. */
+  expression?: string
+  /** intervals · вираз: права частина (за замовчуванням 0). Ненульова — лише для многочленів. */
+  rhs?: string
+  /** intervals: знак нерівності. */
+  op?: IntervalsOp
+  /** intervals · вручну: точки, які поставив учитель (дошка лише малює). */
+  points?: IntervalsPoint[]
+  /** intervals · вручну: знаки на проміжках зліва направо, `points.length + 1`. */
+  signs?: Array<'+' | '-'>
   showAnswer: boolean
   showHatching: boolean
 }
@@ -78,6 +99,21 @@ export interface NumberLineError {
     | 'trailing'
     | 'too_many_conditions'
     | 'not_linear'
+    | 'root_sum'
+    | 'root_form'
+    | 'sum_with_fraction'
+    | 'too_complex'
+    | 'bad_power'
+    | 'rhs_not_zero'
+    | 'cannot_factor'
+    | 'not_inequality'
+    | 'duplicate_point'
+    | 'signs_count'
+    | 'no_points'
+    | 'ambiguous_denominator'
+    | 'too_large'
+    | 'too_long'
+    | 'too_deep'
     | 'unbalanced_paren'
   params?: Record<string, string>
 }

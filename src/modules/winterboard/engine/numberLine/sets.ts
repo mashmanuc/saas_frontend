@@ -1,12 +1,12 @@
 /**
  * Множини на прямій (ТЗ §2.2 `sets`): обʼєднання проміжків із відкритими /
  * закритими кінцями й ±∞. Точка — вироджений закритий проміжок [a; a].
- * Порівняння — лише точне (rational.compare).
+ * Порівняння — лише точне (real.compareReal: дроби й корені a·√n).
  */
-import { compare, type Rational } from './rational'
+import { compareReal as compare, type Real } from './real'
 
 export interface Point {
-  value: Rational
+  value: Real
   label: string
 }
 
@@ -101,7 +101,7 @@ export function intersect(a: NumberSet, b: NumberSet): NumberSet {
   return normalize(out)
 }
 
-export function contains(set: NumberSet, v: Rational): boolean {
+export function contains(set: NumberSet, v: Real): boolean {
   return set.some((iv) => {
     if (iv.lo !== null) {
       const c = compare(v, iv.lo.value)

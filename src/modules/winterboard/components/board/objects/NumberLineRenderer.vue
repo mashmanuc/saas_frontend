@@ -87,7 +87,7 @@
           data-testid="number-line-zero-note"
         >{{ zeroNote }}</text>
         <text v-else-if="!layout" x="30" y="110" font-size="14" :fill="C.error">{{ t('winterboard.numberLine.storedInvalid') }}</text>
-        <text v-else-if="!asset.data.conditions.length" x="30" y="110" font-size="14" :fill="C.muted">{{ t('winterboard.numberLine.emptyHint') }}</text>
+        <text v-else-if="isEmpty" x="30" y="110" font-size="14" :fill="C.muted">{{ t('winterboard.numberLine.emptyHint') }}</text>
 
         <!-- Розвʼязок — тонована смуга, як проміжки в тригонометрії -->
         <template v-if="layout">
@@ -115,6 +115,30 @@
               stroke-width="1.4"
             />
           </g>
+        </template>
+
+        <!-- Метод інтервалів: «змійка» знаків і + / − над проміжками -->
+        <template v-if="layout?.signs?.length">
+          <path
+            v-for="(sg, i) in layout.signs"
+            :key="`c-${i}`"
+            :d="snake(sg)"
+            fill="none"
+            :stroke="C.snake"
+            stroke-width="1.6"
+            data-testid="number-line-snake"
+          />
+          <text
+            v-for="(sg, i) in layout.signs"
+            :key="`s-${i}`"
+            :x="(px(sg.from) + (sg.to === 1 ? X1 : px(sg.to))) / 2"
+            :y="LINE_Y - 42"
+            text-anchor="middle"
+            font-size="20"
+            font-weight="700"
+            :fill="sg.sign === '+' ? C.accent : C.minus"
+            :data-testid="`number-line-sign-${i}`"
+          >{{ sg.sign === '+' ? '+' : '−' }}</text>
         </template>
 
         <!-- Пряма зі стрілкою праворуч і підписом змінної -->
@@ -165,14 +189,21 @@ import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import {
   conditionToText,
+  displayNumber,
   evaluate,
+  intervalsFormula,
   isConstCondition,
+  parseIntervalsLine,
   parseLines,
+  parseNumber,
+  type IntervalsOp,
   type LayoutSegment,
+  type LayoutSign,
   type NumberLineData,
   type NumberLineError,
 } from '../../../engine/numberLine'
 import type { NumberLineAsset } from '../../../types/numberLine'
+import { compareReal, type Real } from '../../../engine/numberLine/real'
 import {
   registerNumberLine,
   unregisterNumberLine,
@@ -215,6 +246,8 @@ const C = {
   axis: '#5a4a3a',
   accent: '#c4622a',
   band: 'rgba(196, 98, 42, 0.12)',
+  snake: 'rgba(90, 74, 58, 0.55)',
+  minus: '#3a6ea5',
 }
 const HATCH_COLORS = ['#8a6a4a', '#a83a5b', '#3a6ea5', '#5a7d3a', '#7a4a9a', '#b07a1a']
 
@@ -231,19 +264,28 @@ const layout = computed(() => ('layout' in evaluation.value ? evaluation.value.l
 /** «x > 1 і x ≤ 4» — те саме, що бачить Інтегралик. */
 const formula = computed(() => {
   const d = props.asset.data
+  if (d.mode === 'intervals') return intervalsFormula(d)
   const joiner = ` ${t(d.combine === 'or' ? 'winterboard.numberLine.joinOr' : 'winterboard.numberLine.joinAnd')} `
   return d.conditions.map((c) => conditionToText(c, d.variable || 'x')).join(joiner)
 })
 
 const kindLabel = computed(() => {
   const d = props.asset.data
+  if (d.mode === 'intervals') return t('winterboard.numberLine.kindIntervals').toUpperCase()
   const key = d.conditions.length <= 1 ? 'kindInequality' : d.combine === 'or' ? 'kindUnion' : 'kindSystem'
   return t(`winterboard.numberLine.${key}`).toUpperCase()
 })
 
+/** Порожня пряма: ще нічого не застосовано (підказка замість відповіді). */
+const isEmpty = computed(() => {
+  const d = props.asset.data
+  if (d.mode === 'intervals') return !(d.expression && d.expression.trim()) && !d.points?.length
+  return !d.conditions.length
+})
+
 const answerLine = computed(() => {
   const ev = evaluation.value
-  if (!('answer' in ev) || !props.asset.data.conditions.length) return ''
+  if (!('answer' in ev) || isEmpty.value) return ''
   if (ev.answer.kind === 'empty') return t('winterboard.numberLine.answerEmpty')
   const name = ev.answer.name ? ` — ${t(`winterboard.numberLine.names.${ev.answer.name}`)}` : ''
   return `${ev.answer.text}${name}`
@@ -296,48 +338,135 @@ function hatchLines(condition: number, segments: LayoutSegment[]) {
   return out
 }
 
-/** `−1/3` → чисельник над знаменником (як у зошиті). */
+/**
+ * Дуга «змійки» над (+) чи під (−) проміжком, як у підручнику; на нескінченних
+ * краях — пологий вихід до краю прямої.
+ */
+function snake(sg: LayoutSign): string {
+  const H = 24
+  const y = sg.sign === '+' ? LINE_Y - H : LINE_Y + H
+  const x1 = px(sg.from)
+  const x2 = sg.to === 1 ? X1 : px(sg.to)
+  if (sg.from === 0 && sg.to === 1) return `M ${x1} ${y} L ${x2} ${y}`
+  if (sg.from === 0) return `M ${x1} ${y} Q ${x2 - (x2 - x1) * 0.15} ${y} ${x2} ${LINE_Y}`
+  if (sg.to === 1) return `M ${x1} ${LINE_Y} Q ${x1 + (x2 - x1) * 0.15} ${y} ${x2} ${y}`
+  return `M ${x1} ${LINE_Y} Q ${(x1 + x2) / 2} ${2 * y - LINE_Y} ${x2} ${LINE_Y}`
+}
+
+/** `−1/3`, `√3/2` → чисельник над знаменником (як у зошиті). */
 function fraction(label: string): { num: string; den: string } | null {
-  const m = /^([−-]?)(\d+)\/(\d+)$/.exec(label)
+  const m = /^([−-]?)(\d*√\d+|\d+)\/(\d+)$/.exec(label)
   return m ? { num: `${m[1]}${m[2]}`, den: m[3] } : null
 }
 
 // ── Чернетка (не стан дошки, не ops). Поля вводу — в NumberLineInspector. ──
+const draftMode = ref<'set' | 'intervals'>('set')
+// set: рядки-умови + система / сукупність.
 const draft = ref<string[]>([])
 const draftCombine = ref<'and' | 'or'>('and')
 const errors = ref<NumberLineError[]>([])
+// intervals: вираз одним рядком або вручну — точки (через «;») + знаки + знак нерівності.
+const ivInput = ref<'expression' | 'manual'>('expression')
+const expressionLine = ref('')
+const pointsText = ref('')
+/** Зафарбована чи виколота — за записом точки (переживає пересортування). */
+const included = ref<Record<string, boolean>>({})
+const manualSigns = ref<Array<'+' | '-'>>([])
+const manualOp = ref<IntervalsOp>('>')
+const ivError = ref<NumberLineError | null>(null)
+
+const OP_TEXT: Record<IntervalsOp, string> = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
+const isStrict = (op: IntervalsOp) => op === '<' || op === '>'
 
 function appliedLines(d: NumberLineData): string[] {
   const lines = d.conditions.map((c) => conditionToText(c, d.variable || 'x'))
   return lines.length ? lines : ['']
 }
 
-/** Застосоване, з якого чернетку синхронізовано востаннє: «не застосовано» рахується від нього. */
-const synced = ref<{ lines: string[]; combine: 'and' | 'or' }>({ lines: [], combine: 'and' })
+/** Точки ручного режиму, як їх бачить учитель: за значенням, із «зафарбована / виколота». */
+const manualView = computed(() => {
+  const items = pointsText.value.split(';').map((x) => x.trim()).filter(Boolean)
+  const pts: Array<{ label: string; value: Real }> = []
+  for (let i = 0; i < items.length; i++) {
+    const n = parseNumber(items[i])
+    if ('error' in n) return { points: [], error: { ...n.error, line: i } as NumberLineError }
+    if (pts.some((p) => compareReal(p.value, n.value) === 0)) {
+      return { points: [], error: { line: i, index: 0, code: 'duplicate_point', params: { text: items[i] } } as NumberLineError }
+    }
+    pts.push({ label: items[i], value: n.value })
+  }
+  pts.sort((x, y) => compareReal(x.value, y.value))
+  return {
+    points: pts.map((p) => ({
+      label: p.label,
+      display: displayNumber(p.label),
+      included: included.value[p.label] ?? !isStrict(manualOp.value),
+    })),
+    error: null as NumberLineError | null,
+  }
+})
 
-function revert(): void {
-  const lines = appliedLines(props.asset.data)
-  synced.value = { lines, combine: props.asset.data.combine }
-  draft.value = [...lines]
-  draftCombine.value = props.asset.data.combine
-  errors.value = []
-}
+/** Знаки на проміжках: учителеві (якщо кількість збігається) або чергування від «+» праворуч. */
+const effectiveSigns = computed<Array<'+' | '-'>>(() => {
+  const n = manualView.value.points.length
+  if (manualSigns.value.length === n + 1) return manualSigns.value
+  return Array.from({ length: n + 1 }, (_, i) => ((n - i) % 2 === 0 ? '+' : '-'))
+})
 
 const norm = (ls: string[]) => ls.map((l) => l.trim()).filter(Boolean).join('\n')
 
-const dirty = computed(() => {
-  const now = draft.value
-  return norm(now) !== norm(synced.value.lines)
-    || (now.filter((l) => l.trim()).length > 1 && draftCombine.value !== synced.value.combine)
-})
+/** Відбиток чернетки: «не застосовано» — коли він відрізняється від застосованого. */
+function snapshot(): string {
+  if (draftMode.value === 'set') {
+    const filled = draft.value.filter((l) => l.trim()).length
+    return JSON.stringify({ m: 'set', l: norm(draft.value), c: filled > 1 ? draftCombine.value : '' })
+  }
+  if (ivInput.value === 'expression') return JSON.stringify({ m: 'iv', e: expressionLine.value.trim().replace(/\s+/g, ' ') })
+  const v = manualView.value
+  return JSON.stringify({
+    m: 'ivm',
+    p: v.error ? pointsText.value.trim() : v.points.map((x) => `${x.label}${x.included ? '●' : '○'}`).join(';'),
+    s: effectiveSigns.value.join(''),
+    o: manualOp.value,
+  })
+}
+
+/** Застосоване, з якого чернетку синхронізовано востаннє. */
+const synced = ref('')
+
+function loadFrom(d: NumberLineData): void {
+  draftMode.value = d.mode === 'intervals' ? 'intervals' : 'set'
+  draft.value = [...appliedLines(d)]
+  draftCombine.value = d.combine
+  const manual = !(d.expression && d.expression.trim()) && !!d.points?.length
+  ivInput.value = manual ? 'manual' : 'expression'
+  expressionLine.value = d.expression && d.expression.trim() ? `${d.expression} ${OP_TEXT[d.op ?? '>']} ${d.rhs ?? '0'}` : ''
+  pointsText.value = (d.points ?? []).map((p) => p.value).join('; ')
+  included.value = Object.fromEntries((d.points ?? []).map((p) => [p.value.trim(), p.included]))
+  manualSigns.value = [...(d.signs ?? [])]
+  manualOp.value = d.op ?? '>'
+  errors.value = []
+  ivError.value = null
+  synced.value = snapshot()
+}
+
+function revert(): void {
+  loadFrom(props.asset.data)
+}
+
+const dirty = computed(() => snapshot() !== synced.value)
 
 // Застосоване змінилось ззовні (інший учасник, «скасувати», Інтегралик): чернетки немає —
 // показуємо нове застосоване; є незастосована чернетка — не стираємо її.
 watch(
-  () => [props.asset.data.conditions, props.asset.data.combine, props.asset.data.variable],
+  () => {
+    const d = props.asset.data
+    return [d.mode, d.conditions, d.combine, d.variable, d.expression, d.rhs, d.op, d.points, d.signs]
+  },
   () => { if (!dirty.value) revert() },
-  { immediate: true, deep: true },
+  { deep: true },
 )
+loadFrom(props.asset.data)
 
 function setLine(i: number, value: string): void {
   draft.value[i] = value
@@ -375,6 +504,21 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   too_many_conditions: 'tooMany',
   not_linear: 'notLinear',
   unbalanced_paren: 'unbalancedParen',
+  root_sum: 'rootSum',
+  root_form: 'rootForm',
+  sum_with_fraction: 'sumWithFraction',
+  too_complex: 'tooComplex',
+  bad_power: 'badPower',
+  rhs_not_zero: 'rhsNotZero',
+  cannot_factor: 'cannotFactor',
+  not_inequality: 'notInequality',
+  duplicate_point: 'duplicatePoint',
+  signs_count: 'signsCount',
+  no_points: 'noPoints',
+  ambiguous_denominator: 'ambiguousDenominator',
+  too_large: 'tooLarge',
+  too_long: 'tooLong',
+  too_deep: 'tooDeep',
 }
 
 function errorFor(i: number): string {
@@ -382,8 +526,15 @@ function errorFor(i: number): string {
   return e ? t(`winterboard.numberLine.errors.${ERROR_KEYS[e.code]}`, e.params ?? {}) : ''
 }
 
+/** Застосувати дані: один update:asset, чернетка — тепер застосоване. */
+function commit(data: NumberLineData): void {
+  emit('update:asset', { ...props.asset, data })
+  loadFrom(data)
+}
+
 /** Перевірити всі рядки; усі правильні → один update:asset. Інакше — нічого не писати. */
 function apply(): void {
+  if (draftMode.value === 'intervals') return applyIntervals()
   const rows = draft.value.map((text, line) => ({ text, line })).filter((r) => r.text.trim())
   const parsed = parseLines(rows.map((r) => r.text))
   if ('errors' in parsed) {
@@ -392,6 +543,7 @@ function apply(): void {
   }
   const data: NumberLineData = {
     ...props.asset.data,
+    mode: 'set',
     conditions: parsed.conditions,
     variable: parsed.variable,
     combine: parsed.conditions.length > 1 ? draftCombine.value : props.asset.data.combine,
@@ -401,12 +553,56 @@ function apply(): void {
     errors.value = ev.errors.map((e) => ({ ...e, line: rows[e.line]?.line ?? e.line }))
     return
   }
-  errors.value = []
-  emit('update:asset', { ...props.asset, data })
-  const lines = appliedLines(data)
-  synced.value = { lines, combine: data.combine }
-  draft.value = [...lines]
+  commit(data)
 }
+
+/** Метод інтервалів: вираз одним рядком або точки й знаки вчителя. */
+function applyIntervals(): void {
+  let data: NumberLineData
+  if (ivInput.value === 'expression') {
+    const p = parseIntervalsLine(expressionLine.value)
+    if ('error' in p) {
+      ivError.value = { ...p.error, line: 0 }
+      return
+    }
+    data = {
+      ...props.asset.data,
+      mode: 'intervals',
+      expression: p.expression,
+      rhs: p.rhs,
+      op: p.op,
+      variable: p.variable,
+      points: undefined,
+      signs: undefined,
+    }
+  } else {
+    const v = manualView.value
+    if (v.error) {
+      ivError.value = v.error
+      return
+    }
+    data = {
+      ...props.asset.data,
+      mode: 'intervals',
+      expression: undefined,
+      rhs: undefined,
+      op: manualOp.value,
+      points: v.points.map((x) => ({ value: x.label, included: x.included })),
+      signs: [...effectiveSigns.value],
+    }
+  }
+  const ev = evaluate(data)
+  if ('errors' in ev) {
+    ivError.value = ev.errors[0]
+    return
+  }
+  commit(data)
+}
+
+const intervalsError = computed(() => {
+  const e = ivError.value
+  return e ? t(`winterboard.numberLine.errors.${ERROR_KEYS[e.code]}`, e.params ?? {}) : ''
+})
 
 function toggleAnswer(): void {
   emit('update:asset', {
@@ -420,7 +616,10 @@ function toggleAnswer(): void {
    чернетку й викликає дії. Pattern mirrors TrigSolverRenderer.
 ──────────────────────────────────────────────────────────────────────────── */
 const showAnswer = computed(() => props.asset.data.showAnswer !== false)
+const manualPoints = computed(() => manualView.value.points)
 const _bridge = reactive({
+  mode: draftMode,
+  setMode: (m: 'set' | 'intervals') => { draftMode.value = m; ivError.value = null },
   draft,
   combine: draftCombine,
   dirty,
@@ -430,6 +629,26 @@ const _bridge = reactive({
   addRow,
   removeRow,
   setCombine: (c: 'and' | 'or') => { draftCombine.value = c },
+  ivInput,
+  setIvInput: (m: 'expression' | 'manual') => { ivInput.value = m; ivError.value = null },
+  expressionLine,
+  setExpressionLine: (v: string) => { expressionLine.value = v; ivError.value = null },
+  pointsText,
+  setPointsText: (v: string) => { pointsText.value = v; ivError.value = null },
+  manualPoints,
+  togglePoint: (i: number) => {
+    const p = manualView.value.points[i]
+    if (p) included.value = { ...included.value, [p.label]: !p.included }
+  },
+  manualSigns: effectiveSigns,
+  toggleSign: (i: number) => {
+    const next = [...effectiveSigns.value]
+    next[i] = next[i] === '+' ? '-' : '+'
+    manualSigns.value = next
+  },
+  manualOp,
+  setManualOp: (op: IntervalsOp) => { manualOp.value = op },
+  intervalsError,
   apply,
   revert,
   toggleAnswer,

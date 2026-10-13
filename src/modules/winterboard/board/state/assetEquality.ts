@@ -148,7 +148,7 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'geomash_scene',    // §3.7.14 — scene {objects, cs} (жива GeoMASH-геометрія)
   'graphmash_3d',     // §3.7.15 — app='g3d', scene (жива GraphMASH 3D-поверхня)
   'visual_capsule',   // TLV2-03 — visual_id, capsule_version, mode
-  'number_line',      // Б-184 — conditions[], combine, variable, showAnswer, showHatching
+  'number_line',      // Б-184 — mode, conditions[], combine, expression/rhs/op, points/signs, …
 ])
 
 /**
