@@ -8,6 +8,7 @@
 //   - NEW: stateUpdate(sid, payload) — POST /sessions/{pk}/state-update/ (broadcast hint)
 //   - INV-20: X-Protocol-Version: v3 header REQUIRED on lock/page/state-update.
 
+import type { SolverRefusal, SolverResult } from '../engine/numberLine/types'
 import apiClient from '@/utils/apiClient'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 // SSOT версія протоколу (replay.ts) замість hardcoded 'v3' — майбутній bump = одна правка.
@@ -978,6 +979,22 @@ export const winterboardApi = {
 
   moveSessionToFolder(sessionId: string, folderId: number | null): Promise<any> {
     return apiClient.patch(`${BASE}/sessions/${sessionId}/`, { folder: folderId }).then((r: any) => r.data ?? r)
+  },
+
+  // ── Б-184: «Розвʼязати» на числовій прямій (сервер лише рахує; пілот) ──
+  /**
+   * Точний розвʼязок нерівності (ТЗ TZ_NUMBER_LINE_SOLVER §3.1). Відмова — завжди нашою формою
+   * `{ ok: false, reason, detail }`, і для 403 «не пілот», і коли сервер недоступний.
+   */
+  solveNumberLine(inequality: string): Promise<SolverResult & { solver?: string } | SolverRefusal> {
+    return apiClient
+      .post(`${BASE}/number-line/solve/`, { inequality })
+      .then((r: any) => r.data ?? r)
+      .catch((err: any) => {
+        const body = err?.response?.data
+        if (body && body.ok === false && typeof body.reason === 'string') return body as SolverRefusal
+        return { ok: false, reason: 'busy', detail: '' } as SolverRefusal
+      })
   },
 
   // ── Copilot (8a-2) ───────────────────────────────────────────────────

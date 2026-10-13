@@ -40,6 +40,13 @@
           data-testid="number-line-mode-intervals"
           @click="b.setMode('intervals')"
         >{{ t('winterboard.numberLine.modeIntervals') }}</button>
+        <button
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.mode === 'solved' }"
+          data-testid="number-line-mode-solved"
+          @click="b.setMode('solved')"
+        >{{ t('winterboard.numberLine.modeSolved') }}</button>
       </div>
     </div>
 
@@ -110,6 +117,34 @@
     </div>
 
     </template>
+
+    <!-- «Розвʼязати»: уся нерівність, розвʼязує сервер (пілот) -->
+    <div v-else-if="b.mode === 'solved'" class="nl-insp__section">
+      <input
+        ref="solveInput"
+        class="nl-insp__input"
+        :class="{ 'has-error': b.solveError }"
+        :value="b.solveLine"
+        :placeholder="t('winterboard.numberLine.solvePlaceholder')"
+        data-testid="number-line-solve-input"
+        spellcheck="false"
+        autocomplete="off"
+        maxlength="200"
+        @input="b.setSolveLine(($event.target as HTMLInputElement).value)"
+        @keydown="onExprKeydown"
+      />
+      <div v-if="b.solveError" class="nl-insp__error" data-testid="number-line-solve-error">{{ b.solveError }}</div>
+      <div class="nl-insp__btn-row nl-insp__keys">
+        <button
+          v-for="k in EXPR_KEYS"
+          :key="k"
+          type="button"
+          class="nl-insp__btn nl-insp__btn--rel"
+          @mousedown.prevent
+          @click="insertIntoSolve(k)"
+        >{{ k }}</button>
+      </div>
+    </div>
 
     <!-- Метод інтервалів -->
     <template v-else>
@@ -244,8 +279,10 @@
       <button v-if="b.dirty" type="button" class="nl-insp__btn" data-testid="number-line-revert" @click="b.revert()">
         {{ t('winterboard.numberLine.revert') }}
       </button>
-      <button type="button" class="nl-insp__btn is-active nl-insp__apply" data-testid="number-line-apply" @click="b.apply()">
-        {{ t('winterboard.numberLine.apply') }}
+      <button type="button" class="nl-insp__btn is-active nl-insp__apply" data-testid="number-line-apply" :disabled="b.solving" @click="b.apply()">
+        {{ b.mode === 'solved'
+          ? t(b.solving ? 'winterboard.numberLine.solving' : 'winterboard.numberLine.solveButton')
+          : t('winterboard.numberLine.apply') }}
       </button>
     </div>
   </div>
@@ -269,6 +306,23 @@ const showModeSwitch = computed(() => isIntervalsPilotUser(authStore.user?.id))
 const KEYS = ['<', '≤', '>', '≥', '≠', '=', '√']
 
 const EXPR_KEYS = ['<', '≤', '>', '≥', '(', ')', '²', '√']
+const solveInput = ref<HTMLInputElement | null>(null)
+
+function insertIntoSolve(text: string): void {
+  const el = solveInput.value
+  const value = b.value.solveLine
+  const start = el?.selectionStart ?? value.length
+  const end = el?.selectionEnd ?? value.length
+  const piece = ['(', ')', '²', '√'].includes(text) ? text : ` ${text} `
+  const next = `${value.slice(0, start)}${piece}${value.slice(end)}`.replace(/\s{2,}/g, ' ')
+  b.value.setSolveLine(next)
+  void nextTick(() => {
+    if (!el) return
+    el.focus()
+    const caret = Math.min(next.length, start + piece.length)
+    el.setSelectionRange(caret, caret)
+  })
+}
 const IV_OPS: Array<{ v: '<' | '<=' | '>' | '>='; lab: string }> = [
   { v: '<', lab: '<' }, { v: '<=', lab: '≤' }, { v: '>', lab: '>' }, { v: '>=', lab: '≥' },
 ]

@@ -33,6 +33,7 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
+import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 import { conditionToText, evaluate as evaluateNumberLine, intervalsFormula, parseIntervalsLine } from '@/modules/winterboard/engine/numberLine'
 import {
   buildNumberLineAsset,
@@ -1075,9 +1076,19 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
   let data
   if (typeof expression === 'string' && expression.trim()) {
     const OPS = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
-    const parsed = OPS[op] ? parseIntervalsLine(`${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`) : null
-    if (!parsed || !parsed.ok) throw new Error('Не зрозумів нерівність для методу інтервалів.')
-    data = { mode: 'intervals', conditions: [], expression: parsed.expression, rhs: parsed.rhs, op: parsed.op, variable: parsed.variable }
+    if (!OPS[op]) throw new Error('Не зрозумів нерівність для методу інтервалів.')
+    const line = `${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`
+    const parsed = parseIntervalsLine(line)
+    if (parsed.ok) {
+      data = { mode: 'intervals', conditions: [], expression: parsed.expression, rhs: parsed.rhs, op: parsed.op, variable: parsed.variable }
+    } else {
+      // ТЗ розвʼязувача §4: дошка сама не може (корені 1 ± √2, вищі степені, корінь у виразі) —
+      // точний розвʼязок на сервері, той самий REST, що й «Розвʼязати» (пілот перевіряє сервер).
+      const r = await winterboardApi.solveNumberLine(line)
+      if (!r || !r.ok) throw new Error(`Не можу розвʼязати нерівність: ${r?.detail || r?.reason || 'сервер не відповів'}.`)
+      const { solver, ...result } = r
+      data = { mode: 'solved', conditions: [], inequality: line, result, solver: solver || '' }
+    }
   } else {
     data = {
       conditions: Array.isArray(conditions) ? conditions : [],
@@ -1086,7 +1097,7 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
     }
   }
   const asset = buildNumberLineAsset({ x: 0, y: 0 }, data, `numline-${_uuid()}`)
-  const empty = asset.data.mode === 'intervals' ? false : !asset.data.conditions.length
+  const empty = asset.data.mode === 'intervals' || asset.data.mode === 'solved' ? false : !asset.data.conditions.length
   if (empty || !evaluateNumberLine(asset.data).ok) {
     throw new Error(asset.data.mode === 'intervals'
       ? 'Не зрозумів нерівність для методу інтервалів.'
@@ -1810,6 +1821,7 @@ export function selectedTaskExtras(d) {
 /** Умови прямої словами для контексту Інтегралика: «x > 1 і x ≤ 4». */
 function numberLineConditionsText(d) {
   if (d?.mode === 'intervals') return intervalsFormula(d)
+  if (d?.mode === 'solved') return String(d.inequality || '')
   const variable = d?.variable || 'x'
   const texts = (Array.isArray(d?.conditions) ? d.conditions : []).map((c) => conditionToText(c, variable))
   return texts.join(d?.combine === 'or' ? ' або ' : ' і ')
@@ -1823,6 +1835,14 @@ export function sceneExtras(a) {
     // Відповідь — з того самого обчислення, що й рисунок (інваріант 1).
     const conds = Array.isArray(d.conditions) ? d.conditions : []
     const intervals = d.mode === 'intervals'
+    // «Розвʼязати»: відповідь сервера збережена в даних — її й бачить Інтегралик (і ОДЗ).
+    if (d.mode === 'solved') {
+      if (d.result?.ok === true) {
+        out.answer = d.result.answer === '∅' ? 'розвʼязків немає (∅)' : String(d.result.answer || '')
+        if (d.result.domain) out.quote = `ОДЗ: ${d.result.domain}`
+      }
+      return out
+    }
     if (!intervals && !conds.length) return out
     // Дані з дошки не гарантовані: зламана пряма не має валити опис усієї сцени (рев'ю 2026-10-13, п. 4).
     let ev

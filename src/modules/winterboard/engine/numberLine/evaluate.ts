@@ -14,6 +14,7 @@ import {
   type NumberLineCondition,
   type NumberLineData,
   type NumberLineError,
+  type SolverBound,
 } from './types'
 
 export type IntervalName = 'segment' | 'interval' | 'half_interval' | 'ray' | 'open_ray' | 'line'
@@ -139,6 +140,7 @@ const MARGIN = 0.18
 
 export function evaluate(input: NumberLineData): NumberLineEvaluation {
   if (input.mode === 'intervals') return evaluateIntervals(input)
+  if (input.mode === 'solved') return evaluateSolved(input)
   // Дані з дошки / від Інтегралика — форму не гарантовано: зіпсоване — помилка, а не мовчазне ∅.
   if (!Array.isArray(input.conditions)) return { ok: false, errors: [{ line: 0, index: 0, code: 'bad_data' }] }
   const data = input
@@ -246,6 +248,53 @@ function evaluateIntervals(data: NumberLineData): NumberLineEvaluation {
       hatches: [{ condition: 0, segments: result }],
       result,
       signs: r.signs.map((sign, i) => ({ from: bounds[i], to: bounds[i + 1], sign })),
+    },
+  }
+}
+
+/** Підпис межі розвʼязувача: точний запис або «≈1,32» (ТЗ розвʼязувача §5.3). */
+export function solverBoundLabel(b: SolverBound): string {
+  if (b.exact && b.text) return b.text
+  return `≈${b.approx.toFixed(2).replace('.', ',').replace('-', '−')}`
+}
+
+/**
+ * Режим «Розвʼязати»: рисунок — лише зі збереженого `result` (ТЗ §5.1: межа на рисунку = межа з
+ * сервера, без перерахунку). Точки рівномірно в порядку `approx`; однакова межа (кінець двох
+ * проміжків) — одна точка; зафарбована, лише якщо входить у відповідь.
+ */
+function evaluateSolved(data: NumberLineData): NumberLineEvaluation {
+  const r = data.result
+  if (!r || r.ok !== true || !Array.isArray(r.intervals) || !Array.isArray(r.points)) {
+    return { ok: false, errors: [{ line: 0, index: 0, code: 'bad_data' }] }
+  }
+  const all: SolverBound[] = []
+  for (const iv of r.intervals) {
+    if (iv.from) all.push(iv.from)
+    if (iv.to) all.push(iv.to)
+  }
+  all.push(...r.points)
+  const uniq: SolverBound[] = []
+  for (const b of [...all].sort((a, c) => a.approx - c.approx)) {
+    const same = uniq.find((u) => u.latex === b.latex)
+    if (same) same.closed = same.closed || b.closed
+    else uniq.push({ ...b })
+  }
+  const n = uniq.length
+  const xs = uniq.map((_, i) => (n === 1 ? 0.5 : MARGIN + ((1 - 2 * MARGIN) * i) / (n - 1)))
+  const xOf = (b: SolverBound) => xs[uniq.findIndex((u) => u.latex === b.latex)]
+  const result: LayoutSegment[] = r.intervals.map((iv) => ({ from: iv.from ? xOf(iv.from) : 0, to: iv.to ? xOf(iv.to) : 1 }))
+  const empty = !r.intervals.length && !r.points.length
+  const all_ = r.intervals.length === 1 && !r.intervals[0].from && !r.intervals[0].to && !r.points.length
+  return {
+    ok: true,
+    // Множина живе на сервері (контракт), рушій її не перераховує — тут лише рисунок і відповідь.
+    set: [],
+    answer: { kind: empty ? 'empty' : all_ ? 'all' : 'set', text: r.answer, ...(all_ ? { name: 'line' as const } : {}) },
+    layout: {
+      points: uniq.map((b, i) => ({ label: solverBoundLabel(b), x: xs[i], filled: b.closed })),
+      hatches: [{ condition: 0, segments: result }],
+      result,
     },
   }
 }

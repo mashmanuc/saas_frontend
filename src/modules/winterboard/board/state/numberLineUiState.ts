@@ -18,8 +18,16 @@ export interface NumberLineManualPoint {
 
 export interface NumberLineBridge {
   /** 'set' — нерівності / системи / сукупності; 'intervals' — метод інтервалів. */
-  mode: 'set' | 'intervals'
-  setMode(m: 'set' | 'intervals'): void
+  mode: 'set' | 'intervals' | 'solved'
+  setMode(m: 'set' | 'intervals' | 'solved'): void
+  // ── «Розвʼязати» (сервер) ──
+  /** Уся нерівність одним рядком. */
+  solveLine: string
+  setSolveLine(v: string): void
+  /** Іде запит до сервера — кнопка неактивна. */
+  solving: boolean
+  /** Відмова сервера словами, '' — немає. */
+  solveError: string
   /** Рядки-умови чернетки (ще не застосовані). */
   draft: string[]
   combine: 'and' | 'or'
