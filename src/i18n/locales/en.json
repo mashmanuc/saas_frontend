@@ -9525,6 +9525,35 @@
       "whereCollapsed": "{what} are in the panel on the right: click ▶ at the right edge",
       "whereDrawer": "{what} are in the panel opened by the ⊞ button at the top"
     },
+    "pdfFragment": {
+      "button": "Take a fragment",
+      "title": "Take a fragment",
+      "untitled": "PDF",
+      "page": "p. {n} / {total}",
+      "prev": "Previous page",
+      "next": "Next page",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fit": "Fit height",
+      "done": "Done",
+      "hint": "Draw a frame around the task with a mouse, finger or pen. Drag the corners or move the frame.",
+      "add": "Add to board",
+      "adding": "Cutting…",
+      "added": "Added ✓ — frame the next one or press Done.",
+      "cutFailed": "Couldn't cut: {reason} Nothing was created.",
+      "notPlaced": "The file “{name}” is saved in Materials but wasn't placed: you are on another page or board now. Drag it from Materials.",
+      "err": {
+        "offline": "no connection to the server.",
+        "rect": "the frame is too big or too small — draw it again.",
+        "page": "page not found.",
+        "notPdf": "this is not a PDF.",
+        "forbidden": "you can only cut from your own or a public PDF on your own board.",
+        "viewerGone": "this PDF window is no longer on the board.",
+        "quota": "your Materials storage is full.",
+        "failed": "the server couldn't do it.",
+        "notReady": "this document was uploaded earlier and is not prepared for cutting yet."
+      }
+    },
     "documentViewer": {
       "pdf": "PDF",
       "document": "Document",

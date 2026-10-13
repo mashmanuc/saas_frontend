@@ -87,6 +87,8 @@
             @page-change="handleDocViewerPageChange"
             @page-jump="(id: string) => emit('doc-viewer-page-jump', id)"
             @expand="handleDocViewerExpand"
+            :can-cut="props.isTutor !== false && wbStore.mode === 'edit'"
+            @cut="openPdfFragment"
           />
           <!-- ASSET_LIFECYCLE_SSOT Phase 2B: провалена картинка (INV-ASSET-3/8).
                Автор бачить ⚠ placeholder; учень/replay — нічого (наступна гілка). -->
@@ -952,6 +954,20 @@
       :view-h="containerHeight"
       @scroll="onSheetScrollbar"
     />
+
+    <!-- «✂️ Взяти фрагмент» з PDF (TZ_PDF_FRAGMENT_2026-10-13) — однаково в конструкторі, соло й класі -->
+    <PdfFragmentDialog
+      v-if="pdfFragment"
+      :content-item-id="pdfFragment.contentItemId"
+      :content-type="pdfFragment.contentType"
+      :title="pdfFragment.title"
+      :total-pages="pdfFragment.totalPages"
+      :start-page="pdfFragment.startPage"
+      :viewer-id="pdfFragment.viewerId"
+      :snapshot="pdfFragmentSnapshot"
+      :place="placePdfFragment"
+      @close="pdfFragment = null"
+    />
   </div>
 </template>
 
@@ -997,6 +1013,9 @@ import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
 import DocumentViewerAsset from './DocumentViewerAsset.vue'
+import PdfFragmentDialog, { type FragmentContext } from '../library/PdfFragmentDialog.vue'
+import { CUT_CONTENT_TYPES, fragmentPlacement, nextStackY, sameSpot, type FragRect } from '../library/pdfFragmentRect'
+import type { PdfFragmentResult } from '../../api/library'
 import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
 import TextOverlay from './TextOverlay.vue'
@@ -3223,6 +3242,58 @@ function handleDocViewerPageChange(id: string, page: number): void {
   assets.value[idx] = updated
   // Broadcast only currentPage (P3: pages[] NOT in WS)
   emit('asset-update', updated)
+}
+
+// ─── «✂️ Взяти фрагмент» з PDF (TZ_PDF_FRAGMENT_2026-10-13) ─────────────────
+
+const pdfFragment = ref<{
+  contentItemId: number; contentType: string; title: string; totalPages: number; startPage: number; viewerId: string
+} | null>(null)
+/** Скільки вже зайнято стовпчиком під фрагментами цього вікна (у межах одного відкриття) */
+let pdfFragmentStackY = 0
+
+function openPdfFragment(asset: WBAsset): void {
+  const contentId = asset.content_ref?.content_id
+  const contentType = asset.content_ref?.content_type ?? ''
+  if (!contentId || !CUT_CONTENT_TYPES.includes(contentType)) return
+  pdfFragmentStackY = 0
+  pdfFragment.value = {
+    contentItemId: contentId,
+    contentType,
+    title: (asset.title as string | undefined) || t('winterboard.pdfFragment.untitled'),
+    totalPages: Math.max(1, asset.totalPages ?? 1),
+    startPage: asset.currentPage ?? 0,
+    viewerId: asset.id,
+  }
+}
+
+function pdfFragmentSnapshot(): FragmentContext {
+  return {
+    boardId: String(wbStore.workspaceId ?? ''),
+    pageId: String(wbStore.currentPage?.id ?? ''),
+    viewerId: pdfFragment.value?.viewerId ?? '',
+  }
+}
+
+/**
+ * Поставити вирізаний фрагмент — лише туди, де натиснули «Додати» (ТЗ §2.2): та сама дошка, та сама
+ * сторінка, і вікно PDF на ній є. Інакше — нічого: файл уже в «Матеріалах», вікно скаже про це словами.
+ */
+function placePdfFragment(ctx: FragmentContext, res: PdfFragmentResult, rect: FragRect): 'placed' | 'not_placed' {
+  const viewer = assets.value.find((a) => a.id === ctx.viewerId)
+  const now = { boardId: String(wbStore.workspaceId ?? ''), pageId: String(wbStore.currentPage?.id ?? '') }
+  if (!viewer || !res.cdn_url || !sameSpot(ctx, now, true)) return 'not_placed'
+  const place = fragmentPlacement(viewer, rect, res.width, res.height, props.width ?? PAGE_WIDTH, pdfFragmentStackY)
+  pdfFragmentStackY = nextStackY(pdfFragmentStackY, place)
+  emit('asset-add', {
+    id: `pdffrag-${res.id}-${Date.now()}`,
+    type: 'image',
+    src: res.cdn_url,
+    x: place.x, y: place.y, w: place.w, h: place.h,
+    rotation: 0,
+    locked: false,
+  } as WBAsset)
+  return 'placed'
 }
 
 function handleDocViewerExpand(asset: WBAsset): void {

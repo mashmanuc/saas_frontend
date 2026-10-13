@@ -35,6 +35,12 @@
     <v-rect :config="nextBtnConfig" />
     <v-text :config="nextBtnTextConfig" />
 
+    <!-- «✂️ Взяти фрагмент» (TZ_PDF_FRAGMENT_2026-10-13): лише PDF і лише той, хто редагує -->
+    <template v-if="showCut">
+      <v-rect :config="cutBtnConfig" />
+      <v-text :config="cutBtnTextConfig" />
+    </template>
+
     <!-- Lock indicator -->
     <v-text v-if="asset.locked" :config="lockConfig" />
   </v-group>
@@ -55,6 +61,7 @@ import type { WBAsset } from '../../types/winterboard'
 import { documentHeaderText } from '../../board/documentTitle'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
+import { CUT_CONTENT_TYPES } from '../library/pdfFragmentRect'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -66,12 +73,15 @@ interface Props {
    *  pointer, щоб штрих малювався ПОВЕРХ документа, а не тягнув його (дзеркало
    *  KONVA_PROXY_TYPES: draggable/listening лише в select-режимі). */
   interactive?: boolean
+  /** Показати «✂️ Взяти фрагмент» (вчитель, режим редагування) */
+  canCut?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
   scale: 1,
   interactive: true,
+  canCut: false,
 })
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
@@ -83,6 +93,7 @@ const emit = defineEmits<{
   pageChange: [id: string, page: number]
   expand: [asset: WBAsset]
   pageJump: [id: string]
+  cut: [asset: WBAsset]
 }>()
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -94,6 +105,8 @@ const FOOTER_H = 32
 const BTN_W = 36
 const BTN_H = 24
 const CORNER_R = 4
+const CUT_W = 32
+const CUT_GAP = 6
 
 // ─── Per-instance state (page URLs from global cache in useDocumentPageCache) ─
 
@@ -297,6 +310,38 @@ const footerConfig = computed(() => ({
 }))
 
 // Prev button
+/** Кнопка «✂️» — ліворуч від «▶»; документ із хмари (PDF, Word, PowerPoint), вікно достатньо широке */
+const showCut = computed(() =>
+  props.canCut && props.interactive && CUT_CONTENT_TYPES.includes(props.asset.content_ref?.content_type ?? '')
+  && Boolean(props.asset.content_ref?.content_id) && props.asset.w >= 200,
+)
+const cutX = computed(() => props.asset.w - 8 - BTN_W - CUT_GAP - CUT_W)
+
+const cutBtnConfig = computed(() => ({
+  x: cutX.value,
+  y: props.asset.h - FOOTER_H + 4,
+  width: CUT_W,
+  height: BTN_H,
+  fill: '#d1fae5',
+  stroke: '#047857',
+  strokeWidth: 1,
+  cornerRadius: 3,
+  listening: true,
+  name: 'doc-viewer-cut',
+}))
+
+const cutBtnTextConfig = computed(() => ({
+  x: cutX.value,
+  y: props.asset.h - FOOTER_H + 4,
+  width: CUT_W,
+  height: BTN_H,
+  text: '✂️',
+  fontSize: 13,
+  align: 'center',
+  verticalAlign: 'middle',
+  listening: false,
+}))
+
 const prevBtnConfig = computed(() => ({
   x: 8,
   y: props.asset.h - FOOTER_H + 4,
@@ -397,6 +442,13 @@ function handleClick(e: any): void {
     if (localPos.x >= nextX && localPos.x <= nextX + BTN_W && canGoNext.value) {
       e.cancelBubble = true
       emit('pageChange', props.asset.id, (props.asset.currentPage ?? 0) + 1)
+      return
+    }
+
+    // «✂️ Взяти фрагмент»
+    if (showCut.value && localPos.x >= cutX.value && localPos.x <= cutX.value + CUT_W) {
+      e.cancelBubble = true
+      emit('cut', props.asset)
       return
     }
   }

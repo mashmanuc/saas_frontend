@@ -64,6 +64,32 @@ export async function deleteFolder(id: number): Promise<void> {
   await apiClient.delete(`${BASE}/folders/${id}/`)
 }
 
+/** Відповідь «✂️ Взяти фрагмент»: файл у «Матеріалах» + розмір PNG і сторінка дошки з вікном PDF. */
+export interface PdfFragmentResult extends LibraryAsset {
+  width: number
+  height: number
+  dpi: number
+  /** true — ця рамка вже була вирізана раніше (той самий файл) */
+  reused: boolean
+  board_page: string
+}
+
+/**
+ * «✂️ Взяти фрагмент» (TZ_PDF_FRAGMENT_2026-10-13): сервер вирізає ділянку з ОРИГІНАЛУ PDF і кладе її в
+ * «Матеріали». На дошку фрагмент ставить фронт штатним asset_add.
+ */
+export async function cutPdfFragment(args: {
+  contentItem: number
+  page: number
+  rect: { x: number; y: number; w: number; h: number }
+  board: string
+  viewer: string
+}): Promise<PdfFragmentResult> {
+  return apiClient.post<PdfFragmentResult>(`${BASE}/pdf-fragment/`, {
+    content_item: args.contentItem, page: args.page, rect: args.rect, board: args.board, viewer: args.viewer,
+  })
+}
+
 /** «Прибрати зайві» в теці «🪞 Дзеркало» чи групі: `dryRun` лише рахує, інакше незадіяні — в Архів. */
 export async function mirrorCleanup(folderId: number, dryRun: boolean): Promise<MirrorCleanupResult> {
   return apiClient.post<MirrorCleanupResult>(
