@@ -993,7 +993,8 @@ export const winterboardApi = {
       .catch((err: any) => {
         const body = err?.response?.data
         if (body && body.ok === false && typeof body.reason === 'string') return body as SolverRefusal
-        return { ok: false, reason: 'busy', detail: '' } as SolverRefusal
+        if (!err?.response) return { ok: false, reason: 'network', detail: 'немає звʼязку з сервером' } as SolverRefusal
+        return { ok: false, reason: 'server_error', detail: 'сервер не відповів як слід' } as SolverRefusal
       })
   },
 

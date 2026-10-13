@@ -56,9 +56,10 @@ const solvedAsset = (result: SolverResult, inequality = '√(x+1) > x − 1') =>
 describe('рисунок лише зі збереженого result (§5.1)', () => {
   it('межі, зафарбована / виколота, відповідь і ОДЗ', async () => {
     const w = await mountIt(solvedAsset(ROOT_RESULT), { isSelected: false })
-    expect(w.find('[data-testid="number-line-kind"]').text()).toBe('РОЗВʼЯЗОК НЕРІВНОСТІ')
+    // Заголовок і відповідь — як у будь-якої нерівності, хоч би чим рахували (ТЗ «один рядок» §1).
+    expect(w.find('[data-testid="number-line-kind"]').text()).toBe('НЕРІВНІСТЬ')
     expect(w.find('[data-testid="number-line-formula"]').text()).toBe('√(x+1) > x − 1')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3)')
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
     expect(w.find('[data-testid="number-line-domain"]').text()).toBe('ОДЗ: x ≥ −1')
     expect(w.findAll('circle').map((c) => c.attributes('data-filled'))).toEqual(['1', '0'])
     expect(api.solveNumberLine).not.toHaveBeenCalled()
@@ -88,13 +89,17 @@ describe('рисунок лише зі збереженого result (§5.1)', (
   })
 })
 
-describe('«Розвʼязати» в інспекторі', () => {
-  it('пілот: рівно один asset_update з нерівністю й відповіддю, як прийшла', async () => {
+const input0 = (w: VueWrapper) => w.find('[data-testid="number-line-input-0"]')
+const err0 = (w: VueWrapper) => w.find('[data-testid="number-line-error-0"]')
+const applyBtn = (w: VueWrapper) => w.find('[data-testid="number-line-apply"]')
+
+describe('нелінійний рядок — точний розвʼязок (пілот; ТЗ «один рядок» §2)', () => {
+  it('рівно один asset_update з нерівністю й відповіддю, як прийшла; режимів у інспекторі немає', async () => {
     api.solveNumberLine.mockResolvedValue({ ...ROOT_RESULT, solver: 'sympy-1.13.3' })
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
-    await w.find('[data-testid="number-line-mode-solved"]').trigger('click')
-    await w.find('[data-testid="number-line-solve-input"]').setValue('√(x+1) > x − 1')
-    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    expect(w.find('[data-testid^="number-line-mode-"]').exists()).toBe(false)
+    await input0(w).setValue('√(x+1) > x − 1')
+    await applyBtn(w).trigger('click')
     await flushPromises()
     expect(api.solveNumberLine).toHaveBeenCalledWith('√(x+1) > x − 1')
     const u = updates(w)
@@ -102,49 +107,44 @@ describe('«Розвʼязати» в інспекторі', () => {
     expect(u[0][0].data).toMatchObject({ mode: 'solved', inequality: '√(x+1) > x − 1', solver: 'sympy-1.13.3', result: ROOT_RESULT })
   })
 
-  it('Enter теж розвʼязує', async () => {
+  it('Ctrl+Enter теж застосовує', async () => {
     api.solveNumberLine.mockResolvedValue(ROOT_RESULT)
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
-    await w.find('[data-testid="number-line-mode-solved"]').trigger('click')
-    const input = w.find('[data-testid="number-line-solve-input"]')
-    await input.setValue('x^2 - 4 > 0')
-    await input.trigger('keydown', { key: 'Enter' })
+    await input0(w).setValue('x^2 - 4 > 0')
+    await input0(w).trigger('keydown', { key: 'Enter', ctrlKey: true })
     await flushPromises()
     expect(updates(w)).toHaveLength(1)
   })
 
-  it('відмова сервера — нуль записів, пояснення словами, рисунок на місці (§5.5)', async () => {
+  it('відмова — нуль записів, пояснення словами під рядком, рисунок на місці (§5.5)', async () => {
     api.solveNumberLine.mockResolvedValue({ ok: false, reason: 'timeout', detail: 'не встиг за 2 с' })
     const w = await mountIt(solvedAsset(ROOT_RESULT))
-    const input = w.find('[data-testid="number-line-solve-input"]')
-    expect((input.element as HTMLInputElement).value).toBe('√(x+1) > x − 1')
-    await input.setValue('x^6 + x^5 + 7 > 0')
-    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    expect((input0(w).element as HTMLInputElement).value).toBe('√(x+1) > x − 1')
+    await input0(w).setValue('x^6 + x^5 + 7 > 0')
+    await applyBtn(w).trigger('click')
     await flushPromises()
     expect(updates(w)).toHaveLength(0)
-    expect(w.find('[data-testid="number-line-solve-error"]').text()).toBe('Не встиг розвʼязати — спростіть нерівність')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3)')
-    expect((w.find('[data-testid="number-line-solve-input"]').element as HTMLInputElement).value).toBe('x^6 + x^5 + 7 > 0')
+    expect(err0(w).text()).toBe('Не встиг розвʼязати — спростіть нерівність')
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
+    expect((input0(w).element as HTMLInputElement).value).toBe('x^6 + x^5 + 7 > 0')
   })
 
-  it('відмова форми запису — із поясненням сервера', async () => {
-    api.solveNumberLine.mockResolvedValue({ ok: false, reason: 'parse', detail: 'незрозуміле імʼя «y» — лише змінна x і √' })
+  it('відмова форми запису — з поясненням, що не так', async () => {
+    api.solveNumberLine.mockResolvedValue({ ok: false, reason: 'parse', detail: 'незрозуміле імʼя «x3» — лише змінна x і √' })
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
-    await w.find('[data-testid="number-line-mode-solved"]').trigger('click')
-    await w.find('[data-testid="number-line-solve-input"]').setValue('y > 0')
-    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await input0(w).setValue('x^2 > 1/x3')
+    await applyBtn(w).trigger('click')
     await flushPromises()
-    expect(w.find('[data-testid="number-line-solve-error"]').text()).toBe('Не зрозумів нерівність: незрозуміле імʼя «y» — лише змінна x і √')
+    expect(err0(w).text()).toBe('Не зрозумів нерівність: незрозуміле імʼя «x3» — лише змінна x і √')
   })
 
   it('поки йде запит — повторний клік нічого не шле', async () => {
     let resolve: (v: unknown) => void = () => {}
     api.solveNumberLine.mockReturnValue(new Promise((r) => { resolve = r }))
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
-    await w.find('[data-testid="number-line-mode-solved"]').trigger('click')
-    await w.find('[data-testid="number-line-solve-input"]').setValue('x^2 - 4 > 0')
-    await w.find('[data-testid="number-line-apply"]').trigger('click')
-    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await input0(w).setValue('x^2 - 4 > 0')
+    await applyBtn(w).trigger('click')
+    await applyBtn(w).trigger('click')
     expect(api.solveNumberLine).toHaveBeenCalledTimes(1)
     resolve(ROOT_RESULT)
     await flushPromises()
@@ -152,17 +152,55 @@ describe('«Розвʼязати» в інспекторі', () => {
   })
 })
 
-describe('лише пілот (§5.4)', () => {
-  it('не пілот — режиму «Розвʼязати» в інспекторі немає', async () => {
+describe('правдива причина невдачі (рев\'ю 13.10, п. 4) — без слова «сервер»', () => {
+  it.each([
+    ['network', 'Немає звʼязку — перевірте інтернет і спробуйте ще раз'],
+    ['server_error', 'Не вдалося розвʼязати — спробуйте ще раз'],
+    ['busy', 'Зараз забагато задач — спробуйте за хвилину'],
+  ])('%s — свій текст і нуль записів', async (reason, text) => {
+    api.solveNumberLine.mockResolvedValue({ ok: false, reason, detail: 'x' })
+    const w = await mountIt(solvedAsset(ROOT_RESULT))
+    await applyBtn(w).trigger('click')
+    await flushPromises()
+    expect(err0(w).text()).toBe(text)
+    expect(updates(w)).toHaveLength(0)
+  })
+})
+
+describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
+  it('нелінійний рядок — відмова словами, БЕЗ запиту (ні 403, ні червоного тосту)', async () => {
     auth.user = { id: 7 }
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
-    expect(w.find('[data-testid="number-line-mode-solved"]').exists()).toBe(false)
+    await input0(w).setValue('x^2 - 4 > 0')
+    await applyBtn(w).trigger('click')
+    await flushPromises()
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(updates(w)).toHaveLength(0)
+    expect(err0(w).text()).toContain('Це не лінійна нерівність')
   })
 
-  it('збережений розвʼязок не пілот бачить (рисунок зі збереженого, без запитів)', async () => {
+  it('збережена пілотом пряма: рисунок той самий; «Застосувати» — відмова без запиту', async () => {
+    auth.user = { id: 7 }
+    const w = await mountIt(solvedAsset(ROOT_RESULT))
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
+    expect((input0(w).element as HTMLInputElement).value).toBe('√(x+1) > x − 1')
+    await applyBtn(w).trigger('click')
+    await flushPromises()
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(updates(w)).toHaveLength(0)
+    expect(err0(w).text()).not.toBe('')
+  })
+
+  it('«Знаків інтервалів» не бачить', async () => {
+    auth.user = { id: 7 }
+    const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
+    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
+  })
+
+  it('збережений розвʼязок без виділення — лише рисунок, без запитів', async () => {
     auth.user = { id: 7 }
     const w = await mountIt(solvedAsset(ROOT_RESULT), { isSelected: false })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3)')
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
     expect(api.solveNumberLine).not.toHaveBeenCalled()
   })
 })

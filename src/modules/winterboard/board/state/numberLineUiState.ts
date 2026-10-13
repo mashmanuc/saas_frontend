@@ -17,18 +17,20 @@ export interface NumberLineManualPoint {
 }
 
 export interface NumberLineBridge {
-  /** 'set' — нерівності / системи / сукупності; 'intervals' — метод інтервалів. */
-  mode: 'set' | 'intervals' | 'solved'
-  setMode(m: 'set' | 'intervals' | 'solved'): void
-  // ── «Розвʼязати» (сервер) ──
-  /** Уся нерівність одним рядком. */
-  solveLine: string
-  setSolveLine(v: string): void
-  /** Іде запит до сервера — кнопка неактивна. */
+  /**
+   * Один розділ «Нерівність» (ТЗ «один рядок» 2026-10-13): режимів учитель не бачить —
+   * чим рахувати, вирішує chooseNumberLine.
+   */
+  /** Іде розвʼязування — кнопка неактивна. */
   solving: boolean
-  /** Відмова сервера словами, '' — немає. */
-  solveError: string
-  /** Рядки-умови чернетки (ще не застосовані). */
+  /** «Знаки інтервалів» (лише один рядок; галочку бачить пілот). */
+  signs: boolean
+  setSigns(v: boolean): void
+  /** Тиха примітка під рядками, '' — немає. */
+  note: string
+  /** Стара пряма «вручну» — замість рядків старий розділ точок і знаків. */
+  legacyManual: boolean
+  /** Рядки чернетки (ще не застосовані). */
   draft: string[]
   combine: 'and' | 'or'
   dirty: boolean
@@ -41,24 +43,19 @@ export interface NumberLineBridge {
   /** Прибрати рядок; повертає індекс рядка, куди перевести фокус, або -1. */
   removeRow(i: number): number
   setCombine(c: 'and' | 'or'): void
-  // ── Метод інтервалів ──
-  ivInput: 'expression' | 'manual'
-  setIvInput(m: 'expression' | 'manual'): void
-  /** Вираз одним рядком: `(x-1)(x+3)/(x-2) ≥ 0`. */
-  expressionLine: string
-  setExpressionLine(v: string): void
-  /** Вручну: точки через «;». */
+  // ── Стара пряма «вручну» ──
+  /** Точки через «;». */
   pointsText: string
   setPointsText(v: string): void
-  /** Вручну: точки за значенням. */
+  /** Точки за значенням. */
   manualPoints: NumberLineManualPoint[]
   togglePoint(i: number): void
-  /** Вручну: знаки на проміжках зліва направо (точок + 1). */
+  /** Знаки на проміжках зліва направо (точок + 1). */
   manualSigns: Array<'+' | '-'>
   toggleSign(i: number): void
   manualOp: '<' | '<=' | '>' | '>='
   setManualOp(op: '<' | '<=' | '>' | '>='): void
-  /** Пояснення помилки методу інтервалів, '' — помилки немає. */
+  /** Пояснення помилки «вручну», '' — помилки немає. */
   intervalsError: string
   apply(): void
   revert(): void

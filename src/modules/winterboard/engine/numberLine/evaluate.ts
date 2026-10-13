@@ -4,7 +4,7 @@
  * для дошки, PDF-знімка й опису для Інтегралика. Окремо нічого не зберігається.
  */
 import { parseNumber } from './parse'
-import { solveIntervals } from './intervals'
+import { denominatorHoles, solveIntervals } from './intervals'
 import { compareReal as compare, type Real } from './real'
 import { ALL, contains, EMPTY, intersect, normalize, union, type Interval, type NumberSet, type Point } from './sets'
 import {
@@ -62,8 +62,25 @@ export interface NumberLineLayout {
 }
 
 export type NumberLineEvaluation =
-  | { ok: true; set: NumberSet; answer: NumberLineAnswer; layout: NumberLineLayout }
+  | {
+    ok: true
+    set: NumberSet
+    answer: NumberLineAnswer
+    layout: NumberLineLayout
+    /** Рядок «ОДЗ» (`x ≠ 2`, `x ≥ −1`): знаменник чи корінь зі змінною — однаково для всіх способів. */
+    domain: string | null
+  }
   | { ok: false; errors: NumberLineError[] }
+
+/** Що бачить учитель у заголовку картки — лише від того, що він увів (ТЗ «один рядок» §1). */
+export type NumberLineKind = 'inequality' | 'system' | 'union' | 'intervals'
+
+export function numberLineKind(data: NumberLineData): NumberLineKind {
+  if (data.mode === 'intervals') return 'intervals'
+  if (data.mode === 'solved') return 'inequality'
+  const n = Array.isArray(data.conditions) ? data.conditions.length : 0
+  return n <= 1 ? 'inequality' : data.combine === 'or' ? 'union' : 'system'
+}
 
 /** Типографський мінус для підписів і відповіді. */
 export function displayNumber(label: string): string {
@@ -107,33 +124,59 @@ function resolve(c: NumberLineCondition, canon: (raw: string, line: number) => P
   }
 }
 
-function fmtInterval(iv: Interval): string {
-  if (iv.lo && iv.hi && compare(iv.lo.value, iv.hi.value) === 0) return `{${displayNumber(iv.lo.label)}}`
-  const lo = iv.lo ? displayNumber(iv.lo.label) : '−∞'
-  const hi = iv.hi ? displayNumber(iv.hi.label) : '+∞'
-  return `${iv.lo && iv.loClosed ? '[' : '('}${lo}; ${hi}${iv.hi && iv.hiClosed ? ']' : ')'}`
+/**
+ * Шматок відповіді для запису: межі вже підписані (`−3`, `√2`, `≈1,32`), null — ±∞.
+ * Один форматер для всіх способів (рушій на сторінці, метод інтервалів, сервер) — однаковий
+ * вхід дає однаковий рядок відповіді й назву проміжку (ТЗ «один рядок» §1).
+ */
+export interface AnswerPiece {
+  lo: string | null
+  loClosed: boolean
+  hi: string | null
+  hiClosed: boolean
+  /** Ізольована точка (`{2}`). */
+  point: boolean
 }
 
-function nameOf(iv: Interval): IntervalName {
-  if (!iv.lo && !iv.hi) return 'line'
-  if (!iv.lo) return iv.hiClosed ? 'ray' : 'open_ray'
-  if (!iv.hi) return iv.loClosed ? 'ray' : 'open_ray'
-  if (iv.loClosed && iv.hiClosed) return 'segment'
-  if (!iv.loClosed && !iv.hiClosed) return 'interval'
+function fmtPiece(p: AnswerPiece): string {
+  if (p.point) return `{${p.lo}}`
+  return `${p.lo !== null && p.loClosed ? '[' : '('}${p.lo ?? '−∞'}; ${p.hi ?? '+∞'}${p.hi !== null && p.hiClosed ? ']' : ')'}`
+}
+
+function nameOf(p: AnswerPiece): IntervalName {
+  if (p.lo === null && p.hi === null) return 'line'
+  if (p.lo === null) return p.hiClosed ? 'ray' : 'open_ray'
+  if (p.hi === null) return p.loClosed ? 'ray' : 'open_ray'
+  if (p.loClosed && p.hiClosed) return 'segment'
+  if (!p.loClosed && !p.hiClosed) return 'interval'
   return 'half_interval'
 }
 
-export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer {
-  if (set.length === 0) return { kind: 'empty', text: '∅' }
-  if (set.length === 1) {
-    const iv = set[0]
-    if (!iv.lo && !iv.hi) return { kind: 'all', text: `${variable} ∈ (−∞; +∞)`, name: 'line' }
-    if (iv.lo && iv.hi && compare(iv.lo.value, iv.hi.value) === 0) {
-      return { kind: 'point', text: `${variable} = ${displayNumber(iv.lo.label)}` }
-    }
-    return { kind: 'set', text: `${variable} ∈ ${fmtInterval(iv)}`, name: nameOf(iv) }
+/** Шматки в порядку зліва направо → `x ∈ [−1; 3)` з назвою, `x = 3`, `∅`. */
+export function answerFromPieces(pieces: AnswerPiece[], variable: string): NumberLineAnswer {
+  if (pieces.length === 0) return { kind: 'empty', text: '∅' }
+  if (pieces.length === 1) {
+    const p = pieces[0]
+    if (p.point) return { kind: 'point', text: `${variable} = ${p.lo}` }
+    if (p.lo === null && p.hi === null) return { kind: 'all', text: `${variable} ∈ (−∞; +∞)`, name: 'line' }
+    return { kind: 'set', text: `${variable} ∈ ${fmtPiece(p)}`, name: nameOf(p) }
   }
-  return { kind: 'set', text: `${variable} ∈ ${set.map(fmtInterval).join(' ∪ ')}` }
+  return { kind: 'set', text: `${variable} ∈ ${pieces.map(fmtPiece).join(' ∪ ')}` }
+}
+
+export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer {
+  return answerFromPieces(set.map((iv: Interval) => ({
+    lo: iv.lo ? displayNumber(iv.lo.label) : null,
+    loClosed: iv.loClosed,
+    hi: iv.hi ? displayNumber(iv.hi.label) : null,
+    hiClosed: iv.hiClosed,
+    point: !!(iv.lo && iv.hi && compare(iv.lo.value, iv.hi.value) === 0),
+  })), variable)
+}
+
+/** «ОДЗ» з нулів знаменника: `x ≠ 2, x ≠ −3`. */
+function holesText(holes: Point[], variable: string): string | null {
+  return holes.length ? holes.map((p) => `${variable} ≠ ${displayNumber(p.label)}`).join(', ') : null
 }
 
 const MARGIN = 0.18
@@ -178,7 +221,8 @@ export function evaluate(input: NumberLineData): NumberLineEvaluation {
   else if (data.combine === 'or') set = resolved.reduce<NumberSet>((acc, r) => union(acc, r.set), EMPTY)
   else set = resolved.reduce<NumberSet>((acc, r) => intersect(acc, r.set), ALL)
 
-  return { ok: true, set, answer: formatAnswer(set, data.variable), layout: layout(resolved, set, canonPoints) }
+  // Лінійні нерівності, системи й сукупності — без знаменників і коренів зі змінною: ОДЗ немає.
+  return { ok: true, set, answer: formatAnswer(set, data.variable), layout: layout(resolved, set, canonPoints), domain: null }
 }
 
 function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]): NumberLineLayout {
@@ -243,6 +287,7 @@ function evaluateIntervals(data: NumberLineData): NumberLineEvaluation {
     ok: true,
     set: r.set,
     answer: formatAnswer(r.set, r.variable),
+    domain: holesText(r.holes, r.variable),
     layout: {
       points: r.points.map((p, i) => ({ label: displayNumber(p.point.label), x: xs[i], filled: p.filled })),
       hatches: [{ condition: 0, segments: result }],
@@ -284,13 +329,27 @@ function evaluateSolved(data: NumberLineData): NumberLineEvaluation {
   const xs = uniq.map((_, i) => (n === 1 ? 0.5 : MARGIN + ((1 - 2 * MARGIN) * i) / (n - 1)))
   const xOf = (b: SolverBound) => xs[uniq.findIndex((u) => u.latex === b.latex)]
   const result: LayoutSegment[] = r.intervals.map((iv) => ({ from: iv.from ? xOf(iv.from) : 0, to: iv.to ? xOf(iv.to) : 1 }))
-  const empty = !r.intervals.length && !r.points.length
-  const all_ = r.intervals.length === 1 && !r.intervals[0].from && !r.intervals[0].to && !r.points.length
+  // Відповідь — тим самим форматером, що й на сторінці (назва проміжку теж), з меж сервера.
+  const pieces: Array<AnswerPiece & { at: number }> = [
+    ...r.intervals.map((iv) => ({
+      lo: iv.from ? solverBoundLabel(iv.from) : null,
+      loClosed: !!iv.from?.closed,
+      hi: iv.to ? solverBoundLabel(iv.to) : null,
+      hiClosed: !!iv.to?.closed,
+      point: false,
+      at: iv.from ? iv.from.approx : -Infinity,
+    })),
+    ...r.points.map((b) => ({ lo: solverBoundLabel(b), loClosed: true, hi: solverBoundLabel(b), hiClosed: true, point: true, at: b.approx })),
+  ].sort((a, b) => a.at - b.at)
+  const variable = data.variable || 'x'
+  // ОДЗ: від сервера (корені, скорочення); інакше — нулі знаменника, якщо рядок розбирає рушій.
+  const holes = r.domain ? null : denominatorHoles(String(data.inequality ?? ''))
   return {
     ok: true,
     // Множина живе на сервері (контракт), рушій її не перераховує — тут лише рисунок і відповідь.
     set: [],
-    answer: { kind: empty ? 'empty' : all_ ? 'all' : 'set', text: r.answer, ...(all_ ? { name: 'line' as const } : {}) },
+    answer: answerFromPieces(pieces, variable),
+    domain: r.domain || holesText(holes ?? [], variable),
     layout: {
       points: uniq.map((b, i) => ({ label: solverBoundLabel(b), x: xs[i], filled: b.closed })),
       hatches: [{ condition: 0, segments: result }],

@@ -25,12 +25,16 @@ vi.mock('@/modules/ship/sceneRecorder', () => ({ recordCompanionScene: vi.fn() }
 vi.mock('@/modules/winterboard/constants/nmt3dDefaults', () => ({ NMT3D_TEMPLATE_LABELS: {} }))
 const api = vi.hoisted(() => ({ solveNumberLine: vi.fn() }))
 vi.mock('@/modules/winterboard/api/winterboardApi', () => ({ winterboardApi: api, default: api }))
+// Той самий вибирач, що й інспектор: точний розвʼязок — лише пілот (id 40).
+const auth = vi.hoisted(() => ({ user: { id: 40 } }))
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => auth }))
 
 import { KIND_LABELS, PREP_PAGE_KINDS, runBoardAction, sceneExtras, summarizeAsset } from '../boardActions'
 
 beforeEach(() => {
   page = { id: 'p1', width: 1920, height: 1080, assets: [] }
   api.solveNumberLine.mockReset()
+  auth.user = { id: 40 }
 })
 
 describe('add_number_line', () => {
@@ -103,7 +107,7 @@ describe('метод інтервалів від Інтегралика (ета�
     // Дошка сама не може (x³ − 2) — питаємо сервер; він відмовив — помилка словами, нуль обʼєктів.
     api.solveNumberLine.mockResolvedValueOnce({ ok: false, reason: 'unsolvable', detail: 'точно не розвʼязується' })
     await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^3 - 2', op: '>' } })).rejects.toThrow('Не можу розвʼязати нерівність')
-    await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: '(x-1)', op: '=' } })).rejects.toThrow('методу інтервалів')
+    await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: '(x-1)', op: '=' } })).rejects.toThrow('Не бачу знака нерівності')
     expect(page.assets).toHaveLength(0)
   })
 
@@ -145,10 +149,19 @@ describe('«Розвʼязати» від Інтегралика (ТЗ розв�
   })
 
   it('Інтегралик бачить нерівність, відповідь і ОДЗ зі збереженого', () => {
+    const B = (approx, text, closed) => ({ latex: text, approx, exact: true, closed, text })
     const a = { id: 's', type: 'number_line', data: { version: 1, mode: 'solved', variable: 'x', conditions: [], combine: 'and',
       inequality: '√(x+1) > x − 1', showAnswer: true, showHatching: true,
-      result: { ok: true, intervals: [], points: [], domain: 'x ≥ −1', answer: 'x ∈ [−1; 3)' } } }
+      result: { ok: true, intervals: [{ from: B(-1, '−1', true), to: B(3, '3', false) }], points: [], domain: 'x ≥ −1', answer: 'x ∈ [−1; 3)' } } }
     expect(summarizeAsset(a)).toEqual({ kind: 'числова пряма', label: '√(x+1) > x − 1' })
     expect(sceneExtras(a)).toEqual({ answer: 'x ∈ [−1; 3)', quote: 'ОДЗ: x ≥ −1' })
+  })
+
+  it('не пілот: дошка сама не може — відмова словами БЕЗ запиту', async () => {
+    auth.user = { id: 7 }
+    await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^2 - 2x - 1', op: '<' } }))
+      .rejects.toThrow('Не можу розвʼязати цю нерівність')
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(page.assets).toHaveLength(0)
   })
 })

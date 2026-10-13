@@ -10449,11 +10449,10 @@
       }
     },
     "numberLine": {
+      "inequalityLabel": "Inequality",
+      "signsOption": "Interval signs",
+      "signsOnlyProducts": "Signs — only for products and fractions",
       "title": "Number line",
-      "kindSolved": "Solved inequality",
-      "modeSolved": "Solve",
-      "solvePlaceholder": "√(x + 1) > x − 1",
-      "solveButton": "Solve",
       "solving": "Solving…",
       "domainLine": "Domain: {domain}",
       "solver": {
@@ -10462,17 +10461,12 @@
         "degree": "The power is too high",
         "timeout": "Did not solve in time — simplify the inequality",
         "unsolvable": "Cannot be solved exactly",
-        "busy": "The server is busy — try again in a minute",
-        "not_pilot": "Solving inequalities is a pilot feature for now"
+        "busy": "Too many tasks right now — try again in a minute",
+        "not_pilot": "I cannot solve this inequality yet",
+        "network": "No connection — check the internet and try again",
+        "server_error": "Could not solve it — try again"
       },
       "kindIntervals": "Interval method",
-      "modeLabel": "Mode",
-      "modeSet": "Inequalities",
-      "modeIntervals": "Interval method",
-      "ivInputLabel": "Input",
-      "ivExpression": "Expression",
-      "ivManual": "Manual",
-      "expressionPlaceholder": "(x − 1)(x + 3)/(x − 2) ≥ 0",
       "pointsLabel": "Points (separated by “;”)",
       "pointsPlaceholder": "−3; 1; 2",
       "pointsHint": "Click — filled / hollow",
@@ -10484,7 +10478,6 @@
       "zeroTrue": "true, so {variable} can be any number",
       "zeroFalse": "false, so there are no solutions",
       "subtitle": "Inequalities, systems and unions on a number line",
-      "conditionsLabel": "Conditions",
       "combineLabel": "Combine",
       "kindInequality": "Inequality",
       "kindSystem": "System",
@@ -10527,7 +10520,7 @@
         "duplicatePoint": "Point {text} is already there",
         "signsCount": "There must be one more sign than points",
         "noPoints": "Add at least one point",
-        "notLinear": "Not a linear inequality: {variable} is multiplied or divided by {variable}. Those come with the interval method (next stage)",
+        "notLinear": "Not a linear inequality: {variable} is multiplied or divided by {variable} — I cannot solve this one yet",
         "unbalancedParen": "Unbalanced parentheses",
         "empty": "Empty line",
         "unexpectedChar": "Unknown character “{char}”",
@@ -10542,7 +10535,8 @@
         "mixedDirection": "Both signs of a double inequality must point the same way",
         "eqInRange": "= and ≠ are not allowed in a double inequality",
         "trailing": "Too many signs: one condition per line",
-        "tooMany": "At most {max} conditions"
+        "tooMany": "At most {max} conditions",
+        "systemNotLinear": "A system — only of linear inequalities for now"
       }
     },
     "quadratic": {

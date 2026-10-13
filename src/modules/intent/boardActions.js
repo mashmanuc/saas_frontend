@@ -34,7 +34,9 @@ import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
-import { conditionToText, evaluate as evaluateNumberLine, intervalsFormula, parseIntervalsLine } from '@/modules/winterboard/engine/numberLine'
+import { chooseNumberLine, conditionToText, defaultNumberLineData, evaluate as evaluateNumberLine, intervalsFormula } from '@/modules/winterboard/engine/numberLine'
+import { isIntervalsPilotUser } from '@/modules/winterboard/engine/numberLine/pilot'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import {
   buildNumberLineAsset,
   DEFAULT_NUMBER_LINE_W,
@@ -1076,19 +1078,18 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
   let data
   if (typeof expression === 'string' && expression.trim()) {
     const OPS = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
-    if (!OPS[op]) throw new Error('Не зрозумів нерівність для методу інтервалів.')
+    if (!OPS[op]) throw new Error('Не бачу знака нерівності — напишіть, наприклад, √(x − 1) ≥ 7.')
     const line = `${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`
-    const parsed = parseIntervalsLine(line)
-    if (parsed.ok) {
-      data = { mode: 'intervals', conditions: [], expression: parsed.expression, rhs: parsed.rhs, op: parsed.op, variable: parsed.variable }
-    } else {
-      // ТЗ розвʼязувача §4: дошка сама не може (корені 1 ± √2, вищі степені, корінь у виразі) —
-      // точний розвʼязок на сервері, той самий REST, що й «Розвʼязати» (пілот перевіряє сервер).
-      const r = await winterboardApi.solveNumberLine(line)
-      if (!r || !r.ok) throw new Error(`Не можу розвʼязати нерівність: ${r?.detail || r?.reason || 'сервер не відповів'}.`)
-      const { solver, ...result } = r
-      data = { mode: 'solved', conditions: [], inequality: line, result, solver: solver || '' }
+    // ТЗ «один рядок» §2: той самий вибирач, що й «Застосувати» в інспекторі (метод інтервалів —
+    // зі знаками; не розбирає — точний розвʼязок; сервер лише для пілота, гейт у вибирачі й на сервері).
+    const pilot = isIntervalsPilotUser(useAuthStore().user?.id)
+    const out = await chooseNumberLine({ lines: [line], combine: 'and', signs: true, pilot },
+      defaultNumberLineData(), (q) => winterboardApi.solveNumberLine(q))
+    if (!out.ok) {
+      if (out.refusal) throw new Error(`Не можу розвʼязати нерівність: ${out.refusal.detail || 'спробуйте ще раз'}.`)
+      throw new Error('Не можу розвʼязати цю нерівність на прямій.')
     }
+    data = out.fields
   } else {
     data = {
       conditions: Array.isArray(conditions) ? conditions : [],
@@ -1098,11 +1099,7 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
   }
   const asset = buildNumberLineAsset({ x: 0, y: 0 }, data, `numline-${_uuid()}`)
   const empty = asset.data.mode === 'intervals' || asset.data.mode === 'solved' ? false : !asset.data.conditions.length
-  if (empty || !evaluateNumberLine(asset.data).ok) {
-    throw new Error(asset.data.mode === 'intervals'
-      ? 'Не зрозумів нерівність для методу інтервалів.'
-      : 'Не зрозумів нерівність для числової прямої.')
-  }
+  if (empty || !evaluateNumberLine(asset.data).ok) throw new Error('Не зрозумів нерівність для числової прямої.')
   const { store, page } = await _store(ctx)
   const { cx, cy } = _center(page, asset.w, asset.h)
   asset.x = cx - asset.w / 2
@@ -1835,11 +1832,13 @@ export function sceneExtras(a) {
     // Відповідь — з того самого обчислення, що й рисунок (інваріант 1).
     const conds = Array.isArray(d.conditions) ? d.conditions : []
     const intervals = d.mode === 'intervals'
-    // «Розвʼязати»: відповідь сервера збережена в даних — її й бачить Інтегралик (і ОДЗ).
+    // Точний розвʼязок: межі збережені в даних — відповідь і ОДЗ з того самого обчислення, що й картка.
     if (d.mode === 'solved') {
-      if (d.result?.ok === true) {
-        out.answer = d.result.answer === '∅' ? 'розвʼязків немає (∅)' : String(d.result.answer || '')
-        if (d.result.domain) out.quote = `ОДЗ: ${d.result.domain}`
+      let ev
+      try { ev = evaluateNumberLine({ ...d, version: 1, variable: d.variable || 'x', showAnswer: true, showHatching: true }) } catch { return out }
+      if (ev.ok) {
+        out.answer = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
+        if (ev.domain) out.quote = `ОДЗ: ${ev.domain}`
       }
       return out
     }

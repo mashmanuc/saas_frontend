@@ -95,6 +95,9 @@ export interface SolverResult {
 }
 
 export type SolverReason = 'parse' | 'too_long' | 'degree' | 'timeout' | 'unsolvable' | 'busy' | 'not_pilot'
+  // Клієнтські: відповіді нашою формою немає — мережа впала (`network`) чи сервер повернув
+  // щось інше, напр. 500 (`server_error`). Не «зайнятий»: учитель має знати, що сталося.
+  | 'network' | 'server_error'
 
 export interface SolverRefusal {
   ok: false
@@ -149,6 +152,7 @@ export interface NumberLineError {
     | 'too_deep'
     | 'bad_data'
     | 'unbalanced_paren'
+    | 'system_not_linear'
   params?: Record<string, string>
 }
 
