@@ -6,6 +6,7 @@ export {
   evaluate,
   formatAnswer,
   describeNumberLine,
+  solverBoundLabel,
   intervalsFormula,
   displayNumber,
   type IntervalName,

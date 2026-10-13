@@ -49,7 +49,7 @@ export interface IntervalsPoint {
 export interface NumberLineData {
   version: 1
   /** 'set' — нерівності, системи, сукупності (етап 1); 'intervals' — метод інтервалів (етап 2). */
-  mode: 'set' | 'intervals'
+  mode: 'set' | 'intervals' | 'solved'
   variable: string
   /** set: кожна умова — одна нерівність. */
   conditions: NumberLineCondition[]
@@ -65,8 +65,41 @@ export interface NumberLineData {
   points?: IntervalsPoint[]
   /** intervals · вручну: знаки на проміжках зліва направо, `points.length + 1`. */
   signs?: Array<'+' | '-'>
+  /** solved (ТЗ розвʼязувача §3.2): нерівність, як ввів учитель. */
+  inequality?: string
+  /** solved: відповідь сервера, як прийшла (наш контракт), — рисунок малюється з неї. */
+  result?: SolverResult
+  /** solved: чим розвʼязано (`sympy-1.13.3`). */
+  solver?: string
   showAnswer: boolean
   showHatching: boolean
+}
+
+/** Межа з сервера: точний `latex`, позиція — `approx`, `exact: false` → на рисунку «≈». */
+export interface SolverBound {
+  latex: string
+  approx: number
+  exact: boolean
+  closed: boolean
+  /** Запис без LaTeX (`1 + √2`); null, якщо точний запис громіздкий. */
+  text: string | null
+}
+
+/** Контракт `POST /winterboard/number-line/solve/` (ТЗ §3.1), успішна відповідь. */
+export interface SolverResult {
+  ok: true
+  intervals: Array<{ from: SolverBound | null; to: SolverBound | null }>
+  points: SolverBound[]
+  domain: string | null
+  answer: string
+}
+
+export type SolverReason = 'parse' | 'too_long' | 'degree' | 'timeout' | 'unsolvable' | 'busy' | 'not_pilot'
+
+export interface SolverRefusal {
+  ok: false
+  reason: SolverReason
+  detail: string
 }
 
 export function isRangeCondition(c: NumberLineCondition): c is NumberLineRangeCondition {

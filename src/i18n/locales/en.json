@@ -10406,6 +10406,21 @@
     },
     "numberLine": {
       "title": "Number line",
+      "kindSolved": "Solved inequality",
+      "modeSolved": "Solve",
+      "solvePlaceholder": "√(x + 1) > x − 1",
+      "solveButton": "Solve",
+      "solving": "Solving…",
+      "domainLine": "Domain: {domain}",
+      "solver": {
+        "parse": "Could not read the inequality",
+        "too_long": "The inequality is too long",
+        "degree": "The power is too high",
+        "timeout": "Did not solve in time — simplify the inequality",
+        "unsolvable": "Cannot be solved exactly",
+        "busy": "The server is busy — try again in a minute",
+        "not_pilot": "Solving inequalities is a pilot feature for now"
+      },
       "kindIntervals": "Interval method",
       "modeLabel": "Mode",
       "modeSet": "Inequalities",

@@ -57,7 +57,7 @@
         <rect x="0" y="0" :width="VB_W" :height="VB_H" :fill="C.bg" />
 
         <!-- HUD: вид · формула · відповідь (як у тригонометричних нерівностей) -->
-        <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
+        <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote || domainNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
         <text x="30" y="34" font-size="12" font-weight="700" letter-spacing="1" :fill="C.kind" data-testid="number-line-kind">{{ kindLabel }}</text>
         <text
           x="30" y="72"
@@ -86,6 +86,13 @@
           :fill="C.muted"
           data-testid="number-line-zero-note"
         >{{ zeroNote }}</text>
+        <text
+          v-else-if="domainNote"
+          x="30" y="134"
+          :font-size="fitFont(domainNote, 14)"
+          :fill="C.muted"
+          data-testid="number-line-domain"
+        >{{ domainNote }}</text>
         <text v-else-if="!layout" x="30" y="110" font-size="14" :fill="C.error">{{ t('winterboard.numberLine.storedInvalid') }}</text>
         <text v-else-if="isEmpty" x="30" y="110" font-size="14" :fill="C.muted">{{ t('winterboard.numberLine.emptyHint') }}</text>
 
@@ -204,6 +211,8 @@ import {
 } from '../../../engine/numberLine'
 import type { NumberLineAsset } from '../../../types/numberLine'
 import { compareReal, type Real } from '../../../engine/numberLine/real'
+import type { SolverRefusal, SolverResult } from '../../../engine/numberLine/types'
+import { winterboardApi } from '../../../api/winterboardApi'
 import {
   registerNumberLine,
   unregisterNumberLine,
@@ -265,6 +274,7 @@ const layout = computed(() => ('layout' in evaluation.value ? evaluation.value.l
 const formula = computed(() => {
   const d = props.asset.data
   if (d.mode === 'intervals') return intervalsFormula(d)
+  if (d.mode === 'solved') return d.inequality ?? ''
   const joiner = ` ${t(d.combine === 'or' ? 'winterboard.numberLine.joinOr' : 'winterboard.numberLine.joinAnd')} `
   return d.conditions.map((c) => conditionToText(c, d.variable || 'x')).join(joiner)
 })
@@ -272,6 +282,7 @@ const formula = computed(() => {
 const kindLabel = computed(() => {
   const d = props.asset.data
   if (d.mode === 'intervals') return t('winterboard.numberLine.kindIntervals').toUpperCase()
+  if (d.mode === 'solved') return t('winterboard.numberLine.kindSolved').toUpperCase()
   const key = d.conditions.length <= 1 ? 'kindInequality' : d.combine === 'or' ? 'kindUnion' : 'kindSystem'
   return t(`winterboard.numberLine.${key}`).toUpperCase()
 })
@@ -280,6 +291,7 @@ const kindLabel = computed(() => {
 const isEmpty = computed(() => {
   const d = props.asset.data
   if (d.mode === 'intervals') return !(d.expression && d.expression.trim()) && !d.points?.length
+  if (d.mode === 'solved') return !d.result
   return !d.conditions.length
 })
 
@@ -289,6 +301,13 @@ const answerLine = computed(() => {
   if (ev.answer.kind === 'empty') return t('winterboard.numberLine.answerEmpty')
   const name = ev.answer.name ? ` — ${t(`winterboard.numberLine.names.${ev.answer.name}`)}` : ''
   return `${ev.answer.text}${name}`
+})
+
+/** Режим «Розвʼязати»: область визначення для коренів — окремим рядком (ТЗ розвʼязувача §1.2). */
+const domainNote = computed(() => {
+  const d = props.asset.data
+  const dom = d.mode === 'solved' ? d.result?.domain : null
+  return dom ? t('winterboard.numberLine.domainLine', { domain: dom }) : ''
 })
 
 /** Умови з коефіцієнтом 0 при змінній — пояснення, чому відповідь «усі числа» чи «∅». */
@@ -360,7 +379,11 @@ function fraction(label: string): { num: string; den: string } | null {
 }
 
 // ── Чернетка (не стан дошки, не ops). Поля вводу — в NumberLineInspector. ──
-const draftMode = ref<'set' | 'intervals'>('set')
+const draftMode = ref<'set' | 'intervals' | 'solved'>('set')
+// solved: уся нерівність одним рядком; розвʼязує сервер (ТЗ розвʼязувача §3).
+const solveLine = ref('')
+const solving = ref(false)
+const solveError = ref('')
 // set: рядки-умови + система / сукупність.
 const draft = ref<string[]>([])
 const draftCombine = ref<'and' | 'or'>('and')
@@ -421,6 +444,7 @@ function snapshot(): string {
     const filled = draft.value.filter((l) => l.trim()).length
     return JSON.stringify({ m: 'set', l: norm(draft.value), c: filled > 1 ? draftCombine.value : '' })
   }
+  if (draftMode.value === 'solved') return JSON.stringify({ m: 'sv', q: solveLine.value.trim().replace(/\s+/g, ' ') })
   if (ivInput.value === 'expression') return JSON.stringify({ m: 'iv', e: expressionLine.value.trim().replace(/\s+/g, ' ') })
   const v = manualView.value
   return JSON.stringify({
@@ -435,7 +459,9 @@ function snapshot(): string {
 const synced = ref('')
 
 function loadFrom(d: NumberLineData): void {
-  draftMode.value = d.mode === 'intervals' ? 'intervals' : 'set'
+  draftMode.value = d.mode === 'intervals' || d.mode === 'solved' ? d.mode : 'set'
+  solveLine.value = d.inequality ?? ''
+  solveError.value = ''
   draft.value = [...appliedLines(d)]
   draftCombine.value = d.combine
   const manual = !(d.expression && d.expression.trim()) && !!d.points?.length
@@ -461,7 +487,7 @@ const dirty = computed(() => snapshot() !== synced.value)
 watch(
   () => {
     const d = props.asset.data
-    return [d.mode, d.conditions, d.combine, d.variable, d.expression, d.rhs, d.op, d.points, d.signs]
+    return [d.mode, d.conditions, d.combine, d.variable, d.expression, d.rhs, d.op, d.points, d.signs, d.inequality, d.result]
   },
   () => { if (!dirty.value) revert() },
   { deep: true },
@@ -536,6 +562,10 @@ function commit(data: NumberLineData): void {
 /** Перевірити всі рядки; усі правильні → один update:asset. Інакше — нічого не писати. */
 function apply(): void {
   if (draftMode.value === 'intervals') return applyIntervals()
+  if (draftMode.value === 'solved') {
+    void applySolved()
+    return
+  }
   const rows = draft.value.map((text, line) => ({ text, line })).filter((r) => r.text.trim())
   const parsed = parseLines(rows.map((r) => r.text))
   if ('errors' in parsed) {
@@ -600,6 +630,39 @@ function applyIntervals(): void {
   commit(data)
 }
 
+/** Відмова сервера — словами; для форми запису (parse / degree / too_long) — ще й що саме не так. */
+function solverErrorText(r: SolverRefusal): string {
+  const base = t(`winterboard.numberLine.solver.${r.reason}`)
+  return ['parse', 'degree', 'too_long'].includes(r.reason) && r.detail ? `${base}: ${r.detail}` : base
+}
+
+/**
+ * «Розвʼязати»: сервер лише рахує; успіх → рівно один asset_update з нерівністю й відповіддю,
+ * як прийшла (рисунок, PDF і запис малюють збережене, на сервер не ходять). Відмова — нуль записів.
+ */
+async function applySolved(): Promise<void> {
+  const q = solveLine.value.trim()
+  if (!q || solving.value) return
+  solving.value = true
+  solveError.value = ''
+  try {
+    const r = await winterboardApi.solveNumberLine(q)
+    if (r.ok !== true) {
+      solveError.value = solverErrorText(r as SolverRefusal)
+      return
+    }
+    const { solver, ...result } = r as SolverResult & { solver?: string }
+    const data: NumberLineData = { ...props.asset.data, mode: 'solved', inequality: q, result: result as SolverResult, solver: solver ?? '' }
+    if ('errors' in evaluate(data)) {
+      solveError.value = t('winterboard.numberLine.errors.badData')
+      return
+    }
+    commit(data)
+  } finally {
+    solving.value = false
+  }
+}
+
 const intervalsError = computed(() => {
   const e = ivError.value
   return e ? t(`winterboard.numberLine.errors.${ERROR_KEYS[e.code]}`, e.params ?? {}) : ''
@@ -620,7 +683,11 @@ const showAnswer = computed(() => props.asset.data.showAnswer !== false)
 const manualPoints = computed(() => manualView.value.points)
 const _bridge = reactive({
   mode: draftMode,
-  setMode: (m: 'set' | 'intervals') => { draftMode.value = m; ivError.value = null },
+  setMode: (m: 'set' | 'intervals' | 'solved') => { draftMode.value = m; ivError.value = null; solveError.value = '' },
+  solveLine,
+  setSolveLine: (v: string) => { solveLine.value = v; solveError.value = '' },
+  solving,
+  solveError,
   draft,
   combine: draftCombine,
   dirty,
