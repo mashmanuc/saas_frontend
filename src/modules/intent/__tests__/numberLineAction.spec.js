@@ -160,8 +160,77 @@ describe('«Розвʼязати» від Інтегралика (ТЗ розв�
   it('не пілот: дошка сама не може — відмова словами БЕЗ запиту', async () => {
     auth.user = { id: 7 }
     await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^2 - 2x - 1', op: '<' } }))
-      .rejects.toThrow('Не можу розвʼязати цю нерівність')
+      .rejects.toThrow('Таку нерівність дошка поки не розвʼязує')
     expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(page.assets).toHaveLength(0)
+  })
+})
+
+// ТЗ «один рядок» §5 (етап В): Інтегралик передає нерівності як сказав учитель (`lines`), рахує той
+// самий вибирач, що й «Застосувати» в інспекторі, — Інтегралик уміє рівно те, що вчитель на акаунті.
+describe('етап В: нерівності як сказав учитель — той самий вибирач, що й інспектор', () => {
+  const RESULT = {
+    ok: true,
+    intervals: [{ from: { latex: '50', approx: 50, exact: true, closed: true, text: '50' }, to: null }],
+    points: [], domain: 'x ≥ 1', answer: 'x ∈ [50; +∞)',
+  }
+  const add = (payload) => runBoardAction({ kind: 'add_number_line', payload })
+
+  it('прод 13.10: «√(x−1) ≥ 7» — точний розвʼязок, а не текст у чаті', async () => {
+    api.solveNumberLine.mockResolvedValueOnce({ ...RESULT, solver: 'sympy-1.13.3' })
+    await add({ lines: ['√(x-1) >= 7'], combine: 'and', signs: false })
+    expect(api.solveNumberLine).toHaveBeenCalledWith('√(x-1) >= 7')
+    expect(page.assets).toHaveLength(1)
+    expect(page.assets[0].data).toMatchObject({ mode: 'solved', inequality: '√(x-1) >= 7' })
+  })
+
+  it('лінійна — рахує дошка (модель нічого не зводить), сервер не питаємо', async () => {
+    await add({ lines: ['x - 7 >= 7'], combine: 'and', signs: false })
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(page.assets[0].data.mode).toBe('set')
+    expect(page.assets[0].data.conditions).toHaveLength(1)
+  })
+
+  it('«методом інтервалів» (signs) у пілота — метод інтервалів', async () => {
+    await add({ lines: ['(x-1)(x+3)/(x-2) >= 0'], signs: true })
+    expect(page.assets[0].data).toMatchObject({ mode: 'intervals', expression: '(x-1)(x+3)/(x-2)' })
+  })
+
+  it('система й сукупність — combine доходить до обʼєкта', async () => {
+    await add({ lines: ['x > 2', 'x <= 5'], combine: 'and', signs: false })
+    await add({ lines: ['x < -1', 'x >= 3'], combine: 'or', signs: false })
+    expect(page.assets.map((a) => [a.data.mode, a.data.conditions.length, a.data.combine]))
+      .toEqual([['set', 2, 'and'], ['set', 2, 'or']])
+  })
+
+  it('не пілот: знаки знято (галочка — пілот), лінійна будується як у інспекторі', async () => {
+    auth.user = { id: 7 }
+    await add({ lines: ['x - 7 >= 7'], signs: true })
+    expect(page.assets[0].data.mode).toBe('set')
+  })
+
+  it('не пілот: нелінійна — відмова словами, без запиту й без обʼєкта', async () => {
+    auth.user = { id: 7 }
+    await expect(add({ lines: ['(x-1)(x+3) > 0'], signs: true }))
+      .rejects.toThrow('Таку нерівність дошка поки не розвʼязує: «(x-1)(x+3) > 0». Можу лінійні нерівності, системи й сукупності.')
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+    expect(page.assets).toHaveLength(0)
+  })
+
+  it('система з нелінійним рядком — відмова словами', async () => {
+    await expect(add({ lines: ['x > 2', 'x^2 < 9'], combine: 'and' }))
+      .rejects.toThrow('Систему чи сукупність дошка поки будує лише з лінійних нерівностей.')
+    expect(page.assets).toHaveLength(0)
+  })
+
+  it('одруківка — «перевірте запис» з самою нерівністю', async () => {
+    await expect(add({ lines: ['2x + > 3'] })).rejects.toThrow('Не зрозумів нерівність «2x + > 3» — перевірте запис.')
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
+  })
+
+  it('сервер відмовив — його словами, без обʼєкта', async () => {
+    api.solveNumberLine.mockResolvedValueOnce({ ok: false, reason: 'unsolvable', detail: 'точно не розвʼязується' })
+    await expect(add({ lines: ['x^3 - 3x + 1 > 0'] })).rejects.toThrow('Не можу розвʼязати нерівність: точно не розвʼязується.')
     expect(page.assets).toHaveLength(0)
   })
 })

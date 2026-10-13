@@ -3,7 +3,7 @@ export * from './types'
 export { parseLine, parseLines, parseNumber, conditionToText, displayOp } from './parse'
 export { parseIntervalsLine, solveIntervals, denominatorHoles, type ParsedIntervalsLine } from './intervals'
 export { inequalityLatex, numberLatex, setLatex, statementLatex } from './latex'
-export { chooseNumberLine, type ChooseInput, type ChooseOutcome, type ChosenFields, type SolveFn } from './choose'
+export { chooseNumberLine, NONLINEAR as NUMBER_LINE_NONLINEAR, type ChooseInput, type ChooseOutcome, type ChosenFields, type SolveFn } from './choose'
 export {
   evaluate,
   formatAnswer,

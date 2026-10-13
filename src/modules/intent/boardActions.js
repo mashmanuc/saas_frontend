@@ -34,7 +34,7 @@ import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
-import { chooseNumberLine, conditionToText, defaultNumberLineData, evaluate as evaluateNumberLine, intervalsFormula } from '@/modules/winterboard/engine/numberLine'
+import { chooseNumberLine, conditionToText, defaultNumberLineData, evaluate as evaluateNumberLine, intervalsFormula, NUMBER_LINE_NONLINEAR } from '@/modules/winterboard/engine/numberLine'
 import { isIntervalsPilotUser } from '@/modules/winterboard/engine/numberLine/pilot'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import {
@@ -1073,23 +1073,26 @@ export async function buildToolCatalog() {
 // Сервер уже перевірив умови тією самою граматикою (parser._r_board_add_number_line);
 // тут — та сама перевірка рушієм ще раз: обʼєкт зʼявляється лише з валідних даних
 // (інваріант 4), невалідне — людська помилка, а не «приблизна» пряма.
-// Етап 2: `expression` + `op` (± `rhs`) — метод інтервалів; перевірка — тим самим рушієм.
-HANDLERS.add_number_line = async function add_number_line({ conditions, combine, variable, expression, op, rhs }, ctx) {
+// Етап В (ТЗ «один рядок» §5): `lines` — нерівності, як їх сказав учитель; розвʼязує той самий
+// вибирач, що й «Застосувати» в інспекторі, тож Інтегралик уміє рівно те, що вчитель на цьому
+// акаунті («Знаки інтервалів» і сервер — пілот). Старі форми дії (`expression` + `op` — етап 2,
+// `conditions` — етап 1) лишаються, доки на проді може бути старий бекенд.
+HANDLERS.add_number_line = async function add_number_line({ lines, signs, conditions, combine, variable, expression, op, rhs }, ctx) {
   let data
-  if (typeof expression === 'string' && expression.trim()) {
+  const pilot = isIntervalsPilotUser(useAuthStore().user?.id)
+  const viaChooser = async (rows, withSigns) => {
+    const out = await chooseNumberLine(
+      { lines: rows, combine: combine === 'or' ? 'or' : 'and', signs: withSigns && pilot && rows.length === 1, pilot },
+      defaultNumberLineData(), (q) => winterboardApi.solveNumberLine(q))
+    if (!out.ok) throw new Error(numberLineRefusal(out, rows, pilot))
+    return out.fields
+  }
+  if (Array.isArray(lines) && lines.length) {
+    data = await viaChooser(lines.map((l) => String(l)), signs === true)
+  } else if (typeof expression === 'string' && expression.trim()) {
     const OPS = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
     if (!OPS[op]) throw new Error('Не бачу знака нерівності — напишіть, наприклад, √(x − 1) ≥ 7.')
-    const line = `${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`
-    // ТЗ «один рядок» §2: той самий вибирач, що й «Застосувати» в інспекторі (метод інтервалів —
-    // зі знаками; не розбирає — точний розвʼязок; сервер лише для пілота, гейт у вибирачі й на сервері).
-    const pilot = isIntervalsPilotUser(useAuthStore().user?.id)
-    const out = await chooseNumberLine({ lines: [line], combine: 'and', signs: true, pilot },
-      defaultNumberLineData(), (q) => winterboardApi.solveNumberLine(q))
-    if (!out.ok) {
-      if (out.refusal) throw new Error(`Не можу розвʼязати нерівність: ${out.refusal.detail || 'спробуйте ще раз'}.`)
-      throw new Error('Не можу розвʼязати цю нерівність на прямій.')
-    }
-    data = out.fields
+    data = await viaChooser([`${expression} ${OPS[op]} ${typeof rhs === 'string' && rhs.trim() ? rhs : '0'}`], true)
   } else {
     data = {
       conditions: Array.isArray(conditions) ? conditions : [],
@@ -1108,6 +1111,21 @@ HANDLERS.add_number_line = async function add_number_line({ conditions, combine,
   if (!ctx?.pageId) {
     try { store.selectItems?.([asset.id]) } catch { /* підсвітка не критична */ }
   }
+}
+
+/**
+ * Відмова вибирача — словами для чату (без «режимів», «пілота» й кодів): той самий зміст, що
+ * вчитель бачить під рядком інспектора, але про конкретну нерівність.
+ */
+function numberLineRefusal(out, rows, pilot) {
+  if (out.refusal) return `Не можу розвʼязати нерівність: ${out.refusal.detail || 'спробуйте ще раз'}.`
+  const e = out.errors?.[0]
+  const row = rows[e?.line ?? 0] ?? rows[0]
+  if (e?.code === 'system_not_linear') return 'Систему чи сукупність дошка поки будує лише з лінійних нерівностей.'
+  if (!pilot && NUMBER_LINE_NONLINEAR.has(e?.code)) {
+    return `Таку нерівність дошка поки не розвʼязує: «${row}». Можу лінійні нерівності, системи й сукупності.`
+  }
+  return `Не зрозумів нерівність «${row}» — перевірте запис.`
 }
 
 HANDLERS.set_param = async function set_param({ object_id, type, value, name, math_content }) {

@@ -48,7 +48,7 @@ export type ChooseOutcome =
  * Помилки рушія «Нерівності», за якими стоїть нелінійна нерівність (не одруківка): такі
  * вміє сервер. Решта (порожньо, незрозумілий символ, знак без числа…) — помилка вчителю.
  */
-const NONLINEAR: ReadonlySet<NumberLineError['code']> = new Set([
+export const NONLINEAR: ReadonlySet<NumberLineError['code']> = new Set([
   'not_linear',
   'root_form',
   'roots_not_supported',
