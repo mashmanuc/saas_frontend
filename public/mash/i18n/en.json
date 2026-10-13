@@ -1,5 +1,25 @@
 {
   "mash": {
+    "hub": {
+      "pageTitle": "Math tools — M4SH",
+      "sectionName": "Mathematics",
+      "mainSite": "Back to M4SH ↗",
+      "eyebrow": "Math tools",
+      "titleStart": "See mathematics",
+      "titleAccent": "in motion.",
+      "intro": "Graphs, geometric constructions, and 3D figures — choose what you need right now.",
+      "choose": "What would you like to explore?",
+      "noInstall": "Opens in your browser",
+      "graph2dTitle": "Graphs on a plane",
+      "graph2d": "Functions, equations, and graphs you can change live.",
+      "graph3dTitle": "Graphs in space",
+      "graph3d": "Surfaces and curves in space: rotate and view them from every angle.",
+      "geoTitle": "Geometric constructions",
+      "geo": "Construct figures on a plane and move their points.",
+      "stereoTitle": "Solid figures",
+      "stereo": "Rotate figures and explore their sections and constructions.",
+      "open": "Open tool"
+    },
     "common": {
       "save": "Save",
       "cancel": "Cancel",

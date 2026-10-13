@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e0f7f4">
+  <meta name="description" content="Побудуйте графіки, геометричні та просторові фігури прямо у браузері. Оберіть потрібний інструмент для уроку математики.">
+  <title>Математичні інструменти — M4SH</title>
+  <link rel="stylesheet" href="./shared/m4sh-theme.css">
+  <link rel="stylesheet" href="./hub.css">
+  <script src="./shared/i18n.js" defer></script>
+  <script src="./hub.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/start" aria-label="M4SH — головна сторінка"><span class="brand-mark">M4</span><span>M4SH</span></a>
+      <span class="brand-divider" aria-hidden="true"></span>
+      <span class="section-name" data-i18n="mash.hub.sectionName">Математика</span>
+      <div class="header-actions">
+        <button class="language-button" type="button" id="languageButton" aria-label="Switch language">UK</button>
+        <a class="main-site-link" href="/start" data-i18n="mash.hub.mainSite">До M4SH <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="mash.hub.eyebrow">Інструменти для математики</span></div>
+        <h1 id="heroTitle"><span data-i18n="mash.hub.titleStart">Покажіть математику</span> <em data-i18n="mash.hub.titleAccent">в русі.</em></h1>
+        <p data-i18n="mash.hub.intro">Графіки, геометричні побудови й просторові фігури — оберіть те, що потрібно зараз.</p>
+      </div>
+      <div class="hero-note" aria-hidden="true"><span>ƒ(x)</span><span>↗</span><span>△</span><span>⬡</span></div>
+    </section>
+
+    <section class="tools" aria-labelledby="toolsTitle">
+      <div class="tools-heading">
+        <h2 id="toolsTitle" data-i18n="mash.hub.choose">Що хочете дослідити?</h2>
+        <p data-i18n="mash.hub.noInstall">Відкривається у браузері</p>
+      </div>
+      <div class="tool-grid">
+        <a class="tool-card tool-2d" href="./grapher/index.html">
+          <div class="card-visual"><img src="./2d-preview.png" alt="" width="815" height="610" decoding="async"></div>
+          <div class="card-body"><div><h3 data-i18n="mash.hub.graph2dTitle">Графіки на площині</h3><p data-i18n="mash.hub.graph2d">Функції, рівняння й графіки, які можна змінювати наживо.</p></div><span class="card-arrow" aria-hidden="true">↗</span></div>
+          <span class="card-action" data-i18n="mash.hub.open">Відкрити інструмент</span>
+        </a>
+        <a class="tool-card tool-3d" href="./grapher-3d/index.html">
+          <div class="card-visual"><img src="./3d-preview.png" alt="" width="900" height="675" decoding="async"></div>
+          <div class="card-body"><div><h3 data-i18n="mash.hub.graph3dTitle">Графіки в просторі</h3><p data-i18n="mash.hub.graph3d">Поверхні й криві в просторі: обертайте та розглядайте з різних боків.</p></div><span class="card-arrow" aria-hidden="true">↗</span></div>
+          <span class="card-action" data-i18n="mash.hub.open">Відкрити інструмент</span>
+        </a>
+        <a class="tool-card tool-geo" href="./geomash/GeoMASH.html">
+          <div class="card-visual"><img src="./geo-preview.png" alt="" width="900" height="600" decoding="async"></div>
+          <div class="card-body"><div><h3 data-i18n="mash.hub.geoTitle">Геометричні побудови</h3><p data-i18n="mash.hub.geo">Будуйте фігури на площині й рухайте їхні точки.</p></div><span class="card-arrow" aria-hidden="true">↗</span></div>
+          <span class="card-action" data-i18n="mash.hub.open">Відкрити інструмент</span>
+        </a>
+        <a class="tool-card tool-stereo" href="./stereomash/index.html">
+          <div class="card-visual"><img src="./stereo-preview.png" alt="" width="900" height="600" decoding="async"></div>
+          <div class="card-body"><div><h3 data-i18n="mash.hub.stereoTitle">Просторові фігури</h3><p data-i18n="mash.hub.stereo">Обертайте фігури, розглядайте перерізи й побудови.</p></div><span class="card-arrow" aria-hidden="true">↗</span></div>
+          <span class="card-action" data-i18n="mash.hub.open">Відкрити інструмент</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>M4SH</span><a href="/start" data-i18n="mash.hub.mainSite">До M4SH ↗</a></footer>
+</body>
+</html>

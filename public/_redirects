@@ -3,9 +3,12 @@
 # NOTE: API calls go directly to backend (apiClient.js baseURL in production)
 # NOTE: SPA fallback is handled by Cloudflare Pages automatically (no rule needed)
 
-# MASH-воронка: короткі публічні адреси (301 → реальні файли; НЕ rewrite-200,
-# бо відносні шляхи всередині додатків резолвляться від реального каталогу)
-/mash        /mash/2d                        301
+# MASH: /mash/ — сторінка вибору чотирьох інструментів.
+# Старий 301 із /mash на 2D міг закешуватися браузером; новий вхід — /mash/.
+# Короткі адреси інструментів ведуть до реальних файлів (не rewrite-200,
+# бо відносні шляхи всередині додатків резолвляться від їхніх каталогів).
+/mash        /mash/                          302
+/mash/       /mash/index.html                200
 /mash/2d     /mash/grapher/index.html        301
 /mash/3d     /mash/grapher-3d/index.html     301
 /mash/geo    /mash/geomash/GeoMASH.html      301

@@ -34,9 +34,30 @@ const fullcalendarCssMockPlugin = () => ({
   },
 })
 
+// Vite dev не відкриває public/mash/index.html за адресою каталогу.
+// На Cloudflare Pages той самий шлях обслуговує правило в public/_redirects.
+const mashHubDevRoutePlugin = () => ({
+  name: 'mash-hub-dev-route',
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      const pathname = req.url?.split('?')[0]
+      if (pathname === '/mash') {
+        res.statusCode = 302
+        res.setHeader('Location', '/mash/')
+        res.end()
+        return
+      }
+      if (pathname === '/mash/') {
+        req.url = '/mash/index.html' + (req.url?.slice(pathname.length) || '')
+      }
+      next()
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), fullcalendarCssMockPlugin()],
+  plugins: [vue(), fullcalendarCssMockPlugin(), mashHubDevRoutePlugin()],
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(getGitInfo()),
   },
