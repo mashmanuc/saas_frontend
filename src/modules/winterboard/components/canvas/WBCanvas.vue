@@ -997,6 +997,7 @@ import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
+import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
 import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, provideCardZoom } from '../../composables/cardZoom'
@@ -3394,6 +3395,8 @@ function getPointerPosition(): WBPoint | null {
 
 // Б-166: від'єднання невидимої картинки під правим кліком (onMounted → onUnmounted).
 let detachImageContextMenuProxy: (() => void) | null = null
+// Б-195: обʼєкт не «прилипає» до курсора, коли відпускання кнопки загубилось (board/konvaStaleDragGuard.ts)
+let detachStaleDragGuard: (() => void) | null = null
 
 /**
  * Завантажений елемент картинки, яку дошка малює під точкою події (верхня за шарами), або
@@ -5823,6 +5826,7 @@ onMounted(async () => {
   // BUG-3 FIX: Global mouseup/pointerup to stop drawing when released outside canvas
   window.addEventListener('mouseup', globalMouseUp)
   window.addEventListener('pointerup', globalMouseUp)
+  detachStaleDragGuard = installKonvaStaleDragGuard()
 
   // P1.4 FIX: Force-stop drawing on visibility/focus loss to prevent stuck pencil
   forceStopDrawing = () => {
@@ -5907,6 +5911,8 @@ onUnmounted(() => {
   // BUG-3 FIX: Remove global mouseup listeners
   window.removeEventListener('mouseup', globalMouseUp)
   window.removeEventListener('pointerup', globalMouseUp)
+  detachStaleDragGuard?.()
+  detachStaleDragGuard = null
   // P1.4: Remove stuck-drawing safeguards
   if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange)
   if (forceStopDrawing) {
