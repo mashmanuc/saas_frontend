@@ -318,4 +318,18 @@ onMounted(async () => {
 .wb-frag__btn.is-on { background: #047857; border-color: #047857; color: #fff; }
 .wb-frag__btn.is-main { min-height: 40px; padding: 0 18px; }
 .wb-frag__btn:disabled { opacity: .45; cursor: default; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-frag { background: var(--color-surface-elevated); color: var(--color-text-primary); }
+[data-theme="dark"] .wb-frag__doc { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-frag__stage { background: var(--color-surface-sunken); }
+[data-theme="dark"] .wb-frag__msg { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-frag__msg.is-problem { color: var(--color-warning); }
+[data-theme="dark"] .wb-frag__btn {
+  background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);
+}
+[data-theme="dark"] .wb-frag__btn.is-on {
+  background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent);
+}
 </style>

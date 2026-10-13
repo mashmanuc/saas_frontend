@@ -160,4 +160,18 @@ onMounted(count)
   font-size: 14px; font-weight: 600; cursor: pointer;
 }
 .wb-tidy__btn.is-on { background: #047857; border-color: #047857; color: #fff; }
+
+/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
+   Світла й класична не змінюються. ── */
+[data-theme="dark"] .wb-tidy { background: var(--color-surface-elevated); color: var(--color-text-primary); }
+[data-theme="dark"] .wb-tidy__x { background: var(--color-surface-sunken); color: var(--color-text-primary); }
+[data-theme="dark"] .wb-tidy__holders { color: var(--color-text-secondary); }
+[data-theme="dark"] .wb-tidy__problem { background: var(--color-warning-soft); color: var(--color-warning); }
+[data-theme="dark"] .wb-tidy__hint { color: var(--color-text-muted); }
+[data-theme="dark"] .wb-tidy__btn {
+  background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary);
+}
+[data-theme="dark"] .wb-tidy__btn.is-on {
+  background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent);
+}
 </style>
