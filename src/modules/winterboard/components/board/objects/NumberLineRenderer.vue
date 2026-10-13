@@ -4,6 +4,9 @@
 
   ДАНІ: лише застосований вхід учителя (умови + «система / сукупність»).
   Рисунок, відповідь, PDF-знімок — з одного обчислення `evaluate()` (інваріант 1).
+  ОДИН РЯДОК (ТЗ 2026-10-13): режимів учитель не бачить — чим рахувати (рушій на сторінці, метод
+  інтервалів, точний розвʼязок), вирішує chooseNumberLine; заголовок, відповідь (з назвою проміжку)
+  і «ОДЗ» однакові, хоч би чим рахували.
 
   ВИГЛЯД — як у тригонометричних нерівностей (TrigSolver): картка — лише рисунок
   (HUD «вид · формула · відповідь» + пряма), усе керування — NumberLineInspector
@@ -195,13 +198,13 @@ import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 import {
+  chooseNumberLine,
   conditionToText,
   displayNumber,
   evaluate,
   intervalsFormula,
   isConstCondition,
-  parseIntervalsLine,
-  parseLines,
+  numberLineKind,
   parseNumber,
   type IntervalsOp,
   type LayoutSegment,
@@ -211,8 +214,10 @@ import {
 } from '../../../engine/numberLine'
 import type { NumberLineAsset } from '../../../types/numberLine'
 import { compareReal, type Real } from '../../../engine/numberLine/real'
-import type { SolverRefusal, SolverResult } from '../../../engine/numberLine/types'
+import type { SolverRefusal } from '../../../engine/numberLine/types'
+import { isIntervalsPilotUser } from '../../../engine/numberLine/pilot'
 import { winterboardApi } from '../../../api/winterboardApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import {
   registerNumberLine,
   unregisterNumberLine,
@@ -279,13 +284,9 @@ const formula = computed(() => {
   return d.conditions.map((c) => conditionToText(c, d.variable || 'x')).join(joiner)
 })
 
-const kindLabel = computed(() => {
-  const d = props.asset.data
-  if (d.mode === 'intervals') return t('winterboard.numberLine.kindIntervals').toUpperCase()
-  if (d.mode === 'solved') return t('winterboard.numberLine.kindSolved').toUpperCase()
-  const key = d.conditions.length <= 1 ? 'kindInequality' : d.combine === 'or' ? 'kindUnion' : 'kindSystem'
-  return t(`winterboard.numberLine.${key}`).toUpperCase()
-})
+/** Заголовок — лише від того, що ввів учитель, а не від того, чим рахували (ТЗ «один рядок» §1). */
+const KIND_KEYS = { inequality: 'kindInequality', system: 'kindSystem', union: 'kindUnion', intervals: 'kindIntervals' } as const
+const kindLabel = computed(() => t(`winterboard.numberLine.${KIND_KEYS[numberLineKind(props.asset.data)]}`).toUpperCase())
 
 /** Порожня пряма: ще нічого не застосовано (підказка замість відповіді). */
 const isEmpty = computed(() => {
@@ -303,10 +304,10 @@ const answerLine = computed(() => {
   return `${ev.answer.text}${name}`
 })
 
-/** Режим «Розвʼязати»: область визначення для коренів — окремим рядком (ТЗ розвʼязувача §1.2). */
+/** «ОДЗ» — однаково для всіх способів: знаменник чи корінь зі змінною (з того самого обчислення). */
 const domainNote = computed(() => {
-  const d = props.asset.data
-  const dom = d.mode === 'solved' ? d.result?.domain : null
+  const ev = evaluation.value
+  const dom = 'domain' in ev && !isEmpty.value ? ev.domain : null
   return dom ? t('winterboard.numberLine.domainLine', { domain: dom }) : ''
 })
 
@@ -379,18 +380,21 @@ function fraction(label: string): { num: string; den: string } | null {
 }
 
 // ── Чернетка (не стан дошки, не ops). Поля вводу — в NumberLineInspector. ──
-const draftMode = ref<'set' | 'intervals' | 'solved'>('set')
-// solved: уся нерівність одним рядком; розвʼязує сервер (ТЗ розвʼязувача §3).
-const solveLine = ref('')
-const solving = ref(false)
-const solveError = ref('')
-// set: рядки-умови + система / сукупність.
+// Один розділ «Нерівність» (ТЗ «один рядок» §1): рядки + система / сукупність + «Знаки інтервалів».
+// Чим рахувати — вирішує chooseNumberLine, учитель режимів не бачить.
 const draft = ref<string[]>([])
 const draftCombine = ref<'and' | 'or'>('and')
+/** «Знаки інтервалів» — «+/−» і крива; лише один рядок. */
+const draftSigns = ref(false)
 const errors = ref<NumberLineError[]>([])
-// intervals: вираз одним рядком або вручну — точки (через «;») + знаки + знак нерівності.
-const ivInput = ref<'expression' | 'manual'>('expression')
-const expressionLine = ref('')
+/** Відмова при розвʼязуванні — словами під рядком. */
+const refusal = ref<{ line: number; text: string } | null>(null)
+/** Тиха примітка під рядками (знаки — лише для добутків і дробів). */
+const note = ref('')
+const solving = ref(false)
+const authStore = useAuthStore()
+// Стара пряма «вручну» (точки й знаки вчителя): лише для такої прямої — старий розділ (ТЗ §3).
+const legacyManual = ref(false)
 const pointsText = ref('')
 /** Зафарбована чи виколота — за записом точки (переживає пересортування). */
 const included = ref<Record<string, boolean>>({})
@@ -440,12 +444,14 @@ const norm = (ls: string[]) => ls.map((l) => l.trim()).filter(Boolean).join('\n'
 
 /** Відбиток чернетки: «не застосовано» — коли він відрізняється від застосованого. */
 function snapshot(): string {
-  if (draftMode.value === 'set') {
+  if (!legacyManual.value) {
     const filled = draft.value.filter((l) => l.trim()).length
-    return JSON.stringify({ m: 'set', l: norm(draft.value), c: filled > 1 ? draftCombine.value : '' })
+    return JSON.stringify({
+      l: norm(draft.value).replace(/[ \t]+/g, ' '),
+      c: filled > 1 ? draftCombine.value : '',
+      s: filled <= 1 && draftSigns.value,
+    })
   }
-  if (draftMode.value === 'solved') return JSON.stringify({ m: 'sv', q: solveLine.value.trim().replace(/\s+/g, ' ') })
-  if (ivInput.value === 'expression') return JSON.stringify({ m: 'iv', e: expressionLine.value.trim().replace(/\s+/g, ' ') })
   const v = manualView.value
   return JSON.stringify({
     m: 'ivm',
@@ -458,15 +464,20 @@ function snapshot(): string {
 /** Застосоване, з якого чернетку синхронізовано востаннє. */
 const synced = ref('')
 
+/**
+ * Збережена пряма → поле (ТЗ «один рядок» §3): set — рядки; intervals · вираз — один рядок і
+ * «Знаки» увімкнено; solved — рядок нерівності; intervals · вручну — старий розділ «Вручну».
+ */
 function loadFrom(d: NumberLineData): void {
-  draftMode.value = d.mode === 'intervals' || d.mode === 'solved' ? d.mode : 'set'
-  solveLine.value = d.inequality ?? ''
-  solveError.value = ''
-  draft.value = [...appliedLines(d)]
+  const expr = d.mode === 'intervals' && !!(d.expression && d.expression.trim())
+  legacyManual.value = d.mode === 'intervals' && !expr && !!d.points?.length
+  draftSigns.value = expr
+  draft.value = expr
+    ? [`${d.expression} ${OP_TEXT[d.op ?? '>']} ${d.rhs ?? '0'}`]
+    : d.mode === 'solved' ? [d.inequality ?? ''] : [...appliedLines(d)]
   draftCombine.value = d.combine
-  const manual = !(d.expression && d.expression.trim()) && !!d.points?.length
-  ivInput.value = manual ? 'manual' : 'expression'
-  expressionLine.value = d.expression && d.expression.trim() ? `${d.expression} ${OP_TEXT[d.op ?? '>']} ${d.rhs ?? '0'}` : ''
+  refusal.value = null
+  note.value = ''
   pointsText.value = (d.points ?? []).map((p) => p.value).join('; ')
   included.value = Object.fromEntries((d.points ?? []).map((p) => [p.value.trim(), p.included]))
   manualSigns.value = [...(d.signs ?? [])]
@@ -474,6 +485,11 @@ function loadFrom(d: NumberLineData): void {
   errors.value = []
   ivError.value = null
   synced.value = snapshot()
+}
+
+function clearHints(): void {
+  refusal.value = null
+  note.value = ''
 }
 
 function revert(): void {
@@ -497,12 +513,14 @@ loadFrom(props.asset.data)
 function setLine(i: number, value: string): void {
   draft.value[i] = value
   errors.value = errors.value.filter((e) => e.line !== i)
+  clearHints()
 }
 
 function addRow(after: number): number {
   const at = Math.min(Math.max(after, -1), draft.value.length - 1) + 1
   draft.value.splice(at, 0, '')
   errors.value = []
+  clearHints()
   return at
 }
 
@@ -510,6 +528,7 @@ function removeRow(i: number): number {
   if (draft.value.length <= 1) return -1
   draft.value.splice(i, 1)
   errors.value = []
+  clearHints()
   return Math.max(0, i - 1)
 }
 
@@ -546,11 +565,13 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   too_long: 'tooLong',
   too_deep: 'tooDeep',
   bad_data: 'badData',
+  system_not_linear: 'systemNotLinear',
 }
 
 function errorFor(i: number): string {
   const e = errors.value.find((x) => x.line === i)
-  return e ? t(`winterboard.numberLine.errors.${ERROR_KEYS[e.code]}`, e.params ?? {}) : ''
+  if (e) return t(`winterboard.numberLine.errors.${ERROR_KEYS[e.code]}`, e.params ?? {})
+  return refusal.value?.line === i ? refusal.value.text : ''
 }
 
 /** Застосувати дані: один update:asset, чернетка — тепер застосоване. */
@@ -559,68 +580,60 @@ function commit(data: NumberLineData): void {
   loadFrom(data)
 }
 
-/** Перевірити всі рядки; усі правильні → один update:asset. Інакше — нічого не писати. */
+/**
+ * «Застосувати»: вибирач вирішує, чим рахувати (ТЗ «один рядок» §2); усі рядки правильні →
+ * РІВНО один update:asset. Помилка чи відмова — нічого не пишеться, пояснення під рядком.
+ */
 function apply(): void {
-  if (draftMode.value === 'intervals') return applyIntervals()
-  if (draftMode.value === 'solved') {
-    void applySolved()
-    return
+  if (legacyManual.value) return applyManual()
+  void applyChosen()
+}
+
+async function applyChosen(): Promise<void> {
+  if (solving.value) return
+  solving.value = true
+  errors.value = []
+  clearHints()
+  try {
+    const out = await chooseNumberLine(
+      {
+        lines: draft.value,
+        combine: draftCombine.value,
+        signs: draftSigns.value,
+        pilot: isIntervalsPilotUser(authStore.user?.id),
+      },
+      props.asset.data,
+      (q) => winterboardApi.solveNumberLine(q),
+    )
+    if (out.ok !== true) {
+      // strict:false — звуження явним приведенням.
+      const bad = out as { errors?: NumberLineError[]; refusal?: SolverRefusal; line?: number }
+      if (bad.refusal) refusal.value = { line: bad.line ?? 0, text: solverErrorText(bad.refusal) }
+      else errors.value = bad.errors ?? []
+      return
+    }
+    commit({ ...props.asset.data, ...out.fields })
+    if (out.note) note.value = t('winterboard.numberLine.signsOnlyProducts')
+  } finally {
+    solving.value = false
   }
-  const rows = draft.value.map((text, line) => ({ text, line })).filter((r) => r.text.trim())
-  const parsed = parseLines(rows.map((r) => r.text))
-  if ('errors' in parsed) {
-    errors.value = parsed.errors.map((e) => ({ ...e, line: rows[e.line]?.line ?? e.line }))
+}
+
+/** Стара пряма «вручну»: точки й знаки вчителя, дошка лише малює. */
+function applyManual(): void {
+  const v = manualView.value
+  if (v.error) {
+    ivError.value = v.error
     return
   }
   const data: NumberLineData = {
     ...props.asset.data,
-    mode: 'set',
-    conditions: parsed.conditions,
-    variable: parsed.variable,
-    combine: parsed.conditions.length > 1 ? draftCombine.value : props.asset.data.combine,
-  }
-  const ev = evaluate(data)
-  if ('errors' in ev) {
-    errors.value = ev.errors.map((e) => ({ ...e, line: rows[e.line]?.line ?? e.line }))
-    return
-  }
-  commit(data)
-}
-
-/** Метод інтервалів: вираз одним рядком або точки й знаки вчителя. */
-function applyIntervals(): void {
-  let data: NumberLineData
-  if (ivInput.value === 'expression') {
-    const p = parseIntervalsLine(expressionLine.value)
-    if ('error' in p) {
-      ivError.value = { ...p.error, line: 0 }
-      return
-    }
-    data = {
-      ...props.asset.data,
-      mode: 'intervals',
-      expression: p.expression,
-      rhs: p.rhs,
-      op: p.op,
-      variable: p.variable,
-      points: undefined,
-      signs: undefined,
-    }
-  } else {
-    const v = manualView.value
-    if (v.error) {
-      ivError.value = v.error
-      return
-    }
-    data = {
-      ...props.asset.data,
-      mode: 'intervals',
-      expression: undefined,
-      rhs: undefined,
-      op: manualOp.value,
-      points: v.points.map((x) => ({ value: x.label, included: x.included })),
-      signs: [...effectiveSigns.value],
-    }
+    mode: 'intervals',
+    expression: undefined,
+    rhs: undefined,
+    op: manualOp.value,
+    points: v.points.map((x) => ({ value: x.label, included: x.included })),
+    signs: [...effectiveSigns.value],
   }
   const ev = evaluate(data)
   if ('errors' in ev) {
@@ -630,37 +643,10 @@ function applyIntervals(): void {
   commit(data)
 }
 
-/** Відмова сервера — словами; для форми запису (parse / degree / too_long) — ще й що саме не так. */
+/** Відмова словами; для форми запису (parse / degree / too_long) — ще й що саме не так. */
 function solverErrorText(r: SolverRefusal): string {
   const base = t(`winterboard.numberLine.solver.${r.reason}`)
   return ['parse', 'degree', 'too_long'].includes(r.reason) && r.detail ? `${base}: ${r.detail}` : base
-}
-
-/**
- * «Розвʼязати»: сервер лише рахує; успіх → рівно один asset_update з нерівністю й відповіддю,
- * як прийшла (рисунок, PDF і запис малюють збережене, на сервер не ходять). Відмова — нуль записів.
- */
-async function applySolved(): Promise<void> {
-  const q = solveLine.value.trim()
-  if (!q || solving.value) return
-  solving.value = true
-  solveError.value = ''
-  try {
-    const r = await winterboardApi.solveNumberLine(q)
-    if (r.ok !== true) {
-      solveError.value = solverErrorText(r as SolverRefusal)
-      return
-    }
-    const { solver, ...result } = r as SolverResult & { solver?: string }
-    const data: NumberLineData = { ...props.asset.data, mode: 'solved', inequality: q, result: result as SolverResult, solver: solver ?? '' }
-    if ('errors' in evaluate(data)) {
-      solveError.value = t('winterboard.numberLine.errors.badData')
-      return
-    }
-    commit(data)
-  } finally {
-    solving.value = false
-  }
 }
 
 const intervalsError = computed(() => {
@@ -682,12 +668,11 @@ function toggleAnswer(): void {
 const showAnswer = computed(() => props.asset.data.showAnswer !== false)
 const manualPoints = computed(() => manualView.value.points)
 const _bridge = reactive({
-  mode: draftMode,
-  setMode: (m: 'set' | 'intervals' | 'solved') => { draftMode.value = m; ivError.value = null; solveError.value = '' },
-  solveLine,
-  setSolveLine: (v: string) => { solveLine.value = v; solveError.value = '' },
   solving,
-  solveError,
+  signs: draftSigns,
+  setSigns: (v: boolean) => { draftSigns.value = v; clearHints() },
+  note,
+  legacyManual,
   draft,
   combine: draftCombine,
   dirty,
@@ -697,10 +682,6 @@ const _bridge = reactive({
   addRow,
   removeRow,
   setCombine: (c: 'and' | 'or') => { draftCombine.value = c },
-  ivInput,
-  setIvInput: (m: 'expression' | 'manual') => { ivInput.value = m; ivError.value = null },
-  expressionLine,
-  setExpressionLine: (v: string) => { expressionLine.value = v; ivError.value = null },
   pointsText,
   setPointsText: (v: string) => { pointsText.value = v; ivError.value = null },
   manualPoints,

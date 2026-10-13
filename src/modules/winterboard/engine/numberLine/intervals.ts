@@ -315,6 +315,8 @@ export interface IntervalsResult {
   points: Array<{ point: Point; filled: boolean }>
   /** Знак на кожному проміжку (k + 1); порожньо, якщо вираз тотожно нуль. */
   signs: Array<'+' | '-'>
+  /** Нулі знаменника — поза ОДЗ (рядок «ОДЗ: x ≠ …»); вручну — порожньо. */
+  holes: Point[]
 }
 
 /** Режим «вираз». */
@@ -327,7 +329,7 @@ export function solveExpression(expression: string, rhs: string, op: IntervalsOp
     const set: NumberSet = strict(op)
       ? []
       : normalize(pts.length ? pts.map((p, i) => openBetween(i ? pts[i - 1] : null, p)).concat([openBetween(pts[pts.length - 1], null)]) : [openBetween(null, null)])
-    return { set, variable: a.variable, points: pts.map((point) => ({ point, filled: false })), signs: [] }
+    return { set, variable: a.variable, points: pts.map((point) => ({ point, filled: false })), signs: [], holes: holesOf(a, pts) }
   }
 
   const signs = signsFromRight(a.zeros, a.signAtInfinity)
@@ -348,6 +350,26 @@ export function solveExpression(expression: string, rhs: string, op: IntervalsOp
     variable: a.variable,
     points: pts.map((point) => ({ point, filled: contains(set, point.value) })),
     signs: signs.map((x) => (x > 0 ? '+' : '-')),
+    holes: holesOf(a, pts),
+  }
+}
+
+function holesOf(a: Analysis, pts: Point[]): Point[] {
+  return a.zeros.flatMap((z, i) => (z.den > 0 ? [pts[i]] : []))
+}
+
+/**
+ * Нулі знаменника рядка `вираз ⋚ права частина` — для рядка «ОДЗ» прямої, яку розвʼязав сервер
+ * (ОДЗ однаково для всіх способів). null — рушій рядок не розбирає (корінь зі змінною тощо).
+ */
+export function denominatorHoles(raw: string): Point[] | null {
+  const p = parseIntervalsLine(raw)
+  if (!p.ok) return null
+  try {
+    const a = analyze(normalizeInput(p.expression), normalizeInput(p.rhs))
+    return holesOf(a, a.zeros.map((z) => pointOf(z.value)))
+  } catch {
+    return null
   }
 }
 
@@ -381,7 +403,7 @@ export function solveManual(points: IntervalsPoint[], signs: Array<'+' | '-'>, o
   parsed.forEach((x) => {
     if (x.included) parts.push({ lo: x.point, loClosed: true, hi: x.point, hiClosed: true })
   })
-  return { set: normalize(parts), variable, points: parsed.map((x) => ({ point: x.point, filled: x.included })), signs }
+  return { set: normalize(parts), variable, points: parsed.map((x) => ({ point: x.point, filled: x.included })), signs, holes: [] }
 }
 
 /** Розвʼязати дані режиму 'intervals' — для evaluate(). */

@@ -4,12 +4,15 @@
   Shown by GroupContentSidebar when numberLineUiState.bridge !== null.
   Чернетка живе в NumberLineRenderer; тут лише поля й кнопки → bridge.
 
+  Один розділ замість трьох режимів (ТЗ «Числова пряма — один рядок», 2026-10-13): чим рахувати,
+  вирішує chooseNumberLine; слів «режим», «сервер», «пілот» учитель не бачить.
   Sections:
-    1. Умови (рядок на умову: Enter — новий рядок, Backspace у порожньому — прибрати)
-    2. Знак (вставляє знак у рядок з фокусом)
-    3. Поєднання (система / сукупність — коли умов більше однієї)
-    4. Опції (відповідь)
+    1. Нерівність (рядок на умову: Enter — новий рядок, Backspace у порожньому — прибрати)
+    2. Знак (вставляє знак, дужку, ², √ у рядок з фокусом)
+    3. Поєднання (система / сукупність — коли рядків більше одного)
+    4. Опції (відповідь; «Знаки інтервалів» — пілот, лише один рядок)
     «Застосувати» / Ctrl+Enter — рівно один asset_update; Esc — повернути застосоване.
+    Стара пряма «вручну» — замість 1–3 старий розділ точок і знаків (лише для такої прямої).
 
   Pattern: mirrors TrigSolverInspector.vue (ті самі класи-кольори).
 -->
@@ -21,188 +24,9 @@
       <span class="nl-insp__subtitle">{{ t('winterboard.numberLine.subtitle') }}</span>
     </div>
 
-    <!-- Режим. «Метод інтервалів» — лише пілот (id 40, власник 2026-10-13). Пряма, вже збережена в цьому
-         режимі, показує свій розділ будь-кому — щоб нічого не зникло, але перемикача немає. -->
-    <div v-if="showModeSwitch" class="nl-insp__section">
-      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.modeLabel') }}</div>
-      <div class="nl-insp__btn-row">
-        <button
-          type="button"
-          class="nl-insp__btn"
-          :class="{ 'is-active': b.mode === 'set' }"
-          data-testid="number-line-mode-set"
-          @click="b.setMode('set')"
-        >{{ t('winterboard.numberLine.modeSet') }}</button>
-        <button
-          type="button"
-          class="nl-insp__btn"
-          :class="{ 'is-active': b.mode === 'intervals' }"
-          data-testid="number-line-mode-intervals"
-          @click="b.setMode('intervals')"
-        >{{ t('winterboard.numberLine.modeIntervals') }}</button>
-        <button
-          type="button"
-          class="nl-insp__btn"
-          :class="{ 'is-active': b.mode === 'solved' }"
-          data-testid="number-line-mode-solved"
-          @click="b.setMode('solved')"
-        >{{ t('winterboard.numberLine.modeSolved') }}</button>
-      </div>
-    </div>
+    <!-- Стара пряма «вручну» (точки й знаки вчителя): лише для такої прямої, нову так не створити. -->
+    <template v-if="b.legacyManual">
 
-    <template v-if="b.mode === 'set'">
-    <!-- Умови -->
-    <div class="nl-insp__section">
-      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.conditionsLabel') }}</div>
-      <div v-for="(line, i) in b.draft" :key="i" class="nl-insp__row">
-        <input
-          :ref="(el) => setInputRef(el as HTMLInputElement | null, i)"
-          class="nl-insp__input"
-          :class="{ 'has-error': b.errorFor(i) }"
-          :value="line"
-          :placeholder="i === 0 ? t('winterboard.numberLine.placeholder') : ''"
-          :data-testid="`number-line-input-${i}`"
-          spellcheck="false"
-          autocomplete="off"
-          maxlength="200"
-          @input="b.setLine(i, ($event.target as HTMLInputElement).value)"
-          @keydown="onKeydown($event, i)"
-          @focus="focused = i"
-        />
-        <div v-if="b.errorFor(i)" class="nl-insp__error" :data-testid="`number-line-error-${i}`">{{ b.errorFor(i) }}</div>
-      </div>
-      <button
-        type="button"
-        class="nl-insp__btn nl-insp__btn--add"
-        data-testid="number-line-add-row"
-        @mousedown.prevent
-        @click="addRow(focused)"
-      >{{ t('winterboard.numberLine.addCondition') }}</button>
-    </div>
-
-    <!-- Знак -->
-    <div class="nl-insp__section">
-      <div class="nl-insp__section-label">{{ t('winterboard.quadratic.signLabel') }}</div>
-      <div class="nl-insp__btn-row">
-        <button
-          v-for="k in KEYS"
-          :key="k"
-          type="button"
-          class="nl-insp__btn nl-insp__btn--rel"
-          @mousedown.prevent
-          @click="insertText(k)"
-        >{{ k }}</button>
-      </div>
-    </div>
-
-    <!-- Поєднання -->
-    <div v-if="filledRows > 1" class="nl-insp__section">
-      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.combineLabel') }}</div>
-      <div class="nl-insp__btn-row">
-        <button
-          type="button"
-          class="nl-insp__btn"
-          :class="{ 'is-active': b.combine === 'and' }"
-          data-testid="number-line-combine-and"
-          @click="b.setCombine('and')"
-        >{{ t('winterboard.numberLine.combineAnd') }}</button>
-        <button
-          type="button"
-          class="nl-insp__btn"
-          :class="{ 'is-active': b.combine === 'or' }"
-          data-testid="number-line-combine-or"
-          @click="b.setCombine('or')"
-        >{{ t('winterboard.numberLine.combineOr') }}</button>
-      </div>
-    </div>
-
-    </template>
-
-    <!-- «Розвʼязати»: уся нерівність, розвʼязує сервер (пілот). Не пілот бачить збережену
-         пілотом пряму лише для читання: сервер усе одно відмовив би 403 (рев'ю 13.10, п. 1). -->
-    <div v-else-if="b.mode === 'solved' && !showModeSwitch" class="nl-insp__section" data-testid="number-line-solve-readonly">
-      <div class="nl-insp__input" aria-readonly="true">{{ b.solveLine }}</div>
-      <span class="nl-insp__subtitle">{{ t('winterboard.numberLine.solveReadOnly') }}</span>
-    </div>
-    <div v-else-if="b.mode === 'solved'" class="nl-insp__section">
-      <input
-        ref="solveInput"
-        class="nl-insp__input"
-        :class="{ 'has-error': b.solveError }"
-        :value="b.solveLine"
-        :placeholder="t('winterboard.numberLine.solvePlaceholder')"
-        data-testid="number-line-solve-input"
-        spellcheck="false"
-        autocomplete="off"
-        maxlength="200"
-        @input="b.setSolveLine(($event.target as HTMLInputElement).value)"
-        @keydown="onExprKeydown"
-      />
-      <div v-if="b.solveError" class="nl-insp__error" data-testid="number-line-solve-error">{{ b.solveError }}</div>
-      <div class="nl-insp__btn-row nl-insp__keys">
-        <button
-          v-for="k in EXPR_KEYS"
-          :key="k"
-          type="button"
-          class="nl-insp__btn nl-insp__btn--rel"
-          @mousedown.prevent
-          @click="insertIntoSolve(k)"
-        >{{ k }}</button>
-      </div>
-    </div>
-
-    <!-- Метод інтервалів -->
-    <template v-else>
-      <div class="nl-insp__section">
-        <div class="nl-insp__section-label">{{ t('winterboard.numberLine.ivInputLabel') }}</div>
-        <div class="nl-insp__btn-row">
-          <button
-            type="button"
-            class="nl-insp__btn"
-            :class="{ 'is-active': b.ivInput === 'expression' }"
-            data-testid="number-line-iv-expression"
-            @click="b.setIvInput('expression')"
-          >{{ t('winterboard.numberLine.ivExpression') }}</button>
-          <button
-            type="button"
-            class="nl-insp__btn"
-            :class="{ 'is-active': b.ivInput === 'manual' }"
-            data-testid="number-line-iv-manual"
-            @click="b.setIvInput('manual')"
-          >{{ t('winterboard.numberLine.ivManual') }}</button>
-        </div>
-      </div>
-
-      <!-- Вираз -->
-      <div v-if="b.ivInput === 'expression'" class="nl-insp__section">
-        <input
-          ref="exprInput"
-          class="nl-insp__input"
-          :class="{ 'has-error': b.intervalsError }"
-          :value="b.expressionLine"
-          :placeholder="t('winterboard.numberLine.expressionPlaceholder')"
-          data-testid="number-line-expression"
-          spellcheck="false"
-          autocomplete="off"
-          maxlength="200"
-          @input="b.setExpressionLine(($event.target as HTMLInputElement).value)"
-          @keydown="onExprKeydown"
-        />
-        <div v-if="b.intervalsError" class="nl-insp__error" data-testid="number-line-iv-error">{{ b.intervalsError }}</div>
-        <div class="nl-insp__btn-row nl-insp__keys">
-          <button
-            v-for="k in EXPR_KEYS"
-            :key="k"
-            type="button"
-            class="nl-insp__btn nl-insp__btn--rel"
-            @mousedown.prevent
-            @click="insertIntoExpression(k)"
-          >{{ k }}</button>
-        </div>
-      </div>
-
-      <!-- Вручну -->
-      <template v-else>
         <div class="nl-insp__section">
           <div class="nl-insp__section-label">{{ t('winterboard.numberLine.pointsLabel') }}</div>
           <input
@@ -261,7 +85,74 @@
             >{{ o.lab }} 0</button>
           </div>
         </div>
-      </template>
+    </template>
+
+    <template v-else>
+    <!-- Нерівність: рядок на умову (Enter — новий рядок, Backspace у порожньому — прибрати) -->
+    <div class="nl-insp__section">
+      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.inequalityLabel') }}</div>
+      <div v-for="(line, i) in b.draft" :key="i" class="nl-insp__row">
+        <input
+          :ref="(el) => setInputRef(el as HTMLInputElement | null, i)"
+          class="nl-insp__input"
+          :class="{ 'has-error': b.errorFor(i) }"
+          :value="line"
+          :placeholder="i === 0 ? t('winterboard.numberLine.placeholder') : ''"
+          :data-testid="`number-line-input-${i}`"
+          spellcheck="false"
+          autocomplete="off"
+          maxlength="200"
+          @input="b.setLine(i, ($event.target as HTMLInputElement).value)"
+          @keydown="onKeydown($event, i)"
+          @focus="focused = i"
+        />
+        <div v-if="b.errorFor(i)" class="nl-insp__error" :data-testid="`number-line-error-${i}`">{{ b.errorFor(i) }}</div>
+      </div>
+      <div v-if="b.note" class="nl-insp__subtitle" data-testid="number-line-note">{{ b.note }}</div>
+      <button
+        type="button"
+        class="nl-insp__btn nl-insp__btn--add"
+        data-testid="number-line-add-row"
+        @mousedown.prevent
+        @click="addRow(focused)"
+      >{{ t('winterboard.numberLine.addCondition') }}</button>
+    </div>
+
+    <!-- Знак (вставляє в рядок з фокусом) -->
+    <div class="nl-insp__section">
+      <div class="nl-insp__section-label">{{ t('winterboard.quadratic.signLabel') }}</div>
+      <div class="nl-insp__btn-row nl-insp__keys">
+        <button
+          v-for="k in KEYS"
+          :key="k"
+          type="button"
+          class="nl-insp__btn nl-insp__btn--rel"
+          @mousedown.prevent
+          @click="insertText(k)"
+        >{{ k }}</button>
+      </div>
+    </div>
+
+    <!-- Поєднання -->
+    <div v-if="filledRows > 1" class="nl-insp__section">
+      <div class="nl-insp__section-label">{{ t('winterboard.numberLine.combineLabel') }}</div>
+      <div class="nl-insp__btn-row">
+        <button
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.combine === 'and' }"
+          data-testid="number-line-combine-and"
+          @click="b.setCombine('and')"
+        >{{ t('winterboard.numberLine.combineAnd') }}</button>
+        <button
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.combine === 'or' }"
+          data-testid="number-line-combine-or"
+          @click="b.setCombine('or')"
+        >{{ t('winterboard.numberLine.combineOr') }}</button>
+      </div>
+    </div>
     </template>
 
     <!-- Опції -->
@@ -275,6 +166,16 @@
           data-testid="number-line-show-answer"
           @click="b.toggleAnswer()"
         >{{ t('winterboard.numberLine.showAnswer') }}</button>
+        <!-- «Знаки інтервалів»: «+/−» і крива — лише один рядок; бачить пілот (і пряма, де знаки вже є). -->
+        <button
+          v-if="showSigns"
+          type="button"
+          class="nl-insp__btn"
+          :class="{ 'is-active': b.signs && filledRows <= 1 }"
+          :disabled="filledRows > 1"
+          data-testid="number-line-signs"
+          @click="b.setSigns(!b.signs)"
+        >{{ t('winterboard.numberLine.signsOption') }}</button>
       </div>
     </div>
 
@@ -285,17 +186,12 @@
         {{ t('winterboard.numberLine.revert') }}
       </button>
       <button
-        v-if="!(b.mode === 'solved' && !showModeSwitch)"
         type="button"
         class="nl-insp__btn is-active nl-insp__apply"
         data-testid="number-line-apply"
         :disabled="b.solving"
         @click="b.apply()"
-      >
-        {{ b.mode === 'solved'
-          ? t(b.solving ? 'winterboard.numberLine.solving' : 'winterboard.numberLine.solveButton')
-          : t('winterboard.numberLine.apply') }}
-      </button>
+      >{{ t(b.solving ? 'winterboard.numberLine.solving' : 'winterboard.numberLine.apply') }}</button>
     </div>
   </div>
 </template>
@@ -313,34 +209,17 @@ const { t } = useI18n()
 const b = computed(() => numberLineUiState.bridge!)
 
 const authStore = useAuthStore()
-const showModeSwitch = computed(() => isIntervalsPilotUser(authStore.user?.id))
+/** «Знаки інтервалів» — пілот; пряма, де знаки вже є, показує галочку будь-кому (щоб можна було вимкнути). */
+const showSigns = computed(() => !b.value.legacyManual && (isIntervalsPilotUser(authStore.user?.id) || b.value.signs))
 
-const KEYS = ['<', '≤', '>', '≥', '≠', '=', '√']
-
-const EXPR_KEYS = ['<', '≤', '>', '≥', '(', ')', '²', '√']
-const solveInput = ref<HTMLInputElement | null>(null)
-
-function insertIntoSolve(text: string): void {
-  const el = solveInput.value
-  const value = b.value.solveLine
-  const start = el?.selectionStart ?? value.length
-  const end = el?.selectionEnd ?? value.length
-  const piece = ['(', ')', '²', '√'].includes(text) ? text : ` ${text} `
-  const next = `${value.slice(0, start)}${piece}${value.slice(end)}`.replace(/\s{2,}/g, ' ')
-  b.value.setSolveLine(next)
-  void nextTick(() => {
-    if (!el) return
-    el.focus()
-    const caret = Math.min(next.length, start + piece.length)
-    el.setSelectionRange(caret, caret)
-  })
-}
+/** Одна клавіатура: знаки нерівностей + дужки, квадрат і корінь (ТЗ «один рядок» §1). */
+const KEYS = ['<', '≤', '>', '≥', '≠', '=', '(', ')', '²', '√']
+const TIGHT = new Set(['(', ')', '²', '√'])
 const IV_OPS: Array<{ v: '<' | '<=' | '>' | '>='; lab: string }> = [
   { v: '<', lab: '<' }, { v: '<=', lab: '≤' }, { v: '>', lab: '>' }, { v: '>=', lab: '≥' },
 ]
-const exprInput = ref<HTMLInputElement | null>(null)
 
-/** Вираз — один рядок: Enter / Ctrl+Enter застосовують, Esc — повертає застосоване. */
+/** «Вручну»: Enter / Ctrl+Enter застосовують, Esc — повертає застосоване. */
 function onExprKeydown(e: KeyboardEvent): void {
   if (e.key === 'Enter') {
     e.preventDefault()
@@ -349,22 +228,6 @@ function onExprKeydown(e: KeyboardEvent): void {
     e.preventDefault()
     b.value.revert()
   }
-}
-
-function insertIntoExpression(text: string): void {
-  const el = exprInput.value
-  const value = b.value.expressionLine
-  const start = el?.selectionStart ?? value.length
-  const end = el?.selectionEnd ?? value.length
-  const piece = ['(', ')', '²', '√'].includes(text) ? text : ` ${text} `
-  const next = `${value.slice(0, start)}${piece}${value.slice(end)}`.replace(/\s{2,}/g, ' ')
-  b.value.setExpressionLine(next)
-  void nextTick(() => {
-    if (!el) return
-    el.focus()
-    const caret = Math.min(next.length, start + piece.length)
-    el.setSelectionRange(caret, caret)
-  })
 }
 
 const focused = ref(0)
@@ -395,7 +258,7 @@ function insertText(text: string): void {
   const value = b.value.draft[i] ?? ''
   const start = el?.selectionStart ?? value.length
   const end = el?.selectionEnd ?? value.length
-  const piece = ` ${text} `
+  const piece = TIGHT.has(text) ? text : ` ${text} `
   const next = `${value.slice(0, start)}${piece}${value.slice(end)}`.replace(/\s{2,}/g, ' ')
   b.value.setLine(i, next)
   focusRow(i, Math.min(next.length, start + piece.length))

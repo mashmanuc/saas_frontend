@@ -1,7 +1,7 @@
 /**
- * Числова пряма: перемикач «Метод інтервалів» — лише пілот id 40 (власник 2026-10-13: «треба тільки
- * включати для ID40… для пересічного користувача буде це як костиль»). Нерівності й корені — для всіх.
- * Пряма, вже збережена в режимі інтервалів, показує свій розділ будь-кому, але без перемикача.
+ * Числова пряма: «Знаки інтервалів» — лише пілот id 40 (власник 2026-10-13: «треба тільки включати
+ * для ID40… для пересічного користувача буде це як костиль»). Перемикача режимів немає ні в кого
+ * (ТЗ «один рядок» §1). Пряма, де знаки вже є, показує галочку будь-кому — щоб її можна було вимкнути.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -40,29 +40,36 @@ async function mountWith(userId: number | null, extra: Partial<NumberLineAsset['
   return wrapper
 }
 
-describe('метод інтервалів — лише пілот', () => {
-  it('id 40 бачить перемикач режимів', async () => {
+describe('«Знаки інтервалів» — лише пілот', () => {
+  it('id 40 бачить галочку «Знаки інтервалів»; перемикача режимів немає', async () => {
     const w = await mountWith(40)
-    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(true)
-    expect(w.find('[data-testid="number-line-mode-set"]').exists()).toBe(true)
-  })
-
-  it('звичайний учитель — без перемикача, нерівності працюють', async () => {
-    const w = await mountWith(612)
-    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(true)
+    expect(w.find('[data-testid^="number-line-mode-"]').exists()).toBe(false)
     expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(true)
   })
 
-  it('без входу — теж без перемикача', async () => {
-    const w = await mountWith(null)
-    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
+  it('звичайний учитель — без галочки, нерівності працюють', async () => {
+    const w = await mountWith(612)
+    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(true)
   })
 
-  it('пряма вже в режимі інтервалів — розділ видно й не-пілоту, але перемикача немає', async () => {
-    const w = await mountWith(612, { mode: 'intervals', expression: '(x-1)(x+3)', op: '>=' } as never)
-    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
-    expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(false)
-    expect(w.find('[data-testid="number-line-iv-expression"]').exists()
-      || w.find('[data-testid="number-line-iv-manual"]').exists()).toBe(true)
+  it('без входу — теж без галочки', async () => {
+    const w = await mountWith(null)
+    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
+  })
+
+  it('пряма зі знаками — один рядок і увімкнена галочка й не-пілоту', async () => {
+    const w = await mountWith(612, { mode: 'intervals', expression: '(x-1)(x+3)', op: '>=', rhs: '0' } as never)
+    expect((w.find('[data-testid="number-line-input-0"]').element as HTMLInputElement).value).toBe('(x-1)(x+3) ≥ 0')
+    expect(w.find('[data-testid="number-line-signs"]').classes()).toContain('is-active')
+  })
+
+  it('кілька рядків — галочка неактивна', async () => {
+    const w = await mountWith(40)
+    await w.find('[data-testid="number-line-input-0"]').setValue('x > 1')
+    await w.find('[data-testid="number-line-add-row"]').trigger('click')
+    await w.find('[data-testid="number-line-input-1"]').setValue('x < 4')
+    expect(w.find('[data-testid="number-line-signs"]').attributes('disabled')).toBeDefined()
   })
 })

@@ -152,6 +152,7 @@ export interface NumberLineError {
     | 'too_deep'
     | 'bad_data'
     | 'unbalanced_paren'
+    | 'system_not_linear'
   params?: Record<string, string>
 }
 

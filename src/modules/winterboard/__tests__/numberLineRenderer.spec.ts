@@ -23,9 +23,12 @@ import { exportPreviewService } from '../services/exportPreviewService'
 import { buildNumberLineAsset } from '../constants/numberLineDefaults'
 import type { NumberLineAsset } from '../types/numberLine'
 
-// Перемикач «Метод інтервалів» — лише пілот id 40 (власник 2026-10-13); тут перевіряємо сам режим,
-// тож користувач — пілот. Гейт для інших — numberLineIntervalsPilot.spec.ts.
-vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 40 } }) }))
+// За замовчуванням — звичайний учитель (лише сторінка, без запитів); «Знаки інтервалів» і точний
+// розвʼязок — пілот id 40 (власник 2026-10-13), вмикаємо в окремих тестах. Гейт — numberLineIntervalsPilot.spec.ts.
+const auth = vi.hoisted(() => ({ user: { id: 7 } as { id: number } | null }))
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => auth }))
+const api = vi.hoisted(() => ({ solveNumberLine: vi.fn() }))
+vi.mock('../api/winterboardApi', () => ({ winterboardApi: api, default: api }))
 
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
 
@@ -34,7 +37,7 @@ function asset(conditions: NumberLineAsset['data']['conditions'] = [], extra: Pa
 }
 
 let wrapper: VueWrapper | null = null
-afterEach(() => { wrapper?.unmount(); wrapper = null; __resetNumberLineUiForTests() })
+afterEach(() => { wrapper?.unmount(); wrapper = null; __resetNumberLineUiForTests(); auth.user = { id: 7 }; api.solveNumberLine.mockReset() })
 
 /** Картка + інспектор сайдбару (показується, лише коли картка зареєструвала міст). */
 const Board = defineComponent({
@@ -275,78 +278,74 @@ describe('лінійні нерівності', () => {
   })
 })
 
-describe('метод інтервалів (етап 2)', () => {
+describe('«Знаки інтервалів» (пілот) і стара пряма «вручну»', () => {
   const iv = (extra: Partial<NumberLineAsset['data']>) => asset([], { mode: 'intervals', ...extra })
+  const input0 = (w: VueWrapper) => w.find('[data-testid="number-line-input-0"]')
 
-  it('вираз: Enter застосовує — рівно один asset_update; картка показує знаки й виколотий нуль знаменника', async () => {
+  it('один рядок + «Знаки» → метод інтервалів: рівно один asset_update; знаки, виколотий нуль знаменника, ОДЗ', async () => {
+    auth.user = { id: 40 }
     const w = await mountIt(asset())
-    await w.find('[data-testid="number-line-mode-intervals"]').trigger('click')
-    const input = w.find('[data-testid="number-line-expression"]')
-    await input.setValue('(x-1)(x+3)/(x-2) ≥ 0')
-    await input.trigger('keydown', { key: 'Enter' })
+    await input0(w).setValue('(x-1)(x+3)/(x-2) ≥ 0')
+    await w.find('[data-testid="number-line-signs"]').trigger('click')
+    await input0(w).trigger('keydown', { key: 'Enter', ctrlKey: true })
+    await flushPromises()
     const u = updates(w)
     expect(u).toHaveLength(1)
     expect(u[0][0].data).toMatchObject({ mode: 'intervals', expression: '(x-1)(x+3)/(x-2)', rhs: '0', op: '>=' })
+    expect(api.solveNumberLine).not.toHaveBeenCalled()
     await w.setProps({ asset: u[0][0] })
     expect(w.find('[data-testid="number-line-kind"]').text()).toBe('МЕТОД ІНТЕРВАЛІВ')
     expect(w.find('[data-testid="number-line-formula"]').text()).toBe('(x-1)(x+3)/(x-2) ≥ 0')
     expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−3; 1] ∪ (2; +∞)')
+    expect(w.find('[data-testid="number-line-domain"]').text()).toBe('ОДЗ: x ≠ 2')
     expect([0, 1, 2, 3].map((i) => w.find(`[data-testid="number-line-sign-${i}"]`).text())).toEqual(['−', '+', '−', '+'])
     expect(w.findAll('circle').map((c) => c.attributes('data-filled'))).toEqual(['1', '1', '0'])
     expect(w.findAll('[data-testid="number-line-snake"]')).toHaveLength(4)
   })
 
-  it('помилка у виразі — нуль записів, пояснення під полем', async () => {
+  it('помилка в рядку зі знаками — нуль записів, пояснення під рядком; Esc повертає застосоване', async () => {
+    auth.user = { id: 40 }
     const w = await mountIt(iv({ expression: 'x - 1', rhs: '0', op: '>' }))
-    const input = w.find('[data-testid="number-line-expression"]')
-    expect((input.element as HTMLInputElement).value).toBe('x - 1 > 0')
-    await input.setValue('(x-1)(x+2) = 0')
+    expect((input0(w).element as HTMLInputElement).value).toBe('x - 1 > 0')
+    await input0(w).setValue('x - 1 >')
     await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await flushPromises()
     expect(updates(w)).toHaveLength(0)
-    expect(w.find('[data-testid="number-line-iv-error"]').text()).toBe('Потрібна нерівність зі знаком <, ≤, > або ≥')
+    expect(w.find('[data-testid="number-line-error-0"]').text()).toBe('Після «>» очікую число')
     expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (1; +∞) — відкритий промінь')
-    await input.trigger('keydown', { key: 'Escape' })
-    expect((w.find('[data-testid="number-line-expression"]').element as HTMLInputElement).value).toBe('x - 1 > 0')
+    await input0(w).trigger('keydown', { key: 'Escape' })
+    expect((input0(w).element as HTMLInputElement).value).toBe('x - 1 > 0')
   })
 
-  it('вручну: точки за значенням, клік — виколота, знаки й знак нерівності від учителя', async () => {
-    const w = await mountIt(asset())
-    await w.find('[data-testid="number-line-mode-intervals"]').trigger('click')
-    await w.find('[data-testid="number-line-iv-manual"]').trigger('click')
-    await w.find('[data-testid="number-line-points"]').setValue('2; -3; 1')
+  it('увімкнути «Знаки» без «Застосувати» — нічого не пише, позначка «не застосовано»', async () => {
+    auth.user = { id: 40 }
+    const w = await mountIt(asset([{ op: '>', value: '3' }]))
+    await w.find('[data-testid="number-line-signs"]').trigger('click')
+    expect(updates(w)).toHaveLength(0)
+    expect(w.find('[data-testid="number-line-dirty"]').exists()).toBe(true)
+    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (3; +∞) — відкритий промінь')
+  })
+
+  it('стара пряма «вручну» — свій розділ (точки, знаки, знак нерівності); рядка немає', async () => {
+    const w = await mountIt(iv({ points: [{ value: '-3', included: true }, { value: '1', included: true }, { value: '2', included: false }], signs: ['-', '+', '-', '+'], op: '>=' }))
+    expect(input0(w).exists()).toBe(false)
     expect(w.findAll('[data-testid^="number-line-point-chip-"]').map((c) => c.text())).toEqual(['−3', '1', '2'])
-    await w.find('[data-testid="number-line-op->="]').trigger('click')
-    await w.find('[data-testid="number-line-point-chip-2"]').trigger('click') // 2 — виколота
-    expect([0, 1, 2, 3].map((i) => w.find(`[data-testid="number-line-sign-btn-${i}"]`).text())).toEqual(['−', '+', '−', '+'])
+    await w.find('[data-testid="number-line-points"]').setValue('2; -3; 1; 5')
+    await w.find('[data-testid="number-line-point-chip-3"]').trigger('click') // 5 — виколота
     await w.find('[data-testid="number-line-apply"]').trigger('click')
     const u = updates(w)
     expect(u).toHaveLength(1)
-    expect(u[0][0].data).toMatchObject({
-      mode: 'intervals',
-      op: '>=',
-      points: [{ value: '-3', included: true }, { value: '1', included: true }, { value: '2', included: false }],
-      signs: ['-', '+', '-', '+'],
-    })
+    expect(u[0][0].data).toMatchObject({ mode: 'intervals', op: '>=' })
+    expect(u[0][0].data.points).toHaveLength(4)
     expect(u[0][0].data.expression).toBeUndefined()
-    await w.setProps({ asset: u[0][0] })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−3; 1] ∪ (2; +∞)')
   })
 
-  it('вручну: знак на проміжку перемикається кліком', async () => {
+  it('стара пряма «вручну»: знак на проміжку перемикається кліком', async () => {
     const w = await mountIt(iv({ points: [{ value: '0', included: false }], signs: ['-', '+'], op: '>' }))
-    expect(w.find('[data-testid="number-line-iv-manual"]').classes()).toContain('is-active')
     await w.find('[data-testid="number-line-sign-btn-0"]').trigger('click')
     expect(w.find('[data-testid="number-line-dirty"]').exists()).toBe(true)
     await w.find('[data-testid="number-line-apply"]').trigger('click')
     expect(updates(w)[0][0].data.signs).toEqual(['+', '+'])
-  })
-
-  it('перемкнути режим без «Застосувати» — нічого не пише, позначка «не застосовано»', async () => {
-    const w = await mountIt(asset([{ op: '>', value: '3' }]))
-    await w.find('[data-testid="number-line-mode-intervals"]').trigger('click')
-    expect(updates(w)).toHaveLength(0)
-    expect(w.find('[data-testid="number-line-dirty"]').exists()).toBe(true)
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (3; +∞) — відкритий промінь')
   })
 })
 
