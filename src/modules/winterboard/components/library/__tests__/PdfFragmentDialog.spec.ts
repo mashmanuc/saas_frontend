@@ -8,7 +8,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import uk from '../../../../../i18n/locales/uk.json'
 import PdfFragmentDialog from '../PdfFragmentDialog.vue'
-import { fragmentPlacement, nextStackY, normRect, sameSpot, FRAGMENT_MIN_W } from '../pdfFragmentRect'
+import { fragmentPlacement, normRect, sameSpot, FRAGMENT_MIN_W } from '../pdfFragmentRect'
 
 vi.mock('../../../api/library', () => ({ cutPdfFragment: vi.fn(), snapPdfFragment: vi.fn() }))
 vi.mock('../../../composables/useDocumentPageCache', () => ({
@@ -53,17 +53,57 @@ describe('pdfFragmentRect', () => {
     expect(normRect(-0.2, 0.5, 1.3, 0.6)).toMatchObject({ x: 0, w: 1 })
   })
 
-  it('удвічі більше, ніж у вікні; не ширше половини сторінки; не вужче 240; праворуч від вікна; стовпчиком униз', () => {
+  it('удвічі більше, ніж у вікні; не ширше половини сторінки; не вужче 240; праворуч від вікна', () => {
     const viewer = { x: 100, y: 120, w: 422, h: 600 }
-    const a = fragmentPlacement(viewer, { x: 0, y: 0, w: 0.5, h: 0.1 }, 3000, 600, 1920, 0)
+    const a = fragmentPlacement(viewer, { x: 0, y: 0, w: 0.5, h: 0.1 }, 3000, 600, 1920, 1080, [])
     expect(a).toEqual({ x: 546, y: 120, w: 420, h: 84 })
-    expect(fragmentPlacement(viewer, { x: 0, y: 0, w: 0.95, h: 0.1 }, 3000, 300, 1920, 0).w).toBe(798)
-    expect(fragmentPlacement({ ...viewer, w: 1400 }, { x: 0, y: 0, w: 0.9, h: 0.1 }, 3000, 300, 1920, 0).w).toBe(960)
-    expect(fragmentPlacement(viewer, { x: 0, y: 0, w: 0.05, h: 0.05 }, 600, 600, 1920, 0).w).toBe(FRAGMENT_MIN_W)
-    const b = fragmentPlacement(viewer, { x: 0, y: 0, w: 0.5, h: 0.1 }, 3000, 600, 1920, nextStackY(0, a))
-    expect(b.y).toBe(120 + 84 + 16)
+    expect(fragmentPlacement(viewer, { x: 0, y: 0, w: 0.95, h: 0.1 }, 3000, 300, 1920, 1080, []).w).toBe(798)
+    expect(fragmentPlacement({ ...viewer, w: 1400 }, { x: 0, y: 0, w: 0.9, h: 0.1 }, 3000, 300, 1920, 1080, []).w).toBe(960)
+    expect(fragmentPlacement(viewer, { x: 0, y: 0, w: 0.05, h: 0.05 }, 600, 600, 1920, 1080, []).w).toBe(FRAGMENT_MIN_W)
     // праворуч не влазить — притиснуто до правого краю сторінки
-    expect(fragmentPlacement({ ...viewer, x: 1500 }, { x: 0, y: 0, w: 0.5, h: 0.1 }, 3000, 600, 1920, 0).x).toBe(1920 - 420 - 24)
+    expect(fragmentPlacement({ ...viewer, x: 1500 }, { x: 0, y: 0, w: 0.5, h: 0.1 }, 3000, 600, 1920, 1080, []).x).toBe(1920 - 420 - 16)
+  })
+
+  // Власник 2026-10-13: «вони всі ложаться одна під одною… як полотно закінчується, то й не видно їх»
+  describe('місце на сторінці — за тим, що справді лежить, і в її межах', () => {
+    const viewer = { x: 80, y: 0, w: 640, h: 900 }
+    const TASK = { x: 0, y: 0, w: 0.9, h: 0.3 }      // задача з малюнком: 960 × 480 на дошці
+    const put = (occupied: Array<{ x: number; y: number; w: number; h: number }>) =>
+      fragmentPlacement(viewer, TASK, 3000, 1500, 1920, 1080, occupied)
+
+    it('наступний — під попереднім; видалили — місце знову вільне', () => {
+      const a = put([])
+      expect(a).toEqual({ x: 744, y: 16, w: 960, h: 480 })
+      const b = put([a])
+      expect(b.y).toBe(16 + 480 + 16)
+      expect(put([]).y).toBe(16)                 // обидва видалили — знову вгорі
+      expect(put([b]).y).toBe(16)                // верхній видалили — його місце вільне
+    })
+
+    it('ніколи не за низ сторінки: стовпчик повний — угорі стовпчика зі зсувом, поверх', () => {
+      const a = put([])
+      const b = put([a])
+      const c = put([a, b])
+      expect(c.y + c.h).toBeLessThanOrEqual(1080 - 16)
+      expect(c.x + c.w).toBeLessThanOrEqual(1920 - 16)
+      const d = put([a, b, c])
+      expect(d.y + d.h).toBeLessThanOrEqual(1080 - 16)
+      expect([d.x, d.y]).not.toEqual([c.x, c.y])  // не точно на попередній
+    })
+
+    it('вищий за сторінку — зменшено, щоб умістився', () => {
+      const tall = fragmentPlacement(viewer, { x: 0, y: 0, w: 0.9, h: 0.9 }, 1000, 3000, 1920, 1080, [])
+      expect(tall.h).toBe(1080 - 32)
+      expect(tall.y).toBe(16)
+      expect(tall.w).toBe(Math.round(1048 / 3))
+    })
+
+    it('інші обʼєкти в стовпчику не перекриває, якщо є місце нижче; вікно документа внизу сторінки — фрагмент усе одно на сторінці', () => {
+      const note = { x: 800, y: 0, w: 300, h: 200 }
+      expect(put([note]).y).toBe(200 + 16)
+      const low = fragmentPlacement({ ...viewer, y: 900 }, TASK, 3000, 1500, 1920, 1080, [])
+      expect(low.y + low.h).toBeLessThanOrEqual(1080 - 16)
+    })
   })
 
   it('ставимо лише туди, де натиснули: та сама дошка, сторінка й вікно PDF', () => {

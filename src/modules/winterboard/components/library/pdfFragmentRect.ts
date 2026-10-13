@@ -93,21 +93,54 @@ const VIEWER_SIDE_INSET = 2
 export const FRAGMENT_MIN_W = 240
 const GAP = 24
 const STACK_GAP = 16
+/** Відступ від краю сторінки дошки */
+const EDGE = 16
+/** Місця під вікном немає — кожен наступний трохи нижче й правіше, щоб не лягав точно на попередній */
+const CASCADE = 24
 
 /**
  * Де й якого розміру покласти фрагмент (ТЗ §2.2): удвічі більший, ніж ділянка у вікні PDF, не ширший за
  * половину сторінки дошки й не вужчий за 240; праворуч від вікна PDF, наступні — стовпчиком униз.
- * `stackY` — скільки вже зайнято під попередніми фрагментами цього вікна.
+ *
+ * Власник 2026-10-13: «вони всі ложаться одна під одною… як полотно закінчується, то й не видно їх» —
+ * лічильник у пам'яті не знав ні меж сторінки, ні видалених фрагментів. Тепер:
+ * - місце шукаємо серед того, що СПРАВДІ лежить на сторінці (`occupied`): видалили — місце знову вільне;
+ * - фрагмент завжди всередині сторінки (вищий за сторінку — зменшуємо);
+ * - у стовпчику місця немає — кладемо вгорі стовпчика з невеликим зсувом, поверх (новий об'єкт — згори).
  */
 export function fragmentPlacement(
-  viewer: ViewerBox, rect: FragRect, pxW: number, pxH: number, pageW: number, stackY: number,
+  viewer: ViewerBox, rect: FragRect, pxW: number, pxH: number, pageW: number, pageH: number, occupied: Placement[],
 ): Placement {
+  const ratio = pxH > 0 && pxW > 0 ? pxH / pxW : rect.h / rect.w
   const shown = rect.w * Math.max(1, viewer.w - VIEWER_SIDE_INSET)
-  const w = Math.round(Math.max(FRAGMENT_MIN_W, Math.min(pageW / 2, shown * 2)))
-  const h = Math.round(w * (pxH > 0 && pxW > 0 ? pxH / pxW : rect.h / rect.w))
+  let w = Math.round(Math.max(FRAGMENT_MIN_W, Math.min(pageW / 2, shown * 2)))
+  let h = Math.round(w * ratio)
+  const maxH = Math.max(1, pageH - 2 * EDGE)
+  if (h > maxH) {
+    h = maxH
+    w = Math.max(1, Math.round(h / ratio))
+  }
   const right = viewer.x + viewer.w + GAP
-  const x = right + w <= pageW ? right : Math.max(0, pageW - w - GAP)
-  return { x: Math.round(x), y: Math.round(viewer.y + stackY), w, h }
+  const x = Math.round(right + w <= pageW - EDGE ? right : Math.max(EDGE, pageW - w - EDGE))
+  const lowest = pageH - h - EDGE
+  const top = Math.round(Math.min(Math.max(viewer.y, EDGE), lowest))
+  // Що лежить у цьому стовпчику — згори вниз
+  const column = occupied
+    .filter((o) => o.x < x + w && o.x + o.w > x && o.y + o.h > top)
+    .sort((a, b) => a.y - b.y)
+  let y = top
+  for (const o of column) {
+    if (o.y >= y + h + STACK_GAP) break      // проміжок перед цим об'єктом — досить
+    y = Math.max(y, o.y + o.h + STACK_GAP)
+  }
+  if (y <= lowest) return { x, y: Math.round(y), w, h }
+  const k = column.length % 8
+  return {
+    x: Math.round(Math.min(x + k * CASCADE, Math.max(EDGE, pageW - w - EDGE))),
+    y: Math.round(Math.min(top + k * CASCADE, lowest)),
+    w,
+    h,
+  }
 }
 
 /**
@@ -120,7 +153,3 @@ export function sameSpot(
   return Boolean(at.boardId) && at.boardId === now.boardId && Boolean(at.pageId) && at.pageId === now.pageId && viewerOnPage
 }
 
-/** Наступний зсув стовпчика після покладеного фрагмента. */
-export function nextStackY(stackY: number, placed: Placement): number {
-  return stackY + placed.h + STACK_GAP
-}

@@ -1019,7 +1019,7 @@ import WBStickyNote from './WBStickyNote.vue'
 import DocumentViewerAsset from './DocumentViewerAsset.vue'
 import PdfFragmentDialog from '../library/PdfFragmentDialog.vue'
 import {
-  CUT_CONTENT_TYPES, fragmentPlacement, nextStackY, sameSpot, type FragRect, type FragmentContext,
+  CUT_CONTENT_TYPES, fragmentPlacement, sameSpot, type FragRect, type FragmentContext,
 } from '../library/pdfFragmentRect'
 import { runQuickCut } from '../library/pdfFragmentFlow'
 import { cutPdfFragment, snapPdfFragment, type PdfFragmentResult, type PdfFragmentSnap } from '../../api/library'
@@ -3257,8 +3257,6 @@ function handleDocViewerPageChange(id: string, page: number): void {
 const pdfFragment = ref<{
   contentItemId: number; contentType: string; title: string; totalPages: number; startPage: number; viewerId: string
 } | null>(null)
-/** Скільки вже зайнято стовпчиком під фрагментами кожного вікна документа (обидві вирізки — один стовпчик) */
-const pdfFragmentStackY = new Map<string, number>()
 /** Вікна документа, з яких зараз іде швидка вирізка (у шапці — «Вирізаю…») */
 const quickCutBusy = ref<string[]>([])
 
@@ -3325,9 +3323,14 @@ function placePdfFragment(ctx: FragmentContext, res: PdfFragmentResult, rect: Fr
   const viewer = assets.value.find((a) => a.id === ctx.viewerId)
   const now = { boardId: String(wbStore.workspaceId ?? ''), pageId: String(wbStore.currentPage?.id ?? '') }
   if (!viewer || !res.cdn_url || !sameSpot(ctx, now, true)) return 'not_placed'
-  const stackY = pdfFragmentStackY.get(viewer.id) ?? 0
-  const place = fragmentPlacement(viewer, rect, res.width, res.height, props.width ?? PAGE_WIDTH, stackY)
-  pdfFragmentStackY.set(viewer.id, nextStackY(stackY, place))
+  // Місце — серед того, що справді лежить на сторінці (видалені фрагменти місця не займають), і в її межах
+  const page = wbStore.currentPage
+  const occupied = assets.value
+    .filter((a) => a.id !== viewer.id)
+    .map((a) => ({ x: a.x, y: a.y, w: a.w, h: a.h }))
+  const place = fragmentPlacement(
+    viewer, rect, res.width, res.height, page?.width ?? PAGE_WIDTH, page?.height ?? PAGE_HEIGHT, occupied,
+  )
   emit('asset-add', {
     id: `pdffrag-${res.id}-${Date.now()}`,
     type: 'image',
