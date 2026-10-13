@@ -46,6 +46,36 @@ export const EXPORT_HIDE_SELECTOR = [
 ].join(',')
 
 /**
+ * Позначка кореня віджета: знімати гілкою DOM (html2canvas + MathJax v2 замість KaTeX), навіть
+ * якщо всередині великий SVG — для віджетів, де формули KaTeX (HTML) лежать поверх рисунка SVG.
+ * Гілка SVG їх би загубила, а foreignObject на KaTeX ламається мовчки (перевірено 2026-05-25).
+ * Як і `[data-export-hide]`, — загальна позначка: новий віджет ставить атрибут, цей файл не правиться.
+ */
+export const EXPORT_DOM_ATTR = 'data-export-dom'
+/**
+ * Бажана ширина знімка гілки DOM (логічна ширина віджета, px): знімок не дрібніє разом із масштабом
+ * дошки. Масштаб html2canvas — не менше 1 і не більше 4, межа MAX_DIMENSION — як для решти гілок.
+ */
+export const EXPORT_WIDTH_ATTR = 'data-export-width'
+
+/** Яку гілку знімка взяти для кореня (без побічних дій — і для тестів). */
+export function snapshotBranch(rootEl: HTMLElement): 'canvas' | 'svg' | 'dom' {
+  if (rootEl.hasAttribute(EXPORT_DOM_ATTR)) return 'dom'
+  const canvas = rootEl.querySelector('canvas') as HTMLCanvasElement | null
+  if (canvas && isPrimaryElement(canvas, rootEl)) return 'canvas'
+  const svg = rootEl.querySelector('svg') as SVGSVGElement | null
+  if (svg && isPrimaryElement(svg, rootEl)) return 'svg'
+  return 'dom'
+}
+
+/** Масштаб html2canvas для бажаної ширини: [1; 4]; без атрибута — 1. */
+export function domExportScale(rootEl: HTMLElement, onScreenWidth: number): number {
+  const want = Number(rootEl.getAttribute(EXPORT_WIDTH_ATTR))
+  if (!Number.isFinite(want) || want <= 0 || onScreenWidth <= 0) return 1
+  return Math.min(4, Math.max(1, want / onScreenWidth))
+}
+
+/**
  * Знімає PNG snapshot першого canvas/svg всередині rootEl.
  *
  * @returns Blob+розмір або null при failure/abort/нечого знімати
@@ -57,26 +87,20 @@ export async function snapshotElement(
   if (!rootEl) return null
   if (signal.aborted) return null
 
+  // 0. Явна позначка [data-export-dom] — одразу DOM (формули KaTeX поверх рисунка SVG).
   // 1. Native canvas — only if it's the primary visual (covers >=50% rootEl).
   //    Без перевірки розміру: dom-widgets з нестандартним child canvas
   //    (наприклад, audio player thumbnail) ловилися б замість DOM rasterize.
-  const canvas = rootEl.querySelector('canvas') as HTMLCanvasElement | null
-  if (canvas && isPrimaryElement(canvas, rootEl)) {
-    return snapshotCanvas(canvas, signal)
-  }
-
   // 2. SVG — only if primary (cover ≥50% rootEl).
   //    Inline KaTeX SVG (sqrt vinculum, viewBox 400000em) — крихітні відносно
   //    nmt_task rootEl → відфільтрується тут → fall through до snapshotDom.
   //    Geometry 2D / NMT3D: JSXGraph / NMT engine рендерять svg що заповнює
   //    stageRef → проходить.
-  const svg = rootEl.querySelector('svg') as SVGSVGElement | null
-  if (svg && isPrimaryElement(svg, rootEl)) {
-    return snapshotSvg(svg, signal)
-  }
-
   // 3. DOM rasterize fallback — для HTML widgets (nmt_task, future theory
   //    blocks). html2canvas + MathJax v2 SVG injection у onclone.
+  const branch = snapshotBranch(rootEl)
+  if (branch === 'canvas') return snapshotCanvas(rootEl.querySelector('canvas') as HTMLCanvasElement, signal)
+  if (branch === 'svg') return snapshotSvg(rootEl.querySelector('svg') as SVGSVGElement, signal)
   return snapshotDom(rootEl, signal)
 }
 
@@ -215,6 +239,25 @@ async function snapshotSvg(
   }
 }
 
+/**
+ * html2canvas міряє базову лінію шрифту в ЖИВОМУ документі: рядок тексту + картинка 1×1 з
+ * `vertical-align: baseline` (FontMetrics.parseMetrics). Глобальний preflight (`src/assets/main.css`:
+ * `img { display: block }`) зносить ту картинку на наступний рядок — базова лінія виходить на
+ * ~пів рядка нижчою, і ВЕСЬ текст DOM-знімка малюється на ~7 px нижче, ніж на екрані (поруч
+ * із формулами MathJax, які стоять правильно, це видно одразу). На час знімка повертаємо саме
+ * цій картинці (її data-URI з html2canvas) рядкову поведінку; більше нічого не чіпаємо.
+ */
+export const HTML2CANVAS_PROBE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+export const FONT_PROBE_STYLE_ATTR = 'data-snapshot-font-probe'
+
+export function fixFontProbe(doc: Document = document): () => void {
+  const style = doc.createElement('style')
+  style.setAttribute(FONT_PROBE_STYLE_ATTR, '')
+  style.textContent = `img[src="${HTML2CANVAS_PROBE_SRC}"] { display: inline !important; }`
+  doc.head.appendChild(style)
+  return () => style.remove()
+}
+
 // ── DOM rasterize (html2canvas) ─────────────────────────────────────────
 //
 // Для HTML widgets без власного canvas/svg (nmt_task, future theory/formula
@@ -247,6 +290,8 @@ async function snapshotDom(
     console.warn('[WB:snapshot] dom_too_large', { width: w, height: h, max: MAX_DIMENSION })
     return null
   }
+  // Бажана ширина знімка ([data-export-width]) — у межах MAX_DIMENSION.
+  const scale = Math.min(domExportScale(rootEl, w), MAX_DIMENSION / w, MAX_DIMENSION / h)
 
   // PRE-PHASE: render all KaTeX math у source DOM through MathJax v2 → SVG.
   // Why: KaTeX HTML uses inline-SVG with viewBox=400000em (sqrt vinculum,
@@ -306,12 +351,14 @@ async function snapshotDom(
   if (signal.aborted) return null
 
   let canvas: HTMLCanvasElement
+  const restoreProbe = fixFontProbe(rootEl.ownerDocument)
   try {
     canvas = await html2canvas(rootEl, {
       backgroundColor: '#ffffff',
       // pixelRatio>1 покращує текст, але збільшує blob.size; 1 безпечно
-      // тримається у 2 MB cap для типового nmt_task (~800×400).
-      scale: 1,
+      // тримається у 2 MB cap для типового nmt_task (~800×400). Більше — лише
+      // на прохання віджета ([data-export-width]).
+      scale,
       // Не пробуємо завантажувати cross-origin зображення (CORS-протекція
       // блокує canvas tainting — toBlob потім кине SecurityError).
       useCORS: false,
@@ -354,6 +401,8 @@ async function snapshotDom(
   } catch (err) {
     console.warn('[WB:snapshot] dom_html2canvas_failed', err)
     return null
+  } finally {
+    restoreProbe()
   }
   if (signal.aborted) return null
 
@@ -364,7 +413,7 @@ async function snapshotDom(
           resolve(null)
           return
         }
-        resolve({ blob, width: w, height: h })
+        resolve({ blob, width: canvas.width, height: canvas.height })
       }, 'image/png')
     } catch (err) {
       console.warn('[WB:snapshot] dom_toBlob_failed', err)

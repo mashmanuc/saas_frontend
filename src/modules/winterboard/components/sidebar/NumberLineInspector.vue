@@ -92,20 +92,34 @@
     <div class="nl-insp__section">
       <div class="nl-insp__section-label">{{ t('winterboard.numberLine.inequalityLabel') }}</div>
       <div v-for="(line, i) in b.draft" :key="i" class="nl-insp__row">
-        <input
-          :ref="(el) => setInputRef(el as HTMLInputElement | null, i)"
-          class="nl-insp__input"
-          :class="{ 'has-error': b.errorFor(i) }"
-          :value="line"
-          :placeholder="i === 0 ? t('winterboard.numberLine.placeholder') : ''"
-          :data-testid="`number-line-input-${i}`"
-          spellcheck="false"
-          autocomplete="off"
-          maxlength="200"
-          @input="b.setLine(i, ($event.target as HTMLInputElement).value)"
-          @keydown="onKeydown($event, i)"
-          @focus="focused = i"
-        />
+        <!-- «Рендер у спокої», як у графіках (ТЗ KaTeX §4.1): поки рядок не редагується — формула;
+             клік — живий <input> з усіма клавішами. Рядок, який розбір не прийняв, — звичайним текстом. -->
+        <div class="nl-insp__field">
+          <input
+            :ref="(el) => setInputRef(el as HTMLInputElement | null, i)"
+            class="nl-insp__input"
+            :class="{ 'has-error': b.errorFor(i), 'is-behind': !!previewTex(i, line) }"
+            :value="line"
+            :placeholder="i === 0 ? t('winterboard.numberLine.placeholder') : ''"
+            :data-testid="`number-line-input-${i}`"
+            spellcheck="false"
+            autocomplete="off"
+            maxlength="200"
+            @input="b.setLine(i, ($event.target as HTMLInputElement).value)"
+            @keydown="onKeydown($event, i)"
+            @focus="focused = i; editing = i"
+            @blur="editing === i && (editing = null)"
+          />
+          <button
+            v-if="previewTex(i, line)"
+            type="button"
+            tabindex="-1"
+            class="nl-insp__preview"
+            :data-testid="`number-line-preview-${i}`"
+            @mousedown.prevent
+            @click="focusRow(i, line.length)"
+          ><MathExpr :expr="line" :latex="previewTex(i, line)!" /></button>
+        </div>
         <div v-if="b.errorFor(i)" class="nl-insp__error" :data-testid="`number-line-error-${i}`">{{ b.errorFor(i) }}</div>
       </div>
       <div v-if="b.note" class="nl-insp__subtitle" data-testid="number-line-note">{{ b.note }}</div>
@@ -202,6 +216,8 @@ import { useI18n } from 'vue-i18n'
 import { numberLineUiState } from '../../board/state/numberLineUiState'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { isIntervalsPilotUser } from '../../engine/numberLine/pilot'
+import { inequalityLatex } from '../../engine/numberLine'
+import MathExpr from '../shared/MathExpr.vue'
 
 const { t } = useI18n()
 
@@ -231,6 +247,14 @@ function onExprKeydown(e: KeyboardEvent): void {
 }
 
 const focused = ref(0)
+/** Рядок, який зараз редагується (живий <input>); решта — формулою. */
+const editing = ref<number | null>(null)
+
+/** LaTeX прев'ю рядка в спокої; null — показати живий рядок (редагується, порожній, з помилкою, не розібраний). */
+function previewTex(i: number, line: string): string | null {
+  if (editing.value === i || !line.trim() || b.value.errorFor(i)) return null
+  return inequalityLatex(line)
+}
 const inputs: Array<HTMLInputElement | null> = []
 
 const filledRows = computed(() => b.value.draft.filter((l) => l.trim()).length)
@@ -350,6 +374,34 @@ function onKeydown(e: KeyboardEvent, i: number): void {
 }
 
 .nl-insp__input:focus { border-color: #c4622a; box-shadow: 0 0 0 2px rgba(196, 98, 42, 0.15); }
+
+/* Прев'ю в спокої займає місце поля й росте за формулою (дріб вищий за рядок); поле лишається
+   в DOM під ним — фокус, клавіші, тести. Клік — прев'ю зникає, поле повертається в потік. */
+.nl-insp__field { position: relative; }
+.nl-insp__input.is-behind {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.nl-insp__preview {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid rgba(196, 98, 42, 0.3);
+  border-radius: 4px;
+  background: #ffffff;
+  color: #2b2118;
+  font-size: 15px;
+  text-align: left;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  cursor: text;
+}
 .nl-insp__input.has-error { border-color: #a83a5b; background: #fdf2f5; }
 
 .nl-insp__error {
@@ -453,6 +505,11 @@ function onKeydown(e: KeyboardEvent, i: number): void {
   border-bottom-color: var(--color-border);
 }
 [data-theme="dark"] .nl-insp__input {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-warning);
+}
+[data-theme="dark"] .nl-insp__preview {
   background: var(--color-surface);
   color: var(--color-text);
   border-color: var(--color-warning);

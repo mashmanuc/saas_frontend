@@ -135,7 +135,7 @@ describe('однаковий вхід — однаковий вигляд (§1)'
     for (const d of [set, iv, solved]) {
       const ev = evaluate(d)
       if (!('answer' in ev)) throw new Error('eval')
-      expect(ev.answer).toEqual({ kind: 'set', text: 'x ∈ [14; +∞)', name: 'ray' })
+      expect(ev.answer).toMatchObject({ kind: 'set', text: 'x ∈ [14; +∞)', name: 'ray', tex: 'x \\in [14; +\\infty)' })
     }
   })
 
@@ -148,10 +148,10 @@ describe('однаковий вхід — однаковий вигляд (§1)'
     const d = (r: Partial<SolverResult>): NumberLineData => ({ ...defaultNumberLineData(), mode: 'solved', inequality: 'q',
       result: { ok: true, intervals: [], points: [], domain: null, answer: '', ...r } })
     const ans = (x: NumberLineData) => { const e = evaluate(x); if (!('answer' in e)) throw new Error('eval'); return e.answer }
-    expect(ans(d({ points: [B(1, '1', true)] }))).toEqual({ kind: 'point', text: 'x = 1' })
+    expect(ans(d({ points: [B(1, '1', true)] }))).toMatchObject({ kind: 'point', text: 'x = 1', tex: 'x = 1' })
     expect(ans(d({ intervals: [{ from: B(3, '3', true), to: null }], points: [B(-2, '−2', true)] })).text).toBe('x ∈ {−2} ∪ [3; +∞)')
-    expect(ans(d({}))).toEqual({ kind: 'empty', text: '∅' })
-    expect(ans(d({ intervals: [{ from: null, to: null }] }))).toEqual({ kind: 'all', text: 'x ∈ (−∞; +∞)', name: 'line' })
+    expect(ans(d({}))).toMatchObject({ kind: 'empty', text: '∅' })
+    expect(ans(d({ intervals: [{ from: null, to: null }] }))).toMatchObject({ kind: 'all', text: 'x ∈ (−∞; +∞)', name: 'line' })
   })
 })
 

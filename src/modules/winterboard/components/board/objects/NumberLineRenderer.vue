@@ -46,58 +46,31 @@
       >×</button>
     </header>
 
-    <!-- Stage — один самодостатній SVG (і на дошці, і в PDF-знімку). Керування — в інспекторі. -->
-    <div ref="stageRef" class="nl-stage" data-testid="number-line-stage">
-      <svg
-        :viewBox="`0 0 ${VB_W} ${VB_H}`"
-        preserveAspectRatio="xMidYMid meet"
-        width="100%"
-        height="100%"
-        xmlns="http://www.w3.org/2000/svg"
-        data-testid="number-line-svg"
-        :font-family="FONT"
-      >
-        <rect x="0" y="0" :width="VB_W" :height="VB_H" :fill="C.bg" />
-
-        <!-- HUD: вид · формула · відповідь (як у тригонометричних нерівностей) -->
-        <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote || domainNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
-        <text x="30" y="34" font-size="12" font-weight="700" letter-spacing="1" :fill="C.kind" data-testid="number-line-kind">{{ kindLabel }}</text>
-        <text
-          x="30" y="72"
-          :font-size="fitFont(formula, 30)"
-          font-weight="750"
-          :font-family="MONO"
-          :fill="C.ink"
-          data-testid="number-line-formula"
-        >{{ formula }}</text>
-        <line x1="30" :x2="VB_W - 30" y1="86" y2="86" :stroke="C.hudBorder" stroke-width="1" />
-        <text
-          v-if="answerLine && asset.data.showAnswer !== false"
-          x="30" y="110"
-          :font-size="fitFont(answerLine, 17)"
-          font-weight="700"
-          :font-family="MONO"
-          :fill="C.ink"
-          data-testid="number-line-answer"
-        >{{ answerLine }}</text>
-        <!-- Коефіцієнт 0: міркування словами (0·x = 0 при будь-якому x → лишається числова нерівність) -->
-        <text
-          v-if="zeroNote"
-          x="30" y="134"
-          :font-size="fitFont(zeroNote, 13)"
-          font-style="italic"
-          :fill="C.muted"
-          data-testid="number-line-zero-note"
-        >{{ zeroNote }}</text>
-        <text
-          v-else-if="domainNote"
-          x="30" y="134"
-          :font-size="fitFont(domainNote, 14)"
-          :fill="C.muted"
-          data-testid="number-line-domain"
-        >{{ domainNote }}</text>
-        <text v-else-if="!layout" x="30" y="110" font-size="14" :fill="C.error">{{ t('winterboard.numberLine.storedInvalid') }}</text>
-        <text v-else-if="isEmpty" x="30" y="110" font-size="14" :fill="C.muted">{{ t('winterboard.numberLine.emptyHint') }}</text>
+    <!-- Stage (ТЗ KaTeX §4): одна логічна рамка VB_W×VB_H — рисунок SVG і формули KaTeX (HTML) у тих
+         самих координатах, рамка масштабується цілою (як preserveAspectRatio="xMidYMid meet"), тож
+         підписи стоять точно під точками на будь-якому розмірі. PDF — гілкою DOM (позначка
+         data-export-dom, бажана ширина знімка — подвійна логічна, щоб дрібні знаки ОДЗ не злипались у
+         растрі: ≥ лишається ≥): foreignObject KaTeX ламає мовчки. -->
+    <div
+      ref="stageRef"
+      class="nl-stage"
+      data-testid="number-line-stage"
+      data-export-dom
+      :data-export-width="EXPORT_W"
+    >
+      <div class="nl-frame" :style="frameStyle">
+        <svg
+          :viewBox="`0 0 ${VB_W} ${VB_H}`"
+          :width="VB_W"
+          :height="VB_H"
+          xmlns="http://www.w3.org/2000/svg"
+          data-testid="number-line-svg"
+          :font-family="FONT"
+        >
+          <rect x="0" y="0" :width="VB_W" :height="VB_H" :fill="C.bg" />
+          <!-- HUD: вид · формула · відповідь (як у тригонометричних нерівностей); текст — HTML нижче -->
+          <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote.length || domainNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
+          <line x1="30" :x2="VB_W - 30" y1="86" y2="86" :stroke="C.hudBorder" stroke-width="1" />
 
         <!-- Розвʼязок — тонована смуга, як проміжки в тригонометрії -->
         <template v-if="layout">
@@ -168,43 +141,99 @@
           />
         </template>
 
-        <!-- Точки й підписи -->
-        <template v-if="layout">
-          <g v-for="(p, i) in layout.points" :key="`p-${i}`" :data-testid="`number-line-point-${i}`">
-            <circle
-              :cx="px(p.x)" :cy="LINE_Y" r="6.5"
-              :fill="p.filled ? C.accent : C.bg"
-              :stroke="C.accent"
-              stroke-width="2.2"
-              :data-filled="p.filled ? '1' : '0'"
-            />
-            <template v-if="fraction(p.label)">
-              <text :x="px(p.x)" :y="LINE_Y + 30" text-anchor="middle" font-size="14" :fill="C.ink">{{ fraction(p.label)!.num }}</text>
-              <line :x1="px(p.x) - 11" :y1="LINE_Y + 35" :x2="px(p.x) + 11" :y2="LINE_Y + 35" :stroke="C.ink" stroke-width="1.2" />
-              <text :x="px(p.x)" :y="LINE_Y + 50" text-anchor="middle" font-size="14" :fill="C.ink">{{ fraction(p.label)!.den }}</text>
+          <!-- Точки (підписи — HTML/KaTeX нижче) -->
+          <template v-if="layout">
+            <g v-for="(p, i) in layout.points" :key="`p-${i}`" :data-testid="`number-line-point-${i}`">
+              <circle
+                :cx="px(p.x)" :cy="LINE_Y" r="6.5"
+                :fill="p.filled ? C.accent : C.bg"
+                :stroke="C.accent"
+                stroke-width="2.2"
+                :data-filled="p.filled ? '1' : '0'"
+              />
+            </g>
+          </template>
+        </svg>
+
+        <!-- HUD-текст: HTML у координатах рамки -->
+        <div class="nl-hud-kind" :style="{ color: C.kind }" data-testid="number-line-kind">{{ kindLabel }}</div>
+        <div class="nl-hud-line nl-hud-formula" :style="{ color: C.ink }" data-testid="number-line-formula" :data-plain="formula">
+          <span ref="formulaFit" class="nl-fit" :style="fitStyle('formula')">
+            <template v-for="(part, i) in parts" :key="i">
+              <span v-if="i" class="nl-join">{{ joiner }}</span>
+              <MathExpr :expr="part.text" :latex="part.tex ?? undefined" />
             </template>
-            <text v-else :x="px(p.x)" :y="LINE_Y + 32" text-anchor="middle" font-size="16" :fill="C.ink">{{ p.label }}</text>
-          </g>
+          </span>
+        </div>
+        <div
+          v-if="answerLine && asset.data.showAnswer !== false"
+          class="nl-hud-line nl-hud-answer"
+          :style="{ color: C.ink }"
+          data-testid="number-line-answer"
+          :data-plain="answerLine"
+        >
+          <span ref="answerFit" class="nl-fit" :style="fitStyle('answer')">
+            <MathExpr v-if="answerTex" :expr="answerCore" :latex="answerTex" />
+            <span v-else>{{ answerCore }}</span>
+            <span v-if="answerName" class="nl-name">{{ answerName }}</span>
+          </span>
+        </div>
+        <!-- Коефіцієнт 0: міркування словами, числова нерівність — формулою -->
+        <div v-if="zeroNote.length" class="nl-hud-line nl-hud-note is-italic" :style="{ color: C.muted }" data-testid="number-line-zero-note" :data-plain="zeroNoteText">
+          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')">
+            <template v-for="(z, i) in zeroNote" :key="i">
+              <span v-if="i">; </span>
+              <i18n-t keypath="winterboard.numberLine.zeroCoef" tag="span">
+                <template #variable>{{ z.variable }}</template>
+                <template #reduced><MathExpr :expr="z.reduced" :latex="z.reducedTex ?? undefined" /></template>
+                <template #verdict>{{ z.verdict }}</template>
+              </i18n-t>
+            </template>
+          </span>
+        </div>
+        <div v-else-if="domainNote" class="nl-hud-line nl-hud-note" :style="{ color: C.muted }" data-testid="number-line-domain" :data-plain="domainNote">
+          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')">
+            <i18n-t keypath="winterboard.numberLine.domainLine" tag="span">
+              <template #domain><MathExpr :expr="domainText" :latex="domainTex ?? undefined" /></template>
+            </i18n-t>
+          </span>
+        </div>
+        <div v-else-if="!layout" class="nl-hud-line nl-hud-answer" :style="{ color: C.error }">{{ t('winterboard.numberLine.storedInvalid') }}</div>
+        <div v-else-if="isEmpty" class="nl-hud-line nl-hud-answer" :style="{ color: C.muted }">{{ t('winterboard.numberLine.emptyHint') }}</div>
+
+        <!-- Підписи меж — точно під точками (ті самі координати рамки) -->
+        <template v-if="layout">
+          <div
+            v-for="(p, i) in layout.points"
+            :key="`l-${i}`"
+            class="nl-label"
+            :style="{ left: `${px(p.x)}px`, top: `${LINE_Y + 13}px`, color: C.ink }"
+            :data-testid="`number-line-label-${i}`"
+            :data-plain="p.label"
+          ><MathExpr :expr="p.label" :latex="p.tex" /></div>
         </template>
-      </svg>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import MathExpr from '../../shared/MathExpr.vue'
 import {
   chooseNumberLine,
   conditionToText,
   displayNumber,
   evaluate,
-  intervalsFormula,
+  formulaParts,
+  inequalityLatex,
   isConstCondition,
   numberLineKind,
+  statementLatex,
   parseNumber,
   type IntervalsOp,
   type LayoutSegment,
@@ -243,11 +272,12 @@ const emit = defineEmits<{
 // ── Рисунок ────────────────────────────────────────────────────────────────
 const VB_W = 600
 const VB_H = 270
+/** Ширина знімка для PDF (гілка DOM): 2× логічної. */
+const EXPORT_W = VB_W * 2
 const X0 = 30
 const X1 = 552
 const LINE_Y = 190
 const FONT = "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
-const MONO = "'JetBrains Mono', 'DejaVu Sans Mono', monospace"
 /** Палітра тригонометричних нерівностей (TrigSolver): теплий папір + теракота. */
 const C = {
   bg: '#fffaf0',
@@ -275,14 +305,11 @@ const evaluation = computed(() => evaluate(props.asset.data))
 /** null — у збережених даних помилка (рисунка немає, лише пояснення). */
 const layout = computed(() => ('layout' in evaluation.value ? evaluation.value.layout : null))
 
-/** «x > 1 і x ≤ 4» — те саме, що бачить Інтегралик. */
-const formula = computed(() => {
-  const d = props.asset.data
-  if (d.mode === 'intervals') return intervalsFormula(d)
-  if (d.mode === 'solved') return d.inequality ?? ''
-  const joiner = ` ${t(d.combine === 'or' ? 'winterboard.numberLine.joinOr' : 'winterboard.numberLine.joinAnd')} `
-  return d.conditions.map((c) => conditionToText(c, d.variable || 'x')).join(joiner)
-})
+/** Формула частинами (рядок — частина): LaTeX з розбору, як записав учитель (ТЗ KaTeX §4.2). */
+const parts = computed(() => formulaParts(props.asset.data))
+const joiner = computed(() => t(props.asset.data.combine === 'or' ? 'winterboard.numberLine.joinOr' : 'winterboard.numberLine.joinAnd'))
+/** «x > 1 і x ≤ 4» — те саме, що бачить Інтегралик; для шапки й plain-атрибута. */
+const formula = computed(() => parts.value.map((p) => p.text).join(` ${joiner.value} `))
 
 /** Заголовок — лише від того, що ввів учитель, а не від того, чим рахували (ТЗ «один рядок» §1). */
 const KIND_KEYS = { inequality: 'kindInequality', system: 'kindSystem', union: 'kindUnion', intervals: 'kindIntervals' } as const
@@ -303,33 +330,117 @@ const answerLine = computed(() => {
   const name = ev.answer.name ? ` — ${t(`winterboard.numberLine.names.${ev.answer.name}`)}` : ''
   return `${ev.answer.text}${name}`
 })
+/** Відповідь без назви — формулою (LaTeX з множини); порожня — словами. */
+const answerCore = computed(() => {
+  const ev = evaluation.value
+  if (!('answer' in ev)) return ''
+  return ev.answer.kind === 'empty' ? t('winterboard.numberLine.answerEmpty') : ev.answer.text
+})
+const answerTex = computed(() => {
+  const ev = evaluation.value
+  return 'answer' in ev && ev.answer.kind !== 'empty' ? ev.answer.tex ?? null : null
+})
+const answerName = computed(() => {
+  const ev = evaluation.value
+  return 'answer' in ev && ev.answer.name ? ` — ${t(`winterboard.numberLine.names.${ev.answer.name}`)}` : ''
+})
 
 /** «ОДЗ» — однаково для всіх способів: знаменник чи корінь зі змінною (з того самого обчислення). */
-const domainNote = computed(() => {
+const domainText = computed(() => {
   const ev = evaluation.value
-  const dom = 'domain' in ev && !isEmpty.value ? ev.domain : null
-  return dom ? t('winterboard.numberLine.domainLine', { domain: dom }) : ''
+  return 'domain' in ev && !isEmpty.value ? ev.domain ?? '' : ''
 })
+const domainNote = computed(() => (domainText.value ? t('winterboard.numberLine.domainLine', { domain: domainText.value }) : ''))
+const domainTex = computed(() => (domainText.value ? statementLatex(domainText.value) : null))
 
 /** Умови з коефіцієнтом 0 при змінній — пояснення, чому відповідь «усі числа» чи «∅». */
 const zeroNote = computed(() => {
   const d = props.asset.data
   const v = d.variable || 'x'
-  return d.conditions
+  return (Array.isArray(d.conditions) ? d.conditions : [])
     .filter(isConstCondition)
-    .map((c) => t('winterboard.numberLine.zeroCoef', {
+    .map((c) => ({
       variable: v,
       reduced: c.reduced.replace(/-/g, '−'),
+      reducedTex: inequalityLatex(c.reduced),
       verdict: t(c.holds ? 'winterboard.numberLine.zeroTrue' : 'winterboard.numberLine.zeroFalse', { variable: v }),
     }))
-    .join('; ')
 })
+const zeroNoteText = computed(() => zeroNote.value
+  .map((z) => t('winterboard.numberLine.zeroCoef', { variable: z.variable, reduced: z.reduced, verdict: z.verdict }))
+  .join('; '))
 
-/** Довгий рядок зменшується, щоб влізти в HUD (моноширинний ≈ 0,6 em на символ). */
-function fitFont(text: string, max: number): number {
-  const width = VB_W - 60
-  return Math.max(11, Math.min(max, Math.floor(width / (Math.max(text.length, 1) * 0.6))))
+// ── Рамка й вміщення формул ──────────────────────────────────────────────────
+/** Масштаб рамки VB_W×VB_H у сцені — «meet», по центру (як preserveAspectRatio="xMidYMid meet"). */
+const stageSize = ref({ w: VB_W, h: VB_H })
+const frameStyle = computed(() => {
+  const { w, h } = stageSize.value
+  const k = w > 0 && h > 0 ? Math.min(w / VB_W, h / VB_H) : 1
+  const dx = (w - VB_W * k) / 2
+  const dy = (h - VB_H * k) / 2
+  return { width: `${VB_W}px`, height: `${VB_H}px`, transform: `translate(${dx}px, ${dy}px) scale(${k})` }
+})
+let stageObserver: ResizeObserver | null = null
+function measureStage(): void {
+  const el = stageRef.value
+  if (!el) return
+  const w = el.clientWidth
+  const h = el.clientHeight
+  if (w > 0 && h > 0) stageSize.value = { w, h }
 }
+
+/**
+ * Формула вміщується в свій рядок HUD — і завширшки (довга нерівність), і заввишки (дріб):
+ * стискаємо цілий рядок (вимір після KaTeX і шрифтів), не міняючи розміру картки й не пишучи
+ * нічого в дошку. Рамка логічна, тож стиск не залежить ні від масштабу дошки, ні від картки.
+ * Висота — з запасом: у PDF формули малює MathJax, і дріб там трохи вищий, ніж у KaTeX.
+ */
+type FitRow = 'formula' | 'answer' | 'note'
+const HUD_WIDTH = VB_W - 60
+const ROW_HEIGHT: Record<FitRow, number> = { formula: 38, answer: 23, note: 19 }
+const formulaFit = ref<HTMLElement | null>(null)
+const answerFit = ref<HTMLElement | null>(null)
+const noteFit = ref<HTMLElement | null>(null)
+const fit = reactive<Record<FitRow, number>>({ formula: 1, answer: 1, note: 1 })
+function fitStyle(which: FitRow) {
+  return fit[which] < 1 ? { transform: `scale(${fit[which]})` } : {}
+}
+/** Висота математики: найвищий strut KaTeX (висота + глибина виразу, без міжрядкового). */
+function mathHeight(el: HTMLElement): number {
+  let h = 0
+  el.querySelectorAll<HTMLElement>('.katex-html .strut').forEach((b) => { h = Math.max(h, b.offsetHeight) })
+  return h
+}
+function measureFit(): void {
+  for (const [key, el] of [['formula', formulaFit.value], ['answer', answerFit.value], ['note', noteFit.value]] as const) {
+    const w = el?.offsetWidth ?? 0
+    const h = el ? mathHeight(el) : 0
+    const k = Math.min(1, w > 0 ? HUD_WIDTH / w : 1, h > 0 ? ROW_HEIGHT[key] / h : 1)
+    fit[key] = Math.max(0.35, k)
+  }
+}
+const refit = () => { void nextTick(measureFit) }
+watch(() => [formula.value, answerLine.value, domainNote.value, zeroNoteText.value], refit)
+// Картка монтується ще до верстки (розміри 0) — міряємо знову, щойно рядок отримав розмір.
+// Стиск — transform, розмірів не міняє, тож циклу немає.
+let fitObserver: ResizeObserver | null = null
+watch([formulaFit, answerFit, noteFit], (els) => {
+  if (typeof ResizeObserver === 'undefined') return
+  fitObserver ??= new ResizeObserver(measureFit)
+  fitObserver.disconnect()
+  for (const el of els) if (el) fitObserver.observe(el)
+}, { flush: 'post' })
+onMounted(() => {
+  measureStage()
+  refit()
+  const fonts = typeof document !== 'undefined' ? (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts : undefined
+  void fonts?.ready?.then(refit)
+  if (stageRef.value && typeof ResizeObserver !== 'undefined') {
+    stageObserver = new ResizeObserver(measureStage)
+    stageObserver.observe(stageRef.value)
+  }
+})
+onBeforeUnmount(() => { stageObserver?.disconnect(); fitObserver?.disconnect() })
 
 function px(x: number): number {
   return X0 + x * (X1 - X0)
@@ -371,12 +482,6 @@ function snake(sg: LayoutSign): string {
   if (sg.from === 0) return `M ${x1} ${y} Q ${x2 - (x2 - x1) * 0.15} ${y} ${x2} ${LINE_Y}`
   if (sg.to === 1) return `M ${x1} ${LINE_Y} Q ${x1 + (x2 - x1) * 0.15} ${y} ${x2} ${y}`
   return `M ${x1} ${LINE_Y} Q ${(x1 + x2) / 2} ${2 * y - LINE_Y} ${x2} ${LINE_Y}`
-}
-
-/** `−1/3`, `√3/2` → чисельник над знаменником (як у зошиті). */
-function fraction(label: string): { num: string; den: string } | null {
-  const m = /^([−-]?)(\d*√\d+|\d+)\/(\d+)$/.exec(label)
-  return m ? { num: `${m[1]}${m[2]}`, den: m[3] } : null
 }
 
 // ── Чернетка (не стан дошки, не ops). Поля вводу — в NumberLineInspector. ──
@@ -758,7 +863,6 @@ const hostWindowControls = useHostWindowControls()
 
 .nl-head-title {
   flex: 1;
-  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
@@ -768,6 +872,67 @@ const hostWindowControls = useHostWindowControls()
 .nl-stage {
   flex: 1 1 auto;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Логічна рамка 600×270: рисунок і формули в одних координатах, масштаб — transform (meet). */
+.nl-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.nl-frame > svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.nl-hud-kind {
+  position: absolute;
+  left: 30px;
+  top: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.nl-hud-line {
+  position: absolute;
+  left: 30px;
+  width: 540px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.nl-hud-formula { top: 42px; height: 42px; font-size: 26px; }
+.nl-hud-answer { top: 89px; height: 26px; font-size: 17px; }
+.nl-hud-note { top: 117px; height: 22px; font-size: 13px; }
+.nl-hud-note.is-italic { font-style: italic; }
+
+/* Стиск довгого чи високого рядка — цілим, від лівого краю (міряє measureFit). */
+.nl-fit {
+  display: inline-block;
+  white-space: nowrap;
+  transform-origin: left center;
+}
+
+.nl-join { margin: 0 0.4em; font-size: 0.7em; }
+.nl-name { font-size: 0.9em; font-weight: 600; }
+
+.nl-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 15px;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .nl-delete {

@@ -79,7 +79,7 @@ describe('рисунок', () => {
     const w = await mountIt(asset([{ from: '-3', fromIncluded: false, to: '5', toIncluded: true }]), { isSelected: false })
     const circles = w.findAll('circle')
     expect(circles.map((c) => c.attributes('data-filled'))).toEqual(['0', '1'])
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (−3; 5] — півінтервал')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (−3; 5] — півінтервал')
     expect(w.findAll('[data-testid="number-line-result"]')).toHaveLength(1)
   })
 
@@ -91,14 +91,15 @@ describe('рисунок', () => {
 
   it('немає розвʼязків — «розвʼязків немає (∅)»', async () => {
     const w = await mountIt(asset([{ op: '<', value: '3' }, { op: '>=', value: '3' }]), { isSelected: false })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('розвʼязків немає (∅)')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('розвʼязків немає (∅)')
   })
 
-  it('дріб — чисельник над знаменником', async () => {
+  it('дріб — чисельник над знаменником (KaTeX \\frac під точкою)', async () => {
     const w = await mountIt(asset([{ op: '>=', value: '-1/3' }]), { isSelected: false })
-    const texts = w.findAll('text').map((t) => t.text())
-    expect(texts).toContain('−1')
-    expect(texts).toContain('3')
+    const label = w.find('[data-testid="number-line-label-0"]')
+    expect(label.attributes('data-plain')).toBe('−1/3')
+    expect(label.find('.katex .mfrac').exists()).toBe(true)
+    expect(label.find('annotation').text()).toBe('-\\frac{1}{3}')
   })
 
   it('відповідь можна сховати', async () => {
@@ -148,7 +149,7 @@ describe('ввід: одне правило (ТЗ §2.3)', () => {
 
   it('помилка в одному рядку — нуль asset_update, пояснення біля рядка, рисунок і текст на місці', async () => {
     const w = await mountIt(asset([{ op: '>', value: '3' }]))
-    const answerBefore = w.find('[data-testid="number-line-answer"]').text()
+    const answerBefore = w.find('[data-testid="number-line-answer"]').attributes('data-plain')
     await w.find('[data-testid="number-line-input-0"]').trigger('keydown', { key: 'Enter' })
     await flushPromises()
     await w.find('[data-testid="number-line-input-1"]').setValue('x <')
@@ -157,7 +158,7 @@ describe('ввід: одне правило (ТЗ §2.3)', () => {
     expect(w.find('[data-testid="number-line-error-1"]').text()).toBe('Після «<» очікую число')
     expect(w.find('[data-testid="number-line-error-0"]').exists()).toBe(false)
     expect((w.find('[data-testid="number-line-input-1"]').element as HTMLInputElement).value).toBe('x <')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe(answerBefore)
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe(answerBefore)
   })
 
   it('корені a·√n — так, 1 + √2 — відмова словами (етап 1б)', async () => {
@@ -170,7 +171,7 @@ describe('ввід: одне правило (ТЗ §2.3)', () => {
     await w.find('[data-testid="number-line-apply"]').trigger('click')
     expect(updates(w)).toHaveLength(1)
     await w.setProps({ asset: updates(w)[0][0] })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (√12; +∞) — відкритий промінь')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (√12; +∞) — відкритий промінь')
   })
 
   it('Esc повертає застосоване', async () => {
@@ -238,7 +239,7 @@ describe('вигляд як у тригонометричних нерівнос
   it('HUD: вид, формула й відповідь', async () => {
     const w = await mountIt(asset([{ op: '>', value: '1' }, { op: '<=', value: '4' }], { combine: 'or' }), { isSelected: false })
     expect(w.find('[data-testid="number-line-kind"]').text()).toBe('СУКУПНІСТЬ')
-    expect(w.find('[data-testid="number-line-formula"]').text()).toBe('x > 1 або x ≤ 4')
+    expect(w.find('[data-testid="number-line-formula"]').attributes('data-plain')).toBe('x > 1 або x ≤ 4')
   })
 })
 
@@ -251,8 +252,8 @@ describe('лінійні нерівності', () => {
     expect(u).toHaveLength(1)
     expect(u[0][0].data.conditions).toEqual([{ op: '>', value: '2', source: '2x + 3 > 7' }])
     await w.setProps({ asset: u[0][0] })
-    expect(w.find('[data-testid="number-line-formula"]').text()).toBe('2x + 3 > 7')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (2; +∞) — відкритий промінь')
+    expect(w.find('[data-testid="number-line-formula"]').attributes('data-plain')).toBe('2x + 3 > 7')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (2; +∞) — відкритий промінь')
     expect((w.find('[data-testid="number-line-input-0"]').element as HTMLInputElement).value).toBe('2x + 3 > 7')
   })
 
@@ -263,8 +264,8 @@ describe('лінійні нерівності', () => {
     const u = updates(w)
     expect(u).toHaveLength(1)
     await w.setProps({ asset: u[0][0] })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (−∞; +∞) — числова пряма')
-    expect(w.find('[data-testid="number-line-zero-note"]').text()).toBe(
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (−∞; +∞) — числова пряма')
+    expect(w.find('[data-testid="number-line-zero-note"]').attributes('data-plain')).toBe(
       'Коефіцієнт при x дорівнює 0: 0·x = 0 при будь-якому x, а 0 > −1 — правильно, тож x — будь-яке число')
     expect(w.findAll('[data-testid="number-line-result"]')).toHaveLength(1)
   })
@@ -295,9 +296,9 @@ describe('«Знаки інтервалів» (пілот) і стара пря�
     expect(api.solveNumberLine).not.toHaveBeenCalled()
     await w.setProps({ asset: u[0][0] })
     expect(w.find('[data-testid="number-line-kind"]').text()).toBe('МЕТОД ІНТЕРВАЛІВ')
-    expect(w.find('[data-testid="number-line-formula"]').text()).toBe('(x-1)(x+3)/(x-2) ≥ 0')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−3; 1] ∪ (2; +∞)')
-    expect(w.find('[data-testid="number-line-domain"]').text()).toBe('ОДЗ: x ≠ 2')
+    expect(w.find('[data-testid="number-line-formula"]').attributes('data-plain')).toBe('(x-1)(x+3)/(x-2) ≥ 0')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−3; 1] ∪ (2; +∞)')
+    expect(w.find('[data-testid="number-line-domain"]').attributes('data-plain')).toBe('ОДЗ: x ≠ 2')
     expect([0, 1, 2, 3].map((i) => w.find(`[data-testid="number-line-sign-${i}"]`).text())).toEqual(['−', '+', '−', '+'])
     expect(w.findAll('circle').map((c) => c.attributes('data-filled'))).toEqual(['1', '1', '0'])
     expect(w.findAll('[data-testid="number-line-snake"]')).toHaveLength(4)
@@ -312,7 +313,7 @@ describe('«Знаки інтервалів» (пілот) і стара пря�
     await flushPromises()
     expect(updates(w)).toHaveLength(0)
     expect(w.find('[data-testid="number-line-error-0"]').text()).toBe('Після «>» очікую число')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (1; +∞) — відкритий промінь')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (1; +∞) — відкритий промінь')
     await input0(w).trigger('keydown', { key: 'Escape' })
     expect((input0(w).element as HTMLInputElement).value).toBe('x - 1 > 0')
   })
@@ -334,7 +335,7 @@ describe('«Знаки інтервалів» (пілот) і стара пря�
     await flushPromises()
     const NOTE = 'Знаки — лише для добутків і дробів'
     expect(w.find('[data-testid="number-line-note"]').text()).toBe(NOTE)
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [2; +∞) — промінь')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [2; +∞) — промінь')
     // Учитель змінив рядок — примітку прибрано.
     await input0(w).setValue('√(x-2) ≥ 1')
     expect(w.find('[data-testid="number-line-note"]').exists()).toBe(false)
@@ -362,7 +363,7 @@ describe('«Знаки інтервалів» (пілот) і стара пря�
     await w.find('[data-testid="number-line-signs"]').trigger('click')
     expect(updates(w)).toHaveLength(0)
     expect(w.find('[data-testid="number-line-dirty"]').exists()).toBe(true)
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (3; +∞) — відкритий промінь')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (3; +∞) — відкритий промінь')
   })
 
   it('стара пряма «вручну» — свій розділ (точки, знаки, знак нерівності); рядка немає', async () => {
@@ -395,7 +396,68 @@ describe('чернетка проти змін ззовні', () => {
     await w.setProps({ asset: asset([{ op: '<', value: '-1' }]) })
     expect((w.find('[data-testid="number-line-input-0"]').element as HTMLInputElement).value).toBe('x ≤ 7')
     expect(w.find('[data-testid="number-line-dirty"]').exists()).toBe(true)
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ (−∞; −1) — відкритий промінь')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ (−∞; −1) — відкритий промінь')
+  })
+})
+
+describe('формули KaTeX (ТЗ «один рядок + KaTeX», етап Б)', () => {
+  it('формула, відповідь і ОДЗ — KaTeX з розбору; підписи — точно під точками', async () => {
+    const w = await mountIt(asset([], { mode: 'intervals', expression: '(x-1)(x+3)/(x-2)', rhs: '0', op: '>=' }), { isSelected: false })
+    const tex = (id: string) => w.find(`[data-testid="${id}"] annotation`).text()
+    expect(tex('number-line-formula')).toBe('\\frac{\\left(x - 1\\right)\\left(x + 3\\right)}{x - 2} \\ge 0')
+    expect(tex('number-line-answer')).toBe('x \\in [-3; 1] \\cup (2; +\\infty)')
+    expect(tex('number-line-domain')).toBe('x \\ne 2')
+    // Моноширинного шрифту коду більше немає.
+    expect(w.html()).not.toContain('JetBrains Mono')
+    const circles = w.findAll('circle')
+    circles.forEach((c, i) => {
+      const label = w.find(`[data-testid="number-line-label-${i}"]`)
+      expect(label.attributes('style')).toContain(`left: ${c.attributes('cx')}px`)
+    })
+  })
+
+  it('рядок HUD: високий дріб і довга формула стискаються цілими', async () => {
+    // happy-dom не верстає — розміри задаємо: дріб у формулі 58 px заввишки, відповідь 1080 px завширшки.
+    const oh = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('strut') && this.closest('[data-testid="number-line-formula"]') ? 58 : 0
+    })
+    const ow = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('nl-fit') && this.closest('[data-testid="number-line-answer"]') ? 1080 : 100
+    })
+    try {
+      const w = await mountIt({ ...asset([]), data: { ...asset([]).data, mode: 'intervals', conditions: [], expression: '(x-1)(x+3)/(x-2)', op: '>=', rhs: '0' } })
+      await flushPromises()
+      const style = (id: string) => w.find(`[data-testid="${id}"] .nl-fit`).attributes('style') ?? ''
+      expect(style('number-line-formula')).toContain(`scale(${38 / 58})`)
+      expect(style('number-line-answer')).toContain('scale(0.5)')
+      expect(style('number-line-domain')).not.toContain('scale')
+    } finally {
+      oh.mockRestore()
+      ow.mockRestore()
+    }
+  })
+
+  it('PDF — гілкою DOM: корінь позначено, бажана ширина — 2× логічної', async () => {
+    const w = await mountIt(asset([{ op: '>', value: '3' }]), { isSelected: false })
+    const stage = w.find('[data-testid="number-line-stage"]')
+    expect(stage.attributes()).toHaveProperty('data-export-dom')
+    expect(stage.attributes('data-export-width')).toBe('1200')
+  })
+
+  it('інспектор: рядок у спокої — формулою; фокус — живий рядок; помилка — звичайний текст', async () => {
+    const w = await mountIt(asset([{ op: '>', value: '2', source: '2x + 3 > 7' }]))
+    const preview = w.find('[data-testid="number-line-preview-0"]')
+    expect(preview.exists()).toBe(true)
+    expect(preview.find('annotation').text()).toBe('2x + 3 > 7')
+    await w.find('[data-testid="number-line-input-0"]').trigger('focus')
+    expect(w.find('[data-testid="number-line-preview-0"]').exists()).toBe(false)
+    await w.find('[data-testid="number-line-input-0"]').trigger('blur')
+    expect(w.find('[data-testid="number-line-preview-0"]').exists()).toBe(true)
+    await w.find('[data-testid="number-line-input-0"]').setValue('x >')
+    await w.find('[data-testid="number-line-apply"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="number-line-error-0"]').exists()).toBe(true)
+    expect(w.find('[data-testid="number-line-preview-0"]').exists()).toBe(false)
   })
 })
 

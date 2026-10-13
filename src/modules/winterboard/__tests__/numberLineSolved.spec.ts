@@ -58,9 +58,9 @@ describe('рисунок лише зі збереженого result (§5.1)', (
     const w = await mountIt(solvedAsset(ROOT_RESULT), { isSelected: false })
     // Заголовок і відповідь — як у будь-якої нерівності, хоч би чим рахували (ТЗ «один рядок» §1).
     expect(w.find('[data-testid="number-line-kind"]').text()).toBe('НЕРІВНІСТЬ')
-    expect(w.find('[data-testid="number-line-formula"]').text()).toBe('√(x+1) > x − 1')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
-    expect(w.find('[data-testid="number-line-domain"]').text()).toBe('ОДЗ: x ≥ −1')
+    expect(w.find('[data-testid="number-line-formula"]').attributes('data-plain')).toBe('√(x+1) > x − 1')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
+    expect(w.find('[data-testid="number-line-domain"]').attributes('data-plain')).toBe('ОДЗ: x ≥ −1')
     expect(w.findAll('circle').map((c) => c.attributes('data-filled'))).toEqual(['1', '0'])
     expect(api.solveNumberLine).not.toHaveBeenCalled()
   })
@@ -125,7 +125,7 @@ describe('нелінійний рядок — точний розвʼязок (�
     await flushPromises()
     expect(updates(w)).toHaveLength(0)
     expect(err0(w).text()).toBe('Не встиг розвʼязати — спростіть нерівність')
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
     expect((input0(w).element as HTMLInputElement).value).toBe('x^6 + x^5 + 7 > 0')
   })
 
@@ -182,7 +182,7 @@ describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
   it('збережена пілотом пряма: рисунок той самий; «Застосувати» — відмова без запиту', async () => {
     auth.user = { id: 7 }
     const w = await mountIt(solvedAsset(ROOT_RESULT))
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
     expect((input0(w).element as HTMLInputElement).value).toBe('√(x+1) > x − 1')
     await applyBtn(w).trigger('click')
     await flushPromises()
@@ -200,7 +200,7 @@ describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
   it('збережений розвʼязок без виділення — лише рисунок, без запитів', async () => {
     auth.user = { id: 7 }
     const w = await mountIt(solvedAsset(ROOT_RESULT), { isSelected: false })
-    expect(w.find('[data-testid="number-line-answer"]').text()).toBe('x ∈ [−1; 3) — півінтервал')
+    expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
     expect(api.solveNumberLine).not.toHaveBeenCalled()
   })
 })

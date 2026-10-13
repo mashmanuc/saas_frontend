@@ -3,8 +3,9 @@
  * множина розвʼязків, відповідь, назва проміжку й схематичне розміщення —
  * для дошки, PDF-знімка й опису для Інтегралика. Окремо нічого не зберігається.
  */
-import { parseNumber } from './parse'
+import { conditionToText, parseNumber } from './parse'
 import { denominatorHoles, solveIntervals } from './intervals'
+import { inequalityLatex, numberLatex } from './latex'
 import { compareReal as compare, type Real } from './real'
 import { ALL, contains, EMPTY, intersect, normalize, union, type Interval, type NumberSet, type Point } from './sets'
 import {
@@ -25,10 +26,14 @@ export interface NumberLineAnswer {
   text: string
   /** Назва за підручником — лише коли відповідь є одним проміжком. */
   name?: IntervalName
+  /** Той самий запис у LaTeX — з множини й меж, не з тексту (ТЗ KaTeX §4.2); немає — показати `text`. */
+  tex?: string
 }
 
 export interface LayoutPoint {
   label: string
+  /** Підпис у LaTeX (`\frac{\sqrt{3}}{2}`); немає — показати `label`. */
+  tex?: string
   /** 0..1 по ширині прямої; точки — у порядку значень, НЕ в масштабі. */
   x: number
   filled: boolean
@@ -136,6 +141,9 @@ export interface AnswerPiece {
   hiClosed: boolean
   /** Ізольована точка (`{2}`). */
   point: boolean
+  /** Межі в LaTeX (сервер дає свій `latex`); немає — з підпису (`numberLatex`). */
+  loTex?: string | null
+  hiTex?: string | null
 }
 
 function fmtPiece(p: AnswerPiece): string {
@@ -152,16 +160,42 @@ function nameOf(p: AnswerPiece): IntervalName {
   return 'half_interval'
 }
 
+function boundTex(label: string | null, tex: string | null | undefined, inf: string): string | null {
+  if (label === null) return inf
+  return tex ?? numberLatex(label)
+}
+
+/** Шматок у LaTeX; null — якщо якусь межу не вдалося записати (тоді вся відповідь — текстом). */
+function pieceTex(p: AnswerPiece): string | null {
+  const lo = boundTex(p.lo, p.loTex, '-\\infty')
+  if (p.point) return lo === null ? null : `\\{${lo}\\}`
+  const hi = boundTex(p.hi, p.hiTex, '+\\infty')
+  if (lo === null || hi === null) return null
+  return `${p.lo !== null && p.loClosed ? '[' : '('}${lo}; ${hi}${p.hi !== null && p.hiClosed ? ']' : ')'}`
+}
+
+function withTex(a: NumberLineAnswer, tex: string | null): NumberLineAnswer {
+  return tex === null ? a : { ...a, tex }
+}
+
 /** Шматки в порядку зліва направо → `x ∈ [−1; 3)` з назвою, `x = 3`, `∅`. */
 export function answerFromPieces(pieces: AnswerPiece[], variable: string): NumberLineAnswer {
-  if (pieces.length === 0) return { kind: 'empty', text: '∅' }
+  if (pieces.length === 0) return { kind: 'empty', text: '∅', tex: '\\varnothing' }
   if (pieces.length === 1) {
     const p = pieces[0]
-    if (p.point) return { kind: 'point', text: `${variable} = ${p.lo}` }
-    if (p.lo === null && p.hi === null) return { kind: 'all', text: `${variable} ∈ (−∞; +∞)`, name: 'line' }
-    return { kind: 'set', text: `${variable} ∈ ${fmtPiece(p)}`, name: nameOf(p) }
+    if (p.point) {
+      const t = boundTex(p.lo, p.loTex, '')
+      return withTex({ kind: 'point', text: `${variable} = ${p.lo}` }, t === null ? null : `${variable} = ${t}`)
+    }
+    if (p.lo === null && p.hi === null) {
+      return { kind: 'all', text: `${variable} ∈ (−∞; +∞)`, name: 'line', tex: `${variable} \\in (-\\infty; +\\infty)` }
+    }
+    const t = pieceTex(p)
+    return withTex({ kind: 'set', text: `${variable} ∈ ${fmtPiece(p)}`, name: nameOf(p) }, t === null ? null : `${variable} \\in ${t}`)
   }
-  return { kind: 'set', text: `${variable} ∈ ${pieces.map(fmtPiece).join(' ∪ ')}` }
+  const texs = pieces.map(pieceTex)
+  const tex = texs.every((x) => x !== null) ? `${variable} \\in ${texs.join(' \\cup ')}` : null
+  return withTex({ kind: 'set', text: `${variable} ∈ ${pieces.map(fmtPiece).join(' ∪ ')}` }, tex)
 }
 
 export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer {
@@ -172,6 +206,11 @@ export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer
     hiClosed: iv.hiClosed,
     point: !!(iv.lo && iv.hi && compare(iv.lo.value, iv.hi.value) === 0),
   })), variable)
+}
+
+function withPointTex(p: LayoutPoint): LayoutPoint {
+  const tex = numberLatex(p.label)
+  return tex === null ? p : { ...p, tex }
 }
 
 /** «ОДЗ» з нулів знаменника: `x ≠ 2, x ≠ −3`. */
@@ -245,7 +284,7 @@ function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]):
     else if (isEndOfResult(p.value)) filled = false
     // Точка поза відповіддю: як у своїй умові (нестрога — зафарбована, строга — виколота).
     else filled = resolved.some((r) => r.bounds.some((b) => b.included && compare(b.point.value, p.value) === 0))
-    return { label: displayNumber(p.label), x: xOf(p.value), filled }
+    return withPointTex({ label: displayNumber(p.label), x: xOf(p.value), filled })
   })
 
   const hatches: LayoutHatch[] = resolved.map((r, condition) => ({
@@ -263,6 +302,18 @@ function layout(resolved: ResolvedCondition[], set: NumberSet, points: Point[]):
 }
 
 const OP_TEXT: Record<string, string> = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
+
+/**
+ * Формула картки частинами — як записав учитель (ТЗ KaTeX §4.2): рядок (умова) → `{ text, tex }`;
+ * `tex` null — розбір не прийняв, показати `text`. Частини поєднує картка (і / або — через i18n).
+ */
+export function formulaParts(data: NumberLineData): Array<{ text: string; tex: string | null }> {
+  const one = (text: string) => ({ text, tex: inequalityLatex(text) })
+  if (data.mode === 'intervals') return [one(intervalsFormula(data))]
+  if (data.mode === 'solved') return data.inequality ? [one(String(data.inequality))] : []
+  const v = data.variable || 'x'
+  return (Array.isArray(data.conditions) ? data.conditions : []).map((c) => one(conditionToText(c, v)))
+}
 
 /** Формула методу інтервалів так, як її бачить учитель: `(x-1)(x+3)/(x-2) ≥ 0`. */
 export function intervalsFormula(data: NumberLineData): string {
@@ -289,12 +340,18 @@ function evaluateIntervals(data: NumberLineData): NumberLineEvaluation {
     answer: formatAnswer(r.set, r.variable),
     domain: holesText(r.holes, r.variable),
     layout: {
-      points: r.points.map((p, i) => ({ label: displayNumber(p.point.label), x: xs[i], filled: p.filled })),
+      points: r.points.map((p, i) => withPointTex({ label: displayNumber(p.point.label), x: xs[i], filled: p.filled })),
       hatches: [{ condition: 0, segments: result }],
       result,
       signs: r.signs.map((sign, i) => ({ from: bounds[i], to: bounds[i + 1], sign })),
     },
   }
+}
+
+/** Межа сервера в LaTeX: точна — його `latex`; громіздка — `\approx 1{,}32`. */
+export function solverBoundTex(b: SolverBound): string | null {
+  if (b.exact && typeof b.latex === 'string' && b.latex) return b.latex
+  return numberLatex(solverBoundLabel(b))
 }
 
 /** Підпис межі розвʼязувача: точний запис або «≈1,32» (ТЗ розвʼязувача §5.3). */
@@ -337,9 +394,14 @@ function evaluateSolved(data: NumberLineData): NumberLineEvaluation {
       hi: iv.to ? solverBoundLabel(iv.to) : null,
       hiClosed: !!iv.to?.closed,
       point: false,
+      loTex: iv.from ? solverBoundTex(iv.from) : null,
+      hiTex: iv.to ? solverBoundTex(iv.to) : null,
       at: iv.from ? iv.from.approx : -Infinity,
     })),
-    ...r.points.map((b) => ({ lo: solverBoundLabel(b), loClosed: true, hi: solverBoundLabel(b), hiClosed: true, point: true, at: b.approx })),
+    ...r.points.map((b) => ({
+      lo: solverBoundLabel(b), loClosed: true, hi: solverBoundLabel(b), hiClosed: true, point: true,
+      loTex: solverBoundTex(b), hiTex: solverBoundTex(b), at: b.approx,
+    })),
   ].sort((a, b) => a.at - b.at)
   const variable = data.variable || 'x'
   // ОДЗ: від сервера (корені, скорочення); інакше — нулі знаменника, якщо рядок розбирає рушій.
@@ -351,7 +413,7 @@ function evaluateSolved(data: NumberLineData): NumberLineEvaluation {
     answer: answerFromPieces(pieces, variable),
     domain: r.domain || holesText(holes ?? [], variable),
     layout: {
-      points: uniq.map((b, i) => ({ label: solverBoundLabel(b), x: xs[i], filled: b.closed })),
+      points: uniq.map((b, i) => ({ label: solverBoundLabel(b), tex: solverBoundTex(b) ?? undefined, x: xs[i], filled: b.closed })),
       hatches: [{ condition: 0, segments: result }],
       result,
     },
