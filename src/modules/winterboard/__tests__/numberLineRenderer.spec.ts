@@ -442,6 +442,11 @@ describe('формули KaTeX (ТЗ «один рядок + KaTeX», етап �
     const stage = w.find('[data-testid="number-line-stage"]')
     expect(stage.attributes()).toHaveProperty('data-export-dom')
     expect(stage.attributes('data-export-width')).toBe('1200')
+    // Рядки HUD позначено для підгонки у знімку (за MathJax): ширина рамки HUD і висота рядка.
+    const fit = w.find('[data-testid="number-line-formula"] .nl-fit')
+    expect(fit.attributes('data-export-fit-width')).toBe('540')
+    expect(fit.attributes('data-export-fit-height')).toBe('38')
+    expect(w.find('[data-testid="number-line-answer"] .nl-fit').attributes('data-export-fit-height')).toBe('23')
   })
 
   it('інспектор: рядок у спокої — формулою; фокус — живий рядок; помилка — звичайний текст', async () => {

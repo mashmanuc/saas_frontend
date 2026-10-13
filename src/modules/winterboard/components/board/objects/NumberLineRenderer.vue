@@ -69,7 +69,7 @@
         >
           <rect x="0" y="0" :width="VB_W" :height="VB_H" :fill="C.bg" />
           <!-- HUD: вид · формула · відповідь (як у тригонометричних нерівностей); текст — HTML нижче -->
-          <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote.length || domainNote ? 140 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
+          <rect x="14" y="10" :width="VB_W - 28" :height="zeroNote.length || domainNote ? 130 : 112" rx="10" :fill="C.hud" :stroke="C.hudBorder" stroke-width="1" />
           <line x1="30" :x2="VB_W - 30" y1="86" y2="86" :stroke="C.hudBorder" stroke-width="1" />
 
         <!-- Розвʼязок — тонована смуга, як проміжки в тригонометрії -->
@@ -115,7 +115,7 @@
             v-for="(sg, i) in layout.signs"
             :key="`s-${i}`"
             :x="(px(sg.from) + (sg.to === 1 ? X1 : px(sg.to))) / 2"
-            :y="LINE_Y - 42"
+            :y="LINE_Y - 36"
             text-anchor="middle"
             font-size="20"
             font-weight="700"
@@ -158,7 +158,7 @@
         <!-- HUD-текст: HTML у координатах рамки -->
         <div class="nl-hud-kind" :style="{ color: C.kind }" data-testid="number-line-kind">{{ kindLabel }}</div>
         <div class="nl-hud-line nl-hud-formula" :style="{ color: C.ink }" data-testid="number-line-formula" :data-plain="formula">
-          <span ref="formulaFit" class="nl-fit" :style="fitStyle('formula')">
+          <span ref="formulaFit" class="nl-fit" :style="fitStyle('formula')" :data-export-fit-width="HUD_WIDTH" :data-export-fit-height="ROW_HEIGHT.formula">
             <template v-for="(part, i) in parts" :key="i">
               <span v-if="i" class="nl-join">{{ joiner }}</span>
               <MathExpr :expr="part.text" :latex="part.tex ?? undefined" />
@@ -172,7 +172,7 @@
           data-testid="number-line-answer"
           :data-plain="answerLine"
         >
-          <span ref="answerFit" class="nl-fit" :style="fitStyle('answer')">
+          <span ref="answerFit" class="nl-fit" :style="fitStyle('answer')" :data-export-fit-width="HUD_WIDTH" :data-export-fit-height="ROW_HEIGHT.answer">
             <MathExpr v-if="answerTex" :expr="answerCore" :latex="answerTex" />
             <span v-else>{{ answerCore }}</span>
             <span v-if="answerName" class="nl-name">{{ answerName }}</span>
@@ -180,7 +180,7 @@
         </div>
         <!-- Коефіцієнт 0: міркування словами, числова нерівність — формулою -->
         <div v-if="zeroNote.length" class="nl-hud-line nl-hud-note is-italic" :style="{ color: C.muted }" data-testid="number-line-zero-note" :data-plain="zeroNoteText">
-          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')">
+          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')" :data-export-fit-width="HUD_WIDTH" :data-export-fit-height="ROW_HEIGHT.note">
             <template v-for="(z, i) in zeroNote" :key="i">
               <span v-if="i">; </span>
               <i18n-t keypath="winterboard.numberLine.zeroCoef" tag="span">
@@ -192,7 +192,7 @@
           </span>
         </div>
         <div v-else-if="domainNote" class="nl-hud-line nl-hud-note" :style="{ color: C.muted }" data-testid="number-line-domain" :data-plain="domainNote">
-          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')">
+          <span ref="noteFit" class="nl-fit" :style="fitStyle('note')" :data-export-fit-width="HUD_WIDTH" :data-export-fit-height="ROW_HEIGHT.note">
             <i18n-t keypath="winterboard.numberLine.domainLine" tag="span">
               <template #domain><MathExpr :expr="domainText" :latex="domainTex ?? undefined" /></template>
             </i18n-t>
@@ -914,7 +914,7 @@ const hostWindowControls = useHostWindowControls()
 
 .nl-hud-formula { top: 42px; height: 42px; font-size: 26px; }
 .nl-hud-answer { top: 89px; height: 26px; font-size: 17px; }
-.nl-hud-note { top: 117px; height: 22px; font-size: 13px; }
+.nl-hud-note { top: 115px; height: 22px; font-size: 13px; }
 .nl-hud-note.is-italic { font-style: italic; }
 
 /* Стиск довгого чи високого рядка — цілим, від лівого краю (міряє measureFit). */

@@ -58,6 +58,60 @@ export const EXPORT_DOM_ATTR = 'data-export-dom'
  */
 export const EXPORT_WIDTH_ATTR = 'data-export-width'
 
+/**
+ * Рядок, який у знімку має вміститись у свою рамку (логічні px): `data-export-fit-width` /
+ * `data-export-fit-height`. У знімку формули малює MathJax — його гліфи трохи ширші й вищі за
+ * KaTeX, тож рядок, підігнаний на екрані впритул, у PDF вилазив би. Підганяємо в КЛОНІ, після
+ * підстановки MathJax (fitExportRows). Загальна позначка, як `[data-export-hide]`.
+ */
+export const EXPORT_FIT_WIDTH_ATTR = 'data-export-fit-width'
+export const EXPORT_FIT_HEIGHT_ATTR = 'data-export-fit-height'
+/** Клас, яким у клоні замінюємо `.katex` навколо MathJax (без CSS KaTeX). */
+export const EXPORT_MATH_CLASS = 'wb-export-math'
+
+/**
+ * SVG MathJax у знімку — як задумав MathJax, незалежно від CSS сторінки:
+ *  - розміри в `ex` → в `em` (MathJax рахує 1ex = 0,5em; справжній ex шрифту різний — у KaTeX_Main
+ *    0,43em, у системних інший — і формула виходила то дрібнішою, то більшою за свій рядок);
+ *  - рядковий svg (глобальний preflight `svg { display: block }` ставив формулу вгору контейнера,
+ *    вище за текст рядка), зсув базової лінії — один раз.
+ */
+export function settleMathJaxSvg(svg: SVGSVGElement): void {
+  const em = (v: string | null) => {
+    const m = /^(-?[\d.]+)ex$/.exec((v ?? '').trim())
+    return m ? `${Number(m[1]) / 2}em` : null
+  }
+  for (const attr of ['width', 'height']) {
+    const v = em(svg.getAttribute(attr))
+    if (v) svg.setAttribute(attr, v)
+  }
+  const va = em(svg.style.verticalAlign)
+  if (va) svg.style.verticalAlign = va
+  // Зсув базової лінії — лише на svg, як у MathJax: копія на контейнері (renderLatexToSvgV2)
+  // опускала формулу вдвічі, і текст рядка стояв вище за неї.
+  if (svg.parentElement) svg.parentElement.style.verticalAlign = ''
+  svg.style.display = 'inline'
+}
+
+/** Стискає (transform: scale) кожен позначений рядок до його рамки за фактичним розміром. */
+export function fitExportRows(root: ParentNode): void {
+  root.querySelectorAll<HTMLElement>(`[${EXPORT_FIT_WIDTH_ATTR}]`).forEach((el) => {
+    const maxW = Number(el.getAttribute(EXPORT_FIT_WIDTH_ATTR))
+    const maxH = Number(el.getAttribute(EXPORT_FIT_HEIGHT_ATTR))
+    el.style.transform = 'none'
+    const w = el.offsetWidth
+    // Висота математики — за самим SVG MathJax (контейнер ще й висота рядка); у клоні предки ще
+    // з transform, тож ділимо на їхній масштаб. Залишки KaTeX — за strut.
+    const rectW = el.getBoundingClientRect().width
+    const k0 = w > 0 && rectW > 0 ? rectW / w : 1
+    let h = 0
+    el.querySelectorAll('mjx-container > svg').forEach((m) => { h = Math.max(h, m.getBoundingClientRect().height / k0) })
+    el.querySelectorAll<HTMLElement>('.katex-html .strut').forEach((m) => { h = Math.max(h, m.offsetHeight) })
+    const k = Math.min(1, w > 0 && maxW > 0 ? maxW / w : 1, h > 0 && maxH > 0 ? maxH / h : 1)
+    if (k < 1) el.style.transform = `scale(${k})`
+  })
+}
+
 /** Яку гілку знімка взяти для кореня (без побічних дій — і для тестів). */
 export function snapshotBranch(rootEl: HTMLElement): 'canvas' | 'svg' | 'dom' {
   if (rootEl.hasAttribute(EXPORT_DOM_ATTR)) return 'dom'
@@ -386,16 +440,31 @@ async function snapshotDom(
         // 2) Replace each cloned .katex span з pre-rendered MathJax SVG.
         //    Walk source + clone у parallel по індексу (cloneNode preserves
         //    DOM order, querySelectorAll is document-order).
-        if (mathReplacements.size === 0) return
-        const sourceKatex = Array.from(rootEl.querySelectorAll('.katex'))
-        const clonedKatex = Array.from(clonedEl.querySelectorAll('.katex'))
-        const len = Math.min(sourceKatex.length, clonedKatex.length)
-        for (let i = 0; i < len; i++) {
-          const svg = mathReplacements.get(sourceKatex[i])
-          if (svg) {
-            clonedKatex[i].innerHTML = svg
+        //    MathJax кладемо НЕ всередину `.katex`: CSS KaTeX (`.katex svg { position: absolute;
+        //    width: 100%; height: inherit }`) стискав і зсував його SVG (у PDF «−3» дрібніше за «1»,
+        //    формула вища за текст рядка). Клас знімаємо, розмір шрифту переносимо з живого `.katex`.
+        if (mathReplacements.size > 0) {
+          const sourceKatex = Array.from(rootEl.querySelectorAll<HTMLElement>('.katex'))
+          const clonedKatex = Array.from(clonedEl.querySelectorAll<HTMLElement>('.katex'))
+          const len = Math.min(sourceKatex.length, clonedKatex.length)
+          for (let i = 0; i < len; i++) {
+            const svg = mathReplacements.get(sourceKatex[i])
+            if (!svg) continue
+            const host = clonedKatex[i]
+            const cs = getComputedStyle(sourceKatex[i])
+            host.className = EXPORT_MATH_CLASS
+            host.style.fontSize = cs.fontSize
+            host.style.lineHeight = cs.lineHeight
+            host.style.whiteSpace = 'nowrap'
+            host.innerHTML = svg
+            // MathML для читачів екрана — на картинці зайвий (без CSS MathJax займав місце).
+            host.querySelectorAll('mjx-assistive-mml').forEach((el) => el.remove())
+            host.querySelectorAll<SVGSVGElement>('mjx-container > svg').forEach(settleMathJaxSvg)
           }
         }
+
+        // 3) Рядки з позначкою — у свою рамку за розміром MathJax (не KaTeX з екрана).
+        fitExportRows(clonedEl)
       },
     })
   } catch (err) {
