@@ -71,8 +71,9 @@ import { documentHeaderText } from '../../board/documentTitle'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
 import {
-  CUT_CONTENT_TYPES, QUICK_MIN_VIEWER_W, quickRect, viewerPointToPage, type FragRect,
+  CUT_CONTENT_TYPES, QUICK_MIN_VIEWER_W, quickRelease, viewerPointToPage, type FragRect,
 } from '../library/pdfFragmentRect'
+import type { PdfFragmentSnap } from '../../api/library'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,8 @@ interface Props {
   canCut?: boolean
   /** Сервер саме вирізає швидкий фрагмент з цього вікна — у шапці «Вирізаю…» */
   cutting?: boolean
+  /** «Клік по задачі»: що під кліком на сторінці (сервер, текстовий шар документа) */
+  snapFn?: (pageIndex: number, point: { x: number; y: number }) => Promise<PdfFragmentSnap>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -347,12 +350,25 @@ const hoverHint = ref<'cut' | 'quick' | null>(null)
 let quickStart: { x: number; y: number } | null = null
 let quickStage: any = null
 let quickGroup: any = null
+/** Запропонована «кліком по задачі» рамка — клік усередині неї вирізає */
+const quickPending = ref<FragRect | null>(null)
+const quickSnapping = ref(false)
+/** Після кліку: нічого не знайшлося / сервер не відповів — у шапці підказка обвести рамкою */
+const quickNote = ref<'nothing' | 'failed' | null>(null)
+/** Номер останнього пошуку: вийшли з «⚡» чи клацнули знову — стара відповідь рамки не ставить */
+let snapSeq = 0
 /** Клік, що завершує рамку (Konva шле його після pointerup), — не виділяє вікно й не відкриває його сторінки */
 let swallowClick = false
 
 const headerText = computed(() => {
   if (props.cutting) return t('winterboard.pdfFragment.quickCutting')
-  if (quickMode.value) return t('winterboard.pdfFragment.quickHint')
+  if (quickMode.value) {
+    if (quickSnapping.value) return t('winterboard.pdfFragment.snapping')
+    if (quickPending.value) return t('winterboard.pdfFragment.quickPending')
+    if (quickNote.value === 'nothing') return t('winterboard.pdfFragment.quickNothing')
+    if (quickNote.value === 'failed') return t('winterboard.pdfFragment.quickSnapFailed')
+    return t('winterboard.pdfFragment.quickHint')
+  }
   if (hoverHint.value === 'cut') return t('winterboard.pdfFragment.title')
   if (hoverHint.value === 'quick') return t('winterboard.pdfFragment.quick')
   return documentHeaderText(props.asset, t)
@@ -424,6 +440,8 @@ function onKeyQuick(e: KeyboardEvent): void {
 function enterQuick(stage: any): void {
   quickMode.value = true
   quickSel.value = null
+  quickPending.value = null
+  quickNote.value = null
   quickStage = stage
   const container = stage?.container?.()
   if (container) container.style.cursor = 'crosshair'
@@ -440,6 +458,10 @@ function exitQuick(): void {
   stopQuickDrag()
   quickMode.value = false
   quickSel.value = null
+  quickPending.value = null
+  quickSnapping.value = false
+  quickNote.value = null
+  snapSeq++
   const container = quickStage?.container?.()
   if (container) container.style.cursor = ''
   quickStage = null
@@ -448,7 +470,7 @@ function exitQuick(): void {
 
 function onQuickDown(e: any): void {
   swallowClick = false
-  if (!quickMode.value) return
+  if (!quickMode.value || quickSnapping.value) return
   const stage = e.target?.getStage?.()
   const group = e.currentTarget
   const p = localPoint(stage, group)
@@ -456,6 +478,7 @@ function onQuickDown(e: any): void {
   // Лише по сторінці: шапка й футер (там ⚡, ◀ ▶) працюють як завжди
   if (!inPageArea(p)) return
   e.cancelBubble = true
+  quickNote.value = null
   quickGroup = group
   quickStart = viewerPointToPage(p.x, p.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H)
   quickSel.value = { x: quickStart.x, y: quickStart.y, w: 0, h: 0 }
@@ -473,12 +496,54 @@ function onQuickDown(e: any): void {
     const a = quickStart
     stopQuickDrag()
     swallowClick = true
-    if (!q || !a) { quickSel.value = null; return }
-    const rect = quickRect(a, viewerPointToPage(q.x, q.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H))
-    if (!rect) { quickSel.value = null; return } // випадковий клік — нічого не вирізаємо, режим лишається
-    emit('quickCut', props.asset, props.asset.currentPage ?? 0, rect)
-    exitQuick()
+    if (!q || !a) { quickSel.value = quickPending.value; return }
+    const end = viewerPointToPage(q.x, q.y, props.asset.w, props.asset.h, HEADER_H, FOOTER_H)
+    const next = quickRelease(a, end, quickPending.value)
+    if (next.action === 'cut') {
+      emit('quickCut', props.asset, props.asset.currentPage ?? 0, next.rect)
+      exitQuick()
+      return
+    }
+    // Клік — «знайди сам»: рамка задачі (чи абзацу / картинки) стає пропозицією; вирізає клік усередині неї
+    quickSel.value = quickPending.value
+    if (next.action === 'snap') void snapAtPoint(next.point)
   })
+}
+
+// Перегорнули сторінку в «⚡» — рамка-пропозиція була для попередньої, клік у ній вирізав би не те
+watch(() => props.asset.currentPage, () => {
+  if (!quickMode.value) return
+  quickPending.value = null
+  quickSel.value = null
+  quickNote.value = null
+})
+
+async function snapAtPoint(point: { x: number; y: number }): Promise<void> {
+  if (!props.snapFn) return
+  const page = props.asset.currentPage ?? 0
+  const seq = ++snapSeq
+  quickSnapping.value = true
+  try {
+    const res = await props.snapFn(page, point)
+    if (seq !== snapSeq || !quickMode.value || (props.asset.currentPage ?? 0) !== page) return
+    if (res.kind === 'none' || !res.rect) {
+      quickPending.value = null
+      quickSel.value = null
+      quickNote.value = 'nothing'
+      return
+    }
+    quickPending.value = { ...res.rect }
+    quickSel.value = quickPending.value
+  } catch (err) {
+    // Видимо в шапці («не вдалося знайти — обведіть рамкою»), рамкою вручну працює як і було
+    console.warn('[WB:DocViewer] snap failed', err)
+    if (seq !== snapSeq || !quickMode.value) return
+    quickPending.value = null
+    quickSel.value = null
+    quickNote.value = 'failed'
+  } finally {
+    if (seq === snapSeq) quickSnapping.value = false
+  }
 }
 
 onBeforeUnmount(exitQuick)

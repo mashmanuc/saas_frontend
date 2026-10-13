@@ -37,6 +37,31 @@ export function quickRect(a: { x: number; y: number }, b: { x: number; y: number
   return r.w >= MIN_SIDE && r.h >= MIN_SIDE ? r : null
 }
 
+/** Клік, а не риска: вказівник майже не зрушив в обидва боки (риска — випадковість, по ній не шукаємо) */
+export function isClick(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
+  return Math.abs(b.x - a.x) < MIN_SIDE && Math.abs(b.y - a.y) < MIN_SIDE
+}
+
+/**
+ * «⚡» — що робить відпускання (власник 2026-10-13: «один клік по задачі»):
+ * - протягнули рамку — вирізати її (як було);
+ * - клацнули всередині запропонованої рамки — вирізати її;
+ * - клацнули деінде — спитати сервер, що під кліком (задача, абзац, картинка);
+ * - риска (протягли лише в один бік) — нічого, як і раніше.
+ */
+export function quickRelease(
+  start: { x: number; y: number }, end: { x: number; y: number }, pending: FragRect | null,
+): { action: 'cut'; rect: FragRect } | { action: 'snap'; point: { x: number; y: number } } | { action: 'none' } {
+  const drawn = quickRect(start, end)
+  if (drawn) return { action: 'cut', rect: drawn }
+  if (!isClick(start, end)) return { action: 'none' }
+  if (pending && end.x >= pending.x && end.x <= pending.x + pending.w
+    && end.y >= pending.y && end.y <= pending.y + pending.h) {
+    return { action: 'cut', rect: pending }
+  }
+  return { action: 'snap', point: end }
+}
+
 /** Відмова сервера / мережі → ключ тексту `winterboard.pdfFragment.err.*` (один для обох вирізок). */
 export function fragmentErrorKey(err: unknown): string {
   const resp = (err as { response?: { status?: number; data?: { error?: string } } } | null)?.response

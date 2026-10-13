@@ -4,7 +4,7 @@
  * помилка — лише повідомлення, на дошці нічого.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { fragmentErrorKey, quickRect, viewerPointToPage } from '../pdfFragmentRect'
+import { fragmentErrorKey, isClick, quickRect, quickRelease, viewerPointToPage } from '../pdfFragmentRect'
 import { runQuickCut, type QuickCutDeps } from '../pdfFragmentFlow'
 
 const HEADER = 28
@@ -38,6 +38,28 @@ describe('quickRect', () => {
     expect(quickRect({ x: 0.5, y: 0.5 }, { x: 0.5, y: 0.5 })).toBeNull()
     expect(quickRect({ x: 0.5, y: 0.5 }, { x: 0.505, y: 0.9 })).toBeNull()
     expect(quickRect({ x: 0.1, y: 0.5 }, { x: 0.9, y: 0.505 })).toBeNull()
+  })
+})
+
+describe('quickRelease — «клік по задачі» у «⚡»', () => {
+  const PENDING = { x: 0.1, y: 0.3, w: 0.8, h: 0.2 }
+
+  it('протягнули рамку — вирізати її, навіть коли є запропонована', () => {
+    const r = quickRelease({ x: 0.2, y: 0.2 }, { x: 0.6, y: 0.4 }, PENDING)
+    expect(r.action).toBe('cut')
+    expect(r.action === 'cut' && r.rect.w).toBeCloseTo(0.4, 6)
+  })
+
+  it('клік — спитати сервер, що під ним; клік усередині запропонованої рамки — вирізати її', () => {
+    expect(quickRelease({ x: 0.5, y: 0.1 }, { x: 0.502, y: 0.101 }, null)).toEqual({ action: 'snap', point: { x: 0.502, y: 0.101 } })
+    expect(quickRelease({ x: 0.5, y: 0.1 }, { x: 0.5, y: 0.1 }, PENDING)).toEqual({ action: 'snap', point: { x: 0.5, y: 0.1 } })
+    expect(quickRelease({ x: 0.5, y: 0.4 }, { x: 0.5, y: 0.4 }, PENDING)).toEqual({ action: 'cut', rect: PENDING })
+  })
+
+  it('риска в один бік — не клік і не рамка: нічого', () => {
+    expect(isClick({ x: 0.5, y: 0.5 }, { x: 0.505, y: 0.9 })).toBe(false)
+    expect(quickRelease({ x: 0.5, y: 0.5 }, { x: 0.505, y: 0.9 }, null)).toEqual({ action: 'none' })
+    expect(quickRelease({ x: 0.1, y: 0.4 }, { x: 0.9, y: 0.405 }, PENDING)).toEqual({ action: 'none' })
   })
 })
 

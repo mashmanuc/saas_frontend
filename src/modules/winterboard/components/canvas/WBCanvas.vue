@@ -89,6 +89,7 @@
             @expand="handleDocViewerExpand"
             :can-cut="props.isTutor !== false && wbStore.mode === 'edit'"
             :cutting="quickCutBusy.includes(asset.id)"
+            :snap-fn="(pageIndex: number, point: { x: number; y: number }) => snapForViewer(asset, pageIndex, point)"
             @cut="openPdfFragment"
             @quick-cut="onQuickCut"
           />
@@ -1020,7 +1021,7 @@ import {
   CUT_CONTENT_TYPES, fragmentPlacement, nextStackY, sameSpot, type FragRect, type FragmentContext,
 } from '../library/pdfFragmentRect'
 import { runQuickCut } from '../library/pdfFragmentFlow'
-import { cutPdfFragment, type PdfFragmentResult } from '../../api/library'
+import { cutPdfFragment, snapPdfFragment, type PdfFragmentResult, type PdfFragmentSnap } from '../../api/library'
 import { notifyError } from '@/utils/notify'
 import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
@@ -3280,6 +3281,17 @@ function pdfFragmentSnapshot(viewerId?: string): FragmentContext {
     pageId: String(wbStore.currentPage?.id ?? ''),
     viewerId: viewerId ?? pdfFragment.value?.viewerId ?? '',
   }
+}
+
+/** «Клік по задачі» у «⚡»: що під кліком на сторінці документа (сервер, текстовий шар; нічого не створює) */
+function snapForViewer(asset: WBAsset, pageIndex: number, point: { x: number; y: number }): Promise<PdfFragmentSnap> {
+  return snapPdfFragment({
+    contentItem: Number(asset.content_ref?.content_id ?? 0),
+    page: pageIndex + 1,
+    point,
+    board: String(wbStore.workspaceId ?? ''),
+    viewer: asset.id,
+  })
 }
 
 /**

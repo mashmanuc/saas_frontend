@@ -10,11 +10,11 @@ import uk from '../../../../../i18n/locales/uk.json'
 import PdfFragmentDialog from '../PdfFragmentDialog.vue'
 import { fragmentPlacement, nextStackY, normRect, sameSpot, FRAGMENT_MIN_W } from '../pdfFragmentRect'
 
-vi.mock('../../../api/library', () => ({ cutPdfFragment: vi.fn() }))
+vi.mock('../../../api/library', () => ({ cutPdfFragment: vi.fn(), snapPdfFragment: vi.fn() }))
 vi.mock('../../../composables/useDocumentPageCache', () => ({
   getDocumentPageUrl: vi.fn(async (_id: number, _t: string, idx: number) => `/media/page_${idx + 1}.png`),
 }))
-import { cutPdfFragment } from '../../../api/library'
+import { cutPdfFragment, snapPdfFragment } from '../../../api/library'
 
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
 const M = (uk as unknown as { winterboard: { pdfFragment: Record<string, string> } }).winterboard.pdfFragment
@@ -79,6 +79,7 @@ describe('pdfFragmentRect', () => {
 describe('PdfFragmentDialog', () => {
   beforeEach(() => {
     vi.mocked(cutPdfFragment).mockReset()
+    vi.mocked(snapPdfFragment).mockReset()
     // jsdom не знає «активного» вказівника й кидає на setPointerCapture; у браузері pointerId завжди живий
     Element.prototype.setPointerCapture = vi.fn()
     // jsdom не має розкладки: підкладка рамки (будь-який її примірник) — 600×800 від (100, 50)
@@ -139,6 +140,47 @@ describe('PdfFragmentDialog', () => {
     expect(w.find('[data-testid="pdf-fragment-add"]').attributes('disabled')).toBeDefined()
     await w.find('[data-testid="pdf-fragment-add"]').trigger('click')
     expect(cutPdfFragment).not.toHaveBeenCalled()
+    expect(snapPdfFragment).not.toHaveBeenCalled() // риска — не клік, задачу не шукаємо
+    w.unmount()
+  })
+
+  it('клік по задачі → рамка задачі з ручками, «Задача 13», «Додати» ввімкнено', async () => {
+    vi.mocked(snapPdfFragment).mockResolvedValueOnce({ kind: 'task', number: 13, rect: { x: 0.05, y: 0.25, w: 0.9, h: 0.2 } })
+    const { w, overlay } = await dialog()
+    await drag(overlay, 0.3, 0.4, 0.3, 0.4)
+    expect(vi.mocked(snapPdfFragment)).toHaveBeenCalledTimes(1)
+    const args = vi.mocked(snapPdfFragment).mock.calls[0][0]
+    expect(args).toMatchObject({ contentItem: 5, page: 4, board: 'board-1', viewer: 'docviewer-1' })
+    expect(args.point.x).toBeCloseTo(0.3, 5)
+    expect(args.point.y).toBeCloseTo(0.4, 5)
+    const style = (w.find('[data-testid="pdf-fragment-rect"]').element as HTMLElement).style
+    expect(parseFloat(style.top)).toBeCloseTo(25, 3)
+    expect(parseFloat(style.height)).toBeCloseTo(20, 3)
+    expect(w.findAll('.wb-frag__handle').length).toBeGreaterThan(0)
+    expect(w.find('[data-testid="pdf-fragment-msg"]').text()).toBe(fill(M.snapTask, { n: 13 }))
+    expect(w.find('[data-testid="pdf-fragment-add"]').attributes('disabled')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('не задача й не текст (скан, порожнє поле) — рамки немає, підказка обвести вручну', async () => {
+    vi.mocked(snapPdfFragment).mockResolvedValueOnce({ kind: 'none' })
+    const { w, overlay } = await dialog()
+    await drag(overlay, 0.9, 0.95, 0.9, 0.95)
+    expect(w.find('[data-testid="pdf-fragment-rect"]').exists()).toBe(false)
+    expect(w.find('[data-testid="pdf-fragment-msg"]').text()).toBe(M.snapNone)
+    w.unmount()
+  })
+
+  it('поки шукали задачу, перегорнули сторінку — стара відповідь рамки не ставить', async () => {
+    let resolve!: (v: unknown) => void
+    vi.mocked(snapPdfFragment).mockReturnValueOnce(new Promise(r => { resolve = r }) as never)
+    const { w, overlay } = await dialog()
+    await drag(overlay, 0.3, 0.4, 0.3, 0.4)
+    await w.find('[data-testid="pdf-fragment-next"]').trigger('click')
+    resolve({ kind: 'task', number: 13, rect: { x: 0.05, y: 0.25, w: 0.9, h: 0.2 } })
+    await flushPromises()
+    expect(w.find('[data-testid="pdf-fragment-page"]').text()).toBe(fill(M.page, { n: 5, total: 11 }))
+    expect(w.find('[data-testid="pdf-fragment-rect"]').exists()).toBe(false)
     w.unmount()
   })
 

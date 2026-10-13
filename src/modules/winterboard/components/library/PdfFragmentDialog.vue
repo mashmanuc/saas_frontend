@@ -36,7 +36,7 @@
             @pointerdown="onDown"
             @pointermove="onMove"
             @pointerup="onUp"
-            @pointercancel="onUp"
+            @pointercancel="onUp()"
           >
             <template v-if="rect">
               <div class="wb-frag__shade" :style="shadeStyle" />
@@ -68,9 +68,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cutPdfFragment, type PdfFragmentResult } from '../../api/library'
+import { cutPdfFragment, snapPdfFragment, type PdfFragmentResult } from '../../api/library'
 import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
-import { MIN_SIDE, fragmentErrorKey, normRect, type FragRect, type FragmentContext } from './pdfFragmentRect'
+import { MIN_SIDE, fragmentErrorKey, isClick, normRect, type FragRect, type FragmentContext } from './pdfFragmentRect'
 
 export type { FragmentContext }
 
@@ -190,7 +190,46 @@ function onMove(e: PointerEvent): void {
   }
 }
 
-function onUp(): void { drag = null }
+function onUp(e?: PointerEvent): void {
+  const was = drag
+  drag = null
+  // Клік без рамки — «знайди сам»: задача (чи абзац / картинка) під кліком стає рамкою з ручками
+  if (was?.mode === 'new' && rect.value && isClick({ x: 0, y: 0 }, { x: rect.value.w, y: rect.value.h })) {
+    const p = e ? point(e) : null
+    rect.value = null
+    if (p) void snapAt(p)
+  }
+}
+
+const snapping = ref(false)
+
+async function snapAt(p: { x: number; y: number }): Promise<void> {
+  if (phase.value === 'working' || snapping.value) return
+  const ctx = props.snapshot()
+  const page = pageIdx.value
+  snapping.value = true
+  say(t('winterboard.pdfFragment.snapping'))
+  try {
+    const res = await snapPdfFragment({
+      contentItem: props.contentItemId, page: page + 1, point: p, board: ctx.boardId, viewer: props.viewerId,
+    })
+    // Поки шукали, перегорнули сторінку чи обвели рамку вручну — їхнє важливіше
+    if (pageIdx.value !== page) return
+    if (rect.value) { say(''); return }
+    if (res.kind === 'none' || !res.rect) {
+      say(t('winterboard.pdfFragment.snapNone'))
+      return
+    }
+    rect.value = { ...res.rect }
+    say(res.kind === 'task' && res.number
+      ? t('winterboard.pdfFragment.snapTask', { n: res.number })
+      : t('winterboard.pdfFragment.snapBlock'))
+  } catch (err) {
+    say(t('winterboard.pdfFragment.snapFailed', { reason: errorText(err) }), 'problem')
+  } finally {
+    snapping.value = false
+  }
+}
 
 // ─── Додати на дошку ─────────────────────────────────────────────────────────
 

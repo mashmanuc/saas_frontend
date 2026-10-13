@@ -90,6 +90,27 @@ export async function cutPdfFragment(args: {
   })
 }
 
+/** «Клік по задачі»: що під кліком на сторінці — задача, абзац чи картинка (рамка в частках сторінки) або нічого. */
+export interface PdfFragmentSnap {
+  kind: 'task' | 'block' | 'none'
+  rect?: { x: number; y: number; w: number; h: number }
+  /** Номер задачі, якщо знайдено задачу */
+  number?: number
+}
+
+/** «Клік по задачі» (2026-10-13): межі з текстового шару документа на сервері, без ШІ. Нічого не створює. */
+export async function snapPdfFragment(args: {
+  contentItem: number
+  page: number
+  point: { x: number; y: number }
+  board: string
+  viewer: string
+}): Promise<PdfFragmentSnap> {
+  return apiClient.post<PdfFragmentSnap>(`${BASE}/pdf-fragment/snap/`, {
+    content_item: args.contentItem, page: args.page, point: args.point, board: args.board, viewer: args.viewer,
+  })
+}
+
 /** «Прибрати зайві» в теці «🪞 Дзеркало» чи групі: `dryRun` лише рахує, інакше незадіяні — в Архів. */
 export async function mirrorCleanup(folderId: number, dryRun: boolean): Promise<MirrorCleanupResult> {
   return apiClient.post<MirrorCleanupResult>(
