@@ -87,8 +87,6 @@ import winterboardRoutes, { winterboardSessionListRoute, winterboardPageRoutes }
 // >>> TLV2-01: Teacher Lesson V2 — ізольований модуль; доступ вирішує бекенд (404 → V1)
 import { teacherLessonV2Routes } from '../modules/teacher-lesson-v2/routes'
 // <<< TLV2-01
-// Local Workspace (ТЗ Точка 3): неавторизований корінь / → одразу робочий стіл
-import { isLocalWorkspaceEnabled } from '../modules/winterboard/config/featureFlags'
 // DEV-only лабораторії (V-D3): у production-збірці масив порожній, маршруту не існує
 import { devOnlyRoutes } from '../modules/dev/devRoutes'
 
@@ -1185,13 +1183,13 @@ router.beforeEach(async (to, from, next) => {
     if (isAuthRoute || isInviteRoute || isStartRoute) {
       return next()
     }
-    // Local Workspace (ТЗ Точка 3, 2026-07-16): неавторизований корінь `/` веде
-    // ОДРАЗУ на робочий стіл `/workspace` (не на лендінг `/start`). Лендінг і
-    // логін лишаються доступні окремими кнопками ([Підключити хмару] → /start →
-    // «Увійти»), але не як обов'язковий перший крок. Гейт — той самий флаг фічі.
-    // Лише корінь: інші protected-роути неавторизованого досі ведуть на /start.
-    if (to.path === '/' && isLocalWorkspaceEnabled()) {
-      return next('/workspace')
+    // Корінь `/` для гостя — ЛЕНДІНГ `/start` (власник 2026-10-13: «зробити перенаправлення зразу на
+    // лендінг, а не показувати цю дошку… вона відлякує»; «якщо попробує без реєстрації, вона не оцінить
+    // всю потужність проекту»). Дані 01–13.10: з першою сторінкою /workspace реєстрацію відкрили 0 з 15
+    // гостей, з /start — 1 з 12. До цього (ТЗ Точка 3, 2026-07-16) корінь вів одразу на `/workspace`.
+    // Сам `/workspace` лишається за прямим посиланням (збережена робота гостей не губиться).
+    if (to.path === '/') {
+      return next('/start')
     }
     // Deep-link з QR/посилання на власний інструмент (пульт на телефон,
     // 2026-09-02): людина вже клієнт, їй потрібен ЛОГІН, а не лендінг.
