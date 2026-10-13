@@ -1824,12 +1824,18 @@ export function sceneExtras(a) {
     const conds = Array.isArray(d.conditions) ? d.conditions : []
     const intervals = d.mode === 'intervals'
     if (!intervals && !conds.length) return out
-    const ev = evaluateNumberLine(intervals
+    // Дані з дошки не гарантовані: зламана пряма не має валити опис усієї сцени (рев'ю 2026-10-13, п. 4).
+    let ev
+    try {
+      ev = evaluateNumberLine(intervals
       ? { version: 1, mode: 'intervals', variable: d.variable || 'x', conditions: [], combine: 'and',
           expression: d.expression, rhs: d.rhs, op: d.op, points: d.points, signs: d.signs,
           showAnswer: true, showHatching: true }
       : { version: 1, mode: 'set', variable: d.variable || 'x', conditions: conds,
           combine: d.combine === 'or' ? 'or' : 'and', showAnswer: true, showHatching: true })
+    } catch {
+      return out
+    }
     if (ev.ok) {
       out.answer = ev.answer.kind === 'empty' ? 'розвʼязків немає (∅)' : ev.answer.text
       // Метод інтервалів: знаки на проміжках — щоб Інтегралик міг пояснити, звідки відповідь.

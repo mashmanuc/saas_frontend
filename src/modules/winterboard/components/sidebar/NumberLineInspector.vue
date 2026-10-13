@@ -56,6 +56,7 @@
           :data-testid="`number-line-input-${i}`"
           spellcheck="false"
           autocomplete="off"
+          maxlength="200"
           @input="b.setLine(i, ($event.target as HTMLInputElement).value)"
           @keydown="onKeydown($event, i)"
           @focus="focused = i"
@@ -142,6 +143,7 @@
           data-testid="number-line-expression"
           spellcheck="false"
           autocomplete="off"
+          maxlength="200"
           @input="b.setExpressionLine(($event.target as HTMLInputElement).value)"
           @keydown="onExprKeydown"
         />
@@ -170,6 +172,7 @@
             data-testid="number-line-points"
             spellcheck="false"
             autocomplete="off"
+          maxlength="200"
             @input="b.setPointsText(($event.target as HTMLInputElement).value)"
             @keydown="onExprKeydown"
           />

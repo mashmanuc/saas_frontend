@@ -515,6 +515,10 @@ const ERROR_KEYS: Record<NumberLineError['code'], string> = {
   duplicate_point: 'duplicatePoint',
   signs_count: 'signsCount',
   no_points: 'noPoints',
+  ambiguous_denominator: 'ambiguousDenominator',
+  too_large: 'tooLarge',
+  too_long: 'tooLong',
+  too_deep: 'tooDeep',
 }
 
 function errorFor(i: number): string {

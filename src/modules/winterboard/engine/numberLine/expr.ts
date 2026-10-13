@@ -25,6 +25,7 @@ import {
   negReal,
   real,
   RootSumError,
+  TooLargeError,
   type Real,
 } from './real'
 import type { NumberLineError, NumberLineOp } from './types'
@@ -187,12 +188,33 @@ const OPS: Array<[string, NumberLineOp]> = [
 
 const SUPERSCRIPT: Record<string, string> = { '²': '2', '³': '3', '⁴': '4' }
 
+/** Найдовший рядок вводу (і поле на дошці, і Інтегралик). */
+export const MAX_INPUT = 200
+/** Найглибша вкладеність дужок (рекурсивний спуск не має впиратися в стек). */
+export const MAX_DEPTH = 20
+
+/**
+ * Кирилична «х» з української розкладки виглядає як латинська x — учитель різниці
+ * не бачить, тож читаємо її як x (рев'ю 2026-10-13, п. 5).
+ */
+export function normalizeInput(line: string): string {
+  return line.replace(/[хХ]/g, 'x')
+}
+
 export function tokenize(line: string): Tok[] {
+  if (line.length > MAX_INPUT) fail(MAX_INPUT, 'too_long', { max: String(MAX_INPUT) })
   const toks: Tok[] = []
   let i = 0
+  let depth = 0
   while (i < line.length) {
     const ch = line[i]
     if (/\s/.test(ch)) { i++; continue }
+    if (ch === '(') {
+      depth++
+      if (depth > MAX_DEPTH) fail(i, 'too_deep', { max: String(MAX_DEPTH) })
+    } else if (ch === ')') {
+      depth--
+    }
     const op = OPS.find(([p]) => line.startsWith(p, i))
     if (op) {
       toks.push({ kind: 'op', op: op[1], start: i })
@@ -267,20 +289,28 @@ export function parseExpr(toks: Tok[], from: number, to: number, endIndex: numbe
 
   const term = (): Factored => {
     let acc = unary()
+    // Щойно поділили на вираз зі змінною: `(x-1)/(x-2)(x+3)` — учитель міг мати на увазі
+    // знаменник (x-2)(x+3), а читаємо (x-1)/(x-2)·(x+3). Мовчки не вгадуємо — просимо дужки
+    // (рев'ю 2026-10-13, блокер 1). `1/2(x+1)` і `2/3x` — ділення на число, їх не чіпаємо.
+    let afterVarDivision = false
     for (;;) {
       const t = peek()
       if (!t) return acc
       if (t.kind === 'sym' && t.ch === '*') {
         pos++
         acc = fMul(acc, unary(), t.start)
+        afterVarDivision = false
       } else if (t.kind === 'sym' && t.ch === '/') {
         pos++
-        acc = fDiv(acc, unary(), t.start)
+        const divisor = unary()
+        acc = fDiv(acc, divisor, t.start)
+        afterVarDivision = divisor.factors.length > 0
       } else if (
         t.kind === 'var' ||
         (t.kind === 'sym' && t.ch === '(') ||
         (t.kind === 'num' && (t.root || prevIsCloser()))
       ) {
+        if (afterVarDivision) fail(t.start, 'ambiguous_denominator')
         // Неявне множення: 2x, 3(x − 1), (x + 1)(x − 2), 2√3, (x + 1)2.
         acc = fMul(acc, power(), t.start)
       } else {
@@ -353,9 +383,16 @@ export function parseExpr(toks: Tok[], from: number, to: number, endIndex: numbe
     }
     return v
   } catch (e) {
-    if (e instanceof RootSumError) fail(from < toks.length ? toks[from].start : endIndex, 'root_sum')
-    throw e
+    rethrowAsExpr(e, from < toks.length ? toks[from].start : endIndex)
   }
+}
+
+/** Помилки точної арифметики → помилка словами з місцем. */
+export function rethrowAsExpr(e: unknown, at: number): never {
+  if (e instanceof RootSumError) fail(at, 'root_sum')
+  if (e instanceof TooLargeError) fail(at, 'too_large')
+  if (e instanceof RangeError) fail(at, 'too_deep', { max: String(MAX_DEPTH) })
+  throw e
 }
 
 /** Індекси знаків порівняння в рядку. */
@@ -368,7 +405,7 @@ export function guardRoots<T>(at: number, fn: () => T): T {
   try {
     return fn()
   } catch (e) {
-    if (e instanceof RootSumError) fail(at, 'root_sum')
-    throw e
+    if (e instanceof ExprError) throw e
+    rethrowAsExpr(e, at)
   }
 }

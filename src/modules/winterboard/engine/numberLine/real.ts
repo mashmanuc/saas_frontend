@@ -21,17 +21,55 @@ export class RootSumError extends Error {
   }
 }
 
+/** Підкореневе завелике, щоб точно звести його без квадратів за мить (рев'ю 2026-10-13, п. 3). */
+export class TooLargeError extends Error {
+  constructor() {
+    super('too_large')
+  }
+}
+
+/** Пробне ділення лише до B; решту перевіряємо як повний квадрат. */
+const TRIAL_LIMIT = 100_000n
+
+/** Цілий корінь (Ньютон): найбільше r з r² ≤ n. */
+export function isqrt(n: bigint): bigint {
+  if (n < 2n) return n
+  // Стартуємо згори (2^⌈біти/2⌉ ≥ √n) — Ньютон спадає до ⌊√n⌋; Number тут не годиться (Infinity).
+  let x = 1n << BigInt(Math.ceil(n.toString(2).length / 2))
+  for (;;) {
+    const y = (x + n / x) / 2n
+    if (y >= x) break
+    x = y
+  }
+  while ((x + 1n) * (x + 1n) <= n) x++
+  return x
+}
+
 const ONE_Q = rational(1n)
 
-/** n = s²·m, m без квадратів → [s, m]. */
+/**
+ * n = s²·m, m без квадратів → [s, m]. Пробне ділення лише до B = 10⁵ (миттєво), далі:
+ * залишок m — або повний квадрат, або (при m < B³) точно без квадратів — у ньому щонайбільше
+ * два прості множники > B, і квадрат одного з них — це сам m. Більший залишок не беремося
+ * звести точно — TooLargeError (відмова словами), а не хвилина розкладу у вкладці.
+ */
 function extractSquares(n: bigint): [bigint, bigint] {
   let s = 1n
   let m = n
-  for (let p = 2n; p * p <= m; p += p === 2n ? 1n : 2n) {
+  // rest — частина n без жодного малого простого множника (лише прості > B).
+  let rest = n
+  for (let p = 2n; p <= TRIAL_LIMIT && p * p <= rest; p += p === 2n ? 1n : 2n) {
     while (m % (p * p) === 0n) {
       m /= p * p
       s *= p
     }
+    while (rest % p === 0n) rest /= p
+  }
+  if (rest > TRIAL_LIMIT * TRIAL_LIMIT) {
+    const r = isqrt(rest)
+    // rest < B³: щонайбільше два прості > B, тож квадрат у ньому — лише rest = p².
+    if (r * r === rest) return [s * r, m / rest]
+    if (rest >= TRIAL_LIMIT * TRIAL_LIMIT * TRIAL_LIMIT) throw new TooLargeError()
   }
   return [s, m]
 }

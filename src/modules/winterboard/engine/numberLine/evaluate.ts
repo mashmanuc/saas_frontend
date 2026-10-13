@@ -101,6 +101,8 @@ function resolve(c: NumberLineCondition, canon: (raw: string, line: number) => P
       set: [iv(null, false, p, false), iv(p, false, null, false)],
       bounds: [{ point: p, included: false }],
     }
+    // Невідомий знак у збережених даних — помилка словами, а не TypeError (рев'ю 2026-10-13, п. 4).
+    default: return { line, index: 0, code: 'expect_op' }
   }
 }
 
@@ -135,8 +137,10 @@ export function formatAnswer(set: NumberSet, variable: string): NumberLineAnswer
 
 const MARGIN = 0.18
 
-export function evaluate(data: NumberLineData): NumberLineEvaluation {
-  if (data.mode === 'intervals') return evaluateIntervals(data)
+export function evaluate(input: NumberLineData): NumberLineEvaluation {
+  if (input.mode === 'intervals') return evaluateIntervals(input)
+  // Дані з дошки / від Інтегралика — форму не гарантовано.
+  const data = Array.isArray(input.conditions) ? input : { ...input, conditions: [] }
   const errors: NumberLineError[] = []
   if (data.conditions.length > NUMBER_LINE_MAX_CONDITIONS) {
     return { ok: false, errors: [{ line: NUMBER_LINE_MAX_CONDITIONS, index: 0, code: 'too_many_conditions', params: { max: String(NUMBER_LINE_MAX_CONDITIONS) } }] }
@@ -156,6 +160,10 @@ export function evaluate(data: NumberLineData): NumberLineEvaluation {
 
   const resolved: ResolvedCondition[] = []
   data.conditions.forEach((c, line) => {
+    if (!c || typeof c !== 'object') {
+      errors.push({ line, index: 0, code: 'bad_number', params: { text: String(c) } })
+      return
+    }
     const r = resolve(c, canon, line)
     if ('code' in r) errors.push(r)
     else resolved.push(r)

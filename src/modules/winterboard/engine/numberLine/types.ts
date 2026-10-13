@@ -110,6 +110,10 @@ export interface NumberLineError {
     | 'duplicate_point'
     | 'signs_count'
     | 'no_points'
+    | 'ambiguous_denominator'
+    | 'too_large'
+    | 'too_long'
+    | 'too_deep'
     | 'unbalanced_paren'
   params?: Record<string, string>
 }

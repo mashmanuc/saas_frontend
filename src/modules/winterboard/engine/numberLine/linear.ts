@@ -19,6 +19,7 @@ import {
   opIndexes,
   parseExpr,
   R0,
+  rethrowAsExpr,
   tokenize,
   type ErrorWithoutLine,
   type Tok,
@@ -192,7 +193,11 @@ export function parseLinear(line: string): LinearResult {
       variable,
       condition: { from: label(lo), fromIncluded: loIncl, to: label(hi), toIncluded: hiIncl, source },
     }
-  } catch (e) {
+  } catch (raw) {
+    let e: unknown = raw
+    if (!(e instanceof ExprError)) {
+      try { rethrowAsExpr(e, 0) } catch (mapped) { e = mapped }
+    }
     if (e instanceof ExprError) {
       const variable = /[a-zA-Z]/.exec(line.replace(/sqrt/gi, ''))?.[0] ?? 'x'
       // Дріб зі змінною в знаменнику в лінійній нерівності — теж «не лінійна».

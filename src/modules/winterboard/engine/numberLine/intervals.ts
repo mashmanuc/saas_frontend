@@ -39,8 +39,10 @@ import {
   guardRoots,
   hasDenominator,
   opIndexes,
+  normalizeInput,
   parseExpr,
   R0,
+  rethrowAsExpr,
   tokenize,
   type ErrorWithoutLine,
   type Factored,
@@ -60,7 +62,8 @@ export type ParsedIntervalsLine =
 const INTERVAL_OPS: ReadonlySet<NumberLineOp> = new Set(['<', '<=', '>', '>='])
 
 /** `(x-1)(x+3)/(x-2) ≥ 0` → вираз, знак, права частина. Перевіряє все, що перевіряє рушій. */
-export function parseIntervalsLine(line: string): ParsedIntervalsLine {
+export function parseIntervalsLine(raw: string): ParsedIntervalsLine {
+  const line = normalizeInput(raw)
   try {
     const toks = tokenize(line)
     const ops = opIndexes(toks)
@@ -73,11 +76,24 @@ export function parseIntervalsLine(line: string): ParsedIntervalsLine {
     const expression = line.slice(0, opTok.start).trim()
     const after = toks[k + 1]?.start ?? line.length
     const rhs = line.slice(after).trim()
+    // `(x-1)(x+3) ≥` — без правої частини мовчки не дописуємо 0 (рев'ю 2026-10-13, п. 6).
+    if (!rhs) fail(line.length, 'expect_number_after', { op: OP_SHOW[opTok.op] })
     const a = analyze(expression, rhs)
-    return { ok: true, expression, rhs: rhs || '0', op: opTok.op as IntervalsOp, variable: a.variable }
+    return { ok: true, expression, rhs, op: opTok.op as IntervalsOp, variable: a.variable }
   } catch (e) {
-    if (e instanceof ExprError) return { ok: false, error: e.payload }
-    throw e
+    return { ok: false, error: toPayload(e) }
+  }
+}
+
+const OP_SHOW: Partial<Record<NumberLineOp, string>> = { '<': '<', '<=': '≤', '>': '>', '>=': '≥' }
+
+function toPayload(e: unknown): ErrorWithoutLine {
+  if (e instanceof ExprError) return e.payload
+  try {
+    rethrowAsExpr(e, 0)
+  } catch (mapped) {
+    if (mapped instanceof ExprError) return mapped.payload
+    throw mapped
   }
 }
 
@@ -370,15 +386,24 @@ export function solveManual(points: IntervalsPoint[], signs: Array<'+' | '-'>, o
 
 /** Розвʼязати дані режиму 'intervals' — для evaluate(). */
 export function solveIntervals(data: NumberLineData): IntervalsResult | { errors: NumberLineError[] } {
+  // Дані з дошки / від Інтегралика — не довіряємо формі (рев'ю 2026-10-13, п. 4).
   const op = data.op ?? '>'
-  if (data.expression !== undefined && data.expression.trim()) {
+  if (!INTERVAL_OPS.has(op)) return { errors: [{ line: 0, index: 0, code: 'not_inequality' }] }
+  if (typeof data.expression === 'string' && data.expression.trim()) {
     try {
-      return solveExpression(data.expression, data.rhs ?? '0', op)
+      return solveExpression(normalizeInput(data.expression), normalizeInput(String(data.rhs ?? '0')), op)
     } catch (e) {
-      if (e instanceof ExprError) return { errors: [{ ...e.payload, line: 0 }] }
-      throw e
+      return { errors: [{ ...toPayload(e), line: 0 }] }
     }
   }
-  return solveManual(data.points ?? [], data.signs ?? [], op, data.variable || 'x')
+  if (data.points !== undefined && !Array.isArray(data.points)) return { errors: [{ line: 0, index: 0, code: 'no_points' }] }
+  if (data.signs !== undefined && !Array.isArray(data.signs)) return { errors: [{ line: 0, index: 0, code: 'signs_count' }] }
+  const signs = (data.signs ?? []).map((x) => (x === '-' ? '-' : '+')) as Array<'+' | '-'>
+  const points = (data.points ?? []).map((p) => ({ value: String(p?.value ?? ''), included: p?.included === true }))
+  try {
+    return solveManual(points, signs, op, data.variable || 'x')
+  } catch (e) {
+    return { errors: [{ ...toPayload(e), line: 0 }] }
+  }
 }
 

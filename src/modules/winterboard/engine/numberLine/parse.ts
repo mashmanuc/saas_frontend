@@ -15,6 +15,7 @@ import type {
 } from './types'
 import { isConstCondition, isRangeCondition } from './types'
 import { parseLinear } from './linear'
+import { MAX_INPUT, normalizeInput } from './expr'
 
 type ErrorWithoutLine = Omit<NumberLineError, 'line'>
 
@@ -32,7 +33,8 @@ const MAX_RADICAND_DIGITS = 9
  * Число з тексту вчителя → точне значення. `label` — як записано (з нормалізованим мінусом).
  * Цілі, десяткові з комою чи крапкою, дроби; етап 1б — корені `a·√n` (`√12` = `2√3`).
  */
-export function parseNumber(raw: string, index = 0): ParsedNumber {
+export function parseNumber(input: string, index = 0): ParsedNumber {
+  const raw = String(input ?? '')
   const text = raw.replace(MINUS, '-').replace(/\s+/g, '')
   const bad = (): ParsedNumber => ({ ok: false, error: { index, code: 'bad_number', params: { text: raw.trim() } } })
   const zeroDiv = (): ParsedNumber => ({ ok: false, error: { index, code: 'division_by_zero', params: { text: raw.trim() } } })
@@ -142,11 +144,14 @@ function checkNumber(tok: Token): ParsedNumber {
 /** Помилки лінійного розбору, які точніші за помилку простого запису. */
 const LINEAR_FIRST: ReadonlySet<NumberLineError['code']> = new Set([
   'not_linear', 'unbalanced_paren', 'division_by_zero', 'root_sum', 'root_form',
+  'ambiguous_denominator', 'too_large', 'too_deep', 'too_long',
 ])
 
 /** Один рядок учителя → умова контракту. Простий запис — як є; інакше — лінійна нерівність. */
-export function parseLine(line: string): ParsedLine {
+export function parseLine(raw: string): ParsedLine {
+  const line = normalizeInput(raw)
   if (!line.trim()) return { ok: false, error: { index: 0, code: 'empty' } }
+  if (line.length > MAX_INPUT) return { ok: false, error: { index: MAX_INPUT, code: 'too_long', params: { max: String(MAX_INPUT) } } }
   const simple = parseSimple(line)
   if (simple.ok) return simple
   const linear = parseLinear(line)
