@@ -18,10 +18,14 @@
 
     <!-- Dropdown menu -->
     <Teleport to="body">
+      <!-- @click.stop (2026-10-13): список винесено в body, тож клік по папці доходив до document —
+           сторінка закривала меню «⋯» разом із цим компонентом ДО відповіді bulk-move, і `moved`
+           з розмонтованого компонента губився: лічильник папки лишався «(0)» до перезавантаження. -->
       <div
         v-if="isOpen"
         class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-52"
         :style="dropdownStyle"
+        @click.stop
       >
         <div class="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase">
           {{ $t('knowledge.lesson.move.selectFolder') }}

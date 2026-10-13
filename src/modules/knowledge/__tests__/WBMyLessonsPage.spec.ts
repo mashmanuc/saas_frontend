@@ -376,3 +376,32 @@ describe('WBMyLessonsPage — кнопка генерації уроку іст�
     expect(wrapper.find('select option[value="i"]').exists()).toBe(true)
   })
 })
+
+// Папки (2026-10-13): видно, що відкрито, і «Всі уроки (N)» — усі уроки, а не кількість у відкритій папці.
+describe('WBMyLessonsPage — відкрита папка', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.mocked(lessonSaveApi.getFolders).mockResolvedValue([])
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue({ sessions: [], has_more: false, total: 0 } as never)
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockImplementation(async (params: { folder?: string } = {}) => (
+      params.folder
+        ? { lessons: [MOCK_LESSONS[0]], total: 1, has_more: false }
+        : { lessons: MOCK_LESSONS, total: 7, has_more: false }
+    ) as never)
+  })
+
+  it('над уроками — назва відкритої папки й кількість; «Всі уроки» лишаються загальною кількістю', async () => {
+    const wrapper = createWrapper()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="folder-heading"]').exists()).toBe(false)     // «Всі уроки» — без заголовка
+    expect(wrapper.find('.stub-folders').attributes('total-count')).toBe('7')
+
+    ;(wrapper.vm as unknown as { onFolderSelect: (id: string) => void }).onFolderSelect('root')
+    await flushPromises()
+    const heading = wrapper.find('[data-testid="folder-heading"]')
+    expect(heading.text()).toContain('knowledge.folder.unfiled')
+    expect(heading.text()).toContain('knowledge.folder.count')
+    expect(wrapper.find('.stub-folders').attributes('total-count')).toBe('7')        // не 1 з відкритої папки
+  })
+})

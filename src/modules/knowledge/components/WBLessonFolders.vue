@@ -43,7 +43,8 @@
         <button
           type="button"
           class="w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors"
-          :class="activeFolder === null ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'"
+          :aria-current="activeFolder === null ? 'true' : undefined"
+          :class="activeFolder === null ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50'"
           @click="selectFolder(null)"
         >
           {{ $t('knowledge.folder.allLessons') }}
@@ -56,7 +57,8 @@
         <button
           type="button"
           class="w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors"
-          :class="activeFolder === 'root' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'"
+          :aria-current="activeFolder === 'root' ? 'true' : undefined"
+          :class="activeFolder === 'root' ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50'"
           @click="selectFolder('root')"
         >
           {{ $t('knowledge.folder.unfiled') }}
@@ -84,7 +86,8 @@
             v-else
             type="button"
             class="flex-1 text-left px-2 py-1.5 text-sm rounded-lg transition-colors truncate"
-            :class="activeFolder === f0.id ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'"
+            :aria-current="activeFolder === f0.id ? 'true' : undefined"
+            :class="activeFolder === f0.id ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50'"
             @click="selectFolder(f0.id)"
             @dblclick.prevent="startRename(f0)"
             :title="f0.name"
@@ -148,7 +151,8 @@
                 v-else
                 type="button"
                 class="flex-1 text-left px-2 py-1 text-sm rounded-lg transition-colors truncate"
-                :class="activeFolder === f1.id ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-600 hover:bg-gray-50'"
+                :aria-current="activeFolder === f1.id ? 'true' : undefined"
+                :class="activeFolder === f1.id ? 'wb-folder--active' : 'text-gray-600 hover:bg-gray-50'"
                 @click="selectFolder(f1.id)"
                 @dblclick.prevent="startRename(f1)"
                 :title="f1.name"
@@ -211,7 +215,8 @@
                     v-else
                     type="button"
                     class="flex-1 text-left px-2 py-1 text-xs rounded-lg transition-colors truncate"
-                    :class="activeFolder === f2.id ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-500 hover:bg-gray-50'"
+                    :aria-current="activeFolder === f2.id ? 'true' : undefined"
+                    :class="activeFolder === f2.id ? 'wb-folder--active' : 'text-gray-500 hover:bg-gray-50'"
                     @click="selectFolder(f2.id)"
                     @dblclick.prevent="startRename(f2)"
                     :title="f2.name"
@@ -385,5 +390,16 @@ async function handleDeleteFolder(folder: LessonFolder) {
   }
 }
 
-defineExpose({ loadFolders })
+defineExpose({ loadFolders, folders })
 </script>
+
+<style scoped>
+/* Відкрита папка (2026-10-13): раніше стояли bg-primary-50/text-primary-700, яких у темі немає — вибір
+   був невидимий. Токени теми — ті самі, що «вибране» в решті застосунку; працюють у світлій/темній/класичній. */
+.wb-folder--active {
+  background: var(--color-accent-soft, rgba(21, 128, 61, 0.1));
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+</style>

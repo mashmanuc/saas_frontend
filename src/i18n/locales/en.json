@@ -11437,7 +11437,8 @@
       "delete": "Delete folder",
       "deleteConfirm": "Delete folder \"{name}\"? Lessons will be moved to root.",
       "rename": "Rename",
-      "renaming": "Renaming..."
+      "renaming": "Renaming...",
+      "count": "lessons: {n}"
     },
     "publish": {
       "title": "Publish lesson",

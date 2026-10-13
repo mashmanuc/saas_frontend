@@ -125,13 +125,19 @@
         ref="folderSidebar"
         :class="mobileFoldersOpen ? '' : 'hidden md:block'"
         :active-folder="activeFolder"
-        :total-count="total"
+        :total-count="allTotal ?? total"
         @select="onFolderSelect"
         @changed="onFoldersChanged"
       />
 
       <!-- Content area -->
       <div class="flex-1 min-w-0">
+        <!-- Відкрита папка (2026-10-13): раніше не було видно, що саме відкрито -->
+        <div v-if="activeFolderLabel !== null" class="mb-3 flex items-center gap-2 text-sm" data-testid="folder-heading">
+          <span aria-hidden="true">📁</span>
+          <span class="font-semibold text-gray-800 truncate">{{ activeFolderLabel }}</span>
+          <span v-if="!isLoading" class="text-gray-500 shrink-0">· {{ $t('knowledge.folder.count', { n: total }) }}</span>
+        </div>
         <!-- Loading skeleton (Phase 26 D1) -->
         <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -909,6 +915,28 @@ const activeFolder = ref<string | null>(null)
 const mobileFoldersOpen = ref(false)
 const activeStatus = ref<string | null>(null)
 const total = ref(0)
+// «Всі уроки (N)» — усі уроки вчителя, а не кількість у відкритій папці чи пошуку (2026-10-13).
+const allTotal = ref<number | null>(null)
+const activeFolderLabel = computed<string | null>(() => {
+  if (activeFolder.value === null) return null
+  if (activeFolder.value === 'root') return t('knowledge.folder.unfiled')
+  const folders = (folderSidebar.value?.folders ?? []) as Array<{ id: string; name: string }>
+  return folders.find(f => f.id === activeFolder.value)?.name ?? ''
+})
+
+async function refreshAllTotal(): Promise<void> {
+  try {
+    allTotal.value = (await lessonSaveApi.getMyLessonsFiltered({ limit: 1, offset: 0 })).total
+  } catch (err) {
+    console.error('[WBMyLessonsPage] all-lessons count failed', err)   // лишається попереднє число
+  }
+}
+
+// Урок видалено: загальна кількість і лічильник його папки змінились.
+function onLessonsRemoved(count: number): void {
+  if (allTotal.value !== null) allTotal.value = Math.max(0, allTotal.value - count)
+  folderSidebar.value?.loadFolders()
+}
 const hasMore = ref(false)
 const folderSidebar = ref<InstanceType<typeof WBLessonFolders> | null>(null)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -980,6 +1008,7 @@ async function handleTemplateBulkDelete(): Promise<void> {
     lessons.value = lessons.value.filter(l => !idsToDelete.includes(l.id))
     total.value = Math.max(0, total.value - idsToDelete.length)
     hasMore.value = lessons.value.length < total.value
+    onLessonsRemoved(idsToDelete.length)
     templateSelectedIds.value = []
     showTemplateBulkDeleteConfirm.value = false
     notify.success(t('knowledge.lesson.bulkDelete.success', { n: idsToDelete.length }))
@@ -1242,6 +1271,11 @@ async function loadLessons(append = false) {
       lessons.value = result.lessons
     }
     total.value = result.total
+    if (!params.q && !params.folder && !params.status) {
+      allTotal.value = result.total
+    } else {
+      void refreshAllTotal()
+    }
     hasMore.value = result.has_more
   } catch (err) {
     console.error('[WBMyLessonsPage] fetch error:', err)
@@ -1400,6 +1434,7 @@ async function executeDelete(): Promise<void> {
     lessons.value = lessons.value.filter(l => l.id !== id)
     total.value = Math.max(0, total.value - 1)
     hasMore.value = lessons.value.length < total.value
+    onLessonsRemoved(1)
     deleteTarget.value = null
   } catch (err) {
     console.error('[WBMyLessonsPage] Delete failed:', err)
@@ -1472,10 +1507,13 @@ async function openConstructor(lesson: MyLesson): Promise<void> {
 
 // ── Phase 25: Move to folder (BUG-4) ────────────────────────────────
 function onLessonMoved(lesson: MyLesson, folderId: string | null): void {
+  closeLessonMenu()          // меню «⋯» закриваємо ПІСЛЯ перенесення, а не кліком, що загубив би `moved`
   lesson.folder = folderId
   folderSidebar.value?.loadFolders()
-  // If filtering by folder and lesson moved out — remove from view
-  if (activeFolder.value && activeFolder.value !== folderId && activeFolder.value !== 'root') {
+  // Урок вийшов із відкритого списку — прибрати з екрана (і з «Без папки», коли його поклали в папку)
+  const stillHere = activeFolder.value === null
+    || (activeFolder.value === 'root' ? folderId === null : activeFolder.value === folderId)
+  if (!stillHere) {
     lessons.value = lessons.value.filter(l => l.id !== lesson.id)
     total.value = Math.max(0, total.value - 1)
     hasMore.value = lessons.value.length < total.value
