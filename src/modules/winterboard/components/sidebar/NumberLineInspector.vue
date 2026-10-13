@@ -21,8 +21,9 @@
       <span class="nl-insp__subtitle">{{ t('winterboard.numberLine.subtitle') }}</span>
     </div>
 
-    <!-- Режим -->
-    <div class="nl-insp__section">
+    <!-- Режим. «Метод інтервалів» — лише пілот (id 40, власник 2026-10-13). Пряма, вже збережена в цьому
+         режимі, показує свій розділ будь-кому — щоб нічого не зникло, але перемикача немає. -->
+    <div v-if="showModeSwitch" class="nl-insp__section">
       <div class="nl-insp__section-label">{{ t('winterboard.numberLine.modeLabel') }}</div>
       <div class="nl-insp__btn-row">
         <button
@@ -254,11 +255,16 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { numberLineUiState } from '../../board/state/numberLineUiState'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { isIntervalsPilotUser } from '../../engine/numberLine/pilot'
 
 const { t } = useI18n()
 
 // Non-null — component shown only when bridge is registered
 const b = computed(() => numberLineUiState.bridge!)
+
+const authStore = useAuthStore()
+const showModeSwitch = computed(() => isIntervalsPilotUser(authStore.user?.id))
 
 const KEYS = ['<', '≤', '>', '≥', '≠', '=', '√']
 

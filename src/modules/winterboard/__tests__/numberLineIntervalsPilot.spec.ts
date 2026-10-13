@@ -1,0 +1,68 @@
+/**
+ * Числова пряма: перемикач «Метод інтервалів» — лише пілот id 40 (власник 2026-10-13: «треба тільки
+ * включати для ID40… для пересічного користувача буде це як костиль»). Нерівності й корені — для всіх.
+ * Пряма, вже збережена в режимі інтервалів, показує свій розділ будь-кому, але без перемикача.
+ */
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { createI18n } from 'vue-i18n'
+import { defineComponent, h, type PropType } from 'vue'
+import uk from '../../../i18n/locales/uk.json'
+import NumberLineRenderer from '../components/board/objects/NumberLineRenderer.vue'
+import NumberLineInspector from '../components/sidebar/NumberLineInspector.vue'
+import { numberLineUiState, __resetNumberLineUiForTests } from '../board/state/numberLineUiState'
+import { buildNumberLineAsset } from '../constants/numberLineDefaults'
+import type { NumberLineAsset } from '../types/numberLine'
+
+const auth = vi.hoisted(() => ({ user: { id: 40 } as { id: number } | null }))
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => auth }))
+
+const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
+
+const Board = defineComponent({
+  props: { asset: { type: Object as PropType<NumberLineAsset>, required: true } },
+  setup(props) {
+    return () => h('div', [
+      h(NumberLineRenderer, { asset: props.asset, isSelected: true, interactive: true }),
+      numberLineUiState.bridge ? h(NumberLineInspector) : null,
+    ])
+  },
+})
+
+let wrapper: VueWrapper | null = null
+afterEach(() => { wrapper?.unmount(); wrapper = null; __resetNumberLineUiForTests(); auth.user = { id: 40 } })
+
+async function mountWith(userId: number | null, extra: Partial<NumberLineAsset['data']> = {}) {
+  auth.user = userId === null ? null : { id: userId }
+  const a = buildNumberLineAsset({ x: 300, y: 200 }, { conditions: [], ...extra }, 'nl-pilot')
+  wrapper = mount(Board, { props: { asset: a }, global: { plugins: [i18n()] }, attachTo: document.body })
+  await flushPromises()
+  return wrapper
+}
+
+describe('метод інтервалів — лише пілот', () => {
+  it('id 40 бачить перемикач режимів', async () => {
+    const w = await mountWith(40)
+    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(true)
+    expect(w.find('[data-testid="number-line-mode-set"]').exists()).toBe(true)
+  })
+
+  it('звичайний учитель — без перемикача, нерівності працюють', async () => {
+    const w = await mountWith(612)
+    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(true)
+  })
+
+  it('без входу — теж без перемикача', async () => {
+    const w = await mountWith(null)
+    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
+  })
+
+  it('пряма вже в режимі інтервалів — розділ видно й не-пілоту, але перемикача немає', async () => {
+    const w = await mountWith(612, { mode: 'intervals', expression: '(x-1)(x+3)', op: '>=' } as never)
+    expect(w.find('[data-testid="number-line-mode-intervals"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-iv-expression"]').exists()
+      || w.find('[data-testid="number-line-iv-manual"]').exists()).toBe(true)
+  })
+})

@@ -23,6 +23,10 @@ import { exportPreviewService } from '../services/exportPreviewService'
 import { buildNumberLineAsset } from '../constants/numberLineDefaults'
 import type { NumberLineAsset } from '../types/numberLine'
 
+// Перемикач «Метод інтервалів» — лише пілот id 40 (власник 2026-10-13); тут перевіряємо сам режим,
+// тож користувач — пілот. Гейт для інших — numberLineIntervalsPilot.spec.ts.
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 40 } }) }))
+
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
 
 function asset(conditions: NumberLineAsset['data']['conditions'] = [], extra: Partial<NumberLineAsset['data']> = {}): NumberLineAsset {
