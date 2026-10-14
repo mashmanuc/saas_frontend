@@ -7,6 +7,10 @@ export interface OrderStudent {
   fullName: string
   email: string
   avatar?: string
+  /** 2026-10-14: false — учень без акаунта (додав учитель за іменем) */
+  hasAccount?: boolean
+  /** 2026-10-14: звідки учень — '' свій, інакше назва платформи («Бука») */
+  platform?: string
 }
 
 export interface Order {

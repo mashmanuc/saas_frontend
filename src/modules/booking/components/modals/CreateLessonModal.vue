@@ -54,6 +54,7 @@
               >
                 <div class="student-info">
                   <span class="student-name">{{ order.student.firstName }} {{ order.student.lastName }}</span>
+                  <span v-if="order.student.platform" class="student-platform" data-testid="order-option-platform">· {{ order.student.platform }}</span>
                 </div>
               </button>
             </div>
@@ -377,7 +378,8 @@ const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return orders.value.filter(o => {
     const fullName = `${o.student.firstName} ${o.student.lastName}`.toLowerCase()
-    return fullName.includes(query) || o.student.email.toLowerCase().includes(query)
+    // учень без акаунта — без адреси (2026-10-14)
+    return fullName.includes(query) || (o.student.email || '').toLowerCase().includes(query)
   })
 })
 
@@ -982,6 +984,13 @@ function handleClose() {
 .student-name {
   font-size: 14px;
   color: var(--text-primary);
+}
+
+/* «звідки учень» (2026-10-14): напр. «· Бука» */
+.student-platform {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .balance-badge {

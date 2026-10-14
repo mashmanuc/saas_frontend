@@ -79,6 +79,23 @@ const relationsApi = {
     return apiClient.post(RELATION_ENDPOINTS.TUTOR_HIDE(relationId))
   },
 
+  /**
+   * Учень без акаунта (2026-10-14): учитель додає за іменем, щоб ставити уроки в розклад.
+   * @param {{ name: string, external_platform?: string, notes?: string }} body
+   */
+  createPlaceholderStudent(body) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_PLACEHOLDER_STUDENT, body)
+  },
+
+  /**
+   * «Звідки учень» і нотатка будь-якого свого учня; імʼя — лише учня без акаунта.
+   * @param {number|string} relationId
+   * @param {{ name?: string, external_platform?: string, notes?: string }} body
+   */
+  updateRelationDetails(relationId, body) {
+    return apiClient.patch(RELATION_ENDPOINTS.TUTOR_RELATION_DETAILS(relationId), body)
+  },
+
   // Legacy methods (deprecated, use role-specific methods)
   acceptRelation(relationId) {
     return apiClient.post(RELATION_ENDPOINTS.ACCEPT(relationId))

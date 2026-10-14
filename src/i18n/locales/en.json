@@ -2331,6 +2331,38 @@
           "description": "Once invitations are accepted, students will appear in this tab."
         }
       },
+      "placeholder": {
+        "addButton": "➕ Student without an account",
+        "addTitle": "Student without an account",
+        "editTitle": "Edit student",
+        "hint": "To schedule lessons for a student who does not use M4SH (for example, from another platform). Nothing is sent to them.",
+        "name": "Student name",
+        "namePlaceholder": "For example, Olia Koval",
+        "source": "Where the student comes from",
+        "sourceOwn": "My student",
+        "sourcePlatform": "From a platform",
+        "platformPlaceholder": "For example, Buka",
+        "platformHelp": "The label shows in the student list and in the lesson student picker.",
+        "notes": "Note",
+        "notesPlaceholder": "Grade, topic, how to reach them",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "noAccountBadge": "no account",
+        "edit": "Edit",
+        "added": "Student added — you can schedule lessons now.",
+        "updated": "Saved.",
+        "errors": {
+          "name_required": "Enter the student name.",
+          "name_too_long": "The name is too long — up to 120 characters.",
+          "platform_too_long": "The platform name is too long — up to 64 characters.",
+          "notes_too_long": "The note is too long — up to 2000 characters.",
+          "name_not_editable": "A student with an account changes their own name.",
+          "tutor_only": "Only a tutor can add students.",
+          "not_found": "Student not found — refresh the page.",
+          "failed": "Couldn't save. Please try again."
+        }
+      },
       "cta": {
         "createLesson": "Create lesson",
         "createLessonError": "Couldn't start the lesson. Please try again.",

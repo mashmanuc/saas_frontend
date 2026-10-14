@@ -8,7 +8,12 @@
             {{ $t('dashboard.tutor.studentsDescription') }}
           </p>
         </div>
-        <InviteCreateButton class="shrink-0" />
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+          <InviteCreateButton />
+          <Button variant="outline" size="sm" data-testid="add-placeholder-student" @click="openPlaceholderDialog(null)">
+            {{ $t('dashboard.tutor.placeholder.addButton') }}
+          </Button>
+        </div>
         <div class="inline-flex rounded-full border border-default overflow-hidden text-xs">
           <button
             v-for="tab in tabs"
@@ -144,6 +149,20 @@
                     {{ $t('student.demoBadge') }}
                   </span>
                   <span
+                    v-if="relation.external_platform"
+                    class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                    :data-test="`relation-platform-${getRelationId(relation)}`"
+                  >
+                    {{ relation.external_platform }}
+                  </span>
+                  <span
+                    v-if="relation.student?.is_placeholder"
+                    class="inline-flex items-center rounded-full border border-default px-2 py-0.5 text-xs font-medium text-muted"
+                    :data-test="`relation-no-account-${getRelationId(relation)}`"
+                  >
+                    {{ $t('dashboard.tutor.placeholder.noAccountBadge') }}
+                  </span>
+                  <span
                     v-if="relation.student?.is_deleted"
                     class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600"
                   >
@@ -169,9 +188,9 @@
               {{ relation.notes }}
             </p>
 
-            <!-- Контакти — тільки для active -->
+            <!-- Контакти — тільки для active; в учня без акаунта контактів немає -->
             <StudentContactUnlock
-              v-if="relation.status === 'active'"
+              v-if="relation.status === 'active' && !relation.student?.is_placeholder"
               class="mt-4"
               :relation="relation"
               :show-revoke-button="true"
@@ -186,6 +205,7 @@
                 {{ $t('dashboard.tutor.cta.createLesson') }}
               </Button>
               <Button
+                v-if="!relation.student?.is_placeholder"
                 variant="outline"
                 size="sm"
                 :disabled="!canOpenChatWithStudent(relation)"
@@ -199,6 +219,14 @@
                 >
                   {{ getUnreadCountForStudent(relation) }}
                 </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                :data-test="`relation-edit-${getRelationId(relation)}`"
+                @click="openPlaceholderDialog(relation)"
+              >
+                {{ $t('dashboard.tutor.placeholder.edit') }}
               </Button>
               <!-- ДЗ у контексті учня (за флагом ASSIGNMENTS_ENABLED; прод-OFF). -->
               <Button
@@ -287,6 +315,14 @@
       </template>
     </Card>
 
+    <!-- Учень без акаунта і «звідки учень» (2026-10-14) -->
+    <PlaceholderStudentDialog
+      :open="placeholderDialog.open"
+      :relation="placeholderDialog.relation"
+      @close="closePlaceholderDialog"
+      @saved="onPlaceholderSaved"
+    />
+
     <!-- Chat Modal -->
     <ChatModal
       :is-open="chatModalOpen"
@@ -304,6 +340,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import StudentContactUnlock from '../components/StudentContactUnlock.vue'
+import PlaceholderStudentDialog from '../components/PlaceholderStudentDialog.vue'
 import ChatModal from '../../chat/components/ChatModal.vue'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
@@ -328,6 +365,21 @@ const contactAccessStore = useContactAccessStore()
 presenceStore.init()
 const router = useRouter()
 const { t } = useI18n()
+
+// Учень без акаунта і «звідки учень» (2026-10-14): додати / змінити
+const placeholderDialog = ref({ open: false, relation: null })
+function openPlaceholderDialog(relation) {
+  placeholderDialog.value = { open: true, relation }
+}
+function closePlaceholderDialog() {
+  placeholderDialog.value = { open: false, relation: null }
+}
+async function onPlaceholderSaved() {
+  const wasEdit = Boolean(placeholderDialog.value.relation)
+  closePlaceholderDialog()
+  notifySuccess(t(wasEdit ? 'dashboard.tutor.placeholder.updated' : 'dashboard.tutor.placeholder.added'))
+  await relationsStore.fetchTutorRelations()
+}
 
 const relationsLoading = computed(() => relationsStore.tutorLoading)
 const relationsError = computed(() => relationsStore.tutorError)
@@ -436,6 +488,8 @@ const emptyState = computed(() => {
 function getStudentName(student) {
   if (!student) return '—'
   if (student.is_deleted) return t('dashboard.tutor.deletedUser')
+  // Учень без акаунта: імʼя ввів сам учитель — повністю (дві «Оля К.» з Буки не злипаються)
+  if (student.is_placeholder && student.full_name) return student.full_name
   return student.display_name || student.full_name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || '—'
 }
 

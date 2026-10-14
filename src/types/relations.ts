@@ -27,7 +27,10 @@ export interface Relation {
     full_name?: string      // P0.1: Full name when contact access granted
     avatar_url?: string
     is_demo?: boolean       // Pre-Phase 4: Demo Student flag
+    is_placeholder?: boolean // 2026-10-14: учень без акаунта (додав учитель за іменем)
   }
+  /** 2026-10-14: звідки учень — '' свій, інакше назва платформи («Бука») */
+  external_platform?: string
   status: 'invited' | 'active' | 'paused' | 'archived'
   created_at: string
   activated_at: string | null
