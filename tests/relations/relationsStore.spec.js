@@ -182,10 +182,25 @@ describe('relationsStore (tutor relations v3)', () => {
 
     await store.bulkArchiveSelectedTutorRelations()
 
-    expect(relationsApi.bulkArchiveTutorRelations).toHaveBeenCalledWith([2])
+    expect(relationsApi.bulkArchiveTutorRelations).toHaveBeenCalledWith([2], { cancelFutureLessons: false })
     expect(notifySuccess).toHaveBeenCalled()
     expect(notifyWarning).toHaveBeenCalledWith(expect.stringContaining('relations.bulk.partialFailure'))
     expect(store.tutorSelectedIds).toHaveLength(0)
+  })
+
+  // 2026-10-14: учитель вирішив скасувати майбутні уроки архівованих — прапорець іде в запит, скасоване — у сповіщенні
+  it('bulkArchiveSelectedTutorRelations passes cancelFutureLessons and reports cancelled lessons', async () => {
+    relationsApi.getTutorRelations.mockResolvedValue(baseRelationsResponse)
+    relationsApi.bulkArchiveTutorRelations.mockResolvedValue({ processed: [2], failed: [], cancelled_lessons: 3 })
+
+    const store = useRelationsStore()
+    await store.fetchTutorRelations()
+    store.tutorSelectedIds = [2]
+
+    await store.bulkArchiveSelectedTutorRelations({ cancelFutureLessons: true })
+
+    expect(relationsApi.bulkArchiveTutorRelations).toHaveBeenCalledWith([2], { cancelFutureLessons: true })
+    expect(notifySuccess).toHaveBeenCalledWith(expect.stringContaining('dashboard.tutor.archiveLessons.cancelled'))
   })
 
   it('handleBulkResult emits correct notifications for outcomes', () => {

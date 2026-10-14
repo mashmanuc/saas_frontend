@@ -50,6 +50,7 @@ export const RELATION_ENDPOINTS = Object.freeze({
   // Учень без акаунта і «звідки учень» (2026-10-14)
   TUTOR_PLACEHOLDER_STUDENT: buildV1Url('/tutor/students/placeholder/'),
   TUTOR_RELATION_DETAILS: (id) => buildV1Url(`/tutor/relations/${id}/details/`),
+  TUTOR_RELATIONS_FUTURE_LESSONS: buildV1Url('/tutor/relations/future-lessons/'),
 
   // Legacy aliases (deprecated, use role-specific endpoints)
   ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),

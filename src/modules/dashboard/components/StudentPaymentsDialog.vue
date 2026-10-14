@@ -29,7 +29,7 @@
               v-model="amount"
               :label="$t('dashboard.tutor.payments.amount')"
               inputmode="decimal"
-              placeholder="2000"
+              :placeholder="$t('dashboard.tutor.payments.amountPlaceholder')"
               required
               data-testid="student-payment-amount"
             />
@@ -38,7 +38,7 @@
               v-model="lessons"
               :label="$t('dashboard.tutor.payments.lessons')"
               inputmode="numeric"
-              placeholder="8"
+              :placeholder="$t('dashboard.tutor.payments.lessonsPlaceholder')"
               required
               data-testid="student-payment-lessons"
             />
@@ -74,6 +74,9 @@
           </div>
           <p v-if="pricePreview" class="text-xs text-muted">{{ pricePreview }}</p>
           <p v-if="saveError" class="text-sm text-danger" role="alert" data-testid="student-payment-error">{{ saveError }}</p>
+          <p v-else-if="!saving && !canSave" class="text-xs text-muted" data-testid="student-payment-fill-hint">
+            {{ $t('dashboard.tutor.payments.fillHint') }}
+          </p>
           <div class="flex justify-end">
             <Button variant="primary" size="sm" type="submit" :disabled="!canSave" data-testid="student-payment-save">
               {{ saving ? $t('dashboard.tutor.payments.saving') : $t('dashboard.tutor.payments.save') }}

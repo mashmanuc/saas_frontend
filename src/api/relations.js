@@ -24,8 +24,19 @@ const relationsApi = {
     return apiClient.post(RELATION_ENDPOINTS.TUTOR_RELATIONS_BULK_ACCEPT, { ids })
   },
 
-  bulkArchiveTutorRelations(ids = []) {
-    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RELATIONS_BULK_ARCHIVE, { ids })
+  /**
+   * 2026-10-14: `cancelFutureLessons` — учитель вирішив скасувати майбутні уроки архівованих учнів.
+   */
+  bulkArchiveTutorRelations(ids = [], { cancelFutureLessons = false } = {}) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RELATIONS_BULK_ARCHIVE, {
+      ids,
+      ...(cancelFutureLessons ? { cancel_future_lessons: true } : {}),
+    })
+  },
+
+  /** 2026-10-14: перед архівом — скільки майбутніх уроків у розкладі: { relations: [{id, name, future_lessons}], total } */
+  futureLessons(ids = []) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RELATIONS_FUTURE_LESSONS, { ids }, { meta: { skipLoader: true } })
   },
 
   /**

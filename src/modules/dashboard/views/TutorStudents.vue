@@ -340,6 +340,15 @@
       </template>
     </Card>
 
+    <!-- Архів: майбутні уроки (2026-10-14) -->
+    <ArchiveFutureLessonsDialog
+      :open="archiveLessons.open"
+      :rows="archiveLessons.rows"
+      :total="archiveLessons.total"
+      @close="archiveLessons = { open: false, rows: [], total: 0 }"
+      @choose="onArchiveLessonsChoice"
+    />
+
     <!-- Облік передоплат учня (2026-10-14) -->
     <StudentPaymentsDialog
       :open="paymentsDialog.open"
@@ -376,6 +385,8 @@ import Card from '../../../ui/Card.vue'
 import StudentContactUnlock from '../components/StudentContactUnlock.vue'
 import PlaceholderStudentDialog from '../components/PlaceholderStudentDialog.vue'
 import StudentPaymentsDialog from '../components/StudentPaymentsDialog.vue'
+import ArchiveFutureLessonsDialog from '../components/ArchiveFutureLessonsDialog.vue'
+import relationsApi from '../../../api/relations'
 import { balanceView, formatUah, studentPaymentsApi } from '../api/studentPayments'
 import ChatModal from '../../chat/components/ChatModal.vue'
 import { useAuthStore } from '../../auth/store/authStore'
@@ -611,8 +622,28 @@ function handleBulkAccept() {
   relationsStore.bulkAcceptSelectedTutorRelations().catch(() => {})
 }
 
-function handleBulkArchive() {
+// 2026-10-14: архів прибирає учня з розкладу до кінця; є майбутні уроки — учитель вирішує, що з ними
+const archiveLessons = ref({ open: false, rows: [], total: 0 })
+
+async function handleBulkArchive() {
+  let preview
+  try {
+    preview = await relationsApi.futureLessons(relationsStore.tutorSelectedIds)
+  } catch (err) {
+    // Не знаємо, чи є майбутні уроки, — не архівуємо наосліп; причина видима
+    notifyError(t('dashboard.tutor.archiveLessons.previewFailed'))
+    return
+  }
+  if (preview?.total) {
+    archiveLessons.value = { open: true, rows: preview.relations || [], total: preview.total }
+    return
+  }
   relationsStore.bulkArchiveSelectedTutorRelations().catch(() => {})
+}
+
+function onArchiveLessonsChoice(cancelFutureLessons) {
+  archiveLessons.value = { open: false, rows: [], total: 0 }
+  relationsStore.bulkArchiveSelectedTutorRelations({ cancelFutureLessons }).catch(() => {})
 }
 
 async function handleAccept(relationId) {

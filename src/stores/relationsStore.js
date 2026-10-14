@@ -288,7 +288,7 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
-    async bulkArchiveSelectedTutorRelations() {
+    async bulkArchiveSelectedTutorRelations({ cancelFutureLessons = false } = {}) {
       if (!this.selectedTutorRelations.length) {
         notifyWarning(translate('relations.bulk.emptySelection'))
         return
@@ -296,8 +296,11 @@ export const useRelationsStore = defineStore('relations', {
 
       this.tutorBulkLoading = true
       try {
-        const result = await relationsApi.bulkArchiveTutorRelations(this.tutorSelectedIds)
+        const result = await relationsApi.bulkArchiveTutorRelations(this.tutorSelectedIds, { cancelFutureLessons })
         this.handleBulkResult('archive', result)
+        if (result?.cancelled_lessons) {
+          notifySuccess(translate('dashboard.tutor.archiveLessons.cancelled', { n: result.cancelled_lessons }))
+        }
         this.clearTutorSelection()
         // Phase 29 INV-3: mutation → invalidateQueries
         queryClient.invalidateQueries({ queryKey: queryKeys.relations() })

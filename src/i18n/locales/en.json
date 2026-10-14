@@ -2363,10 +2363,24 @@
           "failed": "Couldn't save. Please try again."
         }
       },
+      "archiveLessons": {
+        "title": "There are upcoming lessons in the schedule",
+        "text": "The selected students still have upcoming lessons in the schedule:",
+        "count": "lessons — {n}",
+        "hint": "Past lessons stay as they are — they are needed for payment tracking.",
+        "abort": "Don't archive",
+        "keep": "Archive, keep lessons",
+        "cancel": "Cancel lessons ({n}) and archive",
+        "cancelled": "Upcoming lessons cancelled: {n}",
+        "previewFailed": "Couldn't check upcoming lessons — please try again."
+      },
       "payments": {
         "button": "💰 Payment",
         "title": "Payments: {name}",
         "loading": "Loading…",
+        "amountPlaceholder": "For example, 2000",
+        "lessonsPlaceholder": "For example, 8",
+        "fillHint": "To record, enter the amount and the number of lessons.",
         "counted": "Lessons paid — {paid}, held — {done} (since {since})",
         "add": "Record a payment",
         "amount": "Amount, ₴",

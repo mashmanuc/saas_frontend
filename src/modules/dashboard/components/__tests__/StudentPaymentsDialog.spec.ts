@@ -61,10 +61,15 @@ describe('StudentPaymentsDialog', () => {
     expect($(w, 'student-payments-balance').text()).toBe(P.balance.none)
     expect(w.find('[data-testid="student-payment-month-2026-11"]').exists()).toBe(false)   // 0 уроків — без підказки
     expect($(w, 'student-payment-save').attributes('disabled')).toBeDefined()
+    // власник 14.10: «плейсхолдери такі, ніби введено вже… не міг зрозуміти, чому кнопка не активна»
+    expect(w.find('input#student-payment-amount').attributes('placeholder')).toBe(P.amountPlaceholder)
+    expect(w.find('input#student-payment-lessons').attributes('placeholder')).toBe(P.lessonsPlaceholder)
+    expect($(w, 'student-payment-fill-hint').text()).toBe(P.fillHint)
     await w.find('input#student-payment-amount').setValue('2 000')
     await $(w, 'student-payment-month-2026-10').trigger('click')
     expect((w.find('input#student-payment-lessons').element as HTMLInputElement).value).toBe('8')
     expect(w.text()).toContain(fill(P.pricePreview, { price: '250 ₴' }))
+    expect(w.find('[data-testid="student-payment-fill-hint"]').exists()).toBe(false)   // заповнено — підказки немає
     await w.find('input#student-payment-date').setValue('2026-10-01')
     await w.find('input#student-payment-note').setValue(' жовтень ')
     await $(w, 'student-payments-form').trigger('submit')
