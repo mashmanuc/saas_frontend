@@ -69,6 +69,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getReplay,
+  canShowToStudent,
   changeReplayVisibility,
   isLinkVisibility,
   type Replay,
@@ -107,8 +108,8 @@ const visibilityOptions = computed<Array<{
     hint: t('winterboard.replay.share.visibilityHints.private'),
     icon: '🔒',
   },
-  // «👤 Видно учню» — лише запис уроку з учнем; такий запис уже стартує в цьому режимі (2026-10-14).
-  ...(currentReplay.value?.lesson_student_id || currentReplay.value?.visibility === 'student'
+  // «👤 Видно учню» — лише коли є кому; запис уроку з учнем уже стартує в цьому режимі (2026-10-14).
+  ...(canShowToStudent(currentReplay.value)
     ? [{
         value: 'student' as ReplayVisibility,
         label: t('winterboard.replayList.visibility.student'),

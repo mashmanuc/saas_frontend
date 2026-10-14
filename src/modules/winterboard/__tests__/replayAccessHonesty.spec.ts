@@ -24,7 +24,10 @@ const { getReplay, changeReplayVisibility, rotateReplayToken } = vi.hoisted(() =
 
 vi.mock('../api/replayLifecycleApi', async () => {
   const actual = await vi.importActual<typeof import('../api/replayLifecycleApi')>('../api/replayLifecycleApi')
-  return { getReplay, changeReplayVisibility, rotateReplayToken, isLinkVisibility: actual.isLinkVisibility }
+  return {
+    getReplay, changeReplayVisibility, rotateReplayToken,
+    isLinkVisibility: actual.isLinkVisibility, canShowToStudent: actual.canShowToStudent,
+  }
 })
 vi.mock('../api/replay', () => ({ createReplayFromExistingOps: vi.fn() }))
 
@@ -165,7 +168,7 @@ describe('«👤 Видно учню» (рішення власника 2026-10-
   it('у режимі учня посилання НЕ показуємо — воно для учня не відкривається', async () => {
     const w = await open('student', { lesson_student_id: 5 })
     expect(w.find('.wb-share-modal__link').exists()).toBe(false)
-    expect(w.text()).toContain('Запис бачить лише учень цього уроку')
+    expect(w.text()).toContain('Запис бачить лише учень')
     expect(w.text()).toContain('За посиланням не відкривається')
   })
 

@@ -52,7 +52,7 @@
           v-if="replay.visibility !== 'private'"
           class="replay-card__badge"
         >
-          {{ visibilityLabel(replay.visibility) }}
+          {{ badgeLabel }}
         </span>
         <span
           v-if="replay.status === 'archived'"
@@ -136,6 +136,9 @@
               >
                 📂 {{ t('winterboard.replayList.menu.moveToFolder') }}
               </li>
+              <li role="menuitem" data-testid="replay-show-to-student" @click="emit('show-to-student', replay)">
+                {{ t('winterboard.replayList.menu.showToStudent') }}
+              </li>
               <li class="menu-header">{{ t('winterboard.replayList.menu.visibility') }}</li>
               <li
                 v-for="v in visibilityOptions"
@@ -177,7 +180,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isLinkVisibility, type Replay, type ReplayVisibility } from '../../api/replayLifecycleApi'
+import { canShowToStudent, isLinkVisibility, type Replay, type ReplayVisibility } from '../../api/replayLifecycleApi'
 
 interface Props {
   replay: Replay
@@ -196,6 +199,7 @@ const emit = defineEmits<{
   clip: [replay: Replay]
   rename: [replay: Replay]
   visibility: [replay: Replay, visibility: ReplayVisibility]
+  'show-to-student': [replay: Replay]
   archive: [replay: Replay]
   restore: [replay: Replay]
   trash: [replay: Replay]
@@ -206,11 +210,17 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-// «👤 Видно учню» — лише запис уроку з учнем (BE відмовить інакше), 2026-10-14.
+// «👤 Видно учню» — лише коли є кому: учень уроку або обраний учителем (BE відмовить інакше), 2026-10-14.
 const visibilityOptions = computed<ReadonlyArray<ReplayVisibility>>(() =>
-  props.replay.lesson_student_id || props.replay.visibility === 'student'
+  canShowToStudent(props.replay)
     ? ['private', 'student', 'unlisted', 'public']
     : ['private', 'unlisted', 'public'])
+
+/** Позначка режиму; для «👤 Видно учню» з обраним учнем — його ім'я (видно, кому саме показано). */
+const badgeLabel = computed(() =>
+  props.replay.visibility === 'student' && props.replay.shared_student
+    ? t('winterboard.replayList.visibility.studentNamed', { name: props.replay.shared_student.name })
+    : visibilityLabel(props.replay.visibility))
 
 // Має відповідати backend-у: `WB_REPLAY_PURGE_GRACE_DAYS` у
 // apps/winterboard/tasks.py. Зберігаємо локально бо API не експозить це значення.

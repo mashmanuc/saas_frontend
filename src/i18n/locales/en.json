@@ -7837,6 +7837,7 @@
         "trashedSubtitle": "Trashed replays are kept for 7 days, then purged automatically"
       },
       "visibility": {
+        "studentNamed": "👤 Visible to {name}",
         "student": "👤 Visible to the student",
         "private": "🔒 Private",
         "unlisted": "🔗 Anyone with the link",
@@ -7849,6 +7850,7 @@
         "copied": "Copied ✓"
       },
       "menu": {
+        "showToStudent": "👤 Show to a student…",
         "rename": "Rename",
         "moveToFolder": "Move to folder",
         "visibility": "Visibility",
@@ -9851,6 +9853,15 @@
       }
     },
     "replay": {
+      "showToStudent": {
+        "title": "Show the recording to a student",
+        "hint": "The recording will appear on the student’s page under “My lessons”. The link does not open it.",
+        "lessonStudentNote": "The student of this lesson already sees it.",
+        "empty": "You have no active students yet. Invite one in “My students”.",
+        "current": "sees it",
+        "remove": "Stop showing",
+        "failed": "Could not save. Please try again."
+      },
       "viewReplay": "View lesson replay",
       "viewRecording": "View recording",
       "seeking": "Seeking…",
@@ -9891,7 +9902,7 @@
         "send": "Send"
       },
       "share": {
-        "studentHint": "Only the student of this lesson sees the recording — on their page, under “My lessons”. To hide it, choose “🔒 Private”.",
+        "studentHint": "Only the student sees the recording — on their page, under “My lessons”. To hide it, choose “🔒 Private”.",
         "title": "Share recording",
         "link": "Link",
         "linkHint": "Anyone with this link can view the lesson recording.",
@@ -9911,7 +9922,7 @@
         "createHint": "Recording will be created from what is already on the board",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
-          "student": "The student of this lesson sees the recording in their account. The link does not open it",
+          "student": "The student sees the recording in their account. The link does not open it",
           "private": "The link does not work for anyone else",
           "unlisted": "Anyone who has the link can watch the recording without signing in",
           "public": "The recording is open to everyone and can be found and shared"

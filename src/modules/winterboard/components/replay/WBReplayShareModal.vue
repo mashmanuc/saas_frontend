@@ -124,6 +124,7 @@ import { createReplayFromExistingOps } from '../../api/replay'
 import {
   getReplay,
   changeReplayVisibility,
+  canShowToStudent,
   isLinkVisibility,
   rotateReplayToken,
   type Replay,
@@ -183,8 +184,8 @@ const visibilityOptions = computed(() => [
     label: t('winterboard.replayList.visibility.private'),
     hint: t('winterboard.replay.share.visibilityHints.private'),
   },
-  // «👤 Видно учню» — лише запис уроку з учнем (BE відмовить інакше).
-  ...(replay.value?.lesson_student_id || replay.value?.visibility === 'student'
+  // «👤 Видно учню» — лише коли є кому: учень уроку або обраний учителем (BE відмовить інакше).
+  ...(canShowToStudent(replay.value)
     ? [{
         value: 'student' as ReplayVisibility,
         label: t('winterboard.replayList.visibility.student'),

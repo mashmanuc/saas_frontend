@@ -15,19 +15,25 @@ import { createI18n } from 'vue-i18n'
 
 import uk from '@/i18n/locales/uk.json'
 
-const { getReplay, changeReplayVisibility } = vi.hoisted(() => ({
+const { getReplay, changeReplayVisibility, listShareStudents, shareReplayWithStudent } = vi.hoisted(() => ({
   getReplay: vi.fn(),
   changeReplayVisibility: vi.fn(),
+  listShareStudents: vi.fn(),
+  shareReplayWithStudent: vi.fn(),
 }))
 
 vi.mock('../api/replayLifecycleApi', async () => {
   const actual = await vi.importActual<typeof import('../api/replayLifecycleApi')>('../api/replayLifecycleApi')
-  return { getReplay, changeReplayVisibility, isLinkVisibility: actual.isLinkVisibility }
+  return {
+    getReplay, changeReplayVisibility, listShareStudents, shareReplayWithStudent,
+    isLinkVisibility: actual.isLinkVisibility, canShowToStudent: actual.canShowToStudent,
+  }
 })
 
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import ReplayCard from '../components/replay/ReplayCard.vue'
 import StudentLessonRecordsSection from '@/modules/dashboard/components/StudentLessonRecordsSection.vue'
+import ReplayShowToStudentModal from '../components/replay/ReplayShowToStudentModal.vue'
 import { isLinkVisibility } from '../api/replayLifecycleApi'
 
 const i18n = createI18n({ legacy: false, locale: 'uk', messages: { uk } })
@@ -46,6 +52,8 @@ function replayFixture(over: Record<string, unknown> = {}) {
 beforeEach(() => {
   getReplay.mockReset()
   changeReplayVisibility.mockReset()
+  listShareStudents.mockReset()
+  shareReplayWithStudent.mockReset()
 })
 
 describe('isLinkVisibility — дзеркало BE LINK_VISIBILITIES', () => {
@@ -129,5 +137,92 @@ describe('сторінка учня: «Мої уроки» (StudentLessonRecords
     const link = w.findComponent(RouterLinkStub)
     expect(link.props('to')).toEqual({ name: 'winterboard-replay-owner', params: { replayId: 'r-9' } })
     expect(link.text()).toBe('Переглянути')
+  })
+})
+
+describe('«👤 Показати учню…» (власник 2026-10-14: «супер, роби»)', () => {
+  function mountCard(over: Record<string, unknown> = {}) {
+    return mount(ReplayCard, {
+      props: { replay: replayFixture(over) as never, viewMode: 'grid', menuOpen: true, copied: false },
+      global: { plugins: [i18n], stubs, directives: { clickOutside: {} } },
+    })
+  }
+
+  it('у меню картки є пункт — і для соло-запису без учня', async () => {
+    const w = mountCard({ visibility: 'private', lesson_student_id: null })
+    const item = w.find('[data-testid="replay-show-to-student"]')
+    expect(item.text()).toBe('👤 Показати учню…')
+    await item.trigger('click')
+    expect(w.emitted('show-to-student')?.[0]?.[0]).toMatchObject({ id: 'r-1' })
+  })
+
+  it('соло-запис, показаний учню: режим учня в меню і позначка з його ім’ям', () => {
+    const w = mountCard({ visibility: 'student', lesson_student_id: null, shared_student: { id: 9, name: 'Степан У.' } })
+    expect(w.find('.replay-card__badge').text()).toBe('👤 Видно: Степан У.')
+    expect(w.findAll('.menu-item-nested').map(li => li.text())).toContain('👤 Видно учню')
+  })
+
+  it('соло-запис «за посиланням», показаний учню: режим учня в меню є', () => {
+    const w = mountCard({ visibility: 'unlisted', lesson_student_id: null, shared_student: { id: 9, name: 'Степан У.' } })
+    expect(w.findAll('.menu-item-nested').map(li => li.text())).toContain('👤 Видно учню')
+  })
+
+  async function mountModal(over: Record<string, unknown> = {}) {
+    listShareStudents.mockResolvedValue({ students: [{ id: 9, name: 'Степан У.' }, { id: 10, name: 'Оля К.' }] })
+    const w = mount(ReplayShowToStudentModal, {
+      props: { replay: replayFixture({ visibility: 'private', lesson_student_id: null, shared_student: null, ...over }) as never },
+      global: { plugins: [i18n], stubs: { ...stubs, teleport: true } },
+    })
+    await flushPromises()
+    return w
+  }
+
+  it('список учнів; клік — показує запис обраному й віддає оновлений запис', async () => {
+    const w = await mountModal()
+    const items = w.findAll('[data-testid="show-to-student-item"]')
+    expect(items.map(i => i.text())).toEqual(['Степан У.', 'Оля К.'])
+    expect(w.text()).toContain('у розділі «Мої уроки»')
+
+    const updated = replayFixture({ visibility: 'student', shared_student: { id: 10, name: 'Оля К.' } })
+    shareReplayWithStudent.mockResolvedValue(updated)
+    await items[1].trigger('click')
+    await flushPromises()
+    expect(shareReplayWithStudent).toHaveBeenCalledWith('r-1', 10)
+    expect(w.emitted('updated')?.[0]?.[0]).toEqual(updated)
+
+    // Батько кладе підтверджений сервером запис назад — «✓» переходить на обраного.
+    await w.setProps({ replay: updated as never })
+    expect(w.find('.show-to-student__item--current').text()).toContain('Оля К.')
+  })
+
+  it('обраний позначений; «Не показувати» прибирає учня', async () => {
+    const w = await mountModal({ visibility: 'student', shared_student: { id: 9, name: 'Степан У.' } })
+    const current = w.find('.show-to-student__item--current')
+    expect(current.text()).toContain('Степан У.')
+    expect(current.text()).toContain('бачить запис')
+
+    shareReplayWithStudent.mockResolvedValue(replayFixture({ visibility: 'private', shared_student: null }))
+    await w.find('[data-testid="show-to-student-remove"]').trigger('click')
+    await flushPromises()
+    expect(shareReplayWithStudent).toHaveBeenCalledWith('r-1', null)
+  })
+
+  it('помилка збереження — видно, а «✓» лишається на тому, що підтвердив сервер', async () => {
+    const w = await mountModal()
+    shareReplayWithStudent.mockRejectedValue(new Error('400'))
+    await w.findAll('[data-testid="show-to-student-item"]')[0].trigger('click')
+    await flushPromises()
+    expect(w.text()).toContain('Не вдалося зберегти')
+    expect(w.find('.show-to-student__item--current').exists()).toBe(false)
+  })
+
+  it('без учнів — підказка, куди йти', async () => {
+    listShareStudents.mockResolvedValue({ students: [] })
+    const w = mount(ReplayShowToStudentModal, {
+      props: { replay: replayFixture() as never },
+      global: { plugins: [i18n], stubs: { ...stubs, teleport: true } },
+    })
+    await flushPromises()
+    expect(w.text()).toContain('Запросіть учня в «Моїх учнях»')
   })
 })

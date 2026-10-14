@@ -161,6 +161,7 @@
             @share="handleShare"
             @rename="handleRename"
             @visibility="handleVisibility"
+            @show-to-student="openShowToStudent"
             @archive="handleArchive"
             @restore="handleRestore"
             @trash="handleTrash"
@@ -222,6 +223,13 @@
       </template>
     </Modal>
 
+    <!-- «👤 Показати учню…» (власник 2026-10-14): запис — у «Моїх уроках» обраного учня -->
+    <ReplayShowToStudentModal
+      :replay="showToStudentReplay"
+      @updated="onShownToStudent"
+      @close="showToStudentReplay = null"
+    />
+
     <!-- «Дзеркало уроку» (пілот): відеофрагмент зі списку; вікно саме завантажує запис і добирає знімки -->
     <LessonMirrorExportDialog
       v-if="clipReplay"
@@ -241,6 +249,7 @@ import ReplayCard from '../components/replay/ReplayCard.vue'
 import ReplayFolderTree from '../components/replay/ReplayFolderTree.vue'
 import ReplayBreadcrumb, { type BreadcrumbItem } from '../components/replay/ReplayBreadcrumb.vue'
 import MoveReplayDropdown from '../components/replay/MoveReplayDropdown.vue'
+import ReplayShowToStudentModal from '../components/replay/ReplayShowToStudentModal.vue'
 import ConfirmModal from '@/ui/ConfirmModal.vue'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
@@ -504,6 +513,19 @@ function handleShare(replay: Replay) {
       if (copiedId.value === replay.id) copiedId.value = null
     }, 2000)
   })
+}
+
+// ── «👤 Показати учню…» ──
+const showToStudentReplay = ref<Replay | null>(null)
+
+function openShowToStudent(replay: Replay) {
+  openMenuId.value = null
+  showToStudentReplay.value = replay
+}
+
+function onShownToStudent(updated: Replay) {
+  store.replaceReplay(updated)
+  showToStudentReplay.value = updated
 }
 
 async function handleRename(replay: Replay) {

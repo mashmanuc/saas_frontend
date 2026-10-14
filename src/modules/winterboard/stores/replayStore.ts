@@ -155,6 +155,11 @@ export const useReplayStore = defineStore('replay', () => {
     }
   }
 
+  /** Запис, який повернув сервер після окремої дії (напр. «👤 Показати учню…»). */
+  function replaceReplay(updated: Replay) {
+    _replaceOrRemove(updated)
+  }
+
   // ─── Folders ─────────────────────────────────────────────────────
   async function createFolder(name: string, parent: string | null = null) {
     const folder = await apiCreateFolder({ name, parent })
@@ -200,6 +205,7 @@ export const useReplayStore = defineStore('replay', () => {
     setSearch,
     renameReplay,
     changeVisibility,
+    replaceReplay,
     archive,
     restore,
     trash,

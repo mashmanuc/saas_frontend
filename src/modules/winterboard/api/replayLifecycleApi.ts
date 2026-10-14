@@ -19,6 +19,11 @@ export function isLinkVisibility(v: ReplayVisibility | string | null | undefined
   return v === 'unlisted' || v === 'public' || v === 'link'
 }
 
+/** Чи є кому показати запис у режимі «👤 Видно учню»: учень уроку або обраний учителем (BE відмовить інакше). */
+export function canShowToStudent(r: Pick<Replay, 'visibility' | 'lesson_student_id' | 'shared_student'> | null | undefined): boolean {
+  return !!r && (!!r.lesson_student_id || !!r.shared_student || r.visibility === 'student')
+}
+
 export interface Replay {
   id: string
   title: string
@@ -34,8 +39,10 @@ export interface Replay {
   view_count: number
   /** Перший кадр запису (BE рендер start_state_ref). '' = нема прев'ю. */
   thumbnail_url?: string
-  /** Учень уроку, з дошки якого запис; null — дошка не урок, режим 'student' недоступний. */
+  /** Учень уроку, з дошки якого запис; null — дошка не урок. */
   lesson_student_id?: number | null
+  /** Учень, якому вчитель показав запис сам («👤 Показати учню…»), — ДОДАТКОВО до учня уроку. */
+  shared_student?: { id: number; name: string } | null
   created_at?: string
   updated_at?: string
   archived_at: string | null
@@ -89,6 +96,22 @@ export function isStudentReplay(r: Replay | StudentReplay | null | undefined): r
 /** Записи МОЇХ уроків, які вчитель лишив видимими мені (найновіші, до 50). */
 export async function listStudentReplays(): Promise<{ replays: StudentReplay[] }> {
   return apiClient.get<{ replays: StudentReplay[] }>(`${BASE}/replays/student/`)
+}
+
+/** Активний учень учителя, якому можна показати запис. */
+export interface ShareStudent {
+  id: number
+  name: string
+}
+
+/** Кому вчитель може показати запис: його активні учні з робочим акаунтом. */
+export async function listShareStudents(): Promise<{ students: ShareStudent[] }> {
+  return apiClient.get<{ students: ShareStudent[] }>(`${BASE}/replays/share-students/`)
+}
+
+/** «👤 Показати учню…»: `studentId=null` — прибрати обраного учня. */
+export async function shareReplayWithStudent(id: string, studentId: number | null): Promise<Replay> {
+  return apiClient.post<Replay>(`${BASE}/replays/${id}/share-student/`, { student_id: studentId })
 }
 
 /** Запис для перегляду: власнику — повний, учневі уроку — `StudentReplay`; іншим BE віддає 404. */
