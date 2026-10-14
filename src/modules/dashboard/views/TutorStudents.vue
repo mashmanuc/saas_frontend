@@ -34,6 +34,12 @@
         </div>
       </div>
 
+      <!-- Облік передоплат (2026-10-14): підсумок місяця -->
+      <div v-if="paymentsSummaryText" class="rounded-xl bg-surface-soft px-4 py-2 text-sm text-body" data-testid="payments-summary">
+        {{ paymentsSummaryText }}
+      </div>
+      <p v-else-if="paymentsSummaryError" class="text-xs text-muted">{{ $t('dashboard.tutor.payments.summaryError') }}</p>
+
       <!-- Панель групових дій — лише коли щось вибрано (візуальний огляд
            2026-09-22, Топ-10 №9). Раніше висіла завжди з двома сірими
            кнопками, навіть для двох учнів. Вибір починається з чекбокса
@@ -188,6 +194,16 @@
               {{ relation.notes }}
             </p>
 
+            <!-- Облік передоплат (2026-10-14): лише свої учні, не з платформи -->
+            <p
+              v-if="paymentLine(relation)"
+              class="mt-2 text-sm font-medium"
+              :class="paymentLine(relation).cls"
+              :data-test="`relation-payments-${getRelationId(relation)}`"
+            >
+              {{ paymentLine(relation).text }}
+            </p>
+
             <!-- Контакти — тільки для active; в учня без акаунта контактів немає -->
             <StudentContactUnlock
               v-if="relation.status === 'active' && !relation.student?.is_placeholder"
@@ -219,6 +235,15 @@
                 >
                   {{ getUnreadCountForStudent(relation) }}
                 </span>
+              </Button>
+              <Button
+                v-if="canTrackPayments(relation)"
+                variant="outline"
+                size="sm"
+                :data-test="`relation-payments-open-${getRelationId(relation)}`"
+                @click="openPayments(relation)"
+              >
+                {{ $t('dashboard.tutor.payments.button') }}
               </Button>
               <Button
                 variant="outline"
@@ -315,6 +340,15 @@
       </template>
     </Card>
 
+    <!-- Облік передоплат учня (2026-10-14) -->
+    <StudentPaymentsDialog
+      :open="paymentsDialog.open"
+      :student-id="paymentsDialog.studentId"
+      :student-name="paymentsDialog.name"
+      @close="paymentsDialog = { open: false, studentId: null, name: '' }"
+      @changed="loadPaymentsSummary"
+    />
+
     <!-- Учень без акаунта і «звідки учень» (2026-10-14) -->
     <PlaceholderStudentDialog
       :open="placeholderDialog.open"
@@ -341,6 +375,8 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import StudentContactUnlock from '../components/StudentContactUnlock.vue'
 import PlaceholderStudentDialog from '../components/PlaceholderStudentDialog.vue'
+import StudentPaymentsDialog from '../components/StudentPaymentsDialog.vue'
+import { balanceView, formatUah, studentPaymentsApi } from '../api/studentPayments'
 import ChatModal from '../../chat/components/ChatModal.vue'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
@@ -364,7 +400,53 @@ const chatThreadsStore = useChatThreadsStore()
 const contactAccessStore = useContactAccessStore()
 presenceStore.init()
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+// Облік передоплат учня (2026-10-14): «платять наперед, за кілька уроків або за місяць»
+const paymentsSummary = ref(null)
+const paymentsSummaryError = ref(false)
+const paymentsDialog = ref({ open: false, studentId: null, name: '' })
+
+async function loadPaymentsSummary() {
+  try {
+    paymentsSummary.value = await studentPaymentsApi.summary()
+    paymentsSummaryError.value = false
+  } catch (err) {
+    // Видимо рядком під шапкою; облік не заважає решті сторінки
+    console.warn('[TutorStudents] payments summary failed', err)
+    paymentsSummaryError.value = true
+  }
+}
+
+function canTrackPayments(relation) {
+  return relation?.status === 'active' && Boolean(relation.student?.id) && !relation.external_platform
+}
+
+function openPayments(relation) {
+  paymentsDialog.value = { open: true, studentId: relation.student.id, name: getStudentName(relation.student) }
+}
+
+const PAYMENT_TONE_CLASS = { ok: 'text-emerald-700', low: 'text-amber-700', debt: 'text-danger' }
+
+function paymentLine(relation) {
+  if (!canTrackPayments(relation)) return null
+  const b = paymentsSummary.value?.balances?.[String(relation.student.id)]
+  const v = balanceView(b)
+  if (v.tone === 'none') return null
+  return { text: t(`dashboard.tutor.payments.balance.${v.key}`, v.params), cls: PAYMENT_TONE_CLASS[v.tone] }
+}
+
+const paymentsSummaryText = computed(() => {
+  const s = paymentsSummary.value
+  if (!s || (!s.payments_count && !s.lessons_done && !s.debtors)) return ''
+  const month = new Intl.DateTimeFormat(locale.value, { month: 'long' }).format(new Date(`${s.month}-15T12:00:00`))
+  const head = t('dashboard.tutor.payments.summary', {
+    month: month.charAt(0).toUpperCase() + month.slice(1),
+    received: formatUah(s.received),
+    lessons: s.lessons_done,
+  })
+  return s.debtors ? `${head} · ${t('dashboard.tutor.payments.summaryDebtors', { n: s.debtors })}` : head
+})
 
 // Учень без акаунта і «звідки учень» (2026-10-14): додати / змінити
 const placeholderDialog = ref({ open: false, relation: null })
@@ -731,6 +813,7 @@ watch(() => auth.isAuthenticated, (isAuth) => {
 
 onMounted(() => {
   relationsStore.fetchTutorRelations().catch(() => {})
+  void loadPaymentsSummary()
 
   if (auth.isAuthenticated) {
     startUnreadPolling()

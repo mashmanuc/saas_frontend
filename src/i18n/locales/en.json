@@ -2363,6 +2363,49 @@
           "failed": "Couldn't save. Please try again."
         }
       },
+      "payments": {
+        "button": "💰 Payment",
+        "title": "Payments: {name}",
+        "loading": "Loading…",
+        "counted": "Lessons paid — {paid}, held — {done} (since {since})",
+        "add": "Record a payment",
+        "amount": "Amount, ₴",
+        "lessons": "For how many lessons",
+        "monthHint": "All lessons: {month} — {n}",
+        "date": "Payment date",
+        "note": "Note",
+        "notePlaceholder": "For example, for October",
+        "pricePreview": "Lesson price: {price}",
+        "save": "Record",
+        "saving": "Recording…",
+        "history": "Payment history",
+        "lessonsShort": "lessons — {n}",
+        "delete": "Delete",
+        "deleteYes": "Yes, delete",
+        "deleteNo": "No",
+        "summary": "{month}: received {received} · lessons held with your students — {lessons}",
+        "summaryDebtors": "owing: students — {n}",
+        "summaryError": "Couldn't load payments — refresh the page.",
+        "balance": {
+          "none": "No payments recorded yet",
+          "left": "Prepaid: lessons left — {n}",
+          "one": "1 prepaid lesson left",
+          "zero": "Prepaid lessons are used up",
+          "debt": "Owes: lessons — {n} (≈ {amount} ₴)"
+        },
+        "errors": {
+          "bad_amount": "Enter an amount greater than zero.",
+          "bad_lessons": "Number of lessons — a whole number from 1 to 500.",
+          "bad_date": "The payment date cannot be in the future.",
+          "bad_note": "The note must be text.",
+          "note_too_long": "The note is too long — up to 500 characters.",
+          "platform_student": "Payments are not tracked for platform students.",
+          "not_found": "Student or payment not found — refresh the page.",
+          "tutor_only": "Only a tutor tracks payments.",
+          "bad_month": "Unknown month.",
+          "failed": "Couldn't do it. Please try again."
+        }
+      },
       "cta": {
         "createLesson": "Create lesson",
         "createLessonError": "Couldn't start the lesson. Please try again.",
