@@ -301,3 +301,96 @@ describe('WBBoardList.vue (B13)', () => {
     errorSpy.mockRestore()
   })
 })
+
+// 14.10 (власник): «папка учня видаляється в один клік, без підтвердження».
+// Кошик у дереві папок тепер лише відкриває вікно; видаляє — тільки «Видалити папку».
+describe('WBBoardList.vue — видалення папки лише з підтвердженням', () => {
+  const TREE = [{
+    id: 7, name: 'Олексій', parent: null, sessions_count: 3,
+    children: [{ id: 8, name: 'Дроби', parent: 7, sessions_count: 1, children: [] }],
+  }, { id: 9, name: 'Порожня', parent: null, sessions_count: 0, children: [] }]
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    mockListSessions.mockResolvedValue({ count: 2, results: BOARDS })
+    mockListBoardFolders.mockResolvedValue(TREE)
+  })
+
+  afterEach(() => {
+    mockListBoardFolders.mockResolvedValue([])
+    vi.clearAllMocks()
+  })
+
+  async function mountWithFolders() {
+    const wrapper = await mountBoardList()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Олексій'))
+    const { winterboardApi } = await import('../api/winterboardApi')
+    return { wrapper, deleteFolder: winterboardApi.deleteBoardFolder as ReturnType<typeof vi.fn> }
+  }
+
+  /** Як учитель: навести на папку «Олексій» (кнопки з'являються при наведенні) і натиснути кошик. */
+  async function clickTrash(wrapper: Awaited<ReturnType<typeof mountBoardList>>) {
+    const item = wrapper.findAll('.wb-folder-tree__item').find((w) => w.text().includes('Олексій'))!
+    await item.trigger('mouseenter')
+    await item.find('.wb-folder-tree__action--danger').trigger('click')
+  }
+
+  it('кошик відкриває вікно і нічого не видаляє; «Скасувати» закриває без видалення', async () => {
+    const { wrapper, deleteFolder } = await mountWithFolders()
+    await clickTrash(wrapper)
+    const dialog = wrapper.find('[data-testid="folder-delete-dialog"]')
+    expect(dialog.exists()).toBe(true)
+    expect(dialog.text()).toContain('winterboard.folders.confirmDelete.title:{"name":"Олексій"}')
+    // Дошки не зникають: скільки їх і куди підуть (папка верхнього рівня → «Без папки»).
+    expect(dialog.text()).toContain(
+      'winterboard.folders.confirmDelete.boardsMove:{"count":3,"target":"winterboard.folders.noFolder"}')
+    expect(dialog.text()).toContain('winterboard.folders.confirmDelete.childrenMove')
+    expect(deleteFolder).not.toHaveBeenCalled()
+
+    await dialog.find('.wb-dialog__btn--cancel').trigger('click')
+    // <Transition> прибирає вікно на наступному кадрі.
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-testid="folder-delete-dialog"]').exists()).toBe(false))
+    expect(deleteFolder).not.toHaveBeenCalled()
+  })
+
+  it('«Видалити папку» видаляє саме цю папку й закриває вікно', async () => {
+    const { wrapper, deleteFolder } = await mountWithFolders()
+    await clickTrash(wrapper)
+    await wrapper.find('[data-testid="folder-delete-confirm"]').trigger('click')
+    await vi.waitFor(() => expect(deleteFolder).toHaveBeenCalledWith(7))
+    expect(deleteFolder).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-testid="folder-delete-dialog"]').exists()).toBe(false))
+  })
+
+  it('підпапка — дошки йдуть у батьківську папку; порожня — так і сказано', async () => {
+    const { wrapper } = await mountWithFolders()
+    const BoardFolderTree = (await import('../components/boards/BoardFolderTree.vue')).default
+    const tree = wrapper.findComponent(BoardFolderTree)
+
+    tree.vm.$emit('delete', 8)
+    await wrapper.vm.$nextTick()
+    const sub = wrapper.find('[data-testid="folder-delete-dialog"]').text()
+    expect(sub).toContain('winterboard.folders.confirmDelete.boardsMove:{"count":1,"target":"Олексій"}')
+    expect(sub).not.toContain('childrenMove')
+
+    await wrapper.find('.wb-dialog__btn--cancel').trigger('click')
+    tree.vm.$emit('delete', 9)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="folder-delete-dialog"]').text())
+      .toContain('winterboard.folders.confirmDelete.empty')
+  })
+
+  it('невідома папка (дерево застаріло) — без вікна й без видалення, дерево оновлюється', async () => {
+    const { wrapper, deleteFolder } = await mountWithFolders()
+    const calls = mockListBoardFolders.mock.calls.length
+    const BoardFolderTree = (await import('../components/boards/BoardFolderTree.vue')).default
+    wrapper.findComponent(BoardFolderTree).vm.$emit('delete', 999)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="folder-delete-dialog"]').exists()).toBe(false)
+    expect(deleteFolder).not.toHaveBeenCalled()
+    expect(mockListBoardFolders.mock.calls.length).toBe(calls + 1)
+  })
+})

@@ -8680,7 +8680,15 @@
       "moved": "Board moved",
       "moveError": "Failed to move board",
       "sidebar": "Folders",
-      "toggleSidebar": "Show/Hide folders"
+      "toggleSidebar": "Show/Hide folders",
+      "confirmDelete": {
+        "title": "Delete folder “{name}”?",
+        "boardsMove": "Boards in it: {count}. They will not be deleted — they move to “{target}”.",
+        "empty": "The folder is empty — there are no boards in it.",
+        "childrenMove": "Subfolders will move one level up.",
+        "confirm": "Delete folder",
+        "cancel": "Cancel"
+      }
     },
     "dashboard": {
       "subtitle": "Welcome to Winterboard",

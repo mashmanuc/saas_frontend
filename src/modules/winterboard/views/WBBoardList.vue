@@ -91,7 +91,7 @@
         @select-root="selectRoot"
         @create="handleCreateFolder"
         @rename="handleRenameFolder"
-        @delete="handleDeleteFolder"
+        @delete="requestDeleteFolder"
         @drop="handleDropToFolder"
       />
     </aside>
@@ -450,6 +450,43 @@
                 @click="handleDelete"
               >
                 {{ deleting ? '…' : t('winterboard.boards.confirmDelete.confirm') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Підтвердження видалення папки (14.10, власник: «видаляється в один клік»).
+         Дошки не зникають — бекенд переносить їх і підпапки на рівень вище. -->
+    <Teleport to="body">
+      <Transition name="wb-dialog-fade">
+        <div
+          v-if="folderDeleteTarget"
+          class="wb-dialog-overlay"
+          role="dialog"
+          aria-modal="true"
+          data-testid="folder-delete-dialog"
+          :aria-label="t('winterboard.folders.confirmDelete.title', { name: folderDeleteTarget.name })"
+          @click.self="folderDeleteTarget = null"
+        >
+          <div class="wb-dialog">
+            <h2 class="wb-dialog__title">
+              {{ t('winterboard.folders.confirmDelete.title', { name: folderDeleteTarget.name }) }}
+            </h2>
+            <p class="wb-dialog__message">{{ folderDeleteMessage }}</p>
+            <div class="wb-dialog__actions">
+              <button type="button" class="wb-dialog__btn wb-dialog__btn--cancel" @click="folderDeleteTarget = null">
+                {{ t('winterboard.folders.confirmDelete.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="wb-dialog__btn wb-dialog__btn--danger"
+                data-testid="folder-delete-confirm"
+                :disabled="deletingFolder"
+                @click="handleDeleteFolder"
+              >
+                {{ deletingFolder ? '…' : t('winterboard.folders.confirmDelete.confirm') }}
               </button>
             </div>
           </div>
@@ -859,18 +896,72 @@ async function handleRenameFolder(folderId: number, name: string): Promise<void>
   }
 }
 
-async function handleDeleteFolder(folderId: number): Promise<void> {
+// ── Видалення папки — лише через вікно підтвердження ────────────────
+// Кошик у дереві папок раніше видаляв одразу. Дошки при цьому не зникають
+// (`BoardFolderDetailView.delete` переносить їх і підпапки до батьківської
+// папки або в «Без папки»), але розкладку учня доводилось збирати заново.
+
+const folderDeleteTarget = ref<BoardFolderTreeType | null>(null)
+/** Куди перейдуть дошки: назва батьківської папки, `null` — «Без папки». */
+const folderDeleteParentName = ref<string | null>(null)
+const deletingFolder = ref(false)
+
+function findFolderWithParent(
+  nodes: BoardFolderTreeType[],
+  id: number,
+  parent: BoardFolderTreeType | null = null,
+): { node: BoardFolderTreeType; parent: BoardFolderTreeType | null } | null {
+  for (const node of nodes) {
+    if (node.id === id) return { node, parent }
+    const found = node.children?.length ? findFolderWithParent(node.children, id, node) : null
+    if (found) return found
+  }
+  return null
+}
+
+function requestDeleteFolder(folderId: number): void {
+  const found = findFolderWithParent(folderTree.value, folderId)
+  if (!found) {
+    // Дерево застаріло — оновлюємо, але без підтвердження нічого не видаляємо.
+    void fetchFolders()
+    return
+  }
+  folderDeleteTarget.value = found.node
+  folderDeleteParentName.value = found.parent?.name ?? null
+}
+
+const folderDeleteMessage = computed(() => {
+  const folder = folderDeleteTarget.value
+  if (!folder) return ''
+  const target = folderDeleteParentName.value ?? t('winterboard.folders.noFolder')
+  const parts: string[] = []
+  parts.push(folder.sessions_count > 0
+    ? t('winterboard.folders.confirmDelete.boardsMove', { count: folder.sessions_count, target })
+    : t('winterboard.folders.confirmDelete.empty'))
+  if (folder.children?.length) {
+    parts.push(t('winterboard.folders.confirmDelete.childrenMove'))
+  }
+  return parts.join(' ')
+})
+
+async function handleDeleteFolder(): Promise<void> {
+  const folder = folderDeleteTarget.value
+  if (!folder || deletingFolder.value) return
+  deletingFolder.value = true
   try {
-    await winterboardApi.deleteBoardFolder(folderId)
-    if (selectedFolderId.value === folderId) {
+    await winterboardApi.deleteBoardFolder(folder.id)
+    if (selectedFolderId.value === folder.id) {
       selectedFolderId.value = null
       rootOnly.value = false
     }
+    folderDeleteTarget.value = null
     await fetchFolders()
     await fetchBoards()
     notifySuccess(t('winterboard.folders.deleted'))
   } catch {
     notifyError(t('winterboard.folders.deleteError'))
+  } finally {
+    deletingFolder.value = false
   }
 }
 
