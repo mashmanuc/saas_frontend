@@ -31,6 +31,12 @@
       :loading="isLoadingLessons"
     />
 
+    <!-- Записи моїх уроків, які вчитель лишив видимими мені («👤 Видно учню», 2026-10-14) -->
+    <StudentLessonRecordsSection
+      :records="lessonRecords"
+      :loading="isLoadingRecords"
+    />
+
     <!-- Активні тьютори студента -->
     <StudentActiveTutorsSection
       :active-tutors="activeTutors"
@@ -54,6 +60,8 @@ import DashboardHero from '../components/DashboardHero.vue'
 import DashboardSecondaryContext from '../components/DashboardSecondaryContext.vue'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
 import StudentUpcomingLessonsSection from '../components/StudentUpcomingLessonsSection.vue'
+import StudentLessonRecordsSection from '../components/StudentLessonRecordsSection.vue'
+import { listStudentReplays, type StudentReplay } from '@/modules/winterboard/api/replayLifecycleApi'
 import apiClient from '@/utils/apiClient'
 import type { DashboardSnapshotV2, AssignedTutor, ActiveLesson } from '../api/dashboard'
 import { resolveCta } from '../utils/fallbackCta'
@@ -74,6 +82,9 @@ const isLoadingTutors = ref(false)
 
 const upcomingLessons = ref<ActiveLesson[]>([])
 const isLoadingLessons = ref(false)
+
+const lessonRecords = ref<StudentReplay[]>([])
+const isLoadingRecords = ref(false)
 
 // Fix #1: fallback до find_tutor якщо backend повернув null
 const heroCta = computed(() => resolveCta(snapshot.value?.primary_cta, 'student'))
@@ -118,6 +129,18 @@ async function loadUpcomingLessons() {
   }
 }
 
+async function loadLessonRecords() {
+  isLoadingRecords.value = true
+  try {
+    const data = await listStudentReplays()
+    lessonRecords.value = data.replays ?? []
+  } catch (err) {
+    console.error('[StudentHome] Failed to load lesson records:', err)
+  } finally {
+    isLoadingRecords.value = false
+  }
+}
+
 const notificationsStore = useNotificationsStore()
 const { items: notificationItems } = storeToRefs(notificationsStore)
 
@@ -136,6 +159,7 @@ onMounted(() => {
   loadSnapshot()
   loadActiveTutors()
   loadUpcomingLessons()
+  loadLessonRecords()
 })
 </script>
 

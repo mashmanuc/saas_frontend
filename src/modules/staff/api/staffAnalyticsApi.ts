@@ -403,7 +403,7 @@ export interface ReplayAnalyticsTopReplay {
   owner_email: string
   owner_id: number
   view_count: number
-  visibility: 'private' | 'unlisted' | 'public'
+  visibility: 'private' | 'student' | 'unlisted' | 'public'
   status: 'active' | 'archived' | 'trashed'
   recorded_at: string | null
   last_viewed_at: string | null

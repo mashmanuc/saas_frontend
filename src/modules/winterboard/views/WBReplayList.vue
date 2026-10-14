@@ -236,7 +236,7 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplayStore } from '../stores/replayStore'
-import type { Replay, ReplayStatus, ReplayVisibility } from '../api/replayLifecycleApi'
+import { isLinkVisibility, type Replay, type ReplayStatus, type ReplayVisibility } from '../api/replayLifecycleApi'
 import ReplayCard from '../components/replay/ReplayCard.vue'
 import ReplayFolderTree from '../components/replay/ReplayFolderTree.vue'
 import ReplayBreadcrumb, { type BreadcrumbItem } from '../components/replay/ReplayBreadcrumb.vue'
@@ -494,7 +494,7 @@ function handleOpen(replay: Replay) {
 
 function handleShare(replay: Replay) {
   openMenuId.value = null
-  if (replay.visibility === 'private') return
+  if (!isLinkVisibility(replay.visibility)) return
   const token = replay.public_token
   if (!token) return
   const url = `${window.location.origin}/winterboard/public/${token}`

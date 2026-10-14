@@ -40,6 +40,14 @@
         >
           ← {{ t('winterboard.replayList.title') }}
         </router-link>
+        <!-- Учень уроку дивиться запис зі своєї сторінки («Мої уроки», 2026-10-14) — туди й назад. -->
+        <router-link
+          v-else-if="isStudentView"
+          to="/student"
+          class="wb-public-view__to-list"
+        >
+          ← {{ t('studentDashboard.lessonRecords.title') }}
+        </router-link>
         <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
         <!-- «Дзеркало уроку», пілот (ТЗ TZ_LESSON_MIRROR_VIDEO_PILOT_2026-10-09 §2, §4): лише свій
              завершений запис контрольних акаунтів, де є сторінка з ≥ 2 фото-фонами. Публічне
@@ -183,7 +191,7 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { winterboardApi } from '../api/winterboardApi'
-import { getReplay, type Replay } from '../api/replayLifecycleApi'
+import { getReplayForViewer, isStudentReplay, type Replay } from '../api/replayLifecycleApi'
 import { collectMirrorPhotoPages } from '../composables/replayPhotoStates'
 // Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4); список спільний зі «Мої записи»
 import { isMirrorClipPilotUser as isMirrorClipPilotUser_ } from '../engine/lessonMirror/pilot'
@@ -214,8 +222,12 @@ const LessonMirrorExportDialog = defineAsyncComponent(() => import('../component
 
 const { t } = useI18n()
 const route = useRoute()
-/** Свій запис (маршрут `/winterboard/replay/:replayId`), а не публічне посилання. */
-const isOwnerView = computed(() => route.name === 'winterboard-replay-owner')
+/** Запис у кабінеті (маршрут `/winterboard/replay/:replayId`), а не публічне посилання. */
+const isAccountReplayRoute = computed(() => route.name === 'winterboard-replay-owner')
+/** Той самий маршрут відкрив учень уроку, якому вчитель лишив запис видимим (BE `viewer_role`). */
+const isStudentView = ref(false)
+/** Свій запис: кабінетний маршрут і не учень. */
+const isOwnerView = computed(() => isAccountReplayRoute.value && !isStudentView.value)
 const router = useRouter()
 const store = useWBStore()
 const authStore = useAuthStore()
@@ -435,7 +447,7 @@ async function enterReplayMode(): Promise<void> {
   const usePublicSnapshots = !ownerReplayId && !useV1 && replayFlag !== 'v2'
   replay = useV1 && !ownerReplayId
     ? useReplay(replaySessionId.value, token)
-    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots, ownerReplayId })
+    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots, ownerReplayId, noSnapshots: isStudentView.value })
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
@@ -854,8 +866,10 @@ onMounted(async () => {
   try {
     // Private replay іде тільки авторизованим owner route. Публічний token
     // як і раніше не несе cookie/Authorization і лишається CDN-cacheable.
-    const replayMeta = ownerReplayId ? await getReplay(ownerReplayId) : null
-    ownerReplayMeta.value = replayMeta
+    const replayMeta = ownerReplayId ? await getReplayForViewer(ownerReplayId) : null
+    const studentMeta = isStudentReplay(replayMeta) ? replayMeta : null
+    isStudentView.value = !!studentMeta
+    ownerReplayMeta.value = studentMeta ? null : replayMeta as Replay | null
     const data = ownerReplayId
       ? await winterboardApi.getSession(replayMeta!.source_session!) as unknown as WBSession
       : await winterboardApi.getPublicSession(token!) as unknown as WBSession
@@ -866,9 +880,12 @@ onMounted(async () => {
 
     // allow_download is API-only field, not part of store state
     allowDownload.value = (data as unknown as Record<string, unknown>).allow_download === true
-    ownerName.value = ownerReplayId
-      ? ''
-      : (data as unknown as Record<string, string>).owner ?? ''
+    // Свій запис — без підпису автора; учневі — ім'я вчителя; за посиланням — як віддає BE.
+    ownerName.value = studentMeta
+      ? studentMeta.tutor?.name ?? ''
+      : ownerReplayId
+        ? ''
+        : (data as unknown as Record<string, string>).owner ?? ''
     sessionCreatedAt.value = (data as unknown as { created_at?: string }).created_at ?? null
 
     const sessionId = data.id

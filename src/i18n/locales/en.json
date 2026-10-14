@@ -2708,6 +2708,16 @@
     }
   },
   "studentDashboard": {
+    "lessonRecords": {
+      "title": "My lessons",
+      "empty": {
+        "title": "No lesson recordings yet",
+        "description": "When your teacher records a lesson with you, it will appear here."
+      },
+      "untitled": "Untitled lesson",
+      "watch": "Watch",
+      "minutes": "{n} min"
+    },
     "subtitle": "Track your lessons, tutors, and invitations.",
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor.",
@@ -7827,6 +7837,7 @@
         "trashedSubtitle": "Trashed replays are kept for 7 days, then purged automatically"
       },
       "visibility": {
+        "student": "👤 Visible to the student",
         "private": "🔒 Private",
         "unlisted": "🔗 Anyone with the link",
         "link": "🔗 Share with students only",
@@ -9880,6 +9891,7 @@
         "send": "Send"
       },
       "share": {
+        "studentHint": "Only the student of this lesson sees the recording — on their page, under “My lessons”. To hide it, choose “🔒 Private”.",
         "title": "Share recording",
         "link": "Link",
         "linkHint": "Anyone with this link can view the lesson recording.",
@@ -9899,6 +9911,7 @@
         "createHint": "Recording will be created from what is already on the board",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
+          "student": "The student of this lesson sees the recording in their account. The link does not open it",
           "private": "The link does not work for anyone else",
           "unlisted": "Anyone who has the link can watch the recording without signing in",
           "public": "The recording is open to everyone and can be found and shared"

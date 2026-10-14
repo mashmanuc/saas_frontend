@@ -22,9 +22,10 @@ const { getReplay, changeReplayVisibility, rotateReplayToken } = vi.hoisted(() =
   rotateReplayToken: vi.fn(),
 }))
 
-vi.mock('../api/replayLifecycleApi', () => ({
-  getReplay, changeReplayVisibility, rotateReplayToken,
-}))
+vi.mock('../api/replayLifecycleApi', async () => {
+  const actual = await vi.importActual<typeof import('../api/replayLifecycleApi')>('../api/replayLifecycleApi')
+  return { getReplay, changeReplayVisibility, rotateReplayToken, isLinkVisibility: actual.isLinkVisibility }
+})
 vi.mock('../api/replay', () => ({ createReplayFromExistingOps: vi.fn() }))
 
 import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
@@ -152,5 +153,34 @@ describe('приватний режим не вбиває вже роздане 
     const w = await open('private', { public_token: null })
 
     expect(w.find('.wb-share-modal__revoke-btn').exists()).toBe(false)
+  })
+})
+
+describe('«👤 Видно учню» (рішення власника 2026-10-14)', () => {
+  it('режим є лише в запису уроку з учнем', async () => {
+    expect((await open('private', { lesson_student_id: 5 })).text()).toContain('👤 Видно учню')
+    expect((await open('private', { lesson_student_id: null })).text()).not.toContain('Видно учню')
+  })
+
+  it('у режимі учня посилання НЕ показуємо — воно для учня не відкривається', async () => {
+    const w = await open('student', { lesson_student_id: 5 })
+    expect(w.find('.wb-share-modal__link').exists()).toBe(false)
+    expect(w.text()).toContain('Запис бачить лише учень цього уроку')
+    expect(w.text()).toContain('За посиланням не відкривається')
+  })
+
+  it('перехід у режим учня не копіює посилання', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const w = await open('unlisted', { lesson_student_id: 5 })
+    changeReplayVisibility.mockResolvedValue(replayFixture({ visibility: 'student', lesson_student_id: 5 }))
+
+    const btn = w.findAll('.wb-share-modal__visibility-btn').find(b => b.text().includes('Видно учню'))!
+    await btn.trigger('click')
+    await flushPromises()
+
+    expect(changeReplayVisibility).toHaveBeenCalledWith('r-1', 'student')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(w.find('.wb-share-modal__link').exists()).toBe(false)
   })
 })

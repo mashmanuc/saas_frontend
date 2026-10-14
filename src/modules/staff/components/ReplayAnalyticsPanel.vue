@@ -490,6 +490,7 @@ onMounted(load)
 .vis-badge--public { background: color-mix(in srgb, var(--color-success, #10b981) 12%, transparent); color: var(--color-success, #10b981); }
 .vis-badge--unlisted { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .vis-badge--private { background: var(--bg-secondary); color: var(--text-secondary); }
+.vis-badge--student { background: var(--bg-secondary); color: var(--text-primary); }
 
 .replay-panel__footer {
   font-size: 0.75rem;

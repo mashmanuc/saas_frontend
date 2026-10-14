@@ -61,8 +61,8 @@
             </div>
           </div>
 
-          <!-- Link: tylko якщо unlisted або public -->
-          <div v-if="replay.visibility !== 'private' && shareUrl" class="wb-share-modal__link">
+          <!-- Link: лише якщо unlisted або public («👤 Видно учню» за посиланням не відкривається) -->
+          <div v-if="isLinkVisibility(replay.visibility) && shareUrl" class="wb-share-modal__link">
             <label class="wb-share-modal__label">
               {{ t('winterboard.replay.share.link') }}
             </label>
@@ -80,6 +80,10 @@
           <!-- Private hint -->
           <p v-if="replay.visibility === 'private'" class="wb-share-modal__hint">
             {{ t('winterboard.replay.share.privateHint') }}
+          </p>
+
+          <p v-if="replay.visibility === 'student'" class="wb-share-modal__hint">
+            {{ t('winterboard.replay.share.studentHint') }}
           </p>
 
           <!-- Приватний режим НЕ вбиває вже роздане посилання: токен той
@@ -120,6 +124,7 @@ import { createReplayFromExistingOps } from '../../api/replay'
 import {
   getReplay,
   changeReplayVisibility,
+  isLinkVisibility,
   rotateReplayToken,
   type Replay,
   type ReplayVisibility,
@@ -162,7 +167,7 @@ const justRevoked = ref(false)
  * далі відкривається.
  */
 const showRevoke = computed(() =>
-  replay.value?.visibility === 'private'
+  !!replay.value && !isLinkVisibility(replay.value.visibility)
   && !!replay.value?.public_token
   && !justRevoked.value,
 )
@@ -178,6 +183,14 @@ const visibilityOptions = computed(() => [
     label: t('winterboard.replayList.visibility.private'),
     hint: t('winterboard.replay.share.visibilityHints.private'),
   },
+  // «👤 Видно учню» — лише запис уроку з учнем (BE відмовить інакше).
+  ...(replay.value?.lesson_student_id || replay.value?.visibility === 'student'
+    ? [{
+        value: 'student' as ReplayVisibility,
+        label: t('winterboard.replayList.visibility.student'),
+        hint: t('winterboard.replay.share.visibilityHints.student'),
+      }]
+    : []),
   {
     value: 'unlisted' as ReplayVisibility,
     label: t('winterboard.replayList.visibility.unlisted'),
@@ -260,7 +273,7 @@ async function changeVis(value: ReplayVisibility) {
     replay.value = updated
     emit('replay-updated', updated)
     // Auto-copy URL when switching до public/unlisted
-    if (value !== 'private' && shareUrl.value) {
+    if (isLinkVisibility(value) && shareUrl.value) {
       copyLink()
     }
   } catch (e) {

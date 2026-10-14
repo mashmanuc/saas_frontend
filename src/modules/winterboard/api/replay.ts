@@ -507,7 +507,7 @@ export async function createReplayFromExistingOps(
  * Legacy 'link' → migrated to 'unlisted' у Replay entity. Для нових
  * операцій використовуй replayLifecycleApi.changeReplayVisibility().
  */
-export type ReplayVisibility = 'private' | 'unlisted' | 'public'
+export type ReplayVisibility = 'private' | 'student' | 'unlisted' | 'public'
 
 // [Phase C 2026-04-16] REMOVED (replaced by replayLifecycleApi):
 //   updateReplayVisibility()   → replayLifecycleApi.changeReplayVisibility(id, v)

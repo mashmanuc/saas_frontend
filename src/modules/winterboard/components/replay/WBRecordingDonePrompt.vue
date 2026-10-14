@@ -37,7 +37,7 @@
     </div>
 
     <!-- Copy link — показати якщо не private -->
-    <div v-if="shareUrl && currentReplay?.visibility !== 'private'" class="wb-rec-done__link">
+    <div v-if="shareUrl && isLinkVisibility(currentReplay?.visibility)" class="wb-rec-done__link">
       <input type="text" readonly :value="shareUrl" @focus="($event.target as HTMLInputElement).select()" />
       <button
         type="button"
@@ -70,6 +70,7 @@ import { useI18n } from 'vue-i18n'
 import {
   getReplay,
   changeReplayVisibility,
+  isLinkVisibility,
   type Replay,
   type ReplayVisibility,
 } from '../../api/replayLifecycleApi'
@@ -106,6 +107,15 @@ const visibilityOptions = computed<Array<{
     hint: t('winterboard.replay.share.visibilityHints.private'),
     icon: '🔒',
   },
+  // «👤 Видно учню» — лише запис уроку з учнем; такий запис уже стартує в цьому режимі (2026-10-14).
+  ...(currentReplay.value?.lesson_student_id || currentReplay.value?.visibility === 'student'
+    ? [{
+        value: 'student' as ReplayVisibility,
+        label: t('winterboard.replayList.visibility.student'),
+        hint: t('winterboard.replay.share.visibilityHints.student'),
+        icon: '👤',
+      }]
+    : []),
   {
     value: 'unlisted',
     label: t('winterboard.replayList.visibility.unlisted'),
@@ -137,7 +147,7 @@ async function onVisibilityChange(value: ReplayVisibility) {
     currentReplay.value = updated
     emit('replay-updated', updated)
     // Auto-copy URL коли юзер вибирає shareable mode
-    if (value !== 'private' && shareUrl.value) {
+    if (isLinkVisibility(value) && shareUrl.value) {
       await copyLink()
     }
   } catch (err) {

@@ -97,7 +97,7 @@
           <span aria-hidden="true">🎬</span><span class="replay-card__btn-label"> {{ t('winterboard.mirrorClip.video') }}</span>
         </button>
         <button
-          v-if="replay.visibility !== 'private' && replay.public_token && replay.status !== 'trashed'"
+          v-if="isLinkVisibility(replay.visibility) && replay.public_token && replay.status !== 'trashed'"
           type="button"
           class="replay-card__btn"
           :class="{ 'replay-card__btn--copied': copied }"
@@ -138,7 +138,7 @@
               </li>
               <li class="menu-header">{{ t('winterboard.replayList.menu.visibility') }}</li>
               <li
-                v-for="v in VISIBILITY_OPTIONS"
+                v-for="v in visibilityOptions"
                 :key="v"
                 role="menuitem"
                 class="menu-item-nested"
@@ -177,7 +177,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Replay, ReplayVisibility } from '../../api/replayLifecycleApi'
+import { isLinkVisibility, type Replay, type ReplayVisibility } from '../../api/replayLifecycleApi'
 
 interface Props {
   replay: Replay
@@ -206,7 +206,11 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const VISIBILITY_OPTIONS: ReadonlyArray<ReplayVisibility> = ['private', 'unlisted', 'public']
+// «👤 Видно учню» — лише запис уроку з учнем (BE відмовить інакше), 2026-10-14.
+const visibilityOptions = computed<ReadonlyArray<ReplayVisibility>>(() =>
+  props.replay.lesson_student_id || props.replay.visibility === 'student'
+    ? ['private', 'student', 'unlisted', 'public']
+    : ['private', 'unlisted', 'public'])
 
 // Має відповідати backend-у: `WB_REPLAY_PURGE_GRACE_DAYS` у
 // apps/winterboard/tasks.py. Зберігаємо локально бо API не експозить це значення.
@@ -288,6 +292,7 @@ function formatDuration(ms: number | null | undefined): string | null {
 function visibilityLabel(v: ReplayVisibility): string {
   if (v === 'public') return t('winterboard.replayList.visibility.public')
   if (v === 'unlisted') return t('winterboard.replayList.visibility.unlisted')
+  if (v === 'student') return t('winterboard.replayList.visibility.student')
   return t('winterboard.replayList.visibility.private')
 }
 

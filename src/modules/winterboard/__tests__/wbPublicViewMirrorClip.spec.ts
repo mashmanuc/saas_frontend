@@ -20,6 +20,9 @@ const env = vi.hoisted(() => ({
   startState: null as { pages: unknown[]; currentPageIndex: number } | null,
   operations: [] as BoardOperation[],
   replayCalls: { pause: 0 },
+  /** Що BE віддає на GET /replays/{id}/ — власнику повний запис, учневі уроку урізаний (2026-10-14). */
+  replayMeta: null as Record<string, unknown> | null,
+  replayOptions: null as Record<string, unknown> | null,
 }))
 
 vi.mock('vue-router', () => ({
@@ -30,13 +33,18 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => env.auth }))
 
-vi.mock('../api/replayLifecycleApi', () => ({
-  getReplay: vi.fn(async (id: string) => ({
+vi.mock('../api/replayLifecycleApi', async () => {
+  const actual = await vi.importActual<typeof import('../api/replayLifecycleApi')>('../api/replayLifecycleApi')
+  const ownerMeta = (id: string) => ({
     id, title: 'Урок', source_session: 'sess-1', recorded_at: '2026-10-09T10:00:00Z', duration_ms: 1000,
     start_seq: 10, end_seq: 100, status: 'active', visibility: 'private', public_token: null,
     folder: null, view_count: 0, archived_at: null, trashed_at: null,
-  })),
-}))
+  })
+  return {
+    isStudentReplay: actual.isStudentReplay,
+    getReplayForViewer: vi.fn(async (id: string) => env.replayMeta ?? ownerMeta(id)),
+  }
+})
 
 vi.mock('../api/winterboardApi', () => {
   const session = { id: 'sess-1', name: 'Урок дзеркала', state: null, updated_at: '2026-10-09T10:00:00Z' }
@@ -46,7 +54,7 @@ vi.mock('../api/winterboardApi', () => {
 vi.mock('../composables/useReplayV2', async () => {
   const { ref: vueRef } = await import('vue')
   return {
-    useReplayV2: () => ({
+    useReplayV2: (_sessionId: string, _token: unknown, options: Record<string, unknown>) => (env.replayOptions = options, {
       async loadTimeline(_onOp: unknown, onStartState?: (s: unknown) => void) {
         if (env.startState && onStartState) onStartState(env.startState)
       },
@@ -145,6 +153,8 @@ beforeEach(() => {
   env.route = { name: 'winterboard-replay-owner', params: { replayId: 'r-1' }, query: {} }
   env.auth = { user: { id: 40 } }
   env.replayCalls.pause = 0
+  env.replayMeta = null
+  env.replayOptions = null
   twoPhotoRecording()
 })
 
@@ -205,5 +215,35 @@ describe('WBPublicView — кнопка «Створити відеофрагм�
     await w.find('[data-testid="mirror-clip-close"]').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="mirror-clip-dialog"]').exists()).toBe(false)
+  })
+})
+
+describe('WBPublicView — той самий маршрут відкрив учень уроку (2026-10-14)', () => {
+  beforeEach(() => {
+    env.auth = { user: { id: 40 } }  // навіть пілотний id: роль визначає BE, а не номер акаунта
+    env.replayMeta = {
+      id: 'r-1', title: 'Урок', source_session: 'sess-1', recorded_at: '2026-10-09T10:00:00Z',
+      duration_ms: 1000, thumbnail_url: '', tutor: { id: 7, name: 'Олена Петрівна' }, viewer_role: 'student',
+    }
+  })
+
+  it('без дій власника: ні «Мої записи», ні відеофрагмента; назад — на «Мої уроки»', async () => {
+    const w = await mountView()
+    const links = w.findAll('.wb-public-view__to-list').map(l => l.text())
+    expect(links.some(t => t.includes('Мої уроки'))).toBe(true)
+    expect(links.some(t => t.includes('Мої записи'))).toBe(false)
+    expect(openBtn(w).exists()).toBe(false)
+  })
+
+  it('підписано вчителем, а знімки для перемотки не просимо (BE віддав би учневі 403 і тост)', async () => {
+    const w = await mountView()
+    expect(w.find('.wb-public-view__author').text()).toBe('Олена Петрівна')
+    expect(env.replayOptions?.noSnapshots).toBe(true)
+  })
+
+  it('власнику знімки лишаються', async () => {
+    env.replayMeta = null
+    await mountView()
+    expect(env.replayOptions?.noSnapshots).toBe(false)
   })
 })

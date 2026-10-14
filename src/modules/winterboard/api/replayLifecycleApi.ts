@@ -8,7 +8,16 @@ const BASE = '/v1/winterboard'
 // ─── Types ─────────────────────────────────────────────────────────
 
 export type ReplayStatus = 'active' | 'archived' | 'trashed'
-export type ReplayVisibility = 'private' | 'unlisted' | 'public'
+/**
+ * 'student' — «👤 Видно учню»: лише учень уроку цього запису, увійшовши у свій кабінет; за посиланням
+ * НЕ відкривається (рішення власника 2026-10-14). За замовчуванням для нових записів уроку з учнем.
+ */
+export type ReplayVisibility = 'private' | 'student' | 'unlisted' | 'public'
+
+/** Режими, у яких запис відкривається за посиланням (`public_token`). Дзеркало BE `Replay.LINK_VISIBILITIES`. */
+export function isLinkVisibility(v: ReplayVisibility | string | null | undefined): boolean {
+  return v === 'unlisted' || v === 'public' || v === 'link'
+}
 
 export interface Replay {
   id: string
@@ -25,6 +34,8 @@ export interface Replay {
   view_count: number
   /** Перший кадр запису (BE рендер start_state_ref). '' = нема прев'ю. */
   thumbnail_url?: string
+  /** Учень уроку, з дошки якого запис; null — дошка не урок, режим 'student' недоступний. */
+  lesson_student_id?: number | null
   created_at?: string
   updated_at?: string
   archived_at: string | null
@@ -55,6 +66,34 @@ export async function listReplays(params: ReplayListParams = {}): Promise<{ repl
 
 export async function getReplay(id: string): Promise<Replay> {
   return apiClient.get<Replay>(`${BASE}/replays/${id}/`)
+}
+
+// ─── Учень уроку (2026-10-14) ──────────────────────────────────────
+
+/** Запис очима учня уроку: без посилання, режиму й лічильника переглядів (BE `ReplayStudentSerializer`). */
+export interface StudentReplay {
+  id: string
+  title: string
+  source_session: string | null
+  recorded_at: string
+  duration_ms: number
+  thumbnail_url?: string
+  tutor: { id: number; name: string } | null
+  viewer_role: 'student'
+}
+
+export function isStudentReplay(r: Replay | StudentReplay | null | undefined): r is StudentReplay {
+  return !!r && (r as StudentReplay).viewer_role === 'student'
+}
+
+/** Записи МОЇХ уроків, які вчитель лишив видимими мені (найновіші, до 50). */
+export async function listStudentReplays(): Promise<{ replays: StudentReplay[] }> {
+  return apiClient.get<{ replays: StudentReplay[] }>(`${BASE}/replays/student/`)
+}
+
+/** Запис для перегляду: власнику — повний, учневі уроку — `StudentReplay`; іншим BE віддає 404. */
+export async function getReplayForViewer(id: string): Promise<Replay | StudentReplay> {
+  return apiClient.get<Replay | StudentReplay>(`${BASE}/replays/${id}/`)
 }
 
 export async function updateReplay(

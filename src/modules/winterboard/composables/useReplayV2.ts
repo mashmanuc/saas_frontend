@@ -71,6 +71,11 @@ export interface UseReplayV2Options {
   usePublicSnapshots?: boolean
   /** Власник дивиться private replay за id, без public token. */
   ownerReplayId?: string
+  /**
+   * Без знімків для перемотки (NullSnapshotProvider). Учень уроку (2026-10-14): знімки дошки — лише
+   * власнику (BE 403 → загальний тост apiClient «Доступ заборонено»), тож учневі їх не просимо.
+   */
+  noSnapshots?: boolean
 }
 
 export function useReplayV2(sessionId: string, publicToken?: string, options: UseReplayV2Options = {}) {
@@ -116,11 +121,13 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
   //   sessionId present                                         → AuthSnapshotProvider (owner: silent null on 403)
   //   anonymous, no public snapshots                            → NullSnapshotProvider (INV-V2-4)
   const provider: ReplaySnapshotProvider =
-    (options.usePublicSnapshots && publicToken)
-      ? new PublicSnapshotProvider(publicToken)        // INV-V2-PUB-1: token only, no sessionId
-      : sessionId
-        ? new AuthSnapshotProvider(sessionId)
-        : new NullSnapshotProvider()
+    options.noSnapshots
+      ? new NullSnapshotProvider()
+      : (options.usePublicSnapshots && publicToken)
+        ? new PublicSnapshotProvider(publicToken)        // INV-V2-PUB-1: token only, no sessionId
+        : sessionId
+          ? new AuthSnapshotProvider(sessionId)
+          : new NullSnapshotProvider()
 
   // Race protection: кожен seek отримує версію; після await — перевіряємо актуальність.
   let _seekVersion = 0
