@@ -27,6 +27,8 @@ vi.mock('@/modules/intent/corridors/corridorApi', () => ({
 }))
 vi.mock('@/utils/notify', () => ({ notifySuccess: vi.fn(), notifyError: vi.fn() }))
 vi.mock('../store/profileStore', () => ({ useProfileStore: () => api.store }))
+// «Мої предмети» — налаштування помічника, лише вчителю (учень — settingsIntegralykRole.spec).
+vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 1, role: 'tutor' } }) }))
 
 import { i18n } from '@/i18n'
 import GeneralSettingsTab from '../components/settings/GeneralSettingsTab.vue'

@@ -51,8 +51,11 @@
         </select>
       </div>
 
+      <!-- Помічник Інтегралик — лише тим, хто ним користується (учитель, персонал). Учень — без цих
+           налаштувань: помічник йому недоступний і за нього він не платить (власник 2026-10-14). -->
+      <template v-if="integralykAllowed">
       <!-- Помічник Інтегралик — увімк/вимк (per-акаунт, синхронно) -->
-      <div class="flex items-start gap-3 pt-2">
+      <div class="flex items-start gap-3 pt-2" data-testid="integralyk-setting">
         <input
           id="integralyk"
           v-model="formData.integralyk_enabled"
@@ -83,11 +86,12 @@
         </span>
         <AssistantLookPicker variant="full" />
       </div>
+      </template>
 
       <!-- Мої предмети — ВИДИМІСТЬ і дефолт Інтегралика, не дозвіл (рішення
            власника 2026-09-21). `[]` = «Усі предмети». Секція лише там, де
            коридори Інтегралика відкриті: інакше налаштування ні на що не діє. -->
-      <fieldset v-if="subjectChoices.length" class="pt-2" data-testid="teaching-subjects">
+      <fieldset v-if="integralykAllowed && subjectChoices.length" class="pt-2" data-testid="teaching-subjects">
         <legend class="text-sm font-medium text-foreground">
           {{ $t('users.settings.general.subjects') }}
         </legend>
@@ -173,8 +177,13 @@ import { i18n, setLocale } from '@/i18n'
 import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import AssistantLookPicker from '@/modules/intent/AssistantLookPicker.vue'
 import { useAssistantT } from '@/modules/intent/assistantLook'
+import { isIntegralykRole } from '@/modules/intent/integralykAccess'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const profileStore = useProfileStore()
+const authStore = useAuthStore()
+/** Налаштування помічника — лише тим, кому він доступний (те саме правило, що й вікно й сервер). */
+const integralykAllowed = computed(() => isIntegralykRole(authStore.user))
 
 /**
  * Старе написання київського поясу → нове.
@@ -238,6 +247,11 @@ function toggleSubject(id: string) {
 }
 
 async function loadSubjectChoices() {
+  // Учневі предмети помічника ні до чого — і реєстр коридорів не питаємо.
+  if (!integralykAllowed.value) {
+    subjectChoices.value = []
+    return
+  }
   try {
     const reg = await fetchCorridorRegistry(i18n.global.locale.value === 'en' ? 'en' : 'uk')
     subjectChoices.value = (reg?.available_subjects || []).filter((s: SubjectEntry) => s.id !== 'general')

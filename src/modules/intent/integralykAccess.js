@@ -17,11 +17,20 @@ import { errorCodeOf } from './errorMessage'
 /** Ролі, яким доступна палітра (плюс будь-який `is_staff`). */
 export const INTEGRALYK_ROLES = Object.freeze(['tutor', 'admin', 'staff', 'superadmin'])
 
+/**
+ * Чи має цей акаунт Інтегралика взагалі (роль), без огляду на маршрут. Учень — ні: помічник
+ * — інструмент учителя, учень за нього не платить (власник 2026-10-14, знімок «Налаштувань»
+ * учня з вимикачем і виглядом помічника). Те саме правило, що й сервер (`IsIntegralykUser`).
+ */
+export function isIntegralykRole(user) {
+  if (!user) return false
+  return INTEGRALYK_ROLES.includes(user.role) || user.is_staff === true
+}
+
 /** Чи доступна оболонка Інтегралика цьому користувачу на цьому маршруті. */
 export function canUseIntegralyk(user, route) {
-  if (!user) return false
   if (isPaletteHiddenRoute(route)) return false
-  return INTEGRALYK_ROLES.includes(user.role) || user.is_staff === true
+  return isIntegralykRole(user)
 }
 
 /** Персональний вимикач: показувати, доки користувач явно не вимкнув. */
