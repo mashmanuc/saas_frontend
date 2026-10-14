@@ -23,9 +23,9 @@ import { exportPreviewService } from '../services/exportPreviewService'
 import { buildNumberLineAsset } from '../constants/numberLineDefaults'
 import type { NumberLineAsset } from '../types/numberLine'
 
-// За замовчуванням — звичайний учитель (лише сторінка, без запитів); «Знаки інтервалів» і точний
-// розвʼязок — пілот id 40 (власник 2026-10-13), вмикаємо в окремих тестах. Гейт — numberLineIntervalsPilot.spec.ts.
-const auth = vi.hoisted(() => ({ user: { id: 7 } as { id: number } | null }))
+// За замовчуванням — гість без акаунта (лише сторінка, без запитів); «Знаки інтервалів» і точний
+// розвʼязок — усім, хто увійшов (власник 2026-10-14), вмикаємо в окремих тестах. Гейт — numberLineIntervalsPilot.spec.ts.
+const auth = vi.hoisted(() => ({ user: null as { id: number } | null }))
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => auth }))
 const api = vi.hoisted(() => ({ solveNumberLine: vi.fn() }))
 vi.mock('../api/winterboardApi', () => ({ winterboardApi: api, default: api }))
@@ -37,7 +37,7 @@ function asset(conditions: NumberLineAsset['data']['conditions'] = [], extra: Pa
 }
 
 let wrapper: VueWrapper | null = null
-afterEach(() => { wrapper?.unmount(); wrapper = null; __resetNumberLineUiForTests(); auth.user = { id: 7 }; api.solveNumberLine.mockReset() })
+afterEach(() => { wrapper?.unmount(); wrapper = null; __resetNumberLineUiForTests(); auth.user = null; api.solveNumberLine.mockReset() })
 
 /** Картка + інспектор сайдбару (показується, лише коли картка зареєструвала міст). */
 const Board = defineComponent({

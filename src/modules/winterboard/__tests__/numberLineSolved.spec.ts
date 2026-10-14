@@ -167,9 +167,9 @@ describe('правдива причина невдачі (рев\'ю 13.10, п. 
   })
 })
 
-describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
+describe('без акаунта (гість локальної дошки; до 14.10 — «не пілот», §5.4)', () => {
   it('нелінійний рядок — відмова словами, БЕЗ запиту (ні 403, ні червоного тосту)', async () => {
-    auth.user = { id: 7 }
+    auth.user = null   // гість без акаунта: повна пряма — усім, хто увійшов (власник 2026-10-14)
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
     await input0(w).setValue('x^2 - 4 > 0')
     await applyBtn(w).trigger('click')
@@ -179,8 +179,8 @@ describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
     expect(err0(w).text()).toContain('Це не лінійна нерівність')
   })
 
-  it('збережена пілотом пряма: рисунок той самий; «Застосувати» — відмова без запиту', async () => {
-    auth.user = { id: 7 }
+  it('збережена пряма з сервера: рисунок той самий; «Застосувати» без акаунта — відмова без запиту', async () => {
+    auth.user = null   // гість без акаунта: повна пряма — усім, хто увійшов (власник 2026-10-14)
     const w = await mountIt(solvedAsset(ROOT_RESULT))
     expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
     expect((input0(w).element as HTMLInputElement).value).toBe('√(x+1) > x − 1')
@@ -192,13 +192,13 @@ describe('не пілот (§5.4; рев\'ю 13.10, п. 1)', () => {
   })
 
   it('«Знаків інтервалів» не бачить', async () => {
-    auth.user = { id: 7 }
+    auth.user = null   // гість без акаунта: повна пряма — усім, хто увійшов (власник 2026-10-14)
     const w = await mountIt(buildNumberLineAsset({ x: 300, y: 200 }, {}, 'nl-new'))
     expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
   })
 
   it('збережений розвʼязок без виділення — лише рисунок, без запитів', async () => {
-    auth.user = { id: 7 }
+    auth.user = null   // гість без акаунта: повна пряма — усім, хто увійшов (власник 2026-10-14)
     const w = await mountIt(solvedAsset(ROOT_RESULT), { isSelected: false })
     expect(w.find('[data-testid="number-line-answer"]').attributes('data-plain')).toBe('x ∈ [−1; 3) — півінтервал')
     expect(api.solveNumberLine).not.toHaveBeenCalled()

@@ -1,7 +1,7 @@
 /**
- * Числова пряма: «Знаки інтервалів» — лише пілот id 40 (власник 2026-10-13: «треба тільки включати
- * для ID40… для пересічного користувача буде це як костиль»). Перемикача режимів немає ні в кого
- * (ТЗ «один рядок» §1). Пряма, де знаки вже є, показує галочку будь-кому — щоб її можна було вимкнути.
+ * Числова пряма: «Знаки інтервалів» — усім, хто увійшов (власник 2026-10-14: «треба, щоб вже для всіх
+ * користувачів було увімкнено»; до того — лише id 40). Гість без акаунта — без галочки (сервер
+ * розвʼязувача вимагає входу). Перемикача режимів немає ні в кого (ТЗ «один рядок» §1).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -40,7 +40,7 @@ async function mountWith(userId: number | null, extra: Partial<NumberLineAsset['
   return wrapper
 }
 
-describe('«Знаки інтервалів» — лише пілот', () => {
+describe('«Знаки інтервалів» — усім, хто увійшов', () => {
   it('id 40 бачить галочку «Знаки інтервалів»; перемикача режимів немає', async () => {
     const w = await mountWith(40)
     expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(true)
@@ -48,18 +48,18 @@ describe('«Знаки інтервалів» — лише пілот', () => {
     expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(true)
   })
 
-  it('звичайний учитель — без галочки, нерівності працюють', async () => {
+  it('будь-який учитель (не лише 40) — галочка є, нерівності працюють', async () => {
     const w = await mountWith(612)
-    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
+    expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(true)
     expect(w.find('[data-testid="number-line-input-0"]').exists()).toBe(true)
   })
 
-  it('без входу — теж без галочки', async () => {
+  it('без входу (гість локальної дошки) — без галочки', async () => {
     const w = await mountWith(null)
     expect(w.find('[data-testid="number-line-signs"]').exists()).toBe(false)
   })
 
-  it('пряма зі знаками — один рядок і увімкнена галочка й не-пілоту', async () => {
+  it('пряма зі знаками — один рядок і увімкнена галочка', async () => {
     const w = await mountWith(612, { mode: 'intervals', expression: '(x-1)(x+3)', op: '>=', rhs: '0' } as never)
     expect((w.find('[data-testid="number-line-input-0"]').element as HTMLInputElement).value).toBe('(x-1)(x+3) ≥ 0')
     expect(w.find('[data-testid="number-line-signs"]').classes()).toContain('is-active')

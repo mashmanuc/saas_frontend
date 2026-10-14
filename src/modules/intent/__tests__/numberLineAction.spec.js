@@ -157,13 +157,22 @@ describe('«Розвʼязати» від Інтегралика (ТЗ розв�
     expect(sceneExtras(a)).toEqual({ answer: 'x ∈ [−1; 3)', quote: 'ОДЗ: x ≥ −1' })
   })
 
-  it('не пілот: дошка сама не може — відмова словами БЕЗ запиту', async () => {
-    auth.user = { id: 7 }
+  it('без акаунта: дошка сама не може — відмова словами БЕЗ запиту', async () => {
+    auth.user = null   // гість без акаунта: повна пряма — лише тим, хто увійшов
     await expect(runBoardAction({ kind: 'add_number_line', payload: { expression: 'x^2 - 2x - 1', op: '<' } }))
       .rejects.toThrow('Таку нерівність дошка поки не розвʼязує')
     expect(api.solveNumberLine).not.toHaveBeenCalled()
     expect(page.assets).toHaveLength(0)
   })
+})
+
+it('будь-який учитель (не лише 40) — точний розвʼязок і знаки (власник 2026-10-14: «для всіх»)', async () => {
+  auth.user = { id: 612 }
+  api.solveNumberLine.mockResolvedValueOnce({ ok: true, intervals: [{ from: null, to: null }], points: [], domain: null, answer: 'x ∈ (−∞; +∞)', solver: 'sympy-1.13.3' })
+  await runBoardAction({ kind: 'add_number_line', payload: { lines: ['x^2 + 1 > 0'], combine: 'and', signs: false } })
+  expect(api.solveNumberLine).toHaveBeenCalledWith('x^2 + 1 > 0')
+  await runBoardAction({ kind: 'add_number_line', payload: { lines: ['(x-1)(x+3) > 0'], signs: true } })
+  expect(page.assets.map((a) => a.data.mode)).toEqual(['solved', 'intervals'])
 })
 
 // ТЗ «один рядок» §5 (етап В): Інтегралик передає нерівності як сказав учитель (`lines`), рахує той
@@ -203,14 +212,14 @@ describe('етап В: нерівності як сказав учитель —
       .toEqual([['set', 2, 'and'], ['set', 2, 'or']])
   })
 
-  it('не пілот: знаки знято (галочка — пілот), лінійна будується як у інспекторі', async () => {
-    auth.user = { id: 7 }
+  it('без акаунта: знаки знято, лінійна будується як у інспекторі', async () => {
+    auth.user = null   // гість без акаунта: повна пряма — лише тим, хто увійшов
     await add({ lines: ['x - 7 >= 7'], signs: true })
     expect(page.assets[0].data.mode).toBe('set')
   })
 
-  it('не пілот: нелінійна — відмова словами, без запиту й без обʼєкта', async () => {
-    auth.user = { id: 7 }
+  it('без акаунта: нелінійна — відмова словами, без запиту й без обʼєкта', async () => {
+    auth.user = null   // гість без акаунта: повна пряма — лише тим, хто увійшов
     await expect(add({ lines: ['(x-1)(x+3) > 0'], signs: true }))
       .rejects.toThrow('Таку нерівність дошка поки не розвʼязує: «(x-1)(x+3) > 0». Можу лінійні нерівності, системи й сукупності.')
     expect(api.solveNumberLine).not.toHaveBeenCalled()
