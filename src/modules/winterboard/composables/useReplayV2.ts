@@ -28,7 +28,7 @@ import {
   fetchPublicReplayByToken,
   fetchOwnerReplayPlayback,
   fetchReplayTimeline,
-  fetchLessonMarkers,
+  fetchLessonMarkers, fetchReplayViewerMarkers,
   fetchPublicLessonMarkers,
   reportReplayView,
 } from '../api/replay'
@@ -76,6 +76,8 @@ export interface UseReplayV2Options {
    * власнику (BE 403 → загальний тост apiClient «Доступ заборонено»), тож учневі їх не просимо.
    */
   noSnapshots?: boolean
+  /** Позначки — від запису (`/replays/{id}/markers/`), а не від дошки: учень-глядач (2026-10-14). */
+  markersReplayId?: string
 }
 
 export function useReplayV2(sessionId: string, publicToken?: string, options: UseReplayV2Options = {}) {
@@ -457,9 +459,11 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
   async function loadMarkers(): Promise<void> {
     try {
       // Публічний перегляд → за токеном: owner-ендпоінт давав чужому 403/401 і тост.
-      const result = publicToken && !options.ownerReplayId
-        ? await fetchPublicLessonMarkers(publicToken)
-        : await fetchLessonMarkers(sessionId)
+      const result = options.markersReplayId
+        ? await fetchReplayViewerMarkers(options.markersReplayId)
+        : publicToken && !options.ownerReplayId
+          ? await fetchPublicLessonMarkers(publicToken)
+          : await fetchLessonMarkers(sessionId)
       markers.value = result.markers
     } catch { /* non-critical */ }
   }

@@ -43,6 +43,7 @@ vi.mock('../api/replayLifecycleApi', async () => {
   return {
     isStudentReplay: actual.isStudentReplay,
     getReplayForViewer: vi.fn(async (id: string) => env.replayMeta ?? ownerMeta(id)),
+    getReplayBoard: vi.fn(async () => ({ id: 'sess-1', name: 'Урок дзеркала', state: null, updated_at: '2026-10-09T10:00:00Z' })),
   }
 })
 
@@ -119,6 +120,8 @@ vi.mock('../components/replay/LessonMirrorExportDialog.vue', async () => {
 })
 
 import WBPublicView from '../views/WBPublicView.vue'
+import { winterboardApi } from '../api/winterboardApi'
+import { getReplayBoard } from '../api/replayLifecycleApi'
 
 const img = (n: number) => `https://cdn.test/mirror/${n}.jpg`
 function photoOp(seq: number, n: number): BoardOperation {
@@ -241,9 +244,23 @@ describe('WBPublicView — той самий маршрут відкрив уч�
     expect(env.replayOptions?.noSnapshots).toBe(true)
   })
 
-  it('власнику знімки лишаються', async () => {
+  it('дошка й позначки — від запису, живу дошку не просимо (соло-дошки учень не учасник → 404)', async () => {
+    vi.mocked(winterboardApi.getSession).mockClear()
+    vi.mocked(getReplayBoard).mockClear()
+    await mountView()
+    expect(getReplayBoard).toHaveBeenCalledWith('r-1')
+    expect(winterboardApi.getSession).not.toHaveBeenCalled()
+    expect(env.replayOptions?.markersReplayId).toBe('r-1')
+  })
+
+  it('власнику — як і було: жива дошка, знімки, позначки дошки', async () => {
     env.replayMeta = null
+    vi.mocked(winterboardApi.getSession).mockClear()
+    vi.mocked(getReplayBoard).mockClear()
     await mountView()
     expect(env.replayOptions?.noSnapshots).toBe(false)
+    expect(env.replayOptions?.markersReplayId).toBeUndefined()
+    expect(winterboardApi.getSession).toHaveBeenCalledWith('sess-1')
+    expect(getReplayBoard).not.toHaveBeenCalled()
   })
 })

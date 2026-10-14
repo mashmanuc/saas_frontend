@@ -114,6 +114,14 @@ export async function shareReplayWithStudent(id: string, studentId: number | nul
   return apiClient.post<Replay>(`${BASE}/replays/${id}/share-student/`, { student_id: studentId })
 }
 
+/**
+ * Дошка САМОГО запису у формі сесії — для учня-глядача. Живої дошки він може не бачити (соло-запис,
+ * показаний йому вчителем), а дошка уроку після запису живе далі (INV-23 v3).
+ */
+export async function getReplayBoard(id: string): Promise<Record<string, unknown>> {
+  return apiClient.get<Record<string, unknown>>(`${BASE}/replays/${id}/board/`)
+}
+
 /** Запис для перегляду: власнику — повний, учневі уроку — `StudentReplay`; іншим BE віддає 404. */
 export async function getReplayForViewer(id: string): Promise<Replay | StudentReplay> {
   return apiClient.get<Replay | StudentReplay>(`${BASE}/replays/${id}/`)

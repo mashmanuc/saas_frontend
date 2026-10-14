@@ -703,6 +703,13 @@ export async function fetchPublicLessonMarkers(
  * Returns all markers for the session, ordered by [order, operation_index].
  * Owner / учень уроку. Публічна сторінка — fetchPublicLessonMarkers.
  */
+/** Позначки уроку від імені запису — для учня-глядача (`/sessions/{id}/markers/` дав би йому 403 і тост). */
+export async function fetchReplayViewerMarkers(
+  replayId: string,
+): Promise<{ markers: WBLessonMarker[] }> {
+  return apiClient.get<{ markers: WBLessonMarker[] }>(`${BASE}/replays/${replayId}/markers/`)
+}
+
 export async function fetchLessonMarkers(
   sessionId: string,
 ): Promise<{ markers: WBLessonMarker[] }> {

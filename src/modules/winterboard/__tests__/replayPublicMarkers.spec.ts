@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const { calls } = vi.hoisted(() => ({ calls: { owner: 0, pub: 0 } }))
+const { calls } = vi.hoisted(() => ({ calls: { owner: 0, pub: 0, viewer: 0 } }))
 
 vi.mock('../api/replay', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/replay')>()
@@ -17,32 +17,40 @@ vi.mock('../api/replay', async (importOriginal) => {
     fetchReplayTimeline: async () => ({ session_id: 's', total_operations: 0, operations: [], start_state: null }),
     fetchLessonMarkers: async () => { calls.owner++; return { markers: [] } },
     fetchPublicLessonMarkers: async () => { calls.pub++; return { markers: [{ id: 'm1' }] } },
+    fetchReplayViewerMarkers: async () => { calls.viewer++; return { markers: [{ id: 'v1' }] } },
   }
 })
 
 import { useReplayV2 } from '../composables/useReplayV2'
 import { useReplay } from '../composables/useReplay'
 
-beforeEach(() => { calls.owner = 0; calls.pub = 0 })
+beforeEach(() => { calls.owner = 0; calls.pub = 0; calls.viewer = 0 })
 
 describe('useReplayV2.loadMarkers — який ендпоінт', () => {
   it('публічний токен → публічні маркери, owner-ендпоінт не чіпається', async () => {
     const r = useReplayV2('sess', 'tok')
     await r.loadMarkers()
-    expect(calls).toEqual({ owner: 0, pub: 1 })
+    expect(calls).toEqual({ owner: 0, pub: 1, viewer: 0 })
     expect(r.markers.value.map((m) => m.id)).toEqual(['m1'])
   })
 
   it('власник (ownerReplayId) → owner-ендпоінт', async () => {
     const r = useReplayV2('sess', undefined, { ownerReplayId: 'rep' })
     await r.loadMarkers()
-    expect(calls).toEqual({ owner: 1, pub: 0 })
+    expect(calls).toEqual({ owner: 1, pub: 0, viewer: 0 })
   })
 
   it('без токена (автентифікований шлях) → owner-ендпоінт', async () => {
     const r = useReplayV2('sess')
     await r.loadMarkers()
-    expect(calls).toEqual({ owner: 1, pub: 0 })
+    expect(calls).toEqual({ owner: 1, pub: 0, viewer: 0 })
+  })
+
+  it('учень-глядач (markersReplayId) → позначки від запису, дошку не чіпаємо (2026-10-14)', async () => {
+    const r = useReplayV2('sess', undefined, { ownerReplayId: 'rep', markersReplayId: 'rep' })
+    await r.loadMarkers()
+    expect(calls).toEqual({ owner: 0, pub: 0, viewer: 1 })
+    expect(r.markers.value.map((m) => m.id)).toEqual(['v1'])
   })
 })
 
@@ -52,14 +60,14 @@ describe('useReplay (V1, ?replay=v1).loadMarkers — який ендпоінт',
   it('публічний токен → публічні маркери, owner-ендпоінт не чіпається', async () => {
     const r = useReplay('sess', 'tok')
     await r.loadMarkers()
-    expect(calls).toEqual({ owner: 0, pub: 1 })
+    expect(calls).toEqual({ owner: 0, pub: 1, viewer: 0 })
     expect(r.markers.value.map((m) => m.id)).toEqual(['m1'])
   })
 
   it('без токена → owner-ендпоінт, як і раніше', async () => {
     const r = useReplay('sess')
     await r.loadMarkers()
-    expect(calls).toEqual({ owner: 1, pub: 0 })
+    expect(calls).toEqual({ owner: 1, pub: 0, viewer: 0 })
   })
 })
 

@@ -191,7 +191,7 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { winterboardApi } from '../api/winterboardApi'
-import { getReplayForViewer, isStudentReplay, type Replay } from '../api/replayLifecycleApi'
+import { getReplayBoard, getReplayForViewer, isStudentReplay, type Replay } from '../api/replayLifecycleApi'
 import { collectMirrorPhotoPages } from '../composables/replayPhotoStates'
 // Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4); список спільний зі «Мої записи»
 import { isMirrorClipPilotUser as isMirrorClipPilotUser_ } from '../engine/lessonMirror/pilot'
@@ -447,7 +447,13 @@ async function enterReplayMode(): Promise<void> {
   const usePublicSnapshots = !ownerReplayId && !useV1 && replayFlag !== 'v2'
   replay = useV1 && !ownerReplayId
     ? useReplay(replaySessionId.value, token)
-    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots, ownerReplayId, noSnapshots: isStudentView.value })
+    : useReplayV2(replaySessionId.value!, token, {
+        usePublicSnapshots,
+        ownerReplayId,
+        // Учень-глядач: знімки — лише власнику, позначки — від запису (обидва від дошки дали б 403/тост).
+        noSnapshots: isStudentView.value,
+        markersReplayId: isStudentView.value ? ownerReplayId : undefined,
+      })
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
@@ -870,9 +876,12 @@ onMounted(async () => {
     const studentMeta = isStudentReplay(replayMeta) ? replayMeta : null
     isStudentView.value = !!studentMeta
     ownerReplayMeta.value = studentMeta ? null : replayMeta as Replay | null
-    const data = ownerReplayId
-      ? await winterboardApi.getSession(replayMeta!.source_session!) as unknown as WBSession
-      : await winterboardApi.getPublicSession(token!) as unknown as WBSession
+    // Учень — дошка САМОГО запису: живої дошки соло-запису він не бачить, а дошка уроку живе далі.
+    const data = studentMeta
+      ? await getReplayBoard(ownerReplayId!) as unknown as WBSession
+      : ownerReplayId
+        ? await winterboardApi.getSession(replayMeta!.source_session!) as unknown as WBSession
+        : await winterboardApi.getPublicSession(token!) as unknown as WBSession
 
     // Hydrate store — store is SSOT, no shadow state
     store.hydrateFromSession(data)
