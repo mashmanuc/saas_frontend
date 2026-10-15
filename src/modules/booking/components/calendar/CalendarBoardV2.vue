@@ -58,6 +58,7 @@
               :px-per-minute="pxPerMinute"
               :is-past-fn="isPast"
               :timezone="timezone"
+              :payment-marks="paymentMarks"
               @event-click="handleEventClick"
               @drag-start="handleEventDragStart"
             />
@@ -143,6 +144,8 @@ const props = defineProps<{
   timezone?: string
   availabilityMode?: boolean
   draftSlots?: DraftSlot[]
+  /** Залишок передоплати на уроках (2026-10-15): { [eventId]: 'last' | 'unpaid' } */
+  paymentMarks?: Record<string, 'last' | 'unpaid'>
 }>()
 
 const emit = defineEmits<{

@@ -9,20 +9,41 @@
       :class="{
         'is-past': isPastFn(event.start),
         'is-no-show': event.status === 'no_show',
-        'is-cancelled': event.status === 'cancelled'
+        'is-cancelled': event.status === 'cancelled',
+        [`event-card--pay-${markOf(event)}`]: Boolean(markOf(event))
       }"
+      :title="markOf(event) ? t(`calendar.paymentMark.${markOf(event)}Title`) : undefined"
       :style="getEventStyle(event)"
       @click="$emit('event-click', event)"
       @mousedown="handleEventMouseDown(event, $event)"
     >
-      <div class="event-student">{{ getStudentName(event) }}</div>
-      <div class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
+      <div class="event-student">
+        <!-- ₴ у першому рядку: на низькій 60-хв картці другий рядок обрізається, а цей видно завжди -->
+        <span
+          v-if="markOf(event)"
+          class="event-pay-chip"
+          :class="`event-pay-chip--${markOf(event)}`"
+          :data-testid="`lesson-pay-chip-${event.id}`"
+          aria-hidden="true"
+        >₴</span>{{ getStudentName(event) }}
+      </div>
+      <!-- Залишок передоплати (2026-10-15): на місці часу (час видно з сітки) — інакше на 60-хв картці обрізається -->
+      <div
+        v-if="markOf(event) && hasSecondLine(event)"
+        class="event-pay"
+        :class="`event-pay--${markOf(event)}`"
+        :data-testid="`lesson-pay-${event.id}`"
+      >
+        {{ t(`calendar.paymentMark.${markOf(event)}`) }}
+      </div>
+      <div v-else class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
@@ -51,7 +72,21 @@ const props = defineProps<{
   pxPerMinute: number
   isPastFn: (datetime: string) => boolean
   timezone?: string
+  /** Залишок передоплати (2026-10-15): { [eventId]: 'last' | 'unpaid' } */
+  paymentMarks?: Record<string, 'last' | 'unpaid'>
 }>()
+
+const { t } = useI18n()
+
+function markOf(event: CalendarEvent): 'last' | 'unpaid' | null {
+  return props.paymentMarks?.[String(event.id)] ?? null
+}
+
+/** Чи влазить другий рядок (плашка з текстом); на низькій картці її край визирав би знизу — там лише ₴ і смуга */
+const SECOND_LINE_MIN_PX = 46
+function hasSecondLine(event: CalendarEvent): boolean {
+  return calculateHeightPx(event.start, event.end) >= SECOND_LINE_MIN_PX
+}
 
 const emit = defineEmits<{
   'event-click': [event: CalendarEvent]
@@ -127,6 +162,60 @@ const formatTimeRange = (event: CalendarEvent): string => {
 .event-card.is-past {
   opacity: 0.6;
   cursor: default;
+}
+
+/* Залишок передоплати (2026-10-15): смуга ліворуч видна й на найменшій картці */
+.event-card--pay-last {
+  border-left: 4px solid #f59e0b;
+}
+
+.event-card--pay-unpaid {
+  border-left: 4px solid #dc2626;
+}
+
+.event-pay-chip {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  vertical-align: 1px;
+}
+
+.event-pay-chip--last {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.event-pay-chip--unpaid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.event-pay {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-pay--last {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.event-pay--unpaid {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .event-card.is-no-show {

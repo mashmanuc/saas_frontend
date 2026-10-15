@@ -84,6 +84,7 @@
           :is-drag-enabled="dragEnabled && !isAvailabilityMode && props.mode === 'tutor'"
           :availability-mode="isAvailabilityMode"
           :draft-slots="draftStore.slots"
+          :payment-marks="props.mode === 'tutor' ? paymentMarks : undefined"
           @event-click="handleEventClick"
           @slot-click="handleSlotClick"
           @cell-click="handleCellClickRouter"
@@ -207,6 +208,7 @@ import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
+import { studentPaymentsApi, type PaymentMark } from '@/modules/dashboard/api/studentPayments'
 import CalendarFooter from './CalendarFooter.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
@@ -291,6 +293,34 @@ const eventsToRender = computed(() => {
   return eventsV055Computed.value
 })
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
+
+// Залишок передоплати на уроках (власник 2026-10-15): «останній оплачений» / «не оплачено».
+// Окремий запит — знімок тижня не чіпаємо; облік вимкнено вчителю — позначок немає.
+const paymentMarks = ref<Record<string, PaymentMark>>({})
+const paymentMarksKey = computed(() => {
+  if (props.mode !== 'tutor') return ''
+  const days = daysToRender.value as Array<{ date?: string }>
+  const first = days[0]?.date?.slice(0, 10)
+  const last = days[days.length - 1]?.date?.slice(0, 10)
+  if (!first || !last) return ''
+  const evs = (eventsToRender.value as Array<{ id: number; start: string; status?: string }>)
+    .map((e) => `${e.id}:${e.start}:${e.status ?? ''}`).join(',')
+  return `${first}|${last}|${evs}`
+})
+let paymentMarksSeq = 0
+watch(paymentMarksKey, async (key) => {
+  if (!key) { paymentMarks.value = {}; return }
+  const [first, last] = key.split('|')
+  const seq = ++paymentMarksSeq
+  try {
+    const res = await studentPaymentsApi.scheduleMarks(first, dayjs(last).add(1, 'day').format('YYYY-MM-DD'))
+    if (seq === paymentMarksSeq) paymentMarks.value = res?.enabled ? (res.marks ?? {}) : {}
+  } catch (err) {
+    // Позначки — підказка, не дані розкладу: не вдалося — розклад без них, причина в консолі
+    console.warn('[CalendarWeekView] payment marks failed', err)
+    if (seq === paymentMarksSeq) paymentMarks.value = {}
+  }
+}, { immediate: true })
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
 const dragEnabled = computed(() => props.mode === 'tutor')

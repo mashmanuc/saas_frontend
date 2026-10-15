@@ -4224,6 +4224,12 @@
       "notAllow": "Not allowed",
       "${props.cell.status}": "{props.cell.status}"
     },
+    "paymentMark": {
+      "last": "last paid",
+      "unpaid": "not paid",
+      "lastTitle": "The last prepaid lesson — time to ask for payment",
+      "unpaidTitle": "A lesson beyond what was paid — no payment yet"
+    },
     "createLesson": {
       "conflictDetected": "Conflict Detected",
       "create": "Create Lesson",
