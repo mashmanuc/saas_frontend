@@ -36,6 +36,7 @@ const authStore = useAuthStore()
 
 const activeLesson = ref(null)
 let pollTimer = null
+const STALE_AFTER_END_MS = 2 * 60 * 60 * 1000
 
 // На dashboard-home DashboardHero вже рендерить «Урок зараз іде» → не дублюємо.
 const HOME_ROUTES = ['tutor-dashboard', 'student-dashboard']
@@ -58,9 +59,16 @@ async function fetchActiveLesson() {
     return
   }
   try {
-    const res = await lessonsApi.getActiveLessons({ status: 'in_progress' }, { silent: true })
+    // 2026-10-15: статус — як у базі (`IN_PROGRESS`). З червня тут стояло `in_progress`, а сервер порівнює
+    // точно → завжди порожньо, смужка не показувалась ніколи. Покинутий урок (учитель не натиснув «Завершити»,
+    // кінець давніше за 2 год) — не живий, як на головній учня: інакше смужка «висіла б» до автозавершення (24 год).
+    const res = await lessonsApi.getActiveLessons({ status: 'IN_PROGRESS' }, { silent: true })
     const list = res?.results ?? res?.data?.results ?? []
-    activeLesson.value = list.find((l) => String(l?.status).toLowerCase() === 'in_progress') ?? null
+    const fresh = Date.now() - STALE_AFTER_END_MS
+    activeLesson.value = list.find((l) =>
+      String(l?.status).toUpperCase() === 'IN_PROGRESS'
+      && l.has_session
+      && (!l.end || new Date(l.end).getTime() >= fresh)) ?? null
   } catch {
     activeLesson.value = null // best-effort discoverability — never blocks the page
   }
@@ -106,7 +114,8 @@ onBeforeUnmount(() => {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.25; }
 }
-.gal-banner__text { flex: 1 1 auto; }
+/* Кнопка одразу за текстом, а не в правому краю: там у вчителя плаває Інтегралик і накривав «Приєднатись» (2026-10-15) */
+.gal-banner__text { flex: 0 1 auto; }
 .gal-banner__btn {
   flex: none;
   padding: 0.35rem 1.1rem;
