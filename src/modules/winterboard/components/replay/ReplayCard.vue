@@ -108,8 +108,11 @@
           </button>
           <ul
             v-if="menuOpen"
+            ref="menuRef"
             v-click-outside="() => emit('close-menu')"
             class="replay-card__menu"
+            :class="{ 'replay-card__menu--down': menuOpensDown }"
+            :style="menuPlaced ? undefined : { visibility: 'hidden' }"
             role="menu"
           >
             <template v-if="replay.status === 'active'">
@@ -165,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { canShowToStudent, isLinkVisibility, type Replay, type ReplayVisibility } from '../../api/replayLifecycleApi'
 
@@ -211,6 +214,29 @@ const badgeLabel = computed(() =>
 const PURGE_GRACE_DAYS = 7
 
 const menuBtnRef = ref<HTMLButtonElement | null>(null)
+const menuRef = ref<HTMLUListElement | null>(null)
+
+// Меню відкривається вгору від «⋯». У верхніх записів воно вилазило під шапку застосунку — і
+// «Перейменувати» / «Перемістити в папку» не було видно й не натиснути (власник 2026-10-15, скрін).
+// Тож міряємо: вгорі не влазить, а внизу місця більше — відкриваємо вниз. Поки не поміряли — ховаємо,
+// щоб меню не блимало вгорі.
+const MENU_SAFE_TOP_PX = 72   // шапка застосунку + запас
+const menuOpensDown = ref(false)
+const menuPlaced = ref(false)
+watch(() => props.menuOpen, async (open) => {
+  menuOpensDown.value = false
+  menuPlaced.value = false
+  if (!open) return
+  await nextTick()
+  const btn = menuBtnRef.value?.getBoundingClientRect()
+  const menuHeight = menuRef.value?.offsetHeight ?? 0
+  if (btn && menuHeight) {
+    const spaceAbove = btn.top - MENU_SAFE_TOP_PX
+    const spaceBelow = window.innerHeight - btn.bottom
+    menuOpensDown.value = spaceAbove < menuHeight + 4 && spaceBelow > spaceAbove
+  }
+  menuPlaced.value = true
+}, { immediate: true })
 
 // Прев'ю не завантажилось (битий URL/видалений файл) → 🎬-плейсхолдер.
 const thumbFailed = ref(false)
@@ -541,6 +567,9 @@ const vClickOutside = {
   right: 0;
   bottom: calc(100% + 4px);
   min-width: 240px;
+  /* Запас на низькому екрані, де не влазить ні вгору, ні вниз: меню гортається, а не обрізається. */
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
   background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: var(--radius-md, 8px);
@@ -549,6 +578,11 @@ const vClickOutside = {
   margin: 0;
   list-style: none;
   z-index: 50;
+}
+
+.replay-card__menu--down {
+  bottom: auto;
+  top: calc(100% + 4px);
 }
 
 .replay-card__menu li {

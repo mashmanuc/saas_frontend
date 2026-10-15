@@ -9,7 +9,7 @@
  *
  * Тексти — з РЕАЛЬНОГО `uk.json`, як у replayAccessHonesty.spec.ts.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
@@ -224,5 +224,36 @@ describe('«👤 Показати учню…» (власник 2026-10-14: «с
     })
     await flushPromises()
     expect(w.text()).toContain('Запросіть учня в «Моїх учнях»')
+  })
+})
+
+describe('меню «⋯» картки не ховається під шапку (власник 2026-10-15, скрін)', () => {
+  // jsdom не рахує розмітку — геометрію кнопки й висоту меню підставляємо.
+  function mountAt(btnTop: number) {
+    const rect = { top: btnTop, bottom: btnTop + 32, left: 0, right: 32, width: 32, height: 32, x: 0, y: btnTop, toJSON: () => ({}) }
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect as DOMRect)
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(360)
+    return mount(ReplayCard, {
+      props: { replay: replayFixture() as never, viewMode: 'list', menuOpen: false, copied: false },
+      global: { plugins: [i18n], stubs, directives: { clickOutside: {} } },
+    })
+  }
+
+  afterEach(() => vi.restoreAllMocks())
+
+  it('верхній запис: угорі не влазить — меню відкривається вниз, усі пункти видно', async () => {
+    const w = mountAt(150)
+    await w.setProps({ menuOpen: true })
+    await flushPromises()
+    const menu = w.find('.replay-card__menu')
+    expect(menu.classes()).toContain('replay-card__menu--down')
+    expect(menu.attributes('style') ?? '').not.toContain('hidden')
+  })
+
+  it('нижній запис: угорі місця досить — меню, як і було, вгору', async () => {
+    const w = mountAt(700)
+    await w.setProps({ menuOpen: true })
+    await flushPromises()
+    expect(w.find('.replay-card__menu').classes()).not.toContain('replay-card__menu--down')
   })
 })
