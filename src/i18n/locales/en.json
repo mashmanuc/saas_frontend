@@ -7635,6 +7635,12 @@
     }
   },
   "winterboard": {
+    "phoneHint": {
+      "title": "The board works best on a computer or tablet",
+      "body": "Open m4sh.org on your computer — your board is already there. Your phone becomes the remote: flip pages, send photos, play videos.",
+      "understood": "Got it",
+      "openAnyway": "Open the board anyway"
+    },
     "mirrorClip": {
       "open": "Create video clip",
       "title": "Video clip from the recording",

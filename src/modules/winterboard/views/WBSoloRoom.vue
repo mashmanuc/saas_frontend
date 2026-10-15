@@ -1151,6 +1151,13 @@
       @close="showRemoteModal = false"
     />
 
+    <!-- Б-202: дошка на телефоні вертикально — «зручніше з комп'ютера, телефон — пульт» -->
+    <WBPhoneBoardHint
+      v-if="showPhoneBoardHint"
+      @understood="onPhoneHintUnderstood"
+      @open-anyway="onPhoneHintOpenAnyway"
+    />
+
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="wb-confirm-overlay" @click.self="showDeleteConfirm = false">
@@ -1287,6 +1294,12 @@ import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
 import { DEFAULT_BOARD_SIZES } from '../types/boardDrop'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
+import WBPhoneBoardHint from '../components/phone/WBPhoneBoardHint.vue'
+import {
+  readPhoneBoardHintDismissed,
+  rememberPhoneBoardHintDismissed,
+  shouldShowPhoneBoardHint,
+} from '../board/phoneBoardHint'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
@@ -2212,6 +2225,39 @@ watch(
 )
 
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
+
+/* Б-202 (власник 2026-10-15): на телефоні вертикально аркуш — чверть екрана, і новий учитель
+   з реклами пішов за 6 с. Власнику хмарної дошки — одне вікно: «зручніше з комп'ютера,
+   телефон — пульт». «Зрозуміло» — у кабінет; «Все одно відкрити» — більше не питати тут. */
+const phoneHintDismissed = ref(readPhoneBoardHintDismissed())
+const showPhoneBoardHint = computed(() => shouldShowPhoneBoardHint({
+  viewportWidth: deviceModeState.state.value.viewportWidth,
+  viewportHeight: deviceModeState.state.value.viewportHeight,
+  isSessionOwner: isSessionOwner.value,
+  isLocalWorkspace,
+  dismissed: phoneHintDismissed.value,
+}))
+
+function trackPhoneHint(action: 'shown' | 'understood' | 'open_anyway'): void {
+  import('@/utils/telemetryAgent').then(
+    m => m.trackEvent('wb.phone_hint', { action }),
+  ).catch(() => {})
+}
+
+watch(showPhoneBoardHint, (shown, wasShown) => {
+  if (shown && !wasShown) trackPhoneHint('shown')
+}, { immediate: true })
+
+function onPhoneHintUnderstood(): void {
+  trackPhoneHint('understood')
+  void router.push('/tutor')
+}
+
+function onPhoneHintOpenAnyway(): void {
+  trackPhoneHint('open_anyway')
+  rememberPhoneBoardHintDismissed()
+  phoneHintDismissed.value = true
+}
 const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tablet')
 
 const showTemplateSelector = ref(false)
