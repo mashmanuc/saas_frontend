@@ -12,7 +12,7 @@ import { balanceView } from '../../api/studentPayments'
 
 vi.mock('../../api/studentPayments', async (orig) => {
   const real = await orig<typeof import('../../api/studentPayments')>()
-  return { ...real, studentPaymentsApi: { ledger: vi.fn(), record: vi.fn(), remove: vi.fn(), summary: vi.fn() } }
+  return { ...real, studentPaymentsApi: { ledger: vi.fn(), record: vi.fn(), remove: vi.fn(), summary: vi.fn(), setLessonCounted: vi.fn() } }
 })
 import { studentPaymentsApi } from '../../api/studentPayments'
 
@@ -21,7 +21,7 @@ const fill = (s: string, p: Record<string, string | number>) => s.replace(/\{(\w
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
 
 const NONE = { tracking: false, since: null, paid_lessons: 0, done_lessons: 0, left_lessons: 0, last_price: null, debt_amount: 0 }
-const LEDGER = { student_id: 7, external_platform: '', payments: [], balance: NONE, month_lessons: { '2026-10': 8, '2026-11': 0 } }
+const LEDGER = { student_id: 7, external_platform: '', payments: [], lessons: [], balance: NONE, month_lessons: { '2026-10': 8, '2026-11': 0 } }
 
 function dialog() {
   return mount(StudentPaymentsDialog, {
@@ -48,6 +48,7 @@ describe('StudentPaymentsDialog', () => {
     vi.mocked(studentPaymentsApi.ledger).mockReset()
     vi.mocked(studentPaymentsApi.record).mockReset()
     vi.mocked(studentPaymentsApi.remove).mockReset()
+    vi.mocked(studentPaymentsApi.setLessonCounted).mockReset()
   })
 
   it('«усі уроки місяця» підставляє кількість з розкладу; запис — сума, уроки, дата, нотатка; залишок оновлено', async () => {
@@ -114,6 +115,56 @@ describe('StudentPaymentsDialog', () => {
     expect(studentPaymentsApi.remove).toHaveBeenCalledWith(3)
     expect(w.find('[data-testid="student-payments-history"]').exists()).toBe(false)
     expect($(w, 'student-payments-balance').text()).toBe(P.balance.none)
+    w.unmount()
+  })
+
+  // власник 15.10, пункт 3: «урок не рахувати» — проведений, але з передоплати не списується
+  it('«не рахується» — запит із counted:false, урок закреслено, залишок оновлено; ще раз — знову рахується', async () => {
+    const TRACK = { ...NONE, tracking: true, since: '2026-10-01', paid_lessons: 4, done_lessons: 2, left_lessons: 2, last_price: 250 }
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce({
+      ...LEDGER,
+      balance: TRACK,
+      lessons: [
+        { source: 'schedule', id: 11, start: '2026-10-06T07:00:00Z', minutes: 60, no_show: false, counted: true },
+        { source: 'instant', id: 5, start: '2026-10-08T07:00:00Z', minutes: 45, no_show: false, counted: true },
+      ],
+    } as never)
+    vi.mocked(studentPaymentsApi.setLessonCounted)
+      .mockResolvedValueOnce({ balance: { ...TRACK, done_lessons: 1, left_lessons: 3 } } as never)
+      .mockResolvedValueOnce({ balance: TRACK } as never)
+    vi.mocked(studentPaymentsApi.setLessonCounted)
+    const w = dialog()
+    await flushPromises()
+    const btn = () => $(w, 'student-payment-lesson-schedule-11')
+    expect(btn().text()).toBe(P.lessonCounted)
+    expect($(w, 'student-payments-lessons').text()).toContain(P.sourceInstant)
+    await btn().trigger('click')
+    await flushPromises()
+    expect(studentPaymentsApi.setLessonCounted).toHaveBeenLastCalledWith(7, { source: 'schedule', id: 11, counted: false })
+    expect(btn().text()).toBe(P.lessonNotCounted)
+    expect($(w, 'student-payments-balance').text()).toBe(fill(P.balance.left, { n: 3 }))
+    expect(w.emitted('changed')).toHaveLength(1)
+    await btn().trigger('click')
+    await flushPromises()
+    expect(studentPaymentsApi.setLessonCounted).toHaveBeenLastCalledWith(7, { source: 'schedule', id: 11, counted: true })
+    expect(btn().text()).toBe(P.lessonCounted)
+    w.unmount()
+  })
+
+  it('позначку не змінено — причина словами, урок як був', async () => {
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce({
+      ...LEDGER,
+      balance: { ...NONE, tracking: true, since: '2026-10-01', paid_lessons: 4, done_lessons: 1, left_lessons: 3 },
+      lessons: [{ source: 'schedule', id: 11, start: '2026-10-06T07:00:00Z', minutes: 60, no_show: true, counted: true }],
+    } as never)
+    vi.mocked(studentPaymentsApi.setLessonCounted).mockRejectedValueOnce({ response: { status: 404, data: { error: 'not_found' } } })
+    const w = dialog()
+    await flushPromises()
+    expect($(w, 'student-payments-lessons').text()).toContain(P.noShow)
+    await $(w, 'student-payment-lesson-schedule-11').trigger('click')
+    await flushPromises()
+    expect($(w, 'student-payment-error').text()).toBe(P.errors.not_found)
+    expect($(w, 'student-payment-lesson-schedule-11').text()).toBe(P.lessonCounted)
     w.unmount()
   })
 

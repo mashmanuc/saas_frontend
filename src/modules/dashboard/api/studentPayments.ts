@@ -25,10 +25,24 @@ export interface StudentPaymentItem {
   note: string
 }
 
+/** Проведений урок з першої оплати (2026-10-15): «рахувати / не рахувати» */
+export interface HeldLessonItem {
+  /** schedule — урок у розкладі; instant — «Створити урок» на картці */
+  source: 'schedule' | 'instant'
+  id: number
+  start: string
+  minutes: number
+  no_show: boolean
+  /** false — «урок не рахувати»: проведений, але з передоплати не списується */
+  counted: boolean
+}
+
 export interface StudentLedger {
   student_id: number
   external_platform: string
   payments: StudentPaymentItem[]
+  /** проведені уроки з першої оплати (порожньо, поки оплат немає) */
+  lessons: HeldLessonItem[]
   balance: PaymentBalance
   /** уроків учня в розкладі за поточний і наступний місяць: { 'YYYY-MM': n } */
   month_lessons: Record<string, number>
@@ -62,6 +76,13 @@ export const studentPaymentsApi = {
   },
   remove(paymentId: number): Promise<{ balance: PaymentBalance }> {
     return apiClient.delete(buildV1Url(`/tutor/payments/${paymentId}/`))
+  },
+  /** «Урок не рахувати» / знову рахувати (2026-10-15) */
+  setLessonCounted(
+    studentId: number | string,
+    body: { source: HeldLessonItem['source']; id: number; counted: boolean },
+  ): Promise<{ balance: PaymentBalance }> {
+    return apiClient.post(buildV1Url(`/tutor/students/${studentId}/payments/lessons/`), body)
   },
 }
 

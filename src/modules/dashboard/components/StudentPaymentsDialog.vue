@@ -84,6 +84,40 @@
           </div>
         </form>
 
+        <!-- «Урок не рахувати» (власник 2026-10-15, пункт 3) -->
+        <div v-if="ledger.lessons && ledger.lessons.length" class="space-y-2" data-testid="student-payments-lessons">
+          <p class="text-sm font-semibold text-body">
+            {{ $t('dashboard.tutor.payments.lessonsTitle', { since: formatDay(ledger.balance.since) }) }}
+          </p>
+          <p class="text-xs text-muted">{{ $t('dashboard.tutor.payments.lessonsHint') }}</p>
+          <ul class="max-h-56 divide-y divide-border-subtle overflow-y-auto text-sm">
+            <li
+              v-for="l in ledger.lessons"
+              :key="`${l.source}-${l.id}`"
+              class="flex items-center justify-between gap-3 py-2"
+              :class="{ 'text-muted': !l.counted }"
+            >
+              <span class="min-w-0" :class="{ 'line-through': !l.counted }">
+                <span class="font-medium" :class="l.counted ? 'text-body' : ''">{{ formatLessonTime(l.start) }}</span>
+                · {{ $t('dashboard.tutor.payments.minutes', { n: l.minutes }) }}
+                · {{ $t(l.source === 'schedule' ? 'dashboard.tutor.payments.sourceSchedule' : 'dashboard.tutor.payments.sourceInstant') }}
+                <span v-if="l.no_show"> · {{ $t('dashboard.tutor.payments.noShow') }}</span>
+              </span>
+              <button
+                type="button"
+                class="shrink-0 rounded-full border px-3 py-1 text-xs"
+                :class="l.counted ? 'border-emerald-600 text-emerald-700' : 'border-default text-muted'"
+                :disabled="togglingKey === `${l.source}-${l.id}`"
+                :data-testid="`student-payment-lesson-${l.source}-${l.id}`"
+                :title="$t(l.counted ? 'dashboard.tutor.payments.makeNotCounted' : 'dashboard.tutor.payments.makeCounted')"
+                @click="toggleCounted(l)"
+              >
+                {{ $t(l.counted ? 'dashboard.tutor.payments.lessonCounted' : 'dashboard.tutor.payments.lessonNotCounted') }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
         <div v-if="ledger.payments.length" class="space-y-2">
           <p class="text-sm font-semibold text-body">{{ $t('dashboard.tutor.payments.history') }}</p>
           <ul class="divide-y divide-border-subtle text-sm" data-testid="student-payments-history">
@@ -124,7 +158,7 @@ import { useI18n } from 'vue-i18n'
 import Modal from '../../../ui/Modal.vue'
 import Button from '../../../ui/Button.vue'
 import Input from '../../../ui/Input.vue'
-import { balanceView, formatUah, studentPaymentsApi, type StudentLedger } from '../api/studentPayments'
+import { balanceView, formatUah, studentPaymentsApi, type HeldLessonItem, type StudentLedger } from '../api/studentPayments'
 
 const props = defineProps<{ open: boolean; studentId: number | string | null; studentName: string }>()
 const emit = defineEmits<{ close: []; changed: [] }>()
@@ -140,6 +174,7 @@ const note = ref('')
 const saving = ref(false)
 const saveError = ref('')
 const confirmId = ref<number | null>(null)
+const togglingKey = ref<string | null>(null)
 
 function today(): string {
   const d = new Date()
@@ -206,6 +241,33 @@ const canSave = computed(() =>
 const pricePreview = computed(() =>
   canSave.value ? t('dashboard.tutor.payments.pricePreview', { price: formatUah(Math.round((amountNumber.value / lessonsNumber.value) * 100) / 100) }) : '',
 )
+
+function formatLessonTime(iso: string): string {
+  return new Intl.DateTimeFormat(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    .format(new Date(iso))
+}
+
+/** «Урок не рахувати» / знову рахувати: урок лишається проведеним, змінюється лише списання з передоплати */
+async function toggleCounted(l: HeldLessonItem): Promise<void> {
+  if (props.studentId == null || !ledger.value) return
+  const key = `${l.source}-${l.id}`
+  togglingKey.value = key
+  saveError.value = ''
+  try {
+    const res = await studentPaymentsApi.setLessonCounted(props.studentId, { source: l.source, id: l.id, counted: !l.counted })
+    ledger.value = {
+      ...ledger.value,
+      balance: res.balance,
+      lessons: ledger.value.lessons.map((x) => (x.source === l.source && x.id === l.id ? { ...x, counted: !l.counted } : x)),
+    }
+    emit('changed')
+  } catch (err) {
+    // Видимо у вікні; позначка не змінилась
+    saveError.value = errorText(err)
+  } finally {
+    togglingKey.value = null
+  }
+}
 
 function formatDay(iso: string | null): string {
   if (!iso) return ''
