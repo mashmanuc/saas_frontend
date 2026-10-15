@@ -148,7 +148,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
 <h3>How to open it</h3>
 <ul>
   <li>Click the character button on the board (you can drag it wherever is convenient).</li>
-  <li>Or press <strong>Ctrl+Shift+K</strong> (or <strong>Ctrl/⌘+K</strong>).</li>
+  <li>Or press <strong>Ctrl+K</strong>.</li>
 </ul>
 <h3>What you can ask for</h3>
 <ul>
@@ -159,7 +159,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
   <li>A card with theory or formulas for the lesson topic.</li>
 </ul>
 <h3>Ask about the selection</h3>
-<p>Select a card, a problem, a picture or a number line on the board and ask about it: Integralyk sees exactly what is selected (the full problem text, answer options, the card's caption and sources).</p>
+<p>Select a card, a problem, a picture or a number line on the board and ask about it: Integralyk sees exactly what is selected.</p>
 <h3>"What Integralyk read"</h3>
 <p>Select a picture with formulas or text and a <strong>"What Integralyk read"</strong> button appears. It shows what the assistant recognized. Click a formula or text to correct it: once saved, Integralyk works with the corrected version.</p>
 <h3>Look and switching off</h3>
@@ -174,7 +174,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
         body: `
 <p>This is the board's key advantage — interactive math objects. Select an object, and its parameters appear in the panel on the right.</p>
 <ul>
-  <li><strong>Graphing calculator</strong> — y=f(x) graphs: arbitrary expressions, several curves, live slider parameters, points on a curve. Formulas go in rows, as in Desmos: <strong>Enter</strong> — a new row, <strong>↑/↓</strong> — the neighbouring row; you can paste several formulas at once (each becomes its own row), and an error is shown under its row. The <strong>▶</strong> button next to a parameter runs it from the minimum to the maximum by itself. The axes have separate scales, and the graph window fits itself.</li>
+  <li><strong>Graphing calculator</strong> — y=f(x) graphs: arbitrary expressions, several curves, live slider parameters, points on a curve. Each formula goes in its own row; you can paste several formulas at once. The <strong>▶</strong> button next to a parameter runs it from the minimum to the maximum by itself. The graph window fits itself.</li>
   <li><strong>Number line</strong> — type an inequality in one line ("x &gt; 3", "−3 &lt; x ≤ 5", "x² − 4 ≥ 0") and click "Apply": the board picks the method itself — an interval, roots, or the <strong>"Interval method"</strong> with signs on the intervals — and shows the answer and the domain. "+ condition" combines several inequalities into a system ("and") or a union ("or").</li>
   <li><strong>Trigonometric circle</strong> — the unit circle and sin/cos/tan/cot graphs, dragging the point, angle labels, numeric values.</li>
   <li><strong>Derivative / Integral</strong> — tangent and secant lines, the f'(x) trace; Riemann sum (left/middle/right), antiderivative.</li>
@@ -279,7 +279,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
         title: 'Phone remote',
         summary: 'Control the lesson from your phone: pages, photos, videos, Integralyk.',
         body: `
-<p>The remote turns your phone into a remote control for the board open on your computer (for example, on a classroom projector). It controls the lesson you run from "My Lessons" → "Conduct"; photos from the remote only go into such a lesson, not into a template in the Studio.</p>
+<p>The remote turns your phone into a remote control for the board open on your computer (for example, on a classroom projector). It works in the lesson you run from "My Lessons" → "Conduct".</p>
 <h3>How to connect</h3>
 <ol>
   <li>Open the lesson board on your computer and click the <strong>"Phone remote"</strong> button (📱) at the top.</li>
@@ -321,7 +321,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
 <h3>Lesson recording</h3>
 <p>In a lesson you run from "My Lessons" → "Conduct", Mirror starts the recording on "Start" and finishes it on "Stop" — the lesson appears in "My Replays". On other boards the shots still go, but nothing is recorded.</p>
 <h3>Shots in "Materials"</h3>
-<p>Shots are kept in "Materials", grouped by each run. The <strong>"Clear unused"</strong> button (🧹) moves shots that are not used anywhere (not on boards, in recordings or in templates) to the Archive; you can restore them from there within 90 days.</p>
+<p>Shots are kept in "Materials", grouped by each run. The <strong>"Clear unused"</strong> button (🧹) clears shots that are not used anywhere; for 90 days you can still restore them from the Archive.</p>
 `,
       },
     ],
