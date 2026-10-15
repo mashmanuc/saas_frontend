@@ -49,6 +49,8 @@ export interface StudentLedger {
 }
 
 export interface PaymentsSummary {
+  /** власник 2026-10-15: «оплату тільки вмикаєм для ID=40» — false: облік цьому вчителю не показуємо */
+  enabled: boolean
   month: string
   received: number
   payments_count: number

@@ -429,8 +429,11 @@ async function loadPaymentsSummary() {
   }
 }
 
+// Власник 2026-10-15: «оплату тільки вмикаєм для ID=40» — сервер каже, чи облік увімкнено цьому вчителю
+const paymentsEnabled = computed(() => paymentsSummary.value?.enabled === true)
+
 function canTrackPayments(relation) {
-  return relation?.status === 'active' && Boolean(relation.student?.id) && !relation.external_platform
+  return paymentsEnabled.value && relation?.status === 'active' && Boolean(relation.student?.id) && !relation.external_platform
 }
 
 function openPayments(relation) {
@@ -449,7 +452,7 @@ function paymentLine(relation) {
 
 const paymentsSummaryText = computed(() => {
   const s = paymentsSummary.value
-  if (!s || (!s.payments_count && !s.lessons_done && !s.debtors)) return ''
+  if (!s || !s.enabled || (!s.payments_count && !s.lessons_done && !s.debtors)) return ''
   const month = new Intl.DateTimeFormat(locale.value, { month: 'long' }).format(new Date(`${s.month}-15T12:00:00`))
   const head = t('dashboard.tutor.payments.summary', {
     month: month.charAt(0).toUpperCase() + month.slice(1),
