@@ -29,7 +29,7 @@ export interface Relation {
     is_demo?: boolean       // Pre-Phase 4: Demo Student flag
     is_placeholder?: boolean // 2026-10-14: учень без акаунта (додав учитель за іменем)
   }
-  /** 2026-10-14: звідки учень — '' свій, інакше назва платформи («Бука») */
+  /** 2026-10-14: звідки учень — '' свій, інакше назва платформи */
   external_platform?: string
   status: 'invited' | 'active' | 'paused' | 'archived'
   created_at: string

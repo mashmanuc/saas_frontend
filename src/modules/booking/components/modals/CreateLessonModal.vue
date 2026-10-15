@@ -986,7 +986,7 @@ function handleClose() {
   color: var(--text-primary);
 }
 
-/* «звідки учень» (2026-10-14): напр. «· Бука» */
+/* «звідки учень» (2026-10-14): назва платформи після імені */
 .student-platform {
   margin-left: 4px;
   font-size: 12px;

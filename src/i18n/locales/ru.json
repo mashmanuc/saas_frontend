@@ -2928,7 +2928,7 @@
         "source": "Откуда ученик",
         "sourceOwn": "Мой ученик",
         "sourcePlatform": "С платформы",
-        "platformPlaceholder": "Например, Бука",
+        "platformPlaceholder": "Название платформы",
         "platformHelp": "Пометка видна в списке учеников и при выборе ученика для урока.",
         "notes": "Заметка",
         "notesPlaceholder": "Класс, тема, как связаться",
