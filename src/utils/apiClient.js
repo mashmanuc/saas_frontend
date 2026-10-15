@@ -641,6 +641,25 @@ api.interceptors.response.use(
 const _resolvedAdapter = typeof axios.getAdapter === 'function'
   ? axios.getAdapter(api.defaults.adapter || axios.defaults.adapter)
   : (typeof api.defaults.adapter === 'function' ? api.defaults.adapter : (config) => Promise.resolve({ data: {}, status: 200, config }))
+
+// Б-201 (2026-10-15): склеєний викликач отримує ВІДМОВУ першого запиту — а в ній
+// `config` першого. Обробник відповіді першого вже зупинив свій лоадер і погасив
+// `_loaderStarted` на тому config, тож обробник другого свій лоадер не зупиняв:
+// оверлей «Завантаження…» висів 60 с до запобіжника (прод, нова вчителька 14.10,
+// active_count 1 і 2). Тут кожному — своя копія помилки з ВЛАСНИМ config (як
+// `{ ...response, config }` в успіху): той самий клас (isCancel/isAxiosError
+// лишаються), ті самі поля, лише config і response.config — свої.
+function _errorForCaller(error, config) {
+  if (!error || typeof error !== 'object') return error
+  const own = Object.create(Object.getPrototypeOf(error))
+  Object.defineProperties(own, Object.getOwnPropertyDescriptors(error))
+  own.config = config
+  if (error.response && typeof error.response === 'object') {
+    own.response = { ...error.response, config }
+  }
+  return own
+}
+
 api.defaults.adapter = function dedupAdapter(config) {
   const key = config._dedupeKey
   if (!key) {
@@ -658,7 +677,7 @@ api.defaults.adapter = function dedupAdapter(config) {
     }
     return existing.then(
       response => ({ ...response, config }),
-      error => Promise.reject(error)
+      error => Promise.reject(_errorForCaller(error, config))
     )
   }
 
