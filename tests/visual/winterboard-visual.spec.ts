@@ -141,6 +141,9 @@ async function selectTool(page: Page, tool: string): Promise<void> {
 
 test.describe('Winterboard Visual Regression', () => {
   test.beforeEach(async ({ page }) => {
+    // Б-202: на телефоні вертикально власнику показується вікно «Дошку зручніше вести з комп'ютера»;
+    // ці тести знімають саму дошку, тож вибір «Все одно відкрити дошку» — заздалегідь.
+    await page.addInitScript(() => localStorage.setItem('m4sh:wb-phone-hint-dismissed', '1'))
     await mockSessionAPI(page)
   })
 
