@@ -254,8 +254,11 @@ async function handleJoinLesson() {
   joinHint.value = null
   try {
     const res = await lessonsApi.getActiveLessons({ status: 'IN_PROGRESS' }, { silent: true })
+    // Покинутий урок (учитель не натиснув «Завершити», кінець давніше за 2 год) — не живий: як на головній учня
+    const fresh = Date.now() - 2 * 60 * 60 * 1000
     const live = (res?.results || []).find(
-      (l: { tutor_id?: number; has_session?: boolean }) => l.tutor_id === tutorId && l.has_session,
+      (l: { tutor_id?: number; has_session?: boolean; end?: string }) =>
+        l.tutor_id === tutorId && l.has_session && (!l.end || new Date(l.end).getTime() >= fresh),
     )
     if (live) {
       closeEventDrawer()

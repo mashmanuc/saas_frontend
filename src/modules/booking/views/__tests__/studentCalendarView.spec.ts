@@ -113,6 +113,18 @@ describe('Розклад учня', () => {
     expect(joinEventRoom).not.toHaveBeenCalled()
   })
 
+  it('«Зайти на урок»: покинутий учителем урок (кінець давніше за 2 год) — не живий, «Урок ще не почався»', async () => {
+    const stale = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+    getActiveLessons.mockResolvedValue({ results: [{ id: 'old', tutor_id: 578, has_session: true, end: stale }] })
+    const w = await mountView()
+    w.findComponent(WeekStub).vm.$emit('eventClick', 77)
+    await flushPromises()
+    await w.findAll('button').find((b) => b.text() === SC.joinLesson)!.trigger('click')
+    await flushPromises()
+    expect(push).not.toHaveBeenCalled()
+    expect(w.find('[data-testid="student-join-hint"]').text()).toBe(SC.notStarted)
+  })
+
   it('«Зайти на урок»: урок ще не почався — пояснення, нікуди не веде', async () => {
     getActiveLessons.mockResolvedValue({ results: [] })
     const w = await mountView()
