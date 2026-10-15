@@ -43,7 +43,7 @@
       </div>
       
       <router-link 
-        to="/bookings" 
+        to="/student/schedule" 
         class="inline-flex items-center text-sm text-accent hover:underline"
       >
         {{ $t('studentDashboard.actions.viewAllLessons') }}

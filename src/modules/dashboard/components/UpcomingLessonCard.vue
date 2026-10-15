@@ -24,7 +24,8 @@
       >
         {{ joining ? '...' : (isTutor ? 'Почати урок' : 'Приєднатися') }}
       </button>
-      <router-link :to="`/bookings/${lesson.id}`" class="link-ghost px-3 py-1.5 text-sm">
+      <!-- Учню «Деталі» — його розклад: сторінка /bookings/:id для учня давно мертва (2026-10-15) -->
+      <router-link :to="isTutor ? `/bookings/${lesson.id}` : '/student/schedule'" class="link-ghost px-3 py-1.5 text-sm">
         Деталі
       </router-link>
     </div>
@@ -98,6 +99,7 @@ const statusLabel = computed(() => {
   const labels: Record<string, string> = {
     pending: 'Очікує',
     confirmed: 'Підтверджено',
+    scheduled: 'Заплановано',
     in_progress: 'Триває',
     completed: 'Завершено',
     cancelled: 'Скасовано',

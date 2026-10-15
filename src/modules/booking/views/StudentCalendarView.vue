@@ -55,6 +55,8 @@
       mode="student" 
       :external-days="studentDays"
       :external-events="studentEvents"
+      :external-timezone="studentTimezone"
+      @event-click="openEvent"
     />
 
     <!-- Student Event Drawer -->
@@ -72,8 +74,10 @@
 
         <div class="event-detail">
           <label>{{ $t('calendar.status') }}</label>
-          <p>{{ $t(`calendar.status.${selectedEvent.status}`) }}</p>
+          <p>{{ $te(`student.calendar.statusLabel.${selectedEvent.status}`) ? $t(`student.calendar.statusLabel.${selectedEvent.status}`) : selectedEvent.status }}</p>
         </div>
+
+        <p v-if="joinHint" class="join-hint" data-testid="student-join-hint">{{ joinHint }}</p>
       </template>
 
       <template #footer>
@@ -103,6 +107,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
+import lessonsApi from '@/api/lessons'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
@@ -131,13 +136,15 @@ const authStore = useAuthStore()
 const selectedEvent = ref<MyCalendarEvent | null>(null)
 const selectedTutorId = ref<number | null>(null)
 const joiningRoom = ref(false)
+const joinHint = ref<string | null>(null)
 const myEvents = ref<MyCalendarEvent[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const STUDENT_TIMEZONE = 'Europe/Kiev'
+// Пояс учня з профілю (власник 15.10: урок о 16:00 за Києвом учень бачив о 13:00 — сітка малювала в UTC)
+const studentTimezone = computed(() => authStore.user?.timezone || 'Europe/Kyiv')
 
 function getMondayStart(date: dayjs.Dayjs) {
-  const tzDate = date.tz(STUDENT_TIMEZONE)
+  const tzDate = date.tz(studentTimezone.value)
   const dayOfWeek = tzDate.day() // 0 = Sunday, 1 = Monday
   const daysFromMonday = (dayOfWeek + 6) % 7
   return tzDate.subtract(daysFromMonday, 'day').startOf('day')
@@ -206,18 +213,21 @@ const studentEvents = computed<CalendarEventV055[]>(() => {
     end: event.end,
     status: event.status as CalendarEventV055['status'],
     is_first: false,
-    student: event.student || { id: 0, name: 'Unknown' },
+    // Картка уроку підписана полем student — учневі там потрібен учитель, а не він сам (власник 15.10)
+    student: { id: event.tutor?.id ?? 0, name: event.tutor?.name || t('calendar.tutor') },
     lesson_link: '',
     can_reschedule: false,
     can_mark_no_show: false,
-    clientName: event.tutor?.name || 'Tutor',
-    // Store tutor info in student field for rendering (will show in grid)
-    // Note: CalendarEventV055 expects 'student' field, but for student view we show tutor name
   }))
 })
 
+function openEvent(eventId: number) {
+  selectedEvent.value = myEvents.value.find((e) => e.id === eventId) || null
+}
+
 function closeEventDrawer() {
   selectedEvent.value = null
+  joinHint.value = null
 }
 
 async function handleMessageTutor() {
@@ -235,60 +245,47 @@ async function handleMessageTutor() {
   closeEventDrawer()
 }
 
+// «Зайти на урок» (власник 15.10): урок іде там, де його відкрив учитель, — живий урок із цим учителем.
+// Кімната події розкладу вела на особисту дошку вчителя, куди учню доступу немає.
 async function handleJoinLesson() {
-  if (!selectedEvent.value) return
-  
+  if (!selectedEvent.value?.tutor) return
+  const tutorId = selectedEvent.value.tutor.id
   joiningRoom.value = true
-  
+  joinHint.value = null
   try {
-    // Call backend join endpoint (v0.70)
-    const response = await calendarV055Api.joinEventRoom(selectedEvent.value.id)
-    
-    // Navigate to classroom using backend-provided URL
-    if (response.room?.url) {
-      router.push(response.room.url)
+    const res = await lessonsApi.getActiveLessons({ status: 'IN_PROGRESS' }, { silent: true })
+    const live = (res?.results || []).find(
+      (l: { tutor_id?: number; has_session?: boolean }) => l.tutor_id === tutorId && l.has_session,
+    )
+    if (live) {
       closeEventDrawer()
+      router.push(`/winterboard/classroom/${live.id}`)
     } else {
-      console.error('[StudentCalendarView] No room URL in response:', response)
-      alert(t('student.calendar.joinError'))
+      joinHint.value = t('student.calendar.notStarted')
     }
-  } catch (err: any) {
-    console.error('[StudentCalendarView] Error joining room:', err)
-    
-    // Handle specific error codes from backend (v0.71 spec)
-    const errorCode = err?.response?.data?.code
-    const statusCode = err?.response?.status
-    let errorMessage = t('student.calendar.joinError')
-    
-    // Map backend error codes to i18n keys
-    if (statusCode === 409 || errorCode === 'room_not_available_yet') {
-      errorMessage = t('student.calendar.tooEarly')
-    } else if (statusCode === 410 || errorCode === 'room_expired') {
-      errorMessage = t('student.calendar.expired')
-    } else if (statusCode === 403 || errorCode === 'not_event_participant') {
-      errorMessage = t('student.calendar.noAccess')
-    } else if (statusCode === 404 || errorCode === 'event_not_found') {
-      errorMessage = t('student.calendar.notFound')
-    }
-    
-    alert(errorMessage)
+  } catch (err) {
+    console.error('[StudentCalendarView] Не вдалося перевірити живий урок:', err)
+    joinHint.value = t('student.calendar.joinError')
   } finally {
     joiningRoom.value = false
   }
 }
 
 function formatTime(isoString: string): string {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString(activeLocale(), { hour: '2-digit', minute: '2-digit' })
+  return new Date(isoString).toLocaleTimeString(activeLocale(), {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: studentTimezone.value,
+  })
 }
 
 function formatDateTime(isoString: string): string {
-  const date = new Date(isoString)
-  return date.toLocaleString(activeLocale(), {
+  return new Date(isoString).toLocaleString(activeLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: studentTimezone.value,
   })
 }
 
@@ -305,7 +302,7 @@ async function fetchMyCalendar() {
     const response = await calendarV055Api.getMyCalendar({
       from,
       to,
-      tz: STUDENT_TIMEZONE
+      tz: studentTimezone.value
     })
     
     myEvents.value = response.results
@@ -403,6 +400,12 @@ function goToCurrentWeek() {
   font-size: var(--text-base);
   color: var(--text-primary);
   margin: 0;
+}
+
+.join-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 /* Loading / Error */

@@ -8,7 +8,8 @@ export interface ActiveLesson {
   id: string | number
   scheduled_at: string | null
   duration_minutes: number | null
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+  // scheduled — урок із розкладу вчителя, ще не відкритий (2026-10-15)
+  status: 'pending' | 'confirmed' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
   tutor_name: string | null
   tutor_avatar: string | null
   student_name: string | null

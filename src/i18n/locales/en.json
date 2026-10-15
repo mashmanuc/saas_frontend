@@ -208,7 +208,13 @@
       "tooEarly": "Too early to join. Try again 15 minutes before the start",
       "expired": "The time to join has passed. The lesson has ended",
       "noAccess": "You don't have access to this lesson",
-      "notFound": "Lesson not found"
+      "notFound": "Lesson not found",
+      "notStarted": "The lesson hasn't started yet. When the teacher opens it, you'll get a “Lesson started” notification.",
+      "statusLabel": {
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      }
     },
     "profile": {
       "editTitle": "Edit student profile",

@@ -78,7 +78,7 @@
           :days="daysToRender"
           :events="eventsToRender"
           :accessible-slots="accessibleSlotsComputed"
-          :timezone="metaV055?.timezone || 'UTC'"
+          :timezone="props.mode === 'student' ? (props.externalTimezone || 'UTC') : (metaV055?.timezone || 'UTC')"
           :blocked-ranges="blockedRangesV055Computed"
           :current-time="currentTimeV055"
           :is-drag-enabled="dragEnabled && !isAvailabilityMode && props.mode === 'tutor'"
@@ -186,6 +186,8 @@ const props = withDefaults(defineProps<{
   mode?: 'tutor' | 'student'
   externalDays?: DaySnapshot[]
   externalEvents?: CalendarEventV055[]
+  // Пояс учня (власник 15.10): у режимі учня знімка тижня немає, і без нього сітка малювала уроки в UTC
+  externalTimezone?: string
 }>(), {
   mode: 'tutor',
   externalDays: () => [],
@@ -585,8 +587,11 @@ function handleCellClick(data: { date: string; hour: number }) {
 }
 
 function handleEventClick(event: CalendarEventV055) {
-  selectedEventId.value = event.id
-  showEventModal.value = true
+  // Режим учня: свою картку уроку показує сторінка учня (подія eventClick)
+  if (props.mode === 'tutor') {
+    selectedEventId.value = event.id
+    showEventModal.value = true
+  }
   emit('eventClick', event.id)
 }
 
