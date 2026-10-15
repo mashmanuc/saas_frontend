@@ -1327,12 +1327,19 @@ async function loadLessons(append = false) {
   }
 }
 
+/**
+ * Дата й час збереження («13 жовт. 2026 р., 14:35»). Власник 2026-10-15: кілька збережень одного
+ * уроку за день на картці виглядали однаково — шукати доводилось відкриваючи. Час сервер і так
+ * зберігає (`created_at` — повна позначка), картка просто його відкидала.
+ */
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(locale.value, {
+    return new Date(iso).toLocaleString(locale.value, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
   } catch {
     return iso

@@ -25,6 +25,7 @@ vi.mock('vue-router', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key,
+    locale: { value: 'uk' },
   }),
 }))
 
@@ -181,6 +182,16 @@ describe('WBMyLessonsPage', () => {
     expect(cards).toHaveLength(2)
     expect(wrapper.text()).toContain('Algebra Basics')
     expect(wrapper.text()).toContain('Physics Forces')
+  })
+
+  // Власник 2026-10-15: на картці — дата І час збереження, щоб кілька збережень за день розрізнялись.
+  it('картка показує дату й час збереження', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    const card = wrapper.findAll('.wb-lesson-card').find(c => c.text().includes('Algebra Basics'))!
+    expect(card.text()).toMatch(/18 бер\. 2026 р\., \d{2}:\d{2}/)
   })
 
   it('shows empty state when no lessons', async () => {
