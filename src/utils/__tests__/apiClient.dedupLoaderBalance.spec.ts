@@ -108,8 +108,8 @@ describe('склеєні GET і лічильник «Завантаження…
   it('кожен склеєний викликач отримує помилку зі СВОЇМ config і тим самим статусом', async () => {
     h.impl = respondAfterTick(404)
     const [a, b] = await Promise.all([
-      apiClient.get('/v1/me/missing/', { meta: { tag: 'a' } }).catch((e: unknown) => e),
-      apiClient.get('/v1/me/missing/', { meta: { tag: 'b' } }).catch((e: unknown) => e),
+      apiClient.get('/v1/me/missing/', { meta: { tag: 'a' } } as never).catch((e: unknown) => e),
+      apiClient.get('/v1/me/missing/', { meta: { tag: 'b' } } as never).catch((e: unknown) => e),
     ]) as Array<{ config: { meta: { tag: string } }, response: { status: number, config: unknown }, isAxiosError: boolean }>
     expect(a.config.meta.tag).toBe('a')
     expect(b.config.meta.tag).toBe('b')
