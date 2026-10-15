@@ -56,6 +56,13 @@
       <p class="detail-label">{{ $t('booking.calendar.eventDetails.comment') }}</p>
       <p class="comment-text">{{ event.tutorComment }}</p>
     </div>
+
+    <StartLessonDialog
+      :open="startDialogOpen"
+      :student-id="event.studentId ?? null"
+      :student-name="event.clientName"
+      @close="startDialogOpen = false"
+    />
   </div>
 </template>
 
@@ -67,6 +74,7 @@ import { Clock as ClockIcon, User as UserIcon, Timer as TimerIcon } from 'lucide
 import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import JoinLessonPicker from './JoinLessonPicker.vue'
+import StartLessonDialog from '@/modules/knowledge/components/StartLessonDialog.vue'
 import { activeLocale } from '@/utils/i18nDate'
 
 const props = defineProps<{
@@ -77,8 +85,15 @@ const props = defineProps<{
 const router = useRouter()
 const { t } = useI18n()
 const joiningClassroom = ref(false)
+const startDialogOpen = ref(false)
 
 async function handleOpenClassroom() {
+  // Урок з учнем (власник 2026-10-15, Б-203): кімната події без живого уроку — особиста дошка вчителя,
+  // учень туди не потрапить. Тому — вікно «Почати урок з учнем»: нова дошка або готовий урок з «Моїх уроків».
+  if (props.event.studentId) {
+    startDialogOpen.value = true
+    return
+  }
   joiningClassroom.value = true
   try {
     // Використовуємо canonical API join endpoint — повертає classroom URL

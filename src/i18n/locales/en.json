@@ -12445,5 +12445,25 @@
       "preparing": "Preparing the board…",
       "prepareError": "Could not prepare the lesson. Try again later."
     }
+  },
+  "startLesson": {
+    "title": "Start a lesson — {name}",
+    "running": "A lesson with this student is already in progress",
+    "return": "Back to the lesson",
+    "newBoard": "New board",
+    "newBoardHint": "Start from a blank page",
+    "readyTitle": "Or a ready lesson from “My lessons”",
+    "searchPlaceholder": "Search by title",
+    "root": "My lessons",
+    "pages": "pages: {n}",
+    "starting": "Starting…",
+    "loading": "Loading…",
+    "more": "Show more",
+    "notFound": "Nothing found",
+    "folderEmpty": "No lessons in this folder",
+    "noLessons": "No ready lessons in “My lessons” yet — start with a new board",
+    "loadError": "Couldn't load “My lessons”. A new board is still available.",
+    "subfolders": "folders: {n}",
+    "emptyFolder": "empty"
   }
 }

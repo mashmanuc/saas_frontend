@@ -3,7 +3,7 @@
     <Transition name="modal">
       <div
         v-if="open"
-        class="modal-overlay"
+        :class="['modal-overlay', { 'modal-overlay--stacked': stacked }]"
         @click.self="handleOverlayClick"
         @keydown.esc="handleEsc"
       >
@@ -70,6 +70,12 @@ const props = defineProps({
     default: true,
   },
   persistent: {
+    type: Boolean,
+    default: false,
+  },
+  // Вікно поверх іншого вікна, що стоїть вище за звичайний шар (вікно уроку в розкладі — z-index 1000),
+  // напр. «Почати урок з учнем» з вікна уроку (2026-10-15). Інакше відкривається ПІД ним і не клікається.
+  stacked: {
     type: Boolean,
     default: false,
   },
@@ -184,6 +190,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: var(--space-md);
+}
+.modal-overlay--stacked {
+  z-index: 1100;
 }
 .modal-content {
   position: relative;

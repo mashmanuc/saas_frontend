@@ -37,6 +37,8 @@ export interface CalendarEvent {
   durationMin: number     // 60
   orderId: number
   clientName: string
+  // 2026-10-15: учень уроку — «Відкрити дошку уроку» починає урок саме з ним (вікно «Почати урок з учнем»)
+  studentId?: number | null
   clientPhone: string | null
   paidStatus: 'unpaid' | 'paid'
   doneStatus: 'not_done' | 'done' | 'not_done_client_missed' | 'done_client_missed'

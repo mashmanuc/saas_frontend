@@ -114,7 +114,8 @@ const lessonsApi = {
   /**
    * Швидкий старт уроку: створює Lesson + WBSession + IN_PROGRESS за один виклик.
    * Використовує TutorStudentRelation замість ClassroomMembership.
-   * @param {{ student_id: number, start?: string, end?: string }} payload
+   * source_knowledge_lesson_id — почати з копії готового уроку з «Моїх уроків» (2026-10-15).
+   * @param {{ student_id: number, start?: string, end?: string, source_knowledge_lesson_id?: string }} payload
    * @returns {{ lesson_id, session_id, room_url, status }}
    */
   quickStart(payload) {

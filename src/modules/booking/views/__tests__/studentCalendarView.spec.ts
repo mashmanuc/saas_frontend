@@ -5,7 +5,7 @@
  * 3) клік по уроку відкриває картку уроку;
  * «Зайти на урок» — у живий урок із цим учителем, а коли його ще немає — пояснення, а не чужа дошка.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h } from 'vue'
@@ -48,8 +48,13 @@ const ButtonStub = defineComponent({
   setup: (_p, { slots, attrs }) => () => h('button', attrs, slots.default?.()),
 })
 
+// Сторінка велика: перше завантаження під навантаженням повного прогону не вкладалось у 5 с (тест «падав»)
+let View: Awaited<typeof import('../StudentCalendarView.vue')>['default']
+beforeAll(async () => {
+  View = (await import('../StudentCalendarView.vue')).default
+}, 60000)
+
 async function mountView() {
-  const { default: View } = await import('../StudentCalendarView.vue')
   const i18n = createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
   const w = mount(View, {
     global: { plugins: [i18n], stubs: { CalendarWeekView: WeekStub, Modal: ModalStub, Button: ButtonStub } },

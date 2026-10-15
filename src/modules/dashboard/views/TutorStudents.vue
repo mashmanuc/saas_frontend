@@ -359,6 +359,13 @@
     />
 
     <!-- Учень без акаунта і «звідки учень» (2026-10-14) -->
+    <StartLessonDialog
+      :open="startLessonDialog.open"
+      :student-id="startLessonDialog.studentId"
+      :student-name="startLessonDialog.name"
+      @close="startLessonDialog = { open: false, studentId: null, name: '' }"
+    />
+
     <PlaceholderStudentDialog
       :open="placeholderDialog.open"
       :relation="placeholderDialog.relation"
@@ -386,6 +393,7 @@ import StudentContactUnlock from '../components/StudentContactUnlock.vue'
 import PlaceholderStudentDialog from '../components/PlaceholderStudentDialog.vue'
 import StudentPaymentsDialog from '../components/StudentPaymentsDialog.vue'
 import ArchiveFutureLessonsDialog from '../components/ArchiveFutureLessonsDialog.vue'
+import StartLessonDialog from '@/modules/knowledge/components/StartLessonDialog.vue'
 import relationsApi from '../../../api/relations'
 import { balanceView, formatUah, studentPaymentsApi } from '../api/studentPayments'
 import ChatModal from '../../chat/components/ChatModal.vue'
@@ -401,7 +409,6 @@ import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
-import lessonsApi from '@/api/lessons'
 const InviteCreateButton = defineAsyncComponent(() => import('@/components/invites/InviteCreateButton.vue'))
 
 const auth = useAuthStore()
@@ -584,7 +591,7 @@ const emptyState = computed(() => {
 function getStudentName(student) {
   if (!student) return '—'
   if (student.is_deleted) return t('dashboard.tutor.deletedUser')
-  // Учень без акаунта: імʼя ввів сам учитель — повністю (дві «Оля К.» з Буки не злипаються)
+  // Учень без акаунта: імʼя ввів сам учитель — повністю (дві «Оля К.» з іншої платформи не злипаються)
   if (student.is_placeholder && student.full_name) return student.full_name
   return student.display_name || student.full_name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || '—'
 }
@@ -719,27 +726,14 @@ function handleOpenHomework(relation) {
   })
 }
 
-async function handleCreateLesson(relation) {
+// «Створити урок» (2026-10-15): вікно «Почати урок з учнем» — нова дошка або готовий урок з «Моїх уроків»
+// через папки. Урок стартує там (quick-start: живий урок + сповіщення учню), як і раніше з цієї кнопки.
+const startLessonDialog = ref({ open: false, studentId: null, name: '' })
+
+function handleCreateLesson(relation) {
   const studentId = relation.student?.id
   if (!studentId) return
-  const relationId = getRelationId(relation)
-  actionLoadingId.value = relationId
-  try {
-    // BYO instant lesson: створює Lesson + WBSession + IN_PROGRESS і нотифікує учня
-    // (notify_lesson_started у QuickLessonView) → тьютор одразу в живому класі, учневі
-    // приходить дзвінок. Раніше вело в tutor-calendar?student, який ?student ІГНОРУЄ
-    // (читає лише ?booking) → тьютор падав на порожній планувальник (dead-end).
-    const res = await lessonsApi.quickStart({ student_id: studentId })
-    const body = res?.data ?? res
-    const roomUrl = body?.room_url
-      || (body?.lesson_id ? `/winterboard/classroom/${body.lesson_id}` : null)
-    if (roomUrl) router.push(roomUrl)
-    else notifyError(t('dashboard.tutor.cta.createLessonError'))
-  } catch (error) {
-    notifyError(error?.response?.data?.detail || t('dashboard.tutor.cta.createLessonError'))
-  } finally {
-    actionLoadingId.value = null
-  }
+  startLessonDialog.value = { open: true, studentId, name: getStudentName(relation.student) }
 }
 
 function canOpenChatWithStudent(relation) {
