@@ -601,6 +601,35 @@ function materialLang(data) {
 }
 
 const HANDLERS = {
+  async add_tasks(params, ctx) {
+    if (ctx?.pageId) throw new Error('Добірку задач готуйте з вікна Інтегралика на ноутбуці.')
+    const { store, page } = await _store()
+    const boardId = store.workspaceId
+    if (!boardId) throw new Error('Спочатку відкрийте збережену дошку.')
+    const { useOpsSyncStore } = await import('@/modules/winterboard/stores/opsSyncStore')
+    const sync = useOpsSyncStore()
+    const check = () => {
+      if (store.mode !== 'edit' || store.workspaceId !== boardId || store.currentPage?.id !== page.id
+        || sync.mode !== 'SYNC' || sync.inputLocked) {
+        throw new Error('Дошка або сторінка змінилась чи редагування заблоковано. Додайте добірку ще раз.')
+      }
+    }
+    check()
+    const { lessonConstructorApi } = await import('@/modules/lesson_constructor/api/lessonConstructorApi')
+    let result
+    try {
+      result = await lessonConstructorApi.taskPages(params)
+    } catch (error) {
+      const detail = error?.response?.data?.detail
+      if (typeof detail === 'string') throw new Error(detail)
+      throw error
+    }
+    check()
+    const { validateTaskPages } = await import('./taskPages')
+    const pages = validateTaskPages(result.pages)
+    store.insertTaskPagesUndoable(pages)
+    return { warnings: result.warnings || [] }
+  },
   // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke.
   // Коридор (LAW §9.D): мова й провенанс — у `stroke.data`, як у картки в `asset.data`.
   async add_text({ text, corridor }, ctx) {
@@ -1486,7 +1515,7 @@ export async function runBoardAction(action, ctx = null) {
   if (!handler) throw new Error('Ця дія на дошці ще не підтримується.')  // fail-closed
   // Б-146: місце, яке картка довідки лишила картинці, — лише для НАСТУПНОЇ дії.
   if (checked.kind !== 'add_image') _imageLeftSlot = null
-  await handler(checked.payload || {}, ctx)
+  return await handler(checked.payload || {}, ctx)
 }
 
 /** Дії, що лише створюють новий матеріал, — їх можна класти на підготовчу сторінку (пульт). */

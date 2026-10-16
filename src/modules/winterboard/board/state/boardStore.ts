@@ -2865,6 +2865,52 @@ export const useWBStore = defineStore('wb-board', {
      * наступній»): сторінка одразу ПІСЛЯ поточної — штатний `page_add` з `insertAt`, як
      * «Дублювати сторінку». Без прапорця — як було: у кінець, `page_add` без `insertAt`.
      */
+    /** Добірка Інтегралика: одна команда ↶, штатні дрібні ops, без обрізання. */
+    insertTaskPagesUndoable(prepared: WBPage[]): string[] {
+      if (this.mode !== 'edit') throw new Error('Дошка зараз недоступна для редагування.')
+      if (!prepared.length || this.pages.length + prepared.length > 50) {
+        throw new Error('Добірка не вміститься: дошка може мати не більше 50 сторінок.')
+      }
+      const ids = new Set(this.pages.flatMap(p => [p.id,
+        ...(p.assets || []).map(a => a.id), ...(p.strokes || []).map(s => s.id)]))
+      for (const page of prepared) {
+        if (!page.id || ids.has(page.id) || !Array.isArray(page.assets) || !Array.isArray(page.strokes)
+          || page.assets.length + page.strokes.length > 600) {
+          throw new Error('Не можу додати добірку: отримано некоректні сторінки.')
+        }
+        ids.add(page.id)
+        for (const object of [...page.assets, ...page.strokes]) {
+          if (!object.id || ids.has(object.id)) throw new Error('У добірці повторюється ідентифікатор об’єкта.')
+          ids.add(object.id)
+        }
+      }
+      const pages: WBPage[] = JSON.parse(JSON.stringify(prepared))
+      const insertAt = this.currentPageIndex + 1
+      const previousId = this.pages[this.currentPageIndex]?.id
+      const newIds = pages.map(p => p.id)
+      const apply = () => {
+        if (this.pages.length + pages.length > 50) throw new Error('Немає місця для всієї добірки.')
+        const copy = [...this.pages]
+        const at = Math.min(insertAt, copy.length)
+        copy.splice(at, 0, ...pages)
+        this.pages = copy
+        this.currentPageIndex = at
+        this.markDirty()
+        for (const [i, page] of pages.entries()) _emitPageAddDecomposed(page, { insertAt: at + i })
+      }
+      const revert = () => {
+        this.pages = this.pages.filter(p => !newIds.includes(p.id))
+        const previous = this.pages.findIndex(p => p.id === previousId)
+        this.currentPageIndex = previous >= 0 ? previous : Math.min(insertAt - 1, this.pages.length - 1)
+        this.markDirty()
+        for (const id of newIds) _emitOperation({ op_type: 'page_delete', page_id: id, payload: { page_id: id } })
+      }
+      apply()
+      this.undoStack = trimStack([...this.undoStack, { apply, revert }])
+      this.redoStack = []
+      return newIds
+    },
+
     addPageUndoable(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string; afterCurrent?: boolean }): string {
       if (this.pages.length >= 50) {
         console.warn('[WB:Store] Max 50 pages reached')

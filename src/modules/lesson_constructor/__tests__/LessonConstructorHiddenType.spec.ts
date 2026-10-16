@@ -33,6 +33,13 @@ async function openAll(w: any) {
 }
 
 describe('крок типу схований', () => {
+  it('підтему третього рівня передає точно, не підмінює усіма рівняннями', async () => {
+    const w = await openAll(mount(LessonConstructorPage))
+    await chip(w, 'Теорема Вієта')!.trigger('click')
+    await w.find('.lc-btn-generate').trigger('submit')
+    await new Promise(r => setTimeout(r, 0))
+    expect(generate.mock.calls[0]![0].topics).toEqual(['linear-quadratic-rational-equations.quadratic.vieta'])
+  })
   it('кроку «Тип уроку» на екрані немає, теми — перший крок', async () => {
     const w = await openAll(mount(LessonConstructorPage))
     expect(w.find('.lc-type-chip').exists()).toBe(false)

@@ -705,7 +705,10 @@ async function handleGenerate() {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.15s;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .lc-topic-chip:hover:not(.lc-topic-chip--disabled) {

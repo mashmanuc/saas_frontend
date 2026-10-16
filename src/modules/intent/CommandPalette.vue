@@ -1265,7 +1265,7 @@ function emitSceneMetric(action) {
 
 async function execBoardAction(r) {
   try {
-    await runBoardAction(r.action)
+    const result = await runBoardAction(r.action)
     emitSceneMetric(r.action)   // Phase 1, блок A: wb.scene.created / word_edit
     // 0b: щойно щось з'явилось на дошці — юзеру треба туди клікати (тягнути
     // повзунок, рухати об'єкт), а пояснення в чаті лишається потрібним. Тому
@@ -1274,7 +1274,7 @@ async function execBoardAction(r) {
     autoPinOnce()
     // Вирази з payload → `$latex$`, щоб у чаті стояла формула, а не
     // `sqrt(9-(x-1)^2)` (скарга власника 2026-08-16). Див. explainMath.ts.
-    aiPush({ kind: 'done', text: explainWithRenderedMath(r.explain, r.action) })
+    aiPush({ kind: 'done', text: [explainWithRenderedMath(r.explain, r.action), ...(result?.warnings || [])].join(' ') })
     react('happy')
   } catch (be) {
     aiPush({ kind: 'bot', text: be?.message || 'Не вдалося виконати дію на дошці.' })
@@ -1415,7 +1415,7 @@ const AI_AFTER = {
     `Дошку «${r.result?.title || 'Нова дошка'}» створено`,
     { name: 'winterboard-prepare', params: { id: r.result.board_id } }),
   'lesson.generate': (r) => announceAndGo(
-    `Урок «${r.result?.title || 'без назви'}» згенеровано`,
+    [`Урок «${r.result?.title || 'без назви'}» згенеровано`, ...(r.result?.warnings || [])].join(' '),
     { name: 'winterboard-prepare', params: { id: r.result.session_id } }),
   'knowledge.open_lesson': (r) => announceAndGo(
     `Урок відкрито${r.result?.title ? `: «${r.result.title}»` : ''}`,
