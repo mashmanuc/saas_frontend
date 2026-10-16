@@ -271,7 +271,7 @@ export const HELP_SECTIONS_EN: HelpSection[] = [
   <li>"Find board" — the phone finds the corners itself.</li>
   <li><strong>"Start"</strong>; at the end — "Stop".</li>
 </ol>
-<p>In a lesson run with "Conduct", Mirror records the lesson by itself — it appears in "My Replays".</p>
+<p>In a lesson run with "Conduct", Mirror records the lesson by itself — it appears in "My Replays". Open the recording and click "Create video clip" to get a short video of what was written on the board.</p>
 `,
       },
     ],

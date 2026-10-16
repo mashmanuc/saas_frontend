@@ -49,9 +49,10 @@
           ← {{ t('studentDashboard.lessonRecords.title') }}
         </router-link>
         <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
-        <!-- «Дзеркало уроку», пілот (ТЗ TZ_LESSON_MIRROR_VIDEO_PILOT_2026-10-09 §2, §4): лише свій
-             завершений запис контрольних акаунтів, де є сторінка з ≥ 2 фото-фонами. Публічне
-             посилання — без змін. -->
+        <!-- «Дзеркало уроку» (ТЗ TZ_LESSON_MIRROR_VIDEO_PILOT_2026-10-09 §2, §4): лише свій
+             завершений запис, де є сторінка з ≥ 2 фото-фонами. З 2026-10-16 — будь-якому власнику
+             запису (власник: «роби» — відкрити всім), не лише пілоту: кнопка й так з'являється
+             лише там, де відео можна зробити. Публічне посилання й учень — без змін. -->
         <button
           v-if="canOfferMirrorClip"
           type="button"
@@ -194,7 +195,6 @@ import { winterboardApi } from '../api/winterboardApi'
 import { getReplayBoard, getReplayForViewer, isStudentReplay, type Replay } from '../api/replayLifecycleApi'
 import { collectMirrorPhotoPages } from '../composables/replayPhotoStates'
 // Пілот «Дзеркала уроку» — лише контрольні акаунти власника (ТЗ §2, §4); список спільний зі «Мої записи»
-import { isMirrorClipPilotUser as isMirrorClipPilotUser_ } from '../engine/lessonMirror/pilot'
 import type { MirrorPhotoPage } from '../engine/lessonMirror/types'
 import type { BoardOperation } from '../types/replay'
 import { useWBStore } from '../board/state/boardStore'
@@ -237,9 +237,8 @@ const authStore = useAuthStore()
 const ownerReplayMeta = ref<Replay | null>(null)
 const mirrorPhotoPages = ref<MirrorPhotoPage[]>([])
 const showMirrorClip = ref(false)
-const isMirrorClipPilotUser = computed(() => isMirrorClipPilotUser_(authStore.user?.id))
 const canOfferMirrorClip = computed(() =>
-  isOwnerView.value && isMirrorClipPilotUser.value && mirrorPhotoPages.value.length > 0)
+  isOwnerView.value && mirrorPhotoPages.value.length > 0)
 
 // ── UI state (NOT board state — board lives in store) ──
 const isLoading = ref(true)
@@ -678,7 +677,7 @@ async function shareReplay(): Promise<void> {
 function refreshMirrorPhotoPages(): void {
   mirrorPhotoPages.value = []
   const meta = ownerReplayMeta.value
-  if (!isOwnerView.value || !isMirrorClipPilotUser.value || !meta || !replay) return
+  if (!isOwnerView.value || !meta || !replay) return
   const operations: BoardOperation[] = []
   for (let i = 0; i < replay.totalOperations.value; i++) {
     const op = replay.getOperationAt(i)

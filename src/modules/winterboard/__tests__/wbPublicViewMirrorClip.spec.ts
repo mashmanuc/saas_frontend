@@ -166,7 +166,7 @@ afterEach(() => {
   wrapper = null
 })
 
-describe('WBPublicView — кнопка «Створити відеофрагмент» (пілот «Дзеркала уроку»)', () => {
+describe('WBPublicView — кнопка «Створити відеофрагмент» («Дзеркало уроку»)', () => {
   it('є для власника 40 на своєму записі з ≥ 2 фото — з текстом з i18n', async () => {
     const w = await mountView()
     expect(openBtn(w).exists()).toBe(true)
@@ -179,10 +179,12 @@ describe('WBPublicView — кнопка «Створити відеофрагм�
     expect(openBtn(w).exists()).toBe(true)
   })
 
-  it('немає для іншого вчителя (не 40/220) навіть на його записі з фото', async () => {
+  // 2026-10-16 (власник: «роби» — відкрити всім): кнопка — будь-якому власнику запису з фото,
+  // не лише пілотним 40/220. Раніше тут було «немає для іншого вчителя».
+  it('є і для будь-якого іншого вчителя на його записі з фото', async () => {
     env.auth = { user: { id: 41 } }
     const w = await mountView()
-    expect(openBtn(w).exists()).toBe(false)
+    expect(openBtn(w).exists()).toBe(true)
   })
 
   it('немає на публічному посиланні, навіть якщо його відкрив власник 40', async () => {

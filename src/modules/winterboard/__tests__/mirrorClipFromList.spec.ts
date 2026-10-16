@@ -88,13 +88,22 @@ describe('кнопка «🎬 Відео» в картці запису', () => 
 describe('обв\'язка', () => {
   const read = (rel: string) => fs.readFileSync(path.resolve(__dirname, '..', rel), 'utf-8')
 
-  it('пілот один на плеєр і список: 40 і 220', () => {
+  it('пілот (40 і 220) — лише для кнопки на картках «Моїх записів»', () => {
     expect(isMirrorClipPilotUser(40)).toBe(true)
     expect(isMirrorClipPilotUser('220')).toBe(true)
     expect(isMirrorClipPilotUser(41)).toBe(false)
     expect(isMirrorClipPilotUser(undefined)).toBe(false)
-    expect(read('views/WBPublicView.vue')).toContain("from '../engine/lessonMirror/pilot'")
-    expect(read('views/WBPublicView.vue')).not.toMatch(/new Set\(\[40, 220\]\)/)
+  })
+
+  // 2026-10-16 (власник: «роби» — відкрити всім): на сторінці запису кнопка — будь-якому власнику
+  // запису, якщо в записі є знімки; пілот туди не повертається, учень і публічне посилання — без кнопки.
+  it('сторінка запису: «Створити відеофрагмент» — власнику запису зі знімками, без пілота', () => {
+    const view = read('views/WBPublicView.vue')
+    expect(view).not.toContain('lessonMirror/pilot')
+    expect(view).not.toContain('isMirrorClipPilotUser')
+    expect(view).toMatch(/canOfferMirrorClip = computed\(\(\) =>\s*isOwnerView\.value && mirrorPhotoPages\.value\.length > 0\)/)
+    expect(view).toMatch(/if \(!isOwnerView\.value \|\| !meta \|\| !replay\) return/)
+    expect(view).toMatch(/const isOwnerView = computed\(\(\) => isAccountReplayRoute\.value && !isStudentView\.value\)/)
   })
 
   it('«Мої записи»: кнопка за пілотом, вікно — за id запису', () => {
