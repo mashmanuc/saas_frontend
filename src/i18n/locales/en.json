@@ -7635,6 +7635,13 @@
     }
   },
   "winterboard": {
+    "lessonSize": {
+      "warnTitle": "The board is {percent}% full",
+      "warnHint": "At 100% it can no longer be saved as a lesson. Continue on a new board.",
+      "fullTitle": "The board is too full to save as a lesson",
+      "fullHint": "Everything you wrote on the board is saved. To save a lesson, remove extra pages or continue on a new board.",
+      "dismiss": "Got it"
+    },
     "phoneHint": {
       "title": "The board works best on a computer or tablet",
       "body": "Open m4sh.org on your computer — your board is already there. Your phone becomes the remote: flip pages, send photos, play videos.",
@@ -9830,6 +9837,7 @@
       },
       "saveErrorState": "Could not confirm the board state on the server — nothing was saved. Try again.",
       "saveErrorPlan": "Could not save the lesson plan — nothing was saved. Try again.",
+      "saveErrorTooLarge": "The board is too large to save as a lesson. What you wrote is saved — remove extra pages or continue on a new board.",
       "saveErrorNetwork": "No connection to the server — nothing was saved. Check the connection and try again.",
       "exitNotice": {
         "title": "Lesson saved in «Conducted»",

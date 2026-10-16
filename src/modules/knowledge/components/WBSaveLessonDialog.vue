@@ -288,6 +288,8 @@ function saveErrorText(err: unknown): string {
   const code = e?.response?.data?.error ?? e?.data?.error
   if (code === 'board_state_unavailable') return t('winterboard.lesson.saveErrorState')
   if (code === 'plan_transfer_failed') return t('winterboard.lesson.saveErrorPlan')
+  // Б-205: дошка більша за межу знімка уроку — причина й що робити, а не «не вдалося».
+  if (code === 'board_too_large') return t('winterboard.lesson.saveErrorTooLarge')
   if (!e?.response) return t('winterboard.lesson.saveErrorNetwork')
   return t('winterboard.lesson.saveError')
 }

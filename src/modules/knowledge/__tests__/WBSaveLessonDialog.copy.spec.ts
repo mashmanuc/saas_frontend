@@ -71,6 +71,8 @@ describe('WBSaveLessonDialog · mode="copy"', () => {
   it.each([
     ['board_state_unavailable', 'Не вдалося підтвердити стан дошки на сервері'],
     ['plan_transfer_failed', 'Не вдалося зберегти план уроку'],
+    // Б-205 (2026-10-16): дошка більша за межу знімка уроку — причина й що робити
+    ['board_too_large', 'Дошка завелика, щоб зберегти її як урок'],
   ])('сервер відмовив (%s) — причина словами, вікно лишається, блок знято', async (code, text) => {
     saveLessonFromSession.mockRejectedValue({ response: { status: 503, data: { error: code } } })
     const afterSave = vi.fn()

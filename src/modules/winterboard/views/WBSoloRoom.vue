@@ -21,6 +21,13 @@
     <OpsLegacyCopyNotice />
     <OpsBootstrapFailedBanner />
     <OpsRestoreBanner />
+    <!-- Б-205: дошка підходить до межі «Зберегти як урок» — попередити, поки вчитель пише. -->
+    <WBLessonSizeStrip
+      v-if="showLessonSizeStrip"
+      :level="lessonSize.level.value === 'full' ? 'full' : 'warn'"
+      :percent="lessonSize.percent.value"
+      @dismiss="lessonSizeDismissed = lessonSize.level.value"
+    />
     <!-- Власник 2026-09-28: пульт підключився — один дотик для повного екрана (⛶ або F11), тоді
          «На весь екран» з пульта розгортає відео на весь монітор. -->
     <LessonFullscreenPrompt
@@ -1213,6 +1220,8 @@ import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
+import WBLessonSizeStrip from '../components/dialogs/WBLessonSizeStrip.vue'
+import { isBoardTooLargeError, useLessonSizeGauge, type LessonSizeLevel } from '../board/lessonSizeGauge'
 import { notifyError, notifyWarning, notifySuccess } from '@/utils/notify'
 import { artifactBarrierReason, type ArtifactBarrierReason } from '../composables/artifactBarrier'
 import { usePresence } from '../composables/usePresence'
@@ -2225,6 +2234,19 @@ watch(
 )
 
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
+
+/* Б-205 (власник 2026-10-16): «Зберегти як урок» має межу розміру дошки (на сервері 2 МБ), і про неї
+   вчитель дізнавався лише після письма. Рахуємо заповненість так само, як сервер, після прийнятих
+   дій (не частіше ніж раз на кілька секунд) і показуємо смужку з 75 %. «Зрозуміло» ховає її до
+   наступного рівня (75 % → переповнено). Лише підказка: дошку й операції не чіпає. */
+const lessonSize = useLessonSizeGauge({
+  enabled: computed(() => !isLocalWorkspace && isSessionOwner.value && !!sessionId.value),
+  seq: () => opsSync.serverSeq,
+  getState: () => store.serializedStateForSave,
+})
+const lessonSizeDismissed = ref<LessonSizeLevel | null>(null)
+const showLessonSizeStrip = computed(() =>
+  lessonSize.level.value !== 'none' && lessonSizeDismissed.value !== lessonSize.level.value)
 
 /* Б-202 (власник 2026-10-15): на телефоні вертикально аркуш — чверть екрана, і новий учитель
    з реклами пішов за 6 с. Власнику хмарної дошки — одне вікно: «зручніше з комп'ютера,
@@ -4016,7 +4038,11 @@ async function handleUpdateLessonSnapshot(): Promise<void> {
     _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdated'), 'success')
   } catch (e) {
     console.error('[WBSoloRoom] update-snapshot failed:', e)
-    _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdateError'), 'error')
+    // Б-205: дошка завелика для уроку — сказати причину, а не «не вдалося».
+    _updateLessonToast.showToast(
+      t(isBoardTooLargeError(e) ? 'winterboard.lesson.saveErrorTooLarge' : 'knowledge.lesson.snapshotUpdateError'),
+      'error',
+    )
   } finally {
     isUpdatingSnapshot.value = false
   }
