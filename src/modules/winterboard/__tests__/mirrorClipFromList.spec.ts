@@ -1,7 +1,11 @@
 /**
- * «Дзеркало уроку» зі списку «Мої записи» (власник 2026-10-10: «функція глибоко зашита»):
- * «🎬 Відео» в картці запису — лише пілотним акаунтам і не в кошику; вікно саме завантажує запис
- * і чесно каже словами, якщо двох знімків на одній сторінці немає.
+ * «Дзеркало уроку»: вікно відеофрагмента (саме завантажує запис і чесно каже словами, якщо двох знімків
+ * на одній сторінці немає) і де його відкривають.
+ *
+ * 2026-10-16 (власник: «роби» — відкрити всім; «то і в мене перероби»): відео робиться лише зі сторінки
+ * запису — «Створити відеофрагмент» з'являється там, де в записі є знімки, будь-якому власнику запису.
+ * Кнопку «🎬 Відео» на кожній картці «Моїх записів», підказку над списком і пілот 40/220 прибрано:
+ * список не знає, у яких записах є знімки, і кнопка здебільшого вела у відмову «немає знімків».
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -24,12 +28,11 @@ vi.mock('../engine/lessonMirror', async (orig) => ({
 
 import LessonMirrorExportDialog from '../components/replay/LessonMirrorExportDialog.vue'
 import ReplayCard from '../components/replay/ReplayCard.vue'
-import { isMirrorClipPilotUser } from '../engine/lessonMirror/pilot'
 
 const M = (uk as unknown as { winterboard: { mirrorClip: Record<string, string> } }).winterboard.mirrorClip
 const i18n = () => createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', messages: { uk } as never })
 
-describe('вікно зі списку (за id запису)', () => {
+describe('вікно відеофрагмента (за id запису)', () => {
   beforeEach(() => { loadReplayMirrorPages.mockReset(); analyzeRange.mockReset() })
   const open = () => mount(LessonMirrorExportDialog, { props: { replayId: 'r-1', lessonTitle: 'Урок' }, global: { plugins: [i18n()], stubs: { teleport: true } } })
 
@@ -62,41 +65,25 @@ describe('вікно зі списку (за id запису)', () => {
   })
 })
 
-describe('кнопка «🎬 Відео» в картці запису', () => {
-  const replay = (status: Replay['status']) => ({ id: 'r-1', title: 'Урок', status, visibility: 'private' } as unknown as Replay)
-  const card = (canMakeClip: boolean, status: Replay['status'] = 'active') => mount(ReplayCard, {
-    props: { replay: replay(status), viewMode: 'grid', menuOpen: false, copied: false, canMakeClip },
-    global: { plugins: [i18n()], directives: { clickOutside: {} } },
-  })
-
-  it('пілот — є (у плитках значок із підписом «Відео»), тисне — подія з записом', async () => {
-    const w = card(true)
-    const b = w.find('[data-testid="replay-card-clip"]')
-    expect(b.attributes('aria-label')).toBe(M.video)
-    expect(b.attributes('title')).toBe(M.video)
-    expect(b.text()).toContain('🎬')
-    await b.trigger('click')
-    expect(w.emitted('clip')?.[0]?.[0]).toMatchObject({ id: 'r-1' })
-  })
-
-  it('не пілот або запис у кошику — кнопки немає', () => {
-    expect(card(false).find('[data-testid="replay-card-clip"]').exists()).toBe(false)
-    expect(card(true, 'trashed').find('[data-testid="replay-card-clip"]').exists()).toBe(false)
-  })
-})
-
-describe('обв\'язка', () => {
+describe('де відкривають відео', () => {
   const read = (rel: string) => fs.readFileSync(path.resolve(__dirname, '..', rel), 'utf-8')
+  const replay = { id: 'r-1', title: 'Урок', status: 'active', visibility: 'private' } as unknown as Replay
 
-  it('пілот (40 і 220) — лише для кнопки на картках «Моїх записів»', () => {
-    expect(isMirrorClipPilotUser(40)).toBe(true)
-    expect(isMirrorClipPilotUser('220')).toBe(true)
-    expect(isMirrorClipPilotUser(41)).toBe(false)
-    expect(isMirrorClipPilotUser(undefined)).toBe(false)
+  it('картка «Моїх записів» — без «🎬 Відео» і без події clip', () => {
+    const w = mount(ReplayCard, {
+      props: { replay, viewMode: 'grid', menuOpen: false, copied: false },
+      global: { plugins: [i18n()], directives: { clickOutside: {} } },
+    })
+    expect(w.find('[data-testid="replay-card-clip"]').exists()).toBe(false)
+    expect(read('components/replay/ReplayCard.vue')).not.toMatch(/canMakeClip|'clip'|btn--clip|with-clip/)
   })
 
-  // 2026-10-16 (власник: «роби» — відкрити всім): на сторінці запису кнопка — будь-якому власнику
-  // запису, якщо в записі є знімки; пілот туди не повертається, учень і публічне посилання — без кнопки.
+  it('«Мої записи» — без підказки, вікна й пілота', () => {
+    const list = read('views/WBReplayList.vue')
+    expect(list).not.toMatch(/canMakeClip|clipHint|LessonMirrorExportDialog|lessonMirror\/pilot|@clip=/)
+    expect(fs.existsSync(path.resolve(__dirname, '..', 'engine/lessonMirror/pilot.ts'))).toBe(false)
+  })
+
   it('сторінка запису: «Створити відеофрагмент» — власнику запису зі знімками, без пілота', () => {
     const view = read('views/WBPublicView.vue')
     expect(view).not.toContain('lessonMirror/pilot')
@@ -104,12 +91,5 @@ describe('обв\'язка', () => {
     expect(view).toMatch(/canOfferMirrorClip = computed\(\(\) =>\s*isOwnerView\.value && mirrorPhotoPages\.value\.length > 0\)/)
     expect(view).toMatch(/if \(!isOwnerView\.value \|\| !meta \|\| !replay\) return/)
     expect(view).toMatch(/const isOwnerView = computed\(\(\) => isAccountReplayRoute\.value && !isStudentView\.value\)/)
-  })
-
-  it('«Мої записи»: кнопка за пілотом, вікно — за id запису', () => {
-    const list = read('views/WBReplayList.vue')
-    expect(list).toMatch(/:can-make-clip="canMakeClip"/)
-    expect(list).toMatch(/isMirrorClipPilotUser\(authStore\.user\?\.id\)/)
-    expect(list).toMatch(/<LessonMirrorExportDialog[\s\S]*?:replay-id="clipReplay\.id"/)
   })
 })

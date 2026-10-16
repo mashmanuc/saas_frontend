@@ -6,10 +6,6 @@
         <p class="replay-list__subtitle">
           {{ t('winterboard.replayList.subtitle') }}
         </p>
-        <!-- Власник 2026-10-13: «треба просто пояснення… як робиться відео» — мʼяко, не технічно -->
-        <p v-if="canMakeClip" class="replay-list__hint" data-testid="replay-clip-hint">
-          {{ t('winterboard.replayList.clipHint') }}
-        </p>
       </div>
       <!-- 2026-09-22 (огляд, п.5): був самотній бейдж «5» без підпису —
            незрозуміло, що саме 5. Тепер із назвою. -->
@@ -155,8 +151,6 @@
             :view-mode="viewMode"
             :menu-open="openMenuId === replay.id"
             :copied="copiedId === replay.id"
-            :can-make-clip="canMakeClip"
-            @clip="openClip"
             @open="handleOpen"
             @share="handleShare"
             @rename="handleRename"
@@ -229,19 +223,11 @@
       @updated="onShownToStudent"
       @close="showToStudentReplay = null"
     />
-
-    <!-- «Дзеркало уроку» (пілот): відеофрагмент зі списку; вікно саме завантажує запис і добирає знімки -->
-    <LessonMirrorExportDialog
-      v-if="clipReplay"
-      :replay-id="clipReplay.id"
-      :lesson-title="clipReplay.title"
-      @close="clipReplay = null"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplayStore } from '../stores/replayStore'
 import { isLinkVisibility, type Replay, type ReplayStatus, type ReplayVisibility } from '../api/replayLifecycleApi'
@@ -255,19 +241,10 @@ import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Input from '@/ui/Input.vue'
 import { notifyError } from '@/utils/notify'
-import { useAuthStore } from '@/modules/auth/store/authStore'
-import { isMirrorClipPilotUser } from '../engine/lessonMirror/pilot'
 
-// «Дзеркало уроку» (пілот, ТЗ §2): «🎬 Відео» біля кожного свого запису — без відкриття плеєра (власник
-// 2026-10-10: «функція глибоко зашита»). Діалог — лінивий: рушій вантажиться лише на натискання.
-const LessonMirrorExportDialog = defineAsyncComponent(() => import('../components/replay/LessonMirrorExportDialog.vue'))
-const authStore = useAuthStore()
-const canMakeClip = computed(() => isMirrorClipPilotUser(authStore.user?.id))
-const clipReplay = ref<Replay | null>(null)
-function openClip(replay: Replay): void {
-  openMenuId.value = null
-  clipReplay.value = replay
-}
+// «Дзеркало уроку»: відео робиться лише зі сторінки запису (WBPublicView, «Створити відеофрагмент» —
+// там, де в записі є знімки). Кнопку «🎬 Відео» на кожній картці прибрано 2026-10-16 (власник: «то і в
+// мене перероби»): список не знає, у яких записах є знімки, і кнопка здебільшого вела у відмову.
 
 const props = defineProps<{
   initialStatus?: ReplayStatus
@@ -685,11 +662,6 @@ async function onTabDrop(tab: ReplayStatus, e: DragEvent) {
 .replay-list__subtitle {
   margin: 0;
   font-size: 0.9375rem;
-  color: var(--text-secondary);
-}
-.replay-list__hint {
-  margin: 4px 0 0;
-  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 

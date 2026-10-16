@@ -7663,7 +7663,6 @@
       "unsupported": "This browser cannot create MP4. Open the recording in Chrome or Edge on a computer.",
       "loadFailed": "Could not load shot {n} — the video was not created.",
       "failed": "Could not create the video.",
-      "video": "Video",
       "loadingRecord": "Loading the recording…",
       "noPhotos": "This recording has no two board snapshots on one page. The video is made from Mirror snapshots (or page photo backgrounds) — at least two on a page.",
       "loadRecordFailed": "Could not load the recording. Please try again."
@@ -7830,7 +7829,6 @@
       "beaconUnsupported": "Couldn't save changes before page closed."
     },
     "replayList": {
-      "clipHint": "You can turn a recording into a short video: press “🎬 Video”, choose a page and a fragment — and save it.",
       "title": "My Replays",
       "subtitle": "Recordings of your lessons and boards: watch, share a link",
       "countLabel": "Replays: {count}",
