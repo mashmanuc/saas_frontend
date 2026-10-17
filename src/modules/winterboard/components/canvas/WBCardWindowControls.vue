@@ -50,11 +50,21 @@
         @click="emit('scale', 1)"
       >A+</button>
       <span
-        v-if="actions.minimize || actions.expand || actions.delete"
+        v-if="actions.handwrite || actions.minimize || actions.expand || actions.delete"
         class="wb-card-window-controls__divider"
         aria-hidden="true"
       />
     </template>
+    <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок;
+         назва є тільки для читача екрана (aria-label), спливної підказки немає. -->
+    <button
+      v-if="actions.handwrite"
+      type="button"
+      class="wb-card-window-controls__btn"
+      data-testid="wb-card-window-handwrite"
+      :aria-label="t('winterboard.card.handwrite')"
+      @click="emit('handwrite')"
+    >✍</button>
     <button
       v-if="actions.minimize"
       type="button"
@@ -101,7 +111,7 @@ const props = withDefaults(
   { scale: 1 },
 )
 
-const emit = defineEmits<{ minimize: []; expand: []; delete: []; scale: [direction: -1 | 0 | 1] }>()
+const emit = defineEmits<{ minimize: []; expand: []; delete: []; handwrite: []; scale: [direction: -1 | 0 | 1] }>()
 
 const scaleLabel = computed(() => presentationScaleLabel(props.scale))
 const canScaleDown = computed(() => nextPresentationScale(props.scale, -1) !== null)

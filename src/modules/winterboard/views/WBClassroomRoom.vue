@@ -623,6 +623,7 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
@@ -1169,6 +1170,15 @@ const boardRemote = useBoardRemote({
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
   view: createRemoteViewAdapter(store as any),
+  // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
+  // розбір показується друкованим, як «Показати розбір».
+  handwrite: (asset: any) => {
+    void handwriteWithFeedback(asset, () => {
+      const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
+      if (fresh.data?.showSolution) return
+      store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
+    })
+  },
 })
 
 const followMode = useFollowMode({

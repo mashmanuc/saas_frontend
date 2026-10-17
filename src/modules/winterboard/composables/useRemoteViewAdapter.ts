@@ -25,6 +25,7 @@
 // стор не знає розміру поля). Тому тут: екран = center(zoom) − scroll + p·zoom.
 
 import { useTutorRevealGate } from './useStudentTutor'
+import { hasHandwritableSolution } from '../board/handwriteSolution'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
 import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
@@ -318,6 +319,18 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     return changed
   }
 
+  /**
+   * v1.29 «✍️ Розв'язок рукою»: яку задачу писати — розгорнута, інакше у фокусі пульта, інакше
+   * перша на сторінці. Лише з розв'язком і з дозволом reveal-гейту (як «Показати розбір»).
+   */
+  function handwriteTarget(): any | null {
+    const cards = taskCards()
+    const asset = cards.find((a) => a.id === store.expandedAssetId) ?? cards[focusIndex] ?? cards[0]
+    if (!asset || !hasHandwritableSolution(asset)) return null
+    if (!useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value) return null
+    return asset
+  }
+
   function summary(): RemoteCardsSummary & { zoom: number } {
     const cards = taskCards()
     if (!cards.length) return { count: 0, answer: null, solution: null, presenting: false, zoom: store.zoom }
@@ -342,6 +355,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
 
   return {
     fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId,
+    handwriteTarget,
     questionCards, revealQuestions, questionsSummary,
   }
 }

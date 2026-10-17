@@ -6,12 +6,15 @@
  *                  блокування не заважає (це подання, як і ⛶);
  *   • `minimize` — `canMinimize` (вчитель, режим редагування, `minimizable`);
  *   • `expand`   — вчитель і `fullscreen`; розгортання — лише подання, тож блокування не заважає;
- *   • `delete`   — вчитель, режим редагування, `deletable`, картка НЕ заблокована.
+ *   • `delete`   — вчитель, режим редагування, `deletable`, картка НЕ заблокована;
+ *   • `handwrite` — LAW §9 v1.29: розв'язок задачі рукою — вчитель, режим редагування (публічний
+ *                  перегляд і Replay ставлять стору 'readonly'/'replay'), задача з розв'язком.
  * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту).
  */
 import type { WBAsset } from '../types/winterboard'
 import { canMinimize, type TrayViewer } from './boardTray'
 import { assetCapabilities, isCardAsset } from './objectStandard'
+import { hasHandwritableSolution } from './handwriteSolution'
 
 export interface CardWindowActions {
   /** TLV2-05C: `A− / 100% / A+` — спільний учительський масштаб тексту. */
@@ -19,6 +22,8 @@ export interface CardWindowActions {
   minimize: boolean
   expand: boolean
   delete: boolean
+  /** LAW §9 v1.29: ✍️ розв'язок задачі рукою (значок без напису). */
+  handwrite: boolean
 }
 
 export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
@@ -26,6 +31,7 @@ export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
   minimize: false,
   expand: false,
   delete: false,
+  handwrite: false,
 })
 
 export function cardWindowActions(
@@ -39,10 +45,11 @@ export function cardWindowActions(
     minimize: canMinimize(asset, viewer),
     expand: caps.fullscreen,
     delete: caps.deletable && viewer.mode === 'edit' && asset.locked !== true,
+    handwrite: viewer.mode === 'edit' && hasHandwritableSolution(asset),
   }
 }
 
 /** Чи є що показати в групі взагалі. */
 export function hasWindowActions(actions: CardWindowActions): boolean {
-  return actions.scale || actions.minimize || actions.expand || actions.delete
+  return actions.scale || actions.minimize || actions.expand || actions.delete || actions.handwrite
 }

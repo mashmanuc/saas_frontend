@@ -216,7 +216,7 @@ describe('INV-PRES-3/4 · через store, журнал, трей і клон',
 // ─── INV-PRES-5 · панель ───────────────────────────────────────────────────
 
 describe('INV-PRES-5 · верхня панель', () => {
-  const FULL = { scale: true, minimize: true, expand: true, delete: true }
+  const FULL = { scale: true, minimize: true, expand: true, delete: true, handwrite: false }
 
   it('порядок: A− 100% A+ │ — ⛶ ×', () => {
     const w = mount(WBCardWindowControls, { props: { actions: FULL, isExpanded: false, scale: 1.15 }, global: { plugins: [i18n()] } })
@@ -253,7 +253,7 @@ describe('INV-PRES-5 · верхня панель', () => {
 
   it('дії: текстові картки мають масштаб; заблокована — масштаб і ⛶ без ×; учень — нічого', () => {
     const task = { id: 'q', type: 'nmt_task', locked: true } as unknown as WBAsset
-    expect(cardWindowActions(task, TEACHER)).toEqual({ scale: true, minimize: true, expand: true, delete: false })
+    expect(cardWindowActions(task, TEACHER)).toEqual({ scale: true, minimize: true, expand: true, delete: false, handwrite: false })
     expect(cardWindowActions({ id: 'c', type: 'visual_capsule' } as never, TEACHER).scale).toBe(false)
     expect(cardWindowActions(task, { isTutor: false, mode: 'edit' }).scale).toBe(false)
   })

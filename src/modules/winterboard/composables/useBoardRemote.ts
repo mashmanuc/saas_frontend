@@ -97,6 +97,11 @@ export interface UseBoardRemoteOptions {
    * `recording_by_mirror_run`; без нього (класна кімната) команди запису — `rejected: unsupported`.
    */
   recording?: RemoteRecordingAdapter
+  /**
+   * v1.29 «✍️ Розв'язок рукою» (LAW §9). Ноутбук пише розв'язок задачі штрихами пера
+   * (`useHandwriteSolution`). Без нього команда ігнорується.
+   */
+  handwrite?: (asset: any) => void
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -133,6 +138,7 @@ export interface RemoteCommandDetail {
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
+    | 'card.handwrite'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
@@ -521,6 +527,17 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         }
         if (what !== 'answer' && what !== 'solution') return
         view.reveal(what)
+        sendState()
+        return
+      }
+      // v1.29: розв'язок задачі рукою. Задачу вибирає ноутбук (розгорнута → у фокусі → перша),
+      // reveal-гейт шанується. «Задачу на екран» спершу згортаємо — інакше рукопис під карткою.
+      case 'card.handwrite': {
+        if (!view || !opts.handwrite) return
+        const asset = view.handwriteTarget()
+        if (!asset) return
+        view.resetFocus()
+        opts.handwrite(asset)
         sendState()
         return
       }

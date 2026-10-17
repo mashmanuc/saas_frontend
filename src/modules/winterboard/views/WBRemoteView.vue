@@ -154,6 +154,13 @@
                екран заради шрифту не треба. Ноутбук робить view.zoom і без показу (картка у фокусі,
                інакше перша). ▲/▼ гортають лише розгорнуту картку — тому вони тільки в показі.
                Ряд — сітка на чотири: A− A+ стоять на тих самих місцях в обох режимах. -->
+          <!-- LAW §9 v1.29 (власник 2026-10-17): діти розв'язують — учитель тисне, і на дошці рукою
+               пишеться розв'язок задачі. Пише ноутбук; задачу вибирає він (розгорнута → у фокусі → перша). -->
+          <div class="wb-remote__row">
+            <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite" :disabled="!isReady" @click="sendCmd('card.handwrite')">
+              {{ t('winterboard.remote.handwrite') }}
+            </button>
+          </div>
           <div class="wb-remote__row wb-remote__row--fine" data-testid="zoom-row">
             <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="sendCmd('view.zoom', { delta: -1 })">A−</button>
             <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="sendCmd('view.zoom', { delta: 1 })">A+</button>
@@ -1219,6 +1226,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   | 'assistant.ask' | 'assistant.answer'
+  | 'card.handwrite'
   | RemoteRecordingCmd
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false

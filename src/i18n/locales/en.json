@@ -9471,6 +9471,7 @@
       "hideQuestionAnswer": "❓ Hide answer",
       "showSolution": "Solution",
       "hideSolution": "Hide solution",
+      "handwrite": "✍️ Write solution",
       "noCards": "No task cards on this page",
       "boardFrozen": "Recording on this board is finished — nothing is being saved.",
       "boardFrozenHint": "On the laptop tap “New recording” in the banner at the top, then the remote works again.",
@@ -11139,7 +11140,16 @@
     "card": {
       "scaleDown": "Smaller text",
       "scaleUp": "Larger text",
-      "scaleReset": "Default text size (100%)"
+      "scaleReset": "Default text size (100%)",
+      "handwrite": "Write the solution by hand"
+    },
+    "handwrite": {
+      "unsupported": "Can't write this solution by hand — showing it printed.",
+      "busy": "Already writing a solution.",
+      "blocked": "The board is not accepting changes right now — try again.",
+      "noSpace": "The solution doesn't fit even on a new page — showing it printed.",
+      "noSolution": "This task has no solution.",
+      "error": "Couldn't write the solution."
     }
   },
   "storage": {

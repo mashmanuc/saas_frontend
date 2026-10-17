@@ -47,15 +47,15 @@ function card(type: string, extra: Record<string, unknown> = {}): WBAsset {
 
 describe('INV-WIN-1/2 · які дії показати', () => {
   it.each([
-    ['theory_card', { scale: true, minimize: true, expand: false, delete: true }],
-    ['nmt_task', { scale: true, minimize: true, expand: true, delete: true }],
-    ['geomash_scene', { scale: false, minimize: true, expand: true, delete: true }],
-    ['visual_capsule', { scale: false, minimize: true, expand: true, delete: true }],
-    ['image', { scale: false, minimize: true, expand: false, delete: true }],
+    ['theory_card', { scale: true, minimize: true, expand: false, delete: true, handwrite: false }],
+    ['nmt_task', { scale: true, minimize: true, expand: true, delete: true, handwrite: false }],
+    ['geomash_scene', { scale: false, minimize: true, expand: true, delete: true, handwrite: false }],
+    ['visual_capsule', { scale: false, minimize: true, expand: true, delete: true, handwrite: false }],
+    ['image', { scale: false, minimize: true, expand: false, delete: true, handwrite: false }],
     // Медіа згортаються з 2026-09-28 (рішення власника, ТЗ «Сценарій» §4.1) — свідома зміна
-    ['video_player', { scale: false, minimize: true, expand: false, delete: true }],
-    ['youtube_player', { scale: false, minimize: true, expand: false, delete: true }],
-    ['audio_player', { scale: false, minimize: true, expand: false, delete: true }],
+    ['video_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false }],
+    ['youtube_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false }],
+    ['audio_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false }],
   ])('вчитель · %s', (type, expected) => {
     expect(cardWindowActions(card(type), TEACHER)).toEqual(expected)
   })
@@ -74,14 +74,14 @@ describe('INV-WIN-1/2 · які дії показати', () => {
 
   it('replay: лише розгортання', () => {
     expect(cardWindowActions(card('nmt_task'), { isTutor: true, mode: 'replay' }))
-      .toEqual({ scale: false, minimize: false, expand: true, delete: false })
+      .toEqual({ scale: false, minimize: false, expand: true, delete: false, handwrite: false })
   })
 })
 
 // ─── Компонент ──────────────────────────────────────────────────────────────
 
 describe('WBCardWindowControls', () => {
-  const ALL = { scale: false, minimize: true, expand: true, delete: true }
+  const ALL = { scale: false, minimize: true, expand: true, delete: true, handwrite: false }
 
   function mountControls(actions = ALL, isExpanded = false) {
     return mount(WBCardWindowControls, { props: { actions, isExpanded }, global: { plugins: [i18n()] } })
@@ -96,7 +96,7 @@ describe('WBCardWindowControls', () => {
   })
 
   it('показує лише дозволені дії; розгорнута картка — кнопка згортання ⊠', () => {
-    const w = mountControls({ scale: false, minimize: false, expand: true, delete: false }, true)
+    const w = mountControls({ scale: false, minimize: false, expand: true, delete: false, handwrite: false }, true)
     expect(w.findAll('button').map(b => b.text())).toEqual(['⊠'])
   })
 

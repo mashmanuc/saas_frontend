@@ -227,6 +227,32 @@ describe('useBoardRemote', () => {
     expect(states[0]).toMatchObject({ cards: { count: 1, answer: false, solution: true } })
   })
 
+  it('v1.29: card.handwrite → «Задача на екран» згортається, ноутбук пише розв\'язок вибраної задачі', () => {
+    const cardsCount = ref(1)
+    const task = { id: 't1', type: 'nmt_task' }
+    const view = {
+      fitTask: vi.fn(), changeTextScale: vi.fn(), scrollBy: vi.fn(), reveal: vi.fn(), resetFocus: vi.fn(),
+      taskCards: vi.fn(() => [task]), handwriteTarget: vi.fn(() => task),
+      summary: vi.fn(() => ({ count: cardsCount.value, answer: false, solution: false, zoom: 1 })),
+    }
+    const handwrite = vi.fn()
+    const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
+    let api!: ReturnType<typeof useBoardRemote>
+    mounted.push(mount(defineComponent({
+      setup() {
+        api = useBoardRemote({ sessionId: ref(SID), store, undo: vi.fn(), sendMessage: vi.fn(), enabled: ref(true), view: view as any, handwrite })
+        return () => h('div')
+      },
+    })))
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
+    expect(view.resetFocus).toHaveBeenCalledTimes(1)
+    expect(handwrite).toHaveBeenCalledWith(task)
+    // задачі з розв'язком немає — нічого не пише
+    view.handwriteTarget.mockReturnValueOnce(null as any)
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
+    expect(handwrite).toHaveBeenCalledTimes(1)
+  })
+
   it('v1.2: view.fit / view.zoom / view.scroll / card.reveal → адаптер; стан підтверджується', () => {
     const { api, view, sendMessage } = setupWithView()
     const pair = api.pairCode.value

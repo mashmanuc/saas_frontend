@@ -1287,6 +1287,7 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPrompt'
 import LessonFullscreenPrompt from '../components/remote/LessonFullscreenPrompt.vue'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
@@ -1944,6 +1945,15 @@ const boardRemote = useBoardRemote({
   busy: () => (savingTemplate.value ? 'saving_template' : null),
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: remoteView,
+  // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
+  // розбір показується друкованим, як «Показати розбір».
+  handwrite: (asset: any) => {
+    void handwriteWithFeedback(asset, () => {
+      const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
+      if (fresh.data?.showSolution) return
+      store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
+    })
+  },
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
     list: () => (store.currentPage?.assets ?? [])

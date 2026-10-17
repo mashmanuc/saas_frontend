@@ -780,6 +780,7 @@
         @minimize="handleMinimize(windowControlsTarget)"
         @expand="handleWindowExpand(windowControlsTarget.id)"
         @delete="handleWindowDelete(windowControlsTarget.id)"
+        @handwrite="handleWindowHandwrite(windowControlsTarget)"
       />
     </Teleport>
 
@@ -994,6 +995,7 @@ import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../boa
 import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
+import { handwriteWithFeedback } from '../../composables/useHandwriteSolution'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
@@ -1805,6 +1807,19 @@ function handleWindowScale(asset: WBAsset, direction: -1 | 0 | 1): void {
 function handleWindowDelete(assetId: string): void {
   // Видалення — чинною операцією, тим самим шляхом, що × у картці.
   emit('asset-delete', assetId)
+}
+
+/**
+ * LAW §9 v1.29: ✍️ — розв'язок задачі рукою біля неї. Пише стор штатними `stroke_add`
+ * (useHandwriteSolution); не вийшло рукою — розбір показується друкованим, як «Показати розбір».
+ */
+function handleWindowHandwrite(asset: WBAsset): void {
+  if (!cardWindowActions(asset, trayViewer.value).handwrite) return
+  void handwriteWithFeedback(asset as any, () => {
+    const fresh = props.assets.find((a) => a.id === asset.id) ?? asset
+    if ((fresh.data as { showSolution?: boolean } | undefined)?.showSolution) return
+    emit('asset-update', { ...fresh, data: { ...(fresh.data as object), showSolution: true } } as unknown as WBAsset)
+  })
 }
 
 function handleMinimize(asset: WBAsset): void {
