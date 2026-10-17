@@ -1041,6 +1041,7 @@ import { containFit } from '../../engine/imageFit'
 import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMode } from '../../composables/useAssetStatus'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
+import { roundStrokePoints } from '../../engine/strokePrecision'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
@@ -3906,6 +3907,10 @@ function handleMouseUp(): void {
   if (currentTool.value === 'line' && stroke.points.length >= 2) {
     stroke.points = [stroke.points[0], stroke.points[stroke.points.length - 1]]
   }
+
+  // Легші штрихи (2026-10-17): точки — до сотих, натиск — до тисячних, час не чіпаємо
+  // (engine/strokePrecision.ts). Оком не видно, а стан дошки на третину легший.
+  stroke.points = roundStrokePoints(stroke.points)
 
   emit('stroke-add', stroke)
 
