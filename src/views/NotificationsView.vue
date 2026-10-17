@@ -108,6 +108,7 @@
 </template>
 
 <script setup lang="ts">
+import { notificationTarget } from '@/utils/notificationTarget'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -201,24 +202,8 @@ function hasTarget(notification: InAppNotification): boolean {
   return Boolean(targetRoute(notification))
 }
 
-/**
- * Куди веде сповіщення. `null` — нікуди (просто інформація).
- *
- * `/tutor/inquiries` навмисно НЕ використовується: маршрут — редірект на
- * Головну від часу вимкнення маркетплейсу (2026-06-17), а пункт меню прибрано
- * 2026-09-22. Запрошені учні живуть у «Мої учні».
- */
 function targetRoute(notification: InAppNotification): string | null {
-  const data: any = notification.data || {}
-  const role = authStore.userRole // 'student' | 'tutor' | null
-
-  if (data.thread_id) return `/tutor/messages/${data.thread_id}`
-  if (data.inquiry_id || data.relation_id) {
-    return role === 'tutor' ? '/tutor/students' : '/student/inquiries'
-  }
-  if (data.booking_id) return '/bookings'
-  if (data.billing) return '/tutor/billing'
-  return null
+  return notificationTarget(notification.data, authStore.userRole)
 }
 
 async function handleNotificationClick(notification: InAppNotification) {

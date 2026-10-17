@@ -17,7 +17,8 @@ const getMyCalendar = vi.fn()
 const joinEventRoom = vi.fn()
 const getActiveLessons = vi.fn()
 
-vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => ({ query: {} }) }))
+const route = vi.hoisted(() => ({ query: {} as Record<string, string> }))
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }), useRoute: () => route }))
 vi.mock('@/modules/booking/composables/useScheduleDeepLink', () => ({ useScheduleDeepLink: () => {} }))
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 580, timezone: 'Europe/Kyiv' } }) }))
 vi.mock('@/modules/booking/api/calendarV055Api', () => ({ calendarV055Api: { getMyCalendar, joinEventRoom } }))
@@ -64,6 +65,22 @@ async function mountView() {
 }
 
 const SC = (uk as unknown as { student: { calendar: Record<string, string> } }).student.calendar
+
+describe('Розклад учня — посилання зі сповіщення (2026-10-17, С5)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    getMyCalendar.mockReset().mockResolvedValue({ results: [] })
+  })
+
+  it('?week= відкриває тиждень уроку, а не поточний', async () => {
+    route.query = { week: '2026-11-02', booking: '77' }
+    await mountView()
+    const from = getMyCalendar.mock.calls[0][0].from as string
+    // понеділок 02.11 00:00 за Києвом = 01.11 22:00 UTC
+    expect(from).toBe('2026-11-01T22:00:00.000Z')
+    route.query = {}
+  })
+})
 
 describe('Розклад учня', () => {
   beforeEach(() => {

@@ -103,7 +103,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
@@ -131,6 +131,7 @@ dayjs.locale('uk')
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const selectedEvent = ref<MyCalendarEvent | null>(null)
@@ -150,7 +151,17 @@ function getMondayStart(date: dayjs.Dayjs) {
   return tzDate.subtract(daysFromMonday, 'day').startOf('day')
 }
 
-const currentWeekStart = ref(getMondayStart(dayjs()))
+// Посилання зі сповіщення (2026-10-17, С5): ?week=YYYY-MM-DD — одразу тиждень того уроку, а не поточний
+function initialWeek(): dayjs.Dayjs {
+  const raw = typeof route.query.week === 'string' ? route.query.week : ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const day = dayjs.tz(raw, studentTimezone.value)
+    if (day.isValid()) return getMondayStart(day)
+  }
+  return getMondayStart(dayjs())
+}
+
+const currentWeekStart = ref(initialWeek())
 const currentWeekEnd = computed(() => currentWeekStart.value.add(6, 'day'))
 const weekRangeLabel = computed(() => {
   const start = currentWeekStart.value

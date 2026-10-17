@@ -205,6 +205,19 @@ function setupNotificationsRealtime(userId) {
           })
         }
 
+        // Учень дізнається про урок (2026-10-17, С4): новий / перенесений / скасований урок і нагадування за годину
+        if (
+          (event.type === 'LESSON_SCHEDULED' || event.type === 'LESSON_RESCHEDULED'
+            || event.type === 'LESSON_CANCELLED' || event.type === 'LESSON_REMINDER')
+          && event.payload
+        ) {
+          notifyInfo(event.payload.body || '', {
+            title: event.payload.title || 'Урок',
+            action: event.payload.data?.url ? { href: event.payload.data.url, label: 'Мій розклад' } : undefined,
+            timeout: 10000,
+          })
+        }
+
         notificationsStore.handleRealtimeNotification(event)
       }
     )

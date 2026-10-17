@@ -107,9 +107,14 @@ export function useScheduleDeepLink() {
   //   - первинний mount з ?booking=
   //   - перехід у той самий route з новим ?booking= (без remount)
   //   - back-кнопку: query вже очищено processBookingQuery → нічого не робить
+  //   - 2026-10-17: власне прибирання ?booking (router.replace) теж будить цей watch — зі значенням undefined.
+  //     Раніше processBookingQuery(null) одразу зупиняв пошук картки, і коли розклад ще вантажився (тобто завжди),
+  //     підсвічування не спрацьовувало. Порожнє значення — не новий запит: ігноруємо.
   watch(
     () => route.query.booking,
-    (val) => processBookingQuery(typeof val === 'string' ? val : null),
+    (val) => {
+      if (typeof val === 'string' && val) processBookingQuery(val)
+    },
     { immediate: true },
   )
 

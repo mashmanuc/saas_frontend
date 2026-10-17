@@ -6,6 +6,7 @@
       class="event-card"
       data-testid="lesson-card"
       :data-lesson-id="event.id"
+      :data-event-id="event.id"
       :class="{
         'is-past': isPastFn(event.start),
         'is-no-show': event.status === 'no_show',

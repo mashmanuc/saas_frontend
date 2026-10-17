@@ -38,6 +38,8 @@ describe('Урок у розкладі вчителя', () => {
     expect(px(card(w, 1).attributes('style'), 'height')).toBe(43)
     expect(px(card(w, 2).attributes('style'), 'height')).toBeCloseTo(20.5)
     expect(px(card(w, 2).attributes('style'), 'top') - px(card(w, 1).attributes('style'), 'top')).toBe(45)  // 19:00 рівно під 18:00
+    // посилання зі сповіщення (?booking=) знаходить картку за цією міткою (2026-10-17)
+    expect(card(w, 1).attributes('data-event-id')).toBe('1')
   })
 
   it('В2: годинний — імʼя і «18:00 – 19:00» окремими рядками; пів години — один рядок «імʼя 19:00»', () => {

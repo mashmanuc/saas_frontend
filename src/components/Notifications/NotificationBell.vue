@@ -128,6 +128,11 @@ const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
   'LESSON_STARTED': 'Урок розпочався',
   'lesson.started': 'Урок розпочався',
   'CHAT_MESSAGE': 'Нове повідомлення',
+  // Учень дізнається про урок (2026-10-17)
+  'LESSON_SCHEDULED': 'Новий урок',
+  'LESSON_RESCHEDULED': 'Урок перенесено',
+  'LESSON_CANCELLED': 'Урок скасовано',
+  'LESSON_REMINDER': 'Урок за годину',
 }
 
 function getNotificationTitle(item: InAppNotification): string {
