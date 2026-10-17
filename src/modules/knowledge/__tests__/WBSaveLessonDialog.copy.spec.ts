@@ -8,7 +8,9 @@ import { createI18n } from 'vue-i18n'
 import uk from '../../../i18n/locales/uk.json'
 
 const saveLessonFromSession = vi.fn()
-vi.mock('../api/lessonSaveApi', () => ({ lessonSaveApi: { saveLessonFromSession: (...a: any[]) => saveLessonFromSession(...a) } }))
+vi.mock('../api/lessonSaveApi', () => ({
+  lessonSaveApi: { saveLessonFromSession: (...a: any[]) => saveLessonFromSession(...a), getFolders: async () => [] },
+}))
 
 import WBSaveLessonDialog from '../components/WBSaveLessonDialog.vue'
 

@@ -8,6 +8,8 @@ import WBSaveLessonDialog from '../components/WBSaveLessonDialog.vue'
 vi.mock('../api/lessonSaveApi', () => ({
   lessonSaveApi: {
     saveLessonFromSession: vi.fn(),
+    // 2026-10-17: вікно при відкритті вантажить папки «Моїх уроків»
+    getFolders: vi.fn(async () => []),
   },
 }))
 

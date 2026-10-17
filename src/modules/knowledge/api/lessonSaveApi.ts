@@ -6,6 +6,8 @@ import apiClient from '@/utils/apiClient'
 export interface SaveLessonRequest {
   session_id: string
   title: string
+  /** 2026-10-17: папка «Моїх уроків»; немає — «Без папки» */
+  folder_id?: string | null
 }
 
 export interface SaveLessonResponse {
@@ -13,6 +15,7 @@ export interface SaveLessonResponse {
   title: string
   status: string
   created_at: string
+  folder?: string | null
 }
 
 export interface LoadLessonResponse {
