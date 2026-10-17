@@ -23,6 +23,7 @@ export const HANDWRITE_INK = '#1e3a8a'
 interface TaskData {
   solution?: unknown
   options?: Array<{ letter?: unknown; text?: unknown; isCorrect?: unknown }>
+  pairs?: Array<{ left?: unknown; right?: unknown }>
   correctAnswer?: unknown
 }
 
@@ -33,7 +34,11 @@ export function hasHandwritableSolution(asset: { type?: string; data?: unknown }
   return typeof sol === 'string' && sol.trim().length > 0
 }
 
-/** «Б» / «А, В» для варіантів; рядок відповіді для відкритої; інакше порожньо (без рядка). */
+/**
+ * «Б» / «А, В» для варіантів; рядок відповіді для відкритої; для відповідності — пари «ліве — праве»
+ * через «;» (картка показує пари вже зіставленими, окремих літер правого стовпця в даних немає);
+ * інакше порожньо (без рядка).
+ */
 export function answerTextOf(data: TaskData | undefined): string {
   if (!data) return ''
   const correct = (data.options ?? []).filter((o) => o && o.isCorrect === true)
@@ -41,8 +46,12 @@ export function answerTextOf(data: TaskData | undefined): string {
     const letters = correct.map((o) => String(o.letter ?? '').trim()).filter(Boolean)
     return letters.join(', ')
   }
+  const pairs = (data.pairs ?? []).filter((p) => p && p.left != null && p.right != null)
+  if (pairs.length) {
+    return pairs.map((p) => `${String(p.left).trim()} — ${String(p.right).trim()}`).join('; ').slice(0, 600)
+  }
   const ca = data.correctAnswer
-  if (typeof ca === 'string' || typeof ca === 'number') return String(ca).trim().slice(0, 200)
+  if (typeof ca === 'string' || typeof ca === 'number') return String(ca).trim().slice(0, 600)
   return ''
 }
 

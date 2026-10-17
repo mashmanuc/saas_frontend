@@ -16,7 +16,11 @@ import {
 } from '../board/handwriteSolution'
 import type { WBStroke } from '../types/winterboard'
 
-export interface HandwriteLayoutRequest { text: string; width: number; height: number; mode: 'steps' | 'full'; answer: string }
+export interface HandwriteLayoutRequest {
+  text: string; width: number; height: number; mode: 'steps' | 'full'; answer: string
+  /** Умова задачі в лівому верхньому куті області — текст її обтікає (нова сторінка). */
+  float?: { w: number; h: number }
+}
 export type HandwriteLayout =
   | { fits: true; scale: number; size: number; w: number; h: number; duration_ms: number; strokes: Array<{ p: number[][]; t: number }> }
   | { fits: false; needed_height: number | null }
@@ -25,7 +29,7 @@ export type HandwriteLayout =
 export class HandwriteUnsupported extends Error {}
 
 export type HandwriteResult =
-  | { status: 'written'; strokes: number; pageId: string; newPage: boolean }
+  | { status: 'written'; strokes: number; pageId: string; newPage: boolean; copiedTaskId?: string }
   | { status: 'stopped'; written: number }
   | { status: 'unsupported'; detail: string }
   | { status: 'busy' | 'blocked' | 'no_solution' | 'no_space' }
@@ -42,6 +46,8 @@ export interface HandwriteStore {
   addStroke: (stroke: WBStroke, opts?: { skipHistory?: boolean; pageId?: string }) => void
   deleteStroke: (id: string, opts?: { skipHistory?: boolean }) => void
   addPageUndoable: (opts?: { afterCurrent?: boolean }) => string
+  addAsset: (asset: any, pageId: string, opts?: { skipHistory?: boolean }) => void
+  deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
 }
 
 export interface HandwriteDeps {
@@ -100,9 +106,9 @@ export async function handwriteTaskSolution(
 
   const pageW = page.width ?? 1920
   const pageH = page.height ?? 1080
-  const req = (area: Rect): HandwriteLayoutRequest => ({
+  const req = (area: Rect, float?: { w: number; h: number }): HandwriteLayoutRequest => ({
     text: String(asset.data.solution), width: Math.floor(area.w), height: Math.floor(area.h),
-    mode: 'steps', answer: answerTextOf(asset.data),
+    mode: 'steps', answer: answerTextOf(asset.data), ...(float ? { float } : {}),
   })
 
   // Сторінку займає те, що на ній є зараз; лічильник об'єктів — як у `canAddObject`.
@@ -116,10 +122,15 @@ export async function handwriteTaskSolution(
         break
       }
     }
+    // Біля задачі місця немає — нова сторінка, і туди ж копія умови (власник 17.10: «треба і умову
+    // переносити, а розв'язок описувати кругом умови»): умова в лівому верхньому куті, рукопис її обтікає.
     if (!chosen) {
       const area = wholePageArea(pageW, pageH)
-      const layout = await deps.fetchLayout(req(area))
-      if (layout.fits && layout.strokes.length <= PAGE_OBJECT_LIMIT) chosen = { area, layout, newPage: true }
+      // Копія стає в кут з полем; висока задача може сягати майже низу сторінки — тоді рукопис лише праворуч.
+      if (asset.w <= area.w && area.y + asset.h <= pageH - 20) {
+        const layout = await deps.fetchLayout(req(area, { w: Math.ceil(asset.w), h: Math.ceil(asset.h) }))
+        if (layout.fits && layout.strokes.length + 1 <= PAGE_OBJECT_LIMIT) chosen = { area, layout, newPage: true }
+      }
     }
   } catch (err) {
     if (err instanceof HandwriteUnsupported) return { status: 'unsupported', detail: err.message }
@@ -130,9 +141,18 @@ export async function handwriteTaskSolution(
   if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return { status: 'blocked' }
 
   let pageId = page.id
+  let copy: any = null
   if (chosen.newPage) {
     pageId = store.addPageUndoable({ afterCurrent: true })
     if (!pageId) return { status: 'no_space' }
+    // Копія, а не перенос (власник 17.10): задача лишається на своїй сторінці. Відповідь і розбір
+    // у копії сховані — їх і пише рука.
+    copy = {
+      ...asset, id: `tsk-hw-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      x: chosen.area.x, y: chosen.area.y,
+      data: { ...(asset.data || {}), showAnswer: false, showSolution: false },
+    }
+    store.addAsset(copy, pageId, { skipHistory: true })
   }
 
   const { area, layout } = chosen
@@ -167,8 +187,15 @@ export async function handwriteTaskSolution(
     // Один крок «Скасувати» на весь розв'язок — кладемо одразу, щоб і скасування посеред
     // письма прибрало написане й зупинило руку; «Повернути» кладе розв'язок цілим.
     store.undoStack = [...store.undoStack, {
-      apply: () => { for (const s of strokes) store.addStroke(s, { skipHistory: true, pageId }) },
-      revert: () => { stop(); for (const s of strokes) store.deleteStroke(s.id, { skipHistory: true }) },
+      apply: () => {
+        if (copy) store.addAsset(copy, pageId, { skipHistory: true })
+        for (const s of strokes) store.addStroke(s, { skipHistory: true, pageId })
+      },
+      revert: () => {
+        stop()
+        for (const s of strokes) store.deleteStroke(s.id, { skipHistory: true })
+        if (copy) store.deleteAsset(copy.id, { skipHistory: true })
+      },
     }].slice(-MAX_UNDO)
     store.redoStack = []
 
@@ -178,7 +205,7 @@ export async function handwriteTaskSolution(
       store.addStroke(strokes[i], { skipHistory: true, pageId })
       written = i + 1
       if (written >= strokes.length) {
-        finish({ status: 'written', strokes: written, pageId, newPage: chosen!.newPage })
+        finish({ status: 'written', strokes: written, pageId, newPage: chosen!.newPage, ...(copy ? { copiedTaskId: copy.id } : {}) })
         return
       }
       cancelTimer = deps.schedule(() => tick(i + 1), Math.max(0, times[i + 1] - times[i]))

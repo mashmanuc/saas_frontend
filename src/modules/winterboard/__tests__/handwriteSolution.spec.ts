@@ -37,6 +37,8 @@ describe('board/handwriteSolution', () => {
     expect(answerTextOf(TASK.data)).toBe('Б')
     expect(answerTextOf({ options: [{ letter: 'А', isCorrect: true }, { letter: 'В', isCorrect: true }] })).toBe('А, В')
     expect(answerTextOf({ correctAnswer: 12 })).toBe('12')
+    expect(answerTextOf({ pairs: [{ left: '$145$', right: 'на 5' }, { left: '$96$', right: 'на 2' }] }))
+      .toBe('$145$ — на 5; $96$ — на 2')
     expect(answerTextOf({})).toBe('')
   })
 
@@ -88,6 +90,14 @@ function makeDeps(opts: { layouts?: HandwriteLayout[]; unsupported?: boolean } =
     deleteStroke: vi.fn((id: string) => {
       const pg = pages[store.currentPageIndex]
       pg.strokes = pg.strokes.filter((s: any) => s.id !== id)
+    }),
+    addAsset: vi.fn((a: any, pageId: string) => {
+      const pg = pages.find((p) => p.id === pageId)!
+      pg.assets = [...pg.assets, a]
+    }),
+    deleteAsset: vi.fn((id: string) => {
+      const pg = pages[store.currentPageIndex]
+      pg.assets = pg.assets.filter((a: any) => a.id !== id)
     }),
     addPageUndoable: vi.fn(() => {
       const np = { id: 'p2', assets: [] as any[], strokes: [] as any[] }
@@ -172,15 +182,31 @@ describe('handwriteTaskSolution', () => {
     expect(b.page.strokes).toHaveLength(0)
   })
 
-  it('не влізло біля задачі — нова сторінка після поточної', async () => {
+  it('не влізло біля задачі — нова сторінка: копія умови в кутку, рукопис навколо неї, один «Скасувати»', async () => {
     const nofit: HandwriteLayout = { fits: false, needed_height: 2000 }
     const { deps, store, pages, runAll } = makeDeps({ layouts: [nofit, nofit, layout(2)] })
     const done = handwriteTaskSolution(TASK, deps)
     await flush()
     runAll()
-    expect(await done).toEqual({ status: 'written', strokes: 2, pageId: 'p2', newPage: true })
+    const res = await done
+    expect(res).toMatchObject({ status: 'written', strokes: 2, pageId: 'p2', newPage: true })
     expect(store.addPageUndoable).toHaveBeenCalledWith({ afterCurrent: true })
+    // запит для нової сторінки — з умовою в кутку
+    const calls = (deps.fetchLayout as any).mock.calls
+    const lastReq = calls[calls.length - 1][0]
+    expect(lastReq.float).toEqual({ w: TASK.w, h: TASK.h })
+    // копія, а не перенос: оригінал лишився, на новій сторінці — копія з прихованими відповіддю й розбором
+    expect(pages[0].assets.map((a: any) => a.id)).toContain('task-1')
+    const copy = pages[1].assets[0]
+    expect(copy.id).not.toBe('task-1')
+    expect(copy).toMatchObject({ type: 'nmt_task', x: 40, y: 40, w: TASK.w, h: TASK.h })
+    expect(copy.data).toMatchObject({ showAnswer: false, showSolution: false, solution: TASK.data.solution })
+    expect((res as any).copiedTaskId).toBe(copy.id)
     expect(pages[1].strokes).toHaveLength(2)
+    // «Скасувати» прибирає і рукопис, і копію
+    store.undoStack[store.undoStack.length - 1].revert()
+    expect(pages[1].strokes).toHaveLength(0)
+    expect(pages[1].assets).toHaveLength(0)
   })
 
   it('перекладач не знає конструкції — нічого не пише й не кладе «Скасувати»', async () => {
