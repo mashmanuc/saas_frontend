@@ -56,7 +56,7 @@ import { useChatOverlayStore } from '../stores/chatOverlayStore'
 
 const notify = useNotifyStore()
 const { items } = storeToRefs(notify)
-const { t } = useI18n()
+const { locale } = useI18n()
 const router = useRouter()
 const chatOverlay = useChatOverlayStore()
 
@@ -83,7 +83,9 @@ const toastMeta = (item) => {
   return {
     ...(item.meta || {}),
     ...meta,
-    timestamp: new Intl.DateTimeFormat(t('lang.en') ? 'en' : 'uk', {
+    // 2026-10-17: було `t('lang.en') ? 'en' : 'uk'` — переклад «Англійська» завжди непорожній, тож час
+    // у кожному спливному вікні виходив англійським «10:44 PM». Формат — за мовою інтерфейсу.
+    timestamp: new Intl.DateTimeFormat(locale.value === 'en' ? 'en' : 'uk', {
       hour: '2-digit',
       minute: '2-digit',
     }).format(item.timestamp),
