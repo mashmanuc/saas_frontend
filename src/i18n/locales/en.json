@@ -835,13 +835,8 @@
   "auth": {
     "logoutGuard": {
       "title": "There are unsaved changes",
-      "lead": "The server has not accepted some changes on these boards yet.",
-      "checking": "Checking the connection to the server…",
-      "sendFirst": "The server is reachable. Open the board so the changes are sent, then sign out.",
-      "offline": "The server is unreachable. You can download a copy of the changes or sign out and discard them.",
-      "paused": "The connection to the server is paused for a few seconds after failures. Check again in a moment — don't discard the changes yet.",
-      "recheck": "Check again",
-      "gone": "These changes can no longer be sent: the board is gone or not accessible. You can download a copy or sign out and discard them.",
+      "lead": "Some actions on these boards have not reached the server yet. They will stay in this browser and will be sent when you open the board again.",
+      "gone": "Actions of a board that is gone or no longer accessible cannot be sent anywhere — you can download them as a copy.",
       "boardGone": "board is gone or not accessible",
       "notSaved": "the copy could not be saved in the browser",
       "download": "Download a copy",
@@ -850,10 +845,11 @@
       "blocked": "rejected by the server",
       "openBoard": "Open board",
       "cancel": "Cancel",
-      "logoutAnyway": "Sign out anyway",
       "discardWarning": "Actions that will be lost: {n}. They cannot be restored.",
       "confirmDiscard": "Discard and sign out",
-      "board": "Board {id}"
+      "discard": "Discard actions",
+      "board": "Board {id}",
+      "logout": "Sign out"
     },
     "logoutPending": {
       "title": "Sign-out not finished",

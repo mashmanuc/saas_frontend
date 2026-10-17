@@ -1,16 +1,18 @@
 <!--
   «Є незбережені дії» перед виходом (ТЗ «Сесія спільного екрана і безпечний вихід», R7).
 
-  Вихід сам нічого не видаляє. Для кожної дошки — чи можна ще надіслати її зміни:
-  - дошка є на сервері — лише «Відкрити дошку»: черга відправиться штатно
-    (SYSTEM_LAW §5), а відмову сервера дошка покаже своїм банером SAVE_BLOCKED;
-  - дошки немає або до неї немає доступу (400/403/404/410) чи сервер недоступний —
-    надіслати нікуди: «Завантажити копію» (LAW §4), потім явне відкидання з числом дій
-    (§6.4 ТЗ).
-  «Вийти все одно» — лише коли надіслати нікуди жодну з перелічених дошок: відкидання
-  прибирає копії всіх, тож дошку, яку ще можна зберегти, спершу треба відкрити.
-  На спільному комп'ютері це важливо в обидва боки: не загубити роботу і не лишити
-  її наступній людині.
+  Лише нагадування, не замок (рішення власника 2026-10-17: людина після збою світла не могла
+  вийти, бо сервер був на зв'язку, а дошку з чотирма діями вона не відкривала; «ми можемо
+  випускати його, просто буде нагадування»). SYSTEM_LAW, розділ «Вихід з акаунта з
+  незбереженими діями».
+
+  - «Вийти» є завжди і нічого не стирає: копії черг з ключем цього вчителя лишаються в
+    браузері й відправляються штатно, коли він знову відкриє дошку (LAW §5). Іншим
+    користувачам браузера вони не видно (власник у ключі).
+  - «Відкрити дошку» — для тих, кому дії потрібні зараз.
+  - Дошки немає або до неї немає доступу (400/403/404/410) — надіслати нікуди: «Завантажити
+    копію» (LAW §4), а коли такі ВСІ перелічені дошки — ще й явне відкидання з числом дій.
+    Недоступний сервер (5xx, мережа, breaker) — не причина відкидати: дії поїдуть пізніше.
 -->
 <template>
   <div
@@ -57,7 +59,9 @@
         </li>
       </ul>
 
-      <p class="logout-unsent__status" data-testid="logout-unsent-status">{{ statusText }}</p>
+      <p v-if="anyGone" class="logout-unsent__status" data-testid="logout-unsent-status">
+        {{ t('auth.logoutGuard.gone') }}
+      </p>
 
       <p v-if="confirming" class="logout-unsent__warning" data-testid="logout-unsent-warning">
         {{ t('auth.logoutGuard.discardWarning', { n: total }) }}
@@ -68,19 +72,12 @@
           {{ t('auth.logoutGuard.cancel') }}
         </button>
         <button
-          v-if="canRecheck"
-          type="button"
-          class="logout-unsent__cancel"
-          data-testid="logout-unsent-recheck"
-          @click="checkBoards"
-        >{{ t('auth.logoutGuard.recheck') }}</button>
-        <button
           v-if="canDiscard && !confirming"
           type="button"
           class="logout-unsent__discard"
           data-testid="logout-unsent-discard"
           @click="confirming = true"
-        >{{ t('auth.logoutGuard.logoutAnyway') }}</button>
+        >{{ t('auth.logoutGuard.discard') }}</button>
         <button
           v-else-if="canDiscard"
           type="button"
@@ -89,6 +86,13 @@
           :disabled="busy"
           @click="discardAndLogout"
         >{{ t('auth.logoutGuard.confirmDiscard', { n: total }) }}</button>
+        <button
+          type="button"
+          class="logout-unsent__logout"
+          data-testid="logout-unsent-logout"
+          :disabled="busy"
+          @click="keepAndLogout"
+        >{{ t('auth.logoutGuard.logout') }}</button>
       </div>
     </div>
   </div>
@@ -107,9 +111,8 @@ import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
  * Чи можна ще надіслати зміни дошки:
  * - `ok` — дошка є, сервер відповідає (зокрема 429 — він живий);
  * - `gone` — дошки немає або доступу немає (400/403/404/410): надіслати нікуди;
- * - `offline` — жодної відповіді або 5xx;
- * - `paused` — запит не пішов: відкритий circuit breaker клієнта (Б-51). Сервер може ожити
- *   за 30 с, тож відкидання поки не пропонуємо — лише «Перевірити ще раз».
+ * - `offline` — жодної відповіді або 5xx: дії поїдуть пізніше, відкидати не пропонуємо;
+ * - `paused` — запит не пішов: відкритий circuit breaker клієнта (Б-51) — так само, як offline.
  */
 type BoardLink = 'checking' | 'ok' | 'gone' | 'offline' | 'paused'
 const GONE_STATUSES = new Set([400, 403, 404, 410])
@@ -128,30 +131,14 @@ const total = computed(() => totalUnsentOps(guard.work))
 function linkOf(sessionId: string): BoardLink {
   return links.value[sessionId] ?? 'checking'
 }
-const checking = computed(() => guard.work.some(board => linkOf(board.sessionId) === 'checking'))
 /** Надіслати цю дошку нікуди — лише копія або відкидання. */
 function unsendable(sessionId: string): boolean {
-  const link = linkOf(sessionId)
-  return link === 'gone' || link === 'offline'
+  return linkOf(sessionId) === 'gone'
 }
+const anyGone = computed(() => guard.work.some(board => unsendable(board.sessionId)))
 /** Відкидання — лише коли надіслати нікуди ЖОДНУ з дошок (воно прибирає копії всіх). */
 const canDiscard = computed(() =>
-  !checking.value && guard.work.length > 0 && guard.work.every(board => unsendable(board.sessionId)))
-
-/** Б-51: без зв'язку — перевірку можна повторити, не закриваючи діалог. */
-const canRecheck = computed(() => !checking.value && guard.work.some(board => {
-  const link = linkOf(board.sessionId)
-  return link === 'offline' || link === 'paused'
-}))
-
-const statusText = computed(() => {
-  if (checking.value) return t('auth.logoutGuard.checking')
-  if (guard.work.some(board => linkOf(board.sessionId) === 'paused')) return t('auth.logoutGuard.paused')
-  if (!canDiscard.value) return t('auth.logoutGuard.sendFirst')
-  return guard.work.some(board => linkOf(board.sessionId) === 'offline')
-    ? t('auth.logoutGuard.offline')
-    : t('auth.logoutGuard.gone')
-})
+  guard.work.length > 0 && guard.work.every(board => unsendable(board.sessionId)))
 
 function boardName(sessionId: string): string {
   return names.value[sessionId] || t('auth.logoutGuard.board', { id: sessionId.slice(0, 8) })
@@ -172,7 +159,6 @@ function classify(result: PromiseSettledResult<unknown>): BoardLink {
 let generation = 0
 watch(() => guard.open, checkBoards, { immediate: true })
 
-// Б-51: та сама перевірка — при відкритті й кнопкою «Перевірити ще раз».
 async function checkBoards() {
   const run = ++generation
   confirming.value = false
@@ -217,6 +203,17 @@ function downloadCopy(board: UnsentBoardWork) {
 function openBoard(sessionId: string) {
   guard.close()
   void router.push(`/winterboard/${sessionId}`)
+}
+
+/** Вихід без відкидання: копії черг лишаються в браузері до наступного відкриття дошки. */
+async function keepAndLogout() {
+  busy.value = true
+  guard.close()
+  try {
+    await auth.logout({ keepUnsent: true })
+  } finally {
+    busy.value = false
+  }
 }
 
 async function discardAndLogout() {
@@ -273,6 +270,11 @@ async function discardAndLogout() {
   color: #b91c1c; cursor: pointer;
 }
 .logout-unsent__discard:disabled { opacity: 0.6; cursor: default; }
+.logout-unsent__logout {
+  padding: 6px 14px; border: 1px solid #0f766e; border-radius: 8px; background: #0f766e;
+  color: #fff; font-weight: 600; cursor: pointer;
+}
+.logout-unsent__logout:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
    Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
@@ -300,6 +302,11 @@ async function discardAndLogout() {
 }
 [data-theme="dark"] .logout-unsent__warning {
   color: var(--color-danger);
+}
+[data-theme="dark"] .logout-unsent__logout {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-on-accent);
 }
 [data-theme="dark"] .logout-unsent__discard {
   border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);

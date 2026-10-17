@@ -1091,23 +1091,25 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Вихід (ТЗ «Сесія спільного екрана і безпечний вихід», R6–R7).
      *
-     * R7: якщо в браузері лежать неприйняті дії цього користувача — не виходимо, а
-     * показуємо їх (`LogoutUnsentDialog`); відкинути можна лише явно, `discardUnsent`.
+     * R7: якщо в браузері лежать неприйняті дії цього користувача — спершу нагадуємо про
+     * них (`LogoutUnsentDialog`). Звідти: `keepUnsent` — вийти, лишивши копії в браузері до
+     * наступного відкриття дошки (рішення власника 2026-10-17: нагадування, не замок);
+     * `discardUnsent` — явно відкинути (лише коли дошок уже немає).
      * R6: вихід виконано лише після відповіді сервера `2xx`. Раніше помилку logout
      * ковтали й «виходили» локально, хоча сесія на сервері жила, а HttpOnly-cookie
      * лишались у браузері. Тепер — маркер «вихід не завершено» і екран блокування.
      */
-    async logout({ discardUnsent = false } = {}) {
+    async logout({ discardUnsent = false, keepUnsent = false } = {}) {
       // Копія черги відкритої дошки пишеться із секундною затримкою — спершу в сховище,
       // щоб перелік бачив і дії останньої секунди (рецензія пакета A, знахідка 4).
       // Не лягла (переповнене сховище) — черга в пам'яті однаково йде в перелік.
       const persisted = persistOpenBoardQueue()
       const work = withOpenBoardQueue(listUnsentWork(this.user?.id), persisted)
-      if (work.length && !discardUnsent) {
+      if (work.length && !discardUnsent && !keepUnsent) {
         useLogoutGuardStore().show(work)
         return { status: 'blocked_unsent', work }
       }
-      if (work.length) {
+      if (work.length && discardUnsent) {
         // Явне відкидання вчителем: спершу черги з пам'яті (інші вкладки й ця), потім
         // копії. Інакше смерть сесії й beforeunload записали б їх знову, і дії лишились би
         // у спільному браузері для наступної людини.

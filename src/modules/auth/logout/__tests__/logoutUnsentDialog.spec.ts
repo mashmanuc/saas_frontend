@@ -1,10 +1,13 @@
 /**
- * Діалог «Є незбережені дії» (ТЗ спільного екрана, R7): число дій видно ДО відкидання,
- * відкидання — лише другим, явним натисканням, і тоді йде саме `logout({ discardUnsent: true })`.
+ * Діалог «Є незбережені дії» (ТЗ спільного екрана, R7).
  *
- * Рецензія пакета A, знахідка 4: відкидання — ЛИШЕ без зв'язку з сервером (§6.4 ТЗ; з
- * сервером на зв'язку спершу відправлення з дошки), і перед ним — пропозиція завантажити
- * копію (SYSTEM_LAW §4).
+ * Рішення власника 2026-10-17 — нагадування, не замок: людина після збою світла не могла вийти,
+ * бо сервер був на зв'язку, а дошку з діями вона не відкривала. Тепер «Вийти» є завжди і йде як
+ * `logout({ keepUnsent: true })` — копії лишаються в браузері до наступного відкриття дошки.
+ *
+ * Відкидання — як і раніше, лише другим, явним натисканням із числом дій, і лише коли надіслати
+ * нікуди ЖОДНУ з дошок (їх немає або немає доступу). Недоступний сервер — не причина відкидати.
+ * Перед відкиданням — копія у файл (SYSTEM_LAW §4).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -29,6 +32,13 @@ const i18n = () => createI18n({ legacy: false, locale: 'uk', messages: { uk } as
 
 const online = () => getSession.mockImplementation(async () => ({ name: 'Урок: Піраміда' }))
 const offline = () => getSession.mockImplementation(async () => { throw new Error('Network Error') })
+const gone = () => getSession.mockImplementation(async () => {
+  throw Object.assign(new Error('404'), { response: { status: 404 } })
+})
+const breakerOpen = () => getSession.mockImplementation(async () => {
+  throw Object.assign(new Error('[apiClient] Circuit breaker open — request blocked'),
+    { blockedBy: 'circuit_breaker' })
+})
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -48,14 +58,37 @@ async function openDialog() {
   return { wrapper, guard }
 }
 
-describe('LogoutUnsentDialog', () => {
-  it('показує дошку за назвою, число дій і що сервер відмовив', async () => {
+const has = (wrapper: ReturnType<typeof mount>, id: string) => wrapper.find(`[data-testid="${id}"]`).exists()
+
+describe('LogoutUnsentDialog · нагадування, не замок', () => {
+  it('показує дошку за назвою, число дій і що вони лишаться в браузері', async () => {
     online()
     const { wrapper } = await openDialog()
     const text = wrapper.text()
     expect(text).toContain('Урок: Піраміда')
     expect(text).toContain('Не збережено дій: 5')
     expect(text).toContain('сервер відмовив')
+    expect(text).toContain('залишаться в цьому браузері')
+  })
+
+  it('сервер на зв\'язку → «Вийти» є, і це вихід БЕЗ відкидання', async () => {
+    online()
+    const auth = useAuthStore()
+    const logout = vi.spyOn(auth, 'logout').mockResolvedValue({ status: 'done' } as never)
+    const { wrapper, guard } = await openDialog()
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(false)
+    expect(has(wrapper, 'logout-unsent-download')).toBe(false)
+    expect(has(wrapper, 'logout-unsent-status')).toBe(false)
+
+    await wrapper.get('[data-testid="logout-unsent-logout"]').trigger('click')
+    expect(logout).toHaveBeenCalledWith({ keepUnsent: true })
+    expect(guard.open).toBe(false)
+  })
+
+  it('«Вийти» є ще до кінця перевірки дошок — вихід на неї не чекає', async () => {
+    getSession.mockImplementation(() => new Promise(() => {}))
+    const { wrapper } = await openDialog()
+    expect(has(wrapper, 'logout-unsent-logout')).toBe(true)
   })
 
   it('«Відкрити дошку» веде на дошку й закриває діалог', async () => {
@@ -66,31 +99,51 @@ describe('LogoutUnsentDialog', () => {
     expect(guard.open).toBe(false)
   })
 
-  it('сервер на зв\'язку → відкидати не пропонується, лише відкрити дошку', async () => {
-    online()
-    const { wrapper } = await openDialog()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="logout-unsent-download"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Сервер на зв\'язку')
-  })
-
-  it('друга рецензія, знахідка 1: дошку видалено (404) — надіслати нікуди, тож копія й відкидання доступні', async () => {
-    getSession.mockImplementation(async () => { throw Object.assign(new Error('404'), { response: { status: 404 } }) })
-    const { wrapper } = await openDialog()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="logout-unsent-download"]').exists()).toBe(true)
-    // «Відкрити дошку» для видаленої дошки лише вело б на список — його немає.
-    expect(wrapper.find('[data-testid="logout-unsent-open"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Надіслати ці зміни вже нікуди')
+  it('без зв\'язку або відкритий breaker — відкидати не пропонується (дії поїдуть пізніше), вийти можна', async () => {
+    for (const setUp of [offline, breakerOpen]) {
+      setUp()
+      const { wrapper } = await openDialog()
+      expect(has(wrapper, 'logout-unsent-discard')).toBe(false)
+      expect(has(wrapper, 'logout-unsent-recheck')).toBe(false)
+      expect(has(wrapper, 'logout-unsent-logout')).toBe(true)
+      expect(has(wrapper, 'logout-unsent-open')).toBe(true)
+      wrapper.unmount()
+      useLogoutGuardStore().close()
+    }
   })
 
   it('429 — сервер живий і дошка є: відкидати не пропонується', async () => {
     getSession.mockImplementation(async () => { throw Object.assign(new Error('429'), { response: { status: 429 } }) })
     const { wrapper } = await openDialog()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(false)
+  })
+})
+
+describe('LogoutUnsentDialog · дошки немає або немає доступу', () => {
+  it('404 — надіслати нікуди: копія, відкидання, пояснення; «Відкрити дошку» немає', async () => {
+    gone()
+    const { wrapper } = await openDialog()
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(true)
+    expect(has(wrapper, 'logout-unsent-download')).toBe(true)
+    expect(has(wrapper, 'logout-unsent-open')).toBe(false)
+    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('нікуди не відправити')
   })
 
-  it('одна дошка є, друга видалена — спершу відкрити ту, що є; копія — лише для видаленої', async () => {
+  it('відкидання — лише другим натисканням, із числом дій, і саме як discardUnsent', async () => {
+    gone()
+    const auth = useAuthStore()
+    const logout = vi.spyOn(auth, 'logout').mockResolvedValue({ status: 'done' } as never)
+    const { wrapper } = await openDialog()
+
+    await wrapper.get('[data-testid="logout-unsent-discard"]').trigger('click')
+    expect(logout).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="logout-unsent-warning"]').text()).toContain('5')
+
+    await wrapper.get('[data-testid="logout-unsent-confirm"]').trigger('click')
+    expect(logout).toHaveBeenCalledWith({ discardUnsent: true })
+  })
+
+  it('одна дошка є, друга видалена — відкидання немає (воно прибрало б і живу), копія — лише для видаленої', async () => {
     const OTHER = '22222222-2222-4222-8222-222222222222'
     getSession.mockImplementation(async (id: unknown) => {
       if (id === OTHER) throw Object.assign(new Error('404'), { response: { status: 404 } })
@@ -103,8 +156,9 @@ describe('LogoutUnsentDialog', () => {
       { sessionId: OTHER, ops: 2, keys: ['k2'], blocked: false, unreadable: false },
     ])
     await flushPromises()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(false)
     expect(wrapper.findAll('[data-testid="logout-unsent-download"]')).toHaveLength(1)
+    expect(has(wrapper, 'logout-unsent-logout')).toBe(true)
   })
 
   it('застарілий цикл перевірки (закрили й відкрили знову) не перезаписує свіжий результат', async () => {
@@ -117,40 +171,25 @@ describe('LogoutUnsentDialog', () => {
     await flushPromises()
     guard.close()
     await flushPromises()
-    offline()
+    gone()
     guard.show(work)
     await flushPromises()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(true)
     releaseFirst({ name: 'Урок' })   // перший, «живий» цикл завершився пізно
     await flushPromises()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(true)
   })
 
-  it('без зв\'язку: відкидання — лише другим натисканням, із числом дій, і саме як discardUnsent', async () => {
-    offline()
-    const auth = useAuthStore()
-    const logout = vi.spyOn(auth, 'logout').mockResolvedValue({ status: 'done' } as never)
-    const { wrapper } = await openDialog()
-    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Сервер недоступний')
-
-    await wrapper.get('[data-testid="logout-unsent-discard"]').trigger('click')
-    expect(logout).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-testid="logout-unsent-warning"]').text()).toContain('5')
-
-    await wrapper.get('[data-testid="logout-unsent-confirm"]').trigger('click')
-    expect(logout).toHaveBeenCalledWith({ discardUnsent: true })
-  })
-
-  it('змонтовано вже відкритим (ледаче завантаження) — перевірка зв\'язку все одно йде', async () => {
-    offline()
+  it('змонтовано вже відкритим (ледаче завантаження) — перевірка дошок все одно йде', async () => {
+    gone()
     useLogoutGuardStore().show([{ sessionId: BOARD, ops: 5, keys: [KEY], blocked: true, unreadable: false }])
     const wrapper = mount(LogoutUnsentDialog, { global: { plugins: [i18n()] } })
     await flushPromises()
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(true)
+    expect(has(wrapper, 'logout-unsent-discard')).toBe(true)
   })
 
-  it('без зв\'язку: перед відкиданням можна завантажити копію — у ній дії з копії черги', async () => {
-    offline()
+  it('копія у файл — дії з копії черги, нічого не стирає', async () => {
+    gone()
     localStorage.setItem(KEY, JSON.stringify({ pending: [{ op_id: 'a' }, { op_id: 'b' }], inFlight: [{ op_id: 'c' }] }))
     let saved: Blob | null = null
     const createObjectURL = vi.fn((blob: Blob) => { saved = blob; return 'blob:copy' })
@@ -165,47 +204,6 @@ describe('LogoutUnsentDialog', () => {
     expect(data.format).toBe('m4sh-unsaved-board-ops')
     expect(data.session_id).toBe(BOARD)
     expect(data.ops.map((op: { op_id: string }) => op.op_id)).toEqual(['c', 'a', 'b'])
-    // Завантаження нічого не стирає.
     expect(localStorage.getItem(KEY)).not.toBeNull()
-  })
-})
-
-// Б-51 (2026-09-27): відкритий circuit breaker apiClient — запит у мережу не йшов, і сервер
-// може ожити за 30 с. Раніше діалог казав «Сервер недоступний» і пропонував відкинути дії;
-// повторити перевірку можна було лише закривши й відкривши діалог.
-describe('LogoutUnsentDialog · Б-51: breaker і повторна перевірка', () => {
-  const breakerOpen = () => getSession.mockImplementation(async () => {
-    throw Object.assign(new Error('[apiClient] Circuit breaker open — request blocked'),
-      { blockedBy: 'circuit_breaker' })
-  })
-
-  it('відмова breaker-а — «призупинено», відкидання не пропонується, є «Перевірити ще раз»', async () => {
-    breakerOpen()
-    const { wrapper } = await openDialog()
-
-    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('призупинено')
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(true)
-  })
-
-  it('«Перевірити ще раз» без закриття діалогу: сервер ожив → відкрити дошку, не відкидати', async () => {
-    offline()
-    const { wrapper } = await openDialog()
-    expect(wrapper.get('[data-testid="logout-unsent-status"]').text()).toContain('Сервер недоступний')
-
-    online()
-    await wrapper.get('[data-testid="logout-unsent-recheck"]').trigger('click')
-    await flushPromises()
-
-    expect(getSession).toHaveBeenCalledTimes(2)
-    expect(wrapper.text()).toContain('Урок: Піраміда')
-    expect(wrapper.find('[data-testid="logout-unsent-discard"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(false)
-  })
-
-  it('сервер на зв\'язку — кнопки повтору немає', async () => {
-    online()
-    const { wrapper } = await openDialog()
-    expect(wrapper.find('[data-testid="logout-unsent-recheck"]').exists()).toBe(false)
   })
 })

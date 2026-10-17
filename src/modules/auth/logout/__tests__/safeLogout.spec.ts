@@ -294,6 +294,33 @@ describe('рецензія пакета A · вихід у браузері', ()
     }
   })
 
+  // Рішення власника 2026-10-17: нагадування, не замок. «Вийти» з діалогу — вихід без
+  // відкидання: копії лишаються в браузері до наступного відкриття дошки цим учителем.
+  it('«Вийти» (keepUnsent): вихід пішов на сервер, копії й черга відкритої дошки на місці, сигналу відкидання немає', async () => {
+    const key = `wb_ops_backup_v2_${BOARD_A}_u7_tab1`
+    localStorage.setItem(key, copy(4))
+    vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
+    const abandon = vi.fn()
+    const persist = vi.fn(() => true)
+    const off = registerOpenBoardQueue(fakeQueue({ abandon, persist }))
+    const setItem = vi.spyOn(window.localStorage, 'setItem')
+    try {
+      const result = await signedIn().logout({ keepUnsent: true })
+      expect(result).toEqual({ status: 'done' })
+      expect(authApi.logout).toHaveBeenCalledTimes(1)
+      expect(persist).toHaveBeenCalledTimes(1)          // черга відкритої дошки — у копію ДО виходу
+      expect(abandon).not.toHaveBeenCalled()
+      expect(setItem).not.toHaveBeenCalledWith('m4sh_logout_discard', expect.anything())
+      expect(localStorage.getItem(key)).toBe(copy(4))
+      expect(useLogoutGuardStore().open).toBe(false)
+      // Наступний вихід того самого вчителя знову нагадає про ці дії.
+      expect(listUnsentWork(7).map(w => w.ops)).toEqual([4])
+    } finally {
+      off()
+      setItem.mockRestore()
+    }
+  })
+
   it('знахідка 4: відкрита інша дошка — її черга не чіпається', async () => {
     localStorage.setItem(`wb_ops_backup_v2_${BOARD_A}_u7_tab1`, copy(3))
     vi.mocked(authApi.logout).mockResolvedValueOnce({} as never)
