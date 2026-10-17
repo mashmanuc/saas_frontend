@@ -33,6 +33,21 @@ describe('PlaceholderStudentDialog', () => {
     vi.mocked(relationsApi.updateRelationDetails).mockReset()
   })
 
+  it('«З платформи»: поле з підписом і зірочкою, без сірої підказки-примари, курсор одразу в ньому (власник 17.10)', async () => {
+    const w = dialog({ id: 7, notes: '', external_platform: '', student: { full_name: 'Аня', is_placeholder: true } })
+    await w.find('[data-testid="placeholder-source-platform"]').setValue(true)
+    await flushPromises()
+    const input = w.find('input#placeholder-student-platform')
+    expect(input.exists()).toBe(true)
+    expect(document.activeElement).toBe(input.element)               // курсор уже там
+    expect(input.attributes('placeholder') || '').toBe('')          // нема сірого тексту, схожого на значення
+    const label = w.find('label[for="placeholder-student-platform"]')
+    expect(label.text()).toContain(P.platformLabel)
+    expect(label.text()).toContain('*')                             // обовʼязкове, як «Імʼя учня *»
+    expect(save(w).attributes('disabled')).toBeDefined()
+    w.unmount()
+  })
+
   it('додати: без імені «Зберегти» вимкнено; «з платформи» без назви — теж; зберегли — імʼя, звідки, нотатка', async () => {
     vi.mocked(relationsApi.createPlaceholderStudent).mockResolvedValueOnce({ id: 9 } as never)
     const w = dialog()

@@ -2343,7 +2343,7 @@
         "source": "Where the student comes from",
         "sourceOwn": "My student",
         "sourcePlatform": "From a platform",
-        "platformPlaceholder": "Platform name",
+        "platformLabel": "Platform name",
         "platformHelp": "The label shows in the student list and in the lesson student picker.",
         "notes": "Note",
         "notesPlaceholder": "Grade, topic, how to reach them",

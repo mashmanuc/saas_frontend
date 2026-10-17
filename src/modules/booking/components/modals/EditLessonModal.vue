@@ -279,6 +279,7 @@
         <!-- Confirm Delete Dialog -->
         <ConfirmDialog
           :open="showConfirmDelete"
+          stacked
           :title="$t('calendar.editLesson.confirmDelete')"
           :message="$t('calendar.editLesson.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
           :confirm-text="$t('calendar.editLesson.delete')"

@@ -3183,7 +3183,7 @@
         "source": "Звідки учень",
         "sourceOwn": "Мій учень",
         "sourcePlatform": "З платформи",
-        "platformPlaceholder": "Назва платформи",
+        "platformLabel": "Назва платформи",
         "platformHelp": "Позначка видна в списку учнів і у виборі учня для уроку.",
         "notes": "Нотатка",
         "notesPlaceholder": "Клас, тема, як звʼязатися",

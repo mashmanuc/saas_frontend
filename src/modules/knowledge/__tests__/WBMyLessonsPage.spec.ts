@@ -70,6 +70,7 @@ vi.mock('@/utils/apiClient', () => ({
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
 import { fetchHistoryProgram } from '../api/historyGeneratorApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const MOCK_LESSONS = [
   {
@@ -368,7 +369,19 @@ describe('WBMyLessonsPage — кнопка генерації уроку іст�
     vi.mocked(lessonViewApi.listConducted).mockResolvedValue({ sessions: [], has_more: false, total: 0 } as never)
   })
 
+  // 2026-10-17: сторінка питає програму лише коли сервер у профілі назвав пілот (інакше — 404 у консолі щоразу)
+  const withPilot = () => { useAuthStore().user = { id: 40, role: 'tutor', pilots: ['history_generator'] } as never }
+
+  it('пілота в профілі немає — сторінка генератор не питає (жодного 404 у консолі)', async () => {
+    useAuthStore().user = { id: 7, role: 'tutor', pilots: [] } as never
+    const wrapper = createWrapper()
+    await flushPromises()
+    expect(fetchHistoryProgram).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('knowledge.historyGen.headerBtn')
+  })
+
   it('немає кнопки, коли програми для вчителя «не існує» (404 → null)', async () => {
+    withPilot()
     vi.mocked(fetchHistoryProgram).mockResolvedValue(null)
     const wrapper = createWrapper()
     await flushPromises()
@@ -376,6 +389,7 @@ describe('WBMyLessonsPage — кнопка генерації уроку іст�
   })
 
   it('кнопка є й відкриває вікно вибору теми, коли бекенд віддав програму', async () => {
+    withPilot()
     vi.mocked(fetchHistoryProgram).mockResolvedValue(PROGRAM as never)
     const wrapper = createWrapper()
     await flushPromises()

@@ -190,6 +190,7 @@
     <!-- Confirm Delete Dialog -->
     <ConfirmDialog
       :open="showConfirmDelete"
+      stacked
       :title="t('booking.calendar.eventModal.confirmDelete')"
       :message="t('booking.calendar.eventModal.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
       :confirm-text="t('booking.calendar.eventModal.delete')"

@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" :title="title" size="sm" @close="$emit('cancel')">
+  <Modal :open="open" :title="title" size="sm" :stacked="stacked" @close="$emit('cancel')">
     <p class="confirm-modal__message">{{ message }}</p>
     <slot />
     <template #footer>
@@ -17,6 +17,12 @@ import Button from './Button.vue'
 
 defineProps({
   open: {
+    type: Boolean,
+    default: false,
+  },
+  // Поверх іншого вікна вищого шару (вікно уроку в розкладі — z-index 1000), 2026-10-17: інакше
+  // «Ви впевнені…» відкривалось ПІД ним і урок не можна було видалити.
+  stacked: {
     type: Boolean,
     default: false,
   },

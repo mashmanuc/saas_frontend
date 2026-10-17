@@ -20,7 +20,7 @@
       />
       <p v-else class="text-sm">
         <span class="text-muted">{{ $t('dashboard.tutor.placeholder.name') }}:</span>
-        <span class="font-semibold text-body">{{ fixedName }}</span>
+        <span class="ml-1 font-semibold text-body">{{ fixedName }}</span>
       </p>
 
       <fieldset class="space-y-2">
@@ -37,7 +37,8 @@
           v-if="source === 'platform'"
           id="placeholder-student-platform"
           v-model="platform"
-          :placeholder="$t('dashboard.tutor.placeholder.platformPlaceholder')"
+          :label="$t('dashboard.tutor.placeholder.platformLabel')"
+          required
           :help="$t('dashboard.tutor.placeholder.platformHelp')"
           maxlength="64"
           data-testid="placeholder-student-platform"
@@ -78,7 +79,7 @@
 // Учень без акаунта і «звідки учень» (власник 2026-10-14): своїх учнів і учнів з іншої платформи, де
 // працює вчитель, — в один графік. Додати — імʼя + звідки; змінити — звідки й
 // нотатку будь-якого учня, імʼя — лише учня без акаунта (у справжнього акаунта імʼя його власника).
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '../../../ui/Modal.vue'
 import Button from '../../../ui/Button.vue'
@@ -108,6 +109,14 @@ const fixedName = computed(() => {
   return s?.display_name || s?.full_name || [s?.first_name, s?.last_name].filter(Boolean).join(' ')
 })
 const platformValue = computed(() => (source.value === 'platform' ? platform.value.trim() : ''))
+// Власник 17.10: сіру підказку «Назва платформи» в порожньому полі сприйняв як уже вписане значення й не
+// зрозумів, чому «Зберегти» сіра. Тепер у поля підпис із зірочкою (як «Імʼя учня *»), без підказки-примари,
+// і щойно обрано «З платформи» — курсор одразу в цьому полі.
+watch(source, (value, previous) => {
+  if (value !== 'platform' || previous !== 'own') return
+  nextTick(() => document.getElementById('placeholder-student-platform')?.focus())
+})
+
 const canSave = computed(() => {
   if (saving.value) return false
   if (nameEditable.value && !name.value.trim()) return false

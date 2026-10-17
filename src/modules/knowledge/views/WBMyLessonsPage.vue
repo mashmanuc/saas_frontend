@@ -856,12 +856,17 @@ import ShareLessonMenu from '../components/ShareLessonMenu.vue'
 import { grantsApi, type LessonGrant } from '../api/grantsApi'
 import HistoryGenerateModal from '../components/HistoryGenerateModal.vue'
 import { fetchHistoryProgram, type HistoryProgram } from '../api/historyGeneratorApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 // «Згенерувати урок історії» (2026-10-09): програма МОН з бекенду; null — генерації для вчителя «не існує».
 const historyProgram = ref<HistoryProgram | null>(null)
 const showHistoryGen = ref(false)
 
 async function loadHistoryProgram(): Promise<void> {
+  // 2026-10-17: питаємо лише коли сервер назвав цей пілот у профілі — інакше кожне відкриття сторінки давало
+  // червоний 404 у консолі (генератор сховано 09.10); доступ і далі вирішує лише сервер.
+  const pilots = (useAuthStore().user as { pilots?: string[] } | null)?.pilots
+  if (!pilots?.includes('history_generator')) return
   try {
     historyProgram.value = await fetchHistoryProgram()
   } catch (err) {
