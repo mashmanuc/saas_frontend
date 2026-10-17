@@ -24,7 +24,8 @@ export interface GridConfig {
 
 export const useCalendarGrid = (config?: Partial<GridConfig>) => {
   const defaultConfig: GridConfig = {
-    pxPerMinute: 0.6, // ~36px per hour: більш щільна сітка
+    // 45 px на годину (власник 2026-10-17, В2): на годинному уроці вміщаються імʼя й час; було 36 px — час обрізався
+    pxPerMinute: 0.75,
     startHour: 6,
     endHour: 22,
     timezone: 'UTC',

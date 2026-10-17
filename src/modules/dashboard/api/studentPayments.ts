@@ -80,10 +80,10 @@ export const studentPaymentsApi = {
     return apiClient.delete(buildV1Url(`/tutor/payments/${paymentId}/`))
   },
   /**
-   * Залишок передоплати на уроках у розкладі (2026-10-15): `{ [eventId]: 'last' | 'unpaid' }` для днів [from, to).
-   * `enabled: false` — облік оплат цьому вчителю вимкнено, позначок немає.
+   * Залишок оплачених уроків на уроках у розкладі (2026-10-17, О3): `{ [eventId]: n }` для днів [from, to);
+   * n ≥ 1 — оплачено (разом із цим уроком), 0 — не оплачено. `enabled: false` — облік оплат цьому вчителю вимкнено.
    */
-  scheduleMarks(from: string, to: string): Promise<{ enabled: boolean; marks?: Record<string, PaymentMark> }> {
+  scheduleMarks(from: string, to: string): Promise<{ enabled: boolean; left?: Record<string, number> }> {
     return apiClient.get(buildV1Url('/tutor/payments/schedule-marks/'), {
       params: { from, to },
       meta: { skipLoader: true },
@@ -101,7 +101,6 @@ export const studentPaymentsApi = {
 export type BalanceTone = 'ok' | 'low' | 'debt' | 'none'
 
 /** Позначка уроку в розкладі: останній оплачений / понад оплачене */
-export type PaymentMark = 'last' | 'unpaid'
 
 /** Що показати на картці учня: тон і ключ тексту з параметрами (без i18n — щоб тестувати). */
 export function balanceView(b: PaymentBalance | null | undefined): { tone: BalanceTone; key: string; params: Record<string, number> } {

@@ -14,8 +14,9 @@
             class="day-header-chip"
             :class="{ 'is-today': isToday(day.date) }"
           >
-            <div class="day-name">{{ formatDayName(day.date) }}</div>
-            <div class="day-date">{{ formatDayDate(day.date) }}</div>
+            <!-- В3 (2026-10-17): день одним рядком «пн, 19» -->
+            <span class="day-name">{{ formatDayName(day.date) }},</span>
+            <span class="day-date">{{ formatDayNumber(day.date) }}</span>
           </div>
         </div>
       </div>
@@ -58,7 +59,7 @@
               :px-per-minute="pxPerMinute"
               :is-past-fn="isPast"
               :timezone="timezone"
-              :payment-marks="paymentMarks"
+              :payment-left="paymentLeft"
               @event-click="handleEventClick"
               @drag-start="handleEventDragStart"
             />
@@ -145,7 +146,7 @@ const props = defineProps<{
   availabilityMode?: boolean
   draftSlots?: DraftSlot[]
   /** Залишок передоплати на уроках (2026-10-15): { [eventId]: 'last' | 'unpaid' } */
-  paymentMarks?: Record<string, 'last' | 'unpaid'>
+  paymentLeft?: Record<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -189,6 +190,11 @@ const formatDayDate = (dateStr: string): string => {
   } catch {
     return '—'
   }
+}
+
+const formatDayNumber = (dateStr: string): string => {
+  const day = Number(String(dateStr).slice(8, 10))
+  return Number.isFinite(day) && day > 0 ? String(day) : '—'
 }
 
 const formatHour = (hour: number): string => {
@@ -288,16 +294,19 @@ const handleDragEnd = async () => {
   justify-content: center;
 }
 .day-header-chip {
-  min-width: 78px;
-  padding: 10px 16px;
-  border-radius: 999px;
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: 10px;
   background: var(--card-bg);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
   border: 1px solid rgba(15, 23, 42, 0.08);
   text-align: center;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -313,14 +322,14 @@ const handleDragEnd = async () => {
 }
 
 .day-name {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   text-transform: lowercase;
   font-weight: 600;
 }
 
 .day-date {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }

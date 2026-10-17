@@ -29,6 +29,8 @@ export interface CalendarEvent {
   student: {
     id: number
     name: string
+    /** 2026-10-17 (К1): назва платформи, звідки учень; порожньо — свій учень (інший колір картки) */
+    platform?: string | null
   }
   lesson_link: string       // Zoom link
   can_reschedule: boolean

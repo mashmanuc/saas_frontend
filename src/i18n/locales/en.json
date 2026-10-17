@@ -4226,11 +4226,16 @@
       "notAllow": "Not allowed",
       "${props.cell.status}": "{props.cell.status}"
     },
-    "paymentMark": {
-      "last": "last paid",
-      "unpaid": "not paid",
-      "lastTitle": "The last prepaid lesson — time to ask for payment",
-      "unpaidTitle": "A lesson beyond what was paid — no payment yet"
+    "lessonCard": {
+      "fromPlatform": "from platform “{name}”",
+      "paidLeft": "{n} paid lessons left (including this one)",
+      "unpaid": "not paid"
+    },
+    "weekLegend": {
+      "own": "own students",
+      "platform": "students from a platform",
+      "left": "— 3 paid lessons left, including this one",
+      "unpaid": "— not paid"
     },
     "createLesson": {
       "conflictDetected": "Conflict Detected",

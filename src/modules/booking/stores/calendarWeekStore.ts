@@ -185,7 +185,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     return typeof fallback === 'string' ? fallback.trim() : ''
   }
 
-  function normalizeStudent(event: Record<string, any>): { id: number; name: string } {
+  function normalizeStudent(event: Record<string, any>): { id: number; name: string; platform?: string | null } {
     const resolvedId = resolveStudentId(event)
     const resolvedName = resolveStudentName(event)
 
@@ -201,9 +201,12 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
               ? studentObj.full_name
               : resolvedName
 
+      // К1 (2026-10-17): «звідки учень» — інший колір картки учня з платформи; без цього поле губилось тут
+      const platform = typeof studentObj.platform === 'string' && studentObj.platform.trim() ? studentObj.platform.trim() : null
       return {
         id,
         name: (rawName || '').trim(),
+        platform,
       }
     }
 

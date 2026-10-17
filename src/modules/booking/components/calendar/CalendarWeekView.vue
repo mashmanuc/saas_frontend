@@ -84,12 +84,14 @@
           :is-drag-enabled="dragEnabled && !isAvailabilityMode && props.mode === 'tutor'"
           :availability-mode="isAvailabilityMode"
           :draft-slots="draftStore.slots"
-          :payment-marks="props.mode === 'tutor' ? paymentMarks : undefined"
+          :payment-left="props.mode === 'tutor' ? paymentLeft : undefined"
           @event-click="handleEventClick"
           @slot-click="handleSlotClick"
           @cell-click="handleCellClickRouter"
           @drag-complete="handleDragComplete"
         />
+        <!-- Що означають кольори й значки (2026-10-17) — лише коли на тижні є що пояснювати -->
+        <CalendarWeekLegend v-if="props.mode === 'tutor'" :events="eventsToRender" :payment-left="paymentLeft" />
       </template>
     </div>
     
@@ -210,7 +212,8 @@ import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
-import { studentPaymentsApi, type PaymentMark } from '@/modules/dashboard/api/studentPayments'
+import { studentPaymentsApi } from '@/modules/dashboard/api/studentPayments'
+import CalendarWeekLegend from './CalendarWeekLegend.vue'
 import CalendarFooter from './CalendarFooter.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
@@ -296,9 +299,9 @@ const eventsToRender = computed(() => {
 })
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 
-// Залишок передоплати на уроках (власник 2026-10-15): «останній оплачений» / «не оплачено».
-// Окремий запит — знімок тижня не чіпаємо; облік вимкнено вчителю — позначок немає.
-const paymentMarks = ref<Record<string, PaymentMark>>({})
+// Залишок оплачених уроків на уроках (власник 2026-10-17, О1–О7): «₴3» — цей і ще 2 оплачені, «₴0» — не оплачено.
+// Окремий запит — знімок тижня оплат не знає; облік вимкнено вчителю — значків немає.
+const paymentLeft = ref<Record<string, number>>({})
 const paymentMarksKey = computed(() => {
   if (props.mode !== 'tutor') return ''
   const days = daysToRender.value as Array<{ date?: string }>
@@ -311,16 +314,16 @@ const paymentMarksKey = computed(() => {
 })
 let paymentMarksSeq = 0
 watch(paymentMarksKey, async (key) => {
-  if (!key) { paymentMarks.value = {}; return }
+  if (!key) { paymentLeft.value = {}; return }
   const [first, last] = key.split('|')
   const seq = ++paymentMarksSeq
   try {
     const res = await studentPaymentsApi.scheduleMarks(first, dayjs(last).add(1, 'day').format('YYYY-MM-DD'))
-    if (seq === paymentMarksSeq) paymentMarks.value = res?.enabled ? (res.marks ?? {}) : {}
+    if (seq === paymentMarksSeq) paymentLeft.value = res?.enabled ? (res.left ?? {}) : {}
   } catch (err) {
     // Позначки — підказка, не дані розкладу: не вдалося — розклад без них, причина в консолі
     console.warn('[CalendarWeekView] payment marks failed', err)
-    if (seq === paymentMarksSeq) paymentMarks.value = {}
+    if (seq === paymentMarksSeq) paymentLeft.value = {}
   }
 }, { immediate: true })
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])

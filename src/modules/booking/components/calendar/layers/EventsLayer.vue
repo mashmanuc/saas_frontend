@@ -10,38 +10,36 @@
         'is-past': isPastFn(event.start),
         'is-no-show': event.status === 'no_show',
         'is-cancelled': event.status === 'cancelled',
-        [`event-card--pay-${markOf(event)}`]: Boolean(markOf(event))
+        'is-platform': isPlatform(event),
+        'is-short': !hasTwoLines(event),
       }"
-      :title="markOf(event) ? t(`calendar.paymentMark.${markOf(event)}Title`) : undefined"
+      :title="cardTitle(event)"
       :style="getEventStyle(event)"
       @click="$emit('event-click', event)"
       @mousedown="handleEventMouseDown(event, $event)"
     >
-      <div class="event-student">
-        <!-- ₴ у першому рядку: на низькій 60-хв картці другий рядок обрізається, а цей видно завжди -->
+      <div class="event-line">
+        <!-- Залишок оплачених уроків (власник 2026-10-17, О3): «₴3» = цей і ще 2 оплачені; «₴0» — не оплачено -->
         <span
-          v-if="markOf(event)"
+          v-if="leftOf(event) !== null"
           class="event-pay-chip"
-          :class="`event-pay-chip--${markOf(event)}`"
+          :class="{ 'event-pay-chip--last': leftOf(event) === 1, 'event-pay-chip--unpaid': leftOf(event) === 0 }"
           :data-testid="`lesson-pay-chip-${event.id}`"
-          aria-hidden="true"
-        >₴</span>{{ getStudentName(event) }}
+        >₴{{ leftOf(event) }}</span>
+        <span class="event-student" :class="{ 'event-student--two': nameLines(event) === 2 }" data-testid="lesson-name">
+          {{ getStudentName(event) }}
+        </span>
+        <span v-if="!hasTwoLines(event)" class="event-time-inline" data-testid="lesson-time">{{ formatTime(event.start) }}</span>
       </div>
-      <!-- Залишок передоплати (2026-10-15): на місці часу (час видно з сітки) — інакше на 60-хв картці обрізається -->
-      <div
-        v-if="markOf(event) && hasSecondLine(event)"
-        class="event-pay"
-        :class="`event-pay--${markOf(event)}`"
-        :data-testid="`lesson-pay-${event.id}`"
-      >
-        {{ t(`calendar.paymentMark.${markOf(event)}`) }}
-      </div>
-      <div v-else class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
+      <div v-if="hasTwoLines(event)" class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+// Вигляд уроку в розкладі вчителя (власник 2026-10-17; інваріанти В1–В4, К1–К2, О1–О7 у BOOKING_DOMAIN_SSOT):
+// урок — на всю ширину колонки й рівно свою тривалість; імʼя й час читаються без обрізання; учень «З платформи» —
+// інший колір; залишок оплачених уроків — лише значком (колір картки від оплати не залежить).
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
@@ -55,6 +53,8 @@ dayjs.extend(timezone)
 interface Student {
   id: number
   name: string
+  /** Назва платформи, звідки учень (знімок тижня); порожньо — свій учень */
+  platform?: string | null
 }
 
 interface CalendarEvent {
@@ -72,21 +72,11 @@ const props = defineProps<{
   pxPerMinute: number
   isPastFn: (datetime: string) => boolean
   timezone?: string
-  /** Залишок передоплати (2026-10-15): { [eventId]: 'last' | 'unpaid' } */
-  paymentMarks?: Record<string, 'last' | 'unpaid'>
+  /** Залишок оплачених уроків (О3): { [eventId]: n }, n ≥ 1 — оплачено (разом із цим), 0 — не оплачено */
+  paymentLeft?: Record<string, number>
 }>()
 
 const { t } = useI18n()
-
-function markOf(event: CalendarEvent): 'last' | 'unpaid' | null {
-  return props.paymentMarks?.[String(event.id)] ?? null
-}
-
-/** Чи влазить другий рядок (плашка з текстом); на низькій картці її край визирав би знизу — там лише ₴ і смуга */
-const SECOND_LINE_MIN_PX = 46
-function hasSecondLine(event: CalendarEvent): boolean {
-  return calculateHeightPx(event.start, event.end) >= SECOND_LINE_MIN_PX
-}
 
 const emit = defineEmits<{
   'event-click': [event: CalendarEvent]
@@ -99,6 +89,30 @@ const { formatTime, calculateTopPx, calculateHeightPx } = useCalendarGrid({
   pxPerMinute: props.pxPerMinute,
 })
 
+// Проміжок між сусідніми уроками (18:00 і 19:00 не зливаються в одну смугу)
+const GAP_PX = 1
+/** В2: два рядки (імʼя + час) — з уроку на годину; коротший — один рядок «Імʼя · 18:00» */
+const TWO_LINES_MIN_MINUTES = 60
+/** Імʼя у два рядки — лише коли картка має місце ще й під час */
+const TWO_NAME_LINES_MIN_MINUTES = 90
+
+function minutesOf(event: CalendarEvent): number {
+  return Math.max(0, dayjs(event.end).diff(dayjs(event.start), 'minute'))
+}
+function hasTwoLines(event: CalendarEvent): boolean {
+  return minutesOf(event) >= TWO_LINES_MIN_MINUTES
+}
+function nameLines(event: CalendarEvent): 1 | 2 {
+  return minutesOf(event) >= TWO_NAME_LINES_MIN_MINUTES ? 2 : 1
+}
+function isPlatform(event: CalendarEvent): boolean {
+  return Boolean(event.student?.platform && String(event.student.platform).trim())
+}
+function leftOf(event: CalendarEvent): number | null {
+  const n = props.paymentLeft?.[String(event.id)]
+  return typeof n === 'number' && n >= 0 ? n : null
+}
+
 const handleEventMouseDown = (event: CalendarEvent, mouseEvent: MouseEvent) => {
   if (!props.isPastFn(event.start)) {
     emit('drag-start', event, mouseEvent)
@@ -108,10 +122,9 @@ const handleEventMouseDown = (event: CalendarEvent, mouseEvent: MouseEvent) => {
 const getEventStyle = (event: CalendarEvent) => {
   const topPx = calculateTopPx(event.start)
   const heightPx = calculateHeightPx(event.start, event.end)
-
   return {
-    top: `${topPx}px`,
-    height: `${heightPx}px`
+    top: `${topPx + GAP_PX}px`,
+    height: `${Math.max(heightPx - GAP_PX * 2, 10)}px`,
   }
 }
 
@@ -130,6 +143,16 @@ const formatTimeRange = (event: CalendarEvent): string => {
   const to = formatTime(event.end)
   return `${from} – ${to}`
 }
+
+/** Підказка при наведенні: повне імʼя, час, звідки учень і оплата — словами */
+function cardTitle(event: CalendarEvent): string {
+  const parts = [getStudentName(event), formatTimeRange(event)]
+  if (isPlatform(event)) parts.push(t('calendar.lessonCard.fromPlatform', { name: String(event.student?.platform).trim() }))
+  const left = leftOf(event)
+  if (left === 0) parts.push(t('calendar.lessonCard.unpaid'))
+  else if (left !== null) parts.push(t('calendar.lessonCard.paidLeft', { n: left }))
+  return parts.filter(Boolean).join(' · ')
+}
 </script>
 
 <style scoped>
@@ -143,45 +166,102 @@ const formatTimeRange = (event: CalendarEvent): string => {
   pointer-events: none;
 }
 
+/* В1: на всю ширину колонки дня (відступ 2 px) і рівно свою тривалість */
 .event-card {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  min-height: 32px;
-  background: #4caf50;
-  color: #0a2f16;
+  left: 2px;
+  right: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 3px 6px;
+  background: #2e7d32;
+  color: #ffffff;
   border-radius: 6px;
-  padding: 6px 8px;
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: box-shadow 0.15s, filter 0.15s;
   overflow: hidden;
-  border: 1px solid #2e7d32;
+  box-sizing: border-box;
+}
+
+/* К1: учень «З платформи» — синій; свій — зелений */
+.event-card.is-platform {
+  background: #1d4ed8;
+}
+
+.event-card.is-short {
+  padding: 0 6px;
 }
 
 .event-card.is-past {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: default;
 }
 
-/* Залишок передоплати (2026-10-15): смуга ліворуч видна й на найменшій картці */
-.event-card--pay-last {
-  border-left: 4px solid #f59e0b;
+.event-card.is-no-show {
+  background: #9e9e9e;
+  color: #ffffff;
 }
 
-.event-card--pay-unpaid {
-  border-left: 4px solid #dc2626;
+.event-card.is-cancelled {
+  background: #f87171;
+  color: #7f1d1d;
 }
 
+.event-card:not(.is-past):hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+  filter: brightness(1.06);
+}
+
+.event-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.event-student {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-student--two {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.event-time,
+.event-time-inline {
+  font-size: 11px;
+  line-height: 14px;
+  opacity: 0.92;
+  white-space: nowrap;
+}
+
+.event-time-inline {
+  flex: none;
+}
+
+/* О6: компактний значок не ховає імʼя й час */
 .event-pay-chip {
-  display: inline-block;
-  margin-right: 4px;
+  flex: none;
   padding: 0 4px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
-  line-height: 14px;
-  vertical-align: 1px;
+  line-height: 15px;
+  background: #ffffff;
+  color: #14532d;
 }
 
 .event-pay-chip--last {
@@ -194,79 +274,34 @@ const formatTimeRange = (event: CalendarEvent): string => {
   color: #991b1b;
 }
 
-.event-pay {
-  display: inline-block;
-  margin-top: 2px;
-  padding: 0 6px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 16px;
-  white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.event-pay--last {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.event-pay--unpaid {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.event-card.is-no-show {
-  background: #9e9e9e;
-  border-color: #757575;
-  color: #f5f5f5;
-}
-
-.event-card.is-cancelled {
-  background: #f87171;
-  border-color: #ef4444;
-  color: #7f1d1d;
-}
-
-.event-card:not(.is-past):hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.event-student {
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 2px;
-  color: #041b0c;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.event-time {
-  font-size: 12px;
-  opacity: 0.95;
-}
-
-/* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
-   Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
+/* ── Темна тема (Б-156): ті самі селектори, кольори токенами теми; текст на заливці — on-accent ── */
 [data-theme="dark"] .event-card {
   background: var(--color-success);
   color: var(--color-on-accent);
-  border-color: var(--color-success);
+}
+[data-theme="dark"] .event-card.is-platform {
+  background: var(--color-info);
+  color: var(--color-on-accent);
 }
 [data-theme="dark"] .event-card.is-no-show {
   background: var(--color-border-strong);
-  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 [data-theme="dark"] .event-card.is-cancelled {
   background: var(--color-danger-soft);
-  border-color: var(--color-danger);
   color: var(--color-danger);
 }
-[data-theme="dark"] .event-student {
+[data-theme="dark"] .event-pay-chip {
+  background: var(--color-surface);
   color: var(--color-text);
+}
+/* на світлій заливці картки «м'які» тони зливались — суцільна заливка з темним текстом */
+[data-theme="dark"] .event-pay-chip--last {
+  background: var(--color-warning);
+  color: var(--color-on-accent);
+}
+[data-theme="dark"] .event-pay-chip--unpaid {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
 }
 </style>
