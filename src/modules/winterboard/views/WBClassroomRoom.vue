@@ -625,7 +625,7 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
-import { handwriteStepState, handwriteWithFeedback, hasStepTarget, nextStepWithFeedback } from '../composables/useHandwriteSolution'
+import { handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { imageReadingTarget } from '../board/imageReadingTarget'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
@@ -1222,12 +1222,19 @@ const boardRemote = useBoardRemote({
   view: classroomRemoteView,
   // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
   // розбір показується друкованим, як «Показати розбір». 18.10: з правом Інтегралика — коротким записом.
-  handwrite: (asset: any) => {
-    void handwriteWithFeedback(asset, () => {
-      const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
-      if (fresh.data?.showSolution) return
-      store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
-    }, undefined, { canSolve: canSolveHandwrite.value })
+  // 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): задача — за Р1, як «Наступний рядок» (виділена
+  // на ноутбуці вирізка з PDF чи картка теж); нічого писати чи відмова — словами на ноутбуці й на пульті.
+  handwrite: (fallback: any) => {
+    const page = store.pages[store.currentPageIndex]
+    const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
+    void remoteHandwriteWithFeedback({
+      canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => fallback,
+      reveal: (asset: any) => {
+        const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
+        if (fresh.data?.showSolution) return
+        store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
+      },
+    })
   },
   // v1.32: «✍️ Наступний рядок» — один крок розв'язку на натиск; стан — «Крок N з M» на пульті.
   handwriteNext: () => {

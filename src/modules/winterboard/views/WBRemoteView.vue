@@ -115,7 +115,12 @@
              розв'язку; учитель пояснює між рядками. Стан — з ноутбука («Крок N з M», «готую…», причина).
              Не лише біля карток задач: виділена на ноутбуці вирізка з PDF чи картка — теж (`target`). -->
         <template v-if="showStepRow">
+          <!-- 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): увесь розв'язок — поряд із «Наступним
+               рядком», за тим самим правилом вибору задачі; тож і на сторінці з самою вирізкою з PDF. -->
           <div class="wb-remote__row">
+            <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite" :disabled="!isReady || handwriteStepBusy" @click="sendCmd('card.handwrite')">
+              {{ t('winterboard.remote.handwrite') }}
+            </button>
             <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite-next" :disabled="!isReady || handwriteStepBusy" @click="sendCmd('card.handwrite_next')">
               {{ t('winterboard.remote.handwriteNext') }}
             </button>
@@ -167,7 +172,8 @@
                Ряд — сітка на чотири: A− A+ стоять на тих самих місцях в обох режимах. -->
           <!-- LAW §9 v1.29 (власник 2026-10-17): діти розв'язують — учитель тисне, і на дошці рукою
                пишеться розв'язок задачі. Пише ноутбук; задачу вибирає він (розгорнута → у фокусі → перша). -->
-          <div class="wb-remote__row">
+          <!-- Ноутбук без стану покрокового (стара вкладка) — кнопка лишається тут, як до 18.10. -->
+          <div v-if="!showStepRow" class="wb-remote__row">
             <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite" :disabled="!isReady" @click="sendCmd('card.handwrite')">
               {{ t('winterboard.remote.handwrite') }}
             </button>
@@ -870,7 +876,10 @@ const handwriteStepText = computed(() => {
   const s = handwriteStep.value
   if (!s) return ''
   if (s.status === 'preparing') return t('winterboard.remote.step.preparing')
-  if (s.status === 'writing') return t('winterboard.remote.step.writing', { n: s.written + 1, m: s.total })
+  if (s.status === 'writing') {
+    // Увесь розв'язок (✍) кроків не рахує — просто «пише».
+    return s.total ? t('winterboard.remote.step.writing', { n: s.written + 1, m: s.total }) : t('winterboard.remote.step.writingAll')
+  }
   if (s.status === 'done') return t('winterboard.remote.step.done', { m: s.total })
   if (s.status === 'refused') return t(`winterboard.remote.step.reason.${s.reason ?? 'error'}`)
   return s.total ? t('winterboard.remote.step.progress', { n: s.written, m: s.total }) : ''

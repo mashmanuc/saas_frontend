@@ -247,10 +247,12 @@ describe('useBoardRemote', () => {
     fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
     expect(view.resetFocus).toHaveBeenCalledTimes(1)
     expect(handwrite).toHaveBeenCalledWith(task)
-    // задачі з розв'язком немає — нічого не пише
+    // 18.10: задачі з розв'язком немає — натиск не губиться: кімната обирає сама (виділена вирізка з PDF)
+    // або каже словами, що писати нічого.
     view.handwriteTarget.mockReturnValueOnce(null as any)
     fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
-    expect(handwrite).toHaveBeenCalledTimes(1)
+    expect(handwrite).toHaveBeenCalledTimes(2)
+    expect(handwrite).toHaveBeenLastCalledWith(null)
   })
 
   it('v1.2: view.fit / view.zoom / view.scroll / card.reveal → адаптер; стан підтверджується', () => {

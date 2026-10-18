@@ -9476,6 +9476,7 @@
       "step": {
         "preparing": "Preparing the solution…",
         "writing": "Writing step {n} of {m}…",
+        "writingAll": "Writing the solution…",
         "progress": "Step {n} of {m}",
         "done": "Done — {m} of {m}",
         "reason": {

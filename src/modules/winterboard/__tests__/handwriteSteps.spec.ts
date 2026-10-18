@@ -10,8 +10,9 @@ import {
 } from '../board/handwriteSteps'
 import {
   clearHandwriteStepsCache, handwriteNextStep, handwriteStepState, handwriteTaskSolution, hasStepTarget, stopHandwriting,
-  type HandwriteDeps, type HandwriteLayoutRequest,
+  remoteHandwriteWithFeedback, type HandwriteDeps, type HandwriteLayoutRequest,
 } from '../composables/useHandwriteSolution'
+import { notifyInfo } from '@/utils/notify'
 
 vi.mock('@/utils/notify', () => ({ notifyError: vi.fn(), notifyInfo: vi.fn(), notifyWarning: vi.fn() }))
 vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
@@ -67,12 +68,20 @@ const TASK = {
 const STEPS = ['$x + 2 = 5$', 'перенесемо $2$', '$x = 3$', 'Відповідь: Б']
 const LINE_H = 40
 
-function makeDeps(opts: { steps?: string[]; strokes?: any[]; pages?: any[]; assets?: any[]; solve?: () => Promise<any> } = {}) {
+function makeDeps(opts: {
+  steps?: string[]; strokes?: any[]; pages?: any[]; assets?: any[]; solve?: () => Promise<any>
+  /** Висота поточної сторінки, як її показує полотно (згенерована добірка 18.10 — вища за аркуш). */
+  pageHeight?: number
+} = {}) {
   const steps = opts.steps ?? STEPS
-  const page = { id: 'p1', width: 1920, height: 1080, assets: (opts.assets ?? [TASK]) as any[], strokes: (opts.strokes ?? []) as any[] }
+  const page = {
+    id: 'p1', width: 1920, height: opts.pageHeight ?? 1080, assets: (opts.assets ?? [TASK]) as any[], strokes: (opts.strokes ?? []) as any[],
+  }
   const pages: any[] = [page, ...(opts.pages ?? [])]
   const store = {
     mode: 'edit', workspaceId: 'board-1', currentPageIndex: 0, pages,
+    pageHeight: 1080,
+    get currentPageCanvasHeight() { return pages[store.currentPageIndex]?.height ?? 1080 },
     undoStack: [] as any[], redoStack: [] as any[],
     addStroke: vi.fn((s: any, o?: { pageId?: string }) => {
       const pg = pages.find((p) => p.id === (o?.pageId ?? pages[store.currentPageIndex].id))!
@@ -95,6 +104,10 @@ function makeDeps(opts: { steps?: string[]; strokes?: any[]; pages?: any[]; asse
     sync,
     // Розкладка: кожен рядок — 2 штрихи заввишки LINE_H; `steps` — рядки запису (як `/solution/`).
     fetchLayout: vi.fn(async (req: HandwriteLayoutRequest) => {
+      // Як сервер (`apps/handwriting/api.py`): область поза 200…1920 × 60…1080 — 400.
+      if (!(req.width >= 200 && req.width <= 1920 && req.height >= 60 && req.height <= 1080)) {
+        throw Object.assign(new Error('400'), { isAxiosError: true, response: { status: 400 } })
+      }
       const lines = req.text.split('\n')
       const h = LINE_H * lines.length
       if (h > req.height) return { fits: false as const, needed_height: h, steps }
@@ -250,6 +263,87 @@ describe('handwriteNextStep', () => {
     const e = makeDeps({ assets: [] })
     expect(await press(e, { canSolve: true, selected: null, fallback: () => null })).toMatchObject({ status: 'refused', reason: 'no_solution' })
     expect(handwriteStepState(e.page)).toMatchObject({ status: 'refused', reason: 'no_solution' })
+  })
+})
+
+describe('пульт: «✍️ Розв\'язок рукою» за тим самим правилом (власник 18.10: «бери ✍ з пульта»)', () => {
+  beforeEach(() => { stopHandwriting(); clearHandwriteStepsCache(); vi.mocked(notifyInfo).mockClear() })
+  const PDF_CUT = { id: 'pdf-1', type: 'image', src: 'https://cdn.m4sh.org/wb/cut.png', x: 60, y: 60, w: 700, h: 300 }
+  const reveal = vi.fn()
+  async function remote(d: ReturnType<typeof makeDeps>, opts: any) {
+    const done = remoteHandwriteWithFeedback({ reveal, ...opts }, d.deps)
+    for (let i = 0; i < 5; i++) { await flush(); d.runAll() }
+    return done
+  }
+
+  it('виділена вирізка з PDF без розв\'язку — Інтегралик розв\'язує, рука пише; запасний варіант не потрібен', async () => {
+    const d = makeDeps({ assets: [PDF_CUT] })
+    const r = await remote(d, { canSolve: true, selected: PDF_CUT, fallback: () => null })
+    expect(r).toMatchObject({ status: 'written' })
+    expect(d.deps.fetchSolve).toHaveBeenCalledWith('board-1', 'pdf-1')
+    expect(d.page.strokes.length).toBeGreaterThan(0)
+  })
+
+  it('без вибору — як раніше: задача з розв\'язком від ноутбука (розгорнута / у фокусі / перша)', async () => {
+    const d = makeDeps()
+    expect(await remote(d, { canSolve: false, selected: null, fallback: () => TASK })).toMatchObject({ status: 'written' })
+    expect(d.deps.fetchSolve).not.toHaveBeenCalled()
+  })
+
+  it('писати нічого — не тиша: «немає задачі» на ноутбуці й причина на пульті', async () => {
+    const d = makeDeps({ assets: [] })
+    expect(await remote(d, { canSolve: true, selected: null, fallback: () => null })).toEqual({ status: 'no_solution' })
+    expect(notifyInfo).toHaveBeenCalledWith('winterboard.handwrite.noStepTarget')
+    expect(handwriteStepState(d.page)).toMatchObject({ status: 'refused', reason: 'no_solution' })
+    expect(d.page.strokes).toHaveLength(0)
+  })
+
+  it('Інтегралик відмовив («кілька задач») — причина на пульті, нічого не написано', async () => {
+    const d = makeDeps({ assets: [PDF_CUT], solve: async () => ({ error: 'many_tasks' }) })
+    expect(await remote(d, { canSolve: true, selected: PDF_CUT, fallback: () => null })).toEqual({ status: 'many_tasks' })
+    expect(handwriteStepState(d.page)).toMatchObject({ status: 'refused', reason: 'many_tasks' })
+    expect(d.page.strokes).toHaveLength(0)
+  })
+
+  it('поки розв\'язує — пульт «готую…», поки пише — «пишу…», потім спокій', async () => {
+    let answer!: (v: any) => void
+    const d = makeDeps({ assets: [PDF_CUT], solve: () => new Promise((r) => { answer = r }) })
+    const done = remoteHandwriteWithFeedback({ reveal, canSolve: true, selected: PDF_CUT, fallback: () => null }, d.deps)
+    await flush()
+    expect(handwriteStepState(d.page).status).toBe('preparing')
+    answer({ text: '$2x = 4$', answer: '$2$' })
+    for (let i = 0; i < 5; i++) await flush()
+    expect(handwriteStepState(d.page).status).toBe('writing')
+    d.runAll()
+    expect(await done).toMatchObject({ status: 'written' })
+    expect(handwriteStepState(d.page).status).not.toMatch(/preparing|writing/)
+  })
+})
+
+describe('покроково на сторінці вищій за аркуш (згенерована добірка 18.10)', () => {
+  beforeEach(() => { stopHandwriting(); clearHandwriteStepsCache() })
+
+  it('області — у межах сервера; сторінка продовження — звичайний аркуш', async () => {
+    const d = makeDeps({ pageHeight: 2120 })
+    expect(await press(d, { canSolve: true, selected: TASK, all: true })).toMatchObject({ status: 'written', to: 4 })
+    const reqs = (d.deps.fetchLayout as any).mock.calls.map((c: any[]) => c[0])
+    expect(reqs.every((q: any) => q.height <= 1080 && q.width <= 1920)).toBe(true)
+  })
+
+  it('біля задачі місця немає — продовження на звичайному аркуші: нічого нижче 1080, решта — наступним натиском', async () => {
+    const walls = [
+      { id: 'w1', type: 'sticky', x: 880, y: 0, w: 1040, h: 400 },
+      { id: 'w2', type: 'sticky', x: 0, y: 400, w: 1920, h: 1720 },
+    ]
+    const steps = Array.from({ length: 40 }, (_, i) => `$x_{${i}}$`)
+    const d = makeDeps({ pageHeight: 2120, assets: [TASK, ...walls], steps })
+    const r = await press(d, { canSolve: true, selected: TASK, all: true })
+    expect(r).toMatchObject({ status: 'written' })
+    expect((r as any).to).toBeLessThan(40)
+    const cont = d.pages[1]
+    const ys = cont.strokes.flatMap((s: any) => s.points.map((p: any) => p.y))
+    expect(ys.length).toBeGreaterThan(0)
+    expect(Math.max(...ys)).toBeLessThanOrEqual(1080)
   })
 })
 

@@ -21,7 +21,7 @@ import { i18n } from '@/i18n'
 import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import {
-  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, PAGE_OBJECT_LIMIT, answerTextOf,
+  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, PAGE_OBJECT_LIMIT, answerTextOf,
   hasHandwritableSolution, isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear, type Rect,
 } from '../board/handwriteSolution'
 import {
@@ -97,6 +97,8 @@ const SOLVE_TIMEOUT_MS = 90_000
 const SOLVE_REFUSALS: ReadonlySet<string> = new Set(['no_task', 'many_tasks', 'unsure', 'mismatch', 'not_readable', 'unsupported'])
 
 let active: { stop: () => void } | null = null
+/** Рука пише зараз (реактивно — для стану пульта «пишу…»; `active` — звичайна змінна). */
+const handNow = ref(false)
 let seq = 0
 
 /**
@@ -339,7 +341,7 @@ function drawStrokes(
     let stopped = false
     let cancelTimer: (() => void) | null = null
     const finish = (result: HandwriteResult) => {
-      if (active === handle) active = null
+      if (active === handle) { active = null; handNow.value = false }
       resolve(result)
     }
     const stop = () => {
@@ -350,6 +352,7 @@ function drawStrokes(
     }
     const handle = { stop }
     active = handle
+    handNow.value = true
 
     // Один крок «Скасувати» на весь розв'язок — кладемо одразу, щоб і скасування посеред
     // письма прибрало написане й зупинило руку; «Повернути» кладе розв'язок цілим.
@@ -546,7 +549,8 @@ async function newPageColumn(
     k = scaleIndex(scale)
   } else {
     const l = await deps.fetchLayout({
-      text: steps.join('\n'), width: Math.floor(w), height: Math.floor(pageH - HANDWRITE_MARGIN - top), mode: 'full', answer: '',
+      text: steps.join('\n'), width: Math.floor(w), height: Math.floor(Math.min(LAYOUT_MAX_H, pageH - HANDWRITE_MARGIN - top)),
+      mode: 'full', answer: '',
     })
     k = l.fits ? scaleIndex(l.scale) : STEP_SCALES.length - 1
   }
@@ -564,7 +568,7 @@ async function layoutStep(deps: HandwriteDeps, text: string, col: Column): Promi
  */
 async function planSteps(
   deps: HandwriteDeps, page: PageLike & { strokes: any[]; assets: any[] }, anchor: AnchorAsset, steps: string[],
-  from: number, to: number, start: { col: Column; top: number } | null, pageW: number, pageH: number,
+  from: number, to: number, start: { col: Column; top: number } | null, pageW: number, pageH: number, newPageH: number,
 ): Promise<{ here: Planned[]; col: Column | null; there?: { planned: Planned[]; col: Column; copyAt: { x: number; y: number } } } | { error: StepReason }> {
   const here: Planned[] = []
   let i = from
@@ -585,7 +589,7 @@ async function planSteps(
     }
     if (i > to) return { here, col: start.col }
   }
-  const np = await newPageColumn(deps, anchor, steps, pageW, pageH, start?.col.scale)
+  const np = await newPageColumn(deps, anchor, steps, pageW, newPageH, start?.col.scale)
   if (!np) return here.length ? { here, col: start?.col ?? null } : { error: 'no_space' }
   const gap = stepGap(np.col.scale)
   const blank = { strokes: [], assets: [] }
@@ -595,7 +599,7 @@ async function planSteps(
   for (; i <= to; i++) {
     const l = await layoutStep(deps, steps[i - 1], np.col)
     if (!l) break
-    const top = placeStep(blank, np.col.x, y, { w: l.w, h: l.h }, pageH, gap, extra)
+    const top = placeStep(blank, np.col.x, y, { w: l.w, h: l.h }, newPageH, gap, extra)
     if (top === null) break
     there.push({ step: i, x: np.col.x, y: top, layout: l })
     extra.push({ x: np.col.x, y: top, w: l.w, h: l.h })
@@ -666,7 +670,9 @@ export async function handwriteNextStep(opts: StepOptions, depsIn?: HandwriteDep
     const from = session ? session.written + 1 : 1
     const to = opts.all ? total : from
     const pageW = page.width ?? 1920
-    const pageH = page.height ?? 1080
+    // Як у ✍: місце — у висоті, яку показує полотно; сторінка продовження — звичайний аркуш.
+    const pageH = store.currentPageCanvasHeight ?? page.height ?? 1080
+    const newPageH = store.pageHeight ?? 1080
     let start: { col: Column; top: number } | null
     if (session) {
       const scale = STEP_SCALES[session.k]
@@ -679,7 +685,7 @@ export async function handwriteNextStep(opts: StepOptions, depsIn?: HandwriteDep
       start = await firstColumn(deps, page, anchor, got.steps, pageW, pageH)
     }
     stepPhase.value = { phase: 'writing', written: from - 1, total }
-    const plan = await planSteps(deps, page as any, target, got.steps, from, to, start, pageW, pageH)
+    const plan = await planSteps(deps, page as any, target, got.steps, from, to, start, pageW, pageH, newPageH)
     if ('error' in plan) return refuse(plan.error, session)
     if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return refuse('blocked', session)
     const nonce = Math.random().toString(36).slice(2, 4).padEnd(2, '0')
@@ -722,6 +728,8 @@ export function hasStepTarget(store: HandwriteStore, opts: StepOptions): boolean
 export function handwriteStepState(page: PageLike | null | undefined): StepState {
   const phase = stepPhase.value
   if (phase) return { status: phase.phase, written: phase.written, total: phase.total }
+  // Повний ✍ (з ноутбука чи пульта): кроків немає — лише «готую…» / «пишу…».
+  if (handwriteBusyId.value !== null) return { status: handNow.value ? 'writing' : 'preparing', written: 0, total: 0 }
   const r = stepRefusal.value
   if (r) return { status: 'refused', written: Math.min(r.written, r.total), total: r.total, reason: r.reason }
   const open = unfinishedSession(page)
@@ -829,6 +837,42 @@ export async function solveWithFeedback(
     default: break
   }
   return result
+}
+
+/** Чим скінчився ✍ — причина відмови для пульта; написано, зупинено чи зайнято — не відмова. */
+function refusalOf(r: HandwriteResult): StepReason | null {
+  if (r.status === 'written' || r.status === 'stopped' || r.status === 'busy' || r.status === 'done') return null
+  return r.status
+}
+
+/**
+ * Пульт «✍️ Розв'язок рукою» (власник 18.10: «бери ✍ з пульта… роби разом з покроковим»). Задача — за тим самим
+ * правилом, що «Наступний рядок» (Р1): незавершений покроковий на сторінці (Р4 — дописати решту) → виділений на
+ * ноутбуці об'єкт (вирізка з PDF, картинка, картка, задача) → як раніше (розгорнута / у фокусі / перша задача з
+ * розв'язком). Пише так само, як ✍ на ноутбуці (`solveWithFeedback`): готовий розв'язок або розв'язує Інтегралик.
+ * Нічого писати чи відмова — словами і на ноутбуці, і на пульті (`handwrite_step.reason`), не тиша (до 18.10
+ * натиск на сторінці з самою вирізкою мовчки губився).
+ */
+export async function remoteHandwriteWithFeedback(
+  opts: StepOptions & { reveal: (asset: AnchorAsset) => void }, depsIn?: HandwriteDeps,
+): Promise<HandwriteResult | null> {
+  if (active || handwriteBusyId.value !== null) {
+    notifyInfo(tr('busy'))
+    return { status: 'busy' }
+  }
+  stepRefusal.value = null
+  const deps = depsIn ?? await defaultDeps()
+  const page = deps.store.pages[deps.store.currentPageIndex]
+  const target = page ? stepTarget(deps.store, page, opts) : null
+  if (!target) {
+    stepRefusal.value = { reason: 'no_solution', written: 0, total: 0 }
+    notifyInfo(tr('noStepTarget'))
+    return { status: 'no_solution' }
+  }
+  const r = await solveWithFeedback(target, () => opts.reveal(target), deps, { canSolve: opts.canSolve === true })
+  const reason = r === null ? 'error' : refusalOf(r)
+  if (reason) stepRefusal.value = { reason, written: 0, total: 0 }
+  return r
 }
 
 /** «✍️ Наступний рядок» з пульта з поясненням на ноутбуці (пульт бачить те саме у `handwrite_step`). */

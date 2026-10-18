@@ -10372,6 +10372,7 @@
       "step": {
         "preparing": "Готовлю решение…",
         "writing": "Пишу шаг {n} из {m}…",
+        "writingAll": "Пишу решение…",
         "progress": "Шаг {n} из {m}",
         "done": "Готово — {m} из {m}",
         "reason": {

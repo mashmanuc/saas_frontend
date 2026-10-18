@@ -98,10 +98,12 @@ export interface UseBoardRemoteOptions {
    */
   recording?: RemoteRecordingAdapter
   /**
-   * v1.29 «✍️ Розв'язок рукою» (LAW §9). Ноутбук пише розв'язок задачі штрихами пера
-   * (`useHandwriteSolution`). Без нього команда ігнорується.
+   * v1.29 «✍️ Розв'язок рукою» (LAW §9). Ноутбук пише розв'язок штрихами пера (`useHandwriteSolution`).
+   * 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): задачу обирає кімната за правилом Р1, як для
+   * «Наступного рядка», — `fallback` (розгорнута / у фокусі / перша задача з розв'язком) лише запасний варіант,
+   * може бути `null` (на сторінці сама вирізка з PDF). Без колбека команда ігнорується.
    */
-  handwrite?: (asset: any) => void
+  handwrite?: (fallback: any | null) => void
   /**
    * v1.32 «✍️ Наступний рядок» (LAW §9): один натиск — один крок розв'язку. Задачу, крок і місце визначає
    * ноутбук (`handwriteNextStep`); без нього команда ігнорується.
@@ -552,10 +554,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // reveal-гейт шанується. «Задачу на екран» спершу згортаємо — інакше рукопис під карткою.
       case 'card.handwrite': {
         if (!view || !opts.handwrite) return
-        const asset = view.handwriteTarget()
-        if (!asset) return
         view.resetFocus()
-        opts.handwrite(asset)
+        // Р1 вирішує кімната: незавершений покроковий → виділене на ноутбуці → `fallback`. Нічого — кімната
+        // скаже про це словами (на ноутбуці й у `handwrite_step` на пульті), а не мовчки, як до 18.10.
+        opts.handwrite(view.handwriteTarget())
         sendState()
         return
       }

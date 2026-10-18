@@ -92,14 +92,17 @@ describe('openPageForPlan — для дій «що показати далі»',
 })
 
 describe('addPageUndoable({ inheritLook: true }) — сторінка продовження розв\'язку рукою (власник 2026-10-18)', () => {
-  it('бере вигляд поточної: колір, візерунок, розмір; колір іде в page_add', () => {
+  it('бере фон поточної — колір і візерунок; розмір — звичайний аркуш; колір іде в page_add', () => {
     const store = useWBStore()
     seed(store, 1)
-    Object.assign(store.pages[1], { background: 'grid', backgroundColor: '#dbeafe', width: 1600, height: 900 })
+    // Висока сторінка (згенерована добірка, 18.10) — продовження все одно звичайний аркуш.
+    Object.assign(store.pages[1], { background: 'grid', backgroundColor: '#dbeafe', width: 1600, height: 2120 })
     const ops = track(store)
     const id = store.addPageUndoable({ afterCurrent: true, inheritLook: true })
     const page = store.pages.find((p) => p.id === id)!
-    expect(page).toMatchObject({ background: 'grid', backgroundColor: '#dbeafe', width: 1600, height: 900 })
+    expect(page).toMatchObject({ background: 'grid', backgroundColor: '#dbeafe' })
+    expect(page.width).toBeUndefined()
+    expect(page.height).toBeUndefined()
     expect(pageAdds(ops)[0].payload).toMatchObject({ page: { background: 'grid', backgroundColor: '#dbeafe' } })
   })
 
