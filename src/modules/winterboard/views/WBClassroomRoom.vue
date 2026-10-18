@@ -371,6 +371,7 @@
           :zoom="store.zoom"
           :read-only="isDrawingDisabled"
           :is-tutor="classroomRole.isTeacher.value"
+          :can-solve-handwrite="canSolveHandwrite"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
           @stroke-delete="handleStrokeDelete"
@@ -624,6 +625,8 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
+import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
+import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/lifecycleBlock'
@@ -1128,6 +1131,20 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
 })
 
 const authStore = useAuthStore()
+const profileStore = useProfileStore()
+
+// ── Етап 1 «пише рукою» (власник 18.10): ✍ у групі дій виділеної картки чи картинки (вирізки
+// з PDF) — розв'язує Інтегралик. Кнопку малює полотно (`WBCanvas`, `cardWindowActions`).
+/**
+ * Те саме правило, що й «Що прочитав Інтегралик»: власник дошки, роль і маршрут Інтегралика,
+ * персональний вимикач. Сервер перевіряє право сам (К1); це лише «не показувати забороненого».
+ */
+const canSolveHandwrite = computed(() =>
+  classroomRole.isTeacher.value && canSeeImageReading({
+    user: authStore.user, route, settings: profileStore.settings, boardOwnerId: store.ownerId,
+  })
+)
+
 // Аварійні записи SAVE_BLOCKED прив'язані до акаунта (ТЗ §7).
 watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
 // Черга без копії у сховищі — вихід/reload лише з підтвердженням.

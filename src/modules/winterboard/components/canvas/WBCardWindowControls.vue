@@ -56,13 +56,17 @@
       />
     </template>
     <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок;
-         назва є тільки для читача екрана (aria-label), спливної підказки немає. -->
+         назва є тільки для читача екрана (aria-label), спливної підказки немає. Поки Інтегралик
+         розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10). -->
     <button
       v-if="actions.handwrite"
       type="button"
       class="wb-card-window-controls__btn"
+      :class="{ 'wb-card-window-controls__btn--busy': handwriteBusy }"
       data-testid="wb-card-window-handwrite"
       :aria-label="t('winterboard.card.handwrite')"
+      :aria-busy="handwriteBusy ? 'true' : undefined"
+      :disabled="handwriteBusy"
       @click="emit('handwrite')"
     >✍</button>
     <button
@@ -107,8 +111,10 @@ const props = withDefaults(
     isExpanded: boolean
     /** Поточний спільний масштаб картки (`presentationScaleOf`). */
     scale?: number
+    /** Етап 1: Інтегралик розв'язує або рука пише саме цю картку. */
+    handwriteBusy?: boolean
   }>(),
-  { scale: 1 },
+  { scale: 1, handwriteBusy: false },
 )
 
 const emit = defineEmits<{ minimize: []; expand: []; delete: []; handwrite: []; scale: [direction: -1 | 0 | 1] }>()
@@ -188,6 +194,22 @@ const { t } = useI18n({ useScope: 'global' })
 .wb-card-window-controls__btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* Етап 1: розв'язує / пише — значок пульсує чорнилом рукопису (темно-синім). */
+.wb-card-window-controls__btn--busy:disabled {
+  opacity: 1;
+  color: #1e3a8a;
+  animation: wb-handwrite-busy 1.2s ease-in-out infinite;
+}
+
+@keyframes wb-handwrite-busy {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-card-window-controls__btn--busy:disabled { animation: none; }
 }
 
 .wb-card-window-controls__divider {

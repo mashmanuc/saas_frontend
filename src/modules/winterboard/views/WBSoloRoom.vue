@@ -594,6 +594,7 @@
           :zoom="store.zoom"
           :background="displayBackground"
           :is-tutor="true"
+          :can-solve-handwrite="canSolveHandwrite"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
           @stroke-delete="handleStrokeDelete"
@@ -1288,6 +1289,8 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
+import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
+import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPrompt'
 import LessonFullscreenPrompt from '../components/remote/LessonFullscreenPrompt.vue'
 import { createRemotePhotoAdapter } from '../remote/remotePhotoAdapter'
@@ -1884,6 +1887,7 @@ const gridOverlay = useGridOverlay(sessionId.value ?? 'default')
 
 // Presence / remote cursors (A3.2)
 const authStore = useAuthStore()
+const profileStore = useProfileStore()
 // Аварійні записи SAVE_BLOCKED прив'язані до акаунта: чужий запис на спільному
 // комп'ютері не підхоплюється (ТЗ §7).
 watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })
@@ -3215,6 +3219,18 @@ const selectedImageForReading = computed(() => imageReadingTarget({
   selectedIds: store.selectedIds,
   assets: store.currentPage?.assets,
 }))
+
+// ── Етап 1 «пише рукою» (власник 18.10): ✍ у групі дій виділеної картки чи картинки (вирізки
+// з PDF) — розв'язує Інтегралик. Кнопку малює полотно (`WBCanvas`, `cardWindowActions`).
+/**
+ * Те саме правило, що й «Що прочитав Інтегралик»: власник дошки, роль і маршрут Інтегралика,
+ * персональний вимикач. Сервер перевіряє право сам (К1); це лише «не показувати забороненого».
+ */
+const canSolveHandwrite = computed(() =>
+  !isLocalWorkspace && canSeeImageReading({
+    user: authStore.user, route, settings: profileStore.settings, boardOwnerId: store.ownerId,
+  })
+)
 
 const currentPageHasPhotoBackground = computed(() => isImageBackground(store.currentPage?.background))
 

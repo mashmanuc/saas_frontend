@@ -776,6 +776,7 @@
         :actions="windowControlsActions"
         :is-expanded="expandedAssetId === windowControlsTarget.id"
         :scale="presentationScaleOf(windowControlsTarget)"
+        :handwrite-busy="handwriteBusyId === windowControlsTarget.id"
         @scale="(direction: -1 | 0 | 1) => handleWindowScale(windowControlsTarget, direction)"
         @minimize="handleMinimize(windowControlsTarget)"
         @expand="handleWindowExpand(windowControlsTarget.id)"
@@ -995,7 +996,7 @@ import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../boa
 import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
-import { handwriteWithFeedback } from '../../composables/useHandwriteSolution'
+import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
@@ -1130,6 +1131,11 @@ interface Props {
   background?: WBPageBackground
   /** Phase 3C: show full audio/video controls (true for tutor/solo, false for student) */
   isTutor?: boolean
+  /**
+   * Етап 1 «пише рукою» (власник 18.10): ✍ і на картках без розв'язку — їх розв'язує Інтегралик.
+   * Кімната вмикає лише власнику дошки з увімкненим Інтеграликом; за замовчуванням — ні.
+   */
+  canSolveHandwrite?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -1144,6 +1150,7 @@ const props = withDefaults(defineProps<Props>(), {
   // Default to tutor mode so solo boards always show controls.
   // Classroom passes isTutor explicitly based on user role.
   isTutor: true,
+  canSolveHandwrite: false,
 })
 
 // v5 A1: Store + rectangle select composable
@@ -1655,6 +1662,8 @@ const { t } = useI18n({ useScope: 'global' })
 const konvaAssets = computed(() => assets.value.filter(a => !isMinimizedOnBoard(a)))
 
 const trayViewer = computed(() => ({ isTutor: props.isTutor !== false, mode: wbStore.mode }))
+/** Глядач для віконних дій картки: той самий, плюс чи може ✍ кликати Інтегралика (етап 1). */
+const windowViewer = computed(() => ({ ...trayViewer.value, canSolve: props.canSolveHandwrite === true }))
 
 /** Вкладки трею: лише поточна сторінка (`props.assets`), у порядку шарів. */
 const trayList = computed(() => trayItems(assets.value))
@@ -1673,7 +1682,7 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
   if (!asset || isMinimizedOnBoard(asset)) return null
   // У показі на весь екран у відео лише «×» показу: «— ×» картки (× там — видалення) не малюємо
   if (isInMediaShow(asset)) return null
-  return hasWindowActions(cardWindowActions(asset, trayViewer.value)) ? asset : null
+  return hasWindowActions(cardWindowActions(asset, windowViewer.value)) ? asset : null
 })
 
 // HTML-картки та медіа мають власний DOM stacking context. Кнопки повинні бути
@@ -1697,7 +1706,7 @@ watch([windowControlsTarget, assets], async () => {
 }, { flush: 'post', immediate: true })
 
 const windowControlsActions = computed(() =>
-  cardWindowActions(windowControlsTarget.value, trayViewer.value))
+  cardWindowActions(windowControlsTarget.value, windowViewer.value))
 
 const windowControlsWidth = ref(0)
 const windowControlsHeight = ref(0)
@@ -1812,10 +1821,11 @@ function handleWindowDelete(assetId: string): void {
 /**
  * LAW §9 v1.29: ✍️ — розв'язок задачі рукою біля неї. Пише стор штатними `stroke_add`
  * (useHandwriteSolution); не вийшло рукою — розбір показується друкованим, як «Показати розбір».
+ * Етап 1: картка без розв'язку — розв'язує Інтегралик (`solveWithFeedback`), далі той самий шлях.
  */
 function handleWindowHandwrite(asset: WBAsset): void {
-  if (!cardWindowActions(asset, trayViewer.value).handwrite) return
-  void handwriteWithFeedback(asset as any, () => {
+  if (!cardWindowActions(asset, windowViewer.value).handwrite) return
+  void solveWithFeedback(asset as any, () => {
     const fresh = props.assets.find((a) => a.id === asset.id) ?? asset
     if ((fresh.data as { showSolution?: boolean } | undefined)?.showSolution) return
     emit('asset-update', { ...fresh, data: { ...(fresh.data as object), showSolution: true } } as unknown as WBAsset)

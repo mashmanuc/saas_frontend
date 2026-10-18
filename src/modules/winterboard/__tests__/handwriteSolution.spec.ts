@@ -3,17 +3,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  HANDWRITE_INK, HANDWRITE_MIN_W, answerTextOf, freeAreaFrom, hasHandwritableSolution, occupiedRects,
-  writingAreasNear,
+  HANDWRITE_INK, HANDWRITE_MIN_W, answerTextOf, freeAreaFrom, hasHandwritableSolution,
+  isIntegralykSolvable, occupiedRects, writingAreasNear,
 } from '../board/handwriteSolution'
 import {
-  HandwriteUnsupported, handwriteTaskSolution, handwriteWithFeedback, isHandwriting, stopHandwriting,
-  type HandwriteDeps, type HandwriteLayout,
+  HandwriteUnsupported, handwriteBusyId, handwriteTaskSolution, handwriteWithFeedback, isHandwriting,
+  solveAndHandwrite, solveWithFeedback, stopHandwriting, type HandwriteDeps, type HandwriteLayout, type SolveOutcome,
 } from '../composables/useHandwriteSolution'
 import { cardWindowActions } from '../board/windowActions'
+import { notifyInfo, notifyWarning } from '@/utils/notify'
 
 vi.mock('@/utils/notify', () => ({ notifyError: vi.fn(), notifyInfo: vi.fn(), notifyWarning: vi.fn() }))
 vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
+vi.mock('@/modules/intent/assistantLook', () => ({ tAssistantGlobal: (k: string) => `assistant:${k}` }))
 
 const TASK = {
   id: 'task-1', type: 'nmt_task', x: 60, y: 60, w: 800, h: 500,
@@ -77,8 +79,10 @@ function layout(n: number, size = 3): HandwriteLayout {
   }
 }
 
-function makeDeps(opts: { layouts?: HandwriteLayout[]; unsupported?: boolean } = {}) {
-  const page = { id: 'p1', assets: [TASK] as any[], strokes: [] as any[] }
+function makeDeps(opts: {
+  layouts?: HandwriteLayout[]; unsupported?: boolean; assets?: any[]; solve?: () => Promise<SolveOutcome>
+} = {}) {
+  const page = { id: 'p1', assets: (opts.assets ?? [TASK]) as any[], strokes: [] as any[] }
   const pages = [page]
   const store = {
     mode: 'edit', workspaceId: 'board-1', currentPageIndex: 0, pages,
@@ -117,6 +121,7 @@ function makeDeps(opts: { layouts?: HandwriteLayout[]; unsupported?: boolean } =
       return layouts.length > 1 ? layouts.shift()! : layouts[0]
     }),
     schedule: (fn) => { queue.push(fn); return () => { const i = queue.indexOf(fn); if (i >= 0) queue.splice(i, 1) } },
+    fetchSolve: vi.fn(opts.solve ?? (async () => ({ text: '$2x = 4$\n$x = 2$', answer: '$2$' }))),
   }
   const step = () => { const fn = queue.shift(); fn?.() }
   const runAll = () => { while (queue.length) step() }
@@ -247,5 +252,132 @@ describe('✍ у групі дій картки', () => {
     expect(cardWindowActions(TASK as any, { isTutor: true, mode: 'replay' }).handwrite).toBe(false)
     expect(cardWindowActions(TASK as any, { isTutor: true, mode: 'readonly' }).handwrite).toBe(false)
     expect(cardWindowActions({ ...TASK, data: {} } as any, TEACHER).handwrite).toBe(false)
+  })
+})
+
+// ─── етап 1: розв'язує Інтегралик ───────────────────────────────────────────
+
+const PDF_CUT = { id: 'pdffrag-1', type: 'image', src: 'https://cdn.m4sh.org/wb/cut.png', x: 60, y: 60, w: 700, h: 300 }
+const OPEN_TASK = { id: 'task-2', type: 'nmt_task', x: 60, y: 60, w: 800, h: 500, data: { question: 'Знайдіть $x$' } }
+const CARD = { id: 'card-1', type: 'theory_card', x: 60, y: 60, w: 600, h: 300, data: { title: 'Задача', body: '$3x = 12$' } }
+
+describe('що може розв\'язати Інтегралик', () => {
+  it('задача, картка, картинка з адресою; data:/blob: і решта — ні', () => {
+    expect(isIntegralykSolvable(PDF_CUT)).toBe(true)
+    expect(isIntegralykSolvable(OPEN_TASK)).toBe(true)
+    expect(isIntegralykSolvable(CARD)).toBe(true)
+    expect(isIntegralykSolvable({ ...PDF_CUT, src: 'data:image/png;base64,AAA' })).toBe(false)
+    expect(isIntegralykSolvable({ ...PDF_CUT, src: 'blob:https://m4sh.org/x' })).toBe(false)
+    expect(isIntegralykSolvable({ type: 'sticky' })).toBe(false)
+    expect(isIntegralykSolvable(null)).toBe(false)
+  })
+
+  it('✍ у групі дій картки: картка без розв\'язку — лише з дозволом кімнати (Інтегралик)', () => {
+    const teacher = { isTutor: true, mode: 'edit' }
+    expect(cardWindowActions(CARD as any, teacher).handwrite).toBe(false)
+    expect(cardWindowActions(CARD as any, { ...teacher, canSolve: true }).handwrite).toBe(true)
+    expect(cardWindowActions(OPEN_TASK as any, { ...teacher, canSolve: true }).handwrite).toBe(true)
+    expect(cardWindowActions(PDF_CUT as any, { ...teacher, canSolve: true }).handwrite).toBe(true)
+    expect(cardWindowActions(PDF_CUT as any, teacher).handwrite).toBe(false)
+    expect(cardWindowActions({ ...PDF_CUT, src: 'blob:x' } as any, { ...teacher, canSolve: true }).handwrite).toBe(false)
+    expect(cardWindowActions(CARD as any, { isTutor: true, mode: 'replay', canSolve: true }).handwrite).toBe(false)
+    expect(cardWindowActions(CARD as any, { isTutor: false, mode: 'edit', canSolve: true }).handwrite).toBe(false)
+  })
+})
+
+describe('solveAndHandwrite', () => {
+  beforeEach(() => { stopHandwriting(); vi.mocked(notifyInfo).mockClear(); vi.mocked(notifyWarning).mockClear() })
+
+  it('вирізка з PDF: Інтегралик розв\'язує за id об\'єкта, розв\'язок пишеться поруч тим самим шляхом', async () => {
+    const { deps, page, runAll } = makeDeps({ assets: [PDF_CUT] })
+    const done = solveAndHandwrite(PDF_CUT, deps)
+    await flush()
+    runAll()
+    expect(await done).toEqual({ status: 'written', strokes: 3, pageId: 'p1', newPage: false })
+    expect(deps.fetchSolve).toHaveBeenCalledWith('board-1', 'pdffrag-1')
+    expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: '$2x = 4$\n$x = 2$', answer: '$2$', mode: 'steps' })
+    expect(page.strokes[0].points[0].x).toBe(PDF_CUT.x + PDF_CUT.w + 40)
+    expect(handwriteBusyId.value).toBeNull()
+  })
+
+  it('задача з розв\'язком у даних — Інтегралика не кличе', async () => {
+    const { deps, runAll } = makeDeps()
+    const done = solveAndHandwrite(TASK, deps)
+    await flush()
+    runAll()
+    expect((await done).status).toBe('written')
+    expect(deps.fetchSolve).not.toHaveBeenCalled()
+  })
+
+  it('поки розв\'язує — значок зайнятий, друге натискання «зайнято»', async () => {
+    let answer!: (v: SolveOutcome) => void
+    const { deps, runAll } = makeDeps({ assets: [CARD], solve: () => new Promise((r) => { answer = r }) })
+    const done = solveAndHandwrite(CARD, deps)
+    await flush()
+    expect(handwriteBusyId.value).toBe('card-1')
+    expect(await solveAndHandwrite(CARD, makeDeps({ assets: [CARD] }).deps)).toEqual({ status: 'busy' })
+    expect(await handwriteTaskSolution(TASK, makeDeps().deps)).toEqual({ status: 'busy' })
+    answer({ text: '$3x = 12$\n$x = 4$', answer: '$4$' })
+    await flush()
+    expect(handwriteBusyId.value).toBe('card-1')        // тепер пише рука — усе ще зайнято
+    runAll()
+    expect((await done).status).toBe('written')
+    expect(handwriteBusyId.value).toBeNull()
+  })
+
+  it('чесні відмови сервера нічого не пишуть і не кладуть «Скасувати»', async () => {
+    for (const error of ['no_task', 'unsure', 'mismatch', 'not_readable', 'solver_unavailable'] as const) {
+      const { deps, store, page } = makeDeps({ assets: [PDF_CUT], solve: async () => ({ error }) })
+      expect(await solveAndHandwrite(PDF_CUT, deps)).toEqual({ status: error })
+      expect(page.strokes).toHaveLength(0)
+      expect(store.undoStack).toHaveLength(0)
+    }
+    const u = makeDeps({ assets: [PDF_CUT], solve: async () => ({ error: 'unsupported' }) })
+    expect(await solveAndHandwrite(PDF_CUT, u.deps)).toEqual({ status: 'unsupported', detail: '' })
+    expect(handwriteBusyId.value).toBeNull()
+  })
+
+  it('поки розв\'язував, об\'єкт прибрали — нічого не пише', async () => {
+    let answer!: (v: SolveOutcome) => void
+    const { deps, page, store } = makeDeps({ assets: [PDF_CUT], solve: () => new Promise((r) => { answer = r }) })
+    const done = solveAndHandwrite(PDF_CUT, deps)
+    await flush()
+    page.assets = []
+    answer({ text: '$x = 2$', answer: '$2$' })
+    expect(await done).toEqual({ status: 'blocked' })
+    expect(store.undoStack).toHaveLength(0)
+    expect(deps.fetchLayout).not.toHaveBeenCalled()
+  })
+
+  it('нова сторінка: копія картинки як є (без даних задачі), рукопис навколо неї', async () => {
+    const nofit: HandwriteLayout = { fits: false, needed_height: 2000 }
+    const { deps, pages, runAll } = makeDeps({ assets: [PDF_CUT], layouts: [nofit, nofit, layout(2)] })
+    const done = solveAndHandwrite(PDF_CUT, deps)
+    await flush()
+    runAll()
+    expect(await done).toMatchObject({ status: 'written', newPage: true, pageId: 'p2' })
+    const copy = pages[1].assets[0]
+    expect(copy).toMatchObject({ type: 'image', src: PDF_CUT.src, x: 40, y: 40, w: PDF_CUT.w, h: PDF_CUT.h })
+    expect(copy.id).not.toBe(PDF_CUT.id)
+    expect(copy.data).toBeUndefined()
+  })
+
+  it('пояснення вчителю: «розв\'язує…» на старті, причина відмови — словами', async () => {
+    const ok = makeDeps({ assets: [PDF_CUT] })
+    const done = solveWithFeedback(PDF_CUT, () => {}, ok.deps)
+    await flush()
+    ok.runAll()
+    await done
+    expect(notifyInfo).toHaveBeenCalledWith('assistant:winterboard.handwrite.solving')
+
+    const img = makeDeps({ assets: [PDF_CUT], solve: async () => ({ error: 'unsure' }) })
+    await solveWithFeedback(PDF_CUT, () => {}, img.deps)
+    expect(notifyWarning).toHaveBeenCalledWith('assistant:winterboard.handwrite.unsureImage')
+    const card = makeDeps({ assets: [OPEN_TASK], solve: async () => ({ error: 'unsure' }) })
+    await solveWithFeedback(OPEN_TASK, () => {}, card.deps)
+    expect(notifyWarning).toHaveBeenCalledWith('winterboard.handwrite.unsure')
+    const none = makeDeps({ assets: [CARD], solve: async () => ({ error: 'no_task' }) })
+    await solveWithFeedback(CARD, () => {}, none.deps)
+    expect(notifyInfo).toHaveBeenCalledWith('assistant:winterboard.handwrite.noTask')
   })
 })

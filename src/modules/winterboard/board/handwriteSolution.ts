@@ -8,6 +8,7 @@
  * Штрихи обчислює сервер (`/v1/handwriting/solution/`) під розмір області; кладе їх
  * `useHandwriteSolution` штатними `stroke_add`.
  */
+import { isSafeBackgroundUrl } from './pageBackground'
 
 export interface Rect { x: number; y: number; w: number; h: number }
 
@@ -32,6 +33,20 @@ export function hasHandwritableSolution(asset: { type?: string; data?: unknown }
   if (!asset || asset.type !== 'nmt_task') return false
   const sol = (asset.data as TaskData | undefined)?.solution
   return typeof sol === 'string' && sol.trim().length > 0
+}
+
+/**
+ * Етап 1 (власник 18.10: «має бути виділена картка і інтегралик розв'язує… і тоді він це вже пише»):
+ * що може розв'язати Інтегралик, щоб написати рукою, — задача (без розв'язку в даних), картка,
+ * картинка (зокрема вирізка з PDF). Картинку сервер читає за адресою: `data:`/`blob:` (ще вантажиться)
+ * він не прочитає — як і коректор прочитаного (`imageReadingTarget`).
+ */
+export function isIntegralykSolvable(
+  asset: { type?: string; src?: unknown } | null | undefined,
+): boolean {
+  if (!asset) return false
+  if (asset.type === 'image') return isSafeBackgroundUrl(asset.src)
+  return asset.type === 'nmt_task' || asset.type === 'theory_card'
 }
 
 /**

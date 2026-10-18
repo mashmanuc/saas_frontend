@@ -11149,7 +11149,19 @@
       "blocked": "The board is not accepting changes right now — try again.",
       "noSpace": "The solution doesn't fit even on a new page — showing it printed.",
       "noSolution": "This task has no solution.",
-      "error": "Couldn't write the solution."
+      "error": "Couldn't write the solution.",
+      "solving": "Integralyk is solving the task…",
+      "solvingIntegralka": "Integralka is solving the task…",
+      "noTask": "Integralyk didn't find a task here.",
+      "noTaskIntegralka": "Integralka didn't find a task here.",
+      "unsure": "The answer doesn't match the task's options — not writing it.",
+      "unsureImage": "The answer doesn't match the options — the task was probably misread. Check “What Integralyk read” and press ✍ again.",
+      "unsureImageIntegralka": "The answer doesn't match the options — the task was probably misread. Check “What Integralka read” and press ✍ again.",
+      "notReadable": "Integralyk couldn't read the picture.",
+      "notReadableIntegralka": "Integralka couldn't read the picture.",
+      "mismatch": "The solution doesn't match the task's key — not writing it.",
+      "unsupportedSolved": "Couldn't write this solution by hand.",
+      "noSpaceSolved": "The solution doesn't fit even on a new page."
     }
   },
   "storage": {
