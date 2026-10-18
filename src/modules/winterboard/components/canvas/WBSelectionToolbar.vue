@@ -481,6 +481,7 @@ import WBImageReadingButton from './WBImageReadingButton.vue'
 import type { WBStroke, WBAsset } from '../../types/winterboard'
 import { STICKY_DEFAULTS } from '../../types/winterboard'
 import type { ImageReadingTarget } from '../../board/imageReadingTarget'
+import { placeListPopover, sendToPageListHeight, type PopoverPlacement } from '../../board/popoverPlacement'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -784,7 +785,7 @@ const isVisible = computed(() =>
 
 const sendToPageBtnRef = ref<HTMLButtonElement | null>(null)
 const sendToPageOpen = ref(false)
-const sendToPageAnchor = ref<{ left: number; top: number } | null>(null)
+const sendToPageAnchor = ref<({ left: number } & PopoverPlacement) | null>(null)
 
 function toggleSendToPage(): void {
   if (sendToPageOpen.value) {
@@ -794,8 +795,12 @@ function toggleSendToPage(): void {
   const btn = sendToPageBtnRef.value
   if (!btn) return
   const rect = btn.getBoundingClientRect()
-  // Popup під кнопкою, вирівняний по лівому краю; буде clamp-нуто у sendToPageStyle.
-  sendToPageAnchor.value = { left: rect.left, top: rect.bottom + 6 }
+  // Власник 2026-10-18: біля низу екрана нижні сторінки опинялись за краєм. Тепер — вниз, якщо там
+  // уміщається весь список, інакше вгору аж до верху екрана; решту гортає прокрутка
+  // (board/popoverPlacement.ts). Ліво вирівнюється по кнопці й clamp-иться у sendToPageStyle.
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  const place = placeListPopover(rect, vh, sendToPageListHeight(props.pages?.length ?? 0))
+  sendToPageAnchor.value = { left: rect.left, ...place }
   sendToPageOpen.value = true
 }
 
@@ -819,7 +824,8 @@ const sendToPageStyle = computed(() => {
   return {
     position: 'fixed' as const,
     left: `${left}px`,
-    top: `${a.top}px`,
+    ...(a.top !== undefined ? { top: `${a.top}px` } : { bottom: `${a.bottom}px` }),
+    maxHeight: `${a.maxHeight}px`,
     zIndex: 10001,
   }
 })
