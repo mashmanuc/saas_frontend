@@ -352,7 +352,8 @@ const hostWindowControls = useHostWindowControls()
   box-shadow: 0 0 0 3px var(--preset-shadow, rgba(99, 102, 241, 0.18));
 }
 /* readonly (pen/highlighter/eraser) — прозорий фон, ink проступає; body click-through */
-.theory-card.is-readonly { background: rgba(255, 255, 255, 0.0); }
+/* 2026-10-19: прозорий фон — лише в перегляді; з олівцем картка не змінює вигляд (WBOverlayLayer). */
+.wb-overlay--view-only .theory-card.is-readonly { background: rgba(255, 255, 255, 0.0); }
 .theory-card.is-readonly .theory-card__body { pointer-events: none; }
 
 .theory-card__accent-bar {

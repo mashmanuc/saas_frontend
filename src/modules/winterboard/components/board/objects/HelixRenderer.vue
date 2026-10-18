@@ -509,15 +509,25 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-.helix-renderer.is-readonly {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .helix-renderer.is-readonly {
   background: transparent;
 }
 .helix-renderer.is-readonly .helix-stage {
   pointer-events: none;
 }
-.helix-renderer.is-readonly .helix-header,
-.helix-renderer.is-readonly .helix-toolbar {
+.wb-overlay--view-only .helix-renderer.is-readonly .helix-header,
+.wb-overlay--view-only .helix-renderer.is-readonly .helix-toolbar {
   display: none;
+}
+.helix-renderer.is-readonly .helix-header,
+.helix-renderer.is-readonly .helix-header :deep(*),
+.helix-renderer.is-readonly .helix-toolbar,
+.helix-renderer.is-readonly .helix-toolbar :deep(*) {
+  pointer-events: none;
 }
 
 /* ── Header ── */

@@ -189,13 +189,16 @@ describe('GraphCalculatorRenderer (Phase G)', () => {
     wrapper.unmount()
   })
 
-  it('readonly mode: panel hidden when interactive=false', async () => {
+  // 2026-10-19 (власник: «картинка скаче»): з олівцем (interactive=false у режимі уроку) панель формул
+  // лишається — графік не розширюється й не стрибає; дотик іде крізь неї (CSS .is-readonly).
+  // У перегляді (повтор, публічне посилання) панель ховає клас обгортки .wb-overlay--view-only.
+  it('олівець (interactive=false): панель формул лишається на місці', async () => {
     const Renderer = await loadComponent()
     const asset = makeAsset({ snapshotSeq: 1 })
     const wrapper = mount(Renderer, { props: { asset, interactive: false } })
     await nextTick()
-    expect(wrapper.find('.gc-panel').exists()).toBe(false)
-    expect(wrapper.find('.gc-add-btn').exists()).toBe(false)
+    expect(wrapper.find('.gc-panel').exists()).toBe(true)
+    expect(wrapper.find('.gc-add-btn').exists()).toBe(true)
     wrapper.unmount()
   })
 })

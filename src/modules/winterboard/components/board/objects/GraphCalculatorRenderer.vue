@@ -58,7 +58,6 @@
       <!-- P2 (2026-05-08): режим презентації — приховує панель, plot 100%.
            Module-level UI state (NOT persisted, NOT replayed). -->
       <button
-        v-if="interactive"
         type="button"
         class="gc-present-btn"
         :class="{ 'is-active': uiState.presenting }"
@@ -73,7 +72,6 @@
            (dragParamNames) — не «рівно 1 повзунок на дошці». Підпис — імена
            параметрів, якими можна тягнути (a·b, якщо їх кілька), а не жорстке 'a'. -->
       <button
-        v-if="interactive"
         type="button"
         class="gc-param-mode-btn"
         :class="{ 'is-active': uiState.paramMode }"
@@ -104,7 +102,7 @@
            sidebar. Розгортання тепер авто-виділяє об'єкт (WBOverlayLayer.toggleExpand)
            → інспектор з'являється у сайтбарі (не перекритий) → панель НЕ дублюємо на
            оверлеї, інакше були б дві копії контролів. -->
-      <aside class="gc-panel" v-if="interactive && !isSelected">
+      <aside class="gc-panel" v-if="!isSelected">
         <div class="gc-expr-list">
           <div
             v-for="(expr, idx) in displayExpressions"
@@ -298,7 +296,6 @@
             >{{ p.name }} =</button>
             <!-- ТЗ 2026-10-04: ▶ — параметр сам пробігає від мін до макс і назад (лише вчитель). -->
             <button
-              v-if="interactive"
               type="button"
               class="gc-param-play"
               :class="{ 'is-playing': playingParams.includes(p.name) }"
@@ -1796,8 +1793,19 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
 .graph-calc-renderer.is-readonly {
   pointer-events: none;
 }
-.graph-calc-renderer.is-readonly .gc-header {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .graph-calc-renderer.is-readonly .gc-header,
+.wb-overlay--view-only .graph-calc-renderer.is-readonly .gc-panel {
   display: none;
+}
+.graph-calc-renderer.is-readonly .gc-header,
+.graph-calc-renderer.is-readonly .gc-header :deep(*),
+.graph-calc-renderer.is-readonly .gc-panel,
+.graph-calc-renderer.is-readonly .gc-panel :deep(*) {
+  pointer-events: none;
 }
 
 /* P2 (2026-05-08): режим презентації — панель прихована, plot заповнює body.

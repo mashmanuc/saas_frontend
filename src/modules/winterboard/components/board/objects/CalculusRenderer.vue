@@ -515,16 +515,25 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-/* Read-only (pen/highlighter/etc.) — overlay прозорий + всі pointer-events: none. */
-.calculus-renderer.is-readonly {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .calculus-renderer.is-readonly {
   background: transparent;
 }
 .calculus-renderer.is-readonly .calculus-stage {
   pointer-events: none;
 }
-.calculus-renderer.is-readonly .calculus-header,
-.calculus-renderer.is-readonly .calculus-toolbar {
+.wb-overlay--view-only .calculus-renderer.is-readonly .calculus-header,
+.wb-overlay--view-only .calculus-renderer.is-readonly .calculus-toolbar {
   display: none;
+}
+.calculus-renderer.is-readonly .calculus-header,
+.calculus-renderer.is-readonly .calculus-header :deep(*),
+.calculus-renderer.is-readonly .calculus-toolbar,
+.calculus-renderer.is-readonly .calculus-toolbar :deep(*) {
+  pointer-events: none;
 }
 
 .calculus-header {

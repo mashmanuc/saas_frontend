@@ -582,15 +582,25 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   pointer-events: none;
 }
 
-.trig-circle-renderer.is-readonly {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .trig-circle-renderer.is-readonly {
   background: transparent;
 }
 .trig-circle-renderer.is-readonly .trig-circle-stage {
   pointer-events: none;
 }
-.trig-circle-renderer.is-readonly .trig-circle-header,
-.trig-circle-renderer.is-readonly .trig-toolbar {
+.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-circle-header,
+.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-toolbar {
   display: none;
+}
+.trig-circle-renderer.is-readonly .trig-circle-header,
+.trig-circle-renderer.is-readonly .trig-circle-header :deep(*),
+.trig-circle-renderer.is-readonly .trig-toolbar,
+.trig-circle-renderer.is-readonly .trig-toolbar :deep(*) {
+  pointer-events: none;
 }
 
 /* ── Header ── */
@@ -825,8 +835,11 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   color: #f8fafc;
   border-color: #94a3b8;
 }
-.trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
+.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
   display: none;
+}
+.trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
+  pointer-events: none;
 }
 
 /* ── Expand button ── */

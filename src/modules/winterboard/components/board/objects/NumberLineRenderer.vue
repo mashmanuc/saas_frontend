@@ -842,7 +842,15 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-.nl-card.is-readonly .nl-head { display: none; }
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .nl-card.is-readonly .nl-head { display: none; }
+.nl-card.is-readonly .nl-head,
+.nl-card.is-readonly .nl-head :deep(*) {
+  pointer-events: none;
+}
 
 /* ── Header — як у тригонометричних нерівностей ── */
 .nl-head {

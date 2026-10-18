@@ -261,11 +261,19 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-.quad-renderer.is-readonly {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .quad-renderer.is-readonly {
   background: transparent;
 }
 .quad-renderer.is-readonly .quad-stage { pointer-events: none; }
-.quad-renderer.is-readonly .quad-header { display: none; }
+.wb-overlay--view-only .quad-renderer.is-readonly .quad-header { display: none; }
+.quad-renderer.is-readonly .quad-header,
+.quad-renderer.is-readonly .quad-header :deep(*) {
+  pointer-events: none;
+}
 
 .quad-header {
   flex: 0 0 auto;

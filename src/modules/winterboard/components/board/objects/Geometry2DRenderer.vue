@@ -397,23 +397,27 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-/* Read-only mode (pen/highlighter/eraser/etc.) — прибираємо білий фон,
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+/* Перегляд — прибираємо білий фон,
    щоб Konva strokes на canvas-layer ПІД HTML overlay проступали наскрізь.
    SVG геометрія залишається видимою (її background — transparent).
    У select mode (interactive) — повертається білий paper-feel. */
-.geo2dv2-renderer.is-readonly {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly {
   background: transparent;
 }
-.geo2dv2-renderer.is-readonly .geo2dv2-header {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
   background: rgba(15, 23, 42, 0.10);
 }
-.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
   background: rgba(15, 23, 42, 0.08);
 }
-.geo2dv2-renderer.is-readonly .geo2dv2-stage {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-stage {
   background: transparent;
 }
-.geo2dv2-renderer.is-readonly .geo2dv2-stage :deep(.geo-stage) {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-stage :deep(.geo-stage) {
   background: transparent;
 }
 
@@ -486,12 +490,17 @@ const hostWindowControls = useHostWindowControls()
   display: none;
 }
 
-/* Read-only (pen/highlighter/eraser) — hover toolbar/header, тільки малюнок. */
-.geo2dv2-renderer.is-readonly .geo2dv2-header {
+/* Перегляд — лише малюнок, без заголовка й кнопок. */
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
   display: none;
 }
-.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
+.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
   display: none;
+}
+/* Олівець — кнопки видно, але дотик іде крізь них на полотно. */
+.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host,
+.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(*) {
+  pointer-events: none;
 }
 .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(button) {
   pointer-events: none;

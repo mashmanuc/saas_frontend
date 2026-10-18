@@ -294,12 +294,14 @@ describe('GraphCalculatorRenderer — Phase G4 param-mode toggle', () => {
     wrapper.unmount()
   })
 
-  it('toggle hidden when interactive=false (read-only / replay)', async () => {
+  // 2026-10-19: з олівцем заголовок картки не змінюється (перемикач на місці, дотик іде крізь нього);
+  // у перегляді заголовок ховає клас обгортки .wb-overlay--view-only.
+  it('олівець (interactive=false): перемикач на місці — заголовок не змінюється', async () => {
     const Renderer = await loadRenderer()
     const asset = makeAsset({ paramCount: 1 })
     const wrapper = mount(Renderer, { props: { asset, interactive: false } })
     await nextTick()
-    expect(wrapper.find('[data-testid="graph-calc-param-mode-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="graph-calc-param-mode-btn"]').exists()).toBe(true)
     wrapper.unmount()
   })
 
@@ -409,12 +411,12 @@ describe('GraphCalculatorRenderer — Phase G4 inline quick-add + help hint', ()
     wrapper.unmount()
   })
 
-  it('quick-add hidden when interactive=false', async () => {
+  it('олівець (interactive=false): швидке додавання лишається в панелі (картка не стрибає)', async () => {
     const Renderer = await loadRenderer()
     const asset = makeAsset({ paramCount: 0 })
     const wrapper = mount(Renderer, { props: { asset, interactive: false } })
     await nextTick()
-    expect(wrapper.find('[data-testid="graph-calc-quick-sin"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="graph-calc-quick-sin"]').exists()).toBe(true)
     wrapper.unmount()
   })
 

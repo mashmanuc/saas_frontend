@@ -447,9 +447,19 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-.trig-slv.is-readonly .trig-slv-head,
-.trig-slv.is-readonly .trig-slv-tools {
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
+   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
+   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
+   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
+.wb-overlay--view-only .trig-slv.is-readonly .trig-slv-head,
+.wb-overlay--view-only .trig-slv.is-readonly .trig-slv-tools {
   display: none;
+}
+.trig-slv.is-readonly .trig-slv-head,
+.trig-slv.is-readonly .trig-slv-head :deep(*),
+.trig-slv.is-readonly .trig-slv-tools,
+.trig-slv.is-readonly .trig-slv-tools :deep(*) {
+  pointer-events: none;
 }
 .trig-slv.is-readonly .trig-slv-stage {
   pointer-events: none;

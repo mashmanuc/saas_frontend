@@ -464,7 +464,8 @@ useExportCapture(
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 /* Під олівцем/маркером/гумкою ink проходить крізь картку. */
-.history-card.is-readonly { background: rgba(255, 255, 255, 0); }
+/* 2026-10-19: прозорий фон — лише в перегляді; з олівцем картка не змінює вигляд (WBOverlayLayer). */
+.wb-overlay--view-only .history-card.is-readonly { background: rgba(255, 255, 255, 0); }
 .history-card.is-readonly .history-card__body { pointer-events: none; }
 
 .history-card__accent-bar {
