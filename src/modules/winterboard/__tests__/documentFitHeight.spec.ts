@@ -102,3 +102,11 @@ describe('WBCanvas: зберігає тим самим шляхом, що й р�
     expect(viewer).toMatch(/const FOOTER_H = DOC_VIEWER_FOOTER_H/)
   })
 })
+
+describe('назва документа не заходить під «⇕ — ×»', () => {
+  const viewer = readFileSync(resolve(__dirname, '../components/canvas/DocumentViewerAsset.vue'), 'utf-8')
+  it('місце під кнопки — у пікселях екрана, переведене через масштаб дошки', () => {
+    expect(viewer).toMatch(/const HEADER_RIGHT_RESERVE_PX = 76/)
+    expect(viewer).toMatch(/props\.asset\.w - 16 - HEADER_RIGHT_RESERVE_PX \/ Math\.max\(props\.scale \?\? 1, 0\.1\)/)
+  })
+})

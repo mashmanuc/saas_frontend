@@ -119,8 +119,13 @@ const emit = defineEmits<{
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const HEADER_H = DOC_VIEWER_HEADER_H
-/** Праворуч у шапці — віконні кнопки «— ×» виділеної картки й замок: назва під них не заходить. */
-const HEADER_RIGHT_RESERVE = 56
+/**
+ * Праворуч у шапці — віконні кнопки «⇕ — ×» виділеної картки й замок: назва під них не заходить.
+ * Кнопки — HTML сталого розміру на екрані (3 × 20 px + відступи), тож місце рахуємо в пікселях
+ * екрана й переводимо в одиниці дошки через масштаб (раніше 56 одиниць дошки: на дрібному
+ * масштабі довга назва залазила під «—», а з ⇕ (2026-10-18) — ще й під нього).
+ */
+const HEADER_RIGHT_RESERVE_PX = 76
 const FOOTER_H = DOC_VIEWER_FOOTER_H
 const BTN_W = 36
 const BTN_H = 24
@@ -276,7 +281,7 @@ const headerTextConfig = computed(() => {
   return {
     x: 8,
     y: 6,
-    width: Math.max(0, props.asset.w - 16 - HEADER_RIGHT_RESERVE),
+    width: Math.max(0, props.asset.w - 16 - HEADER_RIGHT_RESERVE_PX / Math.max(props.scale ?? 1, 0.1)),
     text: headerText.value,
     fontSize: 12,
     fontFamily: 'Inter, sans-serif',
