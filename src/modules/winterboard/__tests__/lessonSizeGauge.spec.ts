@@ -17,7 +17,7 @@ import {
   GAUGE_SHOW_FROM, LESSON_SNAPSHOT_LIMIT_BYTES, MEASURE_INTERVAL_MS,
   boardStateBytes, isBoardTooLargeError, lessonFillPercent, lessonSizeLevel, useLessonSizeGauge,
 } from '../board/lessonSizeGauge'
-import WBLessonSizeStrip from '../components/dialogs/WBLessonSizeStrip.vue'
+import WBLessonSizeBadge from '../components/status/WBLessonSizeBadge.vue'
 
 const LIMIT = LESSON_SNAPSHOT_LIMIT_BYTES
 
@@ -94,23 +94,47 @@ describe('useLessonSizeGauge — рахує після нових дій, не �
   })
 })
 
-describe('смужка', () => {
-  it('попередження — відсоток; переповнено — інший текст; «Зрозуміло» шле подію', async () => {
-    const warn = mount(WBLessonSizeStrip, { props: { level: 'warn', percent: 82 } })
-    expect(warn.text()).toContain('winterboard.lessonSize.warnTitle:{"percent":82}')
-    expect(warn.text()).toContain('winterboard.lessonSize.warnHint')
-    const full = mount(WBLessonSizeStrip, { props: { level: 'full', percent: 101 } })
-    expect(full.text()).toContain('winterboard.lessonSize.fullTitle')
-    expect(full.find('[data-testid="lesson-size-strip"]').classes()).toContain('wb-lesson-size--full')
-    await full.find('[data-testid="lesson-size-dismiss"]').trigger('click')
-    expect(full.emitted('dismiss')).toHaveLength(1)
+// Власник 2026-10-18: смужка над панеллю зсувала дошку під пером — тепер позначка в зеленій панелі.
+describe('позначка в панелі', () => {
+  it('показує відсоток; пояснення — при наведенні (title) і по дотику, поверх полотна', async () => {
+    const warn = mount(WBLessonSizeBadge, { props: { level: 'warn', percent: 82 }, attachTo: document.body })
+    const btn = warn.get('[data-testid="lesson-size-badge-btn"]')
+    expect(btn.text()).toBe('winterboard.lessonSize.badge:{"percent":82}')
+    expect(btn.attributes('title')).toContain('winterboard.lessonSize.warnTitle:{"percent":82}')
+    expect(btn.attributes('title')).toContain('winterboard.lessonSize.warnHint')
+    expect(warn.find('[data-testid="lesson-size-badge-hint"]').exists()).toBe(false)
+
+    await btn.trigger('click')
+    expect(warn.get('[data-testid="lesson-size-badge-hint"]').text()).toContain('winterboard.lessonSize.warnHint')
+    // дотик поза позначкою закриває пояснення
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(warn.find('[data-testid="lesson-size-badge-hint"]').exists()).toBe(false)
+    warn.unmount()
+  })
+
+  it('переповнено — червона й з іншим поясненням', async () => {
+    const full = mount(WBLessonSizeBadge, { props: { level: 'full', percent: 101 } })
+    expect(full.get('[data-testid="lesson-size-badge"]').classes()).toContain('wb-size-badge--full')
+    await full.get('[data-testid="lesson-size-badge-btn"]').trigger('click')
+    expect(full.get('[data-testid="lesson-size-badge-hint"]').text()).toContain('winterboard.lessonSize.fullTitle')
+  })
+
+  it('пояснення — поверх полотна (absolute), а не в потоці сторінки', () => {
+    const css = readFileSync(resolve(__dirname, '../components/status/WBLessonSizeBadge.vue'), 'utf-8')
+    expect(css).toMatch(/\.wb-size-badge__pop \{\s*position: absolute;/)
   })
 })
 
-describe('WBSoloRoom підключає смужку й причину', () => {
+describe('WBSoloRoom підключає позначку й причину', () => {
   const src = readFileSync(resolve(__dirname, '../views/WBSoloRoom.vue'), 'utf-8')
-  it('смужка — лише власнику хмарної дошки, за прийнятими діями, зі стану як на сервер', () => {
-    expect(src).toMatch(/<WBLessonSizeStrip\s+v-if="showLessonSizeStrip"/)
+  it('позначка — у панелі поруч зі «Збережено» (панель сталої висоти), смужки над панеллю немає', () => {
+    const status = src.slice(src.indexOf('<div class="wb-solo-room__status">'), src.indexOf('<!-- A5.1: Follow mode indicator -->'))
+    expect(status).toMatch(/<WBLessonSizeBadge\s+v-if="lessonSize\.level\.value !== 'none'"/)
+    expect(src).not.toMatch(/WBLessonSizeStrip/)
+    expect(src).toMatch(/\.wb-solo-room__header \{[^}]*height: 56px;/)
+  })
+  it('рахується лише власнику хмарної дошки, за прийнятими діями, зі стану як на сервер', () => {
     expect(src).toMatch(/enabled: computed\(\(\) => !isLocalWorkspace && isSessionOwner\.value && !!sessionId\.value\)/)
     expect(src).toMatch(/seq: \(\) => opsSync\.serverSeq/)
     expect(src).toMatch(/getState: \(\) => store\.serializedStateForSave/)

@@ -7641,7 +7641,7 @@
       "warnHint": "At 100% it can no longer be saved as a lesson. Continue on a new board.",
       "fullTitle": "The board is too full to save as a lesson",
       "fullHint": "Everything you wrote on the board is saved. To save a lesson, remove extra pages or continue on a new board.",
-      "dismiss": "Got it"
+      "badge": "{percent}% full"
     },
     "phoneHint": {
       "title": "The board works best on a computer or tablet",

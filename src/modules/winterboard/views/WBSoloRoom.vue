@@ -21,13 +21,6 @@
     <OpsLegacyCopyNotice />
     <OpsBootstrapFailedBanner />
     <OpsRestoreBanner />
-    <!-- Б-205: дошка підходить до межі «Зберегти як урок» — попередити, поки вчитель пише. -->
-    <WBLessonSizeStrip
-      v-if="showLessonSizeStrip"
-      :level="lessonSize.level.value === 'full' ? 'full' : 'warn'"
-      :percent="lessonSize.percent.value"
-      @dismiss="lessonSizeDismissed = lessonSize.level.value"
-    />
     <!-- Власник 2026-09-28: пульт підключився — один дотик для повного екрана (⛶ або F11), тоді
          «На весь екран» з пульта розгортає відео на весь монітор. -->
     <LessonFullscreenPrompt
@@ -119,6 +112,13 @@
           <span class="wb-save-indicator__dot" />
           <span class="wb-save-indicator__text">{{ saveStatusText }}</span>
         </span>
+        <!-- Б-205: дошка підходить до межі «Зберегти як урок» — позначка в панелі (стала висота,
+             дошку під пером не зсуває; власник 2026-10-18). -->
+        <WBLessonSizeBadge
+          v-if="lessonSize.level.value !== 'none'"
+          :level="lessonSize.level.value === 'full' ? 'full' : 'warn'"
+          :percent="lessonSize.percent.value"
+        />
       </div>
 
       <!-- A5.1: Follow mode indicator -->
@@ -1221,8 +1221,8 @@ import OpsSaveBlockedBanner from '../components/dialogs/OpsSaveBlockedBanner.vue
 import OpsLegacyCopyNotice from '../components/dialogs/OpsLegacyCopyNotice.vue'
 import OpsBootstrapFailedBanner from '../components/dialogs/OpsBootstrapFailedBanner.vue'
 import OpsRestoreBanner from '../components/dialogs/OpsRestoreBanner.vue'
-import WBLessonSizeStrip from '../components/dialogs/WBLessonSizeStrip.vue'
-import { isBoardTooLargeError, useLessonSizeGauge, type LessonSizeLevel } from '../board/lessonSizeGauge'
+import WBLessonSizeBadge from '../components/status/WBLessonSizeBadge.vue'
+import { isBoardTooLargeError, useLessonSizeGauge } from '../board/lessonSizeGauge'
 import { notifyError, notifyWarning, notifySuccess } from '@/utils/notify'
 import { artifactBarrierReason, type ArtifactBarrierReason } from '../composables/artifactBarrier'
 import { usePresence } from '../composables/usePresence'
@@ -2251,16 +2251,14 @@ const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobi
 
 /* Б-205 (власник 2026-10-16): «Зберегти як урок» має межу розміру дошки (на сервері 2 МБ), і про неї
    вчитель дізнавався лише після письма. Рахуємо заповненість так само, як сервер, після прийнятих
-   дій (не частіше ніж раз на кілька секунд) і показуємо смужку з 75 %. «Зрозуміло» ховає її до
-   наступного рівня (75 % → переповнено). Лише підказка: дошку й операції не чіпає. */
+   дій (не частіше ніж раз на кілька секунд) і з 75 % показуємо позначку в зеленій панелі поруч зі
+   «Збережено» (власник 2026-10-18: смужка над панеллю зсувала дошку під пером). Лише підказка:
+   дошку й операції не чіпає. */
 const lessonSize = useLessonSizeGauge({
   enabled: computed(() => !isLocalWorkspace && isSessionOwner.value && !!sessionId.value),
   seq: () => opsSync.serverSeq,
   getState: () => store.serializedStateForSave,
 })
-const lessonSizeDismissed = ref<LessonSizeLevel | null>(null)
-const showLessonSizeStrip = computed(() =>
-  lessonSize.level.value !== 'none' && lessonSizeDismissed.value !== lessonSize.level.value)
 
 /* Б-202 (власник 2026-10-15): на телефоні вертикально аркуш — чверть екрана, і новий учитель
    з реклами пішов за 6 с. Власнику хмарної дошки — одне вікно: «зручніше з комп'ютера,
@@ -5052,6 +5050,10 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__status {
   flex-shrink: 0;
   margin: 0 16px;
+  /* «Збережено» і позначка заповненості (Б-205) — в один рядок. */
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .wb-save-indicator {
