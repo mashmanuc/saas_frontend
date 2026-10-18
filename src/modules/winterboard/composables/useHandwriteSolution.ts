@@ -75,8 +75,8 @@ type AnchorAsset = { id: string; type?: string; src?: unknown; x: number; y: num
 
 const MAX_UNDO = 100
 /**
- * Зір (до 25 с) + розв'язувач (до 30 с) + один перепит — довше за типові 30 с `apiClient`.
- * Сервер сам не перепитує, якщо перший виклик був довгим (`solve.REASK_IF_FASTER_THAN`).
+ * Зір + розв'язувач + можливий один перепит — довше за типові 30 с `apiClient`. Сервер укладається
+ * приблизно в хвилину: перепитує, лише якщо від натискання минуло менше 30 с (`solve.REASK_IF_FASTER_THAN`).
  */
 const SOLVE_TIMEOUT_MS = 90_000
 const SOLVE_REFUSALS: ReadonlySet<string> = new Set(['no_task', 'unsure', 'mismatch', 'not_readable', 'unsupported'])
