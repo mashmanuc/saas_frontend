@@ -123,9 +123,14 @@
 
       <!-- ── open_answer ──────────────────────────────────── -->
       <div v-else-if="data.taskType === 'open_answer'" class="nmt-task__input-wrap">
+        <!-- Власник 2026-10-18: поле завжди текстове. Банк позначає всі відкриті відповіді
+             «number», а серед них дроби «5/3», кома «4,5», корені — числове поле зі стрілками
+             їх не пускало. Картка вписане не перевіряє (лише «Показати відповідь»), тож тип
+             поля нічого, крім набору, не змінює; `data.inputType` лишається в даних. -->
         <input
           class="nmt-task__input"
-          :type="data.inputType ?? 'text'"
+          type="text"
+          autocomplete="off"
           v-model="openAnswerValue"
           :placeholder="t('winterboard.widget.nmtTask.answerPlaceholder')"
           @mousedown.stop
