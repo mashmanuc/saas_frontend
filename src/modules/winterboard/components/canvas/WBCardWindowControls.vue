@@ -57,18 +57,29 @@
     </template>
     <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок;
          назва є тільки для читача екрана (aria-label), спливної підказки немає. Поки Інтегралик
-         розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10). -->
+         розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10).
+         Власник 18.10: «додай позначку Інтегралика… стан, коли він думає» — коли розв'язуватиме Інтегралик
+         (готового розв'язку немає), у куті значка — Інтегралик; поки він розв'язує й пише — думає (похитується)
+         замість пульсу всього значка. -->
     <button
       v-if="actions.handwrite"
       type="button"
-      class="wb-card-window-controls__btn"
-      :class="{ 'wb-card-window-controls__btn--busy': handwriteBusy }"
+      class="wb-card-window-controls__btn wb-card-window-controls__btn--handwrite"
+      :class="{
+        'wb-card-window-controls__btn--busy': handwriteBusy && !actions.handwriteSolves,
+        'wb-card-window-controls__btn--solving': handwriteBusy && actions.handwriteSolves,
+      }"
       data-testid="wb-card-window-handwrite"
       :aria-label="t('winterboard.card.handwrite')"
       :aria-busy="handwriteBusy ? 'true' : undefined"
       :disabled="handwriteBusy"
       @click="emit('handwrite')"
-    >✍</button>
+    >✍<IntegralykThinking
+        v-if="actions.handwriteSolves"
+        class="wb-card-window-controls__itg"
+        :size="12"
+        :thinking="handwriteBusy"
+      /></button>
     <!-- Власник 2026-10-18: документ одним натисканням на всю висоту аркуша біля лівого краю. -->
     <button
       v-if="actions.fitHeight"
@@ -113,6 +124,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CardWindowActions } from '../../board/windowActions'
+import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
 import { nextPresentationScale, presentationScaleLabel } from '../../board/cardPresentation'
 
 const props = withDefaults(
@@ -223,6 +235,17 @@ const { t } = useI18n({ useScope: 'global' })
 @media (prefers-reduced-motion: reduce) {
   .wb-card-window-controls__btn--busy:disabled { animation: none; }
 }
+
+/* Позначка Інтегралика в куті ✍ (розв'язуватиме він). */
+.wb-card-window-controls__btn--handwrite { position: relative; }
+.wb-card-window-controls__itg {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  pointer-events: none;
+}
+/* Розв'язує й пише Інтегралик: значок не блідне — думає сам Інтегралик. */
+.wb-card-window-controls__btn--solving:disabled { opacity: 1; color: #1e3a8a; }
 
 .wb-card-window-controls__divider {
   width: 1px;

@@ -36,7 +36,9 @@
       <button type="button" @click="$emit('close')">{{ t('winterboard.materials.close') }}</button>
     </div>
 
+    <!-- Власник 2026-10-18: поки генерується урок — Інтегралик думає. -->
     <p v-if="busy" class="material-lesson__busy" role="status">
+      <IntegralykThinking :size="20" />
       {{ t('winterboard.materials.generating') }}
     </p>
 
@@ -81,6 +83,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
 
 /** Порядок навмисний: спершу те, заради чого пакет існує. */
 const POLICIES = ['materials', 'mixed', 'bank_only'] as const

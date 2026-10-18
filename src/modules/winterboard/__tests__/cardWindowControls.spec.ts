@@ -47,15 +47,15 @@ function card(type: string, extra: Record<string, unknown> = {}): WBAsset {
 
 describe('INV-WIN-1/2 · які дії показати', () => {
   it.each([
-    ['theory_card', { scale: true, minimize: true, expand: false, delete: true, handwrite: false, fitHeight: false }],
-    ['nmt_task', { scale: true, minimize: true, expand: true, delete: true, handwrite: false, fitHeight: false }],
-    ['geomash_scene', { scale: false, minimize: true, expand: true, delete: true, handwrite: false, fitHeight: false }],
-    ['visual_capsule', { scale: false, minimize: true, expand: true, delete: true, handwrite: false, fitHeight: false }],
-    ['image', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, fitHeight: false }],
+    ['theory_card', { scale: true, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['nmt_task', { scale: true, minimize: true, expand: true, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['geomash_scene', { scale: false, minimize: true, expand: true, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['visual_capsule', { scale: false, minimize: true, expand: true, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['image', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
     // Медіа згортаються з 2026-09-28 (рішення власника, ТЗ «Сценарій» §4.1) — свідома зміна
-    ['video_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, fitHeight: false }],
-    ['youtube_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, fitHeight: false }],
-    ['audio_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, fitHeight: false }],
+    ['video_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['youtube_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
+    ['audio_player', { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }],
   ])('вчитель · %s', (type, expected) => {
     expect(cardWindowActions(card(type), TEACHER)).toEqual(expected)
   })
@@ -74,14 +74,14 @@ describe('INV-WIN-1/2 · які дії показати', () => {
 
   it('replay: лише розгортання', () => {
     expect(cardWindowActions(card('nmt_task'), { isTutor: true, mode: 'replay' }))
-      .toEqual({ scale: false, minimize: false, expand: true, delete: false, handwrite: false, fitHeight: false })
+      .toEqual({ scale: false, minimize: false, expand: true, delete: false, handwrite: false, handwriteSolves: false, fitHeight: false })
   })
 })
 
 // ─── Компонент ──────────────────────────────────────────────────────────────
 
 describe('WBCardWindowControls', () => {
-  const ALL = { scale: false, minimize: true, expand: true, delete: true, handwrite: false, fitHeight: false }
+  const ALL = { scale: false, minimize: true, expand: true, delete: true, handwrite: false, handwriteSolves: false, fitHeight: false }
 
   function mountControls(actions = ALL, isExpanded = false) {
     return mount(WBCardWindowControls, { props: { actions, isExpanded }, global: { plugins: [i18n()] } })
@@ -96,8 +96,29 @@ describe('WBCardWindowControls', () => {
   })
 
   it('показує лише дозволені дії; розгорнута картка — кнопка згортання ⊠', () => {
-    const w = mountControls({ scale: false, minimize: false, expand: true, delete: false, handwrite: false, fitHeight: false }, true)
+    const w = mountControls({ scale: false, minimize: false, expand: true, delete: false, handwrite: false, handwriteSolves: false, fitHeight: false }, true)
     expect(w.findAll('button').map(b => b.text())).toEqual(['⊠'])
+  })
+
+  it("✍: позначка Інтегралика лише коли розв'язує він; поки працює — думає, значок не пульсує (власник 18.10)", () => {
+    const hw = { ...ALL, handwrite: true }
+    const ready = mount(WBCardWindowControls, { props: { actions: hw, isExpanded: false }, global: { plugins: [i18n()] } })
+    expect(ready.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
+    const solves = { ...hw, handwriteSolves: true }
+    const idle = mount(WBCardWindowControls, { props: { actions: solves, isExpanded: false }, global: { plugins: [i18n()] } })
+    expect(idle.get('[data-testid="wb-card-window-handwrite"] [data-testid="integralyk-thinking"]').classes())
+      .not.toContain('itg-thinking--on')
+    const busy = mount(WBCardWindowControls, {
+      props: { actions: solves, isExpanded: false, handwriteBusy: true }, global: { plugins: [i18n()] },
+    })
+    const btn = busy.get('[data-testid="wb-card-window-handwrite"]')
+    expect(btn.get('[data-testid="integralyk-thinking"]').classes()).toContain('itg-thinking--on')
+    expect(btn.classes()).not.toContain('wb-card-window-controls__btn--busy')
+    // Готовий розв'язок банку — як і було: пульсує сам значок.
+    const busyReady = mount(WBCardWindowControls, {
+      props: { actions: hw, isExpanded: false, handwriteBusy: true }, global: { plugins: [i18n()] },
+    })
+    expect(busyReady.get('[data-testid="wb-card-window-handwrite"]').classes()).toContain('wb-card-window-controls__btn--busy')
   })
 
   it('кнопки емітять свої дії', async () => {

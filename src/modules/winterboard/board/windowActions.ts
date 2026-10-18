@@ -11,6 +11,9 @@
  *                  перегляд і Replay ставлять стору 'readonly'/'replay'), задача з розв'язком; або
  *                  (етап 1, 18.10) задача без розв'язку, картка чи картинка (вирізка з PDF), яку розв'яже
  *                  Інтегралик, — лише коли кімната дала `canSolve` (власник дошки з Інтеграликом).
+ *   • `handwriteSolves` — ✍ розв'язуватиме Інтегралик (готового розв'язку немає): на значку — Інтегралик
+ *                  (власник 2026-10-18: «додай позначку Інтегралика»), щоб ще до натиску було видно, що це не
+ *                  готовий розв'язок із банку.
  *   • `fitHeight` — «⇕ на всю висоту аркуша» (власник 2026-10-18): вчитель, режим редагування,
  *                  `fitHeight` типу (документ з «Матеріалів»), картка НЕ заблокована (це зміна розміру).
  * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту).
@@ -28,6 +31,8 @@ export interface CardWindowActions {
   delete: boolean
   /** LAW §9 v1.29: ✍️ розв'язок задачі рукою (значок без напису). */
   handwrite: boolean
+  /** ✍ розв'язуватиме Інтегралик (готового розв'язку в задачі немає) — на значку його позначка. */
+  handwriteSolves: boolean
   /** ⇕ документ на всю висоту аркуша біля лівого краю. */
   fitHeight: boolean
 }
@@ -38,6 +43,7 @@ export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
   expand: false,
   delete: false,
   handwrite: false,
+  handwriteSolves: false,
   fitHeight: false,
 })
 
@@ -47,13 +53,15 @@ export function cardWindowActions(
 ): CardWindowActions {
   if (!asset || !viewer.isTutor || !isCardAsset(asset.type)) return NO_WINDOW_ACTIONS
   const caps = assetCapabilities(asset.type)
+  const ready = hasHandwritableSolution(asset)
+  const solves = viewer.mode === 'edit' && !ready && viewer.canSolve === true && isIntegralykSolvable(asset)
   return {
     scale: viewer.mode === 'edit' && caps.textScale === 'teacher-shared',
     minimize: canMinimize(asset, viewer),
     expand: caps.fullscreen,
     delete: caps.deletable && viewer.mode === 'edit' && asset.locked !== true,
-    handwrite: viewer.mode === 'edit'
-      && (hasHandwritableSolution(asset) || (viewer.canSolve === true && isIntegralykSolvable(asset))),
+    handwrite: (viewer.mode === 'edit' && ready) || solves,
+    handwriteSolves: solves,
     fitHeight: caps.fitHeight && viewer.mode === 'edit' && asset.locked !== true,
   }
 }

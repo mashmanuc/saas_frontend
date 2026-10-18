@@ -83,7 +83,7 @@
           <div class="cmdp-head cmdp-brand">
             <span
               class="cmdp-mascot cmdp-mascot--brand"
-              :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]"
+              :class="[{ thinking: mascotThinking }, fabMood && 'mood-' + fabMood]"
               v-html="MASCOT_SVG"
             ></span>
             <div class="cmdp-brandtitle">
@@ -193,7 +193,7 @@
         <template v-else-if="mode === 'ai'">
           <div class="cmdp-head">
             <button class="cmdp-back" @click="toCommands">{{ uiText.backToCommands }}</button>
-            <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: aiBusy }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
+            <span ref="mascotEl" class="cmdp-mascot" :class="[{ thinking: mascotThinking }, fabMood && 'mood-' + fabMood]" v-html="MASCOT_SVG"></span>
             <span class="cmdp-title">{{ uiText.assistantName }}</span>
             <AssistantLookPicker variant="compact" @error="onLookError" />
             <!-- 0a: розмова живе між відкриттями → потрібен явний спосіб почати з чистого -->
@@ -1096,6 +1096,8 @@ function newConversationId() {
 const conversationId = ref(newConversationId())
 const aiThread = ref([])
 const aiBusy = ref(false)
+// Власник 2026-10-18: поки виконується команда (генерація уроку тощо) — Інтегралик думає, а не лише «Виконую…».
+const mascotThinking = computed(() => aiBusy.value || loading.value)
 const aiInput = ref('')
 const aiThreadEl = ref(null)
 const aiInputEl = ref(null)

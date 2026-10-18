@@ -343,6 +343,18 @@ describe('що може розв\'язати Інтегралик', () => {
     expect(cardWindowActions(CARD as any, { isTutor: true, mode: 'replay', canSolve: true }).handwrite).toBe(false)
     expect(cardWindowActions(CARD as any, { isTutor: false, mode: 'edit', canSolve: true }).handwrite).toBe(false)
   })
+
+  it("позначка Інтегралика на ✍ — лише коли розв'язуватиме він (власник 18.10)", () => {
+    const solver = { isTutor: true, mode: 'edit', canSolve: true }
+    expect(cardWindowActions(PDF_CUT as any, solver).handwriteSolves).toBe(true)
+    expect(cardWindowActions(CARD as any, solver).handwriteSolves).toBe(true)
+    expect(cardWindowActions(OPEN_TASK as any, solver).handwriteSolves).toBe(true)
+    // Готовий розв'язок банку — без позначки, і з правом Інтегралика, і без нього.
+    expect(cardWindowActions(TASK as any, solver)).toMatchObject({ handwrite: true, handwriteSolves: false })
+    expect(cardWindowActions(TASK as any, { isTutor: true, mode: 'edit' }).handwriteSolves).toBe(false)
+    expect(cardWindowActions(PDF_CUT as any, { isTutor: true, mode: 'edit' }).handwriteSolves).toBe(false)
+    expect(cardWindowActions(PDF_CUT as any, { ...solver, mode: 'replay' }).handwriteSolves).toBe(false)
+  })
 })
 
 describe('solveAndHandwrite', () => {

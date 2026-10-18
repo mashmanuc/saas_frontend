@@ -184,3 +184,21 @@ describe('підказки ведуть, а не забороняють', () => 
     expect(w.text()).toContain('0 / 2')
   })
 })
+
+describe('поки генерується урок', () => {
+  it('думає Інтегралик, а не крутиться колесо (власник 2026-10-18)', async () => {
+    let finish: (v: { session_id: string }) => void = () => {}
+    generate.mockImplementationOnce(() => new Promise((r) => { finish = r }))
+    const w = await build('Вивчення нової теми', [TRIANGLE])
+    expect(w.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
+    await generateBtn(w).trigger('submit')
+    await new Promise(r => setTimeout(r, 0))
+    const itg = generateBtn(w).find('[data-testid="integralyk-thinking"]')
+    expect(itg.exists()).toBe(true)
+    expect(itg.classes()).toContain('itg-thinking--on')
+    expect(w.find('.lc-spinner').exists()).toBe(false)
+    finish({ session_id: 'sess-1' })
+    await new Promise(r => setTimeout(r, 0))
+    expect(w.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
+  })
+})

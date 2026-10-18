@@ -275,7 +275,8 @@
             class="lc-btn-generate"
             :disabled="isLoading || !!focusProblem"
           >
-            <span v-if="isLoading" class="lc-spinner" />
+            <!-- Власник 2026-10-18: «що він думає, а не просто колесо крутиться». -->
+            <IntegralykThinking v-if="isLoading" :size="22" />
             <span v-else>✨</span>
             {{ isLoading ? 'Генерую урок…' : 'Згенерувати урок' }}
           </button>
@@ -296,6 +297,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
 import {
   TOPICS,
   THEMES,
@@ -1089,21 +1091,6 @@ async function handleGenerate() {
 
 .lc-error--center {
   text-align: center;
-}
-
-/* ── Spinner ────────────────────────────────────────────────────────────── */
-.lc-spinner {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: lc-spin 0.7s linear infinite;
-}
-
-@keyframes lc-spin {
-  to { transform: rotate(360deg); }
 }
 
 /* ── Темна тема (Б-156, фаза 1) ─────────────────────────────────────────────
