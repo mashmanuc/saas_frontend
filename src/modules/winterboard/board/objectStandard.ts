@@ -64,6 +64,8 @@ export interface BoardObjectCapabilities {
   textScale: 'none' | 'teacher-shared'
   /** TLV2-05C · спільна верхня панель картки (віконні дії та, де є, масштаб). */
   windowChrome: boolean
+  /** «⇕ На всю висоту аркуша» (власник 2026-10-18) — документ біля лівого краю, `board/documentFit.ts`. */
+  fitHeight: boolean
 }
 
 export interface BoardObjectStandardEntry {
@@ -85,6 +87,7 @@ export const NO_CAPABILITIES: BoardObjectCapabilities = Object.freeze({
   contentFit: 'none',
   textScale: 'none',
   windowChrome: false,
+  fitHeight: false,
 })
 
 function caps(patch: Partial<BoardObjectCapabilities>): BoardObjectCapabilities {
@@ -181,7 +184,7 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   sticky: card('konva'),
   // Повноекранний перегляд презентації — заглушка (`WBSoloRoom.presentation-expand`),
   // тому `fullscreen: false`: кнопки без дії стандарт не дозволяє.
-  document_viewer: card('konva'),
+  document_viewer: card('konva', { fitHeight: true }),
 
   // ── Медіа-оверлеї з власним drag ──────────────────────────────────────────
   // Аудіо не має ручок розміру (`WBCanvas.isResizableMedia` — лише video/youtube).

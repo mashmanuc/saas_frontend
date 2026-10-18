@@ -50,7 +50,7 @@
         @click="emit('scale', 1)"
       >A+</button>
       <span
-        v-if="actions.handwrite || actions.minimize || actions.expand || actions.delete"
+        v-if="actions.handwrite || actions.fitHeight || actions.minimize || actions.expand || actions.delete"
         class="wb-card-window-controls__divider"
         aria-hidden="true"
       />
@@ -69,6 +69,16 @@
       :disabled="handwriteBusy"
       @click="emit('handwrite')"
     >✍</button>
+    <!-- Власник 2026-10-18: документ одним натисканням на всю висоту аркуша біля лівого краю. -->
+    <button
+      v-if="actions.fitHeight"
+      type="button"
+      class="wb-card-window-controls__btn"
+      data-testid="wb-card-window-fit-height"
+      :title="t('winterboard.card.fitHeight')"
+      :aria-label="t('winterboard.card.fitHeight')"
+      @click="emit('fitHeight')"
+    >⇕</button>
     <button
       v-if="actions.minimize"
       type="button"
@@ -117,7 +127,9 @@ const props = withDefaults(
   { scale: 1, handwriteBusy: false },
 )
 
-const emit = defineEmits<{ minimize: []; expand: []; delete: []; handwrite: []; scale: [direction: -1 | 0 | 1] }>()
+const emit = defineEmits<{
+  minimize: []; expand: []; delete: []; handwrite: []; fitHeight: []; scale: [direction: -1 | 0 | 1]
+}>()
 
 const scaleLabel = computed(() => presentationScaleLabel(props.scale))
 const canScaleDown = computed(() => nextPresentationScale(props.scale, -1) !== null)

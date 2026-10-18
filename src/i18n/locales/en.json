@@ -11141,7 +11141,8 @@
       "scaleDown": "Smaller text",
       "scaleUp": "Larger text",
       "scaleReset": "Default text size (100%)",
-      "handwrite": "Write the solution by hand"
+      "handwrite": "Write the solution by hand",
+      "fitHeight": "Fit to sheet height"
     },
     "handwrite": {
       "unsupported": "Can't write this solution by hand — showing it printed.",

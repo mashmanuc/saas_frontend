@@ -74,6 +74,7 @@ import {
   CUT_CONTENT_TYPES, QUICK_MIN_VIEWER_W, quickRelease, viewerPointToPage, type FragRect,
 } from '../library/pdfFragmentRect'
 import type { PdfFragmentSnap } from '../../api/library'
+import { DOC_VIEWER_FOOTER_H, DOC_VIEWER_HEADER_H } from '../../board/documentFit'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -117,10 +118,10 @@ const emit = defineEmits<{
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const HEADER_H = 28
+const HEADER_H = DOC_VIEWER_HEADER_H
 /** Праворуч у шапці — віконні кнопки «— ×» виділеної картки й замок: назва під них не заходить. */
 const HEADER_RIGHT_RESERVE = 56
-const FOOTER_H = 32
+const FOOTER_H = DOC_VIEWER_FOOTER_H
 const BTN_W = 36
 const BTN_H = 24
 const CORNER_R = 4

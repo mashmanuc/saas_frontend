@@ -782,6 +782,7 @@
         @expand="handleWindowExpand(windowControlsTarget.id)"
         @delete="handleWindowDelete(windowControlsTarget.id)"
         @handwrite="handleWindowHandwrite(windowControlsTarget)"
+        @fit-height="handleWindowFitHeight(windowControlsTarget)"
       />
     </Teleport>
 
@@ -1008,6 +1009,7 @@ import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
+import { documentPageAspect, fitDocumentToSheetHeight } from '../../board/documentFit'
 import { planAutoFit } from '../../composables/autoFitHeight'
 import { useLayerRepaint } from '../../composables/useLayerRepaint'
 import { filterEvidenceCards } from '../../board/evidenceCards'
@@ -1793,6 +1795,29 @@ provideHostControlsSlot(computed(() => {
 }))
 // Картки з власним полотном — зменшена копія самої себе на будь-якому масштабі (власник 2026-10-01).
 provideCardZoom(computed(() => props.zoom))
+
+/**
+ * «⇕ На всю висоту аркуша» (власник 2026-10-18): документ біля лівого краю на всю висоту, ширина —
+ * за пропорцією його сторінки (з картинки поточної сторінки у вузлі Konva; поки не завантажилась —
+ * A4 або 4:3). Зберігаємо тим самим `asset-update`, що й ручне розтягування (`handleDocViewerTransformEnd`),
+ * тож ↩ повертає попередній розмір.
+ */
+function handleWindowFitHeight(asset: WBAsset): void {
+  if (!cardWindowActions(asset, trayViewer.value).fitHeight) return
+  const idx = assets.value.findIndex(a => a.id === asset.id)
+  if (idx === -1) return
+  const node = assetsLayerRef.value?.getNode?.()?.findOne(`#${asset.id}`) as Konva.Group | undefined
+  const pageImage = (node?.findOne('Image') as Konva.Image | undefined)?.image() as HTMLImageElement | undefined
+  const rect = fitDocumentToSheetHeight({
+    sheetW: PAGE_WIDTH,
+    sheetH: PAGE_HEIGHT,
+    pageAspect: documentPageAspect(pageImage, assets.value[idx].content_ref?.content_type),
+  })
+  const updated = { ...assets.value[idx], ...rect }
+  assets.value[idx] = updated
+  emit('asset-update', updated)
+  void nextTick(() => transformerRef.value?.getNode()?.forceUpdate())
+}
 
 function handleWindowExpand(assetId: string): void {
   // Та сама поведінка, що й ⛶ у картці: перемикач, розгорнута картка виділена.
