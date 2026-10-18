@@ -26,6 +26,59 @@ function formulaContent(content, key) {
 function withMathContent(content) {
   return content ? { math_content: content } : {}
 }
+
+// Пакет 2 «один Інтегралик» (19.10): формула з бібліотеки несе назву й позначення. Їхні
+// документи лежать під тими самими ключами, що й поля картки.
+function formulaCardContent(content) {
+  const base = formulaContent(content, 'latex')
+  if (!base) return null
+  for (const key of ['title', 'notation']) {
+    if (content.fields?.[key]) base.fields[key] = content.fields[key]
+  }
+  return base
+}
+
+// Розмір картки під саму формулу (пакет 2): формула з бібліотеки буває ширша й вища за смугу
+// 380×110 (Герона з півпериметром — ≈500×80 px), а прокрутку на проєкторі не видно. Міряємо
+// KaTeX один раз при вставці — тим самим кеглем і тим самим display-блоком, що й картка (дроби
+// повного розміру, поля блоку зверху й знизу; `flow-root` тримає їх у вимірі). Ширина — 380…760.
+// Без DOM (тести) — 0×0.
+const FORMULA_W_MIN = 380
+const FORMULA_W_MAX = 760
+
+function measureFormula(latex, fontSize = 22) {
+  if (typeof document === 'undefined' || !document.body) return { width: 0, height: 0 }
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:absolute;left:-100000px;top:0;visibility:hidden;display:flow-root;'
+    + `width:max-content;white-space:nowrap;line-height:1.4;font-size:${fontSize}px`
+  try {
+    probe.innerHTML = katex.renderToString(String(latex || ''), { displayMode: true, throwOnError: false })
+    document.body.appendChild(probe)
+    const box = probe.getBoundingClientRect()
+    return { width: box.width || 0, height: box.height || 0 }
+  } catch {
+    return { width: 0, height: 0 }  // не виміряли — стандартна смуга, прокрутка як у звичайної картки
+  } finally {
+    probe.remove()
+  }
+}
+
+function libraryFields(payload) {
+  return Object.fromEntries(FORMULA_LIBRARY_FIELDS
+    .map((key) => [key, payload?.[key]])
+    .filter(([, value]) => typeof value === 'string' && value))
+}
+
+// [ширина, висота] картки формули. Звичайна формула — 380×110, як і була; з бібліотеки — під
+// ширину самої формули й рядки назви та позначень.
+function formulaFootprint(payload) {
+  const library = libraryFields(payload)
+  if (!library.title) return [FORMULA_W_MIN, formulaCardHeight({})]
+  const formula = measureFormula(payload?.latex)
+  // + відступи смуги (2×16), рамка й запас на округлення.
+  const w = Math.min(FORMULA_W_MAX, Math.max(FORMULA_W_MIN, Math.ceil(formula.width) + 48))
+  return [w, formulaCardHeight(library, w, formula.height + 4)]
+}
 // Людські назви 3D-шаблонів для підписів у контексті (етап 0 MCL, 0.1/0.3).
 // Статичний імпорт свідомо: це маленька таблиця констант, не вендор-бандл.
 import { NMT3D_TEMPLATE_LABELS } from '@/modules/winterboard/constants/nmt3dDefaults'
@@ -33,6 +86,8 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
+import katex from 'katex'
+import { FORMULA_LIBRARY_FIELDS, formulaCardHeight } from '@/modules/winterboard/types/formulaCard'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 import { chooseNumberLine, conditionToText, defaultNumberLineData, evaluate as evaluateNumberLine, intervalsFormula, NUMBER_LINE_NONLINEAR } from '@/modules/winterboard/engine/numberLine'
 import { isIntervalsPilotUser } from '@/modules/winterboard/engine/numberLine/pilot'
@@ -232,7 +287,7 @@ export async function planFitsCurrentPage(actions) {
   const { pw, ph } = _pageSize(page)
   const rects = _occupied(page)
   for (const action of actions || []) {
-    const size = FOOTPRINT[action?.kind]
+    const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload) : FOOTPRINT[action?.kind]
     if (!size) continue
     const [w, reserveH] = size
     const h = _reserveFor(0, reserveH, ph)
@@ -708,22 +763,26 @@ const HANDLERS = {
     return assetId
   },
 
-  // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру)
-  async add_formula({ latex, math_content }, ctx) {
+  // Дзеркало WBSoloRoom.handleFormulaSubmit (нова formula_card по центру).
+  // Формула з бібліотеки — з назвою й позначеннями, картка вища на їхні рядки (пакет 2, 19.10).
+  async add_formula({ latex, math_content, ...rest }, ctx) {
     const { store, page } = await _store(ctx)
-    const { cx, cy } = _center(page, 380, 110)
+    const library = libraryFields(rest)
+    const [w, h] = formulaFootprint({ latex, ...library })
+    const { cx, cy } = _center(page, w, h)
     const assetId = _uuid()
+    const content = library.title ? formulaCardContent(math_content) : formulaContent(math_content, 'latex')
     store.addAsset({
       id: assetId,
       type: 'formula_card',
       src: '',
-      x: cx - 190,
-      y: cy - 55,
-      w: 380,
-      h: 110,
+      x: cx - Math.round(w / 2),
+      y: cy - Math.round(h / 2),
+      w,
+      h,
       rotation: 0,
       locked: false,
-      data: { version: 1, formula: latex, fontSize: 22, color: '#1e293b', bg: '#f8fafc', ...withMathContent(formulaContent(math_content, 'latex')) },
+      data: { version: 1, formula: latex, fontSize: 22, color: '#1e293b', bg: '#f8fafc', ...library, ...withMathContent(content) },
     }, page.id ?? '')
     // N1 Фаза 2: запис companion-сцени для AST-експорту (2026-08-07).
     // ⚠️ Раніше тут стояло `assetId: id` — `id` ніколи не оголошувалась у
@@ -736,7 +795,7 @@ const HANDLERS = {
       sessionId: store.workspaceId,
       kind: 'formula_card',
       assetId,
-      data: { formula: latex, ...withMathContent(formulaContent(math_content, 'latex')) },
+      data: { formula: latex, ...library, ...withMathContent(content) },
     })
   },
 
@@ -1210,6 +1269,8 @@ HANDLERS.set_param = async function set_param({ object_id, type, value, name, ma
       [paramKey]: { ...cfg, min, max, value: num },
     }
   } else if (type === 'formula') {
+    // Пакет 2: назва й позначення з бібліотеки описували попередню формулу.
+    if (String(value) !== (data.formula ?? '')) for (const key of FORMULA_LIBRARY_FIELDS) delete data[key]
     data.formula = String(value)
     // Б-141: старий документ описував попередню формулу — без нового від сервера знімаємо його.
     const content = formulaContent(math_content, 'value')
@@ -1674,7 +1735,8 @@ export function summarizeAsset(a) {
   if (a.type === 'graph_calculator') {
     label = (d.state?.expressions || []).map((e) => e.src).filter(Boolean).join(' ; ')
   } else if (a.type === 'formula_card') {
-    label = d.formula || ''
+    // Назва з бібліотеки — щоб «перенеси формулу Герона» знаходило картку за словами.
+    label = [d.title, d.formula].filter(Boolean).join(': ')
   } else if (a.type === 'theory_card') {
     label = d.title || String(d.body || '').slice(0, 80)
   } else if (a.type === 'image') {

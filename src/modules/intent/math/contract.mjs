@@ -362,7 +362,8 @@ export function prepareActions(actions, fixes = []) {
       obj.math_content = { version: VERSION, fields }
     }
     if (a.kind === 'add_card' || a.kind === 'update_card') attach(p, [['title',120],['body',12000]])
-    else if (a.kind === 'add_formula') attach(p, [['latex',4000,true]])
+    // Формула з бібліотеки несе ще назву й позначення («$a$, $b$ — катети») — пакет 2, 19.10.
+    else if (a.kind === 'add_formula') attach(p, [['latex',4000,true],['title',120],['notation',1000]])
     else if (a.kind === 'set_param' && p.type === 'formula') attach(p, [['value',4000,true]])
     else if (a.kind === 'add_page' && p.card) {
       p.card = { ...p.card }

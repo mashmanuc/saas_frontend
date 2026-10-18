@@ -1305,6 +1305,7 @@ import { createBoardVideoRemember } from '../board/boardVideoLibrary'
 import { playVideo, pauseVideo, ytPlayStates, ytPlayErrors } from '../board/youtubeRemoteControl'
 import { getYouTubeThumbnail, videoRefToWatchUrl } from '../utils/youtubeParser'
 import { DEFAULT_BOARD_SIZES } from '../types/boardDrop'
+import { withFormula } from '../types/formulaCard'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import WBPhoneBoardHint from '../components/phone/WBPhoneBoardHint.vue'
@@ -3459,7 +3460,8 @@ function handleFormulaSubmit(formula: string): void {
     if (existing && existing.type === 'formula_card') {
       store.updateAsset({
         ...existing,
-        data: { ...(existing.data as any), formula },
+        // Нова формула — назва й позначення з бібліотеки знімаються (пакет 2, 19.10).
+        data: withFormula(existing.data as any, formula),
       } as any)
     }
     editingFormulaAssetId.value = null
