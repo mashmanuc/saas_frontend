@@ -102,6 +102,13 @@ export interface UseBoardRemoteOptions {
    * (`useHandwriteSolution`). Без нього команда ігнорується.
    */
   handwrite?: (asset: any) => void
+  /**
+   * v1.32 «✍️ Наступний рядок» (LAW §9): один натиск — один крок розв'язку. Задачу, крок і місце визначає
+   * ноутбук (`handwriteNextStep`); без нього команда ігнорується.
+   */
+  handwriteNext?: () => void
+  /** v1.32: стан покрокового письма для пульта (`remote.state.handwrite_step`). */
+  handwriteStep?: () => { status: string; written: number; total: number; reason?: string; target?: boolean }
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -138,7 +145,7 @@ export interface RemoteCommandDetail {
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
-    | 'card.handwrite'
+    | 'card.handwrite' | 'card.handwrite_next'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
@@ -265,6 +272,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     // v1.28: запис на ноутбуці й чий це запуск Дзеркала — телефон знає, чи «Зупинити» завершує запис
     if (opts.recording) Object.assign(msg, opts.recording.state())
     if (recordingResult.value) msg.recording_result = recordingResult.value
+    // v1.32: «Крок N з M» і стан покрокового письма — лише числа й закриті набори, тексту кроку немає
+    if (opts.handwriteStep) msg.handwrite_step = opts.handwriteStep()
     const busy = opts.busy?.()
     if (busy) msg.busy = busy
     opts.sendMessage(msg)
@@ -339,6 +348,15 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const recording = opts.recording
     watch(
       () => JSON.stringify(recording.state()),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
+  }
+
+  // v1.32: крок написано, скасовано, почалось чи скінчилось письмо — пульт одразу показує «Крок N з M»
+  if (opts.handwriteStep) {
+    const step = opts.handwriteStep
+    watch(
+      () => JSON.stringify(step()),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
@@ -538,6 +556,15 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         if (!asset) return
         view.resetFocus()
         opts.handwrite(asset)
+        sendState()
+        return
+      }
+      // v1.32: наступний рядок розв'язку. Задачу (незавершена на сторінці → виділена → як card.handwrite),
+      // крок і місце вибирає ноутбук. «Задачу на екран» згортаємо — інакше рядок під карткою.
+      case 'card.handwrite_next': {
+        if (!opts.handwriteNext) return
+        view?.resetFocus()
+        opts.handwriteNext()
         sendState()
         return
       }

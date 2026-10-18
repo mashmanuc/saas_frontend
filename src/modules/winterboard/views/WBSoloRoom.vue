@@ -1288,7 +1288,7 @@ import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
-import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
+import { handwriteStepState, handwriteWithFeedback, hasStepTarget, nextStepWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { useLessonFullscreenPrompt } from '../composables/useLessonFullscreenPrompt'
@@ -1930,6 +1930,20 @@ const remoteView = createRemoteViewAdapter(store as any, {
   },
 })
 
+// ── Етап 1 «пише рукою» (власник 18.10): ✍ у групі дій виділеної картки чи картинки (вирізки
+// з PDF) — розв'язує Інтегралик. Кнопку малює полотно (`WBCanvas`, `cardWindowActions`).
+// ⚠️ Оголошено ДО `useBoardRemote`: стан пульта (v1.32 `handwrite_step`) читає право вже під час
+// створення кімнати — пізніше оголошення валило дошку (стенд 18.10: «before initialization»).
+/**
+ * Те саме правило, що й «Що прочитав Інтегралик»: власник дошки, роль і маршрут Інтегралика,
+ * персональний вимикач. Сервер перевіряє право сам (К1); це лише «не показувати забороненого».
+ */
+const canSolveHandwrite = computed(() =>
+  !isLocalWorkspace && canSeeImageReading({
+    user: authStore.user, route, settings: profileStore.settings, boardOwnerId: store.ownerId,
+  })
+)
+
 const boardRemote = useBoardRemote({
   sessionId,
   store: {
@@ -1957,6 +1971,18 @@ const boardRemote = useBoardRemote({
       if (fresh.data?.showSolution) return
       store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
     }, undefined, { canSolve: canSolveHandwrite.value })
+  },
+  // v1.32: «✍️ Наступний рядок» — один крок розв'язку на натиск; стан — «Крок N з M» на пульті.
+  handwriteNext: () => {
+    const page = store.pages[store.currentPageIndex]
+    const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
+    void nextStepWithFeedback({ canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => remoteView.handwriteTarget() })
+  },
+  handwriteStep: () => {
+    const page = store.pages[store.currentPageIndex]
+    const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
+    const target = hasStepTarget(store as any, { canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => remoteView.handwriteTarget() })
+    return { ...handwriteStepState(page as any), target }
   },
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
@@ -3222,18 +3248,6 @@ const selectedImageForReading = computed(() => imageReadingTarget({
   selectedIds: store.selectedIds,
   assets: store.currentPage?.assets,
 }))
-
-// ── Етап 1 «пише рукою» (власник 18.10): ✍ у групі дій виділеної картки чи картинки (вирізки
-// з PDF) — розв'язує Інтегралик. Кнопку малює полотно (`WBCanvas`, `cardWindowActions`).
-/**
- * Те саме правило, що й «Що прочитав Інтегралик»: власник дошки, роль і маршрут Інтегралика,
- * персональний вимикач. Сервер перевіряє право сам (К1); це лише «не показувати забороненого».
- */
-const canSolveHandwrite = computed(() =>
-  !isLocalWorkspace && canSeeImageReading({
-    user: authStore.user, route, settings: profileStore.settings, boardOwnerId: store.ownerId,
-  })
-)
 
 const currentPageHasPhotoBackground = computed(() => isImageBackground(store.currentPage?.background))
 

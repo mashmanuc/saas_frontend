@@ -2922,24 +2922,44 @@ export const useWBStore = defineStore('wb-board', {
       return newIds
     },
 
-    addPageUndoable(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string; afterCurrent?: boolean }): string {
+    addPageUndoable(opts?: {
+      background?: WBPageBackground; width?: number; height?: number; name?: string; afterCurrent?: boolean
+      /**
+       * Вигляд поточної сторінки — колір, візерунок і розмір; фото чи PDF у фоні не копіюються (це вміст, а
+       * не вигляд). Те саме правило, що `insertPageAfterCurrent` (власник 2026-09-29: біла сторінка серед
+       * кольорових «помітна і виділяється»); власник 2026-10-18 — і для сторінки продовження розв'язку рукою.
+       */
+      inheritLook?: boolean
+    }): string {
       if (this.pages.length >= 50) {
         console.warn('[WB:Store] Max 50 pages reached')
         return ''
       }
       // A1: Inherit grid from current page so tutor's grid preference carries over
       const currentPage = this.pages[this.currentPageIndex]
+      const bg = currentPage?.background
+      const plainLook = typeof bg === 'string' || bg === undefined
+      const look = opts?.inheritLook
+        ? {
+          background: (typeof bg === 'string' ? bg : 'white') as WBPageBackground,
+          backgroundColor: currentPage?.backgroundColor ?? '#ffffff',
+          width: plainLook ? currentPage?.width : undefined,
+          height: plainLook ? currentPage?.height : undefined,
+        }
+        : null
       const newPage: WBPage = {
         id: generatePageId(),
         name: opts?.name ?? `Page ${this.pages.length + 1}`,
         strokes: [],
         assets: [],
-        background: opts?.background ?? 'white',
-        backgroundColor: '#ffffff',
-        width: opts?.width,
-        height: opts?.height,
+        background: opts?.background ?? look?.background ?? 'white',
+        backgroundColor: look?.backgroundColor ?? '#ffffff',
+        width: opts?.width ?? look?.width,
+        height: opts?.height ?? look?.height,
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
+      // Колір сторінки — у `page_add` лише з успадкованим виглядом (інші виклики — як були, біла за замовчуванням).
+      const colorField = look ? { backgroundColor: newPage.backgroundColor } : {}
 
       const afterCurrent = opts?.afterCurrent === true
       const insertAt = afterCurrent ? this.currentPageIndex + 1 : this.pages.length
@@ -2968,6 +2988,7 @@ export const useWBStore = defineStore('wb-board', {
                 id: _page.id,
                 name: _page.name,
                 background: _page.background,
+                ...colorField,
                 width: _page.width,
                 height: _page.height,
               },
@@ -3008,6 +3029,7 @@ export const useWBStore = defineStore('wb-board', {
               id: newPage.id,
               name: newPage.name,
               background: newPage.background,
+              ...colorField,
               width: newPage.width,
               height: newPage.height,
             },

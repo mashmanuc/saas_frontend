@@ -110,7 +110,18 @@
            Відео поточної сторінки — ▶/⏸.
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
-      <div v-if="hasCards || hasQuestions || videos.length" class="wb-remote__context" data-testid="context">
+      <div v-if="hasCards || hasQuestions || videos.length || showStepRow" class="wb-remote__context" data-testid="context">
+        <!-- LAW §9 v1.32 (власник 2026-10-18: «згоден з усіма чотирма, роби»): кожен натиск — один рядок
+             розв'язку; учитель пояснює між рядками. Стан — з ноутбука («Крок N з M», «готую…», причина).
+             Не лише біля карток задач: виділена на ноутбуці вирізка з PDF чи картка — теж (`target`). -->
+        <template v-if="showStepRow">
+          <div class="wb-remote__row">
+            <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite-next" :disabled="!isReady || handwriteStepBusy" @click="sendCmd('card.handwrite_next')">
+              {{ t('winterboard.remote.handwriteNext') }}
+            </button>
+          </div>
+          <p v-if="handwriteStepText" class="wb-remote__hint" data-testid="remote-handwrite-step" aria-live="polite">{{ handwriteStepText }}</p>
+        </template>
         <div v-if="hasQuestions" class="wb-remote__row" data-testid="questions-row">
           <button
             type="button"
@@ -635,7 +646,7 @@ import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
-import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus } from '../composables/useRemoteChannel'
+import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
@@ -847,6 +858,23 @@ const assistantOpen = ref<boolean | null>(null)
 const recording = ref<RemoteRecordingInfo | null>(null)
 /** v1.28: відповідь ноутбука на останню команду запису від Дзеркала */
 const recordingResult = ref<RemoteRecordingResult | null>(null)
+/** v1.32: стан покрокового письма розв'язку на ноутбуці. */
+const handwriteStep = ref<RemoteHandwriteStep | null>(null)
+/** Ряд «Наступний рядок»: ноутбук знає покроковий режим і є що писати чи що показати (крок, «Готово», причина). */
+const showStepRow = computed(() => {
+  const s = handwriteStep.value
+  return !!s && (s.target === true || s.total > 0 || s.status !== 'idle')
+})
+const handwriteStepBusy = computed(() => handwriteStep.value?.status === 'preparing' || handwriteStep.value?.status === 'writing')
+const handwriteStepText = computed(() => {
+  const s = handwriteStep.value
+  if (!s) return ''
+  if (s.status === 'preparing') return t('winterboard.remote.step.preparing')
+  if (s.status === 'writing') return t('winterboard.remote.step.writing', { n: s.written + 1, m: s.total })
+  if (s.status === 'done') return t('winterboard.remote.step.done', { m: s.total })
+  if (s.status === 'refused') return t(`winterboard.remote.step.reason.${s.reason ?? 'error'}`)
+  return s.total ? t('winterboard.remote.step.progress', { n: s.written, m: s.total }) : ''
+})
 /** Фаза панелі фото — позначка на «+ Фото», поки аркуш закритий, а фото ще в дорозі */
 const photoPhase = ref('idle')
 const photoBadge = computed<{ text: string; tone: 'busy' | 'ok' | 'warn' } | null>(() => {
@@ -1021,6 +1049,7 @@ const channel = useRemoteChannel({
     assistantOpen.value = typeof s.assistantOpen === 'boolean' ? s.assistantOpen : null
     recording.value = s.recording ?? null
     recordingResult.value = s.recordingResult ?? null
+    handwriteStep.value = s.handwriteStep ?? null
     applyAssistantReply(s.assistantReply)
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
@@ -1187,7 +1216,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   | 'assistant.ask' | 'assistant.answer'
-  | 'card.handwrite'
+  | 'card.handwrite' | 'card.handwrite_next'
   | RemoteRecordingCmd
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false

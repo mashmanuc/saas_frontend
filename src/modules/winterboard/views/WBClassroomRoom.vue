@@ -625,7 +625,7 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
-import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
+import { handwriteStepState, handwriteWithFeedback, hasStepTarget, nextStepWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { imageReadingTarget } from '../board/imageReadingTarget'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
@@ -1206,6 +1206,7 @@ const presence = usePresence({
 // є єдиний writer класу, тож локальні дії з команд телефона персистяться
 // штатно. Учень пульта не має (enabled=false → команди ігноруються).
 const showRemoteModal = ref(false)
+const classroomRemoteView = createRemoteViewAdapter(store as any)
 const boardRemote = useBoardRemote({
   sessionId: resolvedSessionId,
   store: {
@@ -1218,7 +1219,7 @@ const boardRemote = useBoardRemote({
   undo: () => handleUndo(),
   sendMessage: (data) => presence.sendMessage(data),
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
-  view: createRemoteViewAdapter(store as any),
+  view: classroomRemoteView,
   // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
   // розбір показується друкованим, як «Показати розбір». 18.10: з правом Інтегралика — коротким записом.
   handwrite: (asset: any) => {
@@ -1227,6 +1228,18 @@ const boardRemote = useBoardRemote({
       if (fresh.data?.showSolution) return
       store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
     }, undefined, { canSolve: canSolveHandwrite.value })
+  },
+  // v1.32: «✍️ Наступний рядок» — один крок розв'язку на натиск; стан — «Крок N з M» на пульті.
+  handwriteNext: () => {
+    const page = store.pages[store.currentPageIndex]
+    const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
+    void nextStepWithFeedback({ canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => classroomRemoteView.handwriteTarget() })
+  },
+  handwriteStep: () => {
+    const page = store.pages[store.currentPageIndex]
+    const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
+    const target = hasStepTarget(store as any, { canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => classroomRemoteView.handwriteTarget() })
+    return { ...handwriteStepState(page as any), target }
   },
 })
 

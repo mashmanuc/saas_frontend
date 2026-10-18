@@ -104,6 +104,8 @@ export interface RemoteStateDetail {
   recording?: RemoteRecordingInfo
   /** v1.28 — відповідь на останню команду запису від Дзеркала */
   recordingResult?: RemoteRecordingResult
+  /** v1.32 — покрокове письмо: «Крок N з M» і стан (закриті набори, як на сервері). */
+  handwriteStep?: RemoteHandwriteStep
 }
 
 export type RemoteAssistantReplyStatus = 'thinking' | 'reply' | 'confirm' | 'done' | 'error' | 'cancelled'
@@ -129,6 +131,37 @@ export function parseRemoteAssistantReply(raw: any): RemoteAssistantReplyDetail 
 }
 
 /** v1.18: закритий набір, як на сервері; інше — поля немає. */
+/** v1.32: стан покрокового письма розв'язку на ноутбуці. */
+export interface RemoteHandwriteStep {
+  status: 'idle' | 'preparing' | 'writing' | 'done' | 'refused'
+  written: number
+  total: number
+  reason?: string
+  /** Є що писати наступним натиском (на сторінці без карток задач — виділена вирізка з PDF тощо). */
+  target?: boolean
+}
+
+const HANDWRITE_STEP_STATUSES = new Set(['idle', 'preparing', 'writing', 'done', 'refused'])
+const HANDWRITE_STEP_REASONS = new Set([
+  'no_task', 'many_tasks', 'unsure', 'mismatch', 'not_readable', 'unsupported', 'solver_unavailable', 'no_space',
+  'blocked', 'no_solution', 'elsewhere', 'error',
+])
+
+/** v1.32: `handwrite_step` — ті самі правила, що на сервері; зіпсоване — поля немає. */
+export function parseRemoteHandwriteStep(raw: unknown): RemoteHandwriteStep | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const v = raw as Record<string, unknown>
+  const ok = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 99
+  if (!HANDWRITE_STEP_STATUSES.has(String(v.status)) || !ok(v.written) || !ok(v.total) || v.written > v.total) return undefined
+  const out: RemoteHandwriteStep = { status: v.status as RemoteHandwriteStep['status'], written: v.written, total: v.total }
+  if (typeof v.target === 'boolean') out.target = v.target
+  if (v.status === 'refused') {
+    if (!HANDWRITE_STEP_REASONS.has(String(v.reason))) return undefined
+    out.reason = String(v.reason)
+  }
+  return out
+}
+
 export function parseRemoteBusy(raw: unknown): 'saving_template' | undefined {
   return raw === 'saving_template' ? 'saving_template' : undefined
 }
@@ -401,6 +434,8 @@ export function useRemoteChannel(opts: {
         if (recording) detail.recording = recording
         const recordingResult = parseRemoteRecordingResult(msg.recording_result)
         if (recordingResult) detail.recordingResult = recordingResult
+        const handwriteStep = parseRemoteHandwriteStep(msg.handwrite_step)
+        if (handwriteStep) detail.handwriteStep = handwriteStep
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

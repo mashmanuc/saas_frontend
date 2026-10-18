@@ -11,6 +11,9 @@
  * пише»; «PDF → вирізав задачу → розв'язати поруч»): задача без розв'язку, картка чи картинка
  * (вирізка з PDF) — розв'язок дає Інтегралик (`/v1/handwriting/solve/`; умову сервер бере з
  * канонічного стану дошки за id об'єкта, не з браузера), далі той самий шлях письма.
+ *
+ * LAW §9 v1.32 (власник 2026-10-18: «згоден з усіма чотирма, роби»): покроково з пульта — кожен натиск пише
+ * один рядок (`handwriteNextStep`). Прогрес — зі штрихів сторінки (`board/handwriteSteps.ts`), не з пам'яті.
  */
 import { ref } from 'vue'
 import apiClient from '@/utils/apiClient'
@@ -18,25 +21,31 @@ import { i18n } from '@/i18n'
 import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import {
-  HANDWRITE_INK, PAGE_OBJECT_LIMIT, answerTextOf, hasHandwritableSolution, isIntegralykSolvable,
-  occupiedRects, wholePageArea, writingAreasNear, type Rect,
+  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, PAGE_OBJECT_LIMIT, answerTextOf,
+  hasHandwritableSolution, isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear, type Rect,
 } from '../board/handwriteSolution'
+import {
+  STEP_SCALES, originalOfCopy, placeStep, sessionOf, shortHash, stepCopyId, stepGap, stepSessions, stepStrokeId,
+  unfinishedSession,
+} from '../board/handwriteSteps'
 import type { WBStroke } from '../types/winterboard'
 
 export interface HandwriteLayoutRequest {
   text: string; width: number; height: number; mode: 'steps' | 'full'; answer: string
   /** Умова задачі в лівому верхньому куті області — текст її обтікає (нова сторінка). */
   float?: { w: number; h: number }
+  /** v1.32: писати рівно цим розміром (покроково — один розмір на весь розв'язок). */
+  scale?: number
 }
 export type HandwriteLayout =
-  | { fits: true; scale: number; size: number; w: number; h: number; duration_ms: number; strokes: Array<{ p: number[][]; t: number }> }
-  | { fits: false; needed_height: number | null }
+  | { fits: true; scale: number; size: number; w: number; h: number; duration_ms: number; strokes: Array<{ p: number[][]; t: number }>; steps?: string[] }
+  | { fits: false; needed_height: number | null; steps?: string[] }
 
 /** 422 від сервера: перекладач цієї конструкції не знає — розбір лишається друкованим. */
 export class HandwriteUnsupported extends Error {}
 
 /** Чесні відмови розв'язку Інтегралика (тіло відповіді `/solve/`: `{error}`). */
-export type SolveRefusal = 'no_task' | 'unsure' | 'mismatch' | 'not_readable' | 'unsupported' | 'solver_unavailable'
+export type SolveRefusal = 'no_task' | 'many_tasks' | 'unsure' | 'mismatch' | 'not_readable' | 'unsupported' | 'solver_unavailable'
 export type SolveOutcome = { text: string; answer: string } | { error: SolveRefusal }
 
 export type HandwriteResult =
@@ -45,6 +54,8 @@ export type HandwriteResult =
   | { status: 'unsupported'; detail: string }
   | { status: 'busy' | 'blocked' | 'no_solution' | 'no_space' }
   | { status: Exclude<SolveRefusal, 'unsupported'> }
+  /** v1.32: усі кроки цього розв'язку вже написано. */
+  | { status: 'done' }
 
 interface PageLike { id: string; width?: number; height?: number; assets: any[]; strokes: any[] }
 
@@ -57,7 +68,7 @@ export interface HandwriteStore {
   redoStack: Array<{ apply: () => void; revert: () => void }>
   addStroke: (stroke: WBStroke, opts?: { skipHistory?: boolean; pageId?: string }) => void
   deleteStroke: (id: string, opts?: { skipHistory?: boolean }) => void
-  addPageUndoable: (opts?: { afterCurrent?: boolean }) => string
+  addPageUndoable: (opts?: { afterCurrent?: boolean; inheritLook?: boolean }) => string
   addAsset: (asset: any, pageId: string, opts?: { skipHistory?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
   /** Висота, яку показує полотно на поточній сторінці (добірка задач буває вищою за аркуш). */
@@ -83,7 +94,7 @@ const MAX_UNDO = 100
  * приблизно в хвилину: перепитує, лише якщо від натискання минуло менше 30 с (`solve.REASK_IF_FASTER_THAN`).
  */
 const SOLVE_TIMEOUT_MS = 90_000
-const SOLVE_REFUSALS: ReadonlySet<string> = new Set(['no_task', 'unsure', 'mismatch', 'not_readable', 'unsupported'])
+const SOLVE_REFUSALS: ReadonlySet<string> = new Set(['no_task', 'many_tasks', 'unsure', 'mismatch', 'not_readable', 'unsupported'])
 
 let active: { stop: () => void } | null = null
 let seq = 0
@@ -167,6 +178,8 @@ export async function handwriteTaskSolution(
 ): Promise<HandwriteResult> {
   if (active || handwriteBusyId.value !== null) return { status: 'busy' }
   if (!hasHandwritableSolution(asset)) return { status: 'no_solution' }
+  const continued = await continueOpenSteps(asset, depsIn, opts)
+  if (continued) return continued
   return exclusive(asset.id, async () => {
     const deps = depsIn ?? await defaultDeps()
     const boardId = deps.store.workspaceId
@@ -203,6 +216,8 @@ export async function solveAndHandwrite(
   if (hasHandwritableSolution(asset)) return handwriteTaskSolution(asset, depsIn, opts)
   if (active || handwriteBusyId.value !== null) return { status: 'busy' }
   if (!opts.canSolve || !isIntegralykSolvable(asset)) return { status: 'no_solution' }
+  const continued = await continueOpenSteps(asset, depsIn, opts)
+  if (continued) return continued
   return exclusive(asset.id, async () => {
     const deps = depsIn ?? await defaultDeps()
     const boardId = deps.store.workspaceId
@@ -277,7 +292,7 @@ async function writeSolution(
   let pageId = page.id
   let copy: any = null
   if (chosen.newPage) {
-    pageId = store.addPageUndoable({ afterCurrent: true })
+    pageId = store.addPageUndoable({ afterCurrent: true, inheritLook: true })
     if (!pageId) return { status: 'no_space' }
     // Копія, а не перенос (власник 17.10): задача лишається на своїй сторінці. Відповідь і розбір
     // у копії картки задачі сховані — їх і пише рука; картка й картинка копіюються як є.
@@ -291,16 +306,34 @@ async function writeSolution(
 
   const { area, layout } = chosen
   const run = ++seq
-  const strokes: WBStroke[] = layout.strokes.map((s, i) => ({
-    id: `hw-${Date.now().toString(36)}-${run}-${i}`,
+  const strokes = toStrokes(layout, area.x, area.y, (i) => `hw-${Date.now().toString(36)}-${run}-${i}`)
+  const times = layout.strokes.map((s) => s.t)
+  return drawStrokes(deps, writable, pageId, strokes, times, copy, chosen.newPage)
+}
+
+function toStrokes(
+  layout: Extract<HandwriteLayout, { fits: true }>, x0: number, y0: number, idOf: (i: number) => string,
+): WBStroke[] {
+  return layout.strokes.map((s, i) => ({
+    id: idOf(i),
     tool: 'pen',
     color: HANDWRITE_INK,
     size: layout.size,
     opacity: 1,
-    points: s.p.map(([x, y]) => ({ x: Math.round((x + area.x) * 10) / 10, y: Math.round((y + area.y) * 10) / 10 })),
+    points: s.p.map(([x, y]) => ({ x: Math.round((x + x0) * 10) / 10, y: Math.round((y + y0) * 10) / 10 })),
   }) as WBStroke)
-  const times = layout.strokes.map((s) => s.t)
+}
 
+/**
+ * Штрихи на сторінку `pageId` по одному в темпі руки (`times` — мс від початку). Один крок «Скасувати» на весь
+ * виклик — кладемо одразу, щоб і скасування посеред письма прибрало написане й зупинило руку; «Повернути» кладе
+ * цілим. Дошка, сторінка чи режим змінились — письмо зупиняється.
+ */
+function drawStrokes(
+  deps: HandwriteDeps, writable: () => boolean, pageId: string, strokes: WBStroke[], times: number[],
+  copy: any, newPage: boolean,
+): Promise<HandwriteResult> {
+  const { store } = deps
   return new Promise<HandwriteResult>((resolve) => {
     let written = 0
     let stopped = false
@@ -339,13 +372,379 @@ async function writeSolution(
       store.addStroke(strokes[i], { skipHistory: true, pageId })
       written = i + 1
       if (written >= strokes.length) {
-        finish({ status: 'written', strokes: written, pageId, newPage: chosen!.newPage, ...(copy ? { copiedTaskId: copy.id } : {}) })
+        finish({ status: 'written', strokes: written, pageId, newPage, ...(copy ? { copiedTaskId: copy.id } : {}) })
         return
       }
       cancelTimer = deps.schedule(() => tick(i + 1), Math.max(0, times[i + 1] - times[i]))
     }
     cancelTimer = deps.schedule(() => tick(0), Math.max(0, times[0] ?? 0))
   })
+}
+
+// ── LAW §9 v1.32 · покроково з пульта ───────────────────────────────────────────────────────────────────────
+
+export type StepReason = SolveRefusal | 'no_space' | 'blocked' | 'no_solution' | 'elsewhere' | 'error'
+
+/** Стан для пульта (`remote.state.handwrite_step`): «Крок N з M», «готую…», «пишу…», «Готово», причина відмови. */
+export interface StepState {
+  status: 'idle' | 'preparing' | 'writing' | 'done' | 'refused'
+  written: number
+  total: number
+  reason?: StepReason
+  /** Є що писати наступним натиском (Р1) — пульт показує «✍️ Наступний рядок» і на сторінці без карток задач. */
+  target?: boolean
+}
+
+export type StepResult =
+  | { status: 'written'; from: number; to: number; total: number }
+  | { status: 'done'; total: number }
+  | { status: 'busy' }
+  | { status: 'stopped' }
+  | { status: 'refused'; reason: StepReason; detail?: string; image?: boolean }
+
+export interface StepOptions extends SolveOptions {
+  /** Р1, друге правило: один виділений на ноутбуці об'єкт. */
+  selected?: AnchorAsset | null
+  /** Р1, третє правило: як у `card.handwrite` — розгорнута / у фокусі пульта / перша задача. */
+  fallback?: () => AnchorAsset | null
+  /** Р4: ✍ на ноутбуці посеред покрокового — саме цей об'єкт і всі кроки, що лишилися. */
+  force?: AnchorAsset | null
+  all?: boolean
+}
+
+/** Пауза між кроками, коли решту дописуємо одразу (Р4). */
+const STEP_PAUSE_MS = 450
+/** Стеля сервера для `handwrite_step` (written/total ≤ 99). */
+const STEP_MAX = 99
+
+const stepPhase = ref<{ phase: 'preparing' | 'writing'; written: number; total: number } | null>(null)
+const stepRefusal = ref<{ reason: StepReason; written: number; total: number } | null>(null)
+/** Кроки розв'язку об'єкта в цій вкладці — щоб не питати сервер на кожен натиск (він і сам кешує). */
+const stepsCache = new Map<string, { steps: string[]; hash: string }>()
+
+/** Забути кроки, запам'ятовані у вкладці (тести; «нова вкладка»). Прогрес на дошці лишається (І1). */
+export function clearHandwriteStepsCache(): void {
+  stepsCache.clear()
+  stepRefusal.value = null
+}
+
+type FitLayout = Extract<HandwriteLayout, { fits: true }>
+interface Column { x: number; w: number; k: number; scale: number }
+interface Planned { step: number; x: number; y: number; layout: FitLayout }
+
+function canWriteSteps(asset: AnchorAsset | null | undefined, canSolve: boolean): asset is AnchorAsset {
+  return !!asset && (hasHandwritableSolution(asset) || (canSolve && isIntegralykSolvable(asset)))
+}
+
+/** Оригінал за відбитком id (копії зі сторінок продовження — не оригінал). */
+function originalByHash(store: HandwriteStore, obj: string): AnchorAsset | null {
+  for (const p of store.pages) {
+    for (const a of p.assets ?? []) {
+      if (a && !originalOfCopy(a.id) && shortHash(String(a.id)) === obj) return a as AnchorAsset
+    }
+  }
+  return null
+}
+
+function asOriginal(store: HandwriteStore, asset: AnchorAsset | null | undefined): AnchorAsset | null {
+  if (!asset) return null
+  const obj = originalOfCopy(asset.id)
+  return obj ? originalByHash(store, obj) : asset
+}
+
+/** Р1: незавершений на сторінці → виділений на ноутбуці → як `card.handwrite`. */
+function stepTarget(store: HandwriteStore, page: PageLike, opts: StepOptions): AnchorAsset | null {
+  const canSolve = opts.canSolve === true
+  if (opts.force) {
+    const forced = asOriginal(store, opts.force)
+    return canWriteSteps(forced, canSolve) ? forced : null
+  }
+  const open = unfinishedSession(page)
+  if (open) {
+    const orig = originalByHash(store, open.obj)
+    if (canWriteSteps(orig, canSolve)) return orig
+  }
+  const sel = asOriginal(store, opts.selected)
+  if (canWriteSteps(sel, canSolve)) return sel
+  const fb = asOriginal(store, opts.fallback?.() ?? null)
+  return canWriteSteps(fb, canSolve) ? fb : null
+}
+
+/**
+ * Кроки розв'язку — рядки запису від `/solution/` (`steps`): з правом Інтегралика — короткий запис сервера;
+ * задача банку без нього (чи сервер відмовив, чи перекладач не знає запису) — формули з картки, як у ✍.
+ */
+async function stepsOf(target: AnchorAsset, canSolve: boolean, boardId: string, deps: HandwriteDeps):
+Promise<{ steps: string[]; hash: string } | { error: StepReason; detail?: string }> {
+  const key = `${boardId}:${target.id}:${canSolve ? 'brief' : 'steps'}`
+  const hit = stepsCache.get(key)
+  if (hit) return hit
+  const bank = hasHandwritableSolution(target)
+  const sources: Array<{ text: string; answer: string; mode: 'steps' | 'full' }> = []
+  if (canSolve) {
+    let solved: SolveOutcome
+    try {
+      solved = await (deps.fetchSolve ?? defaultFetchSolve)(boardId, target.id)
+    } catch (err) {
+      if (!bank) throw err
+      solved = { error: 'solver_unavailable' }   // розв'язок у картці є — пишемо його
+    }
+    if (!('error' in solved)) sources.push({ text: solved.text, answer: solved.answer, mode: 'full' })
+    else if (!bank) return { error: solved.error }
+  }
+  if (bank) sources.push({ text: String(target.data.solution), answer: answerTextOf(target.data), mode: 'steps' })
+  let detail = ''
+  for (const src of sources) {
+    try {
+      const probe = await deps.fetchLayout({ text: src.text, width: 1100, height: 1080, mode: src.mode, answer: src.answer })
+      const steps = (probe.steps ?? []).filter((x) => x.trim())
+      if (!steps.length || steps.length > STEP_MAX) continue
+      const got = { steps, hash: shortHash(steps.join('\n')) }
+      stepsCache.set(key, got)
+      return got
+    } catch (err) {
+      if (!(err instanceof HandwriteUnsupported)) throw err
+      detail = err.message
+    }
+  }
+  return { error: sources.length ? 'unsupported' : 'no_solution', ...(detail ? { detail } : {}) }
+}
+
+function scaleIndex(scale: number): number {
+  const k = STEP_SCALES.indexOf(scale)
+  return k >= 0 ? k : STEP_SCALES.length - 1
+}
+
+/** Перший крок: місце й розмір — як у ✍ (увесь запис поруч із об'єктом), далі стовпчик лишається тим самим (І4). */
+async function firstColumn(
+  deps: HandwriteDeps, page: PageLike, anchor: AnchorAsset, steps: string[], pageW: number, pageH: number,
+): Promise<{ col: Column; top: number } | null> {
+  const task: Rect = { x: anchor.x, y: anchor.y, w: anchor.w, h: anchor.h }
+  for (const area of writingAreasNear(task, occupiedRects(page), pageW, pageH)) {
+    const l = await deps.fetchLayout({
+      text: steps.join('\n'), width: Math.floor(area.w), height: Math.floor(area.h), mode: 'full', answer: '',
+    })
+    if (l.fits) return { col: { x: area.x, w: area.w, k: scaleIndex(l.scale), scale: l.scale }, top: area.y }
+  }
+  return null
+}
+
+/** Нова сторінка продовження: копія задачі в куті, стовпчик праворуч від неї (вузько — під нею). */
+async function newPageColumn(
+  deps: HandwriteDeps, anchor: AnchorAsset, steps: string[], pageW: number, pageH: number, scale?: number,
+): Promise<{ col: Column; top: number; copyAt: { x: number; y: number } } | null> {
+  const area = wholePageArea(pageW, pageH)
+  if (anchor.w > area.w || area.y + anchor.h > pageH - 20) return null
+  const sideX = area.x + anchor.w + HANDWRITE_GAP
+  const side = area.x + area.w - sideX >= HANDWRITE_MIN_W
+  const x = side ? sideX : area.x
+  const w = side ? area.x + area.w - sideX : area.w
+  const top = side ? area.y : area.y + anchor.h + HANDWRITE_GAP
+  if (pageH - HANDWRITE_MARGIN - top < 60) return null
+  let k: number
+  if (scale) {
+    k = scaleIndex(scale)
+  } else {
+    const l = await deps.fetchLayout({
+      text: steps.join('\n'), width: Math.floor(w), height: Math.floor(pageH - HANDWRITE_MARGIN - top), mode: 'full', answer: '',
+    })
+    k = l.fits ? scaleIndex(l.scale) : STEP_SCALES.length - 1
+  }
+  return { col: { x, w, k, scale: STEP_SCALES[k] }, top, copyAt: { x: area.x, y: area.y } }
+}
+
+async function layoutStep(deps: HandwriteDeps, text: string, col: Column): Promise<FitLayout | null> {
+  const l = await deps.fetchLayout({ text, width: Math.floor(col.w), height: 1080, mode: 'full', answer: '', scale: col.scale })
+  return l.fits ? l : null
+}
+
+/**
+ * Розкласти кроки `from..to`: на поточній сторінці — під попереднім кроком, в обхід усього, що там є (І3); що не
+ * влізло — на нову сторінку з копією задачі (як у ✍). На новій сторінці теж не влізло — решта до наступного натиску.
+ */
+async function planSteps(
+  deps: HandwriteDeps, page: PageLike & { strokes: any[]; assets: any[] }, anchor: AnchorAsset, steps: string[],
+  from: number, to: number, start: { col: Column; top: number } | null, pageW: number, pageH: number,
+): Promise<{ here: Planned[]; col: Column | null; there?: { planned: Planned[]; col: Column; copyAt: { x: number; y: number } } } | { error: StepReason }> {
+  const here: Planned[] = []
+  let i = from
+  if (start) {
+    const gap = stepGap(start.col.scale)
+    const extra: Rect[] = []
+    let y = start.top
+    let count = page.strokes.length + page.assets.length
+    for (; i <= to; i++) {
+      const l = await layoutStep(deps, steps[i - 1], start.col)
+      if (!l) return { error: 'no_space' }
+      const top = placeStep(page, start.col.x, y, { w: l.w, h: l.h }, pageH, gap, extra)
+      if (top === null || count + l.strokes.length > PAGE_OBJECT_LIMIT) break
+      here.push({ step: i, x: start.col.x, y: top, layout: l })
+      extra.push({ x: start.col.x, y: top, w: l.w, h: l.h })
+      count += l.strokes.length
+      y = top + l.h + gap
+    }
+    if (i > to) return { here, col: start.col }
+  }
+  const np = await newPageColumn(deps, anchor, steps, pageW, pageH, start?.col.scale)
+  if (!np) return here.length ? { here, col: start?.col ?? null } : { error: 'no_space' }
+  const gap = stepGap(np.col.scale)
+  const blank = { strokes: [], assets: [] }
+  const extra: Rect[] = [{ x: np.copyAt.x, y: np.copyAt.y, w: anchor.w, h: anchor.h }]
+  const there: Planned[] = []
+  let y = np.top
+  for (; i <= to; i++) {
+    const l = await layoutStep(deps, steps[i - 1], np.col)
+    if (!l) break
+    const top = placeStep(blank, np.col.x, y, { w: l.w, h: l.h }, pageH, gap, extra)
+    if (top === null) break
+    there.push({ step: i, x: np.col.x, y: top, layout: l })
+    extra.push({ x: np.col.x, y: top, w: l.w, h: l.h })
+    y = top + l.h + gap
+  }
+  if (!here.length && !there.length) return { error: 'no_space' }
+  return { here, col: start?.col ?? null, ...(there.length ? { there: { planned: there, col: np.col, copyAt: np.copyAt } } : {}) }
+}
+
+function stepStrokes(
+  planned: Planned[], col: Column, obj: string, hash: string, total: number, nonce: string,
+): { strokes: WBStroke[]; times: number[] } {
+  const strokes: WBStroke[] = []
+  const times: number[] = []
+  let offset = 0
+  for (const p of planned) {
+    strokes.push(...toStrokes(p.layout, p.x, p.y, (n) => stepStrokeId({
+      obj, text: hash, step: p.step, total, k: col.k, x: col.x, w: col.w, nonce, n,
+    })))
+    times.push(...p.layout.strokes.map((st) => st.t + offset))
+    offset = (times[times.length - 1] ?? offset) + STEP_PAUSE_MS
+  }
+  return { strokes, times }
+}
+
+function refuse(reason: StepReason, s?: { written: number; total: number } | null, detail?: string, image?: boolean): StepResult {
+  stepRefusal.value = { reason, written: s?.written ?? 0, total: s?.total ?? 0 }
+  return { status: 'refused', reason, ...(detail ? { detail } : {}), ...(image ? { image } : {}) }
+}
+
+/**
+ * LAW §9 v1.32: один натиск «✍️ Наступний рядок» — один крок розв'язку (з `all` — усі, що лишилися, Р4).
+ * Що вже написано, береться зі штрихів поточної сторінки (І1): перезавантаження, інша сторінка й повернення
+ * нічого не ламають. Пише ноутбук штатними `stroke_add`, ніколи поверх написаного (І3), один крок —
+ * одне «Скасувати» (І5). Поки пише — новий натиск нічого не додає (І7).
+ */
+export async function handwriteNextStep(opts: StepOptions, depsIn?: HandwriteDeps): Promise<StepResult> {
+  if (active || handwriteBusyId.value !== null) return { status: 'busy' }
+  stepRefusal.value = null
+  const deps = depsIn ?? await defaultDeps()
+  const { store, sync } = deps
+  const boardId = store.workspaceId
+  const page = store.pages[store.currentPageIndex]
+  const writable = () => store.mode === 'edit' && sync.mode === 'SYNC' && !sync.inputLocked && store.workspaceId === boardId
+  if (!page || !boardId || !writable()) return refuse('blocked')
+  const target = stepTarget(store, page, opts)
+  if (!target) return refuse('no_solution')
+  const image = target.type === 'image'
+  const obj = shortHash(String(target.id))
+  const open = stepSessions(page).find((x) => x.obj === obj && x.written < x.total) ?? null
+  handwriteBusyId.value = target.id
+  stepPhase.value = { phase: 'preparing', written: open?.written ?? 0, total: open?.total ?? 0 }
+  try {
+    const got = await stepsOf(target, opts.canSolve === true, boardId, deps)
+    if ('error' in got) return refuse(got.error, open, got.detail, image)
+    if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return refuse('blocked', open)
+    const total = got.steps.length
+    const session = sessionOf(page, obj, got.hash)
+    if (session && session.written >= session.total) return { status: 'done', total }
+    if (!session) {
+      // Той самий розв'язок продовжується на іншій сторінці — там і продовжувати, не починати вдруге.
+      for (const p of store.pages) {
+        const other = p.id === page.id ? null : sessionOf(p, obj, got.hash)
+        if (other && other.written < other.total) return refuse('elsewhere', other)
+        if (other) return { status: 'done', total }
+      }
+    }
+    const from = session ? session.written + 1 : 1
+    const to = opts.all ? total : from
+    const pageW = page.width ?? 1920
+    const pageH = page.height ?? 1080
+    let start: { col: Column; top: number } | null
+    if (session) {
+      const scale = STEP_SCALES[session.k]
+      start = { col: { x: session.x, w: session.w, k: session.k, scale }, top: session.bottom + stepGap(scale) }
+    } else {
+      // Перший крок пишеться біля об'єкта на цій сторінці: оригіналу чи його копії зі сторінки продовження.
+      const anchor = (page.assets.find((a) => a?.id === target.id)
+        ?? page.assets.find((a) => originalOfCopy(a?.id) === obj)) as AnchorAsset | undefined
+      if (!anchor) return refuse('elsewhere')
+      start = await firstColumn(deps, page, anchor, got.steps, pageW, pageH)
+    }
+    stepPhase.value = { phase: 'writing', written: from - 1, total }
+    const plan = await planSteps(deps, page as any, target, got.steps, from, to, start, pageW, pageH)
+    if ('error' in plan) return refuse(plan.error, session)
+    if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return refuse('blocked', session)
+    const nonce = Math.random().toString(36).slice(2, 4).padEnd(2, '0')
+    let last = from - 1
+    if (plan.here.length && plan.col) {
+      const { strokes, times } = stepStrokes(plan.here, plan.col, obj, got.hash, total, nonce)
+      const r = await drawStrokes(deps, writable, page.id, strokes, times, null, false)
+      if (r.status !== 'written') return { status: 'stopped' }
+      last = plan.here[plan.here.length - 1].step
+      stepPhase.value = { phase: 'writing', written: last, total }
+    }
+    if (plan.there) {
+      const pageId = store.addPageUndoable({ afterCurrent: true, inheritLook: true })
+      if (!pageId) return last >= from ? { status: 'written', from, to: last, total } : refuse('no_space', session)
+      // Копія, а не перенос (як у ✍): задача лишається на своїй сторінці; відповідь і розбір у копії сховані.
+      const copy = {
+        ...target, id: stepCopyId(obj), x: plan.there.copyAt.x, y: plan.there.copyAt.y,
+        ...(target.type === 'nmt_task' ? { data: { ...(target.data || {}), showAnswer: false, showSolution: false } } : {}),
+      }
+      store.addAsset(copy, pageId, { skipHistory: true })
+      const { strokes, times } = stepStrokes(plan.there.planned, plan.there.col, obj, got.hash, total, nonce)
+      const r = await drawStrokes(deps, writable, pageId, strokes, times, copy, true)
+      if (r.status !== 'written') return { status: 'stopped' }
+      last = plan.there.planned[plan.there.planned.length - 1].step
+    }
+    return { status: 'written', from, to: last, total }
+  } finally {
+    handwriteBusyId.value = null
+    stepPhase.value = null
+  }
+}
+
+/** Чи знайде наступний натиск, що писати (Р1) — без мережі, лише з того, що на дошці. */
+export function hasStepTarget(store: HandwriteStore, opts: StepOptions): boolean {
+  const page = store.pages[store.currentPageIndex]
+  return !!page && stepTarget(store, page, opts) !== null
+}
+
+/** Стан для пульта: що зробить наступний натиск на цій сторінці. */
+export function handwriteStepState(page: PageLike | null | undefined): StepState {
+  const phase = stepPhase.value
+  if (phase) return { status: phase.phase, written: phase.written, total: phase.total }
+  const r = stepRefusal.value
+  if (r) return { status: 'refused', written: Math.min(r.written, r.total), total: r.total, reason: r.reason }
+  const open = unfinishedSession(page)
+  if (open) return { status: 'idle', written: open.written, total: open.total }
+  const latest = stepSessions(page).sort((a, b) => b.last - a.last)[0]
+  if (latest) return { status: 'done', written: latest.total, total: latest.total }
+  return { status: 'idle', written: 0, total: 0 }
+}
+
+/** Р4: ✍ (ноутбук чи `card.handwrite`) посеред покрокового цього об'єкта — дописати решту одразу. */
+async function continueOpenSteps(asset: AnchorAsset, depsIn: HandwriteDeps | undefined, opts: SolveOptions): Promise<HandwriteResult | null> {
+  const deps = depsIn ?? await defaultDeps()
+  const page = deps.store.pages[deps.store.currentPageIndex]
+  const orig = asOriginal(deps.store, asset) ?? asset
+  const obj = shortHash(String(orig.id))
+  if (!page || !stepSessions(page).some((x) => x.obj === obj && x.written < x.total)) return null
+  const r = await handwriteNextStep({ canSolve: opts.canSolve === true, force: orig, all: true }, deps)
+  if (r.status === 'written') return { status: 'written', strokes: 0, pageId: page.id, newPage: false }
+  if (r.status === 'done' || r.status === 'busy') return { status: r.status }
+  if (r.status === 'stopped') return { status: 'stopped', written: 0 }
+  if (r.reason === 'unsupported') return { status: 'unsupported', detail: r.detail ?? '' }
+  if (r.reason === 'elsewhere' || r.reason === 'error') return { status: 'blocked' }
+  return { status: r.reason }
 }
 
 function tr(key: string): string {
@@ -421,6 +820,8 @@ export async function solveWithFeedback(
     case 'busy': notifyInfo(tr('busy')); break
     case 'blocked': notifyWarning(tr('blocked')); break
     case 'no_task': notifyInfo(tAssistantGlobal('winterboard.handwrite.noTask')); break
+    // Сторінка з купою задач (власник 18.10): не розв'язуємо — учитель вирізає одну.
+    case 'many_tasks': notifyInfo(tr('manyTasks')); break
     // Картинку Інтегралик читав сам — прочитане можна виправити в «Що прочитав Інтегралик».
     case 'unsure': notifyWarning(asset.type === 'image' ? tAssistantGlobal('winterboard.handwrite.unsureImage') : tr('unsure')); break
     case 'mismatch': notifyWarning(tr('mismatch')); break
@@ -428,4 +829,36 @@ export async function solveWithFeedback(
     default: break
   }
   return result
+}
+
+/** «✍️ Наступний рядок» з пульта з поясненням на ноутбуці (пульт бачить те саме у `handwrite_step`). */
+export async function nextStepWithFeedback(opts: StepOptions, depsIn?: HandwriteDeps): Promise<StepResult | null> {
+  let r: StepResult
+  try {
+    r = await handwriteNextStep(opts, depsIn)
+  } catch (err: any) {
+    console.error('[WB:handwrite] step failed', err)
+    stepRefusal.value = { reason: 'error', written: 0, total: 0 }
+    const status = Number(err?.response?.status ?? 0)
+    if (err?.isAxiosError !== true || (err.response && status !== 403 && status < 500)) notifyError(tr('error'))
+    return null
+  }
+  if (r.status === 'busy') notifyInfo(tr('busy'))
+  else if (r.status === 'done') notifyInfo(tr('stepDone'))
+  else if (r.status === 'refused') {
+    switch (r.reason) {
+      case 'unsupported': notifyInfo(tr('unsupportedSolved')); break
+      case 'no_space': notifyWarning(tr('noSpaceSolved')); break
+      case 'blocked': notifyWarning(tr('blocked')); break
+      case 'no_solution': notifyInfo(tr('noStepTarget')); break
+      case 'elsewhere': notifyInfo(tr('elsewhere')); break
+      case 'no_task': notifyInfo(tAssistantGlobal('winterboard.handwrite.noTask')); break
+      case 'many_tasks': notifyInfo(tr('manyTasks')); break
+      case 'unsure': notifyWarning(r.image ? tAssistantGlobal('winterboard.handwrite.unsureImage') : tr('unsure')); break
+      case 'mismatch': notifyWarning(tr('mismatch')); break
+      case 'not_readable': notifyWarning(tAssistantGlobal('winterboard.handwrite.notReadable')); break
+      default: break
+    }
+  }
+  return r
 }

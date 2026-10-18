@@ -9472,6 +9472,27 @@
       "showSolution": "Solution",
       "hideSolution": "Hide solution",
       "handwrite": "✍️ Write solution",
+      "handwriteNext": "✍️ Next line",
+      "step": {
+        "preparing": "Preparing the solution…",
+        "writing": "Writing step {n} of {m}…",
+        "progress": "Step {n} of {m}",
+        "done": "Done — {m} of {m}",
+        "reason": {
+          "no_task": "No task here",
+          "many_tasks": "Several tasks here — cut out one",
+          "unsure": "The answer doesn't match the options — check the task",
+          "mismatch": "The solution doesn't match the key — not writing it",
+          "not_readable": "Couldn't read the picture",
+          "unsupported": "Couldn't write it by hand",
+          "solver_unavailable": "No solution came — press again",
+          "no_space": "No room even on a new page",
+          "blocked": "The board isn't accepting changes right now",
+          "no_solution": "Nothing to write — select a task",
+          "elsewhere": "It continues on another page",
+          "error": "Failed — press again"
+        }
+      },
       "noCards": "No task cards on this page",
       "boardFrozen": "Recording on this board is finished — nothing is being saved.",
       "boardFrozenHint": "On the laptop tap “New recording” in the banner at the top, then the remote works again.",
@@ -11165,7 +11186,11 @@
       "notReadableIntegralka": "Integralka couldn't read the picture.",
       "mismatch": "The solution doesn't match the task's key — not writing it.",
       "unsupportedSolved": "Couldn't write this solution by hand.",
-      "noSpaceSolved": "The solution doesn't fit even on a new page."
+      "noSpaceSolved": "The solution doesn't fit even on a new page.",
+      "stepDone": "The solution is already written.",
+      "elsewhere": "This solution continues on another page — go there.",
+      "noStepTarget": "Nothing to write: select a task or a PDF cut-out.",
+      "manyTasks": "There are several tasks here — cut out one and I'll solve it."
     }
   },
   "storage": {

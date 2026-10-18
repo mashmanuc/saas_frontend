@@ -90,3 +90,39 @@ describe('openPageForPlan — для дій «що показати далі»',
     expect(store.currentPageIndex).toBe(1)
   })
 })
+
+describe('addPageUndoable({ inheritLook: true }) — сторінка продовження розв\'язку рукою (власник 2026-10-18)', () => {
+  it('бере вигляд поточної: колір, візерунок, розмір; колір іде в page_add', () => {
+    const store = useWBStore()
+    seed(store, 1)
+    Object.assign(store.pages[1], { background: 'grid', backgroundColor: '#dbeafe', width: 1600, height: 900 })
+    const ops = track(store)
+    const id = store.addPageUndoable({ afterCurrent: true, inheritLook: true })
+    const page = store.pages.find((p) => p.id === id)!
+    expect(page).toMatchObject({ background: 'grid', backgroundColor: '#dbeafe', width: 1600, height: 900 })
+    expect(pageAdds(ops)[0].payload).toMatchObject({ page: { background: 'grid', backgroundColor: '#dbeafe' } })
+  })
+
+  it('фото чи PDF у фоні не копіюється (це вміст сторінки) — лишається колір', () => {
+    const store = useWBStore()
+    seed(store, 1)
+    Object.assign(store.pages[1], {
+      background: { type: 'image', url: 'https://cdn.m4sh.org/p.png', assetId: 'img-1' }, backgroundColor: '#fce7f3',
+      width: 1240, height: 1754,
+    })
+    const id = store.addPageUndoable({ afterCurrent: true, inheritLook: true })
+    const page = store.pages.find((p) => p.id === id)!
+    expect(page).toMatchObject({ background: 'white', backgroundColor: '#fce7f3' })
+    expect(page.width).toBeUndefined()
+  })
+
+  it('без прапорця — як було: біла сторінка, колір у page_add не шлемо', () => {
+    const store = useWBStore()
+    seed(store, 1)
+    Object.assign(store.pages[1], { background: 'dots', backgroundColor: '#dcfce7' })
+    const ops = track(store)
+    const id = store.addPageUndoable({ afterCurrent: true })
+    expect(store.pages.find((p) => p.id === id)).toMatchObject({ background: 'white', backgroundColor: '#ffffff' })
+    expect((pageAdds(ops)[0].payload as any).page.backgroundColor).toBeUndefined()
+  })
+})

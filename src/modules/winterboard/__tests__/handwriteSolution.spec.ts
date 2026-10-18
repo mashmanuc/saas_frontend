@@ -213,7 +213,7 @@ describe('handwriteTaskSolution', () => {
     runAll()
     const res = await done
     expect(res).toMatchObject({ status: 'written', strokes: 2, pageId: 'p2', newPage: true })
-    expect(store.addPageUndoable).toHaveBeenCalledWith({ afterCurrent: true })
+    expect(store.addPageUndoable).toHaveBeenCalledWith({ afterCurrent: true, inheritLook: true })
     // запит для нової сторінки — з умовою в кутку
     const calls = (deps.fetchLayout as any).mock.calls
     const lastReq = calls[calls.length - 1][0]
