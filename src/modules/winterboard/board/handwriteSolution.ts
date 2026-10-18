@@ -20,6 +20,14 @@ export const HANDWRITE_MIN_H = 110
 /** `boardStore.canAddObject` — 600 об'єктів на сторінку. */
 export const PAGE_OBJECT_LIMIT = 600
 export const HANDWRITE_INK = '#1e3a8a'
+/**
+ * Найбільша область, яку розкладає сервер (`apps/handwriting/api.py`: ширина ≤ 1920, висота ≤ 1080),
+ * — більшу він відкидає (400). Сторінка буває вищою: згенерована добірка задач тримає запас під розбори
+ * (з 18.10, до 2000 на ряд). Тоді пишемо у верхній частині вільного місця — більше одному розв'язку й
+ * не треба (власник 18.10: «не появляється розв'язок, коли я натискаю»).
+ */
+export const LAYOUT_MAX_W = 1920
+export const LAYOUT_MAX_H = 1080
 
 interface TaskData {
   solution?: unknown
@@ -106,10 +114,14 @@ function overlaps(a: Rect, b: Rect): boolean {
 /**
  * Найбільша вільна область із лівим верхнім кутом у (x, y): спершу до країв сторінки,
  * далі кожну перешкоду обрізаємо або справа, або знизу — як лишається більша площа.
- * Перешкода, що накриває сам кут, — області немає.
+ * Перешкода, що накриває сам кут, — області немає. Не більша за `LAYOUT_MAX_*`.
  */
 export function freeAreaFrom(x: number, y: number, rects: Rect[], pageW: number, pageH: number): Rect | null {
-  const area: Rect = { x, y, w: pageW - HANDWRITE_MARGIN - x, h: pageH - HANDWRITE_MARGIN - y }
+  const area: Rect = {
+    x, y,
+    w: Math.min(pageW - HANDWRITE_MARGIN - x, LAYOUT_MAX_W),
+    h: Math.min(pageH - HANDWRITE_MARGIN - y, LAYOUT_MAX_H),
+  }
   if (area.w < HANDWRITE_MIN_W || area.h < HANDWRITE_MIN_H) return null
   for (let guard = 0; guard < 500; guard++) {
     const hit = rects.find((r) => overlaps(area, r))
@@ -132,7 +144,11 @@ export function writingAreasNear(task: Rect, rects: Rect[], pageW: number, pageH
   return [right, below].filter((a): a is Rect => a !== null)
 }
 
-/** Уся сторінка без полів — для нової сторінки. */
+/** Уся сторінка без полів — для нової сторінки (не більша за `LAYOUT_MAX_*`). */
 export function wholePageArea(pageW: number, pageH: number): Rect {
-  return { x: HANDWRITE_MARGIN, y: HANDWRITE_MARGIN, w: pageW - 2 * HANDWRITE_MARGIN, h: pageH - 2 * HANDWRITE_MARGIN }
+  return {
+    x: HANDWRITE_MARGIN, y: HANDWRITE_MARGIN,
+    w: Math.min(pageW - 2 * HANDWRITE_MARGIN, LAYOUT_MAX_W),
+    h: Math.min(pageH - 2 * HANDWRITE_MARGIN, LAYOUT_MAX_H),
+  }
 }

@@ -60,6 +60,10 @@ export interface HandwriteStore {
   addPageUndoable: (opts?: { afterCurrent?: boolean }) => string
   addAsset: (asset: any, pageId: string, opts?: { skipHistory?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
+  /** Висота, яку показує полотно на поточній сторінці (добірка задач буває вищою за аркуш). */
+  currentPageCanvasHeight?: number
+  /** Висота звичайного аркуша — її має нова сторінка. */
+  pageHeight?: number
 }
 
 export interface HandwriteDeps {
@@ -232,7 +236,10 @@ async function writeSolution(
   if (!asset) return { status: 'blocked' }
 
   const pageW = page.width ?? 1920
-  const pageH = page.height ?? 1080
+  // Місце шукаємо в межах того, що показує полотно: згенерована добірка задач вища за аркуш (18.10),
+  // інша сторінка — рівно аркуш. Нова сторінка — звичайний аркуш (`addPageUndoable` висоти не задає).
+  const pageH = store.currentPageCanvasHeight ?? page.height ?? 1080
+  const newPageH = store.pageHeight ?? 1080
   const req = (area: Rect, float?: { w: number; h: number }): HandwriteLayoutRequest => ({
     text: solved.text, width: Math.floor(area.w), height: Math.floor(area.h),
     mode, answer: solved.answer, ...(float ? { float } : {}),
@@ -252,9 +259,9 @@ async function writeSolution(
     // Біля задачі місця немає — нова сторінка, і туди ж копія умови (власник 17.10: «треба і умову
     // переносити, а розв'язок описувати кругом умови»): умова в лівому верхньому куті, рукопис її обтікає.
     if (!chosen) {
-      const area = wholePageArea(pageW, pageH)
+      const area = wholePageArea(pageW, newPageH)
       // Копія стає в кут з полем; висока задача може сягати майже низу сторінки — тоді рукопис лише праворуч.
-      if (asset.w <= area.w && area.y + asset.h <= pageH - 20) {
+      if (asset.w <= area.w && area.y + asset.h <= newPageH - 20) {
         const layout = await deps.fetchLayout(req(area, { w: Math.ceil(asset.w), h: Math.ceil(asset.h) }))
         if (layout.fits && layout.strokes.length + 1 <= PAGE_OBJECT_LIMIT) chosen = { area, layout, newPage: true }
       }
@@ -346,6 +353,17 @@ function tr(key: string): string {
 }
 
 /**
+ * Збій натискання — словами, якщо apiClient його не показав. Мережу, 403 і 5xx він показує сам; решту
+ * відповідей (400 відкинутої області, 404 вимкненого на сервері Інтегралика, 429 ліміту) мовчки
+ * пропускає — тоді кажемо тут, щоб натискання не зникло (власник 18.10: кнопка «ніби спрацювала»,
+ * а нічого не з'явилось). Не мережева помилка (вада коду) — теж тут.
+ */
+function reportUnshownError(err: any): void {
+  const status = Number(err?.response?.status ?? 0)
+  if (err?.isAxiosError !== true || (err.response && status !== 403 && status < 500)) notifyError(tr('error'))
+}
+
+/**
  * Те саме з поясненням для вчителя (ноутбук і пульт). Коли рукою не вийшло — розбір
  * показується друкованим (`revealPrinted`, як «Показати розбір»), щоб учні не лишились без нього.
  */
@@ -359,9 +377,8 @@ export async function handwriteWithFeedback(
   try {
     result = await handwriteTaskSolution(asset, depsIn, opts)
   } catch (err: any) {
-    // Мережа й 5xx уже показав apiClient; тут — лише те, чого він не бачив.
     console.error('[WB:handwrite] failed', err)
-    if (!err?.response) notifyError(tr('error'))
+    reportUnshownError(err)
     return null
   }
   switch (result.status) {
@@ -395,11 +412,7 @@ export async function solveWithFeedback(
     result = await solveAndHandwrite(asset, depsIn, opts)
   } catch (err: any) {
     console.error('[WB:handwrite] solve failed', err)
-    // Мережу, 403 і 5xx уже показав apiClient; решту відповідей (404 вимкненого на сервері
-    // Інтегралика, 429 ліміту) він мовчки пропускає — тоді кажемо тут, щоб натискання не зникло.
-    // Не мережева помилка (вада коду) — теж тут.
-    const status = Number(err?.response?.status ?? 0)
-    if (err?.isAxiosError !== true || (err.response && status !== 403 && status < 500)) notifyError(tr('error'))
+    reportUnshownError(err)
     return null
   }
   switch (result.status) {

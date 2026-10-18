@@ -3,15 +3,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  HANDWRITE_INK, HANDWRITE_MIN_W, answerTextOf, freeAreaFrom, hasHandwritableSolution,
-  isIntegralykSolvable, occupiedRects, writingAreasNear,
+  HANDWRITE_INK, HANDWRITE_MIN_W, LAYOUT_MAX_H, LAYOUT_MAX_W, answerTextOf, freeAreaFrom, hasHandwritableSolution,
+  isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear,
 } from '../board/handwriteSolution'
 import {
   HandwriteUnsupported, handwriteBusyId, handwriteTaskSolution, handwriteWithFeedback, isHandwriting,
   solveAndHandwrite, solveWithFeedback, stopHandwriting, type HandwriteDeps, type HandwriteLayout, type SolveOutcome,
 } from '../composables/useHandwriteSolution'
 import { cardWindowActions } from '../board/windowActions'
-import { notifyInfo, notifyWarning } from '@/utils/notify'
+import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 
 vi.mock('@/utils/notify', () => ({ notifyError: vi.fn(), notifyInfo: vi.fn(), notifyWarning: vi.fn() }))
 vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
@@ -68,6 +68,13 @@ describe('board/handwriteSolution', () => {
     const only = writingAreasNear(TASK, busy, 1920, 1080)
     expect(only.every((a) => a.x + a.w <= 900 || a.y > 1080)).toBe(true)
   })
+
+  it('сторінка вища за аркуш (добірка задач, 18.10) — область не більша, ніж розкладає сервер', () => {
+    expect(freeAreaFrom(60, 480, [], 1920, 2120)).toEqual({ x: 60, y: 480, w: 1820, h: LAYOUT_MAX_H })
+    expect(freeAreaFrom(40, 40, [], 4000, 1080)!.w).toBe(LAYOUT_MAX_W)
+    expect(wholePageArea(1920, 2120)).toEqual({ x: 40, y: 40, w: 1840, h: LAYOUT_MAX_H })
+    expect(wholePageArea(1920, 1080)).toEqual({ x: 40, y: 40, w: 1840, h: 1000 })
+  })
 })
 
 // ─── письмо ─────────────────────────────────────────────────────────────────
@@ -79,13 +86,23 @@ function layout(n: number, size = 3): HandwriteLayout {
   }
 }
 
+/** Як сервер (`apps/handwriting/api.py`): область поза 200…1920 × 60…1080 — 400 `invalid_area`. */
+function serverRejects(req: { width: number; height: number }): boolean {
+  return !(req.width >= 200 && req.width <= 1920 && req.height >= 60 && req.height <= 1080)
+}
+
 function makeDeps(opts: {
   layouts?: HandwriteLayout[]; unsupported?: boolean; assets?: any[]; solve?: () => Promise<SolveOutcome>
+  /** Висота поточної сторінки, як її показує полотно (добірка задач — вища за аркуш). */
+  pageHeight?: number
 } = {}) {
-  const page = { id: 'p1', assets: (opts.assets ?? [TASK]) as any[], strokes: [] as any[] }
+  const page: any = { id: 'p1', assets: (opts.assets ?? [TASK]) as any[], strokes: [] as any[] }
+  if (opts.pageHeight) page.height = opts.pageHeight
   const pages = [page]
   const store = {
     mode: 'edit', workspaceId: 'board-1', currentPageIndex: 0, pages,
+    pageHeight: 1080,
+    get currentPageCanvasHeight() { return pages[store.currentPageIndex]?.height ?? 1080 },
     undoStack: [] as any[], redoStack: [{ apply() {}, revert() {} }] as any[],
     addStroke: vi.fn((s: any, o?: { skipHistory?: boolean; pageId?: string }) => {
       const pg = pages.find((p) => p.id === (o?.pageId ?? pages[store.currentPageIndex].id))!
@@ -116,7 +133,8 @@ function makeDeps(opts: {
   const deps: HandwriteDeps = {
     store: store as any,
     sync,
-    fetchLayout: vi.fn(async () => {
+    fetchLayout: vi.fn(async (req: any) => {
+      if (serverRejects(req)) throw Object.assign(new Error('400'), { isAxiosError: true, response: { status: 400 } })
       if (opts.unsupported) throw new HandwriteUnsupported('\\hbar')
       return layouts.length > 1 ? layouts.shift()! : layouts[0]
     }),
@@ -239,6 +257,48 @@ describe('handwriteTaskSolution', () => {
     const { deps } = makeDeps({ unsupported: true })
     await handwriteWithFeedback(TASK, reveal, deps)
     expect(reveal).toHaveBeenCalledTimes(1)
+  })
+
+  // Прод 18.10 (власник: «не появляється розв'язок, коли я натискаю»): згенерована добірка задач —
+  // два ряди карток на сторінці вищій за аркуш; область під карткою була вищою, ніж приймає сервер.
+  const ROW = [
+    { ...TASK, id: 'gen-a', x: 60, y: 60, w: 860, h: 380 },
+    { ...TASK, id: 'gen-b', x: 940, y: 60, w: 860, h: 380 },
+  ]
+
+  it('добірка задач вища за аркуш — рукопис під карткою, область у межах сервера', async () => {
+    const { deps, page, runAll } = makeDeps({ assets: ROW, pageHeight: 2120 })
+    const done = handwriteTaskSolution(ROW[1], deps)
+    await flush()
+    runAll()
+    expect(await done).toMatchObject({ status: 'written', newPage: false })
+    const reqs = (deps.fetchLayout as any).mock.calls.map((c: any[]) => c[0])
+    expect(reqs.some(serverRejects)).toBe(false)
+    expect(page.strokes.length).toBeGreaterThan(0)
+    const ys = page.strokes.flatMap((s: any) => s.points.map((p: any) => p.y))
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(ROW[1].y + ROW[1].h)
+  })
+
+  it('після високої добірки нова сторінка — звичайний аркуш, область під нього', async () => {
+    const nofit: HandwriteLayout = { fits: false, needed_height: 2000 }
+    const { deps, runAll } = makeDeps({ assets: ROW, pageHeight: 2120, layouts: [nofit, layout(2)] })
+    const done = handwriteTaskSolution(ROW[1], deps)
+    await flush()
+    runAll()
+    expect(await done).toMatchObject({ status: 'written', newPage: true })
+    const calls = (deps.fetchLayout as any).mock.calls
+    expect(calls[calls.length - 1][0]).toMatchObject({ height: 1080 - 80, float: { w: 860, h: 380 } })
+  })
+
+  it('сервер відкинув запит — учитель бачить «не вийшло», а не тишу', async () => {
+    vi.mocked(notifyError).mockClear()
+    const { deps } = makeDeps()
+    ;(deps.fetchLayout as any).mockRejectedValueOnce(
+      Object.assign(new Error('400'), { isAxiosError: true, response: { status: 400 } }))
+    expect(await handwriteWithFeedback(TASK, vi.fn(), deps)).toBeNull()
+    expect(notifyError).toHaveBeenCalledWith('winterboard.handwrite.error')
+    expect(isHandwriting()).toBe(false)
+    expect(handwriteBusyId.value).toBeNull()
   })
 })
 

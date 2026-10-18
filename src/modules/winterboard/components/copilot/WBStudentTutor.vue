@@ -128,9 +128,12 @@ onMounted(async () => {
   // Два незалежні гейти, як у 8a-3: прапорець і роль. BE однаково
   // відповість 403 не-учню — але показувати канал не можна нікому, крім
   // учня цієї сесії.
+  // Роль питаємо лише при увімкненому прапорці: вимкненому каналу роль не потрібна, а запит
+  // ролі зайвий раз червонів у консолі (власник 18.10: «прибери ці червоні рядки»).
   if (!sessionId.value) return
   try {
-    const [status] = await Promise.all([winterboardApi.copilotStatus(), fetchRole()])
+    const status = await winterboardApi.copilotStatus()
+    if (status?.tutor) await fetchRole()
     live.value = !!status?.tutor && isStudent.value
   } catch {
     live.value = false

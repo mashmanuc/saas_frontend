@@ -94,9 +94,12 @@ const { steps, draft, justSaved, failed, canSubmit, submit, load } =
 onMounted(async () => {
   // Два незалежні гейти: прапорець фічі і роль. Поле бачить ЛИШЕ учень —
   // тьютору BE однаково відповість 403, але показувати йому поле не можна.
+  // Роль питаємо лише при увімкненому прапорці: поле є під КОЖНОЮ задачею банку, і запит ролі
+  // від кожної картки червонів у консолі (власник 18.10: «прибери ці червоні рядки»).
   if (!sessionId.value) return
   try {
-    const [status] = await Promise.all([winterboardApi.copilotStatus(), fetchRole()])
+    const status = await winterboardApi.copilotStatus()
+    if (status?.live) await fetchRole()
     live.value = !!status?.live && isStudent.value
   } catch {
     live.value = false

@@ -53,6 +53,19 @@ describe('WBStepInput', () => {
     expect(w.find('[data-testid="step-input"]').exists()).toBe(false)
   })
 
+  it('вимкнений Copilot — роль не питаємо (поле під кожною задачею, власник 18.10: «прибери червоні рядки»)', async () => {
+    ;(winterboardApi.copilotStatus as any).mockResolvedValueOnce({ live: false })
+    mountIt()
+    await flushPromises()
+    expect(roleState.fetchRole).not.toHaveBeenCalled()
+  })
+
+  it('увімкнений Copilot — роль питаємо', async () => {
+    mountIt()
+    await flushPromises()
+    expect(roleState.fetchRole).toHaveBeenCalledTimes(1)
+  })
+
   it('не показується тьютору — навіть коли фіча увімкнена', async () => {
     roleState.isStudent.value = false
     const w = mountIt()

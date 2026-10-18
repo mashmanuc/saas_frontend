@@ -54,6 +54,16 @@ describe('WBStudentTutor', () => {
     expect(w.find('[data-testid="student-tutor"]').exists()).toBe(false)
   })
 
+  it('канал вимкнений — роль не питаємо (власник 18.10: «прибери червоні рядки»); увімкнений — питаємо', async () => {
+    ;(winterboardApi.copilotStatus as any).mockResolvedValueOnce({ live: true, tutor: false })
+    mountIt()
+    await flushPromises()
+    expect(roleState.fetchRole).not.toHaveBeenCalled()
+    mountIt()
+    await flushPromises()
+    expect(roleState.fetchRole).toHaveBeenCalledTimes(1)
+  })
+
   it('не показується тьютору', async () => {
     roleState.isStudent.value = false
     const w = mountIt()
