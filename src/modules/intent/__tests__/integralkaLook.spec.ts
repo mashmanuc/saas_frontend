@@ -78,7 +78,8 @@ describe('вибір і назви', () => {
   it('відмінки в українській', () => {
     expect(ASSISTANT_NAMES.integralka.uk).toMatchObject({
       nom: 'Інтегралка', gen: 'Інтегралки', dat: 'Інтегралці', acc: 'Інтегралку', ins: 'Інтегралкою',
-      role: 'AI-помічниця', roleAcc: 'AI-помічницю',
+      // Власник 2026-10-18: ім'я помічника одне — без «AI».
+      role: 'помічниця', roleAcc: 'помічницю',
     })
     expect(ASSISTANT_NAMES.integralyk.uk.acc).toBe('Інтегралика')
     expect(integralykServerDisabledMessage('integralka')).toBe('Інтегралку вимкнено на цьому сервері.')

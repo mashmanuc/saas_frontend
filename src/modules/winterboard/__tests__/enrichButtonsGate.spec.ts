@@ -33,6 +33,7 @@ describe('гейт кнопок ✨ / 🔎', () => {
   it('INV-ENRICH-3: fail-closed — стан за замовчуванням і на помилці порожній', () => {
     expect(SRC).toMatch(/const hasLessonArtifact = ref\(false\)/)
     expect(SRC).toMatch(/catch \{[\s\S]{0,180}hasLessonArtifact\.value = false/)
-    expect(SRC).toMatch(/if \(!isConstructor \|\| !sid \|\| !isOwner\) \{ hasLessonArtifact\.value = false; return \}/)
+    // Власник 2026-10-18: ✨/🔎 прибрано — без прапорця `isLessonEnrichEnabled` артефакт не питаємо.
+    expect(SRC).toMatch(/if \(!lessonEnrichEnabled \|\| !isConstructor \|\| !sid \|\| !isOwner\) \{ hasLessonArtifact\.value = false; return \}/)
   })
 })

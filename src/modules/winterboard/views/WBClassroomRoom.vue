@@ -436,6 +436,7 @@
       @audio-deleted="handleAudioDeleted"
       @link-saved="handleLinkSaved"
       @link-removed="handleLinkRemoved"
+      :image-reading="selectedImageForReading"
     />
 
     <!-- P3: YouTube insert modal -->
@@ -626,6 +627,7 @@ import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { handwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
+import { imageReadingTarget } from '../board/imageReadingTarget'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
 import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
@@ -1130,6 +1132,24 @@ provide(ADD_TOOL_AT_CLIENT_KEY, (mime: string, payloadStr: string, clientX: numb
   })
 })
 
+/**
+ * «Вставити інструмент» від Інтегралика — і в класі (власник 2026-10-18, «один Інтегралик»).
+ * Раніше подію слухала лише звичайна дошка, і в класі Інтегралик казав «✓», нічого не вставивши.
+ * Той самий санкціонований шлях, що й «+» трею (`addAtPosition`), у центр аркуша — як вставка з
+ * бічної панелі вище. Вставка з пульта (`pageId` — підготовча сторінка) тут не обробляється:
+ * без `handled` boardActions чесно відмовить, а не скаже «Готово».
+ */
+function onIntegralykInsert(e: Event): void {
+  const d = (e as CustomEvent).detail
+  if (!classroomRole.isTeacher.value || !d?.mime || d.pageId) return
+  contentDrop.addAtPosition(d.mime, d.payload ?? '{}', {
+    x: (store.pageWidth ?? 800) / 2,
+    y: (store.pageHeight ?? 600) / 2,
+  })
+}
+onMounted(() => window.addEventListener('m4sh:wb-insert', onIntegralykInsert))
+onBeforeUnmount(() => window.removeEventListener('m4sh:wb-insert', onIntegralykInsert))
+
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 
@@ -1144,6 +1164,18 @@ const canSolveHandwrite = computed(() =>
     user: authStore.user, route, settings: profileStore.settings, boardOwnerId: store.ownerId,
   })
 )
+
+/**
+ * «Що прочитав Інтегралик» — і в класі, як на звичайній дошці (власник 2026-10-18, «один Інтегралик»:
+ * та сама дія Інтегралика всюди). Те саме правило, що й ✍ вище: учитель-власник дошки з Інтеграликом.
+ */
+const selectedImageForReading = computed(() => imageReadingTarget({
+  enabled: canSolveHandwrite.value,
+  boardId: store.workspaceId,
+  boardOwnerId: store.ownerId,
+  selectedIds: store.selectedIds,
+  assets: store.currentPage?.assets,
+}))
 
 // Аварійні записи SAVE_BLOCKED прив'язані до акаунта (ТЗ §7).
 watch(() => authStore.user?.id, (id) => opsSync.setBlockedOwner(id), { immediate: true })

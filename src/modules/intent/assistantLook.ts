@@ -33,7 +33,7 @@ export interface AssistantNameForms {
   dat: string
   acc: string
   ins: string
-  /** «AI-помічник» / «AI-помічниця». */
+  /** «помічник» / «помічниця» (без «AI» — власник 2026-10-18: ім'я помічника одне). */
   role: string
   /** Знахідний відмінок ролі. */
   roleAcc: string
@@ -42,15 +42,15 @@ export interface AssistantNameForms {
 export const ASSISTANT_NAMES: Record<IntegralykLook, { uk: AssistantNameForms; en: AssistantNameForms }> = {
   integralyk: {
     uk: { nom: 'Інтегралик', gen: 'Інтегралика', dat: 'Інтегралику', acc: 'Інтегралика', ins: 'Інтеграликом',
-      role: 'AI-помічник', roleAcc: 'AI-помічника' },
+      role: 'помічник', roleAcc: 'помічника' },
     en: { nom: 'Integralyk', gen: 'Integralyk', dat: 'Integralyk', acc: 'Integralyk', ins: 'Integralyk',
-      role: 'AI assistant', roleAcc: 'AI assistant' },
+      role: 'assistant', roleAcc: 'assistant' },
   },
   integralka: {
     uk: { nom: 'Інтегралка', gen: 'Інтегралки', dat: 'Інтегралці', acc: 'Інтегралку', ins: 'Інтегралкою',
-      role: 'AI-помічниця', roleAcc: 'AI-помічницю' },
+      role: 'помічниця', roleAcc: 'помічницю' },
     en: { nom: 'Integralka', gen: 'Integralka', dat: 'Integralka', acc: 'Integralka', ins: 'Integralka',
-      role: 'AI assistant', roleAcc: 'AI assistant' },
+      role: 'assistant', roleAcc: 'assistant' },
   },
 }
 

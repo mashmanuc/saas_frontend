@@ -119,12 +119,13 @@ describe('рядки про помічника у вибраному вигля�
     }), { global: { plugins: [pinia, i18n] } })
   }
 
-  it('«Інтегралка прочитала», «Написати Інтегралці…»; інші ключі — без змін', async () => {
+  it('«Інтегралка прочитала», «Інтегралці — на наступну сторінку…»; інші ключі — без змін', async () => {
     useProfileStore().settings = { integralyk_appearance: 'integralka' }
     const w = probe(['winterboard.imageReading.title', 'winterboard.remote.assistant.placeholder', 'winterboard.imageReading.save'])
     const ps = w.findAll('p').map((p) => p.text())
     expect(ps[0]).toBe('Інтегралка прочитала')
-    expect(ps[1]).toBe('Написати Інтегралці…')
+    // Власник 2026-10-18: на пульті мінімальний підпис — текст іде на наступну сторінку.
+    expect(ps[1]).toBe('Інтегралці — на наступну сторінку…')
     expect(ps[2]).toBe(uk.winterboard.imageReading.save)
   })
 

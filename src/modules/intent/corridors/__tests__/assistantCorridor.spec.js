@@ -172,14 +172,12 @@ describe('Коридори · підключення палітри й пуль�
   const palette = read('modules/intent/CommandPalette.vue')
   const remote = read('modules/winterboard/views/WBRemoteView.vue')
 
-  it('палітра і пульт показують ТОЙ САМИЙ селектор із ТОГО САМОГО реєстру (kill-проби 10, 13)', () => {
-    expect(palette).toContain("import CorridorSelector from './corridors/CorridorSelector.vue'")
-    expect(remote).toContain("import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'")
-    expect(remote).toContain("import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'")
-    // обидва входи передають у селектор РІВНО реєстр сервера — без фільтрів і підмін (kill-проба 13)
-    expect(palette).toContain(':registry="corridor.state.registry"')
-    expect(remote).toContain(':registry="corridorRegistry"')
-    expect(remote).toContain('corridorRegistry.value = reg?.enabled ? reg : null')
+  // Власник 2026-10-18 («один Інтегралик» §4): вибір «Предмет / Мова» прибрано і з палітри, і з пульта —
+  // предмет визначається сам (з «Моїх предметів» і з фрази).
+  it('селектора предмета немає ні в палітрі, ні на пульті', () => {
+    expect(palette).not.toContain('<CorridorSelector')
+    expect(remote).not.toContain('<CorridorSelector')
+    expect(remote).not.toContain('fetchCorridorRegistry')
     // жодного власного списку предметів/мов у пульті чи палітрі
     for (const src of [palette, remote]) {
       expect(src).not.toMatch(/['"]history['"]\s*,\s*['"]math['"]|['"]math['"]\s*,\s*['"]history['"]/)
@@ -189,12 +187,9 @@ describe('Коридори · підключення палітри й пуль�
   it('палітра застосовує коридор із відповіді parse і слухає намір пульта', () => {
     expect(palette).toContain('if (r?.corridor) corridor.applyCorridor(r.corridor)')
     expect(palette).toContain('window.addEventListener(EVENT_COMMAND, onCorridorRemoteCommand)')
-    expect(palette).toMatch(/v-if="corridor\.state\.enabled && currentBoardId && !isEnglishGuide"/)
   })
 
-  it('пульт шле лише намір: subject.*/language.* — команди, не REST і не board action (kill-проба 5)', () => {
-    expect(remote).toContain("sendCmd('subject.set', { subject: value })")
-    expect(remote).toContain("sendCmd('language.set', { language: value })")
+  it('пульт не пише контекст помічника сам: ні REST, ні board action (kill-проба 5)', () => {
     expect(remote).not.toContain('patchAssistantContext')
     expect(remote).not.toContain('runBoardAction')
     expect(remote).not.toContain('parseAi')

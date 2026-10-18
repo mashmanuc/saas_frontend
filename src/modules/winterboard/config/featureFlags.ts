@@ -199,6 +199,23 @@ const LS_KEY_COURSES = 'courses_studio_enabled'
  * 2. Env variable: VITE_COURSES_STUDIO_ENABLED=true/false
  * 3. Default: false
  */
+/**
+ * ✨ «Збагатити урок» і 🔎 «Рецензія уроку» у шапці конструктора (власник 2026-10-18: «так,
+ * прибираємо обидва» — `saas_docs/domains/intent/INTEGRALYK_UNIFICATION_2026-10-18.md` §0).
+ * Масові кнопки «зроби все за мене» писали сухо; корисне зерно (підказка до вибраної задачі)
+ * переходить до Інтегралика. Код і сервер лишаються — кнопок немає.
+ *
+ * 1. localStorage `lesson_enrich_enabled=true` — лише для перевірки на стенді
+ * 2. VITE_LESSON_ENRICH_ENABLED=true
+ * 3. Default: false
+ */
+const LS_KEY_ENRICH = 'lesson_enrich_enabled'
+export function isLessonEnrichEnabled(): boolean {
+  const lsValue = getLocalStorage(LS_KEY_ENRICH)
+  if (lsValue !== null) return lsValue === 'true'
+  return getEnvVar('VITE_LESSON_ENRICH_ENABLED') === 'true'
+}
+
 export function isCoursesStudioEnabled(): boolean {
   const lsValue = getLocalStorage(LS_KEY_COURSES)
   if (lsValue !== null) {

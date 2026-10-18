@@ -561,19 +561,8 @@
           {{ t('winterboard.remote.switchAccount') }}
         </button>
 
-        <!-- v1.6 (LAW §9): предмет і мова матеріалу Інтегралика — той самий селектор і той
-             самий реєстр, що в палітрі на ноутбуці. Пульт шле лише намір; пише ноутбук. -->
-        <CorridorSelector
-          v-if="corridorRegistry && assistantView"
-          class="wb-remote__corridor"
-          compact
-          :registry="corridorRegistry"
-          :subject="assistantView.subject"
-          :language="assistantView.language"
-          :disabled="!isReady"
-          @select-subject="onRemoteSubject"
-          @select-language="onRemoteLanguage"
-        />
+        <!-- v1.6 (LAW §9) — вибір предмета й мови матеріалу з пульта прибрано (власник 2026-10-18,
+             «один Інтегралик» §4): предмет визначається сам, як і на ноутбуці. -->
 
         <button type="button" class="wb-remote__settings-refresh" data-testid="settings-refresh" @click="refreshBoard(); closeSheet()">
           {{ t('winterboard.remote.refresh') }}
@@ -646,8 +635,6 @@ import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
-import CorridorSelector from '@/modules/intent/corridors/CorridorSelector.vue'
-import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
@@ -990,33 +977,8 @@ function confirmVideoPick(): void {
   }
 }
 
-/** v1.6 — предмет і мова матеріалу з ноутбука; реєстр — той самий, що в палітрі. */
-const assistant = ref<RemoteStateDetail['assistant'] | null>(null)
-const corridorRegistry = ref<any>(null)
-const assistantView = computed(() => {
-  const a = assistant.value
-  if (!a) return null
-  return {
-    subject: { mode: a.subjectMode, resolved: a.subject, locked: a.subjectMode === 'locked' ? a.subject : null, source: a.subjectSource },
-    language: { mode: a.languageMode, content: a.contentLanguage, locked: a.languageMode === 'locked' ? a.contentLanguage : null, source: '' },
-  }
-})
-function onRemoteSubject(value: string) {
-  if (value === 'auto') sendCmd('subject.auto')
-  else sendCmd('subject.set', { subject: value })
-}
-function onRemoteLanguage(value: string) {
-  if (value === 'auto') sendCmd('language.auto')
-  else sendCmd('language.set', { language: value })
-}
 // Вигляд помічника — налаштування акаунта; на телефоні їх ще ніхто не завантажив.
 onMounted(() => { void loadAssistantSettings() })
-onMounted(() => {
-  // 404 — коридори цьому акаунту не ввімкнено: селектора на пульті немає.
-  fetchCorridorRegistry(locale.value === 'en' ? 'en' : 'uk')
-    .then((reg: any) => { corridorRegistry.value = reg?.enabled ? reg : null })
-    .catch(() => { corridorRegistry.value = null })
-})
 
 /** Причина, чому пульт не керує (null = усе гаразд або ще шукаємо) */
 type ReasonKey = 'noActiveBoard' | 'wrongAccount' | 'tooManyConnections' | 'boardNotAnswering' | 'noToken' | 'serverRejected' | 'unavailable' | 'boardFrozen'
@@ -1050,7 +1012,6 @@ const channel = useRemoteChannel({
     pageCount.value = s.pageCount
     cards.value = s.cards ?? null
     questions.value = s.questions ?? null
-    assistant.value = s.assistant ?? null
     videos.value = s.videos ?? []
     photoResult.value = s.photo ?? null
     caps.value = s.caps ?? null

@@ -5940,12 +5940,12 @@
     "limitPaywall": {
       "title": "Plan limit reached",
       "titleByKey": {
-        "monthly_ai_requests": "AI request limit reached",
+        "monthly_ai_requests": "Integralyk request limit reached",
         "monthly_exports": "Export limit reached",
         "monthly_imports": "Import limit reached"
       },
       "bodyByKey": {
-        "monthly_ai_requests": "You've used all AI requests this month on your current plan. Upgrade to PRO for a higher limit.",
+        "monthly_ai_requests": "You've used all Integralyk requests this month on your current plan. Upgrade to PRO for a higher limit.",
         "monthly_exports": "You've used all board exports this month. Upgrade to PRO for unlimited exports.",
         "monthly_imports": "You've used all material imports this month. Upgrade to PRO for a higher limit."
       },
@@ -5993,8 +5993,8 @@
         "gb": "{n} GB",
         "mb": "{n} MB"
       },
-      "monthlyAi": "{value} AI requests per month",
-      "monthlyAiUnlimited": "Unlimited AI requests",
+      "monthlyAi": "{value} Integralyk requests per month",
+      "monthlyAiUnlimited": "Unlimited Integralyk requests",
       "monthlyExports": "{value} board exports per month",
       "monthlyExportsUnlimited": "Unlimited board exports",
       "monthlyImports": "{value} material imports per month",
@@ -9516,7 +9516,7 @@
       },
       "busySaving": "The laptop is saving the template…",
       "busySavingWhy": "Wait — the laptop is saving the template",
-      "holdToTalk": "Talk (hold)",
+      "holdToTalk": "Talk — straight to the board (hold)",
       "listening": "Listening…",
       "voiceUnsupported": "Voice is not available in this browser — buttons still work.",
       "connectPage": {
@@ -9547,8 +9547,8 @@
       },
       "exitToBoards": "Lesson Studio",
       "assistant": {
-        "placeholder": "Write to Integralyk…",
-        "placeholderIntegralka": "Write to Integralka…",
+        "placeholder": "To Integralyk — onto the next page…",
+        "placeholderIntegralka": "To Integralka — onto the next page…",
         "send": "Send",
         "thinking": "Integralyk is thinking…",
         "thinkingIntegralka": "Integralka is thinking…",
@@ -9571,7 +9571,10 @@
         "unavailableHereIntegralka": "Integralka isn’t available here.",
         "noAssistant": "Integralyk on the laptop isn’t available right now.",
         "noAssistantIntegralka": "Integralka on the laptop isn’t available right now.",
-        "unavailable": "AI is unavailable right now — try again later.",
+        "unavailable": "Integralyk is unavailable right now — try again later.",
+        "unavailableIntegralka": "Integralka is unavailable right now — try again later.",
+        "failed": "Integralyk couldn't answer — try again.",
+        "failedIntegralka": "Integralka couldn't answer — try again.",
         "limit": "Your plan limit is reached — see the laptop for details.",
         "maxPages": "The board already has 50 pages — no room for another one.",
         "noAnswer": "Integralyk didn’t answer — try saying it differently.",
@@ -12249,7 +12252,7 @@
       "classroom": "Classroom",
       "winterboard": "Whiteboard",
       "performance": "Performance",
-      "ai": "AI",
+      "ai": "Integralyk",
       "marketplace": "Marketplace",
       "other": "Other"
     },

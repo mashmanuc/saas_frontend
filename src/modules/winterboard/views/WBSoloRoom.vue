@@ -1317,7 +1317,7 @@ import { LIFECYCLE_BLOCK_EVENT, type LifecycleBlockDetail } from '../remote/life
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 // Local Workspace v1 (ТЗ 2026-07-15): локальний режим без auth/бекенду.
 // Стан живе у localStorage; opsSync/recorder/presence НЕ під'єднуються.
-import { isLocalWorkspaceEnabled } from '../config/featureFlags'
+import { isLessonEnrichEnabled, isLocalWorkspaceEnabled } from '../config/featureFlags'
 import {
   loadLocalWorkspace,
   saveLocalWorkspace,
@@ -2227,14 +2227,18 @@ const isSessionOwner = computed(() => {
    доки відповіді нема — кнопок нема. */
 const hasLessonArtifact = ref(false)
 
+// Власник 2026-10-18: ✨ і 🔎 прибрано (`isLessonEnrichEnabled`, типово вимкнено) — без прапорця
+// і артефакт не питаємо.
+const lessonEnrichEnabled = isLessonEnrichEnabled()
 const hasEnrichableLesson = computed(
-  () => !!(constructorMode.value && sessionId.value && isSessionOwner.value && hasLessonArtifact.value),
+  () => !!(lessonEnrichEnabled && constructorMode.value && sessionId.value && isSessionOwner.value
+    && hasLessonArtifact.value),
 )
 
 watch(
   () => [constructorMode.value, sessionId.value, isSessionOwner.value] as const,
   async ([isConstructor, sid, isOwner]) => {
-    if (!isConstructor || !sid || !isOwner) { hasLessonArtifact.value = false; return }
+    if (!lessonEnrichEnabled || !isConstructor || !sid || !isOwner) { hasLessonArtifact.value = false; return }
     try {
       const { shipApi } = await import('@/modules/ship/shipApi')
       const art = await shipApi.getSessionArtifact(sid)

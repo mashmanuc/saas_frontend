@@ -34,10 +34,11 @@ describe('гілка коридорів після злиття з продом'
     expect(lsOverride).toBeLessThan(enGate)          // QA-оверрайд лишається найвищим
   })
 
-  it('селектор коридору лишився в палітрі й бере реєстр із сервера', () => {
+  // Власник 2026-10-18 («один Інтегралик» §4): вибір «Предмет / Мова» з палітри прибрано;
+  // коридор лишився — його рішення приходить з parse і застосовується.
+  it('коридор у палітрі лишився (рішення з parse), селектора немає', () => {
     const palette = read('../CommandPalette.vue')
-    expect(palette).toContain('<CorridorSelector')
-    expect(palette).toContain(':registry="corridor.state.registry"')
+    expect(palette).not.toContain('<CorridorSelector')
     expect(palette).toContain('corridor.applyCorridor(r.corridor)')
   })
 })

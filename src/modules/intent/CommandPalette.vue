@@ -220,21 +220,9 @@
               :aria-label="uiText.minimizeLabel"
             >–</button>
           </div>
-          <!-- Коридори Інтегралика (ТЗ 2026-09-17 §4.1): «Предмет: Авто · Історія» і
-               «Мова матеріалу: Авто · English». Лише коли сервер увімкнув коридори цьому
-               акаунту (404 → нічого) і дошка відкрита. Англійський провідник (EN_GUIDE)
-               інструментів не має — селектора там немає; мова матеріалу в нього НЕ перемикає. -->
-          <CorridorSelector
-            v-if="corridor.state.enabled && currentBoardId && !isEnglishGuide"
-            :registry="corridor.state.registry"
-            :subject="corridor.state.subject"
-            :language="corridor.state.language"
-            :readonly="corridor.state.readonly"
-            :disabled="corridor.state.busy"
-            :error-key="corridor.state.error"
-            @select-subject="onCorridorSubject"
-            @select-language="onCorridorLanguage"
-          />
+          <!-- Власник 2026-10-18 («один Інтегралик», §4): вибір «Предмет / Мова матеріалу» з вікна
+               прибрано — предмет визначається сам (з «Моїх предметів» і з фрази). Стан коридору
+               (`corridor.state`) лишається: з нього беруться підказки й предмет для сервера. -->
 
           <div ref="aiThreadEl" class="cmdp-ai-thread">
             <template v-for="(it, i) in aiThread" :key="i">
@@ -372,7 +360,6 @@ import { reactive } from 'vue'
 import { useLessonPlan } from './lessonPlanApi'
 // Той самий словник, що в Конструкторі: два списки типів розійшлися б за тиждень.
 import { LESSON_TYPE_OPTIONS } from '@/modules/lesson_constructor/lessonTypeRules'
-import CorridorSelector from './corridors/CorridorSelector.vue'
 import { EVENT_COMMAND, EVENT_STATE, EVENT_STATE_REQUEST, useAssistantCorridor } from './corridors/assistantCorridor'
 import {
   EN_GUIDE_NAVIGATION,
@@ -1231,9 +1218,10 @@ async function askAi(phrase) {
     const d = e?.response?.data
     aiPush({
       kind: 'bot',
+      // Власник 2026-10-18: ім'я помічника одне — у текстах учителя «Інтегралик», не «AI».
       text: errorCodeOf(d) === 'AI_UNAVAILABLE'
-        ? 'AI зараз недоступний — спробуйте пізніше.'
-        : humanErrorMessage(e, ERR_MSG, 'Помилка AI'),
+        ? tAssistant('winterboard.remote.assistant.unavailable')
+        : humanErrorMessage(e, ERR_MSG, tAssistant('winterboard.remote.assistant.failed')),
     })
     react('sad')
   } finally {
@@ -2012,7 +2000,7 @@ const remoteAssistant = createRemoteAssistant({
   },
   // Геттер: текст читається в момент відповіді — у вигляді, обраному зараз.
   get serverDisabledText() { return serverDisabledMsg.value },
-  humanError: (e) => humanErrorMessage(e, ERR_MSG, 'Помилка AI'),
+  humanError: (e) => humanErrorMessage(e, ERR_MSG, tAssistant('winterboard.remote.assistant.failed')),
   errorCode: (e) => errorCodeOf(e?.response?.data),
   // Відповіді пульту складає ноутбук — назва помічника у вигляді, який обрав учитель.
   t: (key, params) => tAssistant(key, params),
@@ -2046,6 +2034,9 @@ function onIntegralykAsk(e) {
 
 function onKeydown(e) {
   if (matchesShortcut(e)) {
+    // Власник 2026-10-18: учитель вимкнув Інтегралика («Показувати Інтегралика») — гарячі
+    // клавіші його теж не відкривають (раніше відкривали, хоч маскота й не було).
+    if (!open.value && !showAI.value) return
     e.preventDefault(); open.value ? close() : openPalette()
   } else if (open.value && e.key === 'Escape') {
     mode.value !== 'commands' ? toCommands() : close()
