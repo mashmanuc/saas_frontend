@@ -77,7 +77,7 @@
           :strokes="store.currentStrokes"
           :assets="store.currentAssets"
           :width="store.pageWidth"
-          :height="store.currentPageCanvasHeight"
+          :height="store.pageHeight"
           :zoom="store.zoom"
           @stroke-add="handleStrokeAdd"
           @stroke-update="(s) => store.updateStroke(s)"

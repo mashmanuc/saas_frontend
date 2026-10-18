@@ -367,7 +367,7 @@
           :strokes="store.currentStrokes"
           :assets="store.currentAssets"
           :width="store.pageWidth"
-          :height="store.currentPageCanvasHeight"
+          :height="store.pageHeight"
           :zoom="store.zoom"
           :read-only="isDrawingDisabled"
           :is-tutor="classroomRole.isTeacher.value"

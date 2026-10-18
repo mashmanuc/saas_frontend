@@ -1,110 +1,124 @@
-/** Стендова регресія: п'ять задач, одночасний auto-fit, без втрати ручних позицій. */
+/** Регресія відхиленого потоку: стандартний аркуш, без руху сусідів. */
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync } from 'node:fs'
 import { useWBStore } from '../board/state/boardStore'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
-import { flowOf, managedFlow, reflowGenerated, generatedFitPageH } from '../board/state/generatedTaskFlow'
 import { applyReplayOperation } from '../engine/applyReplayOperation'
+import { planAutoFit } from '../composables/autoFitHeight'
 import type { WBAsset, WBPage } from '../types/winterboard'
 
-const data = (a:WBAsset):Record<string,unknown> => a.data as unknown as Record<string,unknown>
-function page(n=5): WBPage {
-  const members=Array.from({length:n},(_,i)=>`t${i}`)
-  return {id:'p',name:'Задачі',strokes:[],height:60+Math.ceil(n/2)*2020+40,assets:members.map((id,i)=>{
-    const x=60+(i%2)*880,y=60+Math.floor(i/2)*400
-    return {id,type:'nmt_task',src:'',x,y,w:860,h:380,rotation:0,locked:false,
-      data:{version:1,question:'$x^2-1$',showSolution:false,generatedFlow:{version:1,groupId:'p',members,
-        row:Math.floor(i/2),x,y,w:860,h:380,rotation:0,top:60,gap:20,rowLimit:2000}}} as unknown as WBAsset
-  })}
+const data = (a: WBAsset): Record<string, unknown> => a.data as unknown as Record<string, unknown>
+function page(n = 2, legacy = false): WBPage {
+  const members = Array.from({ length: n }, (_, i) => `t${i}`)
+  return { id: 'p', name: 'Задачі', strokes: [], width: 1920,
+    height: legacy ? 6160 : 1080,
+    assets: members.map((id, i) => {
+      const x = 60 + i % 2 * 880, y = 60 + Math.floor(i / 2) * 400
+      return { id, type: 'nmt_task', src: '', x, y, w: 860, h: 380, rotation: 0,
+        data: { version: 1, question: '$x^2-1$', showSolution: false,
+          ...(legacy ? { generatedFlow: { version: 1, groupId: 'p', members,
+            row: Math.floor(i / 2), x, y, w: 860, h: 380, rotation: 0,
+            top: 60, gap: 20, rowLimit: 2000 } } : {}) },
+      } as unknown as WBAsset
+    }) }
 }
-const fit=(a:WBAsset,h:number):WBAsset=>({...a,h,data:{...data(a),autoFitH:h} as unknown as WBAsset['data']})
-function noOverlap(p:WBPage) {
-  for (let i=0;i<p.assets.length;i++) for (const b of p.assets.slice(i+1)) {
-    const a=p.assets[i]
-    expect(a.x<b.x+b.w && b.x<a.x+a.w && a.y<b.y+b.h && b.y<a.y+a.h,`${a.id}/${b.id}`).toBe(false)
-  }
-}
-beforeEach(()=>{flushPendingUpdates();setActivePinia(createPinia())})
-describe('керована нова добірка',()=>{
-  it('усі hosts показують висоту добірки; фон скидає кеш при гідратації розмірів',()=>{
-    for(const host of ['WBSoloRoom','WBConstructorRoom','WBClassroomRoom','WBPublicView','WBContentPreview']) {
-      expect(readFileSync(`src/modules/winterboard/views/${host}.vue`,'utf8'))
-        .toContain(':height="store.currentPageCanvasHeight"')
+const fit = (a: WBAsset, h: number): WBAsset => ({ ...a, h,
+  data: { ...data(a), autoFitH: h } as unknown as WBAsset['data'] })
+beforeEach(() => { flushPendingUpdates(); setActivePinia(createPinia()) })
+
+describe('стандартний аркуш замість generatedFlow', () => {
+  it('усі кімнати мають стандартну висоту; PDF без змін', () => {
+    for (const host of ['WBSoloRoom', 'WBConstructorRoom', 'WBClassroomRoom', 'WBPublicView', 'WBContentPreview']) {
+      const source = readFileSync(`src/modules/winterboard/views/${host}.vue`, 'utf8')
+      expect(source).toContain(':height="store.pageHeight"')
+      expect(source).not.toContain(':height="store.currentPageCanvasHeight"')
     }
-    const source=readFileSync('src/modules/winterboard/components/canvas/WBCanvas.vue','utf8')
-    expect(source).toMatch(/\[wbStore\.currentPageBgColor, props\.width, props\.height\][\s\S]{0,180}layer\?\.clearCache/)
-    expect(readFileSync('src/modules/winterboard/views/WBSoloRoom.vue','utf8'))
-      .toContain('fit(store.currentPageCanvasHeight !== store.pageHeight ? store.pageHeight : undefined)')
+    const canvas = readFileSync('src/modules/winterboard/components/canvas/WBCanvas.vue', 'utf8')
+    expect(canvas).toContain('pageH: props.height')
+    expect(canvas).not.toContain('generatedFitPageH')
+    expect(canvas).not.toContain('initialHeight')
+    expect(canvas).toContain('sheetH: PAGE_HEIGHT')
+    expect(readFileSync('src/modules/winterboard/views/WBSoloRoom.vue', 'utf8'))
+      .not.toContain('fit(store.currentPageCanvasHeight')
   })
-  it('полотно показує збережену висоту добірки; старі сторінки не змінені',()=>{
-    const store=useWBStore();store.pages=[page()]
-    expect(store.currentPageCanvasHeight).toBe(6160)
-    store.pages[0].assets.forEach(a=>{delete data(a).generatedFlow})
-    expect(store.currentPageCanvasHeight).toBe(store.pageHeight)
+  it('старий маркер не розтягує полотно і не переписує збережені дані', () => {
+    const store = useWBStore(); store.pages = [page(5, true)]
+    const saved = JSON.stringify(store.pages)
+    const ops: unknown[] = []; store.onOperation(op => ops.push(op))
+    expect(store.currentPageCanvasHeight).toBe(1080)
+    expect(JSON.stringify(store.pages)).toBe(saved)
+    expect(store.pages[0].height).toBe(6160)
+    expect(ops).toHaveLength(0)
   })
-  it('учень/Replay на вузькому екрані не перекриває записаний наступний ряд',()=>{
-    const p=page()
-    expect(generatedFitPageH(p,p.assets[0],false)).toBe(440)
-    expect(generatedFitPageH(p,p.assets[0],true)).toBe(2060)
-    expect(generatedFitPageH(p,p.assets[4],false)).toBe(2860)
-    expect(generatedFitPageH({...p,assets:[]},p.assets[0],false)).toBeNull()
+  it.each([1, 2])('%i задачі: відкриті картки не перетинаються при 50%%', n => {
+    const store = useWBStore(); store.pages = [page(n)]
+    const before = store.pages[0].assets.map(a => ({ x: a.x, y: a.y, w: a.w }))
+    for (const asset of [...store.pages[0].assets]) {
+      const plan = planAutoFit({ neededPx: 1500, zoom: 0.5, y: asset.y,
+        h: asset.h, pageH: store.pageHeight, canWrite: true })
+      expect(plan).toEqual({ write: 1020, display: null })
+      store.updateAsset(fit(asset, plan.write!))
+    }
+    flushPendingUpdates()
+    expect(store.pages[0].height).toBe(1080)
+    expect(store.pages[0].assets.map(a => ({ x: a.x, y: a.y, w: a.w }))).toEqual(before)
+    expect(store.pages[0].assets.every(a => a.y + a.h <= 1080)).toBe(true)
+    if (n === 2) expect(store.pages[0].assets[0].x + store.pages[0].assets[0].w)
+      .toBeLessThanOrEqual(store.pages[0].assets[1].x)
+    expect(store.undoStack).toHaveLength(0)
   })
-  it.each([1,2,5])('%i задач: одночасні RAF-виміри не повертають старі y',n=>{
-    const store=useWBStore();store.pages=[page(n)]
-    const requests=store.pages[0].assets.map(a=>fit(a,820))
-    requests.forEach(a=>store.updateAsset(a));flushPendingUpdates()
-    noOverlap(store.pages[0]);expect(store.undoStack).toHaveLength(0)
-    expect(store.pages[0].assets.map(a=>a.y)).toEqual(Array.from({length:n},(_,i)=>60+Math.floor(i/2)*840))
-    expect(store.pages[0].assets.every(a=>!!managedFlow(store.pages[0],a))).toBe(true)
+  it.each([false, true])('учень/Replay лише показує обмежену висоту, legacy=%s', legacy => {
+    const p = page(2, legacy), saved = JSON.stringify(p)
+    expect(planAutoFit({ neededPx: 1500, zoom: 0.5, y: 60, h: 380,
+      pageH: 1080, canWrite: false })).toEqual({ write: null, display: 1020 })
+    expect(JSON.stringify(p)).toBe(saved)
   })
-  it.each(['x','y','w','h','rotation','locked','minimized','deleted','marker','height'])(
-    'ручне/невалідне %s припиняє весь потік',key=>{
-      const p=page();const a=p.assets[1] as unknown as Record<string,unknown>
-      if(key==='deleted')p.assets.splice(1,1)
-      else if(key==='marker')data(p.assets[1]).generatedFlow={version:99}
-      else if(key==='height')p.height=1080
-      else a[key]=key==='locked'||key==='minimized'?true:999
-      expect(managedFlow(p,p.assets[0])).toBeNull()
-      expect(reflowGenerated(p,p.assets[0],fit(p.assets[0],820))).toBeNull()
-    })
-  it('не рухає сторонній об’єкт і не мігрує стару картку',()=>{
-    const p=page();const other={id:'hand',type:'image',src:'x',x:1700,y:300,w:100,h:100} as WBAsset
-    p.assets.push(other)
-    const next=reflowGenerated(p,p.assets[0],fit(p.assets[0],820))!
-    expect(next[next.length-1]).toBe(other)
-    delete data(p.assets[0]).generatedFlow
-    expect(reflowGenerated(p,p.assets[0],fit(p.assets[0],820))).toBeNull()
+  it('старі маркери не рухають сусідів і ручні об’єкти', () => {
+    const store = useWBStore(); store.pages = [page(5, true)]
+    store.pages[0].assets.push({ id: 'hand', type: 'image', src: 'x', x: 1700, y: 300, w: 100, h: 100 } as WBAsset)
+    const before = JSON.stringify(store.pages[0].assets.slice(1))
+    const ops: unknown[] = []; store.onOperation(op => ops.push(op))
+    store.updateAsset(fit(store.pages[0].assets[0], 1020)); flushPendingUpdates()
+    expect(JSON.stringify(store.pages[0].assets.slice(1))).toBe(before)
+    expect(store.pages[0].height).toBe(6160)
+    expect(ops).toHaveLength(1)
   })
-  it('розбір → fit → undo → fit → redo лишає одну дію й потік',()=>{
-    const store=useWBStore();store.pages=[page()]
-    const first=()=>store.pages[0].assets[0]
-    store.updateAsset(fit(first(),820));flushPendingUpdates()
-    store.updateAsset({...first(),data:{...data(first()),showSolution:true} as unknown as WBAsset['data']});flushPendingUpdates()
-    store.updateAsset(fit(first(),1600));flushPendingUpdates();noOverlap(store.pages[0])
+  it('розбір → fit → undo → fit → redo залишається однією дією', () => {
+    const store = useWBStore(); store.pages = [page()]
+    const first = () => store.pages[0].assets[0]
+    const other = JSON.stringify(store.pages[0].assets[1])
+    store.updateAsset({ ...first(), data: { ...data(first()), showSolution: true } as unknown as WBAsset['data'] })
+    flushPendingUpdates(); store.updateAsset(fit(first(), 1020)); flushPendingUpdates()
     expect(store.undoStack).toHaveLength(1)
-    store.undo();flushPendingUpdates();expect(data(first()).showSolution).toBe(false)
-    store.updateAsset(fit(first(),820));flushPendingUpdates();expect(store.redoStack).toHaveLength(1)
-    store.redo();flushPendingUpdates();expect(data(first()).showSolution).toBe(true)
-    store.updateAsset(fit(first(),1600));flushPendingUpdates();noOverlap(store.pages[0])
-    expect(managedFlow(store.pages[0],first())).not.toBeNull()
+    store.undo(); flushPendingUpdates(); expect(data(first()).showSolution).toBe(false)
+    store.updateAsset(fit(first(), 700)); flushPendingUpdates(); expect(store.redoStack).toHaveLength(1)
+    store.redo(); flushPendingUpdates(); expect(data(first()).showSolution).toBe(true)
+    expect(JSON.stringify(store.pages[0].assets[1])).toBe(other)
+    expect(store.pages[0].height).toBe(1080)
   })
-  it('пізній height-запит не стирає новий текст',()=>{
-    const store=useWBStore();store.pages=[page()];const before=store.pages[0].assets[0]
-    store.updateAsset(fit(before,820))
-    store.pages[0].assets[0]={...before,data:{...data(before),question:'Нове'} as WBAsset['data']}
-    flushPendingUpdates();expect(data(store.pages[0].assets[0]).question).toBe('Нове')
+  it.each(['question', 'x', 'y', 'w'])('пізній height-запит не стирає нове %s', field => {
+    const store = useWBStore(); store.pages = [page()]
+    const before = store.pages[0].assets[0]
+    store.updateAsset(fit(before, 820))
+    const current = field === 'question'
+      ? { ...before, data: { ...data(before), question: 'Нове' } as WBAsset['data'] }
+      : { ...before, [field]: 99 }
+    store.pages[0].assets[0] = current
+    flushPendingUpdates(); expect(store.pages[0].assets[0]).toEqual(current)
   })
-  it('reload і Replay відтворюють ті самі asset_update без нового writer',()=>{
-    const store=useWBStore();store.pages=[page()];const initial=JSON.parse(JSON.stringify(store.pages))
-    const ops:unknown[]=[];store.onOperation(op=>ops.push(JSON.parse(JSON.stringify(op))))
-    store.pages[0].assets.map(a=>fit(a,820)).forEach(a=>store.updateAsset(a));flushPendingUpdates()
-    const final=JSON.stringify(store.pages)
-    store.pages=JSON.parse(final);expect(managedFlow(store.pages[0],store.pages[0].assets[0])).not.toBeNull()
-    store.setMode('replay');store.pages=initial
-    for(const op of ops)applyReplayOperation(store as never,op as never)
-    expect(JSON.stringify(store.pages)).toBe(final);noOverlap(store.pages[0])
-    expect(ops.every((op:any)=>op.op_type==='asset_update')).toBe(true)
-    expect(flowOf(store.pages[0].assets[4])?.y).toBe(1740)
+  it('reload і Replay відтворюють ті самі asset_update без нового writer', () => {
+    const store = useWBStore(); store.pages = [page()]
+    const initial = JSON.parse(JSON.stringify(store.pages))
+    const ops: unknown[] = []; store.onOperation(op => ops.push(JSON.parse(JSON.stringify(op))))
+    for (const asset of [...store.pages[0].assets]) store.updateAsset(fit(asset, 1020))
+    flushPendingUpdates()
+    const final = JSON.stringify(store.pages)
+    store.pages = JSON.parse(final); expect(store.currentPageCanvasHeight).toBe(1080)
+    store.setMode('replay'); store.pages = initial
+    for (const op of ops) applyReplayOperation(store as never, op as never)
+    expect(JSON.stringify(store.pages)).toBe(final)
+    expect(ops).toHaveLength(2)
+    expect(ops.every((op: any) => op.op_type === 'asset_update')).toBe(true)
   })
 })

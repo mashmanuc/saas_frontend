@@ -1011,7 +1011,6 @@ import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { documentPageAspect, fitDocumentToSheetHeight } from '../../board/documentFit'
 import { planAutoFit } from '../../composables/autoFitHeight'
-import { generatedFitPageH } from '../../board/state/generatedTaskFlow'
 import { useLayerRepaint } from '../../composables/useLayerRepaint'
 import { filterEvidenceCards } from '../../board/evidenceCards'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
@@ -4964,9 +4963,7 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
 
   const data = asset.data as unknown as Record<string, unknown> | undefined
   const known = viewFitH.value.get(assetId)
-  const page = wbStore.currentPage
   const canWrite = canWriteAutoFit(wbStore.mode, props.isTutor !== false)
-  const flowPageH = page && generatedFitPageH(page, asset, canWrite)
   const { write, display } = planAutoFit({
     neededPx,
     zoom: props.zoom,
@@ -4974,8 +4971,8 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
     // Той, хто лише показує, рахує від висоти, яку вже показує, — інакше кожен
     // вимір порівнювався б зі старою висотою зі стану й повторювався вічно.
     h: known ?? asset.h,
-    // Нова керована добірка має запас під кожний ряд; старі/ручні — як раніше.
-    pageH: flowPageH ?? page?.height ?? PAGE_HEIGHT,
+    // Та сама межа, що й видиме стандартне полотно; без запасу під ряди.
+    pageH: props.height,
     lastAutoH: typeof data?.autoFitH === 'number' ? data.autoFitH : undefined,
     canWrite,
   })
@@ -5822,12 +5819,12 @@ function handleTouchEndZoom(): void {
 }
 
 /** Fit entire page in viewport */
-function handleFitToPage(initialHeight?: number): void {
+function handleFitToPage(): void {
   const container = containerRef.value
   if (!container) return
   const zoom = fitToPage(
     props.width,
-    typeof initialHeight === 'number' ? Math.min(props.height, initialHeight) : props.height,
+    props.height,
     container.clientWidth,
     container.clientHeight,
   )

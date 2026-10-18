@@ -131,8 +131,8 @@ export interface NmtTaskData {
    * учасника ручна висота виглядала б як наша й була б затерта.
    */
   autoFitH?: number
-  /** INV-25.13: лише нова явна добірка, не ручне групування. */
-  generatedFlow?: import('../board/state/generatedTaskFlow').GeneratedFlow
+  /** Історичні дані зберігаємо без використання для компонування. */
+  generatedFlow?: unknown
 }
 
 export const NMT_PRESENTATION_SCALE = {

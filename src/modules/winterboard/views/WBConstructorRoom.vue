@@ -132,7 +132,7 @@
           :strokes="displayStrokes"
           :assets="displayAssets"
           :width="store.pageWidth"
-          :height="store.currentPageCanvasHeight"
+          :height="store.pageHeight"
           :zoom="store.zoom"
           :background="displayBackground"
           :is-tutor="true"

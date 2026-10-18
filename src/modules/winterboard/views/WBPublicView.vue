@@ -74,7 +74,7 @@
             :page-id="store.currentPage?.id ?? ''"
             :background="store.currentPage?.background"
             :width="store.pageWidth"
-            :height="store.currentPageCanvasHeight"
+            :height="store.pageHeight"
             :zoom="store.zoom"
             :read-only="true"
             color="#000000"

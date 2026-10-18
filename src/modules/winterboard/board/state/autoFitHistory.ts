@@ -3,6 +3,21 @@ import type { WBAsset } from '../../types/winterboard'
 import { assetCapabilities } from '../objectStandard'
 import { assetsEqualByOpsFields } from './assetEquality'
 
+/** Пізній вимір висоти не має відновлювати вже застарілий текст чи координати. */
+export function rebaseAutoFit(before: WBAsset, current: WBAsset, next: WBAsset): WBAsset {
+  if (!isAutoFitOnlyUpdate(before, next)) return next
+  const stripHeight = (asset: WBAsset): WBAsset => {
+    const data = { ...(asset.data ?? {}) } as Record<string, unknown>
+    delete data.autoFitH
+    return { ...asset, h: 0, data: data as unknown as WBAsset['data'] }
+  }
+  if (!assetsEqualByOpsFields(stripHeight(before), stripHeight(current))) return current
+  return {
+    ...current, h: next.h,
+    data: { ...current.data, autoFitH: next.h } as unknown as WBAsset['data'],
+  }
+}
+
 export function isAutoFitOnlyUpdate(previous: WBAsset, next: WBAsset): boolean {
   if (previous.id !== next.id || assetCapabilities(next.type).contentFit !== 'height'
       || previous.h === next.h) return false

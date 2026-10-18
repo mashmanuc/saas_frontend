@@ -590,7 +590,7 @@
           :strokes="displayStrokes"
           :assets="displayAssets"
           :width="store.pageWidth"
-          :height="store.currentPageCanvasHeight"
+          :height="store.pageHeight"
           :zoom="store.zoom"
           :background="displayBackground"
           :is-tutor="true"
@@ -2364,7 +2364,7 @@ function fitPageNow(): void {
   applyingProgrammaticFit = true
   try {
     // Довга нова добірка відкривається першим читабельним екраном, не мініатюрою.
-    fit(store.currentPageCanvasHeight !== store.pageHeight ? store.pageHeight : undefined)
+    fit()
   } finally {
     applyingProgrammaticFit = false
   }
