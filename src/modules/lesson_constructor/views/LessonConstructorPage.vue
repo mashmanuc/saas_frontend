@@ -273,6 +273,7 @@
           <button
             type="submit"
             class="lc-btn-generate"
+            :class="{ 'lc-btn-generate--busy': isLoading }"
             :disabled="isLoading || !!focusProblem"
           >
             <!-- Власник 2026-10-18: «що він думає, а не просто колесо крутиться». -->
@@ -1080,6 +1081,12 @@ async function handleGenerate() {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Генерує: кнопка не блідне — видно, що Інтегралик думає (власник 2026-10-18). */
+.lc-btn-generate--busy:disabled {
+  opacity: 1;
+  cursor: progress;
 }
 
 /* ── Error ──────────────────────────────────────────────────────────────── */

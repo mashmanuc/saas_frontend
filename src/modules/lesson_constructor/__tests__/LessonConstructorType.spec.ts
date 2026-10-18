@@ -197,6 +197,8 @@ describe('поки генерується урок', () => {
     expect(itg.exists()).toBe(true)
     expect(itg.classes()).toContain('itg-thinking--on')
     expect(w.find('.lc-spinner').exists()).toBe(false)
+    // Кнопка на час генерації не блідне — Інтегралика видно.
+    expect(generateBtn(w).classes()).toContain('lc-btn-generate--busy')
     finish({ session_id: 'sess-1' })
     await new Promise(r => setTimeout(r, 0))
     expect(w.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
