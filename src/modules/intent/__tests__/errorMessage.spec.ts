@@ -61,6 +61,31 @@ describe('errorDetailOf — detail живе у двох різних місця�
 })
 
 describe('humanErrorMessage — що побачить тьютор', () => {
+  it('нестача: показує реальні 10/16, не приховує їх загальною мапою', () => {
+    const detail = 'У перевіреному наборі доступно 10 задач, а запитано 16.'
+    expect(humanErrorMessage(wrap({error:'TASK_SELECTION_FAILED',detail}),MESSAGES)).toBe(detail)
+  })
+
+  it('доступні структуровані числа, коли сервер не передав detail', () => {
+    expect(humanErrorMessage(wrap({error:'task_selection_failed',requested:16,available:10}),MESSAGES))
+      .toContain('Доступно 10 задач, а запитано 16')
+  })
+
+  it('нуль задач — теж реальна нестача', () => {
+    expect(humanErrorMessage(wrap({error:{code:'TASK_SELECTION_FAILED',requested:6,available:0}}),MESSAGES))
+      .toContain('Доступно 0 задач, а запитано 6')
+  })
+
+  it('відмова конкретного кроку зберігає пояснення', () => {
+    const detail = 'Для кроку «Дужки» потрібно 3 задачі, доступно 2.'
+    expect(humanErrorMessage(wrap({error:'TASK_SELECTION_FAILED',detail}),MESSAGES)).toBe(detail)
+  })
+
+  it('хибні числові поля не стають обіцянкою доступності', () => {
+    expect(humanErrorMessage(wrap({error:'TASK_SELECTION_FAILED',requested:'16',available:-1}),MESSAGES))
+      .toBe(MESSAGES.TASK_SELECTION_FAILED)
+  })
+
   it('плоска ВЕЛИКИМИ: мапа працювала й раніше — це не регресія', () => {
     expect(humanErrorMessage(wrap({ error: 'TASK_SELECTION_FAILED' }), MESSAGES))
       .toBe('Недостатньо задач')

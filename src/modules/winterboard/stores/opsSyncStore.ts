@@ -514,7 +514,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    *   - on PROTOCOL_VERSION_MISMATCH → enterDesync + DesyncError
    *   - on network/HTTP errors → propagates up (caller decides retry)
    */
-  async function bootstrap(sid: string): Promise<void> {
+  async function bootstrap(
+    sid: string,
+    applyState?: (state: Record<string, unknown>) => void,
+  ): Promise<void> {
     // INV-CROSS-SESSION: при зміні сесії — очистити pending/inFlight ops.
     // Без цього ops від попередньої сесії (що не встигли flush) будуть надіслані
     // на новий session_id → крос-сесійне забруднення.
@@ -543,6 +546,15 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       const response = await _fetchState(sid)
       // Які вкладки живі — ДО переходу в SYNC (далі без await: record() не вклиниться).
       const live = await liveTabIds()
+      if (applyState) {
+        // INV-18.1: новий seq не може підтвердити старий detail на полотні.
+        // Гідрація — до лічильників і SYNC; жодних ops чи повторів читання.
+        if (response.stale === true || !response.state
+            || typeof response.state !== 'object' || Array.isArray(response.state)) {
+          throw new Error('bootstrap: server state is unavailable or stale')
+        }
+        applyState(response.state)
+      }
       serverSeq.value = response.last_seq | 0
       localSeq.value = response.last_seq | 0
       _resetRetryState()

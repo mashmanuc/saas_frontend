@@ -852,7 +852,9 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 /* ── single_choice: options grid ─────────────────────────────────────── */
 .nmt-task__options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* На вузькій картці дві min-content колонки виносили відповіді за рамку.
+     Один стовпець без обрізання формул; на широкій картці лишаються два. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 7px;
 }
 

@@ -51,6 +51,17 @@ export function errorDetailOf(data) {
 export function humanErrorMessage(err, messages, fallback = 'Помилка') {
   const data = err?.response?.data
   const code = errorCodeOf(data)
+  // Предметна відмова добору пояснює реальні межі: загальна мапа їх приховувала.
+  // Помилки прав і внутрішні збої й надалі показуємо лише через безпечну мапу.
+  if (code === 'TASK_SELECTION_FAILED') {
+    const detail = errorDetailOf(data)
+    if (detail?.trim()) return detail
+    const counts = typeof data?.error === 'object' ? data.error : data
+    if (Number.isInteger(counts?.requested) && counts.requested > 0 &&
+        Number.isInteger(counts?.available) && counts.available >= 0) {
+      return `Доступно ${counts.available} задач, а запитано ${counts.requested}. Зменшіть кількість або оберіть іншу тему.`
+    }
+  }
   return (
     (code && messages?.[code]) ||
     errorDetailOf(data) ||

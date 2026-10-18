@@ -1,0 +1,4515 @@
+{
+  "edition": "linear-progression-v1",
+  "bundle_sha256": "051f6584ae4466f5399e1f4b8aaa4ffd7f710291f77774624f8d7254f938a4c8",
+  "local_only": true,
+  "teacher_acceptance": false,
+  "database_writes_rolled_back": true,
+  "layouts": {
+    "1": {
+      "pages": [
+        {
+          "id": "page-8c9a6d2f0a15",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-8a810538",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "b737dc4a-4035-47dc-bc29-4305a1028035",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "d826a541-d220-48ae-b870-f903b36fa780",
+                    "text": "$-5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "6fbf344e-ff36-4dab-b01a-3594a1096938",
+                    "text": "$4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "c1682605-26b5-4110-b83d-2bde0a48007d",
+                    "text": "$-4$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+2=-2$.",
+                "solution": "Віднімемо 2 від обох частин рівняння: $x=-4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-02",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-b6117a00a2a7",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-38c0b448",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "8426c253-5afc-4c6a-bba9-16d9b8d9b31f",
+                    "text": "$-8$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "dbb91dd6-d8df-4df4-bff8-b9c0c6a9b7a7",
+                    "text": "$9$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "be8e5dfa-50a0-42cf-af59-fe640b65660e",
+                    "text": "$8$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "0da94d88-16b6-400c-a9a4-0c0acdcc34a6",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3x=24$.",
+                "solution": "Поділимо обидві частини на $3$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-cfec73c3e162",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-a7480532",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "75e8fea6-1133-45b6-96f5-77bdbff5616f",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "fc9f8ea7-772e-4702-9a76-7e090b1f3333",
+                    "text": "$7$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "e955bbeb-3197-41a7-b857-4ad4c70bd8f2",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "2da290e4-7229-4069-9e71-1de417b01fef",
+                    "text": "$6$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+4=10$.",
+                "solution": "Віднімемо 4 від обох частин рівняння: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-c59cce5e7acc",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-6acdba89",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "3fc144ac-3a91-49b3-85d9-59adf3864f24",
+                    "text": "4",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5724fce5-95f6-4f53-af87-c59d569e1a43",
+                    "text": "6",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "7c3a11e2-4a1f-486f-99af-a96bedf1712f",
+                    "text": "16",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "941c06ec-df61-4ee8-a922-1ae695612ee3",
+                    "text": "8",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -4 від обох частин рівняння, і права стає $12 - (-4) = 16$. Тепер маємо $2x = 16$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 16 : 2 = 8$. Відповідь: 8.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-56fcef0faedd",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-12c25aef",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "43a59763-0240-4e4e-b704-3b1447f0fbb1",
+                    "text": "$3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "005f98cc-d6d1-4a1a-b66e-0dd66299a472",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "c73e67a6-2022-4d3a-a5e5-20de46522cb8",
+                    "text": "$-4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ed93fe5f-ced2-43a0-aac1-3d7264b98430",
+                    "text": "$5$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $-5x+8=-12$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 5 x=-20$. Поділимо обидві частини на $-5$: $x=4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s2-08",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-5faab6943b84",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-c79d9c53",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "999d1691-7a56-469e-824f-051ae25f21f7",
+                    "text": "14",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "85970c51-b08e-4c5d-90b8-17f583f9ed7e",
+                    "text": "15,25",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "682513eb-1b78-4e56-8688-e02ae5d2dbef",
+                    "text": "16,5",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "7a558320-0429-44a1-ab9a-2a800a51b0ce",
+                    "text": "56",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4x + 5 = 61$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо 5 від обох частин рівняння, і права стає $61 - 5 = 56$. Тепер маємо $4x = 56$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 56 : 4 = 14$. Відповідь: 14.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-ce9b1588cc60",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-a664901b",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "bebc5697-c0d9-4876-961e-da948ab8423d",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "110c908e-9553-415a-9d41-b541a6e60a97",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "f11813bf-1acc-4bf1-aeb2-14f6a81d7dcd",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "f01ce1a9-a886-47bf-82e8-8c07640e067c",
+                    "text": "$2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-10)+9x=6$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $12 x - 30=6$. Зберемо доданки зі змінною зліва, числа справа: $12 x=36$. Поділимо обидві частини на $12$: $x=3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-d849a309c5c1",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-71cbb664",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "099aed08-2566-446c-883d-7a8decf47422",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "ee8e5787-796c-4e11-bc95-df723d5e05f9",
+                    "text": "$-4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "06662a82-54a3-4a9f-bc30-64bfcc6bc9de",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9ae211df-b94e-4e2a-900e-3cd65780e6d7",
+                    "text": "$-2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-5)+7=-9$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 3=-9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=-6$. Поділимо обидві частини на $2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-75b140f6760b",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-c4b943c3",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "85257d75-9a26-45f7-9f5e-58f4c2821366",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "dc7b80f1-a25d-471a-a149-beb0029624d6",
+                    "text": "$5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5db054a2-3cda-4c64-b791-a34c43b86ff3",
+                    "text": "$-5$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "47b766b1-edbb-4710-89bd-8b3943d8d90c",
+                    "text": "$-6$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-9)+8x=-68$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 18=-68$. Зберемо доданки зі змінною зліва, числа справа: $10 x=-50$. Поділимо обидві частини на $10$: $x=-5$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-09",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-28b26206e598",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-6cf5e878",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "0df5a377-9d41-4df1-ad28-b30ba66e3741",
+                    "text": "$-2$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "a8b4e52e-eef9-446c-a9a1-0ae72d819f3e",
+                    "text": "$2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "4dc3a0b4-73a8-47b4-8837-1005e81a8b40",
+                    "text": "$-3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "64af435f-f36e-4717-85c6-8a3b6dfb0df6",
+                    "text": "$-1$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4(x-7)=6x-24$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $4 x - 28=6 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=4$. Поділимо обидві частини на $-2$: $x=-2$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-07",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-8e0127d12f3f",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-32938883",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "efe79fe9-45f7-4b5f-9c2c-6a6577539583",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5d67b8ea-fc43-41a2-9dc5-fafa6337dbbe",
+                    "text": "$-2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3ac33283-e625-4ff1-aa9d-f16842d5bf05",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5f13b38b-d9fe-495e-a9f3-283533778116",
+                    "text": "$-3$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x+5=4x+11$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=6$. Поділимо обидві частини на $-2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-bf04d0e37495",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-a7dc6010",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "07031143-b95f-487c-b284-89a19ea1766a",
+                    "text": "$8$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "2eaded6f-d63c-498c-8b19-9c42435a66f8",
+                    "text": "$-8$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9c654ce0-74b6-4ddd-a0fa-5f449b5e2561",
+                    "text": "$7$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3b634947-23a6-4c16-a90a-99938366e2c8",
+                    "text": "$9$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-6)=5x-34$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 18=5 x - 34$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-16$. Поділимо обидві частини на $-2$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-2627cd4cb7b6",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-af8531ab",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "4264a364-15d9-483f-adc5-ed69e25a5cb8",
+                    "text": "$- \\frac{137}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "c8335c89-5862-448d-8ff4-33952fe46523",
+                    "text": "$\\frac{126}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "445dd2af-4a02-4f61-9ef6-3a7f68a76688",
+                    "text": "$- \\frac{126}{11}$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "a749e962-afda-4b38-bae4-2b541eab64e1",
+                    "text": "$- \\frac{115}{11}$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x-10}{4}+\\frac{x+11}{5}=x+6$.",
+                "solution": "Помножимо обидві частини на 20, щоб позбутися знаменників. Одержимо $9 x - 6=20 x + 120$. Зберемо доданки зі змінною зліва, числа справа: $- 11 x=126$. Поділимо обидві частини на $-11$: $x=- \\frac{126}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-e4948767b85a",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-d267b3ad",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "3754da59-67e1-4e07-aa3f-1a51962250f1",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "a159cedb-b618-483b-8c7f-9107f5c41d92",
+                    "text": "$6$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "d75eb729-8753-4f09-9e1c-f5cfdf9ab0a0",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "e9ccfa78-9224-4778-9243-4b02f4e8c00e",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x}{2}+1=\\frac{x}{3}+2$.",
+                "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Одержимо $3 x + 6=2 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-01",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-02d54e1a127b",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-5b8f96ce",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "27f0309c-9253-4922-9897-ea2f994b0777",
+                    "text": "$\\frac{15}{2}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "05ff1ec0-f624-4486-8406-661f4ea1d1aa",
+                    "text": "$\\frac{11}{2}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "2c9a3e92-fbc0-4ff3-be8c-0c55933b677e",
+                    "text": "$- \\frac{13}{2}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "deada8e5-d3bb-41e4-bbd6-6272d957f3fc",
+                    "text": "$\\frac{13}{2}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{6(x-5)}{3}-\\frac{2(x+2)}{4}=\\frac{x-9}{2}$.",
+                "solution": "Помножимо обидві частини на 2, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 22=x - 9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=13$. Поділимо обидві частини на $2$: $x=\\frac{13}{2}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-2134b5c117f1",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-69f70fb0",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "4926f688-31fd-4e7b-95ec-daa5eeee1a0d",
+                    "text": "$- \\frac{62}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "fbc42335-f602-4782-9c5d-c12073399ed2",
+                    "text": "$\\frac{51}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "69280b71-566e-4e27-93ac-3571f964bdf7",
+                    "text": "$\\frac{73}{11}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "843c9bc1-9e45-423c-add9-4e6e7228547e",
+                    "text": "$\\frac{62}{11}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{5(x-4)}{3}-\\frac{x+1}{2}=\\frac{x-8}{4}$.",
+                "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $14 x - 86=3 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $11 x=62$. Поділимо обидві частини на $11$: $x=\\frac{62}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "source_problem_ids": [
+        "route-linear-v1-s1-02",
+        "route-linear-v1-s1-06",
+        "route-linear-v1-s1-04",
+        "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+        "route-linear-v1-s2-08",
+        "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+        "route-linear-v1-s3-10",
+        "route-linear-v1-s3-05",
+        "route-linear-v1-s3-09",
+        "route-linear-v1-s4-07",
+        "route-linear-v1-s4-05",
+        "route-linear-v1-s4-06",
+        "route-linear-v1-s5-10",
+        "route-linear-v1-s5-01",
+        "route-linear-v1-s6-10",
+        "route-linear-v1-s6-04"
+      ],
+      "spec_snapshot": {
+        "arc": "progressive",
+        "name": null,
+        "theme": "nmt_exam",
+        "topics": [
+          "linear-quadratic-rational-equations.linear"
+        ],
+        "board_bg": null,
+        "language": "uk",
+        "task_count": 16,
+        "lesson_type": "practice",
+        "pacing_mode": "practice",
+        "random_seed": 7,
+        "curated_only": false,
+        "diff_profile": "balanced",
+        "reviewed_set": "linear-progression-v1",
+        "problem_types": [],
+        "max_difficulty": null,
+        "min_difficulty": null,
+        "tasks_per_page": 1,
+        "topic_or_block": [],
+        "board_bg_palette": null,
+        "include_theory_page": false,
+        "include_solution_page": false
+      },
+      "progression": {
+        "edition": "linear-progression-v1",
+        "bundle_sha256": "051f6584ae4466f5399e1f4b8aaa4ffd7f710291f77774624f8d7254f938a4c8",
+        "profile": "balanced",
+        "order": "progressive",
+        "scope_complete": true,
+        "full_coverage": true,
+        "stages": [
+          {
+            "id": 1,
+            "label": "Одна обернена дія",
+            "count": 3,
+            "families": {
+              "inverse_addition": 2,
+              "inverse_division": 1
+            }
+          },
+          {
+            "id": 2,
+            "label": "Дві дії та знаки",
+            "count": 3,
+            "families": {
+              "two_actions_positive": 2,
+              "two_actions_negative": 1
+            }
+          },
+          {
+            "id": 3,
+            "label": "Дужки й подібні доданки",
+            "count": 3,
+            "families": {
+              "distribute_collect": 2,
+              "distribute": 1
+            }
+          },
+          {
+            "id": 4,
+            "label": "Змінна з обох боків",
+            "count": 3,
+            "families": {
+              "both_sides_brackets": 2,
+              "both_sides": 1
+            }
+          },
+          {
+            "id": 5,
+            "label": "Дробові коефіцієнти",
+            "count": 2,
+            "families": {
+              "fraction_shifted": 1,
+              "fraction_coefficients": 1
+            }
+          },
+          {
+            "id": 6,
+            "label": "Поєднання перетворень",
+            "count": 2,
+            "families": {
+              "combine_two_brackets": 1,
+              "combine_brackets": 1
+            }
+          }
+        ],
+        "empirically_calibrated": false
+      }
+    },
+    "2": {
+      "pages": [
+        {
+          "id": "page-5ed05ff62bac",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-d95b1c72",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "563d312e-3832-41bb-a5c7-09e529986e24",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5d62572a-5f15-400e-b096-fb833cf40ce9",
+                    "text": "$-5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "94e8e608-5c9d-4a2b-a1fc-34162fcda5d9",
+                    "text": "$4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ed4379d5-a394-43b6-b6b9-b9a4c28f187a",
+                    "text": "$-4$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+2=-2$.",
+                "solution": "Віднімемо 2 від обох частин рівняння: $x=-4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-02",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-7ef0e35e",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "63571a06-4e96-4796-96a1-f806a751ada9",
+                    "text": "$-8$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "25308eaf-b540-4109-a1f4-a9366c8f6309",
+                    "text": "$9$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "0a1dc39a-31b7-4104-86ba-3c4eea311fb5",
+                    "text": "$8$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "c96df65c-ca57-44d3-9b03-4f843f7945a3",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3x=24$.",
+                "solution": "Поділимо обидві частини на $3$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-131b9dca82b1",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-d127dcb7",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "a092cb1a-753d-4348-abc8-c3e2152f5e73",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "d3443350-f4c6-4cf8-912b-611a745ba955",
+                    "text": "$7$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "4836f539-25bb-451e-a333-2b1097cb748d",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "cc2b5a55-14d2-43fa-ad3e-6eb067a1152e",
+                    "text": "$6$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+4=10$.",
+                "solution": "Віднімемо 4 від обох частин рівняння: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-9a6df7a4",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "9d787459-c7f4-4dc9-a872-cc6854061a0b",
+                    "text": "4",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "26665401-4e99-4d45-ba90-df92df6d825a",
+                    "text": "6",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "dc6493b3-11a4-4366-831f-a28ccf41fabe",
+                    "text": "16",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "7e60a877-7d85-4a35-b622-cd58d289d84e",
+                    "text": "8",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -4 від обох частин рівняння, і права стає $12 - (-4) = 16$. Тепер маємо $2x = 16$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 16 : 2 = 8$. Відповідь: 8.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-0f981a2ef67a",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-d1f80c7a",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "e599cf3e-a6a9-442a-94e3-5b6adf6e9459",
+                    "text": "$3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "6b35a9be-09a8-4b95-aa32-0afeabca4428",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "d88b8b1e-fdde-47dc-8162-8ee9ca74bd93",
+                    "text": "$-4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "01348771-4324-4ac4-ac9a-514ac31fa6c1",
+                    "text": "$5$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $-5x+8=-12$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 5 x=-20$. Поділимо обидві частини на $-5$: $x=4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s2-08",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-c49e3693",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "94e1c28d-c160-438c-b1ce-e871aad32f1a",
+                    "text": "14",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "b52908f2-2aa8-4879-88ce-8db6b23b7834",
+                    "text": "15,25",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ab372fe8-b291-46b1-bc12-22ce7f40000d",
+                    "text": "16,5",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "878bf1de-6aef-4a0f-bb17-0014acce80a3",
+                    "text": "56",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4x + 5 = 61$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо 5 від обох частин рівняння, і права стає $61 - 5 = 56$. Тепер маємо $4x = 56$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 56 : 4 = 14$. Відповідь: 14.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-8367ead18181",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-cdae2992",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "930f3c18-d452-40d4-b92c-24db07a797a2",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "cabad9c1-fa09-4020-a70b-52971106662e",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ed9b534c-3ef9-493f-b587-f55a80db46fe",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "c0d5020b-52e5-443a-bd40-66dcead3cfe3",
+                    "text": "$2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-10)+9x=6$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $12 x - 30=6$. Зберемо доданки зі змінною зліва, числа справа: $12 x=36$. Поділимо обидві частини на $12$: $x=3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-28322838",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "3ebfdbba-1626-4811-aed1-c99860322f70",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "503f6987-7da5-42e7-9147-f67cee35c354",
+                    "text": "$-4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "c4593ac4-f6ad-4821-9013-c80873ce13e3",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "b571a159-c4fb-48a5-8814-c42caebf5d99",
+                    "text": "$-2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-5)+7=-9$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 3=-9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=-6$. Поділимо обидві частини на $2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-238b716fcf21",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-ea54f57b",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "7fe75cba-2f81-4583-9e12-8807eb57c833",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "8c2c43d4-c365-41c1-9ae1-e32efbab6940",
+                    "text": "$5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3110926b-25d8-4da9-aa14-13f5e32fe618",
+                    "text": "$-5$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "6babccce-3235-4ee2-a26e-ceb9d2b32088",
+                    "text": "$-6$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-9)+8x=-68$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 18=-68$. Зберемо доданки зі змінною зліва, числа справа: $10 x=-50$. Поділимо обидві частини на $10$: $x=-5$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-09",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-71d9f628",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6fadd55a-c624-4eee-857a-b8e6e1416b03",
+                    "text": "$-2$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "c577d557-c404-4383-8427-0915d6001563",
+                    "text": "$2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "48e9cc99-71be-456e-9292-fffd565fd6b0",
+                    "text": "$-3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "c880a3fa-5367-4e0a-9012-c394336d998c",
+                    "text": "$-1$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4(x-7)=6x-24$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $4 x - 28=6 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=4$. Поділимо обидві частини на $-2$: $x=-2$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-07",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-699eefa2a70f",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-f2bea8f6",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "dd0bd461-15ed-4b0f-869d-95cb057809d9",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "107cb3bb-0629-4e3c-a057-76672fa6b3d2",
+                    "text": "$-2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "cb71d222-911a-4d1d-ae9b-7e090052a592",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3cac85bd-77de-4a79-aa98-0a8cd271cd32",
+                    "text": "$-3$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x+5=4x+11$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=6$. Поділимо обидві частини на $-2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-ea68fd80",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "c19b7d9d-17c4-4542-924a-750e6d2d67f3",
+                    "text": "$8$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "f56a2b0f-b48d-4cf4-8bf4-fa0eb357fddb",
+                    "text": "$-8$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "97b958dc-9e0f-4bdb-97d9-1c096b4847e3",
+                    "text": "$7$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "a8a61235-3ad4-426b-a651-8100b7c1cdfb",
+                    "text": "$9$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-6)=5x-34$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 18=5 x - 34$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-16$. Поділимо обидві частини на $-2$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-94401bd3f789",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-6ac73687",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6c8f6747-1bbf-444c-9c0e-e63b7c8cd854",
+                    "text": "$- \\frac{137}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "386190e3-72b1-4dc3-b4fb-32a35b9638a0",
+                    "text": "$\\frac{126}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "4408eb96-8d40-48da-af41-fb70bef86f9b",
+                    "text": "$- \\frac{126}{11}$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "baaf637f-f0d3-4b7f-90ce-90dc164e3a3b",
+                    "text": "$- \\frac{115}{11}$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x-10}{4}+\\frac{x+11}{5}=x+6$.",
+                "solution": "Помножимо обидві частини на 20, щоб позбутися знаменників. Одержимо $9 x - 6=20 x + 120$. Зберемо доданки зі змінною зліва, числа справа: $- 11 x=126$. Поділимо обидві частини на $-11$: $x=- \\frac{126}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-295d1b30",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "f19a698f-8188-4286-941f-51a0b2cab066",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "378c2a55-f471-4311-a3bb-463ec1714fa2",
+                    "text": "$6$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "c14a5fbf-4fd9-43e5-852d-03d26aa2f1df",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "949762fb-2650-4393-a04c-e5fab77ba6ec",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x}{2}+1=\\frac{x}{3}+2$.",
+                "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Одержимо $3 x + 6=2 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-01",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-e44941f5b85a",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-4ac72bcb",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6f258d5e-855d-4b57-92d3-65fb1917ab77",
+                    "text": "$\\frac{15}{2}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "e438a957-ae51-49cd-bf8d-149cc773fbe8",
+                    "text": "$\\frac{11}{2}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "8c3c637b-c1ea-4fef-a8ff-ad6a855aab1f",
+                    "text": "$- \\frac{13}{2}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "6eef67be-0d2b-49f0-978e-a323328b21a4",
+                    "text": "$\\frac{13}{2}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{6(x-5)}{3}-\\frac{2(x+2)}{4}=\\frac{x-9}{2}$.",
+                "solution": "Помножимо обидві частини на 2, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 22=x - 9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=13$. Поділимо обидві частини на $2$: $x=\\frac{13}{2}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-e6c7a1a1",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "c0639f0b-6cb2-4394-9e61-f4a34308e4c9",
+                    "text": "$- \\frac{62}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "8b0b77c7-7ad6-4ede-8c1c-79d5c6f3fba5",
+                    "text": "$\\frac{51}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3f5e1e05-ba84-428e-ab65-46049a43ba35",
+                    "text": "$\\frac{73}{11}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "4fd9fe81-f786-4b10-ac3f-7cd2f1de8d6c",
+                    "text": "$\\frac{62}{11}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{5(x-4)}{3}-\\frac{x+1}{2}=\\frac{x-8}{4}$.",
+                "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $14 x - 86=3 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $11 x=62$. Поділимо обидві частини на $11$: $x=\\frac{62}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "source_problem_ids": [
+        "route-linear-v1-s1-02",
+        "route-linear-v1-s1-06",
+        "route-linear-v1-s1-04",
+        "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+        "route-linear-v1-s2-08",
+        "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+        "route-linear-v1-s3-10",
+        "route-linear-v1-s3-05",
+        "route-linear-v1-s3-09",
+        "route-linear-v1-s4-07",
+        "route-linear-v1-s4-05",
+        "route-linear-v1-s4-06",
+        "route-linear-v1-s5-10",
+        "route-linear-v1-s5-01",
+        "route-linear-v1-s6-10",
+        "route-linear-v1-s6-04"
+      ],
+      "spec_snapshot": {
+        "arc": "progressive",
+        "name": null,
+        "theme": "nmt_exam",
+        "topics": [
+          "linear-quadratic-rational-equations.linear"
+        ],
+        "board_bg": null,
+        "language": "uk",
+        "task_count": 16,
+        "lesson_type": "practice",
+        "pacing_mode": "practice",
+        "random_seed": 7,
+        "curated_only": false,
+        "diff_profile": "balanced",
+        "reviewed_set": "linear-progression-v1",
+        "problem_types": [],
+        "max_difficulty": null,
+        "min_difficulty": null,
+        "tasks_per_page": 2,
+        "topic_or_block": [],
+        "board_bg_palette": null,
+        "include_theory_page": false,
+        "include_solution_page": false
+      },
+      "progression": {
+        "edition": "linear-progression-v1",
+        "bundle_sha256": "051f6584ae4466f5399e1f4b8aaa4ffd7f710291f77774624f8d7254f938a4c8",
+        "profile": "balanced",
+        "order": "progressive",
+        "scope_complete": true,
+        "full_coverage": true,
+        "stages": [
+          {
+            "id": 1,
+            "label": "Одна обернена дія",
+            "count": 3,
+            "families": {
+              "inverse_addition": 2,
+              "inverse_division": 1
+            }
+          },
+          {
+            "id": 2,
+            "label": "Дві дії та знаки",
+            "count": 3,
+            "families": {
+              "two_actions_positive": 2,
+              "two_actions_negative": 1
+            }
+          },
+          {
+            "id": 3,
+            "label": "Дужки й подібні доданки",
+            "count": 3,
+            "families": {
+              "distribute_collect": 2,
+              "distribute": 1
+            }
+          },
+          {
+            "id": 4,
+            "label": "Змінна з обох боків",
+            "count": 3,
+            "families": {
+              "both_sides_brackets": 2,
+              "both_sides": 1
+            }
+          },
+          {
+            "id": 5,
+            "label": "Дробові коефіцієнти",
+            "count": 2,
+            "families": {
+              "fraction_shifted": 1,
+              "fraction_coefficients": 1
+            }
+          },
+          {
+            "id": 6,
+            "label": "Поєднання перетворень",
+            "count": 2,
+            "families": {
+              "combine_two_brackets": 1,
+              "combine_brackets": 1
+            }
+          }
+        ],
+        "empirically_calibrated": false
+      }
+    },
+    "5": {
+      "pages": [
+        {
+          "id": "page-bda80ef94ff2",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-dfaad7a1",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "256b62ac-7f9d-4fff-b6d4-ff5ea0ea9135",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "0f899911-8597-49ca-a1bd-a02a214691f5",
+                    "text": "$-5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "6324151b-a9e6-4f35-939a-ed4db15de15d",
+                    "text": "$4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "83dc50c0-c777-4879-9272-79b8dea2d697",
+                    "text": "$-4$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+2=-2$.",
+                "solution": "Віднімемо 2 від обох частин рівняння: $x=-4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-02",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-6e46dc6f",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "2ff16873-a0d2-4e56-9d2d-2c8259f926c6",
+                    "text": "$-8$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "72247b5b-6126-4a8f-a6b3-af46474c75b1",
+                    "text": "$9$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "dd966fb9-62ad-4ce0-b82f-160af3178616",
+                    "text": "$8$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "296a7f5d-2aa1-48ca-827f-f103e92b1309",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3x=24$.",
+                "solution": "Поділимо обидві частини на $3$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 460,
+              "id": "tsk-95a9ae65",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6810494c-df5b-4a6e-a59d-7b4ad6d0115e",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "14f97b05-5e58-4efd-ac95-8df68f08cb83",
+                    "text": "$7$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9361db53-80b0-4c00-892e-7038c98511bf",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "39dba5e7-e7da-41e1-81f7-68924aee6395",
+                    "text": "$6$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $x+4=10$.",
+                "solution": "Віднімемо 4 від обох частин рівняння: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s1-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 460,
+              "id": "tsk-c035452d",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "d8c19235-7ef4-4256-ba89-530a6997efad",
+                    "text": "4",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "65721a55-5f98-4b0a-8195-22f0d1aab4b8",
+                    "text": "6",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "d2564b1f-da4e-41ba-ab0e-af6dd9fbbcdf",
+                    "text": "16",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3c003657-fa9b-4c58-a0c1-82c4bf76b71e",
+                    "text": "8",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -4 від обох частин рівняння, і права стає $12 - (-4) = 16$. Тепер маємо $2x = 16$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 16 : 2 = 8$. Відповідь: 8.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 860,
+              "id": "tsk-970475c4",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "0962aa6c-4f1d-4225-a1d1-58e5362392ce",
+                    "text": "$3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "5b7948cd-9ee4-4a55-923f-da11d099ea8d",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "eccdac70-9dcd-4984-8173-b087cbecb3de",
+                    "text": "$-4$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "e8727d53-9b73-46c5-9428-40a2919f5ce6",
+                    "text": "$5$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $-5x+8=-12$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 5 x=-20$. Поділимо обидві частини на $-5$: $x=4$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s2-08",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1300,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-1992ace8ac85",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-02726fcc",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6524d4c9-8b6a-4d2b-a6b0-5ba227af7d26",
+                    "text": "14",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "cb7da9d4-d070-40d5-97f1-c7006b1cc983",
+                    "text": "15,25",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "a32a97eb-313c-48ad-88ab-4e1dd65ddf1d",
+                    "text": "16,5",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9c5e3220-3bc1-41a2-88da-15e6d4a8df74",
+                    "text": "56",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4x + 5 = 61$. Знайдіть корінь цього рівняння.",
+                "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо 5 від обох частин рівняння, і права стає $61 - 5 = 56$. Тепер маємо $4x = 56$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 56 : 4 = 14$. Відповідь: 14.",
+                "taskType": "single_choice",
+                "externalId": "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-d8a5f90a",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "c7911ef8-bf2b-4dfd-b80a-0b59d0f91597",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "37471193-1c11-4f63-bce8-ddf5a3305b37",
+                    "text": "$4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "a82a0faa-8866-4e23-8f4e-9450231bdc2c",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "63cc2ce0-338c-4616-b781-eac3caf6bdcc",
+                    "text": "$2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-10)+9x=6$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $12 x - 30=6$. Зберемо доданки зі змінною зліва, числа справа: $12 x=36$. Поділимо обидві частини на $12$: $x=3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 460,
+              "id": "tsk-7777ee66",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "d7ea3951-0468-49f2-a39f-dead175a1f46",
+                    "text": "$-3$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "53e26017-cc14-48b9-a273-bf4df8374253",
+                    "text": "$-4$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ffdcdf06-6cd4-4040-86e8-bdd37bd68338",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "e6cff282-4eac-45b6-bf47-518db975c6c7",
+                    "text": "$-2$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-5)+7=-9$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 3=-9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=-6$. Поділимо обидві частини на $2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 460,
+              "id": "tsk-1303a445",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "a4098673-e256-4c5c-8c39-2d6fac85fd30",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "c9e68797-e7f9-4f2a-a602-da1d068bd265",
+                    "text": "$5$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "09070414-6214-4642-b457-40296059b3b9",
+                    "text": "$-5$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "870f2902-6474-49b1-841e-76645968a7f6",
+                    "text": "$-6$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2(x-9)+8x=-68$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 18=-68$. Зберемо доданки зі змінною зліва, числа справа: $10 x=-50$. Поділимо обидві частини на $10$: $x=-5$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s3-09",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 860,
+              "id": "tsk-a3e4834b",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "43cbf332-785d-46e6-919d-2f04fa4c0214",
+                    "text": "$-2$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "4f72f94a-1cdb-4797-b801-adc3700cc8d5",
+                    "text": "$2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9d9f7a10-9f61-499f-a73e-5fe20b096e81",
+                    "text": "$-3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "074affd8-e2be-49c5-8c95-57f599570c91",
+                    "text": "$-1$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $4(x-7)=6x-24$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $4 x - 28=6 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=4$. Поділимо обидві частини на $-2$: $x=-2$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-07",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1300,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-bdadfcd9fc34",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-f83617ed",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "220eac53-f1f2-4584-b967-b911a7e13fc2",
+                    "text": "$-4$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "f18ecbe5-1145-4ed5-9263-11b801a03d96",
+                    "text": "$-2$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3be18d6e-212b-4064-b55b-1d081740131f",
+                    "text": "$3$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "4b58b138-fd8f-4c32-8959-a1499de6a4de",
+                    "text": "$-3$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $2x+5=4x+11$.",
+                "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=6$. Поділимо обидві частини на $-2$: $x=-3$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-05",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 60,
+              "id": "tsk-7d9ea6d8",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "14582754-461c-4f89-a5c2-a5e397e5436e",
+                    "text": "$8$",
+                    "letter": "А",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "28c5ef4d-232b-4829-9537-e394e8c2c7a7",
+                    "text": "$-8$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "50467754-f416-472b-a969-5b5a3e2196ec",
+                    "text": "$7$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "80ed9117-79f2-491d-85f6-136ffdbc5894",
+                    "text": "$9$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $3(x-6)=5x-34$.",
+                "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 18=5 x - 34$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-16$. Поділимо обидві частини на $-2$: $x=8$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s4-06",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 460,
+              "id": "tsk-e2a12705",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "1447c0bc-7e2e-480f-af51-4c324cf8b17b",
+                    "text": "$- \\frac{137}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "935026ec-4e1b-486a-be33-844acd0b868b",
+                    "text": "$\\frac{126}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "61a9cdb1-824c-4904-8564-0b6bfa1bd1ac",
+                    "text": "$- \\frac{126}{11}$",
+                    "letter": "В",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "5bf8d11e-1f90-4f95-8a99-5b947e24332e",
+                    "text": "$- \\frac{115}{11}$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x-10}{4}+\\frac{x+11}{5}=x+6$.",
+                "solution": "Помножимо обидві частини на 20, щоб позбутися знаменників. Одержимо $9 x - 6=20 x + 120$. Зберемо доданки зі змінною зліва, числа справа: $- 11 x=126$. Поділимо обидві частини на $-11$: $x=- \\frac{126}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 720,
+              "y": 460,
+              "id": "tsk-2fdab524",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "6a132ecb-874f-4a06-b8c2-b25aa8a5773c",
+                    "text": "$5$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "495f7c6a-755f-4c66-bfeb-e9dd53531da9",
+                    "text": "$6$",
+                    "letter": "Б",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "99b8cf0d-de99-41bb-b0d4-682cf5b423b2",
+                    "text": "$-6$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "ae31b6d3-d496-404f-ac4b-f1fdc9b5585e",
+                    "text": "$7$",
+                    "letter": "Г",
+                    "isCorrect": false
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{x}{2}+1=\\frac{x}{3}+2$.",
+                "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Одержимо $3 x + 6=2 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $x=6$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s5-01",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            },
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 860,
+              "id": "tsk-98f525b5",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "29a7b9ad-b5f6-445b-b03e-1e06f1723141",
+                    "text": "$\\frac{15}{2}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "9e191bb4-18f1-497a-a815-c561201b79f9",
+                    "text": "$\\frac{11}{2}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "3011513f-14b7-4c7b-b4e2-856df50ec46e",
+                    "text": "$- \\frac{13}{2}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "79a02905-ef7b-401a-8462-8bfa24aecdd9",
+                    "text": "$\\frac{13}{2}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{6(x-5)}{3}-\\frac{2(x+2)}{4}=\\frac{x-9}{2}$.",
+                "solution": "Помножимо обидві частини на 2, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 22=x - 9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=13$. Поділимо обидві частини на $2$: $x=\\frac{13}{2}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-10",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1300,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        },
+        {
+          "id": "page-cee5415a75ff",
+          "name": "Урок: Лінійні рівняння",
+          "width": 1920,
+          "assets": [
+            {
+              "h": 380,
+              "w": 640,
+              "x": 60,
+              "y": 60,
+              "id": "tsk-0ca1af2f",
+              "src": "",
+              "data": {
+                "options": [
+                  {
+                    "id": "690d9dc6-be54-4939-8234-bb7dc6cb63b7",
+                    "text": "$- \\frac{62}{11}$",
+                    "letter": "А",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "86d2be6b-fb65-48fa-aa3a-0f65d2c16309",
+                    "text": "$\\frac{51}{11}$",
+                    "letter": "Б",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "0d292f4b-e208-4976-b6a0-6a5e1c728d7e",
+                    "text": "$\\frac{73}{11}$",
+                    "letter": "В",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "8cbae805-5a5b-4b02-a34d-9adb65bcf2df",
+                    "text": "$\\frac{62}{11}$",
+                    "letter": "Г",
+                    "isCorrect": true
+                  }
+                ],
+                "version": 1,
+                "question": "Розв'яжіть рівняння $\\frac{5(x-4)}{3}-\\frac{x+1}{2}=\\frac{x-8}{4}$.",
+                "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $14 x - 86=3 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $11 x=62$. Поділимо обидві частини на $11$: $x=\\frac{62}{11}$.",
+                "taskType": "single_choice",
+                "externalId": "route-linear-v1-s6-04",
+                "showAnswer": false,
+                "showSolution": false
+              },
+              "type": "nmt_task",
+              "locked": false,
+              "rotation": 0
+            }
+          ],
+          "height": 1080,
+          "strokes": [],
+          "background": "white",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "source_problem_ids": [
+        "route-linear-v1-s1-02",
+        "route-linear-v1-s1-06",
+        "route-linear-v1-s1-04",
+        "gen3-linear-quadratic-rational-equations-linear_solve-610237",
+        "route-linear-v1-s2-08",
+        "gen3-linear-quadratic-rational-equations-linear_solve-611330",
+        "route-linear-v1-s3-10",
+        "route-linear-v1-s3-05",
+        "route-linear-v1-s3-09",
+        "route-linear-v1-s4-07",
+        "route-linear-v1-s4-05",
+        "route-linear-v1-s4-06",
+        "route-linear-v1-s5-10",
+        "route-linear-v1-s5-01",
+        "route-linear-v1-s6-10",
+        "route-linear-v1-s6-04"
+      ],
+      "spec_snapshot": {
+        "arc": "progressive",
+        "name": null,
+        "theme": "nmt_exam",
+        "topics": [
+          "linear-quadratic-rational-equations.linear"
+        ],
+        "board_bg": null,
+        "language": "uk",
+        "task_count": 16,
+        "lesson_type": "practice",
+        "pacing_mode": "practice",
+        "random_seed": 7,
+        "curated_only": false,
+        "diff_profile": "balanced",
+        "reviewed_set": "linear-progression-v1",
+        "problem_types": [],
+        "max_difficulty": null,
+        "min_difficulty": null,
+        "tasks_per_page": 5,
+        "topic_or_block": [],
+        "board_bg_palette": null,
+        "include_theory_page": false,
+        "include_solution_page": false
+      },
+      "progression": {
+        "edition": "linear-progression-v1",
+        "bundle_sha256": "051f6584ae4466f5399e1f4b8aaa4ffd7f710291f77774624f8d7254f938a4c8",
+        "profile": "balanced",
+        "order": "progressive",
+        "scope_complete": true,
+        "full_coverage": true,
+        "stages": [
+          {
+            "id": 1,
+            "label": "Одна обернена дія",
+            "count": 3,
+            "families": {
+              "inverse_addition": 2,
+              "inverse_division": 1
+            }
+          },
+          {
+            "id": 2,
+            "label": "Дві дії та знаки",
+            "count": 3,
+            "families": {
+              "two_actions_positive": 2,
+              "two_actions_negative": 1
+            }
+          },
+          {
+            "id": 3,
+            "label": "Дужки й подібні доданки",
+            "count": 3,
+            "families": {
+              "distribute_collect": 2,
+              "distribute": 1
+            }
+          },
+          {
+            "id": 4,
+            "label": "Змінна з обох боків",
+            "count": 3,
+            "families": {
+              "both_sides_brackets": 2,
+              "both_sides": 1
+            }
+          },
+          {
+            "id": 5,
+            "label": "Дробові коефіцієнти",
+            "count": 2,
+            "families": {
+              "fraction_shifted": 1,
+              "fraction_coefficients": 1
+            }
+          },
+          {
+            "id": 6,
+            "label": "Поєднання перетворень",
+            "count": 2,
+            "families": {
+              "combine_two_brackets": 1,
+              "combine_brackets": 1
+            }
+          }
+        ],
+        "empirically_calibrated": false
+      }
+    }
+  },
+  "stages": [
+    {
+      "id": 1,
+      "label": "Одна обернена дія",
+      "families": [
+        "inverse_addition",
+        "inverse_division"
+      ],
+      "prerequisites": [],
+      "new_skill": "Застосувати одну обернену дію й знайти невідоме.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "inverse_addition": "Розв'яжіть рівняння $x+1=6$.",
+        "inverse_division": "Розв'яжіть рівняння $3x=24$."
+      }
+    },
+    {
+      "id": 2,
+      "label": "Дві дії та знаки",
+      "families": [
+        "two_actions_positive",
+        "two_actions_negative"
+      ],
+      "prerequisites": [
+        1
+      ],
+      "new_skill": "Виконати дві послідовні дії, зокрема поділ на від’ємний коефіцієнт.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "two_actions_positive": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+        "two_actions_negative": "Розв'яжіть рівняння $-4x+7=15$."
+      }
+    },
+    {
+      "id": 3,
+      "label": "Дужки й подібні доданки",
+      "families": [
+        "distribute",
+        "distribute_collect"
+      ],
+      "prerequisites": [
+        1,
+        2
+      ],
+      "new_skill": "Розкрити дужки та звести подібні доданки перед знаходженням невідомого.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "distribute": "Розв'яжіть рівняння $2(x-1)+3=11$.",
+        "distribute_collect": "Розв'яжіть рівняння $3(x-6)+5x=46$."
+      }
+    },
+    {
+      "id": 4,
+      "label": "Змінна з обох боків",
+      "families": [
+        "both_sides",
+        "both_sides_brackets"
+      ],
+      "prerequisites": [
+        1,
+        2,
+        3
+      ],
+      "new_skill": "Зібрати змінні з обох частин рівняння, за потреби розкривши дужки.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "both_sides": "Розв'яжіть рівняння $2x+1=4x-9$.",
+        "both_sides_brackets": "Розв'яжіть рівняння $3(x-6)=5x-34$."
+      }
+    },
+    {
+      "id": 5,
+      "label": "Дробові коефіцієнти",
+      "families": [
+        "fraction_coefficients",
+        "fraction_shifted"
+      ],
+      "prerequisites": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "new_skill": "Позбутися числових знаменників; не плутати дріб із раціональним рівнянням.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "fraction_coefficients": "Розв'яжіть рівняння $\\frac{x}{2}+1=\\frac{x}{3}+2$.",
+        "fraction_shifted": "Розв'яжіть рівняння $\\frac{x-6}{2}+\\frac{x+7}{3}=x+2$."
+      }
+    },
+    {
+      "id": 6,
+      "label": "Поєднання перетворень",
+      "families": [
+        "combine_brackets",
+        "combine_two_brackets"
+      ],
+      "prerequisites": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "new_skill": "Поєднати позбавлення знаменників, розкриття дужок і перенесення доданків.",
+      "number_limits": {
+        "condition_literal_abs_max": 200,
+        "allowed_denominators": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "unique_real_root": true,
+        "variable_denominator": false
+      },
+      "examples": {
+        "combine_brackets": "Розв'яжіть рівняння $\\frac{2(x-1)}{3}-\\frac{x+1}{2}=\\frac{x-5}{4}$.",
+        "combine_two_brackets": "Розв'яжіть рівняння $\\frac{2(x-1)}{3}-\\frac{2(x+1)}{4}=\\frac{x-5}{2}$."
+      }
+    }
+  ],
+  "tasks": {
+    "route-linear-v1-s1-01": {
+      "stage": 1,
+      "family": "inverse_addition",
+      "question": "Розв'яжіть рівняння $x+1=6$.",
+      "solution": "Віднімемо 1 від обох частин рівняння: $x=5$.",
+      "choices": [
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": true
+        },
+        {
+          "text": "$-5$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": false
+        }
+      ],
+      "root": "5"
+    },
+    "route-linear-v1-s1-02": {
+      "stage": 1,
+      "family": "inverse_addition",
+      "question": "Розв'яжіть рівняння $x+2=-2$.",
+      "solution": "Віднімемо 2 від обох частин рівняння: $x=-4$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-5$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": true
+        }
+      ],
+      "root": "-4"
+    },
+    "route-linear-v1-s1-03": {
+      "stage": 1,
+      "family": "inverse_addition",
+      "question": "Розв'яжіть рівняння $x+3=10$.",
+      "solution": "Віднімемо 3 від обох частин рівняння: $x=7$.",
+      "choices": [
+        {
+          "text": "$6$",
+          "is_correct": false
+        },
+        {
+          "text": "$-7$",
+          "is_correct": false
+        },
+        {
+          "text": "$8$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": true
+        }
+      ],
+      "root": "7"
+    },
+    "route-linear-v1-s1-04": {
+      "stage": 1,
+      "family": "inverse_addition",
+      "question": "Розв'яжіть рівняння $x+4=10$.",
+      "solution": "Віднімемо 4 від обох частин рівняння: $x=6$.",
+      "choices": [
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": true
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s1-05": {
+      "stage": 1,
+      "family": "inverse_addition",
+      "question": "Розв'яжіть рівняння $x+5=2$.",
+      "solution": "Віднімемо 5 від обох частин рівняння: $x=-3$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": true
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": false
+        }
+      ],
+      "root": "-3"
+    },
+    "route-linear-v1-s1-06": {
+      "stage": 1,
+      "family": "inverse_division",
+      "question": "Розв'яжіть рівняння $3x=24$.",
+      "solution": "Поділимо обидві частини на $3$: $x=8$.",
+      "choices": [
+        {
+          "text": "$-8$",
+          "is_correct": false
+        },
+        {
+          "text": "$9$",
+          "is_correct": false
+        },
+        {
+          "text": "$8$",
+          "is_correct": true
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        }
+      ],
+      "root": "8"
+    },
+    "route-linear-v1-s1-07": {
+      "stage": 1,
+      "family": "inverse_division",
+      "question": "Розв'яжіть рівняння $4x=-8$.",
+      "solution": "Поділимо обидві частини на $4$: $x=-2$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-1$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": true
+        }
+      ],
+      "root": "-2"
+    },
+    "route-linear-v1-s1-08": {
+      "stage": 1,
+      "family": "inverse_division",
+      "question": "Розв'яжіть рівняння $5x=20$.",
+      "solution": "Поділимо обидві частини на $5$: $x=4$.",
+      "choices": [
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": true
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        }
+      ],
+      "root": "4"
+    },
+    "route-linear-v1-s1-09": {
+      "stage": 1,
+      "family": "inverse_division",
+      "question": "Розв'яжіть рівняння $2x=-10$.",
+      "solution": "Поділимо обидві частини на $2$: $x=-5$.",
+      "choices": [
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$-5$",
+          "is_correct": true
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        }
+      ],
+      "root": "-5"
+    },
+    "route-linear-v1-s1-10": {
+      "stage": 1,
+      "family": "inverse_division",
+      "question": "Розв'яжіть рівняння $3x=9$.",
+      "solution": "Поділимо обидві частини на $3$: $x=3$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": true
+        }
+      ],
+      "root": "3"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-610237": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $2x − 4 = 12$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -4 від обох частин рівняння, і права стає $12 - (-4) = 16$. Тепер маємо $2x = 16$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 16 : 2 = 8$. Відповідь: 8.",
+      "choices": [
+        {
+          "text": "4",
+          "is_correct": false
+        },
+        {
+          "text": "6",
+          "is_correct": false
+        },
+        {
+          "text": "16",
+          "is_correct": false
+        },
+        {
+          "text": "8",
+          "is_correct": true
+        }
+      ],
+      "root": "8"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-610255": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $3x + 2 = 23$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо 2 від обох частин рівняння, і права стає $23 - 2 = 21$. Тепер маємо $3x = 21$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 21 : 3 = 7$. Відповідь: 7.",
+      "choices": [
+        {
+          "text": "7,67",
+          "is_correct": false
+        },
+        {
+          "text": "21",
+          "is_correct": false
+        },
+        {
+          "text": "8,33",
+          "is_correct": false
+        },
+        {
+          "text": "7",
+          "is_correct": true
+        }
+      ],
+      "root": "7"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-610425": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $3x − 15 = 12$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -15 від обох частин рівняння, і права стає $12 - (-15) = 27$. Тепер маємо $3x = 27$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 27 : 3 = 9$. Відповідь: 9.",
+      "choices": [
+        {
+          "text": "4",
+          "is_correct": false
+        },
+        {
+          "text": "27",
+          "is_correct": false
+        },
+        {
+          "text": "9",
+          "is_correct": true
+        },
+        {
+          "text": "-1",
+          "is_correct": false
+        }
+      ],
+      "root": "9"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-610474": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $6x − 3 = 147$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -3 від обох частин рівняння, і права стає $147 - (-3) = 150$. Тепер маємо $6x = 150$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 150 : 6 = 25$. Відповідь: 25.",
+      "choices": [
+        {
+          "text": "24,5",
+          "is_correct": false
+        },
+        {
+          "text": "24",
+          "is_correct": false
+        },
+        {
+          "text": "25",
+          "is_correct": true
+        },
+        {
+          "text": "150",
+          "is_correct": false
+        }
+      ],
+      "root": "25"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-610558": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $4x − 18 = -14$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо -18 від обох частин рівняння, і права стає $-14 - (-18) = 4$. Тепер маємо $4x = 4$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 4 : 4 = 1$. Відповідь: 1.",
+      "choices": [
+        {
+          "text": "-3,5",
+          "is_correct": false
+        },
+        {
+          "text": "-8",
+          "is_correct": false
+        },
+        {
+          "text": "4",
+          "is_correct": false
+        },
+        {
+          "text": "1",
+          "is_correct": true
+        }
+      ],
+      "root": "1"
+    },
+    "gen3-linear-quadratic-rational-equations-linear_solve-611330": {
+      "stage": 2,
+      "family": "two_actions_positive",
+      "question": "Розв'яжіть рівняння $4x + 5 = 61$. Знайдіть корінь цього рівняння.",
+      "solution": "Щоб залишити $x$ саме, спершу прибираємо вільний член: віднімаємо 5 від обох частин рівняння, і права стає $61 - 5 = 56$. Тепер маємо $4x = 56$, тож ділимо обидві частини на коефіцієнт при $x$: $x = 56 : 4 = 14$. Відповідь: 14.",
+      "choices": [
+        {
+          "text": "14",
+          "is_correct": true
+        },
+        {
+          "text": "15,25",
+          "is_correct": false
+        },
+        {
+          "text": "16,5",
+          "is_correct": false
+        },
+        {
+          "text": "56",
+          "is_correct": false
+        }
+      ],
+      "root": "14"
+    },
+    "route-linear-v1-s2-07": {
+      "stage": 2,
+      "family": "two_actions_negative",
+      "question": "Розв'яжіть рівняння $-4x+7=15$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 4 x=8$. Поділимо обидві частини на $-4$: $x=-2$.",
+      "choices": [
+        {
+          "text": "$-1$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": true
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        }
+      ],
+      "root": "-2"
+    },
+    "route-linear-v1-s2-08": {
+      "stage": 2,
+      "family": "two_actions_negative",
+      "question": "Розв'яжіть рівняння $-5x+8=-12$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 5 x=-20$. Поділимо обидві частини на $-5$: $x=4$.",
+      "choices": [
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": true
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        }
+      ],
+      "root": "4"
+    },
+    "route-linear-v1-s2-09": {
+      "stage": 2,
+      "family": "two_actions_negative",
+      "question": "Розв'яжіть рівняння $-2x+9=19$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=10$. Поділимо обидві частини на $-2$: $x=-5$.",
+      "choices": [
+        {
+          "text": "$-5$",
+          "is_correct": true
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        }
+      ],
+      "root": "-5"
+    },
+    "route-linear-v1-s2-10": {
+      "stage": 2,
+      "family": "two_actions_negative",
+      "question": "Розв'яжіть рівняння $-3x+10=1$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 3 x=-9$. Поділимо обидві частини на $-3$: $x=3$.",
+      "choices": [
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": true
+        }
+      ],
+      "root": "3"
+    },
+    "route-linear-v1-s3-01": {
+      "stage": 3,
+      "family": "distribute",
+      "question": "Розв'яжіть рівняння $2(x-1)+3=11$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x + 1=11$. Зберемо доданки зі змінною зліва, числа справа: $2 x=10$. Поділимо обидві частини на $2$: $x=5$.",
+      "choices": [
+        {
+          "text": "$6$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": true
+        },
+        {
+          "text": "$-5$",
+          "is_correct": false
+        }
+      ],
+      "root": "5"
+    },
+    "route-linear-v1-s3-02": {
+      "stage": 3,
+      "family": "distribute",
+      "question": "Розв'яжіть рівняння $3(x-2)+4=-14$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 2=-14$. Зберемо доданки зі змінною зліва, числа справа: $3 x=-12$. Поділимо обидві частини на $3$: $x=-4$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": true
+        },
+        {
+          "text": "$-5$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        }
+      ],
+      "root": "-4"
+    },
+    "route-linear-v1-s3-03": {
+      "stage": 3,
+      "family": "distribute",
+      "question": "Розв'яжіть рівняння $4(x-3)+5=21$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $4 x - 7=21$. Зберемо доданки зі змінною зліва, числа справа: $4 x=28$. Поділимо обидві частини на $4$: $x=7$.",
+      "choices": [
+        {
+          "text": "$-7$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": true
+        },
+        {
+          "text": "$8$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": false
+        }
+      ],
+      "root": "7"
+    },
+    "route-linear-v1-s3-04": {
+      "stage": 3,
+      "family": "distribute",
+      "question": "Розв'яжіть рівняння $5(x-4)+6=16$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $5 x - 14=16$. Зберемо доданки зі змінною зліва, числа справа: $5 x=30$. Поділимо обидві частини на $5$: $x=6$.",
+      "choices": [
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": true
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s3-05": {
+      "stage": 3,
+      "family": "distribute",
+      "question": "Розв'яжіть рівняння $2(x-5)+7=-9$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 3=-9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=-6$. Поділимо обидві частини на $2$: $x=-3$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": true
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": false
+        }
+      ],
+      "root": "-3"
+    },
+    "route-linear-v1-s3-06": {
+      "stage": 3,
+      "family": "distribute_collect",
+      "question": "Розв'яжіть рівняння $3(x-6)+5x=46$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $8 x - 18=46$. Зберемо доданки зі змінною зліва, числа справа: $8 x=64$. Поділимо обидві частини на $8$: $x=8$.",
+      "choices": [
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$8$",
+          "is_correct": true
+        },
+        {
+          "text": "$-8$",
+          "is_correct": false
+        },
+        {
+          "text": "$9$",
+          "is_correct": false
+        }
+      ],
+      "root": "8"
+    },
+    "route-linear-v1-s3-07": {
+      "stage": 3,
+      "family": "distribute_collect",
+      "question": "Розв'яжіть рівняння $4(x-7)+6x=-48$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 28=-48$. Зберемо доданки зі змінною зліва, числа справа: $10 x=-20$. Поділимо обидві частини на $10$: $x=-2$.",
+      "choices": [
+        {
+          "text": "$-1$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": true
+        }
+      ],
+      "root": "-2"
+    },
+    "route-linear-v1-s3-08": {
+      "stage": 3,
+      "family": "distribute_collect",
+      "question": "Розв'яжіть рівняння $5(x-8)+7x=8$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $12 x - 40=8$. Зберемо доданки зі змінною зліва, числа справа: $12 x=48$. Поділимо обидві частини на $12$: $x=4$.",
+      "choices": [
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": true
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        }
+      ],
+      "root": "4"
+    },
+    "route-linear-v1-s3-09": {
+      "stage": 3,
+      "family": "distribute_collect",
+      "question": "Розв'яжіть рівняння $2(x-9)+8x=-68$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 18=-68$. Зберемо доданки зі змінною зліва, числа справа: $10 x=-50$. Поділимо обидві частини на $10$: $x=-5$.",
+      "choices": [
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$-5$",
+          "is_correct": true
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        }
+      ],
+      "root": "-5"
+    },
+    "route-linear-v1-s3-10": {
+      "stage": 3,
+      "family": "distribute_collect",
+      "question": "Розв'яжіть рівняння $3(x-10)+9x=6$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $12 x - 30=6$. Зберемо доданки зі змінною зліва, числа справа: $12 x=36$. Поділимо обидві частини на $12$: $x=3$.",
+      "choices": [
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": true
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        }
+      ],
+      "root": "3"
+    },
+    "route-linear-v1-s4-01": {
+      "stage": 4,
+      "family": "both_sides",
+      "question": "Розв'яжіть рівняння $2x+1=4x-9$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-10$. Поділимо обидві частини на $-2$: $x=5$.",
+      "choices": [
+        {
+          "text": "$-5$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": true
+        },
+        {
+          "text": "$6$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        }
+      ],
+      "root": "5"
+    },
+    "route-linear-v1-s4-02": {
+      "stage": 4,
+      "family": "both_sides",
+      "question": "Розв'яжіть рівняння $3x+2=5x+10$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=8$. Поділимо обидві частини на $-2$: $x=-4$.",
+      "choices": [
+        {
+          "text": "$4$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": true
+        },
+        {
+          "text": "$-5$",
+          "is_correct": false
+        }
+      ],
+      "root": "-4"
+    },
+    "route-linear-v1-s4-03": {
+      "stage": 4,
+      "family": "both_sides",
+      "question": "Розв'яжіть рівняння $4x+3=6x-11$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-14$. Поділимо обидві частини на $-2$: $x=7$.",
+      "choices": [
+        {
+          "text": "$-7$",
+          "is_correct": false
+        },
+        {
+          "text": "$8$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": true
+        },
+        {
+          "text": "$6$",
+          "is_correct": false
+        }
+      ],
+      "root": "7"
+    },
+    "route-linear-v1-s4-04": {
+      "stage": 4,
+      "family": "both_sides",
+      "question": "Розв'яжіть рівняння $5x+4=7x-8$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-12$. Поділимо обидві частини на $-2$: $x=6$.",
+      "choices": [
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": true
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s4-05": {
+      "stage": 4,
+      "family": "both_sides",
+      "question": "Розв'яжіть рівняння $2x+5=4x+11$.",
+      "solution": "Зберемо доданки зі змінною зліва, числа справа: $- 2 x=6$. Поділимо обидві частини на $-2$: $x=-3$.",
+      "choices": [
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$-2$",
+          "is_correct": false
+        },
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": true
+        }
+      ],
+      "root": "-3"
+    },
+    "route-linear-v1-s4-06": {
+      "stage": 4,
+      "family": "both_sides_brackets",
+      "question": "Розв'яжіть рівняння $3(x-6)=5x-34$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 18=5 x - 34$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-16$. Поділимо обидві частини на $-2$: $x=8$.",
+      "choices": [
+        {
+          "text": "$8$",
+          "is_correct": true
+        },
+        {
+          "text": "$-8$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$9$",
+          "is_correct": false
+        }
+      ],
+      "root": "8"
+    },
+    "route-linear-v1-s4-07": {
+      "stage": 4,
+      "family": "both_sides_brackets",
+      "question": "Розв'яжіть рівняння $4(x-7)=6x-24$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $4 x - 28=6 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=4$. Поділимо обидві частини на $-2$: $x=-2$.",
+      "choices": [
+        {
+          "text": "$-2$",
+          "is_correct": true
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-1$",
+          "is_correct": false
+        }
+      ],
+      "root": "-2"
+    },
+    "route-linear-v1-s4-08": {
+      "stage": 4,
+      "family": "both_sides_brackets",
+      "question": "Розв'яжіть рівняння $5(x-8)=7x-48$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $5 x - 40=7 x - 48$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-8$. Поділимо обидві частини на $-2$: $x=4$.",
+      "choices": [
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": true
+        },
+        {
+          "text": "$3$",
+          "is_correct": false
+        }
+      ],
+      "root": "4"
+    },
+    "route-linear-v1-s4-09": {
+      "stage": 4,
+      "family": "both_sides_brackets",
+      "question": "Розв'яжіть рівняння $2(x-9)=4x-8$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 18=4 x - 8$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=10$. Поділимо обидві частини на $-2$: $x=-5$.",
+      "choices": [
+        {
+          "text": "$-5$",
+          "is_correct": true
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        }
+      ],
+      "root": "-5"
+    },
+    "route-linear-v1-s4-10": {
+      "stage": 4,
+      "family": "both_sides_brackets",
+      "question": "Розв'яжіть рівняння $3(x-10)=5x-36$.",
+      "solution": "Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 30=5 x - 36$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-6$. Поділимо обидві частини на $-2$: $x=3$.",
+      "choices": [
+        {
+          "text": "$3$",
+          "is_correct": true
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": false
+        }
+      ],
+      "root": "3"
+    },
+    "route-linear-v1-s5-01": {
+      "stage": 5,
+      "family": "fraction_coefficients",
+      "question": "Розв'яжіть рівняння $\\frac{x}{2}+1=\\frac{x}{3}+2$.",
+      "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Одержимо $3 x + 6=2 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $x=6$.",
+      "choices": [
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$6$",
+          "is_correct": true
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s5-02": {
+      "stage": 5,
+      "family": "fraction_coefficients",
+      "question": "Розв'яжіть рівняння $\\frac{x}{3}+2=\\frac{x}{4}+1$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Одержимо $4 x + 24=3 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $x=-12$.",
+      "choices": [
+        {
+          "text": "$-13$",
+          "is_correct": false
+        },
+        {
+          "text": "$-12$",
+          "is_correct": true
+        },
+        {
+          "text": "$-11$",
+          "is_correct": false
+        },
+        {
+          "text": "$12$",
+          "is_correct": false
+        }
+      ],
+      "root": "-12"
+    },
+    "route-linear-v1-s5-03": {
+      "stage": 5,
+      "family": "fraction_coefficients",
+      "question": "Розв'яжіть рівняння $\\frac{x}{2}+3=\\frac{x}{5}+6$.",
+      "solution": "Помножимо обидві частини на 10, щоб позбутися знаменників. Одержимо $5 x + 30=2 x + 60$. Зберемо доданки зі змінною зліва, числа справа: $3 x=30$. Поділимо обидві частини на $3$: $x=10$.",
+      "choices": [
+        {
+          "text": "$11$",
+          "is_correct": false
+        },
+        {
+          "text": "$10$",
+          "is_correct": true
+        },
+        {
+          "text": "$-10$",
+          "is_correct": false
+        },
+        {
+          "text": "$9$",
+          "is_correct": false
+        }
+      ],
+      "root": "10"
+    },
+    "route-linear-v1-s5-04": {
+      "stage": 5,
+      "family": "fraction_coefficients",
+      "question": "Розв'яжіть рівняння $\\frac{x}{3}+4=\\frac{x}{5}+2$.",
+      "solution": "Помножимо обидві частини на 15, щоб позбутися знаменників. Одержимо $5 x + 60=3 x + 30$. Зберемо доданки зі змінною зліва, числа справа: $2 x=-30$. Поділимо обидві частини на $2$: $x=-15$.",
+      "choices": [
+        {
+          "text": "$-15$",
+          "is_correct": true
+        },
+        {
+          "text": "$-14$",
+          "is_correct": false
+        },
+        {
+          "text": "$-16$",
+          "is_correct": false
+        },
+        {
+          "text": "$15$",
+          "is_correct": false
+        }
+      ],
+      "root": "-15"
+    },
+    "route-linear-v1-s5-05": {
+      "stage": 5,
+      "family": "fraction_coefficients",
+      "question": "Розв'яжіть рівняння $\\frac{x}{4}+5=\\frac{x}{5}+6$.",
+      "solution": "Помножимо обидві частини на 20, щоб позбутися знаменників. Одержимо $5 x + 100=4 x + 120$. Зберемо доданки зі змінною зліва, числа справа: $x=20$.",
+      "choices": [
+        {
+          "text": "$21$",
+          "is_correct": false
+        },
+        {
+          "text": "$19$",
+          "is_correct": false
+        },
+        {
+          "text": "$-20$",
+          "is_correct": false
+        },
+        {
+          "text": "$20$",
+          "is_correct": true
+        }
+      ],
+      "root": "20"
+    },
+    "route-linear-v1-s5-06": {
+      "stage": 5,
+      "family": "fraction_shifted",
+      "question": "Розв'яжіть рівняння $\\frac{x-6}{2}+\\frac{x+7}{3}=x+2$.",
+      "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Одержимо $5 x - 4=6 x + 12$. Зберемо доданки зі змінною зліва, числа справа: $- x=16$. Поділимо обидві частини на $-1$: $x=-16$.",
+      "choices": [
+        {
+          "text": "$-17$",
+          "is_correct": false
+        },
+        {
+          "text": "$-15$",
+          "is_correct": false
+        },
+        {
+          "text": "$16$",
+          "is_correct": false
+        },
+        {
+          "text": "$-16$",
+          "is_correct": true
+        }
+      ],
+      "root": "-16"
+    },
+    "route-linear-v1-s5-07": {
+      "stage": 5,
+      "family": "fraction_shifted",
+      "question": "Розв'яжіть рівняння $\\frac{x-7}{3}+\\frac{x+8}{4}=x+3$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Одержимо $7 x - 4=12 x + 36$. Зберемо доданки зі змінною зліва, числа справа: $- 5 x=40$. Поділимо обидві частини на $-5$: $x=-8$.",
+      "choices": [
+        {
+          "text": "$-8$",
+          "is_correct": true
+        },
+        {
+          "text": "$-7$",
+          "is_correct": false
+        },
+        {
+          "text": "$-9$",
+          "is_correct": false
+        },
+        {
+          "text": "$8$",
+          "is_correct": false
+        }
+      ],
+      "root": "-8"
+    },
+    "route-linear-v1-s5-08": {
+      "stage": 5,
+      "family": "fraction_shifted",
+      "question": "Розв'яжіть рівняння $\\frac{x-8}{2}+\\frac{x+9}{5}=x+4$.",
+      "solution": "Помножимо обидві частини на 10, щоб позбутися знаменників. Одержимо $7 x - 22=10 x + 40$. Зберемо доданки зі змінною зліва, числа справа: $- 3 x=62$. Поділимо обидві частини на $-3$: $x=- \\frac{62}{3}$.",
+      "choices": [
+        {
+          "text": "$- \\frac{65}{3}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{62}{3}$",
+          "is_correct": false
+        },
+        {
+          "text": "$- \\frac{62}{3}$",
+          "is_correct": true
+        },
+        {
+          "text": "$- \\frac{59}{3}$",
+          "is_correct": false
+        }
+      ],
+      "root": "-62/3"
+    },
+    "route-linear-v1-s5-09": {
+      "stage": 5,
+      "family": "fraction_shifted",
+      "question": "Розв'яжіть рівняння $\\frac{x-9}{3}+\\frac{x+10}{5}=x+5$.",
+      "solution": "Помножимо обидві частини на 15, щоб позбутися знаменників. Одержимо $8 x - 15=15 x + 75$. Зберемо доданки зі змінною зліва, числа справа: $- 7 x=90$. Поділимо обидві частини на $-7$: $x=- \\frac{90}{7}$.",
+      "choices": [
+        {
+          "text": "$\\frac{90}{7}$",
+          "is_correct": false
+        },
+        {
+          "text": "$- \\frac{90}{7}$",
+          "is_correct": true
+        },
+        {
+          "text": "$- \\frac{97}{7}$",
+          "is_correct": false
+        },
+        {
+          "text": "$- \\frac{83}{7}$",
+          "is_correct": false
+        }
+      ],
+      "root": "-90/7"
+    },
+    "route-linear-v1-s5-10": {
+      "stage": 5,
+      "family": "fraction_shifted",
+      "question": "Розв'яжіть рівняння $\\frac{x-10}{4}+\\frac{x+11}{5}=x+6$.",
+      "solution": "Помножимо обидві частини на 20, щоб позбутися знаменників. Одержимо $9 x - 6=20 x + 120$. Зберемо доданки зі змінною зліва, числа справа: $- 11 x=126$. Поділимо обидві частини на $-11$: $x=- \\frac{126}{11}$.",
+      "choices": [
+        {
+          "text": "$- \\frac{137}{11}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{126}{11}$",
+          "is_correct": false
+        },
+        {
+          "text": "$- \\frac{126}{11}$",
+          "is_correct": true
+        },
+        {
+          "text": "$- \\frac{115}{11}$",
+          "is_correct": false
+        }
+      ],
+      "root": "-126/11"
+    },
+    "route-linear-v1-s6-01": {
+      "stage": 6,
+      "family": "combine_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{2(x-1)}{3}-\\frac{x+1}{2}=\\frac{x-5}{4}$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 14=3 x - 15$. Зберемо доданки зі змінною зліва, числа справа: $- x=-1$. Поділимо обидві частини на $-1$: $x=1$.",
+      "choices": [
+        {
+          "text": "$1$",
+          "is_correct": true
+        },
+        {
+          "text": "$-1$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        },
+        {
+          "text": "$0$",
+          "is_correct": false
+        }
+      ],
+      "root": "1"
+    },
+    "route-linear-v1-s6-02": {
+      "stage": 6,
+      "family": "combine_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{3(x-2)}{3}-\\frac{x+2}{2}=\\frac{x-6}{4}$.",
+      "solution": "Помножимо обидві частини на 4, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $2 x - 12=x - 6$. Зберемо доданки зі змінною зліва, числа справа: $x=6$.",
+      "choices": [
+        {
+          "text": "$6$",
+          "is_correct": true
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s6-03": {
+      "stage": 6,
+      "family": "combine_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{4(x-3)}{3}-\\frac{x+3}{2}=\\frac{x-7}{4}$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $10 x - 66=3 x - 21$. Зберемо доданки зі змінною зліва, числа справа: $7 x=45$. Поділимо обидві частини на $7$: $x=\\frac{45}{7}$.",
+      "choices": [
+        {
+          "text": "$- \\frac{45}{7}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{52}{7}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{38}{7}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{45}{7}$",
+          "is_correct": true
+        }
+      ],
+      "root": "45/7"
+    },
+    "route-linear-v1-s6-04": {
+      "stage": 6,
+      "family": "combine_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{5(x-4)}{3}-\\frac{x+1}{2}=\\frac{x-8}{4}$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $14 x - 86=3 x - 24$. Зберемо доданки зі змінною зліва, числа справа: $11 x=62$. Поділимо обидві частини на $11$: $x=\\frac{62}{11}$.",
+      "choices": [
+        {
+          "text": "$- \\frac{62}{11}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{51}{11}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{73}{11}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{62}{11}$",
+          "is_correct": true
+        }
+      ],
+      "root": "62/11"
+    },
+    "route-linear-v1-s6-05": {
+      "stage": 6,
+      "family": "combine_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{6(x-5)}{3}-\\frac{x+2}{2}=\\frac{x-9}{4}$.",
+      "solution": "Помножимо обидві частини на 4, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $6 x - 44=x - 9$. Зберемо доданки зі змінною зліва, числа справа: $5 x=35$. Поділимо обидві частини на $5$: $x=7$.",
+      "choices": [
+        {
+          "text": "$6$",
+          "is_correct": false
+        },
+        {
+          "text": "$-7$",
+          "is_correct": false
+        },
+        {
+          "text": "$7$",
+          "is_correct": true
+        },
+        {
+          "text": "$8$",
+          "is_correct": false
+        }
+      ],
+      "root": "7"
+    },
+    "route-linear-v1-s6-06": {
+      "stage": 6,
+      "family": "combine_two_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{2(x-1)}{3}-\\frac{2(x+1)}{4}=\\frac{x-5}{2}$.",
+      "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $x - 7=3 x - 15$. Зберемо доданки зі змінною зліва, числа справа: $- 2 x=-8$. Поділимо обидві частини на $-2$: $x=4$.",
+      "choices": [
+        {
+          "text": "$3$",
+          "is_correct": false
+        },
+        {
+          "text": "$-4$",
+          "is_correct": false
+        },
+        {
+          "text": "$4$",
+          "is_correct": true
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        }
+      ],
+      "root": "4"
+    },
+    "route-linear-v1-s6-07": {
+      "stage": 6,
+      "family": "combine_two_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{3(x-2)}{3}-\\frac{3(x+2)}{4}=\\frac{x-6}{2}$.",
+      "solution": "Помножимо обидві частини на 4, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $x - 14=2 x - 12$. Зберемо доданки зі змінною зліва, числа справа: $- x=2$. Поділимо обидві частини на $-1$: $x=-2$.",
+      "choices": [
+        {
+          "text": "$-2$",
+          "is_correct": true
+        },
+        {
+          "text": "$-1$",
+          "is_correct": false
+        },
+        {
+          "text": "$-3$",
+          "is_correct": false
+        },
+        {
+          "text": "$2$",
+          "is_correct": false
+        }
+      ],
+      "root": "-2"
+    },
+    "route-linear-v1-s6-08": {
+      "stage": 6,
+      "family": "combine_two_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{4(x-3)}{3}-\\frac{2(x+3)}{4}=\\frac{x-7}{2}$.",
+      "solution": "Помножимо обидві частини на 6, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $5 x - 33=3 x - 21$. Зберемо доданки зі змінною зліва, числа справа: $2 x=12$. Поділимо обидві частини на $2$: $x=6$.",
+      "choices": [
+        {
+          "text": "$6$",
+          "is_correct": true
+        },
+        {
+          "text": "$7$",
+          "is_correct": false
+        },
+        {
+          "text": "$-6$",
+          "is_correct": false
+        },
+        {
+          "text": "$5$",
+          "is_correct": false
+        }
+      ],
+      "root": "6"
+    },
+    "route-linear-v1-s6-09": {
+      "stage": 6,
+      "family": "combine_two_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{5(x-4)}{3}-\\frac{3(x+1)}{4}=\\frac{x-8}{2}$.",
+      "solution": "Помножимо обидві частини на 12, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $11 x - 89=6 x - 48$. Зберемо доданки зі змінною зліва, числа справа: $5 x=41$. Поділимо обидві частини на $5$: $x=\\frac{41}{5}$.",
+      "choices": [
+        {
+          "text": "$\\frac{46}{5}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{36}{5}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{41}{5}$",
+          "is_correct": true
+        },
+        {
+          "text": "$- \\frac{41}{5}$",
+          "is_correct": false
+        }
+      ],
+      "root": "41/5"
+    },
+    "route-linear-v1-s6-10": {
+      "stage": 6,
+      "family": "combine_two_brackets",
+      "question": "Розв'яжіть рівняння $\\frac{6(x-5)}{3}-\\frac{2(x+2)}{4}=\\frac{x-9}{2}$.",
+      "solution": "Помножимо обидві частини на 2, щоб позбутися знаменників. Розкриємо дужки й зведемо подібні доданки. Одержимо $3 x - 22=x - 9$. Зберемо доданки зі змінною зліва, числа справа: $2 x=13$. Поділимо обидві частини на $2$: $x=\\frac{13}{2}$.",
+      "choices": [
+        {
+          "text": "$\\frac{15}{2}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{11}{2}$",
+          "is_correct": false
+        },
+        {
+          "text": "$- \\frac{13}{2}$",
+          "is_correct": false
+        },
+        {
+          "text": "$\\frac{13}{2}$",
+          "is_correct": true
+        }
+      ],
+      "root": "13/2"
+    }
+  }
+}

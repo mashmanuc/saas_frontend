@@ -590,7 +590,7 @@
           :strokes="displayStrokes"
           :assets="displayAssets"
           :width="store.pageWidth"
-          :height="store.pageHeight"
+          :height="store.currentPageCanvasHeight"
           :zoom="store.zoom"
           :background="displayBackground"
           :is-tutor="true"
@@ -2359,7 +2359,8 @@ function fitPageNow(): void {
   if (!fit) return
   applyingProgrammaticFit = true
   try {
-    fit()
+    // Довга нова добірка відкривається першим читабельним екраном, не мініатюрою.
+    fit(store.currentPageCanvasHeight !== store.pageHeight ? store.pageHeight : undefined)
   } finally {
     applyingProgrammaticFit = false
   }
@@ -4730,7 +4731,7 @@ onMounted(async () => {
       // MUST be called BEFORE recorder.connectToStore — без bootstrap store stays
       // у BOOTSTRAP mode → record() returns false → drawing produces 0 ops.
       try {
-        await opsSync.bootstrap(id)
+        await opsSync.bootstrap(id, snapshot => store.applyCatchUpState(snapshot))
         // Лише дії ПІСЛЯ відкриття і лише ті, що змінюють урок (гортання — ні).
         _unsubExitNoticeOps = store.onOperation((op) => {
           if (isLessonContentOp(op.op_type)) lessonContentChanged = true

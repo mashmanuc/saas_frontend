@@ -27,6 +27,8 @@ import type { RecordOperationRequest } from '../../types/replay'
 // Phase 1A (Plan v1.1): Layer A whitelist filter — пропустити no-op updateAsset.
 // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
 import { assetsEqualByOpsFields } from './assetEquality'
+import { isAutoFitOnlyUpdate } from './autoFitHistory'
+import { flowOf, flowContentSnapshot, rebaseFlowFit, reflowGenerated } from './generatedTaskFlow'
 import { isAssetSelectable } from '../selectableObjects'
 // Phase 1B (Plan v1.1): Layer B per-asset_id RAF coalesce — батчинг async updates.
 import { scheduleBufferedUpdate, flushPendingUpdates } from './assetUpdateBatcher'
@@ -669,6 +671,13 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     pageCount: (state): number => state.pages.length,
+
+    /** INV-25.13: збережений аркуш добірки має бути доступний до самого низу. */
+    currentPageCanvasHeight(state): number {
+      const page=state.pages[state.currentPageIndex]
+      return page && page.assets.some(a=>flowOf(a)) && Number.isFinite(page.height)
+        && (page.height ?? 0)>0 ? page.height! : state.pageHeight
+    },
 
     hasWorkspace: (state): boolean => !!state.workspaceId,
 
@@ -1525,7 +1534,8 @@ export const useWBStore = defineStore('wb-board', {
       // На flush — re-fetch current asset (state може змінитись між schedule і flush)
       // + повторний Layer A check (final asset може стати ідентичним до new current).
       scheduleBufferedUpdate(asset, opts, (finalAsset, finalOpts) => {
-        this._applyAssetUpdate(finalAsset, finalOpts)
+        const current = this.pages[this.currentPageIndex]?.assets.find(a => a.id === finalAsset.id)
+        this._applyAssetUpdate(current ? rebaseFlowFit(currentAsset, current, finalAsset) : finalAsset, finalOpts)
       })
     },
 
@@ -1556,27 +1566,38 @@ export const useWBStore = defineStore('wb-board', {
         return
       }
 
-      if (!opts?.skipHistory) {
+      if (!opts?.skipHistory && !isAutoFitOnlyUpdate(currentAsset, asset)) {
         const _prev = { ...page.assets[idx] }
         const _next = { ...asset }
         const cmd: WBCommand = {
-          apply: () => this.updateAsset(_next, { skipHistory: true }),
-          revert: () => this.updateAsset(_prev, { skipHistory: true }),
+          apply: () => {
+            const now=this.pages[pageIndex]?.assets.find(a=>a.id===_next.id)
+            this.updateAsset(now ? flowContentSnapshot(now,_prev,_next,_next) : _next, { skipHistory: true })
+          },
+          revert: () => {
+            const now=this.pages[pageIndex]?.assets.find(a=>a.id===_prev.id)
+            this.updateAsset(now ? flowContentSnapshot(now,_prev,_next,_prev) : _prev, { skipHistory: true })
+          },
         }
         this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
-      const newAssets = [...page.assets]
-      newAssets[idx] = asset
+      const flow = this.mode === 'edit' ? reflowGenerated(page,currentAsset,asset) : null
+      const newAssets = flow ?? [...page.assets]
+      if (!flow) newAssets[idx] = asset
       this.pages[pageIndex] = { ...page, assets: newAssets }
 
       this.markDirty()
-      _emitOperation({
-        op_type: 'asset_update',
-        page_id: this.pages[pageIndex]?.id ?? '',
-        payload: { asset },
-      })
+      for (const updated of newAssets) {
+        const previous=page.assets.find(a=>a.id===updated.id)
+        if (previous && assetsEqualByOpsFields(previous,updated)) continue
+        _emitOperation({
+          op_type: 'asset_update',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { asset: updated },
+        })
+      }
     },
 
     /**

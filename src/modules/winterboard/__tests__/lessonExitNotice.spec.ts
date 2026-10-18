@@ -86,7 +86,8 @@ describe('сторож обв’язки в WBSoloRoom', () => {
     expect(decide).toBeLessThan(push)
   })
   it('зміни рахуються лише після bootstrap наявної дошки і лише операції вмісту', () => {
-    expect(src).toMatch(/await opsSync\.bootstrap\(id\)[\s\S]{0,200}store\.onOperation\(\(op\) => \{\s*\n\s*if \(isLessonContentOp\(op\.op_type\)\) lessonContentChanged = true/)
+    // INV-18.1: bootstrap тепер також гідрує стан; підписка й далі лише ПІСЛЯ await.
+    expect(src).toMatch(/await opsSync\.bootstrap\(id, snapshot => store\.applyCatchUpState\(snapshot\)\)[\s\S]{0,200}store\.onOperation\(\(op\) => \{\s*\n\s*if \(isLessonContentOp\(op\.op_type\)\) lessonContentChanged = true/)
   })
   it('після «Зберегти як новий шаблон» на дошці ці зміни вже не нагадуємо', () => {
     const saved = src.slice(src.indexOf('function handleCopySaved('), src.indexOf('async function openSaveTemplateDialog('))
