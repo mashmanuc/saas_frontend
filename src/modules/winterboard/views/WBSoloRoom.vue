@@ -1950,13 +1950,13 @@ const boardRemote = useBoardRemote({
   // v1.2: «задача на екран», A−/A+, ▲/▼, відповідь/розбір — над стором дошки
   view: remoteView,
   // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
-  // розбір показується друкованим, як «Показати розбір».
+  // розбір показується друкованим, як «Показати розбір». 18.10: з правом Інтегралика — коротким записом.
   handwrite: (asset: any) => {
     void handwriteWithFeedback(asset, () => {
       const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
       if (fresh.data?.showSolution) return
       store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
-    })
+    }, undefined, { canSolve: canSolveHandwrite.value })
   },
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {

@@ -142,25 +142,63 @@ async function exclusive(assetId: string, run: () => Promise<HandwriteResult>): 
   }
 }
 
-/**
- * Написати розв'язок картки задачі рукою біля неї. Повертає, чим скінчилось; не кидає на
- * звичайних відмовах (немає розв'язку, зайнято, заблоковано, не влізло, перекладач не знає).
- */
-export async function handwriteTaskSolution(asset: AnchorAsset, depsIn?: HandwriteDeps): Promise<HandwriteResult> {
-  if (active || handwriteBusyId.value !== null) return { status: 'busy' }
-  if (!hasHandwritableSolution(asset)) return { status: 'no_solution' }
-  return exclusive(asset.id, async () => writeSolution(
-    asset, { text: String(asset.data.solution), answer: answerTextOf(asset.data) }, depsIn ?? await defaultDeps()))
+export interface SolveOptions {
+  /**
+   * Кімната дала право кликати Інтегралика (власник дошки з увімкненим Інтеграликом). Без нього задача
+   * банку пишеться самими формулами (як до 18.10), а інше не пишеться зовсім.
+   */
+  canSolve?: boolean
 }
 
 /**
- * ✍ на виділеному: задача з розв'язком у даних — пишемо його (моделі не треба); інакше розв'язує
- * Інтегралик і розв'язок пишеться тим самим шляхом. Поки йде розв'язування — `handwriteBusyId`.
+ * Написати розв'язок картки задачі банку рукою біля неї. Повертає, чим скінчилось; не кидає на
+ * звичайних відмовах (немає розв'язку, зайнято, заблоковано, не влізло, перекладач не знає).
+ *
+ * Власник 18.10: «формули + короткі слова» скрізь, де пише ✍, — і в банку: з правом Інтегралика сервер
+ * стискає ГОТОВИЙ розв'язок до короткого запису (відповідь звіряється з ключем). Модель не відповіла,
+ * відмовила чи перекладач не знає її запису — пишеться як до того, самими формулами з розв'язку картки.
  */
-export async function solveAndHandwrite(asset: AnchorAsset, depsIn?: HandwriteDeps): Promise<HandwriteResult> {
-  if (hasHandwritableSolution(asset)) return handwriteTaskSolution(asset, depsIn)
+export async function handwriteTaskSolution(
+  asset: AnchorAsset, depsIn?: HandwriteDeps, opts: SolveOptions = {},
+): Promise<HandwriteResult> {
   if (active || handwriteBusyId.value !== null) return { status: 'busy' }
-  if (!isIntegralykSolvable(asset)) return { status: 'no_solution' }
+  if (!hasHandwritableSolution(asset)) return { status: 'no_solution' }
+  return exclusive(asset.id, async () => {
+    const deps = depsIn ?? await defaultDeps()
+    const boardId = deps.store.workspaceId
+    if (opts.canSolve && boardId && deps.store.mode === 'edit') {
+      const brief = await briefOrNull(boardId, asset.id, deps)
+      if (brief && deps.store.workspaceId === boardId) {
+        const written = await writeSolution(asset, brief, deps, 'full')
+        if (written.status !== 'unsupported') return written
+      }
+    }
+    return writeSolution(asset, { text: String(asset.data.solution), answer: answerTextOf(asset.data) }, deps, 'steps')
+  })
+}
+
+/** Короткий запис від сервера або null — тоді пишемо самими формулами (причину сервер уже записав у лог). */
+async function briefOrNull(boardId: string, objectId: string, deps: HandwriteDeps) {
+  try {
+    const solved = await (deps.fetchSolve ?? defaultFetchSolve)(boardId, objectId)
+    return 'error' in solved ? null : solved
+  } catch (err) {
+    // Мережу й 5xx уже показав apiClient; розв'язок у картці є — пишемо його.
+    console.warn('[WB:handwrite] короткий запис недоступний — пишемо формулами з картки', err)
+    return null
+  }
+}
+
+/**
+ * ✍ на виділеному: задача з розв'язком у даних — як `handwriteTaskSolution`; інакше розв'язує Інтегралик
+ * і розв'язок пишеться тим самим шляхом. Поки йде розв'язування — `handwriteBusyId`.
+ */
+export async function solveAndHandwrite(
+  asset: AnchorAsset, depsIn?: HandwriteDeps, opts: SolveOptions = { canSolve: true },
+): Promise<HandwriteResult> {
+  if (hasHandwritableSolution(asset)) return handwriteTaskSolution(asset, depsIn, opts)
+  if (active || handwriteBusyId.value !== null) return { status: 'busy' }
+  if (!opts.canSolve || !isIntegralykSolvable(asset)) return { status: 'no_solution' }
   return exclusive(asset.id, async () => {
     const deps = depsIn ?? await defaultDeps()
     const boardId = deps.store.workspaceId
@@ -171,13 +209,17 @@ export async function solveAndHandwrite(asset: AnchorAsset, depsIn?: HandwriteDe
     }
     // Поки Інтегралик розв'язував, учитель міг перейти на іншу дошку.
     if (deps.store.workspaceId !== boardId) return { status: 'blocked' }
-    return writeSolution(asset, solved, deps)
+    return writeSolution(asset, solved, deps, 'full')
   })
 }
 
-/** Текст розв'язку → рукопис біля об'єкта на поточній сторінці (або на новій — з копією об'єкта). */
+/**
+ * Текст розв'язку → рукопис біля об'єкта на поточній сторінці (або на новій — з копією об'єкта).
+ * `full` — короткий запис сервера пишеться як є (формули + слова); `steps` — лише формули-кроки з
+ * розв'язку картки (так ✍ писав банк до 18.10 і пише без права Інтегралика).
+ */
 async function writeSolution(
-  anchor: AnchorAsset, solved: { text: string; answer: string }, deps: HandwriteDeps,
+  anchor: AnchorAsset, solved: { text: string; answer: string }, deps: HandwriteDeps, mode: 'steps' | 'full',
 ): Promise<HandwriteResult> {
   const { store, sync } = deps
   const boardId = store.workspaceId
@@ -193,7 +235,7 @@ async function writeSolution(
   const pageH = page.height ?? 1080
   const req = (area: Rect, float?: { w: number; h: number }): HandwriteLayoutRequest => ({
     text: solved.text, width: Math.floor(area.w), height: Math.floor(area.h),
-    mode: 'steps', answer: solved.answer, ...(float ? { float } : {}),
+    mode, answer: solved.answer, ...(float ? { float } : {}),
   })
 
   // Сторінку займає те, що на ній є зараз; лічильник об'єктів — як у `canAddObject`.
@@ -311,10 +353,11 @@ export async function handwriteWithFeedback(
   asset: Parameters<typeof handwriteTaskSolution>[0],
   revealPrinted: () => void,
   depsIn?: HandwriteDeps,
+  opts: SolveOptions = {},
 ): Promise<HandwriteResult | null> {
   let result: HandwriteResult
   try {
-    result = await handwriteTaskSolution(asset, depsIn)
+    result = await handwriteTaskSolution(asset, depsIn, opts)
   } catch (err: any) {
     // Мережа й 5xx уже показав apiClient; тут — лише те, чого він не бачив.
     console.error('[WB:handwrite] failed', err)
@@ -341,14 +384,15 @@ export async function solveWithFeedback(
   asset: AnchorAsset,
   revealPrinted: () => void,
   depsIn?: HandwriteDeps,
+  opts: SolveOptions = { canSolve: true },
 ): Promise<HandwriteResult | null> {
-  if (hasHandwritableSolution(asset)) return handwriteWithFeedback(asset, revealPrinted, depsIn)
-  if (!active && handwriteBusyId.value === null && isIntegralykSolvable(asset)) {
+  if (hasHandwritableSolution(asset)) return handwriteWithFeedback(asset, revealPrinted, depsIn, opts)
+  if (opts.canSolve && !active && handwriteBusyId.value === null && isIntegralykSolvable(asset)) {
     notifyInfo(tAssistantGlobal('winterboard.handwrite.solving'))
   }
   let result: HandwriteResult
   try {
-    result = await solveAndHandwrite(asset, depsIn)
+    result = await solveAndHandwrite(asset, depsIn, opts)
   } catch (err: any) {
     console.error('[WB:handwrite] solve failed', err)
     // Мережу, 403 і 5xx уже показав apiClient; решту відповідей (404 вимкненого на сервері

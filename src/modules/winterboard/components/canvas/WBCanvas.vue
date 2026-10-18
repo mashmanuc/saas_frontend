@@ -1822,6 +1822,7 @@ function handleWindowDelete(assetId: string): void {
  * LAW §9 v1.29: ✍️ — розв'язок задачі рукою біля неї. Пише стор штатними `stroke_add`
  * (useHandwriteSolution); не вийшло рукою — розбір показується друкованим, як «Показати розбір».
  * Етап 1: картка без розв'язку — розв'язує Інтегралик (`solveWithFeedback`), далі той самий шлях.
+ * 18.10: з правом Інтегралика й задача банку пишеться коротким записом (формули + слова).
  */
 function handleWindowHandwrite(asset: WBAsset): void {
   if (!cardWindowActions(asset, windowViewer.value).handwrite) return
@@ -1829,7 +1830,7 @@ function handleWindowHandwrite(asset: WBAsset): void {
     const fresh = props.assets.find((a) => a.id === asset.id) ?? asset
     if ((fresh.data as { showSolution?: boolean } | undefined)?.showSolution) return
     emit('asset-update', { ...fresh, data: { ...(fresh.data as object), showSolution: true } } as unknown as WBAsset)
-  })
+  }, undefined, { canSolve: windowViewer.value.canSolve })
 }
 
 function handleMinimize(asset: WBAsset): void {

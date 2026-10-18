@@ -295,17 +295,46 @@ describe('solveAndHandwrite', () => {
     runAll()
     expect(await done).toEqual({ status: 'written', strokes: 3, pageId: 'p1', newPage: false })
     expect(deps.fetchSolve).toHaveBeenCalledWith('board-1', 'pdffrag-1')
-    expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: '$2x = 4$\n$x = 2$', answer: '$2$', mode: 'steps' })
+    expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: '$2x = 4$\n$x = 2$', answer: '$2$', mode: 'full' })
     expect(page.strokes[0].points[0].x).toBe(PDF_CUT.x + PDF_CUT.w + 40)
     expect(handwriteBusyId.value).toBeNull()
   })
 
-  it('задача з розв\'язком у даних — Інтегралика не кличе', async () => {
-    const { deps, runAll } = makeDeps()
+  it('задача банку з правом Інтегралика — короткий запис сервера (формули + слова) як є', async () => {
+    const brief = { text: '$x + 2 = 5$\nперенесемо $2$\n$x = 3$', answer: 'Б' }
+    const { deps, runAll } = makeDeps({ solve: async () => brief })
     const done = solveAndHandwrite(TASK, deps)
     await flush()
     runAll()
     expect((await done).status).toBe('written')
+    expect(deps.fetchSolve).toHaveBeenCalledWith('board-1', 'task-1')
+    expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: brief.text, answer: 'Б', mode: 'full' })
+  })
+
+  it('без права Інтегралика задача банку — самими формулами з картки, сервера не питаємо', async () => {
+    const { deps, runAll } = makeDeps()
+    const done = handwriteTaskSolution(TASK, deps)
+    await flush()
+    runAll()
+    expect((await done).status).toBe('written')
+    expect(deps.fetchSolve).not.toHaveBeenCalled()
+    expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: TASK.data.solution, answer: 'Б', mode: 'steps' })
+  })
+
+  it('сервер відмовив чи впав — задача банку пишеться формулами з картки', async () => {
+    for (const solve of [async () => ({ error: 'mismatch' as const }), async () => { throw new Error('мережа') }]) {
+      const { deps, runAll } = makeDeps({ solve })
+      const done = handwriteTaskSolution(TASK, deps, { canSolve: true })
+      await flush()
+      runAll()
+      expect((await done).status).toBe('written')
+      expect((deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ text: TASK.data.solution, mode: 'steps' })
+    }
+  })
+
+  it('без права Інтегралика картинку й картку не розв\'язуємо', async () => {
+    const { deps } = makeDeps({ assets: [PDF_CUT] })
+    expect(await solveAndHandwrite(PDF_CUT, deps, { canSolve: false })).toEqual({ status: 'no_solution' })
     expect(deps.fetchSolve).not.toHaveBeenCalled()
   })
 

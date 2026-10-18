@@ -1188,13 +1188,13 @@ const boardRemote = useBoardRemote({
   enabled: computed(() => classroomRole.isTeacher.value && !!resolvedSessionId.value),
   view: createRemoteViewAdapter(store as any),
   // v1.29: «✍️ Розв'язок рукою» з пульта — пише ноутбук штатними stroke_add; не вийшло рукою —
-  // розбір показується друкованим, як «Показати розбір».
+  // розбір показується друкованим, як «Показати розбір». 18.10: з правом Інтегралика — коротким записом.
   handwrite: (asset: any) => {
     void handwriteWithFeedback(asset, () => {
       const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
       if (fresh.data?.showSolution) return
       store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
-    })
+    }, undefined, { canSolve: canSolveHandwrite.value })
   },
 })
 
