@@ -64,16 +64,26 @@ describe('«Все одно відкрити дошку» запам’ятов�
 })
 
 describe('WBPhoneBoardHint — вікно', () => {
-  it('заголовок, текст і дві кнопки; кожна шле свою подію', async () => {
+  it('заголовок, текст і три кнопки; кожна шле свою подію', async () => {
     const w = mount(WBPhoneBoardHint, { global: { stubs: { Teleport: true } } })
     const text = w.text()
     expect(text).toContain('winterboard.phoneHint.title')
     expect(text).toContain('winterboard.phoneHint.body')
+    await w.find('[data-testid="phone-board-hint-remote"]').trigger('click')
     await w.find('[data-testid="phone-board-hint-understood"]').trigger('click')
     await w.find('[data-testid="phone-board-hint-open"]').trigger('click')
-    expect(Object.keys(w.emitted())).toEqual(expect.arrayContaining(['understood', 'open-anyway']))
+    expect(Object.keys(w.emitted())).toEqual(expect.arrayContaining(['open-remote', 'understood', 'open-anyway']))
+    expect(w.emitted('open-remote')).toHaveLength(1)
     expect(w.emitted('understood')).toHaveLength(1)
     expect(w.emitted('open-anyway')).toHaveLength(1)
+  })
+
+  it('прохід «очима вчителя» 19.10: вікно обіцяє пульт — «Відкрити пульт» перша й головна', () => {
+    const w = mount(WBPhoneBoardHint, { global: { stubs: { Teleport: true } } })
+    const buttons = w.findAll('button')
+    expect(buttons[0].attributes('data-testid')).toBe('phone-board-hint-remote')
+    expect(buttons[0].classes()).toContain('wb-phone-hint__btn--primary')
+    expect(buttons[0].text()).toBe('winterboard.phoneHint.openRemote')
   })
 })
 
@@ -84,6 +94,13 @@ describe('WBSoloRoom підключає вікно за цим правилом'
   it('вікно показується лише через shouldShowPhoneBoardHint з власником і локальною дошкою', () => {
     expect(src).toMatch(/<WBPhoneBoardHint\s+v-if="showPhoneBoardHint"/)
     expect(src).toMatch(/shouldShowPhoneBoardHint\(\{[\s\S]*?isSessionOwner: isSessionOwner\.value,[\s\S]*?isLocalWorkspace,[\s\S]*?dismissed: phoneHintDismissed\.value,/)
+  })
+
+  it('«Відкрити пульт» веде на той самий вхід пульта, що й QR, і вибору не запам’ятовує', () => {
+    expect(src).toMatch(/@open-remote="onPhoneHintOpenRemote"/)
+    const fn = src.match(/function onPhoneHintOpenRemote\(\)[\s\S]*?\n}/)?.[0] ?? ''
+    expect(fn).toMatch(/router\.push\('\/remote'\)/)
+    expect(fn).not.toMatch(/rememberPhoneBoardHintDismissed/)
   })
 
   it('«Зрозуміло» веде в кабінет, «Все одно відкрити» запам’ятовує вибір', () => {

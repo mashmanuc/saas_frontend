@@ -121,6 +121,35 @@ describe('WBCardWindowControls', () => {
     expect(busyReady.get('[data-testid="wb-card-window-handwrite"]').classes()).toContain('wb-card-window-controls__btn--busy')
   })
 
+  it('LAW §9 v1.35 · ✍ 💡 ⚠ — окремою плашкою під рядком вікна, не поруч із «×» (прохід «очима вчителя», 19.10)', () => {
+    const task = { ...ALL, scale: true, handwrite: true, taskHelp: true }
+    const w = mount(WBCardWindowControls, { props: { actions: task, isExpanded: false }, global: { plugins: [i18n()] } })
+    const row = w.get('.wb-card-window-controls__row')
+    const group = w.get('[data-testid="wb-card-window-task"]')
+    expect(row.findAll('button').map(b => b.text())).toEqual(['A−', '100%', 'A+', '—', '⛶', '×'])
+    expect(group.findAll('button').map(b => b.text())).toEqual(['✍', '💡', '⚠'])
+    // Плашка задачі йде ПІСЛЯ рядка вікна (стовпчиком — нижче), а не всередині нього
+    expect(row.element.nextElementSibling).toBe(group.element)
+    // Без ✍ 💡 ⚠ плашки немає зовсім
+    expect(mountControls().find('[data-testid="wb-card-window-task"]').exists()).toBe(false)
+  })
+
+  it('LAW §9 v1.35 · розміри: шапка 24 px, ✍ 💡 ⚠ 32 px; на дотику 32 і 44 px', () => {
+    const css = read('modules/winterboard/components/canvas/WBCardWindowControls.vue').split('<style scoped>')[1]
+    const rule = (selector: string, from = css) => {
+      const at = from.indexOf(`${selector} {`)
+      expect(at, selector).toBeGreaterThanOrEqual(0)
+      return from.slice(at, from.indexOf('}', at))
+    }
+    expect(css).toMatch(/\.wb-card-window-controls\s*\{[^}]*flex-direction: column/)
+    expect(rule('.wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn')).toMatch(/width: 24px;[\s\S]*height: 24px;/)
+    expect(rule('.wb-card-window-controls__task .wb-card-window-controls__btn')).toMatch(/width: 32px;[\s\S]*height: 32px;/)
+    const touch = css.slice(css.indexOf('@media (any-pointer: coarse) {'))
+    expect(touch.length).toBeGreaterThan(30)
+    expect(rule('.wb-card-window-controls__task .wb-card-window-controls__btn', touch)).toMatch(/width: 44px;[\s\S]*height: 44px;/)
+    expect(rule('.wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn', touch)).toMatch(/width: 32px;[\s\S]*height: 32px;/)
+  })
+
   it('кнопки емітять свої дії', async () => {
     const w = mountControls()
     await w.get('[data-testid="wb-card-window-minimize"]').trigger('click')

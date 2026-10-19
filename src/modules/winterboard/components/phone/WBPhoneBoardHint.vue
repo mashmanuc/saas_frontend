@@ -1,6 +1,8 @@
 <template>
   <!-- Б-202: власнику дошки на телефоні вертикально (логіка показу — board/phoneBoardHint.ts).
-       Лише вигляд на цьому пристрої: дошку, операції й стан не чіпає. -->
+       Лише вигляд на цьому пристрої: дошку, операції й стан не чіпає.
+       Прохід «очима вчителя» 19.10: вікно обіцяло пульт і не відкривало його — тепер перша кнопка
+       «Відкрити пульт» (той самий вхід /remote, що й QR «Підключити телефон»). -->
   <Teleport to="body">
     <div class="wb-phone-hint__overlay" role="dialog" aria-modal="true" aria-labelledby="wb-phone-hint-title"
          data-testid="phone-board-hint">
@@ -16,6 +18,10 @@
         <p class="wb-phone-hint__body">{{ t('winterboard.phoneHint.body') }}</p>
         <div class="wb-phone-hint__actions">
           <button type="button" class="wb-phone-hint__btn wb-phone-hint__btn--primary"
+                  data-testid="phone-board-hint-remote" @click="emit('open-remote')">
+            {{ t('winterboard.phoneHint.openRemote') }}
+          </button>
+          <button type="button" class="wb-phone-hint__btn wb-phone-hint__btn--quiet"
                   data-testid="phone-board-hint-understood" @click="emit('understood')">
             {{ t('winterboard.phoneHint.understood') }}
           </button>
@@ -33,7 +39,7 @@
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const emit = defineEmits<{ understood: []; 'open-anyway': [] }>()
+const emit = defineEmits<{ 'open-remote': []; understood: []; 'open-anyway': [] }>()
 </script>
 
 <style scoped>

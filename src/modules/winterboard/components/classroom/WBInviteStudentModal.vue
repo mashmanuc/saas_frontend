@@ -22,13 +22,36 @@
 
         <!-- Student selection -->
         <div class="wb-invite-modal__field">
-          <label class="wb-invite-modal__label">
+          <label v-if="!noStudents" class="wb-invite-modal__label">
             {{ t('winterboard.startClassroom.selectStudent') }}
           </label>
           <div v-if="isLoadingStudents" class="wb-invite-modal__spinner" aria-busy="true" />
-          <p v-else-if="students.length === 0" class="wb-invite-modal__empty">
-            {{ t('winterboard.startClassroom.noStudents') }}
-          </p>
+          <!-- Прохід «очима вчителя» 19.10: без учнів вікно було глухим кутом. Тепер тут та сама дія,
+               що «Створити запрошення» на сторінці «Учні»: посилання учню; прийме — з'явиться в цьому списку. -->
+          <div v-else-if="students.length === 0" class="wb-invite-modal__empty" data-testid="wb-invite-no-students">
+            <p class="wb-invite-modal__empty-text">{{ t('winterboard.startClassroom.noStudents') }}</p>
+            <p class="wb-invite-modal__empty-text">
+              {{ t(invite ? 'winterboard.startClassroom.afterInvite' : 'winterboard.startClassroom.addStudentHint') }}
+            </p>
+            <div v-if="invite" class="wb-invite-modal__link" data-testid="wb-invite-link">
+              <input
+                ref="inviteInput"
+                class="wb-invite-modal__input"
+                type="text"
+                readonly
+                :value="invite.invite_url"
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+              <button
+                type="button"
+                class="wb-invite-modal__btn wb-invite-modal__btn--confirm"
+                data-testid="wb-invite-copy"
+                @click="copyInvite"
+              >
+                {{ copied ? t('invites.copiedToClipboard') : t('invites.shareCopy') }}
+              </button>
+            </div>
+          </div>
           <select
             v-else
             v-model="selectedStudentId"
@@ -47,7 +70,7 @@
         </div>
 
         <!-- Optional lesson name -->
-        <div class="wb-invite-modal__field">
+        <div v-if="!noStudents" class="wb-invite-modal__field">
           <label class="wb-invite-modal__label">
             {{ t('winterboard.startClassroom.lessonName') }}
           </label>
@@ -75,9 +98,20 @@
             :disabled="isSubmitting"
             @click="handleCancel"
           >
-            {{ t('winterboard.startClassroom.cancel') }}
+            {{ invite ? t('common.close', 'Закрити') : t('winterboard.startClassroom.cancel') }}
           </button>
           <button
+            v-if="noStudents && !invite"
+            type="button"
+            class="wb-invite-modal__btn wb-invite-modal__btn--confirm"
+            data-testid="wb-invite-add-student"
+            :disabled="isCreatingInvite"
+            @click="createInvite"
+          >
+            {{ isCreatingInvite ? '…' : t('winterboard.startClassroom.addStudent') }}
+          </button>
+          <button
+            v-else-if="!noStudents"
             type="button"
             class="wb-invite-modal__btn wb-invite-modal__btn--confirm"
             :disabled="isSubmitting || !selectedStudentId || students.length === 0"
@@ -92,12 +126,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ordersApi } from '@/modules/booking/api/ordersApi'
 import { winterboardApi } from '../../api/winterboardApi'
 import { useOpsSyncStore } from '../../stores/opsSyncStore'
+import { useInviteCreate } from '@/composables/useInviteCreate'
 
 interface StudentOption {
   id: number
@@ -123,6 +158,25 @@ const isSubmitting = ref(false)
 const errorMsg = ref('')
 const submitStatus = ref('')
 
+// Без учнів — та сама дія, що «Створити запрошення» на сторінці «Учні» (useInviteCreate).
+const { isCreating: isCreatingInvite, invite, create: createInvite, reset: resetInvite } = useInviteCreate()
+const copied = ref(false)
+const inviteInput = ref<HTMLInputElement | null>(null)
+const noStudents = computed(() => !isLoadingStudents.value && students.value.length === 0)
+
+async function copyInvite(): Promise<void> {
+  if (!invite.value) return
+  try {
+    await navigator.clipboard.writeText(invite.value.invite_url)
+    copied.value = true
+  } catch {
+    // Буфер обміну заборонено (браузер не дав дозволу) — виділяємо посилання в полі: Ctrl+C і готово.
+    copied.value = false
+    inviteInput.value?.focus()
+    inviteInput.value?.select()
+  }
+}
+
 watch(() => props.visible, async (v) => {
   if (v) {
     selectedStudentId.value = ''
@@ -130,6 +184,8 @@ watch(() => props.visible, async (v) => {
     errorMsg.value = ''
     submitStatus.value = ''
     isSubmitting.value = false
+    resetInvite()
+    copied.value = false
     await loadStudents()
   }
 })
@@ -292,9 +348,22 @@ async function handleConfirm(): Promise<void> {
 }
 
 .wb-invite-modal__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   font-size: 13px;
   color: var(--wb-text-secondary, #94a3b8);
+}
+.wb-invite-modal__empty-text {
   margin: 0;
+}
+.wb-invite-modal__link {
+  display: flex;
+  gap: 8px;
+}
+.wb-invite-modal__link .wb-invite-modal__input {
+  flex: 1;
+  min-width: 0;
 }
 
 .wb-invite-modal__spinner {

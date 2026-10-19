@@ -10,6 +10,9 @@
 
   Кнопки ловлять pointerdown/mousedown/click і далі їх не пускають: натискання не
   починає drag картки й не доходить до сцени всередині неї (GeoMASH, капсула тощо).
+
+  LAW §9 v1.35 (прохід «очима вчителя 60 років», 19.10): ✍ 💡 ⚠ — окремою плашкою ПІД рядком
+  «A− 100% A+ │ — ⛶ ×», а не в ньому: кнопки задачі більші (32 px, на дотику 44 px) і далеко від «×».
 -->
 <template>
   <div
@@ -22,121 +25,125 @@
     @dblclick.stop
     @wheel.stop
   >
-    <template v-if="actions.scale">
+    <div v-if="hasWindowRow" class="wb-card-window-controls__row">
+      <template v-if="actions.scale">
+        <button
+          type="button"
+          class="wb-card-window-controls__btn wb-card-window-controls__btn--text"
+          data-testid="wb-card-window-scale-down"
+          :disabled="!canScaleDown"
+          :title="t('winterboard.card.scaleDown')"
+          :aria-label="t('winterboard.card.scaleDown')"
+          @click="emit('scale', -1)"
+        >A−</button>
+        <button
+          type="button"
+          class="wb-card-window-controls__btn wb-card-window-controls__btn--label"
+          data-testid="wb-card-window-scale-reset"
+          :title="t('winterboard.card.scaleReset')"
+          :aria-label="t('winterboard.card.scaleReset')"
+          @click="emit('scale', 0)"
+        >{{ scaleLabel }}</button>
+        <button
+          type="button"
+          class="wb-card-window-controls__btn wb-card-window-controls__btn--text"
+          data-testid="wb-card-window-scale-up"
+          :disabled="!canScaleUp"
+          :title="t('winterboard.card.scaleUp')"
+          :aria-label="t('winterboard.card.scaleUp')"
+          @click="emit('scale', 1)"
+        >A+</button>
+        <span
+          v-if="actions.fitHeight || actions.minimize || actions.expand || actions.delete"
+          class="wb-card-window-controls__divider"
+          aria-hidden="true"
+        />
+      </template>
+      <!-- Власник 2026-10-18: документ одним натисканням на всю висоту аркуша біля лівого краю. -->
       <button
+        v-if="actions.fitHeight"
         type="button"
-        class="wb-card-window-controls__btn wb-card-window-controls__btn--text"
-        data-testid="wb-card-window-scale-down"
-        :disabled="!canScaleDown"
-        :title="t('winterboard.card.scaleDown')"
-        :aria-label="t('winterboard.card.scaleDown')"
-        @click="emit('scale', -1)"
-      >A−</button>
+        class="wb-card-window-controls__btn"
+        data-testid="wb-card-window-fit-height"
+        :title="t('winterboard.card.fitHeight')"
+        :aria-label="t('winterboard.card.fitHeight')"
+        @click="emit('fitHeight')"
+      >⇕</button>
       <button
+        v-if="actions.minimize"
         type="button"
-        class="wb-card-window-controls__btn wb-card-window-controls__btn--label"
-        data-testid="wb-card-window-scale-reset"
-        :title="t('winterboard.card.scaleReset')"
-        :aria-label="t('winterboard.card.scaleReset')"
-        @click="emit('scale', 0)"
-      >{{ scaleLabel }}</button>
+        class="wb-card-window-controls__btn"
+        data-testid="wb-card-window-minimize"
+        :title="t('winterboard.tray.minimize')"
+        :aria-label="t('winterboard.tray.minimize')"
+        @click="emit('minimize')"
+      >—</button>
       <button
+        v-if="actions.expand"
         type="button"
-        class="wb-card-window-controls__btn wb-card-window-controls__btn--text"
-        data-testid="wb-card-window-scale-up"
-        :disabled="!canScaleUp"
-        :title="t('winterboard.card.scaleUp')"
-        :aria-label="t('winterboard.card.scaleUp')"
-        @click="emit('scale', 1)"
-      >A+</button>
-      <span
-        v-if="actions.handwrite || actions.taskHelp || actions.fitHeight || actions.minimize || actions.expand || actions.delete"
-        class="wb-card-window-controls__divider"
-        aria-hidden="true"
-      />
-    </template>
-    <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок.
-         Власник 19.10: «перевір… чи всі мають підписи» — назва тепер і в спливній підказці (з'являється лише
-         під курсором чи пером, на дошці напису немає), як у всіх значків цієї групи. Поки Інтегралик
-         розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10).
-         Власник 18.10: «додай позначку Інтегралика… стан, коли він думає» — коли розв'язуватиме Інтегралик
-         (готового розв'язку немає), у куті значка — Інтегралик; поки він розв'язує й пише — думає (похитується)
-         замість пульсу всього значка. -->
-    <button
-      v-if="actions.handwrite"
-      type="button"
-      class="wb-card-window-controls__btn wb-card-window-controls__btn--handwrite"
-      :class="{
-        'wb-card-window-controls__btn--busy': handwriteBusy && !actions.handwriteSolves,
-        'wb-card-window-controls__btn--solving': handwriteBusy && actions.handwriteSolves,
-      }"
-      data-testid="wb-card-window-handwrite"
-      :title="t('winterboard.card.handwrite')"
-      :aria-label="t('winterboard.card.handwrite')"
-      :aria-busy="handwriteBusy ? 'true' : undefined"
-      :disabled="handwriteBusy"
-      @click="emit('handwrite')"
-    >✍<IntegralykThinking
-        v-if="actions.handwriteSolves"
-        class="wb-card-window-controls__itg"
-        :size="12"
-        :thinking="handwriteBusy"
-      /></button>
-    <!-- LAW §9 v1.33 (пакет 3 «один Інтегралик», 19.10): підказка й типова помилка від Інтегралика поруч
-         із задачею. Як ✍ — значки без напису, назва в спливній підказці й для читача екрана. Поки Інтегралик
-         складає картку, натиснутий значок пульсує, обидва не натискаються. -->
-    <template v-if="actions.taskHelp">
+        class="wb-card-window-controls__btn"
+        data-testid="wb-card-window-expand"
+        :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
+        :aria-label="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
+        @click="emit('expand')"
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-for="kind in TASK_HELP_KINDS"
-        :key="kind"
+        v-if="actions.delete"
         type="button"
-        class="wb-card-window-controls__btn wb-card-window-controls__btn--task-help"
-        :class="{ 'wb-card-window-controls__btn--busy': taskHelpBusy === kind }"
-        :data-testid="`wb-card-window-task-help-${kind}`"
-        :title="t(`winterboard.card.taskHelp.${kind}`)"
-        :aria-label="t(`winterboard.card.taskHelp.${kind}`)"
-        :aria-busy="taskHelpBusy === kind ? 'true' : undefined"
-        :disabled="taskHelpBusy !== null"
-        @click="emit('taskHelp', kind)"
-      >{{ TASK_HELP_ICONS[kind] }}</button>
-    </template>
-    <!-- Власник 2026-10-18: документ одним натисканням на всю висоту аркуша біля лівого краю. -->
-    <button
-      v-if="actions.fitHeight"
-      type="button"
-      class="wb-card-window-controls__btn"
-      data-testid="wb-card-window-fit-height"
-      :title="t('winterboard.card.fitHeight')"
-      :aria-label="t('winterboard.card.fitHeight')"
-      @click="emit('fitHeight')"
-    >⇕</button>
-    <button
-      v-if="actions.minimize"
-      type="button"
-      class="wb-card-window-controls__btn"
-      data-testid="wb-card-window-minimize"
-      :title="t('winterboard.tray.minimize')"
-      :aria-label="t('winterboard.tray.minimize')"
-      @click="emit('minimize')"
-    >—</button>
-    <button
-      v-if="actions.expand"
-      type="button"
-      class="wb-card-window-controls__btn"
-      data-testid="wb-card-window-expand"
-      :title="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
-      :aria-label="isExpanded ? t('winterboard.widget.collapse') : t('winterboard.widget.expand')"
-      @click="emit('expand')"
-    >{{ isExpanded ? '⊠' : '⛶' }}</button>
-    <button
-      v-if="actions.delete"
-      type="button"
-      class="wb-card-window-controls__btn wb-card-window-controls__btn--delete"
-      data-testid="wb-card-window-delete"
-      :title="t('winterboard.widget.delete')"
-      :aria-label="t('winterboard.widget.delete')"
-      @click="emit('delete')"
-    >×</button>
+        class="wb-card-window-controls__btn wb-card-window-controls__btn--delete"
+        data-testid="wb-card-window-delete"
+        :title="t('winterboard.widget.delete')"
+        :aria-label="t('winterboard.widget.delete')"
+        @click="emit('delete')"
+      >×</button>
+    </div>
+    <div v-if="actions.handwrite || actions.taskHelp" class="wb-card-window-controls__task" data-testid="wb-card-window-task">
+      <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок.
+           Власник 19.10: «перевір… чи всі мають підписи» — назва тепер і в спливній підказці (з'являється лише
+           під курсором чи пером, на дошці напису немає), як у всіх значків цієї групи. Поки Інтегралик
+           розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10).
+           Власник 18.10: «додай позначку Інтегралика… стан, коли він думає» — коли розв'язуватиме Інтегралик
+           (готового розв'язку немає), у куті значка — Інтегралик; поки він розв'язує й пише — думає (похитується)
+           замість пульсу всього значка. -->
+      <button
+        v-if="actions.handwrite"
+        type="button"
+        class="wb-card-window-controls__btn wb-card-window-controls__btn--handwrite"
+        :class="{
+          'wb-card-window-controls__btn--busy': handwriteBusy && !actions.handwriteSolves,
+          'wb-card-window-controls__btn--solving': handwriteBusy && actions.handwriteSolves,
+        }"
+        data-testid="wb-card-window-handwrite"
+        :title="t('winterboard.card.handwrite')"
+        :aria-label="t('winterboard.card.handwrite')"
+        :aria-busy="handwriteBusy ? 'true' : undefined"
+        :disabled="handwriteBusy"
+        @click="emit('handwrite')"
+      >✍<IntegralykThinking
+          v-if="actions.handwriteSolves"
+          class="wb-card-window-controls__itg"
+          :size="12"
+          :thinking="handwriteBusy"
+        /></button>
+      <!-- LAW §9 v1.33 (пакет 3 «один Інтегралик», 19.10): підказка й типова помилка від Інтегралика поруч
+           із задачею. Як ✍ — значки без напису, назва в спливній підказці й для читача екрана. Поки Інтегралик
+           складає картку, натиснутий значок пульсує, обидва не натискаються. -->
+      <template v-if="actions.taskHelp">
+        <button
+          v-for="kind in TASK_HELP_KINDS"
+          :key="kind"
+          type="button"
+          class="wb-card-window-controls__btn wb-card-window-controls__btn--task-help"
+          :class="{ 'wb-card-window-controls__btn--busy': taskHelpBusy === kind }"
+          :data-testid="`wb-card-window-task-help-${kind}`"
+          :title="t(`winterboard.card.taskHelp.${kind}`)"
+          :aria-label="t(`winterboard.card.taskHelp.${kind}`)"
+          :aria-busy="taskHelpBusy === kind ? 'true' : undefined"
+          :disabled="taskHelpBusy !== null"
+          @click="emit('taskHelp', kind)"
+        >{{ TASK_HELP_ICONS[kind] }}</button>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -170,6 +177,8 @@ const TASK_HELP_KINDS = ['hint', 'mistake'] as const
 const TASK_HELP_ICONS = { hint: '💡', mistake: '⚠' } as const
 
 const scaleLabel = computed(() => presentationScaleLabel(props.scale))
+const hasWindowRow = computed(() => props.actions.scale || props.actions.fitHeight || props.actions.minimize
+  || props.actions.expand || props.actions.delete)
 const canScaleDown = computed(() => nextPresentationScale(props.scale, -1) !== null)
 const canScaleUp = computed(() => nextPresentationScale(props.scale, 1) !== null)
 
@@ -181,8 +190,9 @@ const { t } = useI18n({ useScope: 'global' })
   position: absolute;
   z-index: 3;
   display: flex;
-  align-items: center;
-  gap: 2px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   padding: 2px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid #e2e8f0;
@@ -191,21 +201,74 @@ const { t } = useI18n({ useScope: 'global' })
   pointer-events: auto;
 }
 
-/* У шапці картки (2026-09-24): без плашки — кнопки як у рядку вікна. */
+.wb-card-window-controls__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* У шапці картки (2026-09-24): без плашки — кнопки як у рядку вікна.
+   LAW §9 v1.35: 24 px замість 20 — прохід «очима вчителя» (19.10) назвав 20 px дрібними. */
 .wb-card-window-controls--header {
-  gap: 0;
   padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
 }
-.wb-card-window-controls--header .wb-card-window-controls__btn {
-  width: 20px;
-  height: 20px;
-  font-size: 13px;
+.wb-card-window-controls--header .wb-card-window-controls__row {
+  gap: 0;
 }
-.wb-card-window-controls--header .wb-card-window-controls__btn--label {
+.wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+.wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn--label {
   width: auto;
+}
+
+/* LAW §9 v1.35: ✍ 💡 ⚠ — своя плашка під рядком вікна, кнопки 32 px з проміжком. */
+.wb-card-window-controls__task {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wb-card-window-controls--header .wb-card-window-controls__task {
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+.wb-card-window-controls__task .wb-card-window-controls__btn {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+
+/* Дотик (планшет, велика дошка): палець ширший за курсор — кнопки задачі 44 px, рядок вікна 32 px.
+   Рядок 32 px вищий за шапку картки й лягає на її назву — тому на дотику і він на плашці. */
+@media (any-pointer: coarse) {
+  .wb-card-window-controls--header .wb-card-window-controls__row {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+  .wb-card-window-controls__row .wb-card-window-controls__btn,
+  .wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .wb-card-window-controls__row .wb-card-window-controls__btn--label,
+  .wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn--label {
+    width: auto;
+  }
+  .wb-card-window-controls__task .wb-card-window-controls__btn {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
 }
 
 .wb-card-window-controls__btn {
@@ -297,6 +360,16 @@ const { t } = useI18n({ useScope: 'global' })
 [data-theme="dark"] .wb-card-window-controls__btn:hover {
   background: var(--color-border);
   color: var(--color-text);
+}
+@media (any-pointer: coarse) {
+  [data-theme="dark"] .wb-card-window-controls--header .wb-card-window-controls__row {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+}
+[data-theme="dark"] .wb-card-window-controls--header .wb-card-window-controls__task {
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 [data-theme="dark"] .wb-card-window-controls__divider {
   background: var(--color-border);

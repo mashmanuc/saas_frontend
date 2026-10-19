@@ -1163,6 +1163,7 @@
     <!-- Б-202: дошка на телефоні вертикально — «зручніше з комп'ютера, телефон — пульт» -->
     <WBPhoneBoardHint
       v-if="showPhoneBoardHint"
+      @open-remote="onPhoneHintOpenRemote"
       @understood="onPhoneHintUnderstood"
       @open-anyway="onPhoneHintOpenAnyway"
     />
@@ -2324,7 +2325,7 @@ const showPhoneBoardHint = computed(() => shouldShowPhoneBoardHint({
   dismissed: phoneHintDismissed.value,
 }))
 
-function trackPhoneHint(action: 'shown' | 'understood' | 'open_anyway'): void {
+function trackPhoneHint(action: 'shown' | 'open_remote' | 'understood' | 'open_anyway'): void {
   import('@/utils/telemetryAgent').then(
     m => m.trackEvent('wb.phone_hint', { action }),
   ).catch(() => {})
@@ -2333,6 +2334,12 @@ function trackPhoneHint(action: 'shown' | 'understood' | 'open_anyway'): void {
 watch(showPhoneBoardHint, (shown, wasShown) => {
   if (shown && !wasShown) trackPhoneHint('shown')
 }, { immediate: true })
+
+/** Прохід «очима вчителя» 19.10: вікно обіцяє пульт — і веде на нього (той самий вхід, що й QR). */
+function onPhoneHintOpenRemote(): void {
+  trackPhoneHint('open_remote')
+  void router.push('/remote')
+}
 
 function onPhoneHintUnderstood(): void {
   trackPhoneHint('understood')

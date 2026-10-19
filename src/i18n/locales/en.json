@@ -7646,6 +7646,7 @@
     "phoneHint": {
       "title": "The board works best on a computer or tablet",
       "body": "Open m4sh.org on your computer — your board is already there. Your phone becomes the remote: flip pages, send photos, play videos.",
+      "openRemote": "Open the remote",
       "understood": "Got it",
       "openAnyway": "Open the board anyway"
     },
@@ -10436,6 +10437,9 @@
       "selectStudent": "Select student",
       "selectStudentPlaceholder": "— select student —",
       "noStudents": "You have no active students yet.",
+      "addStudent": "Add a student",
+      "addStudentHint": "Create an invite link and send it to your student. Once they accept, you can pick them here.",
+      "afterInvite": "Send this link to your student in any messenger. Once they accept, open this window again — the student will be on the list.",
       "lessonName": "Lesson name (optional)",
       "lessonNamePlaceholder": "e.g. Algebra — lesson 3",
       "confirm": "Start lesson",

@@ -999,6 +999,7 @@ import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../boa
 import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
+import { penTapSelection, topCardAt } from '../../board/penTapSelect'
 import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
 import { announceTaskActions, askTaskHelp, taskHelpBusy } from '@/modules/intent/taskHelp'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
@@ -3947,8 +3948,11 @@ function handleMouseUp(): void {
   freezeMainLayerRendering(false)
 
   if (currentPoints.value.length < 2) {
+    const tap = currentPoints.value[0]
     currentPoints.value = []
     shapePreview.value = null
+    // LAW §9 v1.35: тап олівцем без руху штриха не малює — по картці-задачі він її виділяє
+    if (tap && (currentTool.value === 'pen' || currentTool.value === 'highlighter')) selectCardByPenTap(tap)
     return
   }
 
@@ -3997,6 +4001,37 @@ function handleMouseUp(): void {
       mirrorStrokesLayer()
     })
   })
+}
+
+/**
+ * LAW §9 v1.35 (board/penTapSelect.ts): тап олівцем по картці з ✍ або 💡 ⚠ виділяє її, як
+ * «стрілочка», — інакше новачок цих кнопок не побачить. Повторний тап знімає, тап повз — теж.
+ * Картки при олівці прозорі для дотику, тож влучання — за рамкою з даних, а не за DOM-ціллю.
+ */
+function selectCardByPenTap(point: WBPoint): void {
+  const cards = assets.value.flatMap((asset, index) =>
+    isMinimizedOnBoard(asset) || isInMediaShow(asset) ? [] : [{
+      id: asset.id,
+      render: assetStandard(asset.type)?.render ?? 'konva',
+      index,
+      x: asset.x,
+      y: asset.y,
+      w: asset.w,
+      h: viewFitH.value.get(asset.id) ?? asset.h,
+      rotation: asset.rotation,
+    }])
+  const top = topCardAt(point, cards, nativeFront.value)
+  const tapped = top ? assets.value.find(a => a.id === top.id) ?? null : null
+  const actions = cardWindowActions(tapped, windowViewer.value)
+  const next = penTapSelection(top?.id ?? null, actions.handwrite || actions.taskHelp, wbStore.selectedIds)
+  if (!next) return
+  if (next.length) {
+    wbStore.selectItems(next)
+    emit('select', next[0])
+  } else {
+    wbStore.clearSelection()
+    emit('select', null)
+  }
 }
 
 function handleErase(pos: WBPoint): void {
