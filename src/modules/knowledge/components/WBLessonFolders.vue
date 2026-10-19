@@ -245,6 +245,19 @@
         </ul>
       </li>
     </ul>
+
+    <!-- Видалення папки — вікно сайту, а не системне «Повідомлення з m4sh.org» (власник 2026-10-19). -->
+    <ConfirmModal
+      :open="deleteTarget !== null"
+      :title="deleteTarget ? t('knowledge.folder.deleteTitle', { name: deleteTarget.name }) : ''"
+      :message="deleteMessage"
+      :confirm-text="t('knowledge.folder.delete')"
+      :cancel-text="t('common.cancel')"
+      variant="danger"
+      :loading="isSaving"
+      @confirm="confirmDeleteFolder"
+      @cancel="deleteTarget = null"
+    />
   </aside>
 </template>
 
@@ -252,6 +265,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
+import ConfirmModal from '@/ui/ConfirmModal.vue'
 import type { LessonFolder } from '../api/lessonSaveApi'
 
 const { t } = useI18n()
@@ -372,9 +386,25 @@ function cancelCreate() {
   creatingParentId.value = null
 }
 
-async function handleDeleteFolder(folder: LessonFolder) {
+/** Папка, яку питаємо видалити; null — вікна немає. */
+const deleteTarget = ref<LessonFolder | null>(null)
+// Сервер: уроки переходять у «Без папки», вкладені папки видаляються разом (knowledge LessonFolderDetailView).
+const deleteMessage = computed(() => {
+  const folder = deleteTarget.value
+  if (!folder) return ''
+  return folder.children_count > 0
+    ? t('knowledge.folder.deleteConfirmWithChildren')
+    : t('knowledge.folder.deleteConfirm')
+})
+
+function handleDeleteFolder(folder: LessonFolder) {
   if (isSaving.value) return
-  if (!confirm(t('knowledge.folder.deleteConfirm', { name: folder.name }))) return
+  deleteTarget.value = folder
+}
+
+async function confirmDeleteFolder() {
+  const folder = deleteTarget.value
+  if (!folder || isSaving.value) return
   isSaving.value = true
   try {
     await lessonSaveApi.deleteFolder(folder.id)
@@ -387,6 +417,7 @@ async function handleDeleteFolder(folder: LessonFolder) {
     console.error('[WBLessonFolders] delete error:', err)
   } finally {
     isSaving.value = false
+    deleteTarget.value = null
   }
 }
 

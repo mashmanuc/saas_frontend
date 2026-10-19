@@ -522,6 +522,19 @@
       @done="onTidyDone"
       @close="tidyFolder = null"
     />
+
+    <!-- Видалення папки — вікно сайту, а не системне «Повідомлення з m4sh.org» (власник 2026-10-19). -->
+    <ConfirmModal
+      :open="folderDeleteTarget !== null"
+      :title="folderDeleteTarget ? t('winterboard.library.deleteFolderTitle', { name: folderDeleteTarget.name }) : ''"
+      :message="folderDeleteTarget?.hasChildren ? t('winterboard.library.deleteFolderConfirmWithChildren') : t('winterboard.library.deleteFolderConfirm')"
+      :confirm-text="t('winterboard.library.deleteFolder')"
+      :cancel-text="t('common.cancel')"
+      variant="danger"
+      :loading="folderDeleting"
+      @confirm="confirmDeleteFolder"
+      @cancel="folderDeleteTarget = null"
+    />
   </div>
 </template>
 
@@ -529,6 +542,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
+import ConfirmModal from '@/ui/ConfirmModal.vue'
 import LibraryAssetMenu from '../components/library/LibraryAssetMenu.vue'
 import { groupAssets } from '../utils/libraryGroups'
 import apiClient from '@/utils/apiClient'
@@ -1074,8 +1088,30 @@ async function handleRenameFolder(id: number, newName: string): Promise<void> {
   }
 }
 
-async function handleDeleteFolder(id: number, name: string): Promise<void> {
-  if (!confirm(t('winterboard.library.deleteFolderConfirm', { name }))) return
+/** Папка, яку питаємо видалити; null — вікна немає. */
+const folderDeleteTarget = ref<{ id: number; name: string; hasChildren: boolean } | null>(null)
+const folderDeleting = ref(false)
+
+function findFolderNode(nodes: FolderTree[], id: number): FolderTree | null {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const found = findFolderNode(node.children ?? [], id)
+    if (found) return found
+  }
+  return null
+}
+
+// Сервер: файли лишаються без папки, вкладені папки видаляються разом (WBLibraryFolderDetailView).
+function handleDeleteFolder(id: number, name: string): void {
+  const node = findFolderNode(foldersTree.value, id)
+  folderDeleteTarget.value = { id, name, hasChildren: (node?.children?.length ?? 0) > 0 }
+}
+
+async function confirmDeleteFolder(): Promise<void> {
+  const target = folderDeleteTarget.value
+  if (!target || folderDeleting.value) return
+  const { id } = target
+  folderDeleting.value = true
   try {
     await apiDeleteFolder(id)
     await loadFolders()
@@ -1090,6 +1126,9 @@ async function handleDeleteFolder(id: number, name: string): Promise<void> {
     const resp = (err as { response?: { status?: number; data?: { error?: string } } } | null)?.response
     const notEmpty = resp?.status === 409 && resp.data?.error === 'folder_not_empty'
     showToast(t(notEmpty ? 'winterboard.library.mirror.folderNotEmpty' : 'winterboard.library.folderError'), 'error')
+  } finally {
+    folderDeleting.value = false
+    folderDeleteTarget.value = null
   }
 }
 
