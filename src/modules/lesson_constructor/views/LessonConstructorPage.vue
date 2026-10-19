@@ -72,7 +72,9 @@
               <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
                 <div class="lc-topic-row__title">{{ group.section }}</div>
                 <!-- Широкі теми першим рядком, під кожною — її вужчі з відступом і підписом
-                     «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут. -->
+                     «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут.
+                     Вужчі сховані: ▸ біля теми розкриває один рівень (власник 2026-10-19: «щоб
+                     підтеми розгорталися» — розкрите все разом було «кишкою» на весь екран). -->
                 <div class="lc-topic-tree">
                   <div
                     v-for="row in topicRows(group.topics)"
@@ -83,19 +85,29 @@
                     :data-depth="row.depth"
                   >
                     <span v-if="row.parentLabel" class="lc-topics__parent">{{ row.parentLabel }} ›</span>
-                    <button
-                      v-for="topic in row.topics"
-                      :key="topic.value"
-                      type="button"
-                      class="lc-topic-chip"
-                      :class="{
-                        'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                        'lc-topic-chip--disabled': !canPick(topic.value),
-                      }"
-                      @click="toggleTopic(topic.value)"
-                    >
-                      {{ topic.label }}
-                    </button>
+                    <span v-for="topic in row.topics" :key="topic.value" class="lc-topic-chip-wrap">
+                      <button
+                        type="button"
+                        class="lc-topic-chip"
+                        :class="{
+                          'lc-topic-chip--active': selectedTopics.includes(topic.value),
+                          'lc-topic-chip--disabled': !canPick(topic.value),
+                        }"
+                        @click="toggleTopic(topic.value)"
+                      >
+                        {{ topic.label }}
+                      </button>
+                      <button
+                        v-if="row.expandable.includes(topic.value)"
+                        type="button"
+                        class="lc-topic-expand"
+                        :aria-expanded="expandedTopics.includes(topic.value)"
+                        :aria-label="`${expandedTopics.includes(topic.value) ? 'Згорнути' : 'Розгорнути'} «${topic.label}»`"
+                        :title="expandedTopics.includes(topic.value) ? 'Згорнути' : 'Вужчі теми'"
+                        :data-topic="topic.value"
+                        @click="toggleExpand(topic.value)"
+                      >{{ expandedTopics.includes(topic.value) ? '▾' : '▸' }}</button>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -467,7 +479,23 @@ const topicBlocks = computed(() => {
   return blocks
 })
 
-type TopicRow = { key: string; depth: number; parentLabel: string | null; topics: Topic[] }
+type TopicRow = {
+  key: string
+  depth: number
+  parentLabel: string | null
+  topics: Topic[]
+  /** Теми цього рядка, що мають вужчі (біля них ▸). */
+  expandable: string[]
+}
+
+/** Розкриті гілки: id широких тем, чиї вужчі зараз видно. Спершу все згорнуте. */
+const expandedTopics = ref<string[]>([])
+function toggleExpand(id: string) {
+  expandedTopics.value = expandedTopics.value.includes(id)
+    ? expandedTopics.value.filter((t) => t !== id)
+    : [...expandedTopics.value, id]
+}
+
 
 /**
  * Рядки дерева тем одного розділу: перший — широкі теми, далі під кожною темою, що має вужчі, —
@@ -495,8 +523,15 @@ function topicRows(topics: Topic[]): TopicRow[] {
   const walk = (parent: Topic | null, depth: number) => {
     const kids = children.get(parent ? parent.value : null)
     if (!kids?.length) return
-    rows.push({ key: parent ? parent.value : '__roots', depth, parentLabel: parent ? parent.label : null, topics: kids })
-    for (const kid of kids) walk(kid, depth + 1)
+    rows.push({
+      key: parent ? parent.value : '__roots',
+      depth,
+      parentLabel: parent ? parent.label : null,
+      topics: kids,
+      expandable: kids.filter((k) => children.has(k.value)).map((k) => k.value),
+    })
+    // Глибше — лише в розкриті гілки.
+    for (const kid of kids) if (expandedTopics.value.includes(kid.value)) walk(kid, depth + 1)
   }
   walk(null, 0)
   return rows
@@ -775,6 +810,29 @@ async function handleGenerate() {
 .lc-topics--child .lc-topic-chip {
   font-size: 0.8rem;
   padding: 0.3rem 0.8rem;
+}
+
+.lc-topic-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.lc-topic-expand {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.lc-topic-expand:hover,
+.lc-topic-expand[aria-expanded="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .lc-topics__parent {
@@ -1206,6 +1264,7 @@ async function handleGenerate() {
 [data-theme="dark"] .lc-topic-block__chevron,
 [data-theme="dark"] .lc-topic-row__title,
 [data-theme="dark"] .lc-topics__parent,
+[data-theme="dark"] .lc-topic-expand,
 [data-theme="dark"] .lc-section__hint,
 [data-theme="dark"] .lc-theme-card__desc,
 [data-theme="dark"] .lc-bg-label,

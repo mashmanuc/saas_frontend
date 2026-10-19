@@ -48,6 +48,12 @@ const DERIVATIVE = 'Похідна'
 // Блоки тем (Алгебра / Геометрія) спочатку згорнуті — розгортаємо всі.
 async function openAll(w: any) {
   for (const head of w.findAll('.lc-topic-block__head')) await head.trigger('click')
+  // Вужчі теми згорнуті (▸) — розкриваємо все дерево, поки є що розкривати.
+  for (let guard = 0; guard < 10; guard++) {
+    const closed = w.findAll('.lc-topic-expand[aria-expanded="false"]')
+    if (!closed.length) break
+    for (const b of closed) await b.trigger('click')
+  }
   return w
 }
 function chip(w: any, text: string) {

@@ -24,6 +24,9 @@ describe('Три окремі добірки десяткових у справ�
     it(`${suffix}: передає вузьку тему, кількість16 і збалансований профіль`, async () => {
       const w=mount(LessonConstructorPage)
       await w.get('.lc-topic-block__head').trigger('click')
+      // Вужчі теми згорнуті (власник 2026-10-19) — шлях учителя: Дійсні числа ▸ Дроби ▸ Десяткові дроби ▸.
+      for (const id of ['real-numbers','real-numbers.fractions','real-numbers.fractions.decimal'])
+        await w.get(`.lc-topic-expand[data-topic="${id}"]`).trigger('click')
       const label=TOPICS.find(t => t.value===prefix+suffix)!.label
       const chip=w.findAll('.lc-topic-chip').find(b => b.text().trim()===label)!
       expect(chip).toBeDefined()
