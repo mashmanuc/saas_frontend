@@ -60,8 +60,8 @@
 
     <!-- Toolbar host — bundle inject-ить туди button.tool elements (preset toggles:
          Медіани · Висоти · Бісектриси · Медіатриси · Вписане · Описане · Сер. лінія
-         + Сітка · Осі · Скинути). Видимий лише при is-selected — без вибору
-         показуємо тільки малюнок (CSS: :not(.is-selected) → display:none). -->
+         + Сітка · Осі · Скинути). У картці НЕ показується ніколи (2026-10-19): при виділенні
+         вузол переїжджає в праву панель (Geo2dInspector), а без виділення лежить тут прихованим. -->
     <div
       ref="toolbarRef"
       class="geo2dv2-toolbar-host"
@@ -411,9 +411,6 @@ const hostWindowControls = useHostWindowControls()
 .wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
   background: rgba(15, 23, 42, 0.10);
 }
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
-  background: rgba(15, 23, 42, 0.08);
-}
 .wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-stage {
   background: transparent;
 }
@@ -475,7 +472,11 @@ const hostWindowControls = useHostWindowControls()
   display: block;
 }
 
+/* 2026-10-19 (власник: «картинка скаче»; «роби 1»): кнопки побудов — лише в правій панелі, як просив
+   2026-07-16. Рядок у картці не показуємо ніколи: інакше при виділенні він переїжджав у панель і малюнок
+   зсувався й збільшувався, а натиснути кнопку в картці не вдавалось (перший клік лише виділяв картку). */
 .geo2dv2-toolbar-host {
+  display: none;
   flex: 0 0 auto;
   padding: 5px 6px;
   background: rgba(15, 23, 42, 0.04);
@@ -490,20 +491,9 @@ const hostWindowControls = useHostWindowControls()
   display: none;
 }
 
-/* Перегляд — лише малюнок, без заголовка й кнопок. */
+/* Перегляд — лише малюнок, без заголовка. */
 .wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
   display: none;
-}
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
-  display: none;
-}
-/* Олівець — кнопки видно, але дотик іде крізь них на полотно. */
-.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host,
-.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(*) {
-  pointer-events: none;
-}
-.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(button) {
-  pointer-events: none;
 }
 
 .geo2dv2-toolbar-host :deep(.toolbar) {

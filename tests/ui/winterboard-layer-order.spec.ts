@@ -45,7 +45,7 @@ test('PDF і HTML-картка: стрілки міняють видимий ш�
 
   await toolbar.locator('button').first().click() // ↑: PDF перед HTML-карткою
   await expect(nativeCanvas).toHaveCSS('z-index', '6')
-  await expect(strokesCanvas).toHaveCSS('z-index', '7')
+  await expect(strokesCanvas).toHaveCSS('z-index', '21')
   await expect(strokesCanvas).toHaveCSS('pointer-events', 'none')
   await expect(controls).toHaveCSS('z-index', '10')
   await expect(controls).toHaveCSS('visibility', 'visible')
@@ -56,7 +56,7 @@ test('PDF і HTML-картка: стрілки міняють видимий ш�
   await toolbar.locator('button').nth(1).click() // ↓: PDF за HTML-карткою
   await expect(nativeCanvas).toHaveCSS('z-index', 'auto')
   // 2026-10-19: лінії олівця завжди над HTML-картками (окремої копії-дзеркала більше немає)
-  await expect(strokesCanvas).toHaveCSS('z-index', '6')
+  await expect(strokesCanvas).toHaveCSS('z-index', '21')
   await expect(strokesCanvas).toHaveCSS('pointer-events', 'none')
   await expect(controls).toHaveCSS('z-index', '3')
   await expect(controls).toHaveCSS('visibility', 'hidden')

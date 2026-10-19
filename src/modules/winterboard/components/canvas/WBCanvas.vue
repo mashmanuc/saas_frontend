@@ -222,7 +222,7 @@
     </div>
 
     <!-- Offscreen preview canvas overlay -->
-    <canvas ref="previewCanvasRef" class="wb-preview-canvas" />
+    <canvas ref="previewCanvasRef" class="wb-preview-canvas" :style="{ zIndex: String(linesZ + 1) }" />
 
     <!-- Text editing overlay (v-if ensures clean mount/unmount cycle).
          Enter (без Shift) = save+exit; Shift+Enter = newline (стандарт multi-line);
@@ -2429,7 +2429,11 @@ const controlsFrameAsset = computed<WBAsset | null>(() => {
 // Konva збирає ВСІ нативні асети в один canvas, тож піднімаємо його лише для
 // представимого випадку: вся нативна група стоїть після HTML-групи.
 const nativeFront = computed(() => nativeAssetsAboveOverlays(assets.value))
-watch([nativeFront, konvaReady, () => wbStore.selectedIds], async () => {
+// 2026-10-19 (власник «роби 2»): лінії олівця — над усім вмістом дошки: над картками (z 4–5) і відео
+// (z 20), а коли картка розгорнута на весь екран (z 50) — і над нею. Нижче лишаються указка, редагування
+// тексту й показ відео на весь екран (≥ 999).
+const linesZ = computed(() => (wbStore.expandedAssetId ? 51 : 21))
+watch([nativeFront, konvaReady, () => wbStore.selectedIds, linesZ], async () => {
   await nextTick()
   const assetsCanvas = assetsLayerRef.value?.getNode?.()?.getCanvas()?._canvas
   const strokesCanvas = strokesLayerRef.value?.getNode?.()?.getCanvas()?._canvas
@@ -2437,15 +2441,18 @@ watch([nativeFront, konvaReady, () => wbStore.selectedIds], async () => {
   const uiCanvas = uiLayerRef.value?.getNode?.()?.getCanvas()?._canvas
   if (assetsCanvas) assetsCanvas.style.zIndex = nativeFront.value ? '6' : ''
   // 2026-10-19 (власник: «поверх карток було видно штрихи незалежно від вибраного інструмента»):
-  // лінії олівця — завжди верхній шар над HTML-картками (z 4–5): 6, а над піднятою нативною групою — 7.
-  // pointer-events:none — картки під лінією лишаються клікабельні; Konva бере подію з будь-якого свого
+  // лінії олівця — завжди верхній шар над вмістом дошки (linesZ), прев'ю фігур — над ними.
+  // pointer-events:none — об'єкти під лінією лишаються клікабельні; Konva бере подію з будь-якого свого
   // canvas (hit-graph, не DOM-ціль), тож виділення ліній рамкою й гумка працюють як раніше.
   // Раніше над картками була лише копія-дзеркало і лише з олівцем/у повторі — прибрано.
   if (strokesCanvas) {
-    strokesCanvas.style.zIndex = nativeFront.value ? '7' : '6'
+    strokesCanvas.style.zIndex = String(linesZ.value)
     strokesCanvas.style.pointerEvents = 'none'
   }
-  if (previewCanvas) previewCanvas.style.zIndex = nativeFront.value ? '8' : ''
+  if (previewCanvas) {
+    previewCanvas.style.zIndex = String(linesZ.value + 1)
+    previewCanvas.style.pointerEvents = 'none'
+  }
   const selectedNative = wbStore.selectedIds.some((id) =>
     assetStandard(assets.value.find((asset) => asset.id === id)?.type)?.render === 'konva')
   if (uiCanvas) uiCanvas.style.zIndex = nativeFront.value && selectedNative ? '9' : ''
@@ -6261,7 +6268,7 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
   top: 0;
   left: 0;
   pointer-events: none;
-  z-index: 10;
+  /* z-index — з шаблону (linesZ + 1): живий слід пера над лініями, відео й розгорнутою карткою */
   filter: none;
   backdrop-filter: none;
   box-shadow: none;
@@ -6458,6 +6465,14 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
    PresentationPlayer: темне тло поверх усього екрана, угорі назва й ×, відео по центру.
    Та сама картка, лише стиль: DOM не переноситься, тож відео не перезапускається.
    Предки полотна не мають transform/filter (звірено) — fixed рахується від вікна. */
+/* 2026-10-19 (власник «роби 2»): з олівцем, гумкою та іншими інструментами малювання відео й аудіо
+   не ловлять дотик — лінія лягає поверх них (як на картках). Керувати плеєром — стрілкою.
+   Показ відео на весь екран (--show) не чіпаємо. */
+.wb-media-overlay:not(.wb-media-overlay--selectable):not(.wb-media-overlay--show),
+.wb-media-overlay:not(.wb-media-overlay--selectable):not(.wb-media-overlay--show) :deep(*) {
+  pointer-events: none;
+}
+
 .wb-media-overlay--show,
 .wb-media-overlay--show.wb-media-overlay--selectable:hover {
   position: fixed;

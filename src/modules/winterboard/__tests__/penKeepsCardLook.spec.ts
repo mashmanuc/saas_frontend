@@ -61,14 +61,31 @@ describe('олівець не змінює вигляд картки', () => {
   // сам шар штрихів Konva — над HTML-картками (z 4–5) за будь-якого інструмента й режиму, без копії-дзеркала.
   it('лінії олівця — завжди над картками й не ловлять натискань', () => {
     const src = read('canvas/WBCanvas.vue')
-    expect(src).toContain("strokesCanvas.style.zIndex = nativeFront.value ? '7' : '6'")
+    expect(src).toContain("strokesCanvas.style.zIndex = String(linesZ.value)")
     expect(src).toContain("strokesCanvas.style.pointerEvents = 'none'")
     expect(src).not.toMatch(/wb-strokes-overlay|mirrorStrokesLayer/)
   })
 
+  // 2026-10-19 (власник «роби 2»): лінії — і над відео (z 20), і над розгорнутою карткою (z 50);
+  // живий слід пера — над лініями; з олівцем відео не ловить дотик.
+  it('лінії й слід пера — над відео та розгорнутою карткою; відео з олівцем пропускає дотик', () => {
+    const src = read('canvas/WBCanvas.vue')
+    expect(src).toContain('const linesZ = computed(() => (wbStore.expandedAssetId ? 51 : 21))')
+    expect(src).toContain(':style="{ zIndex: String(linesZ + 1) }"')
+    const media = rules(style(src)).find(([sel]) =>
+      sel.includes('.wb-media-overlay:not(.wb-media-overlay--selectable):not(.wb-media-overlay--show) :deep(*)'))
+    expect(media?.[1] ?? '').toMatch(/pointer-events:\s*none/)
+  })
+
+  // 2026-10-19 (власник «роби 1»): кнопки геометрії — лише в правій панелі; у картці рядка немає ніколи,
+  // тож при виділенні малюнок не стрибає.
+  it('геометрія: рядок кнопок у картці прихований завжди', () => {
+    const hit = rules(style(read('board/objects/Geometry2DRenderer.vue'))).find(([sel]) => sel === '.geo2dv2-toolbar-host')
+    expect(hit?.[1] ?? '').toMatch(/display:\s*none/)
+  })
+
   it('з олівцем кнопки картки видно, але дотик іде крізь них', () => {
     const inert: Record<string, string> = {
-      'board/objects/Geometry2DRenderer.vue': '.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(*)',
       'board/objects/CalculusRenderer.vue': '.calculus-renderer.is-readonly .calculus-toolbar :deep(*)',
       'board/objects/HelixRenderer.vue': '.helix-renderer.is-readonly .helix-toolbar :deep(*)',
       'board/objects/TrigCircleRenderer.vue': '.trig-circle-renderer.is-readonly .trig-toolbar :deep(*)',
