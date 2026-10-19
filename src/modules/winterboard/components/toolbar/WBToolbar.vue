@@ -633,8 +633,9 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   }
 }
 
-/* Hide tooltips on touch devices */
-@media (max-width: 1024px) {
+/* Спливні назви ховаємо лише там, де немає наведення (дотик). Власник 19.10 («чи всі мають
+   підписи»): раніше умовою була ширина ≤1024 px — і ноутбук із вузьким вікном лишався без назв. */
+@media (hover: none) {
   .wb-toolbar__btn--tooltip::after {
     display: none;
   }

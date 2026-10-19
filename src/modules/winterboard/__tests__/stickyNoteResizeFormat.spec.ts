@@ -144,7 +144,7 @@ describe('нотатка: форматування на панелі виділ�
 
   it('нотатка: жирний пише fontWeight', async () => {
     const w = await mountToolbar(STICKY)
-    await w.find('button[title="Bold"]').trigger('click')
+    await w.find('button[title="winterboard.selection.bold"]').trigger('click')   // «Bold» → «Жирний» (власник 19.10: підписи українською)
     expect(w.emitted('text-format')?.[0]).toEqual([{ fontWeight: 700 }])
   })
 

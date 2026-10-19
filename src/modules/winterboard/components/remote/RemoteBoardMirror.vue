@@ -81,7 +81,7 @@
           data-testid="mirror-preview-show"
           :aria-label="t('winterboard.remote.mirror.preview')"
           @click="previewShown = true"
-        >👁</button>
+        ><span aria-hidden="true">👁</span><span class="wb-mirror__icon-label" aria-hidden="true">{{ t('winterboard.remote.mirror.previewShort') }}</span></button>
 
         <button
           v-for="(_, i) in corners"
@@ -1540,9 +1540,13 @@ onBeforeUnmount(() => {
   color: #e2e8f0; background: rgba(2, 6, 23, .6);
 }
 .wb-mirror__preview-show {
-  position: absolute; z-index: 3; width: 40px; height: 40px; border: 0; border-radius: 10px;
+  position: absolute; z-index: 3; min-width: 40px; height: 40px; border: 0; border-radius: 10px;
   background: rgba(2, 6, 23, .7); color: #f8fafc; font-size: 18px;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0 6px; line-height: 1;
 }
+/* Власник 19.10: на дотику спливних назв немає — слово під значком. */
+.wb-mirror__icon-label { font-size: 10px; line-height: 1.1; margin-top: 2px; }
 
 .wb-mirror__handle {
   position: absolute; z-index: 4; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 3px solid #fff; border-radius: 50%;

@@ -58,6 +58,8 @@
       <div class="audio-annotation-panel__playback">
         <button
           class="audio-annotation-panel__btn audio-annotation-panel__btn--play"
+          :title="t(audio.isPlaying.value ? 'winterboard.objectAudio.pause' : 'winterboard.objectAudio.play')"
+          :aria-label="t(audio.isPlaying.value ? 'winterboard.objectAudio.pause' : 'winterboard.objectAudio.play')"
           @click="audio.togglePlayback()"
         >
           {{ audio.isPlaying.value ? '⏸' : '▶' }}

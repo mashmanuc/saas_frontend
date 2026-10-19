@@ -102,6 +102,7 @@
                   v-if="value.old_style"
                   type="button"
                   class="history-card__hint"
+                  :title="labels.oldStyle"
                   :aria-label="labels.oldStyle"
                   @click.stop="toggleOldStyle(fi, vi)"
                 >?</button><span
@@ -111,6 +112,7 @@
                   v-if="canPin(value)"
                   type="button"
                   class="history-card__pin"
+                  :title="labels.toMap"
                   :aria-label="labels.toMap"
                   @click.stop="emit('to-map', value.lat as number, value.lon as number, value.label)"
                 >⌖</button><span

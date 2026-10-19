@@ -17,7 +17,7 @@
           class="wb-selection-toolbar__btn"
           :class="{ 'wb-selection-toolbar__btn--active': selectedObject?.fontWeight === 700 }"
           :disabled="isLocked"
-          title="Bold"
+          :title="t('winterboard.selection.bold')"
           @click="$emit('text-format', { fontWeight: selectedObject?.fontWeight === 700 ? 400 : 700 })"
         >
           <strong style="font-size: 14px; font-weight: 800;">B</strong>
@@ -29,7 +29,7 @@
           class="wb-selection-toolbar__btn"
           :class="{ 'wb-selection-toolbar__btn--active': selectedObject?.fontStyle === 'italic' }"
           :disabled="isLocked"
-          title="Italic"
+          :title="t('winterboard.selection.italic')"
           @click="$emit('text-format', { fontStyle: selectedObject?.fontStyle === 'italic' ? 'normal' : 'italic' })"
         >
           <em style="font-size: 14px;">I</em>

@@ -29,7 +29,7 @@
         data-testid="open-settings"
         :aria-label="t('winterboard.remote.settings')"
         @click="openSheet('settings')"
-      ><span aria-hidden="true">⚙</span></button>
+      ><span aria-hidden="true">⚙</span><span class="wb-remote__icon-label" aria-hidden="true">{{ t('winterboard.remote.settings') }}</span></button>
     </header>
 
     <!-- v1.18: ноутбук 1–3 с зберігає шаблон — кнопки дошки вимкнені на місці, причина словами -->
@@ -1514,9 +1514,13 @@ onBeforeUnmount(() => {
 .wb-remote__status--disconnected .wb-remote__dot,
 .wb-remote__status--unavailable .wb-remote__dot { background: #ef4444; }
 .wb-remote__gear {
-  flex: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+  flex: none; min-width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
   background: transparent; color: #cbd5e1; font-size: 20px; -webkit-tap-highlight-color: transparent;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0 6px; line-height: 1;
 }
+/* Власник 19.10: «чи всі мають підписи» — на дотику спливних назв немає, тож слово під значком. */
+.wb-remote__icon-label { font-size: 10px; line-height: 1.1; margin-top: 2px; color: inherit; }
 .wb-remote__exit { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-size: 14px; min-height: 44px; }
 .wb-remote__exit--primary { background: var(--accent); color: var(--color-on-accent); border-color: var(--accent); }
 .wb-remote__exit--danger { color: #fff; background: var(--danger); border-color: var(--danger); min-height: 52px; font-weight: 600; }

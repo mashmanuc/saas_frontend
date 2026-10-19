@@ -220,7 +220,7 @@
     <div v-else-if="sidebar.error.value" class="content-sidebar__error">
       <!-- errorParams несе деталі (напр. розмір файлу й ліміт для file_too_large) -->
       <span>{{ t(`winterboard.contentSidebar.${sidebar.error.value}`, sidebar.errorParams.value) }}</span>
-      <button class="content-sidebar__retry" @click="sidebar.reload">&#8635;</button>
+      <button class="content-sidebar__retry" :title="t('winterboard.media.retry')" :aria-label="t('winterboard.media.retry')" @click="sidebar.reload">&#8635;</button>
     </div>
 
     <!-- Empty (no materials at all).
@@ -335,7 +335,7 @@
           <!-- RIGHT_PANEL_MODE = catalog_family: drilldown -->
           <div v-else class="tools-family">
             <div class="tools-crumb">
-              <button type="button" class="tools-crumb__back" @click="catalogFamily = null">←</button>
+              <button type="button" class="tools-crumb__back" :title="t('common.back')" :aria-label="t('common.back')" @click="catalogFamily = null">←</button>
               <span class="tools-crumb__label">{{ currentAppLabel }}</span>
             </div>
 

@@ -706,6 +706,7 @@
         v-if="showMaterialsSidebar"
         class="wb-solo-room__sidebar-toggle"
         type="button"
+        :title="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
         :aria-label="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
         @click="toggleSidebarCollapse"
       >

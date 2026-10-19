@@ -70,6 +70,7 @@
         v-if="!readOnly && pages.length > 1"
         type="button"
         class="wb-thumbnail__action wb-thumbnail__delete"
+        :title="t('winterboard.pages.delete_page', { n: index + 1 })"
         :aria-label="t('winterboard.pages.delete_page', { n: index + 1 })"
         @click.stop="emit('delete', index)"
       >

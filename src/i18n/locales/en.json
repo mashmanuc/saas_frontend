@@ -9159,7 +9159,9 @@
       "sendToPageCurrent": "current",
       "lock": "Lock",
       "unlock": "Unlock",
-      "delete": "Delete"
+      "delete": "Delete",
+      "bold": "Bold",
+      "italic": "Italic"
     },
     "corridor": {
       "subject": "Subject",
@@ -9202,6 +9204,7 @@
         },
         "badQuad": "The corners are mixed up or the board is too small — put the circles on the board corners in order.",
         "preview": "This is what the laptop will see",
+        "previewShort": "Preview",
         "clipped": {
           "top": "The top of the board is out of the frame — move the phone back or raise it",
           "bottom": "The bottom of the board is out of the frame — move the phone back or lower it",

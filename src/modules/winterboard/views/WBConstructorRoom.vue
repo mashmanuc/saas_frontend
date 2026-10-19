@@ -172,6 +172,8 @@
         v-if="showMaterialsSidebar"
         class="wb-solo-room__sidebar-toggle"
         type="button"
+        :title="t(showMaterialsSidebar ? 'winterboard.room.sidebarCollapse' : 'winterboard.room.sidebarExpand')"
+        :aria-label="t(showMaterialsSidebar ? 'winterboard.room.sidebarCollapse' : 'winterboard.room.sidebarExpand')"
         @click="showMaterialsSidebar = !showMaterialsSidebar"
       >
         {{ showMaterialsSidebar ? '◀' : '▶' }}
