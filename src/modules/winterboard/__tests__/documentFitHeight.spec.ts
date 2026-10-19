@@ -74,7 +74,7 @@ describe('віконна група показує ⇕ і шле намір', ()
   it('⇕ з підказкою «На всю висоту аркуша» → подія fitHeight', async () => {
     const w = mount(WBCardWindowControls, {
       props: {
-        actions: { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: true },
+        actions: { scale: false, minimize: true, expand: false, delete: true, handwrite: false, handwriteSolves: false, fitHeight: true, taskHelp: false },
         isExpanded: false,
       },
       global: { plugins: [createI18n({ legacy: false, locale: 'uk', messages: { uk } })] },

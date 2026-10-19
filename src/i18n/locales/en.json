@@ -11167,7 +11167,19 @@
       "scaleUp": "Larger text",
       "scaleReset": "Default text size (100%)",
       "handwrite": "Write the solution by hand",
-      "fitHeight": "Fit to sheet height"
+      "fitHeight": "Fit to sheet height",
+      "taskHelp": {
+        "hint": "Hint for the task",
+        "mistake": "Common mistake in the task"
+      }
+    },
+    "taskHelp": {
+      "phrase": {
+        "hint": "Give a short hint for the selected task as a card on the board.",
+        "mistake": "Name a common mistake in this task as a card on the board."
+      },
+      "failed": "Couldn't make the card. Please try again.",
+      "busy": "I'm already making a card — one moment."
     },
     "handwrite": {
       "unsupported": "Can't write this solution by hand — showing it printed.",

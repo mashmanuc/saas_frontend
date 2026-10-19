@@ -31,7 +31,7 @@ export async function sendIntent(verb, objects, clientId) {
  * {status: propose|clarify|none, verb, objects, risk, explain, candidates?, pick_template?}.
  * Нічого не виконує — виконання йде звичайним sendIntent після Resolution Policy на FE.
  */
-export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null, boardSummaryError = null) {
+export async function parseAi(phrase, boardId = null, history = [], boardSummary = null, tools = null, locale = null, conversationId = null, page = null, boardSummaryError = null, extra = null) {
   const res = await apiClient.post('/v1/intents/ai/parse/', {
     phrase,
     context: {
@@ -55,6 +55,8 @@ export async function parseAi(phrase, boardId = null, history = [], boardSummary
       // Б-13 (2026-09-27): дошка відкрита, а стан зібрати не вдалося — чому саме.
       // Сервер пише це в лог і каже моделі «не прочитано», а не «дошки немає».
       ...(boardSummaryError ? { board_summary_error: boardSummaryError } : {}),
+      // Пакет 3 (LAW §9 v1.33): швидка дія на виділеній задачі — `quick: 'hint' | 'mistake'`.
+      ...(extra?.quick ? { quick: extra.quick } : {}),
     },
     history, // Phase 2: останні ≤6 реплік діалогу (user/assistant) для follow-up'ів
   })

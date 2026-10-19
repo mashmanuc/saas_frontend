@@ -16,6 +16,9 @@
  *                  готовий розв'язок із банку.
  *   • `fitHeight` — «⇕ на всю висоту аркуша» (власник 2026-10-18): вчитель, режим редагування,
  *                  `fitHeight` типу (документ з «Матеріалів»), картка НЕ заблокована (це зміна розміру).
+ *   • `taskHelp` — LAW §9 v1.33: «💡 Підказка» і «⚠ Типова помилка» до виділеної задачі — на тих самих
+ *                  об'єктах і тим самим правом, що ✍ Інтегралика (`canSolve`, задача / картка / картинка),
+ *                  режим редагування; задача з готовим розв'язком теж (підказка — не розв'язок).
  * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту).
  */
 import type { WBAsset } from '../types/winterboard'
@@ -35,6 +38,8 @@ export interface CardWindowActions {
   handwriteSolves: boolean
   /** ⇕ документ на всю висоту аркуша біля лівого краю. */
   fitHeight: boolean
+  /** LAW §9 v1.33: 💡 підказка й ⚠ типова помилка від Інтегралика поруч із задачею. */
+  taskHelp: boolean
 }
 
 export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
@@ -45,6 +50,7 @@ export const NO_WINDOW_ACTIONS: CardWindowActions = Object.freeze({
   handwrite: false,
   handwriteSolves: false,
   fitHeight: false,
+  taskHelp: false,
 })
 
 export function cardWindowActions(
@@ -63,11 +69,19 @@ export function cardWindowActions(
     handwrite: (viewer.mode === 'edit' && ready) || solves,
     handwriteSolves: solves,
     fitHeight: caps.fitHeight && viewer.mode === 'edit' && asset.locked !== true,
+    taskHelp: viewer.mode === 'edit' && viewer.canSolve === true && isIntegralykSolvable(asset)
+      && !isTaskHelpCard(asset),
   }
+}
+
+/** Сама картка «Підказка» / «Типова помилка» — не задача: підказки до підказки не буває. */
+function isTaskHelpCard(asset: WBAsset): boolean {
+  const preset = (asset.data as { preset?: unknown } | undefined)?.preset
+  return asset.type === 'theory_card' && (preset === 'tip' || preset === 'common mistake')
 }
 
 /** Чи є що показати в групі взагалі. */
 export function hasWindowActions(actions: CardWindowActions): boolean {
   return actions.scale || actions.minimize || actions.expand || actions.delete || actions.handwrite
-    || actions.fitHeight
+    || actions.fitHeight || actions.taskHelp
 }

@@ -50,7 +50,7 @@
         @click="emit('scale', 1)"
       >A+</button>
       <span
-        v-if="actions.handwrite || actions.fitHeight || actions.minimize || actions.expand || actions.delete"
+        v-if="actions.handwrite || actions.taskHelp || actions.fitHeight || actions.minimize || actions.expand || actions.delete"
         class="wb-card-window-controls__divider"
         aria-hidden="true"
       />
@@ -80,6 +80,23 @@
         :size="12"
         :thinking="handwriteBusy"
       /></button>
+    <!-- LAW §9 v1.33 (пакет 3 «один Інтегралик», 19.10): підказка й типова помилка від Інтегралика поруч
+         із задачею. Як ✍ — значки без напису, назва для читача екрана. Поки Інтегралик складає картку,
+         натиснутий значок пульсує, обидва не натискаються. -->
+    <template v-if="actions.taskHelp">
+      <button
+        v-for="kind in TASK_HELP_KINDS"
+        :key="kind"
+        type="button"
+        class="wb-card-window-controls__btn wb-card-window-controls__btn--task-help"
+        :class="{ 'wb-card-window-controls__btn--busy': taskHelpBusy === kind }"
+        :data-testid="`wb-card-window-task-help-${kind}`"
+        :aria-label="t(`winterboard.card.taskHelp.${kind}`)"
+        :aria-busy="taskHelpBusy === kind ? 'true' : undefined"
+        :disabled="taskHelpBusy !== null"
+        @click="emit('taskHelp', kind)"
+      >{{ TASK_HELP_ICONS[kind] }}</button>
+    </template>
     <!-- Власник 2026-10-18: документ одним натисканням на всю висоту аркуша біля лівого краю. -->
     <button
       v-if="actions.fitHeight"
@@ -135,13 +152,19 @@ const props = withDefaults(
     scale?: number
     /** Етап 1: Інтегралик розв'язує або рука пише саме цю картку. */
     handwriteBusy?: boolean
+    /** LAW §9 v1.33: яку картку Інтегралик складає до цієї задачі зараз (null — жодної). */
+    taskHelpBusy?: 'hint' | 'mistake' | null
   }>(),
-  { scale: 1, handwriteBusy: false },
+  { scale: 1, handwriteBusy: false, taskHelpBusy: null },
 )
 
 const emit = defineEmits<{
   minimize: []; expand: []; delete: []; handwrite: []; fitHeight: []; scale: [direction: -1 | 0 | 1]
+  taskHelp: [kind: 'hint' | 'mistake']
 }>()
+
+const TASK_HELP_KINDS = ['hint', 'mistake'] as const
+const TASK_HELP_ICONS = { hint: '💡', mistake: '⚠' } as const
 
 const scaleLabel = computed(() => presentationScaleLabel(props.scale))
 const canScaleDown = computed(() => nextPresentationScale(props.scale, -1) !== null)

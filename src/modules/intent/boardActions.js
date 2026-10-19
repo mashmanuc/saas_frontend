@@ -187,6 +187,33 @@ function _leastOverlapSpot(rects, w, h, pw, ph) {
   return best
 }
 
+// Пакет 3 (LAW §9 v1.33): картка «Підказка» / «Типова помилка» — поруч із задачею, до якої вона:
+// праворуч (верхом урівень), інакше під нею, ліворуч, над; щоразу в межах сторінки й без перекриттів.
+// Місця біля задачі немає (чи задачу вже прибрали) — звичайне вільне місце, як у будь-якої картки.
+const NEAR_GAP = 24
+
+function _nearSpot(page, { assetId, w, h }) {
+  const { pw, ph } = _pageSize(page)
+  const rects = _occupied(page)
+  const anchor = (page?.assets ?? []).find((a) => a?.id === assetId)
+  if (anchor && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)) {
+    const ax = anchor.x, ay = anchor.y, aw = anchor.w || 0, ah = anchor.h || 0
+    const tries = [
+      { x: ax + aw + NEAR_GAP, y: ay },
+      { x: ax, y: ay + ah + NEAR_GAP },
+      { x: ax - w - NEAR_GAP, y: ay },
+      { x: ax, y: ay - h - NEAR_GAP },
+    ]
+    for (const t of tries) {
+      if (t.x < 0 || t.y < 0 || t.x + w > pw || t.y + h > ph) continue
+      const box = { x: t.x, y: t.y, w, h }
+      if (rects.every((r) => _overlapArea(box, r) === 0)) return { x: Math.round(t.x), y: Math.round(t.y), w, h }
+    }
+  }
+  const { cx, cy } = _center(page, w, h)
+  return { x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), w, h }
+}
+
 // Розмір картинки на дошці: вписати в 480 по ширині, зберігши пропорції; без розмірів —
 // квадрат 360, канва сама підтягне після завантаження. Спільне для `add_image` і місця,
 // яке їй лишає довідка (Б-146): обидва мусять дати той самий розмір.
@@ -912,10 +939,15 @@ const HANDLERS = {
     // Б-146: довідка з Вікіпедії з картинкою (`image_left` — її розмір): картка праворуч на всю
     // вільну ширину, картинці — місце ліворуч. Місця для пари немає — звичайна картка.
     const pair = image_left ? _imageLeftLayout(page, image_left) : null
+    // Пакет 3: «Підказка» / «Типова помилка» — менша картка поруч із задачею (`ctx.near`).
+    const near = !pair && ctx?.near?.assetId ? _nearSpot(page, ctx.near) : null
+    const cardH = near ? near.h : 380
     const { cx, cy } = pair
       ? { cx: pair.card.x + pair.card.w / 2, cy: pair.card.y + 190 }
-      : _center(page, CARD_W, 380, 440)
-    const cardW = pair ? pair.card.w : CARD_W
+      : near
+        ? { cx: near.x + near.w / 2, cy: near.y + near.h / 2 }
+        : _center(page, CARD_W, 380, 440)
+    const cardW = pair ? pair.card.w : near ? near.w : CARD_W
     const assetId = _uuid()
     const badgeValue = badge || ''
     const titleValue = title || ''
@@ -925,9 +957,9 @@ const HANDLERS = {
       type: 'theory_card',
       src: '',
       x: Math.round(cx - cardW / 2),
-      y: cy - 190,
+      y: Math.round(cy - cardH / 2),
       w: cardW,
-      h: 380,
+      h: cardH,
       rotation: 0,
       locked: false,
       // badge — підпис у шапці. BE дає «Розв'язок» за замовчуванням для цього

@@ -777,11 +777,13 @@
         :is-expanded="expandedAssetId === windowControlsTarget.id"
         :scale="presentationScaleOf(windowControlsTarget)"
         :handwrite-busy="handwriteBusyId === windowControlsTarget.id"
+        :task-help-busy="taskHelpBusy?.id === windowControlsTarget.id ? taskHelpBusy.kind : null"
         @scale="(direction: -1 | 0 | 1) => handleWindowScale(windowControlsTarget, direction)"
         @minimize="handleMinimize(windowControlsTarget)"
         @expand="handleWindowExpand(windowControlsTarget.id)"
         @delete="handleWindowDelete(windowControlsTarget.id)"
         @handwrite="handleWindowHandwrite(windowControlsTarget)"
+        @task-help="(kind: 'hint' | 'mistake') => handleWindowTaskHelp(windowControlsTarget, kind)"
         @fit-height="handleWindowFitHeight(windowControlsTarget)"
       />
     </Teleport>
@@ -998,6 +1000,7 @@ import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
+import { askTaskHelp, taskHelpBusy } from '@/modules/intent/taskHelp'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
@@ -1856,6 +1859,12 @@ function handleWindowHandwrite(asset: WBAsset): void {
     if ((fresh.data as { showSolution?: boolean } | undefined)?.showSolution) return
     emit('asset-update', { ...fresh, data: { ...(fresh.data as object), showSolution: true } } as unknown as WBAsset)
   }, undefined, { canSolve: windowViewer.value.canSolve })
+}
+
+/** LAW §9 v1.33: «💡 Підказка» / «⚠ Типова помилка» — Інтегралик кладе картку поруч із задачею. */
+function handleWindowTaskHelp(asset: WBAsset, kind: 'hint' | 'mistake'): void {
+  if (!cardWindowActions(asset, windowViewer.value).taskHelp) return
+  void askTaskHelp(kind, asset)
 }
 
 function handleMinimize(asset: WBAsset): void {
