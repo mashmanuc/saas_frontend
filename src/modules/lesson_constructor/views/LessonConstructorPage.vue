@@ -475,7 +475,7 @@ function toggleExpand(id: string) {
  * тема стає широкою свого розділу. Порядок тем усередині рядка — той, що дав `export_topics`.
  */
 function topicRows(topics: Topic[]): TopicRow[] {
-  const inSection = new Set(topics.map((t) => t.value))
+  const inSection = new Set<string>(topics.map((t) => t.value))
   const parentOf = (id: string): string | null => {
     let cut = id.lastIndexOf('.')
     while (cut > 0) {
