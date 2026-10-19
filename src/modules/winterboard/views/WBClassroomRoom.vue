@@ -625,7 +625,7 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
-import { handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
+import { handwriteAllWithFeedback, handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { imageReadingTarget } from '../board/imageReadingTarget'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
@@ -1206,7 +1206,8 @@ const presence = usePresence({
 // є єдиний writer класу, тож локальні дії з команд телефона персистяться
 // штатно. Учень пульта не має (enabled=false → команди ігноруються).
 const showRemoteModal = ref(false)
-const classroomRemoteView = createRemoteViewAdapter(store as any)
+// v1.34: право Інтегралика — вирізка з PDF і картка теж об'єкти пульта (✍).
+const classroomRemoteView = createRemoteViewAdapter(store as any, { canSolve: () => canSolveHandwrite.value })
 const boardRemote = useBoardRemote({
   sessionId: resolvedSessionId,
   store: {
@@ -1224,20 +1225,29 @@ const boardRemote = useBoardRemote({
   // розбір показується друкованим, як «Показати розбір». 18.10: з правом Інтегралика — коротким записом.
   // 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): задача — за Р1, як «Наступний рядок» (виділена
   // на ноутбуці вирізка з PDF чи картка теж); нічого писати чи відмова — словами на ноутбуці й на пульті.
-  handwrite: (fallback: any) => {
+  // v1.34 (маніфест пульта П2): новий телефон шле адресу об'єкта — пишемо рівно його (`exact`), обірване
+  // дописується з того рядка (О6). Старий телефон без адреси — Р1, як раніше.
+  handwrite: (target: any, exact?: boolean) => {
+    const reveal = (asset: any) => {
+      const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
+      if (fresh.data?.showSolution) return
+      store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
+    }
+    if (exact && target) {
+      void handwriteAllWithFeedback(target, { canSolve: canSolveHandwrite.value, reveal })
+      return
+    }
     const page = store.pages[store.currentPageIndex]
     const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
-    void remoteHandwriteWithFeedback({
-      canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => fallback,
-      reveal: (asset: any) => {
-        const fresh = store.pages[store.currentPageIndex]?.assets.find((a: any) => a.id === asset.id) ?? asset
-        if (fresh.data?.showSolution) return
-        store.updateAsset({ ...fresh, data: { ...(fresh.data || {}), showSolution: true } })
-      },
-    })
+    void remoteHandwriteWithFeedback({ canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => target, reveal })
   },
   // v1.32: «✍️ Наступний рядок» — один крок розв'язку на натиск; стан — «Крок N з M» на пульті.
-  handwriteNext: () => {
+  // v1.34: з адресою — рівно цей об'єкт.
+  handwriteNext: (target?: any) => {
+    if (target) {
+      void nextStepWithFeedback({ canSolve: canSolveHandwrite.value, force: target })
+      return
+    }
     const page = store.pages[store.currentPageIndex]
     const sel = store.selectedIds.length === 1 ? page?.assets.find((a: any) => a.id === store.selectedIds[0]) ?? null : null
     void nextStepWithFeedback({ canSolve: canSolveHandwrite.value, selected: sel as any, fallback: () => classroomRemoteView.handwriteTarget() })

@@ -23,9 +23,15 @@
 // ⚠️ Формула вище — з v1.2. З 2026-09-23 (FIRST USER GATE) у кімнаті уроку аркуш
 // зсувається на −scroll (`boardStore.stageOrigin`: center − scroll, центр = 0, коли
 // стор не знає розміру поля). Тому тут: екран = center(zoom) − scroll + p·zoom.
+//
+// v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2, ТЗ
+// TZ_REMOTE_CURRENT_OBJECT_2026-10-19): ПОТОЧНИЙ ОБ'ЄКТ замість прихованого «у фокусі, інакше перша».
+// Урок 19.10: A+ збільшував першу задачу, а ✍ писав виділену другу. Тепер: розгорнутий → виділений на
+// дошці → останній обраний → перший (згори вниз, зліва направо); дія з адресою (`object_id`) — рівно
+// той об'єкт, якщо він є на поточній сторінці, інакше нічого й причина (`objectNotice`).
 
 import { useTutorRevealGate } from './useStudentTutor'
-import { hasHandwritableSolution } from '../board/handwriteSolution'
+import { hasHandwritableSolution, isIntegralykSolvable } from '../board/handwriteSolution'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
 import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
@@ -50,6 +56,9 @@ export interface RemoteViewStore {
   updateAsset: (asset: any, opts?: { skipHistory?: boolean }) => void
   /** Прокрутка зсуває аркуш (кімната уроку). Без цього «На весь екран» не має куди вести. */
   stageFollowsScroll?: boolean
+  /** v1.34: виділення на дошці — поточний об'єкт пульта (Р1: в обидва боки). */
+  selectedIds?: string[]
+  selectItems?: (ids: string[]) => void
 }
 
 /** v1.15: як кімната дає розмір поля й застосовує вигляд (той самий шлях, що Ctrl+колесо). */
@@ -58,7 +67,27 @@ export interface RemoteViewOptions {
   viewportSize?: () => { width: number; height: number } | null
   /** Застосувати масштаб і прокрутку. Без нього — `store.setZoom` / `store.setScroll`. */
   applyView?: (zoom: number, scrollX: number, scrollY: number) => void
+  /**
+   * v1.34: кімната дала право Інтегралика (`canSolveHandwrite`) — ✍ на вирізці з PDF, картинці, картці й задачі
+   * без розв'язку. Без нього пульт працює лише з задачами (✍ — лише з готовим розв'язком).
+   */
+  canSolve?: () => boolean
 }
+
+/** v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері, `REMOTE_OBJECT_KINDS`). */
+export type RemoteObjectKind = 'task' | 'cut' | 'card'
+/** v1.34: об'єкт поточної сторінки для `remote.state.objects` — без тексту, лише вид, номер і прапорці. */
+export interface RemoteBoardObject {
+  id: string
+  kind: RemoteObjectKind
+  n: number
+  hw: boolean
+  answer?: boolean
+  solution?: boolean
+  presenting: boolean
+}
+/** v1.34: чому дію над об'єктом не виконано — його вже немає на сторінці / цей вид так не вміє. */
+export type RemoteObjectNotice = 'gone' | 'unsupported'
 
 /** Відступ об'єкта від країв видимої частини в «На весь екран» (ТЗ §4.3). */
 export const FOCUS_MARGIN_PX = 24
@@ -91,6 +120,10 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   /** v1.15: об'єкт «на весь екран» і вигляд до ПЕРШОГО показу (його повертає «Уся сторінка»). */
   let objectFocus: string | null = null
   let savedView: { zoom: number; scrollX: number; scrollY: number } | null = null
+  /** v1.34: останній обраний (пультом чи виділенням на дошці) — поки він на поточній сторінці. */
+  let chosenId: string | null = null
+  /** v1.34: чому не виконано останню дію над об'єктом; скидається наступною вдалою дією чи іншою сторінкою. */
+  let notice: RemoteObjectNotice | null = null
 
   function applyView(zoom: number, scrollX: number, scrollY: number): void {
     if (opts.applyView) opts.applyView(zoom, scrollX, scrollY)
@@ -165,6 +198,140 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     if (!asset) return null
     if (isMediaShowType(asset.type) && showId !== objectFocus) return null
     return objectFocus
+  }
+
+  /** v1.34: вид об'єкта для пульта або null — пульт із ним не працює (маніфест П1). */
+  function kindOf(asset: any): RemoteObjectKind | null {
+    if (!asset) return null
+    if (asset.type === TASK_ASSET_TYPE) return 'task'
+    // Вирізка й картка — лише коли є що робити: ✍ (право Інтегралика). «На весь екран» для них — у «Сценарії».
+    if (!(opts.canSolve?.() === true && isIntegralykSolvable(asset))) return null
+    if (asset.type === 'image') return 'cut'
+    if (asset.type === 'theory_card') return 'card'
+    return null
+  }
+
+  /** v1.34: ✍ для цього об'єкта — як у групі дій на дошці (`cardWindowActions`) і reveal-гейт банку. */
+  function hwFor(asset: any): boolean {
+    if (!asset) return false
+    if (asset.type === TASK_ASSET_TYPE && hasHandwritableSolution(asset)) {
+      return useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value
+    }
+    return opts.canSolve?.() === true && isIntegralykSolvable(asset)
+  }
+
+  /** v1.34: об'єкти поточної сторінки, з якими працює пульт, — згори вниз, потім зліва направо. */
+  function objectAssets(): any[] {
+    const page = store.pages[store.currentPageIndex]
+    if (!page) return []
+    return page.assets
+      .filter((a) => a && kindOf(a) !== null)
+      .slice()
+      .sort((a, b) => (a.y - b.y) || (a.x - b.x))
+  }
+
+  /**
+   * v1.34 поточний об'єкт: розгорнутий («Задача на екран») → виділений на дошці (Р1) → останній обраний →
+   * перший. Автовибір (інша сторінка, об'єкт зник) — видимий: пульт показує, який саме (маніфест П2).
+   */
+  function currentAsset(): any | null {
+    const list = objectAssets()
+    if (!list.length) return null
+    const find = (id: string | null) => (id ? list.find((a) => a.id === id) ?? null : null)
+    const expanded = find(store.expandedAssetId)
+    if (expanded) return expanded
+    const sel = store.selectedIds ?? []
+    const selected = sel.length === 1 ? find(sel[0]) : null
+    if (selected) {
+      chosenId = selected.id
+      return selected
+    }
+    return find(chosenId) ?? list[0]
+  }
+
+  function currentObjectId(): string | null {
+    return currentAsset()?.id ?? null
+  }
+
+  function objects(): RemoteBoardObject[] {
+    const counts: Record<string, number> = {}
+    return objectAssets().map((a) => {
+      const kind = kindOf(a) as RemoteObjectKind
+      counts[kind] = (counts[kind] ?? 0) + 1
+      const obj: RemoteBoardObject = {
+        id: a.id, kind, n: counts[kind], hw: hwFor(a),
+        presenting: store.expandedAssetId === a.id || objectFocus === a.id,
+      }
+      if (kind === 'task') {
+        obj.answer = !!a.data?.showAnswer
+        obj.solution = !!a.data?.showSolution
+      }
+      return obj
+    })
+  }
+
+  function objectNotice(): RemoteObjectNotice | null {
+    return notice
+  }
+
+  /**
+   * v1.34: об'єкт для дії. З адресою — рівно він, якщо є серед об'єктів поточної сторінки (інакше null і
+   * `gone`: швидкий натиск після перемикання не піде «не туди»). Без адреси (старий телефон) — поточний.
+   * Знайдений стає поточним і виділяється на дошці (Р1).
+   */
+  function resolve(objectId?: string | null): any | null {
+    const asset = objectId ? objectAssets().find((a) => a.id === objectId) ?? null : currentAsset()
+    if (!asset) {
+      if (objectId) notice = 'gone'
+      return null
+    }
+    adopt(asset)
+    return asset
+  }
+
+  function adopt(asset: any): void {
+    chosenId = asset.id
+    notice = null
+    const sel = store.selectedIds ?? []
+    if (store.selectItems && !(sel.length === 1 && sel[0] === asset.id)) store.selectItems([asset.id])
+  }
+
+  /** v1.34 `object.select`: поточним стає цей об'єкт; показ іде за ним (задача — розгорнута, інше — закрито). */
+  function selectObject(objectId: string): boolean {
+    const asset = objectAssets().find((a) => a.id === objectId)
+    if (!asset) {
+      notice = 'gone'
+      return false
+    }
+    const presentingTask = !!store.expandedAssetId
+    adopt(asset)
+    if (presentingTask && asset.id !== store.expandedAssetId) {
+      if (kindOf(asset) === 'task') present(asset)
+      else endTaskPresentation()
+    }
+    if (objectFocus && objectFocus !== asset.id) endObjectFocus()
+    return true
+  }
+
+  function unsupported(): null {
+    notice = 'unsupported'
+    return null
+  }
+
+  /** v1.34: «Задача на екран» саме для цієї задачі (з адресою). */
+  function present(asset: any): void {
+    if (savedView || objectFocus) endObjectFocus()
+    focusIndex = taskCards().findIndex((a) => a.id === asset.id)
+    store.expandedAssetId = asset.id
+    scrollTaskBody(asset.id, -1)
+  }
+
+  function presentObject(objectId: string): boolean {
+    const asset = resolve(objectId)
+    if (!asset) return false
+    if (kindOf(asset) !== 'task') return !!unsupported()
+    present(asset)
+    return true
   }
 
   function taskCards(): any[] {
@@ -244,15 +411,18 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
    *    команду, на межі кроків — жодного. Клас, учень і Replay бачать те саме,
    *    висоту переміряє сама картка (INV-25).
    *
-   * Картка — розгорнута, інакше у фокусі, інакше перша. Повертає масштаб після команди.
+   * Картка — з адресою рівно вона, інакше поточний об'єкт (v1.34). Повертає масштаб після команди.
    */
-  function changeTextScale(delta: number): number {
+  function changeTextScale(delta: number, objectId?: string | null): number {
     const cards = taskCards()
-    const expanded = cards.find((a) => a.id === store.expandedAssetId)
-    const asset = expanded ?? cards[focusIndex] ?? cards[0]
     const steps = Math.max(-3, Math.min(3, Math.trunc(delta)))
-    if (!asset || steps === 0) return 1
-    focusIndex = cards.indexOf(asset)
+    if (steps === 0) return 1
+    // v1.34: з адресою — рівно ця задача; без (старий телефон) — поточний об'єкт. Не задача — не вміє.
+    const asset = resolve(objectId)
+    if (!asset) return 1
+    if (kindOf(asset) !== 'task') { unsupported(); return 1 }
+    const expanded = store.expandedAssetId === asset.id ? asset : null
+    focusIndex = cards.findIndex((a) => a.id === asset.id)
     if (expanded) {
       const current = getNmtPresentationScale(asset.id)
       const rawNext = current * Math.pow(NMT_PRESENTATION_SCALE.STEP, steps)
@@ -297,38 +467,34 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   }
 
   /**
-   * «Відповідь»/«Розбір»: перемикає на ВСІХ картках задач поточної сторінки
-   * (v1: одна команда — один стан для всієї сторінки; якщо вже частково
-   * показано — показує всім). Шанує reveal-гейт (8b-2) кожної картки.
-   * Повертає кількість змінених карток.
+   * «Відповідь»/«Розбір» поточної задачі (v1.34; до того — усіх задач сторінки разом). Шанує reveal-гейт
+   * (8b-2). Повертає кількість змінених карток (0 або 1).
    */
-  function reveal(what: 'answer' | 'solution'): number {
-    const cards = taskCards()
-    if (!cards.length) return 0
+  function reveal(what: 'answer' | 'solution', objectId?: string | null): number {
+    // v1.34 (маніфест П2): кнопка діє на поточну задачу — з адресою рівно на неї, без (старий телефон) — на
+    // поточний об'єкт. До v1.34 перемикала всі задачі сторінки разом.
+    const asset = resolve(objectId)
+    if (!asset) return 0
+    if (kindOf(asset) !== 'task') { unsupported(); return 0 }
     const key = what === 'answer' ? 'showAnswer' : 'showSolution'
-    const allShown = cards.every((a) => !!a.data?.[key])
-    const target = !allShown
-    let changed = 0
-    for (const asset of cards) {
-      const allowed = useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value
-      if (!allowed) continue
-      if (!!asset.data?.[key] === target) continue
-      store.updateAsset({ ...asset, data: { ...(asset.data || {}), [key]: target } })
-      changed += 1
-    }
-    return changed
+    if (!useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value) return 0
+    store.updateAsset({ ...asset, data: { ...(asset.data || {}), [key]: !asset.data?.[key] } })
+    return 1
   }
 
   /**
-   * v1.29 «✍️ Розв'язок рукою»: яку задачу писати — розгорнута, інакше у фокусі пульта, інакше
-   * перша на сторінці. Лише з розв'язком і з дозволом reveal-гейту (як «Показати розбір»).
+   * v1.29 «✍️ Розв'язок рукою»: що писати. v1.34: з адресою — рівно цей об'єкт; без — поточний об'єкт
+   * (розгорнутий → виділений → обраний → перший), якщо ✍ йому доступний.
    */
-  function handwriteTarget(): any | null {
-    const cards = taskCards()
-    const asset = cards.find((a) => a.id === store.expandedAssetId) ?? cards[focusIndex] ?? cards[0]
-    if (!asset || !hasHandwritableSolution(asset)) return null
-    if (!useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value) return null
-    return asset
+  function handwriteTarget(objectId?: string | null): any | null {
+    // v1.34: з адресою — рівно цей об'єкт (задача, вирізка, картка); ✍ йому недоступний — не вміє.
+    if (objectId) {
+      const asset = resolve(objectId)
+      if (!asset) return null
+      return hwFor(asset) ? asset : unsupported()
+    }
+    const asset = currentAsset()
+    return asset && hwFor(asset) ? asset : null
   }
 
   function summary(): RemoteCardsSummary & { zoom: number } {
@@ -351,12 +517,15 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   function resetFocus(): void {
     endTaskPresentation()
     if (savedView || objectFocus) endObjectFocus()
+    notice = null
   }
 
   return {
     fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId,
     handwriteTarget,
     questionCards, revealQuestions, questionsSummary,
+    // v1.34 поточний об'єкт
+    objects, currentObjectId, objectNotice, selectObject, presentObject,
   }
 }
 

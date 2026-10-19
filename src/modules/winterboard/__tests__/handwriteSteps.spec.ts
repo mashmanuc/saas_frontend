@@ -9,10 +9,12 @@ import {
   originalOfCopy, parseStepId, placeStep, shortHash, stepSessions, stepStrokeId, unfinishedSession,
 } from '../board/handwriteSteps'
 import {
-  clearHandwriteStepsCache, handwriteNextStep, handwriteStepState, handwriteTaskSolution, hasStepTarget, stopHandwriting,
-  remoteHandwriteWithFeedback, type HandwriteDeps, type HandwriteLayoutRequest,
+  clearHandwriteStepsCache, handwriteAllWithFeedback, handwriteBusyId, handwriteNextStep, handwriteStepState, hasStepTarget,
+  isHandwriting, remoteHandwriteWithFeedback, solveWithFeedback, stopHandwriting, HandwriteUnsupported,
+  type HandwriteDeps, type HandwriteLayoutRequest,
 } from '../composables/useHandwriteSolution'
-import { notifyInfo } from '@/utils/notify'
+import { HANDWRITE_INK } from '../board/handwriteSolution'
+import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 
 vi.mock('@/utils/notify', () => ({ notifyError: vi.fn(), notifyInfo: vi.fn(), notifyWarning: vi.fn() }))
 vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
@@ -70,6 +72,8 @@ const LINE_H = 40
 
 function makeDeps(opts: {
   steps?: string[]; strokes?: any[]; pages?: any[]; assets?: any[]; solve?: () => Promise<any>
+  /** Перекладач не знає конструкції (422) — і для запису, і для формул картки. */
+  unsupported?: boolean
   /** Висота поточної сторінки, як її показує полотно (згенерована добірка 18.10 — вища за аркуш). */
   pageHeight?: number
 } = {}) {
@@ -78,9 +82,14 @@ function makeDeps(opts: {
     id: 'p1', width: 1920, height: opts.pageHeight ?? 1080, assets: (opts.assets ?? [TASK]) as any[], strokes: (opts.strokes ?? []) as any[],
   }
   const pages: any[] = [page, ...(opts.pages ?? [])]
+  /** Годинник письма (мс від старту тесту) — темп за годинником (v1.34). */
+  const clock = { t: 0 }
   const store = {
     mode: 'edit', workspaceId: 'board-1', currentPageIndex: 0, pages,
     pageHeight: 1080,
+    addStrokesBatchToPage: vi.fn((pageIndex: number, batch: any[]) => {
+      pages[pageIndex].strokes = [...pages[pageIndex].strokes, ...batch]
+    }),
     get currentPageCanvasHeight() { return pages[store.currentPageIndex]?.height ?? 1080 },
     undoStack: [] as any[], redoStack: [] as any[],
     addStroke: vi.fn((s: any, o?: { pageId?: string }) => {
@@ -104,6 +113,7 @@ function makeDeps(opts: {
     sync,
     // Розкладка: кожен рядок — 2 штрихи заввишки LINE_H; `steps` — рядки запису (як `/solution/`).
     fetchLayout: vi.fn(async (req: HandwriteLayoutRequest) => {
+      if (opts.unsupported) throw new HandwriteUnsupported('\\hbar')
       // Як сервер (`apps/handwriting/api.py`): область поза 200…1920 × 60…1080 — 400.
       if (!(req.width >= 200 && req.width <= 1920 && req.height >= 60 && req.height <= 1080)) {
         throw Object.assign(new Error('400'), { isAxiosError: true, response: { status: 400 } })
@@ -119,9 +129,10 @@ function makeDeps(opts: {
     }),
     fetchSolve: vi.fn(opts.solve ?? (async () => ({ text: 'x', answer: 'Б' }))),
     schedule: (fn) => { queue.push(fn); return () => { const i = queue.indexOf(fn); if (i >= 0) queue.splice(i, 1) } },
+    now: () => clock.t,
   }
   const runAll = () => { while (queue.length) queue.shift()!() }
-  return { deps, store, page, pages, runAll, queue }
+  return { deps, store, page, pages, runAll, queue, clock }
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -202,9 +213,9 @@ describe('handwriteNextStep', () => {
   it('Р4: ✍ на ноутбуці посеред покрокового — дописує решту одним «Скасувати»', async () => {
     const d = makeDeps()
     await press(d)
-    const done = handwriteTaskSolution(TASK, d.deps, { canSolve: true })
+    const done = handwriteAllWithFeedback(TASK, { canSolve: true }, d.deps)
     for (let i = 0; i < 6; i++) { await flush(); d.runAll() }
-    expect((await done).status).toBe('written')
+    expect((await done)?.status).toBe('written')
     expect(new Set(stepsOn(d.page).map((m: any) => m.step))).toEqual(new Set([1, 2, 3, 4]))
     expect(d.store.undoStack).toHaveLength(2)                               // крок 1 + решта разом
   })
@@ -292,7 +303,7 @@ describe('пульт: «✍️ Розв\'язок рукою» за тим са�
 
   it('писати нічого — не тиша: «немає задачі» на ноутбуці й причина на пульті', async () => {
     const d = makeDeps({ assets: [] })
-    expect(await remote(d, { canSolve: true, selected: null, fallback: () => null })).toEqual({ status: 'no_solution' })
+    expect(await remote(d, { canSolve: true, selected: null, fallback: () => null })).toEqual({ status: 'refused', reason: 'no_solution' })
     expect(notifyInfo).toHaveBeenCalledWith('winterboard.handwrite.noStepTarget')
     expect(handwriteStepState(d.page)).toMatchObject({ status: 'refused', reason: 'no_solution' })
     expect(d.page.strokes).toHaveLength(0)
@@ -300,7 +311,7 @@ describe('пульт: «✍️ Розв\'язок рукою» за тим са�
 
   it('Інтегралик відмовив («кілька задач») — причина на пульті, нічого не написано', async () => {
     const d = makeDeps({ assets: [PDF_CUT], solve: async () => ({ error: 'many_tasks' }) })
-    expect(await remote(d, { canSolve: true, selected: PDF_CUT, fallback: () => null })).toEqual({ status: 'many_tasks' })
+    expect(await remote(d, { canSolve: true, selected: PDF_CUT, fallback: () => null })).toMatchObject({ status: 'refused', reason: 'many_tasks' })
     expect(handwriteStepState(d.page)).toMatchObject({ status: 'refused', reason: 'many_tasks' })
     expect(d.page.strokes).toHaveLength(0)
   })
@@ -344,6 +355,123 @@ describe('покроково на сторінці вищій за аркуш (�
     const ys = cont.strokes.flatMap((s: any) => s.points.map((p: any) => p.y))
     expect(ys.length).toBeGreaterThan(0)
     expect(Math.max(...ys)).toBeLessThanOrEqual(1080)
+  })
+})
+
+describe('✍ увесь розв\'язок — кроками (LAW §9 v1.34; урок власника 19.10)', () => {
+  beforeEach(() => {
+    stopHandwriting(); clearHandwriteStepsCache()
+    vi.mocked(notifyInfo).mockClear(); vi.mocked(notifyWarning).mockClear(); vi.mocked(notifyError).mockClear()
+  })
+  const PDF_CUT = { id: 'pdf-1', type: 'image', src: 'https://cdn.m4sh.org/wb/cut.png', x: 60, y: 60, w: 700, h: 300 }
+  async function all(d: ReturnType<typeof makeDeps>, asset: any = TASK, opts: any = { canSolve: true }) {
+    const done = handwriteAllWithFeedback(asset, opts, d.deps)
+    for (let i = 0; i < 8; i++) { await flush(); d.runAll() }
+    return done
+  }
+
+  it('пише всі кроки поруч із задачею, синім пером; один «Скасувати» прибирає все', async () => {
+    const d = makeDeps()
+    expect(await all(d)).toEqual({ status: 'written', from: 1, to: 4, total: 4 })
+    expect(new Set(stepsOn(d.page).map((m: any) => m.step))).toEqual(new Set([1, 2, 3, 4]))
+    expect(d.page.strokes.every((x: any) => x.color === HANDWRITE_INK && x.tool === 'pen')).toBe(true)
+    expect(d.store.undoStack).toHaveLength(1)
+    d.store.undoStack[0].revert()
+    expect(d.page.strokes).toHaveLength(0)
+  })
+
+  it('урок 19.10: перегорнули посеред — повторний ✍ ДОПИСУЄ з того рядка на тому самому місці, без нової сторінки', async () => {
+    const d = makeDeps()
+    const first = handwriteAllWithFeedback(TASK, { canSolve: true }, d.deps)
+    await flush(); await flush(); await flush()
+    d.queue.shift()!(); d.queue.shift()!(); d.queue.shift()!()        // 3 штрихи (крок 1 і половина 2)
+    const extra = { id: 'p2', width: 1920, height: 1080, assets: [] as any[], strokes: [] as any[] }
+    d.pages.push(extra)
+    d.store.currentPageIndex = 1                                          // перегорнули
+    d.runAll()
+    expect((await first)?.status).toBe('stopped')
+    d.store.currentPageIndex = 0                                          // повернулись
+    const before = stepsOn(d.page).length
+    expect(before).toBeGreaterThan(0)
+    expect(await all(d)).toMatchObject({ status: 'written', to: 4, total: 4 })
+    expect(d.pages).toHaveLength(2)                                       // нових сторінок немає
+    // кожен рядок — цілий (по 2 штрихи): перегорнутий посеред рядок дописано одразу, обрізаного немає
+    const perStep = stepsOn(d.page).reduce((m: Record<number, number>, x: any) => ({ ...m, [x.step]: (m[x.step] ?? 0) + 1 }), {})
+    expect(perStep).toEqual({ 1: 2, 2: 2, 3: 2, 4: 2 })
+  })
+
+  it('перегорнули посеред рядка — рядок дописано одразу, далі рука стоїть', async () => {
+    const d = makeDeps()
+    const first = handwriteAllWithFeedback(TASK, { canSolve: true }, d.deps)
+    await flush(); await flush(); await flush()
+    d.queue.shift()!(); d.queue.shift()!(); d.queue.shift()!()            // крок 1 (2 штрихи) і 1 штрих кроку 2
+    d.pages.push({ id: 'p2', width: 1920, height: 1080, assets: [] as any[], strokes: [] as any[] })
+    d.store.currentPageIndex = 1
+    d.runAll()
+    expect((await first)?.status).toBe('stopped')
+    const steps = stepsOn(d.page).map((m: any) => m.step)
+    expect(steps.filter((x: number) => x === 2)).toHaveLength(2)          // рядок 2 цілий
+    expect(steps.filter((x: number) => x >= 3)).toHaveLength(0)           // далі — не пише
+  })
+
+  it('уже написано — «Розв\'язок уже написано», без дубля на новій сторінці', async () => {
+    const d = makeDeps()
+    await all(d)
+    const n = d.page.strokes.length
+    expect(await all(d)).toEqual({ status: 'done', total: 4 })
+    expect(notifyInfo).toHaveBeenCalledWith('winterboard.handwrite.stepDone')
+    expect(d.page.strokes).toHaveLength(n)
+    expect(d.pages).toHaveLength(1)
+  })
+
+  it('темп за годинником: дошка відстала — прострочені штрихи кладуться разом однією дією', async () => {
+    const d = makeDeps()
+    const done = handwriteAllWithFeedback(TASK, { canSolve: true }, d.deps)
+    await flush(); await flush(); await flush()
+    d.clock.t = 10_000                                                    // слабка дошка: усі миті вже минули
+    d.runAll()
+    expect((await done)?.status).toBe('written')
+    expect(d.store.addStrokesBatchToPage).toHaveBeenCalled()
+    expect(stepsOn(d.page)).toHaveLength(8)                               // 4 кроки × 2 штрихи — усі на місці
+  })
+
+  it('перекладач не знає — нічого не пише; задача банку — розбір друкованим', async () => {
+    const reveal = vi.fn()
+    const d = makeDeps({ unsupported: true })
+    expect(await all(d, TASK, { canSolve: false, reveal })).toMatchObject({ status: 'refused', reason: 'unsupported' })
+    expect(d.page.strokes).toHaveLength(0)
+    expect(d.store.undoStack).toHaveLength(0)
+    expect(reveal).toHaveBeenCalledTimes(1)
+    expect(notifyInfo).toHaveBeenCalledWith('winterboard.handwrite.unsupported')
+  })
+
+  it('сервер відкинув запит (400) — «не вийшло» словами, рука вільна', async () => {
+    const d = makeDeps()
+    ;(d.deps.fetchLayout as any).mockRejectedValueOnce(Object.assign(new Error('400'), { isAxiosError: true, response: { status: 400 } }))
+    expect(await all(d, TASK, { canSolve: false })).toBeNull()
+    expect(notifyError).toHaveBeenCalledWith('winterboard.handwrite.error')
+    expect(isHandwriting()).toBe(false)
+    expect(handwriteBusyId.value).toBeNull()
+  })
+
+  it('вирізка з PDF: Інтегралик розв\'язує за id, «розв\'язує…» на старті; без права — не розв\'язуємо', async () => {
+    const d = makeDeps({ assets: [PDF_CUT] })
+    expect((await all(d, PDF_CUT, { canSolve: true }))?.status).toBe('written')
+    expect(d.deps.fetchSolve).toHaveBeenCalledWith('board-1', 'pdf-1')
+    expect(notifyInfo).toHaveBeenCalledWith('assistant:winterboard.handwrite.solving')
+    const e = makeDeps({ assets: [PDF_CUT] })
+    expect(await all(e, PDF_CUT, { canSolve: false })).toMatchObject({ status: 'refused', reason: 'no_solution' })
+    expect(e.deps.fetchSolve).not.toHaveBeenCalled()
+  })
+
+  it('поки пише — другий ✍ «уже пишу»; ✍ на ноутбуці (solveWithFeedback) — той самий шлях', async () => {
+    const d = makeDeps()
+    const first = solveWithFeedback(TASK, vi.fn(), d.deps, { canSolve: true })
+    await flush(); await flush()
+    expect(await handwriteAllWithFeedback(TASK, { canSolve: true }, makeDeps().deps)).toEqual({ status: 'busy' })
+    expect(notifyInfo).toHaveBeenCalledWith('winterboard.handwrite.busy')
+    for (let i = 0; i < 8; i++) { await flush(); d.runAll() }
+    expect((await first)?.status).toBe('written')
   })
 })
 

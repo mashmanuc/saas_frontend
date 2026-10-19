@@ -62,7 +62,7 @@ async function mountWith(state: Record<string, unknown>) {
 
 const CARDS = { count: 1, answer: false, solution: false }
 
-describe('пульт: «✍️ Розв\'язок рукою» поряд із «Наступним рядком»', () => {
+describe("пульт: «✍️ Розв\'язок рукою» поряд із «Наступним рядком»", () => {
   beforeEach(() => {
     channelState.value = 'idle'
     send.mockClear()
@@ -91,7 +91,7 @@ describe('пульт: «✍️ Розв\'язок рукою» поряд із �
     expect(w.find('[data-testid="remote-handwrite-next"]').exists()).toBe(false)
   })
 
-  it('увесь розв\'язок пишеться — «Пишу розв\'язок…», обидві кнопки зайняті; відмова — причина словами', async () => {
+  it("увесь розв\'язок пишеться — «Пишу розв\'язок…», обидві кнопки зайняті; відмова — причина словами", async () => {
     const w = await mountWith({ handwriteStep: { status: 'writing', written: 0, total: 0, target: true } })
     expect(w.get('[data-testid="remote-handwrite-step"]').text()).toBe(uk.winterboard.remote.step.writingAll)
     expect(w.get('[data-testid="remote-handwrite"]').attributes('disabled')).toBeDefined()
@@ -100,5 +100,68 @@ describe('пульт: «✍️ Розв\'язок рукою» поряд із �
       handwriteStep: { status: 'refused', written: 0, total: 0, reason: 'no_solution', target: false } })
     await nextTick()
     expect(w.get('[data-testid="remote-handwrite-step"]').text()).toBe(uk.winterboard.remote.step.reason.no_solution)
+  })
+})
+
+
+// ── LAW §9 v1.34: поточний об'єкт (маніфест пульта П2; урок власника 19.10) ──
+describe("пульт v1.34: поточний об'єкт — перемикач і адреса в кожній кнопці", () => {
+  beforeEach(() => {
+    channelState.value = 'idle'
+    send.mockClear()
+    onStateCb = null
+    try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
+  })
+  const TWO = [
+    { id: 't1', kind: 'task', n: 1, hw: true, answer: false, solution: false, presenting: false },
+    { id: 't2', kind: 'task', n: 2, hw: true, answer: false, solution: false, presenting: false },
+  ]
+  const cmds = () => send.mock.calls.map((c) => c[0]).filter((m: any) => m.type === 'remote.command')
+
+  it('«Задача 2 з 2»: A+ і ✍ шлють адресу саме другої (урок 19.10)', async () => {
+    const w = await mountWith({ cards: CARDS, objects: TWO, currentId: 't2' })
+    expect(w.get('[data-testid="object-label"]').text()).toBe('Задача 2 з 2')
+    send.mockClear()
+    await w.get('[data-testid="object-zoom-up"]').trigger('click')
+    await w.get('[data-testid="remote-handwrite"]').trigger('click')
+    expect(cmds()).toEqual([
+      expect.objectContaining({ cmd: 'view.zoom', args: { delta: 1, object_id: 't2' } }),
+      expect.objectContaining({ cmd: 'card.handwrite', args: { object_id: 't2' } }),
+    ])
+    // старого блоку (без адрес) немає — дубля кнопок теж
+    expect(w.findAll('[data-testid="remote-handwrite"]')).toHaveLength(1)
+  })
+
+  it('◀ перемикає й одразу шле object.select; наступний натиск — уже з новою адресою, хоч стан ще не прийшов', async () => {
+    const w = await mountWith({ objects: TWO, currentId: 't2' })
+    send.mockClear()
+    await w.get('[data-testid="object-prev"]').trigger('click')
+    expect(w.get('[data-testid="object-label"]').text()).toBe('Задача 1 з 2')
+    await w.get('[data-testid="object-fit"]').trigger('click')
+    expect(cmds()).toEqual([
+      expect.objectContaining({ cmd: 'object.select', args: { object_id: 't1' } }),
+      expect.objectContaining({ cmd: 'view.fit', args: { object_id: 't1' } }),
+    ])
+    // запізнілий стан зі старим поточним не повертає вибір назад
+    onStateCb!({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 1, objects: TWO, currentId: 't2' })
+    await nextTick()
+    expect(w.get('[data-testid="object-label"]').text()).toBe('Задача 1 з 2')
+  })
+
+  it("різні види — «Вирізка 1 · 2 з 2»; у вирізки без права ✍ немає кнопок задачі; один об'єкт — без стрілок", async () => {
+    const w = await mountWith({ objects: [TWO[0], { id: 'c1', kind: 'cut', n: 1, hw: false, presenting: false }], currentId: 'c1' })
+    expect(w.get('[data-testid="object-label"]').text()).toBe('Вирізка 1 · 2 з 2')
+    expect(w.find('[data-testid="object-zoom-up"]').exists()).toBe(false)
+    expect(w.find('[data-testid="remote-handwrite"]').exists()).toBe(false)
+    const one = await mountWith({ objects: [TWO[0]], currentId: 't1' })
+    expect(one.find('[data-testid="object-prev"]').exists()).toBe(false)
+    expect(one.get('[data-testid="object-label"]').text()).toBe('Задача 1')
+  })
+
+  it("причина від ноутбука — словами під перемикачем; об'єктів немає — немає й рядка", async () => {
+    const w = await mountWith({ objects: TWO, currentId: 't1', objectNotice: 'gone' })
+    expect(w.get('[data-testid="object-notice"]').text()).toBe(uk.winterboard.remote.object.notice.gone)
+    const empty = await mountWith({ objects: [] })
+    expect(empty.find('[data-testid="object-row"]').exists()).toBe(false)
   })
 })

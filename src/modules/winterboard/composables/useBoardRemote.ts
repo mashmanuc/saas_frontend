@@ -100,15 +100,15 @@ export interface UseBoardRemoteOptions {
   /**
    * v1.29 «✍️ Розв'язок рукою» (LAW §9). Ноутбук пише розв'язок штрихами пера (`useHandwriteSolution`).
    * 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): задачу обирає кімната за правилом Р1, як для
-   * «Наступного рядка», — `fallback` (розгорнута / у фокусі / перша задача з розв'язком) лише запасний варіант,
-   * може бути `null` (на сторінці сама вирізка з PDF). Без колбека команда ігнорується.
+   * «Наступного рядка». v1.34: з адресою (`exact`) — рівно `target`; без (старий телефон) — `target` лише запасний
+   * варіант (поточний об'єкт), може бути `null`. Без колбека команда ігнорується.
    */
-  handwrite?: (fallback: any | null) => void
+  handwrite?: (target: any | null, exact?: boolean) => void
   /**
    * v1.32 «✍️ Наступний рядок» (LAW §9): один натиск — один крок розв'язку. Задачу, крок і місце визначає
    * ноутбук (`handwriteNextStep`); без нього команда ігнорується.
    */
-  handwriteNext?: () => void
+  handwriteNext?: (target?: any | null) => void
   /** v1.32: стан покрокового письма для пульта (`remote.state.handwrite_step`). */
   handwriteStep?: () => { status: string; written: number; total: number; reason?: string; target?: boolean }
 }
@@ -147,7 +147,7 @@ export interface RemoteCommandDetail {
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
-    | 'card.handwrite' | 'card.handwrite_next'
+    | 'card.handwrite' | 'card.handwrite_next' | 'object.select'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
@@ -276,6 +276,14 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     if (recordingResult.value) msg.recording_result = recordingResult.value
     // v1.32: «Крок N з M» і стан покрокового письма — лише числа й закриті набори, тексту кроку немає
     if (opts.handwriteStep) msg.handwrite_step = opts.handwriteStep()
+    // v1.34: об'єкти поточної сторінки для пульта (без тексту задачі), поточний і причина останньої відмови
+    if (opts.view?.objects) {
+      msg.objects = opts.view.objects()
+      const current = opts.view.currentObjectId()
+      if (current) msg.current_id = current
+      const notice = opts.view.objectNotice()
+      if (notice) msg.object_notice = { reason: notice }
+    }
     const busy = opts.busy?.()
     if (busy) msg.busy = busy
     opts.sendMessage(msg)
@@ -350,6 +358,15 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const recording = opts.recording
     watch(
       () => JSON.stringify(recording.state()),
+      () => { if (remoteConnected.value && opts.enabled.value) sendState() },
+    )
+  }
+
+  // v1.34: об'єкт з'явився чи зник, виділили інший на дошці, відкрили відповідь — пульт перемикається одразу
+  if (opts.view?.objects) {
+    const view = opts.view
+    watch(
+      () => JSON.stringify([view.objects(), view.currentObjectId()]),
       () => { if (remoteConnected.value && opts.enabled.value) sendState() },
     )
   }
@@ -511,9 +528,19 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // watch стежить лише за сторінками
       case 'view.fit':
         if (!view) return
-        view.fitTask()
+        // v1.34: з адресою — «на екран» рівно цю задачу; без (старий телефон) — як раніше, по колу
+        if (typeof d.args?.object_id === 'string') view.presentObject(d.args.object_id)
+        else view.fitTask()
         sendState()
         return
+      // v1.34 (маніфест пульта П2): телефон обрав поточний об'єкт — ноутбук виділяє його на дошці
+      case 'object.select': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!view || !objectId) return
+        view.selectObject(objectId)
+        sendState()
+        return
+      }
       // v1.10 — з «Задача на екран» назад до звичайного вигляду сторінки
       // (той самий скид, що й при зміні сторінки)
       case 'view.page':
@@ -525,7 +552,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         if (!view) return
         const delta = Number(d.args?.delta)
         if (!Number.isInteger(delta) || delta === 0) return
-        view.changeTextScale(delta)
+        view.changeTextScale(delta, typeof d.args?.object_id === 'string' ? d.args.object_id : null)
         sendState()
         return
       }
@@ -546,7 +573,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
           return
         }
         if (what !== 'answer' && what !== 'solution') return
-        view.reveal(what)
+        view.reveal(what, typeof d.args?.object_id === 'string' ? d.args.object_id : null)
         sendState()
         return
       }
@@ -554,10 +581,13 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // reveal-гейт шанується. «Задачу на екран» спершу згортаємо — інакше рукопис під карткою.
       case 'card.handwrite': {
         if (!view || !opts.handwrite) return
+        const objectId = typeof d.args?.object_id === 'string' ? d.args.object_id : null
+        // v1.34: з адресою — рівно цей об'єкт; зник чи ✍ йому недоступний — причина на пульті (`object_notice`).
+        const target = view.handwriteTarget(objectId)
+        if (objectId && !target) { sendState(); return }
         view.resetFocus()
-        // Р1 вирішує кімната: незавершений покроковий → виділене на ноутбуці → `fallback`. Нічого — кімната
-        // скаже про це словами (на ноутбуці й у `handwrite_step` на пульті), а не мовчки, як до 18.10.
-        opts.handwrite(view.handwriteTarget())
+        // Без адреси (старий телефон) Р1 вирішує кімната: незавершений покроковий → виділене → `target`.
+        opts.handwrite(target, !!objectId)
         sendState()
         return
       }
@@ -565,8 +595,11 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // крок і місце вибирає ноутбук. «Задачу на екран» згортаємо — інакше рядок під карткою.
       case 'card.handwrite_next': {
         if (!opts.handwriteNext) return
+        const objectId = typeof d.args?.object_id === 'string' ? d.args.object_id : null
+        const target = objectId ? view?.handwriteTarget(objectId) ?? null : undefined
+        if (objectId && !target) { sendState(); return }
         view?.resetFocus()
-        opts.handwriteNext()
+        opts.handwriteNext(target)
         sendState()
         return
       }

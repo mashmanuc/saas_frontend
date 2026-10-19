@@ -106,6 +106,62 @@ export interface RemoteStateDetail {
   recordingResult?: RemoteRecordingResult
   /** v1.32 — покрокове письмо: «Крок N з M» і стан (закриті набори, як на сервері). */
   handwriteStep?: RemoteHandwriteStep
+  /**
+   * v1.34 — об'єкти поточної сторінки, з якими працює пульт (маніфест пульта П2). Є поле — пульт показує
+   * перемикач і кнопки за видом поточного об'єкта; немає (старий ноутбук) — як до v1.34.
+   */
+  objects?: RemoteObject[]
+  /** v1.34 — поточний об'єкт пульта (один з `objects`). */
+  currentId?: string
+  /** v1.34 — чому ноутбук не виконав останню дію над об'єктом. */
+  objectNotice?: RemoteObjectNotice
+}
+
+/** v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері). */
+export type RemoteObjectKind = 'task' | 'cut' | 'card'
+export interface RemoteObject {
+  id: string
+  kind: RemoteObjectKind
+  /** Номер серед об'єктів цього виду на сторінці (з 1). */
+  n: number
+  /** ✍ доступний для цього об'єкта. */
+  hw?: boolean
+  answer?: boolean
+  solution?: boolean
+  /** Цей об'єкт зараз «на екрані» (розгорнутий / збільшений). */
+  presenting?: boolean
+}
+export type RemoteObjectNotice = 'gone' | 'unsupported'
+
+const OBJECT_KINDS = new Set(['task', 'cut', 'card'])
+const OBJECT_FLAGS = ['hw', 'answer', 'solution', 'presenting'] as const
+
+/** v1.34: `objects` — ті самі правила, що на сервері; зіпсоване поле — поля немає (разом із `current_id`). */
+export function parseRemoteObjects(raw: unknown): RemoteObject[] | undefined {
+  if (!Array.isArray(raw) || raw.length > 50) return undefined
+  const out: RemoteObject[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return undefined
+    const v = item as Record<string, unknown>
+    if (typeof v.id !== 'string' || !v.id || v.id.length > 64) return undefined
+    if (!OBJECT_KINDS.has(String(v.kind))) return undefined
+    if (typeof v.n !== 'number' || !Number.isInteger(v.n) || v.n < 1 || v.n > 99) return undefined
+    const obj: RemoteObject = { id: v.id, kind: v.kind as RemoteObjectKind, n: v.n }
+    for (const flag of OBJECT_FLAGS) {
+      if (flag in v) {
+        if (typeof v[flag] !== 'boolean') return undefined
+        obj[flag] = v[flag] as boolean
+      }
+    }
+    out.push(obj)
+  }
+  return out
+}
+
+export function parseRemoteObjectNotice(raw: unknown): RemoteObjectNotice | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const reason = (raw as Record<string, unknown>).reason
+  return reason === 'gone' || reason === 'unsupported' ? reason : undefined
 }
 
 export type RemoteAssistantReplyStatus = 'thinking' | 'reply' | 'confirm' | 'done' | 'error' | 'cancelled'
@@ -436,6 +492,14 @@ export function useRemoteChannel(opts: {
         if (recordingResult) detail.recordingResult = recordingResult
         const handwriteStep = parseRemoteHandwriteStep(msg.handwrite_step)
         if (handwriteStep) detail.handwriteStep = handwriteStep
+        // v1.34: поточний об'єкт — лише якщо він серед `objects`, як на сервері
+        const objects = parseRemoteObjects(msg.objects)
+        if (objects) {
+          detail.objects = objects
+          if (typeof msg.current_id === 'string' && objects.some((o) => o.id === msg.current_id)) detail.currentId = msg.current_id
+        }
+        const objectNotice = parseRemoteObjectNotice(msg.object_notice)
+        if (objectNotice) detail.objectNotice = objectNotice
         opts.onState(detail)
       } else if (msg?.type === 'error') {
         // forbidden (не власник дошки) / invalid_message / rate_limit — показати, не ковтати

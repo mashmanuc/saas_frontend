@@ -246,13 +246,20 @@ describe('useBoardRemote', () => {
     })))
     fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
     expect(view.resetFocus).toHaveBeenCalledTimes(1)
-    expect(handwrite).toHaveBeenCalledWith(task)
+    expect(handwrite).toHaveBeenCalledWith(task, false)
     // 18.10: задачі з розв'язком немає — натиск не губиться: кімната обирає сама (виділена вирізка з PDF)
     // або каже словами, що писати нічого.
     view.handwriteTarget.mockReturnValueOnce(null as any)
     fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: {} })
     expect(handwrite).toHaveBeenCalledTimes(2)
-    expect(handwrite).toHaveBeenLastCalledWith(null)
+    expect(handwrite).toHaveBeenLastCalledWith(null, false)
+    // v1.34: з адресою — рівно цей об'єкт (`exact`); зник чи ✍ йому недоступний — не пишемо, причина в стані
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: { object_id: 't1' } })
+    expect(view.handwriteTarget).toHaveBeenLastCalledWith('t1')
+    expect(handwrite).toHaveBeenLastCalledWith(task, true)
+    view.handwriteTarget.mockReturnValueOnce(null as any)
+    fire({ userId: 'u', pair: api.pairCode.value, clientId: 'p', cmd: 'card.handwrite', args: { object_id: 'gone' } })
+    expect(handwrite).toHaveBeenCalledTimes(3)
   })
 
   it('v1.2: view.fit / view.zoom / view.scroll / card.reveal → адаптер; стан підтверджується', () => {
@@ -261,19 +268,43 @@ describe('useBoardRemote', () => {
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.fit', args: {} })
     expect(view.fitTask).toHaveBeenCalledTimes(1)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 1 } })
-    expect(view.changeTextScale).toHaveBeenCalledWith(1)
+    expect(view.changeTextScale).toHaveBeenCalledWith(1, null)   // старий телефон без адреси — поточний об'єкт
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: 0 } })
     expect(view.changeTextScale).toHaveBeenCalledTimes(1)  // 0 — не команда
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.scroll', args: { dir: 1 } })
     expect(view.scrollBy).toHaveBeenCalledWith(1)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'solution' } })
-    expect(view.reveal).toHaveBeenCalledWith('solution')
+    expect(view.reveal).toHaveBeenCalledWith('solution', null)
     fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'both' } })
     expect(view.reveal).toHaveBeenCalledTimes(1)
     // fit/zoom/reveal шлють стан (3), scroll — ні
     vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS * 4)
     const states = sendMessage.mock.calls.filter(c => c[0].type === 'remote.state').length
     expect(states).toBeGreaterThanOrEqual(1)
+  })
+
+  it('v1.34: object.select і адреса в діях → адаптер; стан несе objects, current_id і object_notice', () => {
+    const { api, view, sendMessage } = setupWithView()
+    const v = view as any
+    v.objects = vi.fn(() => [{ id: 't1', kind: 'task', n: 1, hw: true, presenting: false }, { id: 't2', kind: 'task', n: 2, hw: true, presenting: false }])
+    v.currentObjectId = vi.fn(() => 't2')
+    v.objectNotice = vi.fn(() => 'gone')
+    v.selectObject = vi.fn(() => true)
+    v.presentObject = vi.fn(() => true)
+    const pair = api.pairCode.value
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'object.select', args: { object_id: 't2' } })
+    expect(v.selectObject).toHaveBeenCalledWith('t2')
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.fit', args: { object_id: 't2' } })
+    expect(v.presentObject).toHaveBeenCalledWith('t2')
+    expect(view.fitTask).not.toHaveBeenCalled()            // з адресою — не «по колу»
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'view.zoom', args: { delta: -1, object_id: 't1' } })
+    expect(view.changeTextScale).toHaveBeenLastCalledWith(-1, 't1')
+    fire({ userId: 'u', pair, clientId: 'p', cmd: 'card.reveal', args: { what: 'answer', object_id: 't1' } })
+    expect(view.reveal).toHaveBeenLastCalledWith('answer', 't1')
+    vi.advanceTimersByTime(REMOTE_STATE_THROTTLE_MS * 4)
+    const last = sendMessage.mock.calls.map((c) => c[0]).filter((m) => m.type === 'remote.state').pop()
+    expect(last).toMatchObject({ current_id: 't2', object_notice: { reason: 'gone' } })
+    expect(last.objects).toHaveLength(2)
   })
 
   // v1.10 (баг власника 2026-09-26): з «Задача на екран» не було вороття на пульті

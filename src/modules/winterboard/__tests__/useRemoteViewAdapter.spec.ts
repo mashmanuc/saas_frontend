@@ -171,15 +171,15 @@ describe('useRemoteViewAdapter', () => {
     expect(v.scrollBy(-1)).toBe(0)
   })
 
-  it('reveal(answer): перемикає ВСІ картки сторінки через updateAsset; повторно — ховає', () => {
+  it('v1.34 reveal(answer): лише поточна задача (до v1.34 — усі задачі сторінки); повторно — ховає', () => {
     const store = makeStore([card('a', 0, 0), card('b', 0, 300, 400, { showAnswer: true })])
     const v = createRemoteViewAdapter(store)
-    expect(v.summary()).toMatchObject({ count: 2, answer: false, solution: false })
-    expect(v.reveal('answer')).toBe(1)          // 'b' уже показана → міняється лише 'a'
-    expect(store.pages[0].assets.every((a: any) => a.data.showAnswer)).toBe(true)
-    expect(v.summary().answer).toBe(true)
-    expect(v.reveal('answer')).toBe(2)          // усі показані → сховати всім
-    expect(store.pages[0].assets.every((a: any) => !a.data.showAnswer)).toBe(true)
+    expect(v.reveal('answer')).toBe(1)                     // поточна — перша ('a'), 'b' не чіпаємо
+    expect(store.pages[0].assets.map((a: any) => !!a.data.showAnswer)).toEqual([true, true])
+    expect(v.reveal('answer', 'b')).toBe(1)                // з адресою — рівно 'b'
+    expect(store.pages[0].assets.map((a: any) => !!a.data.showAnswer)).toEqual([true, false])
+    expect(v.reveal('answer', 'a')).toBe(1)
+    expect(store.pages[0].assets.map((a: any) => !!a.data.showAnswer)).toEqual([false, false])
   })
 
   it('reveal(solution) не чіпає showAnswer; без карток → 0', () => {
@@ -224,5 +224,115 @@ describe('useRemoteViewAdapter — A+/A− змінюють типографік
     expect(store.zoom).toBe(1)
     expect(store.setScroll).not.toHaveBeenCalled()
     expect(store.expandedAssetId).toBe('a')
+  })
+})
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// LAW §9 v1.34 — поточний об'єкт пульта (власник 2026-10-19: «згоден з усіма чотирма, роби»; маніфест П2).
+// Урок 19.10: виділив другу задачу — A+ збільшував першу, а ✍ писав другу.
+
+function image(id: string, x: number, y: number) {
+  return { id, type: 'image', src: 'https://cdn.m4sh.org/wb/cut.png', x, y, w: 300, h: 200 }
+}
+function theory(id: string, x: number, y: number) {
+  return { id, type: 'theory_card', x, y, w: 300, h: 200, data: { title: 'Задача', body: '$3x = 12$' } }
+}
+function selectable(assets: any[], over: Partial<any> = {}) {
+  const store = makeStore(assets, { selectedIds: [] as string[], ...over })
+  store.selectItems = vi.fn((ids: string[]) => { store.selectedIds = ids })
+  return store
+}
+
+describe('v1.34 поточний об\'єкт пульта', () => {
+  beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
+
+  it('урок 19.10: виділена на дошці друга задача — і A+, і ✍ ідуть до неї', () => {
+    const store = selectable([card('t1', 0, 100, 400, { solution: '$x=1$' }), card('t2', 500, 100, 400, { solution: '$x=2$' })])
+    const v = createRemoteViewAdapter(store)
+    store.selectedIds = ['t2']
+    expect(v.currentObjectId()).toBe('t2')
+    v.changeTextScale(1)
+    expect(store.pages[0].assets.find((a: any) => a.id === 't2').data.presentationScale).toBe(1.15)
+    expect(store.pages[0].assets.find((a: any) => a.id === 't1').data.presentationScale).toBeUndefined()
+    expect(v.handwriteTarget()?.id).toBe('t2')
+  })
+
+  it('порядок: розгорнута → виділена → обрана → перша (згори вниз, зліва направо)', () => {
+    const store = selectable([card('b', 500, 100), card('a', 0, 100), card('c', 0, 600)])
+    const v = createRemoteViewAdapter(store)
+    expect(v.objects().map((o) => o.id)).toEqual(['a', 'b', 'c'])
+    expect(v.currentObjectId()).toBe('a')                  // нічого не обрано — перша
+    expect(v.selectObject('c')).toBe(true)
+    expect(store.selectedIds).toEqual(['c'])               // Р1: обрав на пульті — виділилось на дошці
+    store.selectedIds = []                                 // учитель клацнув по порожньому — лишається обрана
+    expect(v.currentObjectId()).toBe('c')
+    store.selectedIds = ['b']                              // виділив інший на дошці — пульт перемкнувся
+    expect(v.currentObjectId()).toBe('b')
+    store.expandedAssetId = 'a'                            // «Задача на екран» — саме вона
+    expect(v.currentObjectId()).toBe('a')
+  })
+
+  it('інша сторінка — поточний: виділений там, інакше перший; обраний з іншої сторінки не тягнеться', () => {
+    const store = selectable([card('a', 0, 0), card('b', 0, 300)], {
+      pages: [{ assets: [card('a', 0, 0), card('b', 0, 300)] }, { assets: [card('x', 0, 0), card('y', 0, 300)] }],
+    })
+    const v = createRemoteViewAdapter(store)
+    v.selectObject('b')
+    store.currentPageIndex = 1
+    store.selectedIds = []
+    expect(v.currentObjectId()).toBe('x')
+  })
+
+  it('адреса: об\'єкта вже немає на сторінці — нічого не робимо, причина «gone»; вдала дія причину знімає', () => {
+    const store = selectable([card('a', 0, 0)])
+    const v = createRemoteViewAdapter(store)
+    expect(v.changeTextScale(1, 'zzz')).toBe(1)
+    expect(store.updateAsset).not.toHaveBeenCalled()
+    expect(v.objectNotice()).toBe('gone')
+    expect(v.reveal('answer', 'zzz')).toBe(0)
+    expect(v.presentObject('zzz')).toBe(false)
+    expect(v.selectObject('zzz')).toBe(false)
+    v.changeTextScale(1, 'a')
+    expect(v.objectNotice()).toBeNull()
+  })
+
+  it('вирізка й картка — об\'єкти пульта лише з правом Інтегралика (✍); дії задачі для них — «unsupported»', () => {
+    const assets = [card('t', 0, 0), image('cut', 500, 0), theory('crd', 0, 400)]
+    const without = createRemoteViewAdapter(selectable(assets))
+    expect(without.objects().map((o) => o.kind)).toEqual(['task'])
+    const store = selectable(assets)
+    const v = createRemoteViewAdapter(store, { canSolve: () => true })
+    expect(v.objects().map((o) => [o.id, o.kind, o.n, o.hw])).toEqual([
+      ['t', 'task', 1, true], ['cut', 'cut', 1, true], ['crd', 'card', 1, true],
+    ])
+    expect(v.changeTextScale(1, 'cut')).toBe(1)
+    expect(v.objectNotice()).toBe('unsupported')
+    expect(v.handwriteTarget('cut')?.id).toBe('cut')
+    expect(v.objectNotice()).toBeNull()
+  })
+
+  it('задача без розв\'язку без права Інтегралика: ✍ недоступний (hw=false), адреса — «unsupported»', () => {
+    const v = createRemoteViewAdapter(selectable([card('t', 0, 0)]))
+    expect(v.objects()[0].hw).toBe(false)
+    expect(v.handwriteTarget('t')).toBeNull()
+    expect(v.objectNotice()).toBe('unsupported')
+  })
+
+  it('«Задача на екран» з адресою — рівно вона; перемикач у показі показує обрану задачу', () => {
+    const store = selectable([card('a', 0, 0), card('b', 0, 300)])
+    const v = createRemoteViewAdapter(store)
+    expect(v.presentObject('b')).toBe(true)
+    expect(store.expandedAssetId).toBe('b')
+    expect(v.objects().find((o) => o.id === 'b')?.presenting).toBe(true)
+    v.selectObject('a')
+    expect(store.expandedAssetId).toBe('a')
+  })
+
+  it('стан для пульта — без тексту задачі: вид, номер серед свого виду, прапорці', () => {
+    const v = createRemoteViewAdapter(selectable([card('a', 0, 0, 400, { showAnswer: true, question: 'секрет' })]))
+    const [o] = v.objects()
+    expect(o).toEqual({ id: 'a', kind: 'task', n: 1, hw: false, answer: true, solution: false, presenting: false })
+    expect(JSON.stringify(v.objects())).not.toContain('секрет')
   })
 })

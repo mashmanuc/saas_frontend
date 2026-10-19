@@ -110,11 +110,73 @@
            Відео поточної сторінки — ▶/⏸.
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
-      <div v-if="hasCards || hasQuestions || videos.length || showStepRow" class="wb-remote__context" data-testid="context">
+      <div v-if="hasCards || hasQuestions || videos.length || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
+        <!-- LAW §9 v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2): пульт працює з
+             ПОТОЧНИМ ОБ'ЄКТОМ — його видно («Задача 2 з 3»), ◀ ▶ перемикають, кожна кнопка шле його адресу. Кнопки — за
+             видом: задача — на екран, відповідь, розбір, A±; вирізка й картка — ✍ і «На весь екран». Старий ноутбук
+             (без `objects`) — блок нижче, як до v1.34. -->
+        <template v-if="currentObject">
+          <div class="wb-remote__row wb-remote__objects" data-testid="object-row">
+            <button v-if="objectCount > 1" type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-prev" :disabled="!isReady" :aria-label="t('winterboard.remote.object.prev')" @click="stepObject(-1)">◀</button>
+            <span class="wb-remote__object-label" data-testid="object-label" aria-live="polite">{{ objectLabel }}</span>
+            <button v-if="objectCount > 1" type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-next" :disabled="!isReady" :aria-label="t('winterboard.remote.object.next')" @click="stepObject(1)">▶</button>
+          </div>
+          <p v-if="objectNotice" class="wb-remote__hint" data-testid="object-notice" role="status">{{ t(`winterboard.remote.object.notice.${objectNotice}`) }}</p>
+          <template v-if="currentObject.kind === 'task'">
+            <div v-if="!currentObject.presenting" class="wb-remote__row">
+              <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-fit" :disabled="!isReady" @click="objCmd('view.fit')">
+                {{ t('winterboard.remote.fitTask') }}
+              </button>
+            </div>
+            <template v-else>
+              <div class="wb-remote__row">
+                <button type="button" class="wb-remote__mini wb-remote__mini--wide wb-remote__page-view" :disabled="!isReady" @click="sendCmd('view.page')">
+                  {{ t('winterboard.remote.fitPage') }}
+                </button>
+              </div>
+              <div class="wb-remote__row">
+                <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-answer" :class="{ 'is-on': currentObject.answer }" :disabled="!isReady" @click="objCmd('card.reveal', { what: 'answer' })">
+                  {{ currentObject.answer ? t('winterboard.remote.hideAnswer') : t('winterboard.remote.showAnswer') }}
+                </button>
+                <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-solution" :class="{ 'is-on': currentObject.solution }" :disabled="!isReady" @click="objCmd('card.reveal', { what: 'solution' })">
+                  {{ currentObject.solution ? t('winterboard.remote.hideSolution') : t('winterboard.remote.showSolution') }}
+                </button>
+              </div>
+            </template>
+          </template>
+          <template v-if="currentObject.hw">
+            <div class="wb-remote__row">
+              <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite" :disabled="!isReady || handwriteStepBusy" @click="objCmd('card.handwrite')">
+                {{ t('winterboard.remote.handwrite') }}
+              </button>
+              <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite-next" :disabled="!isReady || handwriteStepBusy" @click="objCmd('card.handwrite_next')">
+                {{ t('winterboard.remote.handwriteNext') }}
+              </button>
+            </div>
+            <p v-if="handwriteStepText" class="wb-remote__hint" data-testid="remote-handwrite-step" aria-live="polite">{{ handwriteStepText }}</p>
+          </template>
+          <!-- Вирізка й картка: «На весь екран» — той самий view.focus, що в «Сценарії» (лише кімната уроку) -->
+          <div v-if="currentObject.kind !== 'task' && canScenario" class="wb-remote__row">
+            <button v-if="!currentObject.presenting" type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-focus" :disabled="!isReady" @click="sendCmd('view.focus', { object_id: currentObject.id })">
+              {{ t('winterboard.remote.scenario.fullscreen') }}
+            </button>
+            <button v-else type="button" class="wb-remote__mini wb-remote__mini--wide wb-remote__page-view" :disabled="!isReady" @click="sendCmd('view.page')">
+              {{ t('winterboard.remote.fitPage') }}
+            </button>
+          </div>
+          <div v-if="currentObject.kind === 'task'" class="wb-remote__row wb-remote__row--fine" data-testid="zoom-row">
+            <button type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-zoom-down" :disabled="!isReady" :aria-label="t('winterboard.remote.fontDown')" @click="objCmd('view.zoom', { delta: -1 })">A−</button>
+            <button type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-zoom-up" :disabled="!isReady" :aria-label="t('winterboard.remote.fontUp')" @click="objCmd('view.zoom', { delta: 1 })">A+</button>
+            <template v-if="currentObject.presenting">
+              <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollUp')" @click="sendCmd('view.scroll', { dir: -1 })">▲</button>
+              <button type="button" class="wb-remote__mini wb-remote__mini--fine" :disabled="!isReady" :aria-label="t('winterboard.remote.scrollDown')" @click="sendCmd('view.scroll', { dir: 1 })">▼</button>
+            </template>
+          </div>
+        </template>
         <!-- LAW §9 v1.32 (власник 2026-10-18: «згоден з усіма чотирма, роби»): кожен натиск — один рядок
              розв'язку; учитель пояснює між рядками. Стан — з ноутбука («Крок N з M», «готую…», причина).
              Не лише біля карток задач: виділена на ноутбуці вирізка з PDF чи картка — теж (`target`). -->
-        <template v-if="showStepRow">
+        <template v-if="!objectMode && showStepRow">
           <!-- 18.10 (власник: «бери ✍ з пульта… разом з покроковим»): увесь розв'язок — поряд із «Наступним
                рядком», за тим самим правилом вибору задачі; тож і на сторінці з самою вирізкою з PDF. -->
           <div class="wb-remote__row">
@@ -139,7 +201,7 @@
             {{ questions?.answer ? t('winterboard.remote.hideQuestionAnswer') : t('winterboard.remote.showQuestionAnswer') }}
           </button>
         </div>
-        <template v-if="hasCards">
+        <template v-if="!objectMode && hasCards">
           <div v-if="!isPresentingTask" class="wb-remote__row">
             <button type="button" class="wb-remote__mini wb-remote__mini--wide" :disabled="!isReady" @click="sendCmd('view.fit')">
               {{ t('winterboard.remote.fitTask') }}
@@ -652,7 +714,7 @@ import { usePushToTalk } from '../composables/usePushToTalk'
 import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
-import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep } from '../composables/useRemoteChannel'
+import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep, RemoteObject, RemoteObjectNotice } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
@@ -866,6 +928,46 @@ const recording = ref<RemoteRecordingInfo | null>(null)
 const recordingResult = ref<RemoteRecordingResult | null>(null)
 /** v1.32: стан покрокового письма розв'язку на ноутбуці. */
 const handwriteStep = ref<RemoteHandwriteStep | null>(null)
+/** v1.34 (маніфест пульта П2): об'єкти поточної сторінки, з якими працює пульт; null — старий ноутбук поля не шле. */
+const objects = ref<RemoteObject[] | null>(null)
+const objectMode = computed(() => objects.value !== null)
+/**
+ * Поточний об'єкт: з ноутбука; щойно вчитель перемкнув ◀ ▶ — одразу свій, щоб наступний натиск ніс адресу
+ * саме обраного (ТЗ О4), навіть якщо стан ноутбука ще не встиг прийти.
+ */
+const currentObjectId = ref<string | null>(null)
+let selectPending: { id: string; at: number } | null = null
+const objectNotice = ref<RemoteObjectNotice | null>(null)
+const objectCount = computed(() => objects.value?.length ?? 0)
+const currentObject = computed<RemoteObject | null>(() =>
+  objects.value?.find((o) => o.id === currentObjectId.value) ?? objects.value?.[0] ?? null)
+/** «Задача 2 з 3»; різні види на сторінці — «Вирізка 1 · 3 з 3»; один об'єкт — «Задача 1». */
+const objectLabel = computed(() => {
+  const list = objects.value ?? []
+  const cur = currentObject.value
+  if (!cur) return ''
+  const kind = t(`winterboard.remote.object.kind.${cur.kind}`)
+  if (list.length <= 1) return `${kind} ${cur.n}`
+  if (list.every((o) => o.kind === cur.kind)) return t('winterboard.remote.object.ofSame', { kind, n: cur.n, total: list.length })
+  return t('winterboard.remote.object.ofMixed', { kind, n: cur.n, i: list.indexOf(cur) + 1, total: list.length })
+})
+/** ◀ ▶: поточним стає сусідній об'єкт сторінки; ноутбук виділяє його на дошці (Р1). */
+function stepObject(dir: -1 | 1): void {
+  const list = objects.value
+  const cur = currentObject.value
+  if (!list || list.length < 2 || !cur || !isReady.value) return
+  const next = list[(list.indexOf(cur) + dir + list.length) % list.length]
+  currentObjectId.value = next.id
+  objectNotice.value = null
+  selectPending = { id: next.id, at: Date.now() }
+  sendCmd('object.select', { object_id: next.id })
+}
+/** Дія над поточним об'єктом — завжди з його адресою (ТЗ О4). */
+function objCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}): void {
+  const cur = currentObject.value
+  if (!cur) return
+  sendCmd(cmd, { ...args, object_id: cur.id })
+}
 /** Ряд «Наступний рядок»: ноутбук знає покроковий режим і є що писати чи що показати (крок, «Готово», причина). */
 const showStepRow = computed(() => {
   const s = handwriteStep.value
@@ -1059,6 +1161,12 @@ const channel = useRemoteChannel({
     recording.value = s.recording ?? null
     recordingResult.value = s.recordingResult ?? null
     handwriteStep.value = s.handwriteStep ?? null
+    // v1.34: об'єкти й поточний. Поки ноутбук не підтвердив щойно обраний (до 2 с) — тримаємо свій вибір.
+    objects.value = s.objects ?? null
+    if (selectPending && (s.currentId === selectPending.id || Date.now() - selectPending.at > 2000
+      || !s.objects?.some((o) => o.id === selectPending!.id))) selectPending = null
+    currentObjectId.value = selectPending ? selectPending.id : (s.currentId ?? null)
+    objectNotice.value = s.objectNotice ?? null
     applyAssistantReply(s.assistantReply)
     // Сумісність зі старим ноутбуком (до LAW v1.11 він ще шле frozen): показуємо як
     // причину, кнопки лишаємо. Нові ноутбуки поля не шлють — завершений запис дошку не блокує.
@@ -1225,7 +1333,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
   | 'assistant.ask' | 'assistant.answer'
-  | 'card.handwrite' | 'card.handwrite_next'
+  | 'card.handwrite' | 'card.handwrite_next' | 'object.select'
   | RemoteRecordingCmd
 function sendCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}) {
   if (!pair.value) return false
@@ -1713,6 +1821,9 @@ onBeforeUnmount(() => {
 .wb-remote__video { display: flex; flex-direction: column; gap: 10px; }
 .wb-remote__video-ctl { display: flex; flex-direction: column; gap: 8px; }
 .wb-remote__video-name { margin: 0; font-size: 14px; font-weight: 600; text-align: center; }
+/* v1.34: рядок поточного об'єкта — ◀ назва ▶, назва по центру */
+.wb-remote__objects { align-items: center; }
+.wb-remote__object-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
 .wb-remote__video-pick { min-height: 44px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 0 10px; font-size: 14px; }
 .wb-remote__video-blocked { margin: 0; padding: 10px 12px; border-radius: 12px; background: #b45309; color: #fff; font-weight: 600; text-align: center; }
 .wb-remote__video-search { display: flex; gap: 8px; }
