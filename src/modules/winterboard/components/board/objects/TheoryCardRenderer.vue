@@ -61,8 +61,21 @@
         />
         <!-- LAW §9 v1.22: TASL-рядок з кінця `body` (атрибуція одного з `sources[]`)
              показує кнопка «Джерело» внизу, а не текст. Дані ті самі (гейт H0). -->
+        <!-- «Домашнє завдання» (власник 2026-10-19): список задач рядками — кожна свій рядок з номером.
+             Лише в картки з `items`; решта карток показують `body`, як і раніше. -->
+        <template v-if="listItems.length">
+          <p v-if="listInstruction" class="theory-card__instruction" data-testid="theory-card-instruction">{{ listInstruction }}</p>
+          <ol
+            class="theory-card__list"
+            :class="{ 'theory-card__list--grid': listIsBare }"
+            data-testid="theory-card-list"
+          >
+            <li v-for="(item, i) in listItems" :key="i" v-html="renderTextWithLatex(item)" />
+          </ol>
+          <p class="theory-card__brand">M4SH · m4sh.org</p>
+        </template>
         <div
-          v-if="bodyParts.text"
+          v-else-if="bodyParts.text"
           class="theory-card__text"
           v-html="renderMathField(data, 'body', bodyParts.text)"
         />
@@ -272,6 +285,17 @@ const sourcesToggleLabel = computed(() => (sources.value.length > 1
   ? `${sourceLabels.value.sources}: ${sources.value.length}`
   : sourceLabels.value.source))
 const bodyParts = computed(() => splitCardAttribution(data.value.body, data.value.sources))
+// «Домашнє завдання»: рядки списку (`data.items`) — лише рядки тексту, інше ігноруємо.
+const listItems = computed<string[]>(() => {
+  const items = (data.value as { items?: unknown }).items
+  return Array.isArray(items) ? items.filter((item): item is string => typeof item === 'string' && item.trim() !== '') : []
+})
+const listInstruction = computed(() => {
+  const value = (data.value as { instruction?: unknown }).instruction
+  return typeof value === 'string' ? value.trim() : ''
+})
+// Самі вирази (спільна вказівка винесена вгору) — двома колонками, як на картинці для месенджера.
+const listIsBare = computed(() => listItems.value.length > 1 && listItems.value.every(item => /^\s*\$[^$]+\$\s*$/.test(item)))
 
 const presetStyle = computed(() => {
   const p = effectivePreset.value
@@ -427,6 +451,18 @@ const hostWindowControls = useHostWindowControls()
   line-height: 1.3; margin: 0 0 12px 0; letter-spacing: -0.01em;
 }
 .theory-card__text { font-size: calc(15px * var(--wb-card-text-scale, 1)); line-height: 1.7; color: #374151; }
+.theory-card__list {
+  /* Загальні стилі сайту прибирають нумерацію списків — номер задачі тут обов'язковий. */
+  list-style: decimal outside; margin: 0; padding-left: 1.8em;
+  font-size: calc(17px * var(--wb-card-text-scale, 1)); line-height: 1.55; color: #1f2937;
+}
+.theory-card__list > li { display: list-item; }
+.theory-card__instruction { margin: 0 0 10px; font-size: calc(16px * var(--wb-card-text-scale, 1)); color: #374151; }
+.theory-card__list--grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; row-gap: 10px; }
+.theory-card__list--grid > li + li { margin-top: 0; }
+.theory-card__list--grid > li { font-size: calc(19px * var(--wb-card-text-scale, 1)); }
+.theory-card__brand { margin: 14px 0 0; font-size: calc(12px * var(--wb-card-text-scale, 1)); color: #0f6e56; text-align: right; }
+.theory-card__list > li + li { margin-top: 6px; }
 .theory-card__text :deep(table),
 .theory-card__hint :deep(table) {
   border-collapse: collapse;

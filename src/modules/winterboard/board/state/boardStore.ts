@@ -2876,8 +2876,11 @@ export const useWBStore = defineStore('wb-board', {
      * наступній»): сторінка одразу ПІСЛЯ поточної — штатний `page_add` з `insertAt`, як
      * «Дублювати сторінку». Без прапорця — як було: у кінець, `page_add` без `insertAt`.
      */
-    /** Добірка Інтегралика: одна команда ↶, штатні дрібні ops, без обрізання. */
-    insertTaskPagesUndoable(prepared: WBPage[]): string[] {
+    /**
+     * Добірка Інтегралика: одна команда ↶, штатні дрібні ops, без обрізання.
+     * `atEnd` — «Домашка» (власник 2026-10-19): сторінка в КІНЕЦЬ уроку, а не після поточної.
+     */
+    insertTaskPagesUndoable(prepared: WBPage[], opts?: { atEnd?: boolean }): string[] {
       if (this.mode !== 'edit') throw new Error('Дошка зараз недоступна для редагування.')
       if (!prepared.length || this.pages.length + prepared.length > 50) {
         throw new Error('Добірка не вміститься: дошка може мати не більше 50 сторінок.')
@@ -2896,7 +2899,7 @@ export const useWBStore = defineStore('wb-board', {
         }
       }
       const pages: WBPage[] = JSON.parse(JSON.stringify(prepared))
-      const insertAt = this.currentPageIndex + 1
+      const insertAt = opts?.atEnd ? this.pages.length : this.currentPageIndex + 1
       const previousId = this.pages[this.currentPageIndex]?.id
       const newIds = pages.map(p => p.id)
       const apply = () => {

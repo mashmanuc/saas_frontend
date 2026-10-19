@@ -712,6 +712,17 @@ const HANDLERS = {
     store.insertTaskPagesUndoable(pages)
     return { warnings: result.warnings || [] }
   },
+  /**
+   * «дай домашку» (власник 2026-10-19): відкриває те саме вікно «Запропонувати домашку», що й кнопка в
+   * уроці (`WBHomeworkButton`). Нічого не кладе на дошку саме — що робити зі списком, вирішує вчитель.
+   */
+  async add_homework({ count }, ctx) {
+    if (ctx?.pageId) throw new Error('Домашку пропоную у вікні уроку на ноутбуці.')
+    const detail = { count, handled: false }
+    window.dispatchEvent(new CustomEvent('m4sh:homework-propose', { detail }))
+    if (!detail.handled) throw new Error('Відкрийте урок із задачами з банку — тоді запропоную домашку.')
+    return {}
+  },
   // Дзеркало createTextAtPosition/templatePresets: текст = WBStroke tool:'text' → addStroke.
   // Коридор (LAW §9.D): мова й провенанс — у `stroke.data`, як у картки в `asset.data`.
   async add_text({ text, corridor }, ctx) {

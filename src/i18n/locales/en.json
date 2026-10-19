@@ -7643,6 +7643,24 @@
       "fullHint": "Everything you wrote on the board is saved. To save a lesson, remove extra pages or continue on a new board.",
       "badge": "{percent}% full"
     },
+    "homework": {
+      "button": "Suggest homework",
+      "title": "Homework",
+      "loading": "Picking tasks like the ones in this lesson…",
+      "count": "Tasks:",
+      "others": "Other tasks",
+      "showAnswers": "Show answers",
+      "hideAnswers": "Hide answers",
+      "copy": "Copy as image",
+      "copied": "Copied — paste it into a messenger (Ctrl+V)",
+      "add": "Add to the lesson",
+      "error": "Couldn't suggest homework. Please try again.",
+      "flushFailed": "Couldn't save the board changes. Please try again.",
+      "locked": "The board can't be changed right now. Try again in a moment.",
+      "copying": "Drawing the image…",
+      "download": "Download the image",
+      "downloadHint": "The browser didn't allow copying the image."
+    },
     "phoneHint": {
       "title": "The board works best on a computer or tablet",
       "body": "Open m4sh.org on your computer — your board is already there. Your phone becomes the remote: flip pages, send photos, play videos.",

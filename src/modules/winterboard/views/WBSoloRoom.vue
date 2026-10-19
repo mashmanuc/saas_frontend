@@ -164,6 +164,11 @@
           @finalize="handleFinalizeRecording"
           @dismiss-empty-notice="hideRecordingEmptyNotice"
         />
+        <!-- «📝 Запропонувати домашку» (власник 2026-10-19): лише коли на уроці є задачі з банку. -->
+        <WBHomeworkButton
+          v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
+          :board-id="sessionId"
+        />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
         <button
@@ -1281,6 +1286,7 @@ import OnboardingHint from '@/components/OnboardingHint.vue'
 import { useOnboardingHints, TutorHintId } from '@/composables/useOnboardingHints'
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
+import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
 import { useGridOverlay, type GridType } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'

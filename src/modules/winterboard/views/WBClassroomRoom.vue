@@ -200,6 +200,11 @@
           @finalize="handleFinalizeRecording"
           @dismiss-empty-notice="hideRecordingEmptyNotice"
         />
+        <!-- «📝 Запропонувати домашку» (власник 2026-10-19): лише вчителю й лише коли на уроці є задачі з банку. -->
+        <WBHomeworkButton
+          v-if="classroomRole.isTeacher.value && resolvedSessionId"
+          :board-id="resolvedSessionId"
+        />
         <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
              самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
              wake lock + автоховання шапки. Лише вигляд цього пристрою —
@@ -609,6 +614,7 @@ import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
+import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
 import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
