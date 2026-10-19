@@ -10374,7 +10374,13 @@
         "kind": {
           "task": "Задача",
           "cut": "Вырезка",
-          "card": "Карточка"
+          "card": "Карточка",
+          "image": "Картинка",
+          "video": "Видео",
+          "audio": "Аудио",
+          "presentation": "Презентация",
+          "pdf": "PDF",
+          "document": "Документ"
         },
         "ofSame": "{kind} {n} из {total}",
         "ofMixed": "{kind} {n} · {i} из {total}",
@@ -10412,6 +10418,7 @@
       "minimizeAssistant": "Свернуть окно Интегралика",
       "minimizeAssistantIntegralka": "Свернуть окно Интегралки",
       "scenario": {
+        "current": "текущий",
         "button": "Сценарий",
         "title": "Сценарий",
         "empty": "На доске ещё нет видео, аудио или документов",

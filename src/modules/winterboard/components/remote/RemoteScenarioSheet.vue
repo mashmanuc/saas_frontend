@@ -38,13 +38,16 @@
         v-for="(it, i) in g.items"
         :key="it.objectId"
         class="wb-scn__item"
-        :class="{ 'wb-scn__item--dim': !g.current, 'wb-scn__item--alt': i % 2 === 1 }"
+        :class="{ 'wb-scn__item--dim': !g.current, 'wb-scn__item--alt': i % 2 === 1, 'wb-scn__item--current': selectable && it.objectId === currentId }"
         :data-testid="`scenario-item-${it.objectId}`"
       >
-        <!-- Сторінка не на екрані: лише значок і назва; тап по назві = «Відкрити» -->
-        <button v-if="!g.current" type="button" class="wb-scn__name wb-scn__name--link" :disabled="!ready" @click="openPage(g.pageIndex)">
+        <!-- Сторінка не на екрані: лише значок і назва; тап по назві = «Відкрити».
+             v1.35 (етап 2): ноутбук уміє поточний об'єкт для всіх видів — тап по назві відкриває сторінку і робить
+             цей об'єкт поточним (на головному екрані — його кнопки); на сторінці, що на екрані, — лише обирає. -->
+        <button v-if="!g.current || selectable" type="button" class="wb-scn__name wb-scn__name--link" :data-testid="`scenario-name-${it.objectId}`" :disabled="!ready" @click="pick(g, it)">
           <span class="wb-scn__icon" aria-hidden="true">{{ ICONS[it.kind] }}</span>
           <span class="wb-scn__title">{{ labelOf(it) }}</span>
+          <span v-if="selectable && it.objectId === currentId" class="wb-scn__current" data-testid="scenario-current">{{ t('winterboard.remote.scenario.current') }}</span>
         </button>
         <p v-else class="wb-scn__name">
           <span class="wb-scn__icon" aria-hidden="true">{{ ICONS[it.kind] }}</span>
@@ -52,107 +55,7 @@
         </p>
 
         <template v-if="g.current">
-          <p
-            v-if="statusOf(it)"
-            class="wb-scn__status"
-            :class="{
-              'wb-scn__status--warn': it.state === 'blocked' || it.state === 'error',
-              'wb-scn__status--playing': isPlayingNow(it),
-            }"
-            data-testid="scenario-status"
-          >
-            <span v-if="isPlayingNow(it)" aria-hidden="true">● </span>{{ statusOf(it) }}
-          </p>
-
-          <!-- Згорнутий: лише «Повернути» -->
-          <div v-if="it.minimized" class="wb-scn__row wb-scn__row--one">
-            <button type="button" class="wb-scn__btn" data-testid="scenario-restore" :disabled="!ready" @click="send('card.restore', { object_id: it.objectId })">
-              ↩ {{ t('winterboard.remote.scenario.restore') }}
-            </button>
-          </div>
-
-          <!-- Відео й аудіо -->
-          <template v-else-if="isPlayable(it)">
-            <div class="wb-scn__row">
-              <!-- Власник 2026-09-28: з кнопок видно стан — «▶ Грає» зелена, «⏸ На паузі» підсвічена -->
-              <button
-                type="button"
-                class="wb-scn__btn"
-                :class="{ 'wb-scn__btn--playing': it.state === 'playing' }"
-                data-testid="scenario-play"
-                :aria-pressed="it.state === 'playing'"
-                :disabled="!ready"
-                @click="send('video.play', { object_id: it.objectId })"
-              >
-                ▶ {{ playLabel(it.state) }}
-              </button>
-              <button
-                type="button"
-                class="wb-scn__btn"
-                :class="{ 'wb-scn__btn--paused': it.state === 'paused' }"
-                data-testid="scenario-pause"
-                :aria-pressed="it.state === 'paused'"
-                :disabled="!ready"
-                @click="send('video.pause', { object_id: it.objectId })"
-              >
-                ⏸ {{ pauseLabel(it.state) }}
-              </button>
-            </div>
-            <div class="wb-scn__row">
-              <div class="wb-scn__slot" @click="why(it, 'quieter')">
-                <button type="button" class="wb-scn__btn" data-testid="scenario-quieter" :disabled="!canQuieter(it)" @click="send('video.volume', { object_id: it.objectId, delta: -1 })">
-                  🔉 {{ t('winterboard.remote.scenario.quieter') }}
-                </button>
-              </div>
-              <div class="wb-scn__slot" @click="why(it, 'louder')">
-                <button type="button" class="wb-scn__btn" data-testid="scenario-louder" :disabled="!canLouder(it)" @click="send('video.volume', { object_id: it.objectId, delta: 1 })">
-                  🔊 {{ t('winterboard.remote.scenario.louder') }}
-                </button>
-              </div>
-            </div>
-            <div class="wb-scn__row" :class="{ 'wb-scn__row--one': it.kind === 'audio' }">
-              <template v-if="it.kind === 'video'">
-                <button v-if="focusId === it.objectId" type="button" class="wb-scn__btn" data-testid="scenario-whole-page" :disabled="!ready" @click="send('view.page', {})">
-                  ▭ {{ t('winterboard.remote.fitPage') }}
-                </button>
-                <button v-else type="button" class="wb-scn__btn" data-testid="scenario-focus" :disabled="!ready" @click="send('view.focus', { object_id: it.objectId })">
-                  ⛶ {{ t('winterboard.remote.scenario.fullscreen') }}
-                </button>
-              </template>
-              <button type="button" class="wb-scn__btn" data-testid="scenario-minimize" :disabled="!ready" @click="send('card.minimize', { object_id: it.objectId })">
-                — {{ t('winterboard.remote.scenario.minimize') }}
-              </button>
-            </div>
-          </template>
-
-          <!-- Презентація, PDF, документ; v1.25 — картинка (⛶ і «Згорнути») і картка (лише «Згорнути») -->
-          <template v-else>
-            <div v-if="it.docPages" class="wb-scn__row wb-scn__row--pager">
-              <div class="wb-scn__slot" @click="why(it, 'docPrev')">
-                <button type="button" class="wb-scn__btn" data-testid="scenario-doc-prev" :disabled="!canDocPrev(it)" :aria-label="t('winterboard.remote.scenario.docPrev')" @click="send('doc.page', { object_id: it.objectId, dir: -1 })">◀</button>
-              </div>
-              <span class="wb-scn__pager" data-testid="scenario-doc-label">{{ pagerOf(it) }}</span>
-              <div class="wb-scn__slot" @click="why(it, 'docNext')">
-                <button type="button" class="wb-scn__btn" data-testid="scenario-doc-next" :disabled="!canDocNext(it)" :aria-label="t('winterboard.remote.scenario.docNext')" @click="send('doc.page', { object_id: it.objectId, dir: 1 })">▶</button>
-              </div>
-            </div>
-            <div class="wb-scn__row" :class="{ 'wb-scn__row--one': it.kind === 'card' }">
-              <!-- Картка «на весь екран» не має сенсу: текст не росте з полотном (§9.C) -->
-              <template v-if="it.kind !== 'card'">
-                <button v-if="focusId === it.objectId" type="button" class="wb-scn__btn" data-testid="scenario-whole-page" :disabled="!ready" @click="send('view.page', {})">
-                  ▭ {{ t('winterboard.remote.fitPage') }}
-                </button>
-                <button v-else type="button" class="wb-scn__btn" data-testid="scenario-focus" :disabled="!ready" @click="send('view.focus', { object_id: it.objectId })">
-                  ⛶ {{ t('winterboard.remote.scenario.fullscreen') }}
-                </button>
-              </template>
-              <button type="button" class="wb-scn__btn" data-testid="scenario-minimize" :disabled="!ready" @click="send('card.minimize', { object_id: it.objectId })">
-                — {{ t('winterboard.remote.scenario.minimize') }}
-              </button>
-            </div>
-          </template>
-
-          <p v-if="whyItem === it.objectId && whyText" class="wb-scn__why" role="status" data-testid="scenario-why">{{ whyText }}</p>
+          <RemoteObjectControls :item="it" :focus-id="focusId" :ready="ready" @send="send" />
         </template>
       </article>
     </section>
@@ -166,9 +69,10 @@
  * «схований на пульті ≠ дозволений на ноутбуці»). Тут нічого не пишеться і не
  * повторюється: загублену команду вчитель тисне ще раз (канал lossy, LAW §12).
  */
-import { computed, nextTick, onBeforeUnmount, ref, watch, type ComponentPublicInstance } from 'vue'
+import { computed, nextTick, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { RemoteScenarioItem, RemoteScenarioKind, RemoteStateDetail } from '../../composables/useRemoteChannel'
+import RemoteObjectControls from './RemoteObjectControls.vue'
 
 const props = defineProps<{
   scenario: RemoteStateDetail['scenario'] | null
@@ -176,6 +80,10 @@ const props = defineProps<{
   ready: boolean
   /** Аркуш щойно відкрили — прокрутити до сторінки, що на екрані */
   open: boolean
+  /** v1.35: ноутбук оголосив 'objects' — тап по назві обирає об'єкт (поточний об'єкт пульта для всіх видів). */
+  selectable?: boolean
+  /** v1.35: поточний об'єкт пульта — позначено в списку. */
+  currentId?: string | null
 }>()
 const emit = defineEmits<{ send: [cmd: string, args: Record<string, unknown>] }>()
 const { t } = useI18n()
@@ -214,81 +122,20 @@ function labelOf(it: RemoteScenarioItem): string {
   return it.title.trim() || fallbackLabels.value[it.objectId] || ''
 }
 
-const isPlayable = (it: RemoteScenarioItem) => it.kind === 'video' || it.kind === 'audio'
-
-/** Грає просто зараз (незгорнутий програвач) — зелена крапка в рядку стану. */
-function isPlayingNow(it: RemoteScenarioItem): boolean {
-  return isPlayable(it) && !it.minimized && it.state === 'playing'
-}
-
-/** Підпис ▶ за станом програвача: «Грає» / «Запускається…» / «Грати». */
-function playLabel(state: RemoteScenarioItem['state']): string {
-  if (state === 'playing') return t('winterboard.remote.video.state.playing')
-  if (state === 'loading') return t('winterboard.remote.video.starting')
-  return t('winterboard.remote.scenario.play')
-}
-
-/** Підпис ⏸: «На паузі», коли стоїть на паузі, інакше «Пауза». */
-function pauseLabel(state: RemoteScenarioItem['state']): string {
-  return state === 'paused' ? t('winterboard.remote.video.state.paused') : t('winterboard.remote.scenario.pause')
-}
-
-function statusOf(it: RemoteScenarioItem): string {
-  if (it.minimized) return t('winterboard.remote.scenario.minimized')
-  if (isPlayable(it)) {
-    const state = it.state ?? 'idle'
-    const text = state === 'error'
-      ? t(`winterboard.remote.video.playerError.${it.error ?? 'playback'}`)
-      : state === 'blocked'
-        ? t('winterboard.remote.video.blocked')
-        : t(`winterboard.remote.video.state.${state}`)
-    return typeof it.volume === 'number'
-      ? `${text} · ${t('winterboard.remote.scenario.volume', { v: it.volume })}`
-      : text
-  }
-  if (!it.docPages) return ''
-  const key = it.kind === 'presentation' ? 'slideOf' : 'pageOf'
-  return t(`winterboard.remote.scenario.${key}`, { n: (it.docPage ?? 0) + 1, total: it.docPages })
-}
-
-function pagerOf(it: RemoteScenarioItem): string {
-  const key = it.kind === 'presentation' ? 'slideShort' : 'pageShort'
-  return t(`winterboard.remote.scenario.${key}`, { n: (it.docPage ?? 0) + 1, total: it.docPages })
-}
-
-const canQuieter = (it: RemoteScenarioItem) => props.ready && typeof it.volume === 'number' && it.volume > 0
-const canLouder = (it: RemoteScenarioItem) => props.ready && typeof it.volume === 'number' && it.volume < 100
-const canDocPrev = (it: RemoteScenarioItem) => props.ready && !!it.docPages && (it.docPage ?? 0) > 0
-const canDocNext = (it: RemoteScenarioItem) => props.ready && !!it.docPages && (it.docPage ?? 0) < it.docPages - 1
-
-// ── Вид Б: тап по вимкненій кнопці пояснює причину одним рядком під об'єктом ──
-const whyItem = ref<string | null>(null)
-const whyText = ref('')
-let whyTimer: ReturnType<typeof setTimeout> | null = null
-function showWhy(id: string, text: string): void {
-  whyItem.value = id
-  whyText.value = text
-  if (whyTimer) clearTimeout(whyTimer)
-  whyTimer = setTimeout(() => { whyItem.value = null; whyText.value = '' }, 2500)
-}
-function why(it: RemoteScenarioItem, which: 'quieter' | 'louder' | 'docPrev' | 'docNext'): void {
-  const enabled = which === 'quieter' ? canQuieter(it) : which === 'louder' ? canLouder(it)
-    : which === 'docPrev' ? canDocPrev(it) : canDocNext(it)
-  if (enabled) return
-  if (!props.ready) { showWhy(it.objectId, t('winterboard.remote.waitingBoard')); return }
-  const key = which === 'docPrev' ? 'whyFirstDocPage'
-    : which === 'docNext' ? 'whyLastDocPage'
-      : typeof it.volume !== 'number' ? 'whyNoVolume'
-        : which === 'quieter' ? 'whyMuted' : 'whyMax'
-  showWhy(it.objectId, t(`winterboard.remote.scenario.${key}`))
-}
-onBeforeUnmount(() => { if (whyTimer) clearTimeout(whyTimer) })
-
 function send(cmd: string, args: Record<string, unknown>): void {
   emit('send', cmd, args)
 }
 function openPage(index: number): void {
   send('page.goto', { index })
+}
+/**
+ * Тап по назві. Без 'objects' — як до v1.35: «Відкрити» сторінку. З ним (Р2 етапу 2) — сторінка, потім вибір:
+ * ноутбук виконує по черзі, а правило «лише об'єкт поточної сторінки» (v1.34) не змінюється.
+ */
+function pick(g: { pageIndex: number; current: boolean }, it: RemoteScenarioItem): void {
+  if (!props.selectable) { openPage(g.pageIndex); return }
+  if (!g.current) openPage(g.pageIndex)
+  send('object.select', { object_id: it.objectId })
 }
 
 // ── Відкриття аркуша: прокрутити до сторінки «на екрані» ──
@@ -346,24 +193,8 @@ watch(() => props.open, async (open) => {
 .wb-scn__name--link { width: 100%; -webkit-tap-highlight-color: transparent; }
 .wb-scn__icon { flex: none; font-size: 18px; }
 .wb-scn__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wb-scn__status { margin: 0; font-size: 13px; color: var(--scn-status); }
-.wb-scn__status--warn { color: var(--warn); font-weight: 600; }
-/* Кнопки — 48 px, два стовпці (ТЗ §2.3, відступи як v2 §5) */
-.wb-scn__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.wb-scn__row--one { grid-template-columns: minmax(0, 1fr); }
-.wb-scn__row--pager { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; }
-.wb-scn__pager { text-align: center; font-size: 15px; font-weight: 700; color: var(--text); }
-.wb-scn__slot { display: flex; }
-.wb-scn__btn {
-  flex: 1; width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--scn-btn); color: var(--text);
-  font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.wb-scn__btn:active { background: var(--scn-btn-active); }
-/* Власник 2026-09-28: стан відтворення видно з витягнутої руки — кнопка поточного стану підсвічена */
-.wb-scn__btn--playing { background: var(--success); color: #fff; box-shadow: inset 0 0 0 2px #5eead4; }
-.wb-scn__btn--paused { background: rgba(255, 255, 255, .26); box-shadow: inset 0 0 0 2px #cbd5e1; }
-.wb-scn__status--playing { color: #5eead4; font-weight: 600; }
-/* Вимкнена лишається на місці; тап ловить обгортка й пояснює причину */
-.wb-scn__btn:disabled { opacity: .4; pointer-events: none; }
-.wb-scn__why { margin: 0; text-align: center; font-size: 13px; color: var(--warn); }
+/* Стан і кнопки об'єкта — у `RemoteObjectControls.vue` (v1.35: той самий блок на головному екрані). */
+/* v1.35: поточний об'єкт пульта — світла рамка й позначка біля назви */
+.wb-scn__item--current { box-shadow: inset 0 0 0 2px #5eead4; }
+.wb-scn__current { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 8px; background: #0f766e; color: #fff; font-size: 12px; font-weight: 700; }
 </style>

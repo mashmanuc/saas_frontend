@@ -165,3 +165,89 @@ describe("пульт v1.34: поточний об'єкт — перемикач 
     expect(empty.find('[data-testid="object-row"]').exists()).toBe(false)
   })
 })
+
+describe("пульт v1.35: етап 2 — відео, аудіо, документ, картка, картинка в тому самому перемикачі", () => {
+  beforeEach(() => {
+    channelState.value = 'idle'
+    send.mockClear()
+    onStateCb = null
+    try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
+  })
+  const cmds = () => send.mock.calls.map((c) => c[0]).filter((m: any) => m.type === 'remote.command')
+  const OBJS = [
+    { id: 'yt', kind: 'video', n: 1, hw: false, presenting: false },
+    { id: 'pdf', kind: 'pdf', n: 1, hw: false, presenting: false },
+    { id: 'mp4', kind: 'video', n: 2, hw: false, presenting: false, minimized: true },
+  ]
+  const SCN = {
+    focusId: null,
+    items: [
+      { objectId: 'yt', kind: 'video', title: 'Досліди з маятником', pageIndex: 0, minimized: false, state: 'playing', volume: 60 },
+      { objectId: 'pdf', kind: 'pdf', title: 'Умова', pageIndex: 0, minimized: false, docPage: 2, docPages: 12 },
+      { objectId: 'mp4', kind: 'video', title: '', pageIndex: 0, minimized: true, state: 'paused' },
+      { objectId: 'snd', kind: 'audio', title: 'Пісня', pageIndex: 1, minimized: false },
+    ],
+  }
+  const VIDEOS = [{ objectId: 'yt', title: 'Досліди з маятником', state: 'playing' }]
+  const NEW = { caps: ['scenario', 'objects'], scenario: SCN, objects: OBJS, videos: VIDEOS }
+
+  it("відео — поточний об'єкт: назва, стан і кнопки «Сценарію» на головному екрані, з адресою; «випадайки» немає", async () => {
+    const w = await mountWith({ ...NEW, currentId: 'yt' })
+    expect(w.get('[data-testid="object-label"]').text()).toBe('Відео 1 · 1 з 3')
+    expect(w.get('[data-testid="object-title"]').text()).toBe('Досліди з маятником')
+    expect(w.get('[data-testid="object-status"]').text()).toContain('60')
+    expect(w.find('.wb-remote__video-ctl').exists()).toBe(false)
+    send.mockClear()
+    await w.get('[data-testid="object-pause"]').trigger('click')
+    await w.get('[data-testid="object-louder"]').trigger('click')
+    await w.get('[data-testid="object-focus"]').trigger('click')
+    expect(cmds()).toEqual([
+      expect.objectContaining({ cmd: 'video.pause', args: { object_id: 'yt' } }),
+      expect.objectContaining({ cmd: 'video.volume', args: { object_id: 'yt', delta: 1 } }),
+      expect.objectContaining({ cmd: 'view.focus', args: { object_id: 'yt' } }),
+    ])
+  })
+
+  it('▶ перемикача → PDF: «Стор. 3 / 12», ◀ ▶ документа з його адресою', async () => {
+    const w = await mountWith({ ...NEW, currentId: 'yt' })
+    await w.get('[data-testid="object-next"]').trigger('click')
+    expect(w.get('[data-testid="object-label"]').text()).toBe('PDF 1 · 2 з 3')
+    expect(w.get('[data-testid="object-doc-label"]').text()).toBe('Стор. 3 / 12')
+    send.mockClear()
+    await w.get('[data-testid="object-doc-next"]').trigger('click')
+    expect(cmds()).toEqual([expect.objectContaining({ cmd: 'doc.page', args: { object_id: 'pdf', dir: 1 } })])
+  })
+
+  it('згорнуте — «Згорнуто» і «↩ Повернути» тим самим пальцем (Р3)', async () => {
+    const w = await mountWith({ ...NEW, currentId: 'mp4' })
+    expect(w.get('[data-testid="object-status"]').text()).toBe(uk.winterboard.remote.scenario.minimized)
+    expect(w.find('[data-testid="object-play"]').exists()).toBe(false)
+    send.mockClear()
+    await w.get('[data-testid="object-restore"]').trigger('click')
+    expect(cmds()).toEqual([expect.objectContaining({ cmd: 'card.restore', args: { object_id: 'mp4' } })])
+  })
+
+  it('«Сценарій»: тап по назві з іншої сторінки — сторінка, потім вибір; поточний позначено (Р2)', async () => {
+    const w = await mountWith({ ...NEW, currentId: 'yt' })
+    expect(w.get('[data-testid="scenario-item-yt"]').classes()).toContain('wb-scn__item--current')
+    send.mockClear()
+    await w.get('[data-testid="scenario-name-snd"]').trigger('click')
+    expect(cmds()).toEqual([
+      expect.objectContaining({ cmd: 'page.goto', args: { index: 1 } }),
+      expect.objectContaining({ cmd: 'object.select', args: { object_id: 'snd' } }),
+    ])
+    send.mockClear()
+    await w.get('[data-testid="scenario-name-pdf"]').trigger('click')       // та сама сторінка — лише вибір
+    expect(cmds()).toEqual([expect.objectContaining({ cmd: 'object.select', args: { object_id: 'pdf' } })])
+    expect(w.get('[data-testid="object-label"]').text()).toBe('PDF 1 · 2 з 3')
+  })
+
+  it('ноутбук v1.34 (без caps objects) — як було: «випадайка» відео на місці, тап у «Сценарії» лише відкриває сторінку', async () => {
+    const w = await mountWith({ caps: ['scenario'], scenario: SCN, videos: VIDEOS, objects: [], currentId: undefined })
+    expect(w.find('.wb-remote__video-ctl').exists()).toBe(true)
+    expect(w.find('[data-testid="scenario-name-pdf"]').exists()).toBe(false)   // на сторінці, що на екрані, — не кнопка
+    send.mockClear()
+    await w.get('[data-testid="scenario-name-snd"]').trigger('click')
+    expect(cmds()).toEqual([expect.objectContaining({ cmd: 'page.goto', args: { index: 1 } })])
+  })
+})

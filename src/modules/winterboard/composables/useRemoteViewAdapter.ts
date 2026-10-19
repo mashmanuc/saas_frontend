@@ -35,6 +35,8 @@ import { hasHandwritableSolution, isIntegralykSolvable } from '../board/handwrit
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
 import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
+import { isMinimizedOnBoard } from '../board/objectStandard'
+import { currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
 import {
   hasSharedTextScale, nextPresentationScale, presentationScaleOf, withPresentationScale,
 } from '../board/cardPresentation'
@@ -72,10 +74,18 @@ export interface RemoteViewOptions {
    * без розв'язку. Без нього пульт працює лише з задачами (✍ — лише з готовим розв'язком).
    */
   canSolve?: () => boolean
+  /**
+   * v1.35 (етап 2): кімната має «Сценарій» — у поточному об'єкті всі його види: відео, аудіо, документи, картки й
+   * картинки сторінки, що на екрані (кнопки — ті самі, що в «Сценарії»). Без нього (класна кімната) — як v1.34.
+   */
+  allKinds?: () => boolean
 }
 
-/** v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері, `REMOTE_OBJECT_KINDS`). */
-export type RemoteObjectKind = 'task' | 'cut' | 'card'
+/**
+ * v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері, `REMOTE_OBJECT_KINDS`). v1.35: картинка —
+ * `image` (v1.34 слав `cut`), і види «Сценарію».
+ */
+export type RemoteObjectKind = 'task' | 'image' | 'card' | 'video' | 'audio' | 'presentation' | 'pdf' | 'document'
 /** v1.34: об'єкт поточної сторінки для `remote.state.objects` — без тексту, лише вид, номер і прапорці. */
 export interface RemoteBoardObject {
   id: string
@@ -85,6 +95,8 @@ export interface RemoteBoardObject {
   answer?: boolean
   solution?: boolean
   presenting: boolean
+  /** v1.35: згорнуто в трей — на пульті лишається з «Повернути». */
+  minimized?: boolean
 }
 /** v1.34: чому дію над об'єктом не виконано — його вже немає на сторінці / цей вид так не вміє. */
 export type RemoteObjectNotice = 'gone' | 'unsupported'
@@ -204,16 +216,27 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   function kindOf(asset: any): RemoteObjectKind | null {
     if (!asset) return null
     if (asset.type === TASK_ASSET_TYPE) return 'task'
-    // Вирізка й картка — лише коли є що робити: ✍ (право Інтегралика). «На весь екран» для них — у «Сценарії».
+    // v1.35: є «Сценарій» — усі його види сторінки, що на екрані (ті самі, що в його списку).
+    if (opts.allKinds?.() === true) {
+      const kind = scenarioKind(asset) ?? currentPageKind(asset)
+      if (kind) return kind
+    }
+    // Картинка й картка без «Сценарію» — лише коли є що робити: ✍ (право Інтегралика).
     if (!(opts.canSolve?.() === true && isIntegralykSolvable(asset))) return null
-    if (asset.type === 'image') return 'cut'
+    if (asset.type === 'image') return 'image'
     if (asset.type === 'theory_card') return 'card'
     return null
   }
 
+  /** v1.35: ноутбук кладе в `objects` усі види «Сценарію» — телефон знає це з `caps ∋ 'objects'`. */
+  function listsAllKinds(): boolean {
+    return opts.allKinds?.() === true
+  }
+
   /** v1.34: ✍ для цього об'єкта — як у групі дій на дошці (`cardWindowActions`) і reveal-гейт банку. */
   function hwFor(asset: any): boolean {
-    if (!asset) return false
+    // Згорнутий лежить у треї: писати поруч нема біля чого — на пульті лише «Повернути» (v1.35)
+    if (!asset || isMinimizedOnBoard(asset)) return false
     if (asset.type === TASK_ASSET_TYPE && hasHandwritableSolution(asset)) {
       return useTutorRevealGate(() => String(asset.data?.externalId ?? '')).value
     }
@@ -246,7 +269,8 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
       chosenId = selected.id
       return selected
     }
-    return find(chosenId) ?? list[0]
+    // Автовибір — перший незгорнутий: згорнутий лежить у треї, на дошці його не видно (v1.35)
+    return find(chosenId) ?? list.find((a) => !isMinimizedOnBoard(a)) ?? list[0]
   }
 
   function currentObjectId(): string | null {
@@ -260,8 +284,9 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
       counts[kind] = (counts[kind] ?? 0) + 1
       const obj: RemoteBoardObject = {
         id: a.id, kind, n: counts[kind], hw: hwFor(a),
-        presenting: store.expandedAssetId === a.id || objectFocus === a.id,
+        presenting: store.expandedAssetId === a.id || objectFocusId() === a.id,
       }
+      if (isMinimizedOnBoard(a)) obj.minimized = true
       if (kind === 'task') {
         obj.answer = !!a.data?.showAnswer
         obj.solution = !!a.data?.showSolution
@@ -292,8 +317,20 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   function adopt(asset: any): void {
     chosenId = asset.id
     notice = null
+    // Згорнутий лежить у треї — виділяти на дошці нічого (v1.35)
+    if (isMinimizedOnBoard(asset)) return
     const sel = store.selectedIds ?? []
     if (store.selectItems && !(sel.length === 1 && sel[0] === asset.id)) store.selectItems([asset.id])
+  }
+
+  /**
+   * v1.35: дія «Сценарію» над об'єктом поточної сторінки (▶, гучність, сторінка документа, «на весь екран»,
+   * «повернути») робить його поточним — один поточний об'єкт для перемикача, «Сценарію» й дошки (Е2-1).
+   * Показ не чіпає: це робить сама дія.
+   */
+  function adoptObject(objectId: string): void {
+    const asset = objectAssets().find((a) => a.id === objectId)
+    if (asset) adopt(asset)
   }
 
   /** v1.34 `object.select`: поточним стає цей об'єкт; показ іде за ним (задача — розгорнута, інше — закрито). */
@@ -522,6 +559,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
 
   return {
     fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId,
+    listsAllKinds, adoptObject,
     handwriteTarget,
     questionCards, revealQuestions, questionsSummary,
     // v1.34 поточний об'єкт

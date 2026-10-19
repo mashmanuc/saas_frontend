@@ -266,6 +266,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.photo ? ['photo'] : []),
       ...(opts.media ? ['video'] : []),
       ...(opts.scenario ? ['scenario'] : []),
+      // v1.35: у `objects` — усі види «Сценарію» (етап 2): телефон ховає «випадайку» відео, тап у «Сценарії» обирає
+      ...(opts.scenario && opts.view?.listsAllKinds?.() ? ['objects'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     if (assistantReply.value) msg.assistant_reply = wireAssistantReply(assistantReply.value)
@@ -287,6 +289,14 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     const busy = opts.busy?.()
     if (busy) msg.busy = busy
     opts.sendMessage(msg)
+  }
+
+  /**
+   * v1.35 (Е2-1): дія «Сценарію» над об'єктом робить його поточним — той самий, що в перемикачі й виділений на
+   * дошці. Лише з етапом 2 (`listsAllKinds`): без нього в `objects` немає медіа, обирати нічого.
+   */
+  function adoptScenarioObject(objectId: string): void {
+    if (opts.view?.listsAllKinds?.()) opts.view.adoptObject?.(objectId)
   }
 
   function reportPhoto(result: RemotePhotoResult): void {
@@ -620,6 +630,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         if (!player) return
         if (d.cmd === 'video.play') player.play(objectId)
         else player.pause(objectId)
+        adoptScenarioObject(objectId)
         sendState()
         return
       }
@@ -629,6 +640,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const delta = d.args?.delta
         if (!opts.scenario || !objectId || (delta !== 1 && delta !== -1)) return
         opts.scenario.volume(objectId, delta as -1 | 1)
+        adoptScenarioObject(objectId)
         sendState()
         return
       }
@@ -636,6 +648,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const objectId = String(d.args?.object_id ?? '')
         if (!opts.scenario || !objectId) return
         opts.scenario.focus(objectId)
+        adoptScenarioObject(objectId)
         sendState()   // focus_id не реактивний — підтверджуємо явно
         return
       }
@@ -644,7 +657,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const objectId = String(d.args?.object_id ?? '')
         if (!opts.scenario || !objectId) return
         if (d.cmd === 'card.minimize') opts.scenario.minimize(objectId)
-        else opts.scenario.restore(objectId)
+        else {
+          opts.scenario.restore(objectId)
+          adoptScenarioObject(objectId)
+        }
         sendState()
         return
       }
@@ -653,6 +669,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         const dir = d.args?.dir
         if (!opts.scenario || !objectId || (dir !== 1 && dir !== -1)) return
         opts.scenario.docPage(objectId, dir as -1 | 1)
+        adoptScenarioObject(objectId)
         return   // новий currentPage → watch надішле стан
       }
       // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить

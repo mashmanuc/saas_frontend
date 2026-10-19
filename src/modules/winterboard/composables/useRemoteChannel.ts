@@ -28,9 +28,11 @@ export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnec
 /**
  * v1.12 (пульт v2, LAW §9): що ноутбук у цій кімнаті вміє понад навігацію. Закритий набір.
  * v1.15: 'scenario' — кнопка «📋 Сценарій» (адаптер лише в уроці).
+ * v1.35: 'objects' — у перемикачі поточного об'єкта всі види «Сценарію» (етап 2): відео, аудіо, документи,
+ * картки, картинки; «випадайку» відео замінює перемикач, дотик у «Сценарії» обирає об'єкт.
  */
-export type RemoteCap = 'photo' | 'video' | 'scenario'
-export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario']
+export type RemoteCap = 'photo' | 'video' | 'scenario' | 'objects'
+export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario', 'objects']
 const REMOTE_CAPS_MAX = 8
 
 /** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). v1.25: + картка й картинка (лише сторінка на екрані). */
@@ -117,8 +119,11 @@ export interface RemoteStateDetail {
   objectNotice?: RemoteObjectNotice
 }
 
-/** v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері). */
-export type RemoteObjectKind = 'task' | 'cut' | 'card'
+/**
+ * v1.34: вид об'єкта для пульта — наш закритий набір (як на сервері). v1.35: ще картинка (`image`; `cut` — та сама
+ * картинка від ноутбука v1.34) і види «Сценарію».
+ */
+export type RemoteObjectKind = 'task' | 'cut' | 'card' | 'image' | 'video' | 'audio' | 'presentation' | 'pdf' | 'document'
 export interface RemoteObject {
   id: string
   kind: RemoteObjectKind
@@ -130,11 +135,13 @@ export interface RemoteObject {
   solution?: boolean
   /** Цей об'єкт зараз «на екрані» (розгорнутий / збільшений). */
   presenting?: boolean
+  /** v1.35: згорнуто в трей — на пульті лишається з «Повернути». */
+  minimized?: boolean
 }
 export type RemoteObjectNotice = 'gone' | 'unsupported'
 
-const OBJECT_KINDS = new Set(['task', 'cut', 'card'])
-const OBJECT_FLAGS = ['hw', 'answer', 'solution', 'presenting'] as const
+const OBJECT_KINDS = new Set(['task', 'cut', 'card', 'image', 'video', 'audio', 'presentation', 'pdf', 'document'])
+const OBJECT_FLAGS = ['hw', 'answer', 'solution', 'presenting', 'minimized'] as const
 
 /** v1.34: `objects` — ті самі правила, що на сервері; зіпсоване поле — поля немає (разом із `current_id`). */
 export function parseRemoteObjects(raw: unknown): RemoteObject[] | undefined {

@@ -304,7 +304,7 @@ describe('v1.34 поточний об\'єкт пульта', () => {
     const store = selectable(assets)
     const v = createRemoteViewAdapter(store, { canSolve: () => true })
     expect(v.objects().map((o) => [o.id, o.kind, o.n, o.hw])).toEqual([
-      ['t', 'task', 1, true], ['cut', 'cut', 1, true], ['crd', 'card', 1, true],
+      ['t', 'task', 1, true], ['cut', 'image', 1, true], ['crd', 'card', 1, true],
     ])
     expect(v.changeTextScale(1, 'cut')).toBe(1)
     expect(v.objectNotice()).toBe('unsupported')
@@ -334,5 +334,89 @@ describe('v1.34 поточний об\'єкт пульта', () => {
     const [o] = v.objects()
     expect(o).toEqual({ id: 'a', kind: 'task', n: 1, hw: false, answer: true, solution: false, presenting: false })
     expect(JSON.stringify(v.objects())).not.toContain('секрет')
+  })
+})
+
+
+// ──────────────────────────────────────────────────────────────────────────
+// LAW §9 v1.35 — етап 2 поточного об'єкта: усі види «Сценарію» в тому самому перемикачі (кімната з «Сценарієм»).
+
+function media(id: string, type: string, x: number, y: number, over: Record<string, unknown> = {}) {
+  return { id, type, x, y, w: 400, h: 240, ...over }
+}
+
+describe('v1.35 етап 2: відео, аудіо, документи, картки й картинки — об\'єкти пульта', () => {
+  beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
+
+  const page = () => [
+    card('t', 0, 0),
+    media('yt', 'youtube_player', 500, 0),
+    media('snd', 'audio_player', 0, 300),
+    media('pdf', 'document_viewer', 500, 300, { content_ref: { content_type: 'pdf' }, totalPages: 5, currentPage: 0 }),
+    theory('crd', 0, 600),
+    image('pic', 500, 600),
+    media('mp4', 'video_player', 0, 900, { minimized: true }),
+  ]
+
+  it('з «Сценарієм» — усі види сторінки згори вниз, потім зліва направо; номер — серед свого виду', () => {
+    const v = createRemoteViewAdapter(selectable(page()), { allKinds: () => true })
+    expect(v.listsAllKinds()).toBe(true)
+    expect(v.objects().map((o) => [o.id, o.kind, o.n])).toEqual([
+      ['t', 'task', 1], ['yt', 'video', 1], ['snd', 'audio', 1], ['pdf', 'pdf', 1],
+      ['crd', 'card', 1], ['pic', 'image', 1], ['mp4', 'video', 2],
+    ])
+  })
+
+  it('без «Сценарію» (класна кімната) — як v1.34: лише задачі, картинка й картка — лише з правом Інтегралика', () => {
+    const v = createRemoteViewAdapter(selectable(page()))
+    expect(v.listsAllKinds()).toBe(false)
+    expect(v.objects().map((o) => o.kind)).toEqual(['task'])
+  })
+
+  it('згорнуте лишається в списку з `minimized` (Р3); автовибір бере перший незгорнутий', () => {
+    const store = selectable([media('mp4', 'video_player', 0, 0, { minimized: true }), media('yt', 'youtube_player', 0, 300)])
+    const v = createRemoteViewAdapter(store, { allKinds: () => true })
+    expect(v.objects().map((o) => [o.id, o.minimized === true])).toEqual([['mp4', true], ['yt', false]])
+    expect(v.currentObjectId()).toBe('yt')
+  })
+
+  it('вибір згорнутого: поточний, але на дошці нічого не виділяємо (він у треї)', () => {
+    const store = selectable([media('mp4', 'video_player', 0, 0, { minimized: true }), media('yt', 'youtube_player', 0, 300)])
+    const v = createRemoteViewAdapter(store, { allKinds: () => true })
+    expect(v.selectObject('mp4')).toBe(true)
+    expect(v.currentObjectId()).toBe('mp4')
+    expect(store.selectItems).not.toHaveBeenCalled()
+  })
+
+  it('дія «Сценарію» робить об\'єкт поточним і виділяє його на дошці (Е2-1); виділив на дошці — поточний він', () => {
+    const store = selectable(page())
+    const v = createRemoteViewAdapter(store, { allKinds: () => true })
+    v.adoptObject('pdf')
+    expect(v.currentObjectId()).toBe('pdf')
+    expect(store.selectedIds).toEqual(['pdf'])
+    store.selectedIds = ['snd']
+    expect(v.currentObjectId()).toBe('snd')
+    v.adoptObject('nope')                                     // не з цієї сторінки — нічого
+    expect(v.currentObjectId()).toBe('snd')
+  })
+
+  it('дії задачі для відео — «unsupported», а не тиша (маніфест П5)', () => {
+    const store = selectable(page())
+    const v = createRemoteViewAdapter(store, { allKinds: () => true })
+    expect(v.changeTextScale(1, 'yt')).toBe(1)
+    expect(v.objectNotice()).toBe('unsupported')
+    expect(store.updateAsset).not.toHaveBeenCalled()
+  })
+})
+
+describe('v1.35 етап 2: згорнутий об\'єкт — без ✍', () => {
+  beforeEach(() => { resetTutorGate(); resetNmtPresentationScales() })
+
+  it('згорнута картка з правом Інтегралика: hw=false, ✍ з адресою — «unsupported», а не письмо біля схованого', () => {
+    const crd = { ...theory('crd', 0, 0), minimized: true }
+    const v = createRemoteViewAdapter(selectable([crd]), { allKinds: () => true, canSolve: () => true })
+    expect(v.objects()[0]).toMatchObject({ id: 'crd', kind: 'card', minimized: true, hw: false })
+    expect(v.handwriteTarget('crd')).toBeNull()
+    expect(v.objectNotice()).toBe('unsupported')
   })
 })

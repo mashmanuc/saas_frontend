@@ -9205,7 +9205,13 @@
         "kind": {
           "task": "Задача",
           "cut": "Вирізка",
-          "card": "Картка"
+          "card": "Картка",
+          "image": "Картинка",
+          "video": "Відео",
+          "audio": "Аудіо",
+          "presentation": "Презентація",
+          "pdf": "PDF",
+          "document": "Документ"
         },
         "ofSame": "{kind} {n} з {total}",
         "ofMixed": "{kind} {n} · {i} з {total}",
@@ -9243,6 +9249,7 @@
       "minimizeAssistant": "Згорнути вікно Інтегралика",
       "minimizeAssistantIntegralka": "Згорнути вікно Інтегралки",
       "scenario": {
+        "current": "поточний",
         "button": "Сценарій",
         "title": "Сценарій",
         "empty": "На дошці ще немає відео, аудіо чи документів",

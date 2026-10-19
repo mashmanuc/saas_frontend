@@ -110,7 +110,7 @@
            Відео поточної сторінки — ▶/⏸.
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
-      <div v-if="hasCards || hasQuestions || videos.length || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
+      <div v-if="hasCards || hasQuestions || showVideoZone || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
         <!-- LAW §9 v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2): пульт працює з
              ПОТОЧНИМ ОБ'ЄКТОМ — його видно («Задача 2 з 3»), ◀ ▶ перемикають, кожна кнопка шле його адресу. Кнопки — за
              видом: задача — на екран, відповідь, розбір, A±; вирізка й картка — ✍ і «На весь екран». Старий ноутбук
@@ -122,6 +122,8 @@
             <button v-if="objectCount > 1" type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-next" :disabled="!isReady" :aria-label="t('winterboard.remote.object.next')" @click="stepObject(1)">▶</button>
           </div>
           <p v-if="objectNotice" class="wb-remote__hint" data-testid="object-notice" role="status">{{ t(`winterboard.remote.object.notice.${objectNotice}`) }}</p>
+          <!-- v1.35: назва відео, документа, картки — одразу під перемикачем, щоб було видно, яке саме -->
+          <p v-if="objectsAll && currentObject.kind !== 'task' && currentObjectTitle" class="wb-remote__object-title" data-testid="object-title">{{ currentObjectTitle }}</p>
           <template v-if="currentObject.kind === 'task'">
             <div v-if="!currentObject.presenting" class="wb-remote__row">
               <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-fit" :disabled="!isReady" @click="objCmd('view.fit')">
@@ -144,7 +146,7 @@
               </div>
             </template>
           </template>
-          <template v-if="currentObject.hw">
+          <template v-if="currentObject.hw && !currentObject.minimized">
             <div class="wb-remote__row">
               <button type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="remote-handwrite" :disabled="!isReady || handwriteStepBusy" @click="objCmd('card.handwrite')">
                 {{ t('winterboard.remote.handwrite') }}
@@ -155,8 +157,22 @@
             </div>
             <p v-if="handwriteStepText" class="wb-remote__hint" data-testid="remote-handwrite-step" aria-live="polite">{{ handwriteStepText }}</p>
           </template>
-          <!-- Вирізка й картка: «На весь екран» — той самий view.focus, що в «Сценарії» (лише кімната уроку) -->
-          <div v-if="currentObject.kind !== 'task' && canScenario" class="wb-remote__row">
+          <!-- v1.35 (етап 2): відео, аудіо, документ, картка, картинка — кнопки «Сценарію» тут, на головному екрані:
+               той самий блок, ті самі команди з адресою (Е2-2). Назва — щоб було видно, яке саме відео. -->
+          <template v-if="objectsAll && currentObject.kind !== 'task'">
+            <RemoteObjectControls
+              v-if="currentScenarioItem"
+              :item="currentScenarioItem"
+              :focus-id="scenario?.focusId ?? null"
+              :ready="isReady"
+              id-prefix="object"
+              variant="main"
+              @send="(cmd, args) => sendCmd(cmd as RemoteCmd, args)"
+            />
+          </template>
+          <!-- Ноутбук v1.34: картинка — «На весь екран», той самий view.focus, що в «Сценарії» (лише кімната уроку).
+               Картці його не даємо: «Сценарій» картку на весь екран не показує, кнопка мовчала б (маніфест П5). -->
+          <div v-else-if="(currentObject.kind === 'cut' || currentObject.kind === 'image') && canScenario" class="wb-remote__row">
             <button v-if="!currentObject.presenting" type="button" class="wb-remote__mini wb-remote__mini--wide" data-testid="object-focus" :disabled="!isReady" @click="sendCmd('view.focus', { object_id: currentObject.id })">
               {{ t('winterboard.remote.scenario.fullscreen') }}
             </button>
@@ -251,7 +267,7 @@
         </template>
 
         <!-- Відео поточної сторінки: ▶/⏸ (v1.8); пошук і посилання — в аркуші «Відео» -->
-        <div v-if="videos.length" class="wb-remote__video-ctl">
+        <div v-if="showVideoZone" class="wb-remote__video-ctl">
           <select
             v-if="videos.length > 1"
             v-model="activeVideoId"
@@ -557,7 +573,9 @@
         :page-index="pageIndex"
         :ready="isReady"
         :open="sheet === 'scenario'"
-        @send="(cmd, args) => sendCmd(cmd as RemoteCmd, args)"
+        :selectable="objectsAll"
+        :current-id="currentObject?.id ?? null"
+        @send="onScenarioSend"
       />
 
       <!-- LAW §9 v1.22 (власник 2026-09-29, «так»): розмова з Інтеграликом — аркушем. Ваш текст, повна
@@ -720,6 +738,7 @@ import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
+import RemoteObjectControls from '../components/remote/RemoteObjectControls.vue'
 import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
 
@@ -961,6 +980,28 @@ function stepObject(dir: -1 | 1): void {
   objectNotice.value = null
   selectPending = { id: next.id, at: Date.now() }
   sendCmd('object.select', { object_id: next.id })
+}
+/**
+ * v1.35 (етап 2): ноутбук кладе в `objects` усі види «Сценарію» — кнопки відео, аудіо, документа, картки й картинки
+ * на головному екрані, «випадайки» відео немає, тап у «Сценарії» обирає об'єкт. Старий ноутбук — як v1.34.
+ */
+const objectsAll = computed(() => objectMode.value && caps.value?.includes('objects') === true)
+/** Стан відтворення / сторінки документа поточного об'єкта — з `scenario.items` (не дублюється в `objects`). */
+const currentScenarioItem = computed(() => {
+  const id = currentObject.value?.id
+  return id ? scenario.value?.items.find((it) => it.objectId === id) ?? null : null
+})
+const currentObjectTitle = computed(() => currentScenarioItem.value?.title.trim() ?? '')
+/** Зона відео v1.8 (▶/⏸ YouTube зі списком) — лише коли перемикач ще не знає відео (ноутбук до v1.35). */
+const showVideoZone = computed(() => videos.value.length > 0 && !objectsAll.value)
+/** Команди аркуша «Сценарій»; вибір об'єкта — одразу поточний і тут, як ◀ ▶ (наступний натиск — з його адресою). */
+function onScenarioSend(cmd: string, args: Record<string, unknown>): void {
+  if (cmd === 'object.select' && typeof args.object_id === 'string') {
+    currentObjectId.value = args.object_id
+    objectNotice.value = null
+    selectPending = { id: args.object_id, at: Date.now() }
+  }
+  sendCmd(cmd as RemoteCmd, args)
 }
 /** Дія над поточним об'єктом — завжди з його адресою (ТЗ О4). */
 function objCmd(cmd: RemoteCmd, args: Record<string, unknown> = {}): void {
@@ -1824,6 +1865,7 @@ onBeforeUnmount(() => {
 /* v1.34: рядок поточного об'єкта — ◀ назва ▶, назва по центру */
 .wb-remote__objects { align-items: center; }
 .wb-remote__object-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
+.wb-remote__object-title { margin: 0; text-align: center; font-size: 13px; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wb-remote__video-pick { min-height: 44px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 0 10px; font-size: 14px; }
 .wb-remote__video-blocked { margin: 0; padding: 10px 12px; border-radius: 12px; background: #b45309; color: #fff; font-weight: 600; text-align: center; }
 .wb-remote__video-search { display: flex; gap: 8px; }

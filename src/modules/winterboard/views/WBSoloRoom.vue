@@ -1926,6 +1926,8 @@ const soloEffectiveTool = computed(() =>
 const remoteView = createRemoteViewAdapter(store as any, {
   // v1.34: право Інтегралика — вирізка з PDF і картка теж об'єкти пульта (✍). Читається пізніше (замикання).
   canSolve: () => canSolveHandwrite.value,
+  // v1.35 (етап 2): тут є «Сценарій» — у перемикачі пульта всі його види (відео, аудіо, документи, картки, картинки)
+  allKinds: () => true,
   viewportSize: () => ({ width: canvasContainerWidth.value, height: canvasContainerHeight.value }),
   applyView: (zoom, x, y) => {
     const c = canvasRef.value?.clampScrollFor?.(x, y, zoom) ?? { x, y }

@@ -553,3 +553,71 @@ describe('INV-SCN-7 · картки й картинки — лише сторі�
     expect(other.updateAsset).not.toHaveBeenCalled()
   })
 })
+
+
+// ── v1.35 · етап 2 поточного об'єкта: caps ∋ 'objects', дія «Сценарію» робить об'єкт поточним ──
+
+describe('v1.35 · етап 2 — ноутбук зі «Сценарієм» і всіма видами в перемикачі', () => {
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => {
+    while (wrappers.length) wrappers.pop()!.unmount()
+    vi.useRealTimers()
+  })
+
+  function withView(allKinds: boolean, withScenario = true) {
+    const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
+    const sendMessage = vi.fn()
+    const scenario = {
+      state: vi.fn(() => ({ focus_id: null, items: [] })),
+      play: vi.fn(), pause: vi.fn(), volume: vi.fn(), focus: vi.fn(), minimize: vi.fn(), restore: vi.fn(), docPage: vi.fn(),
+    }
+    // Справжній адаптер вигляду над столом сторінки; стежимо лише за вибором поточного
+    const view = createRemoteViewAdapter(viewStore().store, { allKinds: () => allKinds }) as any
+    vi.spyOn(view, 'adoptObject')
+    let api!: ReturnType<typeof useBoardRemote>
+    wrappers.push(mount(defineComponent({
+      setup() {
+        api = useBoardRemote({
+          sessionId: ref(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), view,
+          ...(withScenario ? { scenario } : {}),
+        } as any)
+        return () => h('div')
+      },
+    })))
+    const fire = (cmd: string, args: Record<string, unknown> = {}) => window.dispatchEvent(new CustomEvent('wb:remote-command', {
+      detail: { userId: 'u', pair: api.pairCode.value, clientId: 'phone', cmd, args },
+    }))
+    return { sendMessage, scenario, view, fire }
+  }
+
+  it('caps ∋ objects — лише зі «Сценарієм» і всіма видами; старий режим (v1.34) — без нього', () => {
+    const on = withView(true)
+    on.fire('hello')
+    expect(on.sendMessage.mock.calls[0][0].caps).toEqual(['scenario', 'objects'])
+    wrappers.pop()!.unmount()
+    const v134 = withView(false)
+    v134.fire('hello')
+    expect(v134.sendMessage.mock.calls[0][0].caps).toEqual(['scenario'])
+    wrappers.pop()!.unmount()
+    const classroom = withView(true, false)
+    classroom.fire('hello')
+    expect(classroom.sendMessage.mock.calls[0][0].caps).toEqual([])
+  })
+
+  it('▶, гучність, «на весь екран», сторінка документа, «Повернути» — об\'єкт стає поточним; «Згорнути» — ні', () => {
+    const { fire, view } = withView(true)
+    fire('video.play', { object_id: 'yt' })
+    fire('video.volume', { object_id: 'snd', delta: 1 })
+    fire('view.focus', { object_id: 'pic' })
+    fire('doc.page', { object_id: 'pdf', dir: 1 })
+    fire('card.restore', { object_id: 'mp4' })
+    fire('card.minimize', { object_id: 'crd' })
+    expect(view.adoptObject.mock.calls.map((c: unknown[]) => c[0])).toEqual(['yt', 'snd', 'pic', 'pdf', 'mp4'])
+  })
+
+  it('ноутбук v1.34 (без усіх видів) — дії «Сценарію» поточного не змінюють, як і раніше', () => {
+    const { fire, view } = withView(false)
+    fire('video.play', { object_id: 'yt' })
+    expect(view.adoptObject).not.toHaveBeenCalled()
+  })
+})

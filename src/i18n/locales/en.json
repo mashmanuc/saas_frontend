@@ -9480,7 +9480,13 @@
         "kind": {
           "task": "Task",
           "cut": "Cut-out",
-          "card": "Card"
+          "card": "Card",
+          "image": "Picture",
+          "video": "Video",
+          "audio": "Audio",
+          "presentation": "Presentation",
+          "pdf": "PDF",
+          "document": "Document"
         },
         "ofSame": "{kind} {n} of {total}",
         "ofMixed": "{kind} {n} · {i} of {total}",
@@ -9518,6 +9524,7 @@
       "minimizeAssistant": "Minimise the Integralyk window",
       "minimizeAssistantIntegralka": "Minimise the Integralka window",
       "scenario": {
+        "current": "current",
         "button": "Scenario",
         "title": "Scenario",
         "empty": "No videos, audio or documents on the board yet",
