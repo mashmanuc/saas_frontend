@@ -652,7 +652,8 @@ const cmdGenerateLesson = {
   // ⚠️ Мусимо слати ПРОДУКТОВІ дефолти конструктора, а не покладатись на дефолти
   // серіалайзера (вони інші!). Дзеркало LessonConstructorPage.vue:290-390:
   // include_solution_page=false — інакше бекенд-дефолт True генерує зайву сторінку
-  // розбору на кожну задачу (→ подвоєння сторінок). include_theory_page=true, tutorial, balanced.
+  // розбору на кожну задачу (→ подвоєння сторінок). include_theory_page=false — теорії в уроках
+  // немає (власник 2026-10-19: «суха», «не потрібна»), tutorial, balanced.
   act: (v) => sendIntent('CREATE', [{
     type: 'Lesson',
     params: {
@@ -662,7 +663,7 @@ const cmdGenerateLesson = {
       theme: v.theme,
       diff_profile: 'balanced',
       pacing_mode: 'tutorial',
-      include_theory_page: true,
+      include_theory_page: false,
       include_solution_page: false,
     },
   }], 'command-palette'),

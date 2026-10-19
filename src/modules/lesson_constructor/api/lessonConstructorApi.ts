@@ -201,12 +201,6 @@ export const DIFF_PROFILES = [
   { value: 'exam',     label: 'Екзаменаційний' },
 ] as const
 
-export const PACING_MODES = [
-  { value: 'tutorial', label: 'Навчальний (теорія + розбір)' },
-  { value: 'practice', label: 'Практика (тільки задачі)' },
-  { value: 'exam',     label: 'Іспит (без підказок)' },
-] as const
-
 export interface GenerateLessonRequest {
   tasks_per_page?: number | null
   arc?: 'progressive' | 'mixed'

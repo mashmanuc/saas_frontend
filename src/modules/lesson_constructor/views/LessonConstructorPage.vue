@@ -134,8 +134,6 @@
           <div class="lc-preview-box">
             <span class="lc-preview-item lc-preview-item--tasks">📋 {{ taskCount }} {{ taskWord }}</span>
             <span class="lc-preview-sep">→</span>
-            <span v-if="theoryPages > 0" class="lc-preview-item lc-preview-item--theory">📖 1 теорія</span>
-            <span v-if="theoryPages > 0" class="lc-preview-sep">+</span>
             <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
             <span class="lc-preview-sep lc-preview-total-sep">=</span>
             <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
@@ -164,7 +162,7 @@
         <!-- ── Фон дошки ────────────────────────────────────────────────────── -->
         <section class="lc-section">
           <h2 class="lc-section__title">{{ stepNo(5) }}. Фон дошки</h2>
-          <p class="lc-section__hint">Застосовується до всіх сторінок уроку, включно з теорією.</p>
+          <p class="lc-section__hint">Застосовується до всіх сторінок уроку.</p>
 
           <!-- Режим: один колір / різнокольорові -->
           <div class="lc-bg-mode">
@@ -255,28 +253,10 @@
               </div>
             </div>
 
-            <div class="lc-field">
-              <label class="lc-label">Режим уроку</label>
-              <div class="lc-radio-group">
-                <label
-                  v-for="pm in PACING_MODES"
-                  :key="pm.value"
-                  class="lc-radio"
-                >
-                  <input v-model="pacingMode" type="radio" :value="pm.value" />
-                  {{ pm.label }}
-                </label>
-              </div>
-            </div>
-
-            <div class="lc-field lc-field--col">
-              <label class="lc-checkbox">
-                <input v-model="includeTheory" type="checkbox" :disabled="pacingMode === 'exam'" />
-                Сторінка теорії (визначення та формули)
-              </label>
-              <!-- "Окремі сторінки розбору" прибрано: дублювали задачі, а кожна
-                   картка вже має кнопку "Показати розбір". include_solution_page завжди false. -->
-            </div>
+            <!-- «Режим уроку» і «Сторінку теорії» прибрано (власник 2026-10-19): теорія була сухою,
+                 а режими нічого не міняли — «Практика» лишала теорію, «Іспит» не ховав розбору.
+                 Тексти теорії в базі лишились; «Окремі сторінки розбору» прибрано ще раніше —
+                 кожна картка має «Показати розбір». -->
 
             <div class="lc-field">
               <label class="lc-label">Назва дошки (необов'язково)</label>
@@ -339,7 +319,6 @@ import {
   TOPICS,
   THEMES,
   DIFF_PROFILES,
-  PACING_MODES,
   lessonConstructorApi,
 } from '../api/lessonConstructorApi'
 import {
@@ -404,8 +383,6 @@ const boardBg         = ref('#ffffff')
 const multicolorBg    = ref(true)    // різнокольоровий режим (палітра циклом по сторінках)
 const bgSaturation    = ref(100)     // 0–100 % — насиченість пастельної палітри
 const diffProfile     = ref('balanced')
-const pacingMode      = ref('tutorial')
-const includeTheory   = ref(true)
 const boardName       = ref('')
 const showAdvanced    = ref(false)
 
@@ -427,16 +404,8 @@ const practicePages = computed(() => {
   return Math.max(1, Math.ceil(taskCount.value / perPage))
 })
 
-/** Кількість теоретичних сторінок (0 або 1). */
-const theoryPages = computed(() => {
-  if (pacingMode.value === 'exam' || !includeTheory.value) return 0
-  return 1
-})
-
-/** Загальна кількість сторінок (practice + theory). Окремих сторінок розбору немає. */
-const totalPages = computed(() =>
-  practicePages.value + theoryPages.value
-)
+/** Загальна кількість сторінок: лише задачі — теорії й окремих сторінок розбору немає. */
+const totalPages = computed(() => practicePages.value)
 
 const pageWord = computed(() => {
   const n = totalPages.value
@@ -641,8 +610,7 @@ async function handleGenerate() {
       board_bg:              !multicolorBg.value && boardBg.value !== '#ffffff' ? boardBg.value : undefined,
       board_bg_palette:      multicolorBg.value ? bgPalette.value : undefined,
       diff_profile:          diffProfile.value,
-      pacing_mode:           pacingMode.value,
-      include_theory_page:   pacingMode.value !== 'exam' && includeTheory.value,
+      include_theory_page:   false,   // теорії немає (власник 2026-10-19: «суха», «не потрібна»)
       include_solution_page: false,   // окремих сторінок розбору немає (картки мають "Показати розбір")
       name:                  boardName.value || undefined,
     })
@@ -966,7 +934,6 @@ async function handleGenerate() {
 }
 
 .lc-preview-item--tasks    { color: var(--accent); font-weight: 600; }
-.lc-preview-item--theory   { color: #0369a1; }
 .lc-preview-item--practice { color: #0f172a; }
 .lc-preview-item--solution { color: #15803d; }
 .lc-preview-item--total    { color: #0f172a; font-weight: 600; }
@@ -1318,7 +1285,6 @@ async function handleGenerate() {
 [data-theme="dark"] .lc-preview-item,
 [data-theme="dark"] .lc-preview-total-sep { color: var(--color-text-secondary); }
 [data-theme="dark"] .lc-preview-item--tasks { color: var(--color-accent); }
-[data-theme="dark"] .lc-preview-item--theory { color: var(--color-info); }
 [data-theme="dark"] .lc-preview-item--practice,
 [data-theme="dark"] .lc-preview-item--total { color: var(--color-text); }
 [data-theme="dark"] .lc-preview-item--solution { color: var(--color-success); }
