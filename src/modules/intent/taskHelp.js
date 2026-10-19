@@ -27,7 +27,12 @@ export const ONCE_TIP_EVENT = 'm4sh:integralyk-once-tip'
 
 const ONCE_TIPS_KEY = 'm4sh_integralyk_once_tips'
 
-/** Цю одноразову підказку в цьому браузері ще не показували? Так — запам'ятати й повернути true. */
+/**
+ * Цю одноразову підказку в цьому браузері ще не показували? Так — запам'ятати й повернути true.
+ * @param {string} key
+ * @param {{ getItem(key: string): string | null, setItem(key: string, value: string): void } | undefined} [storage]
+ *   досить читати й писати рядок (у тестах — проста заміна, не весь `Storage`)
+ */
 export function claimOnceTip(key, storage = globalThis.localStorage) {
   let seen = []
   try { seen = JSON.parse(storage?.getItem(ONCE_TIPS_KEY) || '[]') } catch { seen = [] }
