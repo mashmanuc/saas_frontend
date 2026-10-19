@@ -129,3 +129,20 @@ describe('що може розв\'язати Інтегралик', () => {
     expect(cardWindowActions(PDF_CUT as any, { ...solver, mode: 'replay' }).handwriteSolves).toBe(false)
   })
 })
+
+describe('✍ лише там, де може бути задача (власник 19.10)', () => {
+  const theory = (preset?: string) => ({ ...CARD, data: { ...CARD.data, ...(preset === undefined ? {} : { preset }) } })
+
+  it('текстова картка: без позначки й «Приклад» — так; підказка, типова помилка й теорія — ні', () => {
+    expect(isIntegralykSolvable(theory())).toBe(true)
+    expect(isIntegralykSolvable(theory(''))).toBe(true)
+    expect(isIntegralykSolvable(theory('example'))).toBe(true)
+    for (const p of ['tip', 'common mistake', 'definition', 'rule', 'proof', 'remember', 'life example', 'algorithm', 'summary']) {
+      expect(isIntegralykSolvable(theory(p)), p).toBe(false)
+    }
+  })
+
+  it('невідома позначка — без руки, доки її не додали до переліку', () => {
+    expect(isIntegralykSolvable(theory('quiz'))).toBe(false)
+  })
+})

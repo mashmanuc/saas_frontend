@@ -278,3 +278,30 @@ describe('INV-WIN-6 · полотно: одна група, правий вер�
     expect(canvas).not.toContain('boardTrayEnabled')
   })
 })
+
+describe('✍ на картці «Підказка» й теоретичних — немає (власник 19.10)', () => {
+  const SOLVER = { isTutor: true, mode: 'edit', canSolve: true }
+  const theory = (preset?: string) => ({
+    id: 'tc-1', type: 'theory_card', src: '', x: 0, y: 0, w: 400, h: 300, rotation: 0, locked: false,
+    data: { version: 1, title: 'Коми підряд', body: 'Запиши коми одну під одною.', ...(preset ? { preset } : {}) },
+  }) as unknown as WBAsset
+
+  it('«Підказка», «Типова помилка», правило — ні ✍, ні 💡/⚠; картка без позначки й «Приклад» — ✍ є', () => {
+    for (const p of ['tip', 'common mistake', 'rule']) {
+      const a = cardWindowActions(theory(p), SOLVER)
+      expect([a.handwrite, a.handwriteSolves, a.taskHelp], p).toEqual([false, false, false])
+    }
+    for (const p of [undefined, 'example']) {
+      const a = cardWindowActions(theory(p), SOLVER)
+      expect([a.handwrite, a.handwriteSolves], String(p)).toEqual([true, true])
+    }
+  })
+
+  it('кнопки ✍ на картці «Підказка» справді немає, а на картці без позначки — є', () => {
+    const at = (asset: WBAsset) => mount(WBCardWindowControls, {
+      props: { actions: cardWindowActions(asset, SOLVER), isExpanded: false }, global: { plugins: [i18n()] },
+    })
+    expect(at(theory('tip')).find('[data-testid="wb-card-window-handwrite"]').exists()).toBe(false)
+    expect(at(theory()).find('[data-testid="wb-card-window-handwrite"]').exists()).toBe(true)
+  })
+})

@@ -50,11 +50,24 @@ export function hasHandwritableSolution(asset: { type?: string; data?: unknown }
  * він не прочитає — як і коректор прочитаного (`imageReadingTarget`).
  */
 export function isIntegralykSolvable(
-  asset: { type?: string; src?: unknown } | null | undefined,
+  asset: { type?: string; src?: unknown; data?: unknown } | null | undefined,
 ): boolean {
   if (!asset) return false
   if (asset.type === 'image') return isSafeBackgroundUrl(asset.src)
-  return asset.type === 'nmt_task' || asset.type === 'theory_card'
+  if (asset.type === 'theory_card') return mayHoldTask(asset.data)
+  return asset.type === 'nmt_task'
+}
+
+/**
+ * Власник 19.10 («нахуя шукати задачу там, де і так ясно, що її немає»): у текстовій картці задача буває лише без
+ * позначки виду або в «Прикладі». «Підказка», «Типова помилка», означення, правило, доведення, «Запам'ятай»,
+ * «Приклад з життя», алгоритм, підсумок — теорія: ✍ там немає ні на дошці, ні на пульті (Інтегралик відповідав би
+ * «задачі не знайдено»). Перелік дозволених, а не заборонених: нова позначка руки не отримає, доки її не додали сюди.
+ */
+const TASK_CARD_PRESETS = new Set(['', 'example'])
+function mayHoldTask(data: unknown): boolean {
+  const preset = (data as { preset?: unknown } | null | undefined)?.preset
+  return TASK_CARD_PRESETS.has(typeof preset === 'string' ? preset : '')
 }
 
 /**
