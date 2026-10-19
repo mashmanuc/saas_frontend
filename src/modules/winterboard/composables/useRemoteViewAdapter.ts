@@ -101,6 +101,9 @@ export interface RemoteBoardObject {
 /** v1.34: чому дію над об'єктом не виконано — його вже немає на сторінці / цей вид так не вміє. */
 export type RemoteObjectNotice = 'gone' | 'unsupported'
 
+/** v1.34: стеля `objects` — як на сервері (`REMOTE_OBJECTS_MAX`). */
+export const REMOTE_OBJECTS_MAX = 50
+
 /** Відступ об'єкта від країв видимої частини в «На весь екран» (ТЗ §4.3). */
 export const FOCUS_MARGIN_PX = 24
 /** Дозволений масштаб полотна (`boardStore.setZoom`, LAW-20). */
@@ -247,10 +250,12 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   function objectAssets(): any[] {
     const page = store.pages[store.currentPageIndex]
     if (!page) return []
+    // Стеля протоколу — 50 (`REMOTE_OBJECTS_MAX`): більше сервер відкинув би весь список (v1.35: картинок буває багато)
     return page.assets
       .filter((a) => a && kindOf(a) !== null)
       .slice()
       .sort((a, b) => (a.y - b.y) || (a.x - b.x))
+      .slice(0, REMOTE_OBJECTS_MAX)
   }
 
   /**

@@ -420,3 +420,13 @@ describe('v1.35 етап 2: згорнутий об\'єкт — без ✍', () 
     expect(v.objectNotice()).toBe('unsupported')
   })
 })
+
+describe('v1.35 етап 2: стеля списку', () => {
+  it('понад 50 об\'єктів (багато фото) — перші 50 згори вниз, а не весь список, який сервер відкинув би', () => {
+    const pics = Array.from({ length: 60 }, (_, i) => image(`p${i}`, 0, i * 10))
+    const v = createRemoteViewAdapter(selectable(pics), { allKinds: () => true })
+    const list = v.objects()
+    expect(list).toHaveLength(50)
+    expect(list[49]).toMatchObject({ id: 'p49', n: 50 })
+  })
+})
