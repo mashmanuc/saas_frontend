@@ -18,6 +18,32 @@ import { buildBoardSummary, runBoardAction } from './boardActions'
 
 export const TASK_HELP_KINDS = Object.freeze(['hint', 'mistake'])
 
+/**
+ * Власник 19.10: «як має пересічний викладач знати… це вже енциклопедію писати… мінімалізм і простота».
+ * Значки без напису пояснює Інтегралик — один раз, тієї миті, коли вчитель уперше виділив задачу
+ * й бачить ✍ 💡 ⚠ (бульбашка біля маскота; запам'ятовує вікно Інтегралика, `ONCE_TIP_EVENT`).
+ */
+export const ONCE_TIP_EVENT = 'm4sh:integralyk-once-tip'
+
+const ONCE_TIPS_KEY = 'm4sh_integralyk_once_tips'
+
+/** Цю одноразову підказку в цьому браузері ще не показували? Так — запам'ятати й повернути true. */
+export function claimOnceTip(key, storage = globalThis.localStorage) {
+  let seen = []
+  try { seen = JSON.parse(storage?.getItem(ONCE_TIPS_KEY) || '[]') } catch { seen = [] }
+  if (!Array.isArray(seen)) seen = []
+  if (seen.includes(key)) return false
+  try { storage?.setItem(ONCE_TIPS_KEY, JSON.stringify([...seen, key])) } catch { /* приватний режим — покажемо ще раз */ }
+  return true
+}
+
+export function announceTaskActions() {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(ONCE_TIP_EVENT, {
+    detail: { key: 'task-actions', text: i18n.global.t('winterboard.taskHelp.onceTip') },
+  }))
+}
+
 /** Розмір картки підказки: 1–3 речення; довшу картку висота доросте сама (стандарт карток). */
 export const TASK_HELP_CARD = Object.freeze({ w: 460, h: 220 })
 

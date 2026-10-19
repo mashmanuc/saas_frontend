@@ -55,8 +55,9 @@
         aria-hidden="true"
       />
     </template>
-    <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок;
-         назва є тільки для читача екрана (aria-label), спливної підказки немає. Поки Інтегралик
+    <!-- LAW §9 v1.29: розв'язок задачі рукою. Власник 2026-10-17: «надпису не має бути» — лише значок.
+         Власник 19.10: «перевір… чи всі мають підписи» — назва тепер і в спливній підказці (з'являється лише
+         під курсором чи пером, на дошці напису немає), як у всіх значків цієї групи. Поки Інтегралик
          розв'язує чи рука пише — значок пульсує й не натискається (етап 1, 18.10).
          Власник 18.10: «додай позначку Інтегралика… стан, коли він думає» — коли розв'язуватиме Інтегралик
          (готового розв'язку немає), у куті значка — Інтегралик; поки він розв'язує й пише — думає (похитується)
@@ -70,6 +71,7 @@
         'wb-card-window-controls__btn--solving': handwriteBusy && actions.handwriteSolves,
       }"
       data-testid="wb-card-window-handwrite"
+      :title="t('winterboard.card.handwrite')"
       :aria-label="t('winterboard.card.handwrite')"
       :aria-busy="handwriteBusy ? 'true' : undefined"
       :disabled="handwriteBusy"
@@ -81,8 +83,8 @@
         :thinking="handwriteBusy"
       /></button>
     <!-- LAW §9 v1.33 (пакет 3 «один Інтегралик», 19.10): підказка й типова помилка від Інтегралика поруч
-         із задачею. Як ✍ — значки без напису, назва для читача екрана. Поки Інтегралик складає картку,
-         натиснутий значок пульсує, обидва не натискаються. -->
+         із задачею. Як ✍ — значки без напису, назва в спливній підказці й для читача екрана. Поки Інтегралик
+         складає картку, натиснутий значок пульсує, обидва не натискаються. -->
     <template v-if="actions.taskHelp">
       <button
         v-for="kind in TASK_HELP_KINDS"
@@ -91,6 +93,7 @@
         class="wb-card-window-controls__btn wb-card-window-controls__btn--task-help"
         :class="{ 'wb-card-window-controls__btn--busy': taskHelpBusy === kind }"
         :data-testid="`wb-card-window-task-help-${kind}`"
+        :title="t(`winterboard.card.taskHelp.${kind}`)"
         :aria-label="t(`winterboard.card.taskHelp.${kind}`)"
         :aria-busy="taskHelpBusy === kind ? 'true' : undefined"
         :disabled="taskHelpBusy !== null"

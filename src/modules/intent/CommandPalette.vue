@@ -331,6 +331,7 @@ import { parseAi, sendIntent } from './sendIntent'
 import { notifySuccess } from '@/utils/notify'
 import { isLimitError } from '@/utils/apiClient'
 import { assistantPlaceholder, commandPlaceholder, tipPool, tipSubjects } from './assistantTips'
+import { ONCE_TIP_EVENT, claimOnceTip } from './taskHelp'
 import { buildBoardSummary, buildToolCatalog, runBoardAction } from './boardActions'
 import { mathContentMessage, prepareServerActions } from './math/prepareServerActions'
 import { createRemoteAssistant } from './remoteAssistant'
@@ -1554,7 +1555,31 @@ function placeTip() {
   }
 }
 
-function tipClick() { tipVisible.value = false; openPalette() }
+function tipClick() {
+  tipVisible.value = false
+  // Одноразова підказка лише пояснює — вікно не відкриває.
+  if (tipOnce) { tipOnce = false; return }
+  openPalette()
+}
+
+// Власник 19.10 («мінімалізм і простота»): можливість пояснюється тоді, коли вона знадобилась, — і один
+// раз. Подію шле дошка (`taskHelp.announceTaskActions`); показане запам'ятовується в цьому браузері
+// (`claimOnceTip`) — лише коли бульбашку справді показано.
+let tipOnce = false
+
+function onOnceTip(e) {
+  const key = String(e?.detail?.key ?? '')
+  const text = String(e?.detail?.text ?? '').trim()
+  if (!key || !text || !enabled.value || !showAI.value || open.value) return
+  if (!claimOnceTip(key)) return
+  tipText.value = text
+  tipOnce = true
+  placeTip()
+  tipVisible.value = true
+  react('wave')
+  clearTimeout(tipHideTimer)
+  tipHideTimer = setTimeout(() => { tipVisible.value = false; tipOnce = false }, 12000)
+}
 
 function scheduleTip() {
   clearTimeout(tipShowTimer)
@@ -1563,7 +1588,8 @@ function scheduleTip() {
     // Не перекладаємо, а ховаємо для не-uk локалі, щоб en/ru-юзер не бачив
     // українських бульбашок. Таймер продовжує тікати — при поверненні на uk
     // підказки з'являться без перемонтування (locale реактивна).
-    if (!open.value && currentLocale.value === 'uk' && Math.random() < 0.7) {
+    // Одноразова підказка (`onOnceTip`) на екрані — випадкова її не перекриває.
+    if (!open.value && !tipOnce && currentLocale.value === 'uk' && Math.random() < 0.7) {
       tipText.value = pickTip()
       placeTip()
       tipVisible.value = true
@@ -2046,6 +2072,7 @@ function onKeydown(e) {
 onMounted(() => {
   if (enabled.value) window.addEventListener('keydown', onKeydown)
   window.addEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.addEventListener(ONCE_TIP_EVENT, onOnceTip)
   window.addEventListener(REMOTE_ASK_EVENT, onRemoteAssistantAsk)
   window.addEventListener(REMOTE_ANSWER_EVENT, onRemoteAssistantAnswer)
   window.addEventListener(EVENT_COMMAND, onCorridorRemoteCommand)
@@ -2080,6 +2107,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('m4sh:integralyk-ask', onIntegralykAsk)
+  window.removeEventListener(ONCE_TIP_EVENT, onOnceTip)
   window.removeEventListener(REMOTE_ASK_EVENT, onRemoteAssistantAsk)
   window.removeEventListener(REMOTE_ANSWER_EVENT, onRemoteAssistantAnswer)
   remoteAssistant.dispose()

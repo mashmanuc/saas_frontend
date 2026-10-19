@@ -30,7 +30,7 @@ vi.mock('@/modules/winterboard/constants/nmt3dDefaults', () => ({ NMT3D_TEMPLATE
 vi.mock('@/utils/notify', () => ({ notifyInfo: vi.fn(), notifyWarning: vi.fn(), notifyError: vi.fn() }))
 
 import { runBoardAction } from '../boardActions'
-import { askTaskHelp, taskHelpBusy, TASK_HELP_CARD } from '../taskHelp'
+import { announceTaskActions, askTaskHelp, claimOnceTip, ONCE_TIP_EVENT, taskHelpBusy, TASK_HELP_CARD } from '../taskHelp'
 import { notifyInfo } from '@/utils/notify'
 
 const TASK = { id: 'task', type: 'nmt_task', x: 100, y: 100, w: 600, h: 300, data: { version: 1, question: '2x + 4 = 10' } }
@@ -70,13 +70,15 @@ describe('значки в групі дій', () => {
     global: { plugins: [i18n()] },
   })
 
-  it('два значки без напису, назва — для читача екрана; натиск каже, яку картку', async () => {
+  it('два значки без напису, назва — у спливній підказці; натиск каже, яку картку', async () => {
     const w = render()
     const hint = w.get('[data-testid="wb-card-window-task-help-hint"]')
     const mistake = w.get('[data-testid="wb-card-window-task-help-mistake"]')
     expect([hint.text(), mistake.text()]).toEqual(['💡', '⚠'])
     expect(hint.attributes('aria-label')).toBe('Підказка до задачі')
     expect(mistake.attributes('aria-label')).toBe('Типова помилка в задачі')
+    // Власник 19.10: «чи всі мають підписи» — назва й у спливній підказці.
+    expect([hint.attributes('title'), mistake.attributes('title')]).toEqual(['Підказка до задачі', 'Типова помилка в задачі'])
     await mistake.trigger('click')
     expect(w.emitted('taskHelp')).toEqual([['mistake']])
   })
@@ -137,6 +139,35 @@ describe('запит і картка', () => {
     expect(await askTaskHelp('mistake', TASK, d)).toBe('busy')
     expect(parse).not.toHaveBeenCalled()
     expect(notifyInfo).toHaveBeenCalledWith('Уже складаю картку — зачекайте мить.')
+  })
+})
+
+describe('одноразова підказка маскота (власник 19.10: «мінімалізм і простота»)', () => {
+  const memory = () => {
+    const box = new Map<string, string>()
+    return { getItem: (k: string) => box.get(k) ?? null, setItem: (k: string, v: string) => { box.set(k, v) } }
+  }
+
+  it('значки на виділеній задачі пояснюються одним рядком — один раз у цьому браузері', () => {
+    const storage = memory()
+    expect(claimOnceTip('task-actions', storage)).toBe(true)
+    expect(claimOnceTip('task-actions', storage)).toBe(false)
+    expect(claimOnceTip('other', storage)).toBe(true)      // інша можливість — своя одна підказка
+  })
+
+  it('недоступне сховище (приватний режим) — показуємо, але нічого не ламаємо', () => {
+    const broken = { getItem: () => { throw new Error('denied') }, setItem: () => { throw new Error('denied') } }
+    expect(claimOnceTip('task-actions', broken)).toBe(true)
+  })
+
+  it('дошка шле вікну Інтегралика рядок про ✍ 💡 ⚠', () => {
+    const seen: any[] = []
+    const listener = (e: Event) => seen.push((e as CustomEvent).detail)
+    window.addEventListener(ONCE_TIP_EVENT, listener)
+    announceTaskActions()
+    window.removeEventListener(ONCE_TIP_EVENT, listener)
+    expect(seen).toEqual([{ key: 'task-actions',
+      text: 'Виділили задачу: ✍ — розв\'язок рукою, 💡 — підказка, ⚠ — типова помилка.' }])
   })
 })
 

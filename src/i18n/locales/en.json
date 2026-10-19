@@ -11179,7 +11179,8 @@
         "mistake": "Name a common mistake in this task as a card on the board."
       },
       "failed": "Couldn't make the card. Please try again.",
-      "busy": "I'm already making a card — one moment."
+      "busy": "I'm already making a card — one moment.",
+      "onceTip": "Task selected: ✍ — handwritten solution, 💡 — hint, ⚠ — common mistake."
     },
     "handwrite": {
       "unsupported": "Can't write this solution by hand — showing it printed.",

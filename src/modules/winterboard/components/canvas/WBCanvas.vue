@@ -1000,7 +1000,7 @@ import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
-import { askTaskHelp, taskHelpBusy } from '@/modules/intent/taskHelp'
+import { announceTaskActions, askTaskHelp, taskHelpBusy } from '@/modules/intent/taskHelp'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
@@ -1860,6 +1860,9 @@ function handleWindowHandwrite(asset: WBAsset): void {
     emit('asset-update', { ...fresh, data: { ...(fresh.data as object), showSolution: true } } as unknown as WBAsset)
   }, undefined, { canSolve: windowViewer.value.canSolve })
 }
+
+// Власник 19.10: значки без напису пояснює Інтегралик — один раз, коли вчитель уперше їх побачив.
+watch(() => windowControlsActions.value.taskHelp, (shown) => { if (shown) announceTaskActions() })
 
 /** LAW §9 v1.33: «💡 Підказка» / «⚠ Типова помилка» — Інтегралик кладе картку поруч із задачею. */
 function handleWindowTaskHelp(asset: WBAsset, kind: 'hint' | 'mistake'): void {
