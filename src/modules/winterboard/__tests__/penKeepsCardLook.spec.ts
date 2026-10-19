@@ -4,8 +4,8 @@
  *
  * З травня з олівцем (`.is-readonly`) картки ставали прозорими й ховали заголовок і кнопки — малюнок
  * зсувався при кожному перемиканні інструмента. Тепер:
- *   - прозорий фон і сховані заголовок/кнопки — ЛИШЕ в перегляді (повтор уроку, публічне посилання),
- *     через клас обгортки `.wb-overlay--view-only` (WBOverlayLayer ставить його, коли дошка не в режимі уроку);
+ *   - картка виглядає однаково з будь-яким інструментом і в будь-якому режимі — і в повторі уроку, і за
+ *     посиланням (власник 2026-10-19 «роби»: учень у «Моїх уроках» бачить те саме, що на уроці);
  *   - з олівцем заголовок і кнопки видно, але дотик іде крізь них (pointer-events: none) — лінія лягає
  *     поверх картки (WBCanvas малює лінії олівця над картками).
  */
@@ -41,17 +41,16 @@ const RENDERERS = [
 ]
 
 describe('олівець не змінює вигляд картки', () => {
-  it('обгортка позначає «лише перегляд» тоді й лише тоді, коли дошка не в режимі уроку', () => {
-    expect(read('canvas/WBOverlayLayer.vue')).toContain("'wb-overlay--view-only': wbStore.mode !== 'edit',")
+  it('окремого вигляду «лише перегляд» немає — повтор і посилання показують картку як на уроці', () => {
+    expect(read('canvas/WBOverlayLayer.vue')).not.toContain('wb-overlay--view-only')
   })
 
   for (const file of RENDERERS) {
-    it(`${file}: сховати чи прозорити картку можна лише в перегляді`, () => {
+    it(`${file}: ні з олівцем, ні в повторі картку не ховають і не прозорять`, () => {
       const offenders = rules(style(read(file)))
         .flatMap(([sel, body]) => sel.split(',').map((s) => [s.trim(), body] as const))
         .filter(([sel, body]) => sel.includes('.is-readonly')
           && /display:\s*none|background:\s*(transparent|rgba\([^)]*,\s*0(\.0)?\))/.test(body))
-        .filter(([sel]) => !sel.startsWith('.wb-overlay--view-only '))
         .map(([sel]) => sel)
       expect(offenders).toEqual([])
     })

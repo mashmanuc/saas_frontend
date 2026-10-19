@@ -295,7 +295,7 @@ describe('GraphCalculatorRenderer — Phase G4 param-mode toggle', () => {
   })
 
   // 2026-10-19: з олівцем заголовок картки не змінюється (перемикач на місці, дотик іде крізь нього);
-  // у перегляді заголовок ховає клас обгортки .wb-overlay--view-only.
+  // з 2026-10-19 і в повторі/за посиланням так само (як на уроці).
   it('олівець (interactive=false): перемикач на місці — заголовок не змінюється', async () => {
     const Renderer = await loadRenderer()
     const asset = makeAsset({ paramCount: 1 })

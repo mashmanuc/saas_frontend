@@ -1792,14 +1792,9 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
 .graph-calc-renderer.is-readonly {
   pointer-events: none;
 }
-/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
-   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
-   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
-   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
-.wb-overlay--view-only .graph-calc-renderer.is-readonly .gc-header,
-.wb-overlay--view-only .graph-calc-renderer.is-readonly .gc-panel {
-  display: none;
-}
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»; далі «роби» — у повторі як на уроці):
+   картка виглядає однаково з будь-яким інструментом і в будь-якому режимі (урок, повтор, посилання) —
+   фон, заголовок і кнопки на місці; .is-readonly лише вимикає дотик (лінії олівця — над картками). */
 .graph-calc-renderer.is-readonly .gc-header,
 .graph-calc-renderer.is-readonly .gc-header :deep(*),
 .graph-calc-renderer.is-readonly .gc-panel,

@@ -256,9 +256,6 @@ function wrapperClasses(item: RenderItem): Array<string | Record<string, boolean
       // Спільний клас виділеного overlay. Стек НЕ змінює (див. CSS нижче):
       // порядок на екрані = порядок page.assets[].
       'wb-overlay--selected': selected,
-      // 2026-10-19: «лише перегляд» (повтор уроку, публічне посилання). Тільки тут renderer-и
-      // ховають заголовок/кнопки й прозорять фон; олівець у режимі уроку вигляду картки не змінює.
-      'wb-overlay--view-only': wbStore.mode !== 'edit',
       'wb-overlay--board-expanded': item.entry.expandable && expandedId.value === item.asset.id,
     },
   ]

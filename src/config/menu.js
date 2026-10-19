@@ -129,7 +129,7 @@ export const SECTIONED_MENU_BY_ROLE = {
   ],
 
   // ====================================================
-  // STUDENT — 3 секції, 5 пунктів
+  // STUDENT — 2 секції (з 2026-10-19 без «Вчителі → Мої запити»)
   // Student solo-дошка прибрана повністю (memory/feedback_student_no_solo_board).
   // ====================================================
   student: [
@@ -144,14 +144,8 @@ export const SECTIONED_MENU_BY_ROLE = {
           : []),
       ],
     },
-    {
-      key: 'tutors',
-      label: 'sidebar.section.tutors',
-      items: [
-        // findTutor (/marketplace) DISABLED 2026-06-17 — Marketplace extraction.
-        { label: 'sidebar.item.myInquiries', icon: 'inbox', to: '/student/inquiries' },
-      ],
-    },
+    // Розділ «Вчителі» («Мої запити» → /student/inquiries) прибрано 2026-10-19 (власник «роби»): з вимкненням
+    // каталогу вчителів (2026-06-17) маршрут лише перекидає на головну — пункт вів у нікуди.
     {
       key: 'profile',
       label: 'sidebar.section.profile',

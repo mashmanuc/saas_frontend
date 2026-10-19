@@ -397,26 +397,9 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
-   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
-   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
-   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
-/* Перегляд — прибираємо білий фон,
-   щоб Konva strokes на canvas-layer ПІД HTML overlay проступали наскрізь.
-   SVG геометрія залишається видимою (її background — transparent).
-   У select mode (interactive) — повертається білий paper-feel. */
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly {
-  background: transparent;
-}
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
-  background: rgba(15, 23, 42, 0.10);
-}
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-stage {
-  background: transparent;
-}
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-stage :deep(.geo-stage) {
-  background: transparent;
-}
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»; далі «роби» — у повторі як на уроці):
+   картка виглядає однаково з будь-яким інструментом і в будь-якому режимі (урок, повтор, посилання) —
+   фон, заголовок і кнопки на місці; .is-readonly лише вимикає дотик (лінії олівця — над картками). */
 
 .geo2dv2-header {
   flex: 0 0 auto;
@@ -491,10 +474,6 @@ const hostWindowControls = useHostWindowControls()
   display: none;
 }
 
-/* Перегляд — лише малюнок, без заголовка. */
-.wb-overlay--view-only .geo2dv2-renderer.is-readonly .geo2dv2-header {
-  display: none;
-}
 
 .geo2dv2-toolbar-host :deep(.toolbar) {
   display: flex;

@@ -515,19 +515,11 @@ const hostWindowControls = useHostWindowControls()
   pointer-events: none;
 }
 
-/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
-   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
-   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
-   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
-.wb-overlay--view-only .calculus-renderer.is-readonly {
-  background: transparent;
-}
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»; далі «роби» — у повторі як на уроці):
+   картка виглядає однаково з будь-яким інструментом і в будь-якому режимі (урок, повтор, посилання) —
+   фон, заголовок і кнопки на місці; .is-readonly лише вимикає дотик (лінії олівця — над картками). */
 .calculus-renderer.is-readonly .calculus-stage {
   pointer-events: none;
-}
-.wb-overlay--view-only .calculus-renderer.is-readonly .calculus-header,
-.wb-overlay--view-only .calculus-renderer.is-readonly .calculus-toolbar {
-  display: none;
 }
 .calculus-renderer.is-readonly .calculus-header,
 .calculus-renderer.is-readonly .calculus-header :deep(*),

@@ -582,19 +582,11 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   pointer-events: none;
 }
 
-/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»): з олівцем картка виглядає так само,
-   як зі стрілкою — фон, заголовок і кнопки на місці, лише не ловлять дотик (лінії олівця малюються
-   над картками, WBCanvas «Strokes overlay»). Прозорий фон і сховані заголовок/кнопки — лише для
-   перегляду (повтор уроку, публічне посилання): клас обгортки .wb-overlay--view-only (WBOverlayLayer). */
-.wb-overlay--view-only .trig-circle-renderer.is-readonly {
-  background: transparent;
-}
+/* 2026-10-19 (власник: «картинка скаче», «фон лишається як і був»; далі «роби» — у повторі як на уроці):
+   картка виглядає однаково з будь-яким інструментом і в будь-якому режимі (урок, повтор, посилання) —
+   фон, заголовок і кнопки на місці; .is-readonly лише вимикає дотик (лінії олівця — над картками). */
 .trig-circle-renderer.is-readonly .trig-circle-stage {
   pointer-events: none;
-}
-.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-circle-header,
-.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-toolbar {
-  display: none;
 }
 .trig-circle-renderer.is-readonly .trig-circle-header,
 .trig-circle-renderer.is-readonly .trig-circle-header :deep(*),
@@ -834,9 +826,6 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   background: #475569;
   color: #f8fafc;
   border-color: #94a3b8;
-}
-.wb-overlay--view-only .trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
-  display: none;
 }
 .trig-circle-renderer.is-readonly .trig-circle-hud-toggle {
   pointer-events: none;

@@ -191,7 +191,7 @@ describe('GraphCalculatorRenderer (Phase G)', () => {
 
   // 2026-10-19 (власник: «картинка скаче»): з олівцем (interactive=false у режимі уроку) панель формул
   // лишається — графік не розширюється й не стрибає; дотик іде крізь неї (CSS .is-readonly).
-  // У перегляді (повтор, публічне посилання) панель ховає клас обгортки .wb-overlay--view-only.
+  // З 2026-10-19 і в повторі/за посиланням панель на місці — як на уроці.
   it('олівець (interactive=false): панель формул лишається на місці', async () => {
     const Renderer = await loadComponent()
     const asset = makeAsset({ snapshotSeq: 1 })
