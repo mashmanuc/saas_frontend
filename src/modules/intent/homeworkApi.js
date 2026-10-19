@@ -15,8 +15,9 @@ export function proposeHomework({ boardId, count, exclude = [] }) {
 /**
  * Картка «Домашнє завдання» картинкою (PNG) для месенджера — малює сервер (формули, підпис M4SH).
  * Повертає обіцянку Blob: її можна віддати в `ClipboardItem` одразу, не чекаючи, — натиск не загубиться.
+ * `answers` — учитель показав відповіді у вікні: картинка йде з блоком «Відповіді» (власник 20.10).
  */
-export function homeworkImage({ boardId, ids }) {
-  return apiClient.post('/v1/intents/homework/image/', { board_id: boardId, ids }, { responseType: 'blob' })
+export function homeworkImage({ boardId, ids, answers = false }) {
+  return apiClient.post('/v1/intents/homework/image/', { board_id: boardId, ids, answers }, { responseType: 'blob' })
     .then((r) => (r instanceof Blob ? r : r?.data))
 }

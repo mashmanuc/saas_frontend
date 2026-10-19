@@ -85,7 +85,7 @@
             class="wb-homework__btn"
             :disabled="loading || !proposal"
             data-testid="wb-homework-answers"
-            @click="showAnswers = !showAnswers"
+            @click="toggleAnswers"
           >{{ showAnswers ? t('winterboard.homework.hideAnswers') : t('winterboard.homework.showAnswers') }}</button>
         </div>
         <div class="wb-homework__row wb-homework__row--main">
@@ -95,7 +95,8 @@
             :disabled="loading || !proposal"
             data-testid="wb-homework-copy"
             @click="copyImage"
-          >{{ copying ? t('winterboard.homework.copying') : copied ? t('winterboard.homework.copied') : t('winterboard.homework.copy') }}</button>
+          >{{ copying ? t('winterboard.homework.copying') : copied ? t('winterboard.homework.copied')
+            : showAnswers ? t('winterboard.homework.copyWithAnswers') : t('winterboard.homework.copy') }}</button>
           <button
             type="button"
             class="wb-homework__btn wb-homework__btn--main"
@@ -186,6 +187,14 @@ function changeCount(delta: number): void {
   void fetchProposal()
 }
 
+// Відповіді показано — картинка піде з ними (власник 20.10: «вибираю показати відповіді і копіюю, то відповіді не
+// скопійовуються»). Перемкнув — попередня копія вже не та: «Скопійовано» і посилання на файл скидаємо.
+function toggleAnswers(): void {
+  showAnswers.value = !showAnswers.value
+  copied.value = false
+  dropDownload()
+}
+
 function others(): void {
   void fetchProposal(proposal.value?.items.map(item => item.id) ?? [])
 }
@@ -199,7 +208,9 @@ async function copyImage(): Promise<void> {
   copied.value = false
   dropDownload()
   copying.value = true
-  const image = homeworkImage({ boardId: props.boardId, ids: proposal.value.items.map(item => item.id) })
+  const image = homeworkImage({
+    boardId: props.boardId, ids: proposal.value.items.map(item => item.id), answers: showAnswers.value,
+  })
   try {
     if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('no-image-clipboard')
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })])

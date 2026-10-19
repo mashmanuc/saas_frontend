@@ -7652,6 +7652,7 @@
       "showAnswers": "Show answers",
       "hideAnswers": "Hide answers",
       "copy": "Copy as image",
+      "copyWithAnswers": "Copy with answers",
       "copied": "Copied — paste it into a messenger (Ctrl+V)",
       "add": "Add to the lesson",
       "error": "Couldn't suggest homework. Please try again.",
