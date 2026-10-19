@@ -231,7 +231,8 @@ export const lessonConstructorApi = {
     return await apiClient.post('/v1/lesson-constructor/task-pages/', payload) as unknown as { pages: import('@/modules/winterboard/types/winterboard').WBPage[]; task_count: number; warnings: string[] }
   },
   async generate(payload: GenerateLessonRequest): Promise<GenerateLessonResponse> {
-    const res = await apiClient.post('/v1/lesson-constructor/generate/', payload)
+    // Без загального «Завантаження…»: сторінка сама показує Інтегралика, що думає (власник 2026-10-19).
+    const res = await apiClient.post('/v1/lesson-constructor/generate/', payload, { meta: { skipLoader: true } })
     return res as unknown as GenerateLessonResponse
   },
 }

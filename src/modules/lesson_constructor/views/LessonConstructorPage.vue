@@ -294,6 +294,18 @@
             {{ isLoading ? 'Генерую урок…' : 'Згенерувати урок' }}
           </button>
 
+          <!-- Поки генерується — посередині екрана Інтегралик, що думає, у тій самій рамці, що й
+               загальне «Завантаження…» (власник 2026-10-19: «не колесо, а Інтегралик»). Загальне
+               вікно для цього запиту вимкнене (skipLoader у lessonConstructorApi.generate). -->
+          <Teleport to="body">
+            <div v-if="isLoading" class="loader-overlay" aria-live="polite" data-testid="lc-generating">
+              <div class="loader-panel" role="status">
+                <IntegralykThinking :size="56" />
+                <p class="text-sm font-medium text-primary">Інтегралик складає урок…</p>
+              </div>
+            </div>
+          </Teleport>
+
           <!-- Заблокована кнопка без причини — та сама глуха стіна, лише мовчазна. -->
           <p v-if="focusProblem" class="lc-hint-blocked">{{ focusProblem }}</p>
 
