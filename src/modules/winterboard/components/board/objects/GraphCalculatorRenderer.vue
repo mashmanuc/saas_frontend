@@ -98,11 +98,11 @@
     </header>
 
     <div class="gc-body">
-      <!-- Expression panel hidden when selected — controls move to GraphCalcInspector
-           sidebar. Розгортання тепер авто-виділяє об'єкт (WBOverlayLayer.toggleExpand)
-           → інспектор з'являється у сайтбарі (не перекритий) → панель НЕ дублюємо на
-           оверлеї, інакше були б дві копії контролів. -->
-      <aside class="gc-panel" v-if="!isSelected">
+      <!-- 2026-10-19 (власник: «картинка скаче»; «лишай формули і в картці, і в панелі»): панель формул
+           лишається в картці завжди — графік не розширюється при виділенні. Коли картку виділено, керування
+           переходить у праву панель (GraphCalcInspector), а тут — той самий список лише для читання (inert):
+           двох копій керування, де можна щось змінити, немає. -->
+      <aside class="gc-panel" :class="{ 'gc-panel--view': isSelected }" :inert="isSelected">
         <div class="gc-expr-list">
           <div
             v-for="(expr, idx) in displayExpressions"
@@ -266,9 +266,8 @@
              (SSoT per FE-RULE-1). Slider drag → emit('param-set', ...) per
              STORE-RULE-5 (coalesce per name). Click on name → expand row to
              reveal range editor (min/max/step).
-             Hidden when isSelected=true: params move to GraphCalcInspector sidebar
-             (розгортання авто-виділяє → інспектор у сайтбарі, на оверлеї не дублюємо). -->
-        <div v-if="paramEntries.length > 0 && !isSelected" class="gc-params" data-testid="graph-calc-params">
+             2026-10-19: при виділенні лишаються на місці (лише для читання) — керування у GraphCalcInspector. -->
+        <div v-if="paramEntries.length > 0" class="gc-params" data-testid="graph-calc-params">
           <!-- Власник 2026-10-02: без технічного «Shift-drag». Ярлик лише коли перетягування
                доступне; коли ні — замість загадкового «Shift-drag —» пояснення в підказці заголовка. -->
           <div
@@ -2065,6 +2064,12 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   display: flex;
   flex: 1;
   min-height: 0;
+}
+
+/* 2026-10-19: виділена картка — список формул лише для читання (керування — у правій панелі). */
+.graph-calc-renderer .gc-panel--view,
+.graph-calc-renderer .gc-panel--view :deep(*) {
+  pointer-events: none;
 }
 
 .gc-panel {

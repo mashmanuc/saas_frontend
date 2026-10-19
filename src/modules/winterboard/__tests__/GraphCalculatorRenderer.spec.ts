@@ -201,4 +201,21 @@ describe('GraphCalculatorRenderer (Phase G)', () => {
     expect(wrapper.find('.gc-add-btn').exists()).toBe(true)
     wrapper.unmount()
   })
+
+  // 2026-10-19 (власник: «лишай формули і в картці, і в панелі»): при виділенні список не зникає (графік не
+  // стрибає), а стає лише для читання — керування у правій панелі.
+  it('виділена картка: список формул на місці, лише для читання', async () => {
+    const Renderer = await loadComponent()
+    const asset = makeAsset({ snapshotSeq: 1 })
+    const wrapper = mount(Renderer, { props: { asset, isSelected: true } })
+    await nextTick()
+    const panel = wrapper.find('.gc-panel')
+    expect(panel.exists()).toBe(true)
+    expect(panel.classes()).toContain('gc-panel--view')
+    expect(panel.attributes('inert')).toBeDefined()
+    await wrapper.setProps({ isSelected: false })
+    expect(wrapper.find('.gc-panel').classes()).not.toContain('gc-panel--view')
+    expect(wrapper.find('.gc-panel').attributes('inert')).toBeUndefined()
+    wrapper.unmount()
+  })
 })
