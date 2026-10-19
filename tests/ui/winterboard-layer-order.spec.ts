@@ -32,7 +32,6 @@ test('PDF і HTML-картка: стрілки міняють видимий ш�
 
   const nativeCanvas = page.locator('.wb-canvas .konvajs-content > canvas').nth(1)
   const strokesCanvas = page.locator('.wb-canvas .konvajs-content > canvas').nth(2)
-  const strokesMirror = page.locator('.wb-strokes-overlay')
   const controls = page.locator('[data-testid="wb-card-window-controls"]')
   const toolbar = page.locator('.wb-selection-toolbar')
   await expect(controls).toHaveAttribute('data-asset-id', 'layer-pdf')
@@ -47,7 +46,7 @@ test('PDF і HTML-картка: стрілки міняють видимий ш�
   await toolbar.locator('button').first().click() // ↑: PDF перед HTML-карткою
   await expect(nativeCanvas).toHaveCSS('z-index', '6')
   await expect(strokesCanvas).toHaveCSS('z-index', '7')
-  await expect(strokesMirror).toHaveCSS('visibility', 'hidden')
+  await expect(strokesCanvas).toHaveCSS('pointer-events', 'none')
   await expect(controls).toHaveCSS('z-index', '10')
   await expect(controls).toHaveCSS('visibility', 'visible')
   const after = await pixelAt(page, point.x, point.y)
@@ -56,8 +55,9 @@ test('PDF і HTML-картка: стрілки міняють видимий ш�
 
   await toolbar.locator('button').nth(1).click() // ↓: PDF за HTML-карткою
   await expect(nativeCanvas).toHaveCSS('z-index', 'auto')
-  await expect(strokesCanvas).toHaveCSS('z-index', 'auto')
-  await expect(strokesMirror).toHaveCSS('visibility', 'visible')
+  // 2026-10-19: лінії олівця завжди над HTML-картками (окремої копії-дзеркала більше немає)
+  await expect(strokesCanvas).toHaveCSS('z-index', '6')
+  await expect(strokesCanvas).toHaveCSS('pointer-events', 'none')
   await expect(controls).toHaveCSS('z-index', '3')
   await expect(controls).toHaveCSS('visibility', 'hidden')
   const restored = await pixelAt(page, point.x, point.y)

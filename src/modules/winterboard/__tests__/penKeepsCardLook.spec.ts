@@ -57,6 +57,15 @@ describe('олівець не змінює вигляд картки', () => {
     })
   }
 
+  // 2026-10-19 (власник: «поверх карток було видно штрихи незалежно від вибраного інструмента»):
+  // сам шар штрихів Konva — над HTML-картками (z 4–5) за будь-якого інструмента й режиму, без копії-дзеркала.
+  it('лінії олівця — завжди над картками й не ловлять натискань', () => {
+    const src = read('canvas/WBCanvas.vue')
+    expect(src).toContain("strokesCanvas.style.zIndex = nativeFront.value ? '7' : '6'")
+    expect(src).toContain("strokesCanvas.style.pointerEvents = 'none'")
+    expect(src).not.toMatch(/wb-strokes-overlay|mirrorStrokesLayer/)
+  })
+
   it('з олівцем кнопки картки видно, але дотик іде крізь них', () => {
     const inert: Record<string, string> = {
       'board/objects/Geometry2DRenderer.vue': '.geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(*)',
