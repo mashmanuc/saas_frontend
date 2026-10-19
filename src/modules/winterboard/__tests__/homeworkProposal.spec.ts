@@ -87,9 +87,17 @@ describe('кнопка — лише там, де є з чого складати
 
 describe('вікно пропозиції', () => {
   it('натиск: спершу доносить дії дошки, потім просить сервер; дошка не змінюється', async () => {
+    let release: () => void = () => {}
+    mocks.sync.flushAll.mockImplementation(() => new Promise<void>(resolve => {
+      release = () => { mocks.order.push('flush'); resolve() }
+    }))
     const w = mountButton()
     await w.get('[data-testid="wb-homework-button"]').trigger('click')
+    // Поки добирає — Інтегралик думає, як під час генерації уроку (власник 20.10)
+    expect(w.find('[data-testid="wb-homework-thinking"] [data-testid="integralyk-thinking"]').exists()).toBe(true)
+    release()
     await flushPromises()
+    expect(w.find('[data-testid="wb-homework-thinking"]').exists()).toBe(false)
     expect(mocks.order).toEqual(['flush', 'post'])
     expect(mocks.propose).toHaveBeenCalledWith({ boardId: 'board-1', count: 10, exclude: [] })
     expect(w.findAll('[data-testid="wb-homework-list"] li')).toHaveLength(3)
@@ -153,7 +161,7 @@ describe('вікно пропозиції', () => {
 
   it('«Додати в урок» — одна картка-список на новій ОСТАННІЙ сторінці, без відповідей; ↶ прибирає', async () => {
     const store = useWBStore()
-    store.pages = [...store.pages, { id: 'p2', name: 'p2', strokes: [], assets: [] }] as never
+    store.pages = [...store.pages, { id: 'p2', name: 'p2', strokes: [], assets: [], background: 'dots', backgroundColor: '#fde2c8' }] as never
     const w = mountButton()
     await w.get('[data-testid="wb-homework-button"]').trigger('click')
     await flushPromises()
@@ -167,6 +175,8 @@ describe('вікно пропозиції', () => {
     expect(card.data.instruction).toBe('Обчисліть.')
     expect(JSON.stringify(card.data)).not.toContain('(А)')
     expect(card.data.taskIds).toEqual(['a', 'b', 'c'])  // наступна пропозиція їх не повторить
+    // Колір і візерунок — як в останньої сторінки уроку (власник 20.10)
+    expect(store.pages[2]).toMatchObject({ background: 'dots', backgroundColor: '#fde2c8' })
     expect(w.find('[data-testid="wb-homework-modal"]').exists()).toBe(false)
     store.undo()
     expect(store.pages.map(p => p.name)).toEqual(['p1', 'p2'])
@@ -222,5 +232,16 @@ describe('картка «Домашнє завдання» показує спи
     const w = mountCard({ version: 1, title: 'Правило', body: 'Текст правила' })
     expect(w.find('[data-testid="theory-card-list"]').exists()).toBe(false)
     expect(w.get('.theory-card__text').text()).toContain('Текст правила')
+  })
+})
+
+describe('сторінка домашки — того ж кольору, що й попередні (власник 20.10)', () => {
+  it('бере колір і візерунок останньої сторінки; фото у фоні не копіює', async () => {
+    const { lastPageLook } = await import('../board/homeworkCard')
+    expect(lastPageLook([{ backgroundColor: '#fff' }, { background: 'grid', backgroundColor: '#dbeafe' }]))
+      .toEqual({ background: 'grid', backgroundColor: '#dbeafe' })
+    expect(lastPageLook([{ background: { type: 'image', url: 'x' } as never, backgroundColor: '#fef9c3' }]))
+      .toEqual({ background: 'white', backgroundColor: '#fef9c3' })
+    expect(lastPageLook([])).toEqual({ background: 'white', backgroundColor: '#ffffff' })
   })
 })

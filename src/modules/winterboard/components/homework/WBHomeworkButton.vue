@@ -38,7 +38,12 @@
           <span v-if="proposal?.lesson" class="wb-homework__lesson-name">{{ proposal.lesson }}</span>
         </h2>
 
-        <p v-if="loading" class="wb-homework__status" aria-busy="true">{{ t('winterboard.homework.loading') }}</p>
+        <!-- Поки сервер добирає — Інтегралик думає, як під час генерації уроку (власник 20.10: «мав би показуватись
+             інтегралик… тут генерується домашнє завдання»). -->
+        <div v-if="loading" class="wb-homework__thinking" role="status" aria-busy="true" data-testid="wb-homework-thinking">
+          <IntegralykThinking :size="56" />
+          <p class="wb-homework__status">{{ t('winterboard.homework.loading') }}</p>
+        </div>
         <p v-else-if="error" class="wb-homework__error" role="alert" data-testid="wb-homework-error">{{ error }}</p>
         <template v-else-if="proposal">
           <p class="wb-homework__status">{{ proposal.message }}</p>
@@ -108,11 +113,12 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
+import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
 import { homeworkImage, proposeHomework } from '@/modules/intent/homeworkApi'
 import { validateTaskPages } from '@/modules/intent/taskPages'
 import { useWBStore } from '../../board/state/boardStore'
 import { useOpsSyncStore } from '../../stores/opsSyncStore'
-import { homeworkPage, lessonHasBankTasks, type HomeworkProposal } from '../../board/homeworkCard'
+import { homeworkPage, lastPageLook, lessonHasBankTasks, type HomeworkProposal } from '../../board/homeworkCard'
 
 const props = defineProps<{ boardId: string }>()
 
@@ -218,7 +224,9 @@ function addToLesson(): void {
     return
   }
   try {
-    store.insertTaskPagesUndoable(validateTaskPages([homeworkPage(proposal.value)]), { atEnd: true })
+    // Колір і візерунок — як в останньої сторінки уроку (власник 20.10: «такі саме, як попередні»).
+    const page = homeworkPage(proposal.value, lastPageLook(store.pages))
+    store.insertTaskPagesUndoable(validateTaskPages([page]), { atEnd: true })
     open.value = false
     dropDownload()
   } catch (e: unknown) {
@@ -279,6 +287,7 @@ defineExpose({ openModal })
 .wb-homework__list--grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; row-gap: 10px; }
 .wb-homework__list--grid .wb-homework__item + .wb-homework__item { margin-top: 0; }
 .wb-homework__list--grid .wb-homework__item { font-size: 1.15rem; }
+.wb-homework__thinking { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 12px; }
 .wb-homework__status { margin: 0 0 10px; color: var(--text-secondary, #475569); font-size: 0.9rem; }
 .wb-homework__error { margin: 0 0 10px; color: var(--color-danger, #dc2626); font-size: 0.95rem; }
 /* Загальні стилі сайту прибирають нумерацію списків — номер задачі тут обов'язковий. */

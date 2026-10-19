@@ -41,13 +41,28 @@ function uid(): string {
  * списком); `body` — той самий список текстом для тих, хто списку не вміє (PDF, старі клієнти). Відповідей на
  * картці немає: їх бачить лише вчитель у вікні пропозиції.
  */
-export function homeworkPage(proposal: HomeworkProposal): WBPage {
+/**
+ * Вигляд останньої сторінки уроку — колір і візерунок (власник 20.10: «остання дошка мала би мати колір… такі саме, як
+ * попередні»). Фото чи PDF у фоні не копіюються — це вміст, а не вигляд (як `addPageUndoable({ inheritLook })`).
+ */
+export function lastPageLook(pages: readonly { background?: unknown; backgroundColor?: string }[]): PageLook {
+  const last = pages[pages.length - 1]
+  return {
+    background: typeof last?.background === 'string' ? last.background : 'white',
+    backgroundColor: typeof last?.backgroundColor === 'string' && last.backgroundColor ? last.backgroundColor : '#ffffff',
+  }
+}
+
+export interface PageLook { background: string; backgroundColor: string }
+
+export function homeworkPage(proposal: HomeworkProposal, look?: PageLook): WBPage {
   const items = proposal.items.map(item => item.short || item.text)
   const instruction = (proposal.instruction || '').trim()
   const lesson = (proposal.lesson || '').trim()
   return {
     id: uid(),
     name: HOMEWORK_TITLE,
+    ...(look ? { background: look.background, backgroundColor: look.backgroundColor } : {}),
     width: 1920,
     height: 1080,
     strokes: [],
