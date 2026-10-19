@@ -399,8 +399,10 @@ const selectedTopics  = ref<string[]>([])
 const taskCount       = ref(4)
 const theme           = ref('nmt_exam')   // default = перший стиль у THEMES (visual прибрано)
 const boardBg         = ref('#ffffff')
-const multicolorBg    = ref(false)   // різнокольоровий режим (палітра циклом по сторінках)
-const bgSaturation    = ref(60)      // 0–100 % — насиченість пастельної палітри
+// Різнокольорові на максимумі — за замовчуванням (власник 2026-10-19: «дітям подобаються кольорові
+// дошки, я щоразу їх клацаю — за замовчуванням треба їх поставити, і на максимум відтінок»).
+const multicolorBg    = ref(true)    // різнокольоровий режим (палітра циклом по сторінках)
+const bgSaturation    = ref(100)     // 0–100 % — насиченість пастельної палітри
 const diffProfile     = ref('balanced')
 const pacingMode      = ref('tutorial')
 const includeTheory   = ref(true)
