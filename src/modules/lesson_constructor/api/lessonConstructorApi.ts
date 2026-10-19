@@ -9,6 +9,8 @@ export const TOPICS = [
   { value: 'real-numbers.divisibility',                                   label: 'Подільність', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'real-numbers.fractions',                                      label: 'Дроби', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'real-numbers.fractions.ordinary',                             label: 'Звичайні дроби', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
+  { value: 'real-numbers.fractions.ordinary.add-subtract',                label: 'Додавання і віднімання дробів з різними знаменниками', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
+  { value: 'real-numbers.fractions.ordinary.multiply-divide',             label: 'Множення і ділення звичайних дробів', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'real-numbers.fractions.decimal',                              label: 'Десяткові дроби', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'real-numbers.rational',                                       label: 'Раціональні числа', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'ratios-percents-word-problems',                               label: 'Відношення, відсотки, задачі', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
