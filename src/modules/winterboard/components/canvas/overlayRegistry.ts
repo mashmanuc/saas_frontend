@@ -296,8 +296,8 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     wrapperClass: 'wb-math-scene-overlay',
     dataAttr: 'data-math-scene-id',
     testidPrefix: 'math-scene-overlay',
-    buildProps: stdProps,
-    buildEvents: stdEvents,
+    buildProps: expProps,
+    buildEvents: expEvents,
   },
 
   formula_card: {

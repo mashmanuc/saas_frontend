@@ -131,9 +131,9 @@ describe('INV-STD-4 · похідні списки не змінили пове�
     expect([...OVERLAY_PROXY_TYPES].sort()).toEqual(PROXY_TYPES_BEFORE_TLV2_05A)
   })
 
-  it('fullscreen = попередній набір + капсула (єдина свідома зміна TLV2-05A)', () => {
+  it('fullscreen = попередній набір + капсула (TLV2-05A) + «Наочна сцена» (власник 2026-10-21)', () => {
     const fullscreen = STANDARD_ASSET_TYPES.filter(isFullscreenAsset).sort()
-    expect(fullscreen).toEqual([...FULLSCREEN_BEFORE_TLV2_05A, 'visual_capsule'].sort())
+    expect(fullscreen).toEqual([...FULLSCREEN_BEFORE_TLV2_05A, 'visual_capsule', 'math_scene'].sort())
   })
 
   it('ручки розміру медіа — лише відео і YouTube, як було', () => {

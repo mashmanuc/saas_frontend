@@ -7,13 +7,15 @@
   INV-OVERLAY-CLICK): натиски всередині вікна дошка не бачить, тож живе вікно невиділеної картки з'їдало б клік,
   призначений картці над ним. Інакше перо малює поверх, а учень/запис лише дивляться.
   МАСШТАБ: тип у ZOOM_SCALED_CARD_TYPES — сцена верстається в пікселях картки й зменшується цілком.
+  ⛶ (2026-10-21): кнопку малює спільна група вікна дошки; розгорнута картка займає полотно без масштабу й жива,
+  навіть коли виділення знято (Esc на дошці знімає виділення). Esc згортає — як у тригонометричного кола.
   БЕЗПЕКА: `sandbox="allow-scripts"` без same-origin — сцена не бачить ні сховища, ні входу сайту; сайт дозволяє
   показувати у вікні лише `/scenes/*` (public/_headers: X-Frame-Options SAMEORIGIN).
 -->
 <template>
   <div
     class="msc-card"
-    :class="{ 'is-selected': isSelected, 'is-live': isSelected && interactive && !asset.locked }"
+    :class="{ 'is-selected': isSelected, 'is-expanded': isExpanded, 'is-live': (isSelected || isExpanded) && interactive && !asset.locked }"
     :data-testid="`math-scene-renderer-${asset.id}`"
   >
     <header class="msc-head" :style="hostControlsReserve ? { paddingRight: `${hostControlsReserve}px` } : undefined">
@@ -37,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAssistantLook } from '@/modules/intent/assistantLook'
 import { useHostControlsReserve } from '../../../composables/boardWindowControls'
@@ -48,13 +50,15 @@ const props = withDefaults(
     asset: MathSceneAsset
     isSelected?: boolean
     interactive?: boolean
+    isExpanded?: boolean
   }>(),
-  { isSelected: false, interactive: true },
+  { isSelected: false, interactive: true, isExpanded: false },
 )
 
-defineEmits<{
+const emit = defineEmits<{
   'update:asset': [asset: MathSceneAsset]
   delete: []
+  expand: []
 }>()
 
 const { t, locale } = useI18n()
@@ -67,6 +71,11 @@ const title = computed(() => isMathSceneId(sceneId.value)
   : t('winterboard.mathScene.title'))
 // Спільна група «— ⛶ ×» полотна сідає в правий край шапки — назва не лягає під неї.
 const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
+
+// Esc згортає розгорнуту сцену (натиск усередині вікна сцени сюди не доходить — там лишаються «— ⛶ ×» у шапці).
+function onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
+onMounted(() => window.addEventListener('keydown', onEsc))
+onUnmounted(() => window.removeEventListener('keydown', onEsc))
 </script>
 
 <style scoped>
@@ -107,7 +116,9 @@ const hostControlsReserve = useHostControlsReserve(() => props.asset.id)
   display: block;
   pointer-events: none;
 }
-/* Живе лише виділена картка в режимі зміни дошки інструментом «Вибір». */
+/* Розгорнута на всю дошку — без заокруглень і тіні. */
+.msc-card.is-expanded { border-radius: 0; box-shadow: none; }
+/* Живе лише виділена (або розгорнута) картка в режимі зміни дошки інструментом «Вибір». */
 .msc-card.is-live .msc-frame { pointer-events: auto; }
 .msc-missing { margin: 16px; color: #6a594a; font-size: 14px; }
 

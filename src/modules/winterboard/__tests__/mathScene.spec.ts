@@ -44,7 +44,7 @@ describe('адреса сцени — мова сайту й вигляд пом
 })
 
 describe('«Інструменти» — лише пілоту math_scenes', () => {
-  it('без пілота немає ні картки, ні плиток; з пілотом — картка й 16 плиток', () => {
+  it('без пілота немає ні картки, ні плиток; з пілотом — картка й 17 плиток', () => {
     expect(visibleApps({ evidence: true }).some(a => a.app === 'scenes')).toBe(false)
     expect(visibleInserts({ evidence: true }).some(e => e.family === 'scenes')).toBe(false)
     expect(visibleApps({ evidence: false, scenes: true }).some(a => a.app === 'scenes')).toBe(true)
@@ -107,11 +107,11 @@ describe('файли сцен — обидві мови, без чужих се�
 })
 
 describe('картка на дошці', () => {
-  async function mountScene(sceneId: string, locale: 'uk' | 'en', interactive = true, isSelected = true) {
+  async function mountScene(sceneId: string, locale: 'uk' | 'en', interactive = true, isSelected = true, isExpanded = false) {
     const Renderer = (await import('../components/board/objects/MathSceneRenderer.vue')).default
     const i18n = createI18n({ legacy: false, locale, fallbackLocale: 'uk', messages: { uk, en } as never })
     const asset = { ...buildMathSceneAsset({ x: 0, y: 0 }, 'percent', 'm1'), data: { version: 1, sceneId } }
-    return mount(Renderer, { props: { asset, interactive, isSelected } as never, global: { plugins: [i18n] } })
+    return mount(Renderer, { props: { asset, interactive, isSelected, isExpanded } as never, global: { plugins: [i18n] } })
   }
 
   it('сцена мовою сайту, у пісочниці без доступу до сайту; живе лише виділена картка в режимі «Вибір»', async () => {
@@ -128,6 +128,24 @@ describe('картка на дошці', () => {
     // невиділена під виділеною: її живе вікно з'їдало б клік, призначений картці зверху
     expect((await mountScene('percent', 'uk', true, false)).classes()).not.toContain('is-live')
     look.value = 'integralyk'
+  })
+
+  it('⛶ (2026-10-21): тип дозволяє розгортання; розгорнута — жива й без виділення; Esc згортає лише розгорнуту', async () => {
+    const { assetCapabilities } = await import('../board/objectStandard')
+    const { OVERLAY_RENDERERS } = await import('../components/canvas/overlayRegistry')
+    expect(assetCapabilities('math_scene').fullscreen).toBe(true)
+    expect(OVERLAY_RENDERERS.math_scene.expandable).toBe(true)
+    const open = await mountScene('symmetry', 'uk', true, false, true)
+    expect(open.classes()).toEqual(expect.arrayContaining(['is-expanded', 'is-live']))
+    expect(open.text()).toContain('Симетрія')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(open.emitted('expand')).toHaveLength(1)
+    // з пером і розгорнута — не жива (перо малює, як в інших картках)
+    expect((await mountScene('symmetry', 'uk', false, false, true)).classes()).not.toContain('is-live')
+    const shut = await mountScene('symmetry', 'uk', true, true, false)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(shut.emitted('expand')).toBeUndefined()
+    open.unmount(); shut.unmount()
   })
 
   it('невідома сцена — «Цієї сцени немає», без вікна', async () => {

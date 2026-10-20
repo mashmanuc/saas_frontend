@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Симетрія і перетворення</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script>
+<style>#view{position:absolute;inset:0;display:block}#cv{display:block;touch-action:none;cursor:crosshair}.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.sw.on{box-shadow:0 0 0 2px var(--ink)}.prm{display:flex;flex-direction:column;gap:10px}.prm[hidden]{display:none}.tp-ctl b{font-family:'Times New Roman',serif;font-size:22px;color:var(--accent)}</style></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Симетрія"><div id="view"><canvas id="cv"></canvas></div></div>
+<aside class="tp-side">
+<h1>Симетрія і перетворення</h1><p class="tp-lead">Малюй на полотні — образ будується сам. Точку <b>O</b> можна перетягувати.</p>
+<span class="tp-lab">Перетворення</span>
+<div class="tp-row" id="modes"><button class="tp-btn on" data-m="axis">Осьова</button><button class="tp-btn" data-m="point">Центральна</button><button class="tp-btn" data-m="rot">Поворот</button><button class="tp-btn" data-m="homo">Гомотетія</button></div>
+<div class="prm" data-p="axis"><div class="tp-ctl">Кут осі<b id="angV"></b></div><input type="range" id="ang" min="0" max="165" step="15" value="90"></div>
+<div class="prm" data-p="rot" hidden><div class="tp-ctl">Кількість копій n<div class="stp" data-k="n"></div></div><div class="tp-ctl">Кут повороту<b id="rotV"></b></div><button class="tp-btn" id="mir">+ дзеркало (калейдоскоп)</button></div>
+<div class="prm" data-p="homo" hidden><div class="tp-ctl">Коефіцієнт k<b id="kV"></b></div><input type="range" id="k" min="0" max="11" step="1" value="7"><button class="tp-btn" id="rays">Показати промені</button></div>
+<span class="tp-lab">Колір</span>
+<div class="tp-row" id="cols"></div>
+<div class="tp-row"><button class="tp-btn" id="undo">↶ Крок назад</button><button class="tp-btn" id="clr">Очистити</button></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,view=$('view'),cv=$('cv'),ctx=cv.getContext('2d');
+const THEMES={paper:{bg:'',pal:[C.acc,C.blue,C.green,C.ink],guide:C.line,axis:C.blue,fg:C.ink,hbg:C.paper,ray:C.ink3,glow:0,w:5,L:45},
+board:{bg:'#1f3b36',pal:['#f6efe0','#f2b98a','#9fd0e4','#b9e0a5'],guide:'rgba(255,255,255,.16)',axis:'#9fd0e4',fg:'#f6efe0',hbg:'#1f3b36',ray:'rgba(255,255,255,.5)',glow:0,w:6,chalk:1,L:78},
+neon:{bg:'#14111c',pal:['#ff7a45','#4cc9f0','#7cf29c','#f5e663'],guide:'rgba(255,255,255,.1)',axis:'#4cc9f0',fg:'#f5f5f5',hbg:'#14111c',ray:'rgba(255,255,255,.45)',glow:16,w:4,L:62}};
+const T={theme:'paper',copies:'same',grid:false};let th=THEMES.paper;
+const KS=[-3,-2,-1.5,-1,-.5,.5,1.5,2,2.5,3,.25,.75].sort((a,b)=>a-b);
+const st={n:6};let strokes=[],cur=null,mode='axis',col=0,W=0,H=0,O=null,dragO=false,mirror=false,rays=true,ang=90,k=2;
+const deg=d=>d*Math.PI/180;
+function maps(){if(mode==='axis'){const t=deg(-ang)*2,c=Math.cos(t),s=Math.sin(t);return[p=>p,([x,y])=>[x*c+y*s,x*s-y*c]]}
+if(mode==='point')return[p=>p,([x,y])=>[-x,-y]];
+if(mode==='homo')return[p=>p,([x,y])=>[k*x,k*y]];
+const o=[];for(let i=0;i<st.n;i++){const a=i*2*Math.PI/st.n,c=Math.cos(a),s=Math.sin(a);o.push(([x,y])=>[x*c-y*s,x*s+y*c]);if(mirror)o.push(([x,y])=>[x*c+y*s,x*s-y*c])}return o}
+function guides(){ctx.save();ctx.strokeStyle=th.guide;ctx.lineWidth=1;
+if(T.grid){ctx.beginPath();const g=40;for(let x=O[0]%g;x<W;x+=g){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=O[1]%g;y<H;y+=g){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.globalAlpha=.7;ctx.stroke();ctx.globalAlpha=1}
+ctx.setLineDash([6,6]);ctx.lineWidth=1.2;const R=Math.hypot(W,H);ctx.beginPath();
+const line=a=>{ctx.moveTo(O[0]-R*Math.cos(a),O[1]-R*Math.sin(a));ctx.lineTo(O[0]+R*Math.cos(a),O[1]+R*Math.sin(a))};
+if(mode==='axis'){ctx.strokeStyle=th.axis;ctx.lineWidth=2;line(deg(-ang))}
+if(mode==='rot'){for(let i=0;i<st.n;i++)line(i*Math.PI/st.n)}
+ctx.stroke();ctx.restore()}
+function colFor(s,i,n){return T.copies==='rainbow'&&i>0?`hsl(${(i*360/n+20)%360} 72% ${th.L}%)`:th.pal[s.c]}
+function path(s,m){ctx.beginPath();s.p.forEach((p,j)=>{const q=m([p[0]-O[0],p[1]-O[1]]);j?ctx.lineTo(O[0]+q[0],O[1]+q[1]):ctx.moveTo(O[0]+q[0],O[1]+q[1])})}
+function drawStroke(s,M){const two=mode==='point'||mode==='homo';
+M.forEach((m,i)=>{const c=colFor(s,i,M.length),a=i===0?1:T.copies==='ghost'?.3:two?.75:1;ctx.globalAlpha=a;ctx.strokeStyle=c;ctx.shadowColor=c;ctx.shadowBlur=th.glow;ctx.lineWidth=th.w;path(s,m);ctx.stroke();
+if(th.chalk){ctx.shadowBlur=0;ctx.globalAlpha=a*.4;ctx.lineWidth=th.w*1.9;ctx.setLineDash([1,4]);ctx.stroke();ctx.setLineDash([])}});ctx.globalAlpha=1;ctx.shadowBlur=0;
+if(two&&rays&&s.p.length){const p=s.p[0],v=[p[0]-O[0],p[1]-O[1]],q=M[1](v);ctx.save();ctx.strokeStyle=th.ray;ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(O[0]+q[0],O[1]+q[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();
+ctx.setLineDash([]);ctx.fillStyle=th.pal[s.c];[[p[0],p[1]],[O[0]+q[0],O[1]+q[1]]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()});ctx.restore()}}
+function redraw(){if(!O)return;ctx.clearRect(0,0,W,H);guides();ctx.lineCap='round';ctx.lineJoin='round';const M=maps();strokes.forEach(s=>drawStroke(s,M));if(cur)drawStroke(cur,M);
+ctx.save();ctx.fillStyle=th.hbg;ctx.strokeStyle=th.fg;ctx.lineWidth=2;ctx.beginPath();ctx.arc(O[0],O[1],8,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=th.fg;ctx.font='700 18px Times New Roman';ctx.fillText('O',O[0]+12,O[1]-10);ctx.restore()}
+function swatches(){$('cols').innerHTML=th.pal.map((c,i)=>`<button class="sw${i===col?' on':''}" data-i="${i}" style="background:${c}" aria-label="колір"></button>`).join('')}
+function size(){const r=view.getBoundingClientRect(),d=devicePixelRatio||1;if(!r.width)return;const ow=W,oh=H;W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(d,0,0,d,0,0);
+if(!O)O=[W/2,H/2];else if(ow){const dx=(W-ow)/2,dy=(H-oh)/2;O=[O[0]+dx,O[1]+dy];strokes.forEach(s=>s.p.forEach(p=>{p[0]+=dx;p[1]+=dy}))}redraw()}
+const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pt(e);if(Math.hypot(p[0]-O[0],p[1]-O[1])<16){dragO=true;return}cur={c:col,p:[p]}});
+cv.addEventListener('pointermove',e=>{const p=pt(e);if(dragO){O=p;redraw();return}if(!cur)return;const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])<2)return;cur.p.push(p);redraw()});
+addEventListener('pointerup',()=>{if(cur&&cur.p.length>1)strokes.push(cur);cur=null;dragO=false;redraw()});
+const SAY={axis:()=>`<span class="n">Осьова симетрія</span>: кожна точка «перескакує» через вісь на таку саму відстань. Поверни вісь повзунком.`,
+point:()=>`<span class="n">Центральна симетрія</span> відносно точки O: точка й образ лежать на одній прямій з O, по різні боки й на однаковій відстані. Це те саме, що поворот на 180°.`,
+rot:()=>`<span class="n">Поворот</span> на ${Kit.num(360/st.n)}° навколо O, ${st.n} разів.`+(mirror?' З дзеркалом у кожному секторі виходить калейдоскоп.':' Фігура збігається сама з собою після кожного повороту.'),
+homo:()=>`<span class="n">Гомотетія</span> з центром O і k = ${Kit.num(k)}: відстань від O ${Math.abs(k)>1?'збільшується':'зменшується'} у ${Kit.num(Math.abs(k))} раза.`+(k<0?' Від’ємне k — образ по інший бік від O.':'')+(k===-1?' При k = −1 це центральна симетрія!':'')};
+function ui(){document.querySelectorAll('.prm').forEach(p=>p.hidden=p.dataset.p!==mode);$('angV').textContent=ang+'°';$('rotV').textContent=Kit.num(360/st.n)+'°';$('kV').textContent=Kit.num(k);
+$('mir').classList.toggle('on',mirror);$('rays').classList.toggle('on',rays);$('say').innerHTML=SAY[mode]();redraw()}
+$('modes').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));ui();Mascot.cast(.5,.5)};
+$('ang').oninput=e=>{ang=+e.target.value;ui()};
+$('k').oninput=e=>{k=KS[+e.target.value];ui()};$('k').max=KS.length-1;$('k').value=KS.indexOf(2);
+$('mir').onclick=()=>{mirror=!mirror;ui();Mascot.cast(.5,.5)};$('rays').onclick=()=>{rays=!rays;ui()};
+Kit.steppers(st,{n:[2,12]},()=>{ui()});
+swatches();
+$('cols').onclick=e=>{const b=e.target.closest('button');if(!b)return;col=+b.dataset.i;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b))};
+$('clr').onclick=()=>{strokes=[];redraw()};$('undo').onclick=()=>{strokes.pop();redraw()};
+size();addEventListener('resize',size);addEventListener('load',size);new ResizeObserver(size).observe(view);ui();
+</script>
+</body></html>
