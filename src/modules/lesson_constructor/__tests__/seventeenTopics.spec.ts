@@ -14,6 +14,10 @@ import LessonConstructorPage from '../views/LessonConstructorPage.vue'
 import { TOPICS } from '../api/lessonConstructorApi'
 
 const topics = [
+  'rational-irrational-expressions.square-roots.arithmetic',
+  'rational-irrational-expressions.square-roots.transformations',
+  'rational-irrational-expressions.square-roots.add-subtract',
+  'rational-irrational-expressions.square-roots.multiply-divide',
   'ratios-percents-word-problems.proportion.unknown-member',
   'ratios-percents-word-problems.proportion.direct',
   'ratios-percents-word-problems.proportion.inverse',
@@ -34,9 +38,9 @@ const topics = [
 
 beforeEach(() => { generate.mockClear(); push.mockClear() })
 
-describe('Сімнадцять добірок у незміненій формі конструктора', () => {
-  it('усі17тем унікальні та є в переліку', () => {
-    expect(new Set(topics).size).toBe(17)
+describe('Двадцять одна добірка у незміненій формі конструктора', () => {
+  it('усі21тема унікальні та є в переліку', () => {
+    expect(new Set(topics).size).toBe(21)
     expect(new Set(TOPICS.map(t => t.value)).size).toBe(TOPICS.length)
     for (const id of topics) expect(TOPICS.some(t => t.value === id)).toBe(true)
   })
