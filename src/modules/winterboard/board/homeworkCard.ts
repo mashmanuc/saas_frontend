@@ -23,6 +23,16 @@ export interface HomeworkProposal {
   message: string
 }
 
+/**
+ * Картка «Домашнє завдання» на дошці — текстова картка зі списком задач (`data.items`; списком більше жодна картка
+ * не рендериться). Це аркуш для учня, а не задача на уроці: на ній лише «📋 Скопіювати картинку» — без ✍ 💡 ⚠ і
+ * без «A− 100% A+ ×» (власник 2026-10-20: «кнопки на кучу позлипались… на домашку не ліпити, там тільки скопіювати»).
+ */
+export function isHomeworkCardData(data: unknown): boolean {
+  const items = (data as { items?: unknown } | null | undefined)?.items
+  return Array.isArray(items) && items.length > 0
+}
+
 /** Задачі банку на уроці — без них домашку нема з чого складати (кнопки немає). */
 export function lessonHasBankTasks(pages: readonly { assets?: readonly { type?: string; data?: unknown }[] }[]): boolean {
   return pages.some(page => (page.assets || []).some(asset => asset.type === 'nmt_task'

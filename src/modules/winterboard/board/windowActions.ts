@@ -19,12 +19,14 @@
  *   • `taskHelp` — LAW §9 v1.33: «💡 Підказка» і «⚠ Типова помилка» до виділеної задачі — на тих самих
  *                  об'єктах і тим самим правом, що ✍ Інтегралика (`canSolve`, задача / картка / картинка),
  *                  режим редагування; задача з готовим розв'язком теж (підказка — не розв'язок).
- * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту).
+ * Учень не отримує жодної дії. Невідомий тип — жодної (fail-closed стандарту). Картка «Домашнє завдання» — теж
+ * жодної: на ній лише власна «📋 Скопіювати картинку» (власник 2026-10-20).
  */
 import type { WBAsset } from '../types/winterboard'
 import { canMinimize, type TrayViewer } from './boardTray'
 import { assetCapabilities, isCardAsset } from './objectStandard'
 import { hasHandwritableSolution, isIntegralykSolvable } from './handwriteSolution'
+import { isHomeworkCardData } from './homeworkCard'
 
 export interface CardWindowActions {
   /** TLV2-05C: `A− / 100% / A+` — спільний учительський масштаб тексту. */
@@ -58,6 +60,8 @@ export function cardWindowActions(
   viewer: TrayViewer & { canSolve?: boolean },
 ): CardWindowActions {
   if (!asset || !viewer.isTutor || !isCardAsset(asset.type)) return NO_WINDOW_ACTIONS
+  // Картка домашки — лише «📋 Скопіювати картинку» в її шапці (власник 2026-10-20: «кнопки на кучу позлипались»).
+  if (asset.type === 'theory_card' && isHomeworkCardData(asset.data)) return NO_WINDOW_ACTIONS
   const caps = assetCapabilities(asset.type)
   const ready = hasHandwritableSolution(asset)
   const solves = viewer.mode === 'edit' && !ready && viewer.canSolve === true && isIntegralykSolvable(asset)

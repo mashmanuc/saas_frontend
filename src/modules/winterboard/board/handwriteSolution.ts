@@ -9,6 +9,7 @@
  * `useHandwriteSolution` штатними `stroke_add`.
  */
 import { isSafeBackgroundUrl } from './pageBackground'
+import { isHomeworkCardData } from './homeworkCard'
 
 export interface Rect { x: number; y: number; w: number; h: number }
 
@@ -66,6 +67,7 @@ export function isIntegralykSolvable(
  */
 const TASK_CARD_PRESETS = new Set(['', 'example'])
 function mayHoldTask(data: unknown): boolean {
+  if (isHomeworkCardData(data)) return false   // домашка — аркуш для учня, не задача на уроці (власник 20.10)
   const preset = (data as { preset?: unknown } | null | undefined)?.preset
   return TASK_CARD_PRESETS.has(typeof preset === 'string' ? preset : '')
 }
