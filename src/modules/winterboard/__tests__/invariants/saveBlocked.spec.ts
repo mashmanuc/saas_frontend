@@ -208,14 +208,14 @@ describe('§4.3/§8.8 · інші відповіді', () => {
     expect(store.inFlightOps).toHaveLength(1)
   })
 
-  it('429 → rate_limited: жодного автоматичного таймера навіть з Retry-After', async () => {
+  it('429 → rate_limited: до Retry-After — жодного HTTP (далі сама одна спроба — LAW v1.39, autoResumeSave.spec)', async () => {
     const store = syncStore()
     const rec = recorder()
     store.record(op('a'))
     post.mockRejectedValueOnce(httpError(429, { error: 'throttled' }, { 'retry-after': '5' }))
     await rec.flush()
     rec.start()
-    await vi.advanceTimersByTimeAsync(120_000)
+    await vi.advanceTimersByTimeAsync(4_000)
     expect(store.saveBlock?.kind).toBe('rate_limited')
     expect(post).toHaveBeenCalledTimes(1)
     rec.stop?.()
@@ -330,7 +330,7 @@ describe('§5.3/§7/§8.6-7 · аварійний запис, reload, схови
   })
 })
 
-describe('§4.3 · «Перевірити й надіслати» — лише дія вчителя, одна спроба', () => {
+describe('§4.3 · «Перевірити й надіслати» — одна спроба (кнопка або автоспроба LAW v1.39)', () => {
   it('unconfirmed + сервер уже має всі op_id → черга знята без повторної відправки', async () => {
     const store = syncStore()
     store.record(op('a'))
@@ -549,7 +549,7 @@ describe('Рев’ю P0 2026-09-24 (2) · ручний повтор і влас
     expect(store.isSaveBlocked).toBe(true)
   })
 
-  it('503 на ручному повторі → SAVE_BLOCKED, без автоматичних повторів, черга ціла', async () => {
+  it('503 на ручному повторі → SAVE_BLOCKED, черга ціла; до автоспроби (10 с, LAW v1.39) — жодного HTTP', async () => {
     const store = await blockedUnconfirmed()
     const rec = recorder()
     post.mockRejectedValueOnce(httpError(503, { error: 'SERVER_BUSY' }, { 'retry-after': '1' }))
@@ -558,14 +558,14 @@ describe('Рев’ю P0 2026-09-24 (2) · ручний повтор і влас
     expect(store.saveBlock?.kind).toBe('unconfirmed')
     expect(store.canRetryBlocked).toBe(true)
     rec.start()
-    await vi.advanceTimersByTimeAsync(120_000)
+    await vi.advanceTimersByTimeAsync(9_000)
     rec.stop?.()
     expect(batches()).toHaveLength(2)
     expect(store.inFlightOps.map(o => o.op_id)).toEqual(['a'])
     expect(readBlocked(SID, null).records).toHaveLength(1)
   })
 
-  it('409 SEQ_MISMATCH на ручному повторі → inFlight НЕ скинуто, SAVE_BLOCKED, наступна спроба лише кнопкою', async () => {
+  it('409 SEQ_MISMATCH на ручному повторі → inFlight НЕ скинуто, SAVE_BLOCKED, наступна спроба — кнопка або автоспроба', async () => {
     const store = await blockedUnconfirmed()
     post.mockRejectedValueOnce(httpError(409, { error: 'SEQ_MISMATCH', expected_seq: 7 }))
     expect(await store.retryBlocked()).toBe('blocked')

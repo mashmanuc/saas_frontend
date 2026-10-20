@@ -1566,7 +1566,12 @@ const saveStatusText = computed(() => {
     case 'saved': return t('winterboard.room.saved')
     case 'syncing': return t('winterboard.room.saving')
     case 'error':
-      if (opsSync.isSaveBlocked) return t('winterboard.errors.saveBlocked.status')
+      if (opsSync.isSaveBlocked) {
+        // LAW v1.39: обрив зв'язку — дошка зберігає сама; у шапці — не «зупинено», а «чекаємо зв'язку».
+        return opsSync.autoResuming
+          ? t('winterboard.errors.saveBlocked.auto.status')
+          : t('winterboard.errors.saveBlocked.status')
+      }
       return autosave.lastError.value ?? t('winterboard.room.saveError')
     case 'offline': return t('winterboard.room.offline')
     default: return store.isDirty ? t('winterboard.room.unsavedChanges') : t('winterboard.room.ready')

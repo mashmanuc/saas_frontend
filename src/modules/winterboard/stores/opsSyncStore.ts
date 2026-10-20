@@ -165,6 +165,13 @@ const RETRY_BASE_DELAY_MS = 200
 const RETRY_JITTER_MAX_MS = 150
 /** TLV2-G1b: у PAUSED — одна спроба відновлення раз на цей інтервал (SYSTEM_LAW §5, §12). */
 const PAUSE_AUTO_RETRY_MS = 30_000
+/**
+ * LAW §4/§5 v1.39 (власник 2026-10-20: «Має бути все автоматично… він тільки повинен бачити, що зв'язок обірвався»):
+ * зупинку `unconfirmed` (обрив зв'язку / сервер не відповів) і `rate_limited` дошка знімає сама — та сама дія, що
+ * «Перевірити й надіслати» (`retryBlocked`: звірка за op_id, потім один пакет). Перша спроба — за 10 с (більшість
+ * обривів короткі), далі не частіше, ніж раз на 30 с (ритм PAUSED); браузер «знову в мережі» — одразу.
+ */
+const BLOCKED_AUTO_FIRST_MS = 10_000
 
 /**
  * Стеля черги в SAVE_BLOCKED і PAUSED: далі record() відмовляє, кімната блокує
@@ -242,6 +249,15 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const _retryUntil = ref<number | null>(null)
   /** TLV2-G1b: єдиний таймер PAUSED — через PAUSE_AUTO_RETRY_MS дозволяє одну спробу. */
   let _pauseTimer: ReturnType<typeof setTimeout> | null = null
+  /** LAW v1.39: єдиний таймер автоспроби зняти SAVE_BLOCKED (`unconfirmed`, `rate_limited`). */
+  let _blockedAutoTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * Звірка не змогла довести, що збережено (`unproven`, частина пакета на сервері) — автоспроби зупинено:
+   * далі лише рука вчителя за «Що робити?». Нова зупинка з іншої причини знімає прапорець.
+   */
+  const blockedAutoStopped = ref(false)
+  /** Автоспроба зараз у роботі — вхід у SAVE_BLOCKED з неї не ставить другого таймера. */
+  let _autoAttemptInProgress = false
   /** TLV2-G1b: дозвіл рівно на один flush() у PAUSED (таймер або «Повторити зараз»). */
   let _probeArmed = false
   /** TLV2-G1b: лічильник запитаних спроб — виконавець (рекордер кімнати) слухає його. */
@@ -395,9 +411,17 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   /** Знімає таймер, дозвіл спроби і лічильник 503; буфери не чіпає. */
   function _resetRetryState(): void {
     _clearPauseTimer()
+    _clearBlockedAuto()
     _probeArmed = false
     _retryAttempt = 0
     _retryUntil.value = null
+  }
+
+  function _clearBlockedAuto(): void {
+    if (_blockedAutoTimer) {
+      clearTimeout(_blockedAutoTimer)
+      _blockedAutoTimer = null
+    }
   }
 
   /** Єдиний таймер: попередній завжди знімається перед новим. */
@@ -849,7 +873,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       if (_manualAttempt) {
         // Одна спроба з дії вчителя. 409 SEQ_MISMATCH тут означає «seq зсунувся між
         // звіркою і відправкою» — пакет НЕ застосовано, inFlight не скидаємо; 503 —
-        // сервер зайнятий, теж не застосовано. Обидва → повтор знову лише кнопкою.
+        // сервер зайнятий, теж не застосовано. Обидва → `unconfirmed`: далі автоспроба (LAW v1.39) або кнопка.
         const seqM = _isSeqMismatch(err)
         let block = _classifyFinal(err, batch)
         if (!block) throw err  // 401: зупинка лишається з попередньою причиною, auth flow
@@ -1010,6 +1034,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     saveBlock.value = info
     persistBlocked()
     // НЕ _broadcast: стан черги цієї вкладки, не контракту (LAW §4).
+    // Нова зупинка — автоспроба (LAW v1.39), і після невдалої спроби вчителя теж. Під час автоспроби таймер ставить
+    // сама автоспроба (`_autoResumeAttempt`), — інакше було б два таймери.
+    if (!_autoAttemptInProgress) {
+      blockedAutoStopped.value = false
+      _armBlockedAuto(_firstAutoDelay())
+    }
   }
 
   /**
@@ -1095,6 +1125,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       saveBlock.value = { ...latest, restored: true, storageOk: true }
     }
     persistBlocked()
+    // Після reload — так само сама (LAW v1.39): звірка за op_id не дасть задвоїти.
+    blockedAutoStopped.value = false
+    _armBlockedAuto(_firstAutoDelay())
   }
 
   function _dropBlockedStorage(sid: string): void {
@@ -1117,8 +1150,82 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     return false
   })
 
+  /** Чи знімає дошка цю зупинку сама (LAW v1.39): обрив зв'язку / сервер не відповів або «забагато запитів». */
+  const autoResuming = computed(() => {
+    const info = saveBlock.value
+    return mode.value === 'SAVE_BLOCKED' && !!info && !blockedAutoStopped.value
+      && (info.kind === 'unconfirmed' || info.kind === 'rate_limited')
+  })
+
+  /** Перша автоспроба: 10 с; для `rate_limited` — не раніше, ніж дозволив сервер (Retry-After). */
+  function _firstAutoDelay(): number {
+    const info = saveBlock.value
+    if (info?.kind === 'rate_limited' && info.retryNotBefore !== null) {
+      return Math.max(1_000, info.retryNotBefore - Date.now())
+    }
+    return BLOCKED_AUTO_FIRST_MS
+  }
+
+  /** Єдиний таймер автоспроби: попередній завжди знімається; ставиться лише коли зупинку можна зняти самим. */
+  function _armBlockedAuto(delayMs: number): void {
+    _clearBlockedAuto()
+    if (!autoResuming.value) return
+    _blockedAutoTimer = setTimeout(() => {
+      _blockedAutoTimer = null
+      void _autoResumeAttempt()
+    }, delayMs)
+  }
+
   /**
-   * «Перевірити й надіслати» — дія вчителя (LAW §5, §12): одна звірка й не більше
+   * Одна автоспроба = та сама дія, що кнопка «Перевірити й надіслати» (LAW v1.39). Не цикл повторів (§12): кожна
+   * спроба починається зі звірки за op_id, між спробами — не менше 30 с, одночасно — лише одна.
+   */
+  async function _autoResumeAttempt(): Promise<void> {
+    if (!autoResuming.value || blockResolving.value) return
+    let res: Awaited<ReturnType<typeof retryBlocked>>
+    _autoAttemptInProgress = true
+    try {
+      res = await retryBlocked()
+    } catch (err) {
+      // Звірка чи стан сервера не відповіли — зв'язку ще немає; наступна спроба за 30 с.
+      console.warn('[opsSync] auto resume: no answer yet', err)
+      res = 'blocked'
+    } finally {
+      _autoAttemptInProgress = false
+    }
+    if (res === 'unproven') {
+      blockedAutoStopped.value = true
+      return
+    }
+    if (mode.value !== 'SAVE_BLOCKED') {
+      // Знято. Зупинка була відновлена з копії (reload) — ці дії ще не на полотні (Б-28), як і після кнопки.
+      if ((res === 'sent' || res === 'already-saved') && restoredPending.value) {
+        try {
+          await reconcileRestored()
+        } catch (err) {
+          console.warn('[opsSync] auto resume: reconcile after restore failed', err)
+        }
+      }
+      return
+    }
+    const info = saveBlock.value
+    if (res === 'too-early' && info?.kind === 'rate_limited' && info.retryNotBefore !== null) {
+      _armBlockedAuto(Math.max(1_000, info.retryNotBefore - Date.now()))
+      return
+    }
+    _armBlockedAuto(PAUSE_AUTO_RETRY_MS)
+  }
+
+  /** Браузер каже «знову в мережі» — не чекаємо таймера (LAW v1.39). */
+  function resumeOnOnline(): void {
+    if (!autoResuming.value || blockResolving.value) return
+    _clearBlockedAuto()
+    void _autoResumeAttempt()
+  }
+  if (typeof window !== 'undefined') window.addEventListener('online', resumeOnOnline)
+
+  /**
+   * «Перевірити й надіслати» — дія вчителя або автоспроба (LAW §5, §12, v1.39): одна звірка й не більше
    * одного HTTP-пакета. Дозволено для `unconfirmed`, `rate_limited` (не раніше
    * Retry-After) і `rejected` лише з іншою збіркою клієнта.
    */
@@ -1820,6 +1927,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     droppedWhileBlocked,
     blockResolving,
     canRetryBlocked,
+    autoResuming,
+    blockedAutoStopped,
+    resumeOnOnline,
 
     // Actions
     bootstrap,

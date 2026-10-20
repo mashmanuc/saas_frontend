@@ -7831,6 +7831,13 @@
         "confirmDismiss": "Remove the old unsaved changes from this computer? You can download them first."
       },
       "saveBlocked": {
+        "auto": {
+          "title": "Connection lost — we’ll save as soon as it’s back",
+          "keepTab": "Don’t close this tab until it’s saved.",
+          "waiting": "The board will wait until the connection is back.",
+          "status": "Waiting for connection"
+        },
+        "more": "What to do?",
         "bannerLabel": "Board saving stopped",
         "title": {
           "rejected": "The server did not accept an action: {action}",

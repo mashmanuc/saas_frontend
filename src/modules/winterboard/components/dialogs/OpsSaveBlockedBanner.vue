@@ -2,7 +2,8 @@
      SYSTEM_LAW §4–§5 «Остаточні відмови», P0 ТЗ чесного збереження.
 
      Сервер остаточно відмовив пакету або результат не підтверджено. Черга стоїть
-     (ті самі op_id), нічого не відправляється автоматично. Банер:
+     (ті самі op_id). LAW v1.39 (2026-10-20): обрив зв'язку й «забагато запитів» дошка знімає сама —
+     тоді банер лише «Зв'язок обірвався — зберігаємо…». Для решти причин банер:
        - каже простими словами, що сталося і скільки змін ще НЕ на сервері;
        - дає дії вчителя: «Перевірити й надіслати» (лише коли дозволено законом),
          «Завантажити копію», «Відкинути незбережені зміни» (з підтвердженням);
@@ -10,8 +11,31 @@
      Не показує вчителю коди на кшталт payload_schema_invalid, UUID чи JSON.
 -->
 <template>
+  <!-- LAW v1.39 (власник 2026-10-20: «він тільки повинен бачити, що зв'язок обірвався. І ми це будемо намагатись
+       зберегти»): дошка знімає зупинку сама — без лічильників, кнопок і технічних слів; зникає, щойно збереглося. -->
   <div
-    v-if="opsSync.isSaveBlocked && info"
+    v-if="opsSync.isSaveBlocked && info && opsSync.autoResuming"
+    class="wb-save-blocked wb-save-blocked--calm"
+    role="status"
+    aria-live="polite"
+    data-testid="wb-save-auto"
+  >
+    <div class="wb-save-blocked__icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.5a7 7 0 0 1 10-1M2 9a11 11 0 0 1 14-1.5M8.5 16a3 3 0 0 1 4-.5" />
+        <line x1="12" y1="19.5" x2="12" y2="19.5" />
+        <line x1="17" y1="14" x2="22" y2="19" />
+        <line x1="22" y1="14" x2="17" y2="19" />
+      </svg>
+    </div>
+    <div class="wb-save-blocked__text">
+      <span class="wb-save-blocked__title">{{ t('winterboard.errors.saveBlocked.auto.title') }}</span>
+      <span v-if="!info.storageOk" class="wb-save-blocked__warn">{{ t('winterboard.errors.saveBlocked.auto.keepTab') }}</span>
+      <span v-else-if="opsSync.inputLocked" class="wb-save-blocked__warn">{{ t('winterboard.errors.saveBlocked.auto.waiting') }}</span>
+    </div>
+  </div>
+  <div
+    v-else-if="opsSync.isSaveBlocked && info"
     class="wb-save-blocked"
     role="alert"
     :aria-label="t('winterboard.errors.saveBlocked.bannerLabel')"
@@ -27,8 +51,8 @@
     <div class="wb-save-blocked__text">
       <span class="wb-save-blocked__title">{{ title }}</span>
       <span class="wb-save-blocked__hint">{{ hint }}</span>
-      <!-- Нечитабельний запис: «0 змін» було б неправдою — скільки там, невідомо. -->
-      <span v-if="queuedCount > 0 || info.kind !== 'storage_unreadable'" class="wb-save-blocked__count">
+      <!-- Нечитабельний запис: «0 змін» було б неправдою — скільки там, невідомо. Цифри — лише в «Що робити?». -->
+      <span v-if="showMore && (queuedCount > 0 || info.kind !== 'storage_unreadable')" class="wb-save-blocked__count">
         {{ t('winterboard.errors.saveBlocked.queued', { count: queuedCount }) }}<template v-if="strokeCount > 0"> · {{ t('winterboard.errors.saveBlocked.strokes', { count: strokeCount }) }}</template>
       </span>
       <span v-if="!info.storageOk" class="wb-save-blocked__warn">
@@ -43,7 +67,17 @@
       <span v-if="resultText" class="wb-save-blocked__result" aria-live="polite">{{ resultText }}</span>
     </div>
 
-    <div class="wb-save-blocked__actions">
+    <!-- Рідкісні поломки (сервер відхилив зміну, дошки немає…): дії — лише за «Що робити?», не на виду (власник
+         2026-10-20: «він не розуміє, що таке завантажити копію, відкинути»). Запобіжник, щоб дошка не застрягла. -->
+    <button
+      v-if="!showMore"
+      type="button"
+      class="wb-save-blocked__more"
+      :aria-expanded="false"
+      data-testid="wb-save-more"
+      @click="showMore = true"
+    >{{ t('winterboard.errors.saveBlocked.more') }}</button>
+    <div v-else class="wb-save-blocked__actions">
       <button
         v-if="showRetry"
         type="button"
@@ -73,6 +107,8 @@ const opsSync = useOpsSyncStore()
 
 const info = computed(() => opsSync.saveBlock)
 const resultText = ref('')
+/** «Що робити?» розгорнуто — цифри й дії видно (LAW v1.39: у звичайному обриві їх немає взагалі). */
+const showMore = ref(false)
 
 const queuedCount = computed(() => opsSync.pendingCount + opsSync.inFlightCount)
 
@@ -188,6 +224,21 @@ async function onDiscard(): Promise<void> {
   pointer-events: auto;
 }
 .wb-save-blocked__icon { flex-shrink: 0; display: flex; padding-top: 1px; }
+/* Обрив зв'язку — дошка зберігає сама (LAW v1.39): спокійна смуга, не червона тривога. */
+.wb-save-blocked--calm { background: #fffbeb; border-bottom-color: #fde68a; color: #78350f; align-items: center; }
+.wb-save-blocked--calm .wb-save-blocked__title { font-weight: 600; }
+.wb-save-blocked--calm .wb-save-blocked__warn { color: #92400e; }
+.wb-save-blocked__more {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: #7f1d1d;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .wb-save-blocked__text { flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .wb-save-blocked__title { font-weight: 600; }
 .wb-save-blocked__hint, .wb-save-blocked__count { font-size: 13px; color: #991b1b; }
@@ -242,5 +293,14 @@ async function onDiscard(): Promise<void> {
 }
 [data-theme="dark"] .wb-save-blocked__btn--danger {
   color: var(--color-danger);
+}
+[data-theme="dark"] .wb-save-blocked--calm {
+  background: var(--color-warning-soft, color-mix(in srgb, #f59e0b 14%, transparent));
+  border-bottom-color: color-mix(in srgb, #f59e0b 35%, transparent);
+  color: var(--color-text);
+}
+[data-theme="dark"] .wb-save-blocked--calm .wb-save-blocked__warn,
+[data-theme="dark"] .wb-save-blocked__more {
+  color: var(--color-text);
 }
 </style>
