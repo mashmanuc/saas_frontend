@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import authApi from '../api/authApi'
@@ -56,10 +56,13 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
+import { rememberPendingEmail } from '../pendingEmail'
 
 const { t } = useI18n()
 const route = useRoute()
 const email = computed(() => (typeof route.query?.email === 'string' ? route.query.email : ''))
+// Після листа сторінка входу вже матиме цю пошту в полі (власник 2026-10-20, прохід «очима вчителя»).
+onMounted(() => rememberPendingEmail(email.value))
 const accountType = computed(() => (typeof route.query?.account_type === 'string' ? route.query.account_type : 'student'))
 
 // Б-154: куди людина йшла, коли почала реєстрацію (?redirect передає RegisterTutorView). Лише

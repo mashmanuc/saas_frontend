@@ -992,9 +992,9 @@
     },
     "checkEmail": {
       "title": "Check your email",
-      "description": "We sent you a verification email.",
+      "description": "We sent you a letter. Click “Confirm email” in it.",
       "sentTo": "Sent to:",
-      "success": "Email sent.",
+      "success": "Letter sent again",
       "resend": "Resend email",
       "resendLoading": "Sending...",
       "backToLogin": "Back to login",
@@ -1007,7 +1007,8 @@
       "loginCta": "Sign in",
       "noToken": "The confirmation token is missing.",
       "alreadyVerified": "Your email is already confirmed — you can sign in",
-      "linkExpired": "This link has expired"
+      "linkExpired": "This link has expired",
+      "loginHint": "Now sign in: {email} is already filled in — just enter your password."
     },
     "forgot": {
       "title": "Forgot password?",

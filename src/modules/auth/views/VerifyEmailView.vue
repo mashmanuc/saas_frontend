@@ -11,6 +11,9 @@
         <h1 class="text-xl font-semibold">
           {{ outcome === 'already_verified' ? $t('auth.verifyEmail.alreadyVerified') : $t('auth.verifyEmail.success') }}
         </h1>
+        <p v-if="pendingEmail" class="text-sm" style="color: var(--text-secondary);" data-testid="verify-login-hint">
+          {{ $t('auth.verifyEmail.loginHint', { email: pendingEmail }) }}
+        </p>
       </div>
 
       <!-- Б-113: застаріле або невірне посилання — новий лист одразу тут (адреси в посиланні немає) -->
@@ -70,6 +73,7 @@ import Button from '../../../ui/Button.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '@/modules/auth/components/OnboardingModal.vue'
 import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
+import { readPendingEmail } from '../pendingEmail'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -80,6 +84,8 @@ const loginLink = computed(() => {
 })
 
 const loading = ref(true)
+// Пошта з реєстрації на цьому пристрої — щоб сказати, що у вході вона вже вписана (власник 2026-10-20).
+const pendingEmail = readPendingEmail()
 const error = ref('')
 // Б-113: чим закінчилось підтвердження. 'error' — лише справжня помилка (вікно, як і раніше).
 const outcome = ref('ok')

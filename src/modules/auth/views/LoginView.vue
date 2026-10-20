@@ -200,6 +200,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { clearPendingEmail, readPendingEmail } from '../pendingEmail'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
@@ -244,6 +245,11 @@ const validationErrors = reactive({
 
 // FIX: Показуємо повідомлення про закінчення сесії при завантаженні
 onMounted(() => {
+  // Щойно підтвердили пошту з листа — вона вже в полі, лишається пароль (власник 2026-10-20).
+  if (!form.email) {
+    const pending = readPendingEmail()
+    if (pending) form.email = pending
+  }
   const msg = sessionStorage.getItem('auth_message')
   if (msg === 'session_expired') {
     sessionStorage.removeItem('auth_message')
@@ -357,6 +363,7 @@ async function onSubmit() {
       return
     }
 
+    clearPendingEmail()
     router.push(resolvePostAuthTarget(res))
   } catch (error) {
     // v0.82.0: Помилка вже відображається через auth.error
