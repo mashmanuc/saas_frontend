@@ -37,7 +37,7 @@ describe('генерація уроку в конструкторі', () => {
     const shown = overlay()
     expect(shown).not.toBeNull()
     expect(shown!.textContent).toContain('Інтегралик складає урок…')
-    expect(shown!.querySelector('[data-testid="integralyk-thinking"]')).not.toBeNull()
+    expect(shown!.querySelector('[data-testid="integralyk-loader"]')).not.toBeNull()
     expect(document.body.textContent).not.toContain('Завантаження')
 
     finish({ session_id: 's-1' })

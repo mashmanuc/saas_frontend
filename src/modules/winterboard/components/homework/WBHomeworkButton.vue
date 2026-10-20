@@ -41,7 +41,7 @@
         <!-- Поки сервер добирає — Інтегралик думає, як під час генерації уроку (власник 20.10: «мав би показуватись
              інтегралик… тут генерується домашнє завдання»). -->
         <div v-if="loading" class="wb-homework__thinking" role="status" aria-busy="true" data-testid="wb-homework-thinking">
-          <IntegralykThinking :size="56" />
+          <IntegralykLoader :width="170" />
           <p class="wb-homework__status">{{ t('winterboard.homework.loading') }}</p>
         </div>
         <p v-else-if="error" class="wb-homework__error" role="alert" data-testid="wb-homework-error">{{ error }}</p>
@@ -114,7 +114,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
-import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
+import IntegralykLoader from '@/modules/intent/IntegralykLoader.vue'
 import { homeworkImage, proposeHomework } from '@/modules/intent/homeworkApi'
 import { validateTaskPages } from '@/modules/intent/taskPages'
 import { useWBStore } from '../../board/state/boardStore'

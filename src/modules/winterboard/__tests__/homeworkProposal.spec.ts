@@ -94,7 +94,7 @@ describe('вікно пропозиції', () => {
     const w = mountButton()
     await w.get('[data-testid="wb-homework-button"]').trigger('click')
     // Поки добирає — Інтегралик думає, як під час генерації уроку (власник 20.10)
-    expect(w.find('[data-testid="wb-homework-thinking"] [data-testid="integralyk-thinking"]').exists()).toBe(true)
+    expect(w.find('[data-testid="wb-homework-thinking"] [data-testid="integralyk-loader"]').exists()).toBe(true)
     release()
     await flushPromises()
     expect(w.find('[data-testid="wb-homework-thinking"]').exists()).toBe(false)

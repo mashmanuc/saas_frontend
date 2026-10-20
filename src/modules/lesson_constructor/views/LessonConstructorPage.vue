@@ -287,12 +287,13 @@
           </button>
 
           <!-- Поки генерується — посередині екрана Інтегралик, що думає, у тій самій рамці, що й
-               загальне «Завантаження…» (власник 2026-10-19: «не колесо, а Інтегралик»). Загальне
-               вікно для цього запиту вимкнене (skipLoader у lessonConstructorApi.generate). -->
+               загальне «Завантаження…» (власник 2026-10-19: «не колесо, а Інтегралик»; 2026-10-20 — сцена
+               «хмарка думок»: «підбери нового лодера»). Загальне вікно для цього запиту вимкнене
+               (skipLoader у lessonConstructorApi.generate). -->
           <Teleport to="body">
             <div v-if="isLoading" class="loader-overlay" aria-live="polite" data-testid="lc-generating">
               <div class="loader-panel" role="status">
-                <IntegralykThinking :size="56" />
+                <IntegralykLoader :width="170" />
                 <p class="text-sm font-medium text-primary">Інтегралик складає урок…</p>
               </div>
             </div>
@@ -315,6 +316,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
+import IntegralykLoader from '@/modules/intent/IntegralykLoader.vue'
 import {
   TOPICS,
   THEMES,
