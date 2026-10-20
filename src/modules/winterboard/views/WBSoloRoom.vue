@@ -175,6 +175,7 @@
           v-if="((isSessionOwner && sessionId) || isLocalWorkspace) && !constructorMode"
           type="button"
           class="wb-header-btn wb-header-btn--invite"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :title="t('winterboard.startClassroom.button')"
           :aria-label="t('winterboard.startClassroom.button')"
           @click="isLocalWorkspace ? openCloudUpsell('invite') : openInviteStudentModal()"
@@ -184,6 +185,7 @@
             <path d="M1 14c0-2.2 1.8-4 4-4h4c.7 0 1.4.2 2 .5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M14 10v4M12 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.invite') }}</span>
         </button>
         <!-- Пульт на телефон (LAW §9 Remote control): QR → телефон керує сторінками,
              новою сторінкою, undo і голосом. Потрібен WS (presence), тому лише
@@ -192,12 +194,13 @@
           v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
           type="button"
           class="wb-header-btn"
-          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value }"
+          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value, 'wb-header-btn--labelled': noHoverLabels }"
           :title="t('winterboard.remote.button')"
           :aria-label="t('winterboard.remote.button')"
           @click="showRemoteModal = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.remote') }}</span>
         </button>
         <!-- Phase B: Share replay — прихована в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
@@ -205,18 +208,22 @@
           v-if="((isSessionOwner && hasOperations) || isLocalWorkspace) && !constructorMode"
           type="button"
           class="wb-header-btn"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :title="t('winterboard.replay.share.title', 'Поділитися записом')"
           @click="isLocalWorkspace ? openCloudUpsell('share') : (showShareModal = true)"
         >
-          🔗
+          <span aria-hidden="true">🔗</span>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.share') }}</span>
         </button>
         <button
           type="button"
           class="wb-header-btn"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :title="t('winterboard.room.export')"
           @click="isLocalWorkspace ? openCloudUpsell('export') : (showExportDialog = true)"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.export') }}</span>
         </button>
         <!-- AI Enrich — винесено з діалогу «Експорт» у власне вікно: enrich додає
              контент в урок, а не експортує. ЛИШЕ в конструкторі (/prepare/:id)
@@ -583,6 +590,12 @@
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
+        <!-- Вертикальний планшет: аркуш лежить і займає ~40 % екрана (прохід «очима вчителя», власник 2026-10-20). -->
+        <div v-if="showRotateHint" class="wb-rotate-hint" role="status" data-testid="wb-rotate-hint">
+          <span class="wb-rotate-hint__icon" aria-hidden="true">📱↻</span>
+          <span>{{ t('winterboard.rotateHint.text') }}</span>
+          <button type="button" class="wb-rotate-hint__ok" @click.stop="dismissRotateHint">{{ t('winterboard.rotateHint.ok') }}</button>
+        </div>
 
         <WBCanvas
           v-show="!isLoading"
@@ -1294,6 +1307,8 @@ import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import { useNoHoverLabels } from '../composables/useNoHoverLabels'
+import { shouldRefitAfterRotate } from '../board/rotateFit'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { handwriteAllWithFeedback, handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
@@ -1473,6 +1488,35 @@ function onUpsellConnect(): void {
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
+// Слова під значками верхньої смуги на екрані без мишки (власник 2026-10-20).
+const noHoverLabels = useNoHoverLabels()
+
+// ── Вертикальний планшет (прохід «очима вчителя», власник 2026-10-20: «6 роби») ──
+// Аркуш 1920×1080 лежить: у вертикалі він займає ~40 % екрана. Підказуємо повернути — один раз за вкладку.
+// Лише на дотику: вузьке вікно на ноутбуці «планшетом» не є. «Вертикально» — за вікном браузера (вище, ніж ширше):
+// так і на iPad із розділеним екраном, і там, де браузер не знає орієнтації екрана. Саме поле дошки на планшеті
+// майже квадратне (знизу панель інструментів і сторінки) — за ним не видно. Оновлюється в `onResize` нижче.
+const viewportPortrait = ref(typeof window !== 'undefined' && window.innerHeight > window.innerWidth)
+const isPortraitTablet = computed(() => deviceModeState.deviceMode.value === 'tablet' && viewportPortrait.value)
+const ROTATE_HINT_KEY = 'wb.rotateHintDismissed'
+function readRotateHintDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(ROTATE_HINT_KEY) === '1'
+  } catch (e) {
+    console.warn('[wb] rotate hint: sessionStorage недоступний', e)
+    return false
+  }
+}
+const rotateHintDismissed = ref(readRotateHintDismissed())
+const showRotateHint = computed(() => isPortraitTablet.value && noHoverLabels.value && !rotateHintDismissed.value)
+function dismissRotateHint(): void {
+  rotateHintDismissed.value = true
+  try {
+    sessionStorage.setItem(ROTATE_HINT_KEY, '1')
+  } catch (e) {
+    console.warn('[wb] rotate hint: sessionStorage недоступний', e)
+  }
+}
 // Повний екран = режим проєктора (крок 2 CLASSROOM_REMOTE_VISION): кнопка
 // повного екрана в шапці тепер іде через цей composable. Не підміняє
 // deviceModeState для решти layout: панелі як були, ховається лише шапка.
@@ -2366,9 +2410,24 @@ const showSidebarOverlay = ref(false)
 // fullscreenchange (Esc), плюс wake lock і автоховання шапки.
 
 // ── Responsive canvas resize: auto-fit zoom when container changes size ──
+/** Орієнтація поля на попередньому вимірі — щоб помітити поворот планшета. */
+let lastLandscape: boolean | null = null
 const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate: recalculateCanvas } = useCanvasResize({
   containerRef: canvasContainerRef,
   onResize(w, h) {
+    // Поворот планшета (власник 2026-10-20, прохід «очима вчителя»): автопідгін нижче вміє лише ЗМЕНШУВАТИ, тож
+    // після повороту з вертикалі в горизонталь аркуш лишався дрібним, як у вертикалі. Поворот — вписати сторінку
+    // заново, якщо вчитель масштаб руками не чіпав.
+    const landscape = window.innerWidth >= window.innerHeight
+    viewportPortrait.value = !landscape
+    const refit = shouldRefitAfterRotate({
+      prevLandscape: lastLandscape, landscape, initialFitDone: initialFitDone.value, userZoomed: userZoomed.value,
+    })
+    lastLandscape = landscape
+    if (refit) {
+      fitPageNow()
+      return
+    }
     // Панель «Матеріали» згорнулась сама (порожня бібліотека) — поле стало
     // ширшим, а аркуш уже вписано у вузьке. Вписуємо ще раз, коли розмір
     // устоявся, — якщо вчитель масштаб руками не чіпав.
@@ -2420,7 +2479,8 @@ const initialFitDone = ref(false)
 let applyingProgrammaticFit = false
 
 function fitPageNow(): void {
-  const fit = canvasRef.value?.fitToPage
+  // Вертикальний планшет: аркуш лежить, тож вписуємо по ширині без відступів — на ~10 % більший (власник 2026-10-20).
+  const fit = isPortraitTablet.value ? canvasRef.value?.fitToWidth : canvasRef.value?.fitToPage
   if (!fit) return
   applyingProgrammaticFit = true
   try {
@@ -5359,6 +5419,23 @@ watch(() => store.workspaceName, (name) => {
   pointer-events: none;
 }
 
+/* Слова під значками верхньої смуги — екран без мишки (`useNoHoverLabels`; власник 2026-10-20, прохід «очима
+   вчителя»: на планшеті й великій дошці 👤+, 📱, 🔗, ⤴ без наведення не прочитати). Шапка 56 px — кнопка 44 px. */
+.wb-header-btn.wb-header-btn--labelled {
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  padding: 3px 6px;
+  flex-direction: column;
+  gap: 2px;
+}
+.wb-header-btn__touch-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .wb-header-btn__label {
   font-size: 0.8125rem;
   line-height: 1;
@@ -5464,6 +5541,39 @@ watch(() => store.workspaceName, (name) => {
   /* блокує context-menu (right-click) */
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Підказка «поверніть планшет» — внизу поля дошки, над аркушем (власник 2026-10-20). */
+.wb-rotate-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 14px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.3;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+}
+.wb-rotate-hint__icon { font-size: 20px; white-space: nowrap; }
+.wb-rotate-hint__ok {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: #10b981;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .wb-solo-room__canvas {

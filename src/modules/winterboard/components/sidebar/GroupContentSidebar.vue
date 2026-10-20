@@ -328,6 +328,7 @@
                 <InsertIcon :family="app.iconFamily" :icon-key="app.iconKey" />
               </span>
               <span class="tools-card__label">{{ app.labelKey ? t(app.labelKey) : app.labelFallback }}</span>
+              <span v-if="app.brand" class="tools-card__brand">{{ app.brand }}</span>
               <span class="tools-card__count">{{ appCounts[app.app] }}</span>
             </button>
           </div>
@@ -1246,6 +1247,8 @@ function onDrop(e: DragEvent) {
 .tools-card__icon { color: #2563eb; display: flex; }
 .tools-card__icon :deep(svg) { width: 28px; height: 28px; }
 .tools-card__label { font-size: 12px; font-weight: 600; color: #334155; text-align: center; }
+/* Назва програми — дрібно під назвою словами вчителя. */
+.tools-card__brand { margin-top: -4px; font-size: 10px; color: #94a3b8; text-align: center; }
 .tools-card__count {
   position: absolute; top: 6px; right: 8px;
   font-size: 10px; font-weight: 600; color: #64748b;

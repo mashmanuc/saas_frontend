@@ -7636,6 +7636,38 @@
     }
   },
   "winterboard": {
+    "rotateHint": {
+      "text": "Turn the tablet sideways — the page will get bigger",
+      "ok": "Got it"
+    },
+    "touchLabels": {
+      "select": "Select",
+      "pen": "Pen",
+      "highlighter": "Marker",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "circle": "Circle",
+      "text": "Text",
+      "eraser": "Eraser",
+      "laser": "Pointer",
+      "sticky": "Note",
+      "color": "Colour",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clear": "Clear",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "youtube": "YouTube",
+      "formula": "Formula",
+      "invite": "Student",
+      "remote": "Remote",
+      "share": "Share",
+      "export": "Export",
+      "fullscreen": "Full screen",
+      "exitFullscreen": "Exit",
+      "lockDrawing": "Lock",
+      "unlockDrawing": "Unlock"
+    },
     "lessonSize": {
       "warnTitle": "The board is {percent}% full",
       "warnHint": "At 100% it can no longer be saved as a lesson. Continue on a new board.",
@@ -8322,6 +8354,12 @@
       "tabMaterials": "Materials",
       "listTitle": "My files",
       "tabTools": "Tools",
+      "apps": {
+        "graphs": "Graphs",
+        "graphs3d": "3D graphs",
+        "geometry": "Geometry",
+        "stereo": "Solid geometry"
+      },
       "interactiveHeader": "Interactive",
       "geo2dHeader": "Planimetry",
       "trayDragHint": "Drag onto the board",

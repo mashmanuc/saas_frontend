@@ -7724,6 +7724,38 @@
     }
   },
   "winterboard": {
+    "rotateHint": {
+      "text": "Поверніть планшет горизонтально — аркуш стане більшим",
+      "ok": "Зрозуміло"
+    },
+    "touchLabels": {
+      "select": "Вибір",
+      "pen": "Ручка",
+      "highlighter": "Маркер",
+      "line": "Лінія",
+      "rectangle": "Прямокутник",
+      "circle": "Коло",
+      "text": "Текст",
+      "eraser": "Гумка",
+      "laser": "Указка",
+      "sticky": "Нотатка",
+      "color": "Колір",
+      "undo": "Скасувати",
+      "redo": "Повторити",
+      "clear": "Очистити",
+      "lock": "Закріпити",
+      "unlock": "Відкріпити",
+      "youtube": "YouTube",
+      "formula": "Формула",
+      "invite": "Учень",
+      "remote": "Пульт",
+      "share": "Поділитися",
+      "export": "Експорт",
+      "fullscreen": "На весь екран",
+      "exitFullscreen": "Згорнути",
+      "lockDrawing": "Заборонити",
+      "unlockDrawing": "Дозволити"
+    },
     "lessonSize": {
       "warnTitle": "Дошка заповнена на {percent} %",
       "warnHint": "Коли буде 100 %, зберегти її як урок не вийде. Продовжуйте на новій дошці.",
@@ -9801,6 +9833,12 @@
       "tabMaterials": "Матеріали",
       "listTitle": "Мої файли",
       "tabTools": "Інструменти",
+      "apps": {
+        "graphs": "Графіки",
+        "graphs3d": "Графіки 3D",
+        "geometry": "Геометрія",
+        "stereo": "Стереометрія"
+      },
       "interactiveHeader": "Інтерактивні",
       "geo2dHeader": "Планіметрія",
       "trayDragHint": "Перетягніть на дошку",

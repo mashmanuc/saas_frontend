@@ -12,6 +12,7 @@
       ref="triggerRef"
       type="button"
       class="wb-toolbar__btn wb-color-flyout__trigger"
+      :class="{ 'wb-color-flyout__trigger--labelled': noHover }"
       :aria-label="t('winterboard.toolbar.color')"
       :aria-expanded="isOpen"
       :aria-haspopup="true"
@@ -35,6 +36,7 @@
         />
       </span>
       <span class="wb-color-flyout__chevron" aria-hidden="true">›</span>
+      <span v-if="noHover" class="wb-color-flyout__label">{{ t('winterboard.touchLabels.color') }}</span>
     </button>
 
     <!-- Flyout panel — teleported to <body> so overflow:hidden на toolbar не обрізає -->
@@ -206,6 +208,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useNoHoverLabels } from '../../composables/useNoHoverLabels'
 import { useI18n } from 'vue-i18n'
 import type { WBToolType } from '../../types/winterboard'
 
@@ -224,6 +227,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+// Слово «Колір» під кнопкою на екрані без мишки — як у решти панелі (`WBToolbar`, власник 2026-10-20).
+const noHover = useNoHoverLabels()
 
 // ─── Thickness presets (sizes mirror WBThicknessPresets) ─────────────────────
 
@@ -745,5 +750,25 @@ watch(
 [data-theme="dark"] .wb-color-flyout__hex-input:focus {
   background: var(--color-surface-sunken);
   border-color: var(--color-accent);
+}
+/* Слово під кнопкою — екран без мишки (як у `WBToolbar`). */
+.wb-color-flyout__trigger.wb-color-flyout__trigger--labelled {
+  width: 68px;
+  height: auto;
+  min-height: 52px;
+  flex-wrap: wrap;
+  align-content: center;
+  row-gap: 3px;
+  padding: 5px 2px 4px;
+}
+.wb-color-flyout__label {
+  display: block;
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: inherit;
 }
 </style>

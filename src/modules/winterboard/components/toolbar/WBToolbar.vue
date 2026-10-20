@@ -7,7 +7,7 @@
   <div
     ref="toolbarEl"
     class="wb-toolbar"
-    :class="[variantClasses, { 'wb-toolbar--expanded': isExpanded }]"
+    :class="[variantClasses, { 'wb-toolbar--expanded': isExpanded, 'wb-toolbar--labelled': showLabels }]"
     :data-variant="variant"
     :data-dock="dock"
     role="toolbar"
@@ -31,6 +31,7 @@
           @click="emit('tool-change', tool.id)"
         >
           <component :is="tool.icon" class="wb-toolbar__icon" />
+          <span v-if="showLabels" class="wb-toolbar__label">{{ t(`winterboard.touchLabels.${tool.id}`) }}</span>
         </button>
         <!-- TABLET 1А (рішення власника 2026-09-27): «товщина + колір» — одразу під олівцем і
              маркером. БУЛО: окремою групою після всіх 10 інструментів, у самому низу панелі
@@ -66,6 +67,7 @@
         @click="emit('undo')"
       >
         <WBIconUndo class="wb-toolbar__icon" />
+        <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.undo') }}</span>
       </button>
       <button
         type="button"
@@ -77,6 +79,7 @@
         @click="emit('redo')"
       >
         <WBIconRedo class="wb-toolbar__icon" />
+        <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.redo') }}</span>
       </button>
       <!-- PROB-3 FIX: Single clear button — clears current page only -->
       <button
@@ -89,6 +92,7 @@
         @click="emit('clear-page-request')"
       >
         <WBIconTrash class="wb-toolbar__icon" />
+        <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.clear') }}</span>
       </button>
     </div>
 
@@ -110,6 +114,7 @@
         >
           <WBIconUnlock v-if="hasLockedInSelection" class="wb-toolbar__icon" />
           <WBIconLock v-else class="wb-toolbar__icon" />
+          <span v-if="showLabels" class="wb-toolbar__label">{{ t(hasLockedInSelection ? 'winterboard.touchLabels.unlock' : 'winterboard.touchLabels.lock') }}</span>
         </button>
       </div>
     </Transition>
@@ -128,6 +133,7 @@
           <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
           <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
         </svg>
+        <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.youtube') }}</span>
       </button>
 
       <!-- FormulaCard (2026-05-30): insert KaTeX formula card -->
@@ -141,6 +147,7 @@
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <text x="2" y="15" font-family="serif" font-size="14" font-style="italic" fill="currentColor">ƒx</text>
         </svg>
+        <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.formula') }}</span>
       </button>
     </div>
 
@@ -187,6 +194,7 @@ import WBIconSticky from './icons/WBIconSticky.vue'
 import WBIconLock from './icons/WBIconLock.vue'
 import WBIconUnlock from './icons/WBIconUnlock.vue'
 import WBColorFlyout from './WBColorFlyout.vue'
+import { useNoHoverLabels } from '../../composables/useNoHoverLabels'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -225,6 +233,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 // Responsive Phase 2 B3: Variant CSS classes
+// Слова під значками на екрані без мишки (власник 2026-10-20, прохід «очима вчителя»). На телефоні — ні:
+// там своя нижня смуга й пульт, місця на слова немає.
+const noHover = useNoHoverLabels()
+const showLabels = computed(() => noHover.value && props.variant !== 'mobile')
+
 const variantClasses = computed(() => ({
   'wb-toolbar--mobile': props.variant === 'mobile',
   'wb-toolbar--tablet': props.variant === 'tablet',
@@ -830,4 +843,31 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   background: color-mix(in srgb, var(--color-chrome) 88%, transparent);
   border-top-color: var(--color-border);
 }
+/* Слова під значками — екран без мишки (`useNoHoverLabels`; власник 2026-10-20: «1 роби»). Ширша колонка,
+   кнопка — значок і коротке слово під ним, як на пульті. Правила мають ту саму вагу, що й
+   варіанти, і стоять у кінці файлу, тож перемагають їхні 44–64 px. Нижня смуга планшета (`data-dock="bottom"`) лишається на всю ширину. */
+.wb-toolbar.wb-toolbar--labelled:not([data-dock="bottom"]),
+.wb-toolbar.wb-toolbar--labelled.wb-toolbar--expanded:not([data-dock="bottom"]) {
+  width: 76px;
+}
+.wb-toolbar.wb-toolbar--labelled .wb-toolbar__btn {
+  width: 68px;
+  height: auto;
+  min-height: 52px;
+  padding: 5px 0 4px;
+  flex-direction: column;
+  gap: 3px;
+}
+.wb-toolbar__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: inherit;
+}
+
 </style>

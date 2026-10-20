@@ -365,11 +365,17 @@ export function appOf(entry: InsertEntry): MashApp {
 }
 
 /** Метадані 4 карток (id, підпис, family-іконка через InsertIcon). */
-export const MASH_APPS: ReadonlyArray<{ app: MashApp; labelKey: string; labelFallback: string; iconFamily: string; iconKey: string }> = [
-  { app: '2d', labelKey: '', labelFallback: 'GraphMASH 2D', iconFamily: 'analysis', iconKey: 'graphCalc' },
-  { app: '3d', labelKey: '', labelFallback: 'GraphMASH 3D', iconFamily: '3d', iconKey: 'surface' },
-  { app: 'geometry', labelKey: '', labelFallback: 'Geometry', iconFamily: 'geomash', iconKey: 'scene' },
-  { app: 'stereo', labelKey: '', labelFallback: 'StereoMASH', iconFamily: 'stereo', iconKey: 'cube' },
+/**
+ * Картки вкладки «Інструменти». Назва — словами вчителя (прохід «очима вчителя 60 років», власник 2026-10-20:
+ * «5 роби» — «GraphMASH 2D», «Geometry», «StereoMASH» вчитель не шукає); `brand` — назва програми дрібно під нею.
+ */
+export const MASH_APPS: ReadonlyArray<{
+  app: MashApp; labelKey: string; labelFallback: string; brand?: string; iconFamily: string; iconKey: string
+}> = [
+  { app: '2d', labelKey: 'winterboard.contentSidebar.apps.graphs', labelFallback: 'Графіки', brand: 'GraphMASH 2D', iconFamily: 'analysis', iconKey: 'graphCalc' },
+  { app: '3d', labelKey: 'winterboard.contentSidebar.apps.graphs3d', labelFallback: 'Графіки 3D', brand: 'GraphMASH 3D', iconFamily: '3d', iconKey: 'surface' },
+  { app: 'geometry', labelKey: 'winterboard.contentSidebar.apps.geometry', labelFallback: 'Геометрія', brand: 'GeoMASH', iconFamily: 'geomash', iconKey: 'scene' },
+  { app: 'stereo', labelKey: 'winterboard.contentSidebar.apps.stereo', labelFallback: 'Стереометрія', brand: 'StereoMASH', iconFamily: 'stereo', iconKey: 'cube' },
   { app: 'content', labelKey: 'winterboard.insertTiles.evidenceApp', labelFallback: 'Навчальні обʼєкти', iconFamily: 'evidence', iconKey: 'timeline' },
 ]
 

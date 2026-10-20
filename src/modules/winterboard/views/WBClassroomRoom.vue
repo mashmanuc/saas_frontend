@@ -213,66 +213,76 @@
           v-if="classroomRole.isTeacher.value"
           type="button"
           class="wb-header-btn wb-header-btn--fullscreen"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :title="projector.enabled.value ? t('winterboard.room.exitFullscreen') : t('winterboard.room.fullscreen')"
           :aria-pressed="projector.enabled.value"
           @click="projector.toggle()"
         >
           <svg v-if="!projector.enabled.value" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t(projector.enabled.value ? 'winterboard.touchLabels.exitFullscreen' : 'winterboard.touchLabels.fullscreen') }}</span>
         </button>
         <!-- Пульт на телефон (teacher only; LAW §9 Remote control) -->
         <button
           v-if="classroomRole.isTeacher.value"
           type="button"
           class="wb-header-btn"
-          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value }"
+          :class="{ 'wb-header-btn--active': boardRemote.remoteConnected.value, 'wb-header-btn--labelled': noHoverLabels }"
           :title="t('winterboard.remote.button')"
           :aria-label="t('winterboard.remote.button')"
           @click="showRemoteModal = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.remote') }}</span>
         </button>
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
           type="button"
           class="wb-header-btn"
-          :class="{ 'wb-header-btn--active': isLocked }"
+          :class="{ 'wb-header-btn--active': isLocked, 'wb-header-btn--labelled': noHoverLabels }"
           :title="isLocked ? t('winterboard.classroom.unlock') : t('winterboard.classroom.lock')"
           :aria-pressed="isLocked"
           @click="handleToggleLock"
         >
-          {{ isLocked ? '🔒' : '🔓' }}
+          <span aria-hidden="true">{{ isLocked ? '🔒' : '🔓' }}</span>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t(isLocked ? 'winterboard.touchLabels.unlockDrawing' : 'winterboard.touchLabels.lockDrawing') }}</span>
         </button>
 
         <button
           type="button"
           class="wb-header-btn"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :disabled="!store.canUndo || !classroomRole.canDraw.value"
           :title="t('winterboard.room.undoShortcut')"
           @click="handleUndo"
         >
-          ↩
+          <span aria-hidden="true">↩</span>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.undo') }}</span>
         </button>
         <button
           type="button"
           class="wb-header-btn"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :disabled="!store.canRedo || !classroomRole.canDraw.value"
           :title="t('winterboard.room.redoShortcut')"
           @click="handleRedo"
         >
-          ↪
+          <span aria-hidden="true">↪</span>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.redo') }}</span>
         </button>
 
         <!-- YouTube insert (Phase 10) -->
         <button
           type="button"
           class="wb-header-btn"
+          :class="{ 'wb-header-btn--labelled': noHoverLabels }"
           :disabled="isDrawingDisabled"
           :title="t('winterboard.youtube.insert')"
           @click="showYouTubeModal = true"
         >
-          ▶️
+          <span aria-hidden="true">▶️</span>
+          <span v-if="noHoverLabels" class="wb-header-btn__touch-label">{{ t('winterboard.touchLabels.youtube') }}</span>
         </button>
 
         <!-- End session + complete lesson (teacher only, B1: single action) -->
@@ -629,6 +639,7 @@ import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 // Phase 2 G-fix (2026-04-28): opsSyncStore bootstrap wiring (single write path)
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
+import { useNoHoverLabels } from '../composables/useNoHoverLabels'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
 import { handwriteAllWithFeedback, handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
@@ -678,6 +689,8 @@ const { showToast } = useToast()
 const history = useHistory({ maxSize: 100 })
 const locking = useLocking(store)
 const deviceModeState = useDeviceMode()
+// Слова під значками верхньої смуги на екрані без мишки (власник 2026-10-20).
+const noHoverLabels = useNoHoverLabels()
 // Режим проєктора — явний перемикач учителя (див. WBSoloRoom, той самий composable).
 const projector = useProjectorMode(deviceModeState.deviceMode)
 
@@ -3141,6 +3154,23 @@ onBeforeUnmount(async () => {
 }
 
 .wb-header-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); }
+
+/* Слова під значками верхньої смуги — екран без мишки (`useNoHoverLabels`; власник 2026-10-20, прохід «очима
+   вчителя»: на планшеті й великій дошці 👤+, 📱, 🔗, ⤴ без наведення не прочитати). Шапка 56 px — кнопка 44 px. */
+.wb-header-btn.wb-header-btn--labelled {
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  padding: 3px 6px;
+  flex-direction: column;
+  gap: 2px;
+}
+.wb-header-btn__touch-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
 .wb-header-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .wb-header-btn--active { background: rgba(239, 68, 68, 0.4); }
 .wb-header-btn--danger {

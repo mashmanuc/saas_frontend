@@ -7469,6 +7469,38 @@
     }
   },
   "winterboard": {
+    "rotateHint": {
+      "text": "Поверните планшет горизонтально — лист станет больше",
+      "ok": "Понятно"
+    },
+    "touchLabels": {
+      "select": "Выбор",
+      "pen": "Ручка",
+      "highlighter": "Маркер",
+      "line": "Линия",
+      "rectangle": "Прямоугольник",
+      "circle": "Круг",
+      "text": "Текст",
+      "eraser": "Ластик",
+      "laser": "Указка",
+      "sticky": "Заметка",
+      "color": "Цвет",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "clear": "Очистить",
+      "lock": "Закрепить",
+      "unlock": "Открепить",
+      "youtube": "YouTube",
+      "formula": "Формула",
+      "invite": "Ученик",
+      "remote": "Пульт",
+      "share": "Поделиться",
+      "export": "Экспорт",
+      "fullscreen": "Во весь экран",
+      "exitFullscreen": "Свернуть",
+      "lockDrawing": "Запретить",
+      "unlockDrawing": "Разрешить"
+    },
     "lessonSize": {
       "warnTitle": "Доска заполнена на {percent} %",
       "warnHint": "Когда будет 100 %, сохранить её как урок не получится. Продолжайте на новой доске.",
@@ -8338,7 +8370,13 @@
       "solidsSectionHeader": "Пространственные тела",
       "tabMaterials": "Материалы",
       "listTitle": "Мои файлы",
-      "tabTools": "Инструменты"
+      "tabTools": "Инструменты",
+      "apps": {
+        "graphs": "Графики",
+        "graphs3d": "Графики 3D",
+        "geometry": "Геометрия",
+        "stereo": "Стереометрия"
+      }
     },
     "templates": {
       "chooseTemplate": "Выберите шаблон доски",
