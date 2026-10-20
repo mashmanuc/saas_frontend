@@ -116,6 +116,7 @@ import { useI18n } from 'vue-i18n'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import IntegralykLoader from '@/modules/intent/IntegralykLoader.vue'
 import { homeworkImage, proposeHomework } from '@/modules/intent/homeworkApi'
+import { serverDetail } from '../../composables/homeworkCopy'
 import { validateTaskPages } from '@/modules/intent/taskPages'
 import { useWBStore } from '../../board/state/boardStore'
 import { useOpsSyncStore } from '../../stores/opsSyncStore'
@@ -219,8 +220,9 @@ async function copyImage(): Promise<void> {
     try {
       downloadUrl.value = URL.createObjectURL(await image)
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
-      error.value = typeof detail === 'string' ? detail : t('winterboard.homework.error')
+      // Картинку просимо з `responseType: 'blob'` — тож і тіло помилки приходить Blob-ом, а не об'єктом: без
+      // читача вчитель бачив загальне «Не вдалося…» замість пояснення сервера (знахідка Салюта 20.10).
+      error.value = (await serverDetail(e)) ?? t('winterboard.homework.error')
     }
   } finally {
     copying.value = false

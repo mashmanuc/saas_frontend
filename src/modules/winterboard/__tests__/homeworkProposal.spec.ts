@@ -150,6 +150,22 @@ describe('вікно пропозиції', () => {
     vi.unstubAllGlobals()
   })
 
+  it('картинку не намалювали — вчитель бачить пояснення сервера, а не загальне «Не вдалося…» (тіло — Blob)', async () => {
+    const detail = 'Частини задач уже немає в банку — запропонуйте домашку ще раз.'
+    const failed = Promise.reject({ response: { status: 400, data: new Blob([JSON.stringify({ detail })], { type: 'application/json' }) } })
+    failed.catch(() => {})   // обіцянку споживає сам компонент; тут — щоб тест не бачив «необробленої»
+    mocks.image.mockReturnValue(failed)
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+    const w = mountButton()
+    await w.get('[data-testid="wb-homework-button"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-testid="wb-homework-copy"]').trigger('click')
+    await flushPromises()
+    await new Promise(r => setTimeout(r, 0))   // Blob.text() — макрозадача в jsdom
+    await flushPromises()
+    expect(w.get('[data-testid="wb-homework-error"]').text()).toBe(detail)
+  })
+
   it('«Показати відповіді» → копія з відповідями; перемкнув — «Скопійовано» скинуто (власник 20.10)', async () => {
     mocks.image.mockResolvedValue(new Blob(['png'], { type: 'image/png' }))
     const write = vi.fn().mockResolvedValue(undefined)
