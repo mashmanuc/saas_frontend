@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Многокутник → коло</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Многокутник → коло"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Многокутник → коло</h1><p class="tp-lead">Збільшуємо кількість сторін правильного многокутника — і він «перетворюється» на коло. Так Архімед знайшов π.</p>
+<div class="tp-big" id="big"></div>
+<div class="tp-ctl">Кількість сторін n<div class="stp" data-k="n"></div></div>
+<input type="range" id="rng" min="3" max="96" value="6">
+<div class="tp-row"><button class="tp-btn primary" id="au">▶ Збільшувати</button><button class="tp-btn on" id="out">Описаний</button></div>
+<span class="tp-lab">Периметр ÷ діаметр</span>
+<div class="tp-expr" id="ex" style="font-size:19px;flex-direction:column;align-items:flex-start;gap:4px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={n:6};let outer=true,timer=null,cheered=false;
+const NM={3:'трикутник',4:'квадрат',5:'п’ятикутник',6:'шестикутник',7:'семикутник',8:'восьмикутник',9:'дев’ятикутник',10:'десятикутник',12:'дванадцятикутник'};
+function dg(v){const s=v.toFixed(6),P=Math.PI.toFixed(6);let i=0;while(i<s.length&&s[i]===P[i])i++;return `<span class="c-g">${s.slice(0,i)}</span>${s.slice(i)}`.replace('.',',')}
+function draw(){const n=st.n,r=180,cx=220,cy=220,pt=(R,i)=>[cx+R*Math.cos(-Math.PI/2+2*Math.PI*i/n),cy+R*Math.sin(-Math.PI/2+2*Math.PI*i/n)],poly=R=>[...Array(n).keys()].map(i=>pt(R,i).map(v=>v.toFixed(2)).join(',')).join(' ');
+let v='<svg viewBox="0 0 440 440">';
+if(outer)v+=`<polygon points="${poly(r/Math.cos(Math.PI/n))}" fill="${C.take2}" fill-opacity=".45" stroke="${C.blue}" stroke-width="2" stroke-linejoin="round"></polygon>`;
+v+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.paper}" stroke="${C.ink}" stroke-width="2.4"></circle>`;
+v+=`<polygon points="${poly(r)}" fill="${C.take}" fill-opacity=".85" stroke="${C.acc}" stroke-width="2" stroke-linejoin="round"></polygon>`;
+if(n<=24)for(let i=0;i<n;i++){const [x,y]=pt(r,i);v+=`<circle cx="${x}" cy="${y}" r="3.5" fill="${C.ink}"></circle>`}
+const [x0,y0]=pt(r,0);v+=`<line x1="${cx}" y1="${cy}" x2="${x0}" y2="${y0}" stroke="${C.ink}" stroke-width="1.6" stroke-dasharray="4 4"></line><circle cx="${cx}" cy="${cy}" r="3.5" fill="${C.ink}"></circle>`+Kit.txt(cx+10,cy-r/2,'r',{a:'start',serif:1,size:20,extra:' font-style="italic"'});
+$('view').innerHTML=v+'</svg>';
+const ins=n*Math.sin(Math.PI/n),cir=n*Math.tan(Math.PI/n);$('big').textContent=NM[n]||n+'-кутник';$('rng').value=n;
+$('ex').innerHTML=`<span><span class="c-a">вписаний:</span> ${dg(ins)}</span>`+(outer?`<span><span class="c-b">описаний:</span> ${dg(cir)}</span>`:'')+`<span>π = <span class="c-g">3,141593</span>…</span>`;
+$('say').innerHTML=n<6?`${(NM[n]||'').replace(/^./,c=>c.toUpperCase())} ще зовсім не схожий на коло — між ними великі «шапочки».`:n<24?`Щілини між многокутником і колом меншають. π затиснуте між <span class="n">${Kit.num(ins.toFixed(3))}</span> і <span class="d">${Kit.num(cir.toFixed(3))}</span>.`:n<96?`При n = ${n} многокутник уже майже не відрізнити від кола. Зелені цифри вже збігаються з π.`:`<span class="g">n = 96</span> — саме тут зупинився Архімед і довів, що 3,1408 < π < 3,1429. Без калькулятора!`}
+function set(n){const was=st.n;st.n=Kit.clamp(n,3,96);Kit.sync(st);draw();if(st.n===96&&was!==96&&!cheered){cheered=true;Mascot.cheer()}}
+function stop(){clearInterval(timer);timer=null;$('au').textContent='▶ Збільшувати'}
+Kit.steppers(st,{n:[3,96]},()=>set(st.n));
+$('rng').oninput=e=>{stop();set(+e.target.value)};
+$('au').onclick=()=>{if(timer)return stop();if(st.n>=96){cheered=false;set(3)}$('au').textContent='❚❚ Пауза';Mascot.cast(.4,.5);timer=setInterval(()=>{if(st.n>=96)return stop();set(st.n+(st.n<12?1:st.n<36?2:4))},st.n<12?400:200)};
+$('out').onclick=e=>{outer=!outer;e.target.classList.toggle('on',outer);draw()};
+draw();
+</script></body></html>

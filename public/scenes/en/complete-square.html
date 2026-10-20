@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Completing the square</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script>
+<style>.cs-l{opacity:.4;transition:opacity .3s}.cs-l.on{opacity:1}.cs-steps{display:flex;flex-direction:column;gap:4px}.cs-steps .tp-btn{text-align:left}.cs-steps .tp-btn.on{background:var(--paper);color:var(--accent);border-color:var(--accent);font-weight:600}.tp-side{gap:8px;padding:12px 16px}.tp-side h1{font-size:21px}.cs-steps{gap:2px}.cs-steps .tp-btn{padding:4px 9px;font-size:11px}.tp-say{font-size:14.5px;min-height:4em;padding-top:8px}</style></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Completing the square"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Completing the square</h1><p class="tp-lead">A quadratic equation is a tile puzzle. Add one corner piece — and you get a full square.</p>
+<div class="tp-ctl">b<div class="stp" data-k="b"></div></div>
+<div class="tp-ctl">c<div class="stp" data-k="c"></div></div>
+<div class="tp-expr" id="ex" style="flex-direction:column;align-items:flex-start;gap:6px;font-size:20px"></div>
+<div class="cs-steps" id="steps"></div>
+<div class="tp-row"><button class="tp-btn" id="pv">← Back</button><button class="tp-btn primary" id="nx">Next →</button></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={b:6,c:16};let s=0,an=1;
+const NAMES=['Equation tiles','Cut the strip in half','Move one half','Add the corner','A full square!'];
+const L=(a,b,k)=>a+(b-a)*k;
+function draw(){const {b,c}=st,h=b/2,S=c+h*h,X=170,u=16,H=h*u,o=40;let v='<svg viewBox="0 0 640 360">';
+const gap=s===0?0:s===1?6*an:6,k=s<2?0:s===2?an:1,cor=s<3?0:s===3?an:1,big=s<4?0:an;
+const grid=(x,y,w,hh,col)=>{let g='';for(let i=1;i*u<w-.5;i++)g+=`<line x1="${x+i*u}" y1="${y}" x2="${x+i*u}" y2="${y+hh}" stroke="${col}" stroke-width=".6"></line>`;for(let j=1;j*u<hh-.5;j++)g+=`<line x1="${x}" y1="${y+j*u}" x2="${x+w}" y2="${y+j*u}" stroke="${col}" stroke-width=".6"></line>`;return g};
+v+=`<rect class="piece" x="${o}" y="${o}" width="${X}" height="${X}" fill="${C.take}" stroke="${C.ink}" stroke-width="2"></rect>`+Kit.txt(o+X/2,o+X/2+10,'x²',{serif:1,size:30});
+v+=`<rect class="piece" x="${o+X}" y="${o}" width="${H}" height="${X}" fill="${C.take2}" stroke="${C.ink}" stroke-width="2"></rect>`;
+const bx=L(o+X+H+gap,o,k),by=L(o,o+X,k),bw=L(H,X,k),bh=L(X,H,k);
+v+=`<rect class="piece" x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="${C.take2}" stroke="${C.ink}" stroke-width="2"></rect>`;
+if(s===0)v+=`<line x1="${o+X+H}" y1="${o}" x2="${o+X+H}" y2="${o+X}" stroke="${C.take2}" stroke-width="3"></line>`;
+if(s===1)v+=`<line x1="${o+X+H+gap/2}" y1="${o-8}" x2="${o+X+H+gap/2}" y2="${o+X+8}" stroke="${C.acc}" stroke-width="2" stroke-dasharray="5 4"></line>`;
+if(cor>0)v+=`<g opacity="${cor}"><rect x="${o+X}" y="${o+X}" width="${H}" height="${H}" fill="${C.green2}" stroke="${C.green}" stroke-width="2.4"></rect>${grid(o+X,o+X,H,H,C.green)}</g>`;
+if(big>0)v+=`<rect x="${o-6}" y="${o-6}" width="${X+H+12}" height="${X+H+12}" fill="none" stroke="${C.acc}" stroke-width="3.5" stroke-dasharray="10 6" opacity="${big}"></rect>`;
+v+=Kit.txt(o+X/2,o-12,'x',{serif:1,size:20,extra:' font-style="italic"'})+Kit.txt(o-14,o+X/2+6,'x',{serif:1,size:20,extra:' font-style="italic"'});
+v+=s===0?Kit.txt(o+X+H,o-12,'b = '+Kit.num(b),{serif:1,size:18,fill:C.blue}):Kit.txt(o+X+H/2,o-12,Kit.num(h),{serif:1,size:18,fill:C.blue});
+if(s===1)v+=Kit.txt(o+X+H*1.5+gap,o-12,Kit.num(h),{serif:1,size:18,fill:C.blue});
+if(k===1)v+=Kit.txt(o-14,o+X+H/2+6,Kit.num(h),{serif:1,size:18,fill:C.blue,a:'end'});
+if(big>0)v+=Kit.txt(o+(X+H)/2,o+X+H+34,'x + '+Kit.num(h),{serif:1,size:20,fill:C.acc,extra:` opacity="${big}"`});
+const rx=440,cols=10,rows=Math.ceil(c/cols);v+=Kit.txt(rx-20,o+22,'=',{serif:1,size:30});
+for(let i=0;i<c;i++)v+=`<rect x="${rx+(i%cols)*u}" y="${o+(i/cols|0)*u}" width="${u}" height="${u}" fill="#d3e5ee" stroke="${C.ink}" stroke-width=".8"></rect>`;
+v+=Kit.txt(rx+cols*u/2,o+rows*u+20,'c = '+c,{size:13,fill:C.ink3});
+if(cor>0){const y=o+rows*u+40;v+=`<g opacity="${cor}">`+Kit.txt(rx-20,y+H/2+8,'+',{serif:1,size:26,fill:C.green})+`<rect x="${rx}" y="${y}" width="${H}" height="${H}" fill="${C.green2}" stroke="${C.green}" stroke-width="2.4"></rect>${grid(rx,y,H,H,C.green)}`+Kit.txt(rx+H+10,y+H/2+5,'('+Kit.num(h)+')² = '+Kit.num(h*h),{a:'start',size:13,fill:C.green})+'</g>'}
+$('view').innerHTML=v+'</svg>';
+const hs=Kit.num(h),Ss=Kit.num(S),r=Math.sqrt(S),sq=Number.isInteger(r)?Kit.num(r):'√'+Ss,x1=r-h,x2=-r-h,fx=v=>Number.isInteger(r)?Kit.num(v):Kit.num(+v.toFixed(2));
+const lines=[`x² + ${Kit.num(b)}x = ${c}`,`x² + ${hs}x + ${hs}x = ${c}`,`x² + 2·${hs}·x = ${c}`,`x² + ${Kit.num(b)}x + <span class="c-g">${Kit.num(h*h)}</span> = ${c} + <span class="c-g">${Kit.num(h*h)}</span>`,`<span class="c-a">(x + ${hs})²</span> = ${Ss} → x = ${sq} − ${hs} = <span class="c-a">${fx(x1)}</span>`];
+$('ex').innerHTML=lines.slice(0,s+1).map((t,i)=>`<span class="cs-l ${i===s?'on':''}">${t}</span>`).join('');
+$('steps').innerHTML=NAMES.map((t,i)=>`<button class="tp-btn ${i===s?'on':''}" data-go="${i}">${i+1}. ${t}</button>`).join('');
+$('pv').disabled=s===0;$('nx').disabled=s===4;
+$('say').innerHTML=[`On the left — <span class="n">x²</span> (a square) and <span class="d">b·x</span> (a ${Kit.num(b)} by x strip). On the right — ${c} unit squares. The total areas are equal.`,
+`Cut the strip into two equal halves of <span class="d">${hs}</span> each.`,
+`Move one half under the square. We get an L-shape — almost a square…`,
+`Only the <span class="g">${hs} × ${hs}</span> corner is missing. We add it — and, to keep the equation true, add the same on the right.`,
+`Now the left side is a full square with side <span class="n">x + ${hs}</span> and area ${Ss}. So x + ${hs} = ${sq}, x = <span class="n">${fx(x1)}</span>. (The second root: −${sq} − ${hs} = ${fx(x2)} — tiles cannot show it.)`][s]}
+function go(n){const ps=s;s=Kit.clamp(n,0,4);if(s===ps)return;an=s>ps?0:1;draw();if(s>ps)Kit.tween(800,e=>{an=e;draw()});if(s===1||s===3)Mascot.cast(.3,.5);if(s===4)Mascot.cheer()}
+$('nx').onclick=()=>go(s+1);$('pv').onclick=()=>go(s-1);
+$('steps').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go(+b.dataset.go)};
+Kit.steppers(st,{b:[1,10],c:[1,40]},()=>{s=0;an=1;draw()});
+draw();
+</script></body></html>

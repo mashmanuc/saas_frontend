@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sieve of Eratosthenes</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Sieve of Eratosthenes"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Sieve of Eratosthenes</h1><p class="tp-lead">Take the smallest number that is not crossed out — it is prime. Cross out all its multiples. Repeat.</p>
+<div class="tp-big" id="big"></div>
+<div class="tp-row"><button class="tp-btn primary" id="nx">Next prime →</button><button class="tp-btn" id="au">▶ Auto</button><button class="tp-btn" id="rs">↺</button></div>
+<div class="tp-expr" id="ex" style="font-size:18px;gap:4px 8px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,COL=['#c4622a','#3b7b9b','#4d8b5a','#8a5aa8'];let by={},primes=[],sieve=[],cur=1,busy=false,done=false,auto=false,msg='';
+const pc=n=>{const i=sieve.indexOf(n);return i>=0?COL[i]:C.acc};
+function reset(){by={};primes=[];sieve=[];cur=1;busy=false;done=false;auto=false;$('au').classList.remove('on');msg='We start with <span class="n">2</span> — the smallest prime number. The number 1 is neither prime nor composite.';draw()}
+function draw(){let v='<svg viewBox="0 0 524 524">';for(let n=1;n<=100;n++){const i=n-1,x=2+(i%10)*52,y=2+(i/10|0)*52,b=by[n],isP=primes.includes(n),now=n===cur&&!done;
+v+=`<rect x="${x}" y="${y}" width="50" height="50" rx="6" fill="${n===1?'#ece3d2':isP?pc(n):C.paper}" stroke="${now?C.ink:C.line}" stroke-width="${now?3:1}"></rect>`;
+if(b!==undefined)v+=`<rect x="${x}" y="${y}" width="50" height="50" rx="6" fill="${COL[b]}" opacity=".16"></rect>`;
+v+=Kit.txt(x+25,y+33,n,{serif:1,size:22,fill:isP?'#fff':b!==undefined?C.ink3:n===1?C.ink3:C.ink});
+if(b!==undefined)v+=`<line x1="${x+9}" y1="${y+41}" x2="${x+41}" y2="${y+9}" stroke="${COL[b]}" stroke-width="2.6" stroke-linecap="round"></line>`}
+$('view').innerHTML=v+'</svg>';
+$('big').textContent=`Primes: ${primes.length}`;
+$('ex').innerHTML=primes.map(n=>`<span style="color:${pc(n)}">${n}</span>`).join('');
+$('say').innerHTML=msg;$('nx').disabled=done||busy}
+function next(){if(busy||done)return;let p=cur+1;while(p<=100&&by[p]!==undefined)p++;
+if(p*p>100){for(let n=2;n<=100;n++)if(by[n]===undefined&&!primes.includes(n))primes.push(n);done=true;auto=false;$('au').classList.remove('on');
+msg=`The next number not crossed out is <span class="n">${p}</span>, but ${p}² = ${p*p} > 100. All its multiples up to 100 are already crossed out! So <span class="g">all the numbers left are prime</span>. There are ${primes.length} of them up to 100.`;draw();Mascot.cheer();return}
+cur=p;primes.push(p);sieve.push(p);const idx=sieve.length-1,ms=[];for(let m=p*p;m<=100;m+=p)if(by[m]===undefined)ms.push(m);
+msg=`<span class="n">${p}</span> is not crossed out — so it is prime. Cross out the multiples of ${p}, starting from ${p}² = ${p*p}: the smaller ones were crossed out earlier. New: ${ms.length}.`;
+busy=true;Mascot.cast(.5,.5);let i=0;const step=()=>{if(i<ms.length){by[ms[i++]]=idx;draw();setTimeout(step,REDUCE?0:45)}else{busy=false;draw();if(auto)setTimeout(next,700)}};draw();setTimeout(step,REDUCE?0:500)}
+$('nx').onclick=next;$('rs').onclick=reset;
+$('au').onclick=e=>{if(done)reset();auto=!auto;$('au').classList.toggle('on',auto);if(auto)next()};
+reset();
+</script></body></html>

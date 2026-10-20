@@ -9,8 +9,9 @@
 import type { WBAsset } from './winterboard'
 
 export const MATH_SCENE_IDS = [
-  'fractions', 'percent', 'decimals', 'frac-mul', 'frac-div', 'lcm', 'negatives', 'equation',
-  'square-sum', 'proportion', 'pythagoras', 'angles', 'symmetry', 'areas', 'probability', 'mean', 'vectors',
+  'fractions', 'percent', 'decimals', 'frac-mul', 'frac-div', 'lcm', 'sieve', 'negatives', 'powers',
+  'equation', 'square-sum', 'complete-square', 'proportion', 'pythagoras', 'angles', 'congruence',
+  'symmetry', 'areas', 'polygon-circle', 'probability', 'galton', 'mean', 'vectors',
 ] as const
 
 export type MathSceneId = typeof MATH_SCENE_IDS[number]

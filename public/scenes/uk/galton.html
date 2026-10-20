@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Дошка Гальтона</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Дошка Гальтона"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Дошка Гальтона</h1><p class="tp-lead">На кожному цвяху кулька навмання падає ліворуч або праворуч. Одна кулька — хаос, тисяча — завжди «дзвін».</p>
+<div class="tp-ctl">Рядів цвяхів<div class="stp" data-k="R"></div></div>
+<div class="tp-ctl">Шанс «праворуч»<b id="pV" style="font-family:'Times New Roman',serif;font-size:22px;color:var(--accent)"></b></div>
+<input type="range" id="p" min="0.2" max="0.8" step="0.05" value="0.5">
+<div class="tp-row"><button class="tp-btn" data-n="1">1 кулька</button><button class="tp-btn" data-n="10">×10</button><button class="tp-btn" data-n="100">×100</button><button class="tp-btn" data-n="1000">×1000</button></div>
+<div class="tp-row"><button class="tp-btn on" id="crv">Теоретична крива</button><button class="tp-btn" id="rst">↺ Очистити</button></div>
+<div class="tp-expr" id="ex" style="font-size:18px;flex-direction:column;align-items:flex-start;gap:2px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={R:8};let p=.5,cnt=[],balls=[],N=0,queue=0,raf=0,fr=0,curve=true,cheered=false;
+const bin=(n,k)=>{let r=1;for(let i=1;i<=k;i++)r=r*(n-k+i)/i;return r};
+const G=()=>{const R=st.R,dx=Math.min(46,500/(R+1)),dy=Math.min(36,330/R);return{R,dx,dy,top:34,binY:34+R*dy+6,H:170}};
+const mk=()=>{const a=[];for(let i=0;i<st.R;i++)a.push(Math.random()<p?1:0);return a};
+const sum=a=>a.reduce((s,c)=>s+c,0);
+function reset(){balls=[];queue=0;cnt=Array(st.R+1).fill(0);N=0;cheered=false;draw()}
+function pos(b,g){const i=Math.min(g.R,Math.floor(b.t)),f=b.t-i,X=(k,i)=>300+(k-i/2)*g.dx,Y=i=>g.top+i*g.dy-9;let k=0;for(let j=0;j<i;j++)k+=b.path[j];
+if(i>=g.R)return[X(k,g.R),Y(g.R)+f*30];const k1=k+b.path[i];return[X(k,i)+(X(k1,i+1)-X(k,i))*f,Y(i)+(Y(i+1)-Y(i))*f-Math.sin(f*Math.PI)*g.dy*.45]}
+function tick(){fr++;if(queue>0&&fr%2===0){balls.push({path:mk(),t:0});queue--}
+const g=G();balls.forEach(b=>b.t+=REDUCE?1:.13);balls=balls.filter(b=>{if(b.t>=g.R+.6){cnt[sum(b.path)]++;N++;return false}return true});
+draw();check();raf=(balls.length||queue)?requestAnimationFrame(tick):0}
+function drop(n){if(n>=1000){for(let i=0;i<n;i++){cnt[sum(mk())]++;N++}Mascot.cast(.5,.85);draw();check();return}queue+=n;if(n>=100)Mascot.cast(.5,.12);if(!raf)raf=requestAnimationFrame(tick)}
+function check(){if(!cheered&&N>=500){cheered=true;Mascot.cheer()}}
+function draw(){const g=G(),{R,dx,dy,top,binY,H}=g;let v=`<svg viewBox="0 0 600 ${binY+H+34}">`;
+v+=`<path d="M244,4 L290,${top-16} M356,4 L310,${top-16}" stroke="${C.ink3}" stroke-width="2.4" fill="none"></path>`;
+for(let i=0;i<R;i++)for(let j=0;j<=i;j++)v+=`<circle cx="${300+(j-i/2)*dx}" cy="${top+i*dy}" r="3.6" fill="${C.ink}"></circle>`;
+for(let k=0;k<=R+1;k++){const x=300+(k-.5-R/2)*dx;v+=`<line x1="${x}" y1="${binY}" x2="${x}" y2="${binY+H}" stroke="${C.ink2}" stroke-width="1.6"></line>`}
+v+=`<line x1="${300-(R/2+.5)*dx}" y1="${binY+H}" x2="${300+(R/2+.5)*dx}" y2="${binY+H}" stroke="${C.ink}" stroke-width="2.4"></line>`;
+const ex=cnt.map((_,k)=>N*bin(R,k)*p**k*(1-p)**(R-k)),mx=Math.max(1,...cnt,...ex),hh=c=>c/mx*(H-12);
+cnt.forEach((c,k)=>{const cx=300+(k-R/2)*dx;if(c)v+=`<rect x="${cx-dx/2+2}" y="${binY+H-hh(c)}" width="${dx-4}" height="${hh(c)}" fill="${C.take}" stroke="${C.ink}" stroke-width="1"></rect>`;if(N&&dx>=30)v+=Kit.txt(cx,binY+H+16,c,{size:10,fill:C.ink3})});
+if(curve&&N){const pts=ex.map((e,k)=>[300+(k-R/2)*dx,binY+H-hh(e)]);v+=`<polyline points="${pts.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${C.green}" stroke-width="2.6" stroke-linejoin="round"></polyline>`+pts.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="3" fill="${C.green}"></circle>`).join('')}
+balls.forEach(b=>{const [x,y]=pos(b,g);v+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${C.acc}" stroke="${C.ink}" stroke-width=".8"></circle>`});
+$('view').innerHTML=v+'</svg>';
+const best=cnt.indexOf(Math.max(...cnt));$('pV').textContent=Math.round(p*100)+'%';
+$('ex').innerHTML=`<span>Кульок: ${N}</span>`+(N?`<span>Найбільше в кошику <span class="c-a">${best}</span></span>`:'')+`<span class="c-g" style="font-size:15px">шанс кошика k = C(${R},k)·p<sup>k</sup>·(1−p)<sup>${R}−k</sup></span>`;
+$('say').innerHTML=N<20?`Кожна кулька проходить <span class="d">${R}</span> цвяхів і щоразу «кидає монетку». Куди впаде наступна — передбачити неможливо.`:N<300?`Уже видно форму: у середині кульок більше. Туди веде найбільше різних шляхів — C(${R},k).`:`Після ${N} кульок гістограма майже збігається з <span class="g">теоретичною кривою</span>.`+(Math.abs(p-.5)>.01?` Дошка нахилена — і «дзвін» з’їхав ${p>.5?'праворуч':'ліворуч'}.`:' Це нормальний розподіл — «дзвін» Гаусса.')}
+Kit.steppers(st,{R:[3,12]},reset);
+$('p').oninput=e=>{p=+e.target.value;reset()};
+document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>drop(+b.dataset.n));
+$('crv').onclick=e=>{curve=!curve;e.target.classList.toggle('on',curve);draw()};$('rst').onclick=reset;
+reset();
+</script></body></html>

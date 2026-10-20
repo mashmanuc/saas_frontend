@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Рівність трикутників</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Рівність трикутників"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Рівність трикутників</h1><p class="tp-lead">Два трикутники рівні, якщо їх можна накласти один на одного. Ознаки кажуть: досить знати лише три елементи.</p>
+<span class="tp-lab">Ознака</span>
+<div class="tp-row" id="crit" style="flex-direction:column"><button class="tp-btn" data-c="sas">1. Дві сторони і кут між ними</button><button class="tp-btn" data-c="asa">2. Сторона і два прилеглі кути</button><button class="tp-btn" data-c="sss">3. Три сторони</button></div>
+<div class="tp-row"><button class="tp-btn primary" id="go">Накласти</button><button class="tp-btn" id="nw">Нова пара</button></div>
+<div class="tp-expr" id="ex" style="font-size:20px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,A0=[175,215],MK={sas:{s:[[0,1,1],[2,0,2]],a:[[0,1]]},asa:{s:[[0,1,1]],a:[[0,1],[1,2]]},sss:{s:[[0,1,1],[1,2,2],[2,0,3]],a:[]}};
+let crit='sas',T=[],P0={},t=0,busy=false;const rnd=(a,b)=>a+Math.random()*(b-a);
+function newPair(){T=[[-100,55],[rnd(60,105),rnd(35,70)],[rnd(-55,35),rnd(-100,-65)]];const cx=(T[0][0]+T[1][0]+T[2][0])/3,cy=(T[0][1]+T[1][1]+T[2][1])/3;T=T.map(([x,y])=>[x-cx,y-cy]);
+P0={th:rnd(.7,2.5)*(Math.random()<.5?-1:1),m:Math.random()<.55?-1:1,x:465,y:205};t=0;draw()}
+const tf=(p,th,m,x,y)=>{const px=m*p[0],py=p[1],c=Math.cos(th),s=Math.sin(th);return[x+px*c-py*s,y+px*s+py*c]};
+const pts=P=>P.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+function ticks(P,i,j,n,col){const a=P[i],b=P[j],M=[(a[0]+b[0])/2,(a[1]+b[1])/2],L=Math.hypot(b[0]-a[0],b[1]-a[1]),d=[(b[0]-a[0])/L,(b[1]-a[1])/L],nr=[-d[1],d[0]];let s='';
+for(let k=0;k<n;k++){const o=(k-(n-1)/2)*6,c=[M[0]+d[0]*o,M[1]+d[1]*o];s+=`<line x1="${c[0]-nr[0]*8}" y1="${c[1]-nr[1]*8}" x2="${c[0]+nr[0]*8}" y2="${c[1]+nr[1]*8}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"></line>`}
+return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="3.4" stroke-linecap="round"></line>`+s}
+function arcs(P,v,n,col){const V=P[v],A=P[(v+1)%3],B=P[(v+2)%3],u=[A[0]-V[0],A[1]-V[1]],w=[B[0]-V[0],B[1]-V[1]],a1=Math.atan2(u[1],u[0]),a2=Math.atan2(w[1],w[0]),sw=u[0]*w[1]-u[1]*w[0]>0?1:0;let s='';
+for(let k=0;k<n;k++){const r=22+k*6;s+=`<path d="M${V[0]+r*Math.cos(a1)},${V[1]+r*Math.sin(a1)} A${r},${r} 0 0 ${sw} ${V[0]+r*Math.cos(a2)},${V[1]+r*Math.sin(a2)}" fill="none" stroke="${col}" stroke-width="2.4"></path>`}
+if(n)s=`<path d="M${V[0]},${V[1]} L${V[0]+22*Math.cos(a1)},${V[1]+22*Math.sin(a1)} A22,22 0 0 ${sw} ${V[0]+22*Math.cos(a2)},${V[1]+22*Math.sin(a2)} Z" fill="${col}" opacity=".22"></path>`+s;return s}
+function tri(P,fill,lab,op=1){const g=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3],mk=MK[crit];let s=`<g opacity="${op}"><polygon points="${pts(P)}" fill="${fill}" stroke="${C.ink}" stroke-width="2.2" stroke-linejoin="round"></polygon>`;
+mk.s.forEach(([i,j,n])=>s+=ticks(P,i,j,n,C.acc));mk.a.forEach(([v,n])=>s+=arcs(P,v,n,C.blue));
+P.forEach((p,i)=>{const d=[p[0]-g[0],p[1]-g[1]],L=Math.hypot(...d);s+=Kit.txt(p[0]+d[0]/L*20,p[1]+d[1]/L*20+6,'ABC'[i]+lab,{serif:1,size:18})});return s+'</g>'}
+function cur(){let th=P0.th;th=Math.atan2(Math.sin(th),Math.cos(th));return{th:th*(1-t),m:P0.m+(1-P0.m)*t,x:P0.x+(A0[0]-P0.x)*t,y:P0.y+(A0[1]-P0.y)*t}}
+function draw(){const P1=T.map(p=>tf(p,0,1,...A0)),q=cur(),P2=T.map(p=>tf(p,q.th,q.m,q.x,q.y));let v='<svg viewBox="0 0 640 420">';
+v+=tri(P1,C.take,'');v+=tri(P2,C.take2,'′',t>0?.85:1);
+if(t===1)v+=`<polygon points="${pts(P1)}" fill="none" stroke="${C.green}" stroke-width="5" stroke-linejoin="round" opacity=".8"></polygon>`;
+$('view').innerHTML=v+'</svg>';
+[...$('crit').children].forEach(b=>b.classList.toggle('on',b.dataset.c===crit));
+$('ex').innerHTML={sas:'AB = A′B′, AC = A′C′, ∠A = ∠A′',asa:'AB = A′B′, ∠A = ∠A′, ∠B = ∠B′',sss:'AB = A′B′, BC = B′C′, CA = C′A′'}[crit];
+$('go').textContent=t===1?'↺ Розвести':'Накласти';
+$('say').innerHTML=t===1?'Усі три вершини збіглися — трикутники <span class="g">рівні</span>. Отже рівні й усі інші сторони та кути, навіть ті, яких ми не позначали.':`Позначені елементи однакові: <span class="n">сторони</span> рисками, <span class="d">кути</span> дугами. Чи цього досить, щоб трикутники збіглися?`+(P0.m<0?' Увага: другий трикутник дзеркальний — його доведеться ще й перевернути!':'')}
+$('crit').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;crit=b.dataset.c;draw()};
+$('go').onclick=()=>{if(busy)return;busy=true;const to=t===1?0:1,from=t;if(to)Mascot.cast(.55,.45);Kit.tween(1600,e=>{t=from+(to-from)*e;draw()},()=>{t=to;busy=false;draw();if(to)Mascot.cheer()})};
+$('nw').onclick=()=>{if(!busy)newPair()};
+newPair();
+</script></body></html>

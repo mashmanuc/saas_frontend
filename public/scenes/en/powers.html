@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Integer exponents</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Powers"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Ladder of powers</h1><p class="tp-lead">Each step down divides by the base. Go below zero — and see where a⁰ = 1 and negative exponents come from.</p>
+<span class="tp-lab">Base a</span>
+<div class="tp-row" id="base"><button class="tp-btn on" data-a="2">2</button><button class="tp-btn" data-a="3">3</button><button class="tp-btn" data-a="10">10</button></div>
+<div class="tp-ctl">Exponent n<div class="stp" data-k="n"></div></div>
+<div class="tp-row"><button class="tp-btn primary" id="dn">↓ ÷ a</button><button class="tp-btn" id="up">↑ · a</button></div>
+<div class="tp-expr" id="ex" style="font-size:22px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={n:3};let a=2,bx=0,by=0,first=true;const NS=[4,3,2,1,0,-1,-2,-3,-4],W=58,X0=26;
+const sx=n=>X0+NS.indexOf(n)*W,sy=n=>50+NS.indexOf(n)*36;
+const val=n=>n>=0?String(a**n):'1/'+a**-n;
+const pw=(x,y,n,o={})=>`<text x="${x}" y="${y}" text-anchor="middle" font-family="Times New Roman,serif" font-weight="700" font-size="${o.size||20}" fill="${o.fill||C.ink}">${a}<tspan dy="-8" font-size="${(o.size||20)*.65}">${String(n).replace('-','−')}</tspan></text>`;
+function draw(){let v='<svg viewBox="0 0 580 520">';
+NS.forEach(n=>{const x=sx(n),y=sy(n),on=n===st.n;v+=`<rect x="${x}" y="${y}" width="${W}" height="${400-y}" fill="${n>0?C.take:n===0?C.green2:C.take2}" stroke="${on?C.ink:C.ink2}" stroke-width="${on?3:1.4}"></rect>`+pw(x+W/2,y+26,n,{size:18})+Kit.txt(x+W/2,y+46,val(n),{size:a===10&&Math.abs(n)>2?9:12,fill:C.ink2,w:600})});
+NS.slice(0,-1).forEach(n=>{const x=sx(n)+W/2,y=sy(n),near=n===st.n||n-1===st.n;v+=`<path d="M${x+8},${y-6} Q${x+W/2+6},${y-30} ${x+W-6},${y+30}" fill="none" stroke="${near?C.acc:C.line}" stroke-width="${near?2:1.2}" marker-end="url(#ar)"></path>`;if(near)v+=Kit.txt(x+W/2+8,y-20,'÷'+a,{size:12,fill:C.acc,w:700})});
+v=v.replace('<svg viewBox="0 0 580 520">',`<svg viewBox="0 0 580 520"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${C.acc}"></path></marker></defs>`);
+v+=`<line x1="10" y1="400" x2="570" y2="400" stroke="${C.ink}" stroke-width="2.4"></line>`;
+v+=`<circle cx="${bx}" cy="${by}" r="11" fill="${C.acc}" stroke="${C.ink}" stroke-width="1.6"></circle>`;
+const U=48,w=Math.min(500,a**st.n*U),cut=a**st.n*U>500;
+v+=Kit.txt(20,440,'actual size (one square = 1):',{a:'start',size:11,fill:C.ink3});
+v+=`<rect x="20" y="452" width="${U}" height="${U}" fill="${C.green2}" stroke="${C.green}" stroke-width="1.6"></rect>`+Kit.txt(20+U/2,452+U/2+5,'1',{serif:1,size:16});
+v+=`<rect x="${30+U}" y="452" width="${Math.max(1.5,w)}" height="${U}" fill="${C.take}" stroke="${C.ink}" stroke-width="1.4"></rect>`;
+if(cut)v+=Kit.txt(30+U+w-8,452+U/2+6,'… ×'+a**st.n,{a:'end',size:13,w:700});
+$('view').innerHTML=v+'</svg>';
+const n=st.n,k=Math.abs(n),mul=k?Array(k).fill(a).join('·'):'';
+$('ex').innerHTML=n>0?`${a}<sup>${n}</sup> = ${mul} = <span class="c-a">${a**n}</span>`:n===0?`${a}<sup>0</sup> = <span class="c-g">1</span>`:`${a}<sup>−${k}</sup> = ${Kit.frac(1,a+'<sup>'+k+'</sup>')} = ${Kit.frac(1,mul)} = <span class="c-b">${Kit.num(+(a**n).toPrecision(4))}</span>`;
+$('say').innerHTML=n>0?`${n} ${n===1?'factor':'factors'} of <span class="n">${a}</span>. One step down removes one factor, that is, divides by ${a}.`:n===0?`From ${a}<sup>1</sup> = ${a}, one step down: ${a} ÷ ${a} = <span class="g">1</span>. That is why any number to the power of zero equals 1 — it is just one more step of the ladder.`:`Keep dividing: 1 ÷ ${a} ÷ … A negative exponent means <span class="d">dividing</span> by ${a} ${k} ${k===1?'time':'times'}: ${a}<sup>−${k}</sup> = 1/${a}<sup>${k}</sup>.`}
+function place(n,anim){const tx=sx(n)+W/2,ty=sy(n)-12;if(!anim||first){bx=tx;by=ty;first=false;draw();return}const x0=bx,y0=by;Kit.tween(450,e=>{bx=x0+(tx-x0)*e;by=y0+(ty-y0)*e-Math.sin(e*Math.PI)*30;draw()})}
+function set(n){const was=st.n;st.n=Kit.clamp(n,-4,4);Kit.sync(st);place(st.n,true);if(st.n===0&&was===1)Mascot.cheer();else if(st.n<0&&was>=0)Mascot.cast(.75,.6)}
+Kit.steppers(st,{n:[-4,4]},()=>{st.n=st.n;place(st.n,true)});
+$('dn').onclick=()=>set(st.n-1);$('up').onclick=()=>set(st.n+1);
+$('base').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;a=+b.dataset.a;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));draw()};
+place(st.n,false);
+</script></body></html>

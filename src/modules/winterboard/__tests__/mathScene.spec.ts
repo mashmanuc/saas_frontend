@@ -44,7 +44,7 @@ describe('адреса сцени — мова сайту й вигляд пом
 })
 
 describe('«Інструменти» — лише пілоту math_scenes', () => {
-  it('без пілота немає ні картки, ні плиток; з пілотом — картка й 17 плиток', () => {
+  it('без пілота немає ні картки, ні плиток; з пілотом — картка й 23 плитки', () => {
     expect(visibleApps({ evidence: true }).some(a => a.app === 'scenes')).toBe(false)
     expect(visibleInserts({ evidence: true }).some(e => e.family === 'scenes')).toBe(false)
     expect(visibleApps({ evidence: false, scenes: true }).some(a => a.app === 'scenes')).toBe(true)
@@ -59,6 +59,15 @@ describe('«Інструменти» — лише пілоту math_scenes', () 
     await expect(runBoardAction({ kind: 'add_tool', payload: { insert_id: 'scenes.pythagoras' } }))
       .rejects.toThrow('Такого інструмента поки немає на дошці.')
     expect(KIND_LABELS.math_scene).toBe('наочна сцена')
+  })
+
+  it('«+» на кожній плитці сцени, на дотик видно завжди (власник 2026-10-21: «для сенсорних дошок це херово»)', () => {
+    const src = readFileSync(resolve(ROOT, 'src/modules/winterboard/components/sidebar/GroupContentSidebar.vue'), 'utf8')
+    const at = src.indexOf('data-testid="tools-scenes"')
+    const block = src.slice(at, src.indexOf('</template>', at))
+    expect(block).toMatch(/v-for="e in sceneEntries"[\s\S]*class="scene-tile__add"[\s\S]*@click\.stop="addSceneToBoard\(e\.dragMime, e\.payload\)"/)
+    expect(src).toMatch(/const addSceneToBoard = useAddToolToBoard\(\)/)
+    expect(src).toMatch(/@media \(any-pointer: coarse\) \{\s*\.scene-tile__add \{ opacity: 1; pointer-events: auto;/)
   })
 
   it('картка й плитки мають назви трьома мовами', () => {
