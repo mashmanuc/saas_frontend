@@ -1305,6 +1305,7 @@ import { useOnboardingHints, TutorHintId } from '@/composables/useOnboardingHint
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
+import { provideHomeworkCopyBoard } from '../composables/homeworkCopy'
 import { useGridOverlay, type GridType } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
@@ -2320,6 +2321,9 @@ const isSessionOwner = computed(() => {
   if (!store.ownerId || !authStore.user) return false
   return String(store.ownerId) === String(authStore.user.id)
 })
+// «📋 Скопіювати картинку» на картці домашки — там само, де «📝 Запропонувати домашку» (власник 2026-10-20).
+provideHomeworkCopyBoard(computed(() => (isSessionOwner.value && sessionId.value && !isLocalWorkspace
+  && !constructorMode.value ? sessionId.value : null)))
 
 /* ── ✨ / 🔎 — лише там, де є що збагачувати ────────────────────────────────
    Було: кнопки показувались на БУДЬ-ЯКІЙ дошці конструктора (`/prepare/:id`),

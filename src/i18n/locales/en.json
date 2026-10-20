@@ -7692,7 +7692,8 @@
       "locked": "The board can't be changed right now. Try again in a moment.",
       "copying": "Drawing the image…",
       "download": "Download the image",
-      "downloadHint": "The browser didn't allow copying the image."
+      "downloadHint": "The browser didn't allow copying the image.",
+      "copyError": "Could not copy the picture. Please try again."
     },
     "phoneHint": {
       "title": "The board works best on a computer or tablet",

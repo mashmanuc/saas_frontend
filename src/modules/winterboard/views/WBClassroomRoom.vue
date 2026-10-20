@@ -625,6 +625,7 @@ import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
 import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
+import { provideHomeworkCopyBoard } from '../composables/homeworkCopy'
 import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
@@ -703,6 +704,8 @@ const classroomGroupId = ref<string | null>(null)
 // читають classroomRole.isWriter синхронно при setup (immediate watch). Залежить лише від
 // resolvedSessionId, без сайд-ефектів (fetchRole/setRole викликаються пізніше). Move 2026-06-14.
 const classroomRole = useClassroomRole(resolvedSessionId)
+// «📋 Скопіювати картинку» на картці домашки — лише власнику: сервер малює її тільки йому (власник 2026-10-20).
+provideHomeworkCopyBoard(computed(() => (classroomRole.isOwner.value ? resolvedSessionId.value : null)))
 
 // ─── Lesson Domain state (C1.1 homework + C1.2 status) ─────────────────────
 const homeworkItems = ref<LessonHomework[]>([])

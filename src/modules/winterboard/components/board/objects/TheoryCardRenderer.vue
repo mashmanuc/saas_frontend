@@ -38,6 +38,33 @@
     <header class="theory-card__header" :style="{ background: presetStyle.accent + '10' }">
       <span class="theory-card__icon">{{ presetStyle.icon }}</span>
       <span class="theory-card__badge" :style="{ color: presetStyle.badge }">{{ data.badge || t('winterboard.widget.theoryCard.defaultBadge') }}</span>
+      <!-- «📋 Скопіювати картинку» (власник 2026-10-20): домашку додали в урок, а учневі не скопіювали. Лише у
+           вчителя-власника; та сама картинка, що у вікні домашки. Клікається й з олівцем, як «Джерело». -->
+      <template v-if="canCopyHomework">
+        <a
+          v-if="hwDownloadUrl"
+          class="theory-card__hw-copy"
+          :href="hwDownloadUrl"
+          :download="`${t('winterboard.homework.title')}.png`"
+          data-export-hide
+          data-testid="theory-card-hw-download"
+          @click.stop
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ t('winterboard.homework.download') }}</a>
+        <button
+          v-else
+          type="button"
+          class="theory-card__hw-copy"
+          :disabled="hwCopying"
+          data-export-hide
+          data-testid="theory-card-hw-copy"
+          @click.stop="copyHomework"
+          @mousedown.stop
+          @pointerdown.stop
+        >{{ hwCopying ? t('winterboard.homework.copying') : hwCopied ? t('winterboard.homework.copied') : `📋 ${t('winterboard.homework.copy')}` }}</button>
+        <span v-if="hwError" class="theory-card__hw-error" role="alert" data-export-hide data-testid="theory-card-hw-error">{{ hwError }}</span>
+      </template>
       <button
         v-if="!hostWindowControls && (!asset.locked && isSelected)"
         type="button"
@@ -182,8 +209,10 @@
 
 <script setup lang="ts">
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { homeworkImage } from '@/modules/intent/homeworkApi'
+import { homeworkTaskIds, serverDetail, useHomeworkCopyBoard } from '../../../composables/homeworkCopy'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { renderMathField } from '@/modules/intent/math/renderMathContent'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
@@ -296,6 +325,48 @@ const listInstruction = computed(() => {
 })
 // Самі вирази (спільна вказівка винесена вгору) — двома колонками, як на картинці для месенджера.
 const listIsBare = computed(() => listItems.value.length > 1 && listItems.value.every(item => /^\s*\$[^$]+\$\s*$/.test(item)))
+
+// ── «📋 Скопіювати картинку» на картці домашки (власник 2026-10-20) ──────────────────────────────
+const copyBoard = useHomeworkCopyBoard()
+const canCopyHomework = computed(() => Boolean(copyBoard?.value) && listItems.value.length > 0
+  && homeworkTaskIds(data.value).length > 0)
+const hwCopying = ref(false)
+const hwCopied = ref(false)
+const hwError = ref('')
+const hwDownloadUrl = ref('')
+
+function dropHwDownload(): void {
+  if (hwDownloadUrl.value) URL.revokeObjectURL(hwDownloadUrl.value)
+  hwDownloadUrl.value = ''
+}
+onBeforeUnmount(dropHwDownload)
+
+/**
+ * Як «Скопіювати картинку» у вікні домашки: `ClipboardItem` з обіцянкою — браузер не губить натиск, поки сервер
+ * малює. Буфер для картинок недоступний — посилання «Завантажити картинку»; сервер відмовив — його пояснення.
+ */
+async function copyHomework(): Promise<void> {
+  const boardId = copyBoard?.value
+  if (!boardId || hwCopying.value) return
+  hwCopied.value = false
+  hwError.value = ''
+  dropHwDownload()
+  hwCopying.value = true
+  const image: Promise<Blob> = homeworkImage({ boardId, ids: homeworkTaskIds(data.value) })
+  try {
+    if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('no-image-clipboard')
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })])
+    hwCopied.value = true
+  } catch {
+    try {
+      hwDownloadUrl.value = URL.createObjectURL(await image)
+    } catch (e: unknown) {
+      hwError.value = (await serverDetail(e)) || t('winterboard.homework.copyError')
+    }
+  } finally {
+    hwCopying.value = false
+  }
+}
 
 const presetStyle = computed(() => {
   const p = effectivePreset.value
@@ -420,6 +491,30 @@ const hostWindowControls = useHostWindowControls()
 }
 .theory-card__delete-btn:hover { background: #dc2626; border-color: #f87171; }
 .theory-card.is-readonly .theory-card__delete-btn { pointer-events: none; opacity: 0.4; }
+/* «📋 Скопіювати картинку» — pointer-events:auto, інакше клік з'їдає Konva-проксі (шапка — ручка перетягування). */
+.theory-card__hw-copy {
+  flex: 0 0 auto;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid var(--preset-border, #bfdbfe);
+  background: #ffffff;
+  color: #1e40af;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font: inherit;
+  font-size: calc(12px * var(--wb-card-text-scale, 1));
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.theory-card__hw-copy:hover:not(:disabled) { background: #eff6ff; }
+.theory-card__hw-copy:disabled { cursor: default; opacity: 0.7; }
+.theory-card__hw-error {
+  flex: 0 1 auto;
+  pointer-events: auto;
+  font-size: calc(11px * var(--wb-card-text-scale, 1));
+  color: #b91c1c;
+}
 
 .theory-card__body {
   flex: 1 1 auto;
