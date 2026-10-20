@@ -124,3 +124,18 @@ describe('6: вертикальний планшет', () => {
     }
   })
 })
+
+describe('3 і 4 (власник 2026-10-20: «так»)', () => {
+  it('кнопка новачка на головній каже, куди веде: «Відкрити Студію уроків»', () => {
+    const cta = (loc: unknown) => (loc as { dashboard: { cta: { create_lesson: { label: string } } } }).dashboard.cta.create_lesson.label
+    expect(cta(uk)).toBe('Відкрити Студію уроків')
+    expect(cta(en)).toBe('Open Lesson Studio')
+    expect(cta(ru)).toBe('Открыть Студию уроков')
+  })
+
+  it('згорнута панель — вкладка зі словом «Матеріали», а не ▶', () => {
+    expect(soloRoomSource).toContain("<span v-if=\"sidebarCollapsedBefore !== null\" class=\"wb-solo-room__sidebar-toggle-word\">{{ t('winterboard.room.materialsTab') }}</span>")
+    expect(soloRoomSource).not.toContain("sidebarCollapsedBefore !== null ? '\u25B6'")
+    expect((uk as never as { winterboard: { room: { materialsTab: string } } }).winterboard.room.materialsTab).toBe('Матеріали')
+  })
+})

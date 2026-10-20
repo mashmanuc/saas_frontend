@@ -2259,7 +2259,7 @@
       },
       "create_lesson": {
         "title": "Create your first lesson",
-        "label": "+ Create"
+        "label": "Open Lesson Studio"
       },
       "prepare_lesson": {
         "title": "Next lesson with {tutor}",
@@ -9196,6 +9196,7 @@
       "home": "Home",
       "sidebarCollapse": "Collapse panel (double-click)",
       "sidebarExpand": "Expand panel (double-click)",
+      "materialsTab": "Materials",
       "hidePagePanel": "Hide page panel",
       "showPagePanel": "Show page panel",
       "bgColor": "Page background",
@@ -9783,7 +9784,7 @@
       "whatAll": "Graphs, shapes, PDFs and presentations",
       "whatTools": "Graphs and shapes",
       "whereOpen": "{what} are in the panel on the right",
-      "whereCollapsed": "{what} are in the panel on the right: click ▶ at the right edge",
+      "whereCollapsed": "{what} are in the panel on the right: click «Materials» at the right edge",
       "whereDrawer": "{what} are in the panel opened by the ⊞ button at the top"
     },
     "pdfFragment": {

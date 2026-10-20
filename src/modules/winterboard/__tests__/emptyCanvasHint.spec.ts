@@ -31,7 +31,7 @@ function sentence(state: EmptyHintPanelState, messages: Record<string, unknown> 
 describe('стан панелі → речення', () => {
   it('новачок на ноутбуці: панель згорнута → куди натиснути', () => {
     expect(sentence({ ...base, collapsed: true }))
-      .toBe('Графіки, фігури, PDF і презентації — у панелі праворуч: натисніть ▶ біля правого краю')
+      .toBe('Графіки, фігури, PDF і презентації — у панелі праворуч: натисніть «Матеріали» біля правого краю')
   })
 
   it('панель відкрита → без інструкції про ▶', () => {
@@ -55,7 +55,7 @@ describe('стан панелі → речення', () => {
 
   it('демо гостя: «Матеріалів» немає — без PDF', () => {
     const s = sentence({ ...base, localMode: true, collapsed: true })
-    expect(s).toBe('Графіки й фігури — у панелі праворуч: натисніть ▶ біля правого краю')
+    expect(s).toBe('Графіки й фігури — у панелі праворуч: натисніть «Матеріали» біля правого краю')
     expect(s).not.toContain('PDF')
   })
 })
@@ -64,7 +64,11 @@ describe('тексти', () => {
   it.each([['uk', uk], ['en', en], ['ru', ru]] as const)('%s: є всі ключі, «де» має {what}', (_l, dict) => {
     const ec = dict.winterboard.emptyCanvas as Record<string, string>
     for (const key of ['whereOpen', 'whereCollapsed', 'whereDrawer']) expect(ec[key]).toContain('{what}')
-    expect(ec.whereCollapsed).toContain('▶')
+    // 2026-10-20: згорнута панель — вкладка зі словом «Матеріали», а не ▶ (прохід «очима вчителя» №10) —
+    // підказка називає те саме слово, що написане на вкладці.
+    const tab = (dict.winterboard.room as Record<string, string>).materialsTab
+    expect(ec.whereCollapsed).toContain(`«${tab}»`)
+    expect(ec.whereCollapsed).not.toContain('▶')
     expect(ec.whereDrawer).toContain('⊞')
     expect(ec.whatAll).toContain('PDF')
     expect(ec.whatTools).not.toContain('PDF')
@@ -75,7 +79,7 @@ describe('тексти', () => {
     const ec = ru.winterboard.emptyCanvas as Record<string, string>
     for (const s of Object.values(ec)) expect(s).not.toMatch(/[іїєґІЇЄҐ]/)
     expect(sentence({ ...base, collapsed: true }, en, 'en'))
-      .toBe('Graphs, shapes, PDFs and presentations are in the panel on the right: click ▶ at the right edge')
+      .toBe('Graphs, shapes, PDFs and presentations are in the panel on the right: click «Materials» at the right edge')
   })
 })
 
@@ -85,10 +89,9 @@ describe('кімната дошки бере рядок зі стану пане
     expect(ROOM).not.toContain("winterboard.emptyCanvas.sub'")
   })
 
-  it('стан «згорнута» — той самий, що малює ▶ на ручці панелі', () => {
+  it('стан «згорнута» — той самий, що малює вкладку «Матеріали» на ручці панелі', () => {
     expect(ROOM).toMatch(/collapsed: sidebarCollapsedBefore\.value !== null/)
-    expect(ROOM).toContain("sidebarCollapsedBefore !== null ? '\\u25B6' : '\\u25C0'")
-    expect('▶').toBe('▶')
+    expect(ROOM).toContain('<span v-if="sidebarCollapsedBefore !== null" class="wb-solo-room__sidebar-toggle-word">')
   })
 
   it('кнопка ⊞, до якої відсилає підказка, — у приліпленому до краю блоці, а не за краєм телефона', () => {

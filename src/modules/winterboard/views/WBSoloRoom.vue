@@ -720,15 +720,20 @@
         <div class="wb-solo-room__resize-grip" />
       </div>
       <!-- Sidebar collapse/expand tab — sits outside sidebar to avoid overflow clip -->
+      <!-- Згорнута панель — вкладка зі словом «Матеріали», а не ▶ розміром із букву (прохід «очима вчителя» №10,
+           власник 2026-10-20: «так»). Розгорнута — та сама вузька смужка, що й була. -->
       <button
         v-if="showMaterialsSidebar"
         class="wb-solo-room__sidebar-toggle"
         type="button"
         :title="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
         :aria-label="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
+        :class="{ 'wb-solo-room__sidebar-toggle--tab': sidebarCollapsedBefore !== null }"
+        data-testid="wb-sidebar-toggle"
         @click="toggleSidebarCollapse"
       >
-        {{ sidebarCollapsedBefore !== null ? '\u25B6' : '\u25C0' }}
+        <span v-if="sidebarCollapsedBefore !== null" class="wb-solo-room__sidebar-toggle-word">{{ t('winterboard.room.materialsTab') }}</span>
+        <template v-else>{{ '\u25C0' }}</template>
       </button>
 
       <!-- Right sidebar — always shows materials (selection toolbar handles object actions inline) -->
@@ -5656,6 +5661,19 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__sidebar-toggle:hover {
   background: var(--wb-bg-hover, #f1f5f9);
   color: var(--wb-text-primary, #334155);
+}
+/* Згорнута панель — вкладка зі словом (власник 2026-10-20). */
+.wb-solo-room__sidebar-toggle.wb-solo-room__sidebar-toggle--tab {
+  width: 32px;
+  border-left: 2px solid var(--wb-brand, #0d9488);
+  color: var(--wb-brand, #0d9488);
+}
+.wb-solo-room__sidebar-toggle-word {
+  writing-mode: vertical-rl;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 /* ── Right content sidebar (materials from LearningGroup, resizable) ───── */
