@@ -1,69 +1,111 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Symmetry and transformations</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script>
-<style>#view{position:absolute;inset:0;display:block}#cv{display:block;touch-action:none;cursor:crosshair}.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.sw.on{box-shadow:0 0 0 2px var(--ink)}.prm{display:flex;flex-direction:column;gap:10px}.prm[hidden]{display:none}.tp-ctl b{font-family:'Times New Roman',serif;font-size:22px;color:var(--accent)}</style></head><body>
+<style>#view{position:absolute;inset:0;display:block}#cv{display:block;touch-action:none;cursor:crosshair}
+.tp-side{gap:9px;padding:14px 18px}.tp-side h1{font-size:22px}.tp-lead{font-size:11px}.tp-say{font-size:15px;min-height:4.8em;padding-top:9px}
+.sw{width:24px;height:24px;border-radius:50%;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.sw.on{box-shadow:0 0 0 2px var(--ink)}
+.prm{display:flex;flex-direction:column;gap:7px}.prm[hidden]{display:none}.tp-ctl b{font-family:'Times New Roman',serif;font-size:21px;color:var(--accent)}
+.tp-btn{padding:6px 9px}.tp-row.figs .tp-btn{font-size:11.5px;padding:5px 8px}.chips{display:flex;gap:4px;flex-wrap:wrap}.chips .tp-btn{padding:4px 9px;font-size:12px}
+.hint{font-size:11px;color:var(--ink-3);line-height:1.4}input[type=range]{width:100%;margin:0}
+.bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.bar .tp-btn.primary{flex:1 1 100%}</style></head><body>
 <div class="tp"><div class="tp-stage" id="stage" data-screen-label="Symmetry"><div id="view"><canvas id="cv"></canvas></div></div>
 <aside class="tp-side">
-<h1>Symmetry and transformations</h1><p class="tp-lead">Draw on the canvas — the image builds itself. You can drag the point <b>O</b>.</p>
+<h1>Symmetry and transformations</h1><p class="tp-lead">Draw on the canvas or pick a ready figure — the image builds itself. You can drag the point <b>O</b>.</p>
 <span class="tp-lab">Transformation</span>
-<div class="tp-row" id="modes"><button class="tp-btn on" data-m="axis">Line</button><button class="tp-btn" data-m="point">Point</button><button class="tp-btn" data-m="rot">Rotation</button><button class="tp-btn" data-m="homo">Dilation</button></div>
+<div class="tp-row" id="modes"><button class="tp-btn on" data-m="axis">Line</button><button class="tp-btn" data-m="point">Point</button><button class="tp-btn" data-m="rot">Rotation</button><button class="tp-btn" data-m="trans">Translation</button><button class="tp-btn" data-m="homo">Dilation</button></div>
 <div class="prm" data-p="axis"><div class="tp-ctl">Axis angle<b id="angV"></b></div><input type="range" id="ang" min="0" max="165" step="15" value="90"></div>
-<div class="prm" data-p="rot" hidden><div class="tp-ctl">Number of copies n<div class="stp" data-k="n"></div></div><div class="tp-ctl">Rotation angle<b id="rotV"></b></div><button class="tp-btn" id="mir">+ mirror (kaleidoscope)</button></div>
-<div class="prm" data-p="homo" hidden><div class="tp-ctl">Scale factor k<b id="kV"></b></div><input type="range" id="k" min="0" max="11" step="1" value="7"><button class="tp-btn" id="rays">Show rays</button></div>
-<span class="tp-lab">Color</span>
-<div class="tp-row" id="cols"></div>
-<div class="tp-row"><button class="tp-btn" id="undo">↶ Undo</button><button class="tp-btn" id="clr">Clear</button></div>
+<div class="prm" data-p="point" hidden><div class="hint">Drag the point O and see when the figure maps onto itself.</div></div>
+<div class="prm" data-p="rot" hidden><div class="tp-ctl">Number of copies n<div class="stp" data-k="n"></div></div><button class="tp-btn" id="mir">+ mirror (kaleidoscope)</button></div>
+<div class="prm" data-p="trans" hidden><div class="tp-ctl">Vector<b id="vecV"></b></div><div class="hint">Drag the arrow tip on the canvas — it snaps to the grid cells.</div></div>
+<div class="prm" data-p="homo" hidden><div class="tp-ctl">Scale factor k<b id="kV"></b></div><input type="range" id="k" min="-12" max="12" step="1" value="8"><div class="chips" id="kq"><button class="tp-btn" data-k="1">1</button><button class="tp-btn" data-k="-1">−1</button><button class="tp-btn" data-k="0.5">0.5</button><button class="tp-btn" data-k="2">2</button><button class="tp-btn" data-k="0">0</button></div></div>
+<span class="tp-lab">Ready figure</span>
+<div class="tp-row figs" id="figs"><button class="tp-btn" data-f="tri">△ ABC</button><button class="tp-btn" data-f="letter">Letter F</button><button class="tp-btn" data-f="flag">Flag</button><button class="tp-btn" data-f="sq" title="A figure centered at O — see when it maps onto itself">□ centered at O</button><button class="tp-btn" data-f="reg" title="A figure centered at O — see when it maps onto itself">▲ centered at O</button></div>
+<div class="bar"><span id="cols" class="tp-row"></span><button class="tp-btn on" id="links">Links</button><button class="tp-btn" id="grid">Grid</button></div>
+<div class="bar"><button class="tp-btn primary" id="play">▶ Show the motion</button><button class="tp-btn" id="undo">↶ Undo</button><button class="tp-btn" id="clr">Clear</button></div>
 <div class="tp-say" id="say"></div>
 </aside></div>
 <script>
-const C=Kit.C,view=$('view'),cv=$('cv'),ctx=cv.getContext('2d');
-const THEMES={paper:{bg:'',pal:[C.acc,C.blue,C.green,C.ink],guide:C.line,axis:C.blue,fg:C.ink,hbg:C.paper,ray:C.ink3,glow:0,w:5,L:45},
-board:{bg:'#1f3b36',pal:['#f6efe0','#f2b98a','#9fd0e4','#b9e0a5'],guide:'rgba(255,255,255,.16)',axis:'#9fd0e4',fg:'#f6efe0',hbg:'#1f3b36',ray:'rgba(255,255,255,.5)',glow:0,w:6,chalk:1,L:78},
-neon:{bg:'#14111c',pal:['#ff7a45','#4cc9f0','#7cf29c','#f5e663'],guide:'rgba(255,255,255,.1)',axis:'#4cc9f0',fg:'#f5f5f5',hbg:'#14111c',ray:'rgba(255,255,255,.45)',glow:16,w:4,L:62}};
-const T={theme:'paper',copies:'same',grid:false};let th=THEMES.paper;
-const KS=[-3,-2,-1.5,-1,-.5,.5,1.5,2,2.5,3,.25,.75].sort((a,b)=>a-b);
-const st={n:6};let strokes=[],cur=null,mode='axis',col=0,W=0,H=0,O=null,dragO=false,mirror=false,rays=true,ang=90,k=2;
-const deg=d=>d*Math.PI/180;
-function maps(){if(mode==='axis'){const t=deg(-ang)*2,c=Math.cos(t),s=Math.sin(t);return[p=>p,([x,y])=>[x*c+y*s,x*s-y*c]]}
-if(mode==='point')return[p=>p,([x,y])=>[-x,-y]];
-if(mode==='homo')return[p=>p,([x,y])=>[k*x,k*y]];
-const o=[];for(let i=0;i<st.n;i++){const a=i*2*Math.PI/st.n,c=Math.cos(a),s=Math.sin(a);o.push(([x,y])=>[x*c-y*s,x*s+y*c]);if(mirror)o.push(([x,y])=>[x*c+y*s,x*s-y*c])}return o}
-function guides(){ctx.save();ctx.strokeStyle=th.guide;ctx.lineWidth=1;
-if(T.grid){ctx.beginPath();const g=40;for(let x=O[0]%g;x<W;x+=g){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=O[1]%g;y<H;y+=g){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.globalAlpha=.7;ctx.stroke();ctx.globalAlpha=1}
-ctx.setLineDash([6,6]);ctx.lineWidth=1.2;const R=Math.hypot(W,H);ctx.beginPath();
-const line=a=>{ctx.moveTo(O[0]-R*Math.cos(a),O[1]-R*Math.sin(a));ctx.lineTo(O[0]+R*Math.cos(a),O[1]+R*Math.sin(a))};
-if(mode==='axis'){ctx.strokeStyle=th.axis;ctx.lineWidth=2;line(deg(-ang))}
-if(mode==='rot'){for(let i=0;i<st.n;i++)line(i*Math.PI/st.n)}
-ctx.stroke();ctx.restore()}
-function colFor(s,i,n){return T.copies==='rainbow'&&i>0?`hsl(${(i*360/n+20)%360} 72% ${th.L}%)`:th.pal[s.c]}
-function path(s,m){ctx.beginPath();s.p.forEach((p,j)=>{const q=m([p[0]-O[0],p[1]-O[1]]);j?ctx.lineTo(O[0]+q[0],O[1]+q[1]):ctx.moveTo(O[0]+q[0],O[1]+q[1])})}
-function drawStroke(s,M){const two=mode==='point'||mode==='homo';
-M.forEach((m,i)=>{const c=colFor(s,i,M.length),a=i===0?1:T.copies==='ghost'?.3:two?.75:1;ctx.globalAlpha=a;ctx.strokeStyle=c;ctx.shadowColor=c;ctx.shadowBlur=th.glow;ctx.lineWidth=th.w;path(s,m);ctx.stroke();
-if(th.chalk){ctx.shadowBlur=0;ctx.globalAlpha=a*.4;ctx.lineWidth=th.w*1.9;ctx.setLineDash([1,4]);ctx.stroke();ctx.setLineDash([])}});ctx.globalAlpha=1;ctx.shadowBlur=0;
-if(two&&rays&&s.p.length){const p=s.p[0],v=[p[0]-O[0],p[1]-O[1]],q=M[1](v);ctx.save();ctx.strokeStyle=th.ray;ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(O[0]+q[0],O[1]+q[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();
-ctx.setLineDash([]);ctx.fillStyle=th.pal[s.c];[[p[0],p[1]],[O[0]+q[0],O[1]+q[1]]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()});ctx.restore()}}
-function redraw(){if(!O)return;ctx.clearRect(0,0,W,H);guides();ctx.lineCap='round';ctx.lineJoin='round';const M=maps();strokes.forEach(s=>drawStroke(s,M));if(cur)drawStroke(cur,M);
-ctx.save();ctx.fillStyle=th.hbg;ctx.strokeStyle=th.fg;ctx.lineWidth=2;ctx.beginPath();ctx.arc(O[0],O[1],8,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=th.fg;ctx.font='700 18px Times New Roman';ctx.fillText('O',O[0]+12,O[1]-10);ctx.restore()}
-function swatches(){$('cols').innerHTML=th.pal.map((c,i)=>`<button class="sw${i===col?' on':''}" data-i="${i}" style="background:${c}" aria-label="color"></button>`).join('')}
+const L={"color": "color", "vecFmt": "({x}, {y})", "empty": "Draw something on the canvas or pick a ready figure — then press “▶ Show the motion”.", "axis": "<span class=\"n\">Line symmetry</span>: every point moves to the other side of the axis — along a perpendicular to it and to the same distance. Turn the axis with the slider.", "axisSelf": " <span class=\"g\">The figure maps onto itself — this axis is its line of symmetry!</span>", "point": "<span class=\"n\">Point symmetry</span> about O: a point and its image lie on one line through O, on opposite sides and at equal distances. It is the same as a 180° rotation.", "pointSelf": " <span class=\"g\">The figure maps onto itself — O is its center of symmetry!</span>", "rot": "<span class=\"n\">Rotation</span> by {a}° about O, {n} times.", "rotMirror": " With a mirror in every sector you get a kaleidoscope.", "rotSelf": " <span class=\"g\">Every {a}° turn maps the figure onto itself!</span>", "trans": "<span class=\"n\">Translation</span> by the vector {v}: every point moves by the same vector — the same distance in the same direction. Drag the arrow tip.", "transSelf": " <span class=\"g\">Zero vector — the figure stays in place.</span>", "homo": "<span class=\"n\">Dilation</span> with center O and k = {k}: OA′ = {a}·OA. Sides are multiplied by {a}, the area by {a2}.", "homoNeg": " Negative k puts the image on the other side of O.", "homoOne": " <span class=\"g\">k = 1: every point stays in place — the image coincides with the figure.</span>", "homoZero": " k = 0: all points shrink into the point O.", "homoMinus": " <span class=\"g\">k = −1 is point symmetry!</span>"},LETTER=[[-60, -70], [-110, -70], [-110, 55], null, [-110, -12], [-72, -12]];
+const C=Kit.C,view=$('view'),cv=$('cv'),ctx=cv.getContext('2d'),PAL=[C.acc,C.blue,C.green,C.ink],GRID=40;
+const st={n:6};
+let strokes=[],cur=null,mode='axis',col=0,W=0,H=0,O=null,V=[160,-80],drag=null,mirror=false,links=true,grid=false,ang=90,k=2,anim=null;
+const deg=d=>d*Math.PI/180,fmt=(s,o)=>s.replace(/\{(\w+)\}/g,(_,x)=>o[x]);
+const rotf=a=>{const c=Math.cos(a),s=Math.sin(a);return([x,y])=>[x*c-y*s,x*s+y*c]};
+const fold=(th,t)=>{const c=Math.cos(th),s=Math.sin(th);return([x,y])=>{const a=x*c+y*s,b=(-x*s+y*c)*(1-2*t);return[a*c-b*s,a*s+b*c]}};
+function maps(t){if(t==null)t=1;
+if(mode==='axis')return[p=>p,fold(deg(-ang),t)];
+if(mode==='point')return[p=>p,rotf(Math.PI*t)];
+if(mode==='trans')return[p=>p,([x,y])=>[x+V[0]*t,y+V[1]*t]];
+if(mode==='homo'){const s=1+(k-1)*t;return[p=>p,([x,y])=>[x*s,y*s]]}
+const o=[];for(let i=0;i<st.n;i++){const a=i*2*Math.PI/st.n;o.push(rotf(a*t));if(mirror)o.push(fold(a/2,t))}return o}
+const rel=p=>[p[0]-O[0],p[1]-O[1]],abs=q=>[O[0]+q[0],O[1]+q[1]];
+const verts=s=>s.fig?s.p.slice(0,s.p.length-(s.closed?1:0)).filter(Boolean):null;
+function same(s,m){const vs=verts(s).map(rel);return vs.every(p=>{const q=m(p);return vs.some(r=>Math.hypot(r[0]-q[0],r[1]-q[1])<2)})}
+function selfMap(){const figs=strokes.filter(s=>s.fig),M=maps(1).slice(1);return figs.length>0&&M.length>0&&figs.every(s=>M.every(m=>same(s,m)))}
+function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function tick(a,b){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1,nx=-dy/d*6,ny=dx/d*6;ctx.setLineDash([]);line(mx-nx,my-ny,mx+nx,my+ny)}
+function arrow(a,b,w){ctx.setLineDash([]);line(a[0],a[1],b[0],b[1]);const an=Math.atan2(b[1]-a[1],b[0]-a[0]),h=w||9;ctx.beginPath();ctx.moveTo(b[0],b[1]);ctx.lineTo(b[0]-h*Math.cos(an-.45),b[1]-h*Math.sin(an-.45));ctx.lineTo(b[0]-h*Math.cos(an+.45),b[1]-h*Math.sin(an+.45));ctx.closePath();ctx.fill()}
+function guides(){ctx.save();ctx.strokeStyle=C.line;ctx.lineWidth=1;
+if(grid){ctx.beginPath();for(let x=O[0]%GRID;x<W;x+=GRID){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=O[1]%GRID;y<H;y+=GRID){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.globalAlpha=.8;ctx.stroke();ctx.globalAlpha=1}
+ctx.setLineDash([6,6]);const R=Math.hypot(W,H),ln=a=>line(O[0]-R*Math.cos(a),O[1]-R*Math.sin(a),O[0]+R*Math.cos(a),O[1]+R*Math.sin(a));
+if(mode==='axis'){ctx.strokeStyle=C.blue;ctx.lineWidth=2;ln(deg(-ang))}
+if(mode==='rot')for(let i=0;i<st.n;i++)ln(i*Math.PI/st.n);
+ctx.restore()}
+function path(s,m){ctx.beginPath();let up=true;s.p.forEach(p=>{if(!p){up=true;return}const q=abs(m(rel(p)));up?ctx.moveTo(q[0],q[1]):ctx.lineTo(q[0],q[1]);up=false});if(s.closed)ctx.closePath()}
+function drawStroke(s,M){const two=mode!=='rot';M.forEach((m,i)=>{const c=PAL[s.c];ctx.strokeStyle=c;ctx.fillStyle=c;ctx.globalAlpha=i===0?1:two?.8:1;path(s,m);
+if(s.closed){ctx.save();ctx.globalAlpha*=.14;ctx.fill();ctx.restore()}ctx.lineWidth=i===0?5:4;ctx.stroke()});ctx.globalAlpha=1}
+function labels(s,m,prime,color){const vs=verts(s);if(!vs||!s.lab)return;const pts=vs.map(p=>abs(m(rel(p))));
+const on=p=>prime&&vs.some(v=>Math.hypot(v[0]-p[0],v[1]-p[1])<2);const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length;
+ctx.save();ctx.font='italic 700 17px Times New Roman';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=color;
+s.lab.forEach((t,i)=>{const p=pts[i],dx=p[0]-cx,dy=p[1]-cy,d=Math.hypot(dx,dy)||1,r=on(p)?34:15;ctx.fillText(t+(prime?'′':''),p[0]+dx/d*r,p[1]+dy/d*r)});ctx.restore()}
+function connectors(s){const vs=verts(s)||[s.p[0]],M=maps(1);ctx.save();ctx.strokeStyle=C.ink3;ctx.fillStyle=C.ink3;ctx.lineWidth=1.2;
+(mode==='rot'?vs.slice(0,1):vs).forEach(p=>{const v=rel(p);ctx.setLineDash([4,4]);
+if(mode==='axis'){const a=p,b=abs(M[1](v)),m=[(a[0]+b[0])/2,(a[1]+b[1])/2];if(Math.hypot(b[0]-a[0],b[1]-a[1])<4)return;line(a[0],a[1],b[0],b[1]);tick(a,m);tick(m,b);
+const th=deg(-ang),u=[Math.cos(th),Math.sin(th)],w=[(b[0]-a[0]),(b[1]-a[1])],wd=Math.hypot(w[0],w[1]),ww=[w[0]/wd*8,w[1]/wd*8];ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(m[0]+u[0]*8,m[1]+u[1]*8);ctx.lineTo(m[0]+u[0]*8+ww[0],m[1]+u[1]*8+ww[1]);ctx.lineTo(m[0]+ww[0],m[1]+ww[1]);ctx.stroke()}
+if(mode==='point'){const a=p,b=abs(M[1](v));line(a[0],a[1],b[0],b[1]);tick(a,O);tick(O,b)}
+if(mode==='trans'){const b=abs(M[1](v));if(V[0]||V[1])arrow(p,b,7)}
+if(mode==='homo'){const b=abs(M[1](v)),far=Math.hypot(b[0]-O[0],b[1]-O[1])>Math.hypot(v[0],v[1])?b:p;line(O[0],O[1],far[0],far[1]);if(k<0)line(O[0],O[1],p[0],p[1]);ctx.setLineDash([]);[p,b].forEach(q=>{ctx.beginPath();ctx.arc(q[0],q[1],3.5,0,7);ctx.fill()})}
+if(mode==='rot'){const b=abs(rotf(2*Math.PI/st.n)(v)),r=Math.min(30,Math.hypot(v[0],v[1])*.5),a0=Math.atan2(v[1],v[0]);line(O[0],O[1],p[0],p[1]);line(O[0],O[1],b[0],b[1]);ctx.setLineDash([]);ctx.beginPath();ctx.arc(O[0],O[1],r,a0,a0+2*Math.PI/st.n);ctx.stroke()}});
+ctx.restore()}
+function drawO(){ctx.save();ctx.fillStyle=C.paper;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.arc(O[0],O[1],8,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=C.ink;ctx.font='700 18px Times New Roman';ctx.fillText('O',O[0]+12,O[1]-10);ctx.restore()}
+function drawVec(){const T=[O[0]+V[0],O[1]+V[1]];ctx.save();ctx.strokeStyle=C.acc;ctx.fillStyle=C.acc;ctx.lineWidth=3;if(V[0]||V[1])arrow(O,T,14);ctx.beginPath();ctx.arc(T[0],T[1],9,0,7);ctx.globalAlpha=.25;ctx.fill();ctx.restore()}
+function redraw(){if(!O)return;ctx.clearRect(0,0,W,H);guides();ctx.lineCap='round';ctx.lineJoin='round';const M=maps(anim==null?1:anim);
+strokes.forEach(s=>drawStroke(s,M));if(cur)drawStroke(cur,M);
+if(anim==null){if(links)strokes.forEach(connectors);strokes.forEach(s=>{labels(s,p=>p,false,C.ink);(mode==='rot'?M.slice(1,2):M.slice(1)).forEach(m=>labels(s,m,true,C.ink3))})}
+if(mode==='trans')drawVec();drawO()}
+const KS=i=>i/4,vecTxt=()=>fmt(L.vecFmt,{x:Kit.num(V[0]/GRID),y:Kit.num(-V[1]/GRID)});
+function say(){if(!strokes.length){$('say').innerHTML=L.empty;return}const self=selfMap();let h='';
+if(mode==='axis')h=L.axis+(self?L.axisSelf:'');
+if(mode==='point')h=L.point+(self?L.pointSelf:'');
+if(mode==='rot')h=fmt(L.rot,{a:Kit.num(360/st.n),n:st.n})+(mirror?L.rotMirror:'')+(self?fmt(L.rotSelf,{a:Kit.num(360/st.n)}):'');
+if(mode==='trans')h=fmt(L.trans,{v:vecTxt()})+(V[0]||V[1]?'':L.transSelf);
+if(mode==='homo'){const a=Math.abs(k);h=fmt(L.homo,{k:Kit.num(k),a:Kit.num(a),a2:Kit.num(k*k)})+(k===1?L.homoOne:k===0?L.homoZero:k===-1?L.homoMinus:k<0?L.homoNeg:'')}
+$('say').innerHTML=h}
+function ui(){document.querySelectorAll('.prm').forEach(p=>p.hidden=p.dataset.p!==mode);$('angV').textContent=ang+'°';$('kV').textContent=Kit.num(k);$('vecV').textContent=vecTxt();
+$('mir').classList.toggle('on',mirror);$('links').classList.toggle('on',links);$('grid').classList.toggle('on',grid);
+document.querySelectorAll('#kq button').forEach(b=>b.classList.toggle('on',+b.dataset.k===k));say();redraw()}
+function play(){if(anim!=null||!strokes.length)return;anim=0;Kit.tween(1500,e=>{anim=e;redraw()},()=>{anim=null;ui();if(selfMap())Mascot.cheer()})}
+const FIG={tri:{p:[[-120,-55],[-90,-130],[-40,-80]],lab:['A','B','C']},letter:{p:LETTER,open:true},flag:{p:[[-130,70],[-130,-60],[-65,-38],[-130,-16]],open:true},
+sq:{p:[[-55,-55],[55,-55],[55,55],[-55,55]],lab:['A','B','C','D']},reg:{p:[0,1,2].map(i=>[Math.round(80*Math.cos(deg(-90+120*i))),Math.round(80*Math.sin(deg(-90+120*i)))]),lab:['A','B','C']}};
+function place(f){const F=FIG[f],pts=F.p.map(p=>p&&[O[0]+p[0],O[1]+p[1]]),closed=!F.open;if(closed)pts.push([...pts[0]]);strokes.push({c:col,p:pts,lab:F.lab||null,fig:true,closed});ui();play()}
+function swatches(){$('cols').innerHTML=PAL.map((c,i)=>`<button class="sw${i===col?' on':''}" data-i="${i}" style="background:${c}" aria-label="${L.color}"></button>`).join('')}
 function size(){const r=view.getBoundingClientRect(),d=devicePixelRatio||1;if(!r.width)return;const ow=W,oh=H;W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(d,0,0,d,0,0);
-if(!O)O=[W/2,H/2];else if(ow){const dx=(W-ow)/2,dy=(H-oh)/2;O=[O[0]+dx,O[1]+dy];strokes.forEach(s=>s.p.forEach(p=>{p[0]+=dx;p[1]+=dy}))}redraw()}
+if(!O)O=[Math.round(W/2),Math.round(H/2)];else if(ow){const dx=(W-ow)/2,dy=(H-oh)/2;O=[O[0]+dx,O[1]+dy];strokes.forEach(s=>s.p.forEach(p=>{if(p){p[0]+=dx;p[1]+=dy}}))}redraw()}
 const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pt(e);if(Math.hypot(p[0]-O[0],p[1]-O[1])<16){dragO=true;return}cur={c:col,p:[p]}});
-cv.addEventListener('pointermove',e=>{const p=pt(e);if(dragO){O=p;redraw();return}if(!cur)return;const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])<2)return;cur.p.push(p);redraw()});
-addEventListener('pointerup',()=>{if(cur&&cur.p.length>1)strokes.push(cur);cur=null;dragO=false;redraw()});
-const SAY={axis:()=>`<span class="n">Line symmetry</span>: every point “jumps” over the axis to the same distance on the other side. Turn the axis with the slider.`,
-point:()=>`<span class="n">Point symmetry</span> about O: a point and its image lie on one line through O, on opposite sides and at equal distances. It is the same as a 180° rotation.`,
-rot:()=>`<span class="n">Rotation</span> by ${Kit.num(360/st.n)}° about O, ${st.n} times.`+(mirror?' With a mirror in every sector you get a kaleidoscope.':' The figure maps onto itself after every turn.'),
-homo:()=>`<span class="n">Dilation</span> with center O and k = ${Kit.num(k)}: every distance from O is multiplied by ${Kit.num(Math.abs(k))}, so it ${Math.abs(k)>1?'grows':Math.abs(k)<1?'shrinks':'stays the same'}.`+(k<0?' Negative k puts the image on the other side of O.':'')+(k===-1?' With k = −1 this is point symmetry!':'')};
-function ui(){document.querySelectorAll('.prm').forEach(p=>p.hidden=p.dataset.p!==mode);$('angV').textContent=ang+'°';$('rotV').textContent=Kit.num(360/st.n)+'°';$('kV').textContent=Kit.num(k);
-$('mir').classList.toggle('on',mirror);$('rays').classList.toggle('on',rays);$('say').innerHTML=SAY[mode]();redraw()}
-$('modes').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));ui();Mascot.cast(.5,.5)};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pt(e);if(Math.hypot(p[0]-O[0],p[1]-O[1])<16){drag='O';return}
+if(mode==='trans'&&Math.hypot(p[0]-O[0]-V[0],p[1]-O[1]-V[1])<18){drag='V';return}if(anim!=null)return;cur={c:col,p:[p]}});
+cv.addEventListener('pointermove',e=>{const p=pt(e);if(drag==='O'){O=p;ui();return}if(drag==='V'){const n=[Math.round((p[0]-O[0])/GRID)*GRID,Math.round((p[1]-O[1])/GRID)*GRID];if(n[0]!==V[0]||n[1]!==V[1]){V=n;ui()}return}
+if(!cur)return;const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])<2)return;cur.p.push(p);redraw()});
+addEventListener('pointerup',()=>{if(cur&&cur.p.length>1){strokes.push(cur);cur=null;ui()}cur=null;drag=null;redraw()});
+$('modes').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));ui();Mascot.cast(.5,.5);play()};
 $('ang').oninput=e=>{ang=+e.target.value;ui()};
-$('k').oninput=e=>{k=KS[+e.target.value];ui()};$('k').max=KS.length-1;$('k').value=KS.indexOf(2);
-$('mir').onclick=()=>{mirror=!mirror;ui();Mascot.cast(.5,.5)};$('rays').onclick=()=>{rays=!rays;ui()};
-Kit.steppers(st,{n:[2,12]},()=>{ui()});
-swatches();
+$('k').oninput=e=>{k=KS(+e.target.value);ui()};
+$('kq').onclick=e=>{const b=e.target.closest('button');if(!b)return;k=+b.dataset.k;$('k').value=k*4;ui();play()};
+$('mir').onclick=()=>{mirror=!mirror;ui();Mascot.cast(.5,.5);play()};
+$('links').onclick=()=>{links=!links;ui()};$('grid').onclick=()=>{grid=!grid;ui()};
+$('figs').onclick=e=>{const b=e.target.closest('button');if(b)place(b.dataset.f)};
+$('play').onclick=()=>play();
+Kit.steppers(st,{n:[2,12]},()=>{ui()});swatches();
 $('cols').onclick=e=>{const b=e.target.closest('button');if(!b)return;col=+b.dataset.i;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b))};
-$('clr').onclick=()=>{strokes=[];redraw()};$('undo').onclick=()=>{strokes.pop();redraw()};
+$('clr').onclick=()=>{strokes=[];ui()};$('undo').onclick=()=>{strokes.pop();ui()};
 size();addEventListener('resize',size);addEventListener('load',size);new ResizeObserver(size).observe(view);ui();
-</script>
-</body></html>
+</script></body></html>

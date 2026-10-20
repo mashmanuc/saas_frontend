@@ -99,6 +99,17 @@ describe('файли сцен — обидві мови, без чужих се�
     }
   })
 
+  it('«Симетрія»: на повзунку гомотетії є k = 1, 0 і −1 (власник 2026-10-21: «гомотетія перескакує k=1»)', () => {
+    for (const lang of ['uk', 'en']) {
+      const html = readFileSync(resolve(PUBLIC, lang, 'symmetry.html'), 'utf8')
+      const m = html.match(/id="k" min="(-?\d+)" max="(-?\d+)" step="1"/)
+      expect(m, lang).not.toBeNull()
+      expect(html, lang).toContain('const KS=i=>i/4')
+      const ks = Array.from({ length: +m![2] - +m![1] + 1 }, (_, i) => (+m![1] + i) / 4)
+      for (const k of [1, 0, -1]) expect(ks, `${lang} k=${k}`).toContain(k)
+    }
+  })
+
   it('сайт дозволяє показувати у вікні лише /scenes/* (решта — DENY, як було)', () => {
     const headers = readFileSync(resolve(ROOT, 'public/_headers'), 'utf8')
     expect(headers).toMatch(/\/scenes\/\*\n {2}! X-Frame-Options\n {2}X-Frame-Options: SAMEORIGIN/)
