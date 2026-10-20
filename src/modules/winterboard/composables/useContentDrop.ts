@@ -27,6 +27,8 @@ import {
   buildBlankTimelineAsset,
 } from '../constants/evidenceCardDefaults'
 import { NUMBER_LINE_DRAG_MIME, buildNumberLineAsset } from '../constants/numberLineDefaults'
+import { MATH_SCENE_DRAG_MIME, buildMathSceneAsset } from '../constants/mathSceneDefaults'
+import { isMathSceneId } from '../types/mathScene'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
@@ -336,6 +338,12 @@ export function useContentDrop(options: UseContentDropOptions) {
     const numberLineRaw = event.dataTransfer?.getData(NUMBER_LINE_DRAG_MIME)
     if (numberLineRaw) {
       addAtPosition(NUMBER_LINE_DRAG_MIME, numberLineRaw, screenToCanvas(event.clientX, event.clientY))
+      return
+    }
+    // «Наочна сцена» (2026-10-20) — той самий builder, що й клік.
+    const mathSceneRaw = event.dataTransfer?.getData(MATH_SCENE_DRAG_MIME)
+    if (mathSceneRaw) {
+      addAtPosition(MATH_SCENE_DRAG_MIME, mathSceneRaw, screenToCanvas(event.clientX, event.clientY))
       return
     }
 
@@ -1094,6 +1102,19 @@ export function useContentDrop(options: UseContentDropOptions) {
     // Б-184: числова пряма — порожня картка (умови пише вчитель). 1 вставка = 1 asset_add.
     if (mime === NUMBER_LINE_DRAG_MIME) {
       onAssetAdd(buildNumberLineAsset(pos) as unknown as WBAsset)
+      return
+    }
+
+    // «Наочна сцена» (2026-10-20): payload {"sceneId"}; невідома сцена — нічого не вставляємо (не порожнє вікно).
+    if (mime === MATH_SCENE_DRAG_MIME) {
+      let sceneId: unknown = null
+      try {
+        sceneId = (JSON.parse(payloadStr) as { sceneId?: unknown }).sceneId
+      } catch (err) {
+        console.warn('[WB:mathScene] bad payload', err)
+      }
+      if (!isMathSceneId(sceneId)) return
+      onAssetAdd(buildMathSceneAsset(pos, sceneId) as unknown as WBAsset)
       return
     }
 

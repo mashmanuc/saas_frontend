@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Negative numbers</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Negative numbers"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Negative numbers</h1><p class="tp-lead">A thermometer: below zero is minus. Adding means going up, subtracting means going down.</p>
+<div class="tp-ctl">Starting temperature<div class="stp" data-k="s"></div></div>
+<div class="tp-ctl">Change<div class="stp" data-k="c"></div></div>
+<div class="tp-expr" id="ex"></div>
+<div class="tp-row"><button class="tp-btn primary" id="go">Apply</button><button class="tp-btn" id="from">Start from the result</button></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={s:-3,c:5};let v=-3,applied=false;const fm=n=>n<0?'−'+(-n):''+n,Y=t=>240-t*20;
+function draw(){let h='<svg viewBox="0 0 440 510">';const col=v<0?C.blue:C.acc;
+h+=`<line x1="110" y1="${Y(0)}" x2="330" y2="${Y(0)}" stroke="${C.ink3}" stroke-width="1.4" stroke-dasharray="5 5"></line>`;
+h+=`<rect x="180" y="26" width="40" height="440" rx="20" fill="${C.paper}" stroke="${C.ink}" stroke-width="2.4"></rect><circle cx="200" cy="470" r="28" fill="${col}" stroke="${C.ink}" stroke-width="2.4"></circle>`;
+h+=`<rect x="189" y="${Y(v)}" width="22" height="${470-Y(v)}" fill="${col}"></rect>`;
+for(let t=-10;t<=10;t++){const big=t%5===0;h+=`<line x1="220" y1="${Y(t)}" x2="${big?240:230}" y2="${Y(t)}" stroke="${C.ink}" stroke-width="${big?2:1.2}"></line>`;if(t%2===0)h+=Kit.txt(250,Y(t)+5,fm(t),{a:'start',size:t?13:18,w:t?500:700,fill:t<0?C.blue:t>0?C.acc:C.ink})}
+h+=`<path d="M170,${Y(st.s)} l-14,-8 v16 z" fill="${C.ink}"></path>`+Kit.txt(148,Y(st.s)+5,fm(st.s),{a:'end',serif:1,size:20});
+if(st.c){const y0=Y(st.s),y1=Y(st.s+st.c),dir=st.c>0?-1:1,yy=Y(st.s+st.c*Math.min(1,applied?1:Math.abs((v-st.s)/st.c)));
+h+=`<line x1="320" y1="${y0}" x2="320" y2="${yy}" stroke="${C.green}" stroke-width="3"></line>`;if(applied||v!==st.s)h+=`<path d="M320,${yy} l-7,${-dir*12} h14 z" fill="${C.green}"></path>`;
+h+=Kit.txt(334,(y0+y1)/2+6,(st.c>0?'+':'−')+Math.abs(st.c),{a:'start',serif:1,size:22,fill:C.green});
+h+=`<line x1="312" y1="${y1}" x2="328" y2="${y1}" stroke="${C.green}" stroke-width="2" stroke-dasharray="3 3"></line>`}
+$('view').innerHTML=h+'</svg>';
+const r=st.s+st.c;$('ex').innerHTML=`${fm(st.s)} ${st.c<0?'+ ('+fm(st.c)+')':'+ '+st.c} = <span class="${r<0?'c-b':'c-a'}">${applied?fm(r):'?'}</span>`;
+$('say').innerHTML=applied?`From <span class="d">${fm(st.s)}</span> we went ${st.c>=0?'up':'down'} ${Math.abs(st.c)} marks and ended up at <span class="n">${fm(r)}</span>.`+(st.s*r<0?' We crossed zero!':''):`We are at <span class="d">${fm(st.s)}</span>. ${st.c>=0?'Adding '+st.c+' — we go up.':'Adding the negative '+fm(st.c)+' is the same as subtracting '+(-st.c)+' — we go down.'}`}
+function go(){if(!st.c)return;applied=false;Mascot.cast(.45,.5);const s=st.s,r=s+st.c;Kit.tween(900,e=>{v=s+st.c*e;draw()},()=>{v=r;applied=true;draw();if(s*r<0)Mascot.cheer()})}
+Kit.steppers(st,{s:[-10,10],c:[-10,10]},()=>{st.c=Kit.clamp(st.c,-10-st.s,10-st.s);applied=false;v=st.s;draw()});
+$('go').onclick=go;$('from').onclick=()=>{if(!applied)return;st.s=st.s+st.c;st.c=Kit.clamp(st.c,-10-st.s,10-st.s);applied=false;v=st.s;Kit.sync(st);draw()};
+draw();
+</script></body></html>

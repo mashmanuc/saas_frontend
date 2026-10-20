@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ймовірність</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Ймовірність"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Ймовірність</h1><p class="tp-lead">Кидаємо багато разів — і частка наближається до ймовірності.</p>
+<div class="tp-row" id="modes"><button class="tp-btn on" data-m="coin">Монетка</button><button class="tp-btn" data-m="die">Кубик</button></div>
+<div class="tp-big" id="last" style="min-height:52px"></div>
+<div class="tp-row"><button class="tp-btn" data-r="1">Кинути</button><button class="tp-btn" data-r="10">×10</button><button class="tp-btn" data-r="100">×100</button><button class="tp-btn" data-r="1000">×1000</button></div>
+<button class="tp-btn" id="rst">↺ Спочатку</button>
+<div class="tp-expr" id="ex" style="font-size:18px;flex-direction:column;align-items:flex-start;gap:2px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C;let mode='coin',cnt=[],n=0,hist=[],last=null,hit=false;
+const NM=()=>mode==='coin'?['Орел','Решка']:['1','2','3','4','5','6'],TG=()=>mode==='coin'?0:5;
+function reset(){cnt=Array(mode==='coin'?2:6).fill(0);n=0;hist=[];last=null;hit=false;draw()}
+function roll(m){const k=cnt.length,tg=TG();for(let i=0;i<m;i++){const r=Math.random()*k|0;cnt[r]++;n++;last=r;if(hist.length<20000)hist.push(cnt[tg]/n)}
+if(m>=100)Mascot.cast(.5,.3);if(!hit&&n>=500&&Math.abs(cnt[tg]/n-1/k)<.01){hit=true;setTimeout(()=>Mascot.cheer(),500)}draw()}
+function draw(){const k=cnt.length,p=1/k,tg=TG(),nm=NM();let v='<svg viewBox="0 0 600 440">';
+const bw=520/k,mx=Math.max(2*p,...cnt.map(c=>n?c/n:0)),bh=f=>f/mx*140,base=190;
+v+=`<line x1="40" y1="${base}" x2="560" y2="${base}" stroke="${C.ink}" stroke-width="2"></line>`;
+cnt.forEach((c,i)=>{const f=n?c/n:0,x=40+i*bw+8;v+=`<rect x="${x}" y="${base-bh(f)}" width="${bw-16}" height="${bh(f)}" rx="3" fill="${i===tg?C.take:C.take2}" stroke="${C.ink}" stroke-width="1.4"></rect>`+Kit.txt(x+(bw-16)/2,base+20,nm[i],{size:13,w:i===tg?700:500})+(n?Kit.txt(x+(bw-16)/2,base-bh(f)-8,Math.round(f*100)+'%',{size:12,fill:C.ink3}):'')});
+v+=`<line x1="40" y1="${base-bh(p)}" x2="560" y2="${base-bh(p)}" stroke="${C.green}" stroke-width="1.8" stroke-dasharray="6 5"></line>`+Kit.txt(566,base-bh(p)+4,(mode==='coin'?'1/2':'1/6'),{a:'start',serif:1,size:16,fill:C.green});
+const y0=410,y1=250,Yf=f=>y0-(f/(2*p))*(y0-y1);v+=`<rect x="40" y="${y1}" width="520" height="${y0-y1}" fill="${C.paper}" stroke="${C.line}"></rect>`;
+v+=`<line x1="40" y1="${Yf(p)}" x2="560" y2="${Yf(p)}" stroke="${C.green}" stroke-width="1.8" stroke-dasharray="6 5"></line>`+Kit.txt(44,y1+16,'частка «'+nm[tg]+'» з кожним кидком',{a:'start',size:11,fill:C.ink3});
+if(hist.length>1){const m=hist.length,step=Math.max(1,Math.ceil(m/600));let d='';for(let i=0;i<m;i+=step)d+=(i?'L':'M')+(40+i/(m-1)*520).toFixed(1)+','+Yf(Kit.clamp(hist[i],0,2*p)).toFixed(1);d+='L560,'+Yf(Kit.clamp(hist[m-1],0,2*p)).toFixed(1);v+=`<path d="${d}" fill="none" stroke="${C.acc}" stroke-width="2"></path>`}
+v+=Kit.txt(560,y0+20,n+' кидків',{a:'end',size:11,fill:C.ink3});
+$('view').innerHTML=v+'</svg>';
+$('last').textContent=last===null?'—':nm[last];
+const f=n?cnt[tg]/n:0;$('ex').innerHTML=`<span>Кидків: ${n}</span><span>«${nm[tg]}»: ${cnt[tg]} → <span class="c-a">${Kit.num(f*100)}%</span></span><span class="c-g">Ймовірність: ${mode==='coin'?'1/2 = 50%':'1/6 ≈ 16,7%'}</span>`;
+$('say').innerHTML=n<20?'Поки кидків мало, частка стрибає як хоче. Кинь сотню!':n<500?`Що більше кидків, то ближче лінія до <span class="g">${mode==='coin'?'1/2':'1/6'}</span>.`:`Після ${n} кидків частка ≈ <span class="g">${mode==='coin'?'1/2':'1/6'}</span>. Це і є ймовірність — те, що виходить «у середньому на довгій дистанції».`}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>roll(+b.dataset.r));$('rst').onclick=reset;
+$('modes').onclick=e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));reset()};
+reset();
+</script></body></html>

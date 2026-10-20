@@ -7637,6 +7637,28 @@
     }
   },
   "winterboard": {
+    "mathScene": {
+      "title": "Visual scene",
+      "missing": "This scene is not available.",
+      "scenes": {
+        "fractions": "Fractions",
+        "percent": "Percent",
+        "decimals": "Decimals",
+        "frac-mul": "Multiplying fractions",
+        "frac-div": "Dividing fractions",
+        "lcm": "LCM and GCD",
+        "negatives": "Negative numbers",
+        "equation": "Balance equations",
+        "square-sum": "Square of a sum",
+        "proportion": "Proportions",
+        "pythagoras": "Pythagorean theorem",
+        "angles": "Angles of a triangle",
+        "areas": "Areas of shapes",
+        "probability": "Probability",
+        "mean": "Mean",
+        "vectors": "Vectors"
+      }
+    },
     "rotateHint": {
       "text": "Turn the tablet sideways — the page will get bigger",
       "ok": "Got it"
@@ -8367,7 +8389,8 @@
         "graphs": "Graphs",
         "graphs3d": "3D graphs",
         "geometry": "Geometry",
-        "stereo": "Solid geometry"
+        "stereo": "Solid geometry",
+        "scenes": "Visual scenes"
       },
       "interactiveHeader": "Interactive",
       "geo2dHeader": "Planimetry",
@@ -11240,6 +11263,7 @@
         "theory_card": "Theory",
         "mash_scene": "MASH",
         "geomash_scene": "Figure",
+        "math_scene": "Visual scene",
         "graphmash_3d": "3D graph",
         "visual_capsule": "Animation",
         "image": "Image",

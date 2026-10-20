@@ -1,4 +1,5 @@
 // Phase 1 (North Ship, блок A): маппінг board_action → wb.scene.* метрика.
+import { MATH_SCENE_IDS } from '@/modules/winterboard/types/mathScene'
 //
 // ЧИСТА функція без Vue-залежностей — тестована напряму (PHASE_1 §7.1).
 // Мапа insert_id→kind з PHASE_1 §6.1. Повертає null для не-сцен (жодної події).
@@ -32,6 +33,8 @@ export const NON_SCENE_INSERT_IDS = [
   'evidence.map',
   // Б-184 (2026-10-12): числова пряма — віджет-рисунок, як quadratic.card, не жива сцена.
   'inequalities.number_line',
+  // 2026-10-20: «Наочні сцени» — лише плитки вчителя; Інтегралик їх не вставляє (boardActions._allInserts).
+  ...MATH_SCENE_IDS.map((id) => `scenes.${id}`),
 ]
 
 export function sceneMetricFromAction(action) {

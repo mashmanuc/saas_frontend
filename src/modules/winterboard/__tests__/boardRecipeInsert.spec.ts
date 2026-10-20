@@ -204,8 +204,9 @@ describe('TLV2-06R · Інтегралик — той самий рецепт, �
     const recipeIds = catalog.filter((e) => e.id.startsWith('tpl.')).map((e) => e.id)
     expect(recipeIds).toEqual(SUPPORTED.map((r) => r.id))
     for (const gap of GAPS) expect(catalog.some((e) => e.id === gap.id)).toBe(false)
-    // перша частина — рівно видимі інструменти (sidebar читає лише insertRegistry)
-    const visible = allInserts().map((e) => e.id)
+    // перша частина — рівно видимі інструменти (sidebar читає лише insertRegistry);
+    // «Наочні сцени» (пілот math_scenes, 2026-10-20) Інтегралику не даються — mathScene.spec.ts
+    const visible = allInserts().filter((e) => e.family !== 'scenes').map((e) => e.id)
     expect(visible.filter((id) => id.startsWith('tpl.'))).toEqual([])
     expect(catalog.slice(0, visible.length).map((e) => e.id)).toEqual(visible)
     // межі BE `_tools_catalog_text`: ≤ 80 записів, label ≤ 60, desc ≤ 100 — рецепт не обрізається

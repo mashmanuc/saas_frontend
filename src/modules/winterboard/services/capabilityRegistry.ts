@@ -106,6 +106,8 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
   // Б-184: числова пряма (DEFAULT_NUMBER_LINE_*). З намірами задач не повʼязана —
   // у AVAILABLE_RENDERERS її немає; розмір тут, щоб перелік розмірів був повний.
   number_line:      { w: 560, h: 300 },
+  // «Наочна сцена» (DEFAULT_MATH_SCENE_*): з намірами задач не повʼязана; розмір — щоб перелік був повний.
+  math_scene:       { w: 1000, h: 640 },
 }
 
 // ── Core function ─────────────────────────────────────────────────────────────

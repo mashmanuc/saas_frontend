@@ -378,6 +378,16 @@ function numberLineIcon(): VNode {
  *   stereo → tplKey · planimetry → preset type · analysis → mode|graphCalc
  *   quadratic → 'card' · trig → 'circle'|'helix'|'solver' · 3d → starter · geomash → 'scene'
  */
+/** «Наочні сцени»: вікно-сцена з зірочкою (Інтегралик змахує паличкою). */
+function scenesIcon() {
+  return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('rect', { x: 3, y: 5, width: 18, height: 14, rx: 2 }),
+    h('path', { d: 'M3 9h18' }),
+    h('path', { d: 'M12 11.5l1 2.2 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z' }),
+  ])
+}
+
 export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }> = (props) => {
   switch (props.family) {
     case 'stereo': return stereoIcon(props.iconKey)
@@ -389,6 +399,7 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case 'geomash': return geomashIcon()
     case 'evidence': return evidenceIcon(props.iconKey)
     case 'inequalities': return numberLineIcon()
+    case 'scenes': return scenesIcon()
     default:
       return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' },
         [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 })])

@@ -378,6 +378,13 @@
                 <InsertResultTile v-for="e in contentEntries" :key="e.id" :entry="e" />
               </div>
             </template>
+
+            <!-- «Наочні сцени» (2026-10-20, пілот math_scenes): одна плитка = одна сцена у вікні на дошці -->
+            <template v-else-if="catalogFamily === 'scenes'">
+              <div class="tools-results" data-testid="tools-scenes">
+                <InsertResultTile v-for="e in sceneEntries" :key="e.id" :entry="e" />
+              </div>
+            </template>
           </div>
         </template>
       </div>
@@ -440,6 +447,7 @@ import {
   type MashApp, type InsertEntry,
 } from './insertRegistry'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -569,7 +577,11 @@ function pickTab(tab: 'materials' | 'tools'): void {
 const toolQuery = ref('')
 // «Навчальні обʼєкти» — лише акаунтам у гейті (див. useEvidenceToolsGate).
 const { evidenceEnabled } = useEvidenceToolsGate()
-const gateOpts = computed(() => ({ evidence: evidenceEnabled.value }))
+// «Наочні сцени» — лише пілоту math_scenes з /me (власник 2026-10-20: «поки будемо включати його для ID40»).
+const authStore = useAuthStore()
+const scenesEnabled = computed(() =>
+  Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('math_scenes')))
+const gateOpts = computed(() => ({ evidence: evidenceEnabled.value, scenes: scenesEnabled.value }))
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>
   visibleInserts(gateOpts.value, searchInserts(toolQuery.value)))
@@ -584,6 +596,7 @@ const appCounts = computed<Record<MashApp, number>>(() => {
     geometry: by.geometry.length,
     stereo: by.stereo.length,
     content: by.content.length,
+    scenes: by.scenes.length,
   }
 })
 const currentAppLabel = computed(() =>
@@ -594,6 +607,8 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
+const sceneEntries = computed<InsertEntry[]>(
+  () => visibleInserts(gateOpts.value).filter(e => e.family === 'scenes'))
 const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))
 const contentEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))

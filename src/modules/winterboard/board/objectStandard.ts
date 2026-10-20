@@ -178,6 +178,8 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   visual_capsule: card('overlay', { fullscreen: true }),
   // Б-184: числова пряма — звичайна картка-оверлей (як quadratic_card).
   number_line: card('overlay'),
+  // «Наочна сцена» (2026-10-20): вікно з готовою сценою; дані — лише sceneId.
+  math_scene: card('overlay'),
 
   // ── Нативні Konva-вузли ───────────────────────────────────────────────────
   image: card('konva'),

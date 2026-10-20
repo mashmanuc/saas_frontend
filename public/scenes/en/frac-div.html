@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dividing fractions</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Dividing fractions"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Dividing fractions</h1><p class="tp-lead">To divide means to ask: how many times does the second piece fit into the first?</p>
+<div class="tp-row" style="align-items:center;gap:14px;justify-content:center">
+<div class="fpair c-a"><div class="stp" data-k="a"></div><div class="bar"></div><div class="stp" data-k="b"></div></div>
+<span class="tp-big" style="font-size:30px;color:var(--ink)">÷</span>
+<div class="fpair c-b"><div class="stp" data-k="c"></div><div class="bar"></div><div class="stp" data-k="d"></div></div></div>
+<div class="tp-expr" id="ex"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={a:3,b:4,c:1,d:4};
+function draw(){const {a,b,c,d}=st,L=Kit.lcm(b,d),A=a*L/b,K=c*L/d,x0=40,W=520,u=W/L,k=Math.floor(A/K),r=A%K;let v='<svg viewBox="0 0 600 300">';
+v+=Kit.txt(x0,30,a+'/'+b,{a:'start',serif:1,size:22,fill:C.acc});
+for(let i=0;i<L;i++)v+=`<rect class="piece" x="${x0+i*u}" y="44" width="${u}" height="50" fill="${i<A?C.take:C.empty}" stroke="${C.ink}" stroke-width=".7"></rect>`;
+for(let i=1;i<b;i++)v+=`<line x1="${x0+i*W/b}" y1="44" x2="${x0+i*W/b}" y2="94" stroke="${C.ink}" stroke-width="2.2"></line>`;
+v+=`<rect x="${x0}" y="44" width="${W}" height="50" fill="none" stroke="${C.ink}" stroke-width="2.4"></rect>`;
+v+=`<line x1="${x0+A*u}" y1="94" x2="${x0+A*u}" y2="230" stroke="${C.acc}" stroke-width="1.6" stroke-dasharray="4 4"></line>`;
+v+=Kit.txt(x0,140,'pieces of '+c+'/'+d,{a:'start',size:13,fill:C.blue});
+for(let i=0;i<k;i++){const x=x0+i*K*u;v+=`<rect class="piece" x="${x}" y="154" width="${K*u}" height="50" rx="4" fill="${i%2?C.take2:'#8fbcd0'}" stroke="${C.ink}" stroke-width="1.8"></rect>`+Kit.txt(x+K*u/2,186,i+1,{serif:1,size:22})}
+if(r){const x=x0+k*K*u,gw=Math.min(K*u,x0+W+40-x);v+=`<rect x="${x}" y="154" width="${gw}" height="50" rx="4" fill="none" stroke="${C.blue}" stroke-width="1.4" stroke-dasharray="5 4"></rect><rect class="piece" x="${x}" y="154" width="${r*u}" height="50" fill="${C.take2}" opacity=".7" stroke="${C.ink}" stroke-width="1.4"></rect>`+Kit.txt(x+r*u/2,232,r+'/'+K,{serif:1,size:18,fill:C.blue})}
+$('view').innerHTML=v+'</svg>';
+const g=Kit.gcd(A,K),N=A/g,D=K/g,whole=Math.floor(N/D),rem=N%D;
+const res=D===1?`<span class="c-a">${N}</span>`:Kit.frac(N,D,'c-a')+(whole&&rem?` = ${whole}${Kit.frac(rem,D)}`:'');
+$('ex').innerHTML=`${Kit.frac(a,b,'c-a')} ÷ ${Kit.frac(c,d,'c-b')} = ${Kit.frac(A,L)} ÷ ${Kit.frac(K,L)} = ${A} ÷ ${K} = ${res}`;
+$('say').innerHTML=`Bring to the common denominator <span class="d">${L}</span>: we have ${A} small parts, and one piece is ${K} parts. `+(k?`The piece fits <span class="n">${k}</span> ${k===1?'time':'times'}`:'Not even one whole piece fits')+(r?` and another ${r}/${K} of a piece.`:'.')+` The same as ${a}/${b} · ${d}/${c}.`}
+Kit.steppers(st,{a:[1,12],b:[1,12],c:[1,12],d:[1,12]},k=>{st.a=Math.min(st.a,st.b);st.c=Math.min(st.c,st.d);draw();if(k==='b'||k==='d')Mascot.cast(.5,.3)});
+draw();
+</script></body></html>

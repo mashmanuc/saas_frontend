@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proportions</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Proportions"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Proportions</h1><p class="tp-lead">A pancake recipe for 4 people. How much is needed for a different number?</p>
+<div class="tp-ctl">People<div class="stp" data-k="n"></div></div>
+<div class="tp-expr" id="k"></div>
+<span class="tp-lab">Rule of three — click an ingredient</span>
+<div class="tp-expr" id="rule" style="flex-direction:column;align-items:flex-start;gap:4px;font-size:19px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={n:6},base=4,ING=[['Flour',200,'g'],['Milk',300,'ml'],['Eggs',2,'pcs'],['Sugar',50,'g']];let sel=0;
+const pl=n=>n===1?'person':'people';
+function draw(){const n=st.n,W=360,x0=180;let v='<svg viewBox="0 0 600 400">';
+for(let i=0;i<n;i++)v+=`<circle cx="${x0+i*30}" cy="34" r="10" fill="${i<base?C.take:C.acc}" stroke="${C.ink}" stroke-width="1.4"></circle>`;
+v+=Kit.txt(40,40,'for '+n+' '+pl(n),{a:'start',serif:1,size:20});
+ING.forEach(([nm,q,u],i)=>{const y=90+i*76,w=q*n/base/(q*3)*W,bw=W/3,val=q*n/base,on=i===sel;
+v+=`<g data-i="${i}" style="cursor:pointer"><rect x="20" y="${y-8}" width="560" height="60" rx="8" fill="${on?C.paper2:'transparent'}"></rect>`+Kit.txt(40,y+28,nm,{a:'start',size:14,w:on?700:500});
+v+=`<rect class="piece" x="${x0}" y="${y+8}" width="${w}" height="28" rx="4" fill="${i%2?C.take2:C.take}" stroke="${C.ink}" stroke-width="1.4"></rect><rect x="${x0}" y="${y+4}" width="${bw}" height="36" rx="4" fill="none" stroke="${C.ink3}" stroke-width="1.4" stroke-dasharray="4 4"></rect>`;
+v+=Kit.txt(Math.max(x0+w,x0+bw)+10,y+28,Kit.num(val)+' '+u,{a:'start',serif:1,size:18,fill:C.acc})+'</g>'});
+v+=Kit.txt(x0+W/6,392,'dashed — recipe for 4',{size:11,fill:C.ink3});
+$('view').innerHTML=v+'</svg>';
+const g=Kit.gcd(n,base);$('k').innerHTML=`× ${Kit.frac(n,base)}${g>1?' = '+(base/g===1?n/g:Kit.frac(n/g,base/g)):''}`;
+const [nm,q,u]=ING[sel],one=q/base;$('rule').innerHTML=`<span>4 → ${q} ${u}</span><span>1 → ${q} ÷ 4 = ${Kit.num(one)} ${u}</span><span class="c-a">${n} → ${Kit.num(one)} · ${n} = ${Kit.num(one*n)} ${u}</span>`;
+$('say').innerHTML=`The number of people changed by a factor of <span class="n">${n}/${base}</span> — so every ingredient changes by the same factor. All the bars change the same way.`}
+Kit.steppers(st,{n:[1,12]},()=>{draw();if(st.n%base===0&&st.n>base)Mascot.cheer()});
+$('view').onclick=e=>{const g=e.target.closest('[data-i]');if(g){sel=+g.dataset.i;draw()}};
+draw();
+</script></body></html>

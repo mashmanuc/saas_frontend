@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Angles of a triangle</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Angles of a triangle"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Angle sum of a triangle</h1><p class="tp-lead">Drag the vertices — any triangle will do. Tear off the angles and put them together.</p>
+<div class="tp-expr" id="ex"></div>
+<button class="tp-btn primary" id="go">✂ Tear off the angles</button>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,P=[[150,320],[470,320],[250,100]],COL=[C.take,C.take2,C.green2],STK=[C.acc,C.blue,C.green],T=[300,402];let t=0,drag=-1,busy=false;
+$('view').innerHTML='<svg id="sv" viewBox="0 0 600 430"><g id="g"></g></svg>';const sv=$('sv'),g=$('g');
+const deg=r=>r*180/Math.PI;
+function ang(V,A,B){const a1=deg(Math.atan2(-(A[1]-V[1]),A[0]-V[0])),a2=deg(Math.atan2(-(B[1]-V[1]),B[0]-V[0]));const d=((a2-a1)%360+360)%360;return d>180?{s:a2,w:360-d}:{s:a1,w:d}}
+function wedge(cx,cy,s,w,r,fill,stk,dash){const p=a=>[(cx+r*Math.cos(a*Math.PI/180)).toFixed(2),(cy-r*Math.sin(a*Math.PI/180)).toFixed(2)],[x0,y0]=p(s),[x1,y1]=p(s+w);return `<path d="M${cx},${cy} L${x0},${y0} A${r},${r} 0 0 0 ${x1},${y1} Z" fill="${fill}" stroke="${stk}" stroke-width="1.8"${dash?' stroke-dasharray="4 3"':''}></path>`}
+function draw(){const W=[0,1,2].map(i=>ang(P[i],P[(i+1)%3],P[(i+2)%3])),D=W.map(w=>Math.round(w.w));D[2]=180-D[0]-D[1];
+let h=`<line x1="150" y1="${T[1]}" x2="450" y2="${T[1]}" stroke="${C.ink}" stroke-width="2" stroke-dasharray="4 5" opacity="${.25+.75*t}"></line>`;
+h+=`<polygon points="${P.map(p=>p.join(',')).join(' ')}" fill="${C.empty}" stroke="${C.ink}" stroke-width="2.4" stroke-linejoin="round"></polygon>`;
+let acc=0;W.forEach((w,i)=>{const ts=acc;acc+=w.w;const dS=((ts-w.s)%360+540)%360-180,cx=P[i][0]+(T[0]-P[i][0])*t,cy=P[i][1]+(T[1]-P[i][1])*t,s=w.s+dS*t;
+if(t>0)h+=wedge(P[i][0],P[i][1],w.s,w.w,42,'none',STK[i],1);h+=wedge(cx,cy,s,w.w,42,COL[i],STK[i]);
+const m=(s+w.w/2)*Math.PI/180;h+=Kit.txt(cx+62*Math.cos(m),cy-62*Math.sin(m)+6,D[i]+'°',{serif:1,size:18,fill:STK[i]})});
+if(t===0)P.forEach((p,i)=>h+=`<circle data-v="${i}" cx="${p[0]}" cy="${p[1]}" r="10" fill="${C.paper}" stroke="${C.ink}" stroke-width="2" style="cursor:grab"></circle>`);
+if(t===1)h+=Kit.txt(T[0],T[1]+24,'180° — a straight angle',{size:12,fill:C.ink3});
+g.innerHTML=h;
+$('ex').innerHTML=`<span class="c-a">${D[0]}°</span> + <span class="c-b">${D[1]}°</span> + <span class="c-g">${D[2]}°</span> = 180°`;
+$('say').innerHTML=t===1?'The three angles made a straight line — exactly <span class="n">180°</span>. It works for any triangle.':'Change the triangle any way you like: the angles change, but their sum does not. Why? Tear off the angles!';
+$('go').textContent=t===1?'↺ Put the angles back':'✂ Tear off the angles'}
+sv.addEventListener('pointerdown',e=>{const c=e.target.closest('[data-v]');if(!c||t>0)return;drag=+c.dataset.v;sv.setPointerCapture(e.pointerId)});
+sv.addEventListener('pointermove',e=>{if(drag<0)return;const p=Kit.svgPt(sv,e);P[drag]=[Kit.clamp(Math.round(p.x),30,570),Kit.clamp(Math.round(p.y),30,330)];draw()});
+sv.addEventListener('pointerup',()=>drag=-1);
+$('go').onclick=()=>{if(busy)return;busy=true;const to=t===1?0:1,from=t;if(to)Mascot.cast(.5,.85);Kit.tween(1300,e=>{t=from+(to-from)*e;draw()},()=>{t=to;busy=false;draw();if(to)Mascot.cheer()})};
+draw();
+</script></body></html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Відсотки</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Відсотки"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Відсотки</h1><p class="tp-lead">Відсоток — це одна соту частина. Квадрат 10×10: кожна клітинка = 1%.</p>
+<div class="tp-big" id="big"></div>
+<div class="tp-expr" id="fr"></div>
+<div class="tp-ctl">Відсотків<div class="stp" data-k="p"></div></div>
+<div class="tp-row" id="quick"><button class="tp-btn" data-q="10">10%</button><button class="tp-btn" data-q="25">25%</button><button class="tp-btn" data-q="50">50%</button><button class="tp-btn" data-q="75">75%</button><button class="tp-btn" data-q="100">100%</button></div>
+<span class="tp-lab">Від якого числа</span>
+<input type="range" id="N" min="10" max="1000" step="10" value="200">
+<div class="tp-expr" id="of" style="font-size:20px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={p:25,N:200},names={0:'нічого',10:'десята частина',20:'п’ята частина',25:'чверть',50:'половина',75:'три чверті',100:'все ціле'};
+function draw(){let s='<svg viewBox="0 0 440 384">';
+for(let i=0;i<100;i++){const r=i/10|0,c=i%10,on=i<st.p;s+=`<rect class="piece" data-i="${i}" x="${c*38+2}" y="${r*38+2}" width="34" height="34" rx="3" fill="${on?C.take:C.empty}" stroke="${C.ink}" stroke-width="${on?1.4:.7}" style="cursor:pointer"></rect>`}
+for(let r=0;r<10;r++)s+=Kit.txt(392,r*38+25,(r+1)*10+'%',{a:'start',fill:(r+1)*10<=st.p?C.acc:C.ink3});
+$('view').innerHTML=s+'</svg>';
+const g=Kit.gcd(st.p,100),res=st.p*st.N/100;$('big').textContent=st.p+'%';
+$('fr').innerHTML=`= ${Kit.frac(st.p,100)}${g>1&&st.p?' = '+Kit.frac(st.p/g,100/g):''} = ${Kit.num(st.p/100)}`;
+$('of').innerHTML=`${st.p}% від ${st.N} = <span class="c-a">${Kit.num(res)}</span>`;
+$('say').innerHTML=`Квадрат поділено на <span class="d">100</span> клітинок. Зафарбовано <span class="n">${st.p}</span>.`+(names[st.p]?` Це <span class="n">${names[st.p]}</span>.`:'')+` Щоб знайти ${st.p}% від ${st.N}: ${st.N} ÷ 100 × ${st.p} = ${Kit.num(res)}.`}
+function setP(p,magic){const was=st.p;st.p=p;Kit.sync(st);draw();if(p===100&&was!==100)Mascot.cheer();else if(magic)Mascot.cast()}
+Kit.steppers(st,{p:[0,100]},()=>{draw();if(st.p===100)Mascot.cheer()});
+$('quick').onclick=e=>{const b=e.target.closest('button');if(b)setP(+b.dataset.q,true)};
+$('view').onclick=e=>{const r=e.target.closest('.piece');if(r){const i=+r.dataset.i;setP(st.p===i+1?i:i+1)}};
+$('N').oninput=e=>{st.N=+e.target.value;draw()};
+draw();
+</script></body></html>

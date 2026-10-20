@@ -23,6 +23,7 @@ const FAMILY_BY_TYPE: Readonly<Record<string, TrayCardFamily>> = Object.freeze({
   calculus_card: 'math',
   quadratic_card: 'math',
   number_line: 'math',
+  math_scene: 'math',
   trig_circle: 'math',
   trig_solver: 'math',
   helix: 'math',

@@ -260,6 +260,9 @@ export interface WBAsset {
     /** NumberLine (Б-184, 2026-10-12) — числова пряма: нерівності, системи, сукупності.
      *  data = NumberLineData (лише застосований вхід учителя; відповідь рахує рушій). */
     | 'number_line'
+    /** «Наочна сцена» (2026-10-20) — готова жива сцена `public/scenes/{uk|en}/{id}.html` у вікні.
+     *  data = MathSceneData { version, sceneId } (types/mathScene.ts). Стан усередині сцени — не ops. */
+    | 'math_scene'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -367,6 +370,7 @@ export interface WBAsset {
     | GeomashSceneData
     | VisualCapsuleAssetData
     | import('../engine/numberLine/types').NumberLineData
+    | import('./mathScene').MathSceneData
 }
 
 /**

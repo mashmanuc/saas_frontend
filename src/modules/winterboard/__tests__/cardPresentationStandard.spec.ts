@@ -42,10 +42,10 @@ const TEACHER = { isTutor: true, mode: 'edit' }
 
 // ─── INV-PRES-1 · 22 типи ──────────────────────────────────────────────────
 
-describe('INV-PRES-1 · можливості подання всіх 27 типів', () => {
+describe('INV-PRES-1 · можливості подання всіх 28 типів', () => {
   const TEXT = ['theory_card', 'history_card', 'nmt_task', 'timeline_card', 'map_card', 'discussion_question']
 
-  it('рівно 27 типів; текстові — height + teacher-shared; решта — none/none; усі — з панеллю', () => {
+  it('рівно 28 типів; текстові — height + teacher-shared; решта — none/none; усі — з панеллю', () => {
     // 22 → 24: H2–H3 додали шкалу й карту (свідоме розширення).
     // 24 → 25: довідкова картка історичної сутності. Вона текстова — та
     // сама сім'я, що theory_card: авто-висота від вмісту й спільний
@@ -53,7 +53,8 @@ describe('INV-PRES-1 · можливості подання всіх 27 типі
     // 25 → 26: питання для обговорення під сценою. Теж текстова: висота
     // росте, коли вчитель відкриває відповідь.
     // 26 → 27: числова пряма (Б-184). Не текстова — фіксований розмір, як quadratic_card.
-    expect(STANDARD_ASSET_TYPES).toHaveLength(27)
+    // 27 → 28: «Наочна сцена» (2026-10-20). Не текстова — вікно фіксованого розміру зі сценою.
+    expect(STANDARD_ASSET_TYPES).toHaveLength(28)
     for (const type of STANDARD_ASSET_TYPES) {
       const c = assetCapabilities(type)
       const text = TEXT.includes(type)

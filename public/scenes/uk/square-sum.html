@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>(a + b)²</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script>
+<style>#view .pc{transition:transform .5s cubic-bezier(.3,.1,.2,1)}#view.split .p1{transform:translate(-16px,-16px)}#view.split .p2{transform:translate(16px,-16px)}#view.split .p3{transform:translate(-16px,16px)}#view.split .p4{transform:translate(16px,16px)}</style></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="(a+b)²"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Квадрат суми</h1><p class="tp-lead">Квадрат зі стороною a + b складається з чотирьох частин: двох квадратів і двох однакових прямокутників.</p>
+<div class="tp-ctl"><span class="c-a">a</span><div class="stp" data-k="a"></div></div>
+<div class="tp-ctl"><span class="c-g">b</span><div class="stp" data-k="b"></div></div>
+<button class="tp-btn primary" id="sp">Розсунути частини</button>
+<div class="tp-expr" id="f1"></div><div class="tp-expr" id="f2" style="font-size:19px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={a:5,b:3};
+function draw(){const {a,b}=st,u=340/(a+b),o=60,A=a*u,B=b*u;let v='<svg viewBox="-20 -20 500 500">';
+const pc=(cls,x,y,w,h,f,lab,val)=>`<g class="pc ${cls}"><rect class="piece" x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}" stroke="${C.ink}" stroke-width="2"></rect>${Kit.txt(x+w/2,y+h/2+4,lab,{serif:1,size:Math.min(28,Math.max(14,Math.min(w,h)/3))})}${Math.min(w,h)>50?Kit.txt(x+w/2,y+h/2+24,val,{size:12,fill:C.ink3}):''}</g>`;
+v+=pc('p1',o,o,A,A,C.take,'a²',a*a)+pc('p2',o+A,o,B,A,C.take2,'ab',a*b)+pc('p3',o,o+A,A,B,C.take2,'ab',a*b)+pc('p4',o+A,o+A,B,B,C.green2,'b²',b*b);
+v+=Kit.txt(o+A/2,o-22,'a = '+a,{fill:C.acc,serif:1,size:18})+Kit.txt(o+A+B/2,o-22,'b = '+b,{fill:C.green,serif:1,size:18});
+v+=Kit.txt(o-22,o+A/2,'a',{fill:C.acc,serif:1,size:18})+Kit.txt(o-22,o+A+B/2,'b',{fill:C.green,serif:1,size:18});
+$('view').innerHTML=v+'</svg>';
+$('f1').innerHTML=`(<span class="c-a">a</span> + <span class="c-g">b</span>)² = <span class="c-a">a²</span> + <span class="c-b">2ab</span> + <span class="c-g">b²</span>`;
+$('f2').innerHTML=`(${a} + ${b})² = ${a*a} + 2·${a*b} + ${b*b} = ${(a+b)**2}`;
+$('say').innerHTML=`Площа всього квадрата ${a+b}·${a+b} = ${(a+b)**2}. Але це не лише <span class="n">${a*a}</span> + <span class="g">${b*b}</span> — є ще два прямокутники <span class="d">ab</span> по ${a*b}. Саме тому (a + b)² ≠ a² + b².`}
+Kit.steppers(st,{a:[1,9],b:[1,9]},draw);
+$('sp').onclick=e=>{const on=$('view').classList.toggle('split');e.target.textContent=on?'Скласти назад':'Розсунути частини';if(on)Mascot.cast(.5,.5)};
+draw();
+</script></body></html>

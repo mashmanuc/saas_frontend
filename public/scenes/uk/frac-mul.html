@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Множення дробів</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Множення дробів"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Множення дробів</h1><p class="tp-lead">Один дріб — стовпчики, другий — рядки. Добуток — там, де вони перетинаються.</p>
+<div class="tp-row" style="align-items:center;gap:14px;justify-content:center">
+<div class="fpair c-a"><div class="stp" data-k="a"></div><div class="bar"></div><div class="stp" data-k="b"></div></div>
+<span class="tp-big" style="font-size:30px;color:var(--ink)">·</span>
+<div class="fpair c-b"><div class="stp" data-k="c"></div><div class="bar"></div><div class="stp" data-k="d"></div></div></div>
+<div class="tp-expr" id="ex"></div>
+<button class="tp-btn" id="only">Показати тільки перетин</button>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={a:2,b:3,c:3,d:4};let only=false;
+function draw(){const {a,b,c,d}=st,S=360,o=60,cw=S/b,rh=S/d;let v='<svg viewBox="0 0 470 470">';
+for(let i=0;i<b;i++)for(let j=0;j<d;j++){const A=i<a,B=j<c,f=A&&B?C.both:A?C.take:B?C.take2:C.empty;v+=`<rect class="piece" x="${o+i*cw}" y="${o+j*rh}" width="${cw}" height="${rh}" fill="${f}" opacity="${only&&!(A&&B)?.2:1}" stroke="${C.ink}" stroke-width=".8"></rect>`}
+for(let i=1;i<b;i++)v+=`<line x1="${o+i*cw}" y1="${o}" x2="${o+i*cw}" y2="${o+S}" stroke="${C.acc}" stroke-width="2"></line>`;
+for(let j=1;j<d;j++)v+=`<line x1="${o}" y1="${o+j*rh}" x2="${o+S}" y2="${o+j*rh}" stroke="${C.blue}" stroke-width="2"></line>`;
+v+=`<rect x="${o}" y="${o}" width="${S}" height="${S}" fill="none" stroke="${C.ink}" stroke-width="2.6"></rect>`;
+if(a)v+=`<path d="M${o},${o-10} v-8 H${o+a*cw} v8" fill="none" stroke="${C.acc}" stroke-width="2"></path>`+Kit.txt(o+a*cw/2,o-26,a+'/'+b,{serif:1,size:22,fill:C.acc});
+if(c)v+=`<path d="M${o-10},${o} h-8 V${o+c*rh} h8" fill="none" stroke="${C.blue}" stroke-width="2"></path>`+Kit.txt(o-26,o+c*rh/2+7,c+'/'+d,{serif:1,size:22,fill:C.blue,a:'end'});
+$('view').innerHTML=v+'</svg>';
+const N=a*c,D=b*d,g=Kit.gcd(N,D)||1;
+$('ex').innerHTML=`${Kit.frac(a,b,'c-a')} · ${Kit.frac(c,d,'c-b')} = ${Kit.frac(a+'·'+c,b+'·'+d)} = ${Kit.frac(N,D)}${g>1&&N?' = '+Kit.frac(N/g,D/g):''}`;
+$('say').innerHTML=`Квадрат розрізали на <span class="n">${b}</span> стовпчики і <span class="d">${d}</span> рядки, тобто на ${D} клітинок. Перетин займає <span class="n">${a}</span>·<span class="d">${c}</span> = ${N} з них, отже добуток ${N}/${D}.`}
+Kit.steppers(st,{a:[0,10],b:[1,10],c:[0,10],d:[1,10]},k=>{st.a=Math.min(st.a,st.b);st.c=Math.min(st.c,st.d);draw();if(k==='b'||k==='d')Mascot.cast()});
+$('only').onclick=e=>{only=!only;e.target.classList.toggle('on',only);draw();if(only)Mascot.cast()};
+draw();
+</script></body></html>

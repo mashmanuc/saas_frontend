@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>НСК і НСД</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="НСК і НСД"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>НСК і НСД</h1><p class="tp-lead">Два стрибунці стартують з нуля. Хто позаду — той і стрибає. Де зустрінуться — там НСК.</p>
+<div class="tp-ctl"><span class="c-a">Крок першого</span><div class="stp" data-k="a"></div></div>
+<div class="tp-ctl"><span class="c-b">Крок другого</span><div class="stp" data-k="b"></div></div>
+<div class="tp-row"><button class="tp-btn primary" id="play">▶ Стрибати</button><button class="tp-btn" id="one">Крок</button><button class="tp-btn" id="rst">↺</button></div>
+<div class="tp-expr" id="ex" style="flex-direction:column;align-items:flex-start;gap:2px"></div>
+<span class="tp-lab">НСД: підбери мірку</span>
+<div class="tp-row" id="meas"></div>
+<button class="tp-btn" id="find">🔍 Знайти НСД автоматично</button>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={a:4,b:6};let pa=0,pb=0,ha=[],hb=[],timer=null,done=false,m=2,seek=null;
+const divs=n=>[...Array(n).keys()].map(i=>i+1).filter(i=>n%i===0);
+function stop(){clearInterval(timer);timer=null;$('play').textContent='▶ Стрибати'}
+function reset(){stop();pa=pb=0;ha=[];hb=[];done=false;m=Kit.gcd(st.a,st.b);draw()}
+function hop(){if(done)return;if(pa<=pb){ha.push(pa);pa+=st.a}else{hb.push(pb);pb+=st.b}if(pa===pb){done=true;stop();Mascot.cheer()}draw()}
+function draw(){const {a,b}=st,L=Kit.lcm(a,b),g=Kit.gcd(a,b),x0=40,W=520,u=W/L,y=110,X=i=>x0+i*u;let v='<svg viewBox="0 0 600 420">';
+v+=`<line x1="${x0-10}" y1="${y}" x2="${x0+W+20}" y2="${y}" stroke="${C.ink}" stroke-width="2.4"></line>`;
+for(let i=0;i<=L;i+=a)v+=`<line x1="${X(i)}" y1="${y-8}" x2="${X(i)}" y2="${y}" stroke="${C.acc}" stroke-width="2"></line>`+(a*u>=22||i===0?Kit.txt(X(i),y-14,i,{size:11,fill:C.acc}):'');
+for(let i=0;i<=L;i+=b)v+=`<line x1="${X(i)}" y1="${y}" x2="${X(i)}" y2="${y+8}" stroke="${C.blue}" stroke-width="2"></line>`+(b*u>=22||i===0?Kit.txt(X(i),y+24,i,{size:11,fill:C.blue}):'');
+const arc=(s,st,up,col)=>`<path d="M${X(s)},${y} Q${X(s+st/2)},${y+(up?-1:1)*Math.min(70,20+st*u*.5)} ${X(s+st)},${y}" fill="none" stroke="${col}" stroke-width="2"></path>`;
+ha.forEach(s=>v+=arc(s,a,1,C.acc));hb.forEach(s=>v+=arc(s,b,0,C.blue));
+v+=`<circle cx="${X(pa)}" cy="${y-9}" r="9" fill="${C.acc}" stroke="${C.ink}" stroke-width="1.5"></circle><circle cx="${X(pb)}" cy="${y+9}" r="9" fill="${C.blue}" stroke="${C.ink}" stroke-width="1.5"></circle>`;
+if(done)v+=`<circle cx="${X(L)}" cy="${y}" r="22" fill="none" stroke="${C.green}" stroke-width="3"></circle>`+Kit.txt(Math.min(X(L),520),y-74,'НСК = '+L,{serif:1,size:22,fill:C.green});
+const w=Math.min(40,440/Math.max(a,b)),fits=n=>n%m===0,row=(n,yy,col,col2)=>{let s='';const full=Math.floor(n/m)*m;for(let i=0;i<n;i++)s+=`<rect x="${80+i*w}" y="${yy}" width="${w}" height="28" fill="${i>=full?'#f3d0c8':Math.floor(i/m)%2?col2:col}" stroke="${C.ink}" stroke-width=".7"></rect>`;
+for(let i=0;i<=full;i+=m)s+=`<line x1="${80+i*w}" y1="${yy-5}" x2="${80+i*w}" y2="${yy+33}" stroke="${C.green}" stroke-width="2.6"></line>`;
+if(n>full)s+=`<path d="M${80+full*w},${yy} h${(n-full)*w} v28 h${-(n-full)*w} z" fill="none" stroke="#b33a2a" stroke-width="2" stroke-dasharray="4 3"></path>`+Kit.txt(80+n*w+10,yy+19,'✗ залишок '+(n-full),{a:'start',size:12,fill:'#b33a2a'});
+else s+=Kit.txt(80+n*w+10,yy+19,'✓ '+n+' = '+m+' · '+n/m,{a:'start',size:12,fill:C.green,w:700});return s};
+v+=`<line x1="30" y1="200" x2="570" y2="200" stroke="${C.line}" stroke-dasharray="3 5"></line>`;
+v+=Kit.txt(40,232,'Мірка '+m+': чи ділить обидві смужки без залишку?',{a:'start',size:13,fill:C.ink2,w:600});
+v+=Kit.txt(66,268,a,{a:'end',serif:1,size:18,fill:C.acc})+row(a,250,C.take,'#f3c9a8')+Kit.txt(66,316,b,{a:'end',serif:1,size:18,fill:C.blue})+row(b,298,C.take2,'#d3e5ee');
+const da=divs(a),db=divs(b),com=da.filter(x=>db.includes(x)),hl=x=>com.includes(x)?(x===g?`<tspan fill="${C.green}" font-weight="800">[${x}]</tspan>`:`<tspan fill="${C.green}" font-weight="700">${x}</tspan>`):x;
+v+=Kit.txt(40,360,'дільники '+a+': '+da.map(hl).join(', '),{a:'start',size:12,fill:C.acc})+Kit.txt(40,380,'дільники '+b+': '+db.map(hl).join(', '),{a:'start',size:12,fill:C.blue})+Kit.txt(40,404,'спільні: '+com.join(', ')+' → найбільший = НСД = '+g,{a:'start',size:12,fill:C.green,w:700});
+$('meas').innerHTML=[...Array(Math.min(a,b)).keys()].map(i=>{const k=i+1,ok=a%k===0&&b%k===0;return `<button class="tp-btn${k===m?' on':''}" data-m="${k}" style="min-width:36px;${ok&&k!==m?'border-color:var(--green);color:var(--green)':''}">${k}</button>`}).join('');
+$('view').innerHTML=v+'</svg>';
+$('ex').innerHTML=`<span>НСК(${a}, ${b}) = <span class="c-g">${done?L:'?'}</span></span><span>НСД(${a}, ${b}) = <span class="c-g">${g}</span></span>`;
+const both=a%m===0&&b%m===0,nsd=m===g?`Мірка <span class="g">${m}</span> ділить і ${a}, і ${b} — і це <span class="g">найбільша</span> така мірка. Це і є НСД.`:both?`Мірка ${m} підходить обом, але є більша. Спробуй зелені кнопки!`:`Мірка ${m} не вкладається без залишку — дивись червоний шматок.`;
+$('say').innerHTML=(done?`Зустрілись на <span class="g">${L}</span>: це найменше число, що ділиться і на <span class="n">${a}</span>, і на <span class="d">${b}</span>.`:`Перший стрибає по <span class="n">${a}</span>, другий — по <span class="d">${b}</span>. Де вони вперше стануть разом?`)+'<br><br>'+nsd}
+$('meas').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;clearInterval(seek);m=+b.dataset.m;draw();if(m===Kit.gcd(st.a,st.b))Mascot.cheer()};
+$('find').onclick=()=>{clearInterval(seek);m=Math.min(st.a,st.b);draw();seek=setInterval(()=>{if(st.a%m===0&&st.b%m===0){clearInterval(seek);Mascot.cheer();return}m--;draw()},650)};
+$('play').onclick=()=>{if(timer)return stop();if(done)reset();$('play').textContent='❚❚ Пауза';timer=setInterval(hop,420)};
+$('one').onclick=()=>{if(done)reset();else hop()};$('rst').onclick=reset;
+Kit.steppers(st,{a:[2,12],b:[2,12]},()=>{clearInterval(seek);reset()});
+m=Kit.gcd(st.a,st.b);
+draw();
+</script></body></html>

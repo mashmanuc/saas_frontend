@@ -60,8 +60,8 @@ describe('useCardZoomRefresh — ПІСЛЯ оновлення DOM', () => {
 })
 
 describe('проводка: які картки масштабуються і де', () => {
-  it('рівно три типи з власним полотном', () => {
-    expect([...ZOOM_SCALED_CARD_TYPES].sort()).toEqual(['calculus_card', 'graph_calculator', 'trig_circle'])
+  it('рівно чотири типи з власним полотном (+ «Наочна сцена», 2026-10-20)', () => {
+    expect([...ZOOM_SCALED_CARD_TYPES].sort()).toEqual(['calculus_card', 'graph_calculator', 'math_scene', 'trig_circle'])
   })
 
   it('уніфікований шар (прод: VITE_UNIFIED_ZORDER=true) кладе лише ці типи в .wb-card-zoom', () => {

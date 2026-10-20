@@ -7725,6 +7725,28 @@
     }
   },
   "winterboard": {
+    "mathScene": {
+      "title": "Наочна сцена",
+      "missing": "Цієї сцени немає.",
+      "scenes": {
+        "fractions": "Дроби",
+        "percent": "Відсотки",
+        "decimals": "Десяткові дроби",
+        "frac-mul": "Множення дробів",
+        "frac-div": "Ділення дробів",
+        "lcm": "НСК і НСД",
+        "negatives": "Від’ємні числа",
+        "equation": "Рівняння-терези",
+        "square-sum": "Квадрат суми",
+        "proportion": "Пропорції",
+        "pythagoras": "Теорема Піфагора",
+        "angles": "Кути трикутника",
+        "areas": "Площі фігур",
+        "probability": "Ймовірність",
+        "mean": "Середнє значення",
+        "vectors": "Вектори"
+      }
+    },
     "rotateHint": {
       "text": "Поверніть планшет горизонтально — аркуш стане більшим",
       "ok": "Зрозуміло"
@@ -9847,7 +9869,8 @@
         "graphs": "Графіки",
         "graphs3d": "Графіки 3D",
         "geometry": "Геометрія",
-        "stereo": "Стереометрія"
+        "stereo": "Стереометрія",
+        "scenes": "Наочні сцени"
       },
       "interactiveHeader": "Інтерактивні",
       "geo2dHeader": "Планіметрія",
@@ -11328,6 +11351,7 @@
         "theory_card": "Теорія",
         "mash_scene": "MASH",
         "geomash_scene": "Рисунок",
+        "math_scene": "Наочна сцена",
         "graphmash_3d": "3D-графік",
         "visual_capsule": "Анімація",
         "image": "Зображення",

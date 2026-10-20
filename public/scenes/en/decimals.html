@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Decimals</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Decimals"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Decimals</h1><p class="tp-lead">Split the segment into 10 — these are tenths. Put one tenth under the magnifier and split it into 10 again — these are hundredths.</p>
+<div class="tp-big" id="big"></div>
+<div class="tp-expr" id="ex"></div>
+<div class="tp-ctl">Tenths<div class="stp" data-k="t"></div></div>
+<div class="tp-ctl">Hundredths<div class="stp" data-k="u"></div></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={t:3,u:7},f=(n,k)=>n.toFixed(k);
+function draw(){const {t,u}=st,x0=40,s=52,v=(t*10+u)/100;let h='<svg viewBox="0 0 600 330">';
+h+=`<polygon points="${x0+t*s},104 ${x0+(t+1)*s},104 ${x0+10*s},214 ${x0},214" fill="${C.take2}" opacity=".28"></polygon>`;
+h+=`<line x1="${x0+t*s}" y1="104" x2="${x0}" y2="214" stroke="${C.blue}" stroke-dasharray="4 4"></line><line x1="${x0+(t+1)*s}" y1="104" x2="${x0+10*s}" y2="214" stroke="${C.blue}" stroke-dasharray="4 4"></line>`;
+h+=`<rect x="${x0+t*s}" y="76" width="${s}" height="28" fill="${C.take2}"></rect><rect x="${x0}" y="84" width="${v*10*s}" height="12" fill="${C.take}"></rect>`;
+h+=`<line x1="${x0-10}" y1="90" x2="${x0+10*s+16}" y2="90" stroke="${C.ink}" stroke-width="2.4"></line>`;
+for(let i=0;i<=10;i++){const x=x0+i*s;h+=`<line x1="${x}" y1="${i%10?80:74}" x2="${x}" y2="${i%10?100:106}" stroke="${C.ink}" stroke-width="${i%10?1.4:2.4}"></line>`+Kit.txt(x,i%10?66:62,i%10?f(i/10,1):i/10,{size:i%10?12:20,serif:!(i%10),fill:i===t||i===t+1?C.blue:C.ink})}
+h+=`<rect x="${x0}" y="224" width="${u*s}" height="12" fill="${C.take}"></rect><line x1="${x0-10}" y1="230" x2="${x0+10*s+16}" y2="230" stroke="${C.ink}" stroke-width="2.4"></line>`;
+for(let j=0;j<=10;j++){const x=x0+j*s,end=j%10===0;h+=`<line x1="${x}" y1="${end?214:220}" x2="${x}" y2="${end?246:240}" stroke="${C.ink}" stroke-width="${end?2.4:1.4}"></line>`+Kit.txt(x,266,f((t*10+j)/100,2),{size:end?13:11,fill:end?C.blue:C.ink3,w:end?700:400})}
+const mx=x0+u*s;h+=`<path d="M${mx},218 l-8,-14 h16 z" fill="${C.acc}"></path>`+Kit.txt(mx,196,f(v,2),{serif:1,size:26,fill:C.acc});
+h+=Kit.txt(300,312,'under the magnifier: from '+f(t/10,1)+' to '+f((t+1)/10,1),{fill:C.ink3,size:12});
+$('view').innerHTML=h+'</svg>';
+$('big').textContent=f(v,2);
+$('ex').innerHTML=`= ${Kit.frac(t,10,'c-b')} + ${Kit.frac(u,100,'c-a')} = ${Kit.frac(t*10+u,100)}`;
+$('say').innerHTML=`The digit <span class="d">${t}</span> after the point means ${t} tenths. The digit <span class="n">${u}</span> means ${u} hundredths inside tenth number ${t+1}.`+(u===0?` Zero hundredths — so ${f(v,2)} = ${f(v,1)}.`:'')}
+Kit.steppers(st,{t:[0,9],u:[0,9]},k=>{draw();if(k==='t')Mascot.cast(.5,.5)});
+draw();
+</script></body></html>

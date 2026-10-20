@@ -46,7 +46,8 @@ describe('видимість «Навчальних обʼєктів»', () => {
   })
 
   it('INV-EV-2: гейт відкритий — плитка й обидві вставки на місці', () => {
-    expect(visibleApps({ evidence: true })).toEqual(MASH_APPS)
+    // «Наочні сцени» мають власний гейт (пілот math_scenes, mathScene.spec.ts) — тут вони закриті.
+    expect(visibleApps({ evidence: true })).toEqual(MASH_APPS.filter(a => a.app !== 'scenes'))
     const ev = visibleInserts({ evidence: true }, allInserts()).filter(e => e.family === 'evidence')
     expect(ev.map(e => e.id).sort()).toEqual(['evidence.map', 'evidence.timeline'])
   })

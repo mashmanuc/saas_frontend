@@ -434,6 +434,14 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   box-shadow: 0 0 0 1px rgba(59, 123, 155, 0.4);
 }
 
+/* «Наочна сцена» (2026-10-20): рамку й тінь малює сама картка (MathSceneRenderer) */
+.wb-math-scene-overlay {
+  position: absolute;
+  z-index: 4;
+  overflow: visible;
+  pointer-events: none;
+}
+
 /* Б-184: числова пряма */
 .wb-number-line-overlay {
   position: absolute;

@@ -88,7 +88,7 @@ describe('5: назви інструментів словами вчителя',
   it('картки — «Графіки», «Графіки 3D», «Геометрія», «Стереометрія»; назва програми — окремо, дрібно', () => {
     const apps = (uk as never as { winterboard: { contentSidebar: { apps: Record<string, string> } } })
       .winterboard.contentSidebar.apps
-    const shown = MASH_APPS.filter(a => a.app !== 'content').map(a => {
+    const shown = MASH_APPS.filter(a => a.app !== 'content' && a.app !== 'scenes').map(a => {
       const key = a.labelKey.split('.').pop() as string
       return [apps[key], a.brand]
     })

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Теорема Піфагора</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Піфагор"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Теорема Піфагора</h1><p class="tp-lead">Квадрати на катетах разом мають стільки ж площі, скільки квадрат на гіпотенузі. Переллємо — і перевіримо.</p>
+<div class="tp-ctl"><span class="c-a">Катет a</span><div class="stp" data-k="a"></div></div>
+<div class="tp-ctl"><span class="c-b">Катет b</span><div class="stp" data-k="b"></div></div>
+<div class="tp-row"><button class="tp-btn" data-p="3,4">3–4–5</button><button class="tp-btn" data-p="6,8">6–8–10</button><button class="tp-btn" data-p="5,5">5–5</button></div>
+<button class="tp-btn primary" id="pour">Перелити</button>
+<div class="tp-expr" id="ex"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={a:3,b:4};let t=0,busy=false;
+function draw(){const {a,b}=st,c=Math.hypot(a,b),W=a+2*b,H=2*a+b,s=Math.min(560/W,460/H),p=24,ox=p+b*s,oy=p+(b+a)*s;
+const O=[ox,oy],A=[ox+a*s,oy],B=[ox,oy-b*s],n=[b*s,-a*s],add=(q,v,k=1)=>[q[0]+v[0]*k,q[1]+v[1]*k],P=l=>l.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');
+const ta=Kit.clamp(t*2,0,1),tb=Kit.clamp(t*2-1,0,1),ka=a*a/(c*c);
+let v=`<svg viewBox="0 0 ${W*s+2*p} ${H*s+2*p}">`;
+v+=`<rect x="${ox}" y="${oy}" width="${a*s}" height="${a*s}" fill="${C.empty}" stroke="${C.ink}" stroke-width="2"></rect><rect x="${ox}" y="${oy+a*s*ta}" width="${a*s}" height="${a*s*(1-ta)}" fill="${C.take}"></rect>`;
+v+=`<rect x="${ox-b*s}" y="${oy-b*s}" width="${b*s}" height="${b*s}" fill="${C.empty}" stroke="${C.ink}" stroke-width="2"></rect><rect x="${ox-b*s}" y="${oy-b*s+b*s*tb}" width="${b*s}" height="${b*s*(1-tb)}" fill="${C.take2}"></rect>`;
+for(let i=1;i<a;i++)v+=`<line x1="${ox+i*s}" y1="${oy}" x2="${ox+i*s}" y2="${oy+a*s}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line><line x1="${ox}" y1="${oy+i*s}" x2="${ox+a*s}" y2="${oy+i*s}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line>`;
+for(let i=1;i<b;i++)v+=`<line x1="${ox-i*s}" y1="${oy-b*s}" x2="${ox-i*s}" y2="${oy}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line><line x1="${ox-b*s}" y1="${oy-i*s}" x2="${ox}" y2="${oy-i*s}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line>`;
+v+=`<polygon points="${P([A,B,add(B,n),add(A,n)])}" fill="${C.empty}" stroke="${C.ink}" stroke-width="2"></polygon>`;
+if(ta>0)v+=`<polygon points="${P([A,B,add(B,n,ka*ta),add(A,n,ka*ta)])}" fill="${C.take}"></polygon>`;
+if(tb>0)v+=`<polygon points="${P([add(A,n,ka),add(B,n,ka),add(B,n,ka+(1-ka)*tb),add(A,n,ka+(1-ka)*tb)])}" fill="${C.take2}"></polygon>`;
+if(Number.isInteger(c)){const AB=[B[0]-A[0],B[1]-A[1]];for(let i=1;i<c;i++){const k=i/c;v+=`<line x1="${A[0]+AB[0]*k}" y1="${A[1]+AB[1]*k}" x2="${A[0]+AB[0]*k+n[0]}" y2="${A[1]+AB[1]*k+n[1]}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line><line x1="${A[0]+n[0]*k}" y1="${A[1]+n[1]*k}" x2="${B[0]+n[0]*k}" y2="${B[1]+n[1]*k}" stroke="${C.ink}" stroke-width=".6" opacity=".5"></line>`}}
+v+=`<polygon points="${P([O,A,B])}" fill="${C.paper}" stroke="${C.ink}" stroke-width="2.6" stroke-linejoin="round"></polygon><path d="M${ox+12},${oy} V${oy-12} H${ox}" fill="none" stroke="${C.ink}" stroke-width="1.4"></path>`;
+const fs=Math.max(14,Math.min(26,s*.9));
+v+=Kit.txt(ox+a*s/2,oy+a*s/2+8,'a² = '+a*a,{serif:1,size:fs})+Kit.txt(ox-b*s/2,oy-b*s/2+8,'b² = '+b*b,{serif:1,size:fs});
+const M=add([(A[0]+B[0])/2,(A[1]+B[1])/2],n,.5);v+=Kit.txt(M[0],M[1]+8,'c² = '+Kit.num(c*c),{serif:1,size:fs});
+$('view').innerHTML=v+'</svg>';
+$('ex').innerHTML=`<span class="c-a">${a*a}</span> + <span class="c-b">${b*b}</span> = ${a*a+b*b} → c = ${Number.isInteger(c)?c:'√'+(a*a+b*b)+' ≈ '+Kit.num(c)}`;
+$('say').innerHTML=t===1?`Уся «вода» з двох квадратів рівно заповнила великий. Отже <span class="n">a²</span> + <span class="d">b²</span> = c².`:`Квадрат на катеті a має площу <span class="n">${a*a}</span>, на катеті b — <span class="d">${b*b}</span>. Чи влізе все в квадрат на гіпотенузі?`;
+$('pour').textContent=t===1?'↺ Назад':'Перелити'}
+function pour(){if(busy)return;if(t===1){t=0;draw();return}busy=true;Mascot.cast(.55,.35);Kit.tween(2200,e=>{t=e;draw()},()=>{t=1;busy=false;draw();Mascot.cheer()})}
+Kit.steppers(st,{a:[1,8],b:[1,8]},()=>{t=0;draw()});
+$('pour').onclick=pour;document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{[st.a,st.b]=b.dataset.p.split(',').map(Number);t=0;Kit.sync(st);draw()});
+draw();
+</script></body></html>

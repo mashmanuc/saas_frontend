@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vectors</title>
+<link rel="stylesheet" href="../shared/vectors/styles.css">
+<link rel="stylesheet" href="../shared/vectors/geo2d.css">
+<link rel="stylesheet" href="../shared/vectors/calculus.css">
+</head>
+<body>
+<main>
+  <header class="hero calc-page-hero">
+    <div>
+      <h1>Vectors <span class="accent">live</span></h1>
+      <p>Five interactive cards for explaining vectors on the board. Drag the tip of a vector — coordinates, length, angle, dot product and projection update instantly. Each card is a separate topic: coordinates, addition, multiplying by a number, dot product, decomposition in a basis.</p>
+    </div>
+    <div class="hero-meta">5 CARDS<br>COORDINATES · LENGTH · ANGLE<br>TRIANGLE AND PARALLELOGRAM<br>DOT PRODUCT · PROJECTION<br>BASIS DECOMPOSITION</div>
+  </header>
+
+  <section class="calc-grid">
+    <article class="calc-card" data-screen-label="vec-components">
+      <div class="calc-head">
+        <span class="calc-num">01</span>
+        <h2 class="calc-title">Vector and coordinates</h2>
+        <span class="calc-formula">v = (x, y)</span>
+      </div>
+      <div class="calc-stage" id="stage-comp"></div>
+      <div class="calc-tools" id="tools-comp"></div>
+      <div class="calc-legend">
+        <span><i style="background:#c4622a"></i><span class="lab">v</span></span>
+        <span><i style="background:#3b7b9b"></i><span class="lab">projections x, y</span></span>
+        <span><i style="background:#a83a5b"></i><span class="lab">angle α</span></span>
+      </div>
+    </article>
+
+    <article class="calc-card" data-screen-label="vec-sum">
+      <div class="calc-head">
+        <span class="calc-num">02</span>
+        <h2 class="calc-title">Sum and difference</h2>
+        <span class="calc-formula">a + b · a − b</span>
+      </div>
+      <div class="calc-stage" id="stage-sum"></div>
+      <div class="calc-tools" id="tools-sum"></div>
+      <div class="calc-legend">
+        <span><i style="background:#c4622a"></i><span class="lab">a</span></span>
+        <span><i style="background:#3b7b9b"></i><span class="lab">b</span></span>
+        <span><i style="background:#7a8b3a"></i><span class="lab">a + b</span></span>
+        <span><i style="background:#a83a5b"></i><span class="lab">a − b</span></span>
+      </div>
+    </article>
+
+    <article class="calc-card" data-screen-label="vec-scalar">
+      <div class="calc-head">
+        <span class="calc-num">03</span>
+        <h2 class="calc-title">Multiplying by a number</h2>
+        <span class="calc-formula">k · v</span>
+      </div>
+      <div class="calc-stage" id="stage-scalar"></div>
+      <div class="calc-tools" id="tools-scalar"></div>
+      <div class="calc-legend">
+        <span><i style="background:#c4622a"></i><span class="lab">v</span></span>
+        <span><i style="background:#5a4a8a"></i><span class="lab">k · v</span></span>
+      </div>
+    </article>
+
+    <article class="calc-card" data-screen-label="vec-dot">
+      <div class="calc-head">
+        <span class="calc-num">04</span>
+        <h2 class="calc-title">Dot product</h2>
+        <span class="calc-formula">a · b = |a||b|cos φ</span>
+      </div>
+      <div class="calc-stage" id="stage-dot"></div>
+      <div class="calc-tools" id="tools-dot"></div>
+      <div class="calc-legend">
+        <span><i style="background:#c4622a"></i><span class="lab">a</span></span>
+        <span><i style="background:#3b7b9b"></i><span class="lab">b · projection of a on b</span></span>
+        <span><i style="background:#a83a5b"></i><span class="lab">angle φ</span></span>
+      </div>
+    </article>
+
+    <article class="calc-card" data-screen-label="vec-basis">
+      <div class="calc-head">
+        <span class="calc-num">05</span>
+        <h2 class="calc-title">Decomposition in a basis</h2>
+        <span class="calc-formula">v = α·e₁ + β·e₂</span>
+      </div>
+      <div class="calc-stage" id="stage-basis"></div>
+      <div class="calc-tools" id="tools-basis"></div>
+      <div class="calc-legend">
+        <span><i style="background:#c4622a"></i><span class="lab">e₁</span></span>
+        <span><i style="background:#3b7b9b"></i><span class="lab">e₂</span></span>
+        <span><i style="background:#5a4a8a"></i><span class="lab">v</span></span>
+        <span><i style="background:#7a8b3a"></i><span class="lab">α·e₁ and β·e₂</span></span>
+      </div>
+    </article>
+  </section>
+</main>
+
+<script src="vectors.js?v=1"></script>
+<script>
+(function () {
+  const mkToggle = (label, on, cb) => {
+    const b = document.createElement('button');
+    b.className = 'calc-tool' + (on ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      b.classList.toggle('active');
+      cb(b.classList.contains('active'));
+    });
+    return b;
+  };
+
+  // ===== 01 Components =====
+  const cComp = new window.VectorCard(document.getElementById('stage-comp'), {
+    mode: 'components',
+    v: { x: 3.2, y: 2.1 },
+    showComponents: true, showAngle: true,
+  });
+  const tComp = document.getElementById('tools-comp');
+  tComp.appendChild(mkToggle('Projections on the axes', true, (on) => cComp.setOption('showComponents', on)));
+  tComp.appendChild(mkToggle('Angle α', true, (on) => cComp.setOption('showAngle', on)));
+
+  // ===== 02 Sum =====
+  const cSum = new window.VectorCard(document.getElementById('stage-sum'), {
+    mode: 'sum',
+    a: { x: 3, y: 1 },
+    b: { x: 1, y: 2.5 },
+    rule: 'triangle', showDiff: false,
+  });
+  const tSum = document.getElementById('tools-sum');
+  // segmented: triangle / parallelogram
+  const seg = document.createElement('div');
+  seg.className = 'calc-segmented';
+  ['triangle', 'parallelogram'].forEach((rule, i) => {
+    const b = document.createElement('button');
+    b.textContent = rule === 'triangle' ? 'Triangle' : 'Parallelogram';
+    if (i === 0) b.classList.add('active');
+    b.addEventListener('click', () => {
+      [...seg.children].forEach((c) => c.classList.remove('active'));
+      b.classList.add('active');
+      cSum.setOption('rule', rule);
+    });
+    seg.appendChild(b);
+  });
+  const segLab = document.createElement('span');
+  segLab.style.cssText = 'font-family:JetBrains Mono,monospace;font-size:11px;color:var(--ink-3);margin-right:6px;align-self:center;';
+  segLab.textContent = 'rule:';
+  tSum.appendChild(segLab);
+  tSum.appendChild(seg);
+  tSum.appendChild(mkToggle('Difference a − b', false, (on) => cSum.setOption('showDiff', on)));
+
+  // ===== 03 Scalar =====
+  const cSc = new window.VectorCard(document.getElementById('stage-scalar'), {
+    mode: 'scalar',
+    v: { x: 2.4, y: 1.2 },
+    k: 1.5,
+  });
+  const tSc = document.getElementById('tools-scalar');
+  const slid = document.createElement('div');
+  slid.className = 'calc-slider';
+  slid.innerHTML = `<label>k =</label><input type="range" min="-3" max="3" step="0.05" value="1.5"><span class="calc-slider-val">1,50</span>`;
+  slid.querySelector('input').addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    cSc.setOption('k', v);
+    slid.querySelector('.calc-slider-val').textContent = v.toFixed(2);
+  });
+  tSc.appendChild(slid);
+  // quick presets for k
+  const kPresets = document.createElement('div');
+  kPresets.className = 'calc-presets';
+  [['½', 0.5], ['1', 1], ['2', 2], ['−1', -1], ['−½', -0.5]].forEach(([label, val]) => {
+    const b = document.createElement('button');
+    b.className = 'calc-preset';
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      cSc.setOption('k', val);
+      const inp = slid.querySelector('input');
+      inp.value = val;
+      slid.querySelector('.calc-slider-val').textContent = val.toFixed(2);
+    });
+    kPresets.appendChild(b);
+  });
+  tSc.appendChild(kPresets);
+
+  // ===== 04 Dot =====
+  const cDot = new window.VectorCard(document.getElementById('stage-dot'), {
+    mode: 'dot',
+    a: { x: 2.5, y: 2.5 },
+    b: { x: 3, y: 0.6 },
+    showProj: true, showAngle: true,
+  });
+  const tDot = document.getElementById('tools-dot');
+  tDot.appendChild(mkToggle('Projection of a on b', true, (on) => cDot.setOption('showProj', on)));
+  tDot.appendChild(mkToggle('Angle φ', true, (on) => cDot.setOption('showAngle', on)));
+  // shortcut: snap to perpendicular
+  const tdpr = document.createElement('div');
+  tdpr.className = 'calc-presets';
+  const presetPairs = [
+    { label: '⊥ perpendicular', a: { x: 2, y: 2 }, b: { x: 2, y: -2 } },
+    { label: '∥ same direction', a: { x: 2, y: 1 }, b: { x: 4, y: 2 } },
+    { label: '∥ opposite',    a: { x: 2, y: 1 }, b: { x: -3, y: -1.5 } },
+    { label: 'arbitrary',         a: { x: 2.5, y: 2.5 }, b: { x: 3, y: 0.6 } },
+  ];
+  presetPairs.forEach((p) => {
+    const b = document.createElement('button');
+    b.className = 'calc-preset';
+    b.textContent = p.label;
+    b.addEventListener('click', () => { cDot.setPoint('a', p.a.x, p.a.y); cDot.setPoint('b', p.b.x, p.b.y); });
+    tdpr.appendChild(b);
+  });
+  tDot.appendChild(tdpr);
+
+  // ===== 05 Basis =====
+  const cBas = new window.VectorCard(document.getElementById('stage-basis'), {
+    mode: 'basis',
+    e1: { x: 2,   y: 0.5 },
+    e2: { x: -0.6, y: 1.8 },
+    v:  { x: 2,   y: 2.5 },
+  });
+  const tBas = document.getElementById('tools-basis');
+  const basPresets = document.createElement('div');
+  basPresets.className = 'calc-presets';
+  [
+    { label: 'standard (1,0),(0,1)', e1: { x: 1, y: 0 }, e2: { x: 0, y: 1 } },
+    { label: 'slanted', e1: { x: 2, y: 0.5 }, e2: { x: -0.6, y: 1.8 } },
+    { label: 'almost collinear', e1: { x: 2, y: 1 }, e2: { x: 2.2, y: 1.05 } },
+  ].forEach((p) => {
+    const b = document.createElement('button');
+    b.className = 'calc-preset';
+    b.textContent = p.label;
+    b.addEventListener('click', () => { cBas.setPoint('e1', p.e1.x, p.e1.y); cBas.setPoint('e2', p.e2.x, p.e2.y); });
+    basPresets.appendChild(b);
+  });
+  tBas.appendChild(basPresets);
+})();
+</script>
+</body>
+</html>

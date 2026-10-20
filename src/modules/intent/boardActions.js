@@ -1168,7 +1168,9 @@ async function _allInserts() {
   // свіжій дошці каталог без 2D-фігур і модель бере найближче 3D/триго (owner-баг).
   try { await import('@/modules/winterboard/vendor/geo2d') } catch { /* без планіметрії — не блокуємо */ }
   const mod = await import('@/modules/winterboard/components/sidebar/insertRegistry')
-  return typeof mod.allInserts === 'function' ? mod.allInserts() : []
+  // «Наочні сцени» (2026-10-20) — лише плитки «Інструментів» пілоту math_scenes; Інтегралику їх не даємо:
+  // інакше він бачив би їх у всіх учителів повз пілот, а 16 плиток витісняли б інструменти зі стелі каталогу.
+  return typeof mod.allInserts === 'function' ? mod.allInserts().filter((e) => e.family !== 'scenes') : []
 }
 
 /** Ліміт каталогу в parse-контексті — дзеркало BE `MAX_TOOLS` (apps/intent/ai/parser.py). */
@@ -1662,6 +1664,7 @@ export const KIND_LABELS = {
   mash_scene: 'MASH-сцена',
   visual_capsule: 'анімація',   // TLV2-03 — капсула V-D3.1 як об'єкт дошки
   number_line: 'числова пряма', // Б-184
+  math_scene: 'наочна сцена',   // 2026-10-20
 }
 
 /**

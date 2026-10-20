@@ -62,6 +62,8 @@ import {
   MAP_CARD_DRAG_MIME,
   TIMELINE_CARD_DRAG_MIME,
 } from '../../constants/evidenceCardDefaults'
+import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
+import { DEFAULT_MATH_SCENE_W, DEFAULT_MATH_SCENE_H } from '../../constants/mathSceneDefaults'
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -290,6 +292,31 @@ describe('useContentDrop.addAtPosition', () => {
       const { addAtPosition, onAssetAdd } = makeComposable()
       addAtPosition('application/x-unknown', '{}', DROP_POS)
       expect(onAssetAdd).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── math_scene («Наочна сцена», 2026-10-20) ────────────────────────────────
+  describe('math_scene', () => {
+    it('плитка сцени → вікно з цією сценою по центру точки', () => {
+      const { addAtPosition, onAssetAdd } = makeComposable()
+      addAtPosition(MATH_SCENE_DRAG_MIME, JSON.stringify({ sceneId: 'pythagoras' }), DROP_POS)
+      expect(onAssetAdd).toHaveBeenCalledOnce()
+      const asset = onAssetAdd.mock.calls[0][0]
+      expect(asset).toMatchObject({ type: 'math_scene', src: '', rotation: 0, locked: false,
+        w: DEFAULT_MATH_SCENE_W, h: DEFAULT_MATH_SCENE_H, data: { version: 1, sceneId: 'pythagoras' } })
+      expect(asset.x + asset.w / 2).toBe(DROP_POS.x)
+      expect(asset.y + asset.h / 2).toBe(DROP_POS.y)
+    })
+
+    it('невідома або зіпсована сцена — нічого не вставляється', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      for (const payload of [JSON.stringify({ sceneId: 'nope' }), '{}', 'not json']) {
+        const { addAtPosition, onAssetAdd } = makeComposable()
+        addAtPosition(MATH_SCENE_DRAG_MIME, payload, DROP_POS)
+        expect(onAssetAdd, payload).not.toHaveBeenCalled()
+      }
+      expect(warn).toHaveBeenCalledOnce()
+      warn.mockRestore()
     })
   })
 

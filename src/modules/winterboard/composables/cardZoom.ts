@@ -18,6 +18,9 @@ export const ZOOM_SCALED_CARD_TYPES: ReadonlySet<string> = new Set([
   'trig_circle',
   'calculus_card',
   'graph_calculator',
+  // «Наочна сцена» (2026-10-20): сцена у вікні верстається в пікселях картки — вужче за 820 px вона
+  // перебудовується «картинка над текстом» і дає прокрутку; так вона завжди та сама, лише менша.
+  'math_scene',
 ])
 
 const CARD_ZOOM: InjectionKey<Readonly<Ref<number>>> = Symbol('wb-card-zoom')

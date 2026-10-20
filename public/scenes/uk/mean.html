@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Середнє значення</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Середнє"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Середнє значення</h1><p class="tp-lead">Середнє — це висота, яку матимуть усі стовпчики, якщо розділити все порівну. Тягни стовпчики мишкою.</p>
+<div class="tp-ctl">Стовпчиків<div class="stp" data-k="k"></div></div>
+<div class="tp-row"><button class="tp-btn primary" id="go">Вирівняти</button><button class="tp-btn" id="rnd">Випадково</button></div>
+<div class="tp-expr" id="ex" style="font-size:19px"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={k:5};let vals=[3,7,4,8,3],t=0,drag=-1,busy=false;
+$('view').innerHTML='<svg id="sv"><g id="g"></g></svg>';const sv=$('sv'),g=$('g'),base=360,U=30;
+const mean=()=>vals.reduce((a,b)=>a+b,0)/vals.length;
+function draw(){const k=vals.length,m=mean(),W=k*80+60;sv.setAttribute('viewBox',`0 0 ${W} 400`);let h='';
+for(let y=0;y<=10;y++)h+=`<line x1="30" y1="${base-y*U}" x2="${W-20}" y2="${base-y*U}" stroke="${C.line}" stroke-width=".8"></line>`;
+vals.forEach((v,i)=>{const x=50+i*80,hh=v+(m-v)*t;
+if(t===0){for(let j=0;j<v;j++)h+=`<rect class="piece" x="${x}" y="${base-(j+1)*U+1}" width="56" height="${U-2}" rx="3" fill="${j%2?C.take:'#f0b88f'}" stroke="${C.ink}" stroke-width="1.2"></rect>`}
+else h+=`<rect x="${x}" y="${base-v*U}" width="56" height="${v*U}" fill="none" stroke="${C.ink3}" stroke-dasharray="4 4"></rect><rect x="${x}" y="${base-hh*U}" width="56" height="${hh*U}" rx="3" fill="${C.take}" stroke="${C.ink}" stroke-width="1.4"></rect>`;
+h+=`<rect data-c="${i}" x="${x-10}" y="${base-10*U-10}" width="76" height="${10*U+20}" fill="transparent" style="cursor:ns-resize"></rect>`+Kit.txt(x+28,base+22,t===0?v:Kit.num(hh),{serif:1,size:18})});
+h+=`<line x1="30" y1="${base-m*U}" x2="${W-20}" y2="${base-m*U}" stroke="${C.green}" stroke-width="${t===1?3:1.6}" stroke-dasharray="7 5" opacity="${.45+.55*t}"></line>`+Kit.txt(W-22,base-m*U-8,'середнє',{a:'end',size:11,fill:C.green});
+h+=`<line x1="30" y1="${base}" x2="${W-20}" y2="${base}" stroke="${C.ink}" stroke-width="2"></line>`;
+g.innerHTML=h;const s=vals.reduce((a,b)=>a+b,0);
+$('ex').innerHTML=`(${vals.join(' + ')}) ÷ ${k} = ${s} ÷ ${k} = <span class="c-g">${Kit.num(m)}</span>`;
+$('say').innerHTML=t===1?`Усі стовпчики стали однакові — по <span class="g">${Kit.num(m)}</span>. Високі віддали, низькі отримали, а загальна сума ${s} не змінилась.`:`Разом <span class="n">${s}</span> кубиків на <span class="d">${k}</span> стовпчиків. Якщо роздати порівну — скільки буде в кожному?`;
+$('go').textContent=t===1?'↺ Повернути':'Вирівняти'}
+function setFrom(e){const p=Kit.svgPt(sv,e);vals[drag]=Kit.clamp(Math.round((base-p.y)/U),0,10);t=0;draw()}
+sv.addEventListener('pointerdown',e=>{const c=e.target.closest('[data-c]');if(!c||busy)return;drag=+c.dataset.c;sv.setPointerCapture(e.pointerId);setFrom(e)});
+sv.addEventListener('pointermove',e=>{if(drag>=0)setFrom(e)});sv.addEventListener('pointerup',()=>drag=-1);
+$('go').onclick=()=>{if(busy)return;busy=true;const to=t===1?0:1,from=t;if(to)Mascot.cast(.5,.4);Kit.tween(1100,e=>{t=from+(to-from)*e;draw()},()=>{t=to;busy=false;draw();if(to)Mascot.cheer()})};
+$('rnd').onclick=()=>{vals=vals.map(()=>1+Math.random()*9|0);t=0;draw()};
+Kit.steppers(st,{k:[3,7]},()=>{while(vals.length<st.k)vals.push(1+Math.random()*9|0);vals.length=st.k;t=0;draw()});
+draw();
+</script></body></html>

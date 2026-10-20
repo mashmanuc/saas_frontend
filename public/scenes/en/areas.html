@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Areas of shapes</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Areas"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Areas of shapes</h1><p class="tp-lead">Every area formula can be “seen”: cut, move or double the shape.</p>
+<div class="tp-row" id="tabs"><button class="tp-btn on" data-s="para">Parallelogram</button><button class="tp-btn" data-s="tri">Triangle</button><button class="tp-btn" data-s="trap">Trapezoid</button></div>
+<div class="tp-ctl">Base a<div class="stp" data-k="b"></div></div>
+<div class="tp-ctl" id="rowc">Top base b<div class="stp" data-k="c"></div></div>
+<div class="tp-ctl">Height h<div class="stp" data-k="h"></div></div>
+<div class="tp-ctl">Slant<div class="stp" data-k="k"></div></div>
+<button class="tp-btn primary" id="go"></button>
+<div class="tp-expr" id="ex"></div>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C,st={b:6,h:4,k:2,c:3};let shape='para',t=0,busy=false;
+function draw(){const {b,h,k}=st,c=Math.min(st.c,b-1),maxX=shape==='para'?b+k:shape==='tri'?Math.max(b,k)+Math.max(b,k):b+k+c,u=Math.min(56,520/maxX,320/h),p=36,X=x=>p+x*u,Y=y=>p+(h-y)*u,P=l=>l.map(([x,y])=>X(x)+','+Y(y)).join(' ');
+let v=`<svg viewBox="0 0 ${2*p+maxX*u} ${2*p+h*u+30}">`;
+for(let x=0;x<=maxX;x++)v+=`<line x1="${X(x)}" y1="${Y(h)}" x2="${X(x)}" y2="${Y(0)}" stroke="${C.line}" stroke-width=".8"></line>`;for(let y=0;y<=h;y++)v+=`<line x1="${X(0)}" y1="${Y(y)}" x2="${X(maxX)}" y2="${Y(y)}" stroke="${C.line}" stroke-width=".8"></line>`;
+const poly=(pts,f,extra='')=>`<polygon class="piece" points="${P(pts)}" fill="${f}" stroke="${C.ink}" stroke-width="2.2" stroke-linejoin="round"${extra}></polygon>`;
+let S,f,msg;
+if(shape==='para'){v+=poly([[k,0],[b,0],[b+k,h],[k,h]],C.take);v+=`<g transform="translate(${t*b*u},0)">${poly([[0,0],[k,0],[k,h]],C.take2)}</g>`;
+if(k)v+=`<line x1="${X(k)}" y1="${Y(0)}" x2="${X(k)}" y2="${Y(h)}" stroke="${C.acc}" stroke-width="2" stroke-dasharray="6 4"></line>`;S=b*h;f=`S = a · h = ${b} · ${h} = ${S}`;
+msg=t===1?'We cut a triangle off the left and moved it to the right — we got a <span class="n">rectangle a × h</span>. The area did not change.':'Let’s cut the parallelogram along the height and move the piece.'}
+else if(shape==='tri'){const M=[(b+k)/2,h/2];v+=poly([[0,0],[b,0],[k,h]],C.take);v+=`<g transform="rotate(${180*t} ${X(M[0])} ${Y(M[1])})" opacity="${Math.min(1,t*3)}">${poly([[0,0],[b,0],[k,h]],C.take2,' stroke-dasharray="6 4"')}</g>`;
+v+=`<line x1="${X(k)}" y1="${Y(0)}" x2="${X(k)}" y2="${Y(h)}" stroke="${C.blue}" stroke-width="1.6" stroke-dasharray="3 4"></line>`;S=b*h/2;f=`S = a · h ÷ 2 = ${b} · ${h} ÷ 2 = ${Kit.num(S)}`;
+msg=t===1?'Two equal halves made a <span class="n">parallelogram</span> with area a · h. So the triangle is half of it.':'Let’s take a copy of the triangle and flip it.'}
+else{const M=[(b+k+c)/2,h/2];v+=poly([[0,0],[b,0],[k+c,h],[k,h]],C.take);v+=`<g transform="rotate(${180*t} ${X(M[0])} ${Y(M[1])})" opacity="${Math.min(1,t*3)}">${poly([[0,0],[b,0],[k+c,h],[k,h]],C.take2,' stroke-dasharray="6 4"')}</g>`;
+S=(b+c)*h/2;f=`S = (a + b) · h ÷ 2 = (${b} + ${c}) · ${h} ÷ 2 = ${Kit.num(S)}`;v+=Kit.txt(X(k+c/2),Y(h)-10,'b = '+c,{serif:1,size:16,fill:C.green});
+msg=t===1?'Two trapezoids made a <span class="n">parallelogram with base a + b</span>. One trapezoid is half of it.':'Let’s take a copy of the trapezoid and flip it.'}
+v+=Kit.txt(X(b/2),Y(0)+24,'a = '+b,{serif:1,size:16,fill:C.acc});
+$('view').innerHTML=v+'</svg>';$('ex').innerHTML=f;$('say').innerHTML=msg;$('go').textContent=t===1?'↺ Back':shape==='para'?'▶ Move the piece':'▶ Add a copy';
+$('rowc').style.display=shape==='trap'?'':'none'}
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;shape=b.dataset.s;t=0;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));draw()};
+$('go').onclick=()=>{if(busy)return;if(t===1){t=0;draw();return}busy=true;Mascot.cast(.4,.5);Kit.tween(1200,e=>{t=e;draw()},()=>{t=1;busy=false;draw();Mascot.cheer()})};
+Kit.steppers(st,{b:[2,8],h:[1,6],k:[0,4],c:[1,7]},()=>{st.c=Math.min(st.c,st.b-1);t=0;draw()});
+draw();
+</script></body></html>

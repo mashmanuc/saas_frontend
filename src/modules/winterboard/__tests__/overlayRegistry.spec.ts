@@ -23,6 +23,8 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   'discussion_question',
   // 2026-10-12, Б-184: числова пряма.
   'number_line',
+  // 2026-10-20: «Наочна сцена».
+  'math_scene',
   'geometry_solid',
   'graph_calculator',
   'geometry_2d_v2',

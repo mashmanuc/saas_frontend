@@ -54,6 +54,8 @@ const PROXY_TYPES_BEFORE_TLV2_05A = [
   'discussion_question',
   // 2026-10-12, Б-184: числова пряма — overlay-картка з проксі, як quadratic_card.
   'number_line',
+  // 2026-10-20: «Наочна сцена» — overlay-вікно з проксі (тягнуть за шапку), як number_line.
+  'math_scene',
 ].sort()
 
 /** `expandable: true` у реєстрі ДО TLV2-05A. Капсула додалась свідомо (ТЗ §3). */

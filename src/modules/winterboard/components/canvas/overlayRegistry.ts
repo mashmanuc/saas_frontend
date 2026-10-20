@@ -31,6 +31,7 @@ import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
 import CalculusRenderer from '../board/objects/CalculusRenderer.vue'
 import QuadraticRenderer from '../board/objects/QuadraticRenderer.vue'
 import NumberLineRenderer from '../board/objects/NumberLineRenderer.vue'
+import MathSceneRenderer from '../board/objects/MathSceneRenderer.vue'
 import FormulaCardRenderer from '../board/objects/FormulaCardRenderer.vue'
 import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
 import HelixRenderer from '../board/objects/HelixRenderer.vue'
@@ -285,6 +286,16 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     wrapperClass: 'wb-number-line-overlay',
     dataAttr: 'data-number-line-id',
     testidPrefix: 'number-line-overlay',
+    buildProps: stdProps,
+    buildEvents: stdEvents,
+  },
+
+  // «Наочна сцена» (2026-10-20): вікно з готовою сценою (public/scenes). Лише реєстровий шлях.
+  math_scene: {
+    component: MathSceneRenderer,
+    wrapperClass: 'wb-math-scene-overlay',
+    dataAttr: 'data-math-scene-id',
+    testidPrefix: 'math-scene-overlay',
     buildProps: stdProps,
     buildEvents: stdEvents,
   },

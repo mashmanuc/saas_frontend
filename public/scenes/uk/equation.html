@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Рівняння-терези</title><link rel="stylesheet" href="../shared/common.css"><script src="../shared/assistant-icon.js"></script><script src="../shared/kit.js"></script></head><body>
+<div class="tp"><div class="tp-stage" id="stage" data-screen-label="Рівняння-терези"><div id="view"></div></div>
+<aside class="tp-side">
+<h1>Рівняння-терези</h1><p class="tp-lead">Рівняння — це терези в рівновазі. Що робиш з одним боком — роби й з іншим.</p>
+<div class="tp-big" id="eq" style="font-size:40px;color:var(--ink)"></div>
+<span class="tp-lab">Дії</span>
+<div class="tp-row" style="flex-direction:column"><button class="tp-btn" id="sub">−1 з обох боків</button><button class="tp-btn" id="div"></button><button class="tp-btn" id="back">↺ Відновити</button><button class="tp-btn primary" id="new">Нове рівняння</button></div>
+<p class="tp-lead" style="margin:0">Підказка: клікни на гирьку «1» лише з одного боку — і подивись, що буде.</p>
+<div class="tp-say" id="say"></div>
+</aside></div>
+<script>
+const C=Kit.C;let q,orig,ang=0,msg='';const rnd=n=>Math.floor(Math.random()*n);
+const L=()=>q.xs*q.x+q.lw,R=()=>q.rw;
+function nw(){const x=1+rnd(6),a=1+rnd(3),b=1+rnd(6);orig={x,xs:a,lw:b,rw:a*x+b};q={...orig};msg='Знайди <span class="n">x</span>: прибирай однакове з обох боків, поки x не залишиться сам.';tilt(true)}
+function tilt(now){const t=Kit.clamp((R()-L())*4,-18,18),a0=ang;if(now){ang=t;draw();return}Kit.tween(500,e=>{ang=a0+(t-a0)*e;draw()})}
+function pan(cx,cy,items,side){let s=`<line x1="${cx}" y1="${cy}" x2="${cx-70}" y2="${cy+100}" stroke="${C.ink3}" stroke-width="1.5"></line><line x1="${cx}" y1="${cy}" x2="${cx+70}" y2="${cy+100}" stroke="${C.ink3}" stroke-width="1.5"></line><rect x="${cx-90}" y="${cy+100}" width="180" height="8" rx="4" fill="${C.ink2}"></rect>`;
+items.forEach((it,i)=>{const r=i/5|0,c=i%5,n=Math.min(5,items.length-r*5),x=cx-(n-1)*17+c*34,y=cy+84-r*34;
+s+=it==='x'?`<rect x="${x-15}" y="${y-15}" width="30" height="30" rx="4" fill="${C.take}" stroke="${C.ink}" stroke-width="1.6"></rect>`+Kit.txt(x,y+6,'x',{serif:1,size:20,w:700,extra:' font-style="italic"'}):`<g class="unit" data-side="${side}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="14" fill="${C.take2}" stroke="${C.ink}" stroke-width="1.6"></circle>${Kit.txt(x,y+5,'1',{serif:1,size:16})}</g>`});return s}
+function draw(){const rad=ang*Math.PI/180,cx=320,cy=150,lx=cx-220*Math.cos(rad),ly=cy-220*Math.sin(rad),rx=cx+220*Math.cos(rad),ry=cy+220*Math.sin(rad);
+let v='<svg viewBox="0 0 640 420">';v+=`<polygon points="320,150 288,380 352,380" fill="${C.paper2}" stroke="${C.ink}" stroke-width="2"></polygon><rect x="250" y="380" width="140" height="12" rx="4" fill="${C.ink2}"></rect>`;
+v+=`<line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="${C.ink2}" stroke-width="10" stroke-linecap="round"></line><circle cx="320" cy="150" r="8" fill="${C.acc}"></circle>`;
+v+=pan(lx,ly,[...Array(q.xs).fill('x'),...Array(q.lw).fill('1')],'l')+pan(rx,ry,Array(q.rw).fill('1'),'r');
+$('view').innerHTML=v+'</svg>';
+const sym=L()===R()?'=':L()>R()?'>':'<';$('eq').innerHTML=`<span class="c-a">${q.xs>1?q.xs:''}<i>x</i></span>${q.lw?' + '+q.lw:''} ${sym} ${q.rw}`;
+$('sub').disabled=!(q.lw>0&&q.rw>0);$('div').disabled=!(q.lw===0&&q.xs>1&&q.rw%q.xs===0);$('div').textContent=`÷ ${q.xs>1?q.xs:'…'} обидва боки`;$('say').innerHTML=msg}
+$('view').onclick=e=>{const u=e.target.closest('.unit');if(!u)return;if(u.dataset.side==='l')q.lw--;else q.rw--;msg='Терези нахилились! Ти змінив лише один бік — рівність зламалась. Натисни «Відновити».';tilt()};
+$('sub').onclick=()=>{q.lw--;q.rw--;msg=L()===R()?'Забрали по одній гирьці з обох боків — рівновага на місці.':'Рівноваги вже не було — тож і зараз її немає.';check();tilt()};
+$('div').onclick=()=>{const k=q.xs;q.rw/=k;q.xs=1;q.x=orig.x;msg=`Поділили обидва боки на ${k}: на кожен x припадає ${q.rw}.`;Mascot.cast(.5,.4);check();tilt()};
+$('back').onclick=()=>{q={...orig};msg='Повернули як було.';tilt()};$('new').onclick=()=>{nw();Mascot.cast(.5,.4)};
+function check(){if(q.xs===1&&q.lw===0&&L()===R()){msg=`Готово! <span class="n">x = ${q.rw}</span>. Перевір: ${orig.xs>1?orig.xs+'·':''}${q.rw}${orig.lw?' + '+orig.lw:''} = ${orig.rw}.`;setTimeout(()=>Mascot.cheer(),400)}}
+nw();
+</script></body></html>

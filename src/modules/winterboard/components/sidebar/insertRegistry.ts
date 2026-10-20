@@ -32,6 +32,7 @@ import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
 import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
 import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
+import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -44,6 +45,7 @@ export type MashFamily =
   | 'inequalities' // Нерівності: числова пряма (Б-184)
   | 'trig'        // Тригонометрія (trig_circle + helix + trig_solver)
   | 'evidence'    // Універсальні доказові об'єкти: шкала й карта
+  | 'scenes'      // «Наочні сцени» (2026-10-20, пілот math_scenes): готові живі сцени в вікні
   | '2d' | '3d' | 'geomash' | 'other'
 
 export interface InsertEntry {
@@ -177,6 +179,26 @@ const INEQUALITY_INSERTS: InsertEntry[] = [
   },
 ]
 
+// ── «Наочні сцени» (math_scene, 2026-10-20) — 16 готових живих сцен; лише пілот math_scenes ──
+const SCENE_INSERTS: InsertEntry[] = [
+  { id: 'scenes.fractions', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"fractions"}', labelKey: 'winterboard.mathScene.scenes.fractions', labelFallback: 'Дроби', iconKey: 'scene', keywords: kw('наочна сцена', 'дріб', 'дроби', 'чисельник', 'знаменник', 'піца') },
+  { id: 'scenes.percent', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"percent"}', labelKey: 'winterboard.mathScene.scenes.percent', labelFallback: 'Відсотки', iconKey: 'scene', keywords: kw('наочна сцена', 'відсоток', 'відсотки', '%') },
+  { id: 'scenes.decimals', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"decimals"}', labelKey: 'winterboard.mathScene.scenes.decimals', labelFallback: 'Десяткові дроби', iconKey: 'scene', keywords: kw('наочна сцена', 'десяткові', 'десяті', 'соті') },
+  { id: 'scenes.frac-mul', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"frac-mul"}', labelKey: 'winterboard.mathScene.scenes.frac-mul', labelFallback: 'Множення дробів', iconKey: 'scene', keywords: kw('наочна сцена', 'множення дробів') },
+  { id: 'scenes.frac-div', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"frac-div"}', labelKey: 'winterboard.mathScene.scenes.frac-div', labelFallback: 'Ділення дробів', iconKey: 'scene', keywords: kw('наочна сцена', 'ділення дробів') },
+  { id: 'scenes.lcm', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"lcm"}', labelKey: 'winterboard.mathScene.scenes.lcm', labelFallback: 'НСК і НСД', iconKey: 'scene', keywords: kw('наочна сцена', 'нск', 'нсд', 'кратне', 'дільник') },
+  { id: 'scenes.negatives', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"negatives"}', labelKey: 'winterboard.mathScene.scenes.negatives', labelFallback: 'Від’ємні числа', iconKey: 'scene', keywords: kw('наочна сцена', 'від’ємні', 'мінус', 'термометр') },
+  { id: 'scenes.equation', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"equation"}', labelKey: 'winterboard.mathScene.scenes.equation', labelFallback: 'Рівняння-терези', iconKey: 'scene', keywords: kw('наочна сцена', 'рівняння', 'терези') },
+  { id: 'scenes.square-sum', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"square-sum"}', labelKey: 'winterboard.mathScene.scenes.square-sum', labelFallback: 'Квадрат суми', iconKey: 'scene', keywords: kw('наочна сцена', 'квадрат суми', '(a+b)²') },
+  { id: 'scenes.proportion', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"proportion"}', labelKey: 'winterboard.mathScene.scenes.proportion', labelFallback: 'Пропорції', iconKey: 'scene', keywords: kw('наочна сцена', 'пропорція', 'пропорції', 'рецепт') },
+  { id: 'scenes.pythagoras', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"pythagoras"}', labelKey: 'winterboard.mathScene.scenes.pythagoras', labelFallback: 'Теорема Піфагора', iconKey: 'scene', keywords: kw('наочна сцена', 'піфагор', 'гіпотенуза', 'катет') },
+  { id: 'scenes.angles', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"angles"}', labelKey: 'winterboard.mathScene.scenes.angles', labelFallback: 'Кути трикутника', iconKey: 'scene', keywords: kw('наочна сцена', 'кути', 'трикутник', '180') },
+  { id: 'scenes.areas', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"areas"}', labelKey: 'winterboard.mathScene.scenes.areas', labelFallback: 'Площі фігур', iconKey: 'scene', keywords: kw('наочна сцена', 'площа', 'паралелограм', 'трапеція') },
+  { id: 'scenes.probability', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"probability"}', labelKey: 'winterboard.mathScene.scenes.probability', labelFallback: 'Ймовірність', iconKey: 'scene', keywords: kw('наочна сцена', 'ймовірність', 'монетка', 'кубик') },
+  { id: 'scenes.mean', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"mean"}', labelKey: 'winterboard.mathScene.scenes.mean', labelFallback: 'Середнє значення', iconKey: 'scene', keywords: kw('наочна сцена', 'середнє', 'середнє арифметичне') },
+  { id: 'scenes.vectors', family: 'scenes', category: 'scenes', dragMime: MATH_SCENE_DRAG_MIME, payload: '{"sceneId":"vectors"}', labelKey: 'winterboard.mathScene.scenes.vectors', labelFallback: 'Вектори', iconKey: 'scene', keywords: kw('наочна сцена', 'вектор', 'вектори', 'скалярний добуток') },
+]
+
 // ── trig (trig_circle + helix + trig_solver) ──────────────────────────────────
 const TRIG_INSERTS: InsertEntry[] = [
   {
@@ -280,6 +302,7 @@ export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...GRAPHMASH3D_INSERTS,
   ...GEOMASH_INSERTS,
   ...EVIDENCE_INSERTS,
+  ...SCENE_INSERTS,
 ]
 
 // ── planimetry (geometry_2d_v2) — РАНТАЙМ ──────────────────────────────────────
@@ -317,15 +340,16 @@ export function allInserts(): InsertEntry[] {
  * до 2026-09-24 гейта не було зовсім і їх бачили всі на проді).
  */
 export function visibleInserts(
-  opts: { evidence: boolean },
+  opts: { evidence: boolean; scenes?: boolean },
   entries: InsertEntry[] = allInserts(),
 ): InsertEntry[] {
-  return opts.evidence ? entries : entries.filter((e) => e.family !== 'evidence')
+  // «Наочні сцени» — лише пілоту math_scenes (власник 2026-10-20: «поки будемо включати його для ID40»).
+  return entries.filter((e) => (opts.evidence || e.family !== 'evidence') && (opts.scenes || e.family !== 'scenes'))
 }
 
-/** Те саме для 4 (або 5) карток-застосунків root-каталогу. */
-export function visibleApps(opts: { evidence: boolean }): typeof MASH_APPS {
-  return opts.evidence ? MASH_APPS : MASH_APPS.filter((a) => a.app !== 'content')
+/** Те саме для карток-застосунків root-каталогу. */
+export function visibleApps(opts: { evidence: boolean; scenes?: boolean }): typeof MASH_APPS {
+  return MASH_APPS.filter((a) => (opts.evidence || a.app !== 'content') && (opts.scenes || a.app !== 'scenes'))
 }
 
 /** Пошук за labelFallback / id / keywords (case-insensitive). Порожній q = всі. */
@@ -349,7 +373,7 @@ export function insertsByFamily(entries: InsertEntry[] = allInserts()): Record<s
 }
 
 // ── mashApp — 4 картки верхнього рівня (BoardMASH Ф3.2) ─────────────────────────
-export type MashApp = '2d' | '3d' | 'geometry' | 'stereo' | 'content'
+export type MashApp = '2d' | '3d' | 'geometry' | 'stereo' | 'content' | 'scenes'
 
 /** family → 4-картка (analysis+quadratic+trig→2d; planimetry+geomash→geometry). */
 const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
@@ -358,6 +382,7 @@ const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
   planimetry: 'geometry', geomash: 'geometry',
   stereo: 'stereo',
   evidence: 'content',
+  scenes: 'scenes',
 }
 
 export function appOf(entry: InsertEntry): MashApp {
@@ -377,11 +402,12 @@ export const MASH_APPS: ReadonlyArray<{
   { app: 'geometry', labelKey: 'winterboard.contentSidebar.apps.geometry', labelFallback: 'Геометрія', brand: 'GeoMASH', iconFamily: 'geomash', iconKey: 'scene' },
   { app: 'stereo', labelKey: 'winterboard.contentSidebar.apps.stereo', labelFallback: 'Стереометрія', brand: 'StereoMASH', iconFamily: 'stereo', iconKey: 'cube' },
   { app: 'content', labelKey: 'winterboard.insertTiles.evidenceApp', labelFallback: 'Навчальні обʼєкти', iconFamily: 'evidence', iconKey: 'timeline' },
+  { app: 'scenes', labelKey: 'winterboard.contentSidebar.apps.scenes', labelFallback: 'Наочні сцени', iconFamily: 'scenes', iconKey: 'scene' },
 ]
 
 /** Групування по 4 картках (для root-каталогу). */
 export function insertsByApp(entries: InsertEntry[] = allInserts()): Record<MashApp, InsertEntry[]> {
-  const out = { '2d': [], '3d': [], geometry: [], stereo: [], content: [] } as Record<MashApp, InsertEntry[]>
+  const out = { '2d': [], '3d': [], geometry: [], stereo: [], content: [], scenes: [] } as Record<MashApp, InsertEntry[]>
   for (const e of entries) out[appOf(e)].push(e)
   return out
 }

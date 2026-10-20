@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дроби · чисельник і знаменник</title>
+<style>
+:root{--paper:#fffaf0;--paper-2:#f4ede0;--ink:#1a1612;--ink-2:#3a2f24;--ink-3:#6a594a;--line:#d6c8b2;--accent:#c4622a;--blue:#3b7b9b;--take:#e9a06f}
+*{box-sizing:border-box}html,body{margin:0;height:100%}html{scrollbar-gutter:stable}
+.fr-main{min-height:0;height:0}.fr-side{overflow-y:auto;min-height:0}.fr-stage{min-height:0}
+.fr-say{min-height:7.5em}.op-eq{min-height:260px}.op-line{min-height:52px}
+body{background:var(--paper-2);color:var(--ink);font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--accent)}a:hover{color:var(--ink)}
+.fr-top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:14px 24px 12px;background:var(--paper);border-bottom:1px solid var(--line)}
+.fr-title{font-family:'Times New Roman',Georgia,serif;font-size:20px;font-weight:700;margin:0}
+.fr-title .ac{color:var(--accent)}
+.fr-sub{font-size:11.5px;color:var(--ink-3);flex:1 1 160px;min-width:0}
+.fr-views{margin-left:auto;display:flex;flex-wrap:wrap;gap:4px;background:var(--paper-2);border:1px solid var(--line);border-radius:9px;padding:3px}
+.fr-views button{font:500 12px inherit;font-family:inherit;border:0;background:transparent;color:var(--ink-2);padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.fr-views button.on{background:var(--ink);color:var(--paper)}
+.fr-main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:0}
+.fr-stage{position:relative;background:radial-gradient(rgba(106,89,74,.06) 1px,transparent 1px);background-size:24px 24px;display:grid;place-items:center;padding:24px;min-height:360px}
+.fr-stage svg{width:100%;height:100%;max-height:72vh;display:block}
+.fr-hint{position:absolute;left:22px;bottom:18px;font-size:10.5px;color:var(--ink-3);background:rgba(255,250,240,.86);border:1px solid var(--line);border-radius:7px;padding:6px 10px;line-height:1.5;max-width:340px}
+.fr-hint b{color:var(--ink)}
+.fr-side{background:var(--paper);border-left:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:20px}
+.fr-big{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center}
+.fr-num,.fr-den{font-family:'Times New Roman',serif;font-weight:700;font-size:64px;line-height:1;text-align:center;min-width:80px}
+.fr-num{color:var(--accent)}.fr-den{color:var(--blue)}
+.fr-bar{height:4px;background:var(--ink);border-radius:2px}
+.fr-lbl{font-size:11.5px;line-height:1.45;color:var(--ink-2);text-wrap:pretty}
+.fr-lbl b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.fr-lbl.n b{color:var(--accent)}.fr-lbl.d b{color:var(--blue)}
+.fr-step{display:flex;align-items:center;gap:8px;margin-top:6px}
+.fr-step button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font:600 16px inherit;font-family:inherit;cursor:pointer}
+.fr-step button:hover{border-color:var(--ink)}
+.fr-say{font-family:'Times New Roman',serif;font-size:19px;font-style:italic;color:var(--ink-2);border-top:1px solid var(--line);padding-top:16px;text-wrap:pretty}
+.fr-say .n{color:var(--accent);font-style:normal;font-weight:700}.fr-say .d{color:var(--blue);font-style:normal;font-weight:700}
+.fr-tools{display:flex;flex-direction:column;gap:8px}
+.fr-tools button{font:500 12px inherit;font-family:inherit;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);border-radius:8px;padding:9px 12px;cursor:pointer}
+.fr-tools button:hover{border-color:var(--accent);color:var(--ink)}
+.fr-lab{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em}
+.piece{cursor:pointer;transition:fill .25s}
+.piece:hover{filter:brightness(.95)}
+@keyframes cut{from{stroke-dashoffset:var(--L)}to{stroke-dashoffset:0}}
+.cutline{animation:cut .5s ease-out both}
+[hidden]{display:none!important}
+.op-eq{display:flex;flex-direction:column;gap:10px;font-family:'Times New Roman',serif;font-weight:700;font-size:24px}
+.op-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;opacity:.35;transition:opacity .3s}.op-line.on{opacity:1}
+.q{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}.q i{font-style:normal;padding:0 4px}.q .n{border-bottom:2px solid var(--ink)}
+.qa .n{color:var(--accent)}.qb .n{color:var(--blue)}.qr .n{color:var(--ink)}
+.op-ctl{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.op-fr{display:flex;flex-direction:column;gap:6px;align-items:center}
+.op-fr .row{display:flex;align-items:center;gap:6px}
+.op-fr .v{font-family:'Times New Roman',serif;font-weight:700;font-size:26px;min-width:28px;text-align:center}
+.op-fr .hr{width:100%;height:2px;background:var(--ink)}
+.op-fr button,.op-sign button,.op-nav button,.op-steps button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);border-radius:7px}
+.op-fr button{width:26px;height:26px;font-size:14px;font-weight:600}
+.op-sign{display:flex;flex-direction:column;gap:4px}.op-sign button{width:34px;height:30px;font-size:18px;font-weight:700}.op-sign button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.op-steps{display:flex;flex-direction:column;gap:4px}.op-steps button{text-align:left;font-size:11.5px;padding:7px 10px;background:var(--paper)}.op-steps button.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.op-nav{display:flex;gap:8px}.op-nav button{flex:1;padding:9px;font-size:12px;font-weight:600}.op-nav button:last-child{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.op-nav button:disabled{opacity:.35;cursor:default}
+.newcut{animation:fadeCut .6s ease-out both}@keyframes fadeCut{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
+.fm{position:absolute;right:18px;bottom:14px;width:92px;height:92px;z-index:3;cursor:pointer}
+.fm svg.body{width:100%;height:100%;overflow:visible}
+.fm .wand{position:absolute;left:-30px;top:20px;width:44px;height:44px;transform-origin:40px 40px;overflow:visible}
+.fm.cast .wand{animation:fmwave .7s ease-in-out}
+@keyframes fmwave{0%{transform:rotate(0)}30%{transform:rotate(28deg)}60%{transform:rotate(-32deg)}100%{transform:rotate(0)}}
+.fm .assistant-pupil{transition:transform .25s}.fm.cast .assistant-pupil{transform:translate(-3px,-2px)}
+.fm.cheer{animation:fmjump .55s ease-out 2}@keyframes fmjump{40%{transform:translateY(-18px)}}
+.fm-star{position:absolute;left:0;top:0;width:24px;height:24px;z-index:4;pointer-events:none}
+.fm-spark{position:absolute;left:0;top:0;width:8px;height:8px;border-radius:50%;background:#f5b83d;pointer-events:none;z-index:4}
+.fresh .piece{animation:fmpop .45s .6s both}@keyframes fmpop{from{opacity:.25}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.fm,.fm *,.fresh .piece{animation:none!important}}
+@media (max-width:820px){.fr-main{height:auto}.fr-main{grid-template-columns:1fr}.fr-side{border-left:0;border-top:1px solid var(--line)}.fr-views{margin-left:0}}
+</style>
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fffaf0"></rect><path d="M50 50 L50 22 A28 28 0 0 1 78 50 Z" fill="#e9a06f" stroke="#1a1612" stroke-width="2"></path><circle cx="50" cy="50" r="28" fill="none" stroke="#1a1612" stroke-width="2"></circle><path d="M50 22V78M22 50H78" stroke="#1a1612" stroke-width="1.5"></path></svg></template>
+</head><body>
+<div class="fr-top">
+<h1 class="fr-title">Що таке <span class="ac">дріб</span>?</h1>
+<span class="fr-sub">ділимо ціле на частини → беремо кілька</span>
+<div class="fr-views" id="views"><button data-v="pie" class="on">Піца</button><button data-v="bar">Шоколадка</button><button data-v="line">Числова пряма</button><button data-v="ops">± Дії</button></div>
+</div>
+<div class="fr-main">
+<div class="fr-stage" id="stage" data-screen-label="Дроби"></div>
+<div class="fr-side fr-ops" id="opsSide" hidden>
+<div class="op-ctl" id="opCtl"></div>
+<div class="op-eq" id="opEq"></div>
+<div class="op-steps" id="opSteps"></div>
+<div class="op-nav"><button data-s="-1">← Назад</button><button data-s="1">Далі →</button></div>
+<div class="fr-say" id="opSay"></div>
+</div>
+<div class="fr-side" id="side">
+<div class="fr-big">
+<div class="fr-num" id="num">3</div>
+<div class="fr-lbl n"><b>Чисельник</b>скільки частинок <u>беремо</u><div class="fr-step"><button data-a="n-">−</button><button data-a="n+">+</button></div></div>
+<div class="fr-bar"></div><div></div>
+<div class="fr-den" id="den">4</div>
+<div class="fr-lbl d"><b>Знаменник</b>на скільки рівних частинок <u>ділимо</u> ціле<div class="fr-step"><button data-a="d-">−</button><button data-a="d+">+</button></div></div>
+</div>
+<div class="fr-say" id="say"></div>
+<div class="fr-tools">
+<span class="fr-lab">Інструменти</span>
+<button data-a="split">✂ Розрізати кожну частинку навпіл</button>
+<button data-a="glue">⧉ Склеїти частинки попарно</button>
+<button data-a="whole">● Взяти все ціле</button>
+</div>
+</div>
+</div>
+<script src="../shared/assistant-icon.js"></script>
+<script>
+window.FrMascot=(function(){
+const STAR='<svg viewBox="0 0 24 24"><path d="M12 1l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#f5b83d" stroke="#b7791f" stroke-width="1.2"></path></svg>';
+let el,stage;
+function make(){el=document.createElement('div');el.className='fm';el.title='Інтегралик';
+const LOOK=new URLSearchParams(location.search).get('look'),g=LOOK?LOOK==='integralka':localStorage.getItem('integ_gender')==='girl',src=(g?window.ASSISTANT_ICON_GIRL:window.ASSISTANT_ICON)||'';
+el.innerHTML=src.replace(/ id="[^"]*"/g,'').replace('<svg','<svg class="body"')+'<svg class="wand" viewBox="0 0 44 44"><line x1="40" y1="40" x2="10" y2="10" stroke="#3a2a1a" stroke-width="4.5" stroke-linecap="round"></line><line x1="14" y1="14" x2="10" y2="10" stroke="#fff" stroke-width="4.5" stroke-linecap="round"></line><path d="M6 0l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" fill="#f5b83d"></path></svg>';
+el.onclick=()=>cast()}
+function burst(x,y){for(let i=0;i<10;i++){const s=document.createElement('div'),a=i/10*Math.PI*2,r=40+Math.random()*30;s.className='fm-spark';stage.appendChild(s);
+s.animate([{transform:`translate(${x-4}px,${y-4}px) scale(1)`,opacity:1},{transform:`translate(${x-4+Math.cos(a)*r}px,${y-4+Math.sin(a)*r}px) scale(.3)`,opacity:0}],{duration:600,easing:'ease-out'}).onfinish=()=>s.remove()}}
+function cast(){if(!el||!stage)return;el.classList.remove('cast');void el.offsetWidth;el.classList.add('cast');
+const svg=stage.firstElementChild;if(svg&&svg.classList){svg.classList.remove('fresh');void svg.offsetWidth;svg.classList.add('fresh')}
+if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+const sr=stage.getBoundingClientRect(),w=el.querySelector('.wand').getBoundingClientRect(),x0=w.left-sr.left-8,y0=w.top-sr.top-8,x1=sr.width*.46,y1=sr.height*.42;
+const st=document.createElement('div');st.className='fm-star';st.innerHTML=STAR;stage.appendChild(st);
+st.animate([{transform:`translate(${x0}px,${y0}px) scale(.5)`},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-70}px) scale(1.3) rotate(200deg)`},{transform:`translate(${x1}px,${y1}px) scale(1) rotate(360deg)`,opacity:1,offset:.85},{transform:`translate(${x1}px,${y1}px) scale(2.4) rotate(400deg)`,opacity:0}],{duration:750,easing:'ease-in-out'}).onfinish=()=>{st.remove();burst(x1+12,y1+12)}}
+function cheer(){if(!el)return;el.classList.remove('cheer');void el.offsetWidth;el.classList.add('cheer');const sr=stage.getBoundingClientRect(),r=el.getBoundingClientRect();burst(r.left-sr.left+r.width/2,r.top-sr.top+10)}
+return{attach(s){stage=s;if(!el)make();s.appendChild(el)},cast,cheer};
+})();
+</script>
+<script>
+(function(){
+const st={n:3,d:4,v:'pie'};
+const stage=document.getElementById('stage');
+const C={ink:'#1a1612',paper:'#fffaf0',take:'#e9a06f',empty:'#fdf6e8',acc:'#c4622a',blue:'#3b7b9b',line:'#d6c8b2'};
+const MAXD=60;const sw=()=>st.d>30?.8:st.d>16?1.1:1.6;
+const wholes=()=>Math.max(1,Math.ceil(st.n/st.d));
+function set(n,d){const pd=st.d,pn=st.n;st.d=Math.max(1,Math.min(MAXD,d));st.n=Math.max(0,Math.min(st.d*3,n));render(true);
+if(st.d!==pd)FrMascot.cast();else if(st.n===st.d&&pn!==st.n)FrMascot.cheer()}
+function pieceClick(i){set(st.n===i+1?i:i+1,st.d)}
+function word(d){const w={1:'ціле',2:'половинки',3:'третини',4:'чверті',5:'п’ятих',6:'шостих',7:'сьомих',8:'восьмих',9:'дев’ятих',10:'десятих',12:'дванадцятих'};return w[d]||d+'-х частинок'}
+function say(){const {n,d}=st;let t=`Ціле розрізали на <span class="d">${d}</span> ${d===1?'частину':(d<5?'рівні частини':'рівних частин')} і взяли <span class="n">${n}</span>.`;
+if(n===d)t+=' Це рівно одне ціле!';else if(n>d)t+=` Це більше за ціле — ${Math.floor(n/d)} ${n%d?'і ще '+n%d+'/'+d:'цілих'}.`;else if(n===0)t+=' Нічого не взяли — нуль.';
+const g=gcd(n,d);if(g>1&&n)t+=` А ще це те саме, що <span class="n">${n/g}</span>/<span class="d">${d/g}</span>.`;
+document.getElementById('say').innerHTML=t}
+function gcd(a,b){return b?gcd(b,a%b):a}
+function arc(cx,cy,r,a0,a1){const p=a=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];const [x0,y0]=p(a0),[x1,y1]=p(a1);return `M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z`}
+function pie(anim){const W=wholes(),R=120,gap=40,w=W*(2*R)+(W-1)*gap+40,h=2*R+80;let s=`<svg viewBox="0 0 ${w} ${h}">`;
+for(let k=0;k<W;k++){const cx=20+R+k*(2*R+gap),cy=R+20;
+if(st.d===1){const i=k;s+=`<circle class="piece" data-i="${i}" cx="${cx}" cy="${cy}" r="${R}" fill="${i<st.n?C.take:C.empty}" stroke="${C.ink}" stroke-width="2"></circle>`}
+else for(let j=0;j<st.d;j++){const i=k*st.d+j,a0=j/st.d*2*Math.PI,a1=(j+1)/st.d*2*Math.PI;s+=`<path class="piece" data-i="${i}" d="${arc(cx,cy,R,a0,a1)}" fill="${i<st.n?C.take:C.empty}" stroke="${C.ink}" stroke-width="${sw()}" stroke-linejoin="round"></path>`}
+s+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${C.ink}" stroke-width="2.4"></circle>`;
+s+=`<text x="${cx}" y="${cy+R+40}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6a594a">${W>1?(k+1)+'-а піца':'одна піца'}</text>`}
+return s+'</svg>'}
+function bar(){const W=wholes(),BW=420,BH=110,gap=26,w=BW+40,h=W*BH+(W-1)*gap+70;let s=`<svg viewBox="0 0 ${w} ${h}">`;
+for(let k=0;k<W;k++){const y=20+k*(BH+gap),pw=BW/st.d;
+for(let j=0;j<st.d;j++){const i=k*st.d+j;s+=`<rect class="piece" data-i="${i}" x="${(20+j*pw).toFixed(2)}" y="${y}" width="${pw.toFixed(2)}" height="${BH}" fill="${i<st.n?C.take:C.empty}" stroke="${C.ink}" stroke-width="${sw()}"></rect>`}
+s+=`<rect x="20" y="${y}" width="${BW}" height="${BH}" rx="4" fill="none" stroke="${C.ink}" stroke-width="2.4"></rect>`}
+s+=`<text x="${20+BW/2}" y="${h-18}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6a594a">кожна частинка = 1/${st.d} шоколадки</text>`;
+return s+'</svg>'}
+function line(){const W=Math.max(1,wholes()),L=520,w=L+80,h=220,x0=40,u=L/W,y=110;let s=`<svg viewBox="0 0 ${w} ${h}">`;
+const xv=st.n/st.d*u+x0;
+s+=`<rect x="${x0}" y="${y-14}" width="${(xv-x0).toFixed(2)}" height="28" rx="4" fill="${C.take}" opacity=".85"></rect>`;
+s+=`<line x1="${x0-10}" y1="${y}" x2="${x0+L+20}" y2="${y}" stroke="${C.ink}" stroke-width="2.4"></line><path d="M${x0+L+28},${y} l-12,-6 v12 z" fill="${C.ink}"></path>`;
+const tot=W*st.d;for(let i=0;i<=tot;i++){const x=x0+i*u/st.d,big=i%st.d===0;
+s+=`<line x1="${x}" y1="${y-(big?16:9)}" x2="${x}" y2="${y+(big?16:9)}" stroke="${C.ink}" stroke-width="${big?2.4:1.4}"></line>`;
+if(i>0)s+=`<rect class="piece" data-i="${i-1}" x="${x-u/st.d}" y="${y-30}" width="${u/st.d}" height="60" fill="transparent"></rect>`;
+if(big)s+=`<text x="${x}" y="${y+44}" text-anchor="middle" font-family="Times New Roman" font-size="22" font-weight="700" fill="${C.ink}">${i/st.d}</text>`}
+s+=`<g transform="translate(${xv},${y-40})"><path d="M0,22 L-7,10 H7 Z" fill="${C.acc}"></path><text y="-34" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="24" fill="${C.acc}">${st.n}</text><line x1="-13" x2="13" y1="-27" y2="-27" stroke="${C.ink}" stroke-width="1.8"></line><text y="-4" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="24" fill="${C.blue}">${st.d}</text></g>`;
+s+=`<text x="${x0+L/2}" y="${h-14}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#6a594a">відрізок від 0 до 1 поділено на ${st.d}, пройшли ${st.n} кроків</text>`;
+return s+'</svg>'}
+function render(){stage.innerHTML=(st.v==='pie'?pie:st.v==='bar'?bar:line)()+`<div class="fr-hint"><b>Клікни на частинку</b> — візьмеш її. Кнопки <b>±</b> змінюють чисельник і знаменник.</div>`;
+document.getElementById('num').textContent=st.n;document.getElementById('den').textContent=st.d;say();FrMascot.attach(stage)}
+stage.addEventListener('click',e=>{const p=e.target.closest('.piece');if(p)pieceClick(+p.dataset.i)});
+document.getElementById('views').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.v=b.dataset.v;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));const ops=st.v==='ops';document.getElementById('side').hidden=ops;document.getElementById('opsSide').hidden=!ops;ops?window.renderOps():render()});
+document.getElementById('side').addEventListener('click',e=>{const a=e.target.closest('button')?.dataset.a;if(!a)return;
+({'n-':()=>set(st.n-1,st.d),'n+':()=>set(st.n+1,st.d),'d-':()=>set(Math.min(st.n,st.d-1),st.d-1),'d+':()=>set(st.n,st.d+1),
+split:()=>{if(st.d*2<=MAXD)set(st.n*2,st.d*2)},glue:()=>{if(st.d%2===0&&st.n%2===0)set(st.n/2,st.d/2)},whole:()=>set(st.d,st.d)})[a]()});
+render();
+})();
+(function(){
+const o={a:{n:1,d:2},b:{n:1,d:3},op:'+',s:0},MAX=12;
+const C={ink:'#1a1612',a:'#e9a06f',b:'#a9cbdc',empty:'#fdf6e8',acc:'#c4622a',blue:'#3b7b9b',mute:'#6a594a'};
+const stage=document.getElementById('stage'),side=document.getElementById('opsSide');
+const gcd=(x,y)=>y?gcd(y,x%y):x,lcm=(x,y)=>x/gcd(x,y)*y;
+const sg=()=>o.op==='+'?'+':'−';
+function calc(){const L=lcm(o.a.d,o.b.d),ka=L/o.a.d,kb=L/o.b.d,A=o.a.n*ka,B=o.b.n*kb,R=o.op==='+'?A+B:A-B,g=gcd(Math.abs(R),L)||1;return{L,ka,kb,A,B,R,g}}
+const q=(n,d,c)=>`<span class="q ${c}"><i class="n">${n}</i><i class="d">${d}</i></span>`;
+function sf(x,cy,n,d,col){return `<text x="${x}" y="${cy-7}" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="26" fill="${col}">${n}</text><line x1="${x-18}" x2="${x+18}" y1="${cy}" y2="${cy}" stroke="${C.ink}" stroke-width="2"></line><text x="${x}" y="${cy+25}" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="26" fill="${C.ink}">${d}</text>`}
+function bar(x,y,w,h,parts,fill,thick,mode,off=0){let s='';const pw=w/parts;
+for(let j=0;j<parts;j++)s+=`<rect x="${(x+j*pw).toFixed(2)}" y="${y}" width="${(pw+.3).toFixed(2)}" height="${h}" fill="${fill(off+j)}"></rect>`;
+for(let j=1;j<parts;j++){const lx=(x+j*pw).toFixed(2);
+if(j%thick===0)s+=`<line x1="${lx}" x2="${lx}" y1="${y}" y2="${y+h}" stroke="${C.ink}" stroke-width="${thick>1?2.4:1.4}"></line>`;
+else if(mode==='cut')s+=`<line class="newcut" style="transform-origin:${lx}px ${y+h/2}px;animation-delay:${(j%thick)*.12}s" x1="${lx}" x2="${lx}" y1="${y}" y2="${y+h}" stroke="${C.acc}" stroke-width="1.4" stroke-dasharray="4 3"></line>`;
+else s+=`<line x1="${lx}" x2="${lx}" y1="${y}" y2="${y+h}" stroke="${C.ink}" stroke-width=".8" opacity=".45"></line>`}
+return s+`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="none" stroke="${C.ink}" stroke-width="2.4"></rect>`}
+function svg(){const {L,ka,kb,A,B,R,g}=calc(),s=o.s,X=110,BW=440,BH=60;
+const rW=R>0?Math.ceil(R/L):1,H=330+2*(BH+20);
+let v=`<svg viewBox="0 0 580 ${H}"><defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="${C.a}"></rect><line x1="0" y1="0" x2="0" y2="8" stroke="${C.empty}" stroke-width="4"></line></pattern></defs>`;
+const cut=s>=1&&L>1;
+v+=s>=1?sf(50,62,A,L,C.acc):sf(50,62,o.a.n,o.a.d,C.acc);
+v+=bar(X,30,BW,BH,cut?L:o.a.d,i=>i<(cut?A:o.a.n)?C.a:C.empty,cut?ka:1,s===1?'cut':'faint');
+if(s>=1&&ka>1)v+=`<text x="${X+BW+12}" y="66" font-family="JetBrains Mono" font-size="13" fill="${C.acc}">×${ka}</text>`;
+v+=`<text x="50" y="138" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="34" fill="${C.ink}">${sg()}</text>`;
+v+=s>=1?sf(50,192,B,L,C.blue):sf(50,192,o.b.n,o.b.d,C.blue);
+v+=bar(X,160,BW,BH,cut?L:o.b.d,i=>i<(cut?B:o.b.n)?C.b:C.empty,cut?kb:1,s===1?'cut':'faint');
+if(s>=1&&kb>1)v+=`<text x="${X+BW+12}" y="196" font-family="JetBrains Mono" font-size="13" fill="${C.blue}">×${kb}</text>`;
+v+=`<line x1="20" x2="560" y1="250" y2="250" stroke="${C.ink}" stroke-width="1.4" stroke-dasharray="2 4"></line>`;
+const ry=280;
+if(s<2){v+=`<text x="50" y="${ry+40}" text-anchor="middle" font-family="Times New Roman" font-weight="700" font-size="34" fill="${C.mute}">?</text><rect x="${X}" y="${ry}" width="${BW}" height="${BH}" rx="3" fill="none" stroke="${C.line||'#d6c8b2'}" stroke-width="2" stroke-dasharray="6 5"></rect>`;
+if(s===0&&o.a.d!==o.b.d)v+=`<text x="${X+BW/2}" y="${ry+36}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="${C.mute}">частинки різного розміру</text>`}
+else if(R<0)v+=`<text x="${X+BW/2}" y="${ry+36}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="${C.acc}">другий дріб більший — результат від’ємний</text>`;
+else{const simp=s===3&&g>1;v+=simp?sf(50,ry+32,R/g,L/g,C.ink):sf(50,ry+32,R,L,C.ink);
+const fill=o.op==='+'?i=>i<A?C.a:i<A+B?C.b:C.empty:i=>i<R?C.a:i<A?'url(#hatch)':C.empty;
+for(let k=0;k<rW;k++)v+=bar(X,ry+k*(BH+20),BW,BH,L,fill,simp?g:1,'faint',k*L);
+if(o.op==='−'||o.op==='-'){}
+if(o.op!=='+'&&B>0)v+=`<text x="${X+BW/2}" y="${ry+rW*(BH+20)+8}" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="${C.mute}">заштриховані ${B} — забрали</text>`}
+return v+'</svg>'}
+function say(){const {L,ka,kb,A,B,R,g}=calc(),act=o.op==='+'?'скласти':'відняти';
+if(o.s===0)return o.a.d===o.b.d?`Знаменники однакові — частинки одного розміру, їх можна одразу ${act}.`:`Перше ціле поділене на <span class="d">${o.a.d}</span>, друге — на <span class="d">${o.b.d}</span>. Частинки різного розміру, тому просто ${act} їх не можна.`;
+if(o.s===1)return o.a.d===o.b.d?'Знаменники вже спільні — різати нічого не треба.':`<span class="d">${L}</span> — найменше число, що ділиться і на ${o.a.d}, і на ${o.b.d}. ${ka>1?`Кожну частинку першої смужки ріжемо на ${ka}`:'Першу смужку не чіпаємо'}, ${kb>1?`другої — на ${kb}`:'другу не чіпаємо'}. Тепер усі частинки — по 1/${L}.`;
+if(o.s===2){if(R<0)return 'Другий дріб більший за перший — результат буде від’ємним. Поміняй дроби місцями.';return `Частинки однакові — просто рахуємо: <span class="n">${A}</span> ${sg()} <span class="n">${B}</span> = <span class="n">${R}</span> частинок по 1/${L}.${R>L?' Це більше за одне ціле.':R===L?' Рівно одне ціле!':''}`}
+if(R<0)return 'Поміняй дроби місцями, щоб побачити результат.';if(R===0)return 'Вийшов нуль.';
+return g>1?`${R} і ${L} обидва діляться на ${g} — склеюємо по ${g} частинки й отримуємо <span class="n">${R/g}</span>/<span class="d">${L/g}</span>.`:`Дріб ${R}/${L} уже нескоротний — це відповідь.`}
+function eq(){const {L,ka,kb,A,B,R,g}=calc(),s=o.s,S=`<span>${sg()}</span>`;let h=`<div class="op-line ${s===0?'on':''}">${q(o.a.n,o.a.d,'qa')}${S}${q(o.b.n,o.b.d,'qb')}</div>`;
+if(s>=1)h+=`<div class="op-line ${s===1?'on':''}"><span>=</span>${q(o.a.n+'·'+ka,o.a.d+'·'+ka,'qa')}${S}${q(o.b.n+'·'+kb,o.b.d+'·'+kb,'qb')}</div><div class="op-line ${s===1?'on':''}"><span>=</span>${q(A,L,'qa')}${S}${q(B,L,'qb')}</div>`;
+if(s>=2&&R>=0)h+=`<div class="op-line ${s===2?'on':''}"><span>=</span>${q(R,L,'qr')}</div>`;
+if(s>=3&&R>0&&g>1)h+=`<div class="op-line on"><span>=</span>${q(R/g,L/g,'qr')}</div>`;else if(s===3){const i=h.lastIndexOf('op-line ');h=h.slice(0,i)+'op-line on'+h.slice(h.indexOf('"',i))}return h}
+function ctl(f,c){return `<div class="op-fr" data-f="${f}"><div class="row"><button data-k="n-">−</button><span class="v" style="color:${c}">${o[f].n}</span><button data-k="n+">+</button></div><div class="hr"></div><div class="row"><button data-k="d-">−</button><span class="v">${o[f].d}</span><button data-k="d+">+</button></div></div>`}
+window.renderOps=function(){stage.innerHTML=svg();
+document.getElementById('opCtl').innerHTML=ctl('a',C.acc)+`<div class="op-sign"><button data-op="+" class="${o.op==='+'?'on':''}">+</button><button data-op="-" class="${o.op==='-'?'on':''}">−</button></div>`+ctl('b',C.blue);
+document.getElementById('opEq').innerHTML=eq();
+const names=['Різні знаменники','Спільний знаменник',o.op==='+'?'Додаємо':'Віднімаємо','Скорочуємо'];
+document.getElementById('opSteps').innerHTML=names.map((t,i)=>`<button data-go="${i}" class="${i===o.s?'on':''}">${i+1}. ${t}</button>`).join('');
+const nb=side.querySelectorAll('.op-nav button');nb[0].disabled=o.s===0;nb[1].disabled=o.s===3;
+document.getElementById('opSay').innerHTML=say();FrMascot.attach(stage)};
+side.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const ps=o.s;
+if(b.dataset.s)o.s=Math.max(0,Math.min(3,o.s+ +b.dataset.s));
+else if(b.dataset.go)o.s=+b.dataset.go;
+else if(b.dataset.op)o.op=b.dataset.op;
+else if(b.dataset.k){const f=o[b.closest('.op-fr').dataset.f],k=b.dataset.k;
+if(k==='n+')f.n=Math.min(f.d,f.n+1);if(k==='n-')f.n=Math.max(0,f.n-1);if(k==='d+')f.d=Math.min(MAX,f.d+1);if(k==='d-'){f.d=Math.max(1,f.d-1);f.n=Math.min(f.n,f.d)}}
+window.renderOps();if(o.s===1&&ps!==1)FrMascot.cast();else if(o.s===3&&ps!==3)FrMascot.cheer()});
+})();
+</script>
+</body></html>
