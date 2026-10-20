@@ -1,7 +1,10 @@
 /**
- * Генератор без теорії (власник 2026-10-19: «теорія суха… не потрібна»; «так, роби»). Прибрано й «Режим
+ * Генератор без сухої теорії (власник 2026-10-19: «теорія суха… не потрібна»; «так, роби»). Прибрано й «Режим
  * уроку»: «Практика» лишала теорію, «Іспит» не ховав розбору — перемикачі нічого не міняли. У «Додаткових
  * параметрах» лишились складність і назва дошки.
+ *
+ * 2026-10-21 (власник: «так, роби конспекти картками»): на початку уроку — конспект теми картками, галочкою
+ * «Конспект теми» поза «Додатковими параметрами»; за замовчуванням увімкнено.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -23,7 +26,7 @@ async function withTopic() {
   return w
 }
 
-describe('генератор без теорії', () => {
+describe('генератор: без сухої теорії, з конспектом теми', () => {
   it('у «Додаткових параметрах» — лише складність і назва дошки', async () => {
     const w = await withTopic()
     await w.get('.lc-advanced-toggle').trigger('click')
@@ -33,9 +36,20 @@ describe('генератор без теорії', () => {
     expect(w.text()).not.toContain('теорі')
   })
 
-  it('урок іде без сторінки теорії, і в підрахунку сторінок її немає', async () => {
+  it('конспект теми — за замовчуванням так: прев’ю каже про нього, запит просить сторінки конспекту', async () => {
     const w = await withTopic()
+    expect(w.get('[data-testid=lc-konspekt] input').element.checked).toBe(true)
+    expect(w.find('[data-testid=lc-preview-konspekt]').exists()).toBe(true)
     expect(w.find('.lc-preview-box').text()).toContain('4 сторінки')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(generate.mock.calls[0][0]).toMatchObject({ include_theory_page: true, include_solution_page: false })
+  })
+
+  it('без галочки — урок без конспекту, як до 2026-10-21', async () => {
+    const w = await withTopic()
+    await w.get('[data-testid=lc-konspekt] input').setValue(false)
+    expect(w.find('[data-testid=lc-preview-konspekt]').exists()).toBe(false)
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(generate.mock.calls[0][0]).toMatchObject({ include_theory_page: false, include_solution_page: false })

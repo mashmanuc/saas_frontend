@@ -24,6 +24,7 @@ import type { Component } from 'vue'
 import type { EntityRef, WBAsset, WBTeachingAction } from '../../types/winterboard'
 
 import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
+import { isKonspektCard } from '../../composables/cardZoom'
 
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
@@ -507,7 +508,8 @@ export const OVERLAY_RENDERERS: Record<string, OverlayRenderEntry> = Object.from
       // а не вручну окремим entry. `canFit` іде тим самим шляхом, що й
       // `request-height`: хто міряє — вирішує стандарт типу, а не entry.
       buildProps: assetCapabilities(type).contentFit === 'height'
-        ? (a: WBAsset, ctx: OverlayCtx) => ({ ...entry.buildProps(a, ctx), canFit: ctx.canFit })
+        // Картка конспекту висоту не підганяє: її розклав генератор разом із сусідами (cardZoom.isKonspektCard)
+        ? (a: WBAsset, ctx: OverlayCtx) => ({ ...entry.buildProps(a, ctx), canFit: ctx.canFit && !isKonspektCard(a) })
         : entry.buildProps,
       buildEvents: assetCapabilities(type).contentFit === 'height'
         ? (a: WBAsset, ctx: OverlayCtx) => ({

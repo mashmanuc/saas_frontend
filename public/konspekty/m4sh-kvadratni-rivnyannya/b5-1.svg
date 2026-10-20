@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" width="200" height="170" font-family="Manrope, Arial, sans-serif"><rect x="0" y="0" width="200" height="170" fill="#ffffff"/>
+<defs><pattern height="20" id="g1" patternunits="userSpaceOnUse" width="20"><path d="M20 0H0V20" fill="none" stroke="#eaf0ed" stroke-width="1"></path></pattern></defs>
+<rect fill="url(#g1)" height="140" width="200"></rect>
+<line stroke="#0f2620" stroke-width="1.2" x1="0" x2="200" y1="100" y2="100"></line>
+<line stroke="#0f2620" stroke-width="1.2" x1="100" x2="100" y1="0" y2="140"></line>
+<path d="M30,20 Q100,200 170,20" fill="none" stroke="#0e7a5f" stroke-width="2.4"></path>
+<circle cx="62" cy="100" fill="#e07a3c" r="3.6"></circle>
+<circle cx="138" cy="100" fill="#e07a3c" r="3.6"></circle>
+<text fill="#345148" font-family="JetBrains Mono" font-size="10" x="58" y="118">x₁</text>
+<text fill="#345148" font-family="JetBrains Mono" font-size="10" x="134" y="118">x₂</text>
+<text x="100.0" y="161.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">D &gt; 0 — два корені</text></svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 110" width="600" height="110" font-family="Manrope, Arial, sans-serif"><rect x="0" y="0" width="600" height="110" fill="#ffffff"/>
+<line stroke="#1f2a26" stroke-width="2" x1="20" x2="580" y1="60" y2="60"></line>
+<polygon fill="#1f2a26" points="580,60 570,55 570,65"></polygon>
+<g fill="#5a6863" font-family="JetBrains Mono, monospace" font-size="13">
+<line stroke="#1f2a26" stroke-width="2" x1="120" x2="120" y1="55" y2="65"></line><text text-anchor="middle" x="120" y="85">-3</text>
+<line stroke="#1f2a26" stroke-width="2" x1="220" x2="220" y1="55" y2="65"></line><text text-anchor="middle" x="220" y="85">0</text>
+<line stroke="#1f2a26" stroke-width="2" x1="320" x2="320" y1="55" y2="65"></line><text text-anchor="middle" x="320" y="85">2</text>
+<line stroke="#1f2a26" stroke-width="2" x1="420" x2="420" y1="55" y2="65"></line><text text-anchor="middle" x="420" y="85">5</text>
+</g>
+<circle cx="320" cy="60" fill="#e07a3c" r="5"></circle>
+<path d="M220 40 Q270 20 320 40" fill="none" stroke="#e07a3c" stroke-width="2"></path>
+<text fill="#e07a3c" font-family="JetBrains Mono, monospace" font-size="12" text-anchor="middle" x="270" y="14">|2| = 2</text>
+<path d="M120 95 Q220 105 320 95" fill="none" stroke="#0e7a5f" stroke-width="2"></path>
+<text fill="#0e7a5f" font-family="JetBrains Mono, monospace" font-size="12" text-anchor="middle" x="220" y="108">|2 - (-3)| = 5</text>
+</svg>

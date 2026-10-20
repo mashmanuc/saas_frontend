@@ -134,6 +134,11 @@
           <div class="lc-preview-box">
             <span class="lc-preview-item lc-preview-item--tasks">📋 {{ taskCount }} {{ taskWord }}</span>
             <span class="lc-preview-sep">→</span>
+            <!-- Конспект теми (2026-10-21): скільки в нього сторінок, знає сервер — тут лише видно, що він буде -->
+            <template v-if="withKonspekt">
+              <span class="lc-preview-item lc-preview-item--konspekt" data-testid="lc-preview-konspekt">📗 конспект</span>
+              <span class="lc-preview-sep">+</span>
+            </template>
             <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
             <span class="lc-preview-sep lc-preview-total-sep">=</span>
             <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
@@ -224,6 +229,18 @@
               <span class="lc-bg-sat__val">{{ bgSaturation }}%</span>
             </label>
           </template>
+        </section>
+
+        <!-- ── Конспект теми (власник 2026-10-21: «так, роби конспекти картками») ─────────────────
+             Сторінки на початку уроку: означення, правила, «Запам'ятай», приклади, малюнки й «Перевір себе». -->
+        <section class="lc-section">
+          <label class="lc-check" data-testid="lc-konspekt">
+            <input v-model="withKonspekt" type="checkbox" />
+            <span>
+              <b>📗 Конспект теми на початку уроку</b>
+              <small>Картки з означеннями, правилами, прикладами й «Перевір себе»</small>
+            </span>
+          </label>
         </section>
 
         <!-- ── Додаткові параметри (collapsed) ─────────────────────────────── -->
@@ -387,6 +404,8 @@ const bgSaturation    = ref(100)     // 0–100 % — насиченість п�
 const diffProfile     = ref('balanced')
 const boardName       = ref('')
 const showAdvanced    = ref(false)
+// Конспект теми на початку уроку (власник 2026-10-21) — за замовчуванням так; немає конспекту — лише задачі
+const withKonspekt    = ref(true)
 
 // ── UI state ───────────────────────────────────────────────────────────────
 const isLoading = ref(false)
@@ -612,7 +631,8 @@ async function handleGenerate() {
       board_bg:              !multicolorBg.value && boardBg.value !== '#ffffff' ? boardBg.value : undefined,
       board_bg_palette:      multicolorBg.value ? bgPalette.value : undefined,
       diff_profile:          diffProfile.value,
-      include_theory_page:   false,   // теорії немає (власник 2026-10-19: «суха», «не потрібна»)
+      // Стара «суха» теорія прибрана 2026-10-19; з 2026-10-21 сторінки теорії — конспект теми картками
+      include_theory_page:   withKonspekt.value,
       include_solution_page: false,   // окремих сторінок розбору немає (картки мають "Показати розбір")
       name:                  boardName.value || undefined,
     })
@@ -1118,6 +1138,11 @@ async function handleGenerate() {
   font-weight: 500;
   color: #374151;
 }
+
+.lc-check { display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; }
+.lc-check input { margin-top: 0.25rem; width: 1.05rem; height: 1.05rem; flex: none; }
+.lc-check span { display: flex; flex-direction: column; gap: 0.15rem; }
+.lc-check small { color: var(--text-secondary, #64748b); font-size: 0.85rem; }
 
 .lc-radio-group {
   display: flex;

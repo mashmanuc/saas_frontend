@@ -651,7 +651,19 @@
         :style="[getOverlayStyle(asset), { '--overlay-shadow': theoryOverlayShadow(asset) }]"
         :data-testid="`theory-card-overlay-${asset.id}`"
       >
+        <!-- Картка конспекту (2026-10-21) — зменшена копія самої себе, висоту не підганяє (cardZoom.isKonspektCard) -->
+        <div v-if="isKonspektCard(asset)" class="wb-card-zoom" :style="cardZoomStyle(zoom, false)">
+          <TheoryCardRenderer
+            :asset="(asset as any)"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            :can-fit="false"
+            @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+            @delete="emit('asset-delete', asset.id)"
+          />
+        </div>
         <TheoryCardRenderer
+          v-else
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
@@ -996,7 +1008,7 @@ import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageC
 import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
-import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, provideCardZoom } from '../../composables/cardZoom'
+import { cardZoomStyle, isKonspektCard, isZoomScaledCard, provideCardZoom } from '../../composables/cardZoom'
 import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -1783,7 +1795,7 @@ provideHostControlsSlot(computed(() => {
   const width = windowControlsWidth.value + WINDOW_CONTROLS_INSET_PX
   // Шапка такої картки — всередині обгортки `scale(zoom)`, а кнопки — в екранних
   // пікселях: резерв у пікселях картки = екранна ширина / масштаб (cardZoom.ts).
-  return { assetId: t.id, width: ZOOM_SCALED_CARD_TYPES.has(t.type) && props.zoom > 0 ? width / props.zoom : width }
+  return { assetId: t.id, width: isZoomScaledCard(t) && props.zoom > 0 ? width / props.zoom : width }
 }))
 // Картки з власним полотном — зменшена копія самої себе на будь-якому масштабі (власник 2026-10-01).
 provideCardZoom(computed(() => props.zoom))

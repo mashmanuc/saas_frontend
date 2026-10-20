@@ -23,6 +23,24 @@ export const ZOOM_SCALED_CARD_TYPES: ReadonlySet<string> = new Set([
   'math_scene',
 ])
 
+/**
+ * Картка конспекту теми (власник 2026-10-21: «так, роби конспекти картками») — текстова картка, яку генератор
+ * поклав на сторінку конспекту разом із сусідами (`data.konspekt` = slug конспекту). Сторінка конспекту — як
+ * сторінка книжки: зменшується цілком, як графік, і НЕ підганяє висоту сама — інакше на меншому екрані текст
+ * лишався б того самого розміру, картка росла б донизу й налазила на сусідню (стенд 2026-10-21, масштаб 67 %).
+ * Решта текстових карток — як і були.
+ */
+export function isKonspektCard(asset: { type?: string; data?: unknown } | null | undefined): boolean {
+  if (!asset || asset.type !== 'theory_card') return false
+  const slug = (asset.data as { konspekt?: unknown } | null | undefined)?.konspekt
+  return typeof slug === 'string' && slug.length > 0
+}
+
+/** Картку показуємо зменшеною копією самої себе: за типом або як картку конспекту. */
+export function isZoomScaledCard(asset: { type?: string; data?: unknown } | null | undefined): boolean {
+  return !!asset && (ZOOM_SCALED_CARD_TYPES.has(asset.type ?? '') || isKonspektCard(asset))
+}
+
 const CARD_ZOOM: InjectionKey<Readonly<Ref<number>>> = Symbol('wb-card-zoom')
 
 /** Полотно: поточний масштаб дошки для карток. */

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 250" width="240" height="250" class="geo" font-family="Manrope, Arial, sans-serif"><style>.geo{font-family:'JetBrains Mono','Manrope',sans-serif;font-size:13px;}
+.geo .face{fill:#eaf5ef;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;}
+.geo .face-back{fill:#dde9e2;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .face-top{fill:#cfe1d6;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .edge{fill:none;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;}
+.geo .edge-hidden{fill:none;stroke:#7ea99a;stroke-width:1.2;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .axis{fill:none;stroke:#345148;stroke-width:1.2;}
+.geo .grid{fill:none;stroke:#cbded3;stroke-width:0.8;}
+.geo .curve{fill:none;stroke:#0e7a5f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.geo .curve-2{fill:none;stroke:#1f8a5b;stroke-width:2;stroke-linecap:round;}
+.geo .accent{stroke:#e07a3c;fill:none;stroke-width:1.8;stroke-linecap:round;}
+.geo .accent-fill{stroke:#e07a3c;fill:#fbe7d7;stroke-width:1.6;}
+.geo .dim{fill:none;stroke:#e07a3c;stroke-width:1.6;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .vert{fill:#0f2620;}
+.geo text{fill:#0f2620;font-weight:500;}
+.geo text.lbl{fill:#345148;font-size:12px;}
+.geo text.lbl-acc{fill:#c25a1c;font-size:12.5px;font-weight:600;}
+.geo text.vlbl{fill:#0f2620;font-size:13px;font-weight:700;}</style><rect x="0" y="0" width="240" height="250" fill="#ffffff"/><polygon class="face-back" points="160,180 148,140 148,30 160,70"></polygon><line class="edge-hidden" x1="40" x2="148" y1="180" y2="140"></line><polygon class="face" points="40,180 160,180 160,70 40,70"></polygon><polygon class="face-top" points="40,70 160,70 148,30"></polygon><line class="edge" x1="160" x2="148" y1="180" y2="140"></line><line class="edge" x1="148" x2="148" y1="140" y2="30"></line><line class="dim" x1="180" x2="180" y1="180" y2="70"></line><line class="accent" x1="176" x2="184" y1="180" y2="180"></line><line class="accent" x1="176" x2="184" y1="70" y2="70"></line><g class="vlbl"><text x="30" y="194">A</text><text x="164" y="194">B</text><text x="152" y="152">C</text><text x="30" y="66">A₁</text><text x="164" y="66">B₁</text><text x="152" y="28">C₁</text></g><text class="lbl-acc" x="190" y="128">h</text><text x="120.0" y="241.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">Пряма трикутна призма</text></svg>

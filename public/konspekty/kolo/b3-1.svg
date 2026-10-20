@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 190" width="220" height="190" class="geo" font-family="Manrope, Arial, sans-serif"><style>.geo{font-family:'JetBrains Mono','Manrope',sans-serif;font-size:13px;}
+.geo .face{fill:#eaf5ef;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;}
+.geo .face-back{fill:#dde9e2;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .face-top{fill:#cfe1d6;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .edge{fill:none;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;}
+.geo .edge-hidden{fill:none;stroke:#7ea99a;stroke-width:1.2;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .axis{fill:none;stroke:#345148;stroke-width:1.2;}
+.geo .grid{fill:none;stroke:#cbded3;stroke-width:0.8;}
+.geo .curve{fill:none;stroke:#0e7a5f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.geo .curve-2{fill:none;stroke:#1f8a5b;stroke-width:2;stroke-linecap:round;}
+.geo .accent{stroke:#e07a3c;fill:none;stroke-width:1.8;stroke-linecap:round;}
+.geo .accent-fill{stroke:#e07a3c;fill:#fbe7d7;stroke-width:1.6;}
+.geo .dim{fill:none;stroke:#e07a3c;stroke-width:1.6;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .vert{fill:#0f2620;}
+.geo text{fill:#0f2620;font-weight:500;}
+.geo text.lbl{fill:#345148;font-size:12px;}
+.geo text.lbl-acc{fill:#c25a1c;font-size:12.5px;font-weight:600;}
+.geo text.vlbl{fill:#0f2620;font-size:13px;font-weight:700;}</style><rect x="0" y="0" width="220" height="190" fill="#ffffff"/><circle class="face" cx="110" cy="80" r="60"></circle><line class="edge" x1="55" x2="170" y1="45" y2="110"></line><line class="edge" x1="60" x2="165" y1="115" y2="40"></line><circle cx="112" cy="78" fill="#e07a3c" r="3"></circle><g class="vlbl"><text x="45" y="42">A</text><text x="172" y="118">B</text><text x="167" y="36">C</text><text x="50" y="125">D</text></g><text class="lbl-acc" x="118" y="75">E</text><text x="110.0" y="181.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">Перетин хорд</text></svg>

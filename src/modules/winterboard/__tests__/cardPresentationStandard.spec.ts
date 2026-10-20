@@ -280,7 +280,10 @@ describe('INV-PRES-6 · авто-висота за стандартом', () => 
     const canvas = read('modules/winterboard/components/canvas/WBCanvas.vue')
     const fn = canvas.slice(canvas.indexOf('function handleOverlayHeightRequest'), canvas.indexOf('const nextH = nextAutoFitHeight'))
     expect(fn).toContain("assetCapabilities(asset.type).contentFit !== 'height' || isMinimizedOnBoard(asset)")
-    const theoryBlock = canvas.slice(canvas.indexOf('<TheoryCardRenderer'), canvas.indexOf('/>', canvas.indexOf('<TheoryCardRenderer')))
+    // 2026-10-21: картка конспекту — окрема гілка без підгонки висоти (cardZoom.isKonspektCard); звичайна — як була
+    const start = canvas.search(/<TheoryCardRenderer\s+v-else/)
+    const theoryBlock = canvas.slice(start, canvas.indexOf('/>', start))
+    expect(start).toBeGreaterThan(-1)
     expect(theoryBlock).toContain('@request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"')
   })
 

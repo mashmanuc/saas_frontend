@@ -66,7 +66,8 @@ describe('проводка: які картки масштабуються і д
 
   it('уніфікований шар (прод: VITE_UNIFIED_ZORDER=true) кладе лише ці типи в .wb-card-zoom', () => {
     const layer = read('components/canvas/WBOverlayLayer.vue')
-    expect(layer).toContain('v-if="ZOOM_SCALED_CARD_TYPES.has(item.asset.type)"')
+    // 2026-10-21: за типом АБО картка конспекту (isZoomScaledCard; перелік типів — той самий ZOOM_SCALED_CARD_TYPES)
+    expect(layer).toContain('v-if="isZoomScaledCard(item.asset)"')
     expect(layer).toMatch(/class="wb-card-zoom"[\s\S]*?:style="cardZoomLayerStyle\(item\)"/)
     expect(layer).toContain('return cardZoomStyle(cardZoom?.value ?? 1, expanded)')
   })
@@ -75,7 +76,7 @@ describe('проводка: які картки масштабуються і д
     const canvas = read('components/canvas/WBCanvas.vue')
     expect(canvas).toContain('provideCardZoom(computed(() => props.zoom))')
     expect(canvas.split('<div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">').length - 1).toBe(3)
-    expect(canvas).toContain('ZOOM_SCALED_CARD_TYPES.has(t.type) && props.zoom > 0 ? width / props.zoom : width')
+    expect(canvas).toContain('isZoomScaledCard(t) && props.zoom > 0 ? width / props.zoom : width')
   })
 
   it.each([
@@ -84,5 +85,41 @@ describe('проводка: які картки масштабуються і д
     ['components/board/objects/GraphCalculatorRenderer.vue', 'calc'],
   ])('%s просить нову роздільність при зміні масштабу', (file, inst) => {
     expect(read(file)).toContain(`useCardZoomRefresh(() => ${inst}?.refreshResolution())`)
+  })
+})
+
+// Конспект теми картками (власник 2026-10-21): сторінку розклав генератор — картки конспекту зменшуються цілком,
+// як графік, і висоту не підганяють (інакше на меншому екрані текст той самий, картка росте й налазить на сусідню).
+describe('картка конспекту', () => {
+  const card = (data: Record<string, unknown>) => ({ type: 'theory_card', data })
+
+  it('за позначкою `konspekt` — зменшується цілком; звичайна текстова картка — як і була', async () => {
+    const { isKonspektCard, isZoomScaledCard } = await import('../composables/cardZoom')
+    expect(isKonspektCard(card({ konspekt: 'paralelni' }))).toBe(true)
+    expect(isZoomScaledCard(card({ konspekt: 'paralelni' }))).toBe(true)
+    for (const data of [{}, { konspekt: '' }, { konspekt: 3 }]) {
+      expect(isKonspektCard(card(data))).toBe(false)
+      expect(isZoomScaledCard(card(data))).toBe(false)
+    }
+    expect(isKonspektCard({ type: 'nmt_task', data: { konspekt: 'x' } })).toBe(false)
+    expect(isZoomScaledCard({ type: 'graph_calculator', data: {} })).toBe(true)
+  })
+
+  it('спільний шар: картка конспекту не міряє висоту, звичайна — міряє', async () => {
+    const { OVERLAY_RENDERERS } = await import('../components/canvas/overlayRegistry')
+    const entry = OVERLAY_RENDERERS.theory_card
+    const ctx = { canFit: true, isSelected: () => false, interactive: true, isTutor: true, boardMode: 'edit',
+      expandedId: null, toggleExpand: () => {}, onRequestHeight: () => {} } as any
+    const asset = (data: Record<string, unknown>) => ({ id: 'tc', type: 'theory_card', src: '', x: 0, y: 0, w: 890, h: 300, data }) as any
+    expect(entry.buildProps(asset({ konspekt: 'paralelni' }), ctx).canFit).toBe(false)
+    expect(entry.buildProps(asset({}), ctx).canFit).toBe(true)
+  })
+
+  it('обидва шляхи полотна (спільний шар і старі блоки) загортають картку конспекту в масштаб', () => {
+    const layer = read('components/canvas/WBOverlayLayer.vue')
+    expect(layer).toContain('v-if="isZoomScaledCard(item.asset)"')
+    const canvas = read('components/canvas/WBCanvas.vue')
+    expect(canvas).toContain('<div v-if="isKonspektCard(asset)" class="wb-card-zoom" :style="cardZoomStyle(zoom, false)">')
+    expect(canvas).toMatch(/isKonspektCard\(asset\)[\s\S]{0,400}:can-fit="false"/)
   })
 })

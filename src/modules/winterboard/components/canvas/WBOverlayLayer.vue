@@ -32,7 +32,7 @@ import {
   OVERLAY_RENDERERS,
   isOverlayType,
   type OverlayCtx, canMeasureInMode } from './overlayRegistry'
-import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, useCardZoom } from '../../composables/cardZoom'
+import { cardZoomStyle, isZoomScaledCard, useCardZoom } from '../../composables/cardZoom'
 // N1 Фаза 3 (2026-08-07): preset shadow для theory-card overlay
 const PRESET_SHADOWS: Record<string, string> = {
   definition:      'rgba(37, 99, 235, 0.35)',
@@ -324,7 +324,7 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
       @pointerdown.capture="onWrapperPointerDownCapture(item, $event)"
     >
       <div
-        v-if="ZOOM_SCALED_CARD_TYPES.has(item.asset.type)"
+        v-if="isZoomScaledCard(item.asset)"
         class="wb-card-zoom"
         data-testid="card-zoom-layer"
         :style="cardZoomLayerStyle(item)"

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" width="180" height="150" class="geo" font-family="Manrope, Arial, sans-serif"><style>.geo{font-family:'JetBrains Mono','Manrope',sans-serif;font-size:13px;}
+.geo .face{fill:#eaf5ef;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;}
+.geo .face-back{fill:#dde9e2;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .face-top{fill:#cfe1d6;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .edge{fill:none;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;}
+.geo .edge-hidden{fill:none;stroke:#7ea99a;stroke-width:1.2;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .axis{fill:none;stroke:#345148;stroke-width:1.2;}
+.geo .grid{fill:none;stroke:#cbded3;stroke-width:0.8;}
+.geo .curve{fill:none;stroke:#0e7a5f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.geo .curve-2{fill:none;stroke:#1f8a5b;stroke-width:2;stroke-linecap:round;}
+.geo .accent{stroke:#e07a3c;fill:none;stroke-width:1.8;stroke-linecap:round;}
+.geo .accent-fill{stroke:#e07a3c;fill:#fbe7d7;stroke-width:1.6;}
+.geo .dim{fill:none;stroke:#e07a3c;stroke-width:1.6;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .vert{fill:#0f2620;}
+.geo text{fill:#0f2620;font-weight:500;}
+.geo text.lbl{fill:#345148;font-size:12px;}
+.geo text.lbl-acc{fill:#c25a1c;font-size:12.5px;font-weight:600;}
+.geo text.vlbl{fill:#0f2620;font-size:13px;font-weight:700;}</style><rect x="0" y="0" width="180" height="150" fill="#ffffff"/><polygon class="face" points="90,15 165,60 90,105 15,60"></polygon><line class="dim" x1="90" x2="90" y1="15" y2="105"></line><line class="dim" x1="15" x2="165" y1="60" y2="60"></line><path class="edge" d="M82 60 h8 v-8"></path><text x="90.0" y="141.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">Ромб</text></svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" width="200" height="170" font-family="Manrope, Arial, sans-serif"><rect x="0" y="0" width="200" height="170" fill="#ffffff"/>
+<rect fill="url(#g1)" height="140" width="200"></rect>
+<line stroke="#0f2620" stroke-width="1.2" x1="0" x2="200" y1="70" y2="70"></line>
+<line stroke="#0f2620" stroke-width="1.2" x1="100" x2="100" y1="0" y2="140"></line>
+<path d="M40,30 Q100,140 160,30" fill="none" stroke="#0e7a5f" stroke-width="2.2"></path>
+<path d="M40,110 Q100,0 160,110" fill="none" stroke="#e07a3c" stroke-dasharray="4 3" stroke-width="2.2"></path>
+<text fill="#0e7a5f" font-family="JetBrains Mono" font-size="10" x="160" y="44">a&gt;0</text>
+<text fill="#e07a3c" font-family="JetBrains Mono" font-size="10" x="160" y="124">a&lt;0</text>
+<text x="100.0" y="161.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">Знак a і вершина</text></svg>

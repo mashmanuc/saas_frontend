@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 270" width="320" height="270" class="geo" font-family="Manrope, Arial, sans-serif"><style>.geo{font-family:'JetBrains Mono','Manrope',sans-serif;font-size:13px;}
+.geo .face{fill:#eaf5ef;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;}
+.geo .face-back{fill:#dde9e2;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .face-top{fill:#cfe1d6;stroke:#0e7a5f;stroke-width:1.4;stroke-linejoin:round;}
+.geo .edge{fill:none;stroke:#0e7a5f;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;}
+.geo .edge-hidden{fill:none;stroke:#7ea99a;stroke-width:1.2;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .axis{fill:none;stroke:#345148;stroke-width:1.2;}
+.geo .grid{fill:none;stroke:#cbded3;stroke-width:0.8;}
+.geo .curve{fill:none;stroke:#0e7a5f;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.geo .curve-2{fill:none;stroke:#1f8a5b;stroke-width:2;stroke-linecap:round;}
+.geo .accent{stroke:#e07a3c;fill:none;stroke-width:1.8;stroke-linecap:round;}
+.geo .accent-fill{stroke:#e07a3c;fill:#fbe7d7;stroke-width:1.6;}
+.geo .dim{fill:none;stroke:#e07a3c;stroke-width:1.6;stroke-dasharray:4 3;stroke-linecap:round;}
+.geo .vert{fill:#0f2620;}
+.geo text{fill:#0f2620;font-weight:500;}
+.geo text.lbl{fill:#345148;font-size:12px;}
+.geo text.lbl-acc{fill:#c25a1c;font-size:12.5px;font-weight:600;}
+.geo text.vlbl{fill:#0f2620;font-size:13px;font-weight:700;}</style><rect x="0" y="0" width="320" height="270" fill="#ffffff"/><line class="edge-hidden" x1="60" x2="90" y1="180" y2="150"></line><line class="edge-hidden" x1="90" x2="250" y1="150" y2="150"></line><polygon fill="#dde9e2" points="60,180 220,180 250,150 90,150" stroke="none"></polygon><line class="edge" x1="60" x2="220" y1="180" y2="180"></line><line class="edge" x1="220" x2="250" y1="180" y2="150"></line><line class="edge" x1="60" x2="155" y1="180" y2="50"></line><line class="edge" x1="220" x2="155" y1="180" y2="50"></line><line class="edge" x1="250" x2="155" y1="150" y2="50"></line><line class="edge-hidden" x1="90" x2="155" y1="150" y2="50"></line><line class="dim" x1="155" x2="155" y1="50" y2="165"></line><line class="dim" x1="155" x2="140" y1="50" y2="180"></line><circle cx="155" cy="165" fill="#0f2620" r="2.5"></circle><g class="vlbl"><text x="50" y="194">A</text><text x="222" y="194">B</text><text x="256" y="146">C</text><text x="75" y="146">D</text><text x="148" y="44">S</text><text x="160" y="176">O</text></g><text class="lbl-acc" x="160" y="112">h</text><text class="lbl-acc" x="122" y="122">ℓ</text><text x="160.0" y="261.0" text-anchor="middle" font-size="15" font-weight="600" font-family="Manrope, Arial, sans-serif" fill="#345148">O — проєкція вершини на основу. h = SO — висота. — апофема.</text></svg>
