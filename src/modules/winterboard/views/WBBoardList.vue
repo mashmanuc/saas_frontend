@@ -116,6 +116,7 @@
           <div>
             <h1 class="wb-board-list__title">{{ t('winterboard.boards.myBoards') }}</h1>
             <p class="wb-board-list__subtitle">{{ t('winterboard.boards.myBoardsSubtitle') }}</p>
+            <p class="wb-board-list__hello">{{ t(`winterboard.boards.greeting.${greetingKey}`) }}</p>
           </div>
         </div>
 
@@ -162,7 +163,7 @@
             type="button"
             class="wb-board-list__new-btn"
             :disabled="creatingNewBoard || isCreatingFromPdf"
-            @click="createNewTemplate"
+            @click="burstFrom($event.currentTarget as Element, NEW_BOARD_FX, 90); createNewTemplate()"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -203,7 +204,19 @@
 
       <!-- Tabs + Search bar -->
       <div class="wb-board-list__toolbar">
-        <div class="wb-board-list__tabs" role="tablist">
+        <div
+          ref="tabsEl"
+          class="wb-board-list__tabs"
+          :class="{ 'wb-board-list__tabs--slid': tabIndicator.width > 0 }"
+          role="tablist"
+        >
+          <!-- Повзунок під активною вкладкою (макет Студії). left/width ставляться синхронно
+               після рендеру (flush:'post'); поки не виміряно — активна вкладка має власний фон. -->
+          <span
+            class="wb-board-list__tab-indicator"
+            aria-hidden="true"
+            :style="{ left: `${tabIndicator.left}px`, width: `${tabIndicator.width}px` }"
+          />
           <button
             v-for="tab in tabs"
             :key="tab.value"
@@ -219,14 +232,19 @@
           </button>
         </div>
 
-        <input
-          v-model="searchQuery"
-          type="search"
-          class="wb-board-list__search"
-          :placeholder="t('winterboard.boards.searchPlaceholder')"
-          :aria-label="t('winterboard.boards.searchPlaceholder')"
-        />
+        <label class="wb-board-list__search-wrap">
+          <input
+            ref="searchEl"
+            v-model="searchQuery"
+            type="search"
+            class="wb-board-list__search"
+            :placeholder="t('winterboard.boards.searchPlaceholder')"
+            :aria-label="t('winterboard.boards.searchPlaceholder')"
+          />
+          <kbd class="wb-board-list__kbd" :title="t('winterboard.boards.searchHotkey')" aria-hidden="true">/</kbd>
+        </label>
       </div>
+      <div v-if="piEggShown" class="wb-board-list__pi" role="status">{{ t('winterboard.boards.piEgg') }}</div>
 
       <!-- Folder breadcrumb -->
       <div v-if="breadcrumbPath.length > 0" class="wb-board-list__breadcrumb">
@@ -360,9 +378,10 @@
       <!-- Grid view -->
       <div v-else-if="viewMode === 'grid'" class="wb-board-list__grid" role="list">
         <WBBoardCard
-          v-for="board in boards"
+          v-for="(board, i) in boards"
           :key="board.id"
           :board="board"
+          :index="i + 1"
           :folders="flatFolders"
           :selected="selectedIds.includes(board.id)"
           role="listitem"
@@ -561,6 +580,7 @@ import { useCreateFromPdf } from '../composables/useCreateFromPdf'
 import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
 import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
+import { NEW_BOARD_FX, burstFrom } from '../utils/studioFx'
 
 const WBShareDialog = defineAsyncComponent(() => import('../components/sharing/WBShareDialog.vue'))
 const WBExportDialog = defineAsyncComponent(() => import('../components/export/WBExportDialog.vue'))
@@ -1124,6 +1144,59 @@ onMounted(() => {
   fetchFolders()
   window.addEventListener('m4sh:boards-changed', onExternalBoardsChanged)
 })
+
+// ─── Студія уроків за макетом дизайнера (2026-10-22): повзунок вкладок, привітання, «/», пасхалка π ──
+
+const tabsEl = ref<HTMLElement | null>(null)
+const searchEl = ref<HTMLInputElement | null>(null)
+const tabIndicator = ref({ left: 0, width: 0 })
+
+function placeTabIndicator(): void {
+  const active = tabsEl.value?.querySelector<HTMLElement>('.wb-board-list__tab--active')
+  tabIndicator.value = active && active.offsetWidth
+    ? { left: active.offsetLeft, width: active.offsetWidth }
+    : { left: 0, width: 0 }
+}
+// Синхронно після рендеру: у макеті лише requestAnimationFrame лишав активну вкладку невидимою
+watch([activeTab, total, studioMode, tabs], placeTabIndicator, { flush: 'post' })
+
+// Привітання без імені: ім'я на сайті лише в називному відмінку («Доброго ранку, Ольга» — помилка)
+const greetingKey = (() => {
+  const h = new Date().getHours()
+  return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'day' : h < 23 ? 'evening' : 'late'
+})()
+
+// «/» — до пошуку (не коли вже пишуть у поле). Нова дошка — лише кнопкою, без гарячої клавіші.
+function onStudioKeydown(e: KeyboardEvent): void {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
+  const target = e.target as HTMLElement | null
+  if (target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return
+  if (!searchEl.value?.isConnected) return
+  e.preventDefault()
+  searchEl.value.focus()
+}
+
+// Пасхалка: лише сам символ «π» (на «пі» вилітала б посеред «піфагор», «піраміда»)
+const piEggShown = ref(false)
+let piEggDone = false
+watch(searchQuery, (q) => {
+  if (piEggDone || q.trim() !== 'π') return
+  piEggDone = true
+  if (searchEl.value) burstFrom(searchEl.value, '3,14159265'.split(''), 120)
+  piEggShown.value = true
+  setTimeout(() => { piEggShown.value = false }, 2500)
+})
+
+onMounted(() => {
+  placeTabIndicator()
+  window.addEventListener('resize', placeTabIndicator)
+  document.addEventListener('keydown', onStudioKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', placeTabIndicator)
+  document.removeEventListener('keydown', onStudioKeydown)
+})
 </script>
 
 <style scoped>
@@ -1294,6 +1367,13 @@ onMounted(() => {
   margin: 2px 0 0;
 }
 
+.wb-board-list__hello {
+  font-size: 13px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  opacity: 0.8;
+  margin: 4px 0 0;
+}
+
 .wb-board-list__header-actions {
   display: flex;
   align-items: center;
@@ -1386,14 +1466,27 @@ onMounted(() => {
 }
 
 .wb-board-list__tabs {
+  position: relative;
   display: flex;
   gap: 4px;
-  background: var(--wb-canvas-bg, #f1f5f9);
-  border-radius: 8px;
-  padding: 3px;
+  background: var(--wb-card-bg, #ffffff);
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 4px 14px -10px rgba(13, 74, 62, 0.45);
+}
+
+.wb-board-list__tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 9px;
+  background: var(--wb-fg, #0d4a3e);
+  transition: left 0.35s cubic-bezier(0.3, 1.3, 0.5, 1), width 0.35s cubic-bezier(0.3, 1.3, 0.5, 1);
 }
 
 .wb-board-list__tab {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1414,10 +1507,23 @@ onMounted(() => {
 }
 
 .wb-board-list__tab--active {
-  background: var(--wb-card-bg, #ffffff);
-  color: var(--wb-fg, #0f172a);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--wb-fg, #0d4a3e);
+  color: var(--wb-card-bg, #ffffff);
   font-weight: 600;
+}
+
+/* Повзунок виміряно — фон дає він, кнопка прозора */
+.wb-board-list__tabs--slid .wb-board-list__tab--active {
+  background: none;
+}
+
+.wb-board-list__tab--active:hover {
+  color: var(--wb-card-bg, #ffffff);
+}
+
+.wb-board-list__tab--active .wb-board-list__tab-count {
+  background: color-mix(in srgb, var(--wb-card-bg, #ffffff) 22%, transparent);
+  color: inherit;
 }
 
 .wb-board-list__tab-count {
@@ -1430,8 +1536,62 @@ onMounted(() => {
   text-align: center;
 }
 
+.wb-board-list__search-wrap {
+  position: relative;
+  display: flex;
+}
+
+.wb-board-list__kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: 600 11px ui-monospace, monospace;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0 5px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  pointer-events: none;
+}
+
+.wb-board-list__search-wrap:focus-within .wb-board-list__kbd {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .wb-board-list__kbd {
+    display: none;
+  }
+}
+
+.wb-board-list__pi {
+  position: fixed;
+  left: 50%;
+  top: 22%;
+  z-index: 61;
+  transform: translateX(-50%);
+  background: var(--wb-fg, #0d4a3e);
+  color: var(--wb-card-bg, #ffffff);
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 600;
+  animation: wb-pi-msg 2.4s ease forwards;
+}
+
+@keyframes wb-pi-msg {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  10%, 80% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-board-list__pi { animation: none; }
+  .wb-board-list__tab-indicator { transition: none; }
+}
+
 .wb-board-list__search {
-  padding: 8px 14px;
+  padding: 8px 34px 8px 14px;
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 8px;
   font-size: 13px;
@@ -1446,6 +1606,11 @@ onMounted(() => {
    відірваним (візуальний огляд 2026-09-22, п.4). Даємо йому власний рядок на
    всю ширину — видно, що це фільтр того самого списку. */
 @media (max-width: 900px) {
+  .wb-board-list__search-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
   .wb-board-list__search {
     flex: 1 1 100%;
     min-width: 0;

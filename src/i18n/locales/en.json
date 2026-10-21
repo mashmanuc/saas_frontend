@@ -8775,6 +8775,17 @@
       "nextPage": "Next",
       "statusActive": "In lessons",
       "statusDraft": "Draft",
+      "firstPageShot": "page 1 snapshot",
+      "dustyHint": "Not changed for a while — maybe it’s time?",
+      "searchHotkey": "Press / to search",
+      "piEgg": "3.14159… You found an easter egg. Integralyk is proud.",
+      "greeting": {
+        "night": "Still awake? So is Integralyk. Just not till morning, okay?",
+        "morning": "Good morning! Coffee — and on to lessons.",
+        "day": "Good afternoon!",
+        "evening": "Good evening! Preparing for tomorrow?",
+        "late": "It’s late. Tomorrow’s lesson can wait till morning."
+      },
       "prepLabel": "Lesson preparation",
       "backToLesson": "↩ To lesson",
       "lessonBadge": "Linked to lesson",

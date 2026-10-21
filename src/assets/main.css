@@ -756,6 +756,12 @@
     --wb-toolbar-border: rgba(5, 150, 105, 0.2);
     --wb-warning-bg: rgba(234, 179, 8, 0.1);
     --wb-warning-text: #d97706;
+    /* Обкладинка дошки в Студії (boardCover.ts): картка дає лише відтінок --h, насиченість і
+       яскравість — тема. Фон / знак / лінії міні-сторінок / прозорість великого знака. */
+    --wb-cover-cs: 70%; --wb-cover-cl: 92%;
+    --wb-cover-is: 45%; --wb-cover-il: 32%;
+    --wb-cover-ls: 40%; --wb-cover-ll: 86%;
+    --wb-cover-glyph-opacity: .16;
   }
 
   /* ─── Classic Theme: Winterboard Variables («Біла класика») ───
@@ -792,6 +798,12 @@
     --wb-toolbar-border: #dfe2e6;
     --wb-warning-bg: rgba(180, 83, 9, 0.1);
     --wb-warning-text: #b45309;
+    /* Обкладинка дошки в Студії (boardCover.ts): картка дає лише відтінок --h, насиченість і
+       яскравість — тема. Фон / знак / лінії міні-сторінок / прозорість великого знака. */
+    --wb-cover-cs: 35%; --wb-cover-cl: 95%;
+    --wb-cover-is: 30%; --wb-cover-il: 34%;
+    --wb-cover-ls: 20%; --wb-cover-ll: 88%;
+    --wb-cover-glyph-opacity: .12;
   }
 
   /* ─── Dark Theme: Winterboard Variables ───
@@ -830,6 +842,12 @@
     --wb-toolbar-border: var(--color-border);
     --wb-warning-bg: var(--color-warning-soft);
     --wb-warning-text: var(--color-warning);
+    /* Обкладинка дошки в Студії (boardCover.ts): картка дає лише відтінок --h, насиченість і
+       яскравість — тема. Фон / знак / лінії міні-сторінок / прозорість великого знака. */
+    --wb-cover-cs: 40%; --wb-cover-cl: 20%;
+    --wb-cover-is: 70%; --wb-cover-il: 80%;
+    --wb-cover-ls: 30%; --wb-cover-ll: 34%;
+    --wb-cover-glyph-opacity: .22;
   }
 }
 

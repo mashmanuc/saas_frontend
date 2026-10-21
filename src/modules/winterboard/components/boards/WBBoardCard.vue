@@ -1,10 +1,15 @@
 <template>
   <div
+    ref="cardEl"
     class="wb-board-card"
-    :class="{ 'wb-board-card--selected': selected }"
+    :class="{ 'wb-board-card--selected': selected, 'wb-board-card--dusty': dusty }"
+    :style="{ '--h': cover.hue, '--i': Math.min(index, 12) }"
+    :title="dusty ? t('winterboard.boards.dustyHint') : undefined"
     role="article"
     :aria-label="board.name || t('winterboard.boards.untitled')"
     tabindex="0"
+    @mousemove="onTilt"
+    @mouseleave="resetTilt"
     @click="emit('open')"
     @keydown.enter="emit('open')"
     @keydown.space.prevent="emit('open')"
@@ -20,16 +25,32 @@
 
     <!-- Thumbnail -->
     <div class="wb-board-card__thumb">
-      <img
-        v-if="board.thumbnail_url"
-        :src="board.thumbnail_url"
-        :alt="board.name || t('winterboard.boards.untitled')"
-        class="wb-board-card__thumb-img"
-        loading="lazy"
-        draggable="false"
-      />
-      <div v-else class="wb-board-card__thumb-placeholder" aria-hidden="true">
-        <img :src="logoSrc" alt="Winterboard" class="wb-board-card__thumb-logo" />
+      <template v-if="board.thumbnail_url">
+        <img
+          :src="board.thumbnail_url"
+          :alt="board.name || t('winterboard.boards.untitled')"
+          class="wb-board-card__thumb-img"
+          loading="lazy"
+          draggable="false"
+        />
+        <span class="wb-board-card__shot-label">{{ t('winterboard.boards.firstPageShot') }}</span>
+      </template>
+      <!-- Обкладинка замість порожнього місця (макет «Студія уроків», 2026-10-22): знак з назви або
+           монограма, три міні-сторінки віялом, сезонний логотип у куті. utils/boardCover.ts -->
+      <div v-else class="wb-board-card__cover" aria-hidden="true">
+        <img :src="logoSrc" alt="" class="wb-board-card__cover-logo" @mouseenter="onLogoHover" />
+        <div
+          v-if="!cover.empty"
+          class="wb-board-card__glyph"
+          :class="{ 'wb-board-card__glyph--mono': cover.mono }"
+        >{{ cover.glyph }}</div>
+        <div class="wb-board-card__pages">
+          <span v-for="n in 3" :key="n" class="wb-board-card__page">
+            <i v-if="n === 3" class="wb-board-card__page-title" />
+            <i /><i class="wb-board-card__page-short" /><i />
+            <b v-if="n === 3">{{ cover.glyph }}</b>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -38,13 +59,6 @@
       <h3 class="wb-board-card__title">
         {{ board.name || t('winterboard.boards.untitled') }}
       </h3>
-      <!-- Board status badge -->
-      <span
-        class="wb-board-card__status-badge"
-        :class="board.has_lesson ? 'wb-board-card__status-badge--active' : 'wb-board-card__status-badge--draft'"
-      >
-        {{ board.has_lesson ? t('winterboard.boards.statusActive') : t('winterboard.boards.statusDraft') }}
-      </span>
       <!-- INV-KNOW-3 (Knowledge plan 2026-05-02 PR-4): folder breadcrumb.
            PURE RENDER — value прямо з backend (BoardFolder.full_path,
            materialized у PR-1). Без traversal, без computed, без logic.
@@ -72,9 +86,15 @@
         {{ board.folder_path }}
       </p>
       <p class="wb-board-card__meta">
-        <span>{{ t('winterboard.boards.pageCount', { n: board.page_count }) }}</span>
-        <span class="wb-board-card__sep" aria-hidden="true">·</span>
+        <!-- Board status badge -->
+        <span
+          class="wb-board-card__status-badge"
+          :class="board.has_lesson ? 'wb-board-card__status-badge--active' : 'wb-board-card__status-badge--draft'"
+        >
+          {{ board.has_lesson ? t('winterboard.boards.statusActive') : t('winterboard.boards.statusDraft') }}
+        </span>
         <span>{{ formatTimeAgo(board.updated_at) }}</span>
+        <span class="wb-board-card__pagecount">{{ t('winterboard.boards.pageCount', { n: board.page_count }) }}</span>
       </p>
     </div>
 
@@ -159,11 +179,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem, BoardFolder } from '../../api/winterboardApi'
 import { activeLocale } from '@/utils/i18nDate'
+import { getBoardCover } from '../../utils/boardCover'
+import { SEASON_FX, burstFrom, fxAllowed } from '../../utils/studioFx'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 
@@ -171,11 +193,14 @@ interface Props {
   board: WBSessionListItem
   folders?: { id: number; name: string }[]
   selected?: boolean
+  /** Місце в сітці — затримка появи картки хвилею (до 12-ї). */
+  index?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   folders: () => [],
   selected: false,
+  index: 0,
 })
 
 const emit = defineEmits<{
@@ -190,9 +215,43 @@ const emit = defineEmits<{
 // ─── State ────────────────────────────────────────────────────────────────────
 
 const { t } = useI18n()
-const { logoSrc } = useSeasonalLogo()
+const { season, logoSrc } = useSeasonalLogo()
 const menuOpen = ref(false)
 const folderSubmenuOpen = ref(false)
+const cardEl = ref<HTMLElement | null>(null)
+
+const cover = computed(() => getBoardCover(props.board.name, activeLocale()))
+
+// «Давно не змінювали» — чернетка без змін тиждень і довше (за датою зміни: дати відкриття список не віддає)
+const DUSTY_AFTER_MS = 7 * 24 * 60 * 60 * 1000
+const dusty = computed(() =>
+  !props.board.has_lesson && Date.now() - new Date(props.board.updated_at).getTime() >= DUSTY_AFTER_MS,
+)
+
+// ─── Нахил за курсором + відблиск (лише миша; на сенсорних панелях і з reduced-motion — ні) ──
+
+function onTilt(e: MouseEvent): void {
+  const el = cardEl.value
+  if (!el || !fxAllowed()) return
+  const r = el.getBoundingClientRect()
+  const x = (e.clientX - r.left) / r.width
+  const y = (e.clientY - r.top) / r.height
+  el.style.setProperty('--mx', `${x * 100}%`)
+  el.style.setProperty('--my', `${y * 100}%`)
+  el.style.transform = `perspective(700px) rotateX(${(0.5 - y) * 7}deg) rotateY(${(x - 0.5) * 9}deg) translateY(-3px)`
+}
+
+function resetTilt(): void {
+  if (cardEl.value) cardEl.value.style.transform = ''
+}
+
+let logoFxAt = 0
+function onLogoHover(e: MouseEvent): void {
+  if (Date.now() - logoFxAt < 900) return
+  logoFxAt = Date.now()
+  const fx = SEASON_FX[season.value] ?? []
+  burstFrom(e.currentTarget as Element, [...fx, ...fx], 40)
+}
 
 // ─── Close menu on outside click ──────────────────────────────────────────────
 
@@ -223,19 +282,50 @@ function formatTimeAgo(iso: string): string {
 
 <style scoped>
 .wb-board-card {
+  /* Кольори обкладинки: відтінок --h з картки, насиченість/яскравість — тема (--wb-cover-* у main.css) */
+  --mx: 50%;
+  --my: 50%;
+  --cover-bg: hsl(var(--h, 165) var(--wb-cover-cs, 70%) var(--wb-cover-cl, 92%));
+  --cover-ink: hsl(var(--h, 165) var(--wb-cover-is, 45%) var(--wb-cover-il, 32%));
+  --cover-line: hsl(var(--h, 165) var(--wb-cover-ls, 40%) var(--wb-cover-ll, 86%));
   position: relative;
   background: var(--wb-card-bg, #ffffff);
-  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -22px rgba(13, 74, 62, 0.45);
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.15s ease;
   outline: none;
+  /* backwards, не both: після появи анімація не тримає transform — інакше нахил (inline) не діяв би */
+  animation: wb-card-rise 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+@keyframes wb-card-rise {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+}
+
+/* Відблиск за курсором (координати — onTilt) */
+.wb-board-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.5), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.wb-board-card:hover::before {
+  opacity: 1;
 }
 
 .wb-board-card:hover,
 .wb-board-card:focus-visible {
-  border-color: var(--wb-brand, #0066ff);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--wb-border, rgba(5, 150, 105, 0.2));
+  box-shadow: 0 24px 44px -22px rgba(13, 74, 62, 0.45);
 }
 
 .wb-board-card--selected {
@@ -287,12 +377,10 @@ function formatTimeAgo(iso: string): string {
 /* ── Thumbnail ────────────────────────────────────────────────────────── */
 
 .wb-board-card__thumb {
+  position: relative;
   height: 140px;
-  background: var(--wb-canvas-bg, #f8fafc);
-  border-radius: 12px 12px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--cover-bg);
+  border-radius: 18px 18px 0 0;
   overflow: hidden;
 }
 
@@ -300,49 +388,199 @@ function formatTimeAgo(iso: string): string {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  background: var(--wb-canvas-bg, #ffffff);
 }
 
-.wb-board-card__thumb-placeholder {
-  color: #cbd5e1;
+.wb-board-card__shot-label {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--wb-fg-secondary, #1f6b5a);
+  background: color-mix(in srgb, var(--wb-card-bg, #ffffff) 88%, transparent);
+  border-radius: 5px;
+  padding: 1px 6px;
 }
 
-.wb-board-card__thumb-logo {
-  width: 48px;
-  height: 48px;
-  opacity: 0.6;
+/* ── Обкладинка (немає знімка першої сторінки) ───────────────────────── */
+
+.wb-board-card__cover {
+  position: absolute;
+  inset: 0;
+}
+
+.wb-board-card__cover-logo {
+  /* Лівий нижній кут: лівий верхній при наведенні займає галочка вибору дошки */
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+  transition: transform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.wb-board-card:hover .wb-board-card__cover-logo {
+  transform: rotate(-12deg) scale(1.15);
+}
+
+.wb-board-card__glyph {
+  position: absolute;
+  right: -6px;
+  bottom: -26px;
+  font-size: 112px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--cover-ink);
+  opacity: var(--wb-cover-glyph-opacity, 0.16);
+  transition: transform 0.5s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.wb-board-card__glyph--mono {
+  font-size: 96px;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  bottom: -18px;
+}
+
+.wb-board-card:hover .wb-board-card__glyph {
+  transform: translate(-8px, -6px) rotate(-6deg) scale(1.06);
+}
+
+.wb-board-card__pages {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 0;
+  height: 0;
+}
+
+.wb-board-card__page {
+  position: absolute;
+  left: -38px;
+  top: 0;
+  width: 76px;
+  height: 98px;
+  border-radius: 7px;
+  background: var(--wb-card-bg, #ffffff);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.3);
+  padding: 9px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: transform 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.wb-board-card__page i {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cover-line);
+}
+
+.wb-board-card__page .wb-board-card__page-title {
+  height: 6px;
+  width: 60%;
+  background: var(--cover-ink);
+  opacity: 0.55;
+}
+
+.wb-board-card__page .wb-board-card__page-short {
+  width: 70%;
+}
+
+.wb-board-card__page b {
+  margin-top: auto;
+  align-self: center;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cover-ink);
+  opacity: 0.8;
+}
+
+.wb-board-card__page:nth-child(1) { transform: translateX(-14px) rotate(-7deg); }
+.wb-board-card__page:nth-child(2) { transform: translateX(14px) rotate(6deg); }
+.wb-board-card:hover .wb-board-card__page:nth-child(1) { transform: translateX(-58px) translateY(6px) rotate(-14deg); }
+.wb-board-card:hover .wb-board-card__page:nth-child(2) { transform: translateX(58px) translateY(6px) rotate(13deg); }
+.wb-board-card:hover .wb-board-card__page:nth-child(3) { transform: translateY(-4px); }
+
+/* «Давно не змінювали» — павутинка в куті обкладинки, зникає при наведенні */
+.wb-board-card--dusty .wb-board-card__thumb::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  pointer-events: none;
+  opacity: 0.55;
+  transition: opacity 0.6s;
+  background:
+    radial-gradient(circle at 100% 0, transparent 8px, color-mix(in srgb, var(--wb-fg-secondary, #1f6b5a) 35%, transparent) 8.5px 9.5px, transparent 10px 15px, color-mix(in srgb, var(--wb-fg-secondary, #1f6b5a) 30%, transparent) 15.5px 16.5px, transparent 17px),
+    linear-gradient(225deg, transparent 48%, color-mix(in srgb, var(--wb-fg-secondary, #1f6b5a) 30%, transparent) 49% 51%, transparent 52%);
+}
+
+.wb-board-card--dusty:hover .wb-board-card__thumb::after {
+  opacity: 0;
 }
 
 /* ── Body ─────────────────────────────────────────────────────────────── */
 
 .wb-board-card__body {
-  padding: 14px 16px 16px;
+  padding: 14px 16px 14px;
 }
 
 .wb-board-card__title {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--wb-fg, #0f172a);
-  margin: 0 0 6px;
-  white-space: nowrap;
+  margin: 0 0 8px;
+  min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 8px);
+  overflow-wrap: anywhere;
 }
 
 .wb-board-card__status-badge {
   display: inline-flex;
   align-items: center;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 6px;
   width: fit-content;
-  margin-bottom: 4px;
 }
 
 .wb-board-card__status-badge--active {
-  color: #7c3aed;
-  background: #ede9fe;
+  color: var(--wb-brand, #047857);
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
+}
+
+/* «У заняттях» — пульсуюча крапка */
+.wb-board-card__status-badge--active::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: wb-card-pulse 1.6s infinite;
+}
+
+@keyframes wb-card-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 50%, transparent); }
+  100% { box-shadow: 0 0 0 7px transparent; }
 }
 
 .wb-board-card__status-badge--draft {
@@ -366,14 +604,16 @@ function formatTimeAgo(iso: string): string {
 .wb-board-card__meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  white-space: nowrap;
   font-size: 12px;
   color: var(--wb-fg-secondary, #94a3b8);
   margin: 0;
 }
 
-.wb-board-card__sep {
-  opacity: 0.5;
+.wb-board-card__pagecount {
+  margin-left: auto;
 }
 
 /* ── Prep session label ───────────────────────────────────────────────── */
@@ -560,12 +800,29 @@ function formatTimeAgo(iso: string): string {
   }
 }
 
+/* Сенсорні панелі шкіл: без відблиску, легка тінь (нахилу там і так нема — onTilt) */
+@media (pointer: coarse) {
+  .wb-board-card,
+  .wb-board-card:hover {
+    box-shadow: 0 2px 8px -4px rgba(13, 74, 62, 0.45);
+  }
+
+  .wb-board-card::before {
+    display: none;
+  }
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .wb-board-card,
+  .wb-board-card *,
+  .wb-board-card::before,
+  .wb-board-card *::before,
+  .wb-board-card *::after,
   .wb-board-card__menu-trigger {
-    transition: none;
+    animation: none !important;
+    transition: none !important;
   }
 
   .wb-menu-fade-enter-active,
@@ -579,7 +836,6 @@ function formatTimeAgo(iso: string): string {
 [data-theme="dark"] .wb-board-card__checkbox:not(.wb-board-card__checkbox--checked),
 [data-theme="dark"] .wb-board-card__menu-trigger,
 [data-theme="dark"] .wb-board-card__menu-trigger:hover { background: var(--color-surface-elevated); }
-[data-theme="dark"] .wb-board-card__thumb-placeholder { color: var(--color-text-muted); }
 [data-theme="dark"] .wb-board-card__status-badge--active { color: var(--color-info); background: var(--color-info-soft); }
 [data-theme="dark"] .wb-board-card__status-badge--draft { color: var(--color-text-secondary); background: var(--color-surface-sunken); }
 [data-theme="dark"] .wb-board-card__prep-badge { color: var(--color-info); background: var(--color-info-soft); }

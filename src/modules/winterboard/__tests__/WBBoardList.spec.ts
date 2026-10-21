@@ -139,10 +139,12 @@ describe('WBBoardCard.vue (B13)', () => {
   })
 
   // Test 2
-  it('renders placeholder SVG when thumbnail_url is null', async () => {
+  it('renders cover (monogram from the name) when thumbnail_url is null', async () => {
+    // 2026-10-22 (Студія за макетом): замість порожнього місця — обкладинка зі знаком або монограмою
     const wrapper = await mountCard(BOARD_NO_THUMB)
     expect(wrapper.find('.wb-board-card__thumb-img').exists()).toBe(false)
-    expect(wrapper.find('.wb-board-card__thumb-placeholder').exists()).toBe(true)
+    expect(wrapper.find('.wb-board-card__cover').exists()).toBe(true)
+    expect(wrapper.find('.wb-board-card__glyph').text()).toBe('Pc')
   })
 
   // Test 3
@@ -211,10 +213,10 @@ describe('WBBoardListItem.vue (B13)', () => {
   })
 
   // Test 10
-  it('renders placeholder when thumbnail_url is null', async () => {
+  it('renders cover when thumbnail_url is null', async () => {
     const wrapper = await mountListItem(BOARD_NO_THUMB)
     expect(wrapper.find('.wb-board-list-item__thumb-img').exists()).toBe(false)
-    expect(wrapper.find('.wb-board-list-item__thumb-placeholder').exists()).toBe(true)
+    expect(wrapper.find('.wb-board-list-item__cover').text()).toBe('Pc')
   })
 })
 

@@ -27,8 +27,15 @@
         loading="lazy"
         draggable="false"
       />
-      <div v-else class="wb-board-list-item__thumb-placeholder">
-        <img :src="logoSrc" alt="Winterboard" class="wb-board-list__thumb-logo" />
+      <!-- Обкладинка зі знаком або монограмою, як у плитках (utils/boardCover.ts, 2026-10-22) -->
+      <div
+        v-else
+        class="wb-board-list-item__cover"
+        :class="{ 'wb-board-list-item__cover--mono': cover.mono }"
+        :style="{ '--h': cover.hue }"
+      >
+        <img v-if="cover.empty" :src="logoSrc" alt="" class="wb-board-list__thumb-logo" />
+        <template v-else>{{ cover.glyph }}</template>
       </div>
     </div>
 
@@ -93,10 +100,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem } from '../../api/winterboardApi'
 import { activeLocale } from '@/utils/i18nDate'
+import { getBoardCover } from '../../utils/boardCover'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 
@@ -121,6 +130,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { logoSrc } = useSeasonalLogo()
+const cover = computed(() => getBoardCover(props.board.name, activeLocale()))
 
 // ─── Time formatting ──────────────────────────────────────────────────────────
 
@@ -216,11 +226,22 @@ function formatTimeAgo(iso: string): string {
   object-fit: cover;
 }
 
-.wb-board-list-item__thumb-placeholder {
-  color: #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.wb-board-list-item__cover {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  background: hsl(var(--h, 165) var(--wb-cover-cs, 70%) var(--wb-cover-cl, 92%));
+  color: hsl(var(--h, 165) var(--wb-cover-is, 45%) var(--wb-cover-il, 32%));
+}
+
+.wb-board-list-item__cover--mono {
+  font-style: italic;
+  letter-spacing: -0.02em;
 }
 
 .wb-board-list__thumb-logo {
