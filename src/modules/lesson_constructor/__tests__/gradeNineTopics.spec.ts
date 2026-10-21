@@ -17,6 +17,8 @@ const topics = ['inequalities-systems.numeric', 'inequalities-systems.linear',
   'linear-quadratic-functions.quadratic.graph-transformations',
   'linear-quadratic-functions.quadratic.properties']
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 beforeEach(() => { generate.mockClear(); push.mockClear() })
 
 describe('Шість тем нерівностей і парабол у чинній формі', () => {

@@ -3,7 +3,7 @@
  * батька («Дроби › …»), і СПЕРШУ згорнуті: ▸ біля теми розкриває один рівень («щоб підтеми розгорталися» —
  * розкрите все разом було «кишкою» на весь екран).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
@@ -24,6 +24,8 @@ const rowUnder = (w: any, parentLabel: string) => w.findAll('.lc-topics')
   .find((r: any) => r.find('.lc-topics__parent').exists() && r.find('.lc-topics__parent').text() === `${parentLabel} ›`)
 const caret = (w: any, topic: string) => w.find(`.lc-topic-expand[data-topic="${topic}"]`)
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 describe('дерево тем генератора', () => {
   it('спершу видно лише широкі теми; біля тих, що мають вужчі, — ▸', async () => {
     const w = await openBlocks()

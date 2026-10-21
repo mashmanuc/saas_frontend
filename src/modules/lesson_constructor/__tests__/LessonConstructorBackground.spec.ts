@@ -13,6 +13,8 @@ vi.mock('../api/lessonConstructorApi', async () => {
 })
 import LessonConstructorPage from '../views/LessonConstructorPage.vue'
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 beforeEach(() => generate.mockClear())
 
 async function generateUntouched() {

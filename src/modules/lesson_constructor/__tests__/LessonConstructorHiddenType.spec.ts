@@ -24,6 +24,8 @@ import { TOPICS } from '../api/lessonConstructorApi'
 
 const chip = (w: any, text: string) => w.findAll('.lc-topic-chip').find((b: any) => b.text().trim() === text)
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 beforeEach(() => { generate.mockClear(); push.mockClear() })
 
 // Блоки тем (Алгебра / Геометрія) спочатку згорнуті — розгортаємо всі.

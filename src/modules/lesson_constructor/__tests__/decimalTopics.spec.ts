@@ -10,6 +10,8 @@ vi.mock('../api/lessonConstructorApi', async () => {
 import LessonConstructorPage from '../views/LessonConstructorPage.vue'
 import { TOPICS } from '../api/lessonConstructorApi'
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 beforeEach(() => {generate.mockClear();push.mockClear()})
 
 describe('Три окремі добірки десяткових у справжній формі конструктора', () => {

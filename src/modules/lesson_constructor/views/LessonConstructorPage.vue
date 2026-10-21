@@ -49,70 +49,113 @@
           </h2>
           <p class="lc-section__hint">{{ topicsHint }}</p>
 
-          <!-- Два блоки (Алгебра / Геометрія), що згортаються; усередині розділ —
-               один рядок «назва | чипи» (слово власника 2026-09-22: «розділити на
-               алгебру і геометрію, а тоді розгортаються теми»). Блоки, розділи й
-               порядок — з таксономії на бекенді (`export_topics`). -->
-          <div v-for="block in topicBlocks" :key="block.block" class="lc-topic-block">
-            <button
-              type="button"
-              class="lc-topic-block__head"
-              :aria-expanded="openBlocks.includes(block.block)"
-              @click="toggleBlock(block.block)"
-            >
-              <span class="lc-topic-block__chevron" aria-hidden="true">
-                {{ openBlocks.includes(block.block) ? '▾' : '▸' }}
-              </span>
-              <span class="lc-topic-block__title">{{ block.block }}</span>
-              <span v-if="pickedIn(block).length" class="lc-topic-block__picked">
-                · {{ pickedIn(block).join(', ') }}
-              </span>
-            </button>
-            <div v-if="openBlocks.includes(block.block)" class="lc-topic-block__body">
-              <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
-                <div class="lc-topic-row__title">{{ group.section }}</div>
-                <!-- Широкі теми першим рядком, під кожною — її вужчі з відступом і підписом
-                     «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут.
-                     Вужчі сховані: ▸ біля теми розкриває один рівень (власник 2026-10-19: «щоб
-                     підтеми розгорталися» — розкрите все разом було «кишкою» на весь екран). -->
-                <div class="lc-topic-tree">
-                  <div
-                    v-for="row in topicRows(group.topics)"
-                    :key="row.key"
-                    class="lc-topics"
-                    :class="{ 'lc-topics--child': row.depth > 0 }"
-                    :style="row.depth > 0 ? { '--lc-depth': row.depth } : undefined"
-                    :data-depth="row.depth"
-                  >
-                    <span v-if="row.parentLabel" class="lc-topics__parent">{{ row.parentLabel }} ›</span>
-                    <span v-for="topic in row.topics" :key="topic.value" class="lc-topic-chip-wrap">
-                      <button
-                        type="button"
-                        class="lc-topic-chip"
-                        :class="{
-                          'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                          'lc-topic-chip--disabled': !canPick(topic.value),
-                        }"
-                        @click="toggleTopic(topic.value)"
-                      >
-                        {{ topic.label }}
-                      </button>
-                      <button
-                        v-if="row.expandable.includes(topic.value)"
-                        type="button"
-                        class="lc-topic-expand"
-                        :aria-expanded="expandedTopics.includes(topic.value)"
-                        :aria-label="`${expandedTopics.includes(topic.value) ? 'Згорнути' : 'Розгорнути'} «${topic.label}»`"
-                        :title="expandedTopics.includes(topic.value) ? 'Згорнути' : 'Вужчі теми'"
-                        :data-topic="topic.value"
-                        @click="toggleExpand(topic.value)"
-                      >{{ expandedTopics.includes(topic.value) ? '▾' : '▸' }}</button>
-                    </span>
+          <!-- Власник 2026-10-21: «зовсім незручно шукати тему від конкретного учня. Йому треба по класах, або по
+               темах, або пошук». Клас → розділи програми (TopicGradePicker, макет дизайнера, варіант D); «НМТ» —
+               дерево тем, як було, і пошук по всіх темах. -->
+          <TopicGradePicker
+            :view="topicView"
+            :selected="selectedTopics"
+            :labels="TOPIC_LABELS"
+            @update:view="setTopicView"
+            @pick="pickTopic"
+          />
+
+          <template v-if="topicView === 'nmt'">
+            <label class="lc-topic-search">
+              <span aria-hidden="true">🔍</span>
+              <input
+                v-model="topicQuery"
+                type="search"
+                placeholder="Знайти тему: «логарифм», «вектор», «відсотки»…"
+                data-testid="topic-search"
+              >
+            </label>
+            <div v-if="topicQuery.trim()" class="lc-topic-hits">
+              <button
+                v-for="topic in topicHits"
+                :key="topic.value"
+                type="button"
+                class="lc-topic-hit"
+                :class="{ 'lc-topic-hit--active': selectedTopics.includes(topic.value) }"
+                :data-testid="`topic-hit-${topic.value}`"
+                @click="toggleTopic(topic.value)"
+              >
+                <span class="lc-topic-hit__label">{{ topic.label }}</span>
+                <span class="lc-topic-hit__path">{{ topic.block }} › {{ topic.section }}</span>
+              </button>
+              <p v-if="!topicHits.length" class="lc-section__hint">Нічого не знайдено. Спробуйте коротше слово.</p>
+            </div>
+          </template>
+
+          <template v-if="topicView === 'nmt' && !topicQuery.trim()">
+            <!-- Два блоки (Алгебра / Геометрія), що згортаються; усередині розділ —
+                 один рядок «назва | чипи» (слово власника 2026-09-22: «розділити на
+                 алгебру і геометрію, а тоді розгортаються теми»). Блоки, розділи й
+                 порядок — з таксономії на бекенді (`export_topics`). -->
+            <div v-for="block in topicBlocks" :key="block.block" class="lc-topic-block">
+              <button
+                type="button"
+                class="lc-topic-block__head"
+                :aria-expanded="openBlocks.includes(block.block)"
+                @click="toggleBlock(block.block)"
+              >
+                <span class="lc-topic-block__chevron" aria-hidden="true">
+                  {{ openBlocks.includes(block.block) ? '▾' : '▸' }}
+                </span>
+                <span class="lc-topic-block__title">{{ block.block }}</span>
+                <span v-if="pickedIn(block).length" class="lc-topic-block__picked">
+                  · {{ pickedIn(block).join(', ') }}
+                </span>
+              </button>
+              <div v-if="openBlocks.includes(block.block)" class="lc-topic-block__body">
+                <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
+                  <div class="lc-topic-row__title">{{ group.section }}</div>
+                  <!-- Широкі теми першим рядком, під кожною — її вужчі з відступом і підписом
+                       «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут.
+                       Вужчі сховані: ▸ біля теми розкриває один рівень (власник 2026-10-19: «щоб
+                       підтеми розгорталися» — розкрите все разом було «кишкою» на весь екран). -->
+                  <div class="lc-topic-tree">
+                    <div
+                      v-for="row in topicRows(group.topics)"
+                      :key="row.key"
+                      class="lc-topics"
+                      :class="{ 'lc-topics--child': row.depth > 0 }"
+                      :style="row.depth > 0 ? { '--lc-depth': row.depth } : undefined"
+                      :data-depth="row.depth"
+                    >
+                      <span v-if="row.parentLabel" class="lc-topics__parent">{{ row.parentLabel }} ›</span>
+                      <span v-for="topic in row.topics" :key="topic.value" class="lc-topic-chip-wrap">
+                        <button
+                          type="button"
+                          class="lc-topic-chip"
+                          :class="{
+                            'lc-topic-chip--active': selectedTopics.includes(topic.value),
+                            'lc-topic-chip--disabled': !canPick(topic.value),
+                          }"
+                          @click="toggleTopic(topic.value)"
+                        >
+                          {{ topic.label }}
+                        </button>
+                        <button
+                          v-if="row.expandable.includes(topic.value)"
+                          type="button"
+                          class="lc-topic-expand"
+                          :aria-expanded="expandedTopics.includes(topic.value)"
+                          :aria-label="`${expandedTopics.includes(topic.value) ? 'Згорнути' : 'Розгорнути'} «${topic.label}»`"
+                          :title="expandedTopics.includes(topic.value) ? 'Згорнути' : 'Вужчі теми'"
+                          :data-topic="topic.value"
+                          @click="toggleExpand(topic.value)"
+                        >{{ expandedTopics.includes(topic.value) ? '▾' : '▸' }}</button>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
+          <p v-if="pickedSummary" class="lc-topic-picked" data-testid="topic-picked">
+            Урок про: <b>{{ pickedSummary }}</b>
+          </p>
           <p v-if="errors.topics" class="lc-error">{{ errors.topics }}</p>
         </section>
 
@@ -334,6 +377,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import IntegralykThinking from '@/modules/intent/IntegralykThinking.vue'
 import IntegralykLoader from '@/modules/intent/IntegralykLoader.vue'
+import TopicGradePicker from '../components/TopicGradePicker.vue'
+import { loadTopicView, saveTopicView, searchTopics, type TopicView } from '../topicByGrade'
 import {
   TOPICS,
   THEMES,
@@ -543,6 +588,23 @@ function pickedIn(block: TopicBlock): string[] {
     .filter((t) => selectedTopics.value.includes(t.value))
     .map((t) => t.label)
 }
+
+// ── Вибір теми «За класом» / «НМТ» (власник 2026-10-21) ──────────────────────
+const TOPIC_LABELS: Readonly<Record<string, string>> = Object.fromEntries(TOPICS.map((t) => [t.value, t.label]))
+/** Клас учня чи «НМТ»; перший раз — нічого (вчитель обирає клас), далі — останній вибір у цьому браузері. */
+const topicView = ref<TopicView | null>(loadTopicView())
+function setTopicView(view: TopicView) {
+  topicView.value = view
+  saveTopicView(view)
+}
+const topicQuery = ref('')
+const topicHits = computed(() => searchTopics(TOPICS, topicQuery.value))
+/** З розділу програми: та сама тема вдруге не знімає вибір — розділ просто лишається обраним. */
+function pickTopic(id: string) {
+  if (!selectedTopics.value.includes(id)) toggleTopic(id)
+}
+/** Що саме піде в генератор: назва теми конструктора, а не розділу програми (вони не завжди збігаються). */
+const pickedSummary = computed(() => selectedTopics.value.map((id) => TOPIC_LABELS[id]).filter(Boolean).join(', '))
 
 const topicsNeeded = computed(() => topicsRequiredFor(lessonType.value))
 
@@ -1239,6 +1301,30 @@ async function handleGenerate() {
   text-align: center;
 }
 
+/* Вибір теми «НМТ»: пошук по всіх темах і список збігів (2026-10-21). */
+.lc-topic-search {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 0.9rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid #cbd5e1; border-radius: 12px;
+  background: #fff;
+}
+.lc-topic-search:focus-within { border-color: var(--accent); }
+.lc-topic-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: inherit; }
+.lc-topic-hits { display: flex; flex-direction: column; gap: 6px; }
+.lc-topic-hit {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #fff; color: #1e293b;
+  font: inherit; font-size: 0.9rem; text-align: left;
+  cursor: pointer;
+}
+.lc-topic-hit:hover { border-color: var(--accent); }
+.lc-topic-hit--active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
+.lc-topic-hit__path { font-size: 0.75rem; color: #64748b; }
+.lc-topic-picked { margin: 0.9rem 0 0; font-size: 0.9rem; color: #334155; }
+
 /* ── Темна тема (Б-156, фаза 1) ─────────────────────────────────────────────
    Сторінка намальована жорсткими світлими кольорами (вище) — у темній темі це був
    білий острів. Тут ті самі елементи отримують токени темної теми; світла тема не
@@ -1287,6 +1373,13 @@ async function handleGenerate() {
   color: var(--color-on-accent);
 }
 
+[data-theme="dark"] .lc-topic-search,
+[data-theme="dark"] .lc-topic-hit {
+  background: var(--color-surface-sunken); border-color: var(--color-border-strong); color: var(--color-text-primary);
+}
+[data-theme="dark"] .lc-topic-hit--active { background: var(--color-accent-soft); border-color: var(--color-accent); }
+[data-theme="dark"] .lc-topic-hit__path { color: var(--color-text-secondary); }
+[data-theme="dark"] .lc-topic-picked { color: var(--color-text-primary); }
 [data-theme="dark"] .lc-topic-chip {
   background: var(--color-surface-sunken);
   border-color: var(--color-border-strong);

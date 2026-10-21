@@ -36,6 +36,8 @@ const topics = [
   'rational-irrational-expressions.algebraic-fractions.combined',
 ]
 
+// Дерево тем — вигляд «НМТ»: з 2026-10-21 сторінка спершу пропонує клас учня (TopicGradePicker).
+beforeEach(() => { localStorage.setItem('lc.topicView', 'nmt') })
 beforeEach(() => { generate.mockClear(); push.mockClear() })
 
 describe('Двадцять одна добірка у незміненій формі конструктора', () => {
