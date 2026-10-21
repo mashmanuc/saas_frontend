@@ -1,7 +1,10 @@
 <template>
+  <!-- Рядок списку Студії за макетом дизайнера (2026-10-22): обкладинка-плитка зліва, назва, праворуч
+       статус · коли змінено · сторінки; дії — при наведенні (на сенсорних — завжди). -->
   <div
     class="wb-board-list-item"
     :class="{ 'wb-board-list-item--selected': selected }"
+    :style="{ '--h': cover.hue, '--i': Math.min(index, 12) }"
     role="row"
     tabindex="0"
     @click="emit('open')"
@@ -32,7 +35,6 @@
         v-else
         class="wb-board-list-item__cover"
         :class="{ 'wb-board-list-item__cover--mono': cover.mono }"
-        :style="{ '--h': cover.hue }"
       >
         <img v-if="cover.empty" :src="logoSrc" alt="" class="wb-board-list__thumb-logo" />
         <template v-else>{{ cover.glyph }}</template>
@@ -55,19 +57,22 @@
           {{ t('winterboard.boards.backToLesson') }}
         </router-link>
       </span>
-      <span class="wb-board-list-item__meta">
-        <!-- INV-KNOW-3 PR-4: folder breadcrumb (rendered, not computed) -->
-        <span
-          v-if="board.folder_path"
-          class="wb-board-list-item__path"
-          :title="board.folder_path"
-        >{{ board.folder_path }}</span>
-        <span v-if="board.folder_path" aria-hidden="true"> · </span>
-        {{ t('winterboard.boards.pageCount', { n: board.page_count }) }}
-        <span aria-hidden="true"> · </span>
-        {{ formatTimeAgo(board.updated_at) }}
-      </span>
+      <!-- INV-KNOW-3 PR-4: folder breadcrumb (rendered, not computed) -->
+      <span
+        v-if="board.folder_path"
+        class="wb-board-list-item__path"
+        :title="board.folder_path"
+      >{{ board.folder_path }}</span>
     </div>
+
+    <span class="wb-board-list-item__meta">
+      <span
+        class="wb-board-list-item__status"
+        :class="{ 'wb-board-list-item__status--active': board.has_lesson }"
+      >{{ board.has_lesson ? t('winterboard.boards.statusActive') : t('winterboard.boards.statusDraft') }}</span>
+      <span>{{ formatTimeAgo(board.updated_at) }}</span>
+      <span class="wb-board-list-item__pages" :title="t('winterboard.boards.pageCount', { n: board.page_count })">▤ {{ board.page_count }}</span>
+    </span>
 
     <!-- Actions -->
     <div class="wb-board-list-item__actions" @click.stop>
@@ -112,10 +117,13 @@ import { getBoardCover } from '../../utils/boardCover'
 interface Props {
   board: WBSessionListItem
   selected?: boolean
+  /** Місце в списку — затримка появи рядка (до 12-го). */
+  index?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selected: false,
+  index: 0,
 })
 
 const emit = defineEmits<{
@@ -148,23 +156,33 @@ function formatTimeAgo(iso: string): string {
 </script>
 
 <style scoped>
+/* Рядок списку Студії за макетом (2026-10-22): картка-рядок з тінню, обкладинка 76×64 зліва */
 .wb-board-list-item {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  column-gap: 16px;
+  padding: 6px 12px 6px 6px;
+  background: var(--wb-card-bg, #ffffff);
   border: 1px solid transparent;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -22px rgba(13, 74, 62, 0.45);
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition: box-shadow 0.2s, border-color 0.15s;
   outline: none;
-  min-height: 56px;
+  animation: wb-list-slide 0.45s ease backwards;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+@keyframes wb-list-slide {
+  from { opacity: 0; transform: translateX(-10px); }
 }
 
 .wb-board-list-item:hover,
 .wb-board-list-item:focus-visible {
-  background: var(--wb-canvas-bg, #f8fafc);
-  border-color: var(--wb-toolbar-border, #e2e8f0);
+  border-color: var(--wb-border, rgba(5, 150, 105, 0.2));
+  box-shadow: 0 18px 36px -22px rgba(13, 74, 62, 0.45);
 }
 
 .wb-board-list-item--selected {
@@ -172,14 +190,21 @@ function formatTimeAgo(iso: string): string {
   border-color: var(--wb-brand, #0066ff);
 }
 
-/* ── Selection checkbox ───────────────────────────────────────────────── */
+/* ── Selection checkbox: поверх обкладинки, при наведенні ─────────────── */
 
 .wb-board-list-item__select {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.wb-board-list-item:hover .wb-board-list-item__select,
+.wb-board-list-item:focus-within .wb-board-list-item__select,
+.wb-board-list-item--selected .wb-board-list-item__select {
+  opacity: 1;
 }
 
 .wb-board-list-item__checkbox {
@@ -193,7 +218,6 @@ function formatTimeAgo(iso: string): string {
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.1s, border-color 0.1s;
-  flex-shrink: 0;
 }
 
 .wb-board-list-item__checkbox:hover {
@@ -206,18 +230,14 @@ function formatTimeAgo(iso: string): string {
   color: var(--color-on-accent);
 }
 
-/* ── Thumbnail ────────────────────────────────────────────────────────── */
+/* ── Thumbnail / обкладинка ───────────────────────────────────────────── */
 
 .wb-board-list-item__thumb {
-  width: 48px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 4px;
+  width: 76px;
+  height: 64px;
+  border-radius: 10px;
   overflow: hidden;
   background: var(--wb-canvas-bg, #f1f5f9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .wb-board-list-item__thumb-img {
@@ -233,15 +253,21 @@ function formatTimeAgo(iso: string): string {
   place-items: center;
   overflow: hidden;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 700;
   background: hsl(var(--h, 165) var(--wb-cover-cs, 70%) var(--wb-cover-cl, 92%));
   color: hsl(var(--h, 165) var(--wb-cover-is, 45%) var(--wb-cover-il, 32%));
+  transition: transform 0.3s;
+}
+
+.wb-board-list-item:hover .wb-board-list-item__cover {
+  transform: scale(1.06);
 }
 
 .wb-board-list-item__cover--mono {
+  font-size: 22px;
   font-style: italic;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .wb-board-list__thumb-logo {
@@ -253,16 +279,15 @@ function formatTimeAgo(iso: string): string {
 /* ── Info ─────────────────────────────────────────────────────────────── */
 
 .wb-board-list-item__info {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .wb-board-list-item__name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--wb-fg, #0f172a);
   white-space: nowrap;
   overflow: hidden;
@@ -270,16 +295,72 @@ function formatTimeAgo(iso: string): string {
 }
 
 .wb-board-list-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  white-space: nowrap;
+}
+
+.wb-board-list-item__status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: var(--wb-border, rgba(5, 150, 105, 0.18));
+  color: var(--wb-fg-secondary, #1f6b5a);
+}
+
+.wb-board-list-item__status--active {
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
+  color: var(--wb-brand, #047857);
+}
+
+/* «У заняттях» — пульсуюча крапка, як у плитці */
+.wb-board-list-item__status--active::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: wb-list-pulse 1.6s infinite;
+}
+
+@keyframes wb-list-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 50%, transparent); }
+  100% { box-shadow: 0 0 0 7px transparent; }
+}
+
+/* INV-KNOW-3 PR-4: шлях папки під назвою */
+.wb-board-list-item__path {
+  font-size: 11.5px;
   color: var(--wb-fg-secondary, #94a3b8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: help;
 }
 
-/* INV-KNOW-3 PR-4: inline breadcrumb segment у meta line */
-.wb-board-list-item__path {
-  cursor: help;
+@media (max-width: 640px) {
+  .wb-board-list-item {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+
+  .wb-board-list-item__thumb {
+    width: 64px;
+    height: 56px;
+  }
+
+  .wb-board-list-item__meta {
+    grid-column: 2;
+    grid-row: 2;
+    flex-wrap: wrap;
+  }
 }
 
 /* ── Prep session label ───────────────────────────────────────────────── */
@@ -364,9 +445,12 @@ function formatTimeAgo(iso: string): string {
 
 @media (prefers-reduced-motion: reduce) {
   .wb-board-list-item,
+  .wb-board-list-item *,
+  .wb-board-list-item *::before,
   .wb-board-list-item__actions,
   .wb-board-list-item__action-btn {
-    transition: none;
+    animation: none !important;
+    transition: none !important;
   }
 }
 

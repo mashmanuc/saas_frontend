@@ -416,18 +416,19 @@ function onDrop(folderId: number) {
 .wb-folder-tree__separator {
   height: 1px;
   background: var(--wb-toolbar-border, #e2e8f0);
-  margin: 4px 8px;
+  margin: 8px 6px;
 }
 
+/* Папки Студії за макетом дизайнера (2026-10-22): крупніші рядки, активна — біла картка з тінню */
 .wb-folder-tree__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
+  gap: 10px;
+  padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: none;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--wb-fg-secondary, #64748b);
   cursor: pointer;
@@ -438,18 +439,19 @@ function onDrop(folderId: number) {
 }
 
 .wb-folder-tree__item:hover {
-  background: var(--wb-canvas-bg, #f1f5f9);
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
   color: var(--wb-fg, #0f172a);
 }
 
 .wb-folder-tree__item--active {
-  background: var(--color-accent-soft, #eff6ff);
-  color: var(--wb-brand, #0066ff);
+  background: var(--wb-card-bg, #ffffff);
+  color: var(--wb-fg, #0f172a);
   font-weight: 600;
+  box-shadow: 0 4px 14px -8px rgba(13, 74, 62, 0.45);
 }
 
 .wb-folder-tree__item--active:hover {
-  background: var(--color-accent-soft, #dbeafe);
+  background: var(--wb-card-bg, #ffffff);
 }
 
 .wb-folder-tree__item--drop {
@@ -495,6 +497,7 @@ function onDrop(folderId: number) {
 
 .wb-folder-tree__count {
   font-size: 11px;
+  font-weight: 700;
   color: var(--wb-fg-secondary, #94a3b8);
   min-width: 16px;
   text-align: right;
@@ -548,14 +551,14 @@ function onDrop(folderId: number) {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 9px 12px;
   margin-top: 4px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: none;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  color: var(--wb-fg-secondary, #94a3b8);
+  color: var(--wb-brand, #047857);
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
   width: 100%;

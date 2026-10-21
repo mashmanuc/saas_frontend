@@ -121,55 +121,6 @@
         </div>
 
         <div class="wb-board-list__header-actions">
-          <!-- View toggle -->
-          <div class="wb-view-toggle" role="group" :aria-label="t('winterboard.boards.viewToggleLabel')">
-            <button
-              type="button"
-              class="wb-view-toggle__btn"
-              :class="{ 'wb-view-toggle__btn--active': viewMode === 'grid' }"
-              :aria-pressed="viewMode === 'grid'"
-              :title="t('winterboard.boards.viewGrid')"
-              @click="setViewMode('grid')"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
-                <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
-                <rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
-                <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="wb-view-toggle__btn"
-              :class="{ 'wb-view-toggle__btn--active': viewMode === 'list' }"
-              :aria-pressed="viewMode === 'list'"
-              :title="t('winterboard.boards.viewList')"
-              @click="setViewMode('list')"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M5 4h10M5 8h10M5 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                <circle cx="2" cy="4" r="1" fill="currentColor" />
-                <circle cx="2" cy="8" r="1" fill="currentColor" />
-                <circle cx="2" cy="12" r="1" fill="currentColor" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- New board.
-               Lesson-first: створює draft KnowledgeLesson + prep WBSession,
-               веде у конструктор шаблону (constructorMode). Усі дошки
-               тепер — шаблони уроків. -->
-          <button
-            type="button"
-            class="wb-board-list__new-btn"
-            :disabled="creatingNewBoard || isCreatingFromPdf"
-            @click="burstFrom($event.currentTarget as Element, NEW_BOARD_FX, 90); createNewTemplate()"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-            {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
-          </button>
 
           <!-- Create lesson from PDF.
                MANIFEST §3.2.1: title = VISIBLE limit hint; button text = PREDICTABLE progress;
@@ -187,6 +138,22 @@
             {{ isCreatingFromPdf
               ? t('winterboard.createFromPdf.creating', { progress: createFromPdfProgress })
               : t('winterboard.createFromPdf.button') }}
+          </button>
+
+          <!-- New board.
+               Lesson-first: створює draft KnowledgeLesson + prep WBSession,
+               веде у конструктор шаблону (constructorMode). Усі дошки
+               тепер — шаблони уроків. -->
+          <button
+            type="button"
+            class="wb-board-list__new-btn"
+            :disabled="creatingNewBoard || isCreatingFromPdf"
+            @click="burstFrom($event.currentTarget as Element, NEW_BOARD_FX, 90); createNewTemplate()"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
           </button>
 
           <!-- Hidden file input for PDF selection -->
@@ -232,7 +199,41 @@
           </button>
         </div>
 
+        <!-- View toggle -->
+        <div class="wb-view-toggle" role="group" :aria-label="t('winterboard.boards.viewToggleLabel')">
+          <button
+            type="button"
+            class="wb-view-toggle__btn"
+            :class="{ 'wb-view-toggle__btn--active': viewMode === 'grid' }"
+            :aria-pressed="viewMode === 'grid'"
+            :title="t('winterboard.boards.viewGrid')"
+            @click="setViewMode('grid')"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
+              <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
+              <rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
+              <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="wb-view-toggle__btn"
+            :class="{ 'wb-view-toggle__btn--active': viewMode === 'list' }"
+            :aria-pressed="viewMode === 'list'"
+            :title="t('winterboard.boards.viewList')"
+            @click="setViewMode('list')"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M5 4h10M5 8h10M5 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <circle cx="2" cy="4" r="1" fill="currentColor" />
+              <circle cx="2" cy="8" r="1" fill="currentColor" />
+              <circle cx="2" cy="12" r="1" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
         <label class="wb-board-list__search-wrap">
+          <span class="wb-board-list__search-icon" aria-hidden="true">⌕</span>
           <input
             ref="searchEl"
             v-model="searchQuery"
@@ -377,6 +378,16 @@
 
       <!-- Grid view -->
       <div v-else-if="viewMode === 'grid'" class="wb-board-list__grid" role="list">
+        <button
+          v-if="showNewCard"
+          type="button"
+          class="wb-board-list__new-card"
+          :disabled="creatingNewBoard || isCreatingFromPdf"
+          @click="burstFrom($event.currentTarget as Element, NEW_BOARD_FX, 90); createNewTemplate()"
+        >
+          <span class="wb-board-list__new-card-plus"><img :src="logoSrc" alt="" /></span>
+          {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
+        </button>
         <WBBoardCard
           v-for="(board, i) in boards"
           :key="board.id"
@@ -398,10 +409,21 @@
 
       <!-- List view -->
       <div v-else class="wb-board-list__list" role="list">
+        <button
+          v-if="showNewCard"
+          type="button"
+          class="wb-board-list__new-card wb-board-list__new-card--row"
+          :disabled="creatingNewBoard || isCreatingFromPdf"
+          @click="burstFrom($event.currentTarget as Element, NEW_BOARD_FX, 90); createNewTemplate()"
+        >
+          <span class="wb-board-list__new-card-plus"><img :src="logoSrc" alt="" /></span>
+          {{ creatingNewBoard ? t('winterboard.boards.creating') : t('winterboard.boards.newBoard') }}
+        </button>
         <WBBoardListItem
-          v-for="board in boards"
+          v-for="(board, i) in boards"
           :key="board.id"
           :board="board"
+          :index="i + 1"
           :selected="selectedIds.includes(board.id)"
           role="listitem"
           draggable="true"
@@ -581,6 +603,7 @@ import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
 import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
 import { NEW_BOARD_FX, burstFrom } from '../utils/studioFx'
+import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 
 const WBShareDialog = defineAsyncComponent(() => import('../components/sharing/WBShareDialog.vue'))
 const WBExportDialog = defineAsyncComponent(() => import('../components/export/WBExportDialog.vue'))
@@ -1160,6 +1183,10 @@ function placeTabIndicator(): void {
 // Синхронно після рендеру: у макеті лише requestAnimationFrame лишав активну вкладку невидимою
 watch([activeTab, total, studioMode, tabs], placeTabIndicator, { flush: 'post' })
 
+// Картка «Нова дошка» першою (макет) — лише на «Всі», без пошуку, на першій сторінці
+const showNewCard = computed(() => activeTab.value === 'all' && !searchQuery.value.trim() && offset.value === 0)
+const { logoSrc } = useSeasonalLogo()
+
 // Привітання без імені: ім'я на сайті лише в називному відмінку («Доброго ранку, Ольга» — помилка)
 const greetingKey = (() => {
   const h = new Date().getHours()
@@ -1355,14 +1382,16 @@ onUnmounted(() => {
 }
 
 .wb-board-list__title {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   color: var(--wb-fg, #0f172a);
   margin: 0;
 }
 
 .wb-board-list__subtitle {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--wb-fg-secondary, #94a3b8);
   margin: 2px 0 0;
 }
@@ -1386,10 +1415,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: var(--wb-canvas-bg, #f1f5f9);
-  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 8px;
-  padding: 2px;
+  margin-left: auto;
+  background: var(--wb-card-bg, #ffffff);
+  border-radius: 10px;
+  padding: 3px;
+  box-shadow: 0 4px 14px -10px rgba(13, 74, 62, 0.45);
 }
 
 .wb-view-toggle__btn {
@@ -1407,9 +1437,8 @@ onUnmounted(() => {
 }
 
 .wb-view-toggle__btn--active {
-  background: var(--wb-card-bg, #ffffff);
-  color: var(--wb-fg, #0f172a);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
+  color: var(--wb-brand, #047857);
 }
 
 .wb-view-toggle__btn:not(.wb-view-toggle__btn--active):hover {
@@ -1419,20 +1448,119 @@ onUnmounted(() => {
 /* ── New board button ────────────────────────────────────────────────── */
 
 .wb-board-list__new-btn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
+  gap: 8px;
+  padding: 11px 18px;
   background: var(--wb-brand, #0066ff);
   color: var(--color-on-accent);
-  border: none;
-  border-radius: 8px;
+  border: 1.5px solid var(--wb-brand, #0066ff);
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s;
-  min-height: 40px;
+  transition: background 0.15s, transform 0.15s;
+  min-height: 44px;
+}
+
+.wb-board-list__new-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Відблиск, що пробігає по «Нова дошка» (макет); не на сенсорних і не з reduced-motion */
+.wb-board-list__new-btn:not(.wb-board-list__new-btn--secondary)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: wb-new-shine 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wb-new-shine {
+  0%, 60% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .wb-board-list__new-btn::after {
+    animation: none !important;
+    display: none;
+  }
+}
+
+/* Картка «Нова дошка» першою в плитках і в списку (макет) */
+.wb-board-list__new-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 236px;
+  border: 2px dashed var(--wb-border, rgba(5, 150, 105, 0.2));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--wb-card-bg, #ffffff) 50%, transparent);
+  color: var(--wb-brand, #047857);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wb-board-list__new-card:hover:not(:disabled) {
+  border-color: var(--wb-brand, #047857);
+  background: var(--wb-card-bg, #ffffff);
+}
+
+.wb-board-list__new-card:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.wb-board-list__new-card-plus {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
+  transition: transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.wb-board-list__new-card-plus img {
+  width: 30px;
+  height: 30px;
+}
+
+.wb-board-list__new-card:hover .wb-board-list__new-card-plus {
+  transform: rotate(90deg) scale(1.08);
+}
+
+.wb-board-list__new-card--row {
+  min-height: 0;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.wb-board-list__new-card--row .wb-board-list__new-card-plus {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-board-list__new-card,
+  .wb-board-list__new-card-plus {
+    transition: none;
+  }
 }
 
 .wb-board-list__new-btn:hover {
@@ -1541,6 +1669,16 @@ onUnmounted(() => {
   display: flex;
 }
 
+.wb-board-list__search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  pointer-events: none;
+}
+
 .wb-board-list__kbd {
   position: absolute;
   right: 10px;
@@ -1591,15 +1729,20 @@ onUnmounted(() => {
 }
 
 .wb-board-list__search {
-  padding: 8px 34px 8px 14px;
-  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 10px 34px 10px 34px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font-size: 14px;
   color: var(--wb-fg, #0f172a);
   background: var(--wb-card-bg, #ffffff);
   outline: none;
+  width: 260px;
   min-width: 200px;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s, width 0.3s;
+}
+
+.wb-board-list__search:focus {
+  width: 320px;
 }
 
 /* Планшет: пошук притискався до правого краю окремо від вкладок і виглядав
@@ -1780,8 +1923,8 @@ onUnmounted(() => {
      5 на ~1420+, 6 на ~1700+ — використовує доступну ширину повністю.
      Refs: WB_RESPONSIVE_GRID_GAP_2026-05-02.md, INV-WB-3 (one render path). */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--wb-card-min, 280px), 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--wb-card-min, 230px), 1fr));
+  gap: 18px;
 }
 
 /* ── List layout ─────────────────────────────────────────────────────── */
@@ -1789,7 +1932,7 @@ onUnmounted(() => {
 .wb-board-list__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 /* ── Empty / Error state ─────────────────────────────────────────────── */
