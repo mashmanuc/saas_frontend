@@ -141,7 +141,8 @@ describe('WBCardWindowControls', () => {
       expect(at, selector).toBeGreaterThanOrEqual(0)
       return from.slice(at, from.indexOf('}', at))
     }
-    expect(css).toMatch(/\.wb-card-window-controls\s*\{[^}]*flex-direction: column/)
+    // LAW §9 v1.44 (власник 2026-10-21, «одна панелька»): один рядок, ✍ 💡 ⚠ зліва — не плашкою під рядком вікна
+    expect(css).toMatch(/\.wb-card-window-controls\s*\{[^}]*flex-direction: row-reverse/)
     expect(rule('.wb-card-window-controls--header .wb-card-window-controls__row .wb-card-window-controls__btn')).toMatch(/width: 24px;[\s\S]*height: 24px;/)
     expect(rule('.wb-card-window-controls__task .wb-card-window-controls__btn')).toMatch(/width: 32px;[\s\S]*height: 32px;/)
     const touch = css.slice(css.indexOf('@media (any-pointer: coarse) {'))
@@ -267,7 +268,7 @@ describe('INV-WIN-6 · полотно: одна група, правий вер�
   })
 
   it('дії — спільним правилом; запис — штатними шляхами', () => {
-    expect(canvas).toMatch(/<Teleport v-if="windowControlsTarget"[^>]+:disabled="!windowControlsOverlayHost"/)
+    expect(canvas).toMatch(/<Teleport\s+v-if="windowControlsTarget"[^>]+:disabled="!windowControlsDocked && !windowControlsOverlayHost"/)
     expect(canvas).toContain('<WBCardWindowControls')
     expect(canvas).toContain('@minimize="handleMinimize(windowControlsTarget)"')
     expect(canvas).toMatch(/function handleWindowDelete\(assetId: string\): void \{[\s\S]*?emit\('asset-delete', assetId\)/)
@@ -303,5 +304,57 @@ describe('✍ на картці «Підказка» й теоретичних �
     })
     expect(at(theory('tip')).find('[data-testid="wb-card-window-handwrite"]').exists()).toBe(false)
     expect(at(theory()).find('[data-testid="wb-card-window-handwrite"]').exists()).toBe(true)
+  })
+})
+
+// LAW §9 v1.44 — одна панель (власник 2026-10-21: «Чому не можна зробити в одну панельку? У нас на карті є одна
+// панель, яка вскривається. Одна панель, яка згортає і хрестик. І ще третя у нас получилась панель» → «Роби»).
+describe('одна панель кнопок картки', () => {
+  const canvas = read('modules/winterboard/components/canvas/WBCanvas.vue').replace(/\r\n/g, '\n')
+  const mountControls = (actions: Record<string, boolean>) => mount(WBCardWindowControls, {
+    props: { actions: { ...NO_WINDOW_ACTIONS, minimize: true, expand: true, delete: true, ...actions } as never, isExpanded: false },
+    global: { plugins: [i18n()] },
+  })
+
+  it('✍ 💡 ⚠ у тому ж рядку, що й вікно, і в розмітці після нього (row-reverse ставить їх зліва, «×» — справа)', () => {
+    const w = mountControls({ handwrite: true, taskHelp: true })
+    const root = w.get('[data-testid="wb-card-window-controls"]')
+    expect(root.classes()).toContain('wb-card-window-controls--with-task')
+    const kids = [...root.element.children].map((el) => (el as HTMLElement).className)
+    expect(kids[0]).toContain('wb-card-window-controls__row')
+    expect(kids[1]).toContain('wb-card-window-controls__task')
+  })
+
+  it('полотно: є панель виділення — група стає в неї, без «×» (там є 🗑) і без резерву в шапці картки', () => {
+    expect(canvas).toContain(":to=\"windowControlsDocked ? cardControlsDock?.el : (windowControlsOverlayHost ?? 'body')\"")
+    expect(canvas).toContain("'wb-card-window-controls--docked': windowControlsDocked,")
+    expect(canvas).toContain(':actions="windowControlsDocked ? { ...windowControlsActions, delete: false } : windowControlsActions"')
+    expect(canvas).toMatch(/if \(windowControlsDocked\.value\) return \{ assetId: null, width: 0 \}/)
+  })
+
+  it('панель виділення дає місце лише для одного виділеного об’єкта', () => {
+    const toolbar = read('modules/winterboard/components/canvas/WBSelectionToolbar.vue')
+    expect(toolbar).toMatch(/v-if="selectedIds\.length === 1"\s+ref="cardDockRef"/)
+    expect(toolbar).toContain('setCardControlsDock({ el, assetId: id })')
+  })
+})
+
+describe('cardControlsDock', () => {
+  it('група в панелі — лише для тієї самої картки, не розгорнутої, і поки місце в документі', async () => {
+    const { isDockedFor, setCardControlsDock, useCardControlsDock } = await import('../composables/cardControlsDock')
+    const el = document.createElement('span')
+    document.body.appendChild(el)
+    setCardControlsDock({ el, assetId: 'a' })
+    const dock = useCardControlsDock()
+    expect(isDockedFor(dock.value, 'a', false)).toBe(true)
+    expect(isDockedFor(dock.value, 'b', false)).toBe(false)
+    expect(isDockedFor(dock.value, 'a', true)).toBe(false)
+    const other = document.createElement('span')
+    setCardControlsDock(null, other)                    // чуже місце не забирає
+    expect(dock.value?.el).toBe(el)
+    el.remove()
+    expect(isDockedFor(dock.value, 'a', false)).toBe(false)
+    setCardControlsDock(null, el)
+    expect(dock.value).toBeNull()
   })
 })

@@ -11,12 +11,16 @@
   Кнопки ловлять pointerdown/mousedown/click і далі їх не пускають: натискання не
   починає drag картки й не доходить до сцени всередині неї (GeoMASH, капсула тощо).
 
-  LAW §9 v1.35 (прохід «очима вчителя 60 років», 19.10): ✍ 💡 ⚠ — окремою плашкою ПІД рядком
-  «A− 100% A+ │ — ⛶ ×», а не в ньому: кнопки задачі більші (32 px, на дотику 44 px) і далеко від «×».
+  LAW §9 v1.35 (прохід «очима вчителя 60 років», 19.10): ✍ 💡 ⚠ — кнопки задачі більші (32 px, на дотику 44 px)
+  і далеко від «×».
+  LAW §9 v1.44 (власник 2026-10-21: «Чому не можна зробити в одну панельку? … третя у нас получилась панель» →
+  «Роби»): ОДНА панель. ✍ 💡 ⚠ — зліва в тому ж рядку, що «A− 100% A+ │ — ⛶ ×», не окремою плашкою під ним (вона
+  лягала на текст задачі). Є панель виділення над карткою — група стає в неї (`--docked`, composables/cardControlsDock).
 -->
 <template>
   <div
     class="wb-card-window-controls"
+    :class="{ 'wb-card-window-controls--with-task': hasTask }"
     data-testid="wb-card-window-controls"
     role="toolbar"
     @pointerdown.stop
@@ -177,6 +181,7 @@ const TASK_HELP_KINDS = ['hint', 'mistake'] as const
 const TASK_HELP_ICONS = { hint: '💡', mistake: '⚠' } as const
 
 const scaleLabel = computed(() => presentationScaleLabel(props.scale))
+const hasTask = computed(() => props.actions.handwrite || props.actions.taskHelp)
 const hasWindowRow = computed(() => props.actions.scale || props.actions.fitHeight || props.actions.minimize
   || props.actions.expand || props.actions.delete)
 const canScaleDown = computed(() => nextPresentationScale(props.scale, -1) !== null)
@@ -190,8 +195,11 @@ const { t } = useI18n({ useScope: 'global' })
   position: absolute;
   z-index: 3;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  /* LAW §9 v1.44: один рядок; ✍ 💡 ⚠ (у розмітці після рядка вікна) — зліва, «×» — справа, далеко від них.
+     Не вміщається в ширину картки (вертикальний планшет, масштаб 0,37) — ✍ 💡 ⚠ переходять нижче, а не за край. */
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
   padding: 2px;
   background: rgba(255, 255, 255, 0.96);
@@ -210,6 +218,7 @@ const { t } = useI18n({ useScope: 'global' })
 /* У шапці картки (2026-09-24): без плашки — кнопки як у рядку вікна.
    LAW §9 v1.35: 24 px замість 20 — прохід «очима вчителя» (19.10) назвав 20 px дрібними. */
 .wb-card-window-controls--header {
+  max-width: calc(100% - 8px);
   padding: 0;
   background: transparent;
   border: none;
@@ -227,18 +236,23 @@ const { t } = useI18n({ useScope: 'global' })
   width: auto;
 }
 
-/* LAW §9 v1.35: ✍ 💡 ⚠ — своя плашка під рядком вікна, кнопки 32 px з проміжком. */
+/* ✍ 💡 ⚠ — кнопки 32 px з проміжком (LAW §9 v1.35), у тому ж рядку, що й вікно (v1.44). */
 .wb-card-window-controls__task {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.wb-card-window-controls--header .wb-card-window-controls__task {
+/* У шапці картки з кнопками задачі — уся група однією плашкою (не рядок + плашка під ним). */
+.wb-card-window-controls--header.wb-card-window-controls--with-task {
   padding: 2px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+.wb-card-window-controls--with-task .wb-card-window-controls__row {
+  padding-left: 4px;
+  border-left: 1px solid #e2e8f0;
 }
 .wb-card-window-controls__task .wb-card-window-controls__btn {
   width: 32px;
@@ -249,7 +263,7 @@ const { t } = useI18n({ useScope: 'global' })
 /* Дотик (планшет, велика дошка): палець ширший за курсор — кнопки задачі 44 px, рядок вікна 32 px.
    Рядок 32 px вищий за шапку картки й лягає на її назву — тому на дотику і він на плашці. */
 @media (any-pointer: coarse) {
-  .wb-card-window-controls--header .wb-card-window-controls__row {
+  .wb-card-window-controls--header:not(.wb-card-window-controls--with-task) .wb-card-window-controls__row {
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid #e2e8f0;
     border-radius: 8px;
@@ -348,6 +362,45 @@ const { t } = useI18n({ useScope: 'global' })
   color: #dc2626;
 }
 
+/* ── У панелі виділення (LAW §9 v1.44): кнопки як у решти панелі — світлі на темному, 32 px; ✍ 💡 ⚠ більші. ── */
+.wb-card-window-controls--docked {
+  position: static;
+  flex-wrap: nowrap;
+  padding: 0 0 0 4px;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  box-shadow: none;
+}
+.wb-card-window-controls--docked .wb-card-window-controls__row .wb-card-window-controls__btn {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+.wb-card-window-controls--docked .wb-card-window-controls__row .wb-card-window-controls__btn--label {
+  width: auto;
+  font-size: 12px;
+}
+.wb-card-window-controls--docked .wb-card-window-controls__btn {
+  color: #e2e8f0;
+}
+.wb-card-window-controls--docked .wb-card-window-controls__btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+.wb-card-window-controls--docked.wb-card-window-controls--with-task .wb-card-window-controls__row {
+  border-left-color: rgba(255, 255, 255, 0.18);
+}
+.wb-card-window-controls--docked .wb-card-window-controls__divider {
+  background: rgba(255, 255, 255, 0.18);
+}
+.wb-card-window-controls--docked .wb-card-window-controls__btn--busy:disabled,
+.wb-card-window-controls--docked .wb-card-window-controls__btn--solving:disabled {
+  color: #93c5fd;
+}
+
 /* ── Темна тема (Б-156, фаза 2): ті самі селектори, що вище, — кольори токенами теми.
    Згенеровано з правил цього файлу; світла й класична не змінюються. ── */
 [data-theme="dark"] .wb-card-window-controls {
@@ -367,9 +420,15 @@ const { t } = useI18n({ useScope: 'global' })
     border-color: var(--color-border);
   }
 }
-[data-theme="dark"] .wb-card-window-controls--header .wb-card-window-controls__task {
+[data-theme="dark"] .wb-card-window-controls--header.wb-card-window-controls--with-task {
   background: var(--color-surface);
   border-color: var(--color-border);
+}
+[data-theme="dark"] .wb-card-window-controls--docked {
+  background: transparent;
+}
+[data-theme="dark"] .wb-card-window-controls--docked .wb-card-window-controls__btn {
+  color: #e2e8f0;
 }
 [data-theme="dark"] .wb-card-window-controls__divider {
   background: var(--color-border);

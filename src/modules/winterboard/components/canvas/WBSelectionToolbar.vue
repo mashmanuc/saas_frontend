@@ -407,6 +407,16 @@
           </svg>
         </button>
       </template>
+
+      <!-- ── Одна панель кнопок картки (власник 2026-10-21: «Чому не можна зробити в одну панельку?» → «Роби»):
+           сюди полотно ставить групу картки «✍ 💡 ⚠ │ A− 100% A+ │ — ⛶» (composables/cardControlsDock.ts).
+           Не картка (штрих, кілька об'єктів) — місце порожнє й непомітне. ── -->
+      <span
+        v-if="selectedIds.length === 1"
+        ref="cardDockRef"
+        class="wb-selection-toolbar__card-dock"
+        data-testid="wb-selection-card-dock"
+      />
     </div>
   </Transition>
 
@@ -482,6 +492,7 @@ import type { WBStroke, WBAsset } from '../../types/winterboard'
 import { STICKY_DEFAULTS } from '../../types/winterboard'
 import type { ImageReadingTarget } from '../../board/imageReadingTarget'
 import { placeListPopover, sendToPageListHeight, type PopoverPlacement } from '../../board/popoverPlacement'
+import { setCardControlsDock } from '../../composables/cardControlsDock'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -833,6 +844,20 @@ const sendToPageStyle = computed(() => {
 // Закриваємо popup, якщо приховується весь toolbar (deselect, replay mode)
 watch(() => isVisible.value, (v) => { if (!v) closeSendToPage() })
 
+// Місце під групу картки (одна панель, 2026-10-21): віддаємо полотну, поки панель на екрані для однієї картки.
+const cardDockRef = ref<HTMLElement | null>(null)
+let ownCardDock: HTMLElement | null = null
+watch([cardDockRef, () => props.selectedIds[0], () => isVisible.value], ([el, id, visible]) => {
+  if (el && id && visible && props.selectedIds.length === 1) {
+    ownCardDock = el
+    setCardControlsDock({ el, assetId: id })
+  } else if (ownCardDock) {
+    setCardControlsDock(null, ownCardDock)
+    ownCardDock = null
+  }
+}, { flush: 'post' })
+onUnmounted(() => { if (ownCardDock) setCardControlsDock(null, ownCardDock) })
+
 // ─── Positioning ────────────────────────────────────────────────────────────
 
 const TOOLBAR_HEIGHT = 40
@@ -899,6 +924,11 @@ const positionStyle = computed(() => {
   pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Місце під групу картки — без власної коробки: її кнопки стають у рядок панелі (2026-10-21). */
+.wb-selection-toolbar__card-dock {
+  display: contents;
 }
 
 .wb-selection-toolbar__btn {

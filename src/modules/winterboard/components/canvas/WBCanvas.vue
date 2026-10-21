@@ -781,14 +781,23 @@
     </template><!-- /v-if="!unifiedRenderEnabled" (legacy per-type blocks end) -->
 
     <!-- TLV2-05B.2: віконні дії картки «— ⛶ ×» — ОДНА група на полотно, у правому верхньому
-         куті виділеної (або розгорнутої) картки. Які дії доступні — board/windowActions.ts. -->
-    <Teleport v-if="windowControlsTarget" :to="windowControlsOverlayHost ?? 'body'" :disabled="!windowControlsOverlayHost">
+         куті виділеної (або розгорнутої) картки. Які дії доступні — board/windowActions.ts.
+         2026-10-21 (власник: «Чому не можна зробити в одну панельку?» → «Роби»): є панель виділення над карткою —
+         група стає в неї (composables/cardControlsDock.ts), на картці кнопок немає; «×» там не потрібен — є 🗑. -->
+    <Teleport
+      v-if="windowControlsTarget"
+      :to="windowControlsDocked ? cardControlsDock?.el : (windowControlsOverlayHost ?? 'body')"
+      :disabled="!windowControlsDocked && !windowControlsOverlayHost"
+    >
       <WBCardWindowControls
         ref="windowControlsRef"
-        :class="{ 'wb-card-window-controls--header': expandedAssetId !== windowControlsTarget.id }"
+        :class="{
+          'wb-card-window-controls--header': !windowControlsDocked && expandedAssetId !== windowControlsTarget.id,
+          'wb-card-window-controls--docked': windowControlsDocked,
+        }"
         :data-asset-id="windowControlsTarget.id"
-        :style="windowControlsStyle"
-        :actions="windowControlsActions"
+        :style="windowControlsDocked ? {} : windowControlsStyle"
+        :actions="windowControlsDocked ? { ...windowControlsActions, delete: false } : windowControlsActions"
         :is-expanded="expandedAssetId === windowControlsTarget.id"
         :scale="presentationScaleOf(windowControlsTarget)"
         :handwrite-busy="handwriteBusyId === windowControlsTarget.id"
@@ -1013,6 +1022,7 @@ import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
 import { cardZoomStyle, fitMeasureZoom, isKonspektCard, isZoomScaledCard, provideCardZoom } from '../../composables/cardZoom'
+import { isDockedFor, useCardControlsDock } from '../../composables/cardControlsDock'
 import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -1731,6 +1741,13 @@ watch([windowControlsTarget, assets], async () => {
 const windowControlsActions = computed(() =>
   cardWindowActions(windowControlsTarget.value, windowViewer.value))
 
+// Одна панель (2026-10-21): панель виділення над карткою дала місце — група картки стає туди.
+const cardControlsDock = useCardControlsDock()
+const windowControlsDocked = computed(() => {
+  const target = windowControlsTarget.value
+  return isDockedFor(cardControlsDock.value, target?.id, !!target && expandedAssetId.value === target.id)
+})
+
 const windowControlsWidth = ref(0)
 const windowControlsHeight = ref(0)
 const areWindowControlsCovered = computed(() => {
@@ -1809,6 +1826,8 @@ onUnmounted(() => windowControlsRo?.disconnect())
 provideHostControlsSlot(computed(() => {
   const t = windowControlsTarget.value
   if (!t || expandedAssetId.value === t.id || !windowControlsWidth.value) return { assetId: null, width: 0 }
+  // Група в панелі виділення — шапка картки вільна
+  if (windowControlsDocked.value) return { assetId: null, width: 0 }
   const width = windowControlsWidth.value + WINDOW_CONTROLS_INSET_PX
   // Шапка такої картки — всередині обгортки `scale(zoom)`, а кнопки — в екранних
   // пікселях: резерв у пікселях картки = екранна ширина / масштаб (cardZoom.ts).
