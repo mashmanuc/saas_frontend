@@ -83,16 +83,26 @@
         />
       </div>
 
-      <!-- Status filter -->
-      <select
-        :value="activeStatus ?? ''"
-        class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        @change="onStatusFilter(($event.target as HTMLSelectElement).value || null)"
-      >
-        <option value="">{{ $t('knowledge.lesson.search.allStatuses') }}</option>
-        <option value="draft">{{ $t('knowledge.lesson.search.draft') }}</option>
-        <option value="public">{{ $t('knowledge.lesson.search.public') }}</option>
-      </select>
+      <!-- Плитки / список (макет «Мої уроки», 2026-10-22). Фільтра «чернетка / опублікований» більше
+           немає: це доступ за посиланням, а не готовність уроку, — ярлик прибрано разом з ним. -->
+      <div class="ml-view" role="group" :aria-label="$t('winterboard.boards.viewToggleLabel')">
+        <button
+          type="button"
+          class="ml-view__btn"
+          :class="{ 'ml-view__btn--on': lessonView === 'tiles' }"
+          :aria-pressed="lessonView === 'tiles'"
+          :title="$t('winterboard.boards.viewGrid')"
+          @click="setLessonView('tiles')"
+        >▦</button>
+        <button
+          type="button"
+          class="ml-view__btn"
+          :class="{ 'ml-view__btn--on': lessonView === 'list' }"
+          :aria-pressed="lessonView === 'list'"
+          :title="$t('winterboard.boards.viewList')"
+          @click="setLessonView('list')"
+        >☰</button>
+      </div>
 
       <!-- Clear filters -->
       <button
@@ -243,18 +253,17 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="ml-grid" :class="{ 'ml-grid--list': lessonView === 'list' }">
             <!-- ⚠️ Без `overflow-hidden`: на картці живуть випадні меню
                  «Поділитися ▾» і «⋯» (absolute). Картка з обрізанням ховала
                  їх повністю — кнопка натискалась, а меню не було видно
                  (власник 2026-09-24). Кути мініатюри тримає сама мініатюра. -->
             <div
-              v-for="lesson in lessons"
+              v-for="(lesson, li) in lessons"
               :key="lesson.id"
-              class="wb-lesson-card wb-template-card relative bg-white rounded-xl border hover:shadow-md transition-shadow"
-              :class="templateSelectedIds.includes(lesson.id)
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200'"
+              :style="{ '--i': Math.min(li, 12) }"
+              class="wb-lesson-card wb-template-card ml-card relative"
+              :class="{ 'ml-card--selected': templateSelectedIds.includes(lesson.id) }"
             >
               <!-- Checkbox (top-left) -->
               <div
@@ -279,66 +288,51 @@
                    не каже про урок, а забирала цілий блок 16:9 — на телефоні
                    назва уроку опинялась нижче половини екрана. Справжня
                    мініатюра лишається на всю висоту; заглушка — вузька смужка. -->
+              <!-- Обкладинка (макет «Мої уроки», 2026-10-22): знімок дошки, а без нього — знак теми
+                   з назви або монограма, як у Студії (utils/boardCover.ts). Статусу «Чернетка/Опублікований»
+                   більше немає: поле означає доступ за посиланням, а не готовність уроку. -->
               <div
-                class="bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-xl"
-                :class="lesson.board_thumbnail_url ? 'aspect-video' : 'h-14'"
+                class="ml-cover"
+                :class="{ 'ml-cover--mono': coverOf(lesson.title).mono }"
+                :style="{ '--h': coverOf(lesson.title).hue }"
               >
                 <img
                   v-if="lesson.board_thumbnail_url"
                   :src="lesson.board_thumbnail_url"
                   :alt="lesson.title"
-                  class="w-full h-full object-cover"
+                  class="ml-cover__img"
                   loading="lazy"
                   @error="onThumbnailError($event, lesson)"
                 />
-                <div v-else class="flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 w-full h-full">
-                  <span class="text-lg font-bold text-green-600/70">{{ lesson.title?.[0]?.toUpperCase() || '?' }}</span>
-                </div>
+                <template v-else>{{ coverOf(lesson.title).glyph }}</template>
               </div>
 
               <!-- Info -->
-              <div class="p-4">
-                <h3 class="font-semibold text-gray-900 truncate" :title="lesson.title">
-                  {{ lesson.title }}
-                </h3>
-                <div class="flex items-center gap-2 mt-1">
-                  <p class="text-xs text-gray-400">
-                    {{ formatDate(lesson.created_at) }}
+              <div class="ml-info">
+                <div class="ml-text">
+                  <p v-if="subjectLabel(lesson.subject_tag)" class="ml-subj">{{ subjectLabel(lesson.subject_tag) }}</p>
+                  <h3 class="ml-title" :title="lesson.title">
+                    {{ lesson.title }}
+                  </h3>
+                  <p class="ml-meta">
+                    <span>{{ $t('winterboard.boards.pageCount', { n: lesson.page_count }) }}</span>
+                    <!-- Власник 2026-10-15: дата І час збереження (кілька збережень за день розрізняються) — не лише день, як у макеті -->
+                    <span>{{ formatDate(lesson.created_at) }}</span>
                   </p>
-                  <!-- Лічильник сторінок -->
-                  <span
-                    v-if="lesson.page_count > 1"
-                    class="inline-flex items-center gap-0.5 text-xs text-gray-400"
-                    :title="`${lesson.page_count} сторінок`"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    {{ lesson.page_count }}
-                  </span>
-                </div>
-                <div class="mt-1 inline-flex items-center gap-1">
-                  <span
-                    class="inline-block px-2 py-0.5 text-xs rounded-full"
-                    :class="lesson.status === 'draft'
-                      ? 'bg-gray-100 text-gray-600'
-                      : 'bg-green-100 text-green-700'"
-                  >
-                    {{ $t(`knowledge.lesson.statusBadge.${lesson.status}`, lesson.status) }}
-                  </span>
                 </div>
 
                 <!-- Actions -->
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div class="ml-acts">
                   <!-- "Провести" — завжди fresh WBSession з KnowledgeLesson.snapshot → WBSoloRoom -->
                   <button
                     type="button"
-                    class="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    class="ml-go"
                     :disabled="openingLessonId === lesson.id"
                     @click="openLesson(lesson)"
                   >
+                    <span class="ml-go__tri" aria-hidden="true" />
                     {{ openingLessonId === lesson.id
-                      ? '...'
+                      ? $t('knowledge.lesson.prepare.starting')
                       : $t('knowledge.lesson.prepare.button') }}
                   </button>
                   <!-- Друга дія і «⋯» — завжди в одному рядку, інакше на
@@ -559,86 +553,77 @@
         </div>
       </div>
 
-      <!-- Grid of conducted sessions -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="session in conductedSessions"
-          :key="session.id"
-          class="wb-conducted-card relative bg-white rounded-xl border hover:shadow-md transition-shadow cursor-pointer"
-          :class="conductedSelectedIds.includes(session.id)
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-200'"
-          @click="conductedSelectionMode ? toggleConductedSelect(session.id) : openConductedSession(session)"
-        >
-          <!-- Checkbox (top-left, visible on hover or when selected) -->
+      <!-- Стрічка проведених за днями (макет «Мої уроки», 2026-10-22). Учень — лише коли урок почали
+           «з учнем»; тривалість — лише коли вели запис (кінця уроку сервер не зберігає); «Ще раз» — лише
+           коли проведено з готового уроку. Без цього рядок просто коротший. -->
+      <div class="ml-tl">
+        <template v-for="day in conductedByDay" :key="day.key">
+          <div class="ml-tl__day">{{ day.label }}</div>
           <div
-            class="wb-conducted-checkbox absolute top-2 left-2 z-10 transition-opacity"
-            :class="conductedSelectedIds.includes(session.id) || conductedSelectionMode ? 'opacity-100' : 'opacity-0'"
-            @click.stop="toggleConductedSelect(session.id)"
+            v-for="session in day.items"
+            :key="session.id"
+            class="wb-conducted-card ml-card ml-row relative"
+            :class="{ 'ml-card--selected': conductedSelectedIds.includes(session.id) }"
+            :style="{ '--i': Math.min(session._i, 12) }"
+            @click="conductedSelectionMode ? toggleConductedSelect(session.id) : openConductedSession(session)"
           >
-            <span
-              class="flex items-center justify-center w-5 h-5 rounded-[4px] shadow-sm cursor-pointer"
-              :class="conductedSelectedIds.includes(session.id)
-                ? 'bg-blue-600 border-[1.5px] border-blue-600 text-white'
-                : 'bg-white/95 border-[1.5px] border-gray-300'"
+            <!-- Checkbox (top-left, visible on hover or when selected) -->
+            <div
+              class="wb-conducted-checkbox ml-check"
+              :class="conductedSelectedIds.includes(session.id) || conductedSelectionMode ? 'opacity-100' : 'opacity-0'"
+              @click.stop="toggleConductedSelect(session.id)"
             >
-              <svg v-if="conductedSelectedIds.includes(session.id)" width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-          </div>
-
-          <!-- Preview -->
-          <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-xl">
-            <img
-              v-if="session.thumbnail_url"
-              :src="session.thumbnail_url"
-              :alt="session.name"
-              class="w-full h-full object-cover"
-              loading="lazy"
-            />
-            <div v-else class="flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 w-full h-full">
-              <span class="text-2xl font-bold text-blue-600/70">{{ session.name?.[0]?.toUpperCase() || '?' }}</span>
-            </div>
-          </div>
-
-          <!-- Info -->
-          <div class="p-4">
-            <div class="flex items-start justify-between gap-2">
-              <h3 class="font-semibold text-gray-900 truncate flex-1" :title="session.name">
-                {{ session.name }}
-              </h3>
               <span
-                v-if="session.has_recording"
-                class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-red-50 text-red-700"
-                :title="$t('winterboard.lesson.conducted.hasRecording')"
+                class="flex items-center justify-center w-5 h-5 rounded-[4px] shadow-sm cursor-pointer"
+                :class="conductedSelectedIds.includes(session.id)
+                  ? 'bg-blue-600 border-[1.5px] border-blue-600 text-white'
+                  : 'bg-white/95 border-[1.5px] border-gray-300'"
               >
-                <span class="w-1.5 h-1.5 rounded-full bg-red-500" />
-                REC
+                <svg v-if="conductedSelectedIds.includes(session.id)" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </span>
             </div>
 
-            <p
-              v-if="session.origin_lesson_title"
-              class="text-xs text-gray-500 mt-1 truncate"
-              :title="session.origin_lesson_title"
-            >
-              {{ $t('winterboard.lesson.conducted.fromTemplate') }}: {{ session.origin_lesson_title }}
-            </p>
+            <div
+              class="ml-cover ml-cover--small"
+              :class="{ 'ml-cover--mono': coverOf(session.origin_lesson_title || session.name).mono }"
+              :style="{ '--h': coverOf(session.origin_lesson_title || session.name).hue }"
+            >{{ coverOf(session.origin_lesson_title || session.name).glyph }}</div>
 
-            <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
-              <span>{{ session.page_count }} {{ $t('winterboard.lesson.pagesShort') }}</span>
-              <span v-if="session.has_recording">
-                ⏱ {{ formatDuration(session.recording_duration_seconds) }}
-              </span>
-              <span>{{ formatDate(session.created_at) }}</span>
+            <div class="ml-text">
+              <h3 class="ml-title ml-title--one" :title="session.origin_lesson_title || session.name">
+                {{ session.origin_lesson_title || session.name }}
+              </h3>
+              <p class="ml-meta">
+                <span>{{ formatTime(session.created_at) }}</span>
+                <span v-if="studentName(session)" class="ml-who">
+                  <b aria-hidden="true">{{ studentName(session).charAt(0) }}</b>{{ studentName(session) }}
+                </span>
+                <span v-if="session.has_recording" :title="$t('winterboard.lesson.conducted.hasRecording')">
+                  ⏱ {{ formatDuration(session.recording_duration_seconds) }}
+                </span>
+                <span>{{ $t('winterboard.boards.pageCount', { n: session.page_count }) }}</span>
+              </p>
             </div>
 
             <!-- Actions -->
-            <div class="mt-3 flex gap-2" @click.stop>
+            <div class="ml-acts" @click.stop>
+              <button
+                v-if="session.origin_lesson_id"
+                type="button"
+                class="ml-go ml-go--small"
+                :disabled="openingLessonId === session.origin_lesson_id"
+                @click="openLesson({ id: session.origin_lesson_id } as MyLesson)"
+              >
+                <span class="ml-go__tri" aria-hidden="true" />
+                {{ openingLessonId === session.origin_lesson_id
+                  ? $t('knowledge.lesson.prepare.starting')
+                  : $t('winterboard.lesson.conducted.again') }}
+              </button>
               <button
                 type="button"
-                class="px-3 py-1.5 border border-gray-300 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+                class="ml-ic ml-ic--danger"
                 :title="$t('winterboard.lesson.conducted.delete')"
                 :disabled="conductedDeleting && conductedDeleteTarget?.id === session.id"
                 @click="conductedDeleteTarget = session"
@@ -647,7 +632,7 @@
               </button>
             </div>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- Load more -->
@@ -837,6 +822,374 @@
 .wb-conducted-card--selected .wb-conducted-checkbox {
   opacity: 1 !important;
 }
+/* ── «Мої уроки» за макетом дизайнера (2026-10-22): обкладинки, плитки/список, стрічка проведених ──
+   Кольори обкладинки — ті самі --wb-cover-* теми, що в Студії (main.css); картка дає лише відтінок --h. */
+.ml-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.ml-card {
+  position: relative;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid transparent;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px -18px rgba(13, 74, 62, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.15s;
+  animation: ml-up 0.45s ease backwards;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+@keyframes ml-up {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+.ml-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px -20px rgba(13, 74, 62, 0.4);
+}
+
+.ml-card--selected {
+  border-color: var(--wb-brand, #047857);
+}
+
+.ml-cover {
+  position: relative;
+  height: 96px;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  background: hsl(var(--h, 165) var(--wb-cover-cs, 70%) var(--wb-cover-cl, 92%));
+  color: hsl(var(--h, 165) var(--wb-cover-is, 45%) var(--wb-cover-il, 32%));
+}
+
+.ml-cover::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 6px;
+  background: hsl(var(--h, 165) 55% 55%);
+  opacity: 0.5;
+}
+
+.ml-cover--mono {
+  font-style: italic;
+  font-size: 40px;
+}
+
+.ml-cover__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--wb-canvas-bg, #ffffff);
+}
+
+.ml-info {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ml-subj {
+  margin: 0 0 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wb-fg-secondary, #1f6b5a);
+}
+
+.ml-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--wb-fg, #0d4a3e);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  min-height: 39px;
+}
+
+.ml-title--one {
+  -webkit-line-clamp: 1;
+  min-height: 0;
+}
+
+.ml-meta {
+  margin: 5px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--wb-fg-secondary, #1f6b5a);
+}
+
+.ml-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* «Провести» — головна дія картки; «Починаємо…» з трикутником, що відлітає, поки відкривається дошка */
+.ml-go {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--wb-brand, #047857);
+  color: var(--color-on-accent, #ffffff);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.ml-go:hover {
+  filter: brightness(1.06);
+}
+
+.ml-go:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.ml-go__tri {
+  width: 0;
+  height: 0;
+  border-left: 9px solid currentColor;
+  border-top: 5.5px solid transparent;
+  border-bottom: 5.5px solid transparent;
+  transition: transform 0.25s;
+}
+
+.ml-go:hover .ml-go__tri {
+  transform: translateX(3px);
+}
+
+.ml-go:disabled .ml-go__tri {
+  animation: ml-launch 0.5s ease-in forwards;
+}
+
+@keyframes ml-launch {
+  to { transform: translateX(26px); opacity: 0; }
+}
+
+.ml-go--small {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 14px;
+  font-size: 13.5px;
+}
+
+.ml-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  border: 1.5px solid var(--wb-border, rgba(5, 150, 105, 0.2));
+  background: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ml-ic--danger:hover {
+  border-color: #ef4444;
+}
+
+.ml-view {
+  display: flex;
+  gap: 2px;
+  background: var(--wb-card-bg, #ffffff);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.ml-view__btn {
+  border: 0;
+  background: none;
+  border-radius: 8px;
+  width: 34px;
+  height: 30px;
+  font-size: 15px;
+  color: var(--wb-fg-secondary, #1f6b5a);
+  cursor: pointer;
+}
+
+.ml-view__btn--on {
+  background: var(--wb-bg-hover, rgba(5, 150, 105, 0.08));
+  color: var(--wb-brand, #047857);
+}
+
+/* Список: обкладинка-значок зліва, назва посередині, дії справа */
+.ml-grid--list {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.ml-grid--list .ml-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+
+.ml-grid--list .ml-cover,
+.ml-cover--small {
+  height: 52px;
+  border-radius: 13px;
+  font-size: 19px;
+}
+
+.ml-grid--list .ml-cover--mono,
+.ml-cover--small.ml-cover--mono {
+  font-size: 20px;
+}
+
+.ml-grid--list .ml-cover::after,
+.ml-cover--small::after {
+  display: none;
+}
+
+.ml-grid--list .ml-info {
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 6px;
+}
+
+.ml-grid--list .ml-info > :not(.ml-text):not(.ml-acts) {
+  grid-column: 1 / -1;
+}
+
+.ml-grid--list .ml-title {
+  -webkit-line-clamp: 1;
+  min-height: 0;
+}
+
+.ml-grid--list .ml-go {
+  flex: 0 0 auto;
+}
+
+/* Проведені: стрічка за днями */
+.ml-tl {
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid var(--wb-border, rgba(5, 150, 105, 0.2));
+  margin-left: 8px;
+  padding-left: 22px;
+}
+
+.ml-tl__day {
+  position: relative;
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-fg-secondary, #1f6b5a);
+}
+
+.ml-tl__day:first-child {
+  margin-top: 0;
+}
+
+.ml-tl__day::before {
+  content: "";
+  position: absolute;
+  left: -29px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--wb-brand, #047857);
+  box-shadow: 0 0 0 4px var(--wb-bg-tertiary, #e0f7f4);
+}
+
+.ml-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.ml-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  transition: opacity 0.1s;
+}
+
+.ml-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ml-who b {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  background: var(--wb-brand, #047857);
+  color: var(--color-on-accent, #ffffff);
+}
+
+@media (max-width: 640px) {
+  .ml-grid--list .ml-info {
+    grid-template-columns: 1fr;
+  }
+
+  .ml-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .ml-row .ml-acts {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Сенсорні панелі: картка не підскакує */
+@media (pointer: coarse) {
+  .ml-card:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-card,
+  .ml-card * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 </style>
 
 <script setup lang="ts">
@@ -916,6 +1269,7 @@ import WBSaveLessonDialog from '../components/WBSaveLessonDialog.vue'
 import { SAVE_COPY_QUERY, SAVE_COPY_TITLE_QUERY } from '@/modules/winterboard/board/lessonExitNotice'
 import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import { getBoardCover } from '@/modules/winterboard/utils/boardCover'
 
 const router = useRouter()
 const route = useRoute()
@@ -1083,6 +1437,79 @@ const conductedLoaded = ref(false)
 const conductedSearchQuery = ref('')
 const CONDUCTED_LIMIT = 24
 let conductedSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+// ─── «Мої уроки» за макетом дизайнера (2026-10-22): обкладинки, плитки/список, стрічка проведених ──
+
+function coverOf(name: string | null | undefined) {
+  return getBoardCover(name, String(locale.value))
+}
+
+// Предмет над назвою — лише відомі коди `subject_tag` (поле буває порожнім або довільним рядком)
+const SUBJECT_CODES = new Set(['math', 'physics', 'english', 'ukrainian', 'chemistry', 'biology', 'history', 'geography', 'informatics'])
+function subjectLabel(tag: string | null | undefined): string {
+  const code = (tag ?? '').split(/[,\s]/)[0].trim().toLowerCase()
+  return SUBJECT_CODES.has(code) ? t(`subject.${code}`) : ''
+}
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
+function studentName(session: ConductedLessonItem): string {
+  const name = (session.lesson_info as { student_name?: string | null } | null)?.student_name
+  return typeof name === 'string' ? name.trim() : ''
+}
+
+const LESSON_VIEW_KEY = 'ml-view'
+function loadLessonView(): 'tiles' | 'list' {
+  try {
+    return localStorage.getItem(LESSON_VIEW_KEY) === 'list' ? 'list' : 'tiles'
+  } catch {
+    return 'tiles'
+  }
+}
+const lessonView = ref<'tiles' | 'list'>(loadLessonView())
+function setLessonView(v: 'tiles' | 'list'): void {
+  lessonView.value = v
+  try {
+    localStorage.setItem(LESSON_VIEW_KEY, v)
+  } catch {
+    // приватний режим — вигляд лише до перезавантаження
+  }
+}
+
+// Проведені за днями (за місцевою датою), порядок сервера зберігається; _i — затримка появи рядка
+const conductedByDay = computed(() => {
+  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  const now = new Date()
+  const today = dayKey(now)
+  const yesterday = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  const days: { key: string; label: string; items: (ConductedLessonItem & { _i: number })[] }[] = []
+  conductedSessions.value.forEach((session, i) => {
+    const d = new Date(session.created_at)
+    const key = dayKey(d)
+    let day = days[days.length - 1]
+    if (!day || day.key !== key) {
+      const label = key === today
+        ? t('winterboard.lesson.conducted.today')
+        : key === yesterday
+          ? t('winterboard.lesson.conducted.yesterday')
+          : d.toLocaleDateString(locale.value, {
+            day: 'numeric',
+            month: 'long',
+            ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' as const } : {}),
+          })
+      day = { key, label, items: [] }
+      days.push(day)
+    }
+    day.items.push({ ...session, _i: i })
+  })
+  return days
+})
 
 // ── Conducted: bulk selection ────────────────────────────────────────
 const conductedSelectedIds = ref<string[]>([])

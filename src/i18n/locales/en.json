@@ -10042,6 +10042,9 @@
       },
       "conducted": {
         "emptyTitle": "No conducted lessons yet",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "again": "Again",
         "emptySubtitle": "Click \"Conduct\" on a lesson card and it will appear here",
         "loadError": "Failed to load conducted lessons",
         "fromTemplate": "From template",
@@ -11789,6 +11792,7 @@
       },
       "prepare": {
         "button": "Conduct",
+        "starting": "Starting…",
         "error": "Failed to open preparation board"
       },
       "updateSnapshot": "Update template",
