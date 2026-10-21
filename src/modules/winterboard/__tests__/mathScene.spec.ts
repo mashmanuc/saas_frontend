@@ -61,13 +61,10 @@ describe('«Інструменти» — лише пілоту math_scenes', () 
     expect(KIND_LABELS.math_scene).toBe('наочна сцена')
   })
 
-  it('«+» на кожній плитці сцени, на дотик видно завжди (власник 2026-10-21: «для сенсорних дошок це херово»)', () => {
+  it('«+» на кожній плитці сцени (власник 2026-10-21: «для сенсорних дошок це херово») — спільна плитка InsertTileWithAdd', () => {
     const src = readFileSync(resolve(ROOT, 'src/modules/winterboard/components/sidebar/GroupContentSidebar.vue'), 'utf8')
     const at = src.indexOf('data-testid="tools-scenes"')
-    const block = src.slice(at, src.indexOf('</template>', at))
-    expect(block).toMatch(/v-for="e in sceneEntries"[\s\S]*class="scene-tile__add"[\s\S]*@click\.stop="addSceneToBoard\(e\.dragMime, e\.payload\)"/)
-    expect(src).toMatch(/const addSceneToBoard = useAddToolToBoard\(\)/)
-    expect(src).toMatch(/@media \(any-pointer: coarse\) \{\s*\.scene-tile__add \{ opacity: 1; pointer-events: auto;/)
+    expect(src.slice(at, src.indexOf('</template>', at))).toContain('<InsertTileWithAdd v-for="e in sceneEntries"')
   })
 
   it('картка й плитки мають назви трьома мовами', () => {

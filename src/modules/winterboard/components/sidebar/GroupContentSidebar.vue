@@ -303,7 +303,7 @@
         <!-- Пошук активний → плоский grid результатів (перекриває секції) -->
         <template v-if="toolQuery.trim()">
           <div v-if="toolResults.length" class="tools-results">
-            <InsertResultTile v-for="e in toolResults" :key="e.id" :entry="e" />
+            <InsertTileWithAdd v-for="e in toolResults" :key="e.id" :entry="e" />
           </div>
           <div v-else class="content-sidebar__empty">
             {{ t('winterboard.contentSidebar.noResults') }}
@@ -347,7 +347,7 @@
               <!-- Б-184: Нерівності → Числова пряма (плитка: клік і перетягування) -->
               <div class="tools-subhead" data-testid="tools-inequalities">{{ t('winterboard.numberLine.family') }}</div>
               <div class="tools-results">
-                <InsertResultTile v-for="e in inequalityEntries" :key="e.id" :entry="e" />
+                <InsertTileWithAdd v-for="e in inequalityEntries" :key="e.id" :entry="e" />
               </div>
               <TrigCircleTray />
             </template>
@@ -362,38 +362,27 @@
               <Geometry2DTray />
               <div class="tools-subhead">GeoMASH</div>
               <div class="tools-results">
-                <InsertResultTile v-for="e in geomashEntries" :key="e.id" :entry="e" />
+                <InsertTileWithAdd v-for="e in geomashEntries" :key="e.id" :entry="e" />
               </div>
             </template>
 
             <!-- 3D: стартовий набір -->
             <template v-else-if="catalogFamily === '3d'">
               <div class="tools-results">
-                <InsertResultTile v-for="e in threeDEntries" :key="e.id" :entry="e" />
+                <InsertTileWithAdd v-for="e in threeDEntries" :key="e.id" :entry="e" />
               </div>
             </template>
 
             <template v-else-if="catalogFamily === 'content'">
               <div class="tools-results">
-                <InsertResultTile v-for="e in contentEntries" :key="e.id" :entry="e" />
+                <InsertTileWithAdd v-for="e in contentEntries" :key="e.id" :entry="e" />
               </div>
             </template>
 
             <!-- «Наочні сцени» (2026-10-20, пілот math_scenes): одна плитка = одна сцена у вікні на дошці -->
             <template v-else-if="catalogFamily === 'scenes'">
               <div class="tools-results" data-testid="tools-scenes">
-                <!-- «+» (власник 2026-10-21: «немає + … для сенсорних дошок це херово») — як у трею графіків -->
-                <div v-for="e in sceneEntries" :key="e.id" class="scene-tile">
-                  <InsertResultTile :entry="e" />
-                  <button
-                    type="button"
-                    class="scene-tile__add"
-                    :data-testid="`scene-add-${e.id}`"
-                    :title="t('winterboard.nmt3d.addToBoard', { name: t(e.labelKey!) })"
-                    :aria-label="t('winterboard.nmt3d.addToBoard', { name: t(e.labelKey!) })"
-                    @click.stop="addSceneToBoard(e.dragMime, e.payload)"
-                  >+</button>
-                </div>
+                <InsertTileWithAdd v-for="e in sceneEntries" :key="e.id" :entry="e" />
               </div>
             </template>
           </div>
@@ -451,7 +440,8 @@ import CalculusTray from './CalculusTray.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
 import TrigCircleTray from './TrigCircleTray.vue'
 // BoardMASH panel Фаза 1: пошук каталогу через insertRegistry SSOT
-import InsertResultTile from './InsertResultTile.vue'
+// Плитка + «+» (власник 2026-10-21: «для сенсорних дошок») — у всіх списках «Інструментів».
+import InsertTileWithAdd from './InsertTileWithAdd.vue'
 import { InsertIcon } from './insertIcons'
 import {
   searchInserts, allInserts, insertsByApp, MASH_APPS, visibleInserts, visibleApps,
@@ -459,7 +449,6 @@ import {
 } from './insertRegistry'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -619,8 +608,6 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
-// «+» на плитці сцени — той самий шлях, що клік по плитці (useAddToolToBoard → addAtPosition).
-const addSceneToBoard = useAddToolToBoard()
 const sceneEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'scenes'))
 const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))
@@ -1250,23 +1237,6 @@ function onDrop(e: DragEvent) {
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 6px;
   padding: 8px;
-}
-
-/* «Наочні сцени»: плитка + «+» у кутку (миша — при наведенні; дотик — завжди видно, більша) */
-.scene-tile { position: relative; display: flex; }
-.scene-tile > .insert-tile { flex: 1; min-width: 0; }
-.scene-tile__add {
-  position: absolute; top: 3px; right: 3px; z-index: 2;
-  width: 20px; height: 20px; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: #f5f3ff; color: #6366f1; border: 1px solid #c7d2fe; border-radius: 5px;
-  font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer;
-  opacity: 0; pointer-events: none; transition: opacity 0.12s, background 0.12s;
-}
-.scene-tile:hover .scene-tile__add, .scene-tile__add:focus-visible { opacity: 1; pointer-events: auto; }
-.scene-tile__add:hover { background: #ede9fe; border-color: #818cf8; color: #4338ca; }
-@media (any-pointer: coarse) {
-  .scene-tile__add { opacity: 1; pointer-events: auto; width: 30px; height: 30px; font-size: 20px; border-radius: 7px; }
 }
 
 /* ── Ф3.2: 4 картки-сімейства (root) ── */
