@@ -36,9 +36,27 @@ export function isKonspektCard(asset: { type?: string; data?: unknown } | null |
   return typeof slug === 'string' && slug.length > 0
 }
 
+/**
+ * Картка задачі (власник 2026-10-21, «роби»: задачі на 200 % на маленьких екранах). Текст задачі мав екранний
+ * розмір, а аркуш зменшувався: на ноутбуці 1366×768 (масштаб 0,47) картка на 200 % ставила варіанти в стовпчик і
+ * виходила за низ сторінки. Тепер вона — зменшена копія самої себе: на проєкторі й на ноутбуці та сама розкладка,
+ * лише менша. Висоту підганяє як і раніше (INV-25), але міряє в пікселях картки (`fitMeasureZoom`).
+ */
+export const ZOOM_SCALED_TEXT_CARD_TYPES: ReadonlySet<string> = new Set(['nmt_task'])
+
 /** Картку показуємо зменшеною копією самої себе: за типом або як картку конспекту. */
 export function isZoomScaledCard(asset: { type?: string; data?: unknown } | null | undefined): boolean {
-  return !!asset && (ZOOM_SCALED_CARD_TYPES.has(asset.type ?? '') || isKonspektCard(asset))
+  if (!asset) return false
+  const type = asset.type ?? ''
+  return ZOOM_SCALED_CARD_TYPES.has(type) || ZOOM_SCALED_TEXT_CARD_TYPES.has(type) || isKonspektCard(asset)
+}
+
+/**
+ * Масштаб, у якому виміряна висота вмісту переводиться в координати дошки (`nextAutoFitHeight`): звичайна картка
+ * міряє екранні пікселі (ділимо на масштаб), зменшена копія — пікселі самої картки, вони вже й є координати дошки.
+ */
+export function fitMeasureZoom(asset: { type?: string; data?: unknown } | null | undefined, zoom: number): number {
+  return isZoomScaledCard(asset) ? 1 : zoom
 }
 
 const CARD_ZOOM: InjectionKey<Readonly<Ref<number>>> = Symbol('wb-card-zoom')

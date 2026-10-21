@@ -625,19 +625,22 @@
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
           : getOverlayStyle(asset)"
       >
-        <NmtTaskRenderer
-          :asset="(asset as any)"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :can-fit="true"
-          :is-tutor="props.isTutor !== false"
-          :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
-          @delete="emit('asset-delete', asset.id)"
-          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-          @spawn-companions="handleSpawnCompanions"
-          @request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"
-        />
+        <!-- Картка задачі (2026-10-21) — зменшена копія самої себе (cardZoom.ZOOM_SCALED_TEXT_CARD_TYPES) -->
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
+          <NmtTaskRenderer
+            :asset="(asset as any)"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            :can-fit="true"
+            :is-tutor="props.isTutor !== false"
+            :is-expanded="expandedAssetId === asset.id"
+            @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+            @delete="emit('asset-delete', asset.id)"
+            @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
+            @spawn-companions="handleSpawnCompanions"
+            @request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"
+          />
+        </div>
       </div>
     </template>
 
@@ -1008,7 +1011,7 @@ import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageC
 import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
 import { provideHostWindowControls, provideHostControlsSlot } from '../../composables/boardWindowControls'
-import { cardZoomStyle, isKonspektCard, isZoomScaledCard, provideCardZoom } from '../../composables/cardZoom'
+import { cardZoomStyle, fitMeasureZoom, isKonspektCard, isZoomScaledCard, provideCardZoom } from '../../composables/cardZoom'
 import { isAssetSelectable } from '../../board/selectableObjects'
 import { usePageGrid } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
@@ -4975,7 +4978,8 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
   const canWrite = canWriteAutoFit(wbStore.mode, props.isTutor !== false)
   const { write, display } = planAutoFit({
     neededPx,
-    zoom: props.zoom,
+    // Зменшена копія (картка задачі, 2026-10-21) міряє вже в пікселях картки — ділити на масштаб не треба
+    zoom: fitMeasureZoom(asset, props.zoom),
     y: asset.y,
     // Той, хто лише показує, рахує від висоти, яку вже показує, — інакше кожен
     // вимір порівнювався б зі старою висотою зі стану й повторювався вічно.

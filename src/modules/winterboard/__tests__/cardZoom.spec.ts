@@ -75,7 +75,8 @@ describe('проводка: які картки масштабуються і д
   it('WBCanvas: дає масштаб карткам; старі блоки (відкат) теж обгорнуто; резерв шапки — у пікселях картки', () => {
     const canvas = read('components/canvas/WBCanvas.vue')
     expect(canvas).toContain('provideCardZoom(computed(() => props.zoom))')
-    expect(canvas.split('<div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">').length - 1).toBe(3)
+    // 2026-10-21: + картка задачі (nmt_task) у старих блоках
+    expect(canvas.split('<div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">').length - 1).toBe(4)
     expect(canvas).toContain('isZoomScaledCard(t) && props.zoom > 0 ? width / props.zoom : width')
   })
 
@@ -121,5 +122,52 @@ describe('картка конспекту', () => {
     const canvas = read('components/canvas/WBCanvas.vue')
     expect(canvas).toContain('<div v-if="isKonspektCard(asset)" class="wb-card-zoom" :style="cardZoomStyle(zoom, false)">')
     expect(canvas).toMatch(/isKonspektCard\(asset\)[\s\S]{0,400}:can-fit="false"/)
+  })
+})
+
+// Картка задачі на 200 % (власник 2026-10-21, «роби»): на ноутбуці 1366×768 текст задачі лишався екранного розміру,
+// а аркуш зменшувався — варіанти ставали в стовпчик і картка виходила за низ сторінки. Тепер картка задачі — зменшена
+// копія самої себе, висоту підганяє як і раніше, але міряє в пікселях картки.
+describe('картка задачі', () => {
+  it('зменшується цілком; текстова картка без позначки конспекту — ні', async () => {
+    const { ZOOM_SCALED_TEXT_CARD_TYPES, isZoomScaledCard } = await import('../composables/cardZoom')
+    expect([...ZOOM_SCALED_TEXT_CARD_TYPES]).toEqual(['nmt_task'])
+    expect(isZoomScaledCard({ type: 'nmt_task', data: {} })).toBe(true)
+    expect(isZoomScaledCard({ type: 'theory_card', data: {} })).toBe(false)
+    expect(isZoomScaledCard(null)).toBe(false)
+  })
+
+  it('висота: зменшена копія вже міряє в пікселях картки — масштаб 1; звичайна — масштаб дошки', async () => {
+    const { fitMeasureZoom } = await import('../composables/cardZoom')
+    expect(fitMeasureZoom({ type: 'nmt_task', data: {} }, 0.47)).toBe(1)
+    expect(fitMeasureZoom({ type: 'theory_card', data: {} }, 0.47)).toBe(0.47)
+  })
+
+  it('host автопідгонки бере масштаб через fitMeasureZoom; старий блок задачі загорнуто й міряє висоту', () => {
+    const canvas = read('components/canvas/WBCanvas.vue')
+    const fn = canvas.slice(canvas.indexOf('function handleOverlayHeightRequest'), canvas.indexOf('function handleAssetTransformEnd'))
+    expect(fn).toContain('zoom: fitMeasureZoom(asset, props.zoom),')
+    expect(fn).not.toContain('zoom: props.zoom,')
+    const start = canvas.indexOf('<template v-for="asset in nmtTaskAssets"')
+    const block = canvas.slice(start, canvas.indexOf('</template>', start))
+    expect(block).toMatch(/<div class="wb-card-zoom" :style="cardZoomStyle\(zoom, expandedAssetId === asset\.id\)">\s*<NmtTaskRenderer/)
+    expect(block).toContain('@request-height="(px: number) => handleOverlayHeightRequest(asset.id, px)"')
+  })
+})
+
+describe('вимір висоти — в пікселях картки', () => {
+  const el = (offsetHeight: number, rectHeight: number, clientHeight = 0) =>
+    ({ offsetHeight, clientHeight, getBoundingClientRect: () => ({ height: rectHeight }) }) as unknown as HTMLElement
+
+  it('у зменшеній копії (scale 0,5) потік зводиться до пікселів картки', async () => {
+    const { measureCardNeededPx } = await import('../composables/useCardContentFit')
+    // корінь 400 px картки, на екрані 200; тіло видно 300 → шапка й рамка 100; потік на екрані 150 → 300 px картки
+    expect(measureCardNeededPx(el(400, 200), el(0, 0, 300), el(0, 150))).toBe(400)
+  })
+
+  it('без трансформації — як і було (екранні пікселі = пікселі картки)', async () => {
+    const { measureCardNeededPx } = await import('../composables/useCardContentFit')
+    expect(measureCardNeededPx(el(400, 400), el(0, 0, 300), el(0, 150.4))).toBe(251)
+    expect(measureCardNeededPx(el(400, 400.6), el(0, 0, 300), el(0, 150))).toBe(250)   // дрібний дріб рамки — не масштаб
   })
 })

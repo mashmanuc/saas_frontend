@@ -9,14 +9,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { EXPORT_MATH_CLASS, FONT_PROBE_STYLE_ATTR, HTML2CANVAS_PROBE_SRC, domExportScale, fitExportRows, fitMathToContainers, fixFontProbe, settleMathJaxSvg, snapshotBranch, snapshotElement } from '../utils/snapshotElement'
 
 // html2canvas у happy-dom не малює — підміняємо: запамʼятовуємо, що було в документі в момент виклику.
-const h2c = vi.hoisted(() => ({ calls: [] as Array<{ probe: boolean; scale: number }> }))
+const h2c = vi.hoisted(() => ({ calls: [] as Array<{ probe: boolean; scale: number }>, sizes: [] as Array<[number, number]> }))
 // MathJax у happy-dom не вантажиться — віддаємо готовий контейнер.
 vi.mock('../../learning-content/utils/contentRendererMathJaxV2', () => ({
   renderLatexToSvgV2: async () => '<mjx-container jax="SVG" style="vertical-align: -0.186ex;"><svg width="2.891ex" height="1.69ex" style="vertical-align: -0.186ex;"></svg><mjx-assistive-mml>−3</mjx-assistive-mml></mjx-container>',
 }))
 vi.mock('html2canvas', () => ({
-  default: async (el: HTMLElement, opts: { scale: number; onclone?: (d: Document, e: HTMLElement) => void }) => {
+  default: async (el: HTMLElement, opts: { scale: number; width: number; height: number; onclone?: (d: Document, e: HTMLElement) => void }) => {
     h2c.calls.push({ probe: !!document.head.querySelector('style[data-snapshot-font-probe]'), scale: opts.scale })
+    h2c.sizes.push([opts.width, opts.height])
     // Клон — сам корінь (happy-dom не малює): перевіряємо, що зробив onclone.
     opts.onclone?.(document, el)
     return { width: 600, height: 270, toBlob: (cb: (b: Blob) => void) => cb(new Blob(['png'])) }
@@ -228,5 +229,40 @@ describe('settleMathJaxSvg — розмір MathJax не залежить від
     const svg = box.querySelector('svg') as SVGSVGElement
     settleMathJaxSvg(svg)
     expect(svg.getAttribute('width')).toBe('2048')
+  })
+})
+
+// Картка — зменшена копія самої себе (обгортка `scale()`, composables/cardZoom: картка задачі, картка конспекту).
+// Стенд 2026-10-21, 1366×768: знімок брав екранний розмір, а html2canvas малював текст повного розміру в зменшеній
+// рамці — у PDF каша. Тепер — пікселі картки, а в клоні обгортка без масштабу.
+describe('snapshotElement — картка в зменшеній обгортці', () => {
+  it('знімає в пікселях картки й розгортає обгортку в клоні', async () => {
+    const layer = document.createElement('div')
+    layer.className = 'wb-card-zoom'
+    layer.style.transform = 'scale(0.5)'
+    const root = document.createElement('div')
+    root.setAttribute('data-export-dom', '')
+    layer.appendChild(root)
+    document.body.appendChild(layer)
+    Object.defineProperty(root, 'offsetWidth', { value: 890 })
+    Object.defineProperty(root, 'offsetHeight', { value: 400 })
+    root.getBoundingClientRect = () => ({ width: 445, height: 200, top: 0, left: 0, right: 445, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect
+    h2c.sizes.length = 0
+    expect(await snapshotElement(root, new AbortController().signal)).not.toBeNull()
+    expect(h2c.sizes).toEqual([[890, 400]])
+    expect(layer.style.transform).toBe('none')
+    layer.remove()
+  })
+
+  it('картка без обгортки — екранний розмір, як і було', async () => {
+    const root = document.createElement('div')
+    root.setAttribute('data-export-dom', '')
+    document.body.appendChild(root)
+    Object.defineProperty(root, 'offsetWidth', { value: 890 })
+    root.getBoundingClientRect = () => ({ width: 445, height: 200, top: 0, left: 0, right: 445, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect
+    h2c.sizes.length = 0
+    await snapshotElement(root, new AbortController().signal)
+    expect(h2c.sizes).toEqual([[445, 200]])
+    root.remove()
   })
 })

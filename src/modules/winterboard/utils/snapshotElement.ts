@@ -32,6 +32,9 @@ export interface SnapshotResult {
 
 const MAX_DIMENSION = 4096 // мірроир BE-cap у views.py:MAX_PREVIEW_DIMENSION
 
+/** Обгортка картки — зменшеної копії самої себе (`composables/cardZoom`, WBOverlayLayer і WBCanvas). */
+const CARD_ZOOM_SELECTOR = '.wb-card-zoom'
+
 /**
  * Що НЕ потрапляє у знімок для експорту: службове керування віджета.
  *
@@ -381,9 +384,13 @@ async function snapshotDom(
 ): Promise<SnapshotResult | null> {
   if (signal.aborted) return null
 
+  // Картка — зменшена копія самої себе (обгортка `scale()` на масштабі дошки, composables/cardZoom: картка задачі,
+  // картка конспекту): знімаємо в пікселях КАРТКИ, а в клоні обгортку розгортаємо. Інакше html2canvas малював текст
+  // повного розміру в зменшеній рамці — у PDF каша (стенд 2026-10-21, 1366×768).
+  const zoomed = rootEl.closest(CARD_ZOOM_SELECTOR) !== null
   const rect = rootEl.getBoundingClientRect()
-  const w = Math.round(rect.width)
-  const h = Math.round(rect.height)
+  const w = Math.round(zoomed ? rootEl.offsetWidth : rect.width)
+  const h = Math.round(zoomed ? rootEl.offsetHeight : rect.height)
   if (w <= 0 || h <= 0) return null
   if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
     console.warn('[WB:snapshot] dom_too_large', { width: w, height: h, max: MAX_DIMENSION })
@@ -474,6 +481,10 @@ async function snapshotDom(
       // entire `.katex` span у clone with the SVG. Live DOM stays intact —
       // editor accessibility preserved (this is pure capture-layer concern).
       onclone: (_clonedDoc, clonedEl) => {
+        // Обгортка зменшеної копії в КЛОНІ — без масштабу: картка в клоні у своїх пікселях (жива дошка не змінюється)
+        const zoomLayer = clonedEl.closest<HTMLElement>(CARD_ZOOM_SELECTOR)
+        if (zoomLayer) zoomLayer.style.transform = 'none'
+
         // 0) Прибрати керування з КЛОНУ (жива дошка не змінюється).
         //    У презентації віджет — статична картинка, тож підказки драга
         //    («Drag A/B/D · C = D + (B−A)»), панелі вимірів і кнопки на

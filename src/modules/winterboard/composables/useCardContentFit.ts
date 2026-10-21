@@ -42,7 +42,18 @@ export function measureCardNeededPx(root: HTMLElement, body: HTMLElement, flow: 
   const padY = style
     ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
     : 0
-  return Math.ceil(outside + padY + flow.getBoundingClientRect().height)
+  return Math.ceil(outside + padY + flow.getBoundingClientRect().height / ancestorScale(root))
+}
+
+/**
+ * У картці — зменшеній копії самої себе (`cardZoom`, обгортка `scale(масштаб)`) `getBoundingClientRect` дає екранні
+ * пікселі, а `offsetHeight` — пікселі картки. Зводимо потік до пікселів картки, щоб вимір був в одних одиницях.
+ * Без трансформації (решта карток) — рівно 1, вимір як і був.
+ */
+function ancestorScale(root: HTMLElement): number {
+  if (!(root.offsetHeight > 0)) return 1
+  const ratio = root.getBoundingClientRect().height / root.offsetHeight
+  return ratio > 0 && Math.abs(ratio - 1) > 0.01 ? ratio : 1
 }
 
 export function useCardContentFit(options: CardContentFitOptions): { requestFit: () => void } {
