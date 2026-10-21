@@ -24,7 +24,7 @@ vi.mock('../api/lessonConstructorApi', async () => {
 
 import LessonConstructorPage from '../views/LessonConstructorPage.vue'
 import { TOPICS } from '../api/lessonConstructorApi'
-import { CURRICULUM, GRADES } from '../curriculum'
+import { CURRICULUM, GRADES, VERIFIED_TOPICS } from '../curriculum'
 import { filterUnits, gradeTracks, loadTopicView, searchTopics } from '../topicByGrade'
 
 const LABELS: Record<string, string> = Object.fromEntries(TOPICS.map((t: any) => [t.value, t.label]))
@@ -84,18 +84,18 @@ describe('вибір теми за класом — сторінка конст�
     expect((await generated(w)).topics).toEqual(['real-numbers.natural'])
   })
 
-  it('розділ з кількома темами питає «про що саме»: «Десяткові дроби» — урок саме про них', async () => {
+  it('розділ з кількома темами питає «про що саме»; є перевірені добірки — лише вони, урок саме про обрану', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-5"]').trigger('click')
     await unit(w, 'Дробові числа і дії з ними').trigger('click')
     expect(w.text()).toContain('Про що саме урок?')
     expect(w.findAll('.tgp-chip').map((c: any) => c.text())).toEqual([
-      'Дроби', 'Звичайні дроби', 'Десяткові дроби', 'Додавання і віднімання десяткових дробів',
-      'Множення і ділення десяткових дробів', 'Порядок дій із десятковими дробами'])
+      'Додавання і віднімання десяткових дробів', 'Множення і ділення десяткових дробів',
+      'Порядок дій із десятковими дробами'])
     expect(generate).not.toHaveBeenCalled()
-    await w.find('[data-testid="topic-refine-real-numbers.fractions.decimal"]').trigger('click')
-    expect(topicSlot(w)).toBe('Десяткові дроби')
-    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.decimal'])
+    await w.find('[data-testid="topic-refine-real-numbers.fractions.decimal.add-subtract"]').trigger('click')
+    expect(topicSlot(w)).toBe('Додавання і віднімання десяткових дробів')
+    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.decimal.add-subtract'])
   })
 
   // Власник 2026-10-21 після уроків: «Вибрав тему додавання-віднімання дроби з різними знаменниками. Хер зна що
@@ -141,7 +141,7 @@ describe('вибір теми за класом — сторінка конст�
     expect(unitButtons(w).map((b: any) => b.find('.tgp-unit__title').text())).toEqual(['Подільність натуральних чисел'])
     await w.find('[data-testid="topic-grade-search"]').setValue('десятков')
     expect(unitButtons(w).map((b: any) => b.find('.tgp-unit__title').text())).toEqual(['Дробові числа і дії з ними'])
-    expect(w.find('[data-testid="topic-refine-real-numbers.fractions.decimal"]').exists()).toBe(true)
+    expect(w.find('[data-testid="topic-refine-real-numbers.fractions.decimal.add-subtract"]').exists()).toBe(true)
   })
 
   it('«НМТ»: дерево тем, як було, і пошук по всіх темах; вибір у дереві не перемикає крок', async () => {
@@ -232,10 +232,30 @@ describe('вибір теми за класом — дані', () => {
     }
   })
 
+  // Власник 2026-10-21 («так, роби»): старі теми — «збірна» (класи впереміш); розділ з перевіреними добірками показує
+  // лише їх, розділ без добірок — як був; стара база лишається під «НМТ».
+  it('розділ з перевіреними добірками показує лише їх; розділ без добірок — старі теми, як були', () => {
+    const verified = new Set<string>(VERIFIED_TOPICS)
+    for (const g of GRADES) {
+      for (const t of gradeTracks(g, LABELS)) {
+        for (const u of t.units) {
+          const source = CURRICULUM.find((c) => c.grade === g && c.track === t.track && c.title === u.title)!
+          const anyVerified = source.topics.some((id) => verified.has(id))
+          expect(u.topics.every((id) => verified.has(id))).toBe(anyVerified)
+        }
+      }
+    }
+    const six = gradeTracks(6, LABELS)[0].units
+    expect(six.find((u) => u.title === 'Відношення і пропорції')!.topics.map((id) => LABELS[id])).toEqual([
+      'Пропорції: невідомий член', 'Пряма пропорційність', 'Обернена пропорційність'])
+    const five = gradeTracks(5, LABELS)[0].units
+    expect(five.find((u) => u.title === 'Геометричні фігури і величини')!.topics).toContain('basic-geometry-figures.angles')
+  })
+
   it('пошук без огляду на регістр; порожній пошук нічого не відкидає', () => {
     const units = gradeTracks(5, LABELS)[0].units
     expect(filterUnits(units, '', LABELS)).toEqual(units)
-    expect(filterUnits(units, 'ДЕСЯТКОВІ', LABELS).map((u) => u.title)).toEqual(['Дробові числа і дії з ними'])
+    expect(filterUnits(units, 'ДЕСЯТКОВИХ', LABELS).map((u) => u.title)).toEqual(['Дробові числа і дії з ними'])
     expect(searchTopics(TOPICS, '')).toEqual([])
   })
 

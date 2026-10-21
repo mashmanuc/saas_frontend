@@ -6,7 +6,7 @@
  * той вів «Десяткові дроби» у широкі «Дійсні числа». Урок будується про ОДНУ тему конструктора, тож розділ,
  * що охоплює кілька тем, просить уточнити «про що саме» (28 з 56 розділів на 2026-10-21).
  */
-import { CURRICULUM, GRADES, TRACK_LABELS } from './curriculum'
+import { CURRICULUM, GRADES, TRACK_LABELS, VERIFIED_TOPICS } from './curriculum'
 
 export type Grade = (typeof GRADES)[number]
 export type Track = keyof typeof TRACK_LABELS
@@ -30,17 +30,28 @@ export interface GradeTrack {
 /** Порядок курсів у класі: 5–6 — одна «Математика», 7–11 — алгебра, потім геометрія. */
 const TRACK_ORDER: readonly Track[] = ['math', 'algebra', 'geometry']
 
+const VERIFIED: ReadonlySet<string> = new Set(VERIFIED_TOPICS)
+
 /**
  * Розділи класу за курсами, у порядку програми. Теми, яких конструктор не знає (`labels`), відкидаються, а розділ
  * без жодної — не показується: кнопка, що нікуди не веде, гірша за її відсутність.
+ *
+ * Власник 2026-10-21 («так, роби»): розділ, де вже є перевірені добірки (`VERIFIED_TOPICS`), показує лише їх — стара
+ * широка тема в ньому ховається («збірна»: класи впереміш, як «Кути» з радіанами 10 класу). Розділ без добірок — як
+ * був. Уся стара база лишається під «НМТ». Нова добірка в розділі сама витісняє стару тему.
  */
 export function gradeTracks(grade: Grade, labels: Readonly<Record<string, string>>): GradeTrack[] {
   return TRACK_ORDER.flatMap((track) => {
     const units = CURRICULUM.filter((u) => u.grade === grade && u.track === track)
-      .map((u, i) => ({ no: i + 1, title: u.title, topics: distinctByLabel(u.topics, labels) }))
+      .map((u, i) => ({ no: i + 1, title: u.title, topics: verifiedFirst(distinctByLabel(u.topics, labels)) }))
       .filter((u) => u.topics.length > 0)
     return units.length ? [{ track, label: TRACK_LABELS[track], units }] : []
   })
+}
+
+function verifiedFirst(ids: string[]): string[] {
+  const verified = ids.filter((id) => VERIFIED.has(id))
+  return verified.length ? verified : ids
 }
 
 function distinctByLabel(ids: readonly string[], labels: Readonly<Record<string, string>>): string[] {
