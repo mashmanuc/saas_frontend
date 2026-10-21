@@ -12,6 +12,7 @@ vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 
 import {
   PHONE_BOARD_HINT_DISMISSED_KEY,
+  isPhoneLandscape,
   isPhonePortrait,
   readPhoneBoardHintDismissed,
   rememberPhoneBoardHintDismissed,
@@ -29,10 +30,25 @@ describe('коли показувати вікно', () => {
     expect(isPhonePortrait(375, 667)).toBe(true)
     expect(isPhonePortrait(639, 900)).toBe(true)
     expect(isPhonePortrait(640, 900)).toBe(false)   // поріг мобільного режиму дошки
-    expect(isPhonePortrait(844, 390)).toBe(false)   // телефон горизонтально — поза рішенням
+    expect(isPhonePortrait(844, 390)).toBe(false)   // телефон горизонтально — окреме правило нижче
     expect(isPhonePortrait(768, 1024)).toBe(false)  // планшет вертикально
     expect(isPhonePortrait(1366, 768)).toBe(false)
     expect(isPhonePortrait(0, 0)).toBe(false)       // розмір ще не виміряно
+  })
+
+  // Власник 2026-10-21: «роби, на телефоні горизонтально — пульт» (на 844×390 кнопки картки ширші за картку)
+  it('телефон горизонтально — так, лише з дотиком; планшет горизонтально й низьке вікно ноутбука — ні', () => {
+    expect(isPhoneLandscape(844, 390, true)).toBe(true)
+    expect(isPhoneLandscape(932, 430, true)).toBe(true)    // найбільший iPhone
+    expect(isPhoneLandscape(915, 412, true)).toBe(true)    // Android
+    expect(isPhoneLandscape(1024, 600, true)).toBe(false)  // поріг планшета
+    expect(isPhoneLandscape(1024, 768, true)).toBe(false)  // планшет горизонтально
+    expect(isPhoneLandscape(900, 640, true)).toBe(false)   // не нижчий за мобільний поріг
+    expect(isPhoneLandscape(844, 390, false)).toBe(false)  // мишка: низьке вікно браузера, не телефон
+    expect(isPhoneLandscape(390, 844, true)).toBe(false)   // вертикально — правило вище
+    expect(isPhoneLandscape(0, 0, true)).toBe(false)
+    expect(shouldShowPhoneBoardHint({ ...OWNER_ON_IPHONE, viewportWidth: 844, viewportHeight: 390, coarsePointer: true })).toBe(true)
+    expect(shouldShowPhoneBoardHint({ ...OWNER_ON_IPHONE, viewportWidth: 844, viewportHeight: 390 })).toBe(false)
   })
 
   it('лише власнику хмарної дошки й лише доки не обрав «Все одно відкрити»', () => {
@@ -94,6 +110,9 @@ describe('WBSoloRoom підключає вікно за цим правилом'
   it('вікно показується лише через shouldShowPhoneBoardHint з власником і локальною дошкою', () => {
     expect(src).toMatch(/<WBPhoneBoardHint\s+v-if="showPhoneBoardHint"/)
     expect(src).toMatch(/shouldShowPhoneBoardHint\(\{[\s\S]*?isSessionOwner: isSessionOwner\.value,[\s\S]*?isLocalWorkspace,[\s\S]*?dismissed: phoneHintDismissed\.value,/)
+    // 2026-10-21: телефон горизонтально — лише з дотиком
+    expect(src).toMatch(/shouldShowPhoneBoardHint\(\{[\s\S]*?coarsePointer: phoneCoarsePointer,/)
+    expect(src).toContain('const phoneCoarsePointer = hasCoarsePointer()')
   })
 
   it('«Відкрити пульт» веде на той самий вхід пульта, що й QR, і вибору не запам’ятовує', () => {

@@ -1183,7 +1183,7 @@
       @close="showRemoteModal = false"
     />
 
-    <!-- Б-202: дошка на телефоні вертикально — «зручніше з комп'ютера, телефон — пульт» -->
+    <!-- Б-202: дошка на телефоні (вертикально, з 21.10 і горизонтально) — «зручніше з комп'ютера, телефон — пульт» -->
     <WBPhoneBoardHint
       v-if="showPhoneBoardHint"
       @open-remote="onPhoneHintOpenRemote"
@@ -1339,6 +1339,7 @@ import { createRemoteViewAdapter } from '../composables/useRemoteViewAdapter'
 import WBRemoteQrModal from '../components/remote/WBRemoteQrModal.vue'
 import WBPhoneBoardHint from '../components/phone/WBPhoneBoardHint.vue'
 import {
+  hasCoarsePointer,
   readPhoneBoardHintDismissed,
   rememberPhoneBoardHintDismissed,
   shouldShowPhoneBoardHint,
@@ -2374,14 +2375,17 @@ const lessonSize = useLessonSizeGauge({
 
 /* Б-202 (власник 2026-10-15): на телефоні вертикально аркуш — чверть екрана, і новий учитель
    з реклами пішов за 6 с. Власнику хмарної дошки — одне вікно: «зручніше з комп'ютера,
-   телефон — пульт». «Зрозуміло» — у кабінет; «Все одно відкрити» — більше не питати тут. */
+   телефон — пульт». «Зрозуміло» — у кабінет; «Все одно відкрити» — більше не питати тут.
+   Власник 2026-10-21: і на телефоні горизонтально (phoneBoardHint.isPhoneLandscape). */
 const phoneHintDismissed = ref(readPhoneBoardHintDismissed())
+const phoneCoarsePointer = hasCoarsePointer()
 const showPhoneBoardHint = computed(() => shouldShowPhoneBoardHint({
   viewportWidth: deviceModeState.state.value.viewportWidth,
   viewportHeight: deviceModeState.state.value.viewportHeight,
   isSessionOwner: isSessionOwner.value,
   isLocalWorkspace,
   dismissed: phoneHintDismissed.value,
+  coarsePointer: phoneCoarsePointer,
 }))
 
 function trackPhoneHint(action: 'shown' | 'open_remote' | 'understood' | 'open_anyway'): void {

@@ -61,9 +61,12 @@ const emit = defineEmits<{ 'open-remote': []; understood: []; 'open-anyway': [] 
   border-radius: 16px;
   padding: 24px 20px 20px;
   width: min(100%, 360px);
+  max-height: 100%;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
+
 
 .wb-phone-hint__icon {
   color: var(--accent, #059669);
@@ -108,5 +111,27 @@ const emit = defineEmits<{ 'open-remote': []; understood: []; 'open-anyway': [] 
   border: 1px solid var(--border-color, #e2e8f0);
   background: transparent;
   color: var(--text-secondary, #475569);
+}
+
+/* Телефон горизонтально (власник 2026-10-21): екран 375–430 px заввишки — вікно ширше, без значка,
+   кнопки в один ряд, щоб «Все одно відкрити дошку» не опинилась за нижнім краєм. */
+@media (max-height: 480px) {
+  .wb-phone-hint {
+    width: min(100%, 600px);
+    padding: 14px 18px;
+  }
+  .wb-phone-hint__icon {
+    display: none;
+  }
+  .wb-phone-hint__body {
+    margin-bottom: 12px;
+  }
+  .wb-phone-hint__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .wb-phone-hint__btn {
+    flex: 1 1 150px;
+  }
 }
 </style>
