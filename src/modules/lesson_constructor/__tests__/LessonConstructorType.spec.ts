@@ -198,7 +198,8 @@ describe('поки генерується урок', () => {
     let finish: (v: { session_id: string }) => void = () => {}
     generate.mockImplementationOnce(() => new Promise((r) => { finish = r }))
     const w = await build('Вивчення нової теми', [TRIANGLE])
-    expect(w.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
+    // З 2026-10-21 Інтегралик стоїть і в підказці під кнопкою — тут мова про саму кнопку.
+    expect(generateBtn(w).find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
     await generateBtn(w).trigger('submit')
     await new Promise(r => setTimeout(r, 0))
     const itg = generateBtn(w).find('[data-testid="integralyk-thinking"]')
@@ -209,6 +210,6 @@ describe('поки генерується урок', () => {
     expect(generateBtn(w).classes()).toContain('lc-btn-generate--busy')
     finish({ session_id: 'sess-1' })
     await new Promise(r => setTimeout(r, 0))
-    expect(w.find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
+    expect(generateBtn(w).find('[data-testid="integralyk-thinking"]').exists()).toBe(false)
   })
 })

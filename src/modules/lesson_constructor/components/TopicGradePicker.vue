@@ -181,11 +181,10 @@ function topicWord(n: number): string {
 .tgp-grade--on, .tgp-grade--on:hover { background: var(--accent); border-color: var(--accent); color: var(--color-on-accent); }
 .tgp-grade--on small { color: inherit; opacity: 0.85; }
 .tgp-sep { width: 1px; margin: 4px; background: #e2e8f0; }
-.tgp--grades .tgp-grades { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.tgp--grades .tgp-grades { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
 .tgp--grades .tgp-grade { min-width: 0; padding: 0.95rem 0 0.7rem; border-radius: 16px; font-size: 1.7rem; }
 .tgp--grades .tgp-grade small { font-size: 0.7rem; }
 .tgp--grades [data-testid="topic-grade-nmt"] { font-size: 1.2rem; padding-top: 1.3rem; }
-@media (max-width: 760px) { .tgp--grades .tgp-grades { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 .tgp-search {
   display: flex; align-items: center; gap: 0.6rem;
@@ -196,9 +195,9 @@ function topicWord(n: number): string {
 .tgp-search:focus-within { border-color: var(--accent); }
 .tgp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: inherit; }
 
-.tgp-tracks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+/* Колонки — за місцем у самому блоці, не за шириною вікна (у Студії поруч бокова панель). */
+.tgp-tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.1rem; }
 .tgp-tracks--one { grid-template-columns: minmax(0, 1fr); }
-@media (max-width: 760px) { .tgp-tracks { grid-template-columns: minmax(0, 1fr); } }
 .tgp-track { min-width: 0; }
 .tgp-track__head {
   display: flex; justify-content: space-between;

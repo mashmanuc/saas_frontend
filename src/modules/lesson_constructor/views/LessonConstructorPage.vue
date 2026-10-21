@@ -398,7 +398,9 @@
         <p v-if="errors.general" class="lc-error lc-error--center">{{ errors.general }}</p>
 
         <div class="lc-mascot">
-          <i aria-hidden="true">∫</i>
+          <!-- Наш Інтегралик (власник 2026-10-21: «тут наш інтегралик старий, що створює урок, має бути») — той
+               самий персонаж, що в палітрі й на кнопці під час генерації; похитується, поки складає урок. -->
+          <span class="lc-mascot__avatar"><IntegralykThinking :size="34" :thinking="isLoading" /></span>
           <span data-testid="lc-tip">{{ tip }}</span>
         </div>
 
@@ -1338,7 +1340,10 @@ async function handleGenerate() {
   gap: 28px;
   align-items: start;
 }
-@media (max-width: 960px) {
+/* Дві колонки — коли їм є місце в самій сторінці, а не у вікні: у Студії поруч бокова панель (власник 2026-10-21,
+   знімок: вікно широке, а картці лишалось ~330 px). */
+.lc-page { container-type: inline-size; }
+@container (max-width: 900px) {
   .lc-layout { grid-template-columns: minmax(0, 1fr); }
   .lc-aside { position: static; }
 }
@@ -1404,7 +1409,7 @@ async function handleGenerate() {
   cursor: pointer;
 }
 .lc-panel { min-height: 300px; padding-top: 22px; border-top: 1px solid #e2e8f0; }
-.lc-panel__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.lc-panel__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 14px; }
 .lc-panel__head b { font-size: 17px; color: #0f172a; }
 .lc-panel__head span { font-size: 13px; color: #64748b; }
 
@@ -1425,8 +1430,9 @@ async function handleGenerate() {
 .lc-count--on, .lc-count--on:hover { background: var(--accent); border-color: var(--accent); color: var(--color-on-accent); }
 .lc-count-range { width: 100%; margin: 4px 0 14px; accent-color: var(--accent); }
 
-.lc-diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-@media (max-width: 640px) { .lc-diffs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Колонки — за місцем у самій панелі, не за шириною вікна: у Студії поруч бокова панель, і вікно 700+ px лишало
+   сторінці ~330 px — чотири картки складності налазили підписами (власник 2026-10-21, знімок). */
+.lc-diffs { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .lc-diff {
   display: flex;
   flex-direction: column;
@@ -1507,16 +1513,14 @@ async function handleGenerate() {
   font-size: 13.5px;
   color: #1f6b5a;
 }
-.lc-mascot i {
+.lc-mascot__avatar {
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--accent) 12%, #fff);
-  color: var(--accent);
-  font: italic 700 22px Georgia, serif;
 }
 
 /* ── Темна тема (Б-156, фаза 1) ─────────────────────────────────────────────
@@ -1641,5 +1645,5 @@ async function handleGenerate() {
 }
 [data-theme="dark"] .lc-diff__bars i { background: var(--color-border-strong); }
 [data-theme="dark"] .lc-diff__bars i.lc-diff__bar--on { background: var(--color-accent); }
-[data-theme="dark"] .lc-mascot i { background: var(--color-accent-soft); color: var(--color-accent); }
+[data-theme="dark"] .lc-mascot__avatar { background: var(--color-accent-soft); }
 </style>
