@@ -46,6 +46,8 @@ describe('getBoardCover — обкладинка дошки в Студії', ()
     expect(getBoardCover('', 'uk')).toMatchObject({ glyph: '', empty: true })
     expect(getBoardCover(null, 'uk').empty).toBe(true)
     expect(getBoardCover('Урок:', 'uk').empty).toBe(true)
+    expect(getBoardCover('Без назви', 'uk').empty).toBe(true)
+    expect(getBoardCover('Untitled', 'en').empty).toBe(true)
   })
 
   it('відтінок стабільний для тієї самої назви', () => {

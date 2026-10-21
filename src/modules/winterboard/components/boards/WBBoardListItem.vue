@@ -23,12 +23,13 @@
     <!-- Thumbnail -->
     <div class="wb-board-list-item__thumb" aria-hidden="true">
       <img
-        v-if="board.thumbnail_url"
+        v-if="board.thumbnail_url && !thumbBroken"
         :src="board.thumbnail_url"
         :alt="board.name || t('winterboard.boards.untitled')"
         class="wb-board-list-item__thumb-img"
         loading="lazy"
         draggable="false"
+        @error="thumbBroken = true"
       />
       <!-- Обкладинка зі знаком або монограмою, як у плитках (utils/boardCover.ts, 2026-10-22) -->
       <div
@@ -105,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem } from '../../api/winterboardApi'
@@ -139,6 +140,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { logoSrc } = useSeasonalLogo()
 const cover = computed(() => getBoardCover(props.board.name, activeLocale()))
+// Знімок не завантажився (видалений файл, мережа) — обкладинка, а не alt-текст у рамці
+const thumbBroken = ref(false)
+watch(() => props.board.thumbnail_url, () => { thumbBroken.value = false })
 
 // ─── Time formatting ──────────────────────────────────────────────────────────
 

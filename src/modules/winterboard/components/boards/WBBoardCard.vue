@@ -25,13 +25,14 @@
 
     <!-- Thumbnail -->
     <div class="wb-board-card__thumb">
-      <template v-if="board.thumbnail_url">
+      <template v-if="board.thumbnail_url && !thumbBroken">
         <img
           :src="board.thumbnail_url"
           :alt="board.name || t('winterboard.boards.untitled')"
           class="wb-board-card__thumb-img"
           loading="lazy"
           draggable="false"
+          @error="thumbBroken = true"
         />
         <span class="wb-board-card__shot-label">{{ t('winterboard.boards.firstPageShot') }}</span>
       </template>
@@ -179,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem, BoardFolder } from '../../api/winterboardApi'
@@ -221,6 +222,9 @@ const folderSubmenuOpen = ref(false)
 const cardEl = ref<HTMLElement | null>(null)
 
 const cover = computed(() => getBoardCover(props.board.name, activeLocale()))
+// Знімок не завантажився (видалений файл, мережа) — обкладинка, а не alt-текст у рамці
+const thumbBroken = ref(false)
+watch(() => props.board.thumbnail_url, () => { thumbBroken.value = false })
 
 // «Давно не змінювали» — чернетка без змін тиждень і довше (за датою зміни: дати відкриття список не віддає)
 const DUSTY_AFTER_MS = 7 * 24 * 60 * 60 * 1000

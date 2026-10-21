@@ -110,6 +110,8 @@ const EN = compile([
 export const KEYWORDS: Readonly<Record<string, readonly Rule[]>> = { uk: UK, en: EN }
 
 const PREFIX = /^(урок|тема|lesson|topic|lekcja|temat|stunde|thema)\s*[:.—-]?\s*/i
+// Назва-заглушка сервера = назви немає: лише логотип, а не монограма «Бн» (макет)
+const PLACEHOLDER = /^(без назви|untitled|без названия)$/i
 const MONO_HUES = [160, 28, 200, 265, 340, 45, 185, 10] as const
 const LETTER = /\p{L}/u
 
@@ -124,7 +126,8 @@ function firstLetter(word: string | undefined): string {
 }
 
 export function getBoardCover(name: string | null | undefined, locale: string): BoardCover {
-  const title = (name ?? '').trim()
+  const raw = (name ?? '').trim()
+  const title = PLACEHOLDER.test(raw) ? '' : raw
   const h = hash(title)
   const rules = KEYWORDS[locale.split('-')[0].toLowerCase()] ?? []
   const hit = rules.find(([re]) => re.test(title))
