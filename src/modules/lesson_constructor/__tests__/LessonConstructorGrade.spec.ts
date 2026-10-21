@@ -34,7 +34,7 @@ const unit = (w: any, title: string) => unitButtons(w).find((b: any) => b.find('
 async function generated(w: any) {
   await w.find('.lc-btn-generate').trigger('submit')
   await new Promise((r) => setTimeout(r, 0))
-  return generate.mock.calls.at(-1)![0]
+  return generate.mock.calls[generate.mock.calls.length - 1]![0]
 }
 
 beforeEach(() => {
