@@ -80,11 +80,37 @@ describe('вибір теми за класом — сторінка конст�
     await w.find('[data-testid="topic-grade-5"]').trigger('click')
     await unit(w, 'Дробові числа і дії з ними').trigger('click')
     expect(w.text()).toContain('Про що саме урок?')
-    expect(w.findAll('.tgp-chip').map((c: any) => c.text())).toEqual(['Дроби', 'Звичайні дроби', 'Десяткові дроби'])
+    expect(w.findAll('.tgp-chip').map((c: any) => c.text())).toEqual([
+      'Дроби', 'Звичайні дроби', 'Десяткові дроби', 'Додавання і віднімання десяткових дробів',
+      'Множення і ділення десяткових дробів', 'Порядок дій із десятковими дробами'])
     expect(generate).not.toHaveBeenCalled()
     await w.find('[data-testid="topic-refine-real-numbers.fractions.decimal"]').trigger('click')
     expect(w.find('[data-testid="topic-picked"]').text()).toBe('Урок про: Десяткові дроби')
     expect((await generated(w)).topics).toEqual(['real-numbers.fractions.decimal'])
+  })
+
+  // Власник 2026-10-21 після уроків: «Вибрав тему додавання-віднімання дроби з різними знаменниками. Хер зна що
+  // чомусь дало» і «виділяється 2» — обидва розділи 6 класу вели в широкі «Звичайні дроби».
+  it('6 клас: «Додавання і віднімання звичайних дробів» — урок саме про це, світиться лише цей розділ', async () => {
+    const w = mount(LessonConstructorPage)
+    await w.find('[data-testid="topic-grade-6"]').trigger('click')
+    await unit(w, 'Додавання і віднімання звичайних дробів').trigger('click')
+    expect(w.find('[data-testid="topic-picked"]').text())
+      .toBe('Урок про: Додавання і віднімання дробів з різними знаменниками')
+    expect(w.findAll('.tgp-unit--on').map((b: any) => b.find('.tgp-unit__title').text()))
+      .toEqual(['Додавання і віднімання звичайних дробів'])
+    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.ordinary.add-subtract'])
+    await unit(w, 'Множення і ділення звичайних дробів').trigger('click')
+    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.ordinary.multiply-divide'])
+  })
+
+  it('та сама тема у двох розділах — світиться лише той, з якого обрали', async () => {
+    const w = mount(LessonConstructorPage)
+    await w.find('[data-testid="topic-grade-7"]').trigger('click')
+    await unit(w, 'Трикутники. Ознаки рівності трикутників').trigger('click')
+    await w.find('[data-testid="topic-refine-triangles"]').trigger('click')
+    expect(w.findAll('.tgp-unit--on').map((b: any) => b.find('.tgp-unit__title').text()))
+      .toEqual(['Трикутники. Ознаки рівності трикутників'])
   })
 
   it('інший розділ замінює вибір — тема одна', async () => {

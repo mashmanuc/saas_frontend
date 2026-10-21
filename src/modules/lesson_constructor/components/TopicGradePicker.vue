@@ -44,7 +44,7 @@
             <button
               type="button"
               class="tgp-unit"
-              :class="{ 'tgp-unit--on': unitPicked(u), 'tgp-unit--open': isOpen(t.track, u) }"
+              :class="{ 'tgp-unit--on': unitPicked(t, u), 'tgp-unit--open': isOpen(t.track, u) }"
               :aria-expanded="u.topics.length > 1 ? isOpen(t.track, u) : undefined"
               :data-testid="`topic-unit-${t.track}-${u.no}`"
               @click="clickUnit(t, u)"
@@ -62,7 +62,7 @@
                 class="tgp-chip"
                 :class="{ 'tgp-chip--on': selected.includes(id) }"
                 :data-testid="`topic-refine-${id}`"
-                @click="emit('pick', id)"
+                @click="pickFrom(t, u, id)"
               >{{ labels[id] }}</button>
             </div>
           </template>
@@ -117,13 +117,28 @@ function isOpen(track: string, u: GradeUnit): boolean {
     && u.topics.some((id) => (props.labels[id] ?? '').toLowerCase().includes(query.value.trim().toLowerCase())))
 }
 
-function unitPicked(u: GradeUnit): boolean {
-  return u.topics.some((id) => props.selected.includes(id))
+/**
+ * Розділ, з якого вчитель обрав тему (клас:курс:номер). Та сама тема буває в кількох розділах — підсвічуємо лише
+ * натиснутий (власник 2026-10-21: у 6 класі «Додавання…» й «Множення…» звичайних дробів світились обидва).
+ */
+const pickedKey = ref<string | null>(null)
+const pickedKeyOf = (t: GradeTrack, u: GradeUnit) => `${props.view}:${keyOf(t.track, u)}`
+
+function unitPicked(t: GradeTrack, u: GradeUnit): boolean {
+  if (!u.topics.some((id) => props.selected.includes(id))) return false
+  if (pickedKey.value) return pickedKey.value === pickedKeyOf(t, u)
+  // Тему обрали не тут (дерево НМТ, інший клас) — світимо розділ, лише коли він у класі один такий.
+  return tracks.value.flatMap((x) => x.units).filter((x) => x.topics.some((id) => props.selected.includes(id))).length === 1
+}
+
+function pickFrom(t: GradeTrack, u: GradeUnit, id: string) {
+  pickedKey.value = pickedKeyOf(t, u)
+  emit('pick', id)
 }
 
 function clickUnit(t: GradeTrack, u: GradeUnit) {
   if (u.topics.length === 1) {
-    emit('pick', u.topics[0])
+    pickFrom(t, u, u.topics[0])
     return
   }
   const key = keyOf(t.track, u)
