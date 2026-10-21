@@ -212,7 +212,7 @@ import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { homeworkImage } from '@/modules/intent/homeworkApi'
-import { homeworkTaskIds, serverDetail, useHomeworkCopyBoard } from '../../../composables/homeworkCopy'
+import { homeworkLevel, homeworkTaskIds, serverDetail, useHomeworkCopyBoard } from '../../../composables/homeworkCopy'
 import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRenderer'
 import { renderMathField } from '@/modules/intent/math/renderMathContent'
 import type { WBAsset, TheoryCardData } from '../../../types/winterboard'
@@ -352,7 +352,7 @@ async function copyHomework(): Promise<void> {
   hwError.value = ''
   dropHwDownload()
   hwCopying.value = true
-  const image: Promise<Blob> = homeworkImage({ boardId, ids: homeworkTaskIds(data.value) })
+  const image: Promise<Blob> = homeworkImage({ boardId, ids: homeworkTaskIds(data.value), level: homeworkLevel(data.value) })
   try {
     if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('no-image-clipboard')
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })])

@@ -21,6 +21,10 @@ export interface HomeworkProposal {
   task_count: number
   requested: number
   message: string
+  /** Вибраний рівень `[lo, hi]` або null — «як на уроці» (власник 2026-10-21). */
+  level?: [number, number] | null
+  /** «рівень 3–4» — у шапці картки й картинки; «як на уроці» — порожньо. */
+  level_label?: string
 }
 
 /**
@@ -89,7 +93,8 @@ export function homeworkPage(proposal: HomeworkProposal, look?: PageLook): WBPag
       locked: false,
       data: {
         version: 1,
-        badge: HOMEWORK_TITLE,
+        // Рівень — у шапці картки (власник 2026-10-21: «вибирати 1-2 чи 2-3…»)
+        badge: proposal.level_label ? `${HOMEWORK_TITLE} · ${proposal.level_label}` : HOMEWORK_TITLE,
         title: lesson || HOMEWORK_TITLE,
         body: [instruction, ...items.map((text, i) => `${i + 1}. ${text}`)].filter(Boolean).join('\n'),
         instruction,
@@ -97,6 +102,7 @@ export function homeworkPage(proposal: HomeworkProposal, look?: PageLook): WBPag
         items,
         // Які задачі банку вже дали домашкою — наступна пропозиція їх не повторить (сервер читає це поле).
         taskIds: proposal.items.map(item => item.id),
+        ...(proposal.level ? { level: proposal.level } : {}),
         formulas: [],
       },
     }],

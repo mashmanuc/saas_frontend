@@ -7712,6 +7712,8 @@
       "loading": "Integralyk is putting the homework together…",
       "count": "Tasks:",
       "others": "Other tasks",
+      "level": "Level:",
+      "levelAsLesson": "As in the lesson",
       "showAnswers": "Show answers",
       "hideAnswers": "Hide answers",
       "copy": "Copy as image",

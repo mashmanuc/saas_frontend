@@ -27,6 +27,13 @@ export function homeworkTaskIds(data: unknown): string[] {
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string' && id !== '') : []
 }
 
+/** Рівень домашки на картці (`data.level` = `[lo, hi]`, власник 2026-10-21) — для шапки картинки; немає — null. */
+export function homeworkLevel(data: unknown): [number, number] | null {
+  const level = (data as { level?: unknown } | null | undefined)?.level
+  return Array.isArray(level) && level.length === 2 && level.every(n => Number.isInteger(n))
+    ? [level[0] as number, level[1] as number] : null
+}
+
 /**
  * Пояснення сервера для вчителя («Частини задач уже немає в банку…»). Картинку просимо як `blob`, тож і тіло
  * помилки приходить `Blob` — читаємо з нього `detail`. Немає пояснення — `null`, і картка покаже загальне.

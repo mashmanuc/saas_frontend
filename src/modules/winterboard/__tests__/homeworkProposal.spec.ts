@@ -99,7 +99,7 @@ describe('вікно пропозиції', () => {
     await flushPromises()
     expect(w.find('[data-testid="wb-homework-thinking"]').exists()).toBe(false)
     expect(mocks.order).toEqual(['flush', 'post'])
-    expect(mocks.propose).toHaveBeenCalledWith({ boardId: 'board-1', count: 10, exclude: [] })
+    expect(mocks.propose).toHaveBeenCalledWith({ boardId: 'board-1', count: 10, exclude: [], level: null })
     expect(w.findAll('[data-testid="wb-homework-list"] li')).toHaveLength(3)
     expect(useWBStore().pages).toHaveLength(1)
   })
@@ -110,7 +110,7 @@ describe('вікно пропозиції', () => {
     await flushPromises()
     await w.get('[data-testid="wb-homework-others"]').trigger('click')
     await flushPromises()
-    expect(mocks.propose).toHaveBeenLastCalledWith({ boardId: 'board-1', count: 10, exclude: ['a', 'b', 'c'] })
+    expect(mocks.propose).toHaveBeenLastCalledWith({ boardId: 'board-1', count: 10, exclude: ['a', 'b', 'c'], level: null })
     const plus = w.findAll('.wb-homework__step')[1]
     for (let i = 0; i < 15; i++) await plus.trigger('click')
     await flushPromises()
@@ -139,7 +139,7 @@ describe('вікно пропозиції', () => {
     await flushPromises()
     await w.get('[data-testid="wb-homework-copy"]').trigger('click')
     await flushPromises()
-    expect(mocks.image).toHaveBeenCalledWith({ boardId: 'board-1', ids: ['a', 'b', 'c'], answers: false })
+    expect(mocks.image).toHaveBeenCalledWith({ boardId: 'board-1', ids: ['a', 'b', 'c'], answers: false, level: null })
     expect(write).toHaveBeenCalledTimes(1)
     expect(Object.keys((write.mock.calls[0][0] as { items: Record<string, unknown> }[])[0].items)).toEqual(['image/png'])
     expect(w.get('[data-testid="wb-homework-copy"]').text()).toContain('Скопійовано')
@@ -178,7 +178,7 @@ describe('вікно пропозиції', () => {
     expect(w.get('[data-testid="wb-homework-copy"]').text()).toBe('Скопіювати з відповідями')
     await w.get('[data-testid="wb-homework-copy"]').trigger('click')
     await flushPromises()
-    expect(mocks.image).toHaveBeenLastCalledWith({ boardId: 'board-1', ids: ['a', 'b', 'c'], answers: true })
+    expect(mocks.image).toHaveBeenLastCalledWith({ boardId: 'board-1', ids: ['a', 'b', 'c'], answers: true, level: null })
     expect(w.get('[data-testid="wb-homework-copy"]').text()).toContain('Скопійовано')
     await w.get('[data-testid="wb-homework-answers"]').trigger('click')
     expect(w.get('[data-testid="wb-homework-copy"]').text()).toBe('Скопіювати картинку')
@@ -241,7 +241,7 @@ describe('вікно пропозиції', () => {
     window.dispatchEvent(new CustomEvent('m4sh:homework-propose', { detail }))
     await flushPromises()
     expect(detail.handled).toBe(true)
-    expect(mocks.propose).toHaveBeenCalledWith({ boardId: 'board-1', count: 6, exclude: [] })
+    expect(mocks.propose).toHaveBeenCalledWith({ boardId: 'board-1', count: 6, exclude: [], level: null })
     expect(w.find('[data-testid="wb-homework-modal"]').exists()).toBe(true)
     w.unmount()
   })
@@ -278,5 +278,50 @@ describe('сторінка домашки — того ж кольору, що �
     expect(lastPageLook([{ background: { type: 'image', url: 'x' } as never, backgroundColor: '#fef9c3' }]))
       .toEqual({ background: 'white', backgroundColor: '#fef9c3' })
     expect(lastPageLook([])).toEqual({ background: 'white', backgroundColor: '#ffffff' })
+  })
+})
+
+// Рівень складності (власник 2026-10-21: «кнопку з можливістю вибору складності… 1-2 чи 2-3 чи 3-4 чи 4-5»)
+describe('рівень домашки', () => {
+  it('рядок «Рівень:» — «Як на уроці» (обрано) і чотири діапазони', async () => {
+    const w = mountButton()
+    await w.get('[data-testid="wb-homework-button"]').trigger('click')
+    await flushPromises()
+    const levels = w.get('[data-testid="wb-homework-levels"]')
+    expect(levels.text()).toContain('Рівень:')
+    expect(levels.findAll('button').map(b => b.text())).toEqual(['Як на уроці', '1–2', '2–3', '3–4', '4–5'])
+    expect(w.get('[data-testid="wb-homework-level-lesson"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('вибір рівня — новий набір цього рівня тієї самої кількості; «Інші задачі» й картинка — з тим самим рівнем', async () => {
+    const w = mountButton()
+    await w.get('[data-testid="wb-homework-button"]').trigger('click')
+    await flushPromises()
+    mocks.propose.mockImplementation(async () => ({ ...proposal(['x', 'y']), level: [3, 4], level_label: 'рівень 3–4' }))
+    await w.get('[data-testid="wb-homework-level-3-4"]').trigger('click')
+    await flushPromises()
+    expect(mocks.propose).toHaveBeenLastCalledWith({ boardId: 'board-1', count: 10, exclude: [], level: [3, 4] })
+    expect(w.get('[data-testid="wb-homework-level-3-4"]').attributes('aria-pressed')).toBe('true')
+    await w.get('[data-testid="wb-homework-others"]').trigger('click')
+    await flushPromises()
+    expect(mocks.propose).toHaveBeenLastCalledWith({ boardId: 'board-1', count: 10, exclude: ['x', 'y'], level: [3, 4] })
+    mocks.image.mockReturnValue(new Promise(() => {}))
+    await w.get('[data-testid="wb-homework-copy"]').trigger('click')
+    expect(mocks.image).toHaveBeenLastCalledWith({ boardId: 'board-1', ids: ['x', 'y'], answers: false, level: [3, 4] })
+    // той самий рівень ще раз — запиту немає
+    const calls = mocks.propose.mock.calls.length
+    await w.get('[data-testid="wb-homework-level-3-4"]').trigger('click')
+    expect(mocks.propose.mock.calls.length).toBe(calls)
+  })
+
+  it('картка на дошці: рівень у шапці й у даних (для копії картинки з картки)', () => {
+    const page = homeworkPage({ ...proposal(['a']), level: [2, 3], level_label: 'рівень 2–3' } as never) as never as {
+      assets: Array<{ data: { badge: string; level?: number[] } }>
+    }
+    expect(page.assets[0].data.badge).toBe(`${HOMEWORK_TITLE} · рівень 2–3`)
+    expect(page.assets[0].data.level).toEqual([2, 3])
+    const plain = homeworkPage(proposal(['a']) as never) as never as { assets: Array<{ data: { badge: string; level?: number[] } }> }
+    expect(plain.assets[0].data.badge).toBe(HOMEWORK_TITLE)
+    expect('level' in plain.assets[0].data).toBe(false)
   })
 })

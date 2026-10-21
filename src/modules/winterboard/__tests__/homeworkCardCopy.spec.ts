@@ -59,10 +59,18 @@ describe('картка домашки на дошці · «📋 Скопіюва
     expect(btn.attributes('data-export-hide')).toBeDefined()          // у PDF-експорт дошки не потрапляє
     await btn.trigger('click')
     await flushPromises()
-    expect(homeworkImage).toHaveBeenCalledWith({ boardId: 'board-1', ids: ['nmt-1', 'nmt-2'] })
+    expect(homeworkImage).toHaveBeenCalledWith({ boardId: 'board-1', ids: ['nmt-1', 'nmt-2'], level: null })
     expect(write).toHaveBeenCalledTimes(1)
     expect(await write.mock.calls[0][0][0].items['image/png']).toBe(png)
     expect(w.get('[data-testid="theory-card-hw-copy"]').text()).toContain('Скопійовано')
+  })
+
+  it('картка з рівнем (власник 21.10) — картинка з тим самим рівнем у шапці', async () => {
+    homeworkImage.mockReturnValue(Promise.resolve(new Blob(['png'])))
+    const w = mountIn('board-1', { ...HOMEWORK, badge: 'Домашнє завдання · рівень 3–4', level: [3, 4] })
+    await w.get('[data-testid="theory-card-hw-copy"]').trigger('click')
+    await flushPromises()
+    expect(homeworkImage).toHaveBeenCalledWith({ boardId: 'board-1', ids: ['nmt-1', 'nmt-2'], level: [3, 4] })
   })
 
   it('клікається й з олівцем — як «Джерело»', async () => {

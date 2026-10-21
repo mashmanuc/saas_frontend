@@ -4,7 +4,8 @@
 
   Натиск нічого не кладе на дошку: відкриває вікно з ПРОПОЗИЦІЄЮ — список таких самих задач, як на уроці
   (добирає сервер з банку, модель не викликається). Далі вчитель:
-    «Інші задачі» — новий набір того самого виду; «Показати відповіді» — лише йому;
+    «Рівень:» «Як на уроці» · 1–2 · 2–3 · 3–4 · 4–5 (власник 2026-10-21) — задачі тих рівнів, від легших до складніших;
+    «Інші задачі» — новий набір того самого виду й рівня; «Показати відповіді» — лише йому;
     «Скопіювати картинку» — картка з формулами й підписом M4SH для месенджера (власник 19.10: «очі ріже»
     від тексту; «скопіювати це карткою… зразу було видно, що це де зроблено»); не дав браузер — «Завантажити»;
     «Додати в урок» — одна картка-список на новій останній сторінці (видно в записі й у «Моїх уроках» учня).
@@ -70,6 +71,22 @@
           </p>
         </template>
 
+        <!-- Рівень (власник 2026-10-21: «кнопку з можливістю вибору складності… 1-2 чи 2-3 чи 3-4 чи 4-5») -->
+        <div class="wb-homework__row wb-homework__levels" role="group" :aria-label="t('winterboard.homework.level')"
+          data-testid="wb-homework-levels">
+          <span class="wb-homework__levels-label">{{ t('winterboard.homework.level') }}</span>
+          <button
+            v-for="option in LEVELS"
+            :key="levelKey(option)"
+            type="button"
+            class="wb-homework__level"
+            :class="{ 'wb-homework__level--on': levelKey(option) === levelKey(level) }"
+            :aria-pressed="levelKey(option) === levelKey(level)"
+            :disabled="loading"
+            :data-testid="`wb-homework-level-${levelKey(option)}`"
+            @click="chooseLevel(option)"
+          >{{ option ? `${option[0]}–${option[1]}` : t('winterboard.homework.levelAsLesson') }}</button>
+        </div>
         <div class="wb-homework__row">
           <span class="wb-homework__count">
             {{ t('winterboard.homework.count') }}
@@ -126,6 +143,8 @@ const props = defineProps<{ boardId: string }>()
 
 const MAX_COUNT = 20
 const DEFAULT_COUNT = 10
+// null — «Як на уроці» (рівні в тій самій пропорції, що на уроці); інакше — діапазон рівнів 1–5.
+const LEVELS: ReadonlyArray<[number, number] | null> = [null, [1, 2], [2, 3], [3, 4], [4, 5]]
 
 const { t } = useI18n()
 const store = useWBStore()
@@ -136,6 +155,7 @@ const loading = ref(false)
 const error = ref('')
 const proposal = ref<HomeworkProposal | null>(null)
 const count = ref(DEFAULT_COUNT)
+const level = ref<[number, number] | null>(null)
 const showAnswers = ref(false)
 const copied = ref(false)
 const copying = ref(false)
@@ -166,7 +186,7 @@ async function fetchProposal(exclude: string[] = []): Promise<void> {
     } catch {
       throw new Error(t('winterboard.homework.flushFailed'))
     }
-    proposal.value = await proposeHomework({ boardId: props.boardId, count: count.value, exclude })
+    proposal.value = await proposeHomework({ boardId: props.boardId, count: count.value, exclude, level: level.value })
   } catch (e: unknown) {
     const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
     proposal.value = null
@@ -185,6 +205,17 @@ function openModal(n?: number): void {
 
 function changeCount(delta: number): void {
   count.value = clamp(count.value + delta)
+  void fetchProposal()
+}
+
+function levelKey(option: [number, number] | null): string {
+  return option ? `${option[0]}-${option[1]}` : 'lesson'
+}
+
+// Рівень змінено — новий набір тих рівнів (кількість та сама), як «Інші задачі».
+function chooseLevel(option: [number, number] | null): void {
+  if (levelKey(option) === levelKey(level.value)) return
+  level.value = option
   void fetchProposal()
 }
 
@@ -211,6 +242,7 @@ async function copyImage(): Promise<void> {
   copying.value = true
   const image = homeworkImage({
     boardId: props.boardId, ids: proposal.value.items.map(item => item.id), answers: showAnswers.value,
+    level: proposal.value.level ?? null,
   })
   try {
     if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('no-image-clipboard')
@@ -310,6 +342,14 @@ defineExpose({ openModal })
 .wb-homework__answer { color: var(--accent, #059669); font-weight: 600; }
 .wb-homework__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 .wb-homework__row--main { margin-top: 12px; }
+.wb-homework__levels { gap: 6px; }
+.wb-homework__levels-label { font-size: 0.95rem; color: var(--text-secondary, #475569); margin-right: 2px; }
+.wb-homework__level {
+  min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-color, #e2e8f0);
+  background: transparent; color: var(--text-primary, #0f172a); font-size: 0.95rem; font-weight: 600; cursor: pointer;
+}
+.wb-homework__level--on { border-color: var(--accent, #059669); background: var(--accent, #059669); color: var(--accent-contrast, #ffffff); }
+.wb-homework__level:disabled { opacity: 0.45; cursor: default; }
 .wb-homework__count { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; font-size: 0.95rem; }
 .wb-homework__step {
   width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);
