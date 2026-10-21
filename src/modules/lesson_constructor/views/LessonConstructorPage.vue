@@ -222,7 +222,8 @@
               </template>
               <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
               <span class="lc-preview-sep lc-preview-total-sep">=</span>
-              <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
+              <!-- Сторінок конспекту клієнт не знає — сума словами, як у «Що вийде» (22.10: було «конспект + 4 практика = 4 сторінки») -->
+              <span class="lc-preview-item lc-preview-item--total">{{ withKonspekt ? 'конспект + ' : '' }}{{ totalPages }} {{ pageWord }}</span>
             </div>
             <p v-if="errors.task_count" class="lc-error">{{ errors.task_count }}</p>
           </template>
