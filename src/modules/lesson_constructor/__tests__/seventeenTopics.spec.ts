@@ -59,6 +59,8 @@ describe('Двадцять одна добірка у незміненій фо�
       const chip = wrapper.findAll('.lc-topic-chip').find(b => b.text().trim() === label)
       expect(chip).toBeDefined()
       await chip!.trigger('click')
+      // З 2026-10-21 кількість — окремий крок конструктора-речення: учитель спершу відкриває його.
+      await wrapper.get('[data-testid="lc-slot-count"]').trigger('click')
       await wrapper.get('input[type=range]').setValue(16)
       await wrapper.get('form').trigger('submit')
       await flushPromises()

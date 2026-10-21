@@ -52,7 +52,8 @@ describe('крок типу схований', () => {
     const w = await openAll(mount(LessonConstructorPage))
     expect(w.find('.lc-type-chip').exists()).toBe(false)
     expect(w.text()).not.toContain('Тип уроку')
-    expect(w.findAll('.lc-section__title')[0].text()).toMatch(/^1\. Оберіть тему/)
+    // З 2026-10-21 (конструктор-речення): перше, що бачить учитель, — речення уроку, без кроку типу.
+    expect(w.get('[data-testid="lc-sentence"]').text()).toMatch(/^Урок для/)
   })
 
   it('одна тема → запит із типом intro', async () => {

@@ -21,6 +21,8 @@ async function generateUntouched() {
   const w = mount(LessonConstructorPage)
   for (const head of w.findAll('.lc-topic-block__head')) await head.trigger('click')
   await w.findAll('.lc-topic-chip').find((c: any) => c.text().trim() === 'Похідна')!.trigger('click')
+  // З 2026-10-21 фон — окреме слово конструктора-речення: відкриваємо його вибір.
+  await w.get('[data-testid="lc-slot-bg"]').trigger('click')
   return w
 }
 

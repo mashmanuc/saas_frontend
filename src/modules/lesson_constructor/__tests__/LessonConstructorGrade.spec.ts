@@ -43,35 +43,44 @@ beforeEach(() => {
   push.mockClear()
 })
 
-describe('вибір теми за класом — сторінка конструктора', () => {
-  it('перший раз: рядок класів 5–11 і «НМТ», підказка обрати клас, дерева тем немає', () => {
+const topicSlot = (w: any) => w.get('[data-testid="lc-slot-topic"]').text()
+const backToTopic = async (w: any) => w.get('[data-testid="lc-slot-topic"]').trigger('click')
+
+describe('вибір теми за класом — сторінка конструктора (конструктор-речення)', () => {
+  it('перший раз: речення з порожніми «якого класу?» і «яку тему?», великі кнопки 5–11 і «НМТ», дерева тем немає', () => {
     const w = mount(LessonConstructorPage)
+    expect(w.get('[data-testid="lc-sentence"]').text()).toMatch(/^Урок для\s+якого класу\?\s+про\s+яку тему\?/)
+    expect(w.get('[data-testid="lc-slot-grade"]').classes()).toEqual(expect.arrayContaining(['lc-slot--empty', 'lc-slot--on']))
     expect(w.findAll('.tgp-grade').map((b: any) => b.text())).toEqual([
-      '5клас', '6клас', '7клас', '8клас', '9клас', '10клас', '11клас', 'НМТусі теми'])
-    expect(w.text()).toContain('Оберіть клас учня')
+      '5клас', '6клас', '7клас', '8клас', '9клас', '10клас', '11клас', 'НМТуся програма'])
+    expect(w.get('[data-testid="lc-tip"]').text()).toContain('Почніть з класу')
     expect(w.find('.lc-topic-block').exists()).toBe(false)
+    expect(w.get('.lc-btn-generate').attributes('disabled')).toBeDefined()
   })
 
-  it('клас → розділи програми в порядку планів; вибір класу запам’ятовується', async () => {
+  it('клас → крок «тема»: розділи програми в порядку планів; клас запам’ятовано й видно в реченні', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-5"]').trigger('click')
     const expected = CURRICULUM.filter((u) => u.grade === 5).map((u) => u.title)
     expect(unitButtons(w).map((b: any) => b.find('.tgp-unit__title').text())).toEqual(expected)
     expect(w.find('.tgp-track__head').text()).toContain('Математика')
+    expect(w.get('[data-testid="lc-slot-grade"]').text()).toBe('5 класу')
     expect(loadTopicView()).toBe(5)
   })
 
-  it('7 клас — дві колонки: алгебра, потім геометрія', async () => {
+  it('клас запам’ятовано — наступного разу сторінка одразу на темі цього класу', async () => {
+    localStorage.setItem('lc.topicView', '7')
     const w = mount(LessonConstructorPage)
-    await w.find('[data-testid="topic-grade-7"]').trigger('click')
     expect(w.findAll('.tgp-track__head').map((h: any) => h.find('span').text())).toEqual(['Алгебра', 'Геометрія'])
   })
 
-  it('розділ з однією темою обирає її одразу — у генератор іде саме вона', async () => {
+  it('розділ з однією темою обирає її одразу; речення каже тему, далі — кількість задач', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-5"]').trigger('click')
     await unit(w, 'Натуральні числа').trigger('click')
-    expect(w.find('[data-testid="topic-picked"]').text()).toBe('Урок про: Натуральні числа')
+    expect(topicSlot(w)).toBe('Натуральні числа')
+    expect(w.get('[data-testid="lc-slot-count"]').classes()).toContain('lc-slot--on')
+    expect(w.get('[data-testid="lc-preview"]').text()).toContain('Натуральні числа')
     expect((await generated(w)).topics).toEqual(['real-numbers.natural'])
   })
 
@@ -85,7 +94,7 @@ describe('вибір теми за класом — сторінка конст�
       'Множення і ділення десяткових дробів', 'Порядок дій із десятковими дробами'])
     expect(generate).not.toHaveBeenCalled()
     await w.find('[data-testid="topic-refine-real-numbers.fractions.decimal"]').trigger('click')
-    expect(w.find('[data-testid="topic-picked"]').text()).toBe('Урок про: Десяткові дроби')
+    expect(topicSlot(w)).toBe('Десяткові дроби')
     expect((await generated(w)).topics).toEqual(['real-numbers.fractions.decimal'])
   })
 
@@ -95,11 +104,11 @@ describe('вибір теми за класом — сторінка конст�
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-6"]').trigger('click')
     await unit(w, 'Додавання і віднімання звичайних дробів').trigger('click')
-    expect(w.find('[data-testid="topic-picked"]').text())
-      .toBe('Урок про: Додавання і віднімання дробів з різними знаменниками')
+    expect(topicSlot(w)).toBe('Додавання і віднімання дробів з різними знаменниками')
+    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.ordinary.add-subtract'])
+    await backToTopic(w)
     expect(w.findAll('.tgp-unit--on').map((b: any) => b.find('.tgp-unit__title').text()))
       .toEqual(['Додавання і віднімання звичайних дробів'])
-    expect((await generated(w)).topics).toEqual(['real-numbers.fractions.ordinary.add-subtract'])
     await unit(w, 'Множення і ділення звичайних дробів').trigger('click')
     expect((await generated(w)).topics).toEqual(['real-numbers.fractions.ordinary.multiply-divide'])
   })
@@ -109,14 +118,18 @@ describe('вибір теми за класом — сторінка конст�
     await w.find('[data-testid="topic-grade-7"]').trigger('click')
     await unit(w, 'Трикутники. Ознаки рівності трикутників').trigger('click')
     await w.find('[data-testid="topic-refine-triangles"]').trigger('click')
+    await backToTopic(w)
     expect(w.findAll('.tgp-unit--on').map((b: any) => b.find('.tgp-unit__title').text()))
       .toEqual(['Трикутники. Ознаки рівності трикутників'])
   })
 
-  it('інший розділ замінює вибір — тема одна', async () => {
+  it('інший клас — тема попереднього не переходить сама', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-5"]').trigger('click')
     await unit(w, 'Натуральні числа').trigger('click')
+    await w.get('[data-testid="lc-slot-grade"]').trigger('click')
+    await w.find('[data-testid="topic-grade-6"]').trigger('click')
+    expect(topicSlot(w)).toBe('яку тему?')
     await unit(w, 'Подільність натуральних чисел').trigger('click')
     expect((await generated(w)).topics).toEqual(['real-numbers.divisibility'])
   })
@@ -131,9 +144,10 @@ describe('вибір теми за класом — сторінка конст�
     expect(w.find('[data-testid="topic-refine-real-numbers.fractions.decimal"]').exists()).toBe(true)
   })
 
-  it('«НМТ»: дерево тем, як було, і пошук по всіх темах', async () => {
+  it('«НМТ»: дерево тем, як було, і пошук по всіх темах; вибір у дереві не перемикає крок', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-nmt"]').trigger('click')
+    expect(w.get('[data-testid="lc-slot-grade"]').text()).toBe('підготовки до НМТ')
     expect(w.findAll('.lc-topic-block').length).toBeGreaterThan(0)
     await w.find('[data-testid="topic-search"]').setValue('логарифм')
     const hits = w.findAll('.lc-topic-hit')
@@ -141,6 +155,7 @@ describe('вибір теми за класом — сторінка конст�
     expect(hits.every((h: any) => h.find('.lc-topic-hit__label').text().toLowerCase().includes('логарифм'))).toBe(true)
     expect(w.find('.lc-topic-block').exists()).toBe(false)
     await hits[0].trigger('click')
+    expect(w.find('[data-testid="topic-search"]').exists()).toBe(true)
     expect((await generated(w)).topics).toEqual([hits[0].attributes('data-testid')!.replace('topic-hit-', '')])
   })
 
@@ -149,6 +164,46 @@ describe('вибір теми за класом — сторінка конст�
     await w.find('[data-testid="topic-grade-nmt"]').trigger('click')
     await w.find('[data-testid="topic-search"]').setValue('щшщшщ')
     expect(w.text()).toContain('Нічого не знайдено')
+  })
+})
+
+describe('конструктор-речення — решта слів', () => {
+  async function ready() {
+    localStorage.setItem('lc.topicView', '5')
+    const w = mount(LessonConstructorPage)
+    await unit(w, 'Натуральні числа').trigger('click')
+    return w
+  }
+
+  it('кількість: кнопки, готові числа, межі 1–20; речення й «Що вийде» рахують сторінки', async () => {
+    const w = await ready()
+    await w.get('[data-testid="lc-count-plus"]').trigger('click')
+    expect(w.get('[data-testid="lc-slot-count"]').text()).toBe('5 задач')
+    await w.findAll('.lc-count').find((b: any) => b.text() === '20')!.trigger('click')
+    expect(w.get('[data-testid="lc-count-plus"]').attributes('disabled')).toBeDefined()
+    expect(w.get('[data-testid="lc-preview"]').text()).toContain('конспект + 20')
+    expect((await generated(w)).task_count).toBe(20)
+  })
+
+  it('складність — слово речення; іде в запит', async () => {
+    const w = await ready()
+    await w.get('[data-testid="lc-slot-diff"]').trigger('click')
+    await w.get('[data-testid="lc-diff-hard"]').trigger('click')
+    expect(w.get('[data-testid="lc-slot-diff"]').text()).toBe('важкі')
+    expect((await generated(w)).diff_profile).toBe('hard')
+  })
+
+  it('стиль і фон — у реченні тими самими словами, що в запиті', async () => {
+    const w = await ready()
+    expect(w.get('[data-testid="lc-slot-style"]').text()).toBe('класичний')
+    expect(w.get('[data-testid="lc-slot-bg"]').text()).toBe('🌈 різнокольоровому')
+    await w.get('[data-testid="lc-slot-bg"]').trigger('click')
+    await w.findAll('.lc-bg-mode__btn').find((b: any) => b.text() === 'Один колір')!.trigger('click')
+    expect(w.get('[data-testid="lc-slot-bg"]').text()).toBe('білому')
+    await w.get('[data-testid="lc-slot-style"]').trigger('click')
+    await w.findAll('.lc-theme-card').find((b: any) => b.text().includes('Наочний'))!.trigger('click')
+    expect(w.get('[data-testid="lc-slot-style"]').text()).toBe('наочний')
+    expect((await generated(w)).theme).toBe('academic')
   })
 })
 

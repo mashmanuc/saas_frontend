@@ -37,6 +37,8 @@ describe('Шість тем нерівностей і парабол у чинн
     const label = TOPICS.find(t => t.value === id)!.label
     const chip = w.findAll('.lc-topic-chip').find(b => b.text().trim() === label)
     expect(chip).toBeDefined(); await chip!.trigger('click')
+    // З 2026-10-21 кількість — окремий крок конструктора-речення: учитель спершу відкриває його.
+    await w.get('[data-testid="lc-slot-count"]').trigger('click')
     await w.get('input[type=range]').setValue(16)
     await w.get('form').trigger('submit'); await flushPromises()
     expect(generate).toHaveBeenCalledTimes(1)

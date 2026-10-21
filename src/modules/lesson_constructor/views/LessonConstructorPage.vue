@@ -1,28 +1,15 @@
 <template>
   <div class="lc-page">
-    <div class="lc-page__inner">
-
-      <!-- Header -->
-      <div class="lc-page__header">
-        <div class="lc-page__header-icon">🧩</div>
-        <div>
-          <h1 class="lc-page__title">Конструктор уроку</h1>
-          <p class="lc-page__subtitle">
-            Оберіть теми та параметри — система згенерує готову дошку з задачами НМТ.
-          </p>
-        </div>
-      </div>
-
-      <form class="lc-form" @submit.prevent="handleGenerate">
-
-        <!-- ── Тип уроку ────────────────────────────────────────────────────── -->
-        <!-- Стоїть ПЕРЕД темами свідомо: від типу залежить, скільки тем можна
-             взяти, тож питати його після вибору тем означало б стирати вже
-             зроблену роботу вчителя. -->
+    <!-- Конструктор-речення (власник 2026-10-21: «Замість цього ставим» — макет дизайнера «Конструктор уроку»).
+         Учитель читає урок одним реченням; клік на слово відкриває під реченням його вибір, праворуч — «Що вийде».
+         «Режим уроку» і «Сторінки теорії» з макета НЕ повернуто — прибрані власником 2026-10-19/20; на їхньому
+         місці — наявний «Конспект теми». Класи й теми — з реєстру програми (curriculum.ts), не зі списку макета. -->
+    <form id="lc-form" class="lc-layout" @submit.prevent="handleGenerate">
+      <section class="lc-main">
+        <!-- Крок «Тип уроку» схований (LESSON_TYPE_STEP_VISIBLE = false); розмітка лишається для тесту правил. -->
         <section v-if="LESSON_TYPE_STEP_VISIBLE" class="lc-section">
           <h2 class="lc-section__title">1. Тип уроку</h2>
           <p class="lc-section__hint">Від типу залежить каркас плану і скільки тем брати.</p>
-
           <div class="lc-types">
             <button
               v-for="opt in LESSON_TYPE_OPTIONS"
@@ -41,334 +28,394 @@
           <p v-if="errors.lesson_type" class="lc-error">{{ errors.lesson_type }}</p>
         </section>
 
-        <!-- ── Тема / теми ──────────────────────────────────────────────────── -->
-        <section class="lc-section">
-          <h2 class="lc-section__title">
-            {{ stepNo(2) }}. Оберіть {{ topicsNeeded === 1 ? 'тему' : 'теми' }}
-            <span class="lc-badge">{{ selectedTopics.length }} / {{ topicsNeeded || '—' }}</span>
-          </h2>
-          <p class="lc-section__hint">{{ topicsHint }}</p>
+        <div class="lc-kick">Новий урок</div>
+        <p class="lc-sentence" data-testid="lc-sentence">
+          Урок для
+          <button type="button" v-bind="slot('grade', !topicView)" data-testid="lc-slot-grade">{{ gradeSlot }}</button>
+          про
+          <button type="button" v-bind="slot('topic', !selectedTopics.length)" data-testid="lc-slot-topic">{{ pickedSummary || 'яку тему?' }}</button>
+          —
+          <button type="button" v-bind="slot('count')" data-testid="lc-slot-count">{{ taskCount }} {{ taskWord }}</button>,
+          <button type="button" v-bind="slot('diff')" data-testid="lc-slot-diff">{{ diffSlot }}</button>,
+          у стилі
+          <button type="button" v-bind="slot('style')" data-testid="lc-slot-style">{{ (currentTheme?.label ?? '').toLowerCase() }}</button>
+          на
+          <button type="button" v-bind="slot('bg')" data-testid="lc-slot-bg">{{ bgSlot }}</button>
+          фоні.
+        </p>
+        <p class="lc-more-line">
+          📗 Конспект теми: {{ withKonspekt ? 'на початку уроку' : 'без конспекту' }}<template v-if="boardName.trim()"> · назва «{{ boardName.trim() }}»</template>
+          <button type="button" class="lc-more-line__btn" data-testid="lc-slot-more" @click="openStep('more')">змінити</button>
+        </p>
 
-          <!-- Власник 2026-10-21: «зовсім незручно шукати тему від конкретного учня. Йому треба по класах, або по
-               темах, або пошук». Клас → розділи програми (TopicGradePicker, макет дизайнера, варіант D); «НМТ» —
-               дерево тем, як було, і пошук по всіх темах. -->
-          <TopicGradePicker
-            :view="topicView"
-            :selected="selectedTopics"
-            :labels="TOPIC_LABELS"
-            @update:view="setTopicView"
-            @pick="pickTopic"
-          />
-
-          <template v-if="topicView === 'nmt'">
-            <label class="lc-topic-search">
-              <span aria-hidden="true">🔍</span>
-              <input
-                v-model="topicQuery"
-                type="search"
-                placeholder="Знайти тему: «логарифм», «вектор», «відсотки»…"
-                data-testid="topic-search"
-              >
-            </label>
-            <div v-if="topicQuery.trim()" class="lc-topic-hits">
-              <button
-                v-for="topic in topicHits"
-                :key="topic.value"
-                type="button"
-                class="lc-topic-hit"
-                :class="{ 'lc-topic-hit--active': selectedTopics.includes(topic.value) }"
-                :data-testid="`topic-hit-${topic.value}`"
-                @click="toggleTopic(topic.value)"
-              >
-                <span class="lc-topic-hit__label">{{ topic.label }}</span>
-                <span class="lc-topic-hit__path">{{ topic.block }} › {{ topic.section }}</span>
-              </button>
-              <p v-if="!topicHits.length" class="lc-section__hint">Нічого не знайдено. Спробуйте коротше слово.</p>
-            </div>
+        <div class="lc-panel" :data-step="step">
+          <!-- Клас -->
+          <template v-if="step === 'grade'">
+            <div class="lc-panel__head"><b>Клас учня</b><span>покажемо лише теми його програми</span></div>
+            <TopicGradePicker
+              part="grades"
+              :view="topicView"
+              :selected="selectedTopics"
+              :labels="TOPIC_LABELS"
+              @update:view="chooseGrade"
+            />
           </template>
 
-          <template v-if="topicView === 'nmt' && !topicQuery.trim()">
-            <!-- Два блоки (Алгебра / Геометрія), що згортаються; усередині розділ —
-                 один рядок «назва | чипи» (слово власника 2026-09-22: «розділити на
-                 алгебру і геометрію, а тоді розгортаються теми»). Блоки, розділи й
-                 порядок — з таксономії на бекенді (`export_topics`). -->
-            <div v-for="block in topicBlocks" :key="block.block" class="lc-topic-block">
-              <button
-                type="button"
-                class="lc-topic-block__head"
-                :aria-expanded="openBlocks.includes(block.block)"
-                @click="toggleBlock(block.block)"
-              >
-                <span class="lc-topic-block__chevron" aria-hidden="true">
-                  {{ openBlocks.includes(block.block) ? '▾' : '▸' }}
-                </span>
-                <span class="lc-topic-block__title">{{ block.block }}</span>
-                <span v-if="pickedIn(block).length" class="lc-topic-block__picked">
-                  · {{ pickedIn(block).join(', ') }}
-                </span>
-              </button>
-              <div v-if="openBlocks.includes(block.block)" class="lc-topic-block__body">
-                <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
-                  <div class="lc-topic-row__title">{{ group.section }}</div>
-                  <!-- Широкі теми першим рядком, під кожною — її вужчі з відступом і підписом
-                       «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут.
-                       Вужчі сховані: ▸ біля теми розкриває один рівень (власник 2026-10-19: «щоб
-                       підтеми розгорталися» — розкрите все разом було «кишкою» на весь екран). -->
-                  <div class="lc-topic-tree">
-                    <div
-                      v-for="row in topicRows(group.topics)"
-                      :key="row.key"
-                      class="lc-topics"
-                      :class="{ 'lc-topics--child': row.depth > 0 }"
-                      :style="row.depth > 0 ? { '--lc-depth': row.depth } : undefined"
-                      :data-depth="row.depth"
-                    >
-                      <span v-if="row.parentLabel" class="lc-topics__parent">{{ row.parentLabel }} ›</span>
-                      <span v-for="topic in row.topics" :key="topic.value" class="lc-topic-chip-wrap">
-                        <button
-                          type="button"
-                          class="lc-topic-chip"
-                          :class="{
-                            'lc-topic-chip--active': selectedTopics.includes(topic.value),
-                            'lc-topic-chip--disabled': !canPick(topic.value),
-                          }"
-                          @click="toggleTopic(topic.value)"
+          <!-- Тема -->
+          <template v-else-if="step === 'topic'">
+            <!-- Лише зі схованим кроком «Тип уроку» (тест правил): скільки тем бере тип. -->
+            <template v-if="LESSON_TYPE_STEP_VISIBLE">
+              <h2 class="lc-section__title">
+                2. Оберіть {{ topicsNeeded === 1 ? 'тему' : 'теми' }}
+                <span class="lc-badge">{{ selectedTopics.length }} / {{ topicsNeeded || '—' }}</span>
+              </h2>
+              <p class="lc-section__hint">{{ topicsHint }}</p>
+            </template>
+            <div class="lc-panel__head">
+              <b>Тема · {{ topicView === 'nmt' ? 'НМТ' : `${topicView} клас` }}</b>
+              <span>{{ topicView === 'nmt' ? 'усі теми НМТ' : 'у порядку шкільної програми' }}</span>
+            </div>
+            <TopicGradePicker
+              v-if="typeof topicView === 'number'"
+              v-model:picked-key="pickedUnitKey"
+              part="topics"
+              :view="topicView"
+              :selected="selectedTopics"
+              :labels="TOPIC_LABELS"
+              @pick="pickFromGrade"
+            />
+            <template v-else>
+              <label class="lc-topic-search">
+                <span aria-hidden="true">🔍</span>
+                <input
+                  v-model="topicQuery"
+                  type="search"
+                  placeholder="Знайти тему: «логарифм», «вектор», «відсотки»…"
+                  data-testid="topic-search"
+                >
+              </label>
+              <div v-if="topicQuery.trim()" class="lc-topic-hits">
+                <button
+                  v-for="topic in topicHits"
+                  :key="topic.value"
+                  type="button"
+                  class="lc-topic-hit"
+                  :class="{ 'lc-topic-hit--active': selectedTopics.includes(topic.value) }"
+                  :data-testid="`topic-hit-${topic.value}`"
+                  @click="toggleTopic(topic.value)"
+                >
+                  <span class="lc-topic-hit__label">{{ topic.label }}</span>
+                  <span class="lc-topic-hit__path">{{ topic.block }} › {{ topic.section }}</span>
+                </button>
+                <p v-if="!topicHits.length" class="lc-section__hint">Нічого не знайдено. Спробуйте коротше слово.</p>
+              </div>
+              <template v-else>
+                <!-- Два блоки (Алгебра / Геометрія), що згортаються; усередині розділ —
+                     один рядок «назва | чипи» (слово власника 2026-09-22: «розділити на
+                     алгебру і геометрію, а тоді розгортаються теми»). Блоки, розділи й
+                     порядок — з таксономії на бекенді (`export_topics`). -->
+                <div v-for="block in topicBlocks" :key="block.block" class="lc-topic-block">
+                  <button
+                    type="button"
+                    class="lc-topic-block__head"
+                    :aria-expanded="openBlocks.includes(block.block)"
+                    @click="toggleBlock(block.block)"
+                  >
+                    <span class="lc-topic-block__chevron" aria-hidden="true">
+                      {{ openBlocks.includes(block.block) ? '▾' : '▸' }}
+                    </span>
+                    <span class="lc-topic-block__title">{{ block.block }}</span>
+                    <span v-if="pickedIn(block).length" class="lc-topic-block__picked">
+                      · {{ pickedIn(block).join(', ') }}
+                    </span>
+                  </button>
+                  <div v-if="openBlocks.includes(block.block)" class="lc-topic-block__body">
+                    <div v-for="group in block.sections" :key="group.section" class="lc-topic-row">
+                      <div class="lc-topic-row__title">{{ group.section }}</div>
+                      <!-- Широкі теми першим рядком, під кожною — її вужчі з відступом і підписом
+                           «Дроби ›» (власник 2026-10-19): видно, що загальне, а що покроковий маршрут.
+                           Вужчі сховані: ▸ біля теми розкриває один рівень (власник 2026-10-19: «щоб
+                           підтеми розгорталися» — розкрите все разом було «кишкою» на весь екран). -->
+                      <div class="lc-topic-tree">
+                        <div
+                          v-for="row in topicRows(group.topics)"
+                          :key="row.key"
+                          class="lc-topics"
+                          :class="{ 'lc-topics--child': row.depth > 0 }"
+                          :style="row.depth > 0 ? { '--lc-depth': row.depth } : undefined"
+                          :data-depth="row.depth"
                         >
-                          {{ topic.label }}
-                        </button>
-                        <button
-                          v-if="row.expandable.includes(topic.value)"
-                          type="button"
-                          class="lc-topic-expand"
-                          :aria-expanded="expandedTopics.includes(topic.value)"
-                          :aria-label="`${expandedTopics.includes(topic.value) ? 'Згорнути' : 'Розгорнути'} «${topic.label}»`"
-                          :title="expandedTopics.includes(topic.value) ? 'Згорнути' : 'Вужчі теми'"
-                          :data-topic="topic.value"
-                          @click="toggleExpand(topic.value)"
-                        >{{ expandedTopics.includes(topic.value) ? '▾' : '▸' }}</button>
-                      </span>
+                          <span v-if="row.parentLabel" class="lc-topics__parent">{{ row.parentLabel }} ›</span>
+                          <span v-for="topic in row.topics" :key="topic.value" class="lc-topic-chip-wrap">
+                            <button
+                              type="button"
+                              class="lc-topic-chip"
+                              :class="{
+                                'lc-topic-chip--active': selectedTopics.includes(topic.value),
+                                'lc-topic-chip--disabled': !canPick(topic.value),
+                              }"
+                              @click="toggleTopic(topic.value)"
+                            >
+                              {{ topic.label }}
+                            </button>
+                            <button
+                              v-if="row.expandable.includes(topic.value)"
+                              type="button"
+                              class="lc-topic-expand"
+                              :aria-expanded="expandedTopics.includes(topic.value)"
+                              :aria-label="`${expandedTopics.includes(topic.value) ? 'Згорнути' : 'Розгорнути'} «${topic.label}»`"
+                              :title="expandedTopics.includes(topic.value) ? 'Згорнути' : 'Вужчі теми'"
+                              :data-topic="topic.value"
+                              @click="toggleExpand(topic.value)"
+                            >{{ expandedTopics.includes(topic.value) ? '▾' : '▸' }}</button>
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </template>
+            </template>
+            <p v-if="pickedSummary" class="lc-topic-picked" data-testid="topic-picked">
+              Урок про: <b>{{ pickedSummary }}</b>
+            </p>
+            <p v-if="errors.topics" class="lc-error">{{ errors.topics }}</p>
+          </template>
+
+          <!-- Скільки задач -->
+          <template v-else-if="step === 'count'">
+            <div class="lc-panel__head"><b>Скільки задач</b><span>від 1 до {{ MAX_TASKS }}</span></div>
+            <div class="lc-stepper">
+              <button type="button" class="lc-stepper__btn" :disabled="taskCount <= 1" aria-label="Менше"
+                      data-testid="lc-count-minus" @click="setTaskCount(taskCount - 1)">−</button>
+              <b class="lc-stepper__value" data-testid="lc-count-value">{{ taskCount }}</b>
+              <button type="button" class="lc-stepper__btn" :disabled="taskCount >= MAX_TASKS" aria-label="Більше"
+                      data-testid="lc-count-plus" @click="setTaskCount(taskCount + 1)">+</button>
+              <div class="lc-counts">
+                <button
+                  v-for="n in COUNT_PRESETS"
+                  :key="n"
+                  type="button"
+                  class="lc-count"
+                  :class="{ 'lc-count--on': taskCount === n }"
+                  @click="setTaskCount(n)"
+                >{{ n }}</button>
               </div>
             </div>
-          </template>
-          <p v-if="pickedSummary" class="lc-topic-picked" data-testid="topic-picked">
-            Урок про: <b>{{ pickedSummary }}</b>
-          </p>
-          <p v-if="errors.topics" class="lc-error">{{ errors.topics }}</p>
-        </section>
-
-        <!-- ── Кількість задач ──────────────────────────────────────────────── -->
-        <section class="lc-section">
-          <h2 class="lc-section__title">{{ stepNo(3) }}. Кількість задач</h2>
-          <div class="lc-task-count">
             <input
               v-model.number="taskCount"
               type="range"
               min="1"
-              max="20"
+              :max="MAX_TASKS"
               step="1"
-              class="lc-slider"
+              class="lc-count-range"
+              aria-label="Кількість задач"
+              data-testid="lc-count-range"
             />
-            <span class="lc-task-count__value">{{ taskCount }}</span>
-          </div>
-          <!-- Реальний preview — показуємо структуру по типах сторінок -->
-          <div class="lc-preview-box">
-            <span class="lc-preview-item lc-preview-item--tasks">📋 {{ taskCount }} {{ taskWord }}</span>
-            <span class="lc-preview-sep">→</span>
-            <!-- Конспект теми (2026-10-21): скільки в нього сторінок, знає сервер — тут лише видно, що він буде -->
-            <template v-if="withKonspekt">
-              <span class="lc-preview-item lc-preview-item--konspekt" data-testid="lc-preview-konspekt">📗 конспект</span>
-              <span class="lc-preview-sep">+</span>
-            </template>
-            <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
-            <span class="lc-preview-sep lc-preview-total-sep">=</span>
-            <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
-          </div>
-          <p v-if="errors.task_count" class="lc-error">{{ errors.task_count }}</p>
-        </section>
+            <div class="lc-preview-box">
+              <span class="lc-preview-item lc-preview-item--tasks">📋 {{ taskCount }} {{ taskWord }}</span>
+              <span class="lc-preview-sep">→</span>
+              <!-- Конспект теми (2026-10-21): скільки в нього сторінок, знає сервер — тут лише видно, що він буде -->
+              <template v-if="withKonspekt">
+                <span class="lc-preview-item lc-preview-item--konspekt" data-testid="lc-preview-konspekt">📗 конспект</span>
+                <span class="lc-preview-sep">+</span>
+              </template>
+              <span class="lc-preview-item lc-preview-item--practice">📝 {{ practicePages }} практика</span>
+              <span class="lc-preview-sep lc-preview-total-sep">=</span>
+              <span class="lc-preview-item lc-preview-item--total">{{ totalPages }} {{ pageWord }}</span>
+            </div>
+            <p v-if="errors.task_count" class="lc-error">{{ errors.task_count }}</p>
+          </template>
 
-        <!-- ── Тема оформлення ──────────────────────────────────────────────── -->
-        <section class="lc-section">
-          <h2 class="lc-section__title">{{ stepNo(4) }}. Стиль карток</h2>
-          <div class="lc-themes">
-            <button
-              v-for="t in THEMES"
-              :key="t.value"
-              type="button"
-              class="lc-theme-card"
-              :class="{ 'lc-theme-card--active': theme === t.value }"
-              @click="theme = t.value"
-            >
-              <span class="lc-theme-card__name">{{ t.label }}</span>
-              <span class="lc-theme-card__desc">{{ t.desc }}</span>
-            </button>
-          </div>
-        </section>
-
-        <!-- ── Фон дошки ────────────────────────────────────────────────────── -->
-        <section class="lc-section">
-          <h2 class="lc-section__title">{{ stepNo(5) }}. Фон дошки</h2>
-          <p class="lc-section__hint">Застосовується до всіх сторінок уроку.</p>
-
-          <!-- Режим: один колір / різнокольорові -->
-          <div class="lc-bg-mode">
-            <button
-              type="button"
-              class="lc-bg-mode__btn"
-              :class="{ 'lc-bg-mode__btn--active': !multicolorBg }"
-              @click="multicolorBg = false"
-            >Один колір</button>
-            <button
-              type="button"
-              class="lc-bg-mode__btn"
-              :class="{ 'lc-bg-mode__btn--active': multicolorBg }"
-              @click="multicolorBg = true"
-            >🌈 Різнокольорові</button>
-          </div>
-
-          <!-- Режим A: один колір (пресети) -->
-          <template v-if="!multicolorBg">
-            <div class="lc-bg-grid">
+          <!-- Складність -->
+          <template v-else-if="step === 'diff'">
+            <div class="lc-panel__head"><b>Складність задач</b><span>за замовчуванням — збалансована</span></div>
+            <div class="lc-diffs">
               <button
-                v-for="bg in BG_PRESETS"
-                :key="bg.value"
+                v-for="(dp, i) in DIFF_PROFILES"
+                :key="dp.value"
                 type="button"
-                class="lc-bg-swatch"
-                :class="{ 'lc-bg-swatch--active': boardBg === bg.value }"
-                :style="{ background: bg.value }"
-                :title="bg.label"
-                @click="boardBg = bg.value"
+                class="lc-diff"
+                :class="{ 'lc-diff--on': diffProfile === dp.value }"
+                :data-testid="`lc-diff-${dp.value}`"
+                @click="diffProfile = dp.value"
               >
-                <span v-if="boardBg === bg.value" class="lc-bg-swatch__check">✓</span>
+                <span class="lc-diff__bars" aria-hidden="true">
+                  <i v-for="k in 4" :key="k" :class="{ 'lc-diff__bar--on': k <= i + 1 }" :style="{ height: `${4 + k * 4}px` }" />
+                </span>
+                {{ dp.label }}
               </button>
             </div>
-            <p class="lc-bg-label">{{ activeBgLabel }}</p>
           </template>
 
-          <!-- Режим B: різнокольорові — палітра пастелі циклом по сторінках -->
-          <template v-else>
-            <p class="lc-bg-label">
-              Кожна практична сторінка — свій м'який колір (циклом). Учням так веселіше.
-            </p>
-            <div class="lc-bg-strip">
-              <span
-                v-for="(c, i) in bgPalette"
-                :key="i"
-                class="lc-bg-strip__cell"
-                :style="{ background: c }"
-                :title="c"
-              />
+          <!-- Стиль карток -->
+          <template v-else-if="step === 'style'">
+            <div class="lc-panel__head"><b>Стиль карток</b><span>можна змінити й після створення</span></div>
+            <div class="lc-themes">
+              <button
+                v-for="t in THEMES"
+                :key="t.value"
+                type="button"
+                class="lc-theme-card"
+                :class="{ 'lc-theme-card--active': theme === t.value }"
+                @click="theme = t.value"
+              >
+                <span class="lc-theme-card__swatch" :class="{ 'lc-theme-card__swatch--grid': t.tasksPerPage > 1 }" aria-hidden="true">
+                  <i /><span v-for="c in t.tasksPerPage" :key="c"><em /><em /><em /></span>
+                </span>
+                <span class="lc-theme-card__name">{{ t.label }}</span>
+                <span class="lc-theme-card__desc">{{ t.desc }}</span>
+              </button>
             </div>
-            <label class="lc-bg-sat">
-              <span class="lc-bg-sat__label">Насиченість</span>
-              <input
-                type="range"
-                min="0" max="100" step="5"
-                v-model.number="bgSaturation"
-                class="lc-bg-sat__range"
-              />
-              <span class="lc-bg-sat__val">{{ bgSaturation }}%</span>
-            </label>
           </template>
-        </section>
 
-        <!-- ── Конспект теми (власник 2026-10-21: «так, роби конспекти картками») ─────────────────
-             Сторінки на початку уроку: означення, правила, «Запам'ятай», приклади, малюнки й «Перевір себе». -->
-        <section class="lc-section">
-          <label class="lc-check" data-testid="lc-konspekt">
-            <input v-model="withKonspekt" type="checkbox" />
-            <span>
-              <b>📗 Конспект теми на початку уроку</b>
-              <small>Картки з означеннями, правилами, прикладами й «Перевір себе»</small>
-            </span>
-          </label>
-        </section>
-
-        <!-- ── Додаткові параметри (collapsed) ─────────────────────────────── -->
-        <section class="lc-section">
-          <button
-            type="button"
-            class="lc-advanced-toggle"
-            @click="showAdvanced = !showAdvanced"
-          >
-            <span>{{ showAdvanced ? '▲' : '▼' }}</span>
-            Додаткові параметри
-          </button>
-
-          <div v-if="showAdvanced" class="lc-advanced">
-
-            <div class="lc-field">
-              <label class="lc-label">Складність задач</label>
-              <div class="lc-radio-group">
-                <label
-                  v-for="dp in DIFF_PROFILES"
-                  :key="dp.value"
-                  class="lc-radio"
+          <!-- Фон дошки -->
+          <template v-else-if="step === 'bg'">
+            <div class="lc-panel__head"><b>Фон дошки</b><span>для всіх сторінок уроку</span></div>
+            <div class="lc-bg-mode">
+              <button
+                type="button"
+                class="lc-bg-mode__btn"
+                :class="{ 'lc-bg-mode__btn--active': !multicolorBg }"
+                @click="multicolorBg = false"
+              >Один колір</button>
+              <button
+                type="button"
+                class="lc-bg-mode__btn"
+                :class="{ 'lc-bg-mode__btn--active': multicolorBg }"
+                @click="multicolorBg = true"
+              >🌈 Різнокольорові</button>
+            </div>
+            <template v-if="!multicolorBg">
+              <div class="lc-bg-grid">
+                <button
+                  v-for="bg in BG_PRESETS"
+                  :key="bg.value"
+                  type="button"
+                  class="lc-bg-swatch"
+                  :class="{ 'lc-bg-swatch--active': boardBg === bg.value }"
+                  :style="{ background: bg.value }"
+                  :title="bg.label"
+                  @click="boardBg = bg.value"
                 >
-                  <input v-model="diffProfile" type="radio" :value="dp.value" />
-                  {{ dp.label }}
-                </label>
+                  <span v-if="boardBg === bg.value" class="lc-bg-swatch__check">✓</span>
+                </button>
               </div>
-            </div>
+              <p class="lc-bg-label">{{ activeBgLabel }}</p>
+            </template>
+            <template v-else>
+              <div class="lc-bg-strip">
+                <span
+                  v-for="(c, i) in bgPalette"
+                  :key="i"
+                  class="lc-bg-strip__cell"
+                  :style="{ background: c }"
+                  :title="c"
+                />
+              </div>
+              <label class="lc-bg-sat">
+                <span class="lc-bg-sat__label">Насиченість</span>
+                <input
+                  type="range"
+                  min="0" max="100" step="5"
+                  v-model.number="bgSaturation"
+                  class="lc-bg-sat__range"
+                />
+                <span class="lc-bg-sat__val">{{ bgSaturation }}%</span>
+              </label>
+              <p class="lc-bg-label">Кожна практична сторінка — свій м'який колір (циклом). Учням так веселіше.</p>
+            </template>
+          </template>
 
-            <!-- «Режим уроку» і «Сторінку теорії» прибрано (власник 2026-10-19): теорія була сухою,
-                 а режими нічого не міняли — «Практика» лишала теорію, «Іспит» не ховав розбору.
-                 Тексти теорії в базі лишились; «Окремі сторінки розбору» прибрано ще раніше —
-                 кожна картка має «Показати розбір». -->
-
+          <!-- Ще: конспект і назва -->
+          <template v-else-if="step === 'more'">
+            <div class="lc-panel__head"><b>Ще про урок</b><span>можна не чіпати</span></div>
+            <!-- Конспект теми (власник 2026-10-21: «так, роби конспекти картками») — сторінки на початку
+                 уроку: означення, правила, «Запам'ятай», приклади, малюнки й «Перевір себе».
+                 «Режим уроку» і «Сторінку теорії» прибрано (власник 2026-10-19): теорія була сухою, а режими
+                 нічого не міняли. -->
+            <label class="lc-check" data-testid="lc-konspekt">
+              <input v-model="withKonspekt" type="checkbox" />
+              <span>
+                <b>📗 Конспект теми на початку уроку</b>
+                <small>Картки з означеннями, правилами, прикладами й «Перевір себе»</small>
+              </span>
+            </label>
             <div class="lc-field">
-              <label class="lc-label">Назва дошки (необов'язково)</label>
+              <label class="lc-label" for="lc-board-name">Назва дошки (необов'язково)</label>
               <input
+                id="lc-board-name"
                 v-model="boardName"
                 type="text"
                 class="lc-input"
                 maxlength="255"
-                placeholder="Авто-назва з тем"
+                placeholder="Авто-назва з теми"
               />
             </div>
+          </template>
+        </div>
+      </section>
 
-          </div>
-        </section>
-
-        <!-- ── Generate button ──────────────────────────────────────────────── -->
-        <div class="lc-actions">
-          <button
-            type="submit"
-            class="lc-btn-generate"
-            :class="{ 'lc-btn-generate--busy': isLoading }"
-            :disabled="isLoading || !!focusProblem"
-          >
-            <!-- Власник 2026-10-18: «що він думає, а не просто колесо крутиться». -->
-            <IntegralykThinking v-if="isLoading" :size="22" />
-            <span v-else>✨</span>
-            {{ isLoading ? 'Генерую урок…' : 'Згенерувати урок' }}
-          </button>
-
-          <!-- Поки генерується — посередині екрана Інтегралик, що думає, у тій самій рамці, що й
-               загальне «Завантаження…» (власник 2026-10-19: «не колесо, а Інтегралик»; 2026-10-20 — сцена
-               «хмарка думок»: «підбери нового лодера»). Загальне вікно для цього запиту вимкнене
-               (skipLoader у lessonConstructorApi.generate). -->
-          <Teleport to="body">
-            <div v-if="isLoading" class="loader-overlay" aria-live="polite" data-testid="lc-generating">
-              <div class="loader-panel" role="status">
-                <IntegralykLoader :width="170" />
-                <p class="text-sm font-medium text-primary">Інтегралик складає урок…</p>
-              </div>
+      <aside class="lc-aside">
+        <div class="lc-preview" data-testid="lc-preview">
+          <span class="lc-kick">Що вийде</span>
+          <div class="lc-stack" aria-hidden="true">
+            <div
+              v-for="(pg, i) in previewPages"
+              :key="i"
+              class="lc-pg"
+              :class="pg.konspekt ? 'lc-pg--k' : 'lc-pg--p'"
+              :style="pg.style"
+            >
+              <span class="lc-pg__tag">{{ pg.tag }}</span>
+              <span class="lc-pg__title">{{ pg.title }}</span>
+              <em /><em class="lc-pg__short" />
+              <span class="lc-pg__box" />
             </div>
-          </Teleport>
-
-          <!-- Заблокована кнопка без причини — та сама глуха стіна, лише мовчазна. -->
-          <p v-if="focusProblem" class="lc-hint-blocked">{{ focusProblem }}</p>
-
-          <p v-if="errors.general" class="lc-error lc-error--center">
-            {{ errors.general }}
-          </p>
+          </div>
+          <dl class="lc-sum">
+            <div><dt>Клас</dt><dd>{{ topicView === 'nmt' ? 'НМТ' : topicView ?? '—' }}</dd></div>
+            <div><dt>Тема</dt><dd>{{ pickedSummary || '—' }}</dd></div>
+            <div><dt>Задач</dt><dd>{{ taskCount }}</dd></div>
+            <div><dt>Сторінок</dt><dd>{{ withKonspekt ? 'конспект + ' : '' }}{{ totalPages }}</dd></div>
+            <div><dt>Складність</dt><dd>{{ diffLabel }}</dd></div>
+            <div><dt>Фон</dt><dd>{{ multicolorBg ? 'різнокольоровий' : activeBgLabel }}</dd></div>
+          </dl>
         </div>
 
-      </form>
-    </div>
+        <button
+          type="submit"
+          class="lc-btn-generate"
+          :class="{ 'lc-btn-generate--busy': isLoading }"
+          :disabled="isLoading || !!focusProblem"
+        >
+          <!-- Власник 2026-10-18: «що він думає, а не просто колесо крутиться». -->
+          <IntegralykThinking v-if="isLoading" :size="22" />
+          {{ isLoading ? 'Інтегралик складає урок…' : 'Створити дошку →' }}
+        </button>
+        <!-- Заблокована кнопка без причини — та сама глуха стіна, лише мовчазна. -->
+        <p v-if="focusProblem" class="lc-hint-blocked">{{ !topicView ? 'Оберіть клас' : focusProblem }}</p>
+        <p v-if="errors.general" class="lc-error lc-error--center">{{ errors.general }}</p>
+
+        <div class="lc-mascot">
+          <i aria-hidden="true">∫</i>
+          <span data-testid="lc-tip">{{ tip }}</span>
+        </div>
+
+        <!-- Поки генерується — посередині екрана Інтегралик, що думає, у тій самій рамці, що й
+             загальне «Завантаження…» (власник 2026-10-19: «не колесо, а Інтегралик»; 2026-10-20 — сцена
+             «хмарка думок»: «підбери нового лодера»). Загальне вікно для цього запиту вимкнене
+             (skipLoader у lessonConstructorApi.generate). -->
+        <Teleport to="body">
+          <div v-if="isLoading" class="loader-overlay" aria-live="polite" data-testid="lc-generating">
+            <div class="loader-panel" role="status">
+              <IntegralykLoader :width="170" />
+              <p class="text-sm font-medium text-primary">Інтегралик складає урок…</p>
+            </div>
+          </div>
+        </Teleport>
+      </aside>
+    </form>
   </div>
 </template>
 
@@ -402,15 +449,15 @@ const router = useRouter()
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const BG_PRESETS = [
-  { value: '#ffffff', label: 'Білий (чистий)' },
-  { value: '#fef9f0', label: 'Тепло-бежевий' },
-  { value: '#f0f7ff', label: 'М\'який блакитний' },
-  { value: '#f0fdf4', label: 'М\'який зелений' },
-  { value: '#faf5ff', label: 'Лавандовий' },
-  { value: '#fff7ed', label: 'Персиковий' },
-  { value: '#f8fafc', label: 'Сіро-білий' },
-  { value: '#f1f5f9', label: 'Сталевий' },
-  { value: '#1e1e2e', label: 'Темний (нічний)' },
+  { value: '#ffffff', label: 'Білий (чистий)', on: "білому" },
+  { value: '#fef9f0', label: 'Тепло-бежевий', on: "тепло-бежевому" },
+  { value: '#f0f7ff', label: 'М\'який блакитний', on: "м'якому блакитному" },
+  { value: '#f0fdf4', label: 'М\'який зелений', on: "м'якому зеленому" },
+  { value: '#faf5ff', label: 'Лавандовий', on: "лавандовому" },
+  { value: '#fff7ed', label: 'Персиковий', on: "персиковому" },
+  { value: '#f8fafc', label: 'Сіро-білий', on: "сіро-білому" },
+  { value: '#f1f5f9', label: 'Сталевий', on: "сталевому" },
+  { value: '#1e1e2e', label: 'Темний (нічний)', on: "темному" },
 ] as const
 
 // Відтінки пастельної палітри (HSL hue, 0–360) — розкидані по колу.
@@ -448,7 +495,6 @@ const multicolorBg    = ref(true)    // різнокольоровий режи�
 const bgSaturation    = ref(100)     // 0–100 % — насиченість пастельної палітри
 const diffProfile     = ref('balanced')
 const boardName       = ref('')
-const showAdvanced    = ref(false)
 // Конспект теми на початку уроку (власник 2026-10-21) — за замовчуванням так; немає конспекту — лише задачі
 const withKonspekt    = ref(true)
 
@@ -492,10 +538,6 @@ const activeBgLabel = computed(
 )
 
 // ── Тип уроку і теми ───────────────────────────────────────────────────────
-/** Номер кроку на екрані: без кроку типу решта зсувається на один. */
-function stepNo(n: number): number {
-  return LESSON_TYPE_STEP_VISIBLE ? n : n - 1
-}
 
 type Topic = (typeof TOPICS)[number]
 type TopicBlock = { block: string; sections: Array<{ section: string; topics: Topic[] }> }
@@ -606,14 +648,88 @@ function pickTopic(id: string) {
 /** Що саме піде в генератор: назва теми конструктора, а не розділу програми (вони не завжди збігаються). */
 const pickedSummary = computed(() => selectedTopics.value.map((id) => TOPIC_LABELS[id]).filter(Boolean).join(', '))
 
+// ── Конструктор-речення (власник 2026-10-21: макет «Конструктор уроку») ────────
+// «Урок для [класу] про [тему] — [N задач], [складність], у стилі [..] на [..] фоні.» Клік на слово відкриває під
+// реченням його вибір. Перший раз — клас; далі (клас запам'ятовано) — одразу тема.
+type Step = 'grade' | 'topic' | 'count' | 'diff' | 'style' | 'bg' | 'more'
+const step = ref<Step>(topicView.value === null ? 'grade' : 'topic')
+function openStep(next: Step) {
+  step.value = next
+}
+/** Слово речення: кнопка, що відкриває свій крок; порожнє — пунктиром («якого класу?»). */
+function slot(name: Step, empty = false) {
+  return {
+    class: ['lc-slot', { 'lc-slot--empty': empty, 'lc-slot--on': step.value === name }],
+    'aria-pressed': step.value === name,
+    onClick: () => openStep(name),
+  }
+}
+
+/** Інший клас — інша програма: тема попереднього класу не переходить сама (як у макеті). */
+function chooseGrade(view: TopicView) {
+  if (view !== topicView.value) selectedTopics.value = []
+  setTopicView(view)
+  step.value = 'topic'
+}
+/** Розділ програми, з якого обрано тему — щоб, повернувшись до теми, світився саме він (TopicGradePicker). */
+const pickedUnitKey = ref<string | null>(null)
+/** Тема з розділу програми обрана — далі кількість задач. У дереві НМТ крок не перемикається: там шукають. */
+function pickFromGrade(id: string) {
+  pickTopic(id)
+  step.value = 'count'
+}
+
+const MAX_TASKS = 20
+const COUNT_PRESETS = [2, 4, 6, 8, 10, 15, 20] as const
+function setTaskCount(n: number) {
+  taskCount.value = Math.min(MAX_TASKS, Math.max(1, Math.round(n)))
+}
+
+const gradeSlot = computed(() => (topicView.value === null ? 'якого класу?'
+  : topicView.value === 'nmt' ? 'підготовки до НМТ' : `${topicView.value} класу`))
+const DIFF_WORDS: Record<string, string> = { easy: 'легкі', balanced: 'збалансовані', hard: 'важкі', exam: 'екзаменаційні' }
+const diffSlot = computed(() => DIFF_WORDS[diffProfile.value] ?? diffProfile.value)
+const diffLabel = computed(() => DIFF_PROFILES.find((d) => d.value === diffProfile.value)?.label ?? diffProfile.value)
+const bgSlot = computed(() => (multicolorBg.value ? '🌈 різнокольоровому'
+  : BG_PRESETS.find((b) => b.value === boardBg.value)?.on ?? 'білому'))
+
+/** «Що вийде»: віяло сторінок — конспект (якщо є) і практичні, до 6 штук, у кольорах фону уроку. */
+const previewPages = computed(() => {
+  const pages: Array<{ konspekt: boolean; tag: string; title: string }> = []
+  if (withKonspekt.value) pages.push({ konspekt: true, tag: 'Конспект', title: pickedSummary.value || 'Тема уроку' })
+  const perPage = currentTheme.value?.tasksPerPage ?? 1
+  for (let p = 1; p <= practicePages.value && pages.length < 6; p++) {
+    const onPage = Math.min(perPage, taskCount.value - (p - 1) * perPage)
+    pages.push({ konspekt: false, tag: `Практика ${p}`, title: onPage === 1 ? '1 задача' : `${onPage} задачі` })
+  }
+  const shown = pages.length
+  return pages.map((pg, i) => {
+    const practiceNo = withKonspekt.value ? i : i + 1
+    const background = multicolorBg.value && !pg.konspekt ? bgPalette.value[(practiceNo - 1) % bgPalette.value.length] : boardBg.value
+    const off = shown > 1 ? i * (130 / (shown - 1)) - 65 : 0
+    const rot = shown > 1 ? (i - (shown - 1) / 2) * 3 : 0
+    return { ...pg, style: { background, zIndex: String(10 - i), transform: `translateX(${off}px) rotate(${rot}deg)` } }
+  })
+})
+
+/** Підказка Інтегралика під кнопкою — що зробити далі. */
+const tip = computed(() => {
+  if (isLoading.value) return 'Збираю урок — конспект і задачі.'
+  if (topicView.value === null) return 'Почніть з класу — я покажу лише теми його програми.'
+  if (!selectedTopics.value.length) return 'Тепер тема. Можна просто почати вводити назву.'
+  return 'Усе готово — натисніть «Створити дошку».'
+})
+
 const topicsNeeded = computed(() => topicsRequiredFor(lessonType.value))
 
+/** Підказка до схованого кроку «Тип уроку» — скільки тем бере тип. */
 const topicsHint = computed(() => {
   if (!lessonType.value) return 'Спершу оберіть тип уроку — від нього залежить, скільки тем брати.'
   return isBlockType(lessonType.value)
     ? 'Оберіть дві споріднені теми одного розділу — між ними буде що узагальнювати.'
     : 'Оберіть одну тему: урок про неї.'
 })
+
 
 /** Що заважає натиснути «Згенерувати». `null` = нічого. */
 const focusProblem = computed(() => focusIssue(lessonType.value, selectedTopics.value))
@@ -734,43 +850,13 @@ async function handleGenerate() {
   padding: 2rem 1rem 4rem;
 }
 
-.lc-page__inner {
-  max-width: 780px;
-  margin: 0 auto;
-}
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
-.lc-page__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
 
-.lc-page__header-icon {
-  font-size: 2.5rem;
-  line-height: 1;
-}
 
-.lc-page__title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 0.25rem;
-}
 
-.lc-page__subtitle {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin: 0;
-}
 
 /* ── Form ───────────────────────────────────────────────────────────────── */
-.lc-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
 
 .lc-section {
   background: #ffffff;
@@ -929,25 +1015,8 @@ async function handleGenerate() {
 }
 
 /* ── Task count ─────────────────────────────────────────────────────────── */
-.lc-task-count {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
 
-.lc-slider {
-  flex: 1;
-  accent-color: var(--accent);
-}
 
-.lc-task-count__value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent);
-  min-width: 2.5rem;
-  text-align: center;
-}
 
 /* ── Themes ─────────────────────────────────────────────────────────────── */
 .lc-themes {
@@ -1148,27 +1217,7 @@ async function handleGenerate() {
 }
 
 /* ── Advanced ───────────────────────────────────────────────────────────── */
-.lc-advanced-toggle {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0;
-  margin-bottom: 1rem;
-}
 
-.lc-advanced {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #e2e8f0;
-}
 
 .lc-field {
   display: flex;
@@ -1176,24 +1225,8 @@ async function handleGenerate() {
   gap: 0.5rem;
 }
 
-.lc-field--row {
-  flex-direction: row;
-  gap: 1.5rem;
-}
 
-.lc-field--col {
-  flex-direction: column;
-  gap: 0.75rem;
-}
 
-.lc-checkbox-hint {
-  font-size: 0.78rem;
-  color: #94a3b8;
-  font-weight: 400;
-  display: block;
-  margin-top: 0.15rem;
-  margin-left: 1.4rem;
-}
 
 .lc-label {
   font-size: 0.875rem;
@@ -1206,31 +1239,8 @@ async function handleGenerate() {
 .lc-check span { display: flex; flex-direction: column; gap: 0.15rem; }
 .lc-check small { color: var(--text-secondary, #64748b); font-size: 0.85rem; }
 
-.lc-radio-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
 
-.lc-radio {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  color: #374151;
-  cursor: pointer;
-  accent-color: var(--accent);   /* успадковується на <input>, узгоджує з темою */
-}
 
-.lc-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  color: #374151;
-  cursor: pointer;
-  accent-color: var(--accent);
-}
 
 .lc-input {
   border: 1.5px solid #d1d5db;
@@ -1248,12 +1258,6 @@ async function handleGenerate() {
 }
 
 /* ── Actions ────────────────────────────────────────────────────────────── */
-.lc-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
 
 .lc-btn-generate {
   background: var(--accent);
@@ -1268,7 +1272,7 @@ async function handleGenerate() {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.15s;
-  min-width: 220px;
+  width: 100%;
   justify-content: center;
 }
 
@@ -1325,6 +1329,196 @@ async function handleGenerate() {
 .lc-topic-hit__path { font-size: 0.75rem; color: #64748b; }
 .lc-topic-picked { margin: 0.9rem 0 0; font-size: 0.9rem; color: #334155; }
 
+/* ── Конструктор-речення (2026-10-21, макет «Конструктор уроку») ─────────────── */
+.lc-layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .lc-layout { grid-template-columns: minmax(0, 1fr); }
+  .lc-aside { position: static; }
+}
+.lc-main {
+  min-width: 0;
+  background: #fff;
+  border-radius: 24px;
+  padding: 36px 40px 32px;
+  box-shadow: 0 20px 50px -30px rgba(13, 74, 62, 0.4);
+}
+@media (max-width: 640px) { .lc-main { padding: 24px 18px; } }
+.lc-kick {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.lc-sentence {
+  margin: 10px 0 8px;
+  font-family: 'Space Grotesk', var(--font-sans, system-ui), sans-serif;
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: #0d4a3e;
+  text-wrap: pretty;
+}
+.lc-slot {
+  display: inline-flex;
+  align-items: center;
+  margin: 2px 0;
+  padding: 0 12px 2px;
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  color: color-mix(in srgb, var(--accent) 75%, #000);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lc-slot:hover { background: color-mix(in srgb, var(--accent) 20%, #fff); }
+.lc-slot--on, .lc-slot--on:hover { background: var(--accent); color: var(--color-on-accent); }
+.lc-slot--empty { padding: 0 4px; border-radius: 0; background: none; color: #94a3b8; border-bottom: 3px dashed #cbd5e1; }
+.lc-slot--empty.lc-slot--on {
+  padding: 0 12px 2px;
+  border-radius: 14px;
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  color: color-mix(in srgb, var(--accent) 75%, #000);
+}
+.lc-more-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 22px; font-size: 14px; color: #64748b; }
+.lc-more-line__btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.lc-panel { min-height: 300px; padding-top: 22px; border-top: 1px solid #e2e8f0; }
+.lc-panel__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.lc-panel__head b { font-size: 17px; color: #0f172a; }
+.lc-panel__head span { font-size: 13px; color: #64748b; }
+
+.lc-stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 12px; }
+.lc-stepper__btn, .lc-count {
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lc-stepper__btn { width: 46px; height: 46px; border-radius: 14px; font-size: 22px; }
+.lc-stepper__btn:disabled { opacity: 0.35; cursor: default; }
+.lc-stepper__value { min-width: 56px; text-align: center; font-size: 40px; color: #0f172a; }
+.lc-counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lc-count { width: 48px; height: 42px; border-radius: 14px; font-size: 17px; }
+.lc-count:hover, .lc-stepper__btn:hover:not(:disabled) { border-color: var(--accent); }
+.lc-count--on, .lc-count--on:hover { background: var(--accent); border-color: var(--accent); color: var(--color-on-accent); }
+.lc-count-range { width: 100%; margin: 4px 0 14px; accent-color: var(--accent); }
+
+.lc-diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .lc-diffs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.lc-diff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 16px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lc-diff--on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.lc-diff__bars { display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+.lc-diff__bars i { width: 7px; border-radius: 2px; background: #e2e8f0; }
+.lc-diff__bars i.lc-diff__bar--on { background: var(--accent); }
+
+.lc-theme-card__swatch {
+  display: grid;
+  grid-template-columns: 6px 1fr;
+  height: 70px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.lc-theme-card__swatch--grid {
+  grid-template-columns: 6px 1fr 1fr;
+  background-image: linear-gradient(#e6efec 1px, transparent 1px), linear-gradient(90deg, #e6efec 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+.lc-theme-card__swatch i { background: var(--accent); }
+.lc-theme-card__swatch > span { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+.lc-theme-card__swatch em { display: block; height: 6px; border-radius: 3px; background: #0d4a3e; opacity: 0.2; }
+.lc-theme-card__swatch em:first-child { width: 60%; height: 8px; opacity: 0.5; }
+
+.lc-aside { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.lc-preview { padding: 22px; border-radius: 24px; background: #fff; box-shadow: 0 20px 50px -30px rgba(13, 74, 62, 0.4); }
+.lc-stack { position: relative; height: 210px; margin: 12px 0 16px; }
+.lc-pg {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 150px;
+  height: 200px;
+  margin-left: -75px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px -10px rgba(13, 74, 62, 0.35);
+  transition: transform 0.35s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.lc-pg--k { border-top: 4px solid var(--accent); }
+.lc-pg--p { border-top: 4px solid #e07a3c; }
+.lc-pg__tag { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #047857; }
+.lc-pg__title { font-size: 12px; font-weight: 600; line-height: 1.25; color: #0d4a3e; }
+.lc-pg em { display: block; height: 5px; border-radius: 3px; background: rgba(13, 74, 62, 0.12); }
+.lc-pg .lc-pg__short { width: 70%; }
+.lc-pg__box { flex: 1; border: 1px dashed rgba(13, 74, 62, 0.18); border-radius: 6px; background: rgba(255, 255, 255, 0.55); }
+@media (prefers-reduced-motion: reduce) { .lc-pg { transition: none; } }
+.lc-sum { display: flex; flex-direction: column; gap: 8px; margin: 0; font-size: 14px; }
+.lc-sum div { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 7px; border-bottom: 1px dashed #e2e8f0; }
+.lc-sum dt { color: #64748b; }
+.lc-sum dd { margin: 0; font-weight: 700; text-align: right; color: #0f172a; }
+.lc-mascot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: #fff;
+  font-size: 13.5px;
+  color: #1f6b5a;
+}
+.lc-mascot i {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  color: var(--accent);
+  font: italic 700 22px Georgia, serif;
+}
+
 /* ── Темна тема (Б-156, фаза 1) ─────────────────────────────────────────────
    Сторінка намальована жорсткими світлими кольорами (вище) — у темній темі це був
    білий острів. Тут ті самі елементи отримують токени темної теми; світла тема не
@@ -1336,7 +1530,6 @@ async function handleGenerate() {
 [data-theme="dark"] .lc-topic-row,
 [data-theme="dark"] .lc-topics--child,
 [data-theme="dark"] .lc-bg-strip,
-[data-theme="dark"] .lc-advanced { border-color: var(--color-border); }
 
 [data-theme="dark"] .lc-page__title,
 [data-theme="dark"] .lc-topic-block__head,
@@ -1353,7 +1546,6 @@ async function handleGenerate() {
 [data-theme="dark"] .lc-bg-sat,
 [data-theme="dark"] .lc-label,
 [data-theme="dark"] .lc-radio,
-[data-theme="dark"] .lc-checkbox { color: var(--color-text-secondary); }
 [data-theme="dark"] .lc-checkbox-hint,
 [data-theme="dark"] .lc-preview-sep { color: var(--color-text-muted); }
 [data-theme="dark"] .lc-topic-block__picked { color: var(--color-accent); }
@@ -1422,4 +1614,32 @@ async function handleGenerate() {
   color: var(--color-text);
 }
 [data-theme="dark"] .lc-input:focus { border-color: var(--color-accent); }
+[data-theme="dark"] .lc-main,
+[data-theme="dark"] .lc-preview,
+[data-theme="dark"] .lc-mascot { background: var(--color-surface); box-shadow: none; }
+[data-theme="dark"] .lc-sentence,
+[data-theme="dark"] .lc-panel__head b,
+[data-theme="dark"] .lc-stepper__value,
+[data-theme="dark"] .lc-sum dd { color: var(--color-text); }
+[data-theme="dark"] .lc-more-line,
+[data-theme="dark"] .lc-panel__head span,
+[data-theme="dark"] .lc-sum dt,
+[data-theme="dark"] .lc-mascot { color: var(--color-text-secondary); }
+[data-theme="dark"] .lc-slot,
+[data-theme="dark"] .lc-slot--empty.lc-slot--on { background: var(--color-accent-soft); color: var(--color-accent); }
+[data-theme="dark"] .lc-slot--empty { background: none; color: var(--color-text-muted); border-bottom-color: var(--color-border-strong); }
+[data-theme="dark"] .lc-slot--on,
+[data-theme="dark"] .lc-slot--on:hover,
+[data-theme="dark"] .lc-count--on,
+[data-theme="dark"] .lc-count--on:hover { background: var(--color-accent); color: var(--color-on-accent); }
+[data-theme="dark"] .lc-panel,
+[data-theme="dark"] .lc-sum div { border-color: var(--color-border); }
+[data-theme="dark"] .lc-stepper__btn,
+[data-theme="dark"] .lc-count,
+[data-theme="dark"] .lc-diff {
+  background: var(--color-surface-sunken); border-color: var(--color-border-strong); color: var(--color-text);
+}
+[data-theme="dark"] .lc-diff__bars i { background: var(--color-border-strong); }
+[data-theme="dark"] .lc-diff__bars i.lc-diff__bar--on { background: var(--color-accent); }
+[data-theme="dark"] .lc-mascot i { background: var(--color-accent-soft); color: var(--color-accent); }
 </style>

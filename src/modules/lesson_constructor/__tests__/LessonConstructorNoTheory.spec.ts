@@ -29,18 +29,23 @@ async function withTopic() {
 }
 
 describe('генератор: без сухої теорії, з конспектом теми', () => {
-  it('у «Додаткових параметрах» — лише складність і назва дошки', async () => {
+  // З 2026-10-21 (конструктор-речення): складність — окреме слово речення, а «Ще про урок» — конспект і назва.
+  it('«Ще про урок» — лише конспект і назва дошки; ні режиму, ні теорії', async () => {
     const w = await withTopic()
-    await w.get('.lc-advanced-toggle').trigger('click')
-    const labels = w.findAll('.lc-advanced .lc-label').map((l: any) => l.text())
-    expect(labels).toEqual(['Складність задач', "Назва дошки (необов'язково)"])
-    expect(w.find('.lc-advanced input[type=checkbox]').exists()).toBe(false)
+    await w.get('[data-testid="lc-slot-more"]').trigger('click')
+    const labels = w.findAll('.lc-panel .lc-label').map((l: any) => l.text())
+    expect(labels).toEqual(["Назва дошки (необов'язково)"])
+    expect(w.findAll('.lc-panel input[type=checkbox]')).toHaveLength(1)
+    expect(w.find('[data-testid=lc-konspekt]').exists()).toBe(true)
     expect(w.text()).not.toContain('теорі')
+    expect(w.text()).not.toContain('Режим')
   })
 
   it('конспект теми — за замовчуванням так: прев’ю каже про нього, запит просить сторінки конспекту', async () => {
     const w = await withTopic()
+    await w.get('[data-testid="lc-slot-more"]').trigger('click')
     expect(w.get('[data-testid=lc-konspekt] input').element.checked).toBe(true)
+    await w.get('[data-testid="lc-slot-count"]').trigger('click')
     expect(w.find('[data-testid=lc-preview-konspekt]').exists()).toBe(true)
     expect(w.find('.lc-preview-box').text()).toContain('4 сторінки')
     await w.get('form').trigger('submit')
@@ -50,7 +55,9 @@ describe('генератор: без сухої теорії, з конспек�
 
   it('без галочки — урок без конспекту, як до 2026-10-21', async () => {
     const w = await withTopic()
+    await w.get('[data-testid="lc-slot-more"]').trigger('click')
     await w.get('[data-testid=lc-konspekt] input').setValue(false)
+    await w.get('[data-testid="lc-slot-count"]').trigger('click')
     expect(w.find('[data-testid=lc-preview-konspekt]').exists()).toBe(false)
     await w.get('form').trigger('submit')
     await flushPromises()

@@ -5,10 +5,13 @@
   (`curriculum.ts`). Розділ з однією темою обирає її одразу; розділ з кількома розкривається: «Про що саме урок?».
   «НМТ» лише перемикає вигляд — дерево тем і пошук по ньому малює сторінка конструктора, як і раніше.
   Компонент нічого не пише сам: обрану тему віддає подією `pick`.
+
+  `part` (конструктор-речення, макет «Конструктор уроку», 2026-10-21): `grades` — лише великі кнопки класів (крок
+  «Клас»), `topics` — лише розділи обраного класу (крок «Тема»), `all` — усе разом, як було.
 -->
 <template>
-  <div class="tgp">
-    <div class="tgp-grades" role="group" aria-label="Клас учня">
+  <div class="tgp" :class="`tgp--${part}`">
+    <div v-if="part !== 'topics'" class="tgp-grades" role="group" aria-label="Клас учня">
       <button
         v-for="g in GRADES"
         :key="g"
@@ -19,7 +22,7 @@
         :data-testid="`topic-grade-${g}`"
         @click="choose(g)"
       >{{ g }}<small>клас</small></button>
-      <span class="tgp-sep" aria-hidden="true" />
+      <span v-if="part !== 'grades'" class="tgp-sep" aria-hidden="true" />
       <button
         type="button"
         class="tgp-grade"
@@ -27,12 +30,12 @@
         :aria-pressed="view === 'nmt'"
         data-testid="topic-grade-nmt"
         @click="choose('nmt')"
-      >НМТ<small>усі теми</small></button>
+      >НМТ<small>{{ part === 'grades' ? 'уся програма' : 'усі теми' }}</small></button>
     </div>
 
-    <p v-if="view === null" class="tgp-note">Оберіть клас учня — побачите лише теми його програми.</p>
+    <p v-if="view === null && part === 'all'" class="tgp-note">Оберіть клас учня — побачите лише теми його програми.</p>
 
-    <template v-else-if="view !== 'nmt'">
+    <template v-else-if="part !== 'grades' && typeof view === 'number'">
       <label class="tgp-search">
         <span aria-hidden="true">🔍</span>
         <input v-model="query" type="search" :placeholder="`Пошук у ${view} класі…`" data-testid="topic-grade-search">
@@ -80,18 +83,23 @@ import { computed, ref, watch } from 'vue'
 import { GRADES } from '../curriculum'
 import { filterUnits, gradeTracks, type GradeTrack, type GradeUnit, type TopicView } from '../topicByGrade'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   view: TopicView | null
   /** Обрані теми конструктора (id). */
   selected: readonly string[]
   /** Назви тем конструктора за id (з `TOPICS`). */
   labels: Readonly<Record<string, string>>
-}>()
+  /** Що показати: ряд класів, розділи класу чи все разом. */
+  part?: 'grades' | 'topics' | 'all'
+  /** Розділ, з якого обрано тему (клас:курс:номер) — у сторінки: панель розділів зникає й з'являється знову. */
+  pickedKey?: string | null
+}>(), { part: 'all', pickedKey: undefined })
 
 const emit = defineEmits<{
   'update:view': [view: TopicView]
   /** Тема конструктора, про яку буде урок. */
   pick: [topicId: string]
+  'update:pickedKey': [key: string]
 }>()
 
 const query = ref('')
@@ -121,7 +129,8 @@ function isOpen(track: string, u: GradeUnit): boolean {
  * Розділ, з якого вчитель обрав тему (клас:курс:номер). Та сама тема буває в кількох розділах — підсвічуємо лише
  * натиснутий (власник 2026-10-21: у 6 класі «Додавання…» й «Множення…» звичайних дробів світились обидва).
  */
-const pickedKey = ref<string | null>(null)
+const localKey = ref<string | null>(null)
+const pickedKey = computed(() => (props.pickedKey !== undefined ? props.pickedKey : localKey.value))
 const pickedKeyOf = (t: GradeTrack, u: GradeUnit) => `${props.view}:${keyOf(t.track, u)}`
 
 function unitPicked(t: GradeTrack, u: GradeUnit): boolean {
@@ -132,7 +141,8 @@ function unitPicked(t: GradeTrack, u: GradeUnit): boolean {
 }
 
 function pickFrom(t: GradeTrack, u: GradeUnit, id: string) {
-  pickedKey.value = pickedKeyOf(t, u)
+  localKey.value = pickedKeyOf(t, u)
+  emit('update:pickedKey', localKey.value)
   emit('pick', id)
 }
 
@@ -171,6 +181,11 @@ function topicWord(n: number): string {
 .tgp-grade--on, .tgp-grade--on:hover { background: var(--accent); border-color: var(--accent); color: var(--color-on-accent); }
 .tgp-grade--on small { color: inherit; opacity: 0.85; }
 .tgp-sep { width: 1px; margin: 4px; background: #e2e8f0; }
+.tgp--grades .tgp-grades { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.tgp--grades .tgp-grade { min-width: 0; padding: 0.95rem 0 0.7rem; border-radius: 16px; font-size: 1.7rem; }
+.tgp--grades .tgp-grade small { font-size: 0.7rem; }
+.tgp--grades [data-testid="topic-grade-nmt"] { font-size: 1.2rem; padding-top: 1.3rem; }
+@media (max-width: 760px) { .tgp--grades .tgp-grades { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 .tgp-search {
   display: flex; align-items: center; gap: 0.6rem;
