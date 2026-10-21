@@ -110,6 +110,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { changedPageIds } from './thumbnailDirty'
 import { useI18n } from 'vue-i18n'
 import type { WBPage } from '../../types/winterboard'
 import { SIDEBAR_DRAG_MIME, type SidebarDragPayload } from '../../types/boardDrop'
@@ -325,7 +326,7 @@ function thumbnailPhoto(url: string): HTMLImageElement | null {
   const img = new Image()
   img.onload = () => {
     thumbnailPhotos.set(url, img)
-    scheduleRender()
+    scheduleRender(true)
   }
   img.onerror = () => thumbnailPhotos.set(url, 'error')
   thumbnailPhotos.set(url, 'loading')
@@ -335,11 +336,36 @@ function thumbnailPhoto(url: string): HTMLImageElement | null {
 
 let renderTimeout: ReturnType<typeof setTimeout> | null = null
 
-function scheduleRender(): void {
+// Сторінки, чий вміст змінився після останньої перемальовки (власник 2026-10-21, мультиборд: після КОЖНОГО штриха
+// перемальовувались мініатюри всіх сторінок — що більше урок, то довше; на Android-панелі це губило дотики).
+const dirtyIds = new Set<string>()
+let renderAll = false
+
+function scheduleRender(all = false): void {
+  if (all) renderAll = true
   if (renderTimeout) clearTimeout(renderTimeout)
   renderTimeout = setTimeout(() => {
-    renderVisibleThumbnails()
+    renderTimeout = null
+    if (renderAll) {
+      renderAll = false
+      dirtyIds.clear()
+      renderVisibleThumbnails()
+      return
+    }
+    renderDirtyThumbnails()
   }, 500)
+}
+
+/** Лише змінені сторінки, і лише ті, що видно (решту домалює IntersectionObserver, коли з'являться). */
+function renderDirtyThumbnails(): void {
+  const currentId = props.pages[props.currentIndex]?.id
+  for (const id of dirtyIds) {
+    if (!visibleIds.has(id) && id !== currentId) continue
+    const canvas = canvasMap.get(id)
+    const page = pageById(id)
+    if (canvas && page) renderThumbnail(canvas, page)
+  }
+  dirtyIds.clear()
 }
 
 // ─── Lazy rendering: only render thumbnails visible in the scrollable sidebar ─
@@ -401,15 +427,19 @@ function renderVisibleThumbnails(): void {
 }
 
 // Watch for page content changes (strokes, assets, backgroundColor)
+let lastSigs = new Map<string, string>()
 watch(
-  () => props.pages.map(p => ({
-    strokeCount: p.strokes?.length || 0,
-    assetCount: p.assets?.length || 0,
-    bg: p.backgroundColor || '',
-    photo: isImageBackground(p.background) ? p.background.url : '',
-  })),
-  () => scheduleRender(),
-  { deep: true }
+  () => props.pages.map(p => [
+    p.id,
+    `${p.strokes?.length || 0}|${p.assets?.length || 0}|${p.backgroundColor || ''}|${isImageBackground(p.background) ? p.background.url : ''}`,
+  ] as [string, string]),
+  (list) => {
+    const next = new Map(list)
+    for (const id of changedPageIds(lastSigs, next)) dirtyIds.add(id)
+    lastSigs = next
+    if (dirtyIds.size) scheduleRender()
+  },
+  { immediate: true },
 )
 
 // Watch for page list changes (add/delete/reorder).

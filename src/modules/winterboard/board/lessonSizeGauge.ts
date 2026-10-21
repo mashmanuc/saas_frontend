@@ -15,8 +15,16 @@ export const LESSON_SNAPSHOT_LIMIT_BYTES = 2 * 1024 * 1024
 /** З якої заповненості показувати смужку. */
 export const GAUGE_SHOW_FROM = 0.75
 
-/** Не частіше — рахувати розмір великої дошки (JSON кількох МБ) кожну дію марно. */
-export const MEASURE_INTERVAL_MS = 3000
+/** Не частіше — рахувати розмір великої дошки (JSON кількох МБ) кожну дію марно.
+ *  10 с (було 3 с): власник 2026-10-21, мультиборд — під час письма перерахунок щотри секунди забирав дотики. */
+export const MEASURE_INTERVAL_MS = 10_000
+
+/** Запустити, коли браузер вільний (не посеред штриха); без requestIdleCallback — одразу. */
+function whenIdle(fn: () => void): void {
+  const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+  if (typeof ric === 'function') ric(fn, { timeout: 2000 })
+  else fn()
+}
 
 export type LessonSizeLevel = 'none' | 'warn' | 'full'
 
@@ -70,7 +78,7 @@ export function useLessonSizeGauge(opts: LessonSizeGaugeOptions) {
 
   function schedule(): void {
     if (!opts.enabled.value || timer) return
-    timer = setTimeout(measure, Math.max(0, MEASURE_INTERVAL_MS - (Date.now() - lastRun)))
+    timer = setTimeout(() => whenIdle(measure), Math.max(0, MEASURE_INTERVAL_MS - (Date.now() - lastRun)))
   }
 
   watch(() => [opts.enabled.value, opts.seq()], schedule, { immediate: true })

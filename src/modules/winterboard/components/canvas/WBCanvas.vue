@@ -990,6 +990,7 @@ import { assistantNameUk } from '@/modules/intent/assistantLook'
 
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
+import { currentBoardPixelRatio } from '../../board/canvasPixelRatio'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
 import WBSheetScrollbars from './WBSheetScrollbars.vue'
 import { useI18n } from 'vue-i18n'
@@ -1052,7 +1053,7 @@ import { useImageCache } from '../../composables/useImageCache'
 import { containFit } from '../../engine/imageFit'
 import { useAssetStatus, resolveAssetSrc, getAssetRenderMode, type AssetRenderMode } from '../../composables/useAssetStatus'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
+import { getSmoothedPoints, clearSmoothedCache, forgetSmoothedPoints } from '../../engine/smoothing'
 import { roundStrokePoints } from '../../engine/strokePrecision'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
@@ -2518,6 +2519,10 @@ const loadedImages = new Map<string, HTMLImageElement>()
 
 // Stroke config cache for performance (R10)
 const strokeConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
+
+// Чіткість полотен — ДО створення шарів (v-stage монтується після setup): у onMounted шари вже стоять у
+// чіткості за замовчуванням. Велика сенсорна панель — 1×, решта — як було, до 2× (board/canvasPixelRatio.ts).
+Konva.pixelRatio = currentBoardPixelRatio()
 
 // Asset config cache — memoizes getAssetConfig per asset to prevent Konva node churn during drawing
 const assetConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
@@ -5961,11 +5966,7 @@ onMounted(async () => {
     resizeObserver.observe(containerRef.value)
   }
 
-  // Konva pixelRatio
-  if (typeof Konva !== 'undefined') {
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    Konva.pixelRatio = Math.min(Math.max(dpr, 1), 2)
-  }
+  // Konva pixelRatio — задано в setup, до створення шарів (board/canvasPixelRatio.ts)
 
   prewarmFonts()
 
@@ -6118,12 +6119,23 @@ watch(
 
 // Invalidate stroke/asset config caches when strokes change (add/delete/update).
 // Selection is NOT cleared here — only caches, so group drag keeps working.
+// 2026-10-21 (власник, мультиборд: «штрихи запізнюються», що далі в урок — то більше): запас форм і згладжених
+// точок скидаємо ЛИШЕ для штрихів, що змінились (сховище міняє штрих заміною на новий об'єкт) або зникли. Раніше
+// після кожного нового штриха всі штрихи сторінки згладжувались і будувались наново. Правки на місці
+// (setObjectText) і далі ловлять підписи запасів (buildStrokeSig, engine/smoothing.ts).
+let lastStrokeObjs = new Map<string, WBStroke>()
 watch(
   () => props.strokes,
-  () => {
-    strokeConfigCache.clear()
+  (strokes) => {
+    const next = new Map((strokes || []).map((s) => [s.id, s] as [string, WBStroke]))
+    for (const [id, obj] of lastStrokeObjs) {
+      if (next.get(id) !== obj) {
+        strokeConfigCache.delete(id)
+        forgetSmoothedPoints(id)
+      }
+    }
+    lastStrokeObjs = next
     assetConfigCache.clear()
-    clearSmoothedCache()
   },
 )
 

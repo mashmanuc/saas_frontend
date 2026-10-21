@@ -185,3 +185,8 @@ export function getSmoothedPoints(
 export function clearSmoothedCache(): void {
   smoothedCache.clear()
 }
+
+/** Забути згладжені точки одного штриха (змінився або зник) — решта запасу лишається. */
+export function forgetSmoothedPoints(strokeId: string): void {
+  smoothedCache.delete(strokeId)
+}
