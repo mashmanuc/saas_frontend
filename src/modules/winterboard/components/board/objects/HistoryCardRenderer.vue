@@ -26,12 +26,21 @@
   <div
     ref="rootEl"
     class="history-card"
-    :class="[{ 'is-selected': isSelected, 'is-readonly': !interactive }, `variant-${data.variant}`]"
+    :class="[{ 'is-selected': isSelected, 'is-readonly': !interactive, 'is-museum': !!museum }, `variant-${data.variant}`]"
     :style="{ '--accent': variantStyle.accent, '--preset-border': variantStyle.border, ...textScaleStyle }"
   >
-    <div class="history-card__accent-bar" :style="{ background: variantStyle.accent }" />
+    <div v-if="!museum" class="history-card__accent-bar" :style="{ background: variantStyle.accent }" />
 
-    <header class="history-card__header">
+    <!-- Музейна етикетка (2026-10-21) — без шапки: назва й галузь у самій етикетці. -->
+    <button
+      v-if="museum && interactive && isSelected"
+      type="button"
+      class="history-card__delete-btn history-card__delete-btn--floating"
+      :aria-label="t('winterboard.widget.delete')"
+      @click.stop="emit('delete')"
+    >×</button>
+
+    <header v-if="!museum" class="history-card__header">
       <span class="history-card__icon" aria-hidden="true">{{ variantStyle.icon }}</span>
       <span class="history-card__badge">{{ variantStyle.badge }}</span>
       <button
@@ -43,149 +52,160 @@
       >×</button>
     </header>
 
-    <div ref="bodyEl" class="history-card__body">
+    <div ref="bodyEl" class="history-card__body" :class="{ 'history-card__body--museum': museum }">
       <div ref="flowEl" class="history-card__flow">
-        <!-- 1 · медіа. Немає зображення — зони немає разом із відступом.
-             2026-09-30 (власник, «так, роби»): автор і ліцензія — у підвалі «ⓘ», а не рядком
-             під картинкою (там лягало сире поле Вікісховища: «Chess x0145.svg: Betalph
-             derivative work…»). Розміри з даних бронюють місце до завантаження, а `load`/`error`
-             перемірюють картку: без цього висоту міряли до картинки, і вміст ішов під скрол. -->
-        <figure v-if="image" class="history-card__media">
-          <img
-            class="history-card__image"
-            :src="image.url"
-            :alt="data.title"
-            :width="image.width || undefined"
-            :height="image.height || undefined"
-            loading="lazy"
-            @load="onImageSettled"
-            @error="onImageSettled"
+        <HistoryCardMuseum
+          v-if="museum"
+          :title="data.title"
+          :subtitle="data.subtitle"
+          :museum="museum"
+          :image="image"
+          :source="sources[0] ?? null"
+          @image-settled="onImageSettled"
+        />
+        <template v-else>
+          <!-- 1 · медіа. Немає зображення — зони немає разом із відступом.
+               2026-09-30 (власник, «так, роби»): автор і ліцензія — у підвалі «ⓘ», а не рядком
+               під картинкою (там лягало сире поле Вікісховища: «Chess x0145.svg: Betalph
+               derivative work…»). Розміри з даних бронюють місце до завантаження, а `load`/`error`
+               перемірюють картку: без цього висоту міряли до картинки, і вміст ішов під скрол. -->
+          <figure v-if="image" class="history-card__media">
+            <img
+              class="history-card__image"
+              :src="image.url"
+              :alt="data.title"
+              :width="image.width || undefined"
+              :height="image.height || undefined"
+              loading="lazy"
+              @load="onImageSettled"
+              @error="onImageSettled"
+            >
+          </figure>
+
+          <!-- 2 · заголовок. Уся зона — перемикач стану. Над ним — чому пов'язана
+               картка тут (Next Actions), під ним — «хто/що це» зі статті. -->
+          <p v-if="data.relation" class="history-card__relation">
+            ↳ {{ data.relation.label }} · {{ data.relation.of }}<template
+              v-if="data.relation.role"> ({{ data.relation.role }})</template>
+          </p>
+          <button
+            type="button"
+            class="history-card__heading"
+            :aria-expanded="isExpanded"
+            @click.stop="toggleExpanded"
           >
-        </figure>
+            <span class="history-card__title">{{ data.title }}</span>
+            <span v-if="data.subtitle" class="history-card__subtitle">{{ data.subtitle }}</span>
+          </button>
+          <p v-if="data.lead" class="history-card__lead">{{ data.lead }}</p>
 
-        <!-- 2 · заголовок. Уся зона — перемикач стану. Над ним — чому пов'язана
-             картка тут (Next Actions), під ним — «хто/що це» зі статті. -->
-        <p v-if="data.relation" class="history-card__relation">
-          ↳ {{ data.relation.label }} · {{ data.relation.of }}<template
-            v-if="data.relation.role"> ({{ data.relation.role }})</template>
-        </p>
-        <button
-          type="button"
-          class="history-card__heading"
-          :aria-expanded="isExpanded"
-          @click.stop="toggleExpanded"
-        >
-          <span class="history-card__title">{{ data.title }}</span>
-          <span v-if="data.subtitle" class="history-card__subtitle">{{ data.subtitle }}</span>
-        </button>
-        <p v-if="data.lead" class="history-card__lead">{{ data.lead }}</p>
-
-        <!-- 3 · поля. Порожнє поле сюди не потрапляє: сервер його не кладе. -->
-        <dl v-if="visibleFields.length" class="history-card__fields">
-          <template v-for="(field, fi) in visibleFields" :key="fi">
-            <dt class="history-card__field-label">{{ field.label }}</dt>
-            <dd class="history-card__field-value">
-              <!-- ⚠️ Теги всередині значення стоять ВПРИТУЛ навмисно: перенос
-                   рядка між ними Vue лишає текстовим вузлом, і кома-роздільник
-                   відривалась від значення («Полтава ,»). -->
-              <span
-                v-for="(value, vi) in shownValues(field, fi)"
-                :key="vi"
-                class="history-card__value"
-              >
+          <!-- 3 · поля. Порожнє поле сюди не потрапляє: сервер його не кладе. -->
+          <dl v-if="visibleFields.length" class="history-card__fields">
+            <template v-for="(field, fi) in visibleFields" :key="fi">
+              <dt class="history-card__field-label">{{ field.label }}</dt>
+              <dd class="history-card__field-value">
+                <!-- ⚠️ Теги всередині значення стоять ВПРИТУЛ навмисно: перенос
+                     рядка між ними Vue лишає текстовим вузлом, і кома-роздільник
+                     відривалась від значення («Полтава ,»). -->
+                <span
+                  v-for="(value, vi) in shownValues(field, fi)"
+                  :key="vi"
+                  class="history-card__value"
+                >
+                  <button
+                    v-if="value.entity_ref && canOpenEntity"
+                    type="button"
+                    class="history-card__link"
+                    @click.stop="emit('open-entity', value.entity_ref, value.label)"
+                  >{{ valueText(value, field, fi, vi) }}</button><span v-else>{{ valueText(value, field, fi, vi) }}</span><button
+                    v-if="value.old_style"
+                    type="button"
+                    class="history-card__hint"
+                    :title="labels.oldStyle"
+                    :aria-label="labels.oldStyle"
+                    @click.stop="toggleOldStyle(fi, vi)"
+                  >?</button><span
+                    v-if="openOldStyle === `${fi}:${vi}`"
+                    class="history-card__old-style"
+                  >{{ value.old_style }} — {{ labels.oldStyle }}</span><button
+                    v-if="canPin(value)"
+                    type="button"
+                    class="history-card__pin"
+                    :title="labels.toMap"
+                    :aria-label="labels.toMap"
+                    @click.stop="emit('to-map', value.lat as number, value.lon as number, value.label)"
+                  >⌖</button><span
+                    v-if="value.note"
+                    class="history-card__note"
+                  >{{ value.note }}</span></span>
                 <button
-                  v-if="value.entity_ref && canOpenEntity"
+                  v-if="hiddenCount(field, fi) > 0"
                   type="button"
-                  class="history-card__link"
-                  @click.stop="emit('open-entity', value.entity_ref, value.label)"
-                >{{ valueText(value, field, fi, vi) }}</button><span v-else>{{ valueText(value, field, fi, vi) }}</span><button
-                  v-if="value.old_style"
+                  class="history-card__more"
+                  @click.stop="expandField(fi)"
+                >+{{ hiddenCount(field, fi) }}</button>
+                <button
+                  v-if="field.status === 'mixed'"
                   type="button"
-                  class="history-card__hint"
-                  :title="labels.oldStyle"
-                  :aria-label="labels.oldStyle"
-                  @click.stop="toggleOldStyle(fi, vi)"
-                >?</button><span
-                  v-if="openOldStyle === `${fi}:${vi}`"
-                  class="history-card__old-style"
-                >{{ value.old_style }} — {{ labels.oldStyle }}</span><button
-                  v-if="canPin(value)"
-                  type="button"
-                  class="history-card__pin"
-                  :title="labels.toMap"
-                  :aria-label="labels.toMap"
-                  @click.stop="emit('to-map', value.lat as number, value.lon as number, value.label)"
-                >⌖</button><span
-                  v-if="value.note"
-                  class="history-card__note"
-                >{{ value.note }}</span></span>
-              <button
-                v-if="hiddenCount(field, fi) > 0"
-                type="button"
-                class="history-card__more"
-                @click.stop="expandField(fi)"
-              >+{{ hiddenCount(field, fi) }}</button>
-              <button
-                v-if="field.status === 'mixed'"
-                type="button"
-                class="history-card__mixed"
-                :aria-expanded="openMixed === fi"
-                @click.stop="openMixed = openMixed === fi ? null : fi"
-              >{{ labels.mixed }}</button>
-              <ul v-if="openMixed === fi" class="history-card__mixed-list">
-                <li v-for="(value, vi) in field.values" :key="vi">{{ valueText(value) }}</li>
-              </ul>
-            </dd>
-          </template>
-        </dl>
+                  class="history-card__mixed"
+                  :aria-expanded="openMixed === fi"
+                  @click.stop="openMixed = openMixed === fi ? null : fi"
+                >{{ labels.mixed }}</button>
+                <ul v-if="openMixed === fi" class="history-card__mixed-list">
+                  <li v-for="(value, vi) in field.values" :key="vi">{{ valueText(value) }}</li>
+                </ul>
+              </dd>
+            </template>
+          </dl>
 
-        <!-- 3½ · що показати далі (Next Actions V1). Кнопки жива картка питає
-             в бекенду за своїм entity_ref (у даних картки їх немає) і лише
-             тоді, коли за ними є дані; у Replay і під олівцем їх немає.
-             Результат кліку — новий об'єкт дошки. -->
-        <div v-if="teachingActions.length" class="history-card__actions" role="group"
-             :aria-label="labels.nextActions">
-          <button
-            v-for="action in teachingActions"
-            :key="action.id"
-            type="button"
-            class="history-card__action"
-            @click.stop="emit('run-action', action)"
-          >{{ action.label }}</button>
-        </div>
+          <!-- 3½ · що показати далі (Next Actions V1). Кнопки жива картка питає
+               в бекенду за своїм entity_ref (у даних картки їх немає) і лише
+               тоді, коли за ними є дані; у Replay і під олівцем їх немає.
+               Результат кліку — новий об'єкт дошки. -->
+          <div v-if="teachingActions.length" class="history-card__actions" role="group"
+               :aria-label="labels.nextActions">
+            <button
+              v-for="action in teachingActions"
+              :key="action.id"
+              type="button"
+              class="history-card__action"
+              @click.stop="emit('run-action', action)"
+            >{{ action.label }}</button>
+          </div>
 
-        <!-- 4 · підвал джерел — той самий вигляд, що в theory_card. -->
-        <div v-if="sourceCount" class="history-card__sources">
-          <button
-            type="button"
-            class="history-card__sources-toggle"
-            :aria-expanded="sourcesOpen"
-            :aria-label="sourceToggleLabel"
-            :title="sourceToggleLabel"
-            @click.stop="sourcesOpen = !sourcesOpen"
-          ><span aria-hidden="true">ⓘ</span><span>{{ sourceCount }}</span></button>
-          <ol v-if="sourcesOpen" class="history-card__sources-list">
-            <li v-for="(ref, i) in sources" :key="i" class="history-card__source">
-              <!-- Клікабельно лише справжнє веб-посилання: інакше `javascript:`
-                   з чужих метаданих став би активним у картці вчителя. -->
-              <a v-if="isWebUrl(ref.url)" :href="ref.url" target="_blank" rel="noopener noreferrer">{{ ref.title || ref.url }}</a>
-              <span v-else>{{ ref.title }}</span>
-              <span v-if="ref.license" class="history-card__source-meta">
-                · <a v-if="isWebUrl(ref.license_url)" :href="ref.license_url" target="_blank" rel="noopener noreferrer">{{ ref.license }}</a>
-                <span v-else>{{ ref.license }}</span>
-              </span>
-              <span v-if="retrievedDay(ref.retrieved_at)" class="history-card__source-meta">
-                · {{ labels.retrieved }} {{ retrievedDay(ref.retrieved_at) }}
-              </span>
-            </li>
-            <li v-if="image" class="history-card__source" data-testid="history-card-image-source">
-              {{ labels.image }}:
-              <a v-if="isWebUrl(image.file_page)" :href="image.file_page" target="_blank" rel="noopener noreferrer">{{ image.author }}</a>
-              <span v-else>{{ image.author }}</span>
-              <span class="history-card__source-meta"> · {{ image.license }}</span>
-            </li>
-          </ol>
-        </div>
+          <!-- 4 · підвал джерел — той самий вигляд, що в theory_card. -->
+          <div v-if="sourceCount" class="history-card__sources">
+            <button
+              type="button"
+              class="history-card__sources-toggle"
+              :aria-expanded="sourcesOpen"
+              :aria-label="sourceToggleLabel"
+              :title="sourceToggleLabel"
+              @click.stop="sourcesOpen = !sourcesOpen"
+            ><span aria-hidden="true">ⓘ</span><span>{{ sourceCount }}</span></button>
+            <ol v-if="sourcesOpen" class="history-card__sources-list">
+              <li v-for="(ref, i) in sources" :key="i" class="history-card__source">
+                <!-- Клікабельно лише справжнє веб-посилання: інакше `javascript:`
+                     з чужих метаданих став би активним у картці вчителя. -->
+                <a v-if="isWebUrl(ref.url)" :href="ref.url" target="_blank" rel="noopener noreferrer">{{ ref.title || ref.url }}</a>
+                <span v-else>{{ ref.title }}</span>
+                <span v-if="ref.license" class="history-card__source-meta">
+                  · <a v-if="isWebUrl(ref.license_url)" :href="ref.license_url" target="_blank" rel="noopener noreferrer">{{ ref.license }}</a>
+                  <span v-else>{{ ref.license }}</span>
+                </span>
+                <span v-if="retrievedDay(ref.retrieved_at)" class="history-card__source-meta">
+                  · {{ labels.retrieved }} {{ retrievedDay(ref.retrieved_at) }}
+                </span>
+              </li>
+              <li v-if="image" class="history-card__source" data-testid="history-card-image-source">
+                {{ labels.image }}:
+                <a v-if="isWebUrl(image.file_page)" :href="image.file_page" target="_blank" rel="noopener noreferrer">{{ image.author }}</a>
+                <span v-else>{{ image.author }}</span>
+                <span class="history-card__source-meta"> · {{ image.license }}</span>
+              </li>
+            </ol>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -208,6 +228,7 @@ import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
+import HistoryCardMuseum from './HistoryCardMuseum.vue'
 
 const { t } = useI18n()
 
@@ -299,12 +320,19 @@ const LABELS: Record<string, { mixed: string; oldStyle: string; toMap: string; r
   en: { mixed: 'sources disagree', oldStyle: 'old style', toMap: 'to map', retrieved: 'retrieved',
         nextActions: 'What to show next', image: 'Image' },
 }
-const lang = computed(() => (data.value.content_language === 'en' ? 'en' : 'uk'))
+const lang = computed(() => (
+  data.value.content_language === 'en' || data.value.museum?.lang === 'en' ? 'en' : 'uk'))
 const labels = computed(() => LABELS[lang.value])
 
 const variantStyle = computed(() => {
   const v = VARIANT_STYLES[data.value.variant] ?? VARIANT_STYLES.person
   return { icon: v.icon, accent: v.accent, border: v.border, badge: lang.value === 'en' ? v.badge_en : v.badge_uk }
+})
+
+/** «Музейна етикетка» (власник 2026-10-21): є — картка малюється етикеткою замість полів. */
+const museum = computed(() => {
+  const m = data.value.museum
+  return m && Array.isArray(m.facts) && Array.isArray(m.timeline) ? m : null
 })
 
 /** Зображення показуємо ЛИШЕ з автором і ліцензією — гейт §6.1. */
@@ -420,6 +448,7 @@ const { requestFit } = useCardContentFit({
     () => JSON.stringify(data.value.image ?? null),
     () => JSON.stringify(data.value.primary ?? []),
     () => JSON.stringify(data.value.secondary ?? []),
+    () => JSON.stringify(data.value.museum ?? null),
     () => JSON.stringify(data.value.sources ?? []),
     () => isExpanded.value,
     () => sourcesOpen.value,
@@ -518,6 +547,28 @@ useExportCapture(
   pointer-events: auto;
 }
 .history-card__flow { display: flow-root; }
+
+/* Музейна етикетка: конверт — сама етикетка (кремовий папір, заокруглення з дизайну). Прозора для дотику —
+   тягнути за будь-яке місце, живі лише посилання (HistoryCardMuseum). Скролу немає: висоту підганяє дошка. */
+.history-card.is-museum {
+  border: none;
+  border-radius: 18px;
+  background: #fbf8f1;
+  box-shadow: 0 20px 50px -20px rgba(15, 38, 32, 0.35);
+}
+.history-card.is-museum.is-selected { box-shadow: 0 0 0 3px rgba(14, 122, 95, 0.35); }
+.history-card__body--museum {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.history-card.is-readonly .history-card__body--museum :deep(a) { pointer-events: none; }
+.history-card__delete-btn--floating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
 
 /* 1 · медіа */
 /* Стеля картинки — частка ШИРИНИ картки, а не 260 екранних px (власник

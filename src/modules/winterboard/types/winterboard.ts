@@ -653,6 +653,22 @@ export interface HistoryCardData {
   /** Сама сутність картки — непрозоре посилання, для дій «що далі».
    *  Самих дій у даних картки немає: список кнопок — не стан дошки. */
   entity_ref?: EntityRef
+  /** «Музейна етикетка» (власник 2026-10-21). Є — картка малюється етикеткою, а не полями. */
+  museum?: HistoryCardMuseumData
+}
+
+/** Вміст «музейної етикетки» — з тексту статті (apps/intent/ai/museum.py); кожне число стоїть у статті. */
+export interface HistoryCardMuseumData {
+  /** Галузь у шапці: «Історія України · Київська Русь». Порожньо — «Довідка». */
+  category: string
+  /** Рівно три: значення («979—1015») і що воно означає. */
+  facts: { value: string; label: string }[]
+  /** 2–3 речення суті. */
+  summary: string
+  /** 2–4 дати за часом. */
+  timeline: { year: string; label: string }[]
+  /** Мова матеріалу — для підписів картки. */
+  lang?: 'uk' | 'en'
 }
 
 export type HistoryCardAsset = WBAsset & { type: 'history_card'; data: HistoryCardData }

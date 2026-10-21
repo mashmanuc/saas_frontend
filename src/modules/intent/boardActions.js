@@ -293,6 +293,10 @@ function _center(page, w = 520, h = 380, reserveH = h) {
 const GRAPH_W = 640
 const GRAPH_H = 480
 
+// «Музейна етикетка» (2026-10-21) — `add_history_card` з `museum`. У дизайні 980×560; на дошці 880, щоб дві
+// людини стали поруч на аркуші 1920 (40 + 880 + 40 + 880 + 40). З 980 друга лягала поверх першої (стенд).
+const MUSEUM_CARD = [880, 560]
+
 const FOOTPRINT = {
   add_history_card: [520, 440],
   add_card: [520, 440],
@@ -314,7 +318,9 @@ export async function planFitsCurrentPage(actions) {
   const { pw, ph } = _pageSize(page)
   const rects = _occupied(page)
   for (const action of actions || []) {
-    const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload) : FOOTPRINT[action?.kind]
+    const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload)
+      : action?.kind === 'add_history_card' && sanitizeMuseum(action.payload?.museum) ? MUSEUM_CARD
+        : FOOTPRINT[action?.kind]
     if (!size) continue
     const [w, reserveH] = size
     const h = _reserveFor(0, reserveH, ph)
@@ -598,6 +604,23 @@ export function sanitizeHistoryImage(raw) {
     out.file_page = raw.file_page.trim()
   }
   return out
+}
+
+/**
+ * «Музейна етикетка» (власник 2026-10-21): рівно 3 факти, 2–4 дати й суть — інакше null, і картка лишається
+ * звичайною картою полів. Вміст уже перевірив сервер (кожне число — зі статті); тут лише форма й межі довжини.
+ */
+export function sanitizeMuseum(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const str = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
+  const pairs = (list, a, b) => (Array.isArray(list) ? list : [])
+    .map((item) => ({ [a]: str(item?.[a], 40), [b]: str(item?.[b], 80) }))
+    .filter((item) => item[a] && item[b])
+  const facts = pairs(raw.facts, 'value', 'label')
+  const timeline = pairs(raw.timeline, 'year', 'label')
+  const summary = str(raw.summary, 600)
+  if (facts.length !== 3 || timeline.length < 2 || timeline.length > 4 || !summary) return null
+  return { category: str(raw.category, 80), facts, summary, timeline, ...(raw.lang === 'en' ? { lang: 'en' } : {}) }
 }
 
 export function sanitizeEvents(raw) {
@@ -903,9 +926,14 @@ const HANDLERS = {
    * значень, тож «—» на картці не з'являється за побудовою.
    */
   async add_history_card({ variant, title, subtitle, image, primary, secondary,
-                           corridor, sources, source_status, entity_ref, lead, relation }, ctx) {
+                           corridor, sources, source_status, entity_ref, lead, relation, museum }, ctx) {
     const { store, page } = await _store(ctx)
-    const { cx, cy } = _center(page, 520, 380, 440)
+    const museumValue = sanitizeMuseum(museum)
+    // Ширина — 520, як у чинної theory_card: картка тієї самої сім'ї, а не
+    // сусідньої (THEORY_CARD_BASELINE.md, знято з коду). Музейна етикетка —
+    // 880×560 (MUSEUM_CARD), вона зменшується цілком (cardZoom.isMuseumCard).
+    const [cardW, cardH] = museumValue ? MUSEUM_CARD : [520, 380]
+    const { cx, cy } = _center(page, cardW, cardH, museumValue ? cardH : 440)
     const titleValue = typeof title === 'string' ? title.trim().slice(0, 200) : ''
     if (!titleValue) return
     const primaryFields = sanitizeHistoryFields(primary)
@@ -916,12 +944,10 @@ const HANDLERS = {
       id: assetId,
       type: 'history_card',
       src: '',
-      x: cx - 260,
-      y: cy - 190,
-      // Ширина — 520, як у чинної theory_card: картка тієї самої сім'ї, а не
-      // сусідньої (THEORY_CARD_BASELINE.md, знято з коду).
-      w: 520,
-      h: 380,
+      x: cx - cardW / 2,
+      y: cy - cardH / 2,
+      w: cardW,
+      h: cardH,
       rotation: 0,
       locked: false,
       data: {
@@ -941,6 +967,7 @@ const HANDLERS = {
         // Власне посилання картки. Дій «що далі» тут НЕМАЄ: список кнопок — не
         // стан дошки (слово власника 2026-09-21); його питає жива картка.
         ...(sanitizeEntityRef(entity_ref) ? { entity_ref: sanitizeEntityRef(entity_ref) } : {}),
+        ...(museumValue ? { museum: museumValue } : {}),
       },
     }, page.id ?? '')
   },

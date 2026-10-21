@@ -44,11 +44,23 @@ export function isKonspektCard(asset: { type?: string; data?: unknown } | null |
  */
 export const ZOOM_SCALED_TEXT_CARD_TYPES: ReadonlySet<string> = new Set(['nmt_task'])
 
-/** Картку показуємо зменшеною копією самої себе: за типом або як картку конспекту. */
+/**
+ * «Музейна етикетка» (власник 2026-10-21) — картка людини за дизайном: портрет 340 px поруч із текстом, кеглі
+ * заголовка 40 px. Це композиція, а не потік тексту: на масштабі 0,5 з екранними кеглями колонка тексту
+ * лишалась би вузькою смужкою. Тож вона, як картка задачі, — зменшена копія самої себе; висоту підганяє (INV-25).
+ */
+export function isMuseumCard(asset: { type?: string; data?: unknown } | null | undefined): boolean {
+  if (!asset || asset.type !== 'history_card') return false
+  const museum = (asset.data as { museum?: unknown } | null | undefined)?.museum
+  return !!museum && typeof museum === 'object'
+}
+
+/** Картку показуємо зменшеною копією самої себе: за типом, як картку конспекту або як музейну етикетку. */
 export function isZoomScaledCard(asset: { type?: string; data?: unknown } | null | undefined): boolean {
   if (!asset) return false
   const type = asset.type ?? ''
   return ZOOM_SCALED_CARD_TYPES.has(type) || ZOOM_SCALED_TEXT_CARD_TYPES.has(type) || isKonspektCard(asset)
+    || isMuseumCard(asset)
 }
 
 /**
