@@ -16,6 +16,8 @@
 
 // ── Renderer resolution result ────────────────────────────────────────────────
 
+import { taskGraphPoints, taskNumberLine } from './taskCompanion'
+
 export interface CompanionResolution {
   /** WBAsset.type — який renderer spawn-ити. */
   rendererType: string
@@ -40,6 +42,7 @@ export const INTENT_TO_RENDERERS: Record<string, string[]> = {
   show_intersection:  ['graph_calculator'],
   show_domain_range:  ['graph_calculator'],
   show_trig_graph:    ['graph_calculator'],
+  show_number_line:   ['number_line'],
 
   // ── Calculus ───────────────────────────────────────────────────────────────
   // rendererType = WBAsset.type (must match exactly)
@@ -91,6 +94,7 @@ export const AVAILABLE_RENDERERS = new Set<string>([
   'trig_circle',
   'trig_solver',
   'quadratic_card',
+  'number_line',
 ])
 
 // ── Default sizes per renderer ─────────────────────────────────────────────────
@@ -103,9 +107,7 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
   trig_circle:      { w: 640, h: 360 },
   trig_solver:      { w: 520, h: 480 },
   quadratic_card:   { w: 480, h: 380 },
-  // Б-184: числова пряма (DEFAULT_NUMBER_LINE_*). З намірами задач не повʼязана —
-  // у AVAILABLE_RENDERERS її немає; розмір тут, щоб перелік розмірів був повний.
-  number_line:      { w: 560, h: 300 },
+  number_line:      { w: 600, h: 300 },
   // «Наочна сцена» (DEFAULT_MATH_SCENE_*): з намірами задач не повʼязана; розмір — щоб перелік був повний.
   math_scene:       { w: 1000, h: 640 },
 }
@@ -131,7 +133,7 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
 
 function hasEquations(data: Record<string, unknown>): boolean {
   const eqs = data.equations as unknown[] | undefined
-  return Array.isArray(eqs) && eqs.length > 0
+  return Array.isArray(eqs) && eqs.length > 0 && eqs.every(e => typeof e === 'string' && e.trim().length > 0)
 }
 
 // quadratic_card має сенс лише з реальними коефіцієнтами (backend extract_quadratic).
@@ -148,7 +150,8 @@ function hasTrigSolver(data: Record<string, unknown>): boolean {
 }
 
 const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boolean> = {
-  graph_calculator: hasEquations,
+  graph_calculator: (d) => hasEquations(d) || taskGraphPoints(d).length > 0,
+  number_line: (d) => taskNumberLine(d.number_line) !== null,
   calculus_card:    hasEquations,   // FIX: було 'calculus' (стара назва) → guard не діяв
   quadratic_card:   hasQuadratic,
   trig_solver:      hasTrigSolver,

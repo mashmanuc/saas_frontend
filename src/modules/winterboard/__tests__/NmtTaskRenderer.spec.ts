@@ -81,6 +81,29 @@ const OPTIONS = [
   { id: 'o3', letter: 'В', text: 'третій', isCorrect: true },
 ]
 
+describe('Штатна кнопка живої побудови', () => {
+  it('числова пряма проходить із картки в spawn-companions без зміни умови', async () => {
+    const number_line = { version: 1, mode: 'set', variable: 'x', conditions: [{ op: '>', value: '-11', source: 'x+5>-6' }],
+      combine: 'and', showAnswer: true, showHatching: true }
+    const w = mountTask({ taskType: 'single_choice', question: 'Розв’яжіть $x+5>-6$', options: OPTIONS,
+      fingerprint: { version: 1, domains: ['inequalities'], entities: [], intents: ['show_number_line'], extracted_data: { number_line } } })
+    expect(w.get('.nmt-task__btn--build').text()).toContain('Побудувати')
+    await w.get('.nmt-task__btn--build').trigger('click')
+    const event = w.emitted('spawn-companions')![0][0] as { sourceAssetId: string; companions: unknown[] }
+    expect(event.sourceAssetId).toBe('a1')
+    expect(event.companions).toEqual([{ rendererType: 'number_line', intent: 'show_number_line', data: { number_line } }])
+    expect(w.emitted('update:asset')).toBeUndefined()
+    w.unmount()
+  })
+
+  it('непідготовлена пряма не обіцяє неробочу побудову', () => {
+    const w = mountTask({ taskType: 'single_choice', question: 'Задача', options: OPTIONS,
+      fingerprint: { version: 1, domains: [], entities: [], intents: ['show_number_line'], extracted_data: {} } })
+    expect(w.find('.nmt-task__btn--build').exists()).toBe(false)
+    w.unmount()
+  })
+})
+
 describe('NmtTaskRenderer — multiple_select', () => {
   beforeEach(() => resetNmtPresentationScales())
 

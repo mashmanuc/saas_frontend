@@ -1090,6 +1090,7 @@ import {
   RENDERER_DEFAULTS,
 } from '../../services/capabilityRegistry'
 import type { CompanionResolution } from '../../services/capabilityRegistry'
+import { buildTaskCompanion, matchesTaskCompanion } from '../../services/taskCompanion'
 // Хвиля 5 North Ship: подія «створено навчальний об'єкт» → scene-секція в AST
 // уроку (TASK_LIVE_OBJECTS §1). Fire-and-forget, дошку не блокує.
 import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
@@ -1292,7 +1293,8 @@ function handleSpawnCompanions(payload: {
   let cursorX = sourceAsset ? sourceAsset.x + sourceAsset.w + G : spawnX
 
   for (const resolution of companions) {
-    if (existingTypes.has(resolution.rendererType)) {
+    const nativeTaskVisual = ['number_line', 'graph_calculator'].includes(resolution.rendererType)
+    if (!nativeTaskVisual && existingTypes.has(resolution.rendererType)) {
       // Companion цього типу вже є в companionLinks — вибираємо існуючий
       const existing = assets.value.find(
         a => existingIds.includes(a.id) && a.type === resolution.rendererType,
@@ -1302,7 +1304,8 @@ function handleSpawnCompanions(payload: {
     }
 
     // Перевіряємо чи companion цього типу вже є на сторінці (напр. від StateSerializer)
-    const existingOnPage = assets.value.find(a => a.type === resolution.rendererType)
+    const existingOnPage = assets.value.find(a => nativeTaskVisual
+      ? matchesTaskCompanion(a, resolution) : a.type === resolution.rendererType)
     if (existingOnPage) {
       emit('select', existingOnPage.id)
       // Записуємо в companionLinks щоб наступний клік теж йшов сюди
@@ -1352,7 +1355,14 @@ function handleSpawnCompanions(payload: {
       continue
     }
 
-    const companionAsset: WBAsset = {
+    const nativeAsset = nativeTaskVisual ? buildTaskCompanion(resolution, companionX, companionY, generateId()) : null
+    if (nativeTaskVisual && !nativeAsset) {
+      notifyWarning('Не можу побудувати ілюстрацію: дані задачі пошкоджені.')
+      continue
+    }
+    const companionAsset: WBAsset = nativeAsset
+      ? nativeAsset
+      : {
       id:       generateId(),
       type:     resolution.rendererType as unknown as WBAsset['type'],
       src:      '',
@@ -1433,6 +1443,9 @@ function buildCompanionData(
   const d = resolution.data
 
   switch (resolution.rendererType) {
+
+    case 'number_line':
+      return buildTaskCompanion(resolution, 0, 0, 'validation')?.data as unknown as Record<string, unknown> ?? null
 
     case 'graph_calculator': {
       // GraphCalculatorData = { version: 1, state: GraphCalculatorState }
